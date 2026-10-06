@@ -17,18 +17,26 @@ verification layer that turns that state into a reviewable artifact.
 
 ### Added
 
-- **Reproducible, verified packaging.** `npm run release:pack` builds
-  `dist/dsh-evolution-<version>.tgz` and `SHA256SUMS` (a committed copy at the
-  repository root plus one next to the artifact), after proving the tree packs
-  byte-identically twice, that the archive contains only the entries declared
-  by `package.json#files`, and that the shipped text carries no local home path
-  or credential-shaped material.
-- **`npm run pack:check`** replaces the bare `npm pack --dry-run`: it also
-  fails on `package-lock.json`/`package.json` drift, on a version that is not a
-  pre-release, on a README that still documents a superseded version, on a
-  missing CHANGELOG entry, on missing install/doctor/upgrade/rollback/
-  uninstall instructions, and on a committed `SHA256SUMS` or `docs/evidence/`
-  file that does not describe the tarball this tree actually produces.
+- **A release pin: `release/manifest.json` + the released tarball.** The bytes
+  that get published are committed and verified rather than rebuilt. Packing is
+  only byte-stable within one npm version (see *Fixed*), so one artifact is
+  stored: `npm run release:publish` copies the build into `release/`, records
+  its `sha256` and its environment-independent `contentSha256`, and
+  `npm run release:verify [<tarball>]` checks either one. `--content-only`
+  checks a locally rebuilt tarball, whose bytes may legitimately differ.
+- **`npm run pack:check`** replaces the bare `npm pack --dry-run`: it fails on
+  a pack that is not byte-stable in this environment, on an archive that is not
+  exactly `package.json#files`, on a non-canonical file mode, on shipped text
+  carrying a local home path or credential-shaped material, on
+  `package-lock.json`/`package.json` drift, on a version that is not a
+  pre-release, on a README that documents a superseded version, on a missing
+  CHANGELOG entry, on missing install/doctor/upgrade/rollback/uninstall
+  instructions — and on a `release/`, `docs/evidence/` or working tree that no
+  longer describes the pinned artifact.
+- **A content digest instead of a byte-only guarantee.** The archive is read
+  with Node's `zlib` and a minimal ustar reader (no external `tar`), and
+  `contentSha256` covers every entry's path, mode and content. This is what the
+  acceptance evidence, the pin and the CI check across platforms.
 - **A committed host-acceptance harness**
   (`scripts/acceptance/run-host-acceptance.mjs`). It installs the requested
   official DSH release into a throwaway runtime, installs the packed tarball
@@ -39,34 +47,59 @@ verification layer that turns that state into a reviewable artifact.
   uninstall/reinstall with data retention, the README upgrade and rollback
   flows (a re-versioned build of the same tree, then the current tarball), real
   promotion with a second confirmation gate, startup-canary commit across a
-  restart, and a canary rollback that removes only the new candidate. It writes
-  portable evidence with local scratch paths redacted.
+  restart, and a canary rollback that removes only the new candidate. Its
+  evidence records both the bytes it installed and the content digest, with
+  local scratch paths redacted.
 - **Committed acceptance evidence** for both supported hosts:
   `docs/evidence/dsh-0.2.0-rc.2.json` and
   `docs/evidence/dsh-0.2.1-alpha.1.json`.
 - **GitHub CI** (`.github/workflows/ci.yml`): unit tests on Node `22.19.0` and
-  `24.x`, a packaging job (reproducibility, allow-list, canonical modes,
-  checksum, and a doctor start with no host packages present), and a per-host
-  acceptance job. `test/workflows.test.mjs` parses both workflow files, pins
-  the CI job set and the accepted host matrix to the declaration, and fails if
-  the release workflow could publish anything other than a draft or reach npm.
+  `24.x`, a packaging job (byte stability, allow-list, canonical modes, the
+  committed pin, a `--content-only` check of a locally rebuilt artifact, and a
+  doctor start with no host packages present), and a per-host acceptance job
+  that also asserts its evidence matches the pinned content.
+  `test/workflows.test.mjs` parses both workflow files, pins the CI job set and
+  the accepted host matrix to the declaration, and fails if the release
+  workflow could publish anything other than a draft, rebuild the released
+  bytes, or reach npm. `test/release-pin.test.mjs` checks the pin against the
+  committed artifact and the working tree without running `npm pack`.
 - **Tag-triggered release workflow** (`.github/workflows/release.yml`) that
-  attaches the verified artifacts to a **draft** GitHub release; nothing is
-  published automatically.
-- **`RELEASE.md`** with the artifact list, the reproduction steps, and the
-  remaining release risks, including the ones this candidate does not remove.
+  verifies the tag against the version, verifies the pinned artifact, and
+  attaches exactly those bytes to a **draft** GitHub release. It deliberately
+  does not rebuild: a rebuild on the runner would have different bytes from the
+  artifact the acceptance ran against.
+- **`RELEASE.md`** with the artifact list, the reproduction steps, what
+  "reproducible" does and does not mean here, and the remaining release risks.
 
 ### Fixed
 
+- **`npm test` did not run on Node 22 or 24.** `node --test test/` treats the
+  argument as a module path on those versions and failed with
+  `Cannot find module '.../test'`, so CI could never go green on the declared
+  engine range. The suite now uses explicit globs
+  (`node --test "test/**/*.test.mjs" "test/**/*.test.js"`), verified on Node
+  `22.19.0` and `26.10.0`. As a side effect of the same fix,
+  `test/full-cross-session.integration.mjs` — a real integration test that the
+  old command silently never ran — is now discovered and passes (renamed to
+  `*.integration.test.mjs`).
 - **The tarball used to depend on the checkout's umask.** `npm pack` records the
   on-disk mode, so three files that happened to be `0600` in the development
   tree produced a different hash than the same commit in a fresh `git clone`
   (`0644`), while git tracked no such difference. Packaging now copies exactly
   the declared entries into a staging directory and normalises modes to
-  `0644`/`0755`, so the artifact is a function of the tracked content and the
-  tracked executable bit only. `npm run pack:check` asserts both that two packs
-  in the same tree are byte-identical and that every shipped entry has a
-  canonical mode.
+  `0644`/`0755`.
+- **The "reproducible tarball" claim was wrong across npm versions.** The same
+  tree packs to different bytes under npm 10 and npm 11 — the compression runs
+  through the bundled zlib. Measured: `46f6e4a4…` with npm `10.9.3`, `040e0d9e…`
+  with npm `11.19.1`, with byte-identical unpacked files and identical
+  uncompressed tar size. The guarantee is now split honestly: byte identity
+  within one environment, `contentSha256` everywhere, and one pinned artifact
+  for what is actually published.
+- **`lib/`-only runtime files no longer ship the release tooling.**
+  `package.json#files` now names `scripts/doctor.mjs` and
+  `scripts/import-evolution-data.mjs` instead of the whole `scripts/`
+  directory, so the acceptance harness and release scripts stay out of the
+  user-facing bundle (48 entries instead of 56).
 
 ### Notes
 

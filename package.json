@@ -12,7 +12,8 @@
   },
   "files": [
     "lib",
-    "scripts",
+    "scripts/doctor.mjs",
+    "scripts/import-evolution-data.mjs",
     "cordis.patch.yml",
     "CHANGELOG.md",
     "README.md",
@@ -44,9 +45,11 @@
     "@deepseek-ai/dsh-storage-json": "0.2.0-rc.2"
   },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test \"test/**/*.test.mjs\" \"test/**/*.test.js\"",
     "pack:check": "node scripts/release/verify-package.mjs",
     "release:pack": "node scripts/release/pack.mjs",
+    "release:publish": "node scripts/release/publish-artifact.mjs",
+    "release:verify": "node scripts/release/verify-artifact.mjs",
     "acceptance:host": "node scripts/acceptance/run-host-acceptance.mjs"
   },
   "keywords": [

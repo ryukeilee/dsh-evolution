@@ -41,7 +41,7 @@ jobs:
         run: npm test
 
   package:
-    name: package (reproducible, clean, installable)
+    name: package (clean, pinned, installable)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -50,31 +50,39 @@ jobs:
         with:
           node-version: '22.19.0'
           cache: npm
-      - name: Package checks (reproducibility, allow-list, portability)
+      - name: Package checks (byte stability, allow-list, canonical modes, pin)
         run: npm run pack:check
-      - name: Build the release artifacts
-        run: npm run release:pack
-      - name: Verify the published checksum
-        run: cd dist && sha256sum --check SHA256SUMS
-      - name: Install the tarball into an empty tree and start the doctor
+      - name: Verify the committed release artifact against the pin
+        run: npm run release:verify
+      - name: Build a local artifact and prove it has the pinned content
+        # The local build is compressed by this runner's npm, so its bytes are
+        # allowed to differ from the published ones; its content is not.
         run: |
           set -euo pipefail
-          tarball="$(ls dist/dsh-evolution-*.tgz)"
-          mkdir -p /tmp/clean-install
+          npm run release:pack
+          node scripts/release/verify-artifact.mjs dist/dsh-evolution-*.tgz --content-only
+      - name: Start the doctor from the published tarball with no host installed
+        run: |
+          set -euo pipefail
+          tarball="$(ls release/*.tgz)"
+          mkdir -p /tmp/clean-install /tmp/clean-home
           tar -xzf "$tarball" -C /tmp/clean-install
           # The doctor entry point must run with no host packages present: the
-          # bundle is copied without any node_modules, so a reintroduced host
+          # bundle is unpacked without any node_modules, so a reintroduced host
           # import fails here instead of only in a real install.
-          mkdir -p /tmp/clean-home
           node /tmp/clean-install/package/scripts/doctor.mjs --home /tmp/clean-home --no-composition --json > /tmp/clean-report.json
           node -e "const r=require('/tmp/clean-report.json'); if (typeof r.status !== 'string') throw new Error('no status'); console.log('doctor status:', r.status)"
-      - name: Upload the release artifacts
+      - name: Verify the checksum file attached to the release
+        run: cd release && sha256sum --check SHA256SUMS
+      - name: Upload the artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dsh-evolution-package
           path: |
-            dist/*.tgz
-            dist/SHA256SUMS
+            release/*.tgz
+            release/SHA256SUMS
+            release/manifest.json
+            dist/manifest.json
           if-no-files-found: error
 
   host-acceptance:
@@ -98,13 +106,27 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 11.26.0
-      - name: Build the release artifacts
-        run: npm run release:pack
+      - name: Build the artifact this job installs
+        run: |
+          set -euo pipefail
+          npm run release:pack
+          node scripts/release/verify-artifact.mjs dist/dsh-evolution-*.tgz --content-only
       - name: Real install acceptance on DSH ${{ matrix.host }}
         run: |
           node scripts/acceptance/run-host-acceptance.mjs \
             --host "${{ matrix.host }}" \
             --out "docs/evidence/dsh-${{ matrix.host }}.json"
+      - name: Prove the recorded evidence describes the pinned content
+        run: |
+          node -e "
+          const evidence = require('./docs/evidence/dsh-${{ matrix.host }}.json');
+          const pin = require('./release/manifest.json');
+          if (evidence.ok !== true) throw new Error('the acceptance did not pass');
+          if (evidence.contentSha256 !== pin.contentSha256) {
+            throw new Error('evidence content ' + evidence.contentSha256 + ' !== pin ' + pin.contentSha256);
+          }
+          console.log('evidence matches pinned content', pin.contentSha256);
+          "
       - name: Upload the acceptance evidence
         uses: actions/upload-artifact@v4
         with:

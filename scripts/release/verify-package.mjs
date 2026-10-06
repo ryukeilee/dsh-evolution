@@ -10,14 +10,22 @@
  *   3. does the shipped text leak a local home directory or a credential?
  *   4. is `package-lock.json` consistent with the manifest, so a fresh
  *      `npm ci` in a clean checkout cannot fail on drift?
- *   5. do the README install/doctor/upgrade/rollback/uninstall instructions
+ *   5. does this tree still produce the *content* that `release/manifest.json`
+ *      pins, and is the committed `release/` artifact exactly those bytes?
+ *   6. do the README install/doctor/upgrade/rollback/uninstall instructions
  *      and the compatibility declaration agree with the shipped package?
+ *
+ * Checks 1 and 5 are split on purpose: byte identity is only promised inside
+ * one environment, because npm's compression is npm-version-dependent, while
+ * the content digest holds everywhere.
  */
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  REPO_ROOT, assertCleanContent, assertCleanEntries, assertReproducible,
-  expectedEntries, formatBytes, readManifest,
+  REPO_ROOT, archiveContentDigest, archiveEntries, assertCleanContent, assertCleanEntries,
+  assertReproducible, expectedEntries, formatBytes, readManifest, readReleaseManifest,
+  readTarEntries, releaseArtifactPath, treeContentDigest,
 } from './release-lib.mjs';
 
 const failures = [];
@@ -38,6 +46,7 @@ let packed = null;
 check('the tarball is byte-identical across two packs', () => {
   packed = assertReproducible();
   notes.push(`        ${packed.filename}  ${formatBytes(packed.bytes)}  sha256 ${packed.sha256}`);
+  notes.push(`        contentSha256 ${packed.contentSha256}`);
 });
 check('the archive contains exactly the declared files', () => {
   const entries = packed ? packed.entries : assertReproducible().entries;
@@ -89,12 +98,14 @@ const readme = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
 const compatibility = fs.readFileSync(path.join(REPO_ROOT, 'COMPATIBILITY.md'), 'utf8');
 const changelog = fs.readFileSync(path.join(REPO_ROOT, 'CHANGELOG.md'), 'utf8');
 
-check('the committed acceptance evidence matches this exact tarball', () => {
-  // The acceptance evidence records the SHA256 of the tarball it was produced
-  // against. Pinning that here means a change to any shipped file invalidates
-  // the evidence and forces the host acceptance to be re-run, instead of a
-  // release shipping a package the recorded run never saw.
-  const sha = packed ? packed.sha256 : assertReproducible().sha256;
+check('the committed acceptance evidence matches this exact package content', () => {
+  // The acceptance evidence records the content digest of the tarball it was
+  // produced against, plus the byte hash of the pinned artifact. Comparing the
+  // content digest means a change to any shipped file invalidates the evidence
+  // and forces the host acceptance to be re-run, instead of a release shipping
+  // a package the recorded run never saw — and it does so on any platform.
+  const verified = packed || assertReproducible();
+  const releaseManifest = readReleaseManifest();
   const problems = [];
   for (const host of hostVersions) {
     const file = path.join(REPO_ROOT, 'docs', 'evidence', `dsh-${host}.json`);
@@ -104,24 +115,86 @@ check('the committed acceptance evidence matches this exact tarball', () => {
     if (evidence.ok !== true) problems.push(`${host}: the recorded acceptance did not pass`);
     if (evidence.hostVersion !== host) problems.push(`${host}: the evidence was recorded against host ${evidence.hostVersion}`);
     if (evidence.packageVersion !== manifest.version) problems.push(`${host}: the evidence was recorded for package ${evidence.packageVersion}, not ${manifest.version}`);
-    if (evidence.tarballSha256 !== sha) problems.push(`${host}: the evidence covers tarball ${evidence.tarballSha256}, but this tree packs to ${sha}; re-run the host acceptance`);
+    if (evidence.contentSha256 !== verified.contentSha256) {
+      problems.push(`${host}: the evidence covers content ${evidence.contentSha256}, but this tree builds ${verified.contentSha256}; re-run the host acceptance`);
+    }
+    if (evidence.tarballSha256 !== releaseManifest.sha256) {
+      problems.push(`${host}: the evidence was recorded against ${evidence.tarballSha256}, but the pinned artifact is ${releaseManifest.sha256}`);
+    }
   }
   if (problems.length > 0) throw new Error(problems.join('\n        '));
+});
+check('release/manifest.json pins this tree content', () => {
+  const verified = packed || assertReproducible();
+  const releaseManifest = readReleaseManifest();
+  if (releaseManifest.version !== manifest.version) {
+    throw new Error(`release/manifest.json pins version ${releaseManifest.version}, package.json is ${manifest.version}`);
+  }
+  if (releaseManifest.filename !== verified.filename) {
+    throw new Error(`release/manifest.json pins ${releaseManifest.filename}, this tree builds ${verified.filename}`);
+  }
+  if (releaseManifest.contentSha256 !== verified.contentSha256) {
+    throw new Error(`release/manifest.json pins content ${releaseManifest.contentSha256}, but this tree builds ${verified.contentSha256}; re-run "npm run release:publish" after the host acceptance`);
+  }
+  notes.push(`        pins ${releaseManifest.filename} content ${releaseManifest.contentSha256}`);
+});
+check('the committed release artifact is exactly the pinned build', () => {
+  const releaseManifest = readReleaseManifest();
+  const artifact = releaseArtifactPath(releaseManifest);
+  if (!fs.existsSync(artifact)) {
+    throw new Error(`missing ${path.relative(REPO_ROOT, artifact)}; run "npm run release:publish"`);
+  }
+  const sha = crypto.createHash('sha256').update(fs.readFileSync(artifact)).digest('hex');
+  if (sha !== releaseManifest.sha256) {
+    throw new Error(`the committed artifact hashes to ${sha}, but release/manifest.json pins ${releaseManifest.sha256}`);
+  }
+  const digest = archiveContentDigest(artifact);
+  if (digest !== releaseManifest.contentSha256) {
+    throw new Error(`the committed artifact contains ${digest}, but release/manifest.json pins ${releaseManifest.contentSha256}`);
+  }
+  const entries = archiveEntries(artifact);
+  if (entries.length !== releaseManifest.entries) {
+    throw new Error(`the committed artifact has ${entries.length} entries, release/manifest.json pins ${releaseManifest.entries}`);
+  }
+  const modes = [...new Set(entries.map((entry) => `0o${entry.mode.toString(8)}`))].sort();
+  if (JSON.stringify(modes) !== JSON.stringify(releaseManifest.modes)) {
+    throw new Error(`the committed artifact has modes ${JSON.stringify(modes)}, release/manifest.json pins ${JSON.stringify(releaseManifest.modes)}`);
+  }
+  assertCleanEntries(entries.map((entry) => entry.path), expectedEntries(manifest));
+  const sums = path.join(REPO_ROOT, 'release', 'SHA256SUMS');
+  if (!fs.existsSync(sums)) throw new Error('release/SHA256SUMS is missing');
+  const recorded = fs.readFileSync(sums, 'utf8').trim();
+  if (recorded !== `${releaseManifest.sha256}  ${releaseManifest.filename}`) {
+    throw new Error(`release/SHA256SUMS records:\n          ${recorded}\n        expected:\n          ${releaseManifest.sha256}  ${releaseManifest.filename}`);
+  }
+  notes.push(`        ${path.relative(REPO_ROOT, artifact)}  sha256 ${sha}`);
+});
+check('the working tree still builds the pinned content', () => {
+  // Cheap and exact: the same canonical digest computed from the declared files
+  // on disk, so a drifted file is named by the diff rather than by a pack hash.
+  const releaseManifest = readReleaseManifest();
+  const treeDigest = treeContentDigest();
+  if (treeDigest !== releaseManifest.contentSha256) {
+    const declared = expectedEntries(manifest);
+    const pinned = new Map(readTarEntries(releaseArtifactPath(releaseManifest)).map((entry) => [entry.path, entry]));
+    const drifted = [];
+    for (const relative of declared) {
+      const absolute = path.join(REPO_ROOT, relative);
+      const current = fs.readFileSync(absolute);
+      const committed = pinned.get(relative);
+      if (!committed) drifted.push(`${relative}: not in the released artifact`);
+      else if (!committed.bytes.equals(current)) drifted.push(`${relative}: content differs from the released artifact`);
+    }
+    for (const relative of pinned.keys()) {
+      if (!declared.includes(relative)) drifted.push(`${relative}: in the released artifact but no longer declared`);
+    }
+    throw new Error(`the tree builds ${treeDigest}, but release/manifest.json pins ${releaseManifest.contentSha256}\n        re-run the host acceptance and "npm run release:publish" after reviewing the changes\n        ${drifted.slice(0, 20).join('\n        ')}`);
+  }
+  notes.push(`        tree content ${treeDigest} matches the pin`);
 });
 check('the version is a semver pre-release, never a plain release', () => {
   if (!/^\d+\.\d+\.\d+-/.test(manifest.version)) {
     throw new Error(`version ${manifest.version} is not a pre-release; a dev/RC artifact must carry a pre-release tag`);
-  }
-});
-
-check('the committed SHA256SUMS names exactly this tarball', () => {
-  const verified = packed || assertReproducible();
-  const file = path.join(REPO_ROOT, 'SHA256SUMS');
-  if (!fs.existsSync(file)) throw new Error('SHA256SUMS is missing; run "npm run release:pack"');
-  const expected = `${verified.sha256}  ${verified.filename}`;
-  const recorded = fs.readFileSync(file, 'utf8').trim();
-  if (recorded !== expected) {
-    throw new Error(`SHA256SUMS records:\n          ${recorded}\n        this tree packs to:\n          ${expected}\n        run "npm run release:pack"`);
   }
 });
 check('package.json declares no publish configuration', () => {

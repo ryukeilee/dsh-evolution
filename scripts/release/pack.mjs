@@ -1,24 +1,31 @@
 #!/usr/bin/env node
 /**
- * Build the release artifacts into ./dist:
+ * Build a local release build into ./dist:
  *
  *   dsh-evolution-<version>.tgz   the packed bundle
+ *   manifest.json                 what this build contains and which bytes it has
  *   SHA256SUMS                    the checksum of that exact tarball
  *
- * The pack is verified before it is published locally: the tree is packed
- * twice and the two tarballs must be byte-identical, the archive can contain
- * only the entries declared by `package.json#files` (plus the always-included
- * manifest files), and the shipped text must not mention a local home
- * directory or carry credential-shaped material.
+ * The pack is verified before it is written: the tree is packed twice and the
+ * two tarballs must be byte-identical *in this environment*, the archive can
+ * contain only the entries declared by `package.json#files` (plus the
+ * always-included manifest files), and the shipped text must not mention a
+ * local home directory or carry credential-shaped material.
+ *
+ * This does not publish anything and does not touch the committed pin in
+ * `release/`. A build made with a different npm version has the same
+ * `contentSha256` but different compressed bytes, so publishing is an explicit
+ * second step: `npm run release:publish`.
  *
  * Usage: node scripts/release/pack.mjs [--dist <dir>]
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  DIST_DIR, REPO_ROOT, assertCleanContent, assertCleanEntries, assertReproducible,
+  DIST_DIR, assertCleanContent, assertCleanEntries, assertReproducible,
   expectedEntries, formatBytes, packOnce, readManifest,
 } from './release-lib.mjs';
+import { execFileSync } from 'node:child_process';
 
 function parseArgs(argv) {
   const options = { dist: DIST_DIR };
@@ -46,25 +53,40 @@ console.log(`dsh-evolution ${manifest.version}: packing twice into a temporary d
 const verified = assertReproducible();
 const entryCount = assertCleanEntries(verified.entries, expected);
 assertCleanContent(verified.entries);
-console.log(`  reproducible tarball ${verified.sha256}`);
+console.log(`  byte-identical in this environment: ${verified.sha256}`);
+console.log(`  content digest (environment-independent): ${verified.contentSha256}`);
 console.log(`  ${entryCount} entries, all inside the declared "files" allow-list`);
 
 fs.rmSync(options.dist, { recursive: true, force: true });
 fs.mkdirSync(options.dist, { recursive: true });
 const built = packOnce(options.dist);
-if (built.sha256 !== verified.sha256) {
-  throw new Error(`the artifact written to dist does not match the verified pack: ${built.sha256} !== ${verified.sha256}`);
+if (built.sha256 !== verified.sha256 || built.contentSha256 !== verified.contentSha256) {
+  throw new Error(`the artifact written to dist does not match the verified pack (${built.sha256} / ${built.contentSha256})`);
 }
 const target = built.file;
 
-// The canonical checksum list is committed at the repository root (the tarball
-// itself is not), so the reviewed commit names the exact artifact; a copy stays
-// next to the artifact in dist/.
-const line = `${built.sha256}  ${path.basename(target)}\n`;
-fs.writeFileSync(path.join(options.dist, 'SHA256SUMS'), line);
-fs.writeFileSync(path.join(REPO_ROOT, 'SHA256SUMS'), line);
+const builtWith = {
+  node: process.version,
+  npm: execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim(),
+  platform: `${process.platform}-${process.arch}`,
+};
+const buildManifest = {
+  name: manifest.name,
+  version: manifest.version,
+  filename: built.filename,
+  sha256: built.sha256,
+  contentSha256: built.contentSha256,
+  entries: built.entries.length,
+  modes: [...new Set(built.entryModes)].sort((a, b) => a - b).map((mode) => `0o${mode.toString(8)}`),
+  builtWith,
+};
+fs.writeFileSync(path.join(options.dist, 'manifest.json'), `${JSON.stringify(buildManifest, null, 2)}\n`);
+fs.writeFileSync(path.join(options.dist, 'SHA256SUMS'), `${built.sha256}  ${built.filename}\n`);
 
 console.log('');
 console.log(`artifacts in ${options.dist}`);
-console.log(`  ${path.basename(target)}  ${formatBytes(built.bytes)}  sha256 ${built.sha256}`);
-console.log('  SHA256SUMS (+ the committed copy at the repository root)');
+console.log(`  ${built.filename}  ${formatBytes(built.bytes)}  sha256 ${built.sha256}`);
+console.log(`  manifest.json  (built with node ${builtWith.node}, npm ${builtWith.npm}, ${builtWith.platform})`);
+console.log('  SHA256SUMS');
+console.log('');
+console.log('to pin this build as the published artifact, run: npm run release:publish');

@@ -1,8 +1,13 @@
 name: Release artifacts
 
-# Builds the verified release package for a version tag and attaches it to a
-# DRAFT GitHub release. Nothing is published automatically: the draft has to be
-# published by a human, and this repository is never published to npm.
+# Verifies the tagged commit against the pinned artifact and attaches that exact
+# artifact to a DRAFT GitHub release. Nothing is published automatically: a human
+# publishes the draft. This repository is never published to npm.
+#
+# The tarball is not rebuilt here on purpose. `npm pack` compresses through the
+# runner's bundled zlib, so a build made here would have different bytes from
+# the one the acceptance ran against. The released bytes are committed under
+# `release/` and verified instead.
 on:
   push:
     tags: ['v*']
@@ -17,7 +22,7 @@ permissions:
 
 jobs:
   release:
-    name: build and attach release artifacts
+    name: verify and attach release artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -28,9 +33,7 @@ jobs:
         with:
           node-version: '22.19.0'
           cache: npm
-      - name: Install from the lockfile
-        run: npm ci --ignore-scripts
-      - name: Verify the package and the declared tag agree
+      - name: Verify the tag matches the package version
         run: |
           set -euo pipefail
           tag="${{ github.event.inputs.tag || github.ref_name }}"
@@ -40,17 +43,16 @@ jobs:
             echo "tag $tag does not match package.json version $actual" >&2
             exit 1
           fi
-      - name: Package checks
-        run: npm run pack:check
-      - name: Build the release artifacts
-        run: npm run release:pack
-      - name: Verify the published checksum
-        run: cd dist && sha256sum --check SHA256SUMS
-      - name: Attach the artifacts to a draft release
+      - name: Verify the package and the pinned artifact
+        run: |
+          set -euo pipefail
+          npm run pack:check
+          npm run release:verify
+      - name: Attach the verified artifacts to a draft release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           tag="${{ github.event.inputs.tag || github.ref_name }}"
           gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --draft --generate-notes --title "dsh-evolution $tag"
-          gh release upload "$tag" dist/*.tgz dist/SHA256SUMS --clobber
+          gh release upload "$tag" release/dsh-evolution-*.tgz release/SHA256SUMS release/manifest.json --clobber

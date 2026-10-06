@@ -53,12 +53,15 @@ test('CI runs the unit tests, the package checks and both supported hosts', () =
   assert.ok(jobs.test.steps.some((step) => step.run === 'npm test'));
   assert.ok(jobs.test.steps.some((step) => step.run === 'npm ci --ignore-scripts'));
 
-  // Packaging: reproducible, clean, and the doctor must start with no host.
+  // Packaging: reproducible, clean, pinned, and the doctor must start with no host.
   const packageRuns = jobs.package.steps.map((step) => step.run).filter(Boolean).join('\n');
   assert.match(packageRuns, /npm run pack:check/);
+  assert.match(packageRuns, /npm run release:verify/);
   assert.match(packageRuns, /npm run release:pack/);
+  assert.match(packageRuns, /verify-artifact\.mjs .*--content-only/);
   assert.match(packageRuns, /sha256sum --check SHA256SUMS/);
   assert.match(packageRuns, /doctor\.mjs/);
+  assert.match(packageRuns, /release\/\*\.tgz/, 'the doctor must start from the published tarball, not a fresh build');
 
   // Real host acceptance for exactly the declared supported versions.
   const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
@@ -68,10 +71,15 @@ test('CI runs the unit tests, the package checks and both supported hosts', () =
   assert.deepEqual(jobs['host-acceptance'].needs, ['package']);
 });
 
-test('the release workflow only publishes a draft, never to npm', () => {
+test('the release workflow only publishes a draft of the verified artifact, never to npm', () => {
   const release = loadWorkflow('release.yml');
   const runs = release.jobs.release.steps.map((step) => step.run).filter(Boolean).join('\n');
   assert.match(runs, /gh release create "\$tag" --draft/);
+  // The released bytes are the committed ones, verified — never a fresh build,
+  // because npm's compression differs between npm versions.
+  assert.match(runs, /npm run release:verify/);
+  assert.match(runs, /gh release upload "\$tag" release\/dsh-evolution-\*\.tgz/);
+  assert.equal(/npm run release:pack/.test(runs), false, 'the release workflow must not rebuild the published artifact');
   const serialized = JSON.stringify(release);
   for (const forbidden of ['npm publish', 'NODE_AUTH_TOKEN', 'NPM_TOKEN', '--provenance']) {
     assert.equal(serialized.includes(forbidden), false, `the release workflow must not contain ${forbidden}`);

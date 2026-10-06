@@ -29,10 +29,13 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 ```
 
 Evidence: `docs/evidence/dsh-0.2.0-rc.2.json` and
-`docs/evidence/dsh-0.2.1-alpha.1.json` (host scratch paths redacted). The
-harness is self-contained: it installs the official host release itself, so a
-fresh checkout can re-derive both files. CI runs the same command per host
-(`.github/workflows/ci.yml`).
+`docs/evidence/dsh-0.2.1-alpha.1.json` (host scratch paths redacted). Each file
+records the `contentSha256` of the package it installed and the `sha256` of the
+bytes it installed; both are checked against the committed pin in
+`release/manifest.json` by `npm run pack:check` and
+`test/release-pin.test.mjs`. The harness is self-contained: it installs the
+official host release itself, so a fresh checkout can re-derive both files. CI
+runs the same command per host (`ci.yml` on `ubuntu-latest`).
 
 ### Verified compatibility matrix
 

@@ -30,7 +30,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { REPO_ROOT, DIST_DIR, packageFileName, readManifest } from '../release/release-lib.mjs';
+import { REPO_ROOT, DIST_DIR, archiveContentDigest, packageFileName, readManifest } from '../release/release-lib.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROBES = path.join(HERE, 'probes');
@@ -85,6 +85,7 @@ if (!fs.existsSync(tarball)) {
   process.exit(2);
 }
 const tarballSha256 = crypto.createHash('sha256').update(fs.readFileSync(tarball)).digest('hex');
+const tarballContentSha256 = archiveContentDigest(tarball);
 const outPath = options.out || path.join(REPO_ROOT, 'docs', 'evidence', `dsh-${options.host}.json`);
 
 const work = options.work || fs.mkdtempSync(path.join(os.tmpdir(), `dsh-evolution-accept-${options.host}-`));
@@ -99,6 +100,9 @@ const evidence = {
   packageVersion: manifest.version,
   tarball: path.relative(REPO_ROOT, tarball),
   tarballSha256,
+  // The environment-independent identity of the package that was installed:
+  // `npm pack` bytes vary with the npm version, the archive content does not.
+  contentSha256: tarballContentSha256,
   node: process.version,
   platform: `${process.platform}-${process.arch}`,
   work,

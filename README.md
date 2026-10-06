@@ -19,18 +19,33 @@ npx @deepseek-ai/dsh web            # 官方推荐
 # 或源码：pnpm install && pnpm run build
 ```
 
-在干净 profile 中通过官方 CLI 安装本插件：
+本插件的发布产物（`dsh-evolution-0.2.0-rc.1.tgz`）与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。
+
+### 1.1 从 Release 安装（用户）
 
 ```sh
-# 从源码包构建（可复现；校验和写入仓库根目录 SHA256SUMS 与 dist/SHA256SUMS）
-npm run release:pack                 # 生成 dist/dsh-evolution-0.2.0-rc.1.tgz + SHA256SUMS
+# 下载产物与校验信息（私有仓库需已登录：gh auth login）
+gh release download v0.2.0-rc.1 --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS'
+
+# 校验：必须与 release/SHA256SUMS 一致
+sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
 
 # 安装 / 升级（同一条命令；官方 CLI 负责 bundle 选择与依赖安装）
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dist/dsh-evolution-0.2.0-rc.1.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.1.tgz
 
 # 启动
 DSH_HOME=/isolated/home dsh web --no-open
 ```
+
+### 1.2 从源码构建（贡献者）
+
+```sh
+npm ci
+npm run release:pack     # 生成 dist/；本机构建的压缩字节受 npm 版本影响
+npm run pack:check       # 校验内容白名单、权限、发布固定点（pin）
+```
+
+本机构建的字节**不保证**与发布产物相同（`npm pack` 的 gzip 输出随 npm 版本变化）；保证一致的是内容：用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.1.tgz --content-only` 核对内容摘要。
 
 安装后官方 profile 的 `package.json` 会把 `dsh-evolution` 列入 `dsh.profile.bundles`，插件随 profile 加载，无需每 session 手工挂载 preset。
 
@@ -157,10 +172,11 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 
 本仓库的真实验收已完成，并且**由本仓库的脚本执行、证据随仓库分发**：
 
-- 单元/集成测试：`npm test`（131 个用例，含故障注入与 CI 工作流校验）。
+- 单元/集成测试：`npm test`（139 个用例，含故障注入、CI 工作流校验与发布固定点校验）。
 - 宿主真实验收：`node scripts/acceptance/run-host-acceptance.mjs --host <version>`，自包含安装官方宿主与 tarball，覆盖安装、诊断、核心流程、升级与回滚、promotion/canary 回滚与跨重启存活、禁用启用、卸载重装与数据保留。
 - 用户侧可复现验证入口：`scripts/doctor.mjs`，不依赖模型，对安装、状态、迁移、promotion 给出分级结论与证据。
-- 发布产物、复现步骤与剩余风险：`RELEASE.md`；验收证据：`docs/evidence/`。
+- 发布产物、复现步骤与剩余风险：`RELEASE.md`；验收证据：`docs/evidence/`；发布固定点：`release/manifest.json`。
+- 从 Release 重新下载后用 `npm run release:verify -- <tarball>` 核对字节与内容摘要。
 
 CI 见 `.github/workflows/ci.yml`（单测矩阵、可复现打包与内容白名单、两个宿主的真实安装验收）。
 
