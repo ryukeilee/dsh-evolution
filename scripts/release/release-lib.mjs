@@ -142,6 +142,24 @@ export function treeContentDigest() {
   return contentDigestOf(entries);
 }
 
+/** Digest the shipped files from git objects, independent of the working tree. */
+export function commitContentDigest(commit, cwd = REPO_ROOT) {
+  const gitBytes = (args) => execFileSync('git', args, { cwd });
+  const manifest = JSON.parse(gitBytes(['show', `${commit}:package.json`]).toString('utf8'));
+  const declared = (manifest.files || []).map((entry) => entry.replace(/\/+$/, ''));
+  const records = gitBytes(['ls-tree', '-rz', '--full-tree', commit]).toString('utf8').split('\0').filter(Boolean);
+  const entries = [];
+  for (const record of records) {
+    const tab = record.indexOf('\t');
+    const [mode, type, object] = record.slice(0, tab).split(' ');
+    const relative = record.slice(tab + 1);
+    if (!ALWAYS_INCLUDED.has(relative) && !declared.some((entry) => relative === entry || relative.startsWith(`${entry}/`))) continue;
+    if (type !== 'blob' || !['100644', '100755'].includes(mode)) throw new Error(`unsupported shipped git entry: ${relative} (${mode} ${type})`);
+    entries.push({ path: relative, mode: mode === '100755' ? 0o755 : 0o644, bytes: gitBytes(['cat-file', 'blob', object]) });
+  }
+  return contentDigestOf(entries);
+}
+
 // ---------------------------------------------------------------------------
 // packing
 // ---------------------------------------------------------------------------

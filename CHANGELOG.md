@@ -11,10 +11,7 @@ you install before upgrading DSH.
 Supported hosts: DSH `0.2.0-rc.2` and `0.2.1-alpha.1` (exact alternatives),
 Node `^22.19.0 || >=24.0.0`. Not published to npm.
 
-This candidate contains **no runtime change**: the shipped `lib/` is exactly
-`0.2.0-rc.1`. It hardens the release chain that produces the next artifact, and
-the release workflow now refuses to publish it at all unless tag, commit,
-manifest, artifact and checksums all agree.
+本候选修复两条 CodeQL high：shell 守卫的多项式回溯，以及指标投影的弱随机兜底 ID。保持核心 Evolution 流程与显式指标身份，重新执行双宿主真实验收。发布链验证 sourceCommit 的实际包内容，确保 tag、源 commit、manifest 与产物内容一致。
 
 ### Added
 
@@ -47,11 +44,10 @@ and the action runtimes instead of only the job names.
 
 ### Notes
 
-- Code scanning reports two pre-existing high-severity findings in `lib/`
-(`js/polynomial-redos` in `lib/guard.js`,
-`js/insecure-randomness` in `lib/dockyard-domain/metric-projection.js`). They are
-recorded in `RELEASE.md` and are deliberately **not** fixed here: this candidate
-changes no runtime code, so the accepted behavior is unchanged.
+- `lib/guard.js` 用单次 token 扫描替代有序命令/写动词的无界回溯，重定向去掉可重试的数字/空白前缀；保留 deny/allow 决策并增加带子进程硬期限的风险回归。
+- 指标兜底身份使用 `crypto.randomUUID()`，同一投影的 `id` 与对应 `taskId` / `goalId` / `agentId` / `sessionId` 一致；调用方身份优先级不变。
+- `sourceCommit` 必须来自已提交的包内容，且其 git 对象摘要等于 tag 树与 tarball，祖先关系不再是唯一来源校验。
+- 原同名 rc.2 draft/tag 经维护者授权重建；旧记录保留，历史 rc.1 tag 和资产不变。
 - The `v0.2.0-rc.1` tag points at a commit whose committed artifact differs from
 the bytes that were published under that release. The hardened workflow now
 fails on exactly that mismatch. It is recorded in `RELEASE.md` as a known risk of

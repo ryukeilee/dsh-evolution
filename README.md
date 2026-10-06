@@ -8,7 +8,7 @@
 - 支持的 DSH 版本范围：**`0.2.0-rc.2` / `0.2.1-alpha.1`**（精确列表）。`package.json` 的 `peerDependencies` 逐一列出经过真实安装验收的宿主版本，不通过 exemption 伪装其它版本兼容；列表之外的宿主由 `host.version` 报 `blocked`。
 - Node：`^22.19.0 || >=24.0.0`（在当前验证环境为 `v26.10.0`，pnpm `11.26.0`）。
 
-> 状态：官方 `0.2.0-rc.2` 与 `0.2.1-alpha.1` 上的完整验收均已完成并通过（干净 runtime 安装 / 官方 CLI 插件安装 / 启动 / 9 个工具注册 / 核心流程 inspect→propose→trial→measure→revert 且 disposer 恢复基线 / CLI 与最终 doctor / promotion 到 canary 并跨重启存活 / startup canary 提交 / canary regression 回滚 / 禁用启用 / 卸载重装 / 数据保留 / 不可兼容宿主阻断）。验收由本仓库的脚本执行，证据已入库：`docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json`；复现方式、产物与**尚未消除的发布风险**见 `RELEASE.md`。本仓库的验证入口是 `npm test`，用户侧的可复现验证入口是 `scripts/doctor.mjs`（见第 5 节）。这不是生产发布声明；发布、push、tag 仍需人工决定。
+> 状态：官方 `0.2.0-rc.2` 与 `0.2.1-alpha.1` 上的完整验收均已完成并通过（干净 runtime 安装 / 官方 CLI 插件安装 / 启动 / 9 个工具注册 / 核心流程 inspect→propose→trial→measure→revert 且 disposer 恢复基线 / CLI 与最终 doctor / promotion 到 canary 并跨重启存活 / startup canary 提交 / canary regression 回滚 / 禁用启用 / 卸载重装 / 数据保留 / 不可兼容宿主阻断）。验收由本仓库的脚本执行，证据已入库：`docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json`；复现方式、产物与**尚未消除的发布风险**见 `RELEASE.md`。本仓库的验证入口是 `npm test`，用户侧的可复现验证入口是 `scripts/doctor.mjs`（见第 5 节）。这是经维护者授权发布的 RC，仍不是生产发布声明。
 
 ## 1. 安装 DSH 与插件
 
@@ -19,32 +19,32 @@ npx @deepseek-ai/dsh web            # 官方推荐
 # 或源码：pnpm install && pnpm run build
 ```
 
-本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库当前固定的候选版本是 `0.2.0-rc.2`；其 Release 以 **draft** 准备（已由 `release.yml` 验证并向 draft 附上产物），维护者发布前不可公开下载。下面的公开下载示例因此仍指向最近一次已公开的 `v0.2.0-rc.1`。
+本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定的候选版本是 `0.2.0-rc.2`；公开发布入口为 `v0.2.0-rc.2`。该 RC 修复两条 CodeQL high，发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新下载并验收。
 
 ### 1.1 从公开 Release 安装（用户）
 
 ```sh
 # 公开下载：无需 GitHub 仓库权限或登录
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.2
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.2.tgz" -o dsh-evolution-0.2.0-rc.2.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 curl -fL "$RELEASE_URL/manifest.json" -o manifest.json
 
 # 也可使用 GitHub CLI；公开仓库无需先运行 gh auth login
-gh release download v0.2.0-rc.1 --repo ryukeilee/dsh-evolution \
+gh release download v0.2.0-rc.2 --repo ryukeilee/dsh-evolution \
   --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS' --pattern 'manifest.json'
 
 # 校验：必须与 release/SHA256SUMS 一致
 sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
 
 # 安装 / 升级（同一条命令；官方 CLI 负责 bundle 选择与依赖安装）
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.1.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.2.tgz
 
 # 启动
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
-> `0.2.0-rc.2` 的 Release 一旦由维护者发布，把上面的 `v0.2.0-rc.1` / `0.2.0-rc.1` 替换为 `v0.2.0-rc.2` / `0.2.0-rc.2` 即可；校验命令与安装流程完全相同。
+> 历史 `v0.2.0-rc.1` 的 tag 与发布资产存在 provenance 不一致；原 tag 和附件保留，详情见 `RELEASE.md`。请使用 `v0.2.0-rc.2`。
 
 ### 1.2 从源码构建（贡献者）
 

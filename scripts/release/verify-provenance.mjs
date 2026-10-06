@@ -28,7 +28,7 @@
  *   node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.2 --json
  */
 import { pathToFileURL } from 'node:url';
-import { REPO_ROOT, gitOutput, readManifest, readReleaseManifest, treeContentDigest } from './release-lib.mjs';
+import { REPO_ROOT, commitContentDigest, gitOutput, readManifest, readReleaseManifest, treeContentDigest } from './release-lib.mjs';
 
 /** A full, lowercase git object name. Short names are ambiguous, so they fail. */
 export function isFullSha(value) {
@@ -56,6 +56,7 @@ export function evaluateProvenance(input) {
     head,
     tagCommit = null,
     sourceCommit = null,
+    sourceDigest = null,
     requireSourceCommit = false,
     isAncestor,
     packageVersion,
@@ -96,6 +97,11 @@ export function evaluateProvenance(input) {
     problems.push(`pinned source commit ${sourceCommit} is not in the history of the tagged commit ${head}`);
   } else {
     notes.push(`source commit ${sourceCommit} is in the tagged history`);
+    if (sourceDigest !== pinContentSha256) {
+      problems.push(`source commit content ${sourceDigest} does not match the pinned content ${pinContentSha256}`);
+    } else {
+      notes.push(`source commit content ${sourceDigest} matches the pin`);
+    }
   }
 
   if (treeDigest !== pinContentSha256) {
@@ -126,11 +132,16 @@ export function collectProvenance({ tag, cwd = REPO_ROOT, gitRun = git } = {}) {
       return false;
     }
   };
+  let sourceDigest = null;
+  if (isFullSha(pin.sourceCommit) && isAncestor(pin.sourceCommit, head)) {
+    sourceDigest = commitContentDigest(pin.sourceCommit, cwd);
+  }
   return {
     tag: tag ?? null,
     head,
     tagCommit,
     sourceCommit: pin.sourceCommit ?? null,
+    sourceDigest,
     isAncestor,
     packageVersion: manifest.version,
     pinVersion: pin.version,

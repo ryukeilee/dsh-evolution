@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   DIST_DIR, RELEASE_DIR, assertCleanContent, assertCleanEntries, assertReproducible,
-  expectedEntries, gitOutput, packageFileName, readManifest, releaseArtifactPath, readReleaseManifest,
+  commitContentDigest, expectedEntries, gitOutput, packageFileName, readManifest, releaseArtifactPath, readReleaseManifest,
 } from './release-lib.mjs';
 
 function parseArgs(argv) {
@@ -83,6 +83,9 @@ const hosts = (manifest.peerDependencies['@deepseek-ai/dsh'] || '').split('||').
 const sourceCommit = gitOutput(['rev-parse', 'HEAD']);
 if (!/^[0-9a-f]{40}$/.test(sourceCommit)) {
   throw new Error(`git returned an unusable commit id: ${JSON.stringify(sourceCommit)}`);
+}
+if (commitContentDigest(sourceCommit) !== verified.contentSha256) {
+  throw new Error('the build differs from HEAD shipped content; commit the source before pinning it');
 }
 const releaseManifest = {
   name: manifest.name,

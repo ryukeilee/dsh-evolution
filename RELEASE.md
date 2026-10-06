@@ -2,7 +2,7 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前候选版本：`0.2.0-rc.2`（已作为 **draft** Release 由 `release.yml` 准备并验证，是否公开由维护者决定）。最近一次**已公开**的 Release 仍是 `v0.2.0-rc.1`。
+当前候选版本：`0.2.0-rc.2`。本次经维护者明确授权，重建原同名 draft 与 tag，并在修复、安全审查、完整验收与 CI 通过后公开为 prerelease。旧 rc.2 固定点与最终在线状态记录在 `docs/evidence/rc2-release-audit.json`。
 
 ## 1. 产物
 
@@ -13,7 +13,7 @@
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-公开 Release 页面与附件可匿名访问，无需仓库权限：<https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.1>。`v0.2.0-rc.2` 在维护者发布（un-draft）之前只能通过仓库内容或 `gh release view --repo ... --json`（需权限）查看。
+本 RC 的公开发布入口：<https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.2>。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
 
 `release/` 始终只固定**当前候选**的产物。历史版本的产物与固定点不会随仓库常驻：它们在对应 tag / commit 的 git 历史里，也在各自已发布的 Release 附件里。
 
@@ -48,7 +48,7 @@ shasum -a 256 -c SHA256SUMS                    # Linux：sha256sum --check SHA25
 ```sh
 git clone <this-repo> && cd dsh-evolution
 npm ci                 # 严格按 package-lock.json 安装
-npm test               # 157/157
+npm test               # 163/163（基线 157 + 6 条风险回归）
 npm run pack:check     # 16 项检查
 npm run release:verify # 固定产物与发布固定点一致
 node --version         # 需要 ^22.19.0 || >=24.0.0
@@ -99,7 +99,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
   - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1`，用真实官方宿主执行第 4 节的全部步骤，并断言证据的内容摘要等于发布固定点
 - `.github/workflows/codeql.yml`：对 `javascript-typescript` 在 `main`、pull request 与每周运行 CodeQL，并把 SARIF 上传到 GitHub code scanning（job 权限仅 `security-events: write` + 只读内容）
 - `.github/workflows/release.yml`：tag push 或 `workflow_dispatch` 时
-  1. 校验 tag 形如 `v*`，并核对 tag 版本、checkout 到的 commit、`release/manifest.json` 的 `sourceCommit`（新版本必须有，且必须是 tag 历史中的祖先）与工作树内容摘要（`scripts/release/verify-provenance.mjs`）
+  1. 校验 tag 形如 `v*`，并核对 tag 版本、checkout 到的 commit、`release/manifest.json` 的 `sourceCommit`（新版本必须有，必须是 tag 历史中的祖先，并从 git 对象计算其实际包内容摘要）与工作树内容摘要（`scripts/release/verify-provenance.mjs`）
   2. 跑 `pack:check`、`release:verify` 与 `sha256sum --check SHA256SUMS`
   3. 在 **draft** Release 上附上 `release/` 中的产物；**不接受覆盖**：已发布或已有附件的 Release 直接失败，上传不带 `--clobber`
   4. 把 GitHub 实际提供的附件下载回来，再跑一次 `verify-artifact.mjs` 并与 `release/SHA256SUMS`、`release/manifest.json` 逐字节 `diff`
@@ -116,7 +116,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 
 1. **发布字节由人工固定的 `release/` 决定，而不是由 CI 重新构建。** 这是刻意的（见第 1 节），但它意味着：如果 `release/` 里的 tarball 被替换而 `release/manifest.json` 未同步，两者会不一致——`pack:check`、`release:verify` 和 `test/release-pin.test.mjs` 都会失败，因此只可能被“同时改对”而无法静默漂移。
 2. **`v0.2.0-rc.1` 的 tag 与同名 Release 的已发布字节不一致。** tag 指向 `98a6425`，该 commit 固定的产物是 `d24f5e52…`（内容 `5bf862ec…`）；而 Release 上实际可下载的是 `fc41f0e0…`（内容 `763707ab…`），来自后续的 `4c87c99`（`git show 4c87c99:release/manifest.json` 可复现该固定点）。加固后的 workflow 现在会在这种 tag/manifest/产物不一致时**明确失败**。要修复历史 Release 需要移动 tag 或覆盖附件，两者都被本次目标禁止，因此它作为已知风险记录在此，而不是被修复。这也是 `release/` 只固定当前候选、旧版本只能靠 tag/commit 历史或 Release 附件校验的原因。
-3. **Code scanning 报告 2 个 high 级别的既有告警**：`lib/guard.js` 的 `js/polynomial-redos` 与 `lib/dockyard-domain/metric-projection.js` 的 `js/insecure-randomness`。前者是 shell 命令拦截路径上的潜在 ReDoS（输入来自工具调用），后者是用 `Math.random()` 生成非安全用途的兜底 id。它们不是本次发布工程改造的一部分，且修改 `lib/` 会改变已验收的运行时行为，因此未修复。
+3. **守卫仍是启发式策略检查，不是 shell/JavaScript 安全沙箱。** 本次修复工具输入可触发的多项式回溯，重定向直接从 `>` 匹配，有序程序/写动词改为单次扫描；没有把守卫扩展为通用解析器。promotion 执行的宿主代码同样是合作式执行，需要可信审批。
 4. **验收覆盖不到手工 dispose 底层 bundle Fiber 的路径。** `disposeTrial` 走官方 runner 的 stop/undefine；直接 dispose bundle Fiber 的手工探针无法自我断言（会让探针自身注入的 `tools` 失活），因此不作为用户关闭流程，也未被 CI 覆盖。
 5. **promotion 的领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威，领域 evaluator 只提供记录在案的决策与 regression 硬 veto；尚未接入宿主提供的独立生产 baseline/test 指标。
 6. **`continuous/` 与 `governance/` 领域模块未接入 orchestrator 实时循环。** 它们有单测覆盖，但不受宿主验收路径保护。
@@ -125,9 +125,16 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 9. **事件签名密钥 `event-bridge.key` 无轮换/吊销流程。** 它只在该数据根首次创建，禁用与卸载都不会删除。
 10. **未做的发布动作：** npm 发布、代码签名 / provenance（SLSA）、SBOM。Code scanning 现已启用，但本 RC 仍不提供供应链签名。
 11. **`0.2.1-alpha.1` 的 npm dist-tag 会移动。** 验收记录的是该精确版本号；上游把 `alpha` 指向新版本后，本仓库声明的仍是 `0.2.1-alpha.1`。
-12. **`v0.2.0-rc.2` 的 Release 仍是 draft。** 产物与校验已由 `release.yml` 验证并附上，但公开下载需要维护者手动发布；在此之前 README 的用户安装示例仍指向已公开的 `v0.2.0-rc.1`。
+12. **指标 ID 不是授权凭证。** 兜底 ID 改为 `crypto.randomUUID()`，同一记录只生成一次，显式 ID 的优先级不变；调用方仍可提供 ID，不能把可猜测/不可猜测的 ID 当作权限控制。
 
-## 7. 相关文档
+## 7. 本次安全修复与 provenance 语义
+
+- CodeQL #1（`js/polynomial-redos`）：前置不可逆标记（如 `publish`）使未受控工具 command 进入旧 matcher；重复数字/空格、编辑器或解释器名可阻塞执行前守卫。本地旧实现 4,000 / 8,000 / 16,000 个 `0` 分别约 52 / 201 / 801 ms。回归测试在独立进程的 5 秒硬期限内检查百万字符、重复命令名和相应 deny/allow 对照。
+- CodeQL #2（`js/insecure-randomness`）：`metric-projection.js` 的组件及 task/goal/agent/session 兜底 ID 改用 Node CSPRNG UUID。它们是 evaluator 投影记录身份，不是密码、签名或权限令牌；本次真实移除弱随机源，不通过 dismiss 隐藏告警。显式身份、指标、时钟与副本隔离均有回归。
+- `sourceCommit` 指向先提交的包源代码；随后 release commit 只加入固定 tarball、manifest、校验和与验收证据。manifest 不能包含承载自身的 commit SHA（会形成哈希自引用），因此要求 sourceCommit 为祖先，且 **source commit、tag commit、工作树与 tarball 的 shipped 内容摘要完全相同**。只验证祖先不足以证明来源，本次补上 git 对象内容比较，并禁止把未提交的包内容固定为 HEAD 的产物。
+- GitHub Code Scanning 的最终 `fixed` 状态、CI run、公开资产校验与发布后双宿主验收见 `docs/evidence/rc2-release-audit.json`；该记录不属于包内容，可在发布后写入而不改变发布字节。
+
+## 8. 相关文档
 
 - `README.md`：用户侧安装 / 诊断 / 升级 / 回滚 / 卸载
 - `COMPATIBILITY.md`：宿主接口审计与分级、验证矩阵
