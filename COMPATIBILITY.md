@@ -22,8 +22,15 @@ imports only:
 
 - `@deepseek-ai/cordis` (service base class)
 - `@deepseek-ai/cordis-plugin-include` (promoted composition lifecycle)
-- `js-yaml` (composition file parsing)
+- `js-yaml` (composition and patch file parsing)
 - `zod` (declared under `dependencies`, installed with the bundle)
+
+`js-yaml` is declared in `peerDependencies` *and* in `dependencies`. The host
+normally provides it, but the doctor CLI (`scripts/doctor.mjs`) runs in a
+plugin-only profile where the host's modules are not on the plain Node
+resolution path; shipping our own copy keeps that entry working, and the
+doctor degrades to an explicit `not-evaluated` YAML check if the parser is
+ever missing instead of failing to start.
 
 `@deepseek-ai/dsh`, `@deepseek-ai/dsh-tools`, and
 `@deepseek-ai/dsh-cordis-host-runner` are declared because the bundle consumes
@@ -41,6 +48,13 @@ contracts**. A DSH upgrade must re-verify them:
 - Fiber effect metadata
 - Official Include internals accessed via public instance state: `root.data`,
   `store`, `Entry.fiber`, `Fiber.state`/`inject`/`ctx`, `ctx.get()`
+
+`runDiagnostics` probes each of these individually (`runtime.internal-api`).
+A host that dropped one reports `degraded` with the exact missing probe, so an
+upgrade cannot silently turn introspection into partial facts. The doctor also
+reads the cross-process `domain-archive.lock`; an ownerless lock (empty file or
+dead pid) is reclaimed by the runtime and reported with a `--repair` action,
+while a lock held by a live process is never taken.
 
 Evidence and the exact official references used during migration are kept in
 the private migration workspace; they are not part of this package. See the
@@ -98,6 +112,25 @@ recorded rather than worked around:
 None of these keeps code in the old DSH repository: the bundle here is complete
 and installable, and each blocker is a documented boundary with a stated
 resolution path.
+
+## Reliability boundaries added by the diagnostics work
+
+- **Startup is never bricked by a partial lock write.** `openDomainStorage`
+  reclaims a lock whose pid is dead, and waits for an unparsable lock to settle
+  (1s) before reclaiming it, so an in-flight writer is never displaced. The
+  previous behaviour threw `E_DOMAIN_ARCHIVE_LOCK` forever on an empty lock
+  file left by a killed process.
+- **Safe repairs are idempotent.** Promotion-journal rollback, committed-journal
+  cleanup, event-bridge tail trimming, orphan staging removal, migration staging
+  cleanup and stale-lock removal all re-verify before acting and are proven
+  no-ops on a second run (`test/diagnostics.test.mjs`).
+- **Unknown states fail safe.** `rollback-failed`, unparsable or out-of-boundary
+  journals, unverifiable event MACs, conflicting event ids, missing pending
+  archives and altered immutable migration evidence are reported `blocked` with
+  `recoverable=false`; the doctor never mutates them.
+- **The doctor CLI is symlink-safe** and resolves the plugin package through
+  `realpath`, so a `$DSH_HOME` or install path that contains symlinks still runs
+  the diagnostic entry.
 
 ## Data and privacy
 

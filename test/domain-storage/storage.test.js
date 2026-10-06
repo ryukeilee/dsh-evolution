@@ -65,3 +65,24 @@ test('untrusted envelope rejected, close propagates failure; schema and safe DTO
   assert.ok(!JSON.stringify(projectObservation({ code: 'lower secret', message: 'secret' })).includes('secret'));
   await f.backend.close(); fs.rmSync(f.root, { recursive: true });
 });
+test('an interrupted or dead-owner archive lock is reclaimed instead of bricking startup', async () => {
+  const f = await fixture();
+  const lockPath = path.join(f.root, 'domain-archive.lock');
+  // Owner pid that cannot be alive: startup must reclaim it.
+  fs.writeFileSync(lockPath, '999999999');
+  let port = await openDomainStorage(f.ctx, f.config);
+  assert.equal(fs.readFileSync(lockPath, 'utf8'), String(process.pid));
+  await port.close();
+  // Interrupted create: the lock exists but its pid was never written.
+  fs.writeFileSync(lockPath, '');
+  const past = new Date(Date.now() - 5000);
+  fs.utimesSync(lockPath, past, past);
+  port = await openDomainStorage(f.ctx, f.config);
+  assert.equal(fs.readFileSync(lockPath, 'utf8'), String(process.pid));
+  await port.close();
+  // A live owner still wins: the lock is never stolen from a running process.
+  fs.writeFileSync(lockPath, String(process.pid));
+  await assert.rejects(openDomainStorage(f.ctx, f.config), /E_DOMAIN_ARCHIVE_LOCK/);
+  fs.unlinkSync(lockPath);
+  await f.backend.close(); fs.rmSync(f.root, { recursive: true });
+});

@@ -8,7 +8,7 @@
 - 支持的 DSH 版本范围：**`0.2.0-rc.2`（精确）**。`package.json` 的 `peerDependencies` 对官方包做精确版本校验，不通过 exemption 伪装其它版本兼容。
 - Node：`^22.19.0 || >=24.0.0`（在当前验证环境为 `v26.10.0`，pnpm `11.26.0`）。
 
-> 状态：官方 `0.2.0-rc.2` 上的迁移验收已完成（干净安装 / 插件安装 / 启动 / 核心流程 / 重启恢复 / 禁用启用 / 卸载重装 / 数据迁移 / 官方主体完整性）。验收证据保存在私有迁移工作目录，见第 7 节。这不是生产发布声明；发布、push 仍需人工决定。
+> 状态：官方 `0.2.0-rc.2` 上的迁移验收已完成（干净安装 / 插件安装 / 启动 / 核心流程 / promotion 与 canary 回滚 / 重启恢复 / 禁用启用 / 卸载重装 / 数据迁移 / 官方主体完整性），并新增“可自诊断 + 故障注入”验收。验收证据保存在私有迁移工作目录（不随包分发）；本仓库的验证入口是 `npm test`，用户侧的可复现验证入口是 `scripts/doctor.mjs`（见第 5 节）。这不是生产发布声明；发布、push 仍需人工决定。
 
 ## 1. 安装 DSH 与插件
 
@@ -73,7 +73,65 @@ DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-<old>.tgz
 - 官方 `pluginManager.setBundleEnabled` 支持热禁用（当前实测 `applied`，插件工具/服务立即下线）或 `restart-required`；两种语义都由官方决定，插件不假设。
 - 卸载：停止应用后 `dsh plugin --profile web remove dsh-evolution`。卸载不删除用户数据。
 
-## 5. 核心能力
+## 5. 统一诊断入口（不需要 LLM）
+
+插件提供一个不依赖模型推理、不联网、不上传任何 Evolution 数据的诊断入口；所有结论都来自真实运行状态，并带可定位的 `evidence`，不是“配置是否存在”。
+
+### 5.1 命令行（应用未运行也可用）
+
+```sh
+# 只读诊断；默认自动识别“在 dsh.profile.bundles 中列出 dsh-evolution”的 profile
+node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs \
+  --home "$DSH_HOME" [--profile web] [--dsh-cli <.../@deepseek-ai/dsh/lib/bin.js>] [--json]
+
+# 只应用报告判定为“安全且幂等”的修复，然后重新验证
+node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" --repair [--json]
+```
+
+- 退出码：`0` 健康、`1` 存在可降级问题、`2` 存在阻塞问题。
+- 报告写入 stdout，本地绝对路径只出现在本地输出中，不会被上传。
+- `--repair` 只处理报告里 `recoverable=true` 且带 `repair` 的项；`recoverable=false` 的状态永远不会被自动改动。
+
+### 5.2 会话内（真实运行时）
+
+`evolution_doctor` 工具返回同一份报告，并在真实宿主中核对：必需服务（`tools` / `storageDomain` / `dynamicCordisRunner` / `systemPrompt` / `loader`）、全部 9 个工具的注册状态（逐个用官方注册表解析）、内部/实验性 introspection API 的可用性、promotion Include 适配器方法、数据根与跨进程锁。
+
+### 5.3 分级与覆盖
+
+| level | 含义 |
+| --- | --- |
+| `ok` | 已验证健康 |
+| `degraded` | 仍可用，但存在有界且被命名的限制，或存在可安全恢复的状态 |
+| `blocked` | 关键保证无法满足；不要在该状态下执行破坏性流程 |
+| `not-evaluated` | 当前模式无法观测该事实（例如 CLI 模式下无法观测实时注册），报告会显式列出，绝不静默略过 |
+
+`coverage` 分别列出已评估/未评估项；`degradedCapabilities` 单独列出已知的非阻塞能力限制（advisory evaluator、continuous/governance 未接入实时循环、host-only promotion、legacy 适配器、internal API 依赖）。
+
+### 5.4 能识别的故障范围
+
+- **宿主不兼容**：`host.cli` / `host.version` / `host.modules`（按 `peerDependencies` 精确校验 DSH 与各宿主模块版本，指出是哪个模块越界）。
+- **profile 与注册**：`host.install`（未安装 / 未列入 bundles / 已安装版本与本诊断包版本漂移）、`host.composition`（调用官方 `dsh --dump-config`，校验 bundle 层与两个 loader 入口是否存在且启用）。
+- **运行时能力**：`runtime.capabilities`、`runtime.registration`、`runtime.internal-api`（缺哪个服务/方法/探针就点出哪个）。
+- **数据与状态**：`data.root`、`data.key`、`state.memory`（含隔离文件）、`state.archives`、`state.event-bridge`（逐行 MAC 验证、重复事件、同 id 冲突 MAC、截断尾行）、`state.domain`（官方 schema 校验、pending 事务、孤儿 staging、损坏的 archive 锁）。
+- **迁移**：`migration.manifest`（`importId` 是否与文件清单自洽、不可变来源是否被改、目标文件是否缺失、未发布的 staging 是否残留）。
+- **promotion**：`promotion.journal` 明确区分 `not-executed` / `incomplete` / `canary-observing` / `committed-pending-cleanup` / `rollback-failed` / `state-unknown`，并做 journal 目标边界校验；`promotion.composition` 校验行是否越界、悬空或残留孤儿目录；`promotion.pointer` 校验 `EVOLUTION.md` 指针与 composition 是否一致。
+
+### 5.5 恢复语义（全部幂等）
+
+| 状态 | 处理 |
+| --- | --- |
+| journal `prepared` / `committing` | 从 journal 备份回滚（CAS 保护，不覆盖并发修改）；`--repair` 或下次启动自动完成；重复执行无副作用 |
+| journal `stable-committed` / `committed` | 只清理 journal 目录，不动 composition 与已提交插件 |
+| journal `rollback-failed` | **不自动处理**：保留 journal 并报 `blocked` |
+| journal 无法解析 / 阶段未知 / 目标越界 | **不自动处理**：报 `blocked`，保留现场 |
+| event bridge 未闭合尾行 | 只丢弃不构成记录的尾部字节；重复执行不改变文件 |
+| domain 孤儿 staging | 仅在无活进程持有 archive 锁时清理；有活进程时报告并拒绝 |
+| domain archive 锁无主（空内容或死 pid） | 运行时会自动回收；`--repair` 可显式清理；有活主的锁永不抢占 |
+| `EVOLUTION.md` 指向迁移前 legacy 能力 | 依据 migration manifest 的“No legacy promoted code execution”边界，报告为“有意不挂载”，不计为故障 |
+| 损坏的 failure memory | 不删除：报 `degraded` 并说明下次启动会隔离（quarantine）保留原字节 |
+| 损坏的 domain 聚合 / 事件 MAC / 不可变迁移证据 | 报 `blocked`，不重写、不猜测、不合并 |
+
+## 6. 核心能力
 
 保留旧 orchestrator 的成熟语义：proposal / candidate 风险分级、trial 临时激活与 teardown 基线恢复、measurement、`promotionGates`、journal 原子提交、CAS、跨进程锁、target claim、单调 evidence hydration、canary/restart、metricRegression 自动 rollback 与失败学习；durable memory、失败抑制、知识去重、冷档案/轮转/index 重建、canonical/tombstone/provenance。
 
@@ -82,16 +140,16 @@ DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-<old>.tgz
 - 领域层新增：`EvolutionMemory`（含冷档案/语义 GC）、`EvolutionObservationStore`、`EvolutionEvaluator`、`knowledge` 通过官方 `storageDomain` 接入。领域提交使用 staging + `domain.global.set` 的 pending 协议，重启后 `installPending` 重放。
 - 迁移白名单/guard 收紧，禁止重写 Cordis、禁止账户/provider/OAuth/旧 Web 与宿主主体写入。
 
-## 6. 已知限制（必须显式记录，不使用隐藏 patch 绕过）
+## 7. 已知限制（必须显式记录，不使用隐藏 patch 绕过）
 
 - **Promotion 的领域 evaluator 仍是 advisory**：`promotionGates` 是生产权威；领域 evaluator 提供记录在案的决策与“识别到 regression 即否决”的硬性 veto。它要求 goal/test/regression/已识别指标全部通过才会给 `promote`，但本插件尚未接入宿主提供的独立生产 baseline/test 指标，因此只有自定义指标时 evaluator 会返回 `reject`（不阻塞），真实独立指标接入待补。
 - **continuous / governance 领域模块已提取并单测通过，但未接入 orchestrator 实时循环**：`lib/dockyard-domain/continuous/`、`governance/` 是无旧运行时副作用的纯领域实现，当前未启动第二套 Engine/scheduler。旧 `dockyard` 数据以文件形式完整保留，可用 `domainSeed` 载入。
 - **Host-only**：Client half 一律拒绝。持久化源码使用合作式 `Function(hostCode)()` 兼容 gate，只接受同步、独立返回 Cordis Plugin 的函数体；任何 `harness` token 保守拒绝。这不是安全沙箱。
-- **内部 API 依赖**：introspection 仍依赖 `ctx.registry.values()`、`ctx.reflect.props/_getImpl()`、`ctx.events._hooks`、Fiber effect 元数据；Include adapter 使用源码中公开的 `root.data` / `store` / `Entry.fiber` / `Fiber.state` / `ctx.get()`。这些不是稳定跨版本公共契约，升级 DSH 前必须重新验证。
+- **内部 API 依赖**：introspection 仍依赖 `ctx.registry.values()`、`ctx.reflect.props/_getImpl()`、`ctx.events._hooks`、Fiber effect 元数据；Include adapter 使用源码中公开的 `root.data` / `store` / `Entry.fiber` / `Fiber.state` / `ctx.get()`。这些不是稳定跨版本公共契约，升级 DSH 前必须重新验证——`runtime.internal-api` 会逐个探针报告可用性，缺失时降级为 `degraded` 而不是假装健康。
 - 直接 dispose 底层 bundle Fiber 的手工 probe 仍无法自我断言（dispose 会使 probe 自身注入的 `tools` 失活）；官方 `pluginManager` 禁用/启用与 CLI 卸载/重装路径已独立验证。该底层路径不作为用户关闭流程。
 
-## 7. 验收与官方参考
+## 8. 验收与官方参考
 
-本仓库的真实迁移验收已完成（干净 DSH 启动、官方 CLI 安装、核心全流程、promotion/canary/rollback/跨进程重启、数据迁移幂等与重启恢复、官方 pluginManager 禁用/启用、CLI 卸载/重装、数据保留）。验收证据保存在私有迁移工作目录，不随包分发。本仓库自身的验证入口是 `npm test`。
+本仓库的真实迁移验收已完成（干净 DSH 启动、官方 CLI 安装、核心全流程、promotion/canary/rollback/跨进程重启、数据迁移幂等与重启恢复、官方 pluginManager 禁用/启用、CLI 卸载/重装、数据保留）。验收证据保存在私有迁移工作目录，不随包分发。本仓库自身的验证入口是 `npm test`（含故障注入用例）；用户侧的可复现验证入口是 `scripts/doctor.mjs`，它不依赖模型，可对安装、状态、迁移、promotion 给出分级结论与证据。
 
 官方参考：`packages/boot/plugin-manager/README.md`、`docs/user/develop/basic/publish.md`、`packages/storage/storage-domain/{README.md,src/spec.ts}`、`vendor/include/README.md`。
