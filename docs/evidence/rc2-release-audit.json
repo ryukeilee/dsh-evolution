@@ -83,7 +83,7 @@
     ]
   },
   "authorization": "维护者明确授权保存旧 rc.2 记录、重建同名 tag/draft 并公开；不修改 rc.1。",
-  "status": "revalidating-regexp-compatible-artifact",
+  "status": "awaiting-final-github-validation",
   "localAcceptanceFailures": [
     {
       "host": "0.2.1-alpha.1",
@@ -139,17 +139,17 @@
         "host": "0.2.0-rc.2",
         "passed": 21,
         "ok": true,
-        "tarballSha256": "28e23d7708a630ab551936fa33bf0e69893d6d1e590fcd36c5b02248c0e0ebf0",
-        "contentSha256": "427080c1a68d9ddaaaf0ef5d84fbdcaf9d9627daf6a3889b4622bfbccfed7376",
-        "finishedAt": "2026-10-06T17:10:36.569Z"
+        "tarballSha256": "b611da72218bcb792ddbbba8d12eb6b410d98ce43885ed76a1f783e5a4cd33a1",
+        "contentSha256": "48bf03a93e6281db2049baaab7af0494ebd4652e05462bb49cf720fa6dabb431",
+        "finishedAt": "2026-10-06T17:21:22.096Z"
       },
       {
         "host": "0.2.1-alpha.1",
         "passed": 21,
         "ok": true,
-        "tarballSha256": "28e23d7708a630ab551936fa33bf0e69893d6d1e590fcd36c5b02248c0e0ebf0",
-        "contentSha256": "427080c1a68d9ddaaaf0ef5d84fbdcaf9d9627daf6a3889b4622bfbccfed7376",
-        "finishedAt": "2026-10-06T17:10:37.463Z"
+        "tarballSha256": "b611da72218bcb792ddbbba8d12eb6b410d98ce43885ed76a1f783e5a4cd33a1",
+        "contentSha256": "48bf03a93e6281db2049baaab7af0494ebd4652e05462bb49cf720fa6dabb431",
+        "finishedAt": "2026-10-06T17:21:23.391Z"
       }
     ]
   },
@@ -249,5 +249,47 @@
     "nativeRegExp": true,
     "maxMillionCharacterMatcherMs": 5.4,
     "consumerRegression": "test/security-regression.test.mjs"
+  },
+  "compatibilityRecheck": {
+    "model": "gpt-6.1-sol",
+    "effort": "medium",
+    "conclusion": "无实质阻塞；原生RegExp接口及boolean语义保留。",
+    "differential": {
+      "cases": 156816,
+      "differences": 0
+    },
+    "scaling": {
+      "families": 9,
+      "maxMillionCharacterMs": 7.94,
+      "childDeadlineMs": 12000
+    },
+    "scope": "仅guard matcher最终修正，未重跑全套测试或修改文件。",
+    "limitation": "exec/match返回的匹配文本范围会因安全前缀移除与候选区间截断变化；守卫只使用boolean test，非解析/提取契约。"
+  },
+  "finalManifest": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.2",
+    "filename": "dsh-evolution-0.2.0-rc.2.tgz",
+    "sha256": "b611da72218bcb792ddbbba8d12eb6b410d98ce43885ed76a1f783e5a4cd33a1",
+    "contentSha256": "48bf03a93e6281db2049baaab7af0494ebd4652e05462bb49cf720fa6dabb431",
+    "entries": 48,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.10.0",
+      "npm": "11.19.1",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "2352d232a6ab22dc6b130d1701dc19b9d7275796",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json"
+    ]
   }
 }
