@@ -54,7 +54,8 @@
         "digest": "sha256:9ef13a7a8398b77bde3a61dce3a8d910bbad465ee27c5458023630d1d9108c34",
         "size": 95
       }
-    ]
+    ],
+    "tagAnnotation": "object 056c237db3bb85ad42f28988c36f46acc15a738a\ntype commit\ntag v0.2.0-rc.2\ntagger dsh-evolution <noreply@example.invalid> 1791305453 +0800\n\ndsh-evolution 0.2.0-rc.2\n"
   },
   "untouchedRc1": {
     "tagObject": "162903f9fc279adb0e88068bb3c42aae637216f1",
@@ -82,5 +83,74 @@
     ]
   },
   "authorization": "维护者明确授权保存旧 rc.2 记录、重建同名 tag/draft 并公开；不修改 rc.1。",
-  "status": "preparing"
+  "status": "awaiting-github-validation",
+  "localAcceptanceFailures": [
+    {
+      "host": "0.2.1-alpha.1",
+      "startedAt": "2026-10-06T17:08:23.720Z",
+      "steps": [
+        {
+          "name": "promotion-promote",
+          "at": "2026-10-06T17:08:50.649Z",
+          "ok": false,
+          "error": "Error: evolution_promote refused: {\"phase\":\"revert-failed\"}\n    at call (file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/probes/promotion-probe.mjs:68:59)\n    at async candidate (file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/probes/promotion-probe.mjs:115:24)\n    at async run (file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/probes/promotion-probe.mjs:124:28)"
+        }
+      ],
+      "error": "Error: promotion promote failed: Error: evolution_promote refused: {\"phase\":\"revert-failed\"}\n    at call (file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/probes/promotion-probe.mjs:68:59)\n    at async candidate (file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/probes/promotion-probe.mjs:115:24)\n    at async run (file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/probes/promotion-probe.mjs:124:28)\n    at main (file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/run-host-acceptance.mjs:474:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/run-host-acceptance.mjs:503:3"
+    }
+  ],
+  "security": {
+    "redosReproduction": [
+      {
+        "length": 4000,
+        "ms": 51.5
+      },
+      {
+        "length": 8000,
+        "ms": 200.6
+      },
+      {
+        "length": 16000,
+        "ms": 801.4
+      }
+    ],
+    "matcherDifferential": {
+      "cases": 8000,
+      "differences": 0
+    },
+    "regression": "test/security-regression.test.mjs",
+    "sourcePinRegression": "test/release-provenance.test.mjs"
+  },
+  "acceptanceHarnessAdjustment": "promotion-probe 未使用 core-probe 的 pre-propose 稳定门；首轮 alpha promotion 返回 revert-failed，相同产物复测 21/21 通过。为控制已知懒加载基线竞态，promotion 也等待相同 runtime 签名稳定，并在失败时记录 cleanup/recovery proof。未修改生产 baseline 或 recovery 判定。首次失败的具体 signature 差异未留存，不能断言其根因已被完全证明。",
+  "sourceSemantics": "manifest 的 sourceCommit 为 tag 的祖先；其 git 对象中的实际 shipped 内容、tag shipped 内容、manifest/contentSha256 与实际 tarball 内容完全相同。manifest 自身不进入 tarball，source SHA 不是承载 manifest 的 commit 自引用。",
+  "localValidation": {
+    "tests": {
+      "passed": 163,
+      "failed": 0
+    },
+    "packChecks": {
+      "passed": 16,
+      "failed": 0
+    },
+    "artifactVerified": true,
+    "sourceContentVerified": true,
+    "hosts": [
+      {
+        "host": "0.2.0-rc.2",
+        "passed": 21,
+        "ok": true,
+        "tarballSha256": "28e23d7708a630ab551936fa33bf0e69893d6d1e590fcd36c5b02248c0e0ebf0",
+        "contentSha256": "427080c1a68d9ddaaaf0ef5d84fbdcaf9d9627daf6a3889b4622bfbccfed7376",
+        "finishedAt": "2026-10-06T17:10:36.569Z"
+      },
+      {
+        "host": "0.2.1-alpha.1",
+        "passed": 21,
+        "ok": true,
+        "tarballSha256": "28e23d7708a630ab551936fa33bf0e69893d6d1e590fcd36c5b02248c0e0ebf0",
+        "contentSha256": "427080c1a68d9ddaaaf0ef5d84fbdcaf9d9627daf6a3889b4622bfbccfed7376",
+        "finishedAt": "2026-10-06T17:10:37.463Z"
+      }
+    ]
+  }
 }

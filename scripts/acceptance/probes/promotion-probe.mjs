@@ -65,7 +65,10 @@ export function apply(ctx) {
       if (!definition) throw new Error(`the official registry cannot resolve ${name}`);
       const result = await definition.execute(args, { agent, signal: new AbortController().signal });
       steps.push({ name, ok: result?.ok !== false, phase: result?.phase });
-      if (!expectedFailure && result?.ok === false) throw new Error(`${name} refused: ${JSON.stringify({ phase: result?.phase, runtimeRecovered: result?.runtimeRecovered })}`);
+      if (!expectedFailure && result?.ok === false) {
+        const record = ctx.evolution.orchestrator.experiments.get(args.experimentId);
+        throw new Error(`${name} refused: ${JSON.stringify({ phase: result?.phase, reason: result?.reason, runtimeRecovered: result?.runtimeRecovered, cleanupProof: record?.cleanupProof, recoveryProof: record?.recoveryProof })}`);
+      }
       return result;
     };
     const executeMarker = async (name) => {
@@ -75,6 +78,25 @@ export function apply(ctx) {
       steps.push({ name: `event:${name}`, ok: true });
     };
     const candidate = async (suffix) => {
+      // Use the same pre-propose stability gate as core-probe. Promotion also
+      // captures a runtime baseline; lazy host fibers must settle first.
+      let previous = null, stable = 0;
+      const deadline = Date.now() + 20000;
+      while (Date.now() < deadline && stable < 4) {
+        const definition = ctx.tools.get('evolution_runtime_inspect', agent);
+        if (!definition) throw new Error('the official registry cannot resolve evolution_runtime_inspect');
+        const runtime = await definition.execute({}, { agent, signal: new AbortController().signal });
+        const fingerprint = JSON.stringify({
+          components: (runtime.components || []).map((entry) => `${entry.name}#${entry.uid}`).sort(),
+          services: (runtime.services || []).map((entry) => `${entry.name}:${entry.active}`).sort(),
+          events: (runtime.events || []).map((entry) => `${entry.name}:${(entry.listeners || []).length}`).sort(),
+        });
+        if (fingerprint === previous) stable++;
+        else { stable = 0; previous = fingerprint; }
+        if (stable < 4) await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      if (stable < 4) throw new Error('the live runtime signature did not stabilize before promotion');
+      steps.push({ name: 'runtime-stable', ok: true });
       const toolName = `promotion_probe_${suffix}`;
       const proposed = await call('evolution_propose', {
         why: `official Include promotion probe (${suffix})`,
