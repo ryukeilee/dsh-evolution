@@ -4,7 +4,7 @@
 
 本仓库是 `dsh-evolution` 的**唯一开发、测试与发布来源**；旧的 DSH 环境只作为历史迁移源和回滚基线，不再维护插件源码。
 
-- 包版本：`0.2.0-rc.1`（RC，非 npm 发布；预发布标签不会出现在 npm 上）
+- 包版本：`0.2.0-rc.2`（RC，非 npm 发布；预发布标签不会出现在 npm 上）
 - 支持的 DSH 版本范围：**`0.2.0-rc.2` / `0.2.1-alpha.1`**（精确列表）。`package.json` 的 `peerDependencies` 逐一列出经过真实安装验收的宿主版本，不通过 exemption 伪装其它版本兼容；列表之外的宿主由 `host.version` 报 `blocked`。
 - Node：`^22.19.0 || >=24.0.0`（在当前验证环境为 `v26.10.0`，pnpm `11.26.0`）。
 
@@ -19,7 +19,7 @@ npx @deepseek-ai/dsh web            # 官方推荐
 # 或源码：pnpm install && pnpm run build
 ```
 
-本插件的发布产物（`dsh-evolution-0.2.0-rc.1.tgz`）与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。
+本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库当前固定的候选版本是 `0.2.0-rc.2`；其 Release 以 **draft** 准备（已由 `release.yml` 验证并向 draft 附上产物），维护者发布前不可公开下载。下面的公开下载示例因此仍指向最近一次已公开的 `v0.2.0-rc.1`。
 
 ### 1.1 从公开 Release 安装（用户）
 
@@ -44,6 +44,8 @@ DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.1.
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
+> `0.2.0-rc.2` 的 Release 一旦由维护者发布，把上面的 `v0.2.0-rc.1` / `0.2.0-rc.1` 替换为 `v0.2.0-rc.2` / `0.2.0-rc.2` 即可；校验命令与安装流程完全相同。
+
 ### 1.2 从源码构建（贡献者）
 
 ```sh
@@ -52,7 +54,7 @@ npm run release:pack     # 生成 dist/；本机构建的压缩字节受 npm 版
 npm run pack:check       # 校验内容白名单、权限、发布固定点（pin）
 ```
 
-本机构建的字节**不保证**与发布产物相同（`npm pack` 的 gzip 输出随 npm 版本变化）；保证一致的是内容：用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.1.tgz --content-only` 核对内容摘要。
+本机构建的字节**不保证**与发布产物相同（`npm pack` 的 gzip 输出随 npm 版本变化）；保证一致的是内容：用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.2.tgz --content-only` 核对内容摘要。
 
 安装后官方 profile 的 `package.json` 会把 `dsh-evolution` 列入 `dsh.profile.bundles`，插件随 profile 加载，无需每 session 手工挂载 preset。
 

@@ -2,18 +2,20 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前候选版本：`0.2.0-rc.1`
+当前候选版本：`0.2.0-rc.2`（已作为 **draft** Release 由 `release.yml` 准备并验证，是否公开由维护者决定）。最近一次**已公开**的 Release 仍是 `v0.2.0-rc.1`。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.1.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
-| `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、条目数、权限、构建工具链、验收宿主与证据路径 |
+| `release/dsh-evolution-0.2.0-rc.2.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-公开 Release 页面与附件可匿名访问，无需仓库权限：<https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.1>。
+公开 Release 页面与附件可匿名访问，无需仓库权限：<https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.1>。`v0.2.0-rc.2` 在维护者发布（un-draft）之前只能通过仓库内容或 `gh release view --repo ... --json`（需权限）查看。
+
+`release/` 始终只固定**当前候选**的产物。历史版本的产物与固定点不会随仓库常驻：它们在对应 tag / commit 的 git 历史里，也在各自已发布的 Release 附件里。
 
 发布的字节与 CI 重新构建的字节**允许不同**：`npm pack` 通过随 Node 附带的 zlib 压缩，npm 10（Node 22）与 npm 11（Node 26）对完全相同的文件会产生不同的压缩字节。实测：同一棵树在 npm 10.9.3 下得到 `46f6e4a4…`、在 npm 11.19.1 下得到 `040e0d9e…`，而解包后的文件逐字节相同、未压缩 tar 大小相同。
 
@@ -27,15 +29,18 @@
 ## 2. 校验命令
 
 ```sh
-curl -fL https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1/dsh-evolution-0.2.0-rc.1.tgz -o dsh-evolution-0.2.0-rc.1.tgz
-curl -fL https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1/SHA256SUMS -o SHA256SUMS
-curl -fL https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1/manifest.json -o manifest.json
-shasum -a 256 -c SHA256SUMS                    # Linux：sha256sum --check SHA256SUMS
-npm run release:verify -- dsh-evolution-0.2.0-rc.1.tgz  # 在公开仓库 checkout 中校验下载的 tarball
+# 当前候选（v0.2.0-rc.2，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
-npm run release:verify -- <下载的.tgz>            # 从 Release 下载回来的文件，用同一条命令核对
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
+node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.2   # tag -> commit -> 固定点 -> 工作树
+
+# 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
+# 本仓库的 release/ 已改为固定 0.2.0-rc.2，不再覆盖旧版本）
+BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
+curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
+curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
+shasum -a 256 -c SHA256SUMS                    # Linux：sha256sum --check SHA256SUMS
 ```
 
 ## 3. 从全新 checkout 复现
@@ -43,7 +48,7 @@ npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：�
 ```sh
 git clone <this-repo> && cd dsh-evolution
 npm ci                 # 严格按 package-lock.json 安装
-npm test               # 139/139
+npm test               # 157/157
 npm run pack:check     # 16 项检查
 npm run release:verify # 固定产物与发布固定点一致
 node --version         # 需要 ^22.19.0 || >=24.0.0
@@ -86,14 +91,22 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 
 首次 CLI 诊断为 `degraded`（`data.root` 尚未初始化）属于预期：数据根在首次运行时创建，最终诊断恢复 `healthy`。
 
-## 5. CI
+## 5. CI 与发布链
 
 - `.github/workflows/ci.yml`
   - `test`：Node `22.19.0` 与 `24.x`，`npm ci --ignore-scripts`，`npm test`
   - `package`：`pack:check`、对固定产物的 `release:verify`、本机重建的 `--content-only` 校验、从**发布 tarball** 解包后在没有任何 `node_modules` 的情况下启动 doctor、`sha256sum --check`
   - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1`，用真实官方宿主执行第 4 节的全部步骤，并断言证据的内容摘要等于发布固定点
-- `.github/workflows/release.yml`：tag push 时校验 tag 与版本一致、验证固定产物、把 `release/` 中的产物附到**草稿** GitHub Release（不重建、不自动发布、不发布 npm）
-- `test/workflows.test.mjs` 解析两个 workflow 并锁定这些性质
+- `.github/workflows/codeql.yml`：对 `javascript-typescript` 在 `main`、pull request 与每周运行 CodeQL，并把 SARIF 上传到 GitHub code scanning（job 权限仅 `security-events: write` + 只读内容）
+- `.github/workflows/release.yml`：tag push 或 `workflow_dispatch` 时
+  1. 校验 tag 形如 `v*`，并核对 tag 版本、checkout 到的 commit、`release/manifest.json` 的 `sourceCommit`（新版本必须有，且必须是 tag 历史中的祖先）与工作树内容摘要（`scripts/release/verify-provenance.mjs`）
+  2. 跑 `pack:check`、`release:verify` 与 `sha256sum --check SHA256SUMS`
+  3. 在 **draft** Release 上附上 `release/` 中的产物；**不接受覆盖**：已发布或已有附件的 Release 直接失败，上传不带 `--clobber`
+  4. 把 GitHub 实际提供的附件下载回来，再跑一次 `verify-artifact.mjs` 并与 `release/SHA256SUMS`、`release/manifest.json` 逐字节 `diff`
+- 重复运行或误触发发布流程**无法**覆盖已有版本资产：对已发布的 `v0.2.0-rc.1` 触发 `release.yml` 会在第 1 步前失败（`refusing to overwrite`），附件保持逐字节不变（已实测）。
+- `workflow_dispatch` 的 `dry_run=true` 会执行第 1、2 步的全部校验而不创建或上传任何 Release。对 `v0.2.0-rc.1`（tag 早于本工具链）实测通过，并在需要时从默认分支借用 `scripts/release`（这些文件不属于包内容，固定点与产物不受影响）。
+- 所有 action 均运行在 Node 24 运行时（`actions/checkout@v7`、`actions/setup-node@v7`、`actions/upload-artifact@v7`、`pnpm/action-setup@v6`、`github/codeql-action/*@v4`），不再出现 `Node.js 20 is deprecated` 警告。
+- `test/workflows.test.mjs` 解析全部 workflow，锁定 CI job 集、可接受宿主矩阵、发布不可覆盖与不可重建、action 运行时与 major 版本；`test/release-provenance.test.mjs` 覆盖 provenance 判定表。
 
 ## 6. 发布状态与剩余风险
 
@@ -102,14 +115,17 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 以下风险仍未消除：
 
 1. **发布字节由人工固定的 `release/` 决定，而不是由 CI 重新构建。** 这是刻意的（见第 1 节），但它意味着：如果 `release/` 里的 tarball 被替换而 `release/manifest.json` 未同步，两者会不一致——`pack:check`、`release:verify` 和 `test/release-pin.test.mjs` 都会失败，因此只可能被“同时改对”而无法静默漂移。
-2. **验收覆盖不到手工 dispose 底层 bundle Fiber 的路径。** `disposeTrial` 走官方 runner 的 stop/undefine；直接 dispose bundle Fiber 的手工探针无法自我断言（会让探针自身注入的 `tools` 失活），因此不作为用户关闭流程，也未被 CI 覆盖。
-3. **promotion 的领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威，领域 evaluator 只提供记录在案的决策与 regression 硬 veto；尚未接入宿主提供的独立生产 baseline/test 指标。
-4. **`continuous/` 与 `governance/` 领域模块未接入 orchestrator 实时循环。** 它们有单测覆盖，但不受宿主验收路径保护。
-5. **内部/未文档化宿主接口仍被依赖。** `ctx.events._hooks` 与 `ctx.reflect._getImpl()` 回退路径是私有的；official loader / Include 的 `EntryTree.resolve`、`Entry.fiber/options/disabled` 是公开但未文档化的。`runtime.internal-api` 会逐项探测并在缺失时降级为 `degraded`，但升级 DSH 必须重新跑完整验收。
-6. **`trial` 的基线在 `propose` 时抓取，宿主懒加载 fiber 会造成竞态。** 验收探针因此先等待运行时签名稳定再 propose；真实用户如果恰好在宿主懒加载期间 propose，仍可能看到 `revert-failed`。这是既有设计属性，本次未修改。
-7. **事件签名密钥 `event-bridge.key` 无轮换/吊销流程。** 它只在该数据根首次创建，禁用与卸载都不会删除。
-8. **未做的发布动作：** npm 发布、代码签名 / provenance（SLSA）、SBOM。本 RC 提供固定字节、校验信息和完整验收证据，但不提供供应链签名。
-9. **`0.2.1-alpha.1` 的 npm dist-tag 会移动。** 验收记录的是该精确版本号；上游把 `alpha` 指向新版本后，本仓库声明的仍是 `0.2.1-alpha.1`。
+2. **`v0.2.0-rc.1` 的 tag 与同名 Release 的已发布字节不一致。** tag 指向 `98a6425`，该 commit 固定的产物是 `d24f5e52…`（内容 `5bf862ec…`）；而 Release 上实际可下载的是 `fc41f0e0…`（内容 `763707ab…`），来自后续的 `4c87c99`（`git show 4c87c99:release/manifest.json` 可复现该固定点）。加固后的 workflow 现在会在这种 tag/manifest/产物不一致时**明确失败**。要修复历史 Release 需要移动 tag 或覆盖附件，两者都被本次目标禁止，因此它作为已知风险记录在此，而不是被修复。这也是 `release/` 只固定当前候选、旧版本只能靠 tag/commit 历史或 Release 附件校验的原因。
+3. **Code scanning 报告 2 个 high 级别的既有告警**：`lib/guard.js` 的 `js/polynomial-redos` 与 `lib/dockyard-domain/metric-projection.js` 的 `js/insecure-randomness`。前者是 shell 命令拦截路径上的潜在 ReDoS（输入来自工具调用），后者是用 `Math.random()` 生成非安全用途的兜底 id。它们不是本次发布工程改造的一部分，且修改 `lib/` 会改变已验收的运行时行为，因此未修复。
+4. **验收覆盖不到手工 dispose 底层 bundle Fiber 的路径。** `disposeTrial` 走官方 runner 的 stop/undefine；直接 dispose bundle Fiber 的手工探针无法自我断言（会让探针自身注入的 `tools` 失活），因此不作为用户关闭流程，也未被 CI 覆盖。
+5. **promotion 的领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威，领域 evaluator 只提供记录在案的决策与 regression 硬 veto；尚未接入宿主提供的独立生产 baseline/test 指标。
+6. **`continuous/` 与 `governance/` 领域模块未接入 orchestrator 实时循环。** 它们有单测覆盖，但不受宿主验收路径保护。
+7. **内部/未文档化宿主接口仍被依赖。** `ctx.events._hooks` 与 `ctx.reflect._getImpl()` 回退路径是私有的；official loader / Include 的 `EntryTree.resolve`、`Entry.fiber/options/disabled` 是公开但未文档化的。`runtime.internal-api` 会逐项探测并在缺失时降级为 `degraded`，但升级 DSH 必须重新跑完整验收。
+8. **`trial` 的基线在 `propose` 时抓取，宿主懒加载 fiber 会造成竞态。** 验收探针因此先等待运行时签名稳定再 propose；真实用户如果恰好在宿主懒加载期间 propose，仍可能看到 `revert-failed`。这是既有设计属性，本次未修改。
+9. **事件签名密钥 `event-bridge.key` 无轮换/吊销流程。** 它只在该数据根首次创建，禁用与卸载都不会删除。
+10. **未做的发布动作：** npm 发布、代码签名 / provenance（SLSA）、SBOM。Code scanning 现已启用，但本 RC 仍不提供供应链签名。
+11. **`0.2.1-alpha.1` 的 npm dist-tag 会移动。** 验收记录的是该精确版本号；上游把 `alpha` 指向新版本后，本仓库声明的仍是 `0.2.1-alpha.1`。
+12. **`v0.2.0-rc.2` 的 Release 仍是 draft。** 产物与校验已由 `release.yml` 验证并附上，但公开下载需要维护者手动发布；在此之前 README 的用户安装示例仍指向已公开的 `v0.2.0-rc.1`。
 
 ## 7. 相关文档
 

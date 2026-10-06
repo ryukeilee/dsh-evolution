@@ -6,6 +6,57 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.2 — release candidate
+
+Supported hosts: DSH `0.2.0-rc.2` and `0.2.1-alpha.1` (exact alternatives),
+Node `^22.19.0 || >=24.0.0`. Not published to npm.
+
+This candidate contains **no runtime change**: the shipped `lib/` is exactly
+`0.2.0-rc.1`. It hardens the release chain that produces the next artifact, and
+the release workflow now refuses to publish it at all unless tag, commit,
+manifest, artifact and checksums all agree.
+
+### Added
+
+- **A source-commit pin.** `npm run release:publish` now records `sourceCommit`
+in `release/manifest.json`, and the release workflow requires it: a new release
+cannot be published unless the pin names a commit in the tagged history. The
+check is `scripts/release/verify-provenance.mjs`, covered by
+`test/release-provenance.test.mjs`.
+- **Code scanning.** `.github/workflows/codeql.yml` runs CodeQL for
+`javascript-typescript` on `main`, on every pull request and weekly, and uploads
+the SARIF results to GitHub code scanning.
+
+### Changed
+
+- **The release workflow can no longer overwrite a published asset.** It refuses
+to touch a release that is already published or already has assets, uploads
+without `--clobber`, and downloads the assets GitHub ends up serving to re-verify
+them against the pin. `workflow_dispatch` gained a `dry_run` input that runs
+every check and touches nothing.
+- **The release workflow verifies tag, commit, manifest and checksums before
+attaching anything.** It checks out full history (so the pinned source commit
+can be walked) and fails when the tag does not match the version, the checked-out
+commit, the pinned source commit or the pinned content.
+- **GitHub Actions now run on Node 24.** `actions/checkout` and
+`actions/setup-node` move to `v7`, `actions/upload-artifact` to `v7` and
+`pnpm/action-setup` to `v6`, which removes the `Node.js 20 is deprecated`
+runner warning the previous releases emitted.
+- **`test/workflows.test.mjs`** now locks the release guarantees, the CodeQL job
+and the action runtimes instead of only the job names.
+
+### Notes
+
+- Code scanning reports two pre-existing high-severity findings in `lib/`
+(`js/polynomial-redos` in `lib/guard.js`,
+`js/insecure-randomness` in `lib/dockyard-domain/metric-projection.js`). They are
+recorded in `RELEASE.md` and are deliberately **not** fixed here: this candidate
+changes no runtime code, so the accepted behavior is unchanged.
+- The `v0.2.0-rc.1` tag points at a commit whose committed artifact differs from
+the bytes that were published under that release. The hardened workflow now
+fails on exactly that mismatch. It is recorded in `RELEASE.md` as a known risk of
+the historical release; rewriting the tag or the release is out of scope.
+
 ## 0.2.0-rc.1 — release candidate
 
 Supported hosts: DSH `0.2.0-rc.2` and `0.2.1-alpha.1` (exact alternatives),
