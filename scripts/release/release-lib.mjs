@@ -24,6 +24,17 @@ export function readManifest() {
   return JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8'));
 }
 
+/**
+ * Run `git` in the repository and return its trimmed stdout.
+ *
+ * Only the release provenance checks use this: the packaging and artifact
+ * verification never depend on git, so they run in an unpacked tarball or a
+ * shallow checkout just as well as in a full clone.
+ */
+export function gitOutput(args, cwd = REPO_ROOT) {
+  return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+}
+
 export function packageFileName(manifest = readManifest()) {
   return `${manifest.name}-${manifest.version}.tgz`;
 }
@@ -37,6 +48,11 @@ export function readReleaseManifest() {
   const file = path.join(RELEASE_DIR, 'manifest.json');
   if (!fs.existsSync(file)) throw new Error(`missing ${path.relative(REPO_ROOT, file)}`);
   return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+/** The pinned source commit, when the pin records one. */
+export function pinnedSourceCommit(pin = readReleaseManifest()) {
+  return typeof pin.sourceCommit === 'string' ? pin.sourceCommit : null;
 }
 
 export function releaseArtifactPath(manifest = readReleaseManifest()) {

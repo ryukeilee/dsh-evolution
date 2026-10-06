@@ -22,6 +22,19 @@ function stepNames(job) {
   return (job.steps || []).map((step) => step.name || step.uses).filter(Boolean);
 }
 
+function usedActions(workflow) {
+  const uses = [];
+  for (const job of Object.values(workflow.jobs)) {
+    for (const step of job.steps || []) if (step.uses) uses.push(step.uses);
+  }
+  return uses;
+}
+
+function releaseWorkflowRuns() {
+  const release = loadWorkflow('release.yml');
+  return release.jobs.release.steps.map((step) => step.run).filter(Boolean).join('\n');
+}
+
 test('every workflow file parses as YAML and has runnable steps', () => {
   const files = fs.readdirSync(workflowsDir).filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'));
   assert.ok(files.length >= 2, `expected at least two workflow files, found ${files.length}`);
@@ -73,7 +86,7 @@ test('CI runs the unit tests, the package checks and both supported hosts', () =
 
 test('the release workflow only publishes a draft of the verified artifact, never to npm', () => {
   const release = loadWorkflow('release.yml');
-  const runs = release.jobs.release.steps.map((step) => step.run).filter(Boolean).join('\n');
+  const runs = releaseWorkflowRuns();
   assert.match(runs, /gh release create "\$tag" --draft/);
   // The released bytes are the committed ones, verified — never a fresh build,
   // because npm's compression differs between npm versions.
@@ -85,6 +98,75 @@ test('the release workflow only publishes a draft of the verified artifact, neve
     assert.equal(serialized.includes(forbidden), false, `the release workflow must not contain ${forbidden}`);
   }
   assert.deepEqual(release.permissions, { contents: 'write' });
+});
+
+test('the release workflow cannot overwrite an existing release asset', () => {
+  const release = loadWorkflow('release.yml');
+  const runs = releaseWorkflowRuns();
+  // `--clobber` on an upload is exactly the silent replacement this forbids.
+  for (const line of runs.split('\n')) {
+    if (!line.includes('gh release upload')) continue;
+    assert.equal(line.includes('--clobber'), false, `the upload must not clobber: ${line.trim()}`);
+  }
+  assert.match(runs, /refusing to overwrite/, 'the workflow must refuse an already-populated release');
+  assert.match(runs, /gh release view "\$tag" --json assets/, 'the release guard must inspect the existing assets');
+  // Both the guard and the upload only run for a real publish, never a dry run.
+  const dryRunGuards = release.jobs.release.steps.filter((step) => /dry_run != 'true'/.test(String(step.if)));
+  assert.ok(dryRunGuards.length >= 3, 'guard, create/upload and post-upload verification must be skipped on a dry run');
+});
+
+test('the release workflow verifies the tag, the commit, the pin and the checksums', () => {
+  const release = loadWorkflow('release.yml');
+  const runs = releaseWorkflowRuns();
+  assert.match(runs, /verify-provenance\.mjs --tag "\$\{\{ steps\.tag\.outputs\.tag \}\}"/);
+  assert.match(JSON.stringify(release), /--require-source-commit/);
+  assert.match(runs, /npm run pack:check/);
+  assert.match(runs, /npm run release:verify/);
+  assert.match(runs, /sha256sum --check SHA256SUMS/);
+  // The bytes GitHub ends up serving are downloaded back and re-verified.
+  assert.match(runs, /gh release download "\$tag"/);
+  assert.match(runs, /verify-artifact\.mjs \/tmp\/uploaded\//);
+  assert.match(runs, /diff -u release\/SHA256SUMS/);
+  // The provenance check walks history, so the checkout cannot be shallow.
+  const checkout = release.jobs.release.steps.find((step) => String(step.uses).startsWith('actions/checkout@'));
+  assert.equal(checkout.with['fetch-depth'], 0);
+});
+
+test('code scanning runs CodeQL against main and pull requests', () => {
+  const codeql = loadWorkflow('codeql.yml');
+  const analyze = codeql.jobs.analyze;
+  assert.ok(analyze, 'codeql.yml must declare an analyze job');
+  assert.equal(analyze.permissions['security-events'], 'write');
+  assert.deepEqual(analyze.strategy.matrix.language, ['javascript-typescript']);
+  const uses = usedActions(codeql);
+  assert.ok(uses.some((ref) => ref.startsWith('github/codeql-action/init@')), 'codeql.yml must initialize CodeQL');
+  assert.ok(uses.some((ref) => ref.startsWith('github/codeql-action/analyze@')), 'codeql.yml must analyze');
+  assert.ok(codeql.on.push, 'code scanning must run on main');
+  assert.ok(codeql.on.pull_request, 'code scanning must run on pull requests');
+});
+
+test('every action runs on the Node.js 24 runtime', () => {
+  // The Node.js 20 action runtime is deprecated; a `@v4`-or-older checkout,
+  // setup-node, upload-artifact, pnpm/action-setup or CodeQL action would
+  // reintroduce the runner warning this repository just removed.
+  const node20 = /action-setup@v[1-4]$|^(actions\/(checkout|setup-node|upload-artifact)@v[1-4]|github\/codeql-action\/(init|analyze)@v[1-3])$/;
+  for (const name of fs.readdirSync(workflowsDir)) {
+    if (!/\.ya?ml$/.test(name)) continue;
+    for (const uses of usedActions(loadWorkflow(name))) {
+      assert.equal(node20.test(uses), false, `${name} still uses a Node.js 20 action runtime: ${uses}`);
+    }
+  }
+});
+
+test('the workflows pin the current supported action majors', () => {
+  const expected = {
+    'ci.yml': ['actions/checkout@v7', 'actions/setup-node@v7', 'actions/upload-artifact@v7', 'pnpm/action-setup@v6'],
+    'release.yml': ['actions/checkout@v7', 'actions/setup-node@v7'],
+    'codeql.yml': ['actions/checkout@v7', 'github/codeql-action/init@v4', 'github/codeql-action/analyze@v4'],
+  };
+  for (const [name, refs] of Object.entries(expected)) {
+    assert.deepEqual([...new Set(usedActions(loadWorkflow(name)))].sort(), [...refs].sort(), `${name} action pins changed`);
+  }
 });
 
 test('no workflow runs on pull_request_target or with write permissions by default', () => {

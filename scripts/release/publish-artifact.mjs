@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   DIST_DIR, RELEASE_DIR, assertCleanContent, assertCleanEntries, assertReproducible,
-  expectedEntries, packageFileName, readManifest, releaseArtifactPath, readReleaseManifest,
+  expectedEntries, gitOutput, packageFileName, readManifest, releaseArtifactPath, readReleaseManifest,
 } from './release-lib.mjs';
 
 function parseArgs(argv) {
@@ -75,6 +75,15 @@ if (fs.existsSync(existingPath) && !options.force) {
 
 const buildManifest = JSON.parse(fs.readFileSync(path.join(options.from, 'manifest.json'), 'utf8'));
 const hosts = (manifest.peerDependencies['@deepseek-ai/dsh'] || '').split('||').map((value) => value.trim()).filter(Boolean);
+// The commit this artifact was built from. It is recorded on purpose: the
+// release workflow refuses to publish a new release whose pin does not name a
+// commit in the tagged history, so a pin cannot be copied onto a tag it did
+// not come from. The release commit that carries this file is a later commit,
+// so `sourceCommit` is checked as an ancestor of the tag, not as an equality.
+const sourceCommit = gitOutput(['rev-parse', 'HEAD']);
+if (!/^[0-9a-f]{40}$/.test(sourceCommit)) {
+  throw new Error(`git returned an unusable commit id: ${JSON.stringify(sourceCommit)}`);
+}
 const releaseManifest = {
   name: manifest.name,
   version: manifest.version,
@@ -84,6 +93,7 @@ const releaseManifest = {
   entries: verified.entries.length,
   modes: buildManifest.modes,
   builtWith: buildManifest.builtWith,
+  sourceCommit,
   // The acceptance evidence recorded against exactly these bytes.
   verifiedHosts: hosts,
   evidence: hosts.map((host) => `docs/evidence/dsh-${host}.json`),
@@ -98,6 +108,7 @@ console.log(`pinned ${filename}`);
 console.log(`  sha256 (published bytes)      ${builtSha}`);
 console.log(`  contentSha256 (any platform)  ${verified.contentSha256}`);
 console.log(`  entries                       ${verified.entries.length}`);
+console.log(`  sourceCommit                  ${sourceCommit}`);
 console.log('');
 console.log('now re-run the host acceptance so ./docs/evidence matches these bytes, then');
 console.log('run "npm run pack:check" and commit release/ together with the evidence.');

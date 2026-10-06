@@ -8,17 +8,32 @@ name: Release artifacts
 # runner's bundled zlib, so a build made here would have different bytes from
 # the one the acceptance ran against. The released bytes are committed under
 # `release/` and verified instead.
+#
+# The workflow never overwrites a release asset. It refuses to touch a release
+# that already has assets (or is already published), and uploads without
+# `--clobber`, so a repeated or wrongly triggered run fails instead of silently
+# replacing what users already downloaded. A `workflow_dispatch` with
+# `dry_run=true` runs every check and touches nothing.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing tag to build artifacts for
+        description: Existing tag to verify (and, unless dry_run, attach artifacts to)
         required: true
+      dry_run:
+        description: Verify tag, commit, manifest, artifact and checksums without creating or uploading a release
+        type: boolean
+        default: false
 
 permissions:
   contents: write
+
+concurrency:
+  # One release per tag, never cancelled halfway through an upload.
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -26,33 +41,81 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
-      - uses: actions/setup-node@v4
+          # The provenance check walks the tagged commit's history, so the
+          # default one-commit shallow clone is not enough.
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
         with:
           node-version: '22.19.0'
           cache: npm
-      - name: Verify the tag matches the package version
+      - name: Resolve the release tag
+        id: tag
         run: |
           set -euo pipefail
           tag="${{ github.event.inputs.tag || github.ref_name }}"
-          version="${tag#v}"
-          actual="$(node -p "require('./package.json').version")"
-          if [ "$version" != "$actual" ]; then
-            echo "tag $tag does not match package.json version $actual" >&2
-            exit 1
-          fi
-      - name: Verify the package and the pinned artifact
-        run: |
-          set -euo pipefail
-          npm run pack:check
-          npm run release:verify
-      - name: Attach the verified artifacts to a draft release
+          case "$tag" in
+            v*) ;;
+            *) echo "release tags must start with v, got: $tag" >&2; exit 1 ;;
+          esac
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "release tag: $tag"
+      - name: Refuse to overwrite an existing release
+        if: ${{ github.event.inputs.dry_run != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag="${{ github.event.inputs.tag || github.ref_name }}"
-          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --draft --generate-notes --title "dsh-evolution $tag"
-          gh release upload "$tag" release/dsh-evolution-*.tgz release/SHA256SUMS release/manifest.json --clobber
+          tag="${{ steps.tag.outputs.tag }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            draft="$(gh release view "$tag" --json isDraft --jq '.isDraft')"
+            assets="$(gh release view "$tag" --json assets --jq '.assets | length')"
+            if [ "$draft" != "true" ] || [ "$assets" -gt 0 ]; then
+              echo "release $tag already exists (draft=$draft, assets=$assets); refusing to overwrite it" >&2
+              exit 1
+            fi
+            echo "reusing the empty draft release for $tag"
+          fi
+      - name: Verify the tag, the commit and the pinned source commit
+        env:
+          REQUIRE_SOURCE_COMMIT: ${{ github.event.inputs.dry_run != 'true' && '--require-source-commit' || '' }}
+        run: |
+          set -euo pipefail
+          node scripts/release/verify-provenance.mjs --tag "${{ steps.tag.outputs.tag }}" $REQUIRE_SOURCE_COMMIT
+      - name: Verify the package, the pinned artifact and the checksum file
+        run: |
+          set -euo pipefail
+          npm run pack:check
+          npm run release:verify
+          (cd release && sha256sum --check SHA256SUMS)
+      - name: Attach the verified artifacts to a draft release
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.tag.outputs.tag }}"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --draft --generate-notes --title "dsh-evolution $tag"
+          fi
+          # No --clobber: an asset name that already exists is an error, so a
+          # second run can never replace published bytes.
+          gh release upload "$tag" release/dsh-evolution-*.tgz release/SHA256SUMS release/manifest.json
+      - name: Verify the assets now attached to the release
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.tag.outputs.tag }}"
+          mkdir -p /tmp/uploaded
+          # Download the bytes GitHub is now serving and re-verify them against
+          # the committed pin, so a partly failed or mismatched upload is caught.
+          gh release download "$tag" --dir /tmp/uploaded --pattern 'dsh-evolution-*.tgz' --clobber
+          gh release download "$tag" --dir /tmp/uploaded --pattern 'SHA256SUMS' --clobber
+          gh release download "$tag" --dir /tmp/uploaded --pattern 'manifest.json' --clobber
+          node scripts/release/verify-artifact.mjs /tmp/uploaded/dsh-evolution-*.tgz
+          diff -u release/SHA256SUMS /tmp/uploaded/SHA256SUMS
+          diff -u release/manifest.json /tmp/uploaded/manifest.json

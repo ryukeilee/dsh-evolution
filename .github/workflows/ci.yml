@@ -30,8 +30,8 @@ jobs:
         # not need; the host acceptance job installs the real host separately.
         node: ['22.19.0', '24.x']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
           cache: npm
@@ -45,8 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22.19.0'
           cache: npm
@@ -90,7 +90,7 @@ jobs:
       - name: Verify the checksum file attached to the release
         run: cd release && sha256sum --check SHA256SUMS
       - name: Upload the artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dsh-evolution-package
           path: |
@@ -113,12 +113,12 @@ jobs:
         # passes on it.
         host: ['0.2.0-rc.2', '0.2.1-alpha.1']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22.19.0'
           cache: npm
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.26.0
       - name: Build the artifact this job installs
@@ -143,7 +143,7 @@ jobs:
           console.log('evidence matches pinned content', pin.contentSha256);
           "
       - name: Upload the acceptance evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: acceptance-${{ matrix.host }}
           path: docs/evidence/dsh-${{ matrix.host }}.json
