@@ -44,7 +44,7 @@ and the action runtimes instead of only the job names.
 
 ### Notes
 
-- `lib/guard.js` 用单次 token 扫描替代有序命令/写动词的无界回溯，重定向去掉可重试的数字/空白前缀；保留 deny/allow 决策并增加带子进程硬期限的风险回归。
+- `lib/guard.js` 使有序命令/写动词在互不重叠的候选区间内匹配，保留导出的 `RegExp` 接口并消除无界回溯，重定向去掉可重试的数字/空白前缀；保留 deny/allow 决策并增加带子进程硬期限的风险回归。
 - 指标兜底身份使用 `crypto.randomUUID()`，同一投影的 `id` 与对应 `taskId` / `goalId` / `agentId` / `sessionId` 一致；调用方身份优先级不变。
 - `sourceCommit` 必须来自已提交的包内容，且其 git 对象摘要等于 tag 树与 tarball，祖先关系不再是唯一来源校验。
 - 原同名 rc.2 draft/tag 经维护者授权重建；旧记录保留，历史 rc.1 tag 和资产不变。

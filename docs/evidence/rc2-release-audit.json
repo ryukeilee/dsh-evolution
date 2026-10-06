@@ -83,7 +83,7 @@
     ]
   },
   "authorization": "维护者明确授权保存旧 rc.2 记录、重建同名 tag/draft 并公开；不修改 rc.1。",
-  "status": "awaiting-github-validation",
+  "status": "revalidating-regexp-compatible-artifact",
   "localAcceptanceFailures": [
     {
       "host": "0.2.1-alpha.1",
@@ -152,5 +152,102 @@
         "finishedAt": "2026-10-06T17:10:37.463Z"
       }
     ]
+  },
+  "remainingDependencyRisks": [
+    {
+      "number": 2,
+      "package": "@modelcontextprotocol/client",
+      "version": "2.0.0",
+      "severity": "high",
+      "ghsa": "GHSA-6qxp-vccf-f47h",
+      "url": "https://github.com/advisories/GHSA-6qxp-vccf-f47h",
+      "dependencyChain": [
+        "@deepseek-ai/dsh@0.2.0-rc.2",
+        "@deepseek-ai/dsh-mcp-client@0.2.0-rc.2",
+        "@modelcontextprotocol/client@2.0.0"
+      ],
+      "condition": "HTTP OAuth client 连接不可信 MCP server 且持有凭证时存在 issuer 绑定风险；stdio client 不受此条影响。未检查或访问任何真实凭证。",
+      "resolution": "上游升级 client/core 至 2.2.0，并按官方 advisory 处理 issuer/expectedIssuer；本次不改动已验收的 DSH 宿主。"
+    },
+    {
+      "number": 1,
+      "package": "fflate",
+      "version": "0.8.2",
+      "severity": "medium",
+      "ghsa": "GHSA-px8p-9vwx-vf98",
+      "url": "https://github.com/advisories/GHSA-px8p-9vwx-vf98",
+      "dependencyChain": [
+        "@deepseek-ai/dsh@0.2.0-rc.2",
+        "@deepseek-ai/libreoffice-kit@0.1.5",
+        "fflate@0.8.2"
+      ],
+      "condition": "unzipSync 解析恶意 ZIP64 时可进入无限循环；修复版本为 0.8.3。",
+      "resolution": "上游修复精确依赖并重新验收 DSH；本次不扩大宿主兼容列表。"
+    }
+  ],
+  "dependencyRiskScope": "这些依赖来自锁文件解析的官方 DSH peer 树，不是 tarball 内的 vendored 文件；发布包仍依赖官方宿主，不能因此忽略风险。两个 CodeQL high 修复不代表依赖风险清零。",
+  "preReleaseGithub": {
+    "commit": "24015eabdecfccb5bb645e1dcba42168af8edc1f",
+    "ci": {
+      "id": 37501620431,
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/37501620431",
+      "conclusion": "success",
+      "jobs": 5
+    },
+    "codeql": {
+      "id": 37501620415,
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/37501620415",
+      "conclusion": "success",
+      "results": 0
+    },
+    "alerts": [
+      {
+        "number": 1,
+        "rule": "js/polynomial-redos",
+        "state": "fixed",
+        "fixedAt": "2026-10-06T17:12:39Z"
+      },
+      {
+        "number": 2,
+        "rule": "js/insecure-randomness",
+        "state": "fixed",
+        "fixedAt": "2026-10-06T17:12:39Z"
+      }
+    ]
+  },
+  "independentReview": {
+    "model": "opencode-go/deepseek-v4.1-flash",
+    "thinking": "max",
+    "reviewedCommits": [
+      "dcb80dce36194de3b108905ee13001ec228b1019",
+      "24015eabdecfccb5bb645e1dcba42168af8edc1f"
+    ],
+    "securityConclusion": "两个CodeQL high代码修复无问题；matcher层511143及decision层166147个对照输入均无boolean差异，UUID与source内容验证通过。",
+    "findings": [
+      {
+        "finding": "旧rc.2 tag仍指向056c237",
+        "response": "按用户授权，全部检查通过后重建tag/draft；该步骤未完成前不公开。"
+      },
+      {
+        "finding": "MUTATION_VERBS_RE对象化破坏RegExp形状",
+        "response": "Root将其收敛为安全的原生RegExp，补充source/flags/exec/match/replace回归，并重新固定产物及执行完整验收。"
+      },
+      {
+        "finding": "摘要不使用可注入git runner；symlink/submodule不支持时exit2",
+        "response": "仓库声明内容均为普通blob；实际Git对象的集成回归通过。不支持条目failclosed，保留为工具可测性/结构化错误的限制，不扩大机制。"
+      },
+      {
+        "finding": "promotion探针与验收证据同commit改变",
+        "response": "首次失败、同字节复测和稳定门目的均已记录；没有删去验收断言或改变生产恢复判定。"
+      }
+    ],
+    "handoffCountClarification": "18/18对应当时两个点名文件合计（14 provenance + 4 security）；新增git对象集成测试后为15 + 4，全套163。"
+  },
+  "regexpCompatibility": {
+    "cases": 32000,
+    "differences": 0,
+    "nativeRegExp": true,
+    "maxMillionCharacterMatcherMs": 5.4,
+    "consumerRegression": "test/security-regression.test.mjs"
   }
 }

@@ -116,7 +116,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 
 1. **发布字节由人工固定的 `release/` 决定，而不是由 CI 重新构建。** 这是刻意的（见第 1 节），但它意味着：如果 `release/` 里的 tarball 被替换而 `release/manifest.json` 未同步，两者会不一致——`pack:check`、`release:verify` 和 `test/release-pin.test.mjs` 都会失败，因此只可能被“同时改对”而无法静默漂移。
 2. **`v0.2.0-rc.1` 的 tag 与同名 Release 的已发布字节不一致。** tag 指向 `98a6425`，该 commit 固定的产物是 `d24f5e52…`（内容 `5bf862ec…`）；而 Release 上实际可下载的是 `fc41f0e0…`（内容 `763707ab…`），来自后续的 `4c87c99`（`git show 4c87c99:release/manifest.json` 可复现该固定点）。加固后的 workflow 现在会在这种 tag/manifest/产物不一致时**明确失败**。要修复历史 Release 需要移动 tag 或覆盖附件，两者都被本次目标禁止，因此它作为已知风险记录在此，而不是被修复。这也是 `release/` 只固定当前候选、旧版本只能靠 tag/commit 历史或 Release 附件校验的原因。
-3. **守卫仍是启发式策略检查，不是 shell/JavaScript 安全沙箱。** 本次修复工具输入可触发的多项式回溯，重定向直接从 `>` 匹配，有序程序/写动词改为单次扫描；没有把守卫扩展为通用解析器。promotion 执行的宿主代码同样是合作式执行，需要可信审批。
+3. **守卫仍是启发式策略检查，不是 shell/JavaScript 安全沙箱。** 本次修复工具输入可触发的多项式回溯，重定向直接从 `>` 匹配，有序程序/写动词按互不重叠的候选区间匹配，保留导出的 `RegExp` 接口；没有把守卫扩展为通用解析器。promotion 执行的宿主代码同样是合作式执行，需要可信审批。
 4. **验收覆盖不到手工 dispose 底层 bundle Fiber 的路径。** `disposeTrial` 走官方 runner 的 stop/undefine；直接 dispose bundle Fiber 的手工探针无法自我断言（会让探针自身注入的 `tools` 失活），因此不作为用户关闭流程，也未被 CI 覆盖。
 5. **promotion 的领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威，领域 evaluator 只提供记录在案的决策与 regression 硬 veto；尚未接入宿主提供的独立生产 baseline/test 指标。
 6. **`continuous/` 与 `governance/` 领域模块未接入 orchestrator 实时循环。** 它们有单测覆盖，但不受宿主验收路径保护。

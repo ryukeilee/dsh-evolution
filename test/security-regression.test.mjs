@@ -23,6 +23,12 @@ test('shell mutation matching retains irreversible, redirect and trust-root deci
   ];
   for (const [command, expected] of cases) assert.equal(commandMutatesComposition(command), expected, command);
   assert.equal(MUTATION_VERBS_RE.test('2>> output'), true);
+  assert.equal(MUTATION_VERBS_RE instanceof RegExp, true);
+  assert.equal(MUTATION_VERBS_RE.flags, 'i');
+  assert.equal(new RegExp(MUTATION_VERBS_RE.source, MUTATION_VERBS_RE.flags).test('sed -i file'), true);
+  assert.equal(MUTATION_VERBS_RE.exec('sed -i file')[0], 'sed -i');
+  assert.equal('sed -i file'.match(MUTATION_VERBS_RE)[0], 'sed -i');
+  assert.equal('sed -i file'.replace(MUTATION_VERBS_RE, 'blocked'), 'blocked file');
   let guard;
   apply({ tools: { guard: (callback) => { guard = callback; } } });
   assert.match(guard({ name: 'bash', arguments: { command: 'publish > output' } }), /已被拒绝/);
