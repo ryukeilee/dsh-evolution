@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NPM_CONFIG_FUND: 'false'
+  NPM_CONFIG_AUDIT: 'false'
+
+jobs:
+  test:
+    name: unit tests (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # The declared engine range: the lowest supported 22.x and the current
+        # 24.x line. --ignore-scripts skips native builds the unit suite does
+        # not need; the host acceptance job installs the real host separately.
+        node: ['22.19.0', '24.x']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - name: Install from the lockfile
+        run: npm ci --ignore-scripts
+      - name: Unit tests
+        run: npm test
+
+  package:
+    name: package (reproducible, clean, installable)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.19.0'
+          cache: npm
+      - name: Package checks (reproducibility, allow-list, portability)
+        run: npm run pack:check
+      - name: Build the release artifacts
+        run: npm run release:pack
+      - name: Verify the published checksum
+        run: cd dist && sha256sum --check SHA256SUMS
+      - name: Install the tarball into an empty tree and start the doctor
+        run: |
+          set -euo pipefail
+          tarball="$(ls dist/dsh-evolution-*.tgz)"
+          mkdir -p /tmp/clean-install
+          tar -xzf "$tarball" -C /tmp/clean-install
+          # The doctor entry point must run with no host packages present: the
+          # bundle is copied without any node_modules, so a reintroduced host
+          # import fails here instead of only in a real install.
+          mkdir -p /tmp/clean-home
+          node /tmp/clean-install/package/scripts/doctor.mjs --home /tmp/clean-home --no-composition --json > /tmp/clean-report.json
+          node -e "const r=require('/tmp/clean-report.json'); if (typeof r.status !== 'string') throw new Error('no status'); console.log('doctor status:', r.status)"
+      - name: Upload the release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-evolution-package
+          path: |
+            dist/*.tgz
+            dist/SHA256SUMS
+          if-no-files-found: error
+
+  host-acceptance:
+    name: host acceptance (${{ matrix.host }})
+    needs: [package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # One entry per host release this bundle declares as supported. A
+        # version may only appear here (and in peerDependencies) after this job
+        # passes on it.
+        host: ['0.2.0-rc.2', '0.2.1-alpha.1']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.19.0'
+          cache: npm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.26.0
+      - name: Build the release artifacts
+        run: npm run release:pack
+      - name: Real install acceptance on DSH ${{ matrix.host }}
+        run: |
+          node scripts/acceptance/run-host-acceptance.mjs \
+            --host "${{ matrix.host }}" \
+            --out "docs/evidence/dsh-${{ matrix.host }}.json"
+      - name: Upload the acceptance evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-${{ matrix.host }}
+          path: docs/evidence/dsh-${{ matrix.host }}.json
+          if-no-files-found: error

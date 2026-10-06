@@ -19,21 +19,47 @@ declared alternatives, so a version can only appear there after the acceptance
 below passes; a host outside the list is reported `blocked` by `host.version`
 with `verified: false`, never accepted silently.
 
+The acceptance is executable from this repository and its evidence is committed
+alongside it:
+
+```sh
+npm run release:pack
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
+```
+
+Evidence: `docs/evidence/dsh-0.2.0-rc.2.json` and
+`docs/evidence/dsh-0.2.1-alpha.1.json` (host scratch paths redacted). The
+harness is self-contained: it installs the official host release itself, so a
+fresh checkout can re-derive both files. CI runs the same command per host
+(`.github/workflows/ci.yml`).
+
 ### Verified compatibility matrix
 
 | Host | `@deepseek-ai/cordis` | `cordis-plugin-include` | `cordis-plugin-loader` | Verified |
 | --- | --- | --- | --- | --- |
-| `0.2.0-rc.2` | `4.0.4` | `1.0.9` | `1.0.5` | yes — full acceptance + unit suite |
-| `0.2.1-alpha.1` | `4.0.5-alpha.1` | `1.0.10-alpha.1` | `1.0.6-alpha.1` | yes — full acceptance, same key paths |
+| `0.2.0-rc.2` | `4.0.4` | `1.0.9` | `1.0.5` | yes — `docs/evidence/dsh-0.2.0-rc.2.json` (full acceptance + unit suite) |
+| `0.2.1-alpha.1` | `4.0.5-alpha.1` | `1.0.10-alpha.1` | `1.0.6-alpha.1` | yes — `docs/evidence/dsh-0.2.1-alpha.1.json` (full acceptance, same key paths) |
 
 The whole acceptance is re-run per host against a fresh `$DSH_HOME`: official
 `dsh plugin add` of the packed tarball, first boot, all 9 tool registrations,
-in-session doctor, core `inspect→propose→trial→measure→revert`, read-only CLI
-doctor over the official composition, execution-bridge fault injection with an
-idempotent repair, restart recovery, real promotion to `canary-observing`,
-stable commit at the startup barrier, canary rollback, interrupted-promotion
-recovery, fail-safe on a `rollback-failed` journal, unsupported-host blocking,
-disable/enable, uninstall/reinstall with data retention, and a final doctor.
+in-session doctor, core `inspect→propose→trial→measure→revert` with proven
+runtime recovery, read-only CLI doctor over the official composition,
+execution-bridge fault injection with an idempotent repair, restart recovery,
+real promotion to `canary-observing` through a second confirmation gate, stable
+commit at the startup barrier across a restart, canary rollback that removes
+only the new candidate, unsupported-host blocking, disable/enable,
+uninstall/reinstall with data retention, and a final doctor.
+
+The committed `docs/evidence/` files are produced by the harness and cover
+install, boot, all 9 tools, CLI doctor, the core flow, the official
+pluginManager lifecycle, CLI uninstall/reinstall with data retention, the
+README upgrade and rollback flows, real promotion, startup-canary commit across
+a restart, canary rollback, and the final doctor. The unit suite covers
+unsupported-host blocking, execution-bridge fault injection and idempotent
+repair, and restart recovery, and parses the CI workflows themselves;
+`RELEASE.md` records which parts of the earlier acceptance are not re-executed
+by this harness.
 
 At verification time npm's `alpha` tag pointed at `0.2.1-alpha.1` while
 `latest`/`next` pointed at `0.2.0-rc.2`; both were accepted only after the run

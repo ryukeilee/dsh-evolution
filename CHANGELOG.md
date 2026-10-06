@@ -6,7 +6,76 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
-## 0.2.0-dev.6 — unreleased
+## 0.2.0-rc.1 — release candidate
+
+Supported hosts: DSH `0.2.0-rc.2` and `0.2.1-alpha.1` (exact alternatives),
+Node `^22.19.0 || >=24.0.0`. Not published to npm.
+
+This candidate contains **no runtime change**: the shipped `lib/` is exactly
+`0.2.0-dev.6`, re-verified end to end on both hosts. It adds the release and
+verification layer that turns that state into a reviewable artifact.
+
+### Added
+
+- **Reproducible, verified packaging.** `npm run release:pack` builds
+  `dist/dsh-evolution-<version>.tgz` and `SHA256SUMS` (a committed copy at the
+  repository root plus one next to the artifact), after proving the tree packs
+  byte-identically twice, that the archive contains only the entries declared
+  by `package.json#files`, and that the shipped text carries no local home path
+  or credential-shaped material.
+- **`npm run pack:check`** replaces the bare `npm pack --dry-run`: it also
+  fails on `package-lock.json`/`package.json` drift, on a version that is not a
+  pre-release, on a README that still documents a superseded version, on a
+  missing CHANGELOG entry, on missing install/doctor/upgrade/rollback/
+  uninstall instructions, and on a committed `SHA256SUMS` or `docs/evidence/`
+  file that does not describe the tarball this tree actually produces.
+- **A committed host-acceptance harness**
+  (`scripts/acceptance/run-host-acceptance.mjs`). It installs the requested
+  official DSH release into a throwaway runtime, installs the packed tarball
+  through the official plugin CLI into a fresh `$DSH_HOME`, and drives the real
+  host through the CLI doctor, the core
+  `inspect→propose→trial→measure→revert` flow (requiring proven runtime
+  recovery), the official pluginManager disable/enable semantics, CLI
+  uninstall/reinstall with data retention, the README upgrade and rollback
+  flows (a re-versioned build of the same tree, then the current tarball), real
+  promotion with a second confirmation gate, startup-canary commit across a
+  restart, and a canary rollback that removes only the new candidate. It writes
+  portable evidence with local scratch paths redacted.
+- **Committed acceptance evidence** for both supported hosts:
+  `docs/evidence/dsh-0.2.0-rc.2.json` and
+  `docs/evidence/dsh-0.2.1-alpha.1.json`.
+- **GitHub CI** (`.github/workflows/ci.yml`): unit tests on Node `22.19.0` and
+  `24.x`, a packaging job (reproducibility, allow-list, canonical modes,
+  checksum, and a doctor start with no host packages present), and a per-host
+  acceptance job. `test/workflows.test.mjs` parses both workflow files, pins
+  the CI job set and the accepted host matrix to the declaration, and fails if
+  the release workflow could publish anything other than a draft or reach npm.
+- **Tag-triggered release workflow** (`.github/workflows/release.yml`) that
+  attaches the verified artifacts to a **draft** GitHub release; nothing is
+  published automatically.
+- **`RELEASE.md`** with the artifact list, the reproduction steps, and the
+  remaining release risks, including the ones this candidate does not remove.
+
+### Fixed
+
+- **The tarball used to depend on the checkout's umask.** `npm pack` records the
+  on-disk mode, so three files that happened to be `0600` in the development
+  tree produced a different hash than the same commit in a fresh `git clone`
+  (`0644`), while git tracked no such difference. Packaging now copies exactly
+  the declared entries into a staging directory and normalises modes to
+  `0644`/`0755`, so the artifact is a function of the tracked content and the
+  tracked executable bit only. `npm run pack:check` asserts both that two packs
+  in the same tree are byte-identical and that every shipped entry has a
+  canonical mode.
+
+### Notes
+
+- The doctor still reports `degraded` immediately after a fresh install
+  (`data.root` is created on first run); the post-boot diagnosis is `healthy`.
+- Nothing was added to `peerDependencies`: `0.2.1-alpha.1` remains supported
+  only because the full acceptance passes on it.
+
+## 0.2.0-dev.6 — superseded by 0.2.0-rc.1
 
 Supported hosts: DSH `0.2.0-rc.2` and `0.2.1-alpha.1` (exact alternatives),
 Node `^22.19.0 || >=24.0.0`.

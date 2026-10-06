@@ -1,6 +1,6 @@
 {
   "name": "dsh-evolution",
-  "version": "0.2.0-dev.6",
+  "version": "0.2.0-rc.1",
   "description": "Self-evolution orchestrator, durable experiment memory, and promotion lifecycle for DSH, shipped as an independent bundle",
   "license": "MIT",
   "type": "module",
@@ -16,7 +16,8 @@
     "cordis.patch.yml",
     "CHANGELOG.md",
     "README.md",
-    "COMPATIBILITY.md"
+    "COMPATIBILITY.md",
+    "RELEASE.md"
   ],
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
@@ -44,7 +45,9 @@
   },
   "scripts": {
     "test": "node --test test/",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "node scripts/release/verify-package.mjs",
+    "release:pack": "node scripts/release/pack.mjs",
+    "acceptance:host": "node scripts/acceptance/run-host-acceptance.mjs"
   },
   "keywords": [
     "dsh",

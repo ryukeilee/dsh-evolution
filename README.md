@@ -4,11 +4,11 @@
 
 本仓库是 `dsh-evolution` 的**唯一开发、测试与发布来源**；旧的 DSH 环境与私有迁移工作目录只作为历史迁移源和回滚基线，不再维护插件源码。
 
-- 包版本：`0.2.0-dev.6`
+- 包版本：`0.2.0-rc.1`（RC，非 npm 发布；预发布标签不会出现在 npm 上）
 - 支持的 DSH 版本范围：**`0.2.0-rc.2` / `0.2.1-alpha.1`**（精确列表）。`package.json` 的 `peerDependencies` 逐一列出经过真实安装验收的宿主版本，不通过 exemption 伪装其它版本兼容；列表之外的宿主由 `host.version` 报 `blocked`。
 - Node：`^22.19.0 || >=24.0.0`（在当前验证环境为 `v26.10.0`，pnpm `11.26.0`）。
 
-> 状态：官方 `0.2.0-rc.2` 与 `0.2.1-alpha.1` 上的完整验收均已完成（干净安装 / 插件安装 / 启动 / 工具注册 / 核心流程 / diagnostics / promotion 与 canary 回滚 / 重启恢复 / 禁用启用 / 卸载重装 / 数据保留 / 不可兼容宿主阻断），并新增“可自诊断 + 故障注入”验收。宿主接口依赖已逐项审计并分级（见 `COMPATIBILITY.md`），其中 `ctx.reflect._getImpl()` 已改由公开的 `ctx.reflect.store` + `Context.isolate` 承担。验收证据保存在私有迁移工作目录（不随包分发）；本仓库的验证入口是 `npm test`，用户侧的可复现验证入口是 `scripts/doctor.mjs`（见第 5 节）。这不是生产发布声明；发布、push 仍需人工决定。
+> 状态：官方 `0.2.0-rc.2` 与 `0.2.1-alpha.1` 上的完整验收均已完成并通过（干净 runtime 安装 / 官方 CLI 插件安装 / 启动 / 9 个工具注册 / 核心流程 inspect→propose→trial→measure→revert 且 disposer 恢复基线 / CLI 与最终 doctor / promotion 到 canary 并跨重启存活 / startup canary 提交 / canary regression 回滚 / 禁用启用 / 卸载重装 / 数据保留 / 不可兼容宿主阻断）。验收由本仓库的脚本执行，证据已入库：`docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json`；复现方式、产物与**尚未消除的发布风险**见 `RELEASE.md`。本仓库的验证入口是 `npm test`，用户侧的可复现验证入口是 `scripts/doctor.mjs`（见第 5 节）。这不是生产发布声明；发布、push、tag 仍需人工决定。
 
 ## 1. 安装 DSH 与插件
 
@@ -22,11 +22,11 @@ npx @deepseek-ai/dsh web            # 官方推荐
 在干净 profile 中通过官方 CLI 安装本插件：
 
 ```sh
-# 从源码包构建
-npm pack                             # 生成 dsh-evolution-0.2.0-dev.5.tgz
+# 从源码包构建（可复现；校验和写入仓库根目录 SHA256SUMS 与 dist/SHA256SUMS）
+npm run release:pack                 # 生成 dist/dsh-evolution-0.2.0-rc.1.tgz + SHA256SUMS
 
 # 安装 / 升级（同一条命令；官方 CLI 负责 bundle 选择与依赖安装）
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-dev.5.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dist/dsh-evolution-0.2.0-rc.1.tgz
 
 # 启动
 DSH_HOME=/isolated/home dsh web --no-open
@@ -155,6 +155,13 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 
 ## 8. 验收与官方参考
 
-本仓库的真实迁移验收已完成（干净 DSH 启动、官方 CLI 安装、核心全流程、promotion/canary/rollback/跨进程重启、数据迁移幂等与重启恢复、官方 pluginManager 禁用/启用、CLI 卸载/重装、数据保留）。验收证据保存在私有迁移工作目录，不随包分发。本仓库自身的验证入口是 `npm test`（含故障注入用例）；用户侧的可复现验证入口是 `scripts/doctor.mjs`，它不依赖模型，可对安装、状态、迁移、promotion 给出分级结论与证据。
+本仓库的真实验收已完成，并且**由本仓库的脚本执行、证据随仓库分发**：
+
+- 单元/集成测试：`npm test`（131 个用例，含故障注入与 CI 工作流校验）。
+- 宿主真实验收：`node scripts/acceptance/run-host-acceptance.mjs --host <version>`，自包含安装官方宿主与 tarball，覆盖安装、诊断、核心流程、升级与回滚、promotion/canary 回滚与跨重启存活、禁用启用、卸载重装与数据保留。
+- 用户侧可复现验证入口：`scripts/doctor.mjs`，不依赖模型，对安装、状态、迁移、promotion 给出分级结论与证据。
+- 发布产物、复现步骤与剩余风险：`RELEASE.md`；验收证据：`docs/evidence/`。
+
+CI 见 `.github/workflows/ci.yml`（单测矩阵、可复现打包与内容白名单、两个宿主的真实安装验收）。
 
 官方参考：`packages/boot/plugin-manager/README.md`、`docs/user/develop/basic/publish.md`、`packages/storage/storage-domain/{README.md,src/spec.ts}`、`vendor/include/README.md`。

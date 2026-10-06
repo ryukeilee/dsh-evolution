@@ -1,0 +1,56 @@
+name: Release artifacts
+
+# Builds the verified release package for a version tag and attaches it to a
+# DRAFT GitHub release. Nothing is published automatically: the draft has to be
+# published by a human, and this repository is never published to npm.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build artifacts for
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: build and attach release artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.19.0'
+          cache: npm
+      - name: Install from the lockfile
+        run: npm ci --ignore-scripts
+      - name: Verify the package and the declared tag agree
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          version="${tag#v}"
+          actual="$(node -p "require('./package.json').version")"
+          if [ "$version" != "$actual" ]; then
+            echo "tag $tag does not match package.json version $actual" >&2
+            exit 1
+          fi
+      - name: Package checks
+        run: npm run pack:check
+      - name: Build the release artifacts
+        run: npm run release:pack
+      - name: Verify the published checksum
+        run: cd dist && sha256sum --check SHA256SUMS
+      - name: Attach the artifacts to a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --draft --generate-notes --title "dsh-evolution $tag"
+          gh release upload "$tag" dist/*.tgz dist/SHA256SUMS --clobber
