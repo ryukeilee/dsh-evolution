@@ -9,9 +9,81 @@ none of them is hidden behind an implicit patch.
 
 | Component | Range |
 | --- | --- |
-| DSH | `0.2.0-rc.2` (exact, enforced by `peerDependencies`) |
+| DSH | `0.2.0-rc.2` or `0.2.1-alpha.1` (exact alternatives, enforced by `peerDependencies`) |
 | Node | `^22.19.0 || >=24.0.0` |
 | Bundle format | `dsh.bundle.patch` + profile `dsh.profile.bundles` |
+
+Every listed DSH version is verified by a real install run, not by widening a
+range. `SUPPORTED_DSH_VERSIONS` in `lib/diagnostics.js` is derived from the
+declared alternatives, so a version can only appear there after the acceptance
+below passes; a host outside the list is reported `blocked` by `host.version`
+with `verified: false`, never accepted silently.
+
+### Verified compatibility matrix
+
+| Host | `@deepseek-ai/cordis` | `cordis-plugin-include` | `cordis-plugin-loader` | Verified |
+| --- | --- | --- | --- | --- |
+| `0.2.0-rc.2` | `4.0.4` | `1.0.9` | `1.0.5` | yes — full acceptance + unit suite |
+| `0.2.1-alpha.1` | `4.0.5-alpha.1` | `1.0.10-alpha.1` | `1.0.6-alpha.1` | yes — full acceptance, same key paths |
+
+The whole acceptance is re-run per host against a fresh `$DSH_HOME`: official
+`dsh plugin add` of the packed tarball, first boot, all 9 tool registrations,
+in-session doctor, core `inspect→propose→trial→measure→revert`, read-only CLI
+doctor over the official composition, execution-bridge fault injection with an
+idempotent repair, restart recovery, real promotion to `canary-observing`,
+stable commit at the startup barrier, canary rollback, interrupted-promotion
+recovery, fail-safe on a `rollback-failed` journal, unsupported-host blocking,
+disable/enable, uninstall/reinstall with data retention, and a final doctor.
+
+At verification time npm's `alpha` tag pointed at `0.2.1-alpha.1` while
+`latest`/`next` pointed at `0.2.0-rc.2`; both were accepted only after the run
+above passed.
+
+### Interface changes between the verified hosts
+
+Measured by unpacking both releases from the registry and diffing the shipped
+sources and type declarations, not by inference:
+
+| Package | `0.2.0-rc.2` -> `0.2.1-alpha.1` | Effect on this bundle |
+| --- | --- | --- |
+| `@deepseek-ai/cordis` | `4.0.4` -> `4.0.5-alpha.1`: **zero source diff** | none |
+| `@deepseek-ai/cordis-plugin-include` | `1.0.9` -> `1.0.10-alpha.1`: **zero source diff** | none |
+| `@deepseek-ai/cordis-plugin-loader` | `1.0.5` -> `1.0.6-alpha.1`: adds `Entry.moduleNamespace` (the raw import result, retained for HMR); `Entry`/`EntryGroup`/`EntryTree` members this bundle reads are unchanged | none |
+| `@deepseek-ai/dsh-tools` | `lib/types/index.d.ts` identical | none |
+| `@deepseek-ai/dsh-cordis-host-runner` | `lib/index.js` identical; `lib/typert.host.js` only registers new LLM-retry event types | none |
+| `@deepseek-ai/dsh-storage-domain` | one JSDoc sentence changed | none |
+
+No breaking change was found, so no compatibility adapter was added: this bundle
+still modifies no DSH code, keeps no host fork, and hides no downgrade. The
+`@deepseek-ai/cordis` `4.0.1` -> `4.0.4` delta that the previous release already
+shipped over only changed `Fiber.update()`'s return value and one logger
+exporter allocation; every surface in the table above is unchanged by it.
+
+Notable findings from the audit, all fixed in this release:
+
+- `ctx.registry.values()`, `ctx.reflect.props`, `Fiber.getEffects()` and the
+  `Fiber` lifecycle fields were documented public members but were listed as
+  non-public, which overstated upgrade risk and pointed an upgrade review at the
+  wrong targets.
+- `ctx.reflect._getImpl()` was the only underscore-private Cordis *method* on the
+  live read path and had a documented equivalent; it no longer is.
+- `FiberState.ACTIVE === 2` was an unverifiable literal on the promotion gate,
+  because `const enum` values are erased from the published runtime.
+- The doctor's import graph must not contain a host package: an earlier draft of
+  the service-inventory change imported `@deepseek-ai/cordis` there and broke the
+  doctor CLI in a real install while the plugin itself still booted.
+
+The loader publishes no independent stability contract, so the layer this
+bundle reads (`EntryTree.resolve/await/root`, `Entry.fiber/options/disabled`) is
+a transitive constraint of the include peer, re-verified per host and probed by
+`runtime.internal-api`.
+
+An unlisted DSH release — including `0.1.5-rc.1` — is reported `blocked` by
+`host.version` with `verified: false` and exit code 2, and it never appears in
+`SUPPORTED_DSH_VERSIONS`. The bundle itself applies no runtime version gate: a
+mounted bundle cannot veto its own host mid-session, so the verdict is a
+contract plus a doctor block rather than a hidden downgrade. A version is added
+to the list only by passing the same acceptance run.
 
 There is no build step: the package ships runnable ESM under `lib/`.
 
@@ -32,29 +104,72 @@ resolution path; shipping our own copy keeps that entry working, and the
 doctor degrades to an explicit `not-evaluated` YAML check if the parser is
 ever missing instead of failing to start.
 
+`lib/cordis-compat.js` follows the same rule in the opposite direction: it
+imports **no** host package, because the doctor's import graph includes it. The
+isolate-map symbol it needs is the registered `Symbol.for('cordis.isolate')`
+that cordis itself builds, and the running bundle hands over the authoritative
+`Context.isolate` at boot (`registerIsolateKey`). `test/cordis-compat.test.mjs`
+asserts that symbol equals the real `Context.isolate` and copies the bundle
+without any `node_modules` to prove the doctor still starts.
+
 `@deepseek-ai/dsh`, `@deepseek-ai/dsh-tools`, and
 `@deepseek-ai/dsh-cordis-host-runner` are declared because the bundle consumes
 the host services they define (`ctx.tools`, `ctx.dynamicCordisRunner`,
 `ctx.storageDomain`, `ctx.agents`, `ctx.permissionPresets`); they are not
 imported directly.
 
-## Experimental / internal DSH API dependencies
+## Cordis / official-Include surfaces this bundle reads
 
-These are used for real lifecycle health checks and are **not stable public
-contracts**. A DSH upgrade must re-verify them:
+Every surface is classified from the shipped packages and recorded once in
+`lib/cordis-compat.js`. The same table drives the runtime readers and the
+doctor's `runtime.internal-api` check, so the report can never claim a different
+dependency set than the code uses. `public` = an exported member with a
+documented contract; `undocumented` = a public runtime property with no
+documented contract; `private` = underscore-prefixed and skipped by cordis' own
+context-member resolution.
 
-- `ctx.registry.values()`, `ctx.reflect.props`, `ctx.reflect._getImpl()`
-- `ctx.events._hooks`
-- Fiber effect metadata
-- Official Include internals accessed via public instance state: `root.data`,
-  `store`, `Entry.fiber`, `Fiber.state`/`inject`/`ctx`, `ctx.get()`
+| Surface | Class | What is read | Replacement used |
+| --- | --- | --- | --- |
+| `ctx.registry.values()` | public - `RegistryService.values()`, "Iterate the registered plugin runtimes" | plugin runtimes and their fibers | none needed |
+| `ctx.reflect.props` | public - "Declared context properties (services and accessors), by name" | declared service names | none needed |
+| `ctx.reflect.store` + `Context.isolate` | public - `ReflectService.store`, the exported `Impl` type, the documented isolation-map key | bound implementation and its owning fiber | **replaces `ctx.reflect._getImpl()`** |
+| `ctx.reflect._getImpl()` | private (underscore) | unused while the row above resolves | fallback only; `runtime.internal-api` records which path was taken |
+| `ctx.events._hooks` | private (underscore) | listener inventory | **none exists** - see below |
+| `Fiber.getEffects()`, `Fiber.state/uid/inject/store/inertia` | public - documented members of the exported `Fiber` class | lifecycle state, dependencies, effect labels | `FiberState.ACTIVE` is not importable (`const enum`, erased at runtime), so `fiberIsActive()` uses these documented fields instead of the numeric literal |
+| official Include instance state: `EntryTree.resolve/await/root`, `Entry.fiber/options/disabled` | undocumented - public members with no published stability contract | the mounted promoted row and its fiber health | `EntryTree.resolve(rowId)` instead of `EntryTree.store[rowId]`; the live root entry list has no public accessor, so the stale-tree check reads `root.data` and fails closed when it cannot |
+| `ctx.tools.schemas/get`, `dynamicCordisRunner.snapshot/define/run/stop/undefine`, `ctx.get('cordisInspect').list` | public - host service surfaces | tool surface, dynamic packages, inspect providers | none needed |
 
-`runDiagnostics` probes each of these individually (`runtime.internal-api`).
-A host that dropped one reports `degraded` with the exact missing probe, so an
-upgrade cannot silently turn introspection into partial facts. The doctor also
-reads the cross-process `domain-archive.lock`; an ownerless lock (empty file or
-dead pid) is reclaimed by the runtime and reported with a `--repair` action,
-while a lock held by a live process is never taken.
+### What is still private, and why
+
+- **`ctx.events._hooks`.** Cordis 4.x publishes no listener enumeration:
+  `ctx.on`/`ctx.once` only register, and `emit`/`parallel`/`serial`/`bail`/
+  `waterfall` only deliver. The alternative would be a second bookkeeping table
+  owned by this plugin, i.e. a less accurate second source of truth for a fact
+  cordis already owns. It is kept, probed individually, and a host that drops it
+  is reported `degraded` with the exact missing probe rather than an empty
+  listener set.
+- **`ctx.reflect._getImpl()`.** Retained only as the fallback for a host where
+  `ctx.reflect.store` is unreachable under the isolate key. On both verified
+  hosts the doctor reports `public: ctx.reflect.store + Context.isolate`, so the
+  private method is not on the live read path.
+- **`Fiber.state` numeric values.** `FiberState` is a `const enum`, erased from
+  the published runtime. `fiberIsActive()` decides ACTIVE from
+  `uid`/`store`/`inertia`, and `test/cordis-compat.test.mjs` asserts equality
+  with `state === FiberState.ACTIVE` across every lifecycle transition against
+  the real package, so a renumbering fails the suite instead of being accepted.
+- **`Fiber state` naming.** `safeState()` still maps the numeric state to a name
+  and always reports the raw number alongside it, so a renumbering shows up as a
+  changed state, never as a silently renamed one.
+
+`lib/diagnostics.js` probes every required surface individually and returns
+`degraded` with the exact missing probe when one is gone, so an upgrade cannot
+silently turn introspection into partial facts. Private surfaces without a
+replacement are listed in the check evidence with the recorded reason, so an
+upgrade review can see what actually needs re-verification.
+
+The doctor also reads the cross-process `domain-archive.lock`; an ownerless lock
+(empty file or dead pid) is reclaimed by the runtime and reported with a
+`--repair` action, while a lock held by a live process is never taken.
 
 Evidence and the exact official references used during migration are kept in
 the private migration workspace; they are not part of this package. See the
@@ -131,6 +246,15 @@ resolution path.
 - **The doctor CLI is symlink-safe** and resolves the plugin package through
   `realpath`, so a `$DSH_HOME` or install path that contains symlinks still runs
   the diagnostic entry.
+- **The doctor's import graph contains no host package.** `lib/cordis-compat.js`
+  imports nothing from the host and the doctor entry only reaches
+  `lib/diagnostics.js`, `lib/orchestrator.js` and `lib/cordis-compat.js`.
+  `test/cordis-compat.test.mjs` copies the bundle without any `node_modules` and
+  runs the doctor from it, so a reintroduced host import fails the suite.
+- **A promoted row that cannot be observed is never reported as healthy.**
+  `mountPromotedInclude` records the loader members it actually found at mount
+  time; `runtime.internal-api` reports that evidence, and a missing surface is
+  `degraded` with the exact probe rather than an empty row list.
 
 ## Data and privacy
 

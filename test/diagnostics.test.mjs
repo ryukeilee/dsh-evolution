@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import {
   collectDiagnostics, runDiagnostics, exitCodeFor, applyRepairs,
   resolveEvolutionPaths, satisfiesRange, inspectJsonLines, checkJournalBoundary,
-  parseComposedProfile, EVOLUTION_TOOL_NAMES,
+  parseComposedProfile, EVOLUTION_TOOL_NAMES, SUPPORTED_DSH_VERSIONS,
 } from '../lib/diagnostics.js';
 import { signEventBridgeEnvelope } from '../lib/orchestrator.js';
 import { evolutionDomainSpec } from '../lib/domain-storage.js';
@@ -197,7 +197,11 @@ function liveOptions(home, extra = {}) {
     ...baseOptions(home, extra),
     live: true,
     ctx: extra.ctx || healthyCtx(),
-    promotionRuntime: { verify: () => null, refresh: () => null, health: () => null },
+    promotionRuntime: {
+      verify: () => null, refresh: () => null, health: () => null,
+      // Mirrors what lib/promotion-include.js records from the live loader tree.
+      capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true },
+    },
     domainStorage: { query: () => null, flush: () => null },
     config: { startupDrift: false, promotionAdapter: 'official-include' },
   };
@@ -215,6 +219,12 @@ test('satisfiesRange: exact, caret, tilde, comparators, and prerelease strictnes
   assert.equal(satisfiesRange('4.3.2', '^4.2.0'), true);
   assert.equal(satisfiesRange('5.0.0', '^4.0.1'), false);
   assert.equal(satisfiesRange('4.1.0-rc.1', '^4.0.1'), false);
+  assert.equal(satisfiesRange('0.2.0-rc.2', '0.2.0-rc.2 || 0.2.1-alpha.1'), true);
+  assert.equal(satisfiesRange('0.2.1-alpha.1', '0.2.0-rc.2 || 0.2.1-alpha.1'), true);
+  assert.equal(satisfiesRange('0.3.0', '0.2.0-rc.2 || 0.2.1-alpha.1'), false);
+  assert.equal(satisfiesRange('4.0.4', '^4.0.1 || 4.0.5-alpha.1'), true);
+  assert.equal(satisfiesRange('4.0.5-alpha.1', '^4.0.1 || 4.0.5-alpha.1'), true);
+  assert.equal(satisfiesRange('1.0.10-alpha.1', '1.0.9 || 1.0.10-alpha.1'), true);
   assert.equal(satisfiesRange('22.19.0', '^22.19.0 || >=24.0.0'), true);
   assert.equal(satisfiesRange('26.10.0', '^22.19.0 || >=24.0.0'), true);
   assert.equal(satisfiesRange('23.0.0', '^22.19.0 || >=24.0.0'), false);
@@ -239,6 +249,25 @@ test('the tool manifest cannot drift from the registered surface', () => {
   assert.deepEqual([...EVOLUTION_TOOL_NAMES].sort(), [...EVOLUTION_TOOLS].sort());
 });
 
+test('the declared support matrix is exactly the verified host versions', () => {
+  // Every version in the declared range is verified by a real install run; see
+  // COMPATIBILITY.md. This test keeps the declaration and the code in step.
+  const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+  assert.equal(manifest.peerDependencies['@deepseek-ai/dsh'], '0.2.0-rc.2 || 0.2.1-alpha.1');
+  assert.deepEqual(
+    [...SUPPORTED_DSH_VERSIONS],
+    manifest.peerDependencies['@deepseek-ai/dsh'].split('||').map((range) => range.trim()),
+  );
+  for (const version of SUPPORTED_DSH_VERSIONS) {
+    assert.equal(satisfiesRange(version, manifest.peerDependencies['@deepseek-ai/dsh']), true, `${version} must satisfy the declared range`);
+  }
+  // Every declared module must declare a range that covers both hosts.
+  for (const [name, range] of Object.entries(manifest.peerDependencies)) {
+    if (name === 'js-yaml') continue;
+    assert.match(range, /\|\|/, `${name} must declare every verified host release`);
+  }
+});
+
 test('unsupported host version is blocked with supported-range evidence', async () => {
   const dir = scratch('host');
   const hostRoot = path.join(dir, 'fake-host', 'node_modules', '@deepseek-ai', 'dsh');
@@ -249,8 +278,9 @@ test('unsupported host version is blocked with supported-range evidence', async 
   assert.equal(levelOf(report, 'host.version'), 'blocked');
   assert.equal(report.status, 'blocked');
   assert.equal(exitCodeFor(report), 2);
-  assert.match(checkOf(report, 'host.version').evidence.supported, /^0\.2\.0-rc\.2$/);
+  assert.match(checkOf(report, 'host.version').evidence.supported, /^0\.2\.0-rc\.2 \|\| 0\.2\.1-alpha\.1$/);
   assert.match(checkOf(report, 'host.version').remediation, /0\.2\.0-rc\.2/);
+  assert.match(checkOf(report, 'host.version').remediation, /0\.2\.1-alpha\.1/);
 });
 
 test('dependencies on non-public runtime surfaces are degraded, never silently ok', async () => {
