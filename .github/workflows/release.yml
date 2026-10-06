@@ -51,6 +51,19 @@ jobs:
         with:
           node-version: '22.19.0'
           cache: npm
+      - name: Use the release tooling from the default branch when the tag predates it
+        run: |
+          set -euo pipefail
+          # A workflow_dispatch can target a tag cut before this tooling existed.
+          # The verification must still run against the tag's own content, with
+          # the current checks, so borrow only `scripts/release` — none of these
+          # files are part of the package, so the pin and the artifact are
+          # unaffected. A tag that already ships the tooling keeps its own copy.
+          if [ ! -f scripts/release/verify-provenance.mjs ]; then
+            echo "the tag predates the provenance tooling; taking scripts/release from ${{ github.event.repository.default_branch }}"
+            git fetch --no-tags --depth=1 origin "${{ github.event.repository.default_branch }}"
+            git checkout FETCH_HEAD -- scripts/release
+          fi
       - name: Resolve the release tag
         id: tag
         run: |
