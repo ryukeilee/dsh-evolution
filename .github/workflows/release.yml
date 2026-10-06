@@ -111,7 +111,13 @@ jobs:
           set -euo pipefail
           tag="${{ steps.tag.outputs.tag }}"
           if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --draft --generate-notes --title "dsh-evolution $tag"
+            # An RC must never become the repository's "latest" release, so a
+            # version with a pre-release component is created as one.
+            case "${tag#v}" in
+              *-*) prerelease="--prerelease" ;;
+              *) prerelease="" ;;
+            esac
+            gh release create "$tag" --draft --generate-notes $prerelease --title "dsh-evolution $tag"
           fi
           # No --clobber: an asset name that already exists is an error, so a
           # second run can never replace published bytes.
