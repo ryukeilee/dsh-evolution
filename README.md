@@ -79,13 +79,18 @@ DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-<old>.tgz
 
 ### 5.1 命令行（应用未运行也可用）
 
+安装到 profile 后会提供 `dsh-evolution-doctor` 命令；也可以直接用 node 运行脚本：
+
 ```sh
 # 只读诊断；默认自动识别“在 dsh.profile.bundles 中列出 dsh-evolution”的 profile
-node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs \
+<profile>/node_modules/.bin/dsh-evolution-doctor \
   --home "$DSH_HOME" [--profile web] [--dsh-cli <.../@deepseek-ai/dsh/lib/bin.js>] [--json]
 
+# 等价写法
+node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" [--json]
+
 # 只应用报告判定为“安全且幂等”的修复，然后重新验证
-node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" --repair [--json]
+<profile>/node_modules/.bin/dsh-evolution-doctor --home "$DSH_HOME" --repair [--json]
 ```
 
 - 退出码：`0` 健康、`1` 存在可降级问题、`2` 存在阻塞问题。
