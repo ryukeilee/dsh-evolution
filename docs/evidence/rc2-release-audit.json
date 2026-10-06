@@ -83,7 +83,7 @@
     ]
   },
   "authorization": "维护者明确授权保存旧 rc.2 记录、重建同名 tag/draft 并公开；不修改 rc.1。",
-  "status": "awaiting-final-github-validation",
+  "status": "released-and-post-publish-validated",
   "localAcceptanceFailures": [
     {
       "host": "0.2.1-alpha.1",
@@ -134,6 +134,7 @@
     },
     "artifactVerified": true,
     "sourceContentVerified": true,
+    "note": "两个宿主的 finishedAt 是发布后针对公开 Release 重新下载字节的复跑；发布前对同一字节的首轮验收同样 21/21 通过。两次运行的 tarball/content 摘要完全相同。",
     "hosts": [
       {
         "host": "0.2.0-rc.2",
@@ -141,7 +142,7 @@
         "ok": true,
         "tarballSha256": "b611da72218bcb792ddbbba8d12eb6b410d98ce43885ed76a1f783e5a4cd33a1",
         "contentSha256": "48bf03a93e6281db2049baaab7af0494ebd4652e05462bb49cf720fa6dabb431",
-        "finishedAt": "2026-10-06T17:21:22.096Z"
+        "finishedAt": "2026-10-06T17:37:55.265Z"
       },
       {
         "host": "0.2.1-alpha.1",
@@ -149,7 +150,7 @@
         "ok": true,
         "tarballSha256": "b611da72218bcb792ddbbba8d12eb6b410d98ce43885ed76a1f783e5a4cd33a1",
         "contentSha256": "48bf03a93e6281db2049baaab7af0494ebd4652e05462bb49cf720fa6dabb431",
-        "finishedAt": "2026-10-06T17:21:23.391Z"
+        "finishedAt": "2026-10-06T17:38:56.043Z"
       }
     ]
   },
@@ -291,5 +292,126 @@
       "docs/evidence/dsh-0.2.0-rc.2.json",
       "docs/evidence/dsh-0.2.1-alpha.1.json"
     ]
+  },
+  "finalGithub": {
+    "commit": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+    "tag": {
+      "name": "v0.2.0-rc.2",
+      "object": "73a8de7617e15a8bf122f4a41b788ac40853c951",
+      "commit": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74"
+    },
+    "release": {
+      "id": 404980323,
+      "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.2",
+      "draft": false,
+      "prerelease": true,
+      "createdAt": "2026-10-06T17:28:18Z",
+      "publishedAt": "2026-10-06T17:29:18Z"
+    },
+    "ci": {
+      "id": 37503044659,
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/37503044659",
+      "sha": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+      "conclusion": "success",
+      "jobs": {
+        "total": 5,
+        "unitTestsNode2219": "success",
+        "unitTestsNode24": "success",
+        "package": "success",
+        "hostAcceptanceRc2": "success",
+        "hostAcceptanceAlpha": "success"
+      }
+    },
+    "codeql": {
+      "id": 37503044466,
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/37503044466",
+      "sha": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+      "conclusion": "success",
+      "results": 0
+    },
+    "releaseWorkflow": {
+      "id": 37503800972,
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/37503800972",
+      "sha": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+      "event": "push",
+      "conclusion": "success"
+    },
+    "alerts": [
+      {
+        "number": 1,
+        "rule": "js/polynomial-redos",
+        "severity": "high",
+        "state": "fixed",
+        "createdAt": "2026-10-06T16:39:44Z",
+        "fixedAt": "2026-10-06T17:12:39Z"
+      },
+      {
+        "number": 2,
+        "rule": "js/insecure-randomness",
+        "severity": "high",
+        "state": "fixed",
+        "createdAt": "2026-10-06T16:39:44Z",
+        "fixedAt": "2026-10-06T17:12:39Z"
+      }
+    ],
+    "openHighAlerts": 0,
+    "provenance": {
+      "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.2 --require-source-commit",
+      "ok": true,
+      "tagCommit": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+      "sourceCommit": "2352d232a6ab22dc6b130d1701dc19b9d7275796",
+      "sourceCommitContentSha256": "48bf03a93e6281db2049baaab7af0494ebd4652e05462bb49cf720fa6dabb431",
+      "taggedTreeContentSha256": "48bf03a93e6281db2049baaab7af0494ebd4652e05462bb49cf720fa6dabb431",
+      "pinContentSha256": "48bf03a93e6281db2049baaab7af0494ebd4652e05462bb49cf720fa6dabb431"
+    }
+  },
+  "postPublishValidation": {
+    "downloadedFrom": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.2",
+    "downloadedAt": "2026-10-06T17:39:00Z",
+    "assets": [
+      {
+        "name": "dsh-evolution-0.2.0-rc.2.tgz",
+        "sha256": "b611da72218bcb792ddbbba8d12eb6b410d98ce43885ed76a1f783e5a4cd33a1",
+        "size": 221145,
+        "matchesPinnedSha256": true,
+        "matchesCommittedArtifact": true
+      },
+      {
+        "name": "manifest.json",
+        "sha256": "ff9bf828c2ae9ca4cb5a6ec9c59dcafb638083e4e47c6cb400c44096129f2c62",
+        "size": 660,
+        "matchesCommittedManifest": true
+      },
+      {
+        "name": "SHA256SUMS",
+        "sha256": "525fe2c0d876768305acbed823a3cc81edd6a323f779857e76d386b75db3e995",
+        "size": 95,
+        "matchesCommittedChecksums": true,
+        "checksumPassesForTarball": true
+      }
+    ],
+    "artifactVerify": {
+      "command": "node scripts/release/verify-artifact.mjs <downloaded>/dsh-evolution-0.2.0-rc.2.tgz",
+      "ok": true,
+      "sha256": "b611da72218bcb792ddbbba8d12eb6b410d98ce43885ed76a1f783e5a4cd33a1",
+      "contentSha256": "48bf03a93e6281db2049baaab7af0494ebd4652e05462bb49cf720fa6dabb431"
+    },
+    "hostAcceptance": [
+      {
+        "host": "0.2.0-rc.2",
+        "passed": 21,
+        "ok": true,
+        "finishedAt": "2026-10-06T17:37:55.265Z",
+        "evidence": "docs/evidence/dsh-0.2.0-rc.2.json"
+      },
+      {
+        "host": "0.2.1-alpha.1",
+        "passed": 21,
+        "ok": true,
+        "finishedAt": "2026-10-06T17:38:56.043Z",
+        "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json"
+      }
+    ],
+    "note": "验收消费的是从公开 Release 重新下载的字节；本地 release/ 中的同名文件与其逐字节相同（git 工作树无差异），因此证据的 tarball 路径仍指向 release/，而 tarballSha256 绑定的是公开附件摘要。"
   }
 }
