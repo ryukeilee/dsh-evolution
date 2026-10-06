@@ -70,8 +70,23 @@ jobs:
           # The doctor entry point must run with no host packages present: the
           # bundle is unpacked without any node_modules, so a reintroduced host
           # import fails here instead of only in a real install.
+          #
+          # Exit codes are 0 healthy / 1 degraded / 2 blocked. A home that has
+          # never been started is legitimately `degraded` (data.root is created
+          # on first run), so only a `blocked` check is a failure here.
+          set +e
           node /tmp/clean-install/package/scripts/doctor.mjs --home /tmp/clean-home --no-composition --json > /tmp/clean-report.json
-          node -e "const r=require('/tmp/clean-report.json'); if (typeof r.status !== 'string') throw new Error('no status'); console.log('doctor status:', r.status)"
+          code=$?
+          set -e
+          echo "doctor exit code: $code"
+          node -e "
+          const report = require('/tmp/clean-report.json');
+          if (typeof report.status !== 'string') throw new Error('the doctor produced no status');
+          const blocked = report.checks.filter((c) => c.level === 'blocked').map((c) => c.id);
+          console.log('doctor status:', report.status, '| blocked checks:', blocked.length ? blocked.join(', ') : 'none');
+          if (blocked.length > 0) throw new Error('the doctor reports a blocked install: ' + blocked.join(', '));
+          "
+          if [ "$code" -gt 1 ]; then echo "the doctor exited $code" >&2; exit 1; fi
       - name: Verify the checksum file attached to the release
         run: cd release && sha256sum --check SHA256SUMS
       - name: Upload the artifacts
