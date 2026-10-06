@@ -1,6 +1,6 @@
 # 发布说明与剩余风险
 
-本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库不发布 npm 包。
+本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
 当前候选版本：`0.2.0-rc.1`
 
@@ -12,6 +12,8 @@
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
+
+公开 Release 页面与附件可匿名访问，无需仓库权限：<https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.1>。
 
 发布的字节与 CI 重新构建的字节**允许不同**：`npm pack` 通过随 Node 附带的 zlib 压缩，npm 10（Node 22）与 npm 11（Node 26）对完全相同的文件会产生不同的压缩字节。实测：同一棵树在 npm 10.9.3 下得到 `46f6e4a4…`、在 npm 11.19.1 下得到 `040e0d9e…`，而解包后的文件逐字节相同、未压缩 tar 大小相同。
 
@@ -25,6 +27,11 @@
 ## 2. 校验命令
 
 ```sh
+curl -fL https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1/dsh-evolution-0.2.0-rc.1.tgz -o dsh-evolution-0.2.0-rc.1.tgz
+curl -fL https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1/SHA256SUMS -o SHA256SUMS
+curl -fL https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1/manifest.json -o manifest.json
+shasum -a 256 -c SHA256SUMS                    # Linux：sha256sum --check SHA256SUMS
+npm run release:verify -- dsh-evolution-0.2.0-rc.1.tgz  # 在公开仓库 checkout 中校验下载的 tarball
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- <下载的.tgz>            # 从 Release 下载回来的文件，用同一条命令核对
@@ -88,18 +95,21 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 - `.github/workflows/release.yml`：tag push 时校验 tag 与版本一致、验证固定产物、把 `release/` 中的产物附到**草稿** GitHub Release（不重建、不自动发布、不发布 npm）
 - `test/workflows.test.mjs` 解析两个 workflow 并锁定这些性质
 
-## 6. 剩余发布风险（未消除）
+## 6. 发布状态与剩余风险
+
+仓库已设为 public，`v0.2.0-rc.1` 的 tarball、`SHA256SUMS` 与 `manifest.json` 可由无仓库权限的用户直接下载。此前“私有仓库导致 Release 资产无法匿名下载”的限制已解除。
+
+以下风险仍未消除：
 
 1. **发布字节由人工固定的 `release/` 决定，而不是由 CI 重新构建。** 这是刻意的（见第 1 节），但它意味着：如果 `release/` 里的 tarball 被替换而 `release/manifest.json` 未同步，两者会不一致——`pack:check`、`release:verify` 和 `test/release-pin.test.mjs` 都会失败，因此只可能被“同时改对”而无法静默漂移。
-2. **本仓库当前是私有仓库。** GitHub Release 的资产只有具备访问权限的账号能下载；要做“任何人可下载”的公开发布，需要把仓库设为 public 或改用其它分发渠道——这是仓库治理决定，不在本次技术验收范围内。
-3. **验收覆盖不到手工 dispose 底层 bundle Fiber 的路径。** `disposeTrial` 走官方 runner 的 stop/undefine；直接 dispose bundle Fiber 的手工探针无法自我断言（会让探针自身注入的 `tools` 失活），因此不作为用户关闭流程，也未被 CI 覆盖。
-4. **promotion 的领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威，领域 evaluator 只提供记录在案的决策与 regression 硬 veto；尚未接入宿主提供的独立生产 baseline/test 指标。
-5. **`continuous/` 与 `governance/` 领域模块未接入 orchestrator 实时循环。** 它们有单测覆盖，但不受宿主验收路径保护。
-6. **内部/未文档化宿主接口仍被依赖。** `ctx.events._hooks` 与 `ctx.reflect._getImpl()` 回退路径是私有的；official loader / Include 的 `EntryTree.resolve`、`Entry.fiber/options/disabled` 是公开但未文档化的。`runtime.internal-api` 会逐项探测并在缺失时降级为 `degraded`，但升级 DSH 必须重新跑完整验收。
-7. **`trial` 的基线在 `propose` 时抓取，宿主懒加载 fiber 会造成竞态。** 验收探针因此先等待运行时签名稳定再 propose；真实用户如果恰好在宿主懒加载期间 propose，仍可能看到 `revert-failed`。这是既有设计属性，本次未修改。
-8. **事件签名密钥 `event-bridge.key` 无轮换/吊销流程。** 它只在该数据根首次创建，禁用与卸载都不会删除。
-9. **未做的发布动作：** npm 发布、代码签名 / provenance（SLSA）、SBOM。本 RC 提供固定字节、校验信息和完整验收证据，但不提供供应链签名。
-10. **`0.2.1-alpha.1` 的 npm dist-tag 会移动。** 验收记录的是该精确版本号；上游把 `alpha` 指向新版本后，本仓库声明的仍是 `0.2.1-alpha.1`。
+2. **验收覆盖不到手工 dispose 底层 bundle Fiber 的路径。** `disposeTrial` 走官方 runner 的 stop/undefine；直接 dispose bundle Fiber 的手工探针无法自我断言（会让探针自身注入的 `tools` 失活），因此不作为用户关闭流程，也未被 CI 覆盖。
+3. **promotion 的领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威，领域 evaluator 只提供记录在案的决策与 regression 硬 veto；尚未接入宿主提供的独立生产 baseline/test 指标。
+4. **`continuous/` 与 `governance/` 领域模块未接入 orchestrator 实时循环。** 它们有单测覆盖，但不受宿主验收路径保护。
+5. **内部/未文档化宿主接口仍被依赖。** `ctx.events._hooks` 与 `ctx.reflect._getImpl()` 回退路径是私有的；official loader / Include 的 `EntryTree.resolve`、`Entry.fiber/options/disabled` 是公开但未文档化的。`runtime.internal-api` 会逐项探测并在缺失时降级为 `degraded`，但升级 DSH 必须重新跑完整验收。
+6. **`trial` 的基线在 `propose` 时抓取，宿主懒加载 fiber 会造成竞态。** 验收探针因此先等待运行时签名稳定再 propose；真实用户如果恰好在宿主懒加载期间 propose，仍可能看到 `revert-failed`。这是既有设计属性，本次未修改。
+7. **事件签名密钥 `event-bridge.key` 无轮换/吊销流程。** 它只在该数据根首次创建，禁用与卸载都不会删除。
+8. **未做的发布动作：** npm 发布、代码签名 / provenance（SLSA）、SBOM。本 RC 提供固定字节、校验信息和完整验收证据，但不提供供应链签名。
+9. **`0.2.1-alpha.1` 的 npm dist-tag 会移动。** 验收记录的是该精确版本号；上游把 `alpha` 指向新版本后，本仓库声明的仍是 `0.2.1-alpha.1`。
 
 ## 7. 相关文档
 

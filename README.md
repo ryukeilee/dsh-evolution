@@ -2,7 +2,7 @@
 
 自我进化（Evolution）能力作为独立 DSH bundle 分发。DSH 主体保持官方原样，本插件通过官方 bundle / profile 机制安装，不修改官方源码、不向官方 `node_modules` 复制文件、不 patch 官方仓库。
 
-本仓库是 `dsh-evolution` 的**唯一开发、测试与发布来源**；旧的 DSH 环境与私有迁移工作目录只作为历史迁移源和回滚基线，不再维护插件源码。
+本仓库是 `dsh-evolution` 的**唯一开发、测试与发布来源**；旧的 DSH 环境只作为历史迁移源和回滚基线，不再维护插件源码。
 
 - 包版本：`0.2.0-rc.1`（RC，非 npm 发布；预发布标签不会出现在 npm 上）
 - 支持的 DSH 版本范围：**`0.2.0-rc.2` / `0.2.1-alpha.1`**（精确列表）。`package.json` 的 `peerDependencies` 逐一列出经过真实安装验收的宿主版本，不通过 exemption 伪装其它版本兼容；列表之外的宿主由 `host.version` 报 `blocked`。
@@ -21,11 +21,18 @@ npx @deepseek-ai/dsh web            # 官方推荐
 
 本插件的发布产物（`dsh-evolution-0.2.0-rc.1.tgz`）与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。
 
-### 1.1 从 Release 安装（用户）
+### 1.1 从公开 Release 安装（用户）
 
 ```sh
-# 下载产物与校验信息（私有仓库需已登录：gh auth login）
-gh release download v0.2.0-rc.1 --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS'
+# 公开下载：无需 GitHub 仓库权限或登录
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
+curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
+curl -fL "$RELEASE_URL/manifest.json" -o manifest.json
+
+# 也可使用 GitHub CLI；公开仓库无需先运行 gh auth login
+gh release download v0.2.0-rc.1 --repo ryukeilee/dsh-evolution \
+  --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS' --pattern 'manifest.json'
 
 # 校验：必须与 release/SHA256SUMS 一致
 sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
