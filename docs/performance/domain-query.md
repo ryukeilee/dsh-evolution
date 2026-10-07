@@ -8,7 +8,7 @@
 
 官方领域端口 `query()` 返回完整 count 和最多 50 条安全 DTO，但原先
 `memory.history()` 先深拷贝完整历史，包括最终不会返回的 summary/evidence。
-2,000 条、每条 16 KiB 合成历史的基线 CPU profile 中，`structuredClone`
+2,000 条、每条 16 KiB 合成历史的基线完整 benchmark 进程 CPU profile 中，`structuredClone`
 有 52 个直接采样，GC 有 91 个；主要剩余成本是全量读取和 JSON 解析。
 这是官方工具查询的真实运行路径，不代表生产用户负载分布。
 
@@ -66,4 +66,17 @@ node "$task_baseline_dir/scripts/benchmarks/domain-query.mjs"
 
 新增回归对比既有 full-history 输出，覆盖窗口边界、重复 ID 更新、墓碑、
 损坏尾行、返回值嵌套隔离与关闭重开。官方领域原有事务、认证及恢复回归保留。
-完整测试、包装和两个官方宿主的最终结果在完成后记录。
+最终完整 `npm test` 166/166 通过，`pack:check` 16 项通过，
+`release:verify` 的 48 个条目、权限和全部字节/内容摘要通过。
+官方 DSH `0.2.0-rc.2`、`0.2.1-alpha.1` 各 21/21 步通过，覆盖核心工具、
+禁用启用、卸载重装与数据保留、升级回滚、promotion 跨重启和 canary 回滚。
+原始证据见 [rc.2](../evidence/dsh-0.2.0-rc.2.json) 和
+[alpha.1](../evidence/dsh-0.2.1-alpha.1.json)。
+
+源码提交：`bda48237908ec194c2e246c5b811bb75e065a81b`。
+本地候选：`release/dsh-evolution-0.2.0-rc.3.tgz`。
+SHA-256：`b7e099946ed91345787bd130d80345fa56ab56166d5cd016c53c95b080ab5588`。
+全部 fixture 和宿主 home 为临时合成数据；复用的仅为前轮官方依赖 runtime。
+没有读取真实用户 Evolution 数据，没有修改官方源码或外部发布。
+源码本地提交首次因沙箱 `.git/index.lock` 权限失败，获准后成功；
+没有将失败记录算作通过。
