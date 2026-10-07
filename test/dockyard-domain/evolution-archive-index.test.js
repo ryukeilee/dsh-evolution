@@ -252,3 +252,31 @@ test("stale index referencing rotated-away segments and wrong checksums is recon
     await rm(home, { recursive: true, force: true });
   }
 });
+
+
+test("history window preserves full-history ordering/count and detached records", async () => {
+  const home = await mkdtemp(join(tmpdir(), "evolution-window-"));
+  try {
+    const memory = await newMemory(home);
+    for (let i = 0; i < 8; i++) await memory.recordCycle({ id: `window-${i}`, status: "observed", details: { value: i } });
+    const archive = join(home, ".dockyard-dsh", archiveName("cycles"));
+    await appendFile(archive, JSON.stringify({ id: "window-0", status: "updated", details: { value: 99 } }) + "\n"
+      + JSON.stringify({ id: "window-1", __evolutionTombstone: 1 }) + "\n");
+    assert.equal(memory.history("cycles").length, 7);
+    assert.equal(memory.history("cycles")[0].status, "updated");
+    // Derive expected output through the established full-history API, including
+    // the same legacy duplicate/torn-tail handling, rather than a second merge.
+    await appendFile(archive, '{"torn":');
+    for (const limit of [undefined, 1, 3, 50, 100, 0, -1, 2.5, NaN, Infinity]) {
+      const full = memory.history("cycles");
+      const size = Math.min(50, Math.max(1, Number(limit) || 10));
+      assert.deepEqual(memory.historyWindow("cycles", limit), { count: full.length, entries: full.slice(-size) });
+    }
+    const window = memory.historyWindow("cycles", 2);
+    window.entries[0].details.value = -100;
+    assert.notEqual(memory.historyWindow("cycles", 2).entries[0].details.value, -100);
+    assert.deepEqual(memory.historyWindow("unknown"), { count: 0, entries: [] });
+    const reloaded = await newMemory(home);
+    assert.deepEqual(reloaded.historyWindow("cycles", 3), memory.historyWindow("cycles", 3));
+  } finally { await rm(home, { recursive: true, force: true }); }
+});

@@ -8,6 +8,9 @@ you install before upgrading DSH.
 
 ## 0.2.0-rc.3 — local performance candidate
 
+- 官方领域查询保留完整历史读取、去重和计数，仅深拷贝最多 50 条返回记录；
+  三轮同负载 CPU 减少 30–49%，数据和收益边界见 `docs/performance/domain-query.md`。
+
 - 在每个 agent step / 工具结束的事件同步中，移除重复 JSON 解析，并仅为
   未提交事件构造 DTO；全部历史记录仍逐条验证 MAC、writer 和同 ID 冲突。
 - 可复现多规模数据与适用范围见 `docs/performance/domain-replay.md`。
