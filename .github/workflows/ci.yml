@@ -53,7 +53,14 @@ jobs:
       - name: Package checks (byte stability, allow-list, canonical modes, pin)
         run: npm run pack:check
       - name: Verify the committed release artifact against the pin
-        run: npm run release:verify
+        id: pinned-artifact
+        run: |
+          set -euo pipefail
+          npm run release:verify
+          # Historical candidates may coexist; the verified pin selects the
+          # only artifact used by the clean install and artifact upload.
+          tarball="$(node -p "'release/' + require('./release/manifest.json').filename")"
+          printf 'tarball=%s\n' "$tarball" >> "$GITHUB_OUTPUT"
       - name: Build a local artifact and prove it has the pinned content
         # The local build is compressed by this runner's npm, so its bytes are
         # allowed to differ from the published ones; its content is not.
@@ -62,11 +69,12 @@ jobs:
           npm run release:pack
           node scripts/release/verify-artifact.mjs dist/dsh-evolution-*.tgz --content-only
       - name: Start the doctor from the published tarball with no host installed
+        env:
+          TARBALL: ${{ steps.pinned-artifact.outputs.tarball }}
         run: |
           set -euo pipefail
-          tarball="$(ls release/*.tgz)"
           mkdir -p /tmp/clean-install /tmp/clean-home
-          tar -xzf "$tarball" -C /tmp/clean-install
+          tar -xzf "$TARBALL" -C /tmp/clean-install
           # The doctor entry point must run with no host packages present: the
           # bundle is unpacked without any node_modules, so a reintroduced host
           # import fails here instead of only in a real install.
@@ -94,7 +102,7 @@ jobs:
         with:
           name: dsh-evolution-package
           path: |
-            release/*.tgz
+            ${{ steps.pinned-artifact.outputs.tarball }}
             release/SHA256SUMS
             release/manifest.json
             dist/manifest.json

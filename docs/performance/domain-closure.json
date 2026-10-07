@@ -1,0 +1,902 @@
+{
+  "baselineCommit": "1abf08e",
+  "sourceCommit": "4809b40271bfc06d1bac4fecfbe2b7f5c5d10d9e",
+  "roundOrder": [
+    [
+      "baseline",
+      "candidate"
+    ],
+    [
+      "candidate",
+      "baseline"
+    ]
+  ],
+  "benchmarks": {
+    "1-baseline-archive": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "segments": 256,
+      "segmentBytes": 1024,
+      "samples": 7,
+      "median": {
+        "elapsedMs": 1666.024790999999,
+        "cpuMs": 253.187,
+        "directoryEnumerations": 83
+      },
+      "results": [
+        {
+          "elapsedMs": 1667.0104999999999,
+          "cpuMs": 223.726,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1713.0530419999996,
+          "cpuMs": 257.264,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1628.8925410000002,
+          "cpuMs": 214.985,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1666.024790999999,
+          "cpuMs": 253.187,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1335.95075,
+          "cpuMs": 194.851,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1487.908958,
+          "cpuMs": 265.462,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1725.3776659999985,
+          "cpuMs": 261.482,
+          "directoryEnumerations": 83
+        }
+      ]
+    },
+    "1-baseline-replay10k": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "events": 10000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 5255564,
+      "median": {
+        "elapsedMs": 51.62020899999993,
+        "cpuMs": 52.396
+      },
+      "results": [
+        {
+          "elapsedMs": 53.82708400000001,
+          "cpuMs": 54.737
+        },
+        {
+          "elapsedMs": 51.49337499999996,
+          "cpuMs": 52.315
+        },
+        {
+          "elapsedMs": 51.42904100000004,
+          "cpuMs": 52.111
+        },
+        {
+          "elapsedMs": 51.299041999999986,
+          "cpuMs": 52.037
+        },
+        {
+          "elapsedMs": 51.27195799999993,
+          "cpuMs": 52.218
+        },
+        {
+          "elapsedMs": 51.87629100000004,
+          "cpuMs": 52.574
+        },
+        {
+          "elapsedMs": 51.83237500000007,
+          "cpuMs": 52.714
+        },
+        {
+          "elapsedMs": 55.76379099999997,
+          "cpuMs": 66.278
+        },
+        {
+          "elapsedMs": 53.17624999999998,
+          "cpuMs": 53.747
+        },
+        {
+          "elapsedMs": 50.912750000000074,
+          "cpuMs": 51.63
+        },
+        {
+          "elapsedMs": 51.54325000000006,
+          "cpuMs": 52.282
+        },
+        {
+          "elapsedMs": 56.344999999999914,
+          "cpuMs": 57.275
+        },
+        {
+          "elapsedMs": 52.47845799999993,
+          "cpuMs": 53.063
+        },
+        {
+          "elapsedMs": 51.318500000000085,
+          "cpuMs": 52.04
+        },
+        {
+          "elapsedMs": 51.62020899999993,
+          "cpuMs": 52.396
+        }
+      ]
+    },
+    "1-baseline-replay50k": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "events": 50000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 26455564,
+      "median": {
+        "elapsedMs": 263.3010840000002,
+        "cpuMs": 289.579
+      },
+      "results": [
+        {
+          "elapsedMs": 271.0600830000001,
+          "cpuMs": 298.951
+        },
+        {
+          "elapsedMs": 261.6450830000001,
+          "cpuMs": 264.438
+        },
+        {
+          "elapsedMs": 271.37599999999975,
+          "cpuMs": 302.77
+        },
+        {
+          "elapsedMs": 260.0781659999998,
+          "cpuMs": 262.869
+        },
+        {
+          "elapsedMs": 265.37033299999985,
+          "cpuMs": 292.678
+        },
+        {
+          "elapsedMs": 272.08950000000004,
+          "cpuMs": 275.165
+        },
+        {
+          "elapsedMs": 267.31708300000037,
+          "cpuMs": 294.278
+        },
+        {
+          "elapsedMs": 267.02816600000006,
+          "cpuMs": 270.093
+        },
+        {
+          "elapsedMs": 263.3010840000002,
+          "cpuMs": 289.579
+        },
+        {
+          "elapsedMs": 259.54087500000014,
+          "cpuMs": 262.523
+        },
+        {
+          "elapsedMs": 263.2067079999997,
+          "cpuMs": 290.987
+        },
+        {
+          "elapsedMs": 258.4069159999999,
+          "cpuMs": 261.237
+        },
+        {
+          "elapsedMs": 260.8569580000003,
+          "cpuMs": 290.863
+        },
+        {
+          "elapsedMs": 259.4997920000005,
+          "cpuMs": 262.249
+        },
+        {
+          "elapsedMs": 264.8449579999997,
+          "cpuMs": 291.733
+        }
+      ]
+    },
+    "1-candidate-archive": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "segments": 256,
+      "segmentBytes": 1024,
+      "samples": 7,
+      "median": {
+        "elapsedMs": 158.68741599999998,
+        "cpuMs": 141.749,
+        "directoryEnumerations": 81
+      },
+      "results": [
+        {
+          "elapsedMs": 158.68741599999998,
+          "cpuMs": 146.878,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 160.46437500000002,
+          "cpuMs": 139.792,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 153.43962499999998,
+          "cpuMs": 141.749,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 160.397375,
+          "cpuMs": 142.101,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 162.14245800000003,
+          "cpuMs": 140.196,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 158.19683299999997,
+          "cpuMs": 144.331,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 157.198083,
+          "cpuMs": 138.712,
+          "directoryEnumerations": 81
+        }
+      ]
+    },
+    "1-candidate-replay10k": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "events": 10000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 5255564,
+      "median": {
+        "elapsedMs": 4.164124999999956,
+        "cpuMs": 4.171
+      },
+      "results": [
+        {
+          "elapsedMs": 4.259709000000015,
+          "cpuMs": 4.284
+        },
+        {
+          "elapsedMs": 4.21437499999999,
+          "cpuMs": 4.216
+        },
+        {
+          "elapsedMs": 4.1835419999999885,
+          "cpuMs": 4.184
+        },
+        {
+          "elapsedMs": 4.185541999999998,
+          "cpuMs": 4.255
+        },
+        {
+          "elapsedMs": 4.235458999999992,
+          "cpuMs": 4.429
+        },
+        {
+          "elapsedMs": 4.1280419999999935,
+          "cpuMs": 4.13
+        },
+        {
+          "elapsedMs": 4.171707999999967,
+          "cpuMs": 4.259
+        },
+        {
+          "elapsedMs": 4.108417000000031,
+          "cpuMs": 4.11
+        },
+        {
+          "elapsedMs": 4.17062500000003,
+          "cpuMs": 4.171
+        },
+        {
+          "elapsedMs": 4.080667000000005,
+          "cpuMs": 4.08
+        },
+        {
+          "elapsedMs": 4.140209000000027,
+          "cpuMs": 4.141
+        },
+        {
+          "elapsedMs": 4.159833000000049,
+          "cpuMs": 4.273
+        },
+        {
+          "elapsedMs": 4.164124999999956,
+          "cpuMs": 4.165
+        },
+        {
+          "elapsedMs": 4.1067919999999845,
+          "cpuMs": 4.106
+        },
+        {
+          "elapsedMs": 4.112666000000047,
+          "cpuMs": 4.113
+        }
+      ]
+    },
+    "1-candidate-replay50k": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "events": 50000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 26455564,
+      "median": {
+        "elapsedMs": 22.348582999999962,
+        "cpuMs": 22.501
+      },
+      "results": [
+        {
+          "elapsedMs": 22.464916000000017,
+          "cpuMs": 22.517
+        },
+        {
+          "elapsedMs": 22.374458000000004,
+          "cpuMs": 22.379
+        },
+        {
+          "elapsedMs": 22.683374999999955,
+          "cpuMs": 22.956
+        },
+        {
+          "elapsedMs": 22.426708000000076,
+          "cpuMs": 22.513
+        },
+        {
+          "elapsedMs": 22.208749999999895,
+          "cpuMs": 22.454
+        },
+        {
+          "elapsedMs": 22.017082999999957,
+          "cpuMs": 22.021
+        },
+        {
+          "elapsedMs": 23.52841699999999,
+          "cpuMs": 23.615
+        },
+        {
+          "elapsedMs": 22.45616700000005,
+          "cpuMs": 22.673
+        },
+        {
+          "elapsedMs": 22.346250000000055,
+          "cpuMs": 22.348
+        },
+        {
+          "elapsedMs": 22.405250000000024,
+          "cpuMs": 22.639
+        },
+        {
+          "elapsedMs": 22.110124999999925,
+          "cpuMs": 22.112
+        },
+        {
+          "elapsedMs": 22.036165999999866,
+          "cpuMs": 22.46
+        },
+        {
+          "elapsedMs": 22.106791999999814,
+          "cpuMs": 22.64
+        },
+        {
+          "elapsedMs": 22.240083999999797,
+          "cpuMs": 22.241
+        },
+        {
+          "elapsedMs": 22.348582999999962,
+          "cpuMs": 22.501
+        }
+      ]
+    },
+    "2-baseline-archive": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "segments": 256,
+      "segmentBytes": 1024,
+      "samples": 7,
+      "median": {
+        "elapsedMs": 1665.1754999999994,
+        "cpuMs": 269.304,
+        "directoryEnumerations": 83
+      },
+      "results": [
+        {
+          "elapsedMs": 1684.78775,
+          "cpuMs": 244.798,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1687.31225,
+          "cpuMs": 269.304,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1671.14275,
+          "cpuMs": 262.444,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1579.288125,
+          "cpuMs": 286.102,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1665.1754999999994,
+          "cpuMs": 272.663,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1227.4749159999992,
+          "cpuMs": 230.17,
+          "directoryEnumerations": 83
+        },
+        {
+          "elapsedMs": 1354.7030840000007,
+          "cpuMs": 270.167,
+          "directoryEnumerations": 83
+        }
+      ]
+    },
+    "2-baseline-replay10k": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "events": 10000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 5255564,
+      "median": {
+        "elapsedMs": 52.273207999999954,
+        "cpuMs": 53.08
+      },
+      "results": [
+        {
+          "elapsedMs": 52.079792,
+          "cpuMs": 52.871
+        },
+        {
+          "elapsedMs": 52.273207999999954,
+          "cpuMs": 53.091
+        },
+        {
+          "elapsedMs": 52.347624999999994,
+          "cpuMs": 53.08
+        },
+        {
+          "elapsedMs": 53.062542000000064,
+          "cpuMs": 53.765
+        },
+        {
+          "elapsedMs": 53.817999999999984,
+          "cpuMs": 54.801
+        },
+        {
+          "elapsedMs": 52.404249999999934,
+          "cpuMs": 53.274
+        },
+        {
+          "elapsedMs": 52.8521659999999,
+          "cpuMs": 53.755
+        },
+        {
+          "elapsedMs": 56.54679199999998,
+          "cpuMs": 67.089
+        },
+        {
+          "elapsedMs": 53.35983299999998,
+          "cpuMs": 53.935
+        },
+        {
+          "elapsedMs": 51.074749999999995,
+          "cpuMs": 51.79
+        },
+        {
+          "elapsedMs": 51.162375,
+          "cpuMs": 51.964
+        },
+        {
+          "elapsedMs": 51.60954199999992,
+          "cpuMs": 52.405
+        },
+        {
+          "elapsedMs": 50.929874999999925,
+          "cpuMs": 51.524
+        },
+        {
+          "elapsedMs": 51.46120799999994,
+          "cpuMs": 52.229
+        },
+        {
+          "elapsedMs": 51.94966699999986,
+          "cpuMs": 52.684
+        }
+      ]
+    },
+    "2-baseline-replay50k": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "events": 50000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 26455564,
+      "median": {
+        "elapsedMs": 265.99979200000007,
+        "cpuMs": 291.092
+      },
+      "results": [
+        {
+          "elapsedMs": 266.0502920000001,
+          "cpuMs": 294.152
+        },
+        {
+          "elapsedMs": 261.788,
+          "cpuMs": 264.589
+        },
+        {
+          "elapsedMs": 264.53541700000005,
+          "cpuMs": 292.863
+        },
+        {
+          "elapsedMs": 262.5542089999999,
+          "cpuMs": 265.341
+        },
+        {
+          "elapsedMs": 265.99979200000007,
+          "cpuMs": 293.315
+        },
+        {
+          "elapsedMs": 272.87770899999987,
+          "cpuMs": 275.761
+        },
+        {
+          "elapsedMs": 287.6463749999998,
+          "cpuMs": 326.485
+        },
+        {
+          "elapsedMs": 278.5073749999997,
+          "cpuMs": 281.362
+        },
+        {
+          "elapsedMs": 264.8029160000001,
+          "cpuMs": 291.092
+        },
+        {
+          "elapsedMs": 273.64020800000026,
+          "cpuMs": 275.989
+        },
+        {
+          "elapsedMs": 264.81516700000066,
+          "cpuMs": 294.504
+        },
+        {
+          "elapsedMs": 265.49262499999986,
+          "cpuMs": 268.206
+        },
+        {
+          "elapsedMs": 287.3034170000001,
+          "cpuMs": 316.553
+        },
+        {
+          "elapsedMs": 263.40195799999947,
+          "cpuMs": 266.236
+        },
+        {
+          "elapsedMs": 269.16112500000054,
+          "cpuMs": 296.249
+        }
+      ]
+    },
+    "2-candidate-archive": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "segments": 256,
+      "segmentBytes": 1024,
+      "samples": 7,
+      "median": {
+        "elapsedMs": 157.62479099999996,
+        "cpuMs": 141.997,
+        "directoryEnumerations": 81
+      },
+      "results": [
+        {
+          "elapsedMs": 157.37545899999998,
+          "cpuMs": 141.997,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 151.14545800000002,
+          "cpuMs": 138.977,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 157.62479099999996,
+          "cpuMs": 147.256,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 156.56762500000002,
+          "cpuMs": 142.092,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 165.094291,
+          "cpuMs": 141.176,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 160.39608299999986,
+          "cpuMs": 144.311,
+          "directoryEnumerations": 81
+        },
+        {
+          "elapsedMs": 158.20158300000003,
+          "cpuMs": 139.056,
+          "directoryEnumerations": 81
+        }
+      ]
+    },
+    "2-candidate-replay10k": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "events": 10000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 5255564,
+      "median": {
+        "elapsedMs": 4.214209000000039,
+        "cpuMs": 4.235
+      },
+      "results": [
+        {
+          "elapsedMs": 4.21795800000001,
+          "cpuMs": 4.242
+        },
+        {
+          "elapsedMs": 4.238332999999983,
+          "cpuMs": 4.241
+        },
+        {
+          "elapsedMs": 4.197666999999996,
+          "cpuMs": 4.199
+        },
+        {
+          "elapsedMs": 4.1684999999999945,
+          "cpuMs": 4.235
+        },
+        {
+          "elapsedMs": 4.289916000000005,
+          "cpuMs": 4.501
+        },
+        {
+          "elapsedMs": 4.4814580000000035,
+          "cpuMs": 4.484
+        },
+        {
+          "elapsedMs": 4.247208000000029,
+          "cpuMs": 4.321
+        },
+        {
+          "elapsedMs": 4.166999999999973,
+          "cpuMs": 4.168
+        },
+        {
+          "elapsedMs": 4.23762499999998,
+          "cpuMs": 4.239
+        },
+        {
+          "elapsedMs": 4.214209000000039,
+          "cpuMs": 4.215
+        },
+        {
+          "elapsedMs": 4.1566250000000196,
+          "cpuMs": 4.157
+        },
+        {
+          "elapsedMs": 4.16358299999996,
+          "cpuMs": 4.284
+        },
+        {
+          "elapsedMs": 4.153667000000041,
+          "cpuMs": 4.154
+        },
+        {
+          "elapsedMs": 4.194209000000001,
+          "cpuMs": 4.196
+        },
+        {
+          "elapsedMs": 4.230124999999987,
+          "cpuMs": 4.231
+        }
+      ]
+    },
+    "2-candidate-replay50k": {
+      "node": "v26.10.0",
+      "platform": "darwin/arm64",
+      "events": 50000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 26455564,
+      "median": {
+        "elapsedMs": 22.58741699999996,
+        "cpuMs": 22.655
+      },
+      "results": [
+        {
+          "elapsedMs": 23.38824999999997,
+          "cpuMs": 23.437
+        },
+        {
+          "elapsedMs": 22.651208999999994,
+          "cpuMs": 22.655
+        },
+        {
+          "elapsedMs": 23.46579200000008,
+          "cpuMs": 23.709
+        },
+        {
+          "elapsedMs": 22.782332999999994,
+          "cpuMs": 22.874
+        },
+        {
+          "elapsedMs": 22.58741699999996,
+          "cpuMs": 22.822
+        },
+        {
+          "elapsedMs": 22.40433299999995,
+          "cpuMs": 22.407
+        },
+        {
+          "elapsedMs": 22.49425000000008,
+          "cpuMs": 22.609
+        },
+        {
+          "elapsedMs": 22.658249999999953,
+          "cpuMs": 22.857
+        },
+        {
+          "elapsedMs": 22.534999999999968,
+          "cpuMs": 22.538
+        },
+        {
+          "elapsedMs": 22.73037499999998,
+          "cpuMs": 22.93
+        },
+        {
+          "elapsedMs": 22.19633299999998,
+          "cpuMs": 22.198
+        },
+        {
+          "elapsedMs": 22.21462499999984,
+          "cpuMs": 22.593
+        },
+        {
+          "elapsedMs": 22.317250000000058,
+          "cpuMs": 22.318
+        },
+        {
+          "elapsedMs": 22.50720800000022,
+          "cpuMs": 22.509
+        },
+        {
+          "elapsedMs": 23.18125000000009,
+          "cpuMs": 23.327
+        }
+      ]
+    }
+  },
+  "hostSandboxFailures": [
+    {
+      "host": "0.2.0-rc.2",
+      "packageVersion": "0.2.0-rc.3",
+      "tarball": "release/dsh-evolution-0.2.0-rc.3.tgz",
+      "tarballSha256": "da8444725d32ba5d37dbb6f2442fbba62a3094d5108772ad91a68c91e1b0e68a",
+      "contentSha256": "d4bec3181f4addad50f32dfee278478134891da15f66626f7c9caa2544957358",
+      "node": "v26.10.0",
+      "platform": "darwin-arm64",
+      "work": "<work>",
+      "startedAt": "2026-10-07T06:35:11.325Z",
+      "steps": [
+        {
+          "name": "host-install",
+          "at": "2026-10-07T06:35:11.327Z",
+          "ok": true,
+          "reused": true
+        },
+        {
+          "name": "plugin-add",
+          "at": "2026-10-07T06:36:22.037Z",
+          "ok": false,
+          "code": 1,
+          "tail": [
+            "    at file:///Users/ryukeili/.local/lib/node_modules/pnpm/dist/pnpm.mjs:83632:23",
+            "    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+            "dsh: plugin command failed; diagnostics: $DSH_HOME/profiles/web/.plugin-manager/logs/operation-YiGVGA/pnpm.log"
+          ]
+        }
+      ],
+      "hostVersion": "0.2.0-rc.2",
+      "hostModules": {
+        "@deepseek-ai/cordis": "4.0.4",
+        "@deepseek-ai/cordis-plugin-include": "1.0.9",
+        "@deepseek-ai/cordis-plugin-loader": "1.0.5"
+      },
+      "ok": false,
+      "error": "Error: dsh plugin add failed: [ERROR] fetch failed\n\nTypeError: fetch failed\n    at Object.processResponse (file:///Users/ryukeili/.local/lib/node_modules/pnpm/dist/pnpm.mjs:83251:20)\n    at file:///Users/ryukeili/.local/lib/node_modules/pnpm/dist/pnpm.mjs:83632:23\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\ndsh: plugin command failed; diagnostics: $DSH_HOME/profiles/web/.plugin-manager/logs/operation-YiGVGA/pnpm.log\n\n    at main (file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/run-host-acceptance.mjs:271:31)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/run-host-acceptance.mjs:503:3",
+      "finishedAt": "2026-10-07T06:36:22.037Z"
+    }
+  ],
+  "verification": {
+    "tests": {
+      "tests": 187,
+      "pass": 187,
+      "fail": 0,
+      "skipped": 0
+    },
+    "packCheck": {
+      "passed": 16,
+      "firstFailure": "EPERM writing default npm cache in sandbox",
+      "recovery": "npm_config_cache=/tmp/dsh-perf-npm-cache"
+    },
+    "artifactVerified": true,
+    "sourceProvenanceVerified": true
+  },
+  "hosts": {
+    "0.2.0-rc.2": {
+      "ok": true,
+      "steps": 21,
+      "contentSha256": "d4bec3181f4addad50f32dfee278478134891da15f66626f7c9caa2544957358",
+      "tarballSha256": "da8444725d32ba5d37dbb6f2442fbba62a3094d5108772ad91a68c91e1b0e68a",
+      "evidence": "docs/evidence/dsh-0.2.0-rc.2.json"
+    },
+    "0.2.1-alpha.1": {
+      "ok": true,
+      "steps": 21,
+      "contentSha256": "d4bec3181f4addad50f32dfee278478134891da15f66626f7c9caa2544957358",
+      "tarballSha256": "da8444725d32ba5d37dbb6f2442fbba62a3094d5108772ad91a68c91e1b0e68a",
+      "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json"
+    }
+  },
+  "releasePin": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.3",
+    "filename": "dsh-evolution-0.2.0-rc.3.tgz",
+    "sha256": "da8444725d32ba5d37dbb6f2442fbba62a3094d5108772ad91a68c91e1b0e68a",
+    "contentSha256": "d4bec3181f4addad50f32dfee278478134891da15f66626f7c9caa2544957358",
+    "entries": 50,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.10.0",
+      "npm": "11.19.1",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "4809b40271bfc06d1bac4fecfbe2b7f5c5d10d9e",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json"
+    ]
+  }
+}

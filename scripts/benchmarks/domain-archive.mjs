@@ -11,6 +11,9 @@ import { DomainFacility } from '@deepseek-ai/dsh-storage-domain';
 import { JsonStorageBackend } from '@deepseek-ai/dsh-storage-json';
 
 const segments = Number(process.env.BENCH_SEGMENTS || 256);
+// Sealed segment size. The default matches the original 1 KiB fixture; larger
+// values model a real archive, where rotation seals multi-megabyte segments.
+const segmentBytes = Math.max(16, Number(process.env.BENCH_SEGMENT_BYTES || 1024));
 const samples = Number(process.env.BENCH_SAMPLES || 7);
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'evolution-archive-bench-'));
 const archiveRoot = path.join(root, 'dockyard');
@@ -20,7 +23,7 @@ fs.mkdirSync(directory, { recursive: true });
 const index = [];
 for (let i = 0; i < segments; i++) {
   const file = `segment-${String(i + 1).padStart(12, '0')}.jsonl`;
-  const raw = JSON.stringify({ id: `cycle-${i}`, status: 'observed', recordedAt: '2026-08-26T12:00:00.000Z', summary: 'x'.repeat(1024) }) + '\n';
+  const raw = JSON.stringify({ id: `cycle-${i}`, status: 'observed', recordedAt: '2026-08-26T12:00:00.000Z', summary: 'x'.repeat(segmentBytes) }) + '\n';
   fs.writeFileSync(path.join(directory, file), raw, { mode: 0o600 });
   index.push({ collection: 'cycles', file, sealed: true, checksumState: 'final', byteSize: Buffer.byteLength(raw), sha256: createHash('sha256').update(raw).digest('hex') });
 }
@@ -37,7 +40,7 @@ const traceIo = process.env.BENCH_TRACE_IO === '1';
 const io = {};
 const originals = new Map();
 if (traceIo) {
-  for (const name of ['cpSync', 'fsyncSync']) {
+  for (const name of ['cpSync', 'copyFileSync', 'linkSync', 'fsyncSync']) {
     originals.set(name, fs[name]);
     fs[name] = function (...args) {
       const start = performance.now();
@@ -74,7 +77,7 @@ try {
   assert.equal(port.query('cycles').count, segments);
   assert.ok(port.query('observations').count > 0);
   const median = key => results.map(row => row[key]).sort((a, b) => a - b)[Math.floor(results.length / 2)];
-  console.log(JSON.stringify({ node: process.version, platform: `${process.platform}/${process.arch}`, segments, samples, median: { elapsedMs: median('elapsedMs'), cpuMs: median('cpuMs'), directoryEnumerations: median('directoryEnumerations') }, results }, null, 2));
+  console.log(JSON.stringify({ node: process.version, platform: `${process.platform}/${process.arch}`, segments, segmentBytes, samples, median: { elapsedMs: median('elapsedMs'), cpuMs: median('cpuMs'), directoryEnumerations: median('directoryEnumerations') }, results }, null, 2));
 } finally {
   fs.readdirSync = original;
   for (const [name, method] of originals) fs[name] = method;
