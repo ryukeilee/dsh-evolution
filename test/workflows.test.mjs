@@ -6,8 +6,10 @@
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 
@@ -74,7 +76,7 @@ test('CI runs the unit tests, the package checks and both supported hosts', () =
   assert.match(packageRuns, /verify-artifact\.mjs .*--content-only/);
   assert.match(packageRuns, /sha256sum --check SHA256SUMS/);
   assert.match(packageRuns, /doctor\.mjs/);
-  assert.match(packageRuns, /release\/\*\.tgz/, 'the doctor must start from the published tarball, not a fresh build');
+  assert.match(packageRuns, /release\/manifest\.json/, 'the published tarball must be selected by the release pin');
 
   // Real host acceptance for exactly the declared supported versions.
   const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
@@ -82,6 +84,41 @@ test('CI runs the unit tests, the package checks and both supported hosts', () =
   assert.deepEqual([...jobs['host-acceptance'].strategy.matrix.host].sort(), [...declared].sort());
   assert.ok(jobs['host-acceptance'].steps.some((step) => String(step.run).includes('run-host-acceptance.mjs')));
   assert.deepEqual(jobs['host-acceptance'].needs, ['package']);
+});
+
+test('CI clean install and upload select only the pinned candidate when historical tarballs coexist', () => {
+  const steps = loadWorkflow('ci.yml').jobs.package.steps;
+  const pin = JSON.parse(fs.readFileSync(path.join(repoRoot, 'release', 'manifest.json'), 'utf8'));
+  const resolve = steps.find((step) => step.id === 'pinned-artifact');
+  const doctor = steps.find((step) => String(step.run).includes('doctor.mjs'));
+  const upload = steps.find((step) => String(step.uses).startsWith('actions/upload-artifact@'));
+  const reference = '${{ steps.pinned-artifact.outputs.tarball }}';
+  assert.equal(doctor.env.TARBALL, reference);
+  assert.deepEqual(upload.with.path.trim().split('\n'), [reference, 'release/SHA256SUMS', 'release/manifest.json', 'dist/manifest.json']);
+  assert.equal(upload.with['if-no-files-found'], 'error');
+
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-ci-pin-'));
+  try {
+    // Add an invalid historical candidate to a fixture checkout: selection
+    // must ignore it rather than unpack it or pass multiple paths to tar.
+    fs.cpSync(path.join(repoRoot, 'release'), path.join(scratch, 'release'), { recursive: true });
+    fs.writeFileSync(path.join(scratch, 'release', 'historical-candidate.tgz'), 'not an archive');
+    fs.cpSync(path.join(repoRoot, 'scripts', 'release'), path.join(scratch, 'scripts', 'release'), { recursive: true });
+    fs.copyFileSync(path.join(repoRoot, 'package.json'), path.join(scratch, 'package.json'));
+    const output = path.join(scratch, 'github-output');
+    execFileSync('bash', ['-c', resolve.run], { cwd: scratch, env: { ...process.env, GITHUB_OUTPUT: output } });
+    const selected = fs.readFileSync(output, 'utf8').trim();
+    assert.equal(selected, `tarball=release/${pin.filename}`);
+    const run = doctor.run.replaceAll('/tmp/clean-', `${scratch}/clean-`);
+    execFileSync('bash', ['-c', run], { cwd: scratch, env: { ...process.env, TARBALL: selected.slice('tarball='.length) } });
+    const installed = JSON.parse(fs.readFileSync(path.join(scratch, 'clean-install', 'package', 'package.json'), 'utf8'));
+    assert.equal(installed.version, pin.version);
+    assert.equal(fs.existsSync(path.join(scratch, 'clean-install', 'package', 'node_modules')), false);
+    const report = JSON.parse(fs.readFileSync(path.join(scratch, 'clean-report.json'), 'utf8'));
+    assert.equal(report.checks.some((check) => check.level === 'blocked'), false);
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
 });
 
 test('the release workflow only publishes a draft of the verified artifact, never to npm', () => {
