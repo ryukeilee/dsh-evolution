@@ -31,6 +31,25 @@ ctx.storageDomain = new DomainFacility(ctx, { backend: 'json' });
 let enumerations = 0;
 const original = fs.readdirSync;
 fs.readdirSync = function (...args) { enumerations++; return original.apply(this, args); };
+// Optional attribution for the remaining transaction I/O; no operations are
+// skipped. Reset after warmup so fixture/startup costs stay outside samples.
+const traceIo = process.env.BENCH_TRACE_IO === '1';
+const io = {};
+const originals = new Map();
+if (traceIo) {
+  for (const name of ['cpSync', 'fsyncSync']) {
+    originals.set(name, fs[name]);
+    fs[name] = function (...args) {
+      const start = performance.now();
+      try { return originals.get(name).apply(this, args); }
+      finally {
+        io[name].calls++;
+        io[name].elapsedMs += performance.now() - start;
+      }
+    };
+    io[name] = { calls: 0, elapsedMs: 0 };
+  }
+}
 syncBuiltinESMExports();
 let port;
 try {
@@ -39,12 +58,14 @@ try {
   const results = [];
   for (let i = 0; i < samples; i++) {
     enumerations = 0;
+    for (const name of originals.keys()) io[name] = { calls: 0, elapsedMs: 0 };
     const cpu = process.cpuUsage();
     const start = performance.now();
     await port.observe({ code: 'BENCH_ERROR', target: 'tool:bench' });
     const elapsedMs = performance.now() - start;
     const used = process.cpuUsage(cpu);
-    results.push({ elapsedMs, cpuMs: (used.user + used.system) / 1000, directoryEnumerations: enumerations });
+    results.push({ elapsedMs, cpuMs: (used.user + used.system) / 1000, directoryEnumerations: enumerations,
+      ...(traceIo ? { io: structuredClone(io) } : {}) });
   }
   assert.equal(port.query('cycles').count, segments);
   assert.ok(port.query('observations').count > 0);
@@ -56,6 +77,7 @@ try {
   console.log(JSON.stringify({ node: process.version, platform: `${process.platform}/${process.arch}`, segments, samples, median: { elapsedMs: median('elapsedMs'), cpuMs: median('cpuMs'), directoryEnumerations: median('directoryEnumerations') }, results }, null, 2));
 } finally {
   fs.readdirSync = original;
+  for (const [name, method] of originals) fs[name] = method;
   syncBuiltinESMExports();
   if (port) await port.close();
   await backend.close();

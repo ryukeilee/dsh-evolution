@@ -1,0 +1,1543 @@
+{
+  "baselineCommit": "378f535",
+  "runs": [
+    {
+      "round": 1,
+      "workload": "archive-empty",
+      "parameters": {
+        "BENCH_SEGMENTS": "0",
+        "BENCH_TRACE_IO": "1"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "segments": 0,
+        "samples": 7,
+        "median": {
+          "elapsedMs": 31.145207999999997,
+          "cpuMs": 8.624,
+          "directoryEnumerations": 81
+        },
+        "results": [
+          {
+            "elapsedMs": 25.044207999999998,
+            "cpuMs": 8.623,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 0.8583760000000069
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 7.680706999999998
+              }
+            }
+          },
+          {
+            "elapsedMs": 29.935333000000014,
+            "cpuMs": 8.108,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 0.9445410000000152
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 9.85291699999999
+              }
+            }
+          },
+          {
+            "elapsedMs": 31.16304199999999,
+            "cpuMs": 8.624,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.0397909999999513
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 9.80499900000001
+              }
+            }
+          },
+          {
+            "elapsedMs": 31.145207999999997,
+            "cpuMs": 9.737,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.1435430000000224
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 9.748458999999997
+              }
+            }
+          },
+          {
+            "elapsedMs": 28.07525000000001,
+            "cpuMs": 8.598,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.1774159999999938
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 9.022709000000049
+              }
+            }
+          },
+          {
+            "elapsedMs": 32.04650000000004,
+            "cpuMs": 10.533,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.3890840000000253
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 9.200748999999945
+              }
+            }
+          },
+          {
+            "elapsedMs": 31.245457999999985,
+            "cpuMs": 12.503,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.383999000000074
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 9.682042000000024
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "round": 1,
+      "workload": "archive-256",
+      "parameters": {
+        "BENCH_SEGMENTS": "256",
+        "BENCH_TRACE_IO": "1"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "segments": 256,
+        "samples": 7,
+        "median": {
+          "elapsedMs": 1459.1940830000003,
+          "cpuMs": 263.39,
+          "directoryEnumerations": 83
+        },
+        "results": [
+          {
+            "elapsedMs": 1576.533583,
+            "cpuMs": 281.68,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 112.4413320000001
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1315.4852759999956
+              }
+            }
+          },
+          {
+            "elapsedMs": 1475.5604589999998,
+            "cpuMs": 263.39,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 112.90312399999993
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1223.547894999996
+              }
+            }
+          },
+          {
+            "elapsedMs": 1491.1286249999994,
+            "cpuMs": 273.336,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 110.43925200000103
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1232.4446670000088
+              }
+            }
+          },
+          {
+            "elapsedMs": 1459.1940830000003,
+            "cpuMs": 266.148,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 112.32495800000015
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1222.7066370000039
+              }
+            }
+          },
+          {
+            "elapsedMs": 1370.9303329999993,
+            "cpuMs": 260.15,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 106.8720000000003
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1120.2062969999788
+              }
+            }
+          },
+          {
+            "elapsedMs": 919.1852500000005,
+            "cpuMs": 229.201,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 102.12383300000147
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 694.2482460000283
+              }
+            }
+          },
+          {
+            "elapsedMs": 1273.581624999999,
+            "cpuMs": 254.762,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 107.89462500000081
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1026.6432389999754
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "round": 1,
+      "workload": "flush-10000",
+      "parameters": {
+        "BENCH_EVENTS": "10000"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "events": 10000,
+        "evidenceRows": 0,
+        "samples": 15,
+        "bytes": 5255564,
+        "median": {
+          "elapsedMs": 52.75262500000008,
+          "cpuMs": 53.317
+        },
+        "results": [
+          {
+            "elapsedMs": 52.936207999999965,
+            "cpuMs": 53.757
+          },
+          {
+            "elapsedMs": 53.22337500000003,
+            "cpuMs": 54.173
+          },
+          {
+            "elapsedMs": 53.04520800000006,
+            "cpuMs": 53.857
+          },
+          {
+            "elapsedMs": 53.65912500000002,
+            "cpuMs": 54.58
+          },
+          {
+            "elapsedMs": 53.619083000000046,
+            "cpuMs": 54.589
+          },
+          {
+            "elapsedMs": 54.971917000000076,
+            "cpuMs": 55.788
+          },
+          {
+            "elapsedMs": 51.786542000000054,
+            "cpuMs": 52.689
+          },
+          {
+            "elapsedMs": 55.67283299999997,
+            "cpuMs": 66.338
+          },
+          {
+            "elapsedMs": 52.75262500000008,
+            "cpuMs": 53.317
+          },
+          {
+            "elapsedMs": 50.85283299999992,
+            "cpuMs": 51.601
+          },
+          {
+            "elapsedMs": 50.952083000000016,
+            "cpuMs": 51.684
+          },
+          {
+            "elapsedMs": 50.996875000000045,
+            "cpuMs": 51.755
+          },
+          {
+            "elapsedMs": 50.44504200000006,
+            "cpuMs": 51.023
+          },
+          {
+            "elapsedMs": 50.889207999999826,
+            "cpuMs": 51.626
+          },
+          {
+            "elapsedMs": 50.593708000000106,
+            "cpuMs": 51.319
+          }
+        ]
+      }
+    },
+    {
+      "round": 1,
+      "workload": "flush-50000",
+      "parameters": {
+        "BENCH_EVENTS": "50000"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "events": 50000,
+        "evidenceRows": 0,
+        "samples": 15,
+        "bytes": 26455564,
+        "median": {
+          "elapsedMs": 260.1884580000001,
+          "cpuMs": 287.231
+        },
+        "results": [
+          {
+            "elapsedMs": 260.1884580000001,
+            "cpuMs": 289.241
+          },
+          {
+            "elapsedMs": 255.07066600000007,
+            "cpuMs": 258.008
+          },
+          {
+            "elapsedMs": 262.3201250000002,
+            "cpuMs": 288.522
+          },
+          {
+            "elapsedMs": 258.28837499999963,
+            "cpuMs": 261.223
+          },
+          {
+            "elapsedMs": 259.41499999999996,
+            "cpuMs": 287.231
+          },
+          {
+            "elapsedMs": 258.97620800000004,
+            "cpuMs": 261.753
+          },
+          {
+            "elapsedMs": 261.32729100000006,
+            "cpuMs": 288.802
+          },
+          {
+            "elapsedMs": 264.09012500000017,
+            "cpuMs": 266.879
+          },
+          {
+            "elapsedMs": 266.7512499999998,
+            "cpuMs": 297.293
+          },
+          {
+            "elapsedMs": 260.35504100000026,
+            "cpuMs": 263.424
+          },
+          {
+            "elapsedMs": 261.3396659999994,
+            "cpuMs": 288.276
+          },
+          {
+            "elapsedMs": 257.5043749999995,
+            "cpuMs": 260.447
+          },
+          {
+            "elapsedMs": 262.69779199999994,
+            "cpuMs": 289.991
+          },
+          {
+            "elapsedMs": 259.34479199999987,
+            "cpuMs": 262.451
+          },
+          {
+            "elapsedMs": 259.08395799999926,
+            "cpuMs": 290.551
+          }
+        ]
+      }
+    },
+    {
+      "round": 1,
+      "workload": "query-5000",
+      "parameters": {
+        "BENCH_RECORDS": "5000",
+        "BENCH_PAYLOAD_BYTES": "16384"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "records": 5000,
+        "payloadBytes": 16384,
+        "samples": 15,
+        "median": {
+          "elapsedMs": 55.917625000000044,
+          "cpuMs": 81.017,
+          "directoryEnumerations": 1
+        },
+        "results": [
+          {
+            "elapsedMs": 57.27854199999996,
+            "cpuMs": 79.735,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.38225,
+            "cpuMs": 82.254,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 59.775750000000016,
+            "cpuMs": 90.067,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 57.26095799999996,
+            "cpuMs": 86.518,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.70662500000003,
+            "cpuMs": 80.455,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.817957999999976,
+            "cpuMs": 80.083,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.55570799999998,
+            "cpuMs": 81.79,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.024916000000076,
+            "cpuMs": 80.66,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.63991699999997,
+            "cpuMs": 80.716,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.03300000000013,
+            "cpuMs": 80.954,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.89350000000013,
+            "cpuMs": 81.017,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.917625000000044,
+            "cpuMs": 80.744,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.621208000000024,
+            "cpuMs": 81.154,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 59.356250000000045,
+            "cpuMs": 87.524,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 54.635125000000016,
+            "cpuMs": 81.293,
+            "directoryEnumerations": 1
+          }
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "workload": "archive-empty",
+      "parameters": {
+        "BENCH_SEGMENTS": "0",
+        "BENCH_TRACE_IO": "1"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "segments": 0,
+        "samples": 7,
+        "median": {
+          "elapsedMs": 27.9285,
+          "cpuMs": 8.208,
+          "directoryEnumerations": 81
+        },
+        "results": [
+          {
+            "elapsedMs": 27.9285,
+            "cpuMs": 9.276,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 0.9557089999999988
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 8.427875
+              }
+            }
+          },
+          {
+            "elapsedMs": 34.82487499999999,
+            "cpuMs": 8.228,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 0.9263329999999854
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 15.666791999999987
+              }
+            }
+          },
+          {
+            "elapsedMs": 30.042665999999997,
+            "cpuMs": 7.756,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 0.8633759999999882
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 8.994459000000006
+              }
+            }
+          },
+          {
+            "elapsedMs": 25.942667,
+            "cpuMs": 7.577,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 0.8529169999999908
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 7.044082999999944
+              }
+            }
+          },
+          {
+            "elapsedMs": 27.103124999999977,
+            "cpuMs": 6.665,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 0.9227499999999793
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 6.450831999999991
+              }
+            }
+          },
+          {
+            "elapsedMs": 29.042249999999996,
+            "cpuMs": 8.208,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.0145000000000266
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 8.858623000000023
+              }
+            }
+          },
+          {
+            "elapsedMs": 25.07166699999999,
+            "cpuMs": 9.674,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.026251000000002
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 6.4833340000000135
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "workload": "archive-256",
+      "parameters": {
+        "BENCH_SEGMENTS": "256",
+        "BENCH_TRACE_IO": "1"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "segments": 256,
+        "samples": 7,
+        "median": {
+          "elapsedMs": 1337.0987909999985,
+          "cpuMs": 231.543,
+          "directoryEnumerations": 83
+        },
+        "results": [
+          {
+            "elapsedMs": 1548.845625,
+            "cpuMs": 234.51,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 90.29283400000031
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1331.1298849999946
+              }
+            }
+          },
+          {
+            "elapsedMs": 1404.3248749999998,
+            "cpuMs": 265.724,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 111.7492930000003
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1148.0738730000007
+              }
+            }
+          },
+          {
+            "elapsedMs": 1233.279708,
+            "cpuMs": 248.758,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 111.98562499999935
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 992.6785290000025
+              }
+            }
+          },
+          {
+            "elapsedMs": 1271.6404169999996,
+            "cpuMs": 225.481,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 84.7236669999993
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1073.491489999994
+              }
+            }
+          },
+          {
+            "elapsedMs": 1237.7929169999989,
+            "cpuMs": 221.237,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 107.17941599999904
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1020.468836999994
+              }
+            }
+          },
+          {
+            "elapsedMs": 1352.7709999999988,
+            "cpuMs": 231.543,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 104.54079099999944
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1129.1551190000137
+              }
+            }
+          },
+          {
+            "elapsedMs": 1337.0987909999985,
+            "cpuMs": 200.655,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 96.71003999999812
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1141.5299169999817
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "workload": "flush-10000",
+      "parameters": {
+        "BENCH_EVENTS": "10000"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "events": 10000,
+        "evidenceRows": 0,
+        "samples": 15,
+        "bytes": 5255564,
+        "median": {
+          "elapsedMs": 50.872000000000014,
+          "cpuMs": 51.582
+        },
+        "results": [
+          {
+            "elapsedMs": 51.82762500000001,
+            "cpuMs": 52.624
+          },
+          {
+            "elapsedMs": 50.77291700000001,
+            "cpuMs": 51.53
+          },
+          {
+            "elapsedMs": 50.69437499999998,
+            "cpuMs": 51.426
+          },
+          {
+            "elapsedMs": 50.872000000000014,
+            "cpuMs": 51.582
+          },
+          {
+            "elapsedMs": 50.96191699999997,
+            "cpuMs": 51.97
+          },
+          {
+            "elapsedMs": 51.03974999999991,
+            "cpuMs": 51.781
+          },
+          {
+            "elapsedMs": 50.873958000000016,
+            "cpuMs": 51.765
+          },
+          {
+            "elapsedMs": 55.14658300000008,
+            "cpuMs": 66.308
+          },
+          {
+            "elapsedMs": 52.25537500000007,
+            "cpuMs": 52.808
+          },
+          {
+            "elapsedMs": 50.00774999999999,
+            "cpuMs": 50.728
+          },
+          {
+            "elapsedMs": 49.709959000000026,
+            "cpuMs": 50.459
+          },
+          {
+            "elapsedMs": 49.605500000000006,
+            "cpuMs": 50.371
+          },
+          {
+            "elapsedMs": 49.727666,
+            "cpuMs": 50.315
+          },
+          {
+            "elapsedMs": 49.50987500000008,
+            "cpuMs": 50.225
+          },
+          {
+            "elapsedMs": 51.39279199999987,
+            "cpuMs": 52.098
+          }
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "workload": "flush-50000",
+      "parameters": {
+        "BENCH_EVENTS": "50000"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "events": 50000,
+        "evidenceRows": 0,
+        "samples": 15,
+        "bytes": 26455564,
+        "median": {
+          "elapsedMs": 261.69212500000003,
+          "cpuMs": 288.757
+        },
+        "results": [
+          {
+            "elapsedMs": 265.101625,
+            "cpuMs": 293.285
+          },
+          {
+            "elapsedMs": 267.4395410000002,
+            "cpuMs": 270.219
+          },
+          {
+            "elapsedMs": 265.07341699999984,
+            "cpuMs": 292.717
+          },
+          {
+            "elapsedMs": 259.78825000000006,
+            "cpuMs": 262.569
+          },
+          {
+            "elapsedMs": 261.69212500000003,
+            "cpuMs": 290.245
+          },
+          {
+            "elapsedMs": 257.92708300000004,
+            "cpuMs": 260.693
+          },
+          {
+            "elapsedMs": 261.71129199999996,
+            "cpuMs": 288.757
+          },
+          {
+            "elapsedMs": 257.6640419999999,
+            "cpuMs": 260.701
+          },
+          {
+            "elapsedMs": 281.35462499999994,
+            "cpuMs": 308.337
+          },
+          {
+            "elapsedMs": 260.9571659999997,
+            "cpuMs": 263.876
+          },
+          {
+            "elapsedMs": 261.25466700000015,
+            "cpuMs": 289.743
+          },
+          {
+            "elapsedMs": 259.3111250000002,
+            "cpuMs": 262.237
+          },
+          {
+            "elapsedMs": 262.7397920000003,
+            "cpuMs": 292.571
+          },
+          {
+            "elapsedMs": 258.1549580000001,
+            "cpuMs": 260.927
+          },
+          {
+            "elapsedMs": 263.62058400000024,
+            "cpuMs": 290.949
+          }
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "workload": "query-5000",
+      "parameters": {
+        "BENCH_RECORDS": "5000",
+        "BENCH_PAYLOAD_BYTES": "16384"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "records": 5000,
+        "payloadBytes": 16384,
+        "samples": 15,
+        "median": {
+          "elapsedMs": 55.761957999999936,
+          "cpuMs": 80.126,
+          "directoryEnumerations": 1
+        },
+        "results": [
+          {
+            "elapsedMs": 56.792958,
+            "cpuMs": 84.416,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.03866700000003,
+            "cpuMs": 81.465,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.92066699999998,
+            "cpuMs": 83.861,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.57854099999997,
+            "cpuMs": 80.284,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.90716699999996,
+            "cpuMs": 79.657,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.367834000000016,
+            "cpuMs": 79.702,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.107417000000055,
+            "cpuMs": 80.976,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56,
+            "cpuMs": 80.192,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.761957999999936,
+            "cpuMs": 79.101,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.551417000000015,
+            "cpuMs": 79.631,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.32183300000008,
+            "cpuMs": 80.273,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.446874999999864,
+            "cpuMs": 80.126,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.07304199999999,
+            "cpuMs": 79.087,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.09279199999992,
+            "cpuMs": 80.081,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.626166999999896,
+            "cpuMs": 79.601,
+            "directoryEnumerations": 1
+          }
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "workload": "archive-empty",
+      "parameters": {
+        "BENCH_SEGMENTS": "0",
+        "BENCH_TRACE_IO": "1"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "segments": 0,
+        "samples": 7,
+        "median": {
+          "elapsedMs": 27.930207999999993,
+          "cpuMs": 8.734,
+          "directoryEnumerations": 81
+        },
+        "results": [
+          {
+            "elapsedMs": 23.374916,
+            "cpuMs": 8.734,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 0.9137479999999982
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 9.181833000000012
+              }
+            }
+          },
+          {
+            "elapsedMs": 27.74945799999999,
+            "cpuMs": 8.05,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 0.9357920000000206
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 9.871583000000015
+              }
+            }
+          },
+          {
+            "elapsedMs": 27.307958999999983,
+            "cpuMs": 8.314,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.0048329999999908
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 9.725084000000038
+              }
+            }
+          },
+          {
+            "elapsedMs": 30.881833,
+            "cpuMs": 9.243,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.0943739999999877
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 8.879499000000038
+              }
+            }
+          },
+          {
+            "elapsedMs": 31.993209000000007,
+            "cpuMs": 8.105,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.151249000000007
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 10.087580000000031
+              }
+            }
+          },
+          {
+            "elapsedMs": 28.228792,
+            "cpuMs": 10.388,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.32408300000003
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 9.318790999999976
+              }
+            }
+          },
+          {
+            "elapsedMs": 27.930207999999993,
+            "cpuMs": 11.548,
+            "directoryEnumerations": 81,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 1.309208999999953
+              },
+              "fsyncSync": {
+                "calls": 6,
+                "elapsedMs": 8.612831999999969
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "workload": "archive-256",
+      "parameters": {
+        "BENCH_SEGMENTS": "256",
+        "BENCH_TRACE_IO": "1"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "segments": 256,
+        "samples": 7,
+        "median": {
+          "elapsedMs": 1478.4346669999995,
+          "cpuMs": 266.212,
+          "directoryEnumerations": 83
+        },
+        "results": [
+          {
+            "elapsedMs": 1560.321459,
+            "cpuMs": 274.243,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 113.77958400000034
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1306.4422809999962
+              }
+            }
+          },
+          {
+            "elapsedMs": 1471.3603750000007,
+            "cpuMs": 271.013,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 111.37658399999964
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1212.092466000001
+              }
+            }
+          },
+          {
+            "elapsedMs": 1478.4346669999995,
+            "cpuMs": 215.413,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 111.1865829999997
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1267.5944250000193
+              }
+            }
+          },
+          {
+            "elapsedMs": 1524.040833,
+            "cpuMs": 289.25,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 116.06958400000076
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1268.8376130000033
+              }
+            }
+          },
+          {
+            "elapsedMs": 1446.1624160000001,
+            "cpuMs": 228.195,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 90.70820700000058
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1223.878325000006
+              }
+            }
+          },
+          {
+            "elapsedMs": 1312.859708,
+            "cpuMs": 265.831,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 112.20287499999904
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1059.5475300000016
+              }
+            }
+          },
+          {
+            "elapsedMs": 1594.9917499999992,
+            "cpuMs": 266.212,
+            "directoryEnumerations": 83,
+            "io": {
+              "cpSync": {
+                "calls": 4,
+                "elapsedMs": 113.23125000000073
+              },
+              "fsyncSync": {
+                "calls": 518,
+                "elapsedMs": 1339.2126310000276
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "workload": "flush-10000",
+      "parameters": {
+        "BENCH_EVENTS": "10000"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "events": 10000,
+        "evidenceRows": 0,
+        "samples": 15,
+        "bytes": 5255564,
+        "median": {
+          "elapsedMs": 50.683875,
+          "cpuMs": 51.434
+        },
+        "results": [
+          {
+            "elapsedMs": 50.683875,
+            "cpuMs": 51.426
+          },
+          {
+            "elapsedMs": 51.003916000000004,
+            "cpuMs": 51.795
+          },
+          {
+            "elapsedMs": 50.89270799999997,
+            "cpuMs": 51.631
+          },
+          {
+            "elapsedMs": 50.71983400000005,
+            "cpuMs": 51.434
+          },
+          {
+            "elapsedMs": 50.950874999999996,
+            "cpuMs": 51.921
+          },
+          {
+            "elapsedMs": 50.73779200000001,
+            "cpuMs": 51.464
+          },
+          {
+            "elapsedMs": 50.561916999999994,
+            "cpuMs": 51.487
+          },
+          {
+            "elapsedMs": 54.91766699999994,
+            "cpuMs": 65.291
+          },
+          {
+            "elapsedMs": 52.37049999999999,
+            "cpuMs": 52.999
+          },
+          {
+            "elapsedMs": 50.24962500000004,
+            "cpuMs": 50.975
+          },
+          {
+            "elapsedMs": 50.291582999999946,
+            "cpuMs": 51.048
+          },
+          {
+            "elapsedMs": 49.63154099999997,
+            "cpuMs": 50.352
+          },
+          {
+            "elapsedMs": 49.751041999999984,
+            "cpuMs": 50.323
+          },
+          {
+            "elapsedMs": 50.19204100000002,
+            "cpuMs": 50.904
+          },
+          {
+            "elapsedMs": 50.1524159999999,
+            "cpuMs": 50.854
+          }
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "workload": "flush-50000",
+      "parameters": {
+        "BENCH_EVENTS": "50000"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "events": 50000,
+        "evidenceRows": 0,
+        "samples": 15,
+        "bytes": 26455564,
+        "median": {
+          "elapsedMs": 262.17266700000073,
+          "cpuMs": 289.478
+        },
+        "results": [
+          {
+            "elapsedMs": 263.4945829999999,
+            "cpuMs": 291.502
+          },
+          {
+            "elapsedMs": 260.44525,
+            "cpuMs": 263.359
+          },
+          {
+            "elapsedMs": 262.169167,
+            "cpuMs": 290.025
+          },
+          {
+            "elapsedMs": 258.94329199999993,
+            "cpuMs": 261.684
+          },
+          {
+            "elapsedMs": 261.7845419999999,
+            "cpuMs": 289.478
+          },
+          {
+            "elapsedMs": 258.7716660000001,
+            "cpuMs": 261.575
+          },
+          {
+            "elapsedMs": 264.8576670000002,
+            "cpuMs": 292.45
+          },
+          {
+            "elapsedMs": 259.8109589999999,
+            "cpuMs": 262.798
+          },
+          {
+            "elapsedMs": 262.9392499999999,
+            "cpuMs": 289.783
+          },
+          {
+            "elapsedMs": 259.60358399999996,
+            "cpuMs": 262.53
+          },
+          {
+            "elapsedMs": 265.4747919999995,
+            "cpuMs": 291.485
+          },
+          {
+            "elapsedMs": 262.17266700000073,
+            "cpuMs": 265.1
+          },
+          {
+            "elapsedMs": 265.1391249999997,
+            "cpuMs": 293.848
+          },
+          {
+            "elapsedMs": 265.12774999999965,
+            "cpuMs": 267.861
+          },
+          {
+            "elapsedMs": 267.1700840000003,
+            "cpuMs": 293.89
+          }
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "workload": "query-5000",
+      "parameters": {
+        "BENCH_RECORDS": "5000",
+        "BENCH_PAYLOAD_BYTES": "16384"
+      },
+      "data": {
+        "node": "v26.10.0",
+        "platform": "darwin/arm64",
+        "records": 5000,
+        "payloadBytes": 16384,
+        "samples": 15,
+        "median": {
+          "elapsedMs": 55.60895900000003,
+          "cpuMs": 80.616,
+          "directoryEnumerations": 1
+        },
+        "results": [
+          {
+            "elapsedMs": 56.712624999999946,
+            "cpuMs": 83.56,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.26608399999998,
+            "cpuMs": 81.707,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.48570900000004,
+            "cpuMs": 80.717,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.60895900000003,
+            "cpuMs": 81.122,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.084790999999996,
+            "cpuMs": 80.438,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.286249999999995,
+            "cpuMs": 81.489,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.17770800000005,
+            "cpuMs": 81.015,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.530958000000055,
+            "cpuMs": 79.973,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.89179100000001,
+            "cpuMs": 80.66,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.48041699999999,
+            "cpuMs": 79.743,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.86520799999994,
+            "cpuMs": 80.471,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 56.131417000000056,
+            "cpuMs": 80.616,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.30579200000011,
+            "cpuMs": 80.026,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.480790999999954,
+            "cpuMs": 80.28,
+            "directoryEnumerations": 1
+          },
+          {
+            "elapsedMs": 55.59004199999981,
+            "cpuMs": 80.512,
+            "directoryEnumerations": 1
+          }
+        ]
+      }
+    }
+  ],
+  "measurementNotes": [
+    "The initial round-1 archive measurements overlapped validation and were discarded; replacements were run without other task commands. All retained timing runs were sequential.",
+    "No production code changed; this is a current baseline, not a new optimization comparison.",
+    "BENCH_TRACE_IO wraps cpSync/fsyncSync for attribution; all original operations still execute."
+  ]
+}
