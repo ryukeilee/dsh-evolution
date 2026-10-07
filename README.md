@@ -4,11 +4,11 @@
 
 本仓库是 `dsh-evolution` 的**唯一开发、测试与发布来源**；旧的 DSH 环境只作为历史迁移源和回滚基线，不再维护插件源码。
 
-- 包版本：`0.2.0-rc.2`（RC，非 npm 发布；预发布标签不会出现在 npm 上）
+- 包版本：`0.2.0-rc.3`（本地候选，未发布）
 - 支持的 DSH 版本范围：**`0.2.0-rc.2` / `0.2.1-alpha.1`**（精确列表）。`package.json` 的 `peerDependencies` 逐一列出经过真实安装验收的宿主版本，不通过 exemption 伪装其它版本兼容；列表之外的宿主由 `host.version` 报 `blocked`。
 - Node：`^22.19.0 || >=24.0.0`（在当前验证环境为 `v26.10.0`，pnpm `11.26.0`）。
 
-> 状态：官方 `0.2.0-rc.2` 与 `0.2.1-alpha.1` 上的完整验收均已完成并通过（干净 runtime 安装 / 官方 CLI 插件安装 / 启动 / 9 个工具注册 / 核心流程 inspect→propose→trial→measure→revert 且 disposer 恢复基线 / CLI 与最终 doctor / promotion 到 canary 并跨重启存活 / startup canary 提交 / canary regression 回滚 / 禁用启用 / 卸载重装 / 数据保留 / 不可兼容宿主阻断）。验收由本仓库的脚本执行，证据已入库：`docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json`；复现方式、产物与**尚未消除的发布风险**见 `RELEASE.md`。本仓库的验证入口是 `npm test`，用户侧的可复现验证入口是 `scripts/doctor.mjs`（见第 5 节）。这是经维护者授权发布的 RC，仍不是生产发布声明。
+> 状态：官方 `0.2.0-rc.2` 与 `0.2.1-alpha.1` 上的完整验收均已完成并通过（干净 runtime 安装 / 官方 CLI 插件安装 / 启动 / 9 个工具注册 / 核心流程 inspect→propose→trial→measure→revert 且 disposer 恢复基线 / CLI 与最终 doctor / promotion 到 canary 并跨重启存活 / startup canary 提交 / canary regression 回滚 / 禁用启用 / 卸载重装 / 数据保留 / 不可兼容宿主阻断）。验收由本仓库的脚本执行，证据已入库：`docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json`；复现方式、产物与**尚未消除的发布风险**见 `RELEASE.md`。本仓库的验证入口是 `npm test`，用户侧的可复现验证入口是 `scripts/doctor.mjs`（见第 5 节）。当前 `0.2.0-rc.3` 仅在本地构建和验收，未创建 tag 或公开发布。
 
 ## 1. 安装 DSH 与插件
 
@@ -19,7 +19,7 @@ npx @deepseek-ai/dsh web            # 官方推荐
 # 或源码：pnpm install && pnpm run build
 ```
 
-本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定的候选版本是 `0.2.0-rc.2`；公开发布入口为 `v0.2.0-rc.2`。该 RC 修复两条 CodeQL high，发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新下载并验收。
+本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定的本地候选版本是 `0.2.0-rc.3`，尚未公开发布；现有公开发布入口仍为 `v0.2.0-rc.2`。该 RC 修复两条 CodeQL high，发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新下载并验收。
 
 ### 1.1 从公开 Release 安装（用户）
 
@@ -34,7 +34,7 @@ curl -fL "$RELEASE_URL/manifest.json" -o manifest.json
 gh release download v0.2.0-rc.2 --repo ryukeilee/dsh-evolution \
   --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS' --pattern 'manifest.json'
 
-# 校验：必须与 release/SHA256SUMS 一致
+# 校验：必须与本次下载的 SHA256SUMS 一致
 sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
 
 # 安装 / 升级（同一条命令；官方 CLI 负责 bundle 选择与依赖安装）
@@ -48,13 +48,15 @@ DSH_HOME=/isolated/home dsh web --no-open
 
 ### 1.2 从源码构建（贡献者）
 
+本地候选可用 `release/dsh-evolution-0.2.0-rc.3.tgz` 安装，校验信息见仓库的 `release/SHA256SUMS`；它与公开 rc.2 的下载校验信息不同。
+
 ```sh
 npm ci
 npm run release:pack     # 生成 dist/；本机构建的压缩字节受 npm 版本影响
 npm run pack:check       # 校验内容白名单、权限、发布固定点（pin）
 ```
 
-本机构建的字节**不保证**与发布产物相同（`npm pack` 的 gzip 输出随 npm 版本变化）；保证一致的是内容：用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.2.tgz --content-only` 核对内容摘要。
+本机构建的字节**不保证**与发布产物相同（`npm pack` 的 gzip 输出随 npm 版本变化）；保证一致的是内容：用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.3.tgz --content-only` 核对内容摘要。
 
 安装后官方 profile 的 `package.json` 会把 `dsh-evolution` 列入 `dsh.profile.bundles`，插件随 profile 加载，无需每 session 手工挂载 preset。
 

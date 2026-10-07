@@ -2,13 +2,13 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前候选版本：`0.2.0-rc.2`。本次经维护者明确授权，重建原同名 draft 与 tag，并在修复、安全审查、完整验收与 CI 通过后公开为 prerelease。旧 rc.2 固定点与最终在线状态记录在 `docs/evidence/rc2-release-audit.json`。
+当前本地候选版本：`0.2.0-rc.3`，用于归档索引性能优化。仅本地构建和两个官方宿主验收，未创建 tag、draft 或公开发布。现有公开 `v0.2.0-rc.2` 保持不变，其固定点与在线状态记录在 `docs/evidence/rc2-release-audit.json`。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.2.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.3.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
@@ -29,11 +29,11 @@
 ## 2. 校验命令
 
 ```sh
-# 当前候选（v0.2.0-rc.2，仓库内容）
+# 当前本地候选（0.2.0-rc.3，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
-node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.2   # tag -> commit -> 固定点 -> 工作树
+# 尚未创建 v0.2.0-rc.3 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
 # 本仓库的 release/ 已改为固定 0.2.0-rc.2，不再覆盖旧版本）
@@ -48,7 +48,7 @@ shasum -a 256 -c SHA256SUMS                    # Linux：sha256sum --check SHA25
 ```sh
 git clone <this-repo> && cd dsh-evolution
 npm ci                 # 严格按 package-lock.json 安装
-npm test               # 163/163（基线 157 + 6 条风险回归）
+npm test               # 164/164（含归档索引兼容回归）
 npm run pack:check     # 16 项检查
 npm run release:verify # 固定产物与发布固定点一致
 node --version         # 需要 ^22.19.0 || >=24.0.0

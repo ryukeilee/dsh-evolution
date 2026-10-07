@@ -149,6 +149,30 @@ test("restart rebuilds a sealed entry after a rotation/index crash", async () =>
   }
 });
 
+test("legacy index entries infer collections and ignore unknown collections on each load", async () => {
+  const home = await mkdtemp(join(tmpdir(), "dsh-archive-index-legacy-"));
+  try {
+    const memory = await newMemory(home, { archiveMaxBytes: 256 });
+    for (let i = 1; i <= 8; i++) await memory.recordCycle({ id: `legacy-cycle-${i}`, status: "observed" });
+    const root = join(home, ".dockyard-dsh");
+    const indexPath = join(root, "state.json.evolution-archive-index.json");
+    const index = JSON.parse(await readFile(indexPath, "utf8"));
+    for (const entry of index.segments) delete entry.collection;
+    index.segments.push({ collection: "unknown", file: archiveName("cycles"), sealed: false });
+    await writeFile(indexPath, JSON.stringify(index));
+    const reloaded = await newMemory(home, { archiveMaxBytes: 256 });
+    assert.equal(reloaded.history("cycles").length, 8);
+    await assertIndexMatches(home);
+    // A subsequent instance must discover segments created after the lookup.
+    for (let i = 9; i <= 12; i++) await reloaded.recordCycle({ id: `legacy-cycle-${i}`, status: "observed" });
+    const again = await newMemory(home, { archiveMaxBytes: 256 });
+    assert.equal(again.history("cycles").length, 12);
+    await assertIndexMatches(home);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
 test("stale index referencing rotated-away segments and wrong checksums is reconciled on load", async () => {
   const home = await mkdtemp(join(tmpdir(), "dsh-archive-index-stale-live-"));
   try {

@@ -6,6 +6,16 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.3 — local performance candidate
+
+- Reuse archive directory lookups within one index load on the official domain
+  observation path; retain fresh discovery on every subsequent load.
+- Preserve archive reconciliation, checksums, MAC verification, fsync and
+  pending/final transaction semantics; no official DSH source changes.
+- On the reproducible 256-segment workload: median observation latency -42.61%,
+  process CPU time -79.62%, directory enumeration calls -92.49%.
+- Built and accepted locally only; no tag, npm or GitHub Release publication.
+
 ## 0.2.0-rc.2 — release candidate
 
 Supported hosts: DSH `0.2.0-rc.2` and `0.2.1-alpha.1` (exact alternatives),
