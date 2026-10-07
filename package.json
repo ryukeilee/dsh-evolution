@@ -61,5 +61,13 @@
   ],
   "bin": {
     "dsh-evolution-doctor": "scripts/doctor.mjs"
+  },
+  "overrides": {
+    "@deepseek-ai/dsh-mcp-client": {
+      "@modelcontextprotocol/client": "2.2.0"
+    },
+    "@deepseek-ai/libreoffice-kit": {
+      "fflate": "0.8.3"
+    }
   }
 }
