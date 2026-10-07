@@ -60,5 +60,16 @@ node "$task_baseline_dir/scripts/benchmarks/domain-replay.mjs"
 
 新增官方领域回归覆盖已提交重复事件仍认证、篡改、错误 writer 和合法签名
 同 ID 冲突拒绝。原有单事件提交、pending 恢复、重启去重和只读 DTO 测试保留。
-最终完整测试、打包校验及双宿主验收结果随本地固定点更新记录。
+最终 `npm test` 165/165 通过；`pack:check` 16 项全部通过，
+`release:verify` 校验 48 个条目及全部字节/内容摘要通过。
+官方 DSH `0.2.0-rc.2`、`0.2.1-alpha.1` 各 21/21 步通过，
+覆盖核心流程、禁用启用、卸载重装与数据保留、升级回滚、promotion 跨重启
+和 canary 回滚；原始证据见 `docs/evidence/`。
+
+源码提交：`3a9b26270a59c7b1ab062eb36f627b64b90fd52a`。
+本地未发布 rc.3 产物：`release/dsh-evolution-0.2.0-rc.3.tgz`。
+SHA-256：`a7b2cb918d2ada9092480399da47f0ee28c77d0dadfdc09c5398549946659e0d`。
+没有推送、创建 tag 或外部发布。首次打包遇到默认 npm 缓存 `EPERM`，
+使用临时缓存后成功；首次沙箱宿主 plugin add 遇到 `fetch failed`，
+获准执行后在新临时 home 完成完整验收，没有把失败记录当作通过。
 所有负载和宿主 home 均为临时合成数据，未访问真实用户 Evolution 数据。
