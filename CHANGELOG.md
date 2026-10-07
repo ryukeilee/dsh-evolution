@@ -8,6 +8,9 @@ you install before upgrading DSH.
 
 ## 0.2.0-rc.3 — local performance candidate
 
+- 在每个 agent step / 工具结束的事件同步中，移除重复 JSON 解析，并仅为
+  未提交事件构造 DTO；全部历史记录仍逐条验证 MAC、writer 和同 ID 冲突。
+- 可复现多规模数据与适用范围见 `docs/performance/domain-replay.md`。
 - Reuse archive directory lookups within one index load on the official domain
   observation path; retain fresh discovery on every subsequent load.
 - Preserve archive reconciliation, checksums, MAC verification, fsync and

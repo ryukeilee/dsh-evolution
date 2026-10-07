@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { openDomainStorage, projectObservation, evolutionDomainSpec } from '../../lib/domain-storage.js';
-import { EvolutionEventBridge } from '../../lib/orchestrator.js';
+import { EvolutionEventBridge, signEventBridgeEnvelope } from '../../lib/orchestrator.js';
 // Official storage packages are dev dependencies of this repo, so the domain
 // integration is exercised against the real official implementation.
 const { DomainFacility } = await import('@deepseek-ai/dsh-storage-domain');
@@ -54,6 +54,28 @@ test('pending archive commit resumes without incrementing canary generation', as
   assert.equal(restarted.query('lineage').count, 1);
   assert.equal((await restarted.replay()).duplicates, 1);
   await restarted.close(); await f.backend.close(); fs.rmSync(f.root, { recursive: true });
+});
+test('committed duplicates still authenticate and reject conflicting signed IDs', async () => {
+  for (const mode of ['tampered', 'conflict', 'writer']) {
+    const f = await fixture();
+    const port = await openDomainStorage(f.ctx, f.config);
+    f.bridge.emit('trial-completed', { id: 'exp-safe', proposal: { target: 'plugin:safe' } });
+    assert.equal((await port.flush()).applied, 1);
+    const original = JSON.parse(fs.readFileSync(f.config.eventBridgePath, 'utf8').trim());
+    assert.equal((await port.flush()).duplicates, 1);
+    let changed;
+    if (mode === 'tampered') changed = { ...original, event: { ...original.event, status: 'forged' } };
+    else changed = signEventBridgeEnvelope({ ...original.event, status: 'changed' }, {
+      key: f.config.eventBridgeKey, sequence: original.sequence,
+      writer: mode === 'writer' ? 'other-writer' : original.writer,
+    });
+    fs.writeFileSync(f.config.eventBridgePath, JSON.stringify(changed) + '\n');
+    const expected = mode === 'conflict' ? /E_DOMAIN_EVENT_ID_CONFLICT/ : /E_DOMAIN_EVENT_AUTH/;
+    await assert.rejects(port.flush(), expected);
+    await assert.rejects(port.close(), expected);
+    await f.backend.close();
+    fs.rmSync(f.root, { recursive: true });
+  }
 });
 test('untrusted envelope rejected, close propagates failure; schema and safe DTO reject raw data', async () => {
   const f = await fixture();
