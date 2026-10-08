@@ -138,3 +138,16 @@ inspect、measure、cleanup 和第二次 Trial 均不重建基线。持续存在
 自行恢复的瞬态变化不可见；未扩展为合作式代码的完整效果追踪或安全沙箱。
 探索记录中的 Node/Linux/发布验证缺口以最终审计补充，长期生产负载、
 独立生产指标、启动失败分支释放锁的既有行为及其它产品边界仍未改变。
+
+### 发布收口结果
+
+`v0.2.0-rc.5` 已于 2026-10-08 公开为 GitHub prerelease（非 draft）。
+Node `22.19.0` / `24.21.0` 各 212/212，零跳过；发布前、Linux CI、
+发布后两个精确官方宿主均各 21/21，最终 doctor `healthy`。发布后的
+验收使用匿名下载的固定字节，以及全新的官方 runtime/home。
+
+PR 与 main CI、CodeQL、tag/sourceCommit 实际包内容、发布 workflow、
+draft 附件和匿名下载校验全部通过。全部历史 tag 与资产 ID、摘要、
+更新时间保持不变；原 rc.4 tarball 未修改。完整测试输出、Linux 和
+发布后宿主证据及来源/资产摘要见 `docs/evidence/rc5-release-audit.json`。
+原始探索失败记录及上节产品边界继续保留。
