@@ -121,7 +121,8 @@ jobs:
           fi
           # No --clobber: an asset name that already exists is an error, so a
           # second run can never replace published bytes.
-          gh release upload "$tag" release/dsh-evolution-*.tgz release/SHA256SUMS release/manifest.json
+          artifact="$(node --input-type=module -e 'import { readReleaseManifest } from "./scripts/release/release-lib.mjs"; console.log(readReleaseManifest().filename)')"
+          gh release upload "$tag" "release/$artifact" release/SHA256SUMS release/manifest.json
       - name: Verify the assets now attached to the release
         if: ${{ github.event.inputs.dry_run != 'true' }}
         env:
@@ -132,9 +133,10 @@ jobs:
           mkdir -p /tmp/uploaded
           # Download the bytes GitHub is now serving and re-verify them against
           # the committed pin, so a partly failed or mismatched upload is caught.
-          gh release download "$tag" --dir /tmp/uploaded --pattern 'dsh-evolution-*.tgz' --clobber
+          artifact="$(node --input-type=module -e 'import { readReleaseManifest } from "./scripts/release/release-lib.mjs"; console.log(readReleaseManifest().filename)')"
+          gh release download "$tag" --dir /tmp/uploaded --pattern "$artifact" --clobber
           gh release download "$tag" --dir /tmp/uploaded --pattern 'SHA256SUMS' --clobber
           gh release download "$tag" --dir /tmp/uploaded --pattern 'manifest.json' --clobber
-          node scripts/release/verify-artifact.mjs /tmp/uploaded/dsh-evolution-*.tgz
+          node scripts/release/verify-artifact.mjs "/tmp/uploaded/$artifact"
           diff -u release/SHA256SUMS /tmp/uploaded/SHA256SUMS
           diff -u release/manifest.json /tmp/uploaded/manifest.json

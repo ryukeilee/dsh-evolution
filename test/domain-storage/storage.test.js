@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { openDomainStorage, projectObservation, evolutionDomainSpec } from '../../lib/domain-storage.js';
 import { EvolutionEventBridge, signEventBridgeEnvelope } from '../../lib/orchestrator.js';
+import { EvolutionMemory } from '../../lib/dockyard-domain/memory.js';
 // Official storage packages are dev dependencies of this repo, so the domain
 // integration is exercised against the real official implementation.
 const { DomainFacility } = await import('@deepseek-ai/dsh-storage-domain');
@@ -17,6 +18,52 @@ async function fixture() {
   const config = { presetDir: root, eventBridgePath: path.join(root, 'execution-events.jsonl'), eventBridgeKey: 'b'.repeat(64) };
   return { root, ctx, config, backend, bridge: new EvolutionEventBridge({ file: config.eventBridgePath, key: config.eventBridgeKey }) };
 }
+test('metadata queries match the previous window path without cloning payloads', async () => {
+  const f = await fixture();
+  const collections = ['cycles', 'observations', 'proposals', 'experiments', 'promotions', 'outcomes', 'lineage', 'knowledge'];
+  const root = path.join(f.root, 'dockyard');
+  fs.mkdirSync(root);
+  const records = [
+    { id: 'valid:1', status: 'observed', eventType: 'safe/type', recordedAt: '2026-08-26T00:00:00Z' },
+    { id: '<unsafe>', status: 'bad value', eventType: 'x'.repeat(161), recordedAt: 'invalid' },
+    { status: null, recordedAt: ['2026-08-26T00:00:00Z'] },
+    { id: 'valid:1', status: 'updated', recordedAt: '2026-08-25T00:00:00Z' },
+    { id: 'deleted', __evolutionTombstone: 1 },
+  ].map(row => ({ ...row, evidence: { payload: 'x'.repeat(1024 * 1024) } }));
+  for (const collection of collections) fs.writeFileSync(path.join(root, `state.json.${collection}-archive.jsonl`), records.map(row => JSON.stringify(row)).join('\n') + '\n{"torn":');
+  let port;
+  const originalWindow = EvolutionMemory.prototype.historyWindow;
+  const originalClone = globalThis.structuredClone;
+  try {
+    port = await openDomainStorage(f.ctx, f.config);
+    for (const collection of collections) {
+      for (const limit of [undefined, 1, 2.5, 0, -1, 50, 100, NaN, Infinity]) {
+        EvolutionMemory.prototype.historyWindow = function (name, size) { return originalWindow.call(this, name, size); };
+        const expected = port.query(collection, limit);
+        EvolutionMemory.prototype.historyWindow = originalWindow;
+        let clonedPayloads = 0;
+        globalThis.structuredClone = value => {
+          if (value?.evidence) clonedPayloads++;
+          return originalClone(value);
+        };
+        const actual = port.query(collection, limit);
+        globalThis.structuredClone = originalClone;
+        assert.deepEqual(actual, expected);
+        assert.equal(clonedPayloads, 0);
+        const nested = actual.entries.find(row => Array.isArray(row.recordedAt));
+        if (nested) nested.recordedAt[0] = 'changed';
+        assert.deepEqual(port.query(collection, limit), expected);
+      }
+    }
+    assert.throws(() => port.query('unknown'), /E_DOMAIN_QUERY_COLLECTION/);
+  } finally {
+    EvolutionMemory.prototype.historyWindow = originalWindow;
+    globalThis.structuredClone = originalClone;
+    if (port) await port.close();
+    await f.backend.close();
+    fs.rmSync(f.root, { recursive: true });
+  }
+});
 test('official domain: single-event batch, durable replay, restart, bounded read-only projection', async () => {
   const f = await fixture();
   let port = await openDomainStorage(f.ctx, f.config);

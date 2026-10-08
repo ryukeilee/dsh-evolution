@@ -1,0 +1,409 @@
+{
+  "status": "final-local-candidate-validated",
+  "version": "0.2.0-rc.4",
+  "optimizationCommit": "c711f3b",
+  "sourceCommit": "1ae5df0b519ed6c54c920cc7ff46b1a56e4dc652",
+  "productionCodeUnchangedFromFifthRound": true,
+  "pin": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.4",
+    "filename": "dsh-evolution-0.2.0-rc.4.tgz",
+    "sha256": "57f09a0f8ab1c0543d5bc1bf54aca5296960d2acf3edc61950f255580e99a4ff",
+    "contentSha256": "b11a085ed330dc449e51e48017df8709b7691ed980f8cf6b55f0c5b0fce7741a",
+    "entries": 50,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.10.0",
+      "npm": "11.19.1",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "1ae5df0b519ed6c54c920cc7ff46b1a56e4dc652",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json"
+    ]
+  },
+  "validation": {
+    "tests": {
+      "total": 205,
+      "passed": 205,
+      "failed": 0,
+      "skipped": 0
+    },
+    "packCheck": {
+      "passed": 16,
+      "failed": 0
+    },
+    "releaseVerify": true,
+    "checksumVerify": true,
+    "requireSourceCommitProvenance": true,
+    "tagCreated": false,
+    "externalPublication": false,
+    "releaseWorkflowAssetSelection": "executed with local gh substitute and historical tarball; exact upload/download and actual downloaded bytes verified"
+  },
+  "validationAttempts": [
+    {
+      "attempt": 1,
+      "result": "failed",
+      "reason": "full tests started while host evidence refresh was in progress; old workflow assertions still required wildcard paths; not used as final evidence"
+    },
+    {
+      "attempt": 2,
+      "tests": 205,
+      "passed": 204,
+      "failed": 1,
+      "reason": "new local gh substitute used require under type=module; fixed to ESM imports"
+    },
+    {
+      "attempt": 3,
+      "tests": 205,
+      "passed": 205,
+      "failed": 0
+    }
+  ],
+  "hosts": {
+    "0.2.0-rc.2": {
+      "ok": true,
+      "stepsPassed": 21,
+      "finalDoctor": {
+        "name": "doctor-final",
+        "at": "2026-10-08T04:55:57.398Z",
+        "ok": true,
+        "status": "healthy",
+        "exitCode": 0,
+        "findings": [
+          {
+            "id": "runtime.capabilities",
+            "level": "not-evaluated",
+            "summary": "Live Cordis capabilities are not observable outside a running host session."
+          },
+          {
+            "id": "runtime.registration",
+            "level": "not-evaluated",
+            "summary": "Live tool registration is not observable outside a running host session."
+          },
+          {
+            "id": "runtime.internal-api",
+            "level": "not-evaluated",
+            "summary": "Introspection probes were not exercised outside a running host session."
+          }
+        ]
+      },
+      "evidence": "docs/evidence/dsh-0.2.0-rc.2.json"
+    },
+    "0.2.1-alpha.1": {
+      "ok": true,
+      "stepsPassed": 21,
+      "finalDoctor": {
+        "name": "doctor-final",
+        "at": "2026-10-08T04:55:56.934Z",
+        "ok": true,
+        "status": "healthy",
+        "exitCode": 0,
+        "findings": [
+          {
+            "id": "runtime.capabilities",
+            "level": "not-evaluated",
+            "summary": "Live Cordis capabilities are not observable outside a running host session."
+          },
+          {
+            "id": "runtime.registration",
+            "level": "not-evaluated",
+            "summary": "Live tool registration is not observable outside a running host session."
+          },
+          {
+            "id": "runtime.internal-api",
+            "level": "not-evaluated",
+            "summary": "Introspection probes were not exercised outside a running host session."
+          }
+        ]
+      },
+      "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json"
+    }
+  },
+  "performance": {
+    "diagnostics": {
+      "cpuMs": {
+        "baseline": 77.442,
+        "candidate": 46.114,
+        "reductionPercent": 40.45350068438315
+      },
+      "elapsedMs": {
+        "baseline": 60.310999999999694,
+        "candidate": 39.038082999999915,
+        "reductionPercent": 35.27203495216442
+      },
+      "sampledAllocationBytes": {
+        "baseline": 117504011.2,
+        "candidate": 78119638.4,
+        "reductionPercent": 33.51747093379226
+      }
+    },
+    "event-bridge-evidence": {
+      "cpuMs": {
+        "baseline": 253.085,
+        "candidate": 222.496,
+        "reductionPercent": 12.086453167908019
+      },
+      "elapsedMs": {
+        "baseline": 236.79824999999983,
+        "candidate": 208.03679100000045,
+        "reductionPercent": 12.145976163252637
+      },
+      "sampledAllocationBytes": {
+        "baseline": 405630501.3333333,
+        "candidate": 337409738.6666667,
+        "reductionPercent": 16.818449905128098
+      },
+      "maxRssKiB": {
+        "baseline": 291568,
+        "candidate": 110640,
+        "reductionPercent": 62.05344893815508
+      }
+    },
+    "runtime-inspect": [
+      {
+        "path": "inspect",
+        "observations": 20,
+        "candidates": 0,
+        "iterations": 1500,
+        "beforeCpuUs": 36.52733333333333,
+        "afterCpuUs": 19.598666666666666,
+        "cpuReduction": 0.46345202679272146,
+        "beforeAllocatedBytes": 48211.253333333334,
+        "afterAllocatedBytes": 31364.613333333335,
+        "allocationReduction": 0.34943376981971563
+      },
+      {
+        "path": "registered-inspect",
+        "observations": 20,
+        "candidates": 0,
+        "iterations": 1500,
+        "beforeCpuUs": 49.29066666666667,
+        "afterCpuUs": 32.58,
+        "cpuReduction": 0.3390229387578446,
+        "beforeAllocatedBytes": 77613.70666666667,
+        "afterAllocatedBytes": 38179.573333333334,
+        "allocationReduction": 0.5080820775986647
+      },
+      {
+        "path": "inspect",
+        "observations": 20,
+        "candidates": 100,
+        "iterations": 1500,
+        "beforeCpuUs": 175.82466666666667,
+        "afterCpuUs": 85.626,
+        "cpuReduction": 0.513003484531939,
+        "beforeAllocatedBytes": 223091.41333333333,
+        "afterAllocatedBytes": 134777.28,
+        "allocationReduction": 0.3958652285795431
+      },
+      {
+        "path": "registered-inspect",
+        "observations": 20,
+        "candidates": 100,
+        "iterations": 1500,
+        "beforeCpuUs": 221.578,
+        "afterCpuUs": 141.23,
+        "cpuReduction": 0.3626172273420647,
+        "beforeAllocatedBytes": 355527.14666666667,
+        "afterAllocatedBytes": 153277.09333333332,
+        "allocationReduction": 0.5688737280108681
+      },
+      {
+        "path": "inspect",
+        "observations": 20,
+        "candidates": 1000,
+        "iterations": 500,
+        "beforeCpuUs": 1428.546,
+        "afterCpuUs": 674.108,
+        "cpuReduction": 0.5281160004648083,
+        "beforeAllocatedBytes": 1823207.7866666666,
+        "afterAllocatedBytes": 1037335.1466666666,
+        "allocationReduction": 0.4310384399118845
+      },
+      {
+        "path": "registered-inspect",
+        "observations": 20,
+        "candidates": 1000,
+        "iterations": 500,
+        "beforeCpuUs": 1801.422,
+        "afterCpuUs": 1128.768,
+        "cpuReduction": 0.373401679339988,
+        "beforeAllocatedBytes": 2884807.04,
+        "afterAllocatedBytes": 1149128.64,
+        "allocationReduction": 0.6016618705977645
+      }
+    ],
+    "runtime-signature": [
+      {
+        "path": "runtimeSignature",
+        "count": 20,
+        "iterations": 400,
+        "oldCpu": [
+          130.6725,
+          132.3525,
+          141.5675
+        ],
+        "newCpu": [
+          126.53,
+          128.195,
+          129.0175
+        ],
+        "beforeCpuUs": 132.3525,
+        "afterCpuUs": 128.195,
+        "cpuReduction": 0.03141232692997864,
+        "beforeAllocatedBytes": 215033.92,
+        "afterAllocatedBytes": 213362.88,
+        "allocationReduction": 0.007771053050607102
+      },
+      {
+        "path": "signatureEqual",
+        "count": 20,
+        "iterations": 400,
+        "oldCpu": [
+          272.5925,
+          273.1725,
+          274.6175
+        ],
+        "newCpu": [
+          270.9025,
+          271.175,
+          271.4075
+        ],
+        "beforeCpuUs": 273.1725,
+        "afterCpuUs": 271.175,
+        "cpuReduction": 0.007312229452086094,
+        "beforeAllocatedBytes": 459925.76,
+        "afterAllocatedBytes": 459068.96,
+        "allocationReduction": 0.0018629093530224683
+      },
+      {
+        "path": "runtimeSignature",
+        "count": 100,
+        "iterations": 400,
+        "oldCpu": [
+          698.115,
+          710.355,
+          715.63
+        ],
+        "newCpu": [
+          505.335,
+          511.0175,
+          518.455
+        ],
+        "beforeCpuUs": 710.355,
+        "afterCpuUs": 511.0175,
+        "cpuReduction": 0.28061673388657793,
+        "beforeAllocatedBytes": 1045998.8,
+        "afterAllocatedBytes": 875923.92,
+        "allocationReduction": 0.1625956741059359
+      },
+      {
+        "path": "signatureEqual",
+        "count": 100,
+        "iterations": 400,
+        "oldCpu": [
+          1471.385,
+          1500.86,
+          1550.9025
+        ],
+        "newCpu": [
+          1059.4925,
+          1059.775,
+          1085.79
+        ],
+        "beforeCpuUs": 1500.86,
+        "afterCpuUs": 1059.775,
+        "cpuReduction": 0.29388817078208485,
+        "beforeAllocatedBytes": 2203631.28,
+        "afterAllocatedBytes": 1879080.48,
+        "allocationReduction": 0.14727999323008334
+      },
+      {
+        "path": "runtimeSignature",
+        "count": 1000,
+        "iterations": 100,
+        "oldCpu": [
+          9831.42,
+          9881.99,
+          9908.38
+        ],
+        "newCpu": [
+          5288.08,
+          5311.71,
+          5353.27
+        ],
+        "beforeCpuUs": 9881.99,
+        "afterCpuUs": 5311.71,
+        "cpuReduction": 0.46248579486520425,
+        "beforeAllocatedBytes": 12921711.52,
+        "afterAllocatedBytes": 7826240.56,
+        "allocationReduction": 0.39433405954879264
+      },
+      {
+        "path": "signatureEqual",
+        "count": 1000,
+        "iterations": 100,
+        "oldCpu": [
+          20470.12,
+          20481.13,
+          20654.53
+        ],
+        "newCpu": [
+          11448.94,
+          11451.56,
+          11520.54
+        ],
+        "beforeCpuUs": 20481.13,
+        "afterCpuUs": 11451.56,
+        "cpuReduction": 0.44087264716351104,
+        "beforeAllocatedBytes": 27019914.48,
+        "afterAllocatedBytes": 16803289.04,
+        "allocationReduction": 0.37811464753385116
+      }
+    ],
+    "domain-query": {
+      "cpuMs": {
+        "baseline": 79.78,
+        "candidate": 67.052,
+        "reductionPercent": 15.953873151165698
+      },
+      "elapsedMs": {
+        "baseline": 67.30020800000011,
+        "candidate": 60.28987500000005,
+        "reductionPercent": 10.416510154025149
+      },
+      "heapDeltaBytes": {
+        "baseline": 157348176,
+        "candidate": 104978304,
+        "reductionPercent": 33.282795728118266
+      }
+    }
+  },
+  "rawEvidence": {
+    "docs/performance/final-diagnostics.json": "8097ba1daea4c458c0a391e79f9e12b7225f5ca915b6027c6fe12aa214810b78",
+    "docs/performance/final-domain-query-baseline.json": "8b29ed07bf729f48dca63737d41948ffda7f419d8ad7002b89745044ec93f0f6",
+    "docs/performance/final-domain-query-candidate.json": "e0eed789930a70410010000872acc8c1518bdbc882518fc6e0678eeeb38ee6b3",
+    "docs/performance/final-event-bridge-evidence.json": "a236cd0f1592925c191f48574bcfe85216e3dabd99ddc1dba937651e52190305",
+    "docs/performance/final-runtime-inspect-overlapped.json": "f5b4d901896e893fe38397e1a2c952609a0b1e44a9edbba2570d150ce66c6d06",
+    "docs/performance/final-runtime-inspect.json": "69a922c745b0e88a43ef72eb0ca7579a16fe1edf96c43ee610868538f426e5a9",
+    "docs/performance/final-runtime-signature.json": "0bc6810fa5152f2e250c764593a1b2874d2f3b8247ca31fc795242d3b0daf22f"
+  },
+  "excludedPerformanceEvidence": [
+    "docs/performance/final-runtime-inspect-overlapped.json"
+  ],
+  "limits": [
+    "Synthetic workloads on Node v26.10.0 / darwin-arm64; no universal production performance guarantee",
+    "Heap allocation sampling, instantaneous heap delta and process maxRSS are different measurements",
+    "Existing host/private API, advisory evaluator, lazy-load trial baseline race and historical rc.1 provenance risks remain; see RELEASE.md",
+    "No external CI, tag validation, publication or post-publication download executed in this local-only task"
+  ]
+}
