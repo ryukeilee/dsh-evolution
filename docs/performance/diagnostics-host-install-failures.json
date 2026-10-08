@@ -1,0 +1,80 @@
+[
+  {
+    "host": "0.2.0-rc.2",
+    "packageVersion": "0.2.0-rc.3",
+    "tarball": "../../../../tmp/dsh-doctor-dist/dsh-evolution-0.2.0-rc.3.tgz",
+    "tarballSha256": "ece1ae106d3dd9c1f43805cbd95f586b0702cdd071f92a8db07f04fb22416a85",
+    "contentSha256": "aeb42b4bb74b7cde2cfca9ea415974321ddce5630520608abf55f329c3af143f",
+    "node": "v26.10.0",
+    "platform": "darwin-arm64",
+    "work": "<work>",
+    "startedAt": "2026-10-08T04:32:37.492Z",
+    "steps": [
+      {
+        "name": "host-install",
+        "at": "2026-10-08T04:32:37.493Z",
+        "ok": true,
+        "reused": true
+      },
+      {
+        "name": "plugin-add",
+        "at": "2026-10-08T04:33:48.181Z",
+        "ok": false,
+        "code": 1,
+        "tail": [
+          "    at file:///Users/ryukeili/.local/lib/node_modules/pnpm/dist/pnpm.mjs:83632:23",
+          "    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+          "dsh: plugin command failed; diagnostics: $DSH_HOME/profiles/web/.plugin-manager/logs/operation-48qLl9/pnpm.log"
+        ]
+      }
+    ],
+    "hostVersion": "0.2.0-rc.2",
+    "hostModules": {
+      "@deepseek-ai/cordis": "4.0.4",
+      "@deepseek-ai/cordis-plugin-include": "1.0.9",
+      "@deepseek-ai/cordis-plugin-loader": "1.0.5"
+    },
+    "ok": false,
+    "error": "Error: dsh plugin add failed: [ERROR] fetch failed\n\nTypeError: fetch failed\n    at Object.processResponse (file:///Users/ryukeili/.local/lib/node_modules/pnpm/dist/pnpm.mjs:83251:20)\n    at file:///Users/ryukeili/.local/lib/node_modules/pnpm/dist/pnpm.mjs:83632:23\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\ndsh: plugin command failed; diagnostics: $DSH_HOME/profiles/web/.plugin-manager/logs/operation-48qLl9/pnpm.log\n\n    at main (file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/run-host-acceptance.mjs:271:31)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/run-host-acceptance.mjs:503:3",
+    "finishedAt": "2026-10-08T04:33:48.182Z"
+  },
+  {
+    "host": "0.2.1-alpha.1",
+    "packageVersion": "0.2.0-rc.3",
+    "tarball": "../../../../tmp/dsh-doctor-dist/dsh-evolution-0.2.0-rc.3.tgz",
+    "tarballSha256": "ece1ae106d3dd9c1f43805cbd95f586b0702cdd071f92a8db07f04fb22416a85",
+    "contentSha256": "aeb42b4bb74b7cde2cfca9ea415974321ddce5630520608abf55f329c3af143f",
+    "node": "v26.10.0",
+    "platform": "darwin-arm64",
+    "work": "<work>",
+    "startedAt": "2026-10-08T04:32:37.492Z",
+    "steps": [
+      {
+        "name": "host-install",
+        "at": "2026-10-08T04:32:37.493Z",
+        "ok": true,
+        "reused": true
+      },
+      {
+        "name": "plugin-add",
+        "at": "2026-10-08T04:33:48.182Z",
+        "ok": false,
+        "code": 1,
+        "tail": [
+          "    at file:///Users/ryukeili/.local/lib/node_modules/pnpm/dist/pnpm.mjs:83632:23",
+          "    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+          "dsh: plugin command failed; diagnostics: $DSH_HOME/profiles/web/.plugin-manager/logs/operation-g3G6gb/pnpm.log"
+        ]
+      }
+    ],
+    "hostVersion": "0.2.1-alpha.1",
+    "hostModules": {
+      "@deepseek-ai/cordis": "4.0.5-alpha.1",
+      "@deepseek-ai/cordis-plugin-include": "1.0.10-alpha.1",
+      "@deepseek-ai/cordis-plugin-loader": "1.0.6-alpha.1"
+    },
+    "ok": false,
+    "error": "Error: dsh plugin add failed: [ERROR] fetch failed\n\nTypeError: fetch failed\n    at Object.processResponse (file:///Users/ryukeili/.local/lib/node_modules/pnpm/dist/pnpm.mjs:83251:20)\n    at file:///Users/ryukeili/.local/lib/node_modules/pnpm/dist/pnpm.mjs:83632:23\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\ndsh: plugin command failed; diagnostics: $DSH_HOME/profiles/web/.plugin-manager/logs/operation-g3G6gb/pnpm.log\n\n    at main (file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/run-host-acceptance.mjs:271:31)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/run-host-acceptance.mjs:503:3",
+    "finishedAt": "2026-10-08T04:33:48.182Z"
+  }
+]

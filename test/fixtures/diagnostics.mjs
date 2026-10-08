@@ -1,3 +1,4 @@
+// Frozen diagnostics baseline from 8e6bd29; only module paths are relocated.
 /**
  * Unified, model-free diagnostics for the dsh-evolution bundle.
  *
@@ -24,8 +25,8 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { verifyEventBridgeEnvelope, recoverInterruptedPromotion } from './orchestrator.js';
-import { probeSurfaces, SURFACE_PRIVATE } from './cordis-compat.js';
+import { verifyEventBridgeEnvelope, recoverInterruptedPromotion } from '../../lib/orchestrator.js';
+import { probeSurfaces, SURFACE_PRIVATE } from '../../lib/cordis-compat.js';
 
 /**
  * js-yaml ships as a bundle dependency so the doctor CLI works in a plugin-only
@@ -42,7 +43,7 @@ async function loadYaml() {
 }
 
 export const DIAGNOSTIC_SCHEMA = 1;
-export const PACKAGE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+export const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 export const LEVEL = Object.freeze({ OK: 'ok', DEGRADED: 'degraded', BLOCKED: 'blocked', NOT_EVALUATED: 'not-evaluated' });
 
@@ -430,28 +431,6 @@ export function inspectJsonLines(text) {
     complete: !records.some((record) => record.error),
     truncatedTail: !endsWithNewline && body.length > 0 && Boolean(body[body.length - 1].trim()),
   };
-}
-
-// Cold-history integrity needs only counts, not retained payload objects.
-function inspectJsonLinesSummary(text) {
-  const source = String(text ?? '');
-  const endsWithNewline = source.endsWith('\n');
-  let start = 0;
-  let lineCount = 0;
-  let invalid = 0;
-  let lastLine = '';
-  do {
-    const end = source.indexOf('\n', start);
-    const line = source.slice(start, end === -1 ? source.length : end);
-    lastLine = line;
-    lineCount += 1;
-    if (line.trim() !== '') {
-      try { JSON.parse(line); } catch { invalid += 1; }
-    }
-    if (end === -1) break;
-    start = end + 1;
-  } while (start < source.length);
-  return { lineCount, invalid, truncatedTail: !endsWithNewline && Boolean(lastLine.trim()) };
 }
 
 // ---------------------------------------------------------------------------
@@ -962,11 +941,9 @@ async function diagnoseArchives(report, paths) {
     ? fs.readdirSync(paths.dockyardDir).sort()
     : [];
   evidence.dockyard.files = dockyardFiles;
-  let legacyState;
   const stateFile = path.join(paths.dockyardDir, 'state.json');
   if (statSafe(stateFile)) {
     const parsed = readJsonSafe(stateFile);
-    legacyState = dockyardMemoryCheck(paths, parsed);
     if (parsed.error) {
       evidence.dockyard.state = { parse: 'failed', error: String(parsed.error.message || parsed.error) };
       problems.push('dockyard/state.json is not valid JSON');
@@ -983,10 +960,9 @@ async function diagnoseArchives(report, paths) {
     const file = path.join(paths.dockyardDir, name);
     let text;
     try { text = fs.readFileSync(file, 'utf8'); } catch (error) { problems.push(`${name} unreadable`); evidence.dockyard.jsonl.push({ name, error: String(error.message || error) }); continue; }
-    const inspected = inspectJsonLinesSummary(text);
-    const invalid = inspected.invalid;
-    evidence.dockyard.jsonl.push({ name, lines: inspected.lineCount, invalid, truncatedTail: inspected.truncatedTail });
-    if (invalid > 0) problems.push(`${name} has ${invalid} unparsable line(s)`);
+    const inspected = inspectJsonLines(text);
+    evidence.dockyard.jsonl.push({ name, lines: inspected.lineCount, invalid: inspected.invalid.length, truncatedTail: inspected.truncatedTail });
+    if (inspected.invalid.length > 0) problems.push(`${name} has ${inspected.invalid.length} unparsable line(s)`);
     if (inspected.truncatedTail) problems.push(`${name} ends with a partial line (interrupted write)`);
   }
   const indexFile = path.join(paths.dockyardDir, 'state.json.evolution-archive-index.json');
@@ -1004,7 +980,6 @@ async function diagnoseArchives(report, paths) {
     remediation: problems.length > 0 ? 'Keep the files: they are append-only evidence. Rebuild the index only from readable rotation files.' : undefined,
     recoverable: false,
   });
-  return legacyState;
 }
 
 async function diagnoseEventBridge(report, paths, { key }) {
@@ -1205,26 +1180,27 @@ async function diagnoseDomain(report, paths, { migration }) {
 let domainValidatorPromise;
 async function loadDomainSchemaValidator() {
   if (!domainValidatorPromise) {
-    domainValidatorPromise = import('./domain-storage.js')
+    domainValidatorPromise = import('../../lib/domain-storage.js')
       .then((module) => module.evolutionDomainSpec?.global?.schema ?? null)
       .catch(() => null);
   }
   return domainValidatorPromise;
 }
 
-function dockyardMemoryCheck(paths, parsed) {
+function diagnoseDockyardMemory(report, paths) {
   const legacyState = path.join(paths.dockyardDir, 'state.json');
-  if (!parsed) return;
+  if (!statSafe(legacyState)) return;
+  const parsed = readJsonSafe(legacyState);
   const mem = parsed.value?.evolution;
   if (parsed.error || !mem) return;
   const collections = Object.keys(mem).filter((key) => Array.isArray(mem[key]));
   const counts = Object.fromEntries(collections.map((key) => [key, mem[key].length]));
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
-  return {
+  addCheck(report, {
     id: 'state.dockyard-legacy', category: 'state', level: LEVEL.OK,
     summary: `Preserved Dockyard aggregate is readable (${total} record(s)); it is only loaded when domainSeed is explicitly enabled.`,
     evidence: { legacyState, schema: mem.schema ?? null, counts },
-  };
+  });
 }
 
 async function diagnoseMigration(report, paths) {
@@ -1796,11 +1772,11 @@ export async function collectDiagnostics(options = {}) {
 
   const data = diagnoseDataRoot(report, paths, { live: options.live === true && Boolean(options.ctx), installed: Boolean(installedInfo?.installedVersion) });
   await diagnoseMemory(report, paths);
-  const legacyState = await diagnoseArchives(report, paths);
+  await diagnoseArchives(report, paths);
   const bridge = await diagnoseEventBridge(report, paths, { key: data.key });
   const migration = await diagnoseMigration(report, paths);
   const domain = await diagnoseDomain(report, paths, { migration: migration.manifest });
-  if (legacyState) addCheck(report, legacyState);
+  diagnoseDockyardMemory(report, paths);
   const promotion = inspectPromotionJournal(report, paths);
   const composition = await diagnosePromotedComposition(report, paths, { promotion });
   diagnosePointer(report, paths, composition, { promotion, migration });
