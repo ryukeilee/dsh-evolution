@@ -6,6 +6,13 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.5 — reliability fixes
+
+- 保留 proposal 快照，在 Trial 首次运行时修改前同步捕获恢复基线；正常 propose→trial 宿主加载不再误报恢复失败。基线不在后续 inspect、measure 或清理时重建，Trial 期间真实并发漂移仍拒绝恢复并保留目标锁。
+- 服务清单读取异常标记为不可用，拒绝以两份空清单证明恢复；普通 service lookup 的容错行为与正常未绑定声明保持兼容。
+- 保留 stop/undefine 回执、安全守卫、二次确认、Promotion、Canary、恢复和回滚语义；官方 DSH 零源码 patch，历史 tag 和发布附件不变。
+- 七项边界回归及真实双宿主探针覆盖本次修复；发布链继续要求 Node 22/24、完整测试、固定产物、来源追溯、远端 CI、CodeQL 和发布后验收。结果与剩余风险见 `docs/evidence/rc5-release-audit.json` 与 `docs/core-reliability.md`。
+
 ## 0.2.0-rc.4 — final local performance candidate
 
 - 收敛领域查询元数据投影、运行时检查投影、签名排序键复用、冷历史诊断、事件桥证据分块恢复五轮优化，保留全部历史基准、失败记录和差分回归。
