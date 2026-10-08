@@ -1,0 +1,152 @@
+{
+  "status": "local-validated",
+  "pin": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.5",
+    "filename": "dsh-evolution-0.2.0-rc.5.tgz",
+    "sha256": "c738e04b268fa8a6fc6367da2257c99a971aa8bff8e8ff0cc9b7d0e1077936d3",
+    "contentSha256": "1751f48e59c03758b9a11e9425d42f82ebb46131195b237ad715e8f54dedfb5e",
+    "entries": 50,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.10.0",
+      "npm": "11.19.1",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "321a974a7ef1d86642435c3cbba21791a37d4fe6",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json"
+    ]
+  },
+  "tests": [
+    {
+      "node": "v22.19.0",
+      "platform": "darwin-arm64",
+      "command": "npm test",
+      "exitCode": 0,
+      "summary": {
+        "tests": 212,
+        "suites": 0,
+        "pass": 212,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "log": "docs/evidence/rc5-node22-tests.txt",
+      "logSha256": "08991fd9a5fe815d167475d8fedf2b1ef3c64eac076de674c25bee79b6902f5b"
+    },
+    {
+      "node": "v24.21.0",
+      "platform": "darwin-arm64",
+      "command": "npm test",
+      "exitCode": 0,
+      "summary": {
+        "tests": 212,
+        "suites": 0,
+        "pass": 212,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "log": "docs/evidence/rc5-node24-tests.txt",
+      "logSha256": "e0356f451fa0b70d8df136ad410f07c09499d98aebbe7dc48b9860731d92fc37"
+    }
+  ],
+  "packageChecks": {
+    "command": "npm run pack:check",
+    "exitCode": 0,
+    "checksPassed": 16,
+    "log": "docs/evidence/rc5-package-check.txt",
+    "logSha256": "a6d24a2e67e7c9010cdbcc33021ff7c64363de9bd9f63da19780207bbffd0a70"
+  },
+  "hosts": [
+    {
+      "host": "0.2.0-rc.2",
+      "node": "v22.19.0",
+      "stepsPassed": 21,
+      "freshRuntime": true,
+      "evidence": "docs/evidence/dsh-0.2.0-rc.2.json",
+      "evidenceSha256": "4caff1b66f88a2291ce4f9cdf6f32dfe27847db5a17b965b143ba1715703e186",
+      "finalDoctor": {
+        "name": "doctor-final",
+        "at": "2026-10-08T13:56:00.681Z",
+        "ok": true,
+        "status": "healthy",
+        "exitCode": 0,
+        "findings": [
+          {
+            "id": "runtime.capabilities",
+            "level": "not-evaluated",
+            "summary": "Live Cordis capabilities are not observable outside a running host session."
+          },
+          {
+            "id": "runtime.registration",
+            "level": "not-evaluated",
+            "summary": "Live tool registration is not observable outside a running host session."
+          },
+          {
+            "id": "runtime.internal-api",
+            "level": "not-evaluated",
+            "summary": "Introspection probes were not exercised outside a running host session."
+          }
+        ]
+      }
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "node": "v24.21.0",
+      "stepsPassed": 21,
+      "freshRuntime": true,
+      "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json",
+      "evidenceSha256": "2e494474762596f03f5153831710c5d0934bab67f86e77708bfdd874d48d379c",
+      "finalDoctor": {
+        "name": "doctor-final",
+        "at": "2026-10-08T13:56:01.383Z",
+        "ok": true,
+        "status": "healthy",
+        "exitCode": 0,
+        "findings": [
+          {
+            "id": "runtime.capabilities",
+            "level": "not-evaluated",
+            "summary": "Live Cordis capabilities are not observable outside a running host session."
+          },
+          {
+            "id": "runtime.registration",
+            "level": "not-evaluated",
+            "summary": "Live tool registration is not observable outside a running host session."
+          },
+          {
+            "id": "runtime.internal-api",
+            "level": "not-evaluated",
+            "summary": "Introspection probes were not exercised outside a running host session."
+          }
+        ]
+      }
+    }
+  ],
+  "review": {
+    "method": "independent narrow static review",
+    "blockingFindings": [],
+    "testsRunByReviewer": false
+  },
+  "verificationLimits": [
+    "Long-term production load and independent production baseline/test metrics were not tested.",
+    "Recovery compares observable before/after inventories, so self-restored transient drift is not recorded.",
+    "Existing trial-start-failure target-release behavior is unchanged."
+  ],
+  "historicalRc4Artifact": {
+    "sha256": "57f09a0f8ab1c0543d5bc1bf54aca5296960d2acf3edc61950f255580e99a4ff",
+    "unchanged": true
+  }
+}

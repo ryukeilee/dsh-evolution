@@ -1,0 +1,271 @@
+
+> dsh-evolution@0.2.0-rc.5 test
+> node --test "test/**/*.test.mjs" "test/**/*.test.js"
+
+PASS parseArchiveMdEvidence: parses populated Observations JSON blocks
+PASS parseArchiveMdEvidence: missing sections stay missing (no fabrication)
+
+2 passed, 0 failed
+✔ test/archive-md-parser.test.mjs (118.402625ms)
+✔ the isolation-map symbol is the one the shipped cordis actually uses (2.597541ms)
+✔ serviceImpl is equivalent to the private reflect._getImpl(name, false) (0.954625ms)
+✔ the service inventory needs the public path only, never the private method (1.326292ms)
+✔ an unbound service declaration is never reported as a live owner (79.858292ms)
+✔ fiberIsActive equals FiberState.ACTIVE across every lifecycle transition (55.986292ms)
+✔ no fiber state decision in lib/ is made from a numeric FiberState literal (8.766084ms)
+✔ every recorded surface is classified and its class matches the shipped packages (1.088667ms)
+✔ a host that dropped a replaced private surface still reports it as satisfied (1.028292ms)
+✔ the doctor CLI starts with no host package resolvable (140.812167ms)
+✔ the promoted composition fixture is never written into the checkout (0.217792ms)
+✔ the promoted Include mount resolves and verifies through the documented loader members (34.060166ms)
+✔ a torn composition fails closed instead of masquerading as a committed tree (46.529083ms)
+✔ a promoted module that fails to activate is reported inactive, with its cause (22.254083ms)
+✔ a disabled promoted row is rejected (12.174166ms)
+PASS cross-session: durable promotion evidence survives (sidecar)
+PASS stable-commit: archive merge keeps full evidence
+PASS event-bridge: hydration restores measurement/gates/canary
+PASS event-bridge: no events returns null
+PASS recovery-proof: archive renders full factual payload
+PASS renderExperimentArchive: emits stable archive sections
+
+6 passed, 0 failed
+✔ test/cross-session-hydration.test.mjs (230.09025ms)
+✔ cold history diagnostics match the baseline across valid, damaged and absent files (684.880917ms)
+✔ satisfiesRange: exact, caret, tilde, comparators, and prerelease strictness (19.2895ms)
+✔ healthy package reports ok and exit code 0 (26.31875ms)
+✔ the tool manifest cannot drift from the registered surface (0.423459ms)
+✔ the declared support matrix is exactly the verified host versions (9.185209ms)
+✔ unsupported host version is blocked with supported-range evidence (4.131542ms)
+✔ dependencies on non-public runtime surfaces are degraded, never silently ok (3.776083ms)
+✔ a missing required runtime service is blocked (2.23075ms)
+✔ incomplete tool registration is blocked and names the missing tools (2.055708ms)
+✔ cli mode marks live checks not-evaluated instead of guessing (2.119833ms)
+✔ damaged failure memory is degraded and recoverable, never a silent loss (2.091375ms)
+✔ valid failure memory and quarantined evidence are both reported (4.167042ms)
+✔ domain aggregate: absent ok, corrupt blocked, unreadable-never-rewritten (3.9935ms)
+✔ domain aggregate fixture matches the runtime schema and tampering is blocked (77.872ms)
+✔ a pending domain transaction without its archive is blocked, with the archive it is recoverable (7.43125ms)
+✔ orphan staging recovery is idempotent and refuses while a writer holds the lock (108.366583ms)
+✔ event bridge: verified ok, bad MAC blocked, conflicting event id blocked, partial tail repairable (26.214583ms)
+✔ event bridge with an unusable key is blocked and the key is never replaced (2.0345ms)
+✔ damaged cold archives are degraded and never rewritten (4.134292ms)
+✔ inspectJsonLines distinguishes a complete record from a partial tail (0.097458ms)
+✔ a verified import is ok, a tampered import is blocked, and a missing target degrades (10.208167ms)
+✔ an interrupted import keeps its only copy; a published one is cleaned idempotently (182.430958ms)
+✔ promotion journal states are classified: none, incomplete, canary, committed, rollback-failed, unknown (13.188667ms)
+✔ interrupted promotion rolls back from the journal and the repair is idempotent (54.663666ms)
+✔ a committed promotion cleans its journal without touching the composition (50.259042ms)
+✔ promotion repair is refused while a live process holds the promotion lock (10.711417ms)
+✔ a journal that escapes its configured roots is blocked and never applied (1.336583ms)
+✔ out-of-boundary composition rows and dangling rows are blocked; orphan directories degrade (18.185208ms)
+✔ migrated legacy pointers are reported as intentionally inactive, not as failures (4.314167ms)
+✔ parseComposedProfile reads bundle sections and entry state (0.629041ms)
+✔ a composed profile missing the bundle entries is blocked (3.065209ms)
+✔ a composed profile without the bundle layer is blocked (7.394792ms)
+✔ a profile that cannot compose is blocked with the CLI stderr tail (3.849875ms)
+✔ a disabled bundle entry is blocked (49.561375ms)
+✔ the cli writes nothing and reports exit codes that match the classification (282.154708ms)
+✔ profile detection picks the profile that lists the bundle and flags unusable installs (59.596625ms)
+✔ a stale domain archive lock is reported and repaired idempotently, never stolen from a live owner (21.683208ms)
+✔ the doctor CLI is reachable through a symlinked path (113.501375ms)
+✔ pure import cannot write, schedule or patch timers/EventEmitter (47.980834ms)
+✔ authority is fail-closed and transaction is explicit (6.341875ms)
+✔ metric projection/evaluation preserves independent gates and anti-gaming (1.318125ms)
+✔ historical snapshot copied to a temp root retains cold history across reload/restore (305.136333ms)
+ℹ {"schema":4,"counts":{"observations":0,"diagnoses":0,"gaps":0,"candidates":0,"proposals":0,"experiments":0,"experimentRecords":0,"journal":0,"selections":0,"promotions":0,"outcomes":0,"cycles":12,"lineage":0,"learnings":0,"strategies":0,"strategyMutations":0,"knowledge":1,"tombstones":0},"coldCollections":1}
+✔ discovery derives degradation and repeated failure, ignoring manual targets (3.686375ms)
+✔ lineage records parents and protects historical best (10.428791ms)
+✔ lineage shared cold memory deduplicates IDs across restart and restores full history (213.31325ms)
+✔ standalone lineage uses explicit transaction; missing authority/storage and write errors reject (0.69525ms)
+Evolution supervisor cycle failed: E_CONTINUOUS_PORT_REQUIRED: Persistence.memory.setAutonomousState
+✔ strategy success/failure conditions, ranking, mutation tree and causal result survive restart (45.853833ms)
+✔ supervisor wait/observe/analyze/experiment decision algorithm preserved (1.041375ms)
+✔ three synthetic domain generations produce lineage/learning/report, not official execution proof (11.084084ms)
+✔ missing execution/evidence/persistence reject; failure is recorded and not learned as success (7.377833ms)
+✔ anti-gaming domains reject isolated metric wins (2.387625ms)
+✔ 50 bounded synthetic trials retain resources/causality and do not claim runtime isolation (6706.332042ms)
+✔ 10 multi-generation domain trials retain parent versions and mutation tree (300.251709ms)
+✔ orphan evidence triggers rollback, restoration is fingerprint-verified (6.545166ms)
+✔ rollback assertion alone cannot certify registry restoration; rollback errors are retained (12.159459ms)
+✔ failure/regression/rollback budgets are finite, including zero regression budget (41.654375ms)
+✔ cooperative deadline settles work before rollback and stops further trials (13.457833ms)
+✔ trial fails closed without inspection/deadline/rollback/persistence; maintenance and disposal propagate errors (0.674542ms)
+✔ supervisor execution and scheduler stay within a cumulative cycle budget (1.03525ms)
+✔ unavailable post-execution inspection triggers rollback, never fabricated healthy evidence (6.484083ms)
+✔ custom stop-condition errors are visible and stop execution (6.1185ms)
+✔ facade construction performs no load and shares existing domain services (0.625458ms)
+✔ continuous import and facade construction do not patch timers/EventEmitter, write files, or start scheduling (46.946ms)
+✔ all continuous imports remain inside the domain directory, no legacy runtime graph (9.354208ms)
+✔ live observation/cycle/proposal appends keep the archive index fresh (204.330708ms)
+✔ compact followed by live appends keeps index metadata current (567.965167ms)
+✔ restart reconciles an append that completed before its index write (103.717208ms)
+✔ restart rebuilds a sealed entry after a rotation/index crash (530.333625ms)
+✔ legacy index entries infer collections and ignore unknown collections on each load (558.527792ms)
+✔ stale index referencing rotated-away segments and wrong checksums is reconciled on load (2041.195791ms)
+✔ history window preserves full-history ordering/count and detached records (56.437583ms)
+✔ 关键增量记忆合并等价观察并拆分新根因与策略 (10.605333ms)
+✔ 关键增量记忆按 eventId 幂等并累计效果趋势 (0.876875ms)
+✔ compact 将旧重复历史迁移为 knowledge 并保留活动与 lineage (59.14175ms)
+✔ knowledge 冷归档重启后保持计数与代表记录 (111.313292ms)
+✔ 并发语义写入串行聚合且保留有界样本 (185.1295ms)
+✔ recovery 保留关系、修正和可追溯状态 (2.596208ms)
+✔ 带语义的 cycle compact 仍保留每轮身份 (5.769083ms)
+✔ P1: healthy info-level component observations are deduped (no durable growth) (31.413459ms)
+✔ P1: error signals are NOT deduped (minOccurrences evidence preserved) (32.210708ms)
+✔ P1: forceRecord bypasses dedup (12.218583ms)
+✔ P5: stable perf metrics are deduped within one cycle (no write storm) (19.01475ms)
+✔ P5: null->value perf transition bypasses dedup (restart recovery path) (12.303583ms)
+✔ cold-only failure blockers and verified canonical survive semantic GC/restart (259.397334ms)
+✔ domain evaluation evidence maps the matured record into evaluator inputs without synthesizing evidence (1.626375ms)
+✔ the extracted evaluator recommends promote only with goal, test, regression and measured improvement (1.774958ms)
+✔ the extracted evaluator returns rollback when a recognized metric regresses (the promotion veto condition) (0.209ms)
+✔ the hand-written evolution domain spec satisfies the official storage-domain contract (1.629291ms)
+✔ assertDomainSpec fails loud on a unit name outside UNIT_NAME_RE (0.769583ms)
+✔ assertDomainSpec fails loud on a nullable global (medium null sentinel) (0.767167ms)
+✔ assertDomainSpec fails loud on an invalid table name (0.19525ms)
+✔ a staged tree shares the live inodes instead of copying the archive (5.383084ms)
+✔ a stage manifest round-trips and rejects unusable entries (1.536167ms)
+✔ installing a stage replaces only the changed files and verifies their bytes (70.79ms)
+✔ a committed transaction leaves untouched archive files byte-identical (5033.703208ms)
+✔ recovery installs a staged archive when the install is interrupted (2312.4945ms)
+✔ a stage without a manifest is replayed as a full copy (76.3675ms)
+✔ a live archive write during a staged transaction fails loudly (12.050125ms)
+✔ the legacy full-copy path still copies a stage without a manifest (2.432459ms)
+✔ append and rotation privatize shared active files before writing (182.005791ms)
+✔ an authenticated prefix is reused and only new records need per-record work (289.843834ms)
+✔ a tampered consumed prefix is still rejected and never advances the checkpoint (197.84325ms)
+✔ a forged or rolled back checkpoint cannot skip verification (231.383125ms)
+✔ a rolled back marker map is refused by the witnesses and re-verified per record (158.352375ms)
+✔ replaced, truncated and torn logs fall back to full per-record verification (443.022833ms)
+✔ a malformed or unknown checkpoint document is treated as absent (29.781458ms)
+✔ a checkpoint the plugin can no longer write does not fail the pass (196.910209ms)
+✔ metadata forgery and a missing middle marker invalidate the entire checkpoint (237.387042ms)
+✔ every replay reads the full prefix and rejects same-size middle tampering with restored timestamps (480.312083ms)
+✔ metadata queries match the previous window path without cloning payloads (2008.379333ms)
+✔ official domain: single-event batch, durable replay, restart, bounded read-only projection (590.485042ms)
+✔ pending archive commit resumes without incrementing canary generation (93.477792ms)
+✔ committed duplicates still authenticate and reject conflicting signed IDs (316.103125ms)
+✔ untrusted envelope rejected, close propagates failure; schema and safe DTO reject raw data (24.778083ms)
+✔ an interrupted or dead-owner archive lock is reclaimed instead of bricking startup (23.89075ms)
+PASS authenticated bridge accepts legitimate evidence and does not disclose key material
+PASS unsigned, tampered, forged promotion and replayed records fail closed
+PASS sequence rollback is isolated without poisoning later valid events
+
+3 passed, 0 failed
+✔ test/event-bridge-authentication.test.mjs (54.017541ms)
+✔ canonical bridge MAC retains legacy key order, escaping and array semantics (2.066834ms)
+✔ canonical bridge MAC remains compatible after bounded key cache saturation (23.005667ms)
+PASS canonical orchestrator 暴露 HMAC 信封签名/校验原语
+PASS 合法信封被接受，并回传事件与序号
+PASS 篡改事件体或序号后校验失败
+PASS 过短密钥被拒绝（签名与校验两侧）
+PASS 结构非法或非正序号的信封直接返回 null 而不抛错
+
+5 passed, 0 failed
+✔ test/event-bridge-envelope.test.mjs (50.521875ms)
+✔ recovery preserves authentication, per-writer ordering, duplicates and complete evidence (26.995708ms)
+✔ chunk boundaries, huge lines, unicode and final partial lines match readFile decoding (808.55975ms)
+✔ file inputs, read errors, invalid options and subsequent rewrites retain behavior (19.361292ms)
+✔ mid-read failures outrank option failures and close the opened file (0.969916ms)
+✔ read and close failures preserve native aggregate ordering and error details (1.806291ms)
+✔ regular-file replay remains bounded by the initial size when events append (1.750875ms)
+✔ FIFO replay uses one reader rendezvous and matches the baseline (141.894833ms)
+PASS mergeEvidenceSources: monotonic downgrade protection
+PASS mergeEvidenceSources: priority order (archive > bridge) wins ties
+PASS mergeEvidenceSources: upgrade path (unknown -> recovered)
+PASS mergeEvidenceSources: no sources returns null
+PASS mergeEvidenceSources: metadata identity passes through in priority order
+✔ test/evidence-persistence.test.mjs (67.8615ms)
+PASS full cross-session: Session A durable write persists everything
+PASS full cross-session: Session B hydrate + canary + stable commit keeps evidence
+
+2 passed, 0 failed
+✔ test/full-cross-session.integration.test.mjs (137.981958ms)
+✔ repeat import never duplicates or overwrites evolved active memory (171.656334ms)
+✔ changed source conflicts without overwriting destination (166.641166ms)
+✔ pending legacy promotion fails closed and preserves source (69.765625ms)
+✔ legacy startup drift adapter is off by default and never guesses an external path (18.4105ms)
+✔ mode=autonomous subscribes to the official emit event without a next callback (1.353125ms)
+✔ async agent observer rejection is contained and recorded (2.163583ms)
+✔ advisory observation is opt-in, preserving passive default behavior (0.267042ms)
+PASS gate: negative (empty observations, unknown recovery) is REJECTED
+PASS gate: negative even with runtimeRecovered true but no measurement
+PASS gate: negative when runtime recovery missing but evidence ok
+PASS gate: positive (full evidence + recovery) is ELIGIBLE
+PASS gate: requireRuntimeRecovery=false allows evidence-only eligibility
+PASS gate: measuredEvidenceOf requires improving shared numeric metric
+
+6 passed, 0 failed
+✔ test/promotion-gate-regression.test.mjs (56.078208ms)
+✔ standalone synchronous Host only; harness helpers and async bodies fail closed (1.7135ms)
+✔ journaled composition uses absolute file URL and no profile mount; interrupted canary rollback restores disk (196.2085ms)
+✔ rollback CAS preserves concurrent composition edits and its recovery journal (321.888041ms)
+✔ client half and missing official adapter never write a promotion (78.05775ms)
+✔ the pin names this package version and a pre-release artifact (0.55325ms)
+✔ the committed artifact hashes to the pinned bytes (0.584667ms)
+✔ the committed artifact is the pinned content, not just the pinned bytes (16.877875ms)
+✔ the working tree still builds exactly the pinned content (6.084291ms)
+✔ every shipped file in the tree matches the artifact byte for byte (4.632958ms)
+✔ release/SHA256SUMS records the pinned artifact (0.152458ms)
+✔ the pin lists an acceptance evidence file per supported host (0.420333ms)
+✔ isFullSha accepts only a full lowercase object name (0.563625ms)
+✔ a consistent tag, commit, manifest and tree has no problems (0.459708ms)
+✔ a tag that names another version fails (0.12375ms)
+✔ a tag that points at another commit fails (0.335334ms)
+✔ a tag that does not resolve fails (0.107ms)
+✔ a source commit outside the tagged history fails (0.080375ms)
+✔ an ancestor with different shipped content cannot be claimed as the source (0.134791ms)
+✔ the source digest reads committed files and detects later shipped changes (852.894834ms)
+✔ a malformed source commit fails (0.143625ms)
+✔ a missing source commit fails when a new release requires one (0.09975ms)
+✔ a missing source commit is tolerated for a legacy pin (0.076833ms)
+✔ a pin that disagrees with package.json fails (0.066ms)
+✔ a tree that no longer builds the pinned content fails (0.049791ms)
+✔ an untagged verification still checks the pin and the tree (0.042917ms)
+✔ the CLI arguments are parsed strictly (0.382833ms)
+PASS upgrade: archive replay upgrades unknown recovery to recovered
+PASS restart: sidecar hydration after journal deletion keeps evidence
+
+2 passed, 0 failed
+✔ test/restart-recovery.test.mjs (115.639083ms)
+✔ full inspect output matches the original boundary and stays detached (6.858208ms)
+✔ snapshot exceptional values preserve clone then projection semantics (6.669167ms)
+✔ fallback reads accessors once and retains alias isolation (0.166708ms)
+✔ registered inspect projects once and proposal retains the complete detached baseline (5.614208ms)
+✔ registered inspect retains the legacy projection for unusual object prototypes (0.426125ms)
+✔ signature bytes and recovery decisions match the original across sizes and mutations (104.214458ms)
+✔ exotic sort values retain serialization calls, errors, and stable ties (3.287375ms)
+✔ nested event and package sort keys retain complete signatures (47.833459ms)
+✔ sort serialization is linear and keys are rebuilt after live mutations (14.4525ms)
+✔ unbound scope declaration is not reported as an unknown live owner (1.236083ms)
+✔ bound service without a fiber still fails closed (0.167125ms)
+✔ inspect the agent scope rather than the profile scope (0.12475ms)
+✔ shell mutation matching retains irreversible, redirect and trust-root decisions (4.931417ms)
+✔ uncontrolled shell input cannot stall the pre-execution guard (530.262625ms)
+✔ metric fallback identifiers use UUIDs once per record without weak randomness (3.485ms)
+✔ caller-provided metric identities and projection data remain unchanged (0.821792ms)
+✔ pre-trial host loading does not invalidate cleanup, and the proof uses the actual trial boundary (28.099333ms)
+✔ drift during the trial still fails recovery and retains target ownership (21.100792ms)
+✔ drift while run is pending cannot be absorbed by a second trial call or a later inspect (17.420292ms)
+✔ an unreadable private service inventory cannot prove recovery even when both reads fail (1.435333ms)
+✔ an unreadable public service inventory fails closed while an unbound declaration stays empty (0.489625ms)
+✔ ordinary private service lookup retains its tolerant behavior (0.496208ms)
+✔ failed cleanup receipts cannot pass recovery with an unchanged runtime (48.106125ms)
+✔ every workflow file parses as YAML and has runnable steps (9.351292ms)
+✔ CI runs the unit tests, the package checks and both supported hosts (3.827917ms)
+✔ CI clean install and upload select only the pinned candidate when historical tarballs coexist (526.9375ms)
+✔ the release workflow only publishes a draft of the verified artifact, never to npm (1127.591166ms)
+✔ the release workflow cannot overwrite an existing release asset (0.634875ms)
+✔ the release workflow verifies the tag, the commit, the pin and the checksums (0.491792ms)
+✔ code scanning runs CodeQL against main and pull requests (0.233875ms)
+✔ every action runs on the Node.js 24 runtime (0.798958ms)
+✔ the workflows pin the current supported action majors (0.527708ms)
+✔ no workflow runs on pull_request_target or with write permissions by default (0.569167ms)
+ℹ tests 212
+ℹ suites 0
+ℹ pass 212
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8671.693417
