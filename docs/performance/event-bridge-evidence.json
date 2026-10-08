@@ -1,0 +1,235 @@
+{
+  "baselineCommit": "9af8ffd",
+  "node": "v26.10.0",
+  "platform": "darwin/arm64",
+  "records": 50000,
+  "payloadBytes": 256,
+  "fileBytes": 27148012,
+  "samples": 5,
+  "equality": true,
+  "allocation": "V8 sampled bytes/call including collected objects; 32768-byte interval, 3 calls",
+  "rssMeasurement": "fresh process maxRSS KiB after 3 replays; includes runtime/imports, excludes fixture construction",
+  "results": [
+    {
+      "baseline": {
+        "samples": [
+          {
+            "cpuMs": 252.477,
+            "elapsedMs": 237.0061250000001
+          },
+          {
+            "cpuMs": 256.738,
+            "elapsedMs": 231.59354199999984
+          },
+          {
+            "cpuMs": 242.396,
+            "elapsedMs": 225.8795
+          },
+          {
+            "cpuMs": 246.253,
+            "elapsedMs": 232.7493330000002
+          },
+          {
+            "cpuMs": 254.123,
+            "elapsedMs": 229.09087499999987
+          }
+        ],
+        "median": {
+          "cpuMs": 252.477,
+          "elapsedMs": 231.59354199999984
+        }
+      },
+      "candidate": {
+        "samples": [
+          {
+            "cpuMs": 221.826,
+            "elapsedMs": 209.18049999999994
+          },
+          {
+            "cpuMs": 220.664,
+            "elapsedMs": 205.90208299999995
+          },
+          {
+            "cpuMs": 220.886,
+            "elapsedMs": 208.29375000000027
+          },
+          {
+            "cpuMs": 220.915,
+            "elapsedMs": 207.25033299999996
+          },
+          {
+            "cpuMs": 220.605,
+            "elapsedMs": 208.046292
+          }
+        ],
+        "median": {
+          "cpuMs": 220.886,
+          "elapsedMs": 208.046292
+        }
+      }
+    },
+    {
+      "candidate": {
+        "samples": [
+          {
+            "cpuMs": 220.259,
+            "elapsedMs": 206.8532499999992
+          },
+          {
+            "cpuMs": 219.973,
+            "elapsedMs": 205.29491700000017
+          },
+          {
+            "cpuMs": 219.423,
+            "elapsedMs": 207.00329200000033
+          },
+          {
+            "cpuMs": 220.423,
+            "elapsedMs": 206.5735420000001
+          },
+          {
+            "cpuMs": 221.08,
+            "elapsedMs": 208.6733750000003
+          }
+        ],
+        "median": {
+          "cpuMs": 220.259,
+          "elapsedMs": 206.8532499999992
+        }
+      },
+      "baseline": {
+        "samples": [
+          {
+            "cpuMs": 249.011,
+            "elapsedMs": 233.21662500000002
+          },
+          {
+            "cpuMs": 255.251,
+            "elapsedMs": 236.82195799999954
+          },
+          {
+            "cpuMs": 249.788,
+            "elapsedMs": 233.2618339999999
+          },
+          {
+            "cpuMs": 245.475,
+            "elapsedMs": 232.03879099999995
+          },
+          {
+            "cpuMs": 251.646,
+            "elapsedMs": 228.41291600000022
+          }
+        ],
+        "median": {
+          "cpuMs": 249.788,
+          "elapsedMs": 233.21662500000002
+        }
+      }
+    },
+    {
+      "baseline": {
+        "samples": [
+          {
+            "cpuMs": 245.879,
+            "elapsedMs": 233.63866700000017
+          },
+          {
+            "cpuMs": 260.488,
+            "elapsedMs": 240.6787090000007
+          },
+          {
+            "cpuMs": 259.531,
+            "elapsedMs": 241.30837500000052
+          },
+          {
+            "cpuMs": 248.947,
+            "elapsedMs": 231.91983299999993
+          },
+          {
+            "cpuMs": 258.563,
+            "elapsedMs": 242.22829099999944
+          }
+        ],
+        "median": {
+          "cpuMs": 258.563,
+          "elapsedMs": 240.6787090000007
+        }
+      },
+      "candidate": {
+        "samples": [
+          {
+            "cpuMs": 221.434,
+            "elapsedMs": 207.86058299999968
+          },
+          {
+            "cpuMs": 222.668,
+            "elapsedMs": 206.79500000000007
+          },
+          {
+            "cpuMs": 219.292,
+            "elapsedMs": 206.74349999999868
+          },
+          {
+            "cpuMs": 222.544,
+            "elapsedMs": 207.55362500000047
+          },
+          {
+            "cpuMs": 227.511,
+            "elapsedMs": 213.67141699999956
+          }
+        ],
+        "median": {
+          "cpuMs": 222.544,
+          "elapsedMs": 207.55362500000047
+        }
+      }
+    }
+  ],
+  "allocations": [
+    {
+      "baseline": 406988917.3333333,
+      "candidate": 334441040
+    },
+    {
+      "candidate": 337590541.3333333,
+      "baseline": 410064413.3333333
+    },
+    {
+      "baseline": 406832029.3333333,
+      "candidate": 334717869.3333333
+    }
+  ],
+  "rss": [
+    {
+      "baseline": {
+        "startRssKiB": 50528,
+        "maxRssKiB": 291168
+      },
+      "candidate": {
+        "startRssKiB": 50784,
+        "maxRssKiB": 110256
+      }
+    },
+    {
+      "candidate": {
+        "startRssKiB": 50688,
+        "maxRssKiB": 116976
+      },
+      "baseline": {
+        "startRssKiB": 50512,
+        "maxRssKiB": 291568
+      }
+    },
+    {
+      "baseline": {
+        "startRssKiB": 50752,
+        "maxRssKiB": 291584
+      },
+      "candidate": {
+        "startRssKiB": 50800,
+        "maxRssKiB": 116496
+      }
+    }
+  ],
+  "candidateStage": "initial chunked candidate"
+}

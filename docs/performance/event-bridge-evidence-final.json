@@ -1,0 +1,236 @@
+{
+  "baselineCommit": "9af8ffd",
+  "node": "v26.10.0",
+  "platform": "darwin/arm64",
+  "records": 50000,
+  "payloadBytes": 256,
+  "fileBytes": 27148012,
+  "samples": 5,
+  "equality": true,
+  "allocation": "V8 sampled bytes/call including collected objects; 32768-byte interval, 3 calls",
+  "rssMeasurement": "fresh process maxRSS KiB after 3 replays; includes runtime/imports, excludes fixture construction",
+  "results": [
+    {
+      "baseline": {
+        "samples": [
+          {
+            "cpuMs": 242.639,
+            "elapsedMs": 226.95000000000005
+          },
+          {
+            "cpuMs": 250.103,
+            "elapsedMs": 228.84024999999997
+          },
+          {
+            "cpuMs": 242.776,
+            "elapsedMs": 225.314167
+          },
+          {
+            "cpuMs": 241.938,
+            "elapsedMs": 225.32812500000023
+          },
+          {
+            "cpuMs": 252.686,
+            "elapsedMs": 228.482708
+          }
+        ],
+        "median": {
+          "cpuMs": 242.776,
+          "elapsedMs": 226.95000000000005
+        }
+      },
+      "candidate": {
+        "samples": [
+          {
+            "cpuMs": 219.763,
+            "elapsedMs": 206.2480840000003
+          },
+          {
+            "cpuMs": 222.403,
+            "elapsedMs": 206.47933299999977
+          },
+          {
+            "cpuMs": 219.79,
+            "elapsedMs": 206.41220899999962
+          },
+          {
+            "cpuMs": 226.945,
+            "elapsedMs": 211.5455420000003
+          },
+          {
+            "cpuMs": 240.155,
+            "elapsedMs": 225.8487500000001
+          }
+        ],
+        "median": {
+          "cpuMs": 222.403,
+          "elapsedMs": 206.47933299999977
+        }
+      }
+    },
+    {
+      "candidate": {
+        "samples": [
+          {
+            "cpuMs": 220.396,
+            "elapsedMs": 206.07979200000045
+          },
+          {
+            "cpuMs": 220.794,
+            "elapsedMs": 204.94566699999996
+          },
+          {
+            "cpuMs": 219.615,
+            "elapsedMs": 205.97279199999957
+          },
+          {
+            "cpuMs": 220.218,
+            "elapsedMs": 205.4404999999997
+          },
+          {
+            "cpuMs": 220.678,
+            "elapsedMs": 208.13733299999967
+          }
+        ],
+        "median": {
+          "cpuMs": 220.396,
+          "elapsedMs": 205.97279199999957
+        }
+      },
+      "baseline": {
+        "samples": [
+          {
+            "cpuMs": 246.739,
+            "elapsedMs": 231.682417
+          },
+          {
+            "cpuMs": 248.719,
+            "elapsedMs": 231.60325000000012
+          },
+          {
+            "cpuMs": 246.352,
+            "elapsedMs": 232.66416600000048
+          },
+          {
+            "cpuMs": 246.237,
+            "elapsedMs": 229.40049999999974
+          },
+          {
+            "cpuMs": 253.762,
+            "elapsedMs": 231.0107910000006
+          }
+        ],
+        "median": {
+          "cpuMs": 246.739,
+          "elapsedMs": 231.60325000000012
+        }
+      }
+    },
+    {
+      "baseline": {
+        "samples": [
+          {
+            "cpuMs": 252.815,
+            "elapsedMs": 233.5745420000003
+          },
+          {
+            "cpuMs": 251.369,
+            "elapsedMs": 238.0520000000006
+          },
+          {
+            "cpuMs": 249.444,
+            "elapsedMs": 231.6331250000003
+          },
+          {
+            "cpuMs": 248.566,
+            "elapsedMs": 235.0866670000014
+          },
+          {
+            "cpuMs": 255.34,
+            "elapsedMs": 231.64387499999975
+          }
+        ],
+        "median": {
+          "cpuMs": 251.369,
+          "elapsedMs": 233.5745420000003
+        }
+      },
+      "candidate": {
+        "samples": [
+          {
+            "cpuMs": 222.78,
+            "elapsedMs": 209.0981670000001
+          },
+          {
+            "cpuMs": 223.863,
+            "elapsedMs": 207.74462500000118
+          },
+          {
+            "cpuMs": 220.449,
+            "elapsedMs": 207.09158299999945
+          },
+          {
+            "cpuMs": 220.197,
+            "elapsedMs": 206.21104099999866
+          },
+          {
+            "cpuMs": 221.981,
+            "elapsedMs": 207.29237499999908
+          }
+        ],
+        "median": {
+          "cpuMs": 221.981,
+          "elapsedMs": 207.29237499999908
+        }
+      }
+    }
+  ],
+  "allocations": [
+    {
+      "baseline": 406068146.6666667,
+      "candidate": 334799101.3333333
+    },
+    {
+      "candidate": 335029653.3333333,
+      "baseline": 407298706.6666667
+    },
+    {
+      "baseline": 407707250.6666667,
+      "candidate": 340173786.6666667
+    }
+  ],
+  "rss": [
+    {
+      "baseline": {
+        "startRssKiB": 50848,
+        "maxRssKiB": 291488
+      },
+      "candidate": {
+        "startRssKiB": 50768,
+        "maxRssKiB": 117456
+      }
+    },
+    {
+      "candidate": {
+        "startRssKiB": 50768,
+        "maxRssKiB": 119696
+      },
+      "baseline": {
+        "startRssKiB": 50880,
+        "maxRssKiB": 284160
+      }
+    },
+    {
+      "baseline": {
+        "startRssKiB": 50928,
+        "maxRssKiB": 283168
+      },
+      "candidate": {
+        "startRssKiB": 50864,
+        "maxRssKiB": 112496
+      }
+    }
+  ],
+  "candidateStage": "final special-file and close-error fixes",
+  "candidateContentSha256": "8070c9f2594210679247a1c11be6008eb56c580de1a433294b100fcfbcdd1b02"
+}
