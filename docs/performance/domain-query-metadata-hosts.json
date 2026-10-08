@@ -1,0 +1,1315 @@
+{
+  "artifact": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.3",
+    "filename": "dsh-evolution-0.2.0-rc.3.tgz",
+    "sha256": "c426e41a607e721d1c7c530e63cea6b168877c553f051abc4a4fcb26be8eba9f",
+    "contentSha256": "9fdf7c06b289c8ce2f9412325aa4accab25f64441a7b36e4c5a7f397cc55e140",
+    "entries": 50,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.10.0",
+      "npm": "11.19.1",
+      "platform": "darwin-arm64"
+    }
+  },
+  "failedSandboxAttempts": [
+    {
+      "host": "0.2.0-rc.2",
+      "packageVersion": "0.2.0-rc.3",
+      "tarball": "../dsh-metadata-dist/dsh-evolution-0.2.0-rc.3.tgz",
+      "tarballSha256": "c426e41a607e721d1c7c530e63cea6b168877c553f051abc4a4fcb26be8eba9f",
+      "contentSha256": "9fdf7c06b289c8ce2f9412325aa4accab25f64441a7b36e4c5a7f397cc55e140",
+      "node": "v26.10.0",
+      "platform": "darwin-arm64",
+      "work": "<work>",
+      "startedAt": "2026-10-08T03:55:45.114Z",
+      "steps": [
+        {
+          "name": "host-install",
+          "at": "2026-10-08T03:55:45.116Z",
+          "ok": true,
+          "reused": true
+        },
+        {
+          "name": "plugin-add",
+          "at": "2026-10-08T03:58:45.134Z",
+          "ok": false,
+          "code": null,
+          "tail": [
+            "[WARN] GET https://registry.npmmirror.com/js-yaml/-/js-yaml-4.3.2.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left.",
+            "[WARN] GET https://registry.npmmirror.com/argparse/-/argparse-2.0.1.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left.",
+            "[WARN] GET https://registry.npmmirror.com/zod/-/zod-4.6.5.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left."
+          ]
+        }
+      ],
+      "hostVersion": "0.2.0-rc.2",
+      "hostModules": {
+        "@deepseek-ai/cordis": "4.0.4",
+        "@deepseek-ai/cordis-plugin-include": "1.0.9",
+        "@deepseek-ai/cordis-plugin-loader": "1.0.5"
+      },
+      "ok": false,
+      "error": "Error: dsh plugin add failed: Packages are cloned from the content-addressable store to the virtual store.\n  Content-addressable store is at: /private/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/.pnpm-store/v11\n  Virtual store is at:             node_modules/.pnpm\nProgress: resolved 4, reused 0, downloaded 1, added 1\n[WARN] GET https://registry.npmmirror.com/js-yaml/-/js-yaml-4.3.2.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left.\n[WARN] GET https://registry.npmmirror.com/argparse/-/argparse-2.0.1.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left.\n[WARN] GET https://registry.npmmirror.com/zod/-/zod-4.6.5.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left.\n\n    at main (file:///private/tmp/dsh-metadata-candidate/scripts/acceptance/run-host-acceptance.mjs:271:31)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///private/tmp/dsh-metadata-candidate/scripts/acceptance/run-host-acceptance.mjs:503:3",
+      "finishedAt": "2026-10-08T03:58:45.134Z"
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "packageVersion": "0.2.0-rc.3",
+      "tarball": "../dsh-metadata-dist/dsh-evolution-0.2.0-rc.3.tgz",
+      "tarballSha256": "c426e41a607e721d1c7c530e63cea6b168877c553f051abc4a4fcb26be8eba9f",
+      "contentSha256": "9fdf7c06b289c8ce2f9412325aa4accab25f64441a7b36e4c5a7f397cc55e140",
+      "node": "v26.10.0",
+      "platform": "darwin-arm64",
+      "work": "<work>",
+      "startedAt": "2026-10-08T03:55:45.114Z",
+      "steps": [
+        {
+          "name": "host-install",
+          "at": "2026-10-08T03:55:45.116Z",
+          "ok": true,
+          "reused": true
+        },
+        {
+          "name": "plugin-add",
+          "at": "2026-10-08T03:58:45.133Z",
+          "ok": false,
+          "code": null,
+          "tail": [
+            "[WARN] GET https://registry.npmmirror.com/js-yaml/-/js-yaml-4.3.2.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left.",
+            "[WARN] GET https://registry.npmmirror.com/zod/-/zod-4.6.5.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left.",
+            "[WARN] GET https://registry.npmmirror.com/argparse/-/argparse-2.0.1.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left."
+          ]
+        }
+      ],
+      "hostVersion": "0.2.1-alpha.1",
+      "hostModules": {
+        "@deepseek-ai/cordis": "4.0.5-alpha.1",
+        "@deepseek-ai/cordis-plugin-include": "1.0.10-alpha.1",
+        "@deepseek-ai/cordis-plugin-loader": "1.0.6-alpha.1"
+      },
+      "ok": false,
+      "error": "Error: dsh plugin add failed: Packages are cloned from the content-addressable store to the virtual store.\n  Content-addressable store is at: /private/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/.pnpm-store/v11\n  Virtual store is at:             node_modules/.pnpm\nProgress: resolved 4, reused 0, downloaded 1, added 1\n[WARN] GET https://registry.npmmirror.com/js-yaml/-/js-yaml-4.3.2.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left.\n[WARN] GET https://registry.npmmirror.com/zod/-/zod-4.6.5.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left.\n[WARN] GET https://registry.npmmirror.com/argparse/-/argparse-2.0.1.tgz error (ENOTFOUND). Will retry in 1 minute. 1 retries left.\n\n    at main (file:///private/tmp/dsh-metadata-candidate/scripts/acceptance/run-host-acceptance.mjs:271:31)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///private/tmp/dsh-metadata-candidate/scripts/acceptance/run-host-acceptance.mjs:503:3",
+      "finishedAt": "2026-10-08T03:58:45.134Z"
+    }
+  ],
+  "acceptedNetworkRetries": [
+    {
+      "host": "0.2.0-rc.2",
+      "packageVersion": "0.2.0-rc.3",
+      "tarball": "../dsh-metadata-dist/dsh-evolution-0.2.0-rc.3.tgz",
+      "tarballSha256": "c426e41a607e721d1c7c530e63cea6b168877c553f051abc4a4fcb26be8eba9f",
+      "contentSha256": "9fdf7c06b289c8ce2f9412325aa4accab25f64441a7b36e4c5a7f397cc55e140",
+      "node": "v26.10.0",
+      "platform": "darwin-arm64",
+      "work": "<work>",
+      "startedAt": "2026-10-08T03:59:03.367Z",
+      "steps": [
+        {
+          "name": "host-install",
+          "at": "2026-10-08T03:59:03.368Z",
+          "ok": true,
+          "reused": true
+        },
+        {
+          "name": "plugin-add",
+          "at": "2026-10-08T03:59:04.147Z",
+          "ok": true,
+          "code": 0,
+          "tail": [
+            "  Virtual store is at:             node_modules/.pnpm",
+            "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
+            "Done in 470ms using pnpm v11.26.0"
+          ]
+        },
+        {
+          "name": "profile-lists-bundle",
+          "at": "2026-10-08T03:59:04.147Z",
+          "ok": true,
+          "bundles": [
+            "@deepseek-ai/dsh-base",
+            "@deepseek-ai/dsh-web-app",
+            "dsh-evolution"
+          ]
+        },
+        {
+          "name": "doctor-cli",
+          "at": "2026-10-08T03:59:04.413Z",
+          "ok": true,
+          "status": "degraded",
+          "exitCode": 1,
+          "hostVersion": "0.2.0-rc.2",
+          "verified": true,
+          "degraded": 1,
+          "blocked": 0
+        },
+        {
+          "name": "core-flow",
+          "at": "2026-10-08T03:59:07.122Z",
+          "ok": true,
+          "toolCount": 9,
+          "tools": [
+            "evolution_canary_observe",
+            "evolution_doctor",
+            "evolution_history",
+            "evolution_measure",
+            "evolution_promote",
+            "evolution_propose",
+            "evolution_revert",
+            "evolution_runtime_inspect",
+            "evolution_trial"
+          ],
+          "steps": [
+            {
+              "name": "runtime-stable",
+              "ok": true
+            },
+            {
+              "name": "evolution_runtime_inspect",
+              "ok": true
+            },
+            {
+              "name": "evolution_propose",
+              "ok": true,
+              "phase": "proposed"
+            },
+            {
+              "name": "evolution_trial",
+              "ok": true,
+              "phase": "trial"
+            },
+            {
+              "name": "evolution_measure",
+              "ok": true,
+              "phase": "measured"
+            },
+            {
+              "name": "evolution_revert",
+              "ok": true,
+              "phase": "reverted",
+              "runtimeRecovered": true
+            },
+            {
+              "name": "evolution_runtime_inspect",
+              "ok": true
+            }
+          ],
+          "reverted": true,
+          "signatureDiff": {
+            "components": {
+              "removed": [],
+              "added": [
+                "cordis-dynamic#316"
+              ]
+            }
+          },
+          "memoryPersisted": true
+        },
+        {
+          "name": "lifecycle-verify",
+          "at": "2026-10-08T03:59:08.249Z",
+          "ok": true,
+          "result": {
+            "action": "verify",
+            "application": "applied",
+            "mountedBefore": true,
+            "mountedAfter": true,
+            "selected": true,
+            "toolCount": 9,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "lifecycle-disable",
+          "at": "2026-10-08T03:59:09.299Z",
+          "ok": true,
+          "result": {
+            "action": "disable",
+            "application": "applied",
+            "mountedBefore": true,
+            "mountedAfter": false,
+            "selected": false,
+            "toolCount": 0,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "lifecycle-enable",
+          "at": "2026-10-08T03:59:10.208Z",
+          "ok": true,
+          "result": {
+            "action": "enable",
+            "application": "restart-required",
+            "mountedBefore": false,
+            "mountedAfter": false,
+            "selected": true,
+            "toolCount": 0,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "lifecycle-verify",
+          "at": "2026-10-08T03:59:11.221Z",
+          "ok": true,
+          "result": {
+            "action": "verify",
+            "application": "applied",
+            "mountedBefore": true,
+            "mountedAfter": true,
+            "selected": true,
+            "toolCount": 9,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "plugin-remove",
+          "at": "2026-10-08T03:59:11.752Z",
+          "ok": true,
+          "code": 0,
+          "tail": [
+            "",
+            "Already up to date",
+            "Done in 267ms using pnpm v11.26.0"
+          ]
+        },
+        {
+          "name": "body-after-uninstall",
+          "at": "2026-10-08T03:59:13.088Z",
+          "ok": true,
+          "result": {
+            "bodyOk": true,
+            "evolutionAbsent": true,
+            "evolutionTools": 0
+          }
+        },
+        {
+          "name": "plugin-reinstall",
+          "at": "2026-10-08T03:59:13.806Z",
+          "ok": true,
+          "code": 0,
+          "tail": [
+            "  Virtual store is at:             node_modules/.pnpm",
+            "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
+            "Done in 437ms using pnpm v11.26.0"
+          ]
+        },
+        {
+          "name": "core-flow-after-reinstall",
+          "at": "2026-10-08T03:59:15.986Z",
+          "ok": true,
+          "toolCount": 9,
+          "reverted": true,
+          "memoryEntriesBefore": 1,
+          "memoryEntriesAfter": 1,
+          "existingMemoryRetained": true,
+          "signatureDiff": {
+            "components": {
+              "removed": [],
+              "added": [
+                "cordis-dynamic#316"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cli-upgrade",
+          "at": "2026-10-08T03:59:16.911Z",
+          "ok": true,
+          "code": 0,
+          "installedVersion": "0.2.0-rc.3.upgrade",
+          "tail": [
+            "+",
+            "Progress: resolved 5, reused 1, downloaded 1, added 1, done",
+            "Done in 315ms using pnpm v11.26.0"
+          ]
+        },
+        {
+          "name": "host-after-upgrade",
+          "at": "2026-10-08T03:59:17.931Z",
+          "ok": true,
+          "result": {
+            "action": "verify",
+            "application": "applied",
+            "mountedBefore": true,
+            "mountedAfter": true,
+            "selected": true,
+            "toolCount": 9,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "cli-rollback",
+          "at": "2026-10-08T03:59:18.572Z",
+          "ok": true,
+          "code": 0,
+          "installedVersion": "0.2.0-rc.3",
+          "tail": [
+            "+",
+            "Progress: resolved 5, reused 2, downloaded 0, added 1, done",
+            "Done in 353ms using pnpm v11.26.0"
+          ]
+        },
+        {
+          "name": "host-after-rollback",
+          "at": "2026-10-08T03:59:19.600Z",
+          "ok": true,
+          "result": {
+            "action": "verify",
+            "application": "applied",
+            "mountedBefore": true,
+            "mountedAfter": true,
+            "selected": true,
+            "toolCount": 9,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "promotion-promote",
+          "at": "2026-10-08T03:59:21.801Z",
+          "ok": true,
+          "steps": [
+            {
+              "name": "runtime-stable",
+              "ok": true
+            },
+            {
+              "name": "evolution_propose",
+              "ok": true,
+              "phase": "proposed"
+            },
+            {
+              "name": "evolution_trial",
+              "ok": true,
+              "phase": "trial"
+            },
+            {
+              "name": "event:promotion_probe_stable",
+              "ok": true
+            },
+            {
+              "name": "evolution_measure",
+              "ok": true,
+              "phase": "measured"
+            },
+            {
+              "name": "evolution_promote",
+              "ok": false,
+              "phase": "awaiting-owner-confirmation"
+            },
+            {
+              "name": "evolution_promote",
+              "ok": true,
+              "phase": "canary-observing"
+            },
+            {
+              "name": "event:promotion_probe_stable",
+              "ok": true
+            },
+            {
+              "name": "evolution_canary_observe",
+              "ok": true,
+              "phase": "canary-observing"
+            }
+          ],
+          "committed": {
+            "pluginName": "dsh-evolution-promoted-5528213db75f",
+            "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-5528213db75f",
+            "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-5528213db75f/lib/index.js",
+            "adapter": "official-include",
+            "rowId": "evolution-promoted-5528213db75f",
+            "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-muz0c44a-1.md",
+            "presetId": "evolution",
+            "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+            "promotionTimestamp": "2026-10-08T03:59:21.741Z",
+            "healthObservationWindow": 2
+          }
+        },
+        {
+          "name": "promotion-restart-and-rollback",
+          "at": "2026-10-08T03:59:24.230Z",
+          "ok": true,
+          "steps": [
+            {
+              "name": "event:promotion_probe_stable",
+              "ok": true
+            },
+            {
+              "name": "runtime-stable",
+              "ok": true
+            },
+            {
+              "name": "evolution_propose",
+              "ok": true,
+              "phase": "proposed"
+            },
+            {
+              "name": "evolution_trial",
+              "ok": true,
+              "phase": "trial"
+            },
+            {
+              "name": "event:promotion_probe_rollback",
+              "ok": true
+            },
+            {
+              "name": "evolution_measure",
+              "ok": true,
+              "phase": "measured"
+            },
+            {
+              "name": "evolution_promote",
+              "ok": false,
+              "phase": "awaiting-owner-confirmation"
+            },
+            {
+              "name": "evolution_promote",
+              "ok": true,
+              "phase": "canary-observing"
+            },
+            {
+              "name": "event:promotion_probe_rollback",
+              "ok": true
+            },
+            {
+              "name": "evolution_canary_observe",
+              "ok": false,
+              "phase": "rolled-back"
+            }
+          ],
+          "startupPhase": "stable",
+          "rolledBack": {
+            "pluginName": "dsh-evolution-promoted-497553141c67",
+            "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-497553141c67",
+            "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-497553141c67/lib/index.js",
+            "adapter": "official-include",
+            "rowId": "evolution-promoted-497553141c67",
+            "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-muz0c5vr-1.md",
+            "presetId": "evolution",
+            "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+            "promotionTimestamp": "2026-10-08T03:59:24.006Z",
+            "healthObservationWindow": 2
+          }
+        },
+        {
+          "name": "promotion-verify",
+          "at": "2026-10-08T03:59:25.127Z",
+          "ok": true,
+          "steps": [
+            {
+              "name": "event:promotion_probe_stable",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "name": "doctor-final",
+          "at": "2026-10-08T03:59:25.450Z",
+          "ok": true,
+          "status": "healthy",
+          "exitCode": 0,
+          "findings": [
+            {
+              "id": "runtime.capabilities",
+              "level": "not-evaluated",
+              "summary": "Live Cordis capabilities are not observable outside a running host session."
+            },
+            {
+              "id": "runtime.registration",
+              "level": "not-evaluated",
+              "summary": "Live tool registration is not observable outside a running host session."
+            },
+            {
+              "id": "runtime.internal-api",
+              "level": "not-evaluated",
+              "summary": "Introspection probes were not exercised outside a running host session."
+            }
+          ]
+        }
+      ],
+      "hostVersion": "0.2.0-rc.2",
+      "hostModules": {
+        "@deepseek-ai/dsh": "0.2.0-rc.2",
+        "@deepseek-ai/cordis": "4.0.4",
+        "@deepseek-ai/cordis-plugin-include": "1.0.9",
+        "js-yaml": "4.3.2",
+        "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-cordis-host-runner": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-domain": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-json": "0.2.0-rc.2"
+      },
+      "doctor": {
+        "status": "degraded",
+        "coverage": {
+          "evaluated": [
+            "plugin.home",
+            "plugin.package",
+            "plugin.patch",
+            "plugin.support-matrix",
+            "host.install",
+            "host.cli",
+            "host.version",
+            "host.modules",
+            "host.composition",
+            "compat.legacy-adapters",
+            "capabilities.known-limits",
+            "data.root",
+            "state.memory",
+            "state.archives",
+            "state.event-bridge",
+            "migration.manifest",
+            "state.domain",
+            "promotion.journal",
+            "promotion.composition",
+            "promotion.pointer"
+          ],
+          "notEvaluated": [
+            {
+              "id": "runtime.capabilities",
+              "reason": "cli mode without a live context"
+            },
+            {
+              "id": "runtime.registration",
+              "reason": "cli mode without a live context"
+            },
+            {
+              "id": "runtime.internal-api",
+              "reason": "cli mode without a live context"
+            }
+          ]
+        },
+        "degradedCapabilities": [
+          {
+            "id": "evaluator-advisory",
+            "impact": "The domain evaluator records a decision and hard-vetoes a detected regression, but promotionGates remains the production authority; independent host baseline/test metrics are not wired in.",
+            "resolution": "Provide a DSH host surface that supplies independent baseline/test metrics for an experiment."
+          },
+          {
+            "id": "continuous-and-governance-not-wired",
+            "impact": "lib/dockyard-domain/continuous and lib/dockyard-domain/governance are pure domain modules covered by unit tests and are not started by the orchestrator live loop.",
+            "resolution": "Wire them into the live loop behind an explicit opt-in once the loop is designed."
+          },
+          {
+            "id": "host-only-promotion",
+            "impact": "Client halves are rejected; promoted host code runs through a cooperative Function(hostCode)() gate that is not a security sandbox.",
+            "resolution": "Requires an approval-aware durable composition contract from the host."
+          },
+          {
+            "id": "legacy-compat-adapters",
+            "impact": "lib/compat/legacy-startup-drift.js and the legacy preset/default-path handling stay present but disabled by default.",
+            "resolution": "Remove once no supported DSH layout publishes the legacy drift engine or preset layout."
+          },
+          {
+            "id": "internal-api-dependency",
+            "impact": "Two introspection surfaces are private to Cordis by its own rule: ctx.events._hooks (no public listener enumeration exists) and the ctx.reflect._getImpl() fallback (used only when the documented ctx.reflect.store + Context.isolate path is absent). FiberState.ACTIVE is not importable (const enum, erased at runtime), so ACTIVE is decided from documented lifecycle fields. The official loader/Include members used for the mounted promoted row (EntryTree.resolve/root, Entry.fiber/options/disabled) are public but undocumented.",
+            "resolution": "Replace ctx.events._hooks once the host publishes a public listener enumeration; every other surface already goes through a documented or explicitly classified path recorded in lib/cordis-compat.js."
+          }
+        ],
+        "levels": {
+          "plugin.home": "ok",
+          "plugin.package": "ok",
+          "plugin.patch": "ok",
+          "plugin.support-matrix": "ok",
+          "host.install": "ok",
+          "host.cli": "ok",
+          "host.version": "ok",
+          "host.modules": "ok",
+          "host.composition": "ok",
+          "runtime.capabilities": "not-evaluated",
+          "runtime.registration": "not-evaluated",
+          "runtime.internal-api": "not-evaluated",
+          "compat.legacy-adapters": "ok",
+          "capabilities.known-limits": "ok",
+          "data.root": "degraded",
+          "state.memory": "ok",
+          "state.archives": "ok",
+          "state.event-bridge": "ok",
+          "migration.manifest": "ok",
+          "state.domain": "ok",
+          "promotion.journal": "ok",
+          "promotion.composition": "ok",
+          "promotion.pointer": "ok"
+        },
+        "findings": [
+          {
+            "id": "runtime.capabilities",
+            "level": "not-evaluated",
+            "summary": "Live Cordis capabilities are not observable outside a running host session."
+          },
+          {
+            "id": "runtime.registration",
+            "level": "not-evaluated",
+            "summary": "Live tool registration is not observable outside a running host session."
+          },
+          {
+            "id": "runtime.internal-api",
+            "level": "not-evaluated",
+            "summary": "Introspection probes were not exercised outside a running host session."
+          },
+          {
+            "id": "data.root",
+            "level": "degraded",
+            "summary": "The Evolution data root is not initialized yet: data root is not initialized yet (created on first run)."
+          }
+        ]
+      },
+      "memoryShaAfterCore": "d0b97e8afacc7b5992e5078d26d1ca4e9b46ec0085f7b6acd0e3f90dd395748c",
+      "memoryShaBeforeUninstall": "d0b97e8afacc7b5992e5078d26d1ca4e9b46ec0085f7b6acd0e3f90dd395748c",
+      "memoryEntriesAtUninstall": 1,
+      "memoryEntriesAfterReinstall": 1,
+      "memoryShaAfterReinstall": "fc0b8876620b696ea9bc61c671626ef058133d4d19b07c8f28d2e778adfe7f3e",
+      "upgradeRollback": {
+        "from": "0.2.0-rc.3",
+        "to": "0.2.0-rc.3.upgrade",
+        "preservedUserData": true
+      },
+      "promotion": {
+        "promote": {
+          "ok": true,
+          "committed": {
+            "pluginName": "dsh-evolution-promoted-5528213db75f",
+            "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-5528213db75f",
+            "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-5528213db75f/lib/index.js",
+            "adapter": "official-include",
+            "rowId": "evolution-promoted-5528213db75f",
+            "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-muz0c44a-1.md",
+            "presetId": "evolution",
+            "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+            "promotionTimestamp": "2026-10-08T03:59:21.741Z",
+            "healthObservationWindow": 2
+          }
+        },
+        "restart-and-rollback": {
+          "ok": true,
+          "startupPhase": "stable",
+          "rolledBack": {
+            "pluginName": "dsh-evolution-promoted-497553141c67",
+            "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-497553141c67",
+            "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-497553141c67/lib/index.js",
+            "adapter": "official-include",
+            "rowId": "evolution-promoted-497553141c67",
+            "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-muz0c5vr-1.md",
+            "presetId": "evolution",
+            "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+            "promotionTimestamp": "2026-10-08T03:59:24.006Z",
+            "healthObservationWindow": 2
+          }
+        },
+        "verify": {
+          "ok": true
+        }
+      },
+      "ok": true,
+      "finishedAt": "2026-10-08T03:59:25.450Z"
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "packageVersion": "0.2.0-rc.3",
+      "tarball": "../dsh-metadata-dist/dsh-evolution-0.2.0-rc.3.tgz",
+      "tarballSha256": "c426e41a607e721d1c7c530e63cea6b168877c553f051abc4a4fcb26be8eba9f",
+      "contentSha256": "9fdf7c06b289c8ce2f9412325aa4accab25f64441a7b36e4c5a7f397cc55e140",
+      "node": "v26.10.0",
+      "platform": "darwin-arm64",
+      "work": "<work>",
+      "startedAt": "2026-10-08T03:59:01.280Z",
+      "steps": [
+        {
+          "name": "host-install",
+          "at": "2026-10-08T03:59:01.281Z",
+          "ok": true,
+          "reused": true
+        },
+        {
+          "name": "plugin-add",
+          "at": "2026-10-08T03:59:02.345Z",
+          "ok": true,
+          "code": 0,
+          "tail": [
+            "  Virtual store is at:             node_modules/.pnpm",
+            "Progress: resolved 4, reused 3, downloaded 1, added 4, done",
+            "Done in 781ms using pnpm v11.26.0"
+          ]
+        },
+        {
+          "name": "profile-lists-bundle",
+          "at": "2026-10-08T03:59:02.345Z",
+          "ok": true,
+          "bundles": [
+            "@deepseek-ai/dsh-base",
+            "@deepseek-ai/dsh-web-app",
+            "dsh-evolution"
+          ]
+        },
+        {
+          "name": "doctor-cli",
+          "at": "2026-10-08T03:59:02.609Z",
+          "ok": true,
+          "status": "degraded",
+          "exitCode": 1,
+          "hostVersion": "0.2.1-alpha.1",
+          "verified": true,
+          "degraded": 1,
+          "blocked": 0
+        },
+        {
+          "name": "core-flow",
+          "at": "2026-10-08T03:59:05.295Z",
+          "ok": true,
+          "toolCount": 9,
+          "tools": [
+            "evolution_canary_observe",
+            "evolution_doctor",
+            "evolution_history",
+            "evolution_measure",
+            "evolution_promote",
+            "evolution_propose",
+            "evolution_revert",
+            "evolution_runtime_inspect",
+            "evolution_trial"
+          ],
+          "steps": [
+            {
+              "name": "runtime-stable",
+              "ok": true
+            },
+            {
+              "name": "evolution_runtime_inspect",
+              "ok": true
+            },
+            {
+              "name": "evolution_propose",
+              "ok": true,
+              "phase": "proposed"
+            },
+            {
+              "name": "evolution_trial",
+              "ok": true,
+              "phase": "trial"
+            },
+            {
+              "name": "evolution_measure",
+              "ok": true,
+              "phase": "measured"
+            },
+            {
+              "name": "evolution_revert",
+              "ok": true,
+              "phase": "reverted",
+              "runtimeRecovered": true
+            },
+            {
+              "name": "evolution_runtime_inspect",
+              "ok": true
+            }
+          ],
+          "reverted": true,
+          "signatureDiff": {
+            "components": {
+              "removed": [],
+              "added": [
+                "cordis-dynamic#327"
+              ]
+            }
+          },
+          "memoryPersisted": true
+        },
+        {
+          "name": "lifecycle-verify",
+          "at": "2026-10-08T03:59:06.359Z",
+          "ok": true,
+          "result": {
+            "action": "verify",
+            "application": "applied",
+            "mountedBefore": true,
+            "mountedAfter": true,
+            "selected": true,
+            "toolCount": 9,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "lifecycle-disable",
+          "at": "2026-10-08T03:59:07.560Z",
+          "ok": true,
+          "result": {
+            "action": "disable",
+            "application": "applied",
+            "mountedBefore": true,
+            "mountedAfter": false,
+            "selected": false,
+            "toolCount": 0,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "lifecycle-enable",
+          "at": "2026-10-08T03:59:08.634Z",
+          "ok": true,
+          "result": {
+            "action": "enable",
+            "application": "restart-required",
+            "mountedBefore": false,
+            "mountedAfter": false,
+            "selected": true,
+            "toolCount": 0,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "lifecycle-verify",
+          "at": "2026-10-08T03:59:09.699Z",
+          "ok": true,
+          "result": {
+            "action": "verify",
+            "application": "applied",
+            "mountedBefore": true,
+            "mountedAfter": true,
+            "selected": true,
+            "toolCount": 9,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "plugin-remove",
+          "at": "2026-10-08T03:59:10.247Z",
+          "ok": true,
+          "code": 0,
+          "tail": [
+            "",
+            "Already up to date",
+            "Done in 271ms using pnpm v11.26.0"
+          ]
+        },
+        {
+          "name": "body-after-uninstall",
+          "at": "2026-10-08T03:59:11.592Z",
+          "ok": true,
+          "result": {
+            "bodyOk": true,
+            "evolutionAbsent": true,
+            "evolutionTools": 0
+          }
+        },
+        {
+          "name": "plugin-reinstall",
+          "at": "2026-10-08T03:59:12.331Z",
+          "ok": true,
+          "code": 0,
+          "tail": [
+            "  Virtual store is at:             node_modules/.pnpm",
+            "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
+            "Done in 442ms using pnpm v11.26.0"
+          ]
+        },
+        {
+          "name": "core-flow-after-reinstall",
+          "at": "2026-10-08T03:59:14.518Z",
+          "ok": true,
+          "toolCount": 9,
+          "reverted": true,
+          "memoryEntriesBefore": 1,
+          "memoryEntriesAfter": 1,
+          "existingMemoryRetained": true,
+          "signatureDiff": {
+            "components": {
+              "removed": [],
+              "added": [
+                "cordis-dynamic#327"
+              ]
+            }
+          }
+        },
+        {
+          "name": "cli-upgrade",
+          "at": "2026-10-08T03:59:15.423Z",
+          "ok": true,
+          "code": 0,
+          "installedVersion": "0.2.0-rc.3.upgrade",
+          "tail": [
+            "+",
+            "Progress: resolved 5, reused 1, downloaded 1, added 1, done",
+            "Done in 308ms using pnpm v11.26.0"
+          ]
+        },
+        {
+          "name": "host-after-upgrade",
+          "at": "2026-10-08T03:59:16.460Z",
+          "ok": true,
+          "result": {
+            "action": "verify",
+            "application": "applied",
+            "mountedBefore": true,
+            "mountedAfter": true,
+            "selected": true,
+            "toolCount": 9,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "cli-rollback",
+          "at": "2026-10-08T03:59:17.048Z",
+          "ok": true,
+          "code": 0,
+          "installedVersion": "0.2.0-rc.3",
+          "tail": [
+            "+",
+            "Progress: resolved 5, reused 2, downloaded 0, added 1, done",
+            "Done in 312ms using pnpm v11.26.0"
+          ]
+        },
+        {
+          "name": "host-after-rollback",
+          "at": "2026-10-08T03:59:18.122Z",
+          "ok": true,
+          "result": {
+            "action": "verify",
+            "application": "applied",
+            "mountedBefore": true,
+            "mountedAfter": true,
+            "selected": true,
+            "toolCount": 9,
+            "memoryUnchanged": true
+          }
+        },
+        {
+          "name": "promotion-promote",
+          "at": "2026-10-08T03:59:20.388Z",
+          "ok": true,
+          "steps": [
+            {
+              "name": "runtime-stable",
+              "ok": true
+            },
+            {
+              "name": "evolution_propose",
+              "ok": true,
+              "phase": "proposed"
+            },
+            {
+              "name": "evolution_trial",
+              "ok": true,
+              "phase": "trial"
+            },
+            {
+              "name": "event:promotion_probe_stable",
+              "ok": true
+            },
+            {
+              "name": "evolution_measure",
+              "ok": true,
+              "phase": "measured"
+            },
+            {
+              "name": "evolution_promote",
+              "ok": false,
+              "phase": "awaiting-owner-confirmation"
+            },
+            {
+              "name": "evolution_promote",
+              "ok": true,
+              "phase": "canary-observing"
+            },
+            {
+              "name": "event:promotion_probe_stable",
+              "ok": true
+            },
+            {
+              "name": "evolution_canary_observe",
+              "ok": true,
+              "phase": "canary-observing"
+            }
+          ],
+          "committed": {
+            "pluginName": "dsh-evolution-promoted-a410a3e1dc5b",
+            "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-a410a3e1dc5b",
+            "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-a410a3e1dc5b/lib/index.js",
+            "adapter": "official-include",
+            "rowId": "evolution-promoted-a410a3e1dc5b",
+            "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-muz0c31d-1.md",
+            "presetId": "evolution",
+            "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+            "promotionTimestamp": "2026-10-08T03:59:20.326Z",
+            "healthObservationWindow": 2
+          }
+        },
+        {
+          "name": "promotion-restart-and-rollback",
+          "at": "2026-10-08T03:59:22.784Z",
+          "ok": true,
+          "steps": [
+            {
+              "name": "event:promotion_probe_stable",
+              "ok": true
+            },
+            {
+              "name": "runtime-stable",
+              "ok": true
+            },
+            {
+              "name": "evolution_propose",
+              "ok": true,
+              "phase": "proposed"
+            },
+            {
+              "name": "evolution_trial",
+              "ok": true,
+              "phase": "trial"
+            },
+            {
+              "name": "event:promotion_probe_rollback",
+              "ok": true
+            },
+            {
+              "name": "evolution_measure",
+              "ok": true,
+              "phase": "measured"
+            },
+            {
+              "name": "evolution_promote",
+              "ok": false,
+              "phase": "awaiting-owner-confirmation"
+            },
+            {
+              "name": "evolution_promote",
+              "ok": true,
+              "phase": "canary-observing"
+            },
+            {
+              "name": "event:promotion_probe_rollback",
+              "ok": true
+            },
+            {
+              "name": "evolution_canary_observe",
+              "ok": false,
+              "phase": "rolled-back"
+            }
+          ],
+          "startupPhase": "stable",
+          "rolledBack": {
+            "pluginName": "dsh-evolution-promoted-1205e1229c88",
+            "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-1205e1229c88",
+            "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-1205e1229c88/lib/index.js",
+            "adapter": "official-include",
+            "rowId": "evolution-promoted-1205e1229c88",
+            "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-muz0c4si-1.md",
+            "presetId": "evolution",
+            "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+            "promotionTimestamp": "2026-10-08T03:59:22.595Z",
+            "healthObservationWindow": 2
+          }
+        },
+        {
+          "name": "promotion-verify",
+          "at": "2026-10-08T03:59:23.715Z",
+          "ok": true,
+          "steps": [
+            {
+              "name": "event:promotion_probe_stable",
+              "ok": true
+            }
+          ]
+        },
+        {
+          "name": "doctor-final",
+          "at": "2026-10-08T03:59:24.024Z",
+          "ok": true,
+          "status": "healthy",
+          "exitCode": 0,
+          "findings": [
+            {
+              "id": "runtime.capabilities",
+              "level": "not-evaluated",
+              "summary": "Live Cordis capabilities are not observable outside a running host session."
+            },
+            {
+              "id": "runtime.registration",
+              "level": "not-evaluated",
+              "summary": "Live tool registration is not observable outside a running host session."
+            },
+            {
+              "id": "runtime.internal-api",
+              "level": "not-evaluated",
+              "summary": "Introspection probes were not exercised outside a running host session."
+            }
+          ]
+        }
+      ],
+      "hostVersion": "0.2.1-alpha.1",
+      "hostModules": {
+        "@deepseek-ai/dsh": "0.2.1-alpha.1",
+        "@deepseek-ai/cordis": "4.0.5-alpha.1",
+        "@deepseek-ai/cordis-plugin-include": "1.0.10-alpha.1",
+        "js-yaml": "4.3.2",
+        "@deepseek-ai/dsh-tools": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-cordis-host-runner": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-storage-domain": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-storage-json": "0.2.1-alpha.1"
+      },
+      "doctor": {
+        "status": "degraded",
+        "coverage": {
+          "evaluated": [
+            "plugin.home",
+            "plugin.package",
+            "plugin.patch",
+            "plugin.support-matrix",
+            "host.install",
+            "host.cli",
+            "host.version",
+            "host.modules",
+            "host.composition",
+            "compat.legacy-adapters",
+            "capabilities.known-limits",
+            "data.root",
+            "state.memory",
+            "state.archives",
+            "state.event-bridge",
+            "migration.manifest",
+            "state.domain",
+            "promotion.journal",
+            "promotion.composition",
+            "promotion.pointer"
+          ],
+          "notEvaluated": [
+            {
+              "id": "runtime.capabilities",
+              "reason": "cli mode without a live context"
+            },
+            {
+              "id": "runtime.registration",
+              "reason": "cli mode without a live context"
+            },
+            {
+              "id": "runtime.internal-api",
+              "reason": "cli mode without a live context"
+            }
+          ]
+        },
+        "degradedCapabilities": [
+          {
+            "id": "evaluator-advisory",
+            "impact": "The domain evaluator records a decision and hard-vetoes a detected regression, but promotionGates remains the production authority; independent host baseline/test metrics are not wired in.",
+            "resolution": "Provide a DSH host surface that supplies independent baseline/test metrics for an experiment."
+          },
+          {
+            "id": "continuous-and-governance-not-wired",
+            "impact": "lib/dockyard-domain/continuous and lib/dockyard-domain/governance are pure domain modules covered by unit tests and are not started by the orchestrator live loop.",
+            "resolution": "Wire them into the live loop behind an explicit opt-in once the loop is designed."
+          },
+          {
+            "id": "host-only-promotion",
+            "impact": "Client halves are rejected; promoted host code runs through a cooperative Function(hostCode)() gate that is not a security sandbox.",
+            "resolution": "Requires an approval-aware durable composition contract from the host."
+          },
+          {
+            "id": "legacy-compat-adapters",
+            "impact": "lib/compat/legacy-startup-drift.js and the legacy preset/default-path handling stay present but disabled by default.",
+            "resolution": "Remove once no supported DSH layout publishes the legacy drift engine or preset layout."
+          },
+          {
+            "id": "internal-api-dependency",
+            "impact": "Two introspection surfaces are private to Cordis by its own rule: ctx.events._hooks (no public listener enumeration exists) and the ctx.reflect._getImpl() fallback (used only when the documented ctx.reflect.store + Context.isolate path is absent). FiberState.ACTIVE is not importable (const enum, erased at runtime), so ACTIVE is decided from documented lifecycle fields. The official loader/Include members used for the mounted promoted row (EntryTree.resolve/root, Entry.fiber/options/disabled) are public but undocumented.",
+            "resolution": "Replace ctx.events._hooks once the host publishes a public listener enumeration; every other surface already goes through a documented or explicitly classified path recorded in lib/cordis-compat.js."
+          }
+        ],
+        "levels": {
+          "plugin.home": "ok",
+          "plugin.package": "ok",
+          "plugin.patch": "ok",
+          "plugin.support-matrix": "ok",
+          "host.install": "ok",
+          "host.cli": "ok",
+          "host.version": "ok",
+          "host.modules": "ok",
+          "host.composition": "ok",
+          "runtime.capabilities": "not-evaluated",
+          "runtime.registration": "not-evaluated",
+          "runtime.internal-api": "not-evaluated",
+          "compat.legacy-adapters": "ok",
+          "capabilities.known-limits": "ok",
+          "data.root": "degraded",
+          "state.memory": "ok",
+          "state.archives": "ok",
+          "state.event-bridge": "ok",
+          "migration.manifest": "ok",
+          "state.domain": "ok",
+          "promotion.journal": "ok",
+          "promotion.composition": "ok",
+          "promotion.pointer": "ok"
+        },
+        "findings": [
+          {
+            "id": "runtime.capabilities",
+            "level": "not-evaluated",
+            "summary": "Live Cordis capabilities are not observable outside a running host session."
+          },
+          {
+            "id": "runtime.registration",
+            "level": "not-evaluated",
+            "summary": "Live tool registration is not observable outside a running host session."
+          },
+          {
+            "id": "runtime.internal-api",
+            "level": "not-evaluated",
+            "summary": "Introspection probes were not exercised outside a running host session."
+          },
+          {
+            "id": "data.root",
+            "level": "degraded",
+            "summary": "The Evolution data root is not initialized yet: data root is not initialized yet (created on first run)."
+          }
+        ]
+      },
+      "memoryShaAfterCore": "75f6761ee49dc58753b669cdfabd9bbcff5d6b33fb1ff299de460f627d274ac8",
+      "memoryShaBeforeUninstall": "75f6761ee49dc58753b669cdfabd9bbcff5d6b33fb1ff299de460f627d274ac8",
+      "memoryEntriesAtUninstall": 1,
+      "memoryEntriesAfterReinstall": 1,
+      "memoryShaAfterReinstall": "9f79a83a17400b61f268fb0d228f7b6977e2f3a343d166995f6a2ed34b2f8bff",
+      "upgradeRollback": {
+        "from": "0.2.0-rc.3",
+        "to": "0.2.0-rc.3.upgrade",
+        "preservedUserData": true
+      },
+      "promotion": {
+        "promote": {
+          "ok": true,
+          "committed": {
+            "pluginName": "dsh-evolution-promoted-a410a3e1dc5b",
+            "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-a410a3e1dc5b",
+            "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-a410a3e1dc5b/lib/index.js",
+            "adapter": "official-include",
+            "rowId": "evolution-promoted-a410a3e1dc5b",
+            "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-muz0c31d-1.md",
+            "presetId": "evolution",
+            "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+            "promotionTimestamp": "2026-10-08T03:59:20.326Z",
+            "healthObservationWindow": 2
+          }
+        },
+        "restart-and-rollback": {
+          "ok": true,
+          "startupPhase": "stable",
+          "rolledBack": {
+            "pluginName": "dsh-evolution-promoted-1205e1229c88",
+            "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-1205e1229c88",
+            "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-1205e1229c88/lib/index.js",
+            "adapter": "official-include",
+            "rowId": "evolution-promoted-1205e1229c88",
+            "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-muz0c4si-1.md",
+            "presetId": "evolution",
+            "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+            "promotionTimestamp": "2026-10-08T03:59:22.595Z",
+            "healthObservationWindow": 2
+          }
+        },
+        "verify": {
+          "ok": true
+        }
+      },
+      "ok": true,
+      "finishedAt": "2026-10-08T03:59:24.024Z"
+    }
+  ]
+}

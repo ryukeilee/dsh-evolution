@@ -271,6 +271,10 @@ test("history window preserves full-history ordering/count and detached records"
       const full = memory.history("cycles");
       const size = Math.min(50, Math.max(1, Number(limit) || 10));
       assert.deepEqual(memory.historyWindow("cycles", limit), { count: full.length, entries: full.slice(-size) });
+      assert.deepEqual(memory.historyWindow("cycles", limit, { metadataOnly: true }), {
+        count: full.length,
+        entries: full.slice(-size).map(({ id, status, eventType, recordedAt }) => ({ id, status, eventType, recordedAt })),
+      });
     }
     const window = memory.historyWindow("cycles", 2);
     window.entries[0].details.value = -100;
