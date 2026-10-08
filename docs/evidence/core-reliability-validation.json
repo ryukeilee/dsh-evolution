@@ -1,0 +1,72 @@
+{
+  "baselineCommit": "f40cb5ebb09a4eade6ad7cc0c21dc7ba9f25e40a",
+  "node": "v26.10.0",
+  "platform": "darwin-arm64",
+  "baselineRegression": {
+    "exitCode": 1,
+    "tests": 4,
+    "pass": 2,
+    "fail": 2,
+    "output": "✖ pre-trial host loading does not invalidate cleanup, and the proof uses the actual trial boundary (8.802541ms)\n✔ drift during the trial still fails recovery and retains target ownership (3.397042ms)\n✖ an unreadable private service inventory cannot prove recovery even when both reads fail (1.88075ms)\n✔ failed cleanup receipts cannot pass recovery with an unchanged runtime (3.324083ms)\nℹ tests 4\nℹ suites 0\nℹ pass 2\nℹ fail 2\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 134.358916\n\n✖ failing tests:\n\ntest at test/trial-recovery-boundary.test.mjs:43:1\n✖ pre-trial host loading does not invalidate cleanup, and the proof uses the actual trial boundary (8.802541ms)\n  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  false !== true\n  \n      at TestContext.<anonymous> (file://<repo>/test/trial-recovery-boundary.test.mjs:50:10)\n      at async Test.run (node:internal/test_runner/test:1409:7)\n      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: false,\n    expected: true,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n\ntest at test/trial-recovery-boundary.test.mjs:70:1\n✖ an unreadable private service inventory cannot prove recovery even when both reads fail (1.88075ms)\n  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n  \n    assert.ok(before.recoveryProof.unknown.includes('service-registry'))\n  \n      at TestContext.<anonymous> (file://<repo>/test/trial-recovery-boundary.test.mjs:76:10)\n      at Test.runInAsyncScope (node:async_hooks:226:14)\n      at Test.run (node:internal/test_runner/test:1402:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)\n      at Test.postRun (node:internal/test_runner/test:1542:19)\n      at Test.run (node:internal/test_runner/test:1467:12)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: false,\n    expected: true,\n    operator: '==',\n    diff: 'simple'\n  }\n"
+  },
+  "candidateSuite": {
+    "exitCode": 1,
+    "tests": 209,
+    "pass": 207,
+    "fail": 2,
+    "skipped": 0,
+    "failures": [
+      "the working tree still builds exactly the pinned content",
+      "every shipped file in the tree matches the artifact byte for byte"
+    ],
+    "reason": "Unreleased source intentionally differs from immutable rc.4; release guards remain unchanged."
+  },
+  "candidatePack": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.4",
+    "filename": "dsh-evolution-0.2.0-rc.4.tgz",
+    "sha256": "31ee71dbcefc10295942452b1ad574d2adc1bf59f928e3860b0f721a8cdd0c54",
+    "contentSha256": "60646e809e81084aa66d8254d16b1c9ba545c99b51ecd4e3dadffbd7b46bc36f",
+    "entries": 50,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.10.0",
+      "npm": "11.19.1",
+      "platform": "darwin-arm64"
+    }
+  },
+  "hosts": [
+    {
+      "file": "core-reliability-dsh-0.2.0-rc.2.json",
+      "ok": true,
+      "steps": 21,
+      "allStepsPassed": true,
+      "finalDoctor": "healthy",
+      "tarballSha256": "31ee71dbcefc10295942452b1ad574d2adc1bf59f928e3860b0f721a8cdd0c54",
+      "contentSha256": "60646e809e81084aa66d8254d16b1c9ba545c99b51ecd4e3dadffbd7b46bc36f"
+    },
+    {
+      "file": "core-reliability-dsh-0.2.1-alpha.1.json",
+      "ok": true,
+      "steps": 21,
+      "allStepsPassed": true,
+      "finalDoctor": "healthy",
+      "tarballSha256": "31ee71dbcefc10295942452b1ad574d2adc1bf59f928e3860b0f721a8cdd0c54",
+      "contentSha256": "60646e809e81084aa66d8254d16b1c9ba545c99b51ecd4e3dadffbd7b46bc36f"
+    }
+  ],
+  "releasedArtifactVerified": true,
+  "review": {
+    "scope": [
+      "lib/orchestrator.js",
+      "lib/cordis-compat.js",
+      "test/trial-recovery-boundary.test.mjs",
+      "scripts/acceptance/probes/core-probe.mjs"
+    ],
+    "blockingFindings": [],
+    "method": "independent static review"
+  }
+}

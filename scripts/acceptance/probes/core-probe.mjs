@@ -81,10 +81,9 @@ export function apply(ctx) {
 
     try {
       // The host creates some fibers lazily right after boot (for example the
-      // dynamic Cordis runner). The trial baseline is captured at propose time
-      // and must equal the post-dispose signature, so wait until the live
-      // runtime stops changing before proposing; otherwise a fiber that appears
-      // mid-experiment is wrongly reported as unrecovered cleanup.
+      // dynamic Cordis runner). Wait for boot to finish so later drift during
+      // the trial remains a real failure. Below we deliberately load a normal
+      // host plugin between propose and trial to exercise the trial boundary.
       let previous = null;
       let stable = 0;
       const stableDeadline = Date.now() + 20000;
@@ -102,7 +101,7 @@ export function apply(ctx) {
 
       const existingMemory = ctx.evolution.orchestrator.memory.snapshot().entries;
       const baselineRuntime = await call('evolution_runtime_inspect', {});
-      const baseline = signatureOf(baselineRuntime);
+      let baseline = signatureOf(baselineRuntime);
 
       const proposed = await call('evolution_propose', {
         why: 'release acceptance probe',
@@ -111,6 +110,21 @@ export function apply(ctx) {
         successMetrics: ['cleanup restores the pre-trial baseline'],
       });
       if (proposed?.ok === false) return { tools, toolCount: tools.length, steps, failure: 'propose refused' };
+
+      let loaded = false;
+      const lateHost = ctx.plugin({ name: 'acceptance-late-host', apply(scope) {
+        scope.on('evolution/acceptance-late-host', () => {});
+        loaded = true;
+      } });
+      // A normal official Cordis registration, with no DSH source patch.
+      ctx.effect(() => () => lateHost.dispose());
+      await waitFor(() => loaded, 'the host plugin loaded after propose');
+      const preTrialRuntime = await call('evolution_runtime_inspect', {});
+      const preTrialSignature = signatureOf(preTrialRuntime);
+      const boundaryDiff = diffSignatures(baseline, preTrialSignature);
+      if (!Object.keys(boundaryDiff).length) throw new Error('the pre-trial drift fixture changed no runtime facts');
+      baseline = preTrialSignature;
+      steps.push({ name: 'pre-trial-host-drift', ok: true });
 
       const trial = await call('evolution_trial', {
         experimentId: proposed.experimentId,

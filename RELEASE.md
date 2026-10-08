@@ -2,20 +2,20 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前本地最终候选版本：`0.2.0-rc.4`，收敛领域查询、运行时检查、签名、doctor 与事件桥证据恢复五轮性能优化。固定产物和两个官方宿主完整验收针对同一内容及字节；本候选未创建 tag、draft 或公开发布。历史公开 `v0.2.0-rc.3` 的固定点与发布后验收记录保留在 `docs/evidence/rc3-release-audit.json` 及 `rc3-postpublish-*.json`。前五轮证据和失败记录保持原样，最终收口见 `docs/performance/final-candidate.md`。
+当前固定版本：`0.2.0-rc.5`，收口 Trial 恢复基线与不可读服务清单两项可靠性修复，保留此前五轮性能优化、安全、恢复与回滚语义。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。发布状态、远端 CI / CodeQL、匿名下载与发布后双宿主证据见 `docs/evidence/rc5-release-audit.json`。历史 rc.4 固定点与发布后记录保留在 `docs/evidence/rc4-release-audit.json` 及 `rc4-postpublish-*.json`；本轮不修改历史 tag 或发布附件。修复边界及原始失败记录见 `docs/core-reliability.md`。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.4.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.5.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-本候选尚无公开发布入口。历史公开 rc.3 的入口和资产记录见上述历史审计。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
+发布入口为 `https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.5`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。实际完成状态以发布审计为准。
 
-`release/` 始终只固定**当前候选**的产物。历史版本的产物与固定点不会随仓库常驻：它们在对应 tag / commit 的 git 历史里，也在各自已发布的 Release 附件里。
+`release/manifest.json` 只固定当前版本。历史 tarball 可以共存，发布流程仅选择 manifest 指定的文件；历史固定点也保留在对应 tag / commit 与各自 Release 附件中。
 
 发布的字节与 CI 重新构建的字节**允许不同**：`npm pack` 通过随 Node 附带的 zlib 压缩，npm 10（Node 22）与 npm 11（Node 26）对完全相同的文件会产生不同的压缩字节。实测：同一棵树在 npm 10.9.3 下得到 `46f6e4a4…`、在 npm 11.19.1 下得到 `040e0d9e…`，而解包后的文件逐字节相同、未压缩 tar 大小相同。
 
@@ -29,14 +29,14 @@
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.4，仓库内容）
+# 当前本地候选（0.2.0-rc.5，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
-# 尚未创建 v0.2.0-rc.4 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
+node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.5 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.4，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0-rc.5，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -48,7 +48,7 @@ shasum -a 256 -c SHA256SUMS                    # Linux：sha256sum --check SHA25
 ```sh
 git clone <this-repo> && cd dsh-evolution
 npm ci                 # 严格按 package-lock.json 安装
-npm test               # 205/205（含前五轮差分回归和发布 pin 一致性）
+npm test               # 完整套件（含可靠性、安全、性能差分与发布 pin 回归）
 npm run pack:check     # 16 项检查
 npm run release:verify # 固定产物与发布固定点一致
 node --version         # 需要 ^22.19.0 || >=24.0.0
@@ -121,7 +121,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 5. **promotion 的领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威，领域 evaluator 只提供记录在案的决策与 regression 硬 veto；尚未接入宿主提供的独立生产 baseline/test 指标。
 6. **`continuous/` 与 `governance/` 领域模块未接入 orchestrator 实时循环。** 它们有单测覆盖，但不受宿主验收路径保护。
 7. **内部/未文档化宿主接口仍被依赖。** `ctx.events._hooks` 与 `ctx.reflect._getImpl()` 回退路径是私有的；official loader / Include 的 `EntryTree.resolve`、`Entry.fiber/options/disabled` 是公开但未文档化的。`runtime.internal-api` 会逐项探测并在缺失时降级为 `degraded`，但升级 DSH 必须重新跑完整验收。
-8. **`trial` 的基线在 `propose` 时抓取，宿主懒加载 fiber 会造成竞态。** 验收探针因此先等待运行时签名稳定再 propose；真实用户如果恰好在宿主懒加载期间 propose，仍可能看到 `revert-failed`。这是既有设计属性，本次未修改。
+8. **Trial 期间持续存在的外部漂移仍拒绝恢复。** rc.5 在 Trial 首次修改运行时前同步捕获基线，解决 propose→trial 正常宿主加载的误报；不会重建基线来接纳 Trial 期间的变化。签名仍是前后可观察清单比较，不能记录已自行恢复的瞬态漂移，也不能证明任意合作式代码或 disposer 的全部外部效果。
 9. **事件签名密钥 `event-bridge.key` 无轮换/吊销流程。** 它只在该数据根首次创建，禁用与卸载都不会删除。
 10. **未做的发布动作：** npm 发布、代码签名 / provenance（SLSA）、SBOM。Code scanning 现已启用，但本 RC 仍不提供供应链签名。
 11. **`0.2.1-alpha.1` 的 npm dist-tag 会移动。** 验收记录的是该精确版本号；上游把 `alpha` 指向新版本后，本仓库声明的仍是 `0.2.1-alpha.1`。
