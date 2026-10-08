@@ -1,0 +1,80 @@
+{
+  "node": "v26.10.0",
+  "platform": "darwin-arm64",
+  "cpu": "median of 3 process.cpuUsage runs, microseconds/call",
+  "allocation": "V8 sampled bytes/call including collected objects, 1024-byte interval",
+  "results": [
+    {
+      "path": "inspect",
+      "observations": 20,
+      "candidates": 0,
+      "iterations": 1500,
+      "beforeCpuUs": 35.80733333333333,
+      "afterCpuUs": 20.883333333333333,
+      "cpuReduction": 0.4167861331943178,
+      "beforeAllocatedBytes": 48131.84,
+      "afterAllocatedBytes": 31430.933333333334,
+      "allocationReduction": 0.34698251026070603
+    },
+    {
+      "path": "registered-inspect",
+      "observations": 20,
+      "candidates": 0,
+      "iterations": 1500,
+      "beforeCpuUs": 47.53066666666667,
+      "afterCpuUs": 31.874,
+      "cpuReduction": 0.3294013689407541,
+      "beforeAllocatedBytes": 78048.21333333333,
+      "afterAllocatedBytes": 37765.36,
+      "allocationReduction": 0.5161278088620778
+    },
+    {
+      "path": "inspect",
+      "observations": 20,
+      "candidates": 100,
+      "iterations": 1500,
+      "beforeCpuUs": 174.99533333333332,
+      "afterCpuUs": 84.12,
+      "cpuReduction": 0.5193014670867413,
+      "beforeAllocatedBytes": 222404.08,
+      "afterAllocatedBytes": 136622.42666666667,
+      "allocationReduction": 0.38570179707734376
+    },
+    {
+      "path": "registered-inspect",
+      "observations": 20,
+      "candidates": 100,
+      "iterations": 1500,
+      "beforeCpuUs": 220.14533333333333,
+      "afterCpuUs": 141.876,
+      "cpuReduction": 0.3555348285072285,
+      "beforeAllocatedBytes": 355081.86666666664,
+      "afterAllocatedBytes": 152533.36,
+      "allocationReduction": 0.5704276272063457
+    },
+    {
+      "path": "inspect",
+      "observations": 20,
+      "candidates": 1000,
+      "iterations": 500,
+      "beforeCpuUs": 1417.666,
+      "afterCpuUs": 684.404,
+      "cpuReduction": 0.5172318444541943,
+      "beforeAllocatedBytes": 1824405.36,
+      "afterAllocatedBytes": 1034686.0533333333,
+      "allocationReduction": 0.4328639478819919
+    },
+    {
+      "path": "registered-inspect",
+      "observations": 20,
+      "candidates": 1000,
+      "iterations": 500,
+      "beforeCpuUs": 1803.054,
+      "afterCpuUs": 1140.768,
+      "cpuReduction": 0.3673134581659784,
+      "beforeAllocatedBytes": 2885542.453333333,
+      "afterAllocatedBytes": 1150690.24,
+      "allocationReduction": 0.6012222108634233
+    }
+  ]
+}

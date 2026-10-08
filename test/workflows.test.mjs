@@ -131,7 +131,42 @@ test('the release workflow only publishes a draft of the verified artifact, neve
   // The released bytes are the committed ones, verified — never a fresh build,
   // because npm's compression differs between npm versions.
   assert.match(runs, /npm run release:verify/);
-  assert.match(runs, /gh release upload "\$tag" release\/dsh-evolution-\*\.tgz/);
+  assert.match(runs, /gh release upload "\$tag" "release\/\$artifact"/);
+  // Execute both asset steps with a local gh substitute. Historical tarballs
+  // coexist, but only the manifest-selected bytes may be uploaded/downloaded.
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-release-pin-'));
+  try {
+    fs.cpSync(path.join(repoRoot, 'release'), path.join(scratch, 'release'), { recursive: true });
+    fs.writeFileSync(path.join(scratch, 'release', 'dsh-evolution-historical.tgz'), 'not an archive');
+    fs.cpSync(path.join(repoRoot, 'scripts', 'release'), path.join(scratch, 'scripts', 'release'), { recursive: true });
+    fs.copyFileSync(path.join(repoRoot, 'package.json'), path.join(scratch, 'package.json'));
+    const bin = path.join(scratch, 'bin');
+    fs.mkdirSync(bin);
+    fs.writeFileSync(path.join(bin, 'gh'), `#!${process.execPath}
+import fs from 'node:fs';
+import path from 'node:path';
+const args = process.argv.slice(2);
+fs.appendFileSync(process.env.GH_CALLS, JSON.stringify(args) + '\\n');
+if (args[1] === 'download') {
+  const filename = args[args.indexOf('--pattern') + 1];
+  const dir = args[args.indexOf('--dir') + 1];
+  fs.copyFileSync(path.join('release', filename), path.join(dir, filename));
+}
+`, { mode: 0o755 });
+    const callsFile = path.join(scratch, 'calls.jsonl');
+    const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, GH_CALLS: callsFile };
+    for (const step of release.jobs.release.steps.filter((step) => /gh release (upload|download)/.test(step.run || ''))) {
+      const run = step.run.replaceAll('${{ steps.tag.outputs.tag }}', 'v-local-test').replaceAll('/tmp/uploaded', path.join(scratch, 'uploaded'));
+      execFileSync('bash', ['-c', run], { cwd: scratch, env });
+    }
+    const calls = fs.readFileSync(callsFile, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    const pin = JSON.parse(fs.readFileSync(path.join(scratch, 'release', 'manifest.json'), 'utf8'));
+    assert.deepEqual(calls.find((args) => args[1] === 'upload'), ['release', 'upload', 'v-local-test', `release/${pin.filename}`, 'release/SHA256SUMS', 'release/manifest.json']);
+    assert.deepEqual(calls.filter((args) => args[1] === 'download').map((args) => args[args.indexOf('--pattern') + 1]), [pin.filename, 'SHA256SUMS', 'manifest.json']);
+    assert.deepEqual(fs.readdirSync(path.join(scratch, 'uploaded')).sort(), [pin.filename, 'SHA256SUMS', 'manifest.json'].sort());
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
   assert.equal(/npm run release:pack/.test(runs), false, 'the release workflow must not rebuild the published artifact');
   const serialized = JSON.stringify(release);
   for (const forbidden of ['npm publish', 'NODE_AUTH_TOKEN', 'NPM_TOKEN', '--provenance']) {
@@ -165,7 +200,7 @@ test('the release workflow verifies the tag, the commit, the pin and the checksu
   assert.match(runs, /sha256sum --check SHA256SUMS/);
   // The bytes GitHub ends up serving are downloaded back and re-verified.
   assert.match(runs, /gh release download "\$tag"/);
-  assert.match(runs, /verify-artifact\.mjs \/tmp\/uploaded\//);
+  assert.match(runs, /verify-artifact\.mjs "\/tmp\/uploaded\/\$artifact"/);
   assert.match(runs, /diff -u release\/SHA256SUMS/);
   // The provenance check walks history, so the checkout cannot be shallow.
   const checkout = release.jobs.release.steps.find((step) => String(step.uses).startsWith('actions/checkout@'));

@@ -1,0 +1,134 @@
+{
+  "node": "v26.10.0",
+  "platform": "darwin-arm64",
+  "cpu": "median of 3 alternating process.cpuUsage runs, microseconds/call",
+  "allocation": "V8 sampled bytes/call including collected objects, 1024-byte interval",
+  "results": [
+    {
+      "path": "runtimeSignature",
+      "count": 20,
+      "iterations": 400,
+      "oldCpu": [
+        130.6725,
+        132.3525,
+        141.5675
+      ],
+      "newCpu": [
+        126.53,
+        128.195,
+        129.0175
+      ],
+      "beforeCpuUs": 132.3525,
+      "afterCpuUs": 128.195,
+      "cpuReduction": 0.03141232692997864,
+      "beforeAllocatedBytes": 215033.92,
+      "afterAllocatedBytes": 213362.88,
+      "allocationReduction": 0.007771053050607102
+    },
+    {
+      "path": "signatureEqual",
+      "count": 20,
+      "iterations": 400,
+      "oldCpu": [
+        272.5925,
+        273.1725,
+        274.6175
+      ],
+      "newCpu": [
+        270.9025,
+        271.175,
+        271.4075
+      ],
+      "beforeCpuUs": 273.1725,
+      "afterCpuUs": 271.175,
+      "cpuReduction": 0.007312229452086094,
+      "beforeAllocatedBytes": 459925.76,
+      "afterAllocatedBytes": 459068.96,
+      "allocationReduction": 0.0018629093530224683
+    },
+    {
+      "path": "runtimeSignature",
+      "count": 100,
+      "iterations": 400,
+      "oldCpu": [
+        698.115,
+        710.355,
+        715.63
+      ],
+      "newCpu": [
+        505.335,
+        511.0175,
+        518.455
+      ],
+      "beforeCpuUs": 710.355,
+      "afterCpuUs": 511.0175,
+      "cpuReduction": 0.28061673388657793,
+      "beforeAllocatedBytes": 1045998.8,
+      "afterAllocatedBytes": 875923.92,
+      "allocationReduction": 0.1625956741059359
+    },
+    {
+      "path": "signatureEqual",
+      "count": 100,
+      "iterations": 400,
+      "oldCpu": [
+        1471.385,
+        1500.86,
+        1550.9025
+      ],
+      "newCpu": [
+        1059.4925,
+        1059.775,
+        1085.79
+      ],
+      "beforeCpuUs": 1500.86,
+      "afterCpuUs": 1059.775,
+      "cpuReduction": 0.29388817078208485,
+      "beforeAllocatedBytes": 2203631.28,
+      "afterAllocatedBytes": 1879080.48,
+      "allocationReduction": 0.14727999323008334
+    },
+    {
+      "path": "runtimeSignature",
+      "count": 1000,
+      "iterations": 100,
+      "oldCpu": [
+        9831.42,
+        9881.99,
+        9908.38
+      ],
+      "newCpu": [
+        5288.08,
+        5311.71,
+        5353.27
+      ],
+      "beforeCpuUs": 9881.99,
+      "afterCpuUs": 5311.71,
+      "cpuReduction": 0.46248579486520425,
+      "beforeAllocatedBytes": 12921711.52,
+      "afterAllocatedBytes": 7826240.56,
+      "allocationReduction": 0.39433405954879264
+    },
+    {
+      "path": "signatureEqual",
+      "count": 1000,
+      "iterations": 100,
+      "oldCpu": [
+        20470.12,
+        20481.13,
+        20654.53
+      ],
+      "newCpu": [
+        11448.94,
+        11451.56,
+        11520.54
+      ],
+      "beforeCpuUs": 20481.13,
+      "afterCpuUs": 11451.56,
+      "cpuReduction": 0.44087264716351104,
+      "beforeAllocatedBytes": 27019914.48,
+      "afterAllocatedBytes": 16803289.04,
+      "allocationReduction": 0.37811464753385116
+    }
+  ]
+}

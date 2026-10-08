@@ -1,0 +1,234 @@
+{
+  "baselineCommit": "9af8ffd",
+  "node": "v26.10.0",
+  "platform": "darwin/arm64",
+  "records": 50000,
+  "payloadBytes": 256,
+  "fileBytes": 27148012,
+  "samples": 5,
+  "equality": true,
+  "allocation": "V8 sampled bytes/call including collected objects; 32768-byte interval, 3 calls",
+  "rssMeasurement": "fresh process maxRSS KiB after 3 replays; includes runtime/imports, excludes fixture construction",
+  "results": [
+    {
+      "baseline": {
+        "samples": [
+          {
+            "cpuMs": 252.654,
+            "elapsedMs": 236.75191700000005
+          },
+          {
+            "cpuMs": 259.203,
+            "elapsedMs": 238.252166
+          },
+          {
+            "cpuMs": 250.837,
+            "elapsedMs": 234.17737499999998
+          },
+          {
+            "cpuMs": 253.085,
+            "elapsedMs": 239.43266600000015
+          },
+          {
+            "cpuMs": 260.971,
+            "elapsedMs": 235.82549999999992
+          }
+        ],
+        "median": {
+          "cpuMs": 253.085,
+          "elapsedMs": 236.75191700000005
+        }
+      },
+      "candidate": {
+        "samples": [
+          {
+            "cpuMs": 223.972,
+            "elapsedMs": 211.12241700000004
+          },
+          {
+            "cpuMs": 225.342,
+            "elapsedMs": 210.46466599999985
+          },
+          {
+            "cpuMs": 222.496,
+            "elapsedMs": 209.965917
+          },
+          {
+            "cpuMs": 221.962,
+            "elapsedMs": 208.49962499999992
+          },
+          {
+            "cpuMs": 221.317,
+            "elapsedMs": 208.79679099999976
+          }
+        ],
+        "median": {
+          "cpuMs": 222.496,
+          "elapsedMs": 209.965917
+        }
+      }
+    },
+    {
+      "candidate": {
+        "samples": [
+          {
+            "cpuMs": 222.286,
+            "elapsedMs": 208.93695899999966
+          },
+          {
+            "cpuMs": 221.582,
+            "elapsedMs": 207.11833399999978
+          },
+          {
+            "cpuMs": 220.1,
+            "elapsedMs": 207.37424999999985
+          },
+          {
+            "cpuMs": 220.72,
+            "elapsedMs": 206.88029200000074
+          },
+          {
+            "cpuMs": 220.831,
+            "elapsedMs": 208.56129200000032
+          }
+        ],
+        "median": {
+          "cpuMs": 220.831,
+          "elapsedMs": 207.37424999999985
+        }
+      },
+      "baseline": {
+        "samples": [
+          {
+            "cpuMs": 254.747,
+            "elapsedMs": 239.39333299999998
+          },
+          {
+            "cpuMs": 255.089,
+            "elapsedMs": 236.79824999999983
+          },
+          {
+            "cpuMs": 248.862,
+            "elapsedMs": 232.68870900000002
+          },
+          {
+            "cpuMs": 251.76,
+            "elapsedMs": 238.18937499999993
+          },
+          {
+            "cpuMs": 257.907,
+            "elapsedMs": 234.52145800000017
+          }
+        ],
+        "median": {
+          "cpuMs": 254.747,
+          "elapsedMs": 236.79824999999983
+        }
+      }
+    },
+    {
+      "baseline": {
+        "samples": [
+          {
+            "cpuMs": 250.221,
+            "elapsedMs": 237.6205
+          },
+          {
+            "cpuMs": 257.537,
+            "elapsedMs": 238.05445900000086
+          },
+          {
+            "cpuMs": 250.063,
+            "elapsedMs": 233.7644160000009
+          },
+          {
+            "cpuMs": 252.235,
+            "elapsedMs": 235.88425000000097
+          },
+          {
+            "cpuMs": 261.345,
+            "elapsedMs": 238.3799170000002
+          }
+        ],
+        "median": {
+          "cpuMs": 252.235,
+          "elapsedMs": 237.6205
+        }
+      },
+      "candidate": {
+        "samples": [
+          {
+            "cpuMs": 220.742,
+            "elapsedMs": 207.08537500000057
+          },
+          {
+            "cpuMs": 224.256,
+            "elapsedMs": 208.03679100000045
+          },
+          {
+            "cpuMs": 222.545,
+            "elapsedMs": 209.0906670000004
+          },
+          {
+            "cpuMs": 222.645,
+            "elapsedMs": 207.75554199999897
+          },
+          {
+            "cpuMs": 223.163,
+            "elapsedMs": 209.4751670000005
+          }
+        ],
+        "median": {
+          "cpuMs": 222.645,
+          "elapsedMs": 208.03679100000045
+        }
+      }
+    }
+  ],
+  "allocations": [
+    {
+      "baseline": 405630501.3333333,
+      "candidate": 337625197.3333333
+    },
+    {
+      "candidate": 331871954.6666667,
+      "baseline": 406241493.3333333
+    },
+    {
+      "baseline": 402884621.3333333,
+      "candidate": 337409738.6666667
+    }
+  ],
+  "rss": [
+    {
+      "baseline": {
+        "startRssKiB": 50688,
+        "maxRssKiB": 291664
+      },
+      "candidate": {
+        "startRssKiB": 50912,
+        "maxRssKiB": 112240
+      }
+    },
+    {
+      "candidate": {
+        "startRssKiB": 50704,
+        "maxRssKiB": 110000
+      },
+      "baseline": {
+        "startRssKiB": 50816,
+        "maxRssKiB": 291568
+      }
+    },
+    {
+      "baseline": {
+        "startRssKiB": 50816,
+        "maxRssKiB": 291392
+      },
+      "candidate": {
+        "startRssKiB": 50864,
+        "maxRssKiB": 110640
+      }
+    }
+  ]
+}
