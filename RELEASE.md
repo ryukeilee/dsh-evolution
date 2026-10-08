@@ -2,18 +2,18 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前本地候选版本：`0.2.0-rc.3`，用于归档索引性能优化。仅本地构建和两个官方宿主验收，未创建 tag、draft 或公开发布。现有公开 `v0.2.0-rc.2` 保持不变，其固定点与在线状态记录在 `docs/evidence/rc2-release-audit.json`。
+当前本地最终候选版本：`0.2.0-rc.4`，收敛领域查询、运行时检查、签名、doctor 与事件桥证据恢复五轮性能优化。固定产物和两个官方宿主完整验收针对同一内容及字节；本候选未创建 tag、draft 或公开发布。历史公开 `v0.2.0-rc.3` 的固定点与发布后验收记录保留在 `docs/evidence/rc3-release-audit.json` 及 `rc3-postpublish-*.json`。前五轮证据和失败记录保持原样，最终收口见 `docs/performance/final-candidate.md`。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.3.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.4.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-本 RC 的公开发布入口：<https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.2>。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
+本候选尚无公开发布入口。历史公开 rc.3 的入口和资产记录见上述历史审计。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
 
 `release/` 始终只固定**当前候选**的产物。历史版本的产物与固定点不会随仓库常驻：它们在对应 tag / commit 的 git 历史里，也在各自已发布的 Release 附件里。
 
@@ -29,14 +29,14 @@
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.3，仓库内容）
+# 当前本地候选（0.2.0-rc.4，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
-# 尚未创建 v0.2.0-rc.3 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
+# 尚未创建 v0.2.0-rc.4 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.2，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0-rc.4，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -48,7 +48,7 @@ shasum -a 256 -c SHA256SUMS                    # Linux：sha256sum --check SHA25
 ```sh
 git clone <this-repo> && cd dsh-evolution
 npm ci                 # 严格按 package-lock.json 安装
-npm test               # 164/164（含归档索引兼容回归）
+npm test               # 205/205（含前五轮差分回归和发布 pin 一致性）
 npm run pack:check     # 16 项检查
 npm run release:verify # 固定产物与发布固定点一致
 node --version         # 需要 ^22.19.0 || >=24.0.0

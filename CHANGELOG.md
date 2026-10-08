@@ -6,7 +6,13 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
-## 0.2.0-rc.3 — local performance candidate
+## 0.2.0-rc.4 — final local performance candidate
+
+- 收敛领域查询元数据投影、运行时检查投影、签名排序键复用、冷历史诊断、事件桥证据分块恢复五轮优化，保留全部历史基准、失败记录和差分回归。
+- 统一源码、固定 tarball、校验和、manifest 与两个官方宿主的完整验收证据；未降低发布验证要求。
+- 本候选仅在本地固定，未创建 tag 或进行外部发布。可复现结果与收益边界见 `docs/performance/final-candidate.md`。
+
+## 0.2.0-rc.3 — performance candidate
 
 - 官方领域查询保留完整历史读取、去重和计数，仅深拷贝最多 50 条返回记录；
   三轮同负载 CPU 减少 30–49%，数据和收益边界见 `docs/performance/domain-query.md`。
@@ -20,7 +26,7 @@ you install before upgrading DSH.
   pending/final transaction semantics; no official DSH source changes.
 - On the reproducible 256-segment workload: median observation latency -42.61%,
   process CPU time -79.62%, directory enumeration calls -92.49%.
-- Built and accepted locally only; no tag, npm or GitHub Release publication.
+- 历史发布及发布后双宿主验收记录见 `docs/evidence/rc3-release-audit.json`；本轮不修改历史 tag 或公开资产。
 
 ## 0.2.0-rc.2 — release candidate
 
