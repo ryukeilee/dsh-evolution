@@ -1,0 +1,1382 @@
+TAP version 13
+# PASS parseArchiveMdEvidence: parses populated Observations JSON blocks
+# PASS parseArchiveMdEvidence: missing sections stay missing (no fabrication)
+# 2 passed, 0 failed
+# Subtest: test/archive-md-parser.test.mjs
+ok 1 - test/archive-md-parser.test.mjs
+  ---
+  duration_ms: 102.577833
+  type: 'test'
+  ...
+# Subtest: the isolation-map symbol is the one the shipped cordis actually uses
+ok 2 - the isolation-map symbol is the one the shipped cordis actually uses
+  ---
+  duration_ms: 8.141083
+  type: 'test'
+  ...
+# Subtest: serviceImpl is equivalent to the private reflect._getImpl(name, false)
+ok 3 - serviceImpl is equivalent to the private reflect._getImpl(name, false)
+  ---
+  duration_ms: 2.537084
+  type: 'test'
+  ...
+# Subtest: the service inventory needs the public path only, never the private method
+ok 4 - the service inventory needs the public path only, never the private method
+  ---
+  duration_ms: 37.761333
+  type: 'test'
+  ...
+# Subtest: an unbound service declaration is never reported as a live owner
+ok 5 - an unbound service declaration is never reported as a live owner
+  ---
+  duration_ms: 3.223083
+  type: 'test'
+  ...
+# Subtest: fiberIsActive equals FiberState.ACTIVE across every lifecycle transition
+ok 6 - fiberIsActive equals FiberState.ACTIVE across every lifecycle transition
+  ---
+  duration_ms: 57.295
+  type: 'test'
+  ...
+# Subtest: no fiber state decision in lib/ is made from a numeric FiberState literal
+ok 7 - no fiber state decision in lib/ is made from a numeric FiberState literal
+  ---
+  duration_ms: 18.754958
+  type: 'test'
+  ...
+# Subtest: every recorded surface is classified and its class matches the shipped packages
+ok 8 - every recorded surface is classified and its class matches the shipped packages
+  ---
+  duration_ms: 4.968708
+  type: 'test'
+  ...
+# Subtest: a host that dropped a replaced private surface still reports it as satisfied
+ok 9 - a host that dropped a replaced private surface still reports it as satisfied
+  ---
+  duration_ms: 5.07775
+  type: 'test'
+  ...
+# Subtest: the doctor CLI starts with no host package resolvable
+ok 10 - the doctor CLI starts with no host package resolvable
+  ---
+  duration_ms: 153.87925
+  type: 'test'
+  ...
+# Subtest: the promoted composition fixture is never written into the checkout
+ok 11 - the promoted composition fixture is never written into the checkout
+  ---
+  duration_ms: 0.405042
+  type: 'test'
+  ...
+# Subtest: the promoted Include mount resolves and verifies through the documented loader members
+ok 12 - the promoted Include mount resolves and verifies through the documented loader members
+  ---
+  duration_ms: 42.637959
+  type: 'test'
+  ...
+# Subtest: a torn composition fails closed instead of masquerading as a committed tree
+ok 13 - a torn composition fails closed instead of masquerading as a committed tree
+  ---
+  duration_ms: 10.841417
+  type: 'test'
+  ...
+# Subtest: a promoted module that fails to activate is reported inactive, with its cause
+ok 14 - a promoted module that fails to activate is reported inactive, with its cause
+  ---
+  duration_ms: 4.409375
+  type: 'test'
+  ...
+# Subtest: a disabled promoted row is rejected
+ok 15 - a disabled promoted row is rejected
+  ---
+  duration_ms: 5.7485
+  type: 'test'
+  ...
+# PASS cross-session: durable promotion evidence survives (sidecar)
+# PASS stable-commit: archive merge keeps full evidence
+# PASS event-bridge: hydration restores measurement/gates/canary
+# PASS event-bridge: no events returns null
+# PASS recovery-proof: archive renders full factual payload
+# PASS renderExperimentArchive: emits stable archive sections
+# 6 passed, 0 failed
+# Subtest: test/cross-session-hydration.test.mjs
+ok 3 - test/cross-session-hydration.test.mjs
+  ---
+  duration_ms: 94.241084
+  type: 'test'
+  ...
+# Subtest: cold history diagnostics match the baseline across valid, damaged and absent files
+ok 17 - cold history diagnostics match the baseline across valid, damaged and absent files
+  ---
+  duration_ms: 712.219084
+  type: 'test'
+  ...
+# Subtest: satisfiesRange: exact, caret, tilde, comparators, and prerelease strictness
+ok 18 - satisfiesRange: exact, caret, tilde, comparators, and prerelease strictness
+  ---
+  duration_ms: 129.666583
+  type: 'test'
+  ...
+# Subtest: healthy package reports ok and exit code 0
+ok 19 - healthy package reports ok and exit code 0
+  ---
+  duration_ms: 27.544209
+  type: 'test'
+  ...
+# Subtest: the tool manifest cannot drift from the registered surface
+ok 20 - the tool manifest cannot drift from the registered surface
+  ---
+  duration_ms: 0.372125
+  type: 'test'
+  ...
+# Subtest: the declared support matrix is exactly the verified host versions
+ok 21 - the declared support matrix is exactly the verified host versions
+  ---
+  duration_ms: 0.185125
+  type: 'test'
+  ...
+# Subtest: unsupported host version is blocked with supported-range evidence
+ok 22 - unsupported host version is blocked with supported-range evidence
+  ---
+  duration_ms: 3.363166
+  type: 'test'
+  ...
+# Subtest: dependencies on non-public runtime surfaces are degraded, never silently ok
+ok 23 - dependencies on non-public runtime surfaces are degraded, never silently ok
+  ---
+  duration_ms: 32.830334
+  type: 'test'
+  ...
+# Subtest: a missing required runtime service is blocked
+ok 24 - a missing required runtime service is blocked
+  ---
+  duration_ms: 2.710417
+  type: 'test'
+  ...
+# Subtest: incomplete tool registration is blocked and names the missing tools
+ok 25 - incomplete tool registration is blocked and names the missing tools
+  ---
+  duration_ms: 2.24625
+  type: 'test'
+  ...
+# Subtest: cli mode marks live checks not-evaluated instead of guessing
+ok 26 - cli mode marks live checks not-evaluated instead of guessing
+  ---
+  duration_ms: 2.194791
+  type: 'test'
+  ...
+# Subtest: damaged failure memory is degraded and recoverable, never a silent loss
+ok 27 - damaged failure memory is degraded and recoverable, never a silent loss
+  ---
+  duration_ms: 2.697
+  type: 'test'
+  ...
+# Subtest: valid failure memory and quarantined evidence are both reported
+ok 28 - valid failure memory and quarantined evidence are both reported
+  ---
+  duration_ms: 17.4605
+  type: 'test'
+  ...
+# Subtest: domain aggregate: absent ok, corrupt blocked, unreadable-never-rewritten
+ok 29 - domain aggregate: absent ok, corrupt blocked, unreadable-never-rewritten
+  ---
+  duration_ms: 6.29575
+  type: 'test'
+  ...
+# Subtest: domain aggregate fixture matches the runtime schema and tampering is blocked
+ok 30 - domain aggregate fixture matches the runtime schema and tampering is blocked
+  ---
+  duration_ms: 6.873125
+  type: 'test'
+  ...
+# Subtest: a pending domain transaction without its archive is blocked, with the archive it is recoverable
+ok 31 - a pending domain transaction without its archive is blocked, with the archive it is recoverable
+  ---
+  duration_ms: 6.817625
+  type: 'test'
+  ...
+# Subtest: orphan staging recovery is idempotent and refuses while a writer holds the lock
+ok 32 - orphan staging recovery is idempotent and refuses while a writer holds the lock
+  ---
+  duration_ms: 112.759584
+  type: 'test'
+  ...
+# Subtest: event bridge: verified ok, bad MAC blocked, conflicting event id blocked, partial tail repairable
+ok 33 - event bridge: verified ok, bad MAC blocked, conflicting event id blocked, partial tail repairable
+  ---
+  duration_ms: 22.455959
+  type: 'test'
+  ...
+# Subtest: event bridge with an unusable key is blocked and the key is never replaced
+ok 34 - event bridge with an unusable key is blocked and the key is never replaced
+  ---
+  duration_ms: 2.26
+  type: 'test'
+  ...
+# Subtest: damaged cold archives are degraded and never rewritten
+ok 35 - damaged cold archives are degraded and never rewritten
+  ---
+  duration_ms: 2.924542
+  type: 'test'
+  ...
+# Subtest: inspectJsonLines distinguishes a complete record from a partial tail
+ok 36 - inspectJsonLines distinguishes a complete record from a partial tail
+  ---
+  duration_ms: 0.098084
+  type: 'test'
+  ...
+# Subtest: a verified import is ok, a tampered import is blocked, and a missing target degrades
+ok 37 - a verified import is ok, a tampered import is blocked, and a missing target degrades
+  ---
+  duration_ms: 12.470625
+  type: 'test'
+  ...
+# Subtest: an interrupted import keeps its only copy; a published one is cleaned idempotently
+ok 38 - an interrupted import keeps its only copy; a published one is cleaned idempotently
+  ---
+  duration_ms: 11.116625
+  type: 'test'
+  ...
+# Subtest: promotion journal states are classified: none, incomplete, canary, committed, rollback-failed, unknown
+ok 39 - promotion journal states are classified: none, incomplete, canary, committed, rollback-failed, unknown
+  ---
+  duration_ms: 13.104625
+  type: 'test'
+  ...
+# Subtest: interrupted promotion rolls back from the journal and the repair is idempotent
+ok 40 - interrupted promotion rolls back from the journal and the repair is idempotent
+  ---
+  duration_ms: 239.780958
+  type: 'test'
+  ...
+# Subtest: a committed promotion cleans its journal without touching the composition
+ok 41 - a committed promotion cleans its journal without touching the composition
+  ---
+  duration_ms: 52.435583
+  type: 'test'
+  ...
+# Subtest: promotion repair is refused while a live process holds the promotion lock
+ok 42 - promotion repair is refused while a live process holds the promotion lock
+  ---
+  duration_ms: 11.099125
+  type: 'test'
+  ...
+# Subtest: a journal that escapes its configured roots is blocked and never applied
+ok 43 - a journal that escapes its configured roots is blocked and never applied
+  ---
+  duration_ms: 0.460625
+  type: 'test'
+  ...
+# Subtest: out-of-boundary composition rows and dangling rows are blocked; orphan directories degrade
+ok 44 - out-of-boundary composition rows and dangling rows are blocked; orphan directories degrade
+  ---
+  duration_ms: 9.468125
+  type: 'test'
+  ...
+# Subtest: migrated legacy pointers are reported as intentionally inactive, not as failures
+ok 45 - migrated legacy pointers are reported as intentionally inactive, not as failures
+  ---
+  duration_ms: 2.319833
+  type: 'test'
+  ...
+# Subtest: parseComposedProfile reads bundle sections and entry state
+ok 46 - parseComposedProfile reads bundle sections and entry state
+  ---
+  duration_ms: 0.25775
+  type: 'test'
+  ...
+# Subtest: a composed profile missing the bundle entries is blocked
+ok 47 - a composed profile missing the bundle entries is blocked
+  ---
+  duration_ms: 1.7005
+  type: 'test'
+  ...
+# Subtest: a composed profile without the bundle layer is blocked
+ok 48 - a composed profile without the bundle layer is blocked
+  ---
+  duration_ms: 1.635166
+  type: 'test'
+  ...
+# Subtest: a profile that cannot compose is blocked with the CLI stderr tail
+ok 49 - a profile that cannot compose is blocked with the CLI stderr tail
+  ---
+  duration_ms: 2.134084
+  type: 'test'
+  ...
+# Subtest: a disabled bundle entry is blocked
+ok 50 - a disabled bundle entry is blocked
+  ---
+  duration_ms: 3.18625
+  type: 'test'
+  ...
+# Subtest: the cli writes nothing and reports exit codes that match the classification
+ok 51 - the cli writes nothing and reports exit codes that match the classification
+  ---
+  duration_ms: 206.742459
+  type: 'test'
+  ...
+# Subtest: profile detection picks the profile that lists the bundle and flags unusable installs
+ok 52 - profile detection picks the profile that lists the bundle and flags unusable installs
+  ---
+  duration_ms: 13.395833
+  type: 'test'
+  ...
+# Subtest: a stale domain archive lock is reported and repaired idempotently, never stolen from a live owner
+ok 53 - a stale domain archive lock is reported and repaired idempotently, never stolen from a live owner
+  ---
+  duration_ms: 40.084334
+  type: 'test'
+  ...
+# Subtest: the doctor CLI is reachable through a symlinked path
+ok 54 - the doctor CLI is reachable through a symlinked path
+  ---
+  duration_ms: 94.705959
+  type: 'test'
+  ...
+# Subtest: pure import cannot write, schedule or patch timers/EventEmitter
+ok 55 - pure import cannot write, schedule or patch timers/EventEmitter
+  ---
+  duration_ms: 96.824042
+  type: 'test'
+  ...
+# Subtest: authority is fail-closed and transaction is explicit
+ok 56 - authority is fail-closed and transaction is explicit
+  ---
+  duration_ms: 4.817833
+  type: 'test'
+  ...
+# Subtest: metric projection/evaluation preserves independent gates and anti-gaming
+ok 57 - metric projection/evaluation preserves independent gates and anti-gaming
+  ---
+  duration_ms: 1.806875
+  type: 'test'
+  ...
+# Subtest: historical snapshot copied to a temp root retains cold history across reload/restore
+ok 58 - historical snapshot copied to a temp root retains cold history across reload/restore
+  ---
+  duration_ms: 304.730542
+  type: 'test'
+  ...
+# {"schema":4,"counts":{"observations":0,"diagnoses":0,"gaps":0,"candidates":0,"proposals":0,"experiments":0,"experimentRecords":0,"journal":0,"selections":0,"promotions":0,"outcomes":0,"cycles":12,"lineage":0,"learnings":0,"strategies":0,"strategyMutations":0,"knowledge":1,"tombstones":0},"coldCollections":1}
+# Subtest: discovery derives degradation and repeated failure, ignoring manual targets
+ok 59 - discovery derives degradation and repeated failure, ignoring manual targets
+  ---
+  duration_ms: 4.935875
+  type: 'test'
+  ...
+# Subtest: lineage records parents and protects historical best
+ok 60 - lineage records parents and protects historical best
+  ---
+  duration_ms: 3.15375
+  type: 'test'
+  ...
+# Subtest: lineage shared cold memory deduplicates IDs across restart and restores full history
+ok 61 - lineage shared cold memory deduplicates IDs across restart and restores full history
+  ---
+  duration_ms: 231.631958
+  type: 'test'
+  ...
+# Subtest: standalone lineage uses explicit transaction; missing authority/storage and write errors reject
+ok 62 - standalone lineage uses explicit transaction; missing authority/storage and write errors reject
+  ---
+  duration_ms: 1.92275
+  type: 'test'
+  ...
+# Evolution supervisor cycle failed: E_CONTINUOUS_PORT_REQUIRED: Persistence.memory.setAutonomousState
+# Subtest: strategy success/failure conditions, ranking, mutation tree and causal result survive restart
+ok 63 - strategy success/failure conditions, ranking, mutation tree and causal result survive restart
+  ---
+  duration_ms: 83.406292
+  type: 'test'
+  ...
+# Subtest: supervisor wait/observe/analyze/experiment decision algorithm preserved
+ok 64 - supervisor wait/observe/analyze/experiment decision algorithm preserved
+  ---
+  duration_ms: 1.934459
+  type: 'test'
+  ...
+# Subtest: three synthetic domain generations produce lineage/learning/report, not official execution proof
+ok 65 - three synthetic domain generations produce lineage/learning/report, not official execution proof
+  ---
+  duration_ms: 29.790542
+  type: 'test'
+  ...
+# Subtest: missing execution/evidence/persistence reject; failure is recorded and not learned as success
+ok 66 - missing execution/evidence/persistence reject; failure is recorded and not learned as success
+  ---
+  duration_ms: 16.489334
+  type: 'test'
+  ...
+# Subtest: anti-gaming domains reject isolated metric wins
+ok 67 - anti-gaming domains reject isolated metric wins
+  ---
+  duration_ms: 7.849
+  type: 'test'
+  ...
+# Subtest: 50 bounded synthetic trials retain resources/causality and do not claim runtime isolation
+ok 68 - 50 bounded synthetic trials retain resources/causality and do not claim runtime isolation
+  ---
+  duration_ms: 6794.585667
+  type: 'test'
+  ...
+# Subtest: 10 multi-generation domain trials retain parent versions and mutation tree
+ok 69 - 10 multi-generation domain trials retain parent versions and mutation tree
+  ---
+  duration_ms: 333.754292
+  type: 'test'
+  ...
+# Subtest: orphan evidence triggers rollback, restoration is fingerprint-verified
+ok 70 - orphan evidence triggers rollback, restoration is fingerprint-verified
+  ---
+  duration_ms: 7.527125
+  type: 'test'
+  ...
+# Subtest: rollback assertion alone cannot certify registry restoration; rollback errors are retained
+ok 71 - rollback assertion alone cannot certify registry restoration; rollback errors are retained
+  ---
+  duration_ms: 14.901875
+  type: 'test'
+  ...
+# Subtest: failure/regression/rollback budgets are finite, including zero regression budget
+ok 72 - failure/regression/rollback budgets are finite, including zero regression budget
+  ---
+  duration_ms: 46.111834
+  type: 'test'
+  ...
+# Subtest: cooperative deadline settles work before rollback and stops further trials
+ok 73 - cooperative deadline settles work before rollback and stops further trials
+  ---
+  duration_ms: 12.908917
+  type: 'test'
+  ...
+# Subtest: trial fails closed without inspection/deadline/rollback/persistence; maintenance and disposal propagate errors
+ok 74 - trial fails closed without inspection/deadline/rollback/persistence; maintenance and disposal propagate errors
+  ---
+  duration_ms: 0.634458
+  type: 'test'
+  ...
+# Subtest: supervisor execution and scheduler stay within a cumulative cycle budget
+ok 75 - supervisor execution and scheduler stay within a cumulative cycle budget
+  ---
+  duration_ms: 1.100916
+  type: 'test'
+  ...
+# Subtest: unavailable post-execution inspection triggers rollback, never fabricated healthy evidence
+ok 76 - unavailable post-execution inspection triggers rollback, never fabricated healthy evidence
+  ---
+  duration_ms: 6.263
+  type: 'test'
+  ...
+# Subtest: custom stop-condition errors are visible and stop execution
+ok 77 - custom stop-condition errors are visible and stop execution
+  ---
+  duration_ms: 6.160708
+  type: 'test'
+  ...
+# Subtest: facade construction performs no load and shares existing domain services
+ok 78 - facade construction performs no load and shares existing domain services
+  ---
+  duration_ms: 0.543625
+  type: 'test'
+  ...
+# Subtest: continuous import and facade construction do not patch timers/EventEmitter, write files, or start scheduling
+ok 79 - continuous import and facade construction do not patch timers/EventEmitter, write files, or start scheduling
+  ---
+  duration_ms: 48.001625
+  type: 'test'
+  ...
+# Subtest: all continuous imports remain inside the domain directory, no legacy runtime graph
+ok 80 - all continuous imports remain inside the domain directory, no legacy runtime graph
+  ---
+  duration_ms: 9.662875
+  type: 'test'
+  ...
+# Subtest: live observation/cycle/proposal appends keep the archive index fresh
+ok 81 - live observation/cycle/proposal appends keep the archive index fresh
+  ---
+  duration_ms: 420.947708
+  type: 'test'
+  ...
+# Subtest: compact followed by live appends keeps index metadata current
+ok 82 - compact followed by live appends keeps index metadata current
+  ---
+  duration_ms: 562.908166
+  type: 'test'
+  ...
+# Subtest: restart reconciles an append that completed before its index write
+ok 83 - restart reconciles an append that completed before its index write
+  ---
+  duration_ms: 264.226959
+  type: 'test'
+  ...
+# Subtest: restart rebuilds a sealed entry after a rotation/index crash
+ok 84 - restart rebuilds a sealed entry after a rotation/index crash
+  ---
+  duration_ms: 386.804333
+  type: 'test'
+  ...
+# Subtest: legacy index entries infer collections and ignore unknown collections on each load
+ok 85 - legacy index entries infer collections and ignore unknown collections on each load
+  ---
+  duration_ms: 556.805125
+  type: 'test'
+  ...
+# Subtest: stale index referencing rotated-away segments and wrong checksums is reconciled on load
+ok 86 - stale index referencing rotated-away segments and wrong checksums is reconciled on load
+  ---
+  duration_ms: 3101.841917
+  type: 'test'
+  ...
+# Subtest: history window preserves full-history ordering/count and detached records
+ok 87 - history window preserves full-history ordering/count and detached records
+  ---
+  duration_ms: 116.790958
+  type: 'test'
+  ...
+# Subtest: 关键增量记忆合并等价观察并拆分新根因与策略
+ok 88 - 关键增量记忆合并等价观察并拆分新根因与策略
+  ---
+  duration_ms: 17.261958
+  type: 'test'
+  ...
+# Subtest: 关键增量记忆按 eventId 幂等并累计效果趋势
+ok 89 - 关键增量记忆按 eventId 幂等并累计效果趋势
+  ---
+  duration_ms: 1.046333
+  type: 'test'
+  ...
+# Subtest: compact 将旧重复历史迁移为 knowledge 并保留活动与 lineage
+ok 90 - compact 将旧重复历史迁移为 knowledge 并保留活动与 lineage
+  ---
+  duration_ms: 64.337333
+  type: 'test'
+  ...
+# Subtest: knowledge 冷归档重启后保持计数与代表记录
+ok 91 - knowledge 冷归档重启后保持计数与代表记录
+  ---
+  duration_ms: 151.400166
+  type: 'test'
+  ...
+# Subtest: 并发语义写入串行聚合且保留有界样本
+ok 92 - 并发语义写入串行聚合且保留有界样本
+  ---
+  duration_ms: 140.2335
+  type: 'test'
+  ...
+# Subtest: recovery 保留关系、修正和可追溯状态
+ok 93 - recovery 保留关系、修正和可追溯状态
+  ---
+  duration_ms: 0.833834
+  type: 'test'
+  ...
+# Subtest: 带语义的 cycle compact 仍保留每轮身份
+ok 94 - 带语义的 cycle compact 仍保留每轮身份
+  ---
+  duration_ms: 3.164042
+  type: 'test'
+  ...
+# Subtest: P1: healthy info-level component observations are deduped (no durable growth)
+ok 95 - P1: healthy info-level component observations are deduped (no durable growth)
+  ---
+  duration_ms: 34.826167
+  type: 'test'
+  ...
+# Subtest: P1: error signals are NOT deduped (minOccurrences evidence preserved)
+ok 96 - P1: error signals are NOT deduped (minOccurrences evidence preserved)
+  ---
+  duration_ms: 17.933583
+  type: 'test'
+  ...
+# Subtest: P1: forceRecord bypasses dedup
+ok 97 - P1: forceRecord bypasses dedup
+  ---
+  duration_ms: 10.981667
+  type: 'test'
+  ...
+# Subtest: P5: stable perf metrics are deduped within one cycle (no write storm)
+ok 98 - P5: stable perf metrics are deduped within one cycle (no write storm)
+  ---
+  duration_ms: 24.531625
+  type: 'test'
+  ...
+# Subtest: P5: null->value perf transition bypasses dedup (restart recovery path)
+ok 99 - P5: null->value perf transition bypasses dedup (restart recovery path)
+  ---
+  duration_ms: 32.743959
+  type: 'test'
+  ...
+# Subtest: cold-only failure blockers and verified canonical survive semantic GC/restart
+ok 100 - cold-only failure blockers and verified canonical survive semantic GC/restart
+  ---
+  duration_ms: 378.932958
+  type: 'test'
+  ...
+# Subtest: retirement still consults every canonical record id
+ok 101 - retirement still consults every canonical record id
+  ---
+  duration_ms: 20.966375
+  type: 'test'
+  ...
+# Subtest: observation list normalizes a primitive query once without changing the filter result
+ok 102 - observation list normalizes a primitive query once without changing the filter result
+  ---
+  duration_ms: 2.336708
+  type: 'test'
+  ...
+# Subtest: strategy snapshot reports counts for the lists it returns
+ok 103 - strategy snapshot reports counts for the lists it returns
+  ---
+  duration_ms: 0.248708
+  type: 'test'
+  ...
+# Subtest: capability snapshot counts active lifecycle states in the capabilities it returns
+ok 104 - capability snapshot counts active lifecycle states in the capabilities it returns
+  ---
+  duration_ms: 0.144875
+  type: 'test'
+  ...
+# Subtest: failure memory retains on record and load without changing the public snapshots
+ok 105 - failure memory retains on record and load without changing the public snapshots
+  ---
+  duration_ms: 47.421209
+  type: 'test'
+  ...
+# Subtest: domain evaluation evidence maps the matured record into evaluator inputs without synthesizing evidence
+ok 106 - domain evaluation evidence maps the matured record into evaluator inputs without synthesizing evidence
+  ---
+  duration_ms: 0.730166
+  type: 'test'
+  ...
+# Subtest: the extracted evaluator recommends promote only with goal, test, regression and measured improvement
+ok 107 - the extracted evaluator recommends promote only with goal, test, regression and measured improvement
+  ---
+  duration_ms: 2.4525
+  type: 'test'
+  ...
+# Subtest: the extracted evaluator returns rollback when a recognized metric regresses (the promotion veto condition)
+ok 108 - the extracted evaluator returns rollback when a recognized metric regresses (the promotion veto condition)
+  ---
+  duration_ms: 0.281666
+  type: 'test'
+  ...
+# Subtest: the hand-written evolution domain spec satisfies the official storage-domain contract
+ok 109 - the hand-written evolution domain spec satisfies the official storage-domain contract
+  ---
+  duration_ms: 4.217709
+  type: 'test'
+  ...
+# Subtest: assertDomainSpec fails loud on a unit name outside UNIT_NAME_RE
+ok 110 - assertDomainSpec fails loud on a unit name outside UNIT_NAME_RE
+  ---
+  duration_ms: 0.458
+  type: 'test'
+  ...
+# Subtest: assertDomainSpec fails loud on a nullable global (medium null sentinel)
+ok 111 - assertDomainSpec fails loud on a nullable global (medium null sentinel)
+  ---
+  duration_ms: 0.472792
+  type: 'test'
+  ...
+# Subtest: assertDomainSpec fails loud on an invalid table name
+ok 112 - assertDomainSpec fails loud on an invalid table name
+  ---
+  duration_ms: 0.170375
+  type: 'test'
+  ...
+# Subtest: a staged tree shares the live inodes instead of copying the archive
+ok 113 - a staged tree shares the live inodes instead of copying the archive
+  ---
+  duration_ms: 7.944458
+  type: 'test'
+  ...
+# Subtest: a stage manifest round-trips and rejects unusable entries
+ok 114 - a stage manifest round-trips and rejects unusable entries
+  ---
+  duration_ms: 1.459125
+  type: 'test'
+  ...
+# Subtest: installing a stage replaces only the changed files and verifies their bytes
+ok 115 - installing a stage replaces only the changed files and verifies their bytes
+  ---
+  duration_ms: 88.022417
+  type: 'test'
+  ...
+# Subtest: a committed transaction leaves untouched archive files byte-identical
+ok 116 - a committed transaction leaves untouched archive files byte-identical
+  ---
+  duration_ms: 6221.00575
+  type: 'test'
+  ...
+# Subtest: recovery installs a staged archive when the install is interrupted
+ok 117 - recovery installs a staged archive when the install is interrupted
+  ---
+  duration_ms: 3000.841458
+  type: 'test'
+  ...
+# Subtest: a stage without a manifest is replayed as a full copy
+ok 118 - a stage without a manifest is replayed as a full copy
+  ---
+  duration_ms: 106.910083
+  type: 'test'
+  ...
+# Subtest: a live archive write during a staged transaction fails loudly
+ok 119 - a live archive write during a staged transaction fails loudly
+  ---
+  duration_ms: 13.410625
+  type: 'test'
+  ...
+# Subtest: the legacy full-copy path still copies a stage without a manifest
+ok 120 - the legacy full-copy path still copies a stage without a manifest
+  ---
+  duration_ms: 3.257209
+  type: 'test'
+  ...
+# Subtest: append and rotation privatize shared active files before writing
+ok 121 - append and rotation privatize shared active files before writing
+  ---
+  duration_ms: 134.301708
+  type: 'test'
+  ...
+# Subtest: the stored marker digest always describes the committed marker map
+ok 122 - the stored marker digest always describes the committed marker map
+  ---
+  duration_ms: 208.906083
+  type: 'test'
+  ...
+# Subtest: an authenticated prefix is reused and only new records need per-record work
+ok 123 - an authenticated prefix is reused and only new records need per-record work
+  ---
+  duration_ms: 345.946458
+  type: 'test'
+  ...
+# Subtest: a tampered consumed prefix is still rejected and never advances the checkpoint
+ok 124 - a tampered consumed prefix is still rejected and never advances the checkpoint
+  ---
+  duration_ms: 159.2135
+  type: 'test'
+  ...
+# Subtest: a forged or rolled back checkpoint cannot skip verification
+ok 125 - a forged or rolled back checkpoint cannot skip verification
+  ---
+  duration_ms: 199.451583
+  type: 'test'
+  ...
+# Subtest: a rolled back marker map is refused by the witnesses and re-verified per record
+ok 126 - a rolled back marker map is refused by the witnesses and re-verified per record
+  ---
+  duration_ms: 171.759625
+  type: 'test'
+  ...
+# Subtest: a mid-history marker rollback between runs is repaired by a fresh process
+ok 127 - a mid-history marker rollback between runs is repaired by a fresh process
+  ---
+  duration_ms: 419.789542
+  type: 'test'
+  ...
+# Subtest: a marker rewound through the official handle while the port is alive is repaired
+ok 128 - a marker rewound through the official handle while the port is alive is repaired
+  ---
+  duration_ms: 1028.684209
+  type: 'test'
+  ...
+# Subtest: a listener that rewrites the pending record cannot bypass its validation
+ok 129 - a listener that rewrites the pending record cannot bypass its validation
+  ---
+  duration_ms: 343.842292
+  type: 'test'
+  ...
+# Subtest: a rejected commit does not install the staged archive
+ok 130 - a rejected commit does not install the staged archive
+  ---
+  duration_ms: 3912.730417
+  type: 'test'
+  ...
+# Subtest: replaced, truncated and torn logs fall back to full per-record verification
+ok 131 - replaced, truncated and torn logs fall back to full per-record verification
+  ---
+  duration_ms: 330.654209
+  type: 'test'
+  ...
+# Subtest: a malformed or unknown checkpoint document is treated as absent
+ok 132 - a malformed or unknown checkpoint document is treated as absent
+  ---
+  duration_ms: 23.30675
+  type: 'test'
+  ...
+# Subtest: a checkpoint the plugin can no longer write does not fail the pass
+ok 133 - a checkpoint the plugin can no longer write does not fail the pass
+  ---
+  duration_ms: 187.88325
+  type: 'test'
+  ...
+# Subtest: metadata forgery and a missing middle marker invalidate the entire checkpoint
+ok 134 - metadata forgery and a missing middle marker invalidate the entire checkpoint
+  ---
+  duration_ms: 209.13125
+  type: 'test'
+  ...
+# Subtest: every replay reads the full prefix and rejects same-size middle tampering with restored timestamps
+ok 135 - every replay reads the full prefix and rejects same-size middle tampering with restored timestamps
+  ---
+  duration_ms: 318.056542
+  type: 'test'
+  ...
+# Subtest: metadata queries match the previous window path without cloning payloads
+ok 136 - metadata queries match the previous window path without cloning payloads
+  ---
+  duration_ms: 3004.162459
+  type: 'test'
+  ...
+# Subtest: official domain: single-event batch, durable replay, restart, bounded read-only projection
+ok 137 - official domain: single-event batch, durable replay, restart, bounded read-only projection
+  ---
+  duration_ms: 637.842625
+  type: 'test'
+  ...
+# Subtest: pending archive commit resumes without incrementing canary generation
+ok 138 - pending archive commit resumes without incrementing canary generation
+  ---
+  duration_ms: 153.517583
+  type: 'test'
+  ...
+# Subtest: committed duplicates still authenticate and reject conflicting signed IDs
+ok 139 - committed duplicates still authenticate and reject conflicting signed IDs
+  ---
+  duration_ms: 374.118041
+  type: 'test'
+  ...
+# Subtest: untrusted envelope rejected, close propagates failure; schema and safe DTO reject raw data
+ok 140 - untrusted envelope rejected, close propagates failure; schema and safe DTO reject raw data
+  ---
+  duration_ms: 30.317583
+  type: 'test'
+  ...
+# Subtest: an interrupted or dead-owner archive lock is reclaimed instead of bricking startup
+ok 141 - an interrupted or dead-owner archive lock is reclaimed instead of bricking startup
+  ---
+  duration_ms: 39.413792
+  type: 'test'
+  ...
+# PASS authenticated bridge accepts legitimate evidence and does not disclose key material
+# PASS unsigned, tampered, forged promotion and replayed records fail closed
+# PASS sequence rollback is isolated without poisoning later valid events
+# 3 passed, 0 failed
+# Subtest: test/event-bridge-authentication.test.mjs
+ok 20 - test/event-bridge-authentication.test.mjs
+  ---
+  duration_ms: 66.542708
+  type: 'test'
+  ...
+# Subtest: canonical bridge MAC retains legacy key order, escaping and array semantics
+ok 143 - canonical bridge MAC retains legacy key order, escaping and array semantics
+  ---
+  duration_ms: 2.065208
+  type: 'test'
+  ...
+# Subtest: canonical bridge MAC remains compatible after bounded key cache saturation
+ok 144 - canonical bridge MAC remains compatible after bounded key cache saturation
+  ---
+  duration_ms: 28.729708
+  type: 'test'
+  ...
+# PASS canonical orchestrator 暴露 HMAC 信封签名/校验原语
+# PASS 合法信封被接受，并回传事件与序号
+# PASS 篡改事件体或序号后校验失败
+# PASS 过短密钥被拒绝（签名与校验两侧）
+# PASS 结构非法或非正序号的信封直接返回 null 而不抛错
+# 5 passed, 0 failed
+# Subtest: test/event-bridge-envelope.test.mjs
+ok 22 - test/event-bridge-envelope.test.mjs
+  ---
+  duration_ms: 67.980458
+  type: 'test'
+  ...
+# Subtest: recovery preserves authentication, per-writer ordering, duplicates and complete evidence
+ok 146 - recovery preserves authentication, per-writer ordering, duplicates and complete evidence
+  ---
+  duration_ms: 14.989917
+  type: 'test'
+  ...
+# Subtest: chunk boundaries, huge lines, unicode and final partial lines match readFile decoding
+ok 147 - chunk boundaries, huge lines, unicode and final partial lines match readFile decoding
+  ---
+  duration_ms: 736.677084
+  type: 'test'
+  ...
+# Subtest: file inputs, read errors, invalid options and subsequent rewrites retain behavior
+ok 148 - file inputs, read errors, invalid options and subsequent rewrites retain behavior
+  ---
+  duration_ms: 27.08425
+  type: 'test'
+  ...
+# Subtest: mid-read failures outrank option failures and close the opened file
+ok 149 - mid-read failures outrank option failures and close the opened file
+  ---
+  duration_ms: 1.166416
+  type: 'test'
+  ...
+# Subtest: read and close failures preserve native aggregate ordering and error details
+ok 150 - read and close failures preserve native aggregate ordering and error details
+  ---
+  duration_ms: 1.279209
+  type: 'test'
+  ...
+# Subtest: regular-file replay remains bounded by the initial size when events append
+ok 151 - regular-file replay remains bounded by the initial size when events append
+  ---
+  duration_ms: 1.614791
+  type: 'test'
+  ...
+# Subtest: FIFO replay uses one reader rendezvous and matches the baseline
+ok 152 - FIFO replay uses one reader rendezvous and matches the baseline
+  ---
+  duration_ms: 121.976541
+  type: 'test'
+  ...
+# PASS mergeEvidenceSources: monotonic downgrade protection
+# PASS mergeEvidenceSources: priority order (archive > bridge) wins ties
+# PASS mergeEvidenceSources: upgrade path (unknown -> recovered)
+# PASS mergeEvidenceSources: no sources returns null
+# PASS mergeEvidenceSources: metadata identity passes through in priority order
+# Subtest: test/evidence-persistence.test.mjs
+ok 24 - test/evidence-persistence.test.mjs
+  ---
+  duration_ms: 56.067625
+  type: 'test'
+  ...
+# PASS full cross-session: Session A durable write persists everything
+# PASS full cross-session: Session B hydrate + canary + stable commit keeps evidence
+# 2 passed, 0 failed
+# Subtest: test/full-cross-session.integration.test.mjs
+ok 25 - test/full-cross-session.integration.test.mjs
+  ---
+  duration_ms: 89.528334
+  type: 'test'
+  ...
+# Subtest: repeat import never duplicates or overwrites evolved active memory
+ok 155 - repeat import never duplicates or overwrites evolved active memory
+  ---
+  duration_ms: 262.242208
+  type: 'test'
+  ...
+# Subtest: changed source conflicts without overwriting destination
+ok 156 - changed source conflicts without overwriting destination
+  ---
+  duration_ms: 189.690833
+  type: 'test'
+  ...
+# Subtest: pending legacy promotion fails closed and preserves source
+ok 157 - pending legacy promotion fails closed and preserves source
+  ---
+  duration_ms: 30.295959
+  type: 'test'
+  ...
+# Subtest: legacy startup drift adapter is off by default and never guesses an external path
+ok 158 - legacy startup drift adapter is off by default and never guesses an external path
+  ---
+  duration_ms: 27.70125
+  type: 'test'
+  ...
+# Subtest: mode=autonomous subscribes to the official emit event without a next callback
+ok 159 - mode=autonomous subscribes to the official emit event without a next callback
+  ---
+  duration_ms: 1.890125
+  type: 'test'
+  ...
+# Subtest: async agent observer rejection is contained and recorded
+ok 160 - async agent observer rejection is contained and recorded
+  ---
+  duration_ms: 3.357417
+  type: 'test'
+  ...
+# Subtest: advisory observation is opt-in, preserving passive default behavior
+ok 161 - advisory observation is opt-in, preserving passive default behavior
+  ---
+  duration_ms: 0.421708
+  type: 'test'
+  ...
+# PASS gate: negative (empty observations, unknown recovery) is REJECTED
+# PASS gate: negative even with runtimeRecovered true but no measurement
+# PASS gate: negative when runtime recovery missing but evidence ok
+# PASS gate: positive (full evidence + recovery) is ELIGIBLE
+# PASS gate: requireRuntimeRecovery=false allows evidence-only eligibility
+# PASS gate: measuredEvidenceOf requires improving shared numeric metric
+# 6 passed, 0 failed
+# Subtest: test/promotion-gate-regression.test.mjs
+ok 29 - test/promotion-gate-regression.test.mjs
+  ---
+  duration_ms: 53.189208
+  type: 'test'
+  ...
+# Subtest: standalone synchronous Host only; harness helpers and async bodies fail closed
+ok 163 - standalone synchronous Host only; harness helpers and async bodies fail closed
+  ---
+  duration_ms: 1.551042
+  type: 'test'
+  ...
+# Subtest: journaled composition uses absolute file URL and no profile mount; interrupted canary rollback restores disk
+ok 164 - journaled composition uses absolute file URL and no profile mount; interrupted canary rollback restores disk
+  ---
+  duration_ms: 239.602166
+  type: 'test'
+  ...
+# Subtest: rollback CAS preserves concurrent composition edits and its recovery journal
+ok 165 - rollback CAS preserves concurrent composition edits and its recovery journal
+  ---
+  duration_ms: 291.612459
+  type: 'test'
+  ...
+# Subtest: client half and missing official adapter never write a promotion
+ok 166 - client half and missing official adapter never write a promotion
+  ---
+  duration_ms: 65.682083
+  type: 'test'
+  ...
+# Subtest: the pin names this package version and a pre-release artifact
+ok 167 - the pin names this package version and a pre-release artifact
+  ---
+  duration_ms: 0.511166
+  type: 'test'
+  ...
+# Subtest: the committed artifact hashes to the pinned bytes
+ok 168 - the committed artifact hashes to the pinned bytes
+  ---
+  duration_ms: 1.41825
+  type: 'test'
+  ...
+# Subtest: the committed artifact is the pinned content, not just the pinned bytes
+ok 169 - the committed artifact is the pinned content, not just the pinned bytes
+  ---
+  duration_ms: 14.561208
+  type: 'test'
+  ...
+# Subtest: the working tree still builds exactly the pinned content
+ok 170 - the working tree still builds exactly the pinned content
+  ---
+  duration_ms: 10.599666
+  type: 'test'
+  ...
+# Subtest: every shipped file in the tree matches the artifact byte for byte
+ok 171 - every shipped file in the tree matches the artifact byte for byte
+  ---
+  duration_ms: 5.592667
+  type: 'test'
+  ...
+# Subtest: release/SHA256SUMS records the pinned artifact
+ok 172 - release/SHA256SUMS records the pinned artifact
+  ---
+  duration_ms: 0.13675
+  type: 'test'
+  ...
+# Subtest: the pin lists an acceptance evidence file per supported host
+ok 173 - the pin lists an acceptance evidence file per supported host
+  ---
+  duration_ms: 0.507792
+  type: 'test'
+  ...
+# Subtest: isFullSha accepts only a full lowercase object name
+ok 174 - isFullSha accepts only a full lowercase object name
+  ---
+  duration_ms: 3.775083
+  type: 'test'
+  ...
+# Subtest: a consistent tag, commit, manifest and tree has no problems
+ok 175 - a consistent tag, commit, manifest and tree has no problems
+  ---
+  duration_ms: 1.274208
+  type: 'test'
+  ...
+# Subtest: a tag that names another version fails
+ok 176 - a tag that names another version fails
+  ---
+  duration_ms: 0.472125
+  type: 'test'
+  ...
+# Subtest: a tag that points at another commit fails
+ok 177 - a tag that points at another commit fails
+  ---
+  duration_ms: 0.153417
+  type: 'test'
+  ...
+# Subtest: a tag that does not resolve fails
+ok 178 - a tag that does not resolve fails
+  ---
+  duration_ms: 0.315583
+  type: 'test'
+  ...
+# Subtest: a source commit outside the tagged history fails
+ok 179 - a source commit outside the tagged history fails
+  ---
+  duration_ms: 0.161
+  type: 'test'
+  ...
+# Subtest: an ancestor with different shipped content cannot be claimed as the source
+ok 180 - an ancestor with different shipped content cannot be claimed as the source
+  ---
+  duration_ms: 0.263542
+  type: 'test'
+  ...
+# Subtest: the source digest reads committed files and detects later shipped changes
+ok 181 - the source digest reads committed files and detects later shipped changes
+  ---
+  duration_ms: 885.6175
+  type: 'test'
+  ...
+# Subtest: a malformed source commit fails
+ok 182 - a malformed source commit fails
+  ---
+  duration_ms: 0.802
+  type: 'test'
+  ...
+# Subtest: a missing source commit fails when a new release requires one
+ok 183 - a missing source commit fails when a new release requires one
+  ---
+  duration_ms: 0.354708
+  type: 'test'
+  ...
+# Subtest: a missing source commit is tolerated for a legacy pin
+ok 184 - a missing source commit is tolerated for a legacy pin
+  ---
+  duration_ms: 0.153709
+  type: 'test'
+  ...
+# Subtest: a pin that disagrees with package.json fails
+ok 185 - a pin that disagrees with package.json fails
+  ---
+  duration_ms: 0.128708
+  type: 'test'
+  ...
+# Subtest: a tree that no longer builds the pinned content fails
+ok 186 - a tree that no longer builds the pinned content fails
+  ---
+  duration_ms: 0.047542
+  type: 'test'
+  ...
+# Subtest: an untagged verification still checks the pin and the tree
+ok 187 - an untagged verification still checks the pin and the tree
+  ---
+  duration_ms: 0.038083
+  type: 'test'
+  ...
+# Subtest: the CLI arguments are parsed strictly
+ok 188 - the CLI arguments are parsed strictly
+  ---
+  duration_ms: 0.708292
+  type: 'test'
+  ...
+# PASS upgrade: archive replay upgrades unknown recovery to recovered
+# PASS restart: sidecar hydration after journal deletion keeps evidence
+# 2 passed, 0 failed
+# Subtest: test/restart-recovery.test.mjs
+ok 33 - test/restart-recovery.test.mjs
+  ---
+  duration_ms: 132.9835
+  type: 'test'
+  ...
+# Subtest: full inspect output matches the original boundary and stays detached
+ok 190 - full inspect output matches the original boundary and stays detached
+  ---
+  duration_ms: 7.458917
+  type: 'test'
+  ...
+# Subtest: snapshot exceptional values preserve clone then projection semantics
+ok 191 - snapshot exceptional values preserve clone then projection semantics
+  ---
+  duration_ms: 5.720125
+  type: 'test'
+  ...
+# Subtest: fallback reads accessors once and retains alias isolation
+ok 192 - fallback reads accessors once and retains alias isolation
+  ---
+  duration_ms: 0.160375
+  type: 'test'
+  ...
+# Subtest: registered inspect projects once and proposal retains the complete detached baseline
+ok 193 - registered inspect projects once and proposal retains the complete detached baseline
+  ---
+  duration_ms: 3.205167
+  type: 'test'
+  ...
+# Subtest: registered inspect retains the legacy projection for unusual object prototypes
+ok 194 - registered inspect retains the legacy projection for unusual object prototypes
+  ---
+  duration_ms: 0.419917
+  type: 'test'
+  ...
+# Subtest: signature bytes and recovery decisions match the original across sizes and mutations
+ok 195 - signature bytes and recovery decisions match the original across sizes and mutations
+  ---
+  duration_ms: 101.190208
+  type: 'test'
+  ...
+# Subtest: exotic sort values retain serialization calls, errors, and stable ties
+ok 196 - exotic sort values retain serialization calls, errors, and stable ties
+  ---
+  duration_ms: 4.999417
+  type: 'test'
+  ...
+# Subtest: nested event and package sort keys retain complete signatures
+ok 197 - nested event and package sort keys retain complete signatures
+  ---
+  duration_ms: 46.746375
+  type: 'test'
+  ...
+# Subtest: sort serialization is linear and keys are rebuilt after live mutations
+ok 198 - sort serialization is linear and keys are rebuilt after live mutations
+  ---
+  duration_ms: 9.126375
+  type: 'test'
+  ...
+# Subtest: unbound scope declaration is not reported as an unknown live owner
+ok 199 - unbound scope declaration is not reported as an unknown live owner
+  ---
+  duration_ms: 1.019958
+  type: 'test'
+  ...
+# Subtest: bound service without a fiber still fails closed
+ok 200 - bound service without a fiber still fails closed
+  ---
+  duration_ms: 0.182667
+  type: 'test'
+  ...
+# Subtest: inspect the agent scope rather than the profile scope
+ok 201 - inspect the agent scope rather than the profile scope
+  ---
+  duration_ms: 0.113291
+  type: 'test'
+  ...
+# Subtest: shell mutation matching retains irreversible, redirect and trust-root decisions
+ok 202 - shell mutation matching retains irreversible, redirect and trust-root decisions
+  ---
+  duration_ms: 4.101042
+  type: 'test'
+  ...
+# Subtest: uncontrolled shell input cannot stall the pre-execution guard
+ok 203 - uncontrolled shell input cannot stall the pre-execution guard
+  ---
+  duration_ms: 390.782417
+  type: 'test'
+  ...
+# Subtest: metric fallback identifiers use UUIDs once per record without weak randomness
+ok 204 - metric fallback identifiers use UUIDs once per record without weak randomness
+  ---
+  duration_ms: 6.019667
+  type: 'test'
+  ...
+# Subtest: caller-provided metric identities and projection data remain unchanged
+ok 205 - caller-provided metric identities and projection data remain unchanged
+  ---
+  duration_ms: 1.615417
+  type: 'test'
+  ...
+# Subtest: pre-trial host loading does not invalidate cleanup, and the proof uses the actual trial boundary
+ok 206 - pre-trial host loading does not invalidate cleanup, and the proof uses the actual trial boundary
+  ---
+  duration_ms: 66.192417
+  type: 'test'
+  ...
+# Subtest: drift during the trial still fails recovery and retains target ownership
+ok 207 - drift during the trial still fails recovery and retains target ownership
+  ---
+  duration_ms: 66.524209
+  type: 'test'
+  ...
+# Subtest: drift while run is pending cannot be absorbed by a second trial call or a later inspect
+ok 208 - drift while run is pending cannot be absorbed by a second trial call or a later inspect
+  ---
+  duration_ms: 79.136875
+  type: 'test'
+  ...
+# Subtest: an unreadable private service inventory cannot prove recovery even when both reads fail
+ok 209 - an unreadable private service inventory cannot prove recovery even when both reads fail
+  ---
+  duration_ms: 0.332625
+  type: 'test'
+  ...
+# Subtest: an unreadable public service inventory fails closed while an unbound declaration stays empty
+ok 210 - an unreadable public service inventory fails closed while an unbound declaration stays empty
+  ---
+  duration_ms: 0.129875
+  type: 'test'
+  ...
+# Subtest: ordinary private service lookup retains its tolerant behavior
+ok 211 - ordinary private service lookup retains its tolerant behavior
+  ---
+  duration_ms: 0.285833
+  type: 'test'
+  ...
+# Subtest: failed cleanup receipts cannot pass recovery with an unchanged runtime
+ok 212 - failed cleanup receipts cannot pass recovery with an unchanged runtime
+  ---
+  duration_ms: 63.762667
+  type: 'test'
+  ...
+# Subtest: every workflow file parses as YAML and has runnable steps
+ok 213 - every workflow file parses as YAML and has runnable steps
+  ---
+  duration_ms: 4.797
+  type: 'test'
+  ...
+# Subtest: CI runs the unit tests, the package checks and both supported hosts
+ok 214 - CI runs the unit tests, the package checks and both supported hosts
+  ---
+  duration_ms: 2.59425
+  type: 'test'
+  ...
+# Subtest: CI clean install and upload select only the pinned candidate when historical tarballs coexist
+ok 215 - CI clean install and upload select only the pinned candidate when historical tarballs coexist
+  ---
+  duration_ms: 859.35575
+  type: 'test'
+  ...
+# Subtest: the release workflow only publishes a draft of the verified artifact, never to npm
+ok 216 - the release workflow only publishes a draft of the verified artifact, never to npm
+  ---
+  duration_ms: 1991.179458
+  type: 'test'
+  ...
+# Subtest: the release workflow cannot overwrite an existing release asset
+ok 217 - the release workflow cannot overwrite an existing release asset
+  ---
+  duration_ms: 1.539459
+  type: 'test'
+  ...
+# Subtest: the release workflow verifies the tag, the commit, the pin and the checksums
+ok 218 - the release workflow verifies the tag, the commit, the pin and the checksums
+  ---
+  duration_ms: 1.0765
+  type: 'test'
+  ...
+# Subtest: code scanning runs CodeQL against main and pull requests
+ok 219 - code scanning runs CodeQL against main and pull requests
+  ---
+  duration_ms: 0.281166
+  type: 'test'
+  ...
+# Subtest: every action runs on the Node.js 24 runtime
+ok 220 - every action runs on the Node.js 24 runtime
+  ---
+  duration_ms: 1.170583
+  type: 'test'
+  ...
+# Subtest: the workflows pin the current supported action majors
+ok 221 - the workflows pin the current supported action majors
+  ---
+  duration_ms: 1.178333
+  type: 'test'
+  ...
+# Subtest: no workflow runs on pull_request_target or with write permissions by default
+ok 222 - no workflow runs on pull_request_target or with write permissions by default
+  ---
+  duration_ms: 1.241541
+  type: 'test'
+  ...
+1..222
+# tests 222
+# suites 0
+# pass 222
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10508.560625

@@ -156,3 +156,29 @@ npm test
 记录、退休未被引用的记录（`test/dockyard-domain/failure-retention.test.js`）；
 投影与快照的取值、计数、返回隔离
 （`test/dockyard-domain/projection-snapshot.test.js`）。
+
+## 发布收口
+
+`v0.2.0-rc.6` 使用新版本与新固定点，不覆盖探索时的 rc.5 产物或历史发布附件。
+撤回两项事件同步优化、保留四项重复计算消除后，源码、固定 tarball、校验和与
+manifest 指向同一内容：`sourceCommit` `3822862`、tag commit `7eba617`、
+`sha256` `b1c538d1…`、`contentSha256` `e83170af…`。
+
+### 发布收口结果
+
+`v0.2.0-rc.6` 已于 2026-10-10 公开为 GitHub prerelease（非 draft），tag 指向
+与 `main` 相同的 commit。Node `22.19.0` / `24.21.0` / `26.11.1` 本地各
+222/222，零跳过；发布前验收、Linux CI 验收与发布后验收在两个精确官方宿主上
+均各 21/21，最终 doctor `healthy`。发布后的验收使用匿名下载的固定字节，以及
+全新的官方 runtime/home。
+
+main CI、CodeQL（无未关闭告警）、tag/sourceCommit 实际包内容、发布 workflow、
+draft 附件和匿名下载校验全部通过。全部历史 tag 与资产 ID、摘要、更新时间
+保持不变；rc.1 的 tag/资产 provenance 不一致作为已知风险继续保留。完整测试
+输出、Linux 和发布后宿主证据及来源/资产摘要见
+`docs/evidence/rc6-release-audit.json`。
+
+包内 `README.md`、`CHANGELOG.md`、`COMPATIBILITY.md`、`RELEASE.md` 属于发布
+内容，随固定字节冻结：它们在 pin 时写下的是“尚未发布”的状态，发布后的权威
+记录只能写在包外（本文件与上述审计证据）。下一个版本的 pin commit 会像
+rc.5 → rc.6 一样，把 rc.6 的发布状态写回 `RELEASE.md`。
