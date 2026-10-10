@@ -6,6 +6,12 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.6 — redundant work removal
+
+- 删除同一调用路径中的重复计算：领域事件同步不再在一次 `flush()` 里把已提交标记表摘要算两次（改为每个已提交代次一次，写入即失效，重启后首次使用仍从介质读回），并复用本端口刚校验写出的持久文档；语义 GC 不再为每条可退休记录线性扫描整张 canonical 表；失败记忆 `record()` 与加载不再为丢弃的返回值深拷贝整份记录；observation 过滤不再逐条规范化同一查询词，strategy 与 capability 快照不再为取计数重复生成整份列表。
+- 保留持久化格式、认证、fsync、事务、恢复、回滚与跨进程锁语义，官方 DSH 零源码 patch；历史 tag 和发布附件不变。新增检查点标记摘要绑定、退休判定、投影与快照取值回归。
+- 可复现前后对比（3 轮交替、中位数）：稳态事件同步 50000 条历史 CPU 22.658 → 11.430 ms（−49.55%）；带 1 条新事件 20000 条历史 CPU 62.902 → 50.832 ms（−19.19%）；canonical 3000 时语义 GC 94.182 → 67.198 ms（−28.65%）；`record()` 重复条目 1.1432 → 0.7722 ms（−32.45%）；带查询词的 observation 列表 1.3195 → 0.5097 ms（−61.37%）。收益边界与原始数据见 `docs/performance/redundant-work.md`。
+
 ## 0.2.0-rc.5 — reliability fixes
 
 - 保留 proposal 快照，在 Trial 首次运行时修改前同步捕获恢复基线；正常 propose→trial 宿主加载不再误报恢复失败。基线不在后续 inspect、measure 或清理时重建，Trial 期间真实并发漂移仍拒绝恢复并保留目标锁。

@@ -39,3 +39,30 @@ test("cold-only failure blockers and verified canonical survive semantic GC/rest
   await next.restore(next.fullSnapshot());
   assert.equal(next.history("outcomes").length, count);
 });
+
+test("retirement still consults every canonical record id", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "domain-canonical-retention-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const memory = new EvolutionMemory({
+    stateStore: new JsonStateStore({ filePath: join(root, "state.json") }),
+    maxEntries: 1000, hotEntries: 1000, hotCycles: 1000, mutationAuthority: { assertMutation() {} },
+  });
+  await memory.load();
+  const at = "2026-10-07T00:00:00.000Z";
+  const terminal = (id) => ({ id, signature: `sig-${id}`, rootCause: `cause-${id}`, status: "failed", recordedAt: at, lastSeenAt: at });
+  const outcomes = [terminal("kept-by-canonical"), terminal("retired-record")];
+  // The referenced record sits in the middle of a longer canonical table: the
+  // decision must not depend on where the matching entry is stored.
+  const canonical = [
+    { id: "canonical-other", state: "CANONICAL", lifecycleState: "CANONICAL", capability: "other", recordId: "unrelated-record", fitnessScore: 1, updatedAt: at },
+    { id: "canonical-kept", state: "CANONICAL", lifecycleState: "CANONICAL", capability: "test", recordId: "kept-by-canonical", fitnessScore: 2, updatedAt: at },
+    { id: "canonical-tail", state: "CANONICAL", lifecycleState: "CANONICAL", capability: "third", recordId: "another-record", fitnessScore: 3, updatedAt: at },
+  ];
+  await memory.restore({ ...memory.fullSnapshot(), outcomes, canonical }, { persist: false });
+  const report = await memory.compact();
+  assert.equal(report.retired, 1);
+  assert.equal(report.retainedCanonical, 3);
+  assert.deepEqual(memory.history("outcomes").map((entry) => entry.id), ["kept-by-canonical"]);
+  assert.deepEqual(memory.history("tombstones").map((entry) => entry.id).length, 1);
+  assert.equal(memory.canonicalSnapshot().length, 3);
+});

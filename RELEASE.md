@@ -2,18 +2,18 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前固定版本：`0.2.0-rc.5`，收口 Trial 恢复基线与不可读服务清单两项可靠性修复，保留此前五轮性能优化、安全、恢复与回滚语义。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。发布状态、远端 CI / CodeQL、匿名下载与发布后双宿主证据见 `docs/evidence/rc5-release-audit.json`。历史 rc.4 固定点与发布后记录保留在 `docs/evidence/rc4-release-audit.json` 及 `rc4-postpublish-*.json`；本轮不修改历史 tag 或发布附件。修复边界及原始失败记录见 `docs/core-reliability.md`。
+当前固定版本：`0.2.0-rc.6`，删除事件同步前缀摘要、语义 GC、失败记忆记录与投影快照中的重复计算，保留此前的可靠性修复、五轮性能优化、安全、恢复与回滚语义。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本候选仅在本地固定与验收，未创建 tag 或进行外部发布。历史 rc.5 的发布状态、远端 CI / CodeQL、匿名下载与发布后双宿主证据见 `docs/evidence/rc5-release-audit.json`；历史 rc.4 固定点与发布后记录保留在 `docs/evidence/rc4-release-audit.json` 及 `rc4-postpublish-*.json`；本轮不修改历史 tag 或发布附件。收益边界、原始数据与失败记录见 `docs/performance/redundant-work.md`。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.5.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.6.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-发布入口为 `https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.5`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。实际完成状态以发布审计为准。
+本候选尚无公开发布入口。历史公开 rc.5 的入口、资产与发布后验收记录见 `docs/evidence/rc5-release-audit.json`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
 
 `release/manifest.json` 只固定当前版本。历史 tarball 可以共存，发布流程仅选择 manifest 指定的文件；历史固定点也保留在对应 tag / commit 与各自 Release 附件中。
 
@@ -29,14 +29,14 @@
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.5，仓库内容）
+# 当前本地候选（0.2.0-rc.6，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
-node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.5 --require-source-commit
+node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.6 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.5，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0-rc.6，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz

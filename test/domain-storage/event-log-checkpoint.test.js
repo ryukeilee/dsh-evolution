@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { openDomainStorage } from '../../lib/domain-storage.js';
 import { EvolutionEventBridge, signEventBridgeEnvelope } from '../../lib/orchestrator.js';
-import { digestEventLogPrefix, eventLogCheckpointPath, planEventLogReplay,
+import { digestApplied, digestEventLogPrefix, eventLogCheckpointPath, planEventLogReplay,
   readEventLogCheckpoint, writeEventLogCheckpoint } from '../../lib/event-log-checkpoint.js';
 // The official storage packages are dev dependencies of this repo, so the
 // domain integration is exercised against the real official implementation.
@@ -36,6 +36,35 @@ function eventFor(id, status = 'measured') {
   return { schema: 1, eventId: `evolution:measurement-completed:${id}`, eventType: 'measurement-completed',
     experimentId: id, status, measurement: { latency: 1 }, audit: { at: '2026-10-07T00:00:00.000Z' } };
 }
+
+test('the stored marker digest always describes the committed marker map', async () => {
+  const f = await fixture();
+  const port = await openDomainStorage(f.ctx, f.config);
+  try {
+    const appliedNow = () => f.ctx.storageDomain.get('evolution_domain').global.get().applied;
+    const checkpointFile = eventLogCheckpointPath(f.root);
+    appendEnvelope(f.config.eventBridgePath, eventFor('exp-digest'), { sequence: 1 });
+    assert.deepEqual(await port.flush(), { applied: 1, duplicates: 0 });
+    const first = readEventLogCheckpoint(checkpointFile);
+    assert.equal(first.appliedDigest, digestApplied(appliedNow()));
+
+    // A pass that commits nothing must keep binding the same map: the checkpoint
+    // stays trusted instead of degrading to per-record verification.
+    assert.deepEqual(await port.flush(), { applied: 0, duplicates: 1 });
+    assert.equal(readEventLogCheckpoint(checkpointFile).appliedDigest, first.appliedDigest);
+    assert.equal(planEventLogReplay({ file: f.config.eventBridgePath, key: KEY,
+      writer: 'dsh-evolution-orchestrator', checkpoint: readEventLogCheckpoint(checkpointFile),
+      applied: appliedNow() }).trusted, true);
+
+    // A committed record must move the stored digest together with the map.
+    appendEnvelope(f.config.eventBridgePath, eventFor('exp-digest-2'), { sequence: 2 });
+    assert.deepEqual(await port.flush(), { applied: 1, duplicates: 1 });
+    const advanced = readEventLogCheckpoint(checkpointFile);
+    assert.equal(Object.keys(appliedNow()).length, 2);
+    assert.notEqual(advanced.appliedDigest, first.appliedDigest);
+    assert.equal(advanced.appliedDigest, digestApplied(appliedNow()));
+  } finally { await port.close(); await teardown(f); }
+});
 
 test('an authenticated prefix is reused and only new records need per-record work', async () => {
   const f = await fixture();

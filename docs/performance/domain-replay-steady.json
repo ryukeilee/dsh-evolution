@@ -1,0 +1,467 @@
+{
+  "benchmark": "scripts/benchmarks/domain-replay.mjs",
+  "parameters": {
+    "BENCH_EVENTS": "50000",
+    "BENCH_NEW_EVENTS": "0",
+    "BENCH_SAMPLES": "15"
+  },
+  "node": "v26.11.1",
+  "platform": "darwin/arm64",
+  "baselineCommit": "034c3a463b822aed2e1fa437dfac9b6b45b2b01e",
+  "baselineCheckout": "git archive <baselineCommit> | tar -x -C <dir> plus a node_modules symlink",
+  "rounds": 3,
+  "baseline": [
+    {
+      "round": 1,
+      "node": "v26.11.1",
+      "platform": "darwin/arm64",
+      "events": 50000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 26455564,
+      "median": {
+        "elapsedMs": 22.606708000000026,
+        "cpuMs": 22.788
+      },
+      "results": [
+        {
+          "elapsedMs": 22.748542000000043,
+          "cpuMs": 22.797
+        },
+        {
+          "elapsedMs": 22.587292000000048,
+          "cpuMs": 22.592
+        },
+        {
+          "elapsedMs": 23.257875000000013,
+          "cpuMs": 23.502
+        },
+        {
+          "elapsedMs": 22.81762500000002,
+          "cpuMs": 22.898
+        },
+        {
+          "elapsedMs": 22.65983300000005,
+          "cpuMs": 22.907
+        },
+        {
+          "elapsedMs": 22.363500000000045,
+          "cpuMs": 22.904
+        },
+        {
+          "elapsedMs": 22.715167000000065,
+          "cpuMs": 22.82
+        },
+        {
+          "elapsedMs": 22.619749999999954,
+          "cpuMs": 22.788
+        },
+        {
+          "elapsedMs": 22.568000000000097,
+          "cpuMs": 22.569
+        },
+        {
+          "elapsedMs": 23.085250000000087,
+          "cpuMs": 23.306
+        },
+        {
+          "elapsedMs": 22.16179099999988,
+          "cpuMs": 22.163
+        },
+        {
+          "elapsedMs": 22.324749999999995,
+          "cpuMs": 22.688
+        },
+        {
+          "elapsedMs": 22.212749999999915,
+          "cpuMs": 22.214
+        },
+        {
+          "elapsedMs": 22.57316600000013,
+          "cpuMs": 22.575
+        },
+        {
+          "elapsedMs": 22.606708000000026,
+          "cpuMs": 22.743
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "node": "v26.11.1",
+      "platform": "darwin/arm64",
+      "events": 50000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 26455564,
+      "median": {
+        "elapsedMs": 22.497667000000092,
+        "cpuMs": 22.658
+      },
+      "results": [
+        {
+          "elapsedMs": 22.62525000000005,
+          "cpuMs": 22.669
+        },
+        {
+          "elapsedMs": 24.47645900000009,
+          "cpuMs": 23.439
+        },
+        {
+          "elapsedMs": 23.050666999999976,
+          "cpuMs": 23.296
+        },
+        {
+          "elapsedMs": 22.685791999999992,
+          "cpuMs": 22.777
+        },
+        {
+          "elapsedMs": 22.518500000000017,
+          "cpuMs": 22.752
+        },
+        {
+          "elapsedMs": 22.202542000000108,
+          "cpuMs": 22.206
+        },
+        {
+          "elapsedMs": 22.488916000000017,
+          "cpuMs": 22.581
+        },
+        {
+          "elapsedMs": 22.497667000000092,
+          "cpuMs": 22.687
+        },
+        {
+          "elapsedMs": 22.480458,
+          "cpuMs": 22.482
+        },
+        {
+          "elapsedMs": 22.39745800000003,
+          "cpuMs": 22.609
+        },
+        {
+          "elapsedMs": 21.954042000000072,
+          "cpuMs": 21.956
+        },
+        {
+          "elapsedMs": 22.254457999999886,
+          "cpuMs": 22.658
+        },
+        {
+          "elapsedMs": 22.421875,
+          "cpuMs": 22.423
+        },
+        {
+          "elapsedMs": 22.540499999999838,
+          "cpuMs": 22.542
+        },
+        {
+          "elapsedMs": 22.73758299999986,
+          "cpuMs": 22.882
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "node": "v26.11.1",
+      "platform": "darwin/arm64",
+      "events": 50000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 26455564,
+      "median": {
+        "elapsedMs": 22.426625000000058,
+        "cpuMs": 22.568
+      },
+      "results": [
+        {
+          "elapsedMs": 23.061707999999953,
+          "cpuMs": 23.105
+        },
+        {
+          "elapsedMs": 22.718875000000025,
+          "cpuMs": 22.721
+        },
+        {
+          "elapsedMs": 22.85800000000006,
+          "cpuMs": 23.106
+        },
+        {
+          "elapsedMs": 22.54774999999995,
+          "cpuMs": 22.625
+        },
+        {
+          "elapsedMs": 22.49391700000001,
+          "cpuMs": 22.748
+        },
+        {
+          "elapsedMs": 22.165624999999977,
+          "cpuMs": 22.169
+        },
+        {
+          "elapsedMs": 22.433874999999944,
+          "cpuMs": 22.522
+        },
+        {
+          "elapsedMs": 22.38824999999997,
+          "cpuMs": 22.568
+        },
+        {
+          "elapsedMs": 22.323624999999993,
+          "cpuMs": 22.326
+        },
+        {
+          "elapsedMs": 22.484375,
+          "cpuMs": 22.7
+        },
+        {
+          "elapsedMs": 22.084791999999993,
+          "cpuMs": 22.086
+        },
+        {
+          "elapsedMs": 22.20825000000002,
+          "cpuMs": 22.58
+        },
+        {
+          "elapsedMs": 22.151582999999846,
+          "cpuMs": 22.153
+        },
+        {
+          "elapsedMs": 22.426625000000058,
+          "cpuMs": 22.429
+        },
+        {
+          "elapsedMs": 22.34550000000013,
+          "cpuMs": 22.49
+        }
+      ]
+    }
+  ],
+  "candidate": [
+    {
+      "round": 1,
+      "node": "v26.11.1",
+      "platform": "darwin/arm64",
+      "events": 50000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 26455564,
+      "median": {
+        "elapsedMs": 11.42395799999997,
+        "cpuMs": 11.493
+      },
+      "results": [
+        {
+          "elapsedMs": 11.363750000000095,
+          "cpuMs": 11.399
+        },
+        {
+          "elapsedMs": 11.416584000000057,
+          "cpuMs": 11.419
+        },
+        {
+          "elapsedMs": 11.479499999999916,
+          "cpuMs": 11.612
+        },
+        {
+          "elapsedMs": 11.403083000000038,
+          "cpuMs": 11.518
+        },
+        {
+          "elapsedMs": 11.456457999999998,
+          "cpuMs": 11.581
+        },
+        {
+          "elapsedMs": 11.42395799999997,
+          "cpuMs": 11.43
+        },
+        {
+          "elapsedMs": 11.38695800000005,
+          "cpuMs": 11.497
+        },
+        {
+          "elapsedMs": 11.503583000000049,
+          "cpuMs": 11.685
+        },
+        {
+          "elapsedMs": 11.447250000000054,
+          "cpuMs": 11.449
+        },
+        {
+          "elapsedMs": 11.406834000000003,
+          "cpuMs": 11.493
+        },
+        {
+          "elapsedMs": 11.386082999999985,
+          "cpuMs": 11.387
+        },
+        {
+          "elapsedMs": 11.426958000000013,
+          "cpuMs": 11.765
+        },
+        {
+          "elapsedMs": 11.509874999999965,
+          "cpuMs": 11.512
+        },
+        {
+          "elapsedMs": 11.479584000000045,
+          "cpuMs": 11.481
+        },
+        {
+          "elapsedMs": 11.343707999999992,
+          "cpuMs": 11.349
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "node": "v26.11.1",
+      "platform": "darwin/arm64",
+      "events": 50000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 26455564,
+      "median": {
+        "elapsedMs": 11.404457999999977,
+        "cpuMs": 11.43
+      },
+      "results": [
+        {
+          "elapsedMs": 11.387917000000016,
+          "cpuMs": 11.422
+        },
+        {
+          "elapsedMs": 11.422666999999933,
+          "cpuMs": 11.43
+        },
+        {
+          "elapsedMs": 11.446500000000015,
+          "cpuMs": 11.586
+        },
+        {
+          "elapsedMs": 11.766875000000027,
+          "cpuMs": 11.874
+        },
+        {
+          "elapsedMs": 11.546207999999979,
+          "cpuMs": 11.679
+        },
+        {
+          "elapsedMs": 11.46049999999991,
+          "cpuMs": 11.467
+        },
+        {
+          "elapsedMs": 11.479791999999975,
+          "cpuMs": 11.6
+        },
+        {
+          "elapsedMs": 11.505625000000009,
+          "cpuMs": 11.693
+        },
+        {
+          "elapsedMs": 11.404457999999977,
+          "cpuMs": 11.406
+        },
+        {
+          "elapsedMs": 11.29570799999999,
+          "cpuMs": 11.392
+        },
+        {
+          "elapsedMs": 11.264292000000069,
+          "cpuMs": 11.265
+        },
+        {
+          "elapsedMs": 11.384167000000048,
+          "cpuMs": 11.743
+        },
+        {
+          "elapsedMs": 11.239625000000046,
+          "cpuMs": 11.24
+        },
+        {
+          "elapsedMs": 11.279583000000002,
+          "cpuMs": 11.281
+        },
+        {
+          "elapsedMs": 11.296458999999913,
+          "cpuMs": 11.297
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "node": "v26.11.1",
+      "platform": "darwin/arm64",
+      "events": 50000,
+      "newEvents": 0,
+      "samples": 15,
+      "bytes": 26455564,
+      "median": {
+        "elapsedMs": 11.403666999999928,
+        "cpuMs": 11.409
+      },
+      "results": [
+        {
+          "elapsedMs": 11.429208000000017,
+          "cpuMs": 11.47
+        },
+        {
+          "elapsedMs": 11.337791000000038,
+          "cpuMs": 11.34
+        },
+        {
+          "elapsedMs": 11.464959000000022,
+          "cpuMs": 11.598
+        },
+        {
+          "elapsedMs": 11.436791000000085,
+          "cpuMs": 11.556
+        },
+        {
+          "elapsedMs": 11.405292000000031,
+          "cpuMs": 11.53
+        },
+        {
+          "elapsedMs": 11.374915999999985,
+          "cpuMs": 11.38
+        },
+        {
+          "elapsedMs": 11.403666999999928,
+          "cpuMs": 11.526
+        },
+        {
+          "elapsedMs": 11.403958999999986,
+          "cpuMs": 11.583
+        },
+        {
+          "elapsedMs": 11.189750000000004,
+          "cpuMs": 11.191
+        },
+        {
+          "elapsedMs": 11.313291999999933,
+          "cpuMs": 11.407
+        },
+        {
+          "elapsedMs": 11.408041000000026,
+          "cpuMs": 11.409
+        },
+        {
+          "elapsedMs": 11.423000000000002,
+          "cpuMs": 11.772
+        },
+        {
+          "elapsedMs": 11.334749999999985,
+          "cpuMs": 11.335
+        },
+        {
+          "elapsedMs": 11.254167000000052,
+          "cpuMs": 11.255
+        },
+        {
+          "elapsedMs": 11.387417000000028,
+          "cpuMs": 11.388
+        }
+      ]
+    }
+  ]
+}

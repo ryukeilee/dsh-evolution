@@ -4,7 +4,7 @@
 
 本仓库是 `dsh-evolution` 的**唯一开发、测试与发布来源**；旧的 DSH 环境只作为历史迁移源和回滚基线，不再维护插件源码。
 
-- 包版本：`0.2.0-rc.5`（可靠性修复 RC）
+- 包版本：`0.2.0-rc.6`（性能精简 RC）
 - 支持的 DSH 版本范围：**`0.2.0-rc.2` / `0.2.1-alpha.1`**（精确列表）。`package.json` 的 `peerDependencies` 逐一列出经过真实安装验收的宿主版本，不通过 exemption 伪装其它版本兼容；列表之外的宿主由 `host.version` 报 `blocked`。
 - Node：`^22.19.0 || >=24.0.0`（在当前验证环境为 `v26.10.0`，pnpm `11.26.0`）。
 
@@ -19,36 +19,36 @@ npx @deepseek-ai/dsh web            # 官方推荐
 # 或源码：pnpm install && pnpm run build
 ```
 
-本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定版本是 `0.2.0-rc.5`，收口 Trial 恢复边界与服务清单读取两项可靠性修复，保留此前性能优化。发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新匿名下载并执行双宿主验收。历史 rc.4 审计保留在 `docs/evidence/rc4-release-audit.json`。
+本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定版本是 `0.2.0-rc.6`，删除事件同步、语义 GC、失败记忆记录与投影快照中的重复计算，保留此前的可靠性修复、性能、安全、恢复与回滚语义。发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新匿名下载并执行双宿主验收。历史 rc.5 审计保留在 `docs/evidence/rc5-release-audit.json`，收益边界见 `docs/performance/redundant-work.md`。
 
 ### 1.1 从公开 Release 安装（用户）
 
 ```sh
 # 公开下载：无需 GitHub 仓库权限或登录
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.5
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.5.tgz" -o dsh-evolution-0.2.0-rc.5.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.6
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.6.tgz" -o dsh-evolution-0.2.0-rc.6.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 curl -fL "$RELEASE_URL/manifest.json" -o manifest.json
 
 # 也可使用 GitHub CLI；公开仓库无需先运行 gh auth login
-gh release download v0.2.0-rc.5 --repo ryukeilee/dsh-evolution \
+gh release download v0.2.0-rc.6 --repo ryukeilee/dsh-evolution \
   --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS' --pattern 'manifest.json'
 
 # 校验：必须与本次下载的 SHA256SUMS 一致
 sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
 
 # 安装 / 升级（同一条命令；官方 CLI 负责 bundle 选择与依赖安装）
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.5.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.6.tgz
 
 # 启动
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
-> 历史 `v0.2.0-rc.1` 的 tag 与发布资产存在 provenance 不一致；原 tag 和附件保留，详情见 `RELEASE.md`。请使用当前通过验收的 `v0.2.0-rc.5`。
+> 历史 `v0.2.0-rc.1` 的 tag 与发布资产存在 provenance 不一致；原 tag 和附件保留，详情见 `RELEASE.md`。请使用当前通过验收的 `v0.2.0-rc.6`。
 
 ### 1.2 从源码构建（贡献者）
 
-固定产物可用 `release/dsh-evolution-0.2.0-rc.5.tgz` 安装，校验信息见仓库的 `release/SHA256SUMS`；它与历史公开版本的下载校验信息不同。
+固定产物可用 `release/dsh-evolution-0.2.0-rc.6.tgz` 安装，校验信息见仓库的 `release/SHA256SUMS`；它与历史公开版本的下载校验信息不同。
 
 ```sh
 npm ci
@@ -56,7 +56,7 @@ npm run release:pack     # 生成 dist/；本机构建的压缩字节受 npm 版
 npm run pack:check       # 校验内容白名单、权限、发布固定点（pin）
 ```
 
-本机构建的字节**不保证**与发布产物相同（`npm pack` 的 gzip 输出随 npm 版本变化）；保证一致的是内容：用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.5.tgz --content-only` 核对内容摘要。
+本机构建的字节**不保证**与发布产物相同（`npm pack` 的 gzip 输出随 npm 版本变化）；保证一致的是内容：用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.6.tgz --content-only` 核对内容摘要。
 
 安装后官方 profile 的 `package.json` 会把 `dsh-evolution` 列入 `dsh.profile.bundles`，插件随 profile 加载，无需每 session 手工挂载 preset。
 
