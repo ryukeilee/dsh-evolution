@@ -92,7 +92,8 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
    （原字节保留、空 memory 继续、可查询 warning），doctor 同步报 `degraded`。
 2. 缺少 `signature` 的记录在 `bySignature` 中以同一缺失键合并，不同记录被静默折叠，
    且 `compact()` 会把折叠结果写回磁盘。修复：为缺失身份的记录派生整条内容的
-   SHA-256，不同内容永不合并，完全相同的内容仍然去重。
+   SHA-256，在加载边界（64 层）以内不同内容永不合并，完全相同的内容仍然去重；
+   超出边界的记录按损坏状态隔离，不参与去重。
 3. 时钟回拨或异常 `lastSeenAt` 使新记录排到满仓之后时，`record()` 自己的保留过程会裁掉
    刚写入的记录并返回 `entry: undefined`，随后 `archive()` 读取 `memory.entry.signature`
    抛 `TypeError`。另外显式 `signature` 为非字符串（如 `42`）时，保留键与实际存储键

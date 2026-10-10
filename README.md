@@ -6,7 +6,7 @@
 
 - 包版本：`0.2.0-rc.7`（本地候选，未发布）
 - 支持的 DSH 版本范围：**`0.2.0-rc.2` / `0.2.1-alpha.1`**（精确列表）。`package.json` 的 `peerDependencies` 逐一列出经过真实安装验收的宿主版本，不通过 exemption 伪装其它版本兼容；列表之外的宿主由 `host.version` 报 `blocked`。
-- Node：`^22.19.0 || >=24.0.0`（在当前验证环境为 `v26.10.0`，pnpm `11.26.0`）。
+- Node：`^22.19.0 || >=24.0.0`（在当前验证环境为 `v26.11.1`，pnpm `11.26.0`）。
 
 > 状态：官方 `0.2.0-rc.2` 与 `0.2.1-alpha.1` 上的完整验收均已完成并通过（干净 runtime 安装 / 官方 CLI 插件安装 / 启动 / 9 个工具注册 / 核心流程 inspect→propose→trial→measure→revert 且 disposer 恢复基线 / CLI 与最终 doctor / promotion 到 canary 并跨重启存活 / startup canary 提交 / canary regression 回滚 / 禁用启用 / 卸载重装 / 数据保留 / 不可兼容宿主阻断）。验收由本仓库的脚本执行，证据已入库：`docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json`；复现方式、产物与**尚未消除的发布风险**见 `RELEASE.md`。本仓库的验证入口是 `npm test`，用户侧的可复现验证入口是 `scripts/doctor.mjs`（见第 5 节）。最后公开版本 `v0.2.0-rc.6` 的发布状态、CI 与发布后验收以 GitHub Release 及 `docs/evidence/rc6-release-audit.json` 为准；当前 `0.2.0-rc.7` 仅在本地构建与验收，未创建 tag 或公开发布。
 
