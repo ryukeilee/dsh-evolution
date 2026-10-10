@@ -2,18 +2,18 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前固定版本：`0.2.0-rc.6`，删除语义 GC、失败记忆记录与投影快照中的重复计算；事件同步路径的两项候选优化经三轮独立对抗式审查后整体撤回（三处反例均在真实官方 JSON 后端复现），生产代码恢复基线行为，保留此前的可靠性修复、五轮性能优化、安全、恢复与回滚语义。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本候选仅在本地固定与验收，未创建 tag 或进行外部发布。历史 rc.5 的发布状态、远端 CI / CodeQL、匿名下载与发布后双宿主证据见 `docs/evidence/rc5-release-audit.json`；历史 rc.4 固定点与发布后记录保留在 `docs/evidence/rc4-release-audit.json` 及 `rc4-postpublish-*.json`；本轮不修改历史 tag 或发布附件。收益边界、原始数据与失败记录见 `docs/performance/redundant-work.md`。
+当前本地候选版本：`0.2.0-rc.7`，修复 file 后端失败记忆在损坏记录、缺失身份与时钟回拨下的启动失败、静默合并与丢失；doctor 与运行时对同一状态的判定保持一致。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本候选仅在本地固定与验收，未创建 tag 或进行外部发布。最后公开 `v0.2.0-rc.6` 的发布状态、远端 CI / CodeQL、匿名下载与发布后双宿主证据见 `docs/evidence/rc6-release-audit.json` 及 `rc6-postpublish-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.6.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.7.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-本候选尚无公开发布入口。历史公开 rc.5 的入口、资产与发布后验收记录见 `docs/evidence/rc5-release-audit.json`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
+本候选尚无公开发布入口。历史公开 rc.6 的入口、资产与发布后验收记录见 `docs/evidence/rc6-release-audit.json`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
 
 `release/manifest.json` 只固定当前版本。历史 tarball 可以共存，发布流程仅选择 manifest 指定的文件；历史固定点也保留在对应 tag / commit 与各自 Release 附件中。
 
@@ -29,14 +29,14 @@
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.6，仓库内容）
+# 当前本地候选（0.2.0-rc.7，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
-node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.6 --require-source-commit
+# 尚未创建 v0.2.0-rc.7 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.6，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0-rc.7，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -126,6 +126,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 10. **未做的发布动作：** npm 发布、代码签名 / provenance（SLSA）、SBOM。Code scanning 现已启用，但本 RC 仍不提供供应链签名。
 11. **`0.2.1-alpha.1` 的 npm dist-tag 会移动。** 验收记录的是该精确版本号；上游把 `alpha` 指向新版本后，本仓库声明的仍是 `0.2.1-alpha.1`。
 12. **指标 ID 不是授权凭证。** 兜底 ID 改为 `crypto.randomUUID()`，同一记录只生成一次，显式 ID 的优先级不变；调用方仍可提供 ID，不能把可猜测/不可猜测的 ID 当作权限控制。
+13. **file 后端的失败记忆仍是 last-writer-wins，`save()` 也不做 fsync。** 同一数据根下两个 host 实例同时执行 `archive()` 时，后写者覆盖先写者的整份快照（隔离实验中 100 条记录只剩 50 条）；断电时最后一次 `record()` 也可能丢失。`openDomainStorage` 在同一数据根上的跨进程锁保护的是领域归档事务，不是这个文件。它是有界、advisory 的失败记忆（`promotionGates` 仍是生产权威），因此本次不引入锁或 fsync，而是记录为已知边界；单实例使用不触发。另外，从旧数据恢复且缺少 `signature` 的记录只能按整条内容去重，不参与后续的模式匹配。
 
 ## 7. 本次安全修复与 provenance 语义
 

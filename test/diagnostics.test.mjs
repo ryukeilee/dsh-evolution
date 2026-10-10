@@ -343,6 +343,17 @@ test('valid failure memory and quarantined evidence are both reported', async ()
   assert.equal(checkOf(second, 'state.memory-quarantine').recoverable, false);
 });
 
+test('a failure memory whose records are not objects is degraded, matching the runtime quarantine', async () => {
+  const { home, paths } = freshHome('memory-record-damaged');
+  fs.writeFileSync(paths.memoryPath, JSON.stringify({ schema: 1, entries: [null] }));
+  const report = await collectDiagnostics(baseOptions(home));
+  const check = checkOf(report, 'state.memory');
+  assert.equal(check.level, 'degraded');
+  assert.equal(check.recoverable, true);
+  assert.match(check.evidence.problems.join(' '), /not an object/);
+  assert.equal(report.summary.blocked, 0);
+});
+
 test('domain aggregate: absent ok, corrupt blocked, unreadable-never-rewritten', async () => {
   const absent = freshHome('domain-absent');
   assert.equal(levelOf(await collectDiagnostics(baseOptions(absent.home)), 'state.domain'), 'ok');
