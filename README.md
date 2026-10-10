@@ -19,7 +19,7 @@ npx @deepseek-ai/dsh web            # 官方推荐
 # 或源码：pnpm install && pnpm run build
 ```
 
-本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定的本地候选版本是 `0.2.0-rc.7`，尚未公开发布；它修复失败记忆在损坏记录、缺失身份与时钟回拨下的启动失败、静默合并与丢失，保留此前的可靠性修复、性能、安全、恢复与回滚语义。发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新匿名下载并执行双宿主验收。最后公开 `v0.2.0-rc.6` 的审计保留在 `docs/evidence/rc6-release-audit.json`；卸载/重装后 memory 哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`。
+本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定的本地候选版本是 `0.2.0-rc.7`，尚未公开发布；它修复失败记忆在损坏记录（含嵌套过深）、缺失身份、非字符串显式签名与时钟回拨下的启动失败、静默合并与丢失，保留此前的可靠性修复、性能、安全、恢复与回滚语义。发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新匿名下载并执行双宿主验收。最后公开 `v0.2.0-rc.6` 的审计保留在 `docs/evidence/rc6-release-audit.json`；卸载/重装后 memory 哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`。
 
 ### 1.1 从公开 Release 安装（用户）
 

@@ -18,15 +18,18 @@ SHA-256 变化，**不是卸载或重装改写了用户数据，也不是持久�
 
 ## 可复现证据
 
-### 1. 历史上 22 份验收证据（rc.3 – rc.6，两个宿主）
+### 1. 迭代验收证据（rc.3 – rc.6，两个宿主）
 
-`docs/evidence/` 中 22 份 acceptance 证据全部呈现同一模式：
+调查开始时 `docs/evidence/` 中有 22 份带 memory 哈希的 acceptance 证据
+（`packageVersion` 均为 rc.3 – rc.6），全部呈现同一模式：
 `memoryShaAfterCore == memoryShaBeforeUninstall`（脚本断言卸载不改数据），
 `memoryEntriesAtUninstall == memoryEntriesAfterReinstall`（条目保留），
 但 `memoryShaAfterReinstall != memoryShaBeforeUninstall`。
 每份证据的 `core-flow-after-reinstall` 都记录
 `memoryEntriesBefore == memoryEntriesAfter == 1` 且
-`existingMemoryRetained: true`，即变化发生在条目内部而非条目集合。
+`existingMemoryRetained: true`，即变化发生在条目内部而非条目集合。（其中代表 rc.6
+两个宿主的两份最新证据在本候选验收后已被 rc.7 的对应文件覆盖，模式相同；其余 20 份
+保持原样。）
 
 ### 2. 双宿主实测（rc.6 固定产物 + rc.7 源码）
 
@@ -79,7 +82,7 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
 
 ## 调查中发现并修复的真实缺陷（0.2.0-rc.7）
 
-隔离实验与代码审计发现失败记忆在三个边界上违反仓库自身的恢复原则
+隔离实验与代码审计发现失败记忆在四个边界上违反仓库自身的恢复原则
 （"未知或损坏持久状态不得猜测、静默合并或删除现场"）：
 
 1. `entries` 含非对象记录（如 `[null]`）时，`load()` 的外层校验通过，
@@ -92,10 +95,15 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
    SHA-256，不同内容永不合并，完全相同的内容仍然去重。
 3. 时钟回拨或异常 `lastSeenAt` 使新记录排到满仓之后时，`record()` 自己的保留过程会裁掉
    刚写入的记录并返回 `entry: undefined`，随后 `archive()` 读取 `memory.entry.signature`
-   抛 `TypeError`。修复：`retainEntries({ keep })` 保证本次写入的条目一定保留
-   （淘汰最旧记录），`record()` 始终返回它写下的条目。
+   抛 `TypeError`。另外显式 `signature` 为非字符串（如 `42`）时，保留键与实际存储键
+   不一致，同样会让新记录丢失。修复：`retainEntries({ keep })` 保证本次写入的条目一定保留
+   （淘汰最旧记录），`record()` 只接受非空字符串签名、其余按 `signature()` 计算，
+   返回值不再因自身的裁剪而缺失。
+4. 记录嵌套超过克隆边界（`snapshot()` 的 `structuredClone` 在数千层时栈溢出）时，
+   `load()` 直接抛 `RangeError`，**插件启动失败**，而 doctor 仍报 `ok`。修复：运行时与
+   doctor 共用同一个迭代式判定（非对象、或超过 64 层即视为损坏状态），隔离并保留原字节。
 
-三个缺陷都有失败路径测试（`test/failure-memory-integrity.test.mjs`，
+四个缺陷都有失败路径测试（`test/failure-memory-integrity.test.mjs`，
 以及 `test/diagnostics.test.mjs` 的 doctor 一致性用例），并保持 schema 1 格式、
 重复语义、`tmp`+`rename` 原子写入与隔离恢复不变。
 

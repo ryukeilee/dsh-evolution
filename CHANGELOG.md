@@ -8,9 +8,10 @@ you install before upgrading DSH.
 
 ## 0.2.0-rc.7 — failure memory integrity
 
-- 修复 file 后端失败记忆的损坏输入路径：`entries` 中出现非对象记录时，插件不再在启动时抛错，而是像解析失败 / 结构失效一样隔离原文件、以空 memory 继续并留下可查询 warning；doctor 的 `state.memory` 同步把该状态报为 `degraded`，不再与运行时判定相反。
-- 从旧数据恢复、缺少 `signature` 的记录改为按整条内容派生身份：不同记录不再因缺失键被静默合并（`compact()` 曾把合并结果写回磁盘），完全相同的记录仍会去重。
-- `record()` 的保留不再可能裁掉本次写入：时钟回拨或异常 `lastSeenAt` 使新记录排在满仓之后时，淘汰最旧记录而不是丢掉刚观察到的失败，`record()` 始终返回它写下的条目。
+- 修复 file 后端失败记忆的损坏输入路径：`entries` 中出现非对象记录、或记录嵌套超过加载边界（64 层；`snapshot()` 克隆在这之前会因过深而栈溢出）时，插件不再在启动时崩溃，而是像解析失败 / 结构失效一样隔离原文件、以空 memory 继续并留下可查询 warning；doctor 与运行时使用同一个判定函数，不再出现“运行时拒绝、doctor 报 ok”。
+- 从旧数据恢复、缺少 `signature` 的记录改为按整条内容派生身份（深度受限的稳定序列化）：不同记录不再因缺失键被静默合并（`compact()` 曾把合并结果写回磁盘），完全相同的记录仍会去重。
+- 显式 `signature` 只接受非空字符串；其它值改按 `signature()` 计算，避免 `record()` 的保留键与实际存储键不一致。
+- `record()` 的保留不再可能裁掉本次写入：时钟回拨或异常 `lastSeenAt` 使新记录排在满仓之后时，淘汰最旧记录而不是丢掉刚观察到的失败，返回值不再因自身的裁剪而缺失。
 - 保留 schema 1 格式、`record()` 的重复语义（`count` 递增、`firstSeenAt` 与模式身份不变）、`tmp`+`rename` 原子写入与隔离恢复语义。
 - 本候选仅在本地固定与验收，未创建 tag 或进行外部发布。卸载/重装后 memory 文件哈希变化的调查结论（属预期的 `count`/`lastSeenAt` 更新，非持久化缺陷）见 `docs/evidence/memory-hash-investigation.md`。
 

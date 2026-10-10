@@ -52,12 +52,61 @@ test('a record that is not an object quarantines the file instead of failing sta
 
 test('one unusable record quarantines the whole file instead of silently dropping part of it', () => {
   const { dir, file } = freshFile('mixed');
-  fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [record(), 42] }));
+  const original = JSON.stringify({ schema: 1, entries: [record(), 42] });
+  fs.writeFileSync(file, original);
 
   const memory = new EvolutionMemory({ file });
 
   assert.deepEqual(memory.snapshot().entries, []);
   assert.equal(memory.quarantine?.reason, 'entry-failure');
+  const quarantined = fs.readdirSync(dir).filter((name) => name.includes('.quarantine-'));
+  assert.equal(quarantined.length, 1);
+  assert.equal(fs.readFileSync(path.join(dir, quarantined[0]), 'utf8'), original, 'the damaged bytes are preserved');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('a record nested past the load bound is quarantined, never a startup overflow', () => {
+  const { dir, file } = freshFile('deep');
+  const deep = '{"a":'.repeat(3000) + '1' + '}'.repeat(3000);
+  const original = `{"schema":1,"entries":[{"id":"deep","payload":${deep}}]}`;
+  fs.writeFileSync(file, original);
+
+  const memory = new EvolutionMemory({ file });
+
+  assert.deepEqual(memory.snapshot().entries, []);
+  assert.equal(memory.quarantine?.reason, 'entry-failure');
+  const quarantined = fs.readdirSync(dir).filter((name) => name.includes('.quarantine-'));
+  assert.equal(quarantined.length, 1);
+  assert.equal(fs.readFileSync(path.join(dir, quarantined[0]), 'utf8'), original, 'the deep bytes are preserved');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('records within the load bound still load', () => {
+  const { dir, file } = freshFile('bounded-depth');
+  let payload = 1;
+  for (let level = 0; level < 32; level += 1) payload = { a: payload };
+  fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [{ id: 'ok', payload }] }));
+
+  const memory = new EvolutionMemory({ file });
+
+  assert.equal(memory.snapshot().entries.length, 1);
+  assert.equal(memory.quarantine, null);
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('a non-string explicit signature is normalized instead of breaking retention', () => {
+  const { dir, file } = freshFile('non-string-signature');
+  fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [record({ signature: 'future', lastSeenAt: '9999-12-31T23:59:59.999Z' })] }));
+
+  const memory = new EvolutionMemory({ file, maxEntries: 1 });
+  const result = memory.record({ signature: 42, problem: 'numeric signature', evidence: {}, experiment: {}, result: {}, prevention: 'x' });
+
+  assert.equal(typeof result.entry?.signature, 'string', 'record() must return a string-signed entry');
+  assert.equal(memory.snapshot().entries[0].problem, 'numeric signature');
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).entries[0].problem, 'numeric signature');
 
   fs.rmSync(dir, { recursive: true, force: true });
 });
