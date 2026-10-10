@@ -120,6 +120,43 @@ test('records at the depth bound keep distinct identities', () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('records whose numbers JSON cannot represent are quarantined with their bytes', () => {
+  const cases = [
+    ['overflow', '{"schema":1,"entries":[{"n":1e400}]}'],
+    ['negative-overflow', '{"schema":1,"entries":[{"n":-1e400}]}'],
+    ['negative-zero', '{"schema":1,"entries":[{"n":-0}]}'],
+  ];
+  for (const [name, content] of cases) {
+    const { dir, file } = freshFile(`unrepresentable-${name}`);
+    fs.writeFileSync(file, content);
+
+    const memory = new EvolutionMemory({ file });
+
+    assert.deepEqual(memory.snapshot().entries, [], `${name} must be quarantined`);
+    assert.equal(memory.quarantine?.reason, 'entry-failure');
+    const quarantined = fs.readdirSync(dir).filter((entry) => entry.includes('.quarantine-'));
+    assert.equal(fs.readFileSync(path.join(dir, quarantined[0]), 'utf8'), content, `${name} bytes are preserved`);
+
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('representable numbers stay usable and written records stay readable', () => {
+  const { dir, file } = freshFile('representable');
+  fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [{ n: 0 }, { n: -1.5 }, { n: 1e308 }] }));
+  assert.equal(new EvolutionMemory({ file }).snapshot().entries.length, 3);
+
+  const writtenFile = path.join(dir, 'written.json');
+  const written = new EvolutionMemory({ file: writtenFile });
+  written.record({ problem: 'overflowing metric', evidence: { metrics: { ratio: Infinity, delta: -0 } }, experiment: {}, result: {}, prevention: 'x' });
+  const reloaded = new EvolutionMemory({ file: writtenFile });
+  assert.equal(reloaded.snapshot().entries.length, 1, 'a record this process wrote must be readable back');
+  assert.equal(reloaded.quarantine, null);
+  assert.equal(reloaded.snapshot().entries[0].evidence.metrics.ratio, 'Infinity');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('a non-string explicit signature is normalized instead of breaking retention', () => {
   const { dir, file } = freshFile('non-string-signature');
   fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [record({ signature: 'future', lastSeenAt: '9999-12-31T23:59:59.999Z' })] }));

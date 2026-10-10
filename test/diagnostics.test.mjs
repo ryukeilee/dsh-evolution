@@ -350,6 +350,7 @@ test('a failure memory the runtime quarantines is degraded, matching the runtime
     ['primitive-record', JSON.stringify({ schema: 1, entries: [42] })],
     ['array-record', JSON.stringify({ schema: 1, entries: [[]] })],
     ['deep-record', `{"schema":1,"entries":[{"id":"deep","payload":${deep}}]}`],
+    ['unrepresentable-number-record', '{"schema":1,"entries":[{"n":1e400}]}'],
   ];
   for (const [name, content] of cases) {
     const { home, paths } = freshHome(`memory-${name}`);
