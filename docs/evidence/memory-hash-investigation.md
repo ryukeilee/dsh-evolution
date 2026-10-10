@@ -99,6 +99,20 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
 以及 `test/diagnostics.test.mjs` 的 doctor 一致性用例），并保持 schema 1 格式、
 重复语义、`tmp`+`rename` 原子写入与隔离恢复不变。
 
+## 0.2.0-rc.7 本地验证
+
+对修复后的固定产物 `release/dsh-evolution-0.2.0-rc.7.tgz` 重跑同一实验：
+
+- 双宿主真实安装验收：`0.2.0-rc.2` 与 `0.2.1-alpha.1` 各 21/21 步通过，证据
+  `docs/evidence/dsh-0.2.0-rc.2.json` / `docs/evidence/dsh-0.2.1-alpha.1.json`
+  （content `23c9194b…`，字节 `71ba1194…`，与 `release/manifest.json` 一致）。
+- alpha.1 上的快照复现得到同样的四个快照（1598 / 1598 / 3305 / 4996 字节），
+  卸载到重装之间无写入；`beforeUninstall → afterReinstall` 的 diff 仍然只有
+  `count`、`lastSeenAt`、`evidence.at`、`result.rollback.at` 四处，即修复没有改变
+  正常路径的 memory 语义。
+- `npm test` 231/231 通过（含三个修复边界的失败路径测试）；`npm run pack:check`
+  16/16；`npm run release:verify` 针对固定产物通过。
+
 ## 剩余风险
 
 - `EvolutionMemory.save()` 是 last-writer-wins 且不做 fsync：同一数据根下两个 host 实例
