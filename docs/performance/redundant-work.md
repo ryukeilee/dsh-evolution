@@ -1,51 +1,45 @@
-# 重复计算消除：flush 前缀摘要、语义 GC 与投影快照
+# 重复计算消除：语义 GC、失败记忆记录、投影快照与恢复安装
 
 基线为本轮开始前的 `main` 提交
 `034c3a463b822aed2e1fa437dfac9b6b45b2b01e`（已含前五轮优化）。本轮只删除
-同一调用路径中重复执行的工作，不新增缓存层、不改变持久化格式、认证、
-fsync、恢复、回滚与跨进程锁语义，也没有修改官方 DSH 源码。原始逐轮数据见
-[`redundant-work-manifest.json`](redundant-work-manifest.json) 与各基准同名
-JSON；环境 Node `v26.11.1` / `darwin-arm64`。
+同一调用路径中重复执行或**根本未被使用**的工作，不新增缓存层、不改变
+持久化格式、认证、fsync、事务、恢复、回滚与跨进程锁语义，也没有修改官方
+DSH 源码。原始逐轮数据见 [`redundant-work-manifest.json`](redundant-work-manifest.json)
+与各基准同名 JSON；环境 Node `v26.11.1` / `darwin-arm64`。
 
-## 1. 领域事件同步：已提交标记摘要重复计算
+## 1. 恢复安装：校验了整份文档，却只用到两个小字段
 
-`lib/domain-storage.js` 的每次 `flush()` 都会重放事件日志前缀。检查点
-（`lib/event-log-checkpoint.js`）用 `appliedDigest = sha256(JSON.stringify(applied))`
-把已提交标记表绑定到检查点上；该摘要与历史长度成正比，基线在**一次** `flush()`
-里算两次：一次用于验证存储的检查点，一次用于写出新检查点。50000 条历史时
-单次约 7–12 ms，占稳态 `flush()` CPU 的一半以上。
+`lib/domain-storage.js` 的 `installPending()` 在基线里用
+`schema.parse(domain.global.get())` 校验整份持久文档，但它实际只读取
+`pending.stage`、`pending.files`（用来决定安装哪些文件）以及
+`pending.aggregate`、`pending.applied`（交给收尾写入）。其中顶层 `applied`
+标记表**从未被使用**，而它与 `pending.applied` 都是 O(历史) 的；一次
+`mutate()` 因此要把整张标记表校验多次。
 
-改动：
+改动：`mutate()` 把它刚刚校验并写出的文档传给 `installPending(known)`，安装
+路径改为**在使用点校验它使用的字段**——`pending` 本身与 `stage`、`files`
+用同一组字段 schema（`pendingInstallSchema`，与文档 schema 共用
+`stageNameSchema` / `pendingFilesSchema`，不是第二套规则）重新校验，
+`aggregate` 与标记表由收尾的 `schema.parse` 在写入前校验。因此
+“先使用后校验”没有出现：官方会把写出的同一个对象交给所有
+`domain/changed` 监听器，改写后的记录依旧失败退出，而不是被当作旧格式
+执行整树复制，也不会把 `stage` 当路径使用。没有 `known` 的调用方（启动恢复）
+仍走完整读取校验。
 
-- 摘要只按“仍描述当前持久标记表”这一条件复用。失效来源有三个：本端口自己的
-  每次提交；**任何**通过官方 domain 句柄的写入（官方在 `domain/changed` 上通知，
-  本端口订阅并按域名过滤）；以及标记表对象被替换时（`global.get()` 返回的正是
-  被写入的那个对象，因此即使通知没到也能识别）。`openDomainStorage` 之后的第一次
-  使用仍然从介质读回标记表再计算，因此进程不在运行期间发生的回滚依旧会被发现。
-- `planEventLogReplay()` 与 `eventLogCheckpointDocument()` 接受可选的
-  `appliedDigest`，省略时仍按原逻辑从 `applied` 计算，直接调用方（含既有测试）
-  行为不变。
-- `installPending()` 接受本端口刚校验并写出的文档，但**只**把它当作已通过
-  `schema` 结构校验的对象，并且仍然在**使用前**重新校验它真正读取的字段
-  （`stage` 与 `files`，复用同一组字段 schema，不是第二套规则）。`aggregate` 与
-  标记表由收尾的 `commitGlobal()` 重新校验，因此“先使用后校验”没有出现：
-  官方会把同一个对象交给所有 `domain/changed` 监听器，改写后的 pending 记录
-  依旧会失败退出，而不是被当作旧格式执行整树复制，也不会把 `stage` 当路径使用。
+## 2. 语义 GC：每条可退休记录都线性扫描整张 canonical 表
 
-## 2. 语义 GC：每个记录线性扫描整张 canonical 表
-
-`lib/dockyard-domain/memory.js` 的 `#retentionPlan()` 对每条可退休记录都执行
-`this.#data.canonical.some(...)`，在 1000 条待退休记录上退化为 O(记录 × canonical)。
-改为在规划开始时一次构造 canonical `recordId` 集合，两处判断共用；
-比较规则（`String(canonical.recordId ?? "")`）与退休结果完全一致。
+`lib/dockyard-domain/memory.js` 的 `#retentionPlan()` 对每条可退休记录执行
+`this.#data.canonical.some(...)`，在 1000 条待退休记录上退化为
+O(记录 × canonical)。改为在规划开始时一次构造 canonical `recordId` 集合，
+两处判断共用；比较规则（`String(canonical.recordId ?? "")`）与退休结果一致。
 
 ## 3. 失败记忆：记录时丢弃整份深拷贝
 
 `lib/orchestrator.js` 的 `EvolutionMemory.record()` 调用
 `this.compact({ save: false })` 并丢弃返回值，而 `compact()` 末尾会
-`return this.snapshot()`，即 `structuredClone(this.data)`。同一路径在 `load()`
-也发生一次。改为把去重与截断抽成 `retainEntries()`：`compact()` 仍然返回快照
-（公开契约不变），`record()`/`load()` 只做保留工作。
+`return this.snapshot()`，即 `structuredClone(this.data)`；同一路径在
+`load()` 也发生一次。改为把去重与截断抽成 `retainEntries()`：`compact()`
+仍然返回快照（公开契约不变），`record()`/`load()` 只做保留工作。
 
 ## 4. 投影快照重复生成整份列表
 
@@ -56,46 +50,46 @@ JSON；环境 Node `v26.11.1` / `darwin-arm64`。
   `lib/dockyard-domain/governance/capability-registry.js`：`snapshot()` 为取计数
   把同一份列表生成（并 clone）两次，改为只生成一次。
 
-## 独立审查与修复
+## 5. 已撤回：事件同步的已提交标记摘要复用
 
-本轮的性能改动在固定前经过一次独立对抗式审查。审查用真实代码构造了两个
-反例，都在本仓库的官方 JSON 后端上复现；两处都是**本次改动新引入**的边界收窄，
-已修复并补回归（新回归在修复前失败、修复后通过）：
+本轮最初还让每次 `flush()` 复用“已提交标记表摘要”（`sha256(JSON.stringify(applied))`，
+O(历史)，50000 条时单次约 5–12 ms）。基线在一次稳态 `flush()` 里算一次、
+在带新事件时算两次，复用能把稳态 CPU 从 22.5 ms 降到 11.5 ms（−49%）。
 
-1. **摘要复用曾在端口存活期间被第三方写入绕过。** 归档锁不拦截同一进程内
-   `ctx.storageDomain.get('evolution_domain').global.set(...)` 这个官方句柄。
-   复现（回退三条标记中的中间一条、再追加一条事件、重启）：修复前
-   `markers 3 middlePresent false`，基线 `markers 4 middlePresent true`；新检查点
-   因此认证了已经缺一条标记的状态，缺失标记跨重启不再被修复。修复后与基线
-   一致。回归：`test/domain-storage/event-log-checkpoint.test.js`
-   “a marker rewound through the official handle while the port is alive is repaired”。
-2. **已校验的 pending 文档可在写入后被通知回调就地改写。** 官方把写出的对象
-   交给每个 `domain/changed` 监听器。复现：监听器把 `pending.stage` 改成
-   `../../escape`，修复前该字符串被直接用于拼路径
-   （`E_DOMAIN_PENDING_ARCHIVE_MISSING`，即已越过校验到达文件系统），基线为
-   `ZodError`；把 `pending.files` 改成 `null`，修复前静默按“旧版本无文件清单”
-   执行整树复制，基线为 `ZodError`。修复后两者都失败退出。回归：同文件
-   “a listener that rewrites the pending record cannot bypass its validation”。
+两轮独立对抗式审查各自构造出**本次改动新引入**的边界收窄，都已在真实官方
+JSON 后端上复现：
 
-审查同时给出两项**不阻断**的差异，保留并记录：
+- 第一轮：端口存活期间，同进程内官方句柄
+  `storageDomain.get('evolution_domain').global.set(...)` 可以回退标记表，
+  而归档锁不拦截它。复现（回退三条标记中的中间一条、追加事件、重启）：
+  `middlePresent false`（基线 `true`）。
+- 第二轮：即使加上 `domain/changed` 订阅与对象身份检查，**同一对象原地修改后
+  再 `set`，而 `set` 在介质已替换、通知尚未发出时失败**（真实存在的情形是
+  目录 `fsync` 失败）时两种信号都缺席，摘要仍会认证缺失标记。
 
-- `#retentionPlan()` 现在在规划开始时一次构造 canonical id 集合，因此当
-  `canonical.recordId` 存在不可 `String()` 强转的异常值时，会比基线更早、
-  更确定地失败（基线只在某条记录真的走到该判断时才失败）。失败是显式的，
-  没有静默合并或丢弃现场。
+结论是：复用缓存的是 O(历史) 状态的派生值，而 O(1) 信号无法证明该状态未变。
+因此该优化**整体撤回**，`lib/domain-storage.js` 与
+`lib/event-log-checkpoint.js` 恢复基线行为（摘要每次从介质读回的标记表重新
+计算，`installPending()` 无 `known` 时仍完整校验）。下面表格里稳态事件同步
+因此没有收益；第 1 节的收益与它无关，仍然成立。
+
+两轮审查同时确认并保留了以下**不阻断**差异：
+
+- `#retentionPlan()` 一次构造 canonical id 集合，因此当 `canonical.recordId`
+  存在不可 `String()` 强转的异常值时，会比基线更早、更确定地失败（基线只在
+  某条记录真的走到该判断时才失败）。失败是显式的，没有静默合并或丢弃现场。
 - `strategy.snapshot()` 与 `capability.snapshot()` 现在各调用一次 `list()`，
   因此若有人覆写 `list()` 使其带副作用，可观察的调用次数与计数会与基线不同；
   仓库内没有这样的覆写，`list()` 是纯投影。
-
-审查未覆盖的部分（本轮末次固定时另行执行）：性能数字与原始 JSON 的复核、
-README/RELEASE/CHANGELOG 措辞、完整 `npm test`、发布固定点与双宿主真实验收。
+- `mutate()` 的默认参数在 `installPending()` 之前读取 `applied`，这一顺序在
+  基线已存在，不是本轮引入。
 
 ## 可复现对比
 
 同一脚本、同一参数、两侧各自 checkout，每轮交替先后顺序，3 轮取中位数。
 基线目录由 `git archive 034c3a4 | tar -x -C <dir>` 加 `node_modules` 软链和
-同名脚本构成。基准脚本带行为断言（退休条数、快照计数、过滤结果、保留条数），
-更快的实现若改变结果会直接失败。
+同名脚本构成。基准脚本带行为断言（退休条数、快照计数、过滤结果、保留条数、
+`flush()` 返回值），更快的实现若改变结果会直接失败。
 
 ```sh
 node --expose-gc scripts/benchmarks/domain-retention.mjs
@@ -107,37 +101,33 @@ BENCH_EVENTS=20000 BENCH_NEW_EVENTS=1 BENCH_SAMPLES=15 node --expose-gc scripts/
 
 | 路径 | 基线 | 优化后 | 变化 | 各轮 |
 | --- | ---: | ---: | ---: | --- |
-| 事件同步 50k 历史、无新事件（CPU） | 22.543 ms | 11.472 ms | **−49.11%** | 49.27 / 48.96 / 49.62% |
-| 事件同步 50k 历史、无新事件（耗时） | 22.407 ms | 11.397 ms | −49.14% | 49.11 / 49.14 / 49.56% |
-| 事件同步 20k 历史、1 条新事件（CPU） | 62.836 ms | 50.413 ms | **−19.77%** | 19.77 / 20.52 / 19.33% |
-| 事件同步 20k 历史、1 条新事件（耗时） | 90.906 ms | 77.929 ms | −14.28% | 14.29 / 13.23 / 15.09% |
-| 语义 GC 1000 记录、canonical 0 | 61.955 ms | 61.374 ms | +0.94% | −0.24 / 1.04 / −0.15% |
-| 语义 GC 1000 记录、canonical 1000 | 72.248 ms | 62.647 ms | **−13.29%** | 13.24 / 13.29 / 11.04% |
-| 语义 GC 1000 记录、canonical 3000 | 94.119 ms | 67.051 ms | **−28.76%** | 28.86 / 28.76 / 27.77% |
-| `EvolutionMemory.record()` 重复条目 | 1.1395 ms | 0.7644 ms | **−32.92%** | 31.82 / 32.00 / 33.00% |
-| `EvolutionMemory.record()` 新条目 | 1.0408 ms | 0.6708 ms | **−35.55%** | 35.91 / 33.92 / 35.55% |
-| `observation.list({ patternKey })` 1000 条 | 1.3211 ms | 0.5087 ms | **−61.49%** | 58.63 / 61.72 / 61.49% |
-| `strategy.snapshot()` 1000 条 | 3.0577 ms | 1.5476 ms | **−49.39%** | 48.77 / 49.39 / 49.77% |
-| `capability.snapshot()` 1000 条 | 0.8850 ms | 0.4800 ms | **−45.77%** | 45.02 / 45.95 / 46.37% |
+| 事件同步 50k 历史、无新事件（CPU） | 22.566 ms | 22.631 ms | +0.29%（无收益） | 0.47 / 0.66 / −0.75% |
+| 事件同步 20k 历史、1 条新事件（CPU） | 62.751 ms | 54.455 ms | **−13.22%** | 12.95 / 14.14 / 13.07% |
+| 事件同步 20k 历史、1 条新事件（耗时） | 90.886 ms | 81.903 ms | −9.88% | 9.88 / 10.83 / 10.02% |
+| 语义 GC 1000 记录、canonical 0 | 61.936 ms | 62.041 ms | +0.17%（无收益） | −0.14 / −0.17 / −0.42% |
+| 语义 GC 1000 记录、canonical 1000 | 72.720 ms | 62.199 ms | **−14.47%** | 14.42 / 15.43 / 11.41% |
+| 语义 GC 1000 记录、canonical 3000 | 94.406 ms | 67.492 ms | **−28.51%** | 28.51 / 28.98 / 28.09% |
+| `EvolutionMemory.record()` 重复条目 | 1.1506 ms | 0.7619 ms | **−33.78%** | 32.97 / 34.21 / 33.80% |
+| `EvolutionMemory.record()` 新条目 | 1.0679 ms | 0.6824 ms | **−36.10%** | 35.94 / 35.10 / 37.39% |
+| `observation.list({ patternKey })` 1000 条 | 1.3108 ms | 0.5110 ms | **−61.02%** | 60.63 / 61.14 / 61.26% |
+| `strategy.snapshot()` 1000 条 | 3.0581 ms | 1.5529 ms | **−49.22%** | 49.56 / 48.79 / 49.22% |
+| `capability.snapshot()` 1000 条 | 0.8785 ms | 0.4849 ms | **−44.81%** | 45.63 / 44.81 / 45.48% |
 
 同脚本内的对照组（未改动的调用）用于确认没有系统性漂移：
-`EvolutionMemory.snapshot()` +0.13%、`observation.list()` +0.56%、
-`strategy.list()` −1.65%、`capability.list()` +0.14%，均在噪声范围内；
-canonical 为 0 的语义 GC 场景 +0.94%，说明收益来自被删除的扫描而不是环境差异。
-上表是修复审查发现后重新采集的最终源码数据，与修复前相比各路径无退化。
+`EvolutionMemory.snapshot()` −0.04%、`observation.list()` −1.19%、
+`strategy.list()` −1.28%、`capability.list()` −0.27%，均在噪声范围内。
 
 ## 收益边界
 
-- 事件同步的稳态收益随历史增长：摘要成本与已提交标记数成正比，收益上限是
-  原 `flush()` CPU 的一半左右；日志字节仍需完整读取并做一次带密钥前缀摘要
-  （“消费过的字节未被改写”这一证明没有削弱），新事件仍走完整单事件事务、
-  两次持久写入与 fsync，因此**有**新事件的路径收益明显更小。摘要复用依赖
-  “域名下的任何持久写入都会让它失效”，因此比“只信任本端口”多一次订阅与
-  一次对象身份比较，两者都是 O(1)。
+- 第 1 节的收益只出现在**有**新事件（或启动恢复有 pending 记录）的路径上，
+  绝对值随已提交标记数增长；它不减少任何持久写入、fsync 或日志读取。
 - 语义 GC 的收益只随 canonical 表增大而增大；canonical 为空时没有可测收益。
-- `record()` 的收益来自删除被丢弃的 `structuredClone`；其绝对值随条目数和
-  单条大小增长，磁盘写入成本不在本次优化范围内。
+- `record()` 的收益来自删除被丢弃的 `structuredClone`；磁盘写入成本不在本次
+  优化范围内。
 - 投影快照的收益只在“列表非空且查询非空”时出现；空列表、空查询调用没有收益。
+- 稳态事件同步**没有**收益：日志字节仍需完整读取并做一次带密钥前缀摘要，
+  标记表摘要仍需每次从介质读回的标记表重新计算（这正是撤回复用后保留的
+  完整性边界）。
 - 所有数字都是本机、合成负载、热页缓存；采样分配与 maxRSS 本轮未测量，因此
   不声称内存占用下降。收益不可相加，也不代表其他平台或生产规模。
 
@@ -149,10 +139,11 @@ node --test test/dockyard-domain/projection-snapshot.test.js
 npm test
 ```
 
-新增回归：检查点存储的标记摘要必须始终描述已提交的标记表（含稳态复用与
-提交后推进两个方向，见 `test/domain-storage/event-log-checkpoint.test.js`）；
-退休判定在 canonical 表非空时仍拒绝被引用的记录、退休未被引用的记录
-（`test/dockyard-domain/failure-retention.test.js`）；投影与快照的取值、计数、
-返回隔离（`test/dockyard-domain/projection-snapshot.test.js`）；以及独立审查
-发现的两个反例：端口存活期间经官方句柄回退中间标记、通知监听器改写 pending
-记录（均在 `test/domain-storage/event-log-checkpoint.test.js`）。
+新增回归：检查点存储的标记摘要必须始终描述已提交的标记表
+（`test/domain-storage/event-log-checkpoint.test.js`）；端口存活期间经官方句柄
+回退中间标记、以及跨进程重启后的同类回退，都必须被修复；通知监听器改写
+`pending` 记录的四种方式（越界的 `stage`、非数组 `files`、缺 `sha256` 的条目、
+整体移除 `pending`）都必须失败退出——这一项在 `40d0e08` 上失败、在撤回复用后
+的源码上通过；退休判定在 canonical 表非空时仍拒绝被引用的记录、退休未被引用
+的记录（`test/dockyard-domain/failure-retention.test.js`）；投影与快照的取值、
+计数、返回隔离（`test/dockyard-domain/projection-snapshot.test.js`）。

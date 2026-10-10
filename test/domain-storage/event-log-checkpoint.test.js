@@ -258,6 +258,7 @@ test('a listener that rewrites the pending record cannot bypass its validation',
     ['a stage name outside the staging root', pending => { pending.stage = '../../escape'; }],
     ['a file list that is not a file list', pending => { pending.files = null; }],
     ['a file entry without a digest', pending => { pending.files = [{ file: 'state.json', bytes: 1 }]; }],
+    ['a pending record removed altogether', (pending, document) => { document.pending = undefined; }],
   ]) {
     const f = await fixture();
     const port = await openDomainStorage(f.ctx, f.config);
@@ -266,7 +267,7 @@ test('a listener that rewrites the pending record cannot bypass its validation',
       if (!pendingMutation || !change?.value?.pending) return;
       const run = pendingMutation;
       pendingMutation = null;
-      run(change.value.pending);
+      run(change.value.pending, change.value);
     });
     try {
       appendEnvelope(f.config.eventBridgePath, eventFor('exp-listener'), { sequence: 1 });

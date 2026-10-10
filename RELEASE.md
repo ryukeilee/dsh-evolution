@@ -2,7 +2,7 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前固定版本：`0.2.0-rc.6`，删除事件同步前缀摘要、语义 GC、失败记忆记录与投影快照中的重复计算，保留此前的可靠性修复、五轮性能优化、安全、恢复与回滚语义。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本候选仅在本地固定与验收，未创建 tag 或进行外部发布。历史 rc.5 的发布状态、远端 CI / CodeQL、匿名下载与发布后双宿主证据见 `docs/evidence/rc5-release-audit.json`；历史 rc.4 固定点与发布后记录保留在 `docs/evidence/rc4-release-audit.json` 及 `rc4-postpublish-*.json`；本轮不修改历史 tag 或发布附件。收益边界、原始数据与失败记录见 `docs/performance/redundant-work.md`。
+当前固定版本：`0.2.0-rc.6`，删除语义 GC、恢复安装、失败记忆记录与投影快照中的重复计算；事件同步的标记摘要复用经两轮独立审查后撤回（两处绕过均在真实官方 JSON 后端复现），保留此前的可靠性修复、五轮性能优化、安全、恢复与回滚语义。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本候选仅在本地固定与验收，未创建 tag 或进行外部发布。历史 rc.5 的发布状态、远端 CI / CodeQL、匿名下载与发布后双宿主证据见 `docs/evidence/rc5-release-audit.json`；历史 rc.4 固定点与发布后记录保留在 `docs/evidence/rc4-release-audit.json` 及 `rc4-postpublish-*.json`；本轮不修改历史 tag 或发布附件。收益边界、原始数据与失败记录见 `docs/performance/redundant-work.md`。
 
 ## 1. 产物
 
