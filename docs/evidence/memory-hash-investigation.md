@@ -118,7 +118,7 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
 
 - 双宿主真实安装验收：`0.2.0-rc.2` 与 `0.2.1-alpha.1` 各 21/21 步通过，证据
   `docs/evidence/dsh-0.2.0-rc.2.json` / `docs/evidence/dsh-0.2.1-alpha.1.json`
-  （content `48ff2b16…`，字节 `d585739a…`，与 `release/manifest.json` 一致）。
+  （content `8ba64344…`，字节 `a6a258fd…`，与 `release/manifest.json` 一致）。
 - alpha.1 上的快照复现得到同样的四个快照（1598 / 1598 / 3305 / 4996 字节），
   卸载到重装之间无写入；`beforeUninstall → afterReinstall` 的 diff 仍然只有
   `count`、`lastSeenAt`、`evidence.at`、`result.rollback.at` 四处，即修复没有改变
@@ -126,7 +126,7 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
 - 真实宿主端到端：在隔离 home 中写入 `{"schema":1,"entries":[null]}` 后，doctor 报
   `state.memory: degraded`；用 core probe 启动宿主成功（9 个工具、流程完整、
   `reverted: true`），损坏文件被隔离且字节完全保留，memory 以空内容继续并正常记录。
-- `npm test` 235/235 通过（含四个修复边界的失败路径测试，含加载边界与身份边界的一致性）；`npm run pack:check`
+- `npm test` 237/237 通过（含五个修复边界的失败路径测试，含加载边界与身份边界的一致性）；`npm run pack:check`
   16/16；`npm run release:verify` 针对固定产物通过。
 
 ## 剩余风险
