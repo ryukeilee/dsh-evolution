@@ -44,6 +44,17 @@ function appendEnvelope(file, event, { sequence, key = KEY }) {
   return envelope;
 }
 
+function archiveTree(root) {
+  const directory = path.join(root, 'dockyard');
+  if (!fs.existsSync(directory)) return {};
+  return Object.fromEntries(fs.readdirSync(directory, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => {
+      const file = path.join(entry.parentPath, entry.name);
+      return [path.relative(directory, file), crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')];
+    }));
+}
+
 function eventFor(id, status = 'measured') {
   return { schema: 1, eventId: `evolution:measurement-completed:${id}`, eventType: 'measurement-completed',
     experimentId: id, status, measurement: { latency: 1 }, audit: { at: '2026-10-07T00:00:00.000Z' } };
@@ -263,10 +274,9 @@ test('a marker rewound through the official handle while the port is alive is re
 
 test('a listener that rewrites the pending record cannot bypass its validation', async () => {
   // The official domain hands the written document to every `domain/changed`
-  // listener, so the recovery path re-checks the fields it reads before the
-  // final commit validates the aggregate and marker map again. Each variant gets
-  // a fresh home because the injected failure deliberately leaves the pending
-  // record in place for recovery.
+  // listener, so nothing about it may be assumed to still hold later. Each
+  // variant gets a fresh home because the injected failure deliberately leaves
+  // the pending record in place for recovery.
   for (const [name, mutate] of [
     ['a stage name outside the staging root', pending => { pending.stage = '../../escape'; }],
     ['a file list that is not a file list', pending => { pending.files = null; }],
@@ -275,21 +285,49 @@ test('a listener that rewrites the pending record cannot bypass its validation',
   ]) {
     const f = await fixture();
     const port = await openDomainStorage(f.ctx, f.config);
-    let pendingMutation = mutate;
+    let injected = null;
     f.ctx.on('domain/changed', change => {
-      if (!pendingMutation || !change?.value?.pending) return;
-      const run = pendingMutation;
-      pendingMutation = null;
-      run(change.value.pending, change.value);
+      if (injected !== null || !change?.value?.pending) return;
+      injected = name;
+      mutate(change.value.pending, change.value);
     });
     try {
       appendEnvelope(f.config.eventBridgePath, eventFor('exp-listener'), { sequence: 1 });
       await assert.rejects(port.flush(), (error) => error?.name === 'ZodError', `${name} must fail loudly`);
+      assert.equal(injected, name, `${name} must reach the pending record`);
     } finally {
       // The port records the injected failure and rethrows it on close.
       await port.close().catch(() => {});
       await teardown(f);
     }
+  }
+});
+
+test('a rejected commit does not install the staged archive', async () => {
+  // The whole pending record is validated before anything on disk changes, so a
+  // rejected commit leaves the live archive exactly as the previous calls left
+  // it. Observing rotates the hot pool into an archive segment after
+  // `hotEntries` records, which is what makes the stage non-empty here.
+  const f = await fixture();
+  const port = await openDomainStorage(f.ctx, f.config);
+  let injected = false, before = null;
+  f.ctx.on('domain/changed', change => {
+    if (injected || !change?.value?.pending?.files?.length) return;
+    injected = true;
+    before = archiveTree(f.root);
+    change.value.pending.aggregate = { evolution: { schema: 3 } };
+  });
+  try {
+    await assert.rejects(async () => {
+      for (let index = 0; index < 60; index += 1) await port.observe({ code: 'REVIEW_ERROR', target: `tool:review-${index}` });
+    }, (error) => error?.name === 'ZodError');
+    assert.equal(injected, true, 'the injection must reach a pending record with a file list');
+    // The stage installs files the live tree does not have yet, so a rejected
+    // commit that installed first would add them here.
+    assert.deepEqual(archiveTree(f.root), before, 'a rejected commit must not install staged files');
+  } finally {
+    await port.close().catch(() => {});
+    await teardown(f);
   }
 });
 

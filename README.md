@@ -19,7 +19,7 @@ npx @deepseek-ai/dsh web            # 官方推荐
 # 或源码：pnpm install && pnpm run build
 ```
 
-本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定版本是 `0.2.0-rc.6`，删除语义 GC、恢复安装、失败记忆记录与投影快照中的重复计算，保留此前的可靠性修复、性能、安全、恢复与回滚语义。发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新匿名下载并执行双宿主验收。历史 rc.5 审计保留在 `docs/evidence/rc5-release-audit.json`，收益边界见 `docs/performance/redundant-work.md`。
+本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定版本是 `0.2.0-rc.6`，删除语义 GC、失败记忆记录与投影快照中的重复计算（事件同步路径的候选优化经审查后撤回），保留此前的可靠性修复、性能、安全、恢复与回滚语义。发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新匿名下载并执行双宿主验收。历史 rc.5 审计保留在 `docs/evidence/rc5-release-audit.json`，收益边界见 `docs/performance/redundant-work.md`。
 
 ### 1.1 从公开 Release 安装（用户）
 

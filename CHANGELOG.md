@@ -8,10 +8,10 @@ you install before upgrading DSH.
 
 ## 0.2.0-rc.6 — redundant work removal
 
-- 删除同一调用路径中重复执行或根本未被使用的工作：恢复安装不再为决定安装而校验整份持久文档（改为在使用点校验它读取的 `pending`/`stage`/`files`，`aggregate` 与标记表仍由收尾写入校验，共用同一组字段 schema）；语义 GC 不再为每条可退休记录线性扫描整张 canonical 表；失败记忆 `record()` 与加载不再为丢弃的返回值深拷贝整份记录；observation 过滤不再逐条规范化同一查询词，strategy 与 capability 快照不再为取计数重复生成整份列表。
+- 删除同一调用路径中重复执行的工作：语义 GC 不再为每条可退休记录线性扫描整张 canonical 表；失败记忆 `record()` 与加载不再为丢弃的返回值深拷贝整份记录；observation 过滤不再逐条规范化同一查询词；strategy 与 capability 快照不再为取计数重复生成整份列表。
 - 保留持久化格式、认证、fsync、事务、恢复、回滚与跨进程锁语义，官方 DSH 零源码 patch；历史 tag 和发布附件不变。
-- 事件同步的“已提交标记摘要复用”经两轮独立对抗式审查后被撤回：审查在真实官方 JSON 后端上复现了端口存活期间经官方句柄回退标记、以及“同一对象原地修改后写入失败”两种绕过，说明 O(1) 信号无法证明 O(历史) 状态未变。稳态 `flush()` 因此没有收益，`lib/domain-storage.js` 与 `lib/event-log-checkpoint.js` 恢复基线行为。
-- 可复现前后对比（3 轮交替、中位数）：带 1 条新事件的 20000 条历史 CPU 62.751 → 54.455 ms（−13.22%）；canonical 3000 时语义 GC 94.406 → 67.492 ms（−28.51%）；`record()` 重复条目 1.1506 → 0.7619 ms（−33.78%）；带查询词的 observation 列表 1.3108 → 0.5110 ms（−61.02%）；`strategy.snapshot()` 3.0581 → 1.5529 ms（−49.22%）。收益边界、撤回记录与原始数据见 `docs/performance/redundant-work.md`。
+- 事件同步路径的两项候选优化经三轮独立对抗式审查后**整体撤回**，生产代码恢复基线行为：标记表摘要复用被“端口存活期间经官方句柄回退标记”和“同一对象原地修改后写入失败”两处反例击穿；恢复安装的“只校验使用到的字段”被“被拒绝的提交已把暂存文件装进实时归档树”击穿。两项都在真实官方 JSON 后端复现，稳态与带新事件的 `flush()` 因此都没有收益。
+- 可复现前后对比（3 轮交替、中位数）：canonical 3000 时语义 GC 94.475 → 67.519 ms（−28.53%）；`record()` 重复条目 1.1321 → 0.7594 ms（−32.92%）；带查询词的 observation 列表 1.3183 → 0.5106 ms（−61.27%）；`strategy.snapshot()` 3.0507 → 1.5348 ms（−49.69%）；`capability.snapshot()` 0.8837 → 0.4866 ms（−44.94%）。收益边界、撤回记录、反例与原始数据见 `docs/performance/redundant-work.md`。
 
 ## 0.2.0-rc.5 — reliability fixes
 
