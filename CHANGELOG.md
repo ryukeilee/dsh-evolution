@@ -18,6 +18,7 @@ you install before upgrading DSH.
 - 解析前检查对象的重复键（含转义解码后的键名）：重复键在 `JSON.parse` 中后者覆盖前者，不同原文会得到相同记录；命中即隔离原文件。
 - 严格 UTF-8 解码内存文件：非法字节不再被替换字符“修复”而与其它记录合并，命中即隔离并保留原字节。
 - `compactValue` 改用 `Object.fromEntries` 写回对象属性，`__proto__` 自有属性不再被原型 setter 吞掉。
+- 保持 BOM 文件的既有语义：UTF-8 BOM 不属于 JSON，严格解码保留它以便解析失败并按损坏状态隔离，运行时与 doctor 一致，不再出现“运行时接受、doctor 报 degraded、保存时静默去掉 BOM”的分歧。
 - 保留 schema 1 格式、`record()` 的重复语义（`count` 递增、`firstSeenAt` 与模式身份不变）、`tmp`+`rename` 原子写入与隔离恢复语义。
 - 本候选仅在本地固定与验收，未创建 tag 或进行外部发布。卸载/重装后 memory 文件哈希变化的调查结论（属预期的 `count`/`lastSeenAt` 更新，非持久化缺陷）见 `docs/evidence/memory-hash-investigation.md`。
 

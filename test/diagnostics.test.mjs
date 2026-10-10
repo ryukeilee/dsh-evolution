@@ -366,6 +366,16 @@ test('a failure memory the runtime quarantines is degraded, matching the runtime
   }
 });
 
+test('a memory file with a UTF-8 BOM is degraded, matching the runtime', async () => {
+  const { home, paths } = freshHome('memory-bom');
+  fs.writeFileSync(paths.memoryPath, Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('{"schema":1,"entries":[{"p":1}]}')]));
+  const report = await collectDiagnostics(baseOptions(home));
+  const check = checkOf(report, 'state.memory');
+  assert.equal(check.level, 'degraded');
+  assert.match(check.evidence.problems.join(' '), /not valid JSON/);
+  assert.equal(report.summary.blocked, 0);
+});
+
 test('a memory file that is not valid UTF-8 is degraded, matching the runtime', async () => {
   const { home, paths } = freshHome('memory-bad-utf8');
   fs.writeFileSync(paths.memoryPath, Buffer.concat([Buffer.from('{"schema":1,"entries":[{"p":"'), Buffer.from([0xff]), Buffer.from('"}]}')]));

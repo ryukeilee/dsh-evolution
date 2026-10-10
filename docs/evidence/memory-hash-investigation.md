@@ -82,7 +82,7 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
 
 ## 调查中发现并修复的真实缺陷（0.2.0-rc.7）
 
-隔离实验与代码审计发现失败记忆在十个边界上违反仓库自身的恢复原则
+隔离实验与代码审计发现失败记忆在十一个边界上违反仓库自身的恢复原则
 （"未知或损坏持久状态不得猜测、静默合并或删除现场"）：
 
 1. `entries` 含非对象记录（如 `[null]`）时，`load()` 的外层校验通过，
@@ -123,8 +123,11 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
    解码，失败即以 `encoding-failure` 隔离并保留原字节。
 10. `compactValue` 向普通对象赋值时，`__proto__` 键会触发原型 setter 而不产生自有属性，
    该字段被静默丢弃且身份随之碰撞。修复：改用 `Object.fromEntries` 定义自有属性。
+11. 带 UTF-8 BOM 的文件在严格解码下曾被 `TextDecoder` 默认吞掉 BOM：运行时接受而 doctor
+   报 `degraded`，且下一次保存会静默去掉 BOM。修复：解码时保留 BOM（`ignoreBOM: true`），
+   让解析失败并按 `parse-failure` 隔离，运行时与 doctor 一致且原字节保留。
 
-十个缺陷都有失败路径测试（`test/failure-memory-integrity.test.mjs`，
+十一个缺陷都有失败路径测试（`test/failure-memory-integrity.test.mjs`，
 以及 `test/diagnostics.test.mjs` 的 doctor 一致性用例），并保持 schema 1 格式、
 重复语义、`tmp`+`rename` 原子写入与隔离恢复不变。
 
@@ -142,7 +145,7 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
 - 真实宿主端到端：在隔离 home 中写入 `{"schema":1,"entries":[null]}` 后，doctor 报
   `state.memory: degraded`；用 core probe 启动宿主成功（9 个工具、流程完整、
   `reverted: true`），损坏文件被隔离且字节完全保留，memory 以空内容继续并正常记录。
-- `npm test` 243/243 通过（含十个修复边界的失败路径测试，含加载边界与身份边界的一致性）；`npm run pack:check`
+- `npm test` 245/245 通过（含十一个修复边界的失败路径测试，含加载边界与身份边界的一致性）；`npm run pack:check`
   16/16；`npm run release:verify` 针对固定产物通过。
 
 ## 剩余风险

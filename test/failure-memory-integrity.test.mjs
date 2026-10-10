@@ -259,6 +259,21 @@ test('a __proto__ own property survives compaction and keeps records apart', () 
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('a UTF-8 BOM is not silently stripped from an accepted file', () => {
+  const { dir, file } = freshFile('bom');
+  const original = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('{"schema":1,"entries":[{"p":1}]}')]);
+  fs.writeFileSync(file, original);
+
+  const memory = new EvolutionMemory({ file });
+
+  assert.deepEqual(memory.snapshot().entries, []);
+  assert.equal(memory.quarantine?.reason, 'parse-failure');
+  const quarantined = fs.readdirSync(dir).filter((entry) => entry.includes('.quarantine-'));
+  assert.equal(fs.readFileSync(path.join(dir, quarantined[0])).equals(original), true, 'the original bytes are preserved');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('a non-string explicit signature is normalized instead of breaking retention', () => {
   const { dir, file } = freshFile('non-string-signature');
   fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [record({ signature: 'future', lastSeenAt: '9999-12-31T23:59:59.999Z' })] }));
