@@ -216,36 +216,49 @@ test('a mid-history marker rollback between runs is repaired by a fresh process'
 });
 
 test('a marker rewound through the official handle while the port is alive is repaired', async () => {
-  const f = await fixture();
-  const port = await openDomainStorage(f.ctx, f.config);
-  try {
-    const envelopes = [1, 2, 3].map((sequence) =>
-      appendEnvelope(f.config.eventBridgePath, eventFor(`exp-live-${sequence}`), { sequence }));
-    assert.deepEqual(await port.flush(), { applied: 3, duplicates: 0 });
-    const expected = Object.fromEntries(envelopes.map((envelope) => [envelope.event.eventId, envelope.mac]));
-    // The plugin is not the only holder of the official handle: anything with
-    // the context can open this domain. A rewind through that handle must
-    // invalidate the reused digest, or the new checkpoint would authenticate a
-    // marker map that is already missing an absorbed record.
-    const handle = f.ctx.storageDomain.get(evolutionDomainSpec.name).global;
-    const rewound = { ...handle.get().applied };
-    delete rewound[envelopes[1].event.eventId];
-    await handle.set({ ...handle.get(), applied: rewound });
-    appendEnvelope(f.config.eventBridgePath, eventFor('exp-live-4'), { sequence: 4 });
-    assert.deepEqual(await port.flush(), { applied: 1, duplicates: 3 });
-    await port.close();
-    const restarted = await openDomainStorage(f.ctx, f.config);
+  // Two rewinds through the official handle: one that replaces the marker map
+  // object, and one that edits the map the port already read in place and
+  // re-commits the same document. Both must be visible to the next pass, so a
+  // future reuse of a derived digest cannot survive either.
+  for (const [name, rewind] of [
+    ['replaced map object', (handle, id) => {
+      const rewound = { ...handle.get().applied };
+      delete rewound[id];
+      return { ...handle.get(), applied: rewound };
+    }],
+    ['edited map object', (handle, id) => {
+      const document = handle.get();
+      delete document.applied[id];
+      return document;
+    }],
+  ]) {
+    const f = await fixture();
+    const port = await openDomainStorage(f.ctx, f.config);
     try {
-      await restarted.flush();
-      const applied = f.ctx.storageDomain.get(evolutionDomainSpec.name).global.get().applied;
-      for (const [id, mac] of Object.entries(expected)) assert.equal(applied[id], mac, `marker ${id} must survive`);
-      assert.equal(Object.keys(applied).length, 4);
-      // The stored digest must describe the repaired map: a stale one would be
-      // written into the next checkpoint and silently skip the prefix again.
-      const checkpoint = readEventLogCheckpoint(eventLogCheckpointPath(f.root));
-      assert.equal(checkpoint.appliedDigest, digestApplied(applied));
-    } finally { await restarted.close(); }
-  } finally { await teardown(f); }
+      const envelopes = [1, 2, 3].map((sequence) =>
+        appendEnvelope(f.config.eventBridgePath, eventFor(`exp-live-${sequence}`), { sequence }));
+      assert.deepEqual(await port.flush(), { applied: 3, duplicates: 0 });
+      const expected = Object.fromEntries(envelopes.map((envelope) => [envelope.event.eventId, envelope.mac]));
+      // The plugin is not the only holder of the official handle: anything with
+      // the context can open this domain.
+      const handle = f.ctx.storageDomain.get(evolutionDomainSpec.name).global;
+      await handle.set(rewind(handle, envelopes[1].event.eventId));
+      appendEnvelope(f.config.eventBridgePath, eventFor('exp-live-4'), { sequence: 4 });
+      assert.deepEqual(await port.flush(), { applied: 1, duplicates: 3 }, name);
+      await port.close();
+      const restarted = await openDomainStorage(f.ctx, f.config);
+      try {
+        await restarted.flush();
+        const applied = f.ctx.storageDomain.get(evolutionDomainSpec.name).global.get().applied;
+        for (const [id, mac] of Object.entries(expected)) assert.equal(applied[id], mac, `${name}: marker ${id} must survive`);
+        assert.equal(Object.keys(applied).length, 4, name);
+        // The stored digest must describe the repaired map: a stale one would be
+        // written into the next checkpoint and silently skip the prefix again.
+        const checkpoint = readEventLogCheckpoint(eventLogCheckpointPath(f.root));
+        assert.equal(checkpoint.appliedDigest, digestApplied(applied), name);
+      } finally { await restarted.close(); }
+    } finally { await teardown(f); }
+  }
 });
 
 test('a listener that rewrites the pending record cannot bypass its validation', async () => {
