@@ -617,6 +617,66 @@
     "assetsUnchangedByNotesEdit": true,
     "note": "the release body was extended after publication with the verification summary; asset ids, sizes and digests were re-checked afterwards and are unchanged."
   },
+  "releaseRecordCommit": "fc65542146264a0b1dede9c00a2778ab9928a244",
+  "postPublishCi": {
+    "ci": {
+      "conclusion": "success",
+      "databaseId": 38075003209,
+      "headSha": "fc65542146264a0b1dede9c00a2778ab9928a244",
+      "jobs": [
+        {
+          "conclusion": "success",
+          "name": "package (clean, pinned, installable)",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38075003209/job/114280034187"
+        },
+        {
+          "conclusion": "success",
+          "name": "unit tests (node 22.19.0)",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38075003209/job/114280034283"
+        },
+        {
+          "conclusion": "success",
+          "name": "unit tests (node 24.x)",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38075003209/job/114280034310"
+        },
+        {
+          "conclusion": "success",
+          "name": "host acceptance (0.2.1-alpha.1)",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38075003209/job/114280097887"
+        },
+        {
+          "conclusion": "success",
+          "name": "host acceptance (0.2.0-rc.2)",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38075003209/job/114280097901"
+        }
+      ],
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38075003209"
+    },
+    "codeql": {
+      "conclusion": "success",
+      "databaseId": 38075003176,
+      "headSha": "fc65542146264a0b1dede9c00a2778ab9928a244",
+      "jobs": [
+        {
+          "conclusion": "success",
+          "name": "analyze (javascript-typescript)",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38075003176/job/114280034056"
+        }
+      ],
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38075003176"
+    },
+    "openAlertsAfter": 0,
+    "note": "CI and CodeQL on the commit that carries this audit: the package is still pinned, the unit tests pass on Node 22.19.0 and 24.x, and both hosts still accept the bundle on Linux."
+  },
+  "finalState": {
+    "originMainEqualsLocalHeadAtRecordCommit": "fc65542146264a0b1dede9c00a2778ab9928a244",
+    "workingTreeClean": true,
+    "tagObject": "c466af6d3ee85f64286ec87d5d036ca0ea96d365",
+    "tagTargets": "7eba617b434ba144f469e734313105361db39112",
+    "tagUnchangedSinceUpload": true,
+    "packageContentStillPinned": "e83170afe0fa064931178c4eadfbea781bafed4b2c25179cc5d034ccc9b4d56f",
+    "note": "the audit file and the release close-out live outside the package allow-list, so the published bytes and the pin are untouched by the post-publication commits."
+  },
   "ciPackageArtifact": {
     "tarballSha256": "b1c538d11c8c612bdd29bf574924fd690fffbd55f60243abc06ec8f39deae833",
     "equalsCommittedPin": true,
