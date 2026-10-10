@@ -13,6 +13,8 @@ you install before upgrading DSH.
 - 显式 `signature` 只接受非空字符串；其它值改按 `signature()` 计算，避免 `record()` 的保留键与实际存储键不一致。
 - `record()` 的保留不再可能裁掉本次写入：时钟回拨或异常 `lastSeenAt` 使新记录排在满仓之后时，淘汰最旧记录而不是丢掉刚观察到的失败，返回值不再因自身的裁剪而缺失。
 - 加载时拒绝 JSON 无法保真表示的值（±Infinity/NaN、-0）并按损坏状态隔离原文件；写入路径把非有限数规范化为字符串、-0 规范化为 0，避免插件自己写出下次启动会被拒绝或与其它记录共享身份的记录。
+- 加载时检测 JSON 数字字面量的精度丢失（如 `9007199254740993`、`1.0000000000000001`、`1e-400`）：`JSON.parse` 之后原文差异已不可观察，因此对原文做精确十进制比较，命中即按损坏状态隔离原文件，doctor 同步报 `degraded`。
+- 写入路径把 `undefined` 数组元素/空洞与 `undefined` 属性规范化为落盘后的形状（`null` / 删除），使身份在写入、重载、再写入之间保持一致。
 - 保留 schema 1 格式、`record()` 的重复语义（`count` 递增、`firstSeenAt` 与模式身份不变）、`tmp`+`rename` 原子写入与隔离恢复语义。
 - 本候选仅在本地固定与验收，未创建 tag 或进行外部发布。卸载/重装后 memory 文件哈希变化的调查结论（属预期的 `count`/`lastSeenAt` 更新，非持久化缺陷）见 `docs/evidence/memory-hash-investigation.md`。
 

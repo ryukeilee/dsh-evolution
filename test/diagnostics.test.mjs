@@ -346,20 +346,21 @@ test('valid failure memory and quarantined evidence are both reported', async ()
 test('a failure memory the runtime quarantines is degraded, matching the runtime predicate', async () => {
   const deep = '{"a":'.repeat(3000) + '1' + '}'.repeat(3000);
   const cases = [
-    ['null-record', JSON.stringify({ schema: 1, entries: [null] })],
-    ['primitive-record', JSON.stringify({ schema: 1, entries: [42] })],
-    ['array-record', JSON.stringify({ schema: 1, entries: [[]] })],
-    ['deep-record', `{"schema":1,"entries":[{"id":"deep","payload":${deep}}]}`],
-    ['unrepresentable-number-record', '{"schema":1,"entries":[{"n":1e400}]}'],
+    ['null-record', JSON.stringify({ schema: 1, entries: [null] }), /not an object, or nested too deeply/],
+    ['primitive-record', JSON.stringify({ schema: 1, entries: [42] }), /not an object, or nested too deeply/],
+    ['array-record', JSON.stringify({ schema: 1, entries: [[]] }), /not an object, or nested too deeply/],
+    ['deep-record', `{"schema":1,"entries":[{"id":"deep","payload":${deep}}]}`, /not an object, or nested too deeply/],
+    ['unrepresentable-number-record', '{"schema":1,"entries":[{"n":1e400}]}', /not an object, or nested too deeply/],
+    ['precision-lost-record', '{"schema":1,"entries":[{"n":9007199254740993}]}', /does not survive JSON.parse exactly/],
   ];
-  for (const [name, content] of cases) {
+  for (const [name, content, expected] of cases) {
     const { home, paths } = freshHome(`memory-${name}`);
     fs.writeFileSync(paths.memoryPath, content);
     const report = await collectDiagnostics(baseOptions(home));
     const check = checkOf(report, 'state.memory');
     assert.equal(check.level, 'degraded', `${name} must be degraded`);
     assert.equal(check.recoverable, true);
-    assert.match(check.evidence.problems.join(' '), /not an object, or nested too deeply/);
+    assert.match(check.evidence.problems.join(' '), expected);
     assert.equal(report.summary.blocked, 0);
   }
 });

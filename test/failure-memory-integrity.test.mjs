@@ -122,18 +122,18 @@ test('records at the depth bound keep distinct identities', () => {
 
 test('records whose numbers JSON cannot represent are quarantined with their bytes', () => {
   const cases = [
-    ['overflow', '{"schema":1,"entries":[{"n":1e400}]}'],
-    ['negative-overflow', '{"schema":1,"entries":[{"n":-1e400}]}'],
-    ['negative-zero', '{"schema":1,"entries":[{"n":-0}]}'],
+    ['overflow', '{"schema":1,"entries":[{"n":1e400}]}', 'number-failure'],
+    ['negative-overflow', '{"schema":1,"entries":[{"n":-1e400}]}', 'number-failure'],
+    ['negative-zero', '{"schema":1,"entries":[{"n":-0}]}', 'entry-failure'],
   ];
-  for (const [name, content] of cases) {
+  for (const [name, content, reason] of cases) {
     const { dir, file } = freshFile(`unrepresentable-${name}`);
     fs.writeFileSync(file, content);
 
     const memory = new EvolutionMemory({ file });
 
     assert.deepEqual(memory.snapshot().entries, [], `${name} must be quarantined`);
-    assert.equal(memory.quarantine?.reason, 'entry-failure');
+    assert.equal(memory.quarantine?.reason, reason);
     const quarantined = fs.readdirSync(dir).filter((entry) => entry.includes('.quarantine-'));
     assert.equal(fs.readFileSync(path.join(dir, quarantined[0]), 'utf8'), content, `${name} bytes are preserved`);
 
@@ -153,6 +153,51 @@ test('representable numbers stay usable and written records stay readable', () =
   assert.equal(reloaded.snapshot().entries.length, 1, 'a record this process wrote must be readable back');
   assert.equal(reloaded.quarantine, null);
   assert.equal(reloaded.snapshot().entries[0].evidence.metrics.ratio, 'Infinity');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('records whose number literals lose precision are quarantined with their bytes', () => {
+  const cases = [
+    ['unsafe-integer', '{"schema":1,"entries":[{"n":9007199254740993}]}'],
+    ['unrepresentable-fraction', '{"schema":1,"entries":[{"n":1.0000000000000001}]}'],
+    ['underflow', '{"schema":1,"entries":[{"n":1e-400}]}'],
+  ];
+  for (const [name, content] of cases) {
+    const { dir, file } = freshFile(`precision-${name}`);
+    fs.writeFileSync(file, content);
+
+    const memory = new EvolutionMemory({ file });
+
+    assert.deepEqual(memory.snapshot().entries, [], `${name} must be quarantined`);
+    assert.equal(memory.quarantine?.reason, 'number-failure');
+    const quarantined = fs.readdirSync(dir).filter((entry) => entry.includes('.quarantine-'));
+    assert.equal(fs.readFileSync(path.join(dir, quarantined[0]), 'utf8'), content, `${name} bytes are preserved`);
+
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  // Literals that survive parsing exactly stay usable.
+  const { dir, file } = freshFile('precision-ok');
+  fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [{ n: 0.1 }, { n: 1e21 }, { n: -1.5 }] }));
+  assert.equal(new EvolutionMemory({ file }).snapshot().entries.length, 3);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('undefined array elements normalize to the value a reload produces', () => {
+  const { dir, file } = freshFile('undefined-elements');
+  const memory = new EvolutionMemory({ file });
+  const first = memory.record({ problem: 'same', evidence: {}, experiment: { a: [undefined] }, result: {}, prevention: 'x' });
+  const second = memory.record({ problem: 'same', evidence: {}, experiment: { a: [] }, result: {}, prevention: 'x' });
+  assert.equal(first.duplicate, false);
+  assert.equal(second.duplicate, false, 'an undefined element must not share an identity with a missing one');
+  assert.equal(memory.snapshot().entries.length, 2);
+
+  // [undefined] is written as [null]; a reload must derive the same identity.
+  const reloaded = new EvolutionMemory({ file });
+  const third = reloaded.record({ problem: 'same', evidence: {}, experiment: { a: [null] }, result: {}, prevention: 'x' });
+  assert.equal(third.duplicate, true, 'the reloaded identity matches what was written');
+  assert.equal(reloaded.snapshot().entries.length, 2);
 
   fs.rmSync(dir, { recursive: true, force: true });
 });
