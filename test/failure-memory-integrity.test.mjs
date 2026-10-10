@@ -97,6 +97,29 @@ test('records within the load bound still load', () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('records at the depth bound keep distinct identities', () => {
+  const { dir, file } = freshFile('bound-agreement');
+  const entryAt = (levels, leaf) => {
+    let value = leaf;
+    for (let level = 0; level < levels; level += 1) value = { a: value };
+    return { id: 'same', payload: value };
+  };
+  // The deepest value sits at depth 64: the loader accepts these, so the
+  // content-derived identity has to keep telling them apart.
+  fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [entryAt(63, 1), entryAt(63, 2)] }));
+  const memory = new EvolutionMemory({ file });
+  assert.equal(memory.snapshot().entries.length, 2);
+  assert.equal(new Set(memory.snapshot().entries.map((item) => item.signature)).size, 2);
+
+  // One level deeper is damaged input and quarantines the file instead.
+  fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [entryAt(64, 1), entryAt(64, 2)] }));
+  const deeper = new EvolutionMemory({ file });
+  assert.deepEqual(deeper.snapshot().entries, []);
+  assert.equal(deeper.quarantine?.reason, 'entry-failure');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('a non-string explicit signature is normalized instead of breaking retention', () => {
   const { dir, file } = freshFile('non-string-signature');
   fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [record({ signature: 'future', lastSeenAt: '9999-12-31T23:59:59.999Z' })] }));
