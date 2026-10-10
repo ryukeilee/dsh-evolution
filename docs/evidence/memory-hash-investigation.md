@@ -82,7 +82,7 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
 
 ## 调查中发现并修复的真实缺陷（0.2.0-rc.7）
 
-隔离实验与代码审计发现失败记忆在七个边界上违反仓库自身的恢复原则
+隔离实验与代码审计发现失败记忆在十个边界上违反仓库自身的恢复原则
 （"未知或损坏持久状态不得猜测、静默合并或删除现场"）：
 
 1. `entries` 含非对象记录（如 `[null]`）时，`load()` 的外层校验通过，
@@ -92,7 +92,7 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
    （原字节保留、空 memory 继续、可查询 warning），doctor 同步报 `degraded`。
 2. 缺少 `signature` 的记录在 `bySignature` 中以同一缺失键合并，不同记录被静默折叠，
    且 `compact()` 会把折叠结果写回磁盘。修复：为缺失身份的记录派生整条内容的
-   SHA-256，在加载接受的范围内（JSON 可保真解析的数值、不超过 64 层）不同内容永不合并，完全相同的内容仍然去重；
+   SHA-256，在加载接受的范围内（严格 UTF-8、无重复键、JSON 可保真解析的数值、不超过 64 层）不同内容永不合并，完全相同的内容仍然去重；
    超出该范围的记录按损坏状态隔离，不参与去重。
 3. 时钟回拨或异常 `lastSeenAt` 使新记录排到满仓之后时，`record()` 自己的保留过程会裁掉
    刚写入的记录并返回 `entry: undefined`，随后 `archive()` 读取 `memory.entry.signature`
@@ -115,8 +115,16 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
    `undefined` 元素在 `JSON.stringify` 下都是 `null`，对象属性则被删除）而被合并为一条，
    重载后又因落盘值为 `[null]` 而分裂为两条。修复：`compactValue` 在计算签名前就把
    `undefined` 规范化为落盘后的形状，`stableJson` 也不再让 `undefined`/空洞与缺失值同形。
+8. 同一对象内重复键（`{"p":1,"p":2}` 与 `{"p":2}`）在 `JSON.parse` 中不可观察：后者
+   覆盖前者，不同原文得到相同记录。修复：`inspectMemoryText` 在解析前跟踪每层对象的
+   解码后键名，重复即以 `duplicate-key-failure` 隔离。
+9. 非法 UTF-8 字节（`ff`/`fe`）曾被宽松解码替换为 `�`，不同文件字节因此变成相同字符串
+   并被合并，保存后原字节丢失。修复：用 `TextDecoder("utf-8", { fatal: true })` 严格
+   解码，失败即以 `encoding-failure` 隔离并保留原字节。
+10. `compactValue` 向普通对象赋值时，`__proto__` 键会触发原型 setter 而不产生自有属性，
+   该字段被静默丢弃且身份随之碰撞。修复：改用 `Object.fromEntries` 定义自有属性。
 
-七个缺陷都有失败路径测试（`test/failure-memory-integrity.test.mjs`，
+十个缺陷都有失败路径测试（`test/failure-memory-integrity.test.mjs`，
 以及 `test/diagnostics.test.mjs` 的 doctor 一致性用例），并保持 schema 1 格式、
 重复语义、`tmp`+`rename` 原子写入与隔离恢复不变。
 
@@ -134,7 +142,7 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
 - 真实宿主端到端：在隔离 home 中写入 `{"schema":1,"entries":[null]}` 后，doctor 报
   `state.memory: degraded`；用 core probe 启动宿主成功（9 个工具、流程完整、
   `reverted: true`），损坏文件被隔离且字节完全保留，memory 以空内容继续并正常记录。
-- `npm test` 239/239 通过（含七个修复边界的失败路径测试，含加载边界与身份边界的一致性）；`npm run pack:check`
+- `npm test` 243/243 通过（含十个修复边界的失败路径测试，含加载边界与身份边界的一致性）；`npm run pack:check`
   16/16；`npm run release:verify` 针对固定产物通过。
 
 ## 剩余风险

@@ -15,6 +15,9 @@ you install before upgrading DSH.
 - 加载时拒绝 JSON 无法保真表示的值（±Infinity/NaN、-0）并按损坏状态隔离原文件；写入路径把非有限数规范化为字符串、-0 规范化为 0，避免插件自己写出下次启动会被拒绝或与其它记录共享身份的记录。
 - 加载时检测 JSON 数字字面量的精度丢失（如 `9007199254740993`、`1.0000000000000001`、`1e-400`）：`JSON.parse` 之后原文差异已不可观察，因此对原文做精确十进制比较，命中即按损坏状态隔离原文件，doctor 同步报 `degraded`。
 - 写入路径把 `undefined` 数组元素/空洞与 `undefined` 属性规范化为落盘后的形状（`null` / 删除），使身份在写入、重载、再写入之间保持一致。
+- 解析前检查对象的重复键（含转义解码后的键名）：重复键在 `JSON.parse` 中后者覆盖前者，不同原文会得到相同记录；命中即隔离原文件。
+- 严格 UTF-8 解码内存文件：非法字节不再被替换字符“修复”而与其它记录合并，命中即隔离并保留原字节。
+- `compactValue` 改用 `Object.fromEntries` 写回对象属性，`__proto__` 自有属性不再被原型 setter 吞掉。
 - 保留 schema 1 格式、`record()` 的重复语义（`count` 递增、`firstSeenAt` 与模式身份不变）、`tmp`+`rename` 原子写入与隔离恢复语义。
 - 本候选仅在本地固定与验收，未创建 tag 或进行外部发布。卸载/重装后 memory 文件哈希变化的调查结论（属预期的 `count`/`lastSeenAt` 更新，非持久化缺陷）见 `docs/evidence/memory-hash-investigation.md`。
 

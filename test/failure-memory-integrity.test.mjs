@@ -202,6 +202,63 @@ test('undefined array elements normalize to the value a reload produces', () => 
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('duplicate object keys are quarantined with their bytes', () => {
+  const cases = [
+    ['top-level', '{"schema":1,"entries":[{"p":1,"p":2}]}'],
+    ['nested', '{"schema":1,"entries":[{"p":{"a":1,"a":2}}]}'],
+  ];
+  for (const [name, content] of cases) {
+    const { dir, file } = freshFile(`duplicate-key-${name}`);
+    fs.writeFileSync(file, content);
+
+    const memory = new EvolutionMemory({ file });
+
+    assert.deepEqual(memory.snapshot().entries, [], `${name} must be quarantined`);
+    assert.equal(memory.quarantine?.reason, 'duplicate-key-failure');
+    const quarantined = fs.readdirSync(dir).filter((entry) => entry.includes('.quarantine-'));
+    assert.equal(fs.readFileSync(path.join(dir, quarantined[0]), 'utf8'), content, `${name} bytes are preserved`);
+
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  // Distinct objects that happen to use the same key name are not duplicates.
+  const { dir, file } = freshFile('duplicate-key-ok');
+  fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [{ a: { x: 1 } }, { a: { x: 2 } }] }));
+  assert.equal(new EvolutionMemory({ file }).snapshot().entries.length, 2);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('a memory file that is not valid UTF-8 is quarantined, never repaired', () => {
+  const { dir, file } = freshFile('bad-encoding');
+  const original = Buffer.concat([Buffer.from('{"schema":1,"entries":[{"p":"'), Buffer.from([0xff]), Buffer.from('"}]}')]);
+  fs.writeFileSync(file, original);
+
+  const memory = new EvolutionMemory({ file });
+
+  assert.deepEqual(memory.snapshot().entries, []);
+  assert.equal(memory.quarantine?.reason, 'encoding-failure');
+  const quarantined = fs.readdirSync(dir).filter((entry) => entry.includes('.quarantine-'));
+  assert.equal(fs.readFileSync(path.join(dir, quarantined[0])).equals(original), true, 'the original bytes are preserved');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('a __proto__ own property survives compaction and keeps records apart', () => {
+  const { dir, file } = freshFile('proto-key');
+  const memory = new EvolutionMemory({ file });
+  const payload = (value) => ({ problem: 'p', evidence: {}, experiment: JSON.parse(`{"__proto__":${value},"target":"t"}`), result: {}, prevention: 'x' });
+  const first = memory.record(payload(1));
+  const second = memory.record(payload(2));
+
+  assert.equal(first.duplicate, false);
+  assert.equal(second.duplicate, false, 'a different __proto__ value must be a different record');
+  assert.equal(memory.snapshot().entries.length, 2);
+  const stored = JSON.parse(fs.readFileSync(file, 'utf8')).entries[0].experiment;
+  assert.equal(Object.getOwnPropertyDescriptor(stored, '__proto__')?.value, 1, 'the key is written as an own property');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('a non-string explicit signature is normalized instead of breaking retention', () => {
   const { dir, file } = freshFile('non-string-signature');
   fs.writeFileSync(file, JSON.stringify({ schema: 1, entries: [record({ signature: 'future', lastSeenAt: '9999-12-31T23:59:59.999Z' })] }));

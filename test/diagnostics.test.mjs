@@ -352,6 +352,7 @@ test('a failure memory the runtime quarantines is degraded, matching the runtime
     ['deep-record', `{"schema":1,"entries":[{"id":"deep","payload":${deep}}]}`, /not an object, or nested too deeply/],
     ['unrepresentable-number-record', '{"schema":1,"entries":[{"n":1e400}]}', /not an object, or nested too deeply/],
     ['precision-lost-record', '{"schema":1,"entries":[{"n":9007199254740993}]}', /does not survive JSON.parse exactly/],
+    ['duplicate-key-record', '{"schema":1,"entries":[{"p":1,"p":2}]}', /has duplicate keys/],
   ];
   for (const [name, content, expected] of cases) {
     const { home, paths } = freshHome(`memory-${name}`);
@@ -363,6 +364,16 @@ test('a failure memory the runtime quarantines is degraded, matching the runtime
     assert.match(check.evidence.problems.join(' '), expected);
     assert.equal(report.summary.blocked, 0);
   }
+});
+
+test('a memory file that is not valid UTF-8 is degraded, matching the runtime', async () => {
+  const { home, paths } = freshHome('memory-bad-utf8');
+  fs.writeFileSync(paths.memoryPath, Buffer.concat([Buffer.from('{"schema":1,"entries":[{"p":"'), Buffer.from([0xff]), Buffer.from('"}]}')]));
+  const report = await collectDiagnostics(baseOptions(home));
+  const check = checkOf(report, 'state.memory');
+  assert.equal(check.level, 'degraded');
+  assert.match(check.evidence.problems.join(' '), /not valid UTF-8/);
+  assert.equal(report.summary.blocked, 0);
 });
 
 test('domain aggregate: absent ok, corrupt blocked, unreadable-never-rewritten', async () => {
