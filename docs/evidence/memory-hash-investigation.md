@@ -114,7 +114,7 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
 
 - 双宿主真实安装验收：`0.2.0-rc.2` 与 `0.2.1-alpha.1` 各 21/21 步通过，证据
   `docs/evidence/dsh-0.2.0-rc.2.json` / `docs/evidence/dsh-0.2.1-alpha.1.json`
-  （content `12fd2a62…`，字节 `77f8f20c…`，与 `release/manifest.json` 一致）。
+  （content `48ff2b16…`，字节 `d585739a…`，与 `release/manifest.json` 一致）。
 - alpha.1 上的快照复现得到同样的四个快照（1598 / 1598 / 3305 / 4996 字节），
   卸载到重装之间无写入；`beforeUninstall → afterReinstall` 的 diff 仍然只有
   `count`、`lastSeenAt`、`evidence.at`、`result.rollback.at` 四处，即修复没有改变
