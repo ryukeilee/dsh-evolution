@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { openDomainStorage } from '../../lib/domain-storage.js';
+import { evolutionDomainSpec, openDomainStorage } from '../../lib/domain-storage.js';
 import { EvolutionEventBridge, signEventBridgeEnvelope } from '../../lib/orchestrator.js';
 import { digestApplied, digestEventLogPrefix, eventLogCheckpointPath, planEventLogReplay,
   readEventLogCheckpoint, writeEventLogCheckpoint } from '../../lib/event-log-checkpoint.js';
@@ -170,6 +170,37 @@ test('a rolled back marker map is refused by the witnesses and re-verified per r
     checkpoint, applied: { [checkpoint.last.id]: checkpoint.last.mac } }).trusted, true);
   await port.close();
   await teardown(f);
+});
+
+test('a mid-history marker rollback between runs is repaired by a fresh process', async () => {
+  const f = await fixture();
+  let port = await openDomainStorage(f.ctx, f.config);
+  const envelopes = [1, 2, 3].map((sequence) =>
+    appendEnvelope(f.config.eventBridgePath, eventFor(`exp-rewound-${sequence}`), { sequence }));
+  assert.deepEqual(await port.flush(), { applied: 3, duplicates: 0 });
+  await port.close();
+  // Rewind one marker in the middle of the consumed prefix, keeping the first
+  // and last witness intact, the way a restored or rewound home would, with no
+  // plugin running. Only the marker-map digest can detect this, and it is only
+  // reused within one port: a prefix trusted from a stale digest would skip
+  // per-record work and leave the missing marker unrepaired.
+  const expected = Object.fromEntries(envelopes.map((envelope) => [envelope.event.eventId, envelope.mac]));
+  const domain = await f.ctx.storageDomain.open(evolutionDomainSpec);
+  try {
+    const current = domain.global.get();
+    assert.deepEqual(current.applied, expected);
+    const rewound = { ...current.applied };
+    delete rewound[envelopes[1].event.eventId];
+    await domain.global.set({ ...current, applied: rewound });
+  } finally { await domain.close(); }
+  port = await openDomainStorage(f.ctx, f.config);
+  try {
+    const result = await port.flush();
+    assert.equal(result.applied + result.duplicates, 3, 'every record is processed per record again');
+    assert.deepEqual(f.ctx.storageDomain.get('evolution_domain').global.get().applied, expected,
+      'the rewound marker is repaired, never skipped by a reused digest');
+    assert.deepEqual(await port.flush(), { applied: 0, duplicates: 3 });
+  } finally { await port.close(); await teardown(f); }
 });
 
 test('replaced, truncated and torn logs fall back to full per-record verification', async () => {
