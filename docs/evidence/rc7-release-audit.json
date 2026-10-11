@@ -896,7 +896,64 @@
       "statement": "本轮本地全量测试在 darwin-arm64 的 Node 22.19.0 / 24.21.0 / 26.11.1 执行；Linux 上的真实宿主验收来自 CI（Node 22.19.0）；发布后宿主验收在 darwin-arm64 上使用匿名下载字节。未做长期生产负载、独立生产指标采集、Windows 验收或供应链签名。"
     }
   ],
-  "releaseRecordCommit": null,
-  "postPublishCi": null,
-  "finalState": null
+  "releaseRecordCommit": "9e00a6b9cc3c46e74c18637cc0821b0e283a8cdb",
+  "postPublishCi": {
+    "ci": {
+      "databaseId": 38116934748,
+      "headSha": "9e00a6b9cc3c46e74c18637cc0821b0e283a8cdb",
+      "conclusion": "success",
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116934748",
+      "jobs": [
+        {
+          "name": "package (clean, pinned, installable)",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116934748/job/114403564936"
+        },
+        {
+          "name": "unit tests (node 24.x)",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116934748/job/114403565003"
+        },
+        {
+          "name": "unit tests (node 22.19.0)",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116934748/job/114403565093"
+        },
+        {
+          "name": "host acceptance (0.2.0-rc.2)",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116934748/job/114403607079"
+        },
+        {
+          "name": "host acceptance (0.2.1-alpha.1)",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116934748/job/114403607084"
+        }
+      ]
+    },
+    "codeql": {
+      "databaseId": 38116934742,
+      "headSha": "9e00a6b9cc3c46e74c18637cc0821b0e283a8cdb",
+      "conclusion": "success",
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116934742",
+      "jobs": [
+        {
+          "name": "analyze (javascript-typescript)",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116934742/job/114403565285"
+        }
+      ]
+    },
+    "openAlertsAfter": 0,
+    "note": "CI and CodeQL on the commit that carries this audit: the package is still pinned, the unit tests pass on Node 22.19.0 and 24.x, and both hosts still accept the bundle on Linux."
+  },
+  "finalState": {
+    "originMainEqualsLocalHeadAtRecordCommit": "9e00a6b9cc3c46e74c18637cc0821b0e283a8cdb",
+    "workingTreeClean": true,
+    "tagObject": "b0e06fd5d4d38be2b48b5f66ec0e38cd278bb7eb",
+    "tagTargets": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+    "tagUnchangedSinceUpload": true,
+    "packageContentStillPinned": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+    "note": "the audit file and the release close-out live outside the package allow-list, so the published bytes and the pin are untouched by the post-publication commits."
+  }
 }
