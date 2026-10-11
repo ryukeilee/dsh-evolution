@@ -1,0 +1,902 @@
+{
+  "status": "released-and-post-publish-validated",
+  "tag": "v0.2.0-rc.7",
+  "sourceCommit": "13621c34b0cb13f9bc923d15a96656a377472fc8",
+  "candidate": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+  "tagCommit": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+  "tagObject": "b0e06fd5d4d38be2b48b5f66ec0e38cd278bb7eb",
+  "mainMergeCommit": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+  "candidateTreeEqualsMergeTree": true,
+  "note": "rc.7 was committed directly to main (no pull request); the tag, main and the pin all name the same commit 8fc70e5. The tag was created after the full local validation and pushed once; the release workflow verified the tag before attaching anything.",
+  "pin": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.7",
+    "filename": "dsh-evolution-0.2.0-rc.7.tgz",
+    "sha256": "03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9",
+    "contentSha256": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+    "entries": 50,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.11.1",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "13621c34b0cb13f9bc923d15a96656a377472fc8",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json"
+    ]
+  },
+  "provenance": {
+    "tag": "v0.2.0-rc.7",
+    "head": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+    "tagCommit": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+    "sourceCommit": "13621c34b0cb13f9bc923d15a96656a377472fc8",
+    "sourceDigest": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+    "packageVersion": "0.2.0-rc.7",
+    "pinVersion": "0.2.0-rc.7",
+    "treeDigest": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+    "pinContentSha256": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+    "requireSourceCommit": true,
+    "ok": true,
+    "problems": [],
+    "notes": [
+      "tag v0.2.0-rc.7 -> commit 8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+      "source commit 13621c34b0cb13f9bc923d15a96656a377472fc8 is in the tagged history",
+      "source commit content 214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744 matches the pin",
+      "tagged tree content 214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744 matches the pin"
+    ]
+  },
+  "pullRequest": null,
+  "release": {
+    "createdAt": "2026-10-11T05:53:22Z",
+    "id": 409453591,
+    "isDraft": false,
+    "isPrerelease": true,
+    "publishedAt": "2026-10-11T05:55:43Z",
+    "tagName": "v0.2.0-rc.7",
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.7",
+    "assets": [
+      {
+        "id": 629926691,
+        "name": "dsh-evolution-0.2.0-rc.7.tgz",
+        "size": 243385,
+        "digest": "sha256:03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9",
+        "updatedAt": "2026-10-11T05:54:50Z",
+        "downloadCount": 0,
+        "state": "uploaded",
+        "url": "https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.7/dsh-evolution-0.2.0-rc.7.tgz"
+      },
+      {
+        "id": 629926698,
+        "name": "manifest.json",
+        "size": 660,
+        "digest": "sha256:ffa2b7c9552cd939b4af0dc15a790ea19d210d82f37b3565ca2b960807da1936",
+        "updatedAt": "2026-10-11T05:54:51Z",
+        "downloadCount": 0,
+        "state": "uploaded",
+        "url": "https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.7/manifest.json"
+      },
+      {
+        "id": 629926697,
+        "name": "SHA256SUMS",
+        "size": 95,
+        "digest": "sha256:ce86827376190c6c818b09bb1151ac534024cdd05a6c64fba076a91f96cd9461",
+        "updatedAt": "2026-10-11T05:54:50Z",
+        "downloadCount": 0,
+        "state": "uploaded",
+        "url": "https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.7/SHA256SUMS"
+      }
+    ]
+  },
+  "draftAssets": {
+    "byteAndContentVerification": "passed",
+    "manifestAndChecksumsEqualCommittedFiles": true,
+    "uploadWorkflow": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116315472",
+    "note": "the draft was verified before publishing; the workflow itself re-downloads the uploaded assets and diffs them against release/SHA256SUMS and release/manifest.json, and the same three files were downloaded again over the API and compared byte for byte."
+  },
+  "anonymousDownload": {
+    "transport": "curl -fsSL without authentication",
+    "byteAndContentVerification": "passed",
+    "checksumVerification": "passed",
+    "files": {
+      "dsh-evolution-0.2.0-rc.7.tgz": {
+        "sha256": "03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9",
+        "bytes": 243385,
+        "equalsCommittedFile": true
+      },
+      "manifest.json": {
+        "sha256": "ffa2b7c9552cd939b4af0dc15a790ea19d210d82f37b3565ca2b960807da1936",
+        "bytes": 660,
+        "equalsCommittedFile": true
+      },
+      "SHA256SUMS": {
+        "sha256": "ce86827376190c6c818b09bb1151ac534024cdd05a6c64fba076a91f96cd9461",
+        "bytes": 95,
+        "equalsCommittedFile": true
+      }
+    }
+  },
+  "localValidation": {
+    "tests": [
+      {
+        "node": "v22.19.0",
+        "platform": "darwin-arm64",
+        "command": "node --test \"test/**/*.test.mjs\" \"test/**/*.test.js\"",
+        "exitCode": 0,
+        "summary": {
+          "tests": 245,
+          "suites": 0,
+          "pass": 245,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "log": "docs/evidence/rc7-node22-tests.txt",
+        "logSha256": "a9b5ad3c4caebc504144ce66725fd6ea5f4c2048870a79d7c6c5dce5de63dad5"
+      },
+      {
+        "node": "v24.21.0",
+        "platform": "darwin-arm64",
+        "command": "node --test \"test/**/*.test.mjs\" \"test/**/*.test.js\"",
+        "exitCode": 0,
+        "summary": {
+          "tests": 245,
+          "suites": 0,
+          "pass": 245,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "log": "docs/evidence/rc7-node24-tests.txt",
+        "logSha256": "bc812bdd23961332b58bae092349913d575d378d7b6cfcd4f8408142342c26dd"
+      },
+      {
+        "node": "v26.11.1",
+        "platform": "darwin-arm64",
+        "command": "node --test \"test/**/*.test.mjs\" \"test/**/*.test.js\"",
+        "exitCode": 0,
+        "summary": {
+          "tests": 245,
+          "suites": 0,
+          "pass": 245,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "log": "docs/evidence/rc7-node26-tests.txt",
+        "logSha256": "01f5e310f4a9fd0a32940eb6682555cf2efa72f6a671a7a57f69a698ce8fefe8"
+      }
+    ],
+    "packageChecks": {
+      "command": "npm run pack:check",
+      "exitCode": 0,
+      "checksPassed": 16,
+      "log": "docs/evidence/rc7-package-check.txt",
+      "logSha256": "a6bc953da1225d0af27cccd6345539895cf2dec63e89cfb9e4f00f1e96cbb1cf",
+      "artifactVerification": {
+        "command": "npm run release:verify",
+        "exitCode": 0,
+        "log": "docs/evidence/rc7-release-verify.txt",
+        "logSha256": "111db2f3096fb5a40a297ec70561f4ce1d150cd1a684df576f2d7a0821b0f93f"
+      },
+      "checksumFile": {
+        "command": "shasum -a 256 -c SHA256SUMS (in release/)",
+        "exitCode": 0
+      }
+    },
+    "prePublishHosts": [
+      {
+        "host": "0.2.0-rc.2",
+        "node": "v26.11.1",
+        "platform": "darwin-arm64",
+        "packageVersion": "0.2.0-rc.7",
+        "stepsPassed": 21,
+        "stepsTotal": 21,
+        "failedSteps": [],
+        "freshRuntime": true,
+        "freshHome": true,
+        "contentSha256": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+        "tarballSha256": "03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9",
+        "evidence": "docs/evidence/dsh-0.2.0-rc.2.json",
+        "evidenceSha256": "84476e3554270466bcedfc47e5848e8c046f3dee3f55ea877a3fdc8a6bd90f83",
+        "startedAt": "2026-10-11T05:53:09.005Z",
+        "finishedAt": "2026-10-11T05:53:38.938Z",
+        "finalDoctor": {
+          "status": "healthy",
+          "exitCode": 0
+        },
+        "hostModules": {
+          "@deepseek-ai/dsh": "0.2.0-rc.2",
+          "@deepseek-ai/cordis": "4.0.4",
+          "@deepseek-ai/cordis-plugin-include": "1.0.9",
+          "js-yaml": "4.3.2",
+          "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+          "@deepseek-ai/dsh-cordis-host-runner": "0.2.0-rc.2",
+          "@deepseek-ai/dsh-storage-domain": "0.2.0-rc.2",
+          "@deepseek-ai/dsh-storage-json": "0.2.0-rc.2"
+        }
+      },
+      {
+        "host": "0.2.1-alpha.1",
+        "node": "v26.11.1",
+        "platform": "darwin-arm64",
+        "packageVersion": "0.2.0-rc.7",
+        "stepsPassed": 21,
+        "stepsTotal": 21,
+        "failedSteps": [],
+        "freshRuntime": true,
+        "freshHome": true,
+        "contentSha256": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+        "tarballSha256": "03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9",
+        "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json",
+        "evidenceSha256": "417227e63f8aa155da1b403c7568f92d377f3f004047e0b764a295841ad186fd",
+        "startedAt": "2026-10-11T05:53:10.238Z",
+        "finishedAt": "2026-10-11T05:53:40.037Z",
+        "finalDoctor": {
+          "status": "healthy",
+          "exitCode": 0
+        },
+        "hostModules": {
+          "@deepseek-ai/dsh": "0.2.1-alpha.1",
+          "@deepseek-ai/cordis": "4.0.5-alpha.1",
+          "@deepseek-ai/cordis-plugin-include": "1.0.10-alpha.1",
+          "js-yaml": "4.3.2",
+          "@deepseek-ai/dsh-tools": "0.2.1-alpha.1",
+          "@deepseek-ai/dsh-cordis-host-runner": "0.2.1-alpha.1",
+          "@deepseek-ai/dsh-storage-domain": "0.2.1-alpha.1",
+          "@deepseek-ai/dsh-storage-json": "0.2.1-alpha.1"
+        }
+      }
+    ],
+    "note": "local validation ran on the pinned tree before the tag existed: three Node versions x 245 tests, 16/16 package checks, both hosts accepted the pinned artifact on darwin-arm64."
+  },
+  "workflows": [
+    {
+      "name": "ci",
+      "workflowName": "CI",
+      "databaseId": 38079978053,
+      "headSha": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+      "status": "completed",
+      "conclusion": "success",
+      "event": "push",
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38079978053",
+      "jobs": [
+        {
+          "name": "package (clean, pinned, installable)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38079978053/job/114294718997"
+        },
+        {
+          "name": "unit tests (node 22.19.0)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38079978053/job/114294719229"
+        },
+        {
+          "name": "unit tests (node 24.x)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38079978053/job/114294719333"
+        },
+        {
+          "name": "host acceptance (0.2.0-rc.2)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38079978053/job/114294766844"
+        },
+        {
+          "name": "host acceptance (0.2.1-alpha.1)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38079978053/job/114294766882"
+        }
+      ]
+    },
+    {
+      "name": "codeql-run",
+      "workflowName": "Code scanning",
+      "databaseId": 38079978067,
+      "headSha": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+      "status": "completed",
+      "conclusion": "success",
+      "event": "push",
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38079978067",
+      "jobs": [
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38079978067/job/114294718960"
+        }
+      ]
+    },
+    {
+      "name": "release-run",
+      "workflowName": "Release artifacts",
+      "databaseId": 38116315472,
+      "headSha": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+      "status": "completed",
+      "conclusion": "success",
+      "event": "push",
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116315472",
+      "jobs": [
+        {
+          "name": "verify and attach release artifacts",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38116315472/job/114401792070"
+        }
+      ]
+    }
+  ],
+  "codeQL": {
+    "analysesOnTagCommit": 1,
+    "resultsOnTagCommit": 0,
+    "openAlertsAfter": 0,
+    "note": "the CodeQL analysis of 8fc70e5 reports zero results and the repository has no open code scanning alerts."
+  },
+  "linuxCIHosts": [
+    {
+      "host": "0.2.0-rc.2",
+      "node": "v22.19.0",
+      "platform": "linux-x64",
+      "packageVersion": "0.2.0-rc.7",
+      "stepsPassed": 21,
+      "stepsTotal": 21,
+      "failedSteps": [],
+      "freshRuntime": true,
+      "freshHome": true,
+      "contentSha256": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+      "tarballSha256": "9d42c94af32688f9e8e6c181b2e1e67f92594093adc933c4ef222a8ed92f9a11",
+      "evidence": "docs/evidence/rc7-ci-dsh-0.2.0-rc.2.json",
+      "evidenceSha256": "e2e9c8cfb6e91331e78d24035197d28a0c2fd4f3473129f1edab7d1fa61f4709",
+      "startedAt": "2026-10-10T19:29:40.232Z",
+      "finishedAt": "2026-10-10T19:30:21.297Z",
+      "finalDoctor": {
+        "status": "healthy",
+        "exitCode": 0
+      },
+      "hostModules": {
+        "@deepseek-ai/dsh": "0.2.0-rc.2",
+        "@deepseek-ai/cordis": "4.0.4",
+        "@deepseek-ai/cordis-plugin-include": "1.0.9",
+        "js-yaml": "4.3.2",
+        "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-cordis-host-runner": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-domain": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-json": "0.2.0-rc.2"
+      },
+      "anonymousDownloadedArtifact": false,
+      "note": "CI rebuild verifies identical content; published bytes are verified separately."
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "node": "v22.19.0",
+      "platform": "linux-x64",
+      "packageVersion": "0.2.0-rc.7",
+      "stepsPassed": 21,
+      "stepsTotal": 21,
+      "failedSteps": [],
+      "freshRuntime": true,
+      "freshHome": true,
+      "contentSha256": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+      "tarballSha256": "9d42c94af32688f9e8e6c181b2e1e67f92594093adc933c4ef222a8ed92f9a11",
+      "evidence": "docs/evidence/rc7-ci-dsh-0.2.1-alpha.1.json",
+      "evidenceSha256": "4cd63af72ce7c621f768f322ca248b964e62101d14597a471d29dd88a130edc3",
+      "startedAt": "2026-10-10T19:29:39.076Z",
+      "finishedAt": "2026-10-10T19:30:15.647Z",
+      "finalDoctor": {
+        "status": "healthy",
+        "exitCode": 0
+      },
+      "hostModules": {
+        "@deepseek-ai/dsh": "0.2.1-alpha.1",
+        "@deepseek-ai/cordis": "4.0.5-alpha.1",
+        "@deepseek-ai/cordis-plugin-include": "1.0.10-alpha.1",
+        "js-yaml": "4.3.2",
+        "@deepseek-ai/dsh-tools": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-cordis-host-runner": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-storage-domain": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-storage-json": "0.2.1-alpha.1"
+      },
+      "anonymousDownloadedArtifact": false,
+      "note": "CI rebuild verifies identical content; published bytes are verified separately."
+    }
+  ],
+  "postPublishHosts": [
+    {
+      "host": "0.2.0-rc.2",
+      "node": "v26.11.1",
+      "platform": "darwin-arm64",
+      "packageVersion": "0.2.0-rc.7",
+      "stepsPassed": 21,
+      "stepsTotal": 21,
+      "failedSteps": [],
+      "freshRuntime": true,
+      "freshHome": true,
+      "contentSha256": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+      "tarballSha256": "03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9",
+      "evidence": "docs/evidence/rc7-postpublish-dsh-0.2.0-rc.2.json",
+      "evidenceSha256": "51861c6de6269bca50278ba4a2aefd38829796bb4b8db4b3b9c1d7af1d49e4f7",
+      "startedAt": "2026-10-11T06:04:02.614Z",
+      "finishedAt": "2026-10-11T06:04:28.772Z",
+      "finalDoctor": {
+        "status": "healthy",
+        "exitCode": 0
+      },
+      "hostModules": {
+        "@deepseek-ai/dsh": "0.2.0-rc.2",
+        "@deepseek-ai/cordis": "4.0.4",
+        "@deepseek-ai/cordis-plugin-include": "1.0.9",
+        "js-yaml": "4.3.2",
+        "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-cordis-host-runner": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-domain": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-json": "0.2.0-rc.2"
+      },
+      "anonymousDownloadedArtifact": true,
+      "note": "installed from the anonymously downloaded public release asset, in a fresh official runtime and a fresh DSH_HOME"
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "node": "v26.11.1",
+      "platform": "darwin-arm64",
+      "packageVersion": "0.2.0-rc.7",
+      "stepsPassed": 21,
+      "stepsTotal": 21,
+      "failedSteps": [],
+      "freshRuntime": true,
+      "freshHome": true,
+      "contentSha256": "214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744",
+      "tarballSha256": "03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9",
+      "evidence": "docs/evidence/rc7-postpublish-dsh-0.2.1-alpha.1.json",
+      "evidenceSha256": "264389e82c1046ac148fa0bfb4cb4de85ad371cab852ee2b53ea44ab1da8a0e4",
+      "startedAt": "2026-10-11T06:02:23.277Z",
+      "finishedAt": "2026-10-11T06:02:50.557Z",
+      "finalDoctor": {
+        "status": "healthy",
+        "exitCode": 0
+      },
+      "hostModules": {
+        "@deepseek-ai/dsh": "0.2.1-alpha.1",
+        "@deepseek-ai/cordis": "4.0.5-alpha.1",
+        "@deepseek-ai/cordis-plugin-include": "1.0.10-alpha.1",
+        "js-yaml": "4.3.2",
+        "@deepseek-ai/dsh-tools": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-cordis-host-runner": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-storage-domain": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-storage-json": "0.2.1-alpha.1"
+      },
+      "anonymousDownloadedArtifact": true,
+      "note": "installed from the anonymously downloaded public release asset, in a fresh official runtime and a fresh DSH_HOME"
+    }
+  ],
+  "historicalReleaseVerification": {
+    "historicalTagsUnchanged": true,
+    "historicalReleaseAssetMetadataUnchanged": true,
+    "tags": [
+      {
+        "tag": "v0.2.0-rc.1",
+        "tagObject": "162903f9fc279adb0e88068bb3c42aae637216f1",
+        "tagTarget": "98a64255b94c1cc7bdbfa99f2d425b18759fd173",
+        "remoteTagObject": "162903f9fc279adb0e88068bb3c42aae637216f1",
+        "remoteTagTarget": "98a64255b94c1cc7bdbfa99f2d425b18759fd173",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.2",
+        "tagObject": "73a8de7617e15a8bf122f4a41b788ac40853c951",
+        "tagTarget": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+        "remoteTagObject": "73a8de7617e15a8bf122f4a41b788ac40853c951",
+        "remoteTagTarget": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.3",
+        "tagObject": "60375999e6b8f2c36afca005645ee96f0bcb7e2e",
+        "tagTarget": "0944cc12e7fe7356125a38cd850becbd63bb1650",
+        "remoteTagObject": "60375999e6b8f2c36afca005645ee96f0bcb7e2e",
+        "remoteTagTarget": "0944cc12e7fe7356125a38cd850becbd63bb1650",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.4",
+        "tagObject": "8e1b391c37517ddbc170ccee0e9ca798979b2f5f",
+        "tagTarget": "20a377706906149a987fd099c57cd0a05ef5a87e",
+        "remoteTagObject": "8e1b391c37517ddbc170ccee0e9ca798979b2f5f",
+        "remoteTagTarget": "20a377706906149a987fd099c57cd0a05ef5a87e",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.5",
+        "tagObject": "9f086ee092e951ba05212c25a66358f85b426130",
+        "tagTarget": "8eddabd3e05901b11d425513a0ede0c66cb21742",
+        "remoteTagObject": "9f086ee092e951ba05212c25a66358f85b426130",
+        "remoteTagTarget": "8eddabd3e05901b11d425513a0ede0c66cb21742",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.6",
+        "tagObject": "c466af6d3ee85f64286ec87d5d036ca0ea96d365",
+        "tagTarget": "7eba617b434ba144f469e734313105361db39112",
+        "remoteTagObject": "c466af6d3ee85f64286ec87d5d036ca0ea96d365",
+        "remoteTagTarget": "7eba617b434ba144f469e734313105361db39112",
+        "unchanged": true
+      }
+    ],
+    "historicalReleases": [
+      {
+        "tag": "v0.2.0-rc.1",
+        "id": 404877980,
+        "publishedAt": "2026-10-06T15:23:19Z",
+        "isDraft": false,
+        "isPrerelease": true,
+        "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.1",
+        "assets": [
+          {
+            "id": 616012646,
+            "name": "dsh-evolution-0.2.0-rc.1.tgz",
+            "size": 217006,
+            "digest": "sha256:fc41f0e0bd3a1f37f224275271d889a625e10a13cc6ff7103df183aaec48f4c8",
+            "updatedAt": "2026-10-06T16:16:10Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 616012654,
+            "name": "manifest.json",
+            "size": 598,
+            "digest": "sha256:192336e10d0e836940b722bd11ea4037fe54e7573d6b4717491c7341c68f56fc",
+            "updatedAt": "2026-10-06T16:16:10Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 616012653,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:44d8cdec8cbe5078e104802cd8f478e7a55535509d6de7c7dee983da41ce78d4",
+            "updatedAt": "2026-10-06T16:16:10Z",
+            "state": "uploaded"
+          }
+        ],
+        "comparedAgainst": "rc6-release-audit.historicalReleaseVerification",
+        "previousAuditId": 404877980,
+        "matchesPreviousAuditRecord": true
+      },
+      {
+        "tag": "v0.2.0-rc.2",
+        "id": 404980323,
+        "publishedAt": "2026-10-06T17:29:18Z",
+        "isDraft": false,
+        "isPrerelease": true,
+        "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.2",
+        "assets": [
+          {
+            "id": 616180227,
+            "name": "dsh-evolution-0.2.0-rc.2.tgz",
+            "size": 221145,
+            "digest": "sha256:b611da72218bcb792ddbbba8d12eb6b410d98ce43885ed76a1f783e5a4cd33a1",
+            "updatedAt": "2026-10-06T17:28:37Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 616180228,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:ff9bf828c2ae9ca4cb5a6ec9c59dcafb638083e4e47c6cb400c44096129f2c62",
+            "updatedAt": "2026-10-06T17:28:37Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 616180224,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:525fe2c0d876768305acbed823a3cc81edd6a323f779857e76d386b75db3e995",
+            "updatedAt": "2026-10-06T17:28:37Z",
+            "state": "uploaded"
+          }
+        ],
+        "comparedAgainst": "rc6-release-audit.historicalReleaseVerification",
+        "previousAuditId": 404980323,
+        "matchesPreviousAuditRecord": true
+      },
+      {
+        "tag": "v0.2.0-rc.3",
+        "id": 405478313,
+        "publishedAt": "2026-10-07T07:09:54Z",
+        "isDraft": false,
+        "isPrerelease": true,
+        "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.3",
+        "assets": [
+          {
+            "id": 617889348,
+            "name": "dsh-evolution-0.2.0-rc.3.tgz",
+            "size": 231636,
+            "digest": "sha256:da8444725d32ba5d37dbb6f2442fbba62a3094d5108772ad91a68c91e1b0e68a",
+            "updatedAt": "2026-10-07T07:08:03Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 617889349,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:8af8b11091ea37f756763686ac7014caea8be11a39e8abf6b5ba92741e223711",
+            "updatedAt": "2026-10-07T07:08:03Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 617889353,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:ba44f6901941c3160e8a82b436584f7fd1ce8e9667676c258b2dd7ea60bad90a",
+            "updatedAt": "2026-10-07T07:08:03Z",
+            "state": "uploaded"
+          }
+        ],
+        "comparedAgainst": "rc6-release-audit.historicalReleaseVerification",
+        "previousAuditId": 405478313,
+        "matchesPreviousAuditRecord": true
+      },
+      {
+        "tag": "v0.2.0-rc.4",
+        "id": 406432225,
+        "publishedAt": "2026-10-08T05:06:16Z",
+        "isDraft": false,
+        "isPrerelease": true,
+        "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.4",
+        "assets": [
+          {
+            "id": 620787813,
+            "name": "dsh-evolution-0.2.0-rc.4.tgz",
+            "size": 235255,
+            "digest": "sha256:57f09a0f8ab1c0543d5bc1bf54aca5296960d2acf3edc61950f255580e99a4ff",
+            "updatedAt": "2026-10-08T05:05:08Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 620787811,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:f6ee7bb73d90c1ed9b7308242b3c6df8ae2159f10a26d0c0e3c7f24ade89936b",
+            "updatedAt": "2026-10-08T05:05:08Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 620787810,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:47f49b636a0c7cc351e0b2c7326796a4d06a6554d6f5d199bda08fb08e2ea86e",
+            "updatedAt": "2026-10-08T05:05:08Z",
+            "state": "uploaded"
+          }
+        ],
+        "comparedAgainst": "rc6-release-audit.historicalReleaseVerification",
+        "previousAuditId": 406432225,
+        "matchesPreviousAuditRecord": true
+      },
+      {
+        "tag": "v0.2.0-rc.5",
+        "id": 406898692,
+        "publishedAt": "2026-10-08T14:06:42Z",
+        "isDraft": false,
+        "isPrerelease": true,
+        "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.5",
+        "assets": [
+          {
+            "id": 622006235,
+            "name": "dsh-evolution-0.2.0-rc.5.tgz",
+            "size": 236066,
+            "digest": "sha256:c738e04b268fa8a6fc6367da2257c99a971aa8bff8e8ff0cc9b7d0e1077936d3",
+            "updatedAt": "2026-10-08T14:05:19Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 622006244,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:291e8eed21ecf3d26c902bc2b9fd6a7ece3582d8f2dec7c79554141c725fcee6",
+            "updatedAt": "2026-10-08T14:05:19Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 622006236,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:ee067f99f9834ffec49306d4367305dedc41e8209a223b0712222020472f2b3c",
+            "updatedAt": "2026-10-08T14:05:19Z",
+            "state": "uploaded"
+          }
+        ],
+        "comparedAgainst": "rc6-release-audit.historicalReleaseVerification",
+        "previousAuditId": 406898692,
+        "matchesPreviousAuditRecord": true
+      },
+      {
+        "tag": "v0.2.0-rc.6",
+        "id": 409114747,
+        "publishedAt": "2026-10-10T18:04:27Z",
+        "isDraft": false,
+        "isPrerelease": true,
+        "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.6",
+        "assets": [
+          {
+            "id": 628633152,
+            "name": "dsh-evolution-0.2.0-rc.6.tgz",
+            "size": 237772,
+            "digest": "sha256:b1c538d11c8c612bdd29bf574924fd690fffbd55f60243abc06ec8f39deae833",
+            "updatedAt": "2026-10-10T18:03:52Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 628633160,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:64bca9240a8a75773d6e3880ba8ccc5b3677efe9ace5f8901c347f5c1555f5d8",
+            "updatedAt": "2026-10-10T18:03:52Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 628633151,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:56b29ea5c39875a66e6d4b4eeb8ef5a105a821c32fec214483b26ed3dd100fe8",
+            "updatedAt": "2026-10-10T18:03:51Z",
+            "state": "uploaded"
+          }
+        ],
+        "comparedAgainst": "rc6-release-audit.release",
+        "previousAuditId": "RE_kwDOU-JOyM4YYph7",
+        "matchesPreviousAuditRecord": true
+      }
+    ],
+    "anonymousRedownloads": [
+      {
+        "tag": "v0.2.0-rc.6",
+        "sha256": "b1c538d11c8c612bdd29bf574924fd690fffbd55f60243abc06ec8f39deae833",
+        "bytes": 237772,
+        "checksumVerified": true,
+        "equalsRecordedAssetDigest": true
+      },
+      {
+        "tag": "v0.2.0-rc.5",
+        "sha256": "c738e04b268fa8a6fc6367da2257c99a971aa8bff8e8ff0cc9b7d0e1077936d3",
+        "bytes": 236066,
+        "checksumVerified": true,
+        "equalsRecordedAssetDigest": true
+      },
+      {
+        "tag": "v0.2.0-rc.4",
+        "sha256": "57f09a0f8ab1c0543d5bc1bf54aca5296960d2acf3edc61950f255580e99a4ff",
+        "bytes": 235255,
+        "checksumVerified": true,
+        "equalsRecordedAssetDigest": true
+      }
+    ],
+    "note": "every historical tag object and target still matches the remote, every release asset id/size/digest/updatedAt/state matches the previous audit records, and rc.4–rc.6 still download anonymously with intact checksums."
+  },
+  "officialDSHSourcePatch": false,
+  "publishedArtifactRebuilt": false,
+  "packageUnchangedAfterPublication": true,
+  "auditFilesOutsidePackageAllowList": true,
+  "releaseNotes": {
+    "verificationSummaryAppended": true,
+    "assetsUnchangedByNotesEdit": true,
+    "note": "the release body carries the verification summary; the body was written at publication time and extended after the post-publish host runs. Asset ids, sizes and digests were re-checked afterwards and are unchanged."
+  },
+  "observations": [
+    {
+      "id": "shipped-release-docs-are-frozen-at-the-pin",
+      "observed": "README.md, CHANGELOG.md, COMPATIBILITY.md and RELEASE.md are shipped files, so they were written at pin time; RELEASE.md still calls rc.7 an unpublished local candidate and points the public entry at rc.6.",
+      "whyNotFixed": "editing them after publication would change the shipped content digest and break the pin (pack:check, test/release-pin.test.mjs, release:verify). The tag and the published bytes may not be rewritten for a documentation fix.",
+      "mitigation": "the post-publication record lives outside the package: the GitHub release body carries the verification summary, docs/evidence/memory-hash-investigation.md carries the release close-out, and this file is the authoritative audit. The next version pin updates RELEASE.md, as rc.7 did for rc.6."
+    },
+    {
+      "id": "memory-file-bytes-change-on-reinstall",
+      "observed": "memoryShaBeforeUninstall != memoryShaAfterReinstall in every acceptance run, while entry counts stay equal and the flow asserts existingMemoryRetained: true.",
+      "scope": "present in all 22 historical acceptance evidence files in docs/evidence (rc.2-era through rc.6), so it is not introduced by rc.6.",
+      "resolution": "investigated in rc.7 (docs/evidence/memory-hash-investigation.md): the reinstall itself writes nothing, and re-running the core flow updates count, lastSeenAt, evidence.at and result.rollback.at inside the same signature — a real, correct state change, not corruption. The investigation did surface and fix a separate class of real defects: a corrupted failure-memory record (nested too deep, numbers JSON cannot represent, precision loss on parse, duplicate keys, invalid UTF-8, missing identity, undefined/__proto__ keys) could be silently merged or silently rewritten by doctor or the runtime."
+    },
+    {
+      "id": "first-doctor-degraded-is-expected",
+      "observed": "the doctor-cli step records status degraded / exit 1 with verified: true and blocked: 0, because the Evolution data root is created on first run.",
+      "scope": "documented expectation (RELEASE.md section 4.1); doctor-final is healthy in every run."
+    },
+    {
+      "id": "post-publish-acceptance-first-attempt-hit-a-cold-pnpm-store",
+      "observed": "the first post-publish alpha.1 attempt ran with an isolated HOME/XDG cache, so pnpm had to download the whole host tree from scratch; two platform binaries (@deepseek-ai/libreoffice-kit-darwin-arm64, @img/sharp-libvips-darwin-arm64) failed to fetch and the run stopped at host-install before installing the bundle. No bundle or host step had run.",
+      "notAProductFailure": "the same anonymous bytes then passed 21/21 on the same host in the same session using the default store (warm, as in the pre-publish runs), and the pre-publish runs on both hosts passed with the same artifact.",
+      "mitigation": "the recorded post-publish evidence is the successful run; the failed attempt is disclosed here rather than hidden. No retry-loop was added to the acceptance script for this."
+    }
+  ],
+  "remainingRisksAndUnverified": [
+    {
+      "id": "pinned-bytes-are-human-pinned",
+      "source": "RELEASE.md section 6 item 1",
+      "statement": "发布字节由仓库固定的 release/ 决定，不由 CI 重建；只有同时改对 tarball 与 manifest 才可能漂移，且 pack:check / release:verify / test/release-pin.test.mjs 都会失败。"
+    },
+    {
+      "id": "rc1-tag-artifact-mismatch",
+      "source": "RELEASE.md section 6 item 2",
+      "statement": "v0.2.0-rc.1 的 tag 与同名 Release 已发布字节不一致；加固后的 workflow 会明确失败，本次未移动 tag 或覆盖附件。"
+    },
+    {
+      "id": "guard-is-heuristic",
+      "source": "RELEASE.md section 6 item 3",
+      "statement": "执行守卫仍是启发式策略检查，不是 shell/JavaScript 安全沙箱；promotion 执行的宿主代码是合作式执行，需要可信审批。"
+    },
+    {
+      "id": "manual-bundle-fiber-dispose-uncovered",
+      "source": "RELEASE.md section 6 item 4",
+      "statement": "验收覆盖不到手工 dispose 底层 bundle Fiber 的路径，该路径不作为用户关闭流程。"
+    },
+    {
+      "id": "domain-evaluator-advisory",
+      "source": "RELEASE.md section 6 item 5",
+      "statement": "promotion 的领域 evaluator 仍是 advisory；promotionGates 是生产权威，未接入独立生产 baseline/test 指标。"
+    },
+    {
+      "id": "continuous-governance-not-wired",
+      "source": "RELEASE.md section 6 item 6",
+      "statement": "continuous/ 与 governance/ 领域模块未接入 orchestrator 实时循环，只有单测覆盖。"
+    },
+    {
+      "id": "internal-host-interfaces",
+      "source": "RELEASE.md section 6 item 7",
+      "statement": "仍依赖内部/未文档化宿主接口（ctx.events._hooks、ctx.reflect._getImpl()、EntryTree.resolve、Entry.fiber/options/disabled）；升级 DSH 必须重跑完整验收。"
+    },
+    {
+      "id": "trial-drift-recovery-refuses",
+      "source": "RELEASE.md section 6 item 8",
+      "statement": "Trial 期间持续存在的外部漂移仍拒绝恢复；签名只比较前后可观察清单，不能记录已自行恢复的瞬态漂移。"
+    },
+    {
+      "id": "event-key-no-rotation",
+      "source": "RELEASE.md section 6 item 9",
+      "statement": "event-bridge.key 无轮换/吊销流程，禁用与卸载都不会删除。"
+    },
+    {
+      "id": "no-npm-signing-sbom",
+      "source": "RELEASE.md section 6 item 10",
+      "statement": "未做 npm 发布、代码签名 / provenance（SLSA）或 SBOM。"
+    },
+    {
+      "id": "alpha-dist-tag-moves",
+      "source": "RELEASE.md section 6 item 11",
+      "statement": "0.2.1-alpha.1 的 npm dist-tag 会移动；本仓库声明与验收的是该精确版本号。"
+    },
+    {
+      "id": "metric-ids-are-not-credentials",
+      "source": "RELEASE.md section 6 item 12",
+      "statement": "指标 ID 不是授权凭证；兜底 ID 用 crypto.randomUUID()，但调用方仍可显式提供 ID。"
+    },
+    {
+      "id": "failure-memory-last-writer-wins-no-fsync",
+      "source": "RELEASE.md section 6 item 13",
+      "statement": "file 后端的失败记忆仍是 last-writer-wins，save() 不做 fsync：同一数据根下两个 host 实例同时 archive() 时后写者覆盖先写者的快照，断电可能丢失最后一次 record()。这是有界、advisory 的失败记忆，本次不引入锁或 fsync。缺少 signature 的旧记录只能按整条内容去重，不参与模式匹配。"
+    },
+    {
+      "id": "shipped-docs-frozen-at-pin",
+      "source": "this audit, observation shipped-release-docs-are-frozen-at-the-pin",
+      "statement": "包内 README/CHANGELOG/COMPATIBILITY/RELEASE 随固定字节冻结，rc.7 的“尚未发布”表述在发布后过时；权威记录在包外，下一个版本的 pin commit 写回 RELEASE.md。"
+    },
+    {
+      "id": "verification-platform-coverage",
+      "source": "this audit",
+      "statement": "本轮本地全量测试在 darwin-arm64 的 Node 22.19.0 / 24.21.0 / 26.11.1 执行；Linux 上的真实宿主验收来自 CI（Node 22.19.0）；发布后宿主验收在 darwin-arm64 上使用匿名下载字节。未做长期生产负载、独立生产指标采集、Windows 验收或供应链签名。"
+    }
+  ],
+  "releaseRecordCommit": null,
+  "postPublishCi": null,
+  "finalState": null
+}

@@ -1,0 +1,31 @@
+
+> dsh-evolution@0.2.0-rc.7 pack:check
+> node scripts/release/verify-package.mjs
+
+        dsh-evolution-0.2.0-rc.7.tgz  237.7 KiB  sha256 03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9
+        contentSha256 214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744
+        50 entries
+        modes 0o644, 0o755
+        lockfileVersion 3, version 0.2.0-rc.7
+        pins dsh-evolution-0.2.0-rc.7.tgz content 214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744
+        release/dsh-evolution-0.2.0-rc.7.tgz  sha256 03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9
+        tree content 214cf979c07f008fa2551c1c6b6eb2643acb3eaf7d998ee2e882e7c9f88dd744 matches the pin
+pack:check dsh-evolution@0.2.0-rc.7
+  ok    the tarball is byte-identical across two packs
+  ok    the archive contains exactly the declared files
+  ok    every shipped entry has a canonical mode
+  ok    the shipped text carries no home path or credential material
+  ok    package-lock.json matches package.json
+  ok    the committed acceptance evidence matches this exact package content
+  ok    release/manifest.json pins this tree content
+  ok    the committed release artifact is exactly the pinned build
+  ok    the working tree still builds the pinned content
+  ok    the version is a semver pre-release, never a plain release
+  ok    package.json declares no publish configuration
+  ok    every supported host appears in README and COMPATIBILITY
+  ok    the README current version matches the manifest
+  ok    the CHANGELOG has an entry for the current version
+  ok    the README documents install, doctor, upgrade, rollback and uninstall
+  ok    the doctor entry point declared in "bin" exists
+
+all package checks passed

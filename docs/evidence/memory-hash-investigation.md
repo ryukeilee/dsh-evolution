@@ -155,3 +155,28 @@ v003/v004 的条目增长来自随后的 promotion 实验，属于不同模式�
   跨进程锁保护的是领域归档事务，不是这个文件。它是有界、advisory 的失败记忆
   （`promotionGates` 仍是生产权威），本次不引入锁或 fsync，记录为已知边界。
 - 无 `signature` 的历史记录按整条内容去重，不参与后续的模式匹配。
+
+## 发布收口
+
+`v0.2.0-rc.7` 使用新版本与新固定点，不覆盖 rc.5 / rc.6 的产物或历史发布附件。
+调查结论（哈希变化是真实的语义变化）与随之修复的损坏记录处理缺陷指向同一份内容：
+`sourceCommit` `13621c3`、tag commit `8fc70e5`、`sha256` `03ea4945…`、
+`contentSha256` `214cf979…`。
+
+### 发布收口结果
+
+`v0.2.0-rc.7` 已于 2026-10-11 公开为 GitHub prerelease（非 draft），tag 与 `main`
+指向同一 commit。Node `22.19.0` / `24.21.0` / `26.11.1` 本地各 245/245，零跳过；
+发布前的双宿主验收、Linux CI 验收与发布后的匿名下载字节验收在两个精确官方宿主上
+均各 21/21，最终 doctor `healthy`。
+
+main CI、CodeQL（无未关闭告警）、tag/sourceCommit 实际包内容、发布 workflow、
+draft 附件与匿名下载校验全部通过。全部历史 tag 与 rc.1–rc.6 的资产 ID、摘要、
+更新时间保持不变；rc.1 的 tag/资产 provenance 不一致作为已知风险继续保留。
+完整测试输出、Linux 与发布后宿主证据及来源/资产摘要见
+`docs/evidence/rc7-release-audit.json`。
+
+包内 `README.md`、`CHANGELOG.md`、`COMPATIBILITY.md`、`RELEASE.md` 属于发布内容，
+随固定字节冻结：它们在 pin 时写下的是“尚未发布”的状态，发布后的权威记录只能写在
+包外（本文件与上述审计证据）。下一个版本的 pin commit 会像 rc.6 → rc.7 一样，把
+rc.7 的发布状态写回 `RELEASE.md`。
