@@ -95,7 +95,7 @@ DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-<old>.tgz
 ```
 
 - 升级只替换插件包；数据根、`promoted.cordis.yml`、promoted 子插件源码、archive/evidence 全部保留。
-- 回滚旧插件包后，已提交的 promotion composition 会在启动时按 journal 恢复；若 composition 引用了新版本独有实现，需按“promotion”边界人工移除对应条目后重启（stable commit 后没有 journal 的自动回滚不受支持）。
+- 回滚旧插件包不会自动回滚已稳定提交的 promotion composition；残留 journal 在边界校验通过后按阶段处理：`prepared` / `committing` 回滚，`stable-committed` / `committed` 只清理 journal。若 composition 引用了新版本独有实现，需按“promotion”边界人工移除对应条目后重启（stable commit 后没有 journal 的自动回滚不受支持）。
 - 官方 `pluginManager.setBundleEnabled` 支持热禁用（当前实测 `applied`，插件工具/服务立即下线）或 `restart-required`；两种语义都由官方决定，插件不假设。
 - 卸载：停止应用后 `dsh plugin --profile web remove dsh-evolution`。卸载不删除用户数据。
 
@@ -145,16 +145,17 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 - **运行时能力**：`runtime.capabilities`、`runtime.registration`、`runtime.internal-api`（缺哪个服务/方法/探针就点出哪个）。
 - **数据与状态**：`data.root`、`data.key`、`state.memory`（含隔离文件）、`state.archives`、`state.event-bridge`（逐行 MAC 验证、重复事件、同 id 冲突 MAC、截断尾行）、`state.domain`（官方 schema 校验、pending 事务、孤儿 staging、损坏的 archive 锁）。
 - **迁移**：`migration.manifest`（`importId` 是否与文件清单自洽、不可变来源是否被改、目标文件是否缺失、未发布的 staging 是否残留）。
-- **promotion**：`promotion.journal` 明确区分 `not-executed` / `incomplete` / `canary-observing` / `committed-pending-cleanup` / `rollback-failed` / `state-unknown`，并做 journal 目标边界校验；`promotion.composition` 校验行是否越界、悬空或残留孤儿目录；`promotion.pointer` 校验 `EVOLUTION.md` 指针与 composition 是否一致。
+- **promotion**：`promotion.journal` 明确区分 `not-executed` / `incomplete` / `canary-observing` / `committed-pending-cleanup` / `rollback-failed` / `state-unknown`，并与恢复共用 journal 边界规则：仅接受 `file` / `path` 记录，目标须在 `pluginRoot` / `presetDir` / `archiveDir` 内且不得指向 promotion 状态目录（不以 `dataRoot` 扩大范围）；拒绝时为 `blocked` / `state-unknown`、`recoverable=false`，不提供 repair；`promotion.composition` 校验行是否越界、悬空或残留孤儿目录；`promotion.pointer` 校验 `EVOLUTION.md` 指针与 composition 是否一致。
 
 ### 5.5 恢复语义（全部幂等）
 
 | 状态 | 处理 |
 | --- | --- |
-| journal `prepared` / `committing` | 从 journal 备份回滚（CAS 保护，不覆盖并发修改）；`--repair` 或下次启动自动完成；重复执行无副作用 |
-| journal `stable-committed` / `committed` | 只清理 journal 目录，不动 composition 与已提交插件 |
+| 边界校验通过的 journal `prepared` / `committing` | `promotion-journal-recover`：从 journal 备份回滚（CAS 保护，不覆盖并发修改）；`--repair` 或下次启动自动完成；重复执行无副作用 |
+| 边界校验通过的 journal `stable-committed` / `committed` | `promotion-journal-cleanup`：只清理 journal 目录，不动 composition 与已提交插件 |
 | journal `rollback-failed` | **不自动处理**：保留 journal 并报 `blocked` |
-| journal 无法解析 / 阶段未知 / 目标越界 | **不自动处理**：报 `blocked`，保留现场 |
+| journal 无法解析 / 边界拒绝（含 `symlink` 等不支持的记录形状） | **不自动处理**：报 `blocked` / `state-unknown`、`recoverable=false`，不提供 repair，保留现场 |
+| journal 阶段未知（边界校验通过） | doctor 报 `blocked` / `state-unknown`、`recoverable=false`，不提供 repair；启动恢复当前仍走默认 rollback，启动前须人工检查现场 |
 | event bridge 未闭合尾行 | 只丢弃不构成记录的尾部字节；重复执行不改变文件 |
 | domain 孤儿 staging | 仅在无活进程持有 archive 锁时清理；有活进程时报告并拒绝 |
 | domain archive 锁无主（空内容或死 pid） | 运行时会自动回收；`--repair` 可显式清理；有活主的锁永不抢占 |

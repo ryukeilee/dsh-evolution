@@ -6,6 +6,12 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.8 — journal boundary 与 archive index 单次解析
+
+- **Promotion journal 边界**：doctor 与恢复共用 `checkJournalBoundary`；仅接受 `file` / `path` 记录，目标限于 `pluginRoot` / `presetDir` / `archiveDir` 且不得指向 promotion 状态目录，不以 `dataRoot` 扩大范围。`symlink` 等不支持的记录形状现报 `blocked` / `state-unknown`、`recoverable=false`，不再提供恢复必然拒绝的 `promotion-journal-recover`；边界拒绝保留 journal，缺失 `stateDir` 或 `stageDir: 42` 等原先触发 `TypeError` 的非法值返回明确拒绝原因。修正 README / COMPATIBILITY 与 doctor 摘要的描述。
+
+- 本候选仅在本地开发，未固定新产物、未创建 tag 或进行外部发布；`package.json` 与 `release/` 仍为 `0.2.0-rc.7`。
+
 ## 0.2.0-rc.7 — failure memory integrity
 
 - 修复 file 后端失败记忆的损坏输入路径：`entries` 中出现非对象记录、或记录嵌套超过加载边界（64 层；`snapshot()` 克隆在这之前会因过深而栈溢出）时，插件不再在启动时崩溃，而是像解析失败 / 结构失效一样隔离原文件、以空 memory 继续并留下可查询 warning；doctor 与运行时使用同一个判定函数，不再出现“运行时拒绝、doctor 报 ok”。
@@ -312,12 +318,13 @@ Supported host: DSH `0.2.0-rc.2` (exact), Node `^22.19.0 || >=24.0.0`.
 - **In-session diagnostics.** The `evolution_doctor` tool and
   `ctx.evolution.diagnose()` return the same report while checking the live
   registry (9 tools) and the mounted promotion Include adapter.
-- **Safe, idempotent repairs** (`--repair`): interrupted promotion-journal
-  rollback (backup + CAS), committed-journal cleanup, event-bridge
+- **Safe, idempotent repairs** (`--repair`): boundary-valid interrupted promotion-journal
+  rollback (backup + CAS), boundary-valid committed-journal cleanup, event-bridge
   partial-tail trimming, orphan domain staging removal, migration staging
   cleanup, and stale archive-lock removal. Every repair re-verifies and is a
   no-op on a second run. `rollback-failed`, unparsable or out-of-boundary
-  journals, unverifiable event MACs, conflicting event ids, missing pending
+  journals (including unsupported record shapes under the shared rule in rc.8),
+  unverifiable event MACs, conflicting event ids, missing pending
   archives and altered immutable migration evidence stay `blocked` with
   `recoverable=false` and are never modified.
 - `CHANGELOG.md` and a `bin` entry so the doctor is discoverable by name.

@@ -269,9 +269,15 @@ resolution path.
   cleanup and stale-lock removal all re-verify before acting and are proven
   no-ops on a second run (`test/diagnostics.test.mjs`).
 - **Unknown states fail safe.** `rollback-failed`, unparsable or out-of-boundary
-  journals, unverifiable event MACs, conflicting event ids, missing pending
+  journals (including unsupported record shapes such as `symlink`), unverifiable
+  event MACs, conflicting event ids, missing pending
   archives and altered immutable migration evidence are reported `blocked` with
-  `recoverable=false`; the doctor never mutates them.
+  `recoverable=false`; the doctor offers no repair and never mutates them.
+  Journal diagnostics and recovery share one boundary rule: only `file`/`path`
+  records targeting `pluginRoot`, `presetDir` or `archiveDir` are allowed, never
+  the promotion state directory; `dataRoot` does not widen these roots. Only
+  boundary-valid interrupted/committed journals offer `promotion-journal-recover`
+  / `promotion-journal-cleanup`, respectively.
 - **The doctor CLI is symlink-safe** and resolves the plugin package through
   `realpath`, so a `$DSH_HOME` or install path that contains symlinks still runs
   the diagnostic entry.
