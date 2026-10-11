@@ -1,0 +1,740 @@
+{
+  "measuredAt": "2026-10-11T20:12:47.072Z",
+  "environment": {
+    "node": "v26.11.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "osRelease": "27.0.0",
+    "cpuModel": "Apple M2",
+    "logicalCpus": 8,
+    "totalMemoryBytes": 17179869184,
+    "loadavgBefore": [
+      1.826171875,
+      1.7294921875,
+      1.65087890625
+    ],
+    "cpuSnapshotBefore": [
+      "/Applications/T3   5.7",
+      "/opt/homebrew/bi  12.6"
+    ],
+    "note": "No tests or other benchmark commands ran concurrently. Background desktop/app activity was not controlled."
+  },
+  "workload": {
+    "rows": 20000,
+    "measuredRunsPerInvocation": 5,
+    "warmupPerInvocation": 1,
+    "rounds": 3,
+    "order": [
+      "before",
+      "after",
+      "after",
+      "before",
+      "before",
+      "after"
+    ]
+  },
+  "summary": {
+    "before": {
+      "samples": 15,
+      "loadMedianMs": 19.077334000000064,
+      "compactMedianMs": 877.2013749999999
+    },
+    "after": {
+      "samples": 15,
+      "loadMedianMs": 13.549209000000246,
+      "compactMedianMs": 877.7647080000002
+    }
+  },
+  "invocations": [
+    {
+      "round": 1,
+      "variant": "before",
+      "command": "node scripts/benchmarks/archive-index-reconcile.mjs --rows 20000 --runs 5 --warmup 1 --memory <baseline-file>",
+      "records": [
+        {
+          "node": "v26.11.1",
+          "source": "<os.tmpdir()>/memory-baseline.js",
+          "sourceSha256": "58a75e35fc4f7aed780fc63314420adc2bfd9bfc13909252b26ca0f4e058f0d8",
+          "rows": 20000,
+          "bytes": 3228913,
+          "runs": 5,
+          "warmup": 1,
+          "scope": "load=reconcile; compact=public compact including #writeArchiveIndex, retention, archive I/O and save"
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "loadMs": 25.095750000000002,
+          "compactMs": 916.600334
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "loadMs": 18.178457999999978,
+          "compactMs": 889.9525420000001
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "loadMs": 21.097417000000178,
+          "compactMs": 870.4667079999999
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "loadMs": 17.821708999999828,
+          "compactMs": 861.891083
+        },
+        {
+          "iteration": 5,
+          "warmup": false,
+          "loadMs": 18.87420800000018,
+          "compactMs": 890.1060419999994
+        },
+        {
+          "iteration": 6,
+          "warmup": false,
+          "loadMs": 17.950832999999875,
+          "compactMs": 879.7683749999997
+        },
+        {
+          "summary": {
+            "load": {
+              "medianMs": 18.178457999999978,
+              "madMs": 0.35674900000014986,
+              "stddevMs": 1.2121787535972919,
+              "minMs": 17.821708999999828,
+              "maxMs": 21.097417000000178
+            },
+            "compact": {
+              "medianMs": 879.7683749999997,
+              "madMs": 10.184167000000457,
+              "stddevMs": 11.025785523633191,
+              "minMs": 861.891083,
+              "maxMs": 890.1060419999994
+            }
+          }
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "variant": "after",
+      "command": "node scripts/benchmarks/archive-index-reconcile.mjs --rows 20000 --runs 5 --warmup 1",
+      "records": [
+        {
+          "node": "v26.11.1",
+          "source": "lib/dockyard-domain/memory.js",
+          "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
+          "rows": 20000,
+          "bytes": 3228913,
+          "runs": 5,
+          "warmup": 1,
+          "scope": "load=reconcile; compact=public compact including #writeArchiveIndex, retention, archive I/O and save"
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "loadMs": 18.128125000000004,
+          "compactMs": 907.142959
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "loadMs": 14.180750000000103,
+          "compactMs": 864.0071249999999
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "loadMs": 12.706957999999986,
+          "compactMs": 853.65875
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "loadMs": 12.477958999999828,
+          "compactMs": 880.1880000000001
+        },
+        {
+          "iteration": 5,
+          "warmup": false,
+          "loadMs": 13.549209000000246,
+          "compactMs": 882.8290409999995
+        },
+        {
+          "iteration": 6,
+          "warmup": false,
+          "loadMs": 13.661540999999488,
+          "compactMs": 854.5945840000004
+        },
+        {
+          "summary": {
+            "load": {
+              "medianMs": 13.549209000000246,
+              "madMs": 0.6315409999998565,
+              "stddevMs": 0.6316359538103327,
+              "minMs": 12.477958999999828,
+              "maxMs": 14.180750000000103
+            },
+            "compact": {
+              "medianMs": 864.0071249999999,
+              "madMs": 10.348374999999805,
+              "stddevMs": 12.371799223967697,
+              "minMs": 853.65875,
+              "maxMs": 882.8290409999995
+            }
+          }
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "variant": "after",
+      "command": "node scripts/benchmarks/archive-index-reconcile.mjs --rows 20000 --runs 5 --warmup 1",
+      "records": [
+        {
+          "node": "v26.11.1",
+          "source": "lib/dockyard-domain/memory.js",
+          "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
+          "rows": 20000,
+          "bytes": 3228913,
+          "runs": 5,
+          "warmup": 1,
+          "scope": "load=reconcile; compact=public compact including #writeArchiveIndex, retention, archive I/O and save"
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "loadMs": 20.142666000000006,
+          "compactMs": 919.6471670000001
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "loadMs": 16.11641700000007,
+          "compactMs": 889.6725829999999
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "loadMs": 12.588167000000112,
+          "compactMs": 890.5214580000002
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "loadMs": 15.298874999999953,
+          "compactMs": 877.7647080000002
+        },
+        {
+          "iteration": 5,
+          "warmup": false,
+          "loadMs": 12.868666999999732,
+          "compactMs": 882.654583
+        },
+        {
+          "iteration": 6,
+          "warmup": false,
+          "loadMs": 12.518917000000329,
+          "compactMs": 886.3887500000001
+        },
+        {
+          "summary": {
+            "load": {
+              "medianMs": 12.868666999999732,
+              "madMs": 0.34974999999940337,
+              "stddevMs": 1.5204555296101714,
+              "minMs": 12.518917000000329,
+              "maxMs": 16.11641700000007
+            },
+            "compact": {
+              "medianMs": 886.3887500000001,
+              "madMs": 3.7341670000000704,
+              "stddevMs": 4.71798519841595,
+              "minMs": 877.7647080000002,
+              "maxMs": 890.5214580000002
+            }
+          }
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "variant": "before",
+      "command": "node scripts/benchmarks/archive-index-reconcile.mjs --rows 20000 --runs 5 --warmup 1 --memory <baseline-file>",
+      "records": [
+        {
+          "node": "v26.11.1",
+          "source": "<os.tmpdir()>/memory-baseline.js",
+          "sourceSha256": "58a75e35fc4f7aed780fc63314420adc2bfd9bfc13909252b26ca0f4e058f0d8",
+          "rows": 20000,
+          "bytes": 3228913,
+          "runs": 5,
+          "warmup": 1,
+          "scope": "load=reconcile; compact=public compact including #writeArchiveIndex, retention, archive I/O and save"
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "loadMs": 24.016292,
+          "compactMs": 939.487042
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "loadMs": 21.265625,
+          "compactMs": 877.2013749999999
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "loadMs": 19.126792000000023,
+          "compactMs": 874.758875
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "loadMs": 19.077334000000064,
+          "compactMs": 887.5373749999999
+        },
+        {
+          "iteration": 5,
+          "warmup": false,
+          "loadMs": 20.141625000000204,
+          "compactMs": 876.5152499999995
+        },
+        {
+          "iteration": 6,
+          "warmup": false,
+          "loadMs": 20.559041999999863,
+          "compactMs": 874.5128330000007
+        },
+        {
+          "summary": {
+            "load": {
+              "medianMs": 20.141625000000204,
+              "madMs": 1.0148330000001806,
+              "stddevMs": 0.8417111783609548,
+              "minMs": 19.077334000000064,
+              "maxMs": 21.265625
+            },
+            "compact": {
+              "medianMs": 876.5152499999995,
+              "madMs": 1.7563749999994798,
+              "stddevMs": 4.8252203579734285,
+              "minMs": 874.5128330000007,
+              "maxMs": 887.5373749999999
+            }
+          }
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "variant": "before",
+      "command": "node scripts/benchmarks/archive-index-reconcile.mjs --rows 20000 --runs 5 --warmup 1 --memory <baseline-file>",
+      "records": [
+        {
+          "node": "v26.11.1",
+          "source": "<os.tmpdir()>/memory-baseline.js",
+          "sourceSha256": "58a75e35fc4f7aed780fc63314420adc2bfd9bfc13909252b26ca0f4e058f0d8",
+          "rows": 20000,
+          "bytes": 3228913,
+          "runs": 5,
+          "warmup": 1,
+          "scope": "load=reconcile; compact=public compact including #writeArchiveIndex, retention, archive I/O and save"
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "loadMs": 23.947333,
+          "compactMs": 898.0363749999999
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "loadMs": 19.666082999999958,
+          "compactMs": 893.3291670000001
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "loadMs": 18.847125000000005,
+          "compactMs": 878.457375
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "loadMs": 18.79616699999997,
+          "compactMs": 866.288125
+        },
+        {
+          "iteration": 5,
+          "warmup": false,
+          "loadMs": 17.971459000000323,
+          "compactMs": 880.9730410000002
+        },
+        {
+          "iteration": 6,
+          "warmup": false,
+          "loadMs": 20.766375000000153,
+          "compactMs": 849.8333329999996
+        },
+        {
+          "summary": {
+            "load": {
+              "medianMs": 18.847125000000005,
+              "madMs": 0.8189579999999523,
+              "stddevMs": 0.9452230542863901,
+              "minMs": 17.971459000000323,
+              "maxMs": 20.766375000000153
+            },
+            "compact": {
+              "medianMs": 878.457375,
+              "madMs": 12.16924999999992,
+              "stddevMs": 14.73335389955728,
+              "minMs": 849.8333329999996,
+              "maxMs": 893.3291670000001
+            }
+          }
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "variant": "after",
+      "command": "node scripts/benchmarks/archive-index-reconcile.mjs --rows 20000 --runs 5 --warmup 1",
+      "records": [
+        {
+          "node": "v26.11.1",
+          "source": "lib/dockyard-domain/memory.js",
+          "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
+          "rows": 20000,
+          "bytes": 3228913,
+          "runs": 5,
+          "warmup": 1,
+          "scope": "load=reconcile; compact=public compact including #writeArchiveIndex, retention, archive I/O and save"
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "loadMs": 18.317667,
+          "compactMs": 931.651917
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "loadMs": 14.316208999999958,
+          "compactMs": 873.0572910000001
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "loadMs": 12.631792000000132,
+          "compactMs": 895.557333
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "loadMs": 12.561208999999963,
+          "compactMs": 873.3218750000001
+        },
+        {
+          "iteration": 5,
+          "warmup": false,
+          "loadMs": 13.674665999999888,
+          "compactMs": 857.4134999999997
+        },
+        {
+          "iteration": 6,
+          "warmup": false,
+          "loadMs": 13.567707999999584,
+          "compactMs": 859.8983330000001
+        },
+        {
+          "summary": {
+            "load": {
+              "medianMs": 13.567707999999584,
+              "madMs": 0.748501000000374,
+              "stddevMs": 0.6669899680856279,
+              "minMs": 12.561208999999963,
+              "maxMs": 14.316208999999958
+            },
+            "compact": {
+              "medianMs": 873.0572910000001,
+              "madMs": 13.158957999999984,
+              "stddevMs": 13.54190888552752,
+              "minMs": 857.4134999999997,
+              "maxMs": 895.557333
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "loadavgAfter": [
+    2.0400390625,
+    1.7900390625,
+    1.67578125
+  ],
+  "baselineVerification": {
+    "command": "node --test test/dockyard-domain/archive-index-equivalence.test.js",
+    "beforeSlimming": {
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "reconcileParsesBefore": 23,
+      "reconcileParsesAfter": 12,
+      "compactParsesBefore": 4,
+      "compactParsesAfter": 2
+    },
+    "afterSlimming": {
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "reconcileParsesBefore": 23,
+      "reconcileParsesAfter": 12,
+      "compactParsesBefore": 4,
+      "compactParsesAfter": 2
+    },
+    "testFileBytesBefore": 655122,
+    "testFileBytesAfter": 481767,
+    "storedBaselineBytesBefore": 175320,
+    "reconstructionHelperBytesAfter": 5789,
+    "runtimeBaselineBytes": 175320,
+    "negativeProbes": [
+      {
+        "mutation": "add one JSON.parse in reconstructed source before comparing with pre-change pin",
+        "exitCode": 1,
+        "tests": 1,
+        "pass": 0,
+        "fail": 1,
+        "error": "the reconstruction must be byte-identical to the authoritative pre-change pin"
+      },
+      {
+        "mutation": "add one JSON.parse to imported baseline index loop after successful provenance check",
+        "exitCode": 1,
+        "tests": 6,
+        "pass": 5,
+        "fail": 1,
+        "error": "the pre-change baseline parsed every active line twice",
+        "actual": 3,
+        "expected": 2
+      }
+    ],
+    "restored": true,
+    "note": "Previous-worker snapshot; the frozen diagnostics fixture has since been restored. Independent reviewer results and final byte counts are recorded in independentReview."
+  },
+  "independentReview": {
+    "measuredAt": "2026-10-11T20:23:32.924Z",
+    "frozenDiagnosticsFixture": "byte-identical to HEAD; differential test pass 1/fail 0/skipped 0; diagnostics benchmark exit 0, equality true",
+    "baseline": {
+      "pinPredatesScan": true,
+      "byteIdentical": true,
+      "bytes": 175320,
+      "sha256": "58a75e35fc4f7aed780fc63314420adc2bfd9bfc13909252b26ca0f4e058f0d8"
+    },
+    "testFileBytesFinal": 483033,
+    "reconstructionHelperBytes": 5789,
+    "postChangeShapeDrift": {
+      "exitCode": 1,
+      "actual": 0,
+      "expected": 1,
+      "error": "shared-scan post-change shape must occur exactly once before reconstruction"
+    },
+    "candidateIgnoresSharedScan": {
+      "exitCode": 1,
+      "tests": 6,
+      "pass": 5,
+      "fail": 1,
+      "actual": 2,
+      "expected": 1,
+      "error": "no active line may be parsed twice during reconcile",
+      "guardAdjustment": "Only during the probe, the matching reversal needle was aligned to the mutation so reconstruction remained byte-identical to the pin and runtime parse assertions ran."
+    },
+    "restored": {
+      "byteExact": true,
+      "memorySha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
+      "helperSha256": "db06d5c46344ec08dfb730caf8c837f3a8de9797394b0fa585b5219caa2af457",
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "skipped": 0,
+      "reconcileParsesBefore": 23,
+      "reconcileParsesAfter": 12,
+      "compactParsesBefore": 4,
+      "compactParsesAfter": 2
+    },
+    "benchmark": {
+      "measuredAt": "2026-10-11T20:23:32.924Z",
+      "environment": {
+        "node": "v26.11.1",
+        "platform": "darwin",
+        "arch": "arm64",
+        "osRelease": "27.0.0",
+        "cpuModel": "Apple M2",
+        "logicalCpus": 8,
+        "totalMemoryBytes": 17179869184,
+        "loadavgBefore": [
+          1.5283203125,
+          1.62255859375,
+          1.62548828125
+        ],
+        "loadavgAfter": [
+          1.60693359375,
+          1.634765625,
+          1.62939453125
+        ]
+      },
+      "invocations": [
+        {
+          "variant": "before",
+          "records": [
+            {
+              "node": "v26.11.1",
+              "source": "<os.tmpdir()>/memory-baseline.js",
+              "sourceSha256": "58a75e35fc4f7aed780fc63314420adc2bfd9bfc13909252b26ca0f4e058f0d8",
+              "rows": 20000,
+              "bytes": 3228913,
+              "runs": 5,
+              "warmup": 1,
+              "scope": "load=reconcile; compact=public compact including #writeArchiveIndex, retention, archive I/O and save"
+            },
+            {
+              "iteration": 1,
+              "warmup": true,
+              "loadMs": 23.588791,
+              "compactMs": 905.516709
+            },
+            {
+              "iteration": 2,
+              "warmup": false,
+              "loadMs": 19.309792000000016,
+              "compactMs": 916.160833
+            },
+            {
+              "iteration": 3,
+              "warmup": false,
+              "loadMs": 18.992958000000044,
+              "compactMs": 870.0169579999999
+            },
+            {
+              "iteration": 4,
+              "warmup": false,
+              "loadMs": 18.836874999999964,
+              "compactMs": 871.02675
+            },
+            {
+              "iteration": 5,
+              "warmup": false,
+              "loadMs": 18.195624999999836,
+              "compactMs": 885.3179580000005
+            },
+            {
+              "iteration": 6,
+              "warmup": false,
+              "loadMs": 20.33995800000048,
+              "compactMs": 892.6278749999992
+            },
+            {
+              "summary": {
+                "load": {
+                  "medianMs": 18.992958000000044,
+                  "madMs": 0.31683399999997164,
+                  "stddevMs": 0.7034139396387701,
+                  "minMs": 18.195624999999836,
+                  "maxMs": 20.33995800000048
+                },
+                "compact": {
+                  "medianMs": 885.3179580000005,
+                  "madMs": 14.291208000000552,
+                  "stddevMs": 16.902191172907493,
+                  "minMs": 870.0169579999999,
+                  "maxMs": 916.160833
+                }
+              }
+            }
+          ],
+          "command": "rtk proxy node scripts/benchmarks/archive-index-reconcile.mjs --rows 20000 --runs 5 --warmup 1 --memory <baseline-file>"
+        },
+        {
+          "variant": "after",
+          "records": [
+            {
+              "node": "v26.11.1",
+              "source": "lib/dockyard-domain/memory.js",
+              "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
+              "rows": 20000,
+              "bytes": 3228913,
+              "runs": 5,
+              "warmup": 1,
+              "scope": "load=reconcile; compact=public compact including #writeArchiveIndex, retention, archive I/O and save"
+            },
+            {
+              "iteration": 1,
+              "warmup": true,
+              "loadMs": 18.168959,
+              "compactMs": 916.116083
+            },
+            {
+              "iteration": 2,
+              "warmup": false,
+              "loadMs": 13.915917000000036,
+              "compactMs": 913.6928330000001
+            },
+            {
+              "iteration": 3,
+              "warmup": false,
+              "loadMs": 12.604750000000195,
+              "compactMs": 888.5904169999999
+            },
+            {
+              "iteration": 4,
+              "warmup": false,
+              "loadMs": 12.429375000000164,
+              "compactMs": 879.0663749999999
+            },
+            {
+              "iteration": 5,
+              "warmup": false,
+              "loadMs": 13.328416000000288,
+              "compactMs": 880.2191669999997
+            },
+            {
+              "iteration": 6,
+              "warmup": false,
+              "loadMs": 14.547042000000147,
+              "compactMs": 902.1750829999992
+            },
+            {
+              "summary": {
+                "load": {
+                  "medianMs": 13.328416000000288,
+                  "madMs": 0.7236660000000938,
+                  "stddevMs": 0.7944111495735395,
+                  "minMs": 12.429375000000164,
+                  "maxMs": 14.547042000000147
+                },
+                "compact": {
+                  "medianMs": 888.5904169999999,
+                  "madMs": 9.524042000000009,
+                  "stddevMs": 13.334166158167175,
+                  "minMs": 879.0663749999999,
+                  "maxMs": 913.6928330000001
+                }
+              }
+            }
+          ],
+          "command": "rtk proxy node scripts/benchmarks/archive-index-reconcile.mjs --rows 20000 --runs 5 --warmup 1"
+        }
+      ],
+      "baseline": {
+        "pinPredatesScan": true,
+        "byteIdentical": true,
+        "bytes": 175320,
+        "sha256": "58a75e35fc4f7aed780fc63314420adc2bfd9bfc13909252b26ca0f4e058f0d8"
+      }
+    }
+  }
+}

@@ -10,6 +10,8 @@ you install before upgrading DSH.
 
 - **Promotion journal 边界**：doctor 与恢复共用 `checkJournalBoundary`；仅接受 `file` / `path` 记录，目标限于 `pluginRoot` / `presetDir` / `archiveDir` 且不得指向 promotion 状态目录，不以 `dataRoot` 扩大范围。`symlink` 等不支持的记录形状现报 `blocked` / `state-unknown`、`recoverable=false`，不再提供恢复必然拒绝的 `promotion-journal-recover`；边界拒绝保留 journal，缺失 `stateDir` 或 `stageDir: 42` 等原先触发 `TypeError` 的非法值返回明确拒绝原因。修正 README / COMPATIBILITY 与 doctor 摘要的描述。
 
+- **Archive index 单次解析**：reconcile 与 compact 重建共享一次 JSONL 分行/解析，保留索引字段、活动键、轮转字节与损坏行处理。等价测试使用固定产物中的完整旧实现，并以带形状断言的逆向重建证明字节一致；重新固定包含新实现的产物后仍保留基线，移除重复 vendored 源码。可复现性能数据与收益边界见 `docs/performance/archive-index-single-parse.md`。
+
 - 本候选仅在本地开发，未固定新产物、未创建 tag 或进行外部发布；`package.json` 与 `release/` 仍为 `0.2.0-rc.7`。
 
 ## 0.2.0-rc.7 — failure memory integrity
