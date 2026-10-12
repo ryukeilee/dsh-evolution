@@ -566,15 +566,52 @@
     "the 0.2.1-alpha.1 npm dist-tag can move; the acceptance is pinned to that exact version.",
     "see RELEASE.md section 6 for the full list; the entries above are the ones re-checked or newly observed for rc.9."
   ],
-  "releaseRecordCommit": null,
-  "postPublishCi": null,
+  "releaseRecordCommit": "8c0dff5765d7d3a7b9fd20766df0f3e71a0f52eb",
+  "postPublishCi": {
+    "ci": {
+      "databaseId": 38272401511,
+      "headSha": "8c0dff5765d7d3a7b9fd20766df0f3e71a0f52eb",
+      "conclusion": "success",
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38272401511",
+      "jobs": [
+        {
+          "name": "unit tests (node 22.19.0)",
+          "conclusion": "success"
+        },
+        {
+          "name": "unit tests (node 24.x)",
+          "conclusion": "success"
+        },
+        {
+          "name": "package (clean, pinned, installable)",
+          "conclusion": "success"
+        },
+        {
+          "name": "host acceptance (0.2.0-rc.2)",
+          "conclusion": "success"
+        },
+        {
+          "name": "host acceptance (0.2.1-alpha.1)",
+          "conclusion": "success"
+        }
+      ]
+    },
+    "codeQL": {
+      "databaseId": 38272401431,
+      "headSha": "8c0dff5765d7d3a7b9fd20766df0f3e71a0f52eb",
+      "conclusion": "success",
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38272401431"
+    },
+    "note": "the audit commit itself was verified: the full CI matrix (unit tests on 22.19.0 and 24.x, package checks, real host acceptance on both official hosts) and the CodeQL analysis all succeeded. Only this close-out commit follows; it touches docs/evidence, which is outside the package allow-list, so the published bytes and the pin cannot change."
+  },
   "finalState": {
-    "originMainAtAuditTime": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
-    "localMainAtAuditTime": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+    "originMainEqualsLocalHeadAtRecordCommit": "8c0dff5765d7d3a7b9fd20766df0f3e71a0f52eb",
     "tagObject": "e6d7c2566caf7de5c69f7e39c6132be98d6ff7bb",
-    "tagTargets": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
-    "workingTreeClean": false,
+    "tagUnchangedSinceUpload": true,
+    "workingTreeClean": true,
     "packageContentStillPinned": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
-    "note": "the audit files live outside the package allow-list, so this commit cannot change the published bytes or the pin."
+    "publishedAssetsUnchangedSinceRelease": true,
+    "historicalReleasesUnchanged": true,
+    "note": "the audit file and this close-out live outside the package allow-list, so neither the published bytes nor the pin is touched by these commits. workingTreeClean describes the state after the record commit: during the audit build the new docs/evidence files were still untracked."
   }
 }
