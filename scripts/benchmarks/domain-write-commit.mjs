@@ -11,11 +11,13 @@
 // option is the pinned pre-change baseline, never an arbitrary historical
 // snapshot; the candidate is always the working tree.
 //
-// Both implementations run in one process against separate temporary roots, one
-// after the other, alternating which goes first. The clock is frozen so the two
-// runs are byte-comparable, and every pair asserts the full persisted tree, all
-// query projections and the post-restart projections are identical (UUIDs, the
-// only intentionally random part of a record id, are masked before hashing).
+// Both implementations run in one process against the same fixture path, one
+// after the other, alternating which goes first. The clock is frozen and
+// `crypto.randomUUID` is a per-run deterministic sequence reset before every
+// run, so every pair asserts the full persisted tree, all query projections and
+// the post-restart projections are identical as raw bytes - no mask, no
+// placeholder and no field excluded from the digest, so a difference in an id or
+// in a reference to one fails the comparison instead of hiding in it.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import crypto, { createHash } from "node:crypto";
