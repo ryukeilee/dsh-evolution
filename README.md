@@ -19,7 +19,7 @@ npx @deepseek-ai/dsh web            # 官方推荐
 # 或源码：pnpm install && pnpm run build
 ```
 
-本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定的本地候选版本是 `0.2.0-rc.9`，尚未公开发布；它在 `0.2.0-rc.8` 的基础上删除默认写入路径中每次事务重复执行的四项工作（恢复收尾的第二次文档校验、`hydrate()` 的死 observation store、`update` 的冗余深拷贝与 `inlineSerialization` 缺失导致的全量快照），落盘字节不变。发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新匿名下载并执行双宿主验收。最后公开 `v0.2.0-rc.6` 的审计保留在 `docs/evidence/rc6-release-audit.json`；卸载/重装后 memory 哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`。
+本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定的本地候选版本是 `0.2.0-rc.9`，尚未公开发布；它在 `0.2.0-rc.8` 的基础上删除默认写入路径中每次事务重复执行的三项工作（恢复收尾的第二次文档校验、`stateStore.update` 的冗余深拷贝，以及 `inlineSerialization` 缺失导致的全量快照），落盘字节不变。发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新匿名下载并执行双宿主验收。最后公开 `v0.2.0-rc.6` 的审计保留在 `docs/evidence/rc6-release-audit.json`；卸载/重装后 memory 哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`。
 
 ### 1.1 从公开 Release 安装（用户）
 

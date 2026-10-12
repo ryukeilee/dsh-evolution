@@ -1,14 +1,23 @@
-// Equivalence evidence for the merged write-path variant in
+// Equivalence evidence for the retained write-path variant in
 // lib/domain-storage.js.
 //
-// The variant removes four pieces of provably redundant work from the default
-// write path: a second walk of a document that was just parsed, a dead
-// `EvolutionObservationStore` in `hydrate`, a clone of the incoming aggregate
-// that the JSON projection copies again, and the `snapshot()` deep clone that
-// `inlineSerialization` makes unnecessary. None of them can accept or reject a
-// document that the other path would not, so the evidence is differential:
-// every check below runs the pre-change implementation and the working tree on
-// the same input and requires the same observable result.
+// The variant removes three pieces of provably redundant work from the default
+// write path: a second walk of a document that was just parsed, a clone of the
+// incoming aggregate that the JSON projection copies again, and the
+// `snapshot()` deep clone that `inlineSerialization` makes unnecessary. None of
+// them can accept or reject a document that the other path would not, so the
+// evidence is differential: every check below runs the pre-change
+// implementation and the working tree on the same input and requires the same
+// observable result.
+//
+// A fourth candidate - dropping the `EvolutionObservationStore` that `hydrate()`
+// loads and never reads - was withdrawn after an independent review found a real
+// divergence, which is now a regression test here: its `load()` is not inert,
+// because `snapshot()` reads `memory.hasColdHistory`, which coerces every
+// `coldArchives` entry with `Number(count)`. Without the call, the first commit
+// after a durable aggregate with a non-coercible entry succeeded where the
+// pre-change implementation refuses it. See
+// `docs/performance/domain-write-path.md` section 4.
 //
 // Everything is anchored to `release/dsh-evolution-0.2.0-rc.8.tgz`, which is
 // committed and predates the change. Both implementations are loaded as real
@@ -23,7 +32,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { syncBuiltinESMExports } from 'node:module';
 import { domainStorageBaseline, materializeDomainStorage, reconstructPreMerge } from './domain-storage-baseline.js';
-import { openDomainStorage } from '../../lib/domain-storage.js';
+import { evolutionDomainSpec, openDomainStorage } from '../../lib/domain-storage.js';
 const { DomainFacility } = await import('@deepseek-ai/dsh-storage-domain');
 const { JsonStorageBackend } = await import('@deepseek-ai/dsh-storage-json');
 
@@ -126,17 +135,66 @@ test('the reconstruction is anchored to the pinned pre-change artifact', async (
   assert.notEqual(sha256(baseline.source), sha256(WORKING));
   assert.match(baseline.source, /await domain\.global\.set\(schema\.parse\(\{ schema: 1, aggregate: current\.pending\.aggregate/);
   assert.match(baseline.source, /updater\(structuredClone\(aggregate\)\)/);
-  assert.match(baseline.source, /observations = new EvolutionObservationStore\(\{ memory \}\);/);
   assert.doesNotMatch(baseline.source, /inlineSerialization/);
   // The reversal must be exact: applying it twice would silently produce a
   // different file, and a drifted shape must fail loudly instead.
   assert.throws(() => reconstructPreMerge(baseline.source), /must occur exactly once/);
-  // And the working tree must actually carry all four pieces.
+  // And the working tree must actually carry all three pieces.
   assert.doesNotMatch(WORKING, /await domain\.global\.set\(schema\.parse\(\{ schema: 1, aggregate: current\.pending\.aggregate/);
   assert.doesNotMatch(WORKING, /updater\(structuredClone\(aggregate\)\)/);
-  assert.doesNotMatch(WORKING, /observations = new EvolutionObservationStore\(\{ memory \}\);/);
   assert.match(WORKING, /inlineSerialization: true/);
   assert.match(WORKING, /update: async updater => \{ aggregate = aggregateSchema\.parse\(updater\(aggregate\)\); \}/);
+  // The withdrawn fourth piece must stay exactly as the released artifact had it.
+  assert.match(WORKING, /observations = new EvolutionObservationStore\(\{ memory \}\);\n    await observations\.load\(\);/);
+});
+
+test('a durable aggregate whose cold archive entry cannot be coerced still fails loudly', async () => {
+  // The `hydrate()` observation store is never read, but loading it is not
+  // inert: `snapshot()` reads `memory.hasColdHistory`, which runs
+  // `Number(entry.count)` over every `coldArchives` entry. A plain JSON entry
+  // whose `toString` and `valueOf` are null passes the domain schema and makes
+  // that coercion throw, so the released implementation refuses to open the
+  // port. Removing the store silently accepted the next commit instead; this
+  // pins the loud failure in both implementations.
+  await withHome(async (home) => {
+    const baseline = await domainStorageBaseline();
+    const { openDomainStorage: openBaseline } = await materializeDomainStorage(baseline.source, home, 'baseline');
+    const corrupt = JSON.parse(JSON.stringify({ coldArchives: { extra: { count: { toString: null, valueOf: null } } } }));
+    const document = { schema: 1, aggregate: { evolution: { schema: 4, ...corrupt } }, applied: {}, pending: null };
+    assert.equal(evolutionDomainSpec.global.schema.safeParse(document).success, true,
+      'the corrupt document must be schema-valid, otherwise it does not prove anything');
+    const unfreeze = freezeClock();
+    const uuid = freezeUuid();
+    try {
+      const run = async (open, tag) => {
+        const root = path.join(home, 'fixture');
+        const f = resetFixture(root, uuid);
+        const warm = await open(f.ctx, f.config);
+        await warm.observe({ code: 'BENCH_ERROR', target: 'tool:warm' });
+        await warm.close();
+        // Corrupt the committed medium exactly as a crash or an in-process
+        // official handle could leave it, then reopen the real port.
+        const medium = path.join(root, 'official', 'evolution_domain.json');
+        const stored = JSON.parse(fs.readFileSync(medium, 'utf8'));
+        stored.global = document;
+        fs.writeFileSync(medium, JSON.stringify(stored));
+        await f.backend.close();
+        const reopened = fixture(root);
+        let outcome;
+        try {
+          const port = await open(reopened.ctx, reopened.config);
+          await port.close();
+          outcome = 'opened';
+        } catch (error) { outcome = `${error.constructor.name}: ${error.message}`; }
+        await reopened.backend.close();
+        assert.notEqual(outcome, 'opened', `${tag}: opening on a non-coercible cold archive entry must fail`);
+        return outcome;
+      };
+      const before = await run(openBaseline, 'baseline');
+      const after = await run(openDomainStorage, 'after');
+      assert.equal(after, before, 'both implementations must reject the same corrupt state identically');
+    } finally { uuid.restore(); unfreeze(); }
+  });
 });
 
 test('the real port commits byte-identical state before and after the change', async () => {

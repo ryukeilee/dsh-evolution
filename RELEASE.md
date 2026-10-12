@@ -2,7 +2,7 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前本地候选版本：`0.2.0-rc.9`，在 `0.2.0-rc.8` 之上删除默认写入路径中每次事务重复执行的四项工作（恢复收尾的第二次文档校验、`hydrate()` 的死 observation store、`stateStore.update` 的冗余深拷贝，以及 `inlineSerialization` 缺失导致的全量快照），落盘字节不变；doctor 与恢复继续共用同一判定。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本候选仅在本地固定与验收，未创建 tag 或进行外部发布。最后公开 `v0.2.0-rc.6` 的发布状态、远端 CI / CodeQL、匿名下载与发布后双宿主证据见 `docs/evidence/rc6-release-audit.json` 及 `rc6-postpublish-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
+当前本地候选版本：`0.2.0-rc.9`，在 `0.2.0-rc.8` 之上删除默认写入路径中每次事务重复执行的三项工作（恢复收尾的第二次文档校验、`stateStore.update` 的冗余深拷贝，以及 `inlineSerialization` 缺失导致的全量快照），落盘字节不变；doctor 与恢复继续共用同一判定。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本候选仅在本地固定与验收，未创建 tag 或进行外部发布。最后公开 `v0.2.0-rc.6` 的发布状态、远端 CI / CodeQL、匿名下载与发布后双宿主证据见 `docs/evidence/rc6-release-audit.json` 及 `rc6-postpublish-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
 
 ## 1. 产物
 

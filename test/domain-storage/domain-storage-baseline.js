@@ -18,8 +18,9 @@ const SOURCE_PATH = "lib/domain-storage.js";
 // pinned artifact byte for byte; an exact single-occurrence guard fails on any
 // shape drift instead of silently rebuilding something else.
 //
-// The four reversed pieces are the whole merged variant, and each one removes
-// work that is provably redundant rather than any check that can still reject:
+// The three reversed pieces are the whole retained variant, and each one
+// removes work that is provably redundant rather than any check that can still
+// reject:
 //
 // 1. `installPending` closed a committed recovery by re-parsing the document it
 //    had already parsed one step earlier. `pending.aggregate` and
@@ -28,21 +29,33 @@ const SOURCE_PATH = "lib/domain-storage.js";
 //    closing document is provably accepted before the second walk starts. The
 //    validation that must stay - the full document check that runs before any
 //    staged file is installed - is untouched.
-// 2. `hydrate` built an `EvolutionObservationStore` and loaded it into a local
-//    that nothing ever reads. The load only calls `memory.load()`, which is
-//    already loaded at that point, so it has no observable effect at all.
-// 3. The state store's `update` cloned the incoming aggregate before handing it
+// 2. The state store's `update` cloned the incoming aggregate before handing it
 //    to the updater, and then projected the result through
 //    `aggregateSchema.parse`, which is itself a fresh deep value
 //    (`JSON.parse(JSON.stringify(...))`). The clone could only be copied again.
 //    Both updaters this store receives are pure spreads that never mutate their
 //    argument.
-// 4. The same store did not declare `inlineSerialization`, so `EvolutionMemory`
+// 3. The same store did not declare `inlineSerialization`, so `EvolutionMemory`
 //    deep-cloned the live partition (`snapshot()`) before persisting it. The
 //    bytes are captured synchronously by the JSON projection inside `update`,
 //    so the shallow live view is equivalent and the clone is the third copy of
 //    the same value in that call.
+//
+// A fourth candidate - dropping the `EvolutionObservationStore` that `hydrate()`
+// loads and never reads - was measured with these three and then withdrawn: its
+// `load()` is not inert, because `snapshot()` reads `memory.hasColdHistory`,
+// which coerces every `coldArchives` entry with `Number(count)`. Dropping the
+// call let the first commit after a durable aggregate with a non-coercible
+// entry succeed where the released implementation refuses it. See
+// `docs/performance/domain-write-path.md` section 4.
 const reversals = [
+  ["    // The store is not read afterwards, but `load()` is not inert: its\n" +
+   "    // `snapshot()` reads `memory.hasColdHistory`, which derives `Number(count)`\n" +
+   "    // from every `coldArchives` entry and therefore rejects a durable\n" +
+   "    // aggregate whose entry cannot be coerced. Removing this call silently\n" +
+   "    // accepted the first commit after such a state was written; keeping it\n" +
+   "    // preserves the loud failure the released implementation has.\n",
+   ""],
   ["    // `current` is the output of `schema.parse` above, so `pending.aggregate`\n" +
    "    // and `pending.applied` are already validated projections of this exact\n" +
    "    // durable document; re-parsing them with the same schema can only\n" +
@@ -64,16 +77,9 @@ const reversals = [
    "      update: async updater => { aggregate = aggregateSchema.parse(updater(aggregate)); } };\n",
    "    const stateStore = { filePath: path.join(dir, 'state.json'), load: async () => structuredClone(aggregate),\n" +
    "      update: async updater => { aggregate = aggregateSchema.parse(updater(structuredClone(aggregate))); } };\n"],
-  ["    memory = current.instance;\n" +
-   "    // Loading may repair the derived index by atomic replacement.",
-   "    memory = current.instance;\n" +
-   "    observations = new EvolutionObservationStore({ memory });\n" +
-   "    await observations.load();\n" +
-   "    // Loading may repair the derived index by atomic replacement."],
-  ["  let memory;\n", "  let memory, observations;\n"],
 ];
 
-/** Revert only the merged write-path variant; everything else stays as written. */
+/** Revert only the retained write-path variant; everything else stays as written. */
 export function reconstructPreMerge(source) {
   for (const [after, before] of reversals) {
     assert.equal(source.split(after).length - 1, 1,
