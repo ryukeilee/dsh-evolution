@@ -1,0 +1,580 @@
+{
+  "status": "released-and-post-publish-validated",
+  "tag": "v0.2.0-rc.9",
+  "tagObject": "e6d7c2566caf7de5c69f7e39c6132be98d6ff7bb",
+  "tagCommit": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+  "remoteTagObject": "e6d7c2566caf7de5c69f7e39c6132be98d6ff7bb",
+  "remoteTagTarget": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+  "tagObjectMatchesRemote": true,
+  "mainCommit": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+  "mergeStrategy": "fast-forward: the release branch was a strict descendant of the previous main (0 behind, 12 ahead), so main advanced to the tagged commit with no merge commit",
+  "candidateTreeEqualsMergeTree": true,
+  "candidate": "feat/journal-boundary-and-archive-index",
+  "sourceCommit": "f20317ce1b09cd6babb358e804d620b5173f46c4",
+  "note": "rc.9 was cut from 0.2.0-rc.8 work that was never tagged or published; rc.8 exists only as a committed local pin in git history. rc.1-rc.7 tags and releases were not touched.",
+  "pin": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.9",
+    "filename": "dsh-evolution-0.2.0-rc.9.tgz",
+    "sha256": "2942020d7c72f852b1d648c2c0337b8cdd88cd8250201cbdf80ecc6c74c208e3",
+    "contentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+    "entries": 50,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.11.1",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "f20317ce1b09cd6babb358e804d620b5173f46c4",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json"
+    ]
+  },
+  "provenance": {
+    "tag": "v0.2.0-rc.9",
+    "head": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+    "tagCommit": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+    "sourceCommit": "f20317ce1b09cd6babb358e804d620b5173f46c4",
+    "sourceDigest": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+    "packageVersion": "0.2.0-rc.9",
+    "pinVersion": "0.2.0-rc.9",
+    "treeDigest": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+    "pinContentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+    "requireSourceCommit": true,
+    "ok": true,
+    "problems": [],
+    "notes": [
+      "tag v0.2.0-rc.9 -> commit 9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+      "source commit f20317ce1b09cd6babb358e804d620b5173f46c4 is in the tagged history",
+      "source commit content f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b matches the pin",
+      "tagged tree content f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b matches the pin"
+    ]
+  },
+  "pullRequest": null,
+  "release": {
+    "id": 410763102,
+    "tagName": "v0.2.0-rc.9",
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.9",
+    "isDraft": false,
+    "isPrerelease": true,
+    "publishedAt": "2026-10-12T15:36:13Z",
+    "assets": [
+      {
+        "id": 634191186,
+        "name": "dsh-evolution-0.2.0-rc.9.tgz",
+        "size": 247774,
+        "digest": "sha256:2942020d7c72f852b1d648c2c0337b8cdd88cd8250201cbdf80ecc6c74c208e3",
+        "updatedAt": "2026-10-12T15:35:10Z",
+        "state": "uploaded"
+      },
+      {
+        "id": 634191187,
+        "name": "manifest.json",
+        "size": 660,
+        "digest": "sha256:960d9b1ce30829c7b2a65fb06089152534d8f5c4ebe1ba701f6e28ed09fa27de",
+        "updatedAt": "2026-10-12T15:35:10Z",
+        "state": "uploaded"
+      },
+      {
+        "id": 634191185,
+        "name": "SHA256SUMS",
+        "size": 95,
+        "digest": "sha256:8335dfb5f959584cce7dfbaf2e46da2be69b541eae70bdf2e2d9a8de23f25325",
+        "updatedAt": "2026-10-12T15:35:10Z",
+        "state": "uploaded"
+      }
+    ]
+  },
+  "noLatestRelease": {
+    "endpoint": "GET /repos/ryukeilee/dsh-evolution/releases/latest",
+    "httpStatus": 404,
+    "note": "rc.9 is a pre-release and is excluded from the \"latest\" marker; the repository still has no stable release. The release was published with gh release edit --draft=false --prerelease --latest=false."
+  },
+  "draftAssets": {
+    "byteAndContentVerification": "passed",
+    "manifestAndChecksumsEqualCommittedFiles": true,
+    "uploadWorkflow": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38271268805",
+    "note": "the release workflow itself re-downloads the uploaded assets and diffs them against release/SHA256SUMS and release/manifest.json; the same three assets were then downloaded again over the API and compared byte for byte with the committed files before the draft was published."
+  },
+  "anonymousDownload": {
+    "transport": "curl -fsSL without authentication (GH_TOKEN and GITHUB_TOKEN unset)",
+    "httpStatus": 200,
+    "byteAndContentVerification": "passed",
+    "checksumVerification": "passed",
+    "command": "shasum -a 256 -c SHA256SUMS",
+    "files": {
+      "dsh-evolution-0.2.0-rc.9.tgz": {
+        "sha256": "2942020d7c72f852b1d648c2c0337b8cdd88cd8250201cbdf80ecc6c74c208e3",
+        "bytes": 247774,
+        "equalsCommittedFile": true
+      },
+      "manifest.json": {
+        "sha256": "960d9b1ce30829c7b2a65fb06089152534d8f5c4ebe1ba701f6e28ed09fa27de",
+        "bytes": 660,
+        "equalsCommittedFile": true
+      },
+      "SHA256SUMS": {
+        "sha256": "8335dfb5f959584cce7dfbaf2e46da2be69b541eae70bdf2e2d9a8de23f25325",
+        "bytes": 95,
+        "equalsCommittedFile": true
+      }
+    }
+  },
+  "localValidation": {
+    "tests": [
+      {
+        "node": "v26.11.1",
+        "platform": "darwin-arm64",
+        "command": "npm test (node --test \"test/**/*.test.mjs\" \"test/**/*.test.js\")",
+        "exitCode": 0,
+        "summary": {
+          "tests": 292,
+          "suites": 0,
+          "pass": 292,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0
+        },
+        "log": "docs/evidence/rc9-node26-tests.txt",
+        "logSha256": "57e4ffeef9618daf5a05370dfe98b27e8264e7e0b0ed9a58e04ffbf0f1ce40af"
+      }
+    ],
+    "packCheck": {
+      "command": "npm run pack:check",
+      "exitCode": 0,
+      "checks": 16,
+      "passed": 16,
+      "failed": 0,
+      "pinnedContentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+      "log": "docs/evidence/rc9-package-check.txt",
+      "logSha256": "43ba9d813c746e14262e765b9c5798445963cc3fb21bad2475b02b97e471ebba"
+    },
+    "releaseVerify": {
+      "command": "npm run release:verify",
+      "exitCode": 0,
+      "sha256": "2942020d7c72f852b1d648c2c0337b8cdd88cd8250201cbdf80ecc6c74c208e3",
+      "contentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+      "entries": 50,
+      "log": "docs/evidence/rc9-release-verify.txt",
+      "logSha256": "43cd987523cedf6d6c93bb0d08714207671ee0fdd96c1ba6806abeeae04080b8"
+    },
+    "provenance": {
+      "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.9 --require-source-commit --json",
+      "exitCode": 0,
+      "sourceCommit": "f20317ce1b09cd6babb358e804d620b5173f46c4",
+      "sourceDigest": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+      "treeDigest": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+      "pinContentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+      "tagCommit": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+      "note": "tag commit, source commit content and tagged tree content all equal the pinned content digest."
+    },
+    "restoreCompatibility": {
+      "command": "node --test test/dockyard-domain/boundary-history.test.js test/domain-storage/domain-storage-write-path-equivalence.test.js",
+      "exitCode": 0,
+      "tests": 9,
+      "passed": 9,
+      "failed": 0,
+      "focus": [
+        "historical snapshot copied to a temp root retains cold history across reload/restore",
+        "the reconstruction is anchored to the pinned pre-change artifact",
+        "a durable aggregate whose cold archive entry cannot be coerced still fails loudly",
+        "the real port commits byte-identical state before and after the change",
+        "a rejected commit installs nothing in either implementation",
+        "the committed value is never aliased to the live partition"
+      ],
+      "assertions": {
+        "restoreAcceptsOlderSnapshots": "lib/dockyard-domain/memory.js#restore() still reads snapshot?.memoryState ?? snapshot?.state ?? snapshot, clones the input and raises the schema to at least 4; a read-only probe over schema 1-4 x raw/memoryState/state accepted all 12 shapes with the input detached.",
+        "committedDocumentNotAliased": "test/domain-storage/domain-storage-write-path-equivalence.test.js asserts JSON.stringify(captured[i].document) === captured[i].json after later writes (\"the committed value is never aliased to the live partition\"), which is the contract the removed structuredClone in stateStore.update had to keep."
+      },
+      "log": "docs/evidence/rc9-restore-compat-tests.txt",
+      "logSha256": "3c2c22c2214806602da930795cc54b5b0007b0b4ee7ae5835ff3c6e5f7957a79"
+    }
+  },
+  "pinHostAcceptance": {
+    "note": "both official hosts ran the documented 21-step acceptance against the committed pinned tarball, into paths outside the package allow-list so the committed evidence was untouched.",
+    "hosts": [
+      {
+        "ok": true,
+        "hostVersion": "0.2.0-rc.2",
+        "packageVersion": "0.2.0-rc.9",
+        "steps": 21,
+        "stepsPassed": 21,
+        "failedSteps": [],
+        "node": "v26.11.1",
+        "platform": "darwin-arm64",
+        "contentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+        "tarballSha256": "2942020d7c72f852b1d648c2c0337b8cdd88cd8250201cbdf80ecc6c74c208e3",
+        "startedAt": "2026-10-12T15:22:19.134Z",
+        "finishedAt": "2026-10-12T15:22:44.083Z",
+        "evidence": "docs/evidence/dsh-0.2.0-rc.2.json",
+        "evidenceSha256": "6cb03f0595f122dc4db27e02001c8ac80a8e2d7b887d732eeb7da9d1a6f26e3c"
+      },
+      {
+        "ok": true,
+        "hostVersion": "0.2.1-alpha.1",
+        "packageVersion": "0.2.0-rc.9",
+        "steps": 21,
+        "stepsPassed": 21,
+        "failedSteps": [],
+        "node": "v26.11.1",
+        "platform": "darwin-arm64",
+        "contentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+        "tarballSha256": "2942020d7c72f852b1d648c2c0337b8cdd88cd8250201cbdf80ecc6c74c208e3",
+        "startedAt": "2026-10-12T15:22:46.428Z",
+        "finishedAt": "2026-10-12T15:23:11.488Z",
+        "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json",
+        "evidenceSha256": "c95e79ce60ed83050fe4f5a7ad37c5c978e7248a8e9924791e0b002d13e6a346"
+      }
+    ]
+  },
+  "postPublishHostAcceptance": {
+    "note": "both official hosts re-ran the full 21-step acceptance against the bytes downloaded anonymously from the published release, in a fresh official runtime and a fresh DSH_HOME.",
+    "hosts": [
+      {
+        "ok": true,
+        "hostVersion": "0.2.0-rc.2",
+        "packageVersion": "0.2.0-rc.9",
+        "steps": 21,
+        "stepsPassed": 21,
+        "failedSteps": [],
+        "node": "v26.11.1",
+        "platform": "darwin-arm64",
+        "contentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+        "tarballSha256": "2942020d7c72f852b1d648c2c0337b8cdd88cd8250201cbdf80ecc6c74c208e3",
+        "startedAt": "2026-10-12T15:37:12.300Z",
+        "finishedAt": "2026-10-12T15:37:40.812Z",
+        "evidence": "docs/evidence/rc9-postpublish-dsh-0.2.0-rc.2.json",
+        "evidenceSha256": "58e6332062bf0d2fc3a4accfd75d91b91a9d7a724ab09d539499d6e86971158b"
+      },
+      {
+        "ok": true,
+        "hostVersion": "0.2.1-alpha.1",
+        "packageVersion": "0.2.0-rc.9",
+        "steps": 21,
+        "stepsPassed": 21,
+        "failedSteps": [],
+        "node": "v26.11.1",
+        "platform": "darwin-arm64",
+        "contentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+        "tarballSha256": "2942020d7c72f852b1d648c2c0337b8cdd88cd8250201cbdf80ecc6c74c208e3",
+        "startedAt": "2026-10-12T15:37:12.300Z",
+        "finishedAt": "2026-10-12T15:37:42.361Z",
+        "evidence": "docs/evidence/rc9-postpublish-dsh-0.2.1-alpha.1.json",
+        "evidenceSha256": "e43e22ec526203df2195ba485d35e60fce35a7c36adef84d3a39cbc16787b6c8"
+      }
+    ]
+  },
+  "linuxCIHosts": [
+    {
+      "host": "0.2.0-rc.2",
+      "ok": true,
+      "hostVersion": "0.2.0-rc.2",
+      "packageVersion": "0.2.0-rc.9",
+      "steps": 21,
+      "stepsPassed": 21,
+      "failedSteps": [],
+      "node": "v22.19.0",
+      "platform": "linux-x64",
+      "contentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+      "tarballSha256": "b6849e1a3ff8b04c9e6cad588e1f309575e99b28b27fbe4c5fdd0b95c0d6f4ec",
+      "startedAt": "2026-10-12T15:32:54.333Z",
+      "finishedAt": "2026-10-12T15:33:34.297Z",
+      "evidence": "docs/evidence/rc9-ci-dsh-0.2.0-rc.2.json",
+      "evidenceSha256": "feff5684bd7703d28e920ef9d2195d52614d6bbfd2211f8121ed90716a90e182"
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "ok": true,
+      "hostVersion": "0.2.1-alpha.1",
+      "packageVersion": "0.2.0-rc.9",
+      "steps": 21,
+      "stepsPassed": 21,
+      "failedSteps": [],
+      "node": "v22.19.0",
+      "platform": "linux-x64",
+      "contentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+      "tarballSha256": "b6849e1a3ff8b04c9e6cad588e1f309575e99b28b27fbe4c5fdd0b95c0d6f4ec",
+      "startedAt": "2026-10-12T15:32:53.595Z",
+      "finishedAt": "2026-10-12T15:33:24.026Z",
+      "evidence": "docs/evidence/rc9-ci-dsh-0.2.1-alpha.1.json",
+      "evidenceSha256": "dcffb634bf876a6738a03e29a020c8aff65c6e6dcc8b770e4da8245f5ed731ec"
+    }
+  ],
+  "ciRebuildContent": {
+    "command": "node scripts/release/verify-artifact.mjs <CI-built linux tarball> --content-only",
+    "exitCode": 0,
+    "contentSha256": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+    "linuxSha256": "b6849e1a3ff8b04c9e6cad588e1f309575e99b28b27fbe4c5fdd0b95c0d6f4ec",
+    "builtWith": {
+      "node": "v22.19.0",
+      "npm": "10.9.3",
+      "platform": "linux-x64"
+    },
+    "note": "the CI runner rebuild has different compressed bytes (npm 10.9.3 on linux-x64) and the pinned content digest, which is the property the pin promises."
+  },
+  "workflows": [
+    {
+      "workflowName": "Release artifacts",
+      "databaseId": 38271268805,
+      "event": "push",
+      "headSha": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+      "conclusion": "success",
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38271268805",
+      "jobs": [
+        {
+          "name": "verify and attach release artifacts",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "workflowName": "Code scanning",
+      "databaseId": 38270937184,
+      "event": "push",
+      "headSha": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+      "conclusion": "success",
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38270937184"
+    },
+    {
+      "workflowName": "CI",
+      "databaseId": 38270937190,
+      "event": "push",
+      "headSha": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+      "conclusion": "success",
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38270937190",
+      "jobs": [
+        {
+          "name": "package (clean, pinned, installable)",
+          "conclusion": "success"
+        },
+        {
+          "name": "unit tests (node 24.x)",
+          "conclusion": "success"
+        },
+        {
+          "name": "unit tests (node 22.19.0)",
+          "conclusion": "success"
+        },
+        {
+          "name": "host acceptance (0.2.0-rc.2)",
+          "conclusion": "success"
+        },
+        {
+          "name": "host acceptance (0.2.1-alpha.1)",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "ciTestCounts": [
+    {
+      "node": "22.19.0",
+      "tests": 292,
+      "pass": 292,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "node": "24.x",
+      "tests": 292,
+      "pass": 292,
+      "fail": 0,
+      "skipped": 0
+    }
+  ],
+  "codeQL": {
+    "analysesOnTagCommit": 1,
+    "resultsOnTagCommit": 0,
+    "openAlertsAfter": 0,
+    "note": "CodeQL analysed the tagged commit with read-only content permissions and reported zero results; the repository has no open code scanning alerts (js/polynomial-redos and js/insecure-randomness are both fixed)."
+  },
+  "historicalReleaseVerification": {
+    "historicalTagsUnchanged": true,
+    "historicalReleaseAssetMetadataUnchanged": true,
+    "historicalAnonymousDownloadChecks": [
+      {
+        "tag": "v0.2.0-rc.6",
+        "anonymousDownload": true,
+        "checksumVerification": "passed",
+        "equalsCommittedFile": true
+      },
+      {
+        "tag": "v0.2.0-rc.7",
+        "anonymousDownload": true,
+        "checksumVerification": "passed",
+        "equalsCommittedFile": true
+      }
+    ],
+    "tags": [
+      {
+        "tag": "v0.2.0-rc.1",
+        "tagObject": "162903f9fc279adb0e88068bb3c42aae637216f1",
+        "tagTarget": "98a64255b94c1cc7bdbfa99f2d425b18759fd173",
+        "remoteTagObject": "162903f9fc279adb0e88068bb3c42aae637216f1",
+        "remoteTagTarget": "98a64255b94c1cc7bdbfa99f2d425b18759fd173",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.2",
+        "tagObject": "73a8de7617e15a8bf122f4a41b788ac40853c951",
+        "tagTarget": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+        "remoteTagObject": "73a8de7617e15a8bf122f4a41b788ac40853c951",
+        "remoteTagTarget": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.3",
+        "tagObject": "60375999e6b8f2c36afca005645ee96f0bcb7e2e",
+        "tagTarget": "0944cc12e7fe7356125a38cd850becbd63bb1650",
+        "remoteTagObject": "60375999e6b8f2c36afca005645ee96f0bcb7e2e",
+        "remoteTagTarget": "0944cc12e7fe7356125a38cd850becbd63bb1650",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.4",
+        "tagObject": "8e1b391c37517ddbc170ccee0e9ca798979b2f5f",
+        "tagTarget": "20a377706906149a987fd099c57cd0a05ef5a87e",
+        "remoteTagObject": "8e1b391c37517ddbc170ccee0e9ca798979b2f5f",
+        "remoteTagTarget": "20a377706906149a987fd099c57cd0a05ef5a87e",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.5",
+        "tagObject": "9f086ee092e951ba05212c25a66358f85b426130",
+        "tagTarget": "8eddabd3e05901b11d425513a0ede0c66cb21742",
+        "remoteTagObject": "9f086ee092e951ba05212c25a66358f85b426130",
+        "remoteTagTarget": "8eddabd3e05901b11d425513a0ede0c66cb21742",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.6",
+        "tagObject": "c466af6d3ee85f64286ec87d5d036ca0ea96d365",
+        "tagTarget": "7eba617b434ba144f469e734313105361db39112",
+        "remoteTagObject": "c466af6d3ee85f64286ec87d5d036ca0ea96d365",
+        "remoteTagTarget": "7eba617b434ba144f469e734313105361db39112",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.7",
+        "tagObject": "b0e06fd5d4d38be2b48b5f66ec0e38cd278bb7eb",
+        "tagTarget": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+        "remoteTagObject": "b0e06fd5d4d38be2b48b5f66ec0e38cd278bb7eb",
+        "remoteTagTarget": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+        "unchanged": true
+      }
+    ],
+    "assetChecks": [
+      {
+        "tag": "v0.2.0-rc.1",
+        "metadataUnchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.2",
+        "metadataUnchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.3",
+        "metadataUnchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.4",
+        "metadataUnchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.5",
+        "metadataUnchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.6",
+        "metadataUnchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.7",
+        "metadataUnchanged": true
+      }
+    ]
+  },
+  "officialDSHSourcePatch": false,
+  "officialDSHIntegration": "official bundle/profile mechanism only: package.json#dsh.bundle.patch points at cordis.patch.yml, which inserts the bundle by id/name. No patches/ directory, no patch-package, no install hooks, and no official DSH source file is modified in the acceptance path.",
+  "publishedArtifactRebuilt": false,
+  "packageUnchangedAfterPublication": true,
+  "auditFilesOutsidePackageAllowList": true,
+  "withdrawnCandidate": {
+    "change": "deleting the observation store created in openDomainStorage() as \"dead code\"",
+    "whyWithdrawn": "the store is not read afterwards, but load() is not inert: snapshot() reads memory.hasColdHistory, which coerces every coldArchives entry. Removing it silently accepted the first commit after a corrupt durable state.",
+    "restoredIn": "f20317c",
+    "pinnedBy": "test/domain-storage/domain-storage-write-path-equivalence.test.js — \"a durable aggregate whose cold archive entry cannot be coerced still fails loudly\" (fails with outcome \"opened\" if the two lines are removed)"
+  },
+  "releasedRemovals": [
+    "installPending(): the second schema.parse of the document being committed (the full validation before installing staged files is unchanged)",
+    "createMemory(): the redundant structuredClone of the aggregate passed to stateStore.update",
+    "EvolutionMemory#save(): the full snapshot() deep copy, avoided by declaring inlineSerialization: true on that store"
+  ],
+  "adversarialReview": {
+    "performed": true,
+    "scope": "independent review by a different model of the rc.9 write-path removals against the rc.8 pin",
+    "confirmed": [
+      "only the three removals are present; lib/ diff rc.8 -> rc.9 touches only lib/domain-storage.js",
+      "the withdrawn observation-store change is absent and the regression test fails if it is reapplied",
+      "committed bytes are byte-identical across the change (differential test anchored to release/dsh-evolution-0.2.0-rc.8.tgz)",
+      "no place where an updater mutates its argument, no caller-visible object aliased into persisted state, and no path that installs staged files before the full validation"
+    ],
+    "findings": [
+      {
+        "severity": "pre-existing, not introduced by rc.8 or rc.9",
+        "detail": "memory.hasColdHistory uses Object.values(coldArchives).some(...), which short-circuits: when a coldArchives entry with count > 0 precedes a non-coercible entry, the corrupt entry is not reached and the durable aggregate is accepted. Identical bytes at v0.2.0-rc.7 (published), rc.8 and rc.9; the getter dates from the initial commit.",
+        "decision": "recorded as a known boundary instead of fixed, because fixing it changes shipped content and would invalidate the pin and the acceptance already performed on these bytes"
+      }
+    ],
+    "coverageGaps": [
+      "no committed regression test pins the legacy Memory restore snapshot formats (schema 1-3, memoryState/state wrappers); they were verified by a read-only probe only",
+      "the byte-differential equivalence workload exercises observe(); signed-event replay and successful pending-install recovery are not byte-diffed between rc.8 and rc.9"
+    ]
+  },
+  "releaseNotes": {
+    "verificationSummaryAppended": true,
+    "assetsUnchangedByNotesEdit": true,
+    "note": "the generated notes were extended with the verification summary, the post-publish section and the known boundary. Asset ids, sizes, digests and updated_at were re-checked after the edit and are unchanged."
+  },
+  "observations": [
+    "v0.2.0-rc.8 was pinned locally but never tagged or published; its tarball is only reachable from git history (release/dsh-evolution-0.2.0-rc.8.tgz) and its lib/ sources are the baseline the rc.9 differential test anchors against.",
+    "release/SHA256SUMS pins only the current version; the rc.1-rc.7 checksum files live in their own releases and were not rewritten.",
+    "the CI host-acceptance job installs a linux rebuild of the same tree, so its recorded tarballSha256 is the linux byte hash while its contentSha256 equals the pin."
+  ],
+  "remainingRisksAndUnverified": [
+    "memory.hasColdHistory short-circuits on the first hit, so a corrupt coldArchives entry after a count > 0 entry is not detected. Present since the initial commit and identical in v0.2.0-rc.7, rc.8 and rc.9; left unfixed to keep the published bytes equal to the accepted bytes.",
+    "the published bytes are the committed bytes under release/, not a CI rebuild (deliberate; npm compression varies by npm version). pack:check, release:verify and test/release-pin.test.mjs all fail on any drift between the two.",
+    "v0.2.0-rc.1 tag/Release bytes still disagree (the tag names 98a6425 / d24f5e52..., the release serves fc41f0e0...). Unchanged by this release; fixing it would require moving the tag or overwriting assets, both out of scope.",
+    "legacy Memory restore snapshot formats (schema 1-3, memoryState/state wrappers) are verified by a probe but not pinned by a committed regression test.",
+    "byte-differential equivalence covers the observe() workload, not signed-event replay or successful pending-install recovery.",
+    "the guard remains a heuristic policy check, not a shell/JavaScript sandbox; promotion executes host code under trusted approval.",
+    "the acceptance does not cover manually disposing the underlying bundle Fiber.",
+    "the domain evaluator stays advisory; continuous/ and governance/ are unit-tested but not wired into the live loop.",
+    "internal/undocumented host interfaces are still used (ctx.events._hooks, ctx.reflect._getImpl() fallback, loader EntryTree.resolve, Entry.fiber/options/disabled).",
+    "event-bridge.key has no rotation or revocation flow; it is created once per data root and survives disable and uninstall.",
+    "no npm publish, no code signing/provenance (SLSA) and no SBOM for this RC.",
+    "the file-backend failure memory is still last-writer-wins and save() does not fsync.",
+    "the 0.2.1-alpha.1 npm dist-tag can move; the acceptance is pinned to that exact version.",
+    "see RELEASE.md section 6 for the full list; the entries above are the ones re-checked or newly observed for rc.9."
+  ],
+  "releaseRecordCommit": null,
+  "postPublishCi": null,
+  "finalState": {
+    "originMainAtAuditTime": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+    "localMainAtAuditTime": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+    "tagObject": "e6d7c2566caf7de5c69f7e39c6132be98d6ff7bb",
+    "tagTargets": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+    "workingTreeClean": false,
+    "packageContentStillPinned": "f8402c640743682d0d485c2d656907166c2bb2e0f6ee86a041cc896b6bf4421b",
+    "note": "the audit files live outside the package allow-list, so this commit cannot change the published bytes or the pin."
+  }
+}

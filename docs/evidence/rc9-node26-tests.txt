@@ -1,0 +1,382 @@
+
+> dsh-evolution@0.2.0-rc.9 test
+> node --test "test/**/*.test.mjs" "test/**/*.test.js"
+
+PASS parseArchiveMdEvidence: parses populated Observations JSON blocks
+PASS parseArchiveMdEvidence: missing sections stay missing (no fabrication)
+
+2 passed, 0 failed
+✔ test/archive-md-parser.test.mjs (156.031875ms)
+✔ the isolation-map symbol is the one the shipped cordis actually uses (2.426375ms)
+✔ serviceImpl is equivalent to the private reflect._getImpl(name, false) (0.836667ms)
+✔ the service inventory needs the public path only, never the private method (1.219625ms)
+✔ an unbound service declaration is never reported as a live owner (0.396375ms)
+✔ fiberIsActive equals FiberState.ACTIVE across every lifecycle transition (54.258125ms)
+✔ no fiber state decision in lib/ is made from a numeric FiberState literal (7.164666ms)
+✔ every recorded surface is classified and its class matches the shipped packages (2.000333ms)
+✔ a host that dropped a replaced private surface still reports it as satisfied (0.760792ms)
+✔ the doctor CLI starts with no host package resolvable (178.554208ms)
+✔ the promoted composition fixture is never written into the checkout (0.180709ms)
+✔ the promoted Include mount resolves and verifies through the documented loader members (22.123875ms)
+✔ a torn composition fails closed instead of masquerading as a committed tree (5.222541ms)
+✔ a promoted module that fails to activate is reported inactive, with its cause (8.034958ms)
+✔ a disabled promoted row is rejected (4.774917ms)
+PASS cross-session: durable promotion evidence survives (sidecar)
+PASS stable-commit: archive merge keeps full evidence
+PASS event-bridge: hydration restores measurement/gates/canary
+PASS event-bridge: no events returns null
+PASS recovery-proof: archive renders full factual payload
+PASS renderExperimentArchive: emits stable archive sections
+
+6 passed, 0 failed
+✔ test/cross-session-hydration.test.mjs (149.422959ms)
+✔ cold history diagnostics match the baseline across valid, damaged and absent files (208.741084ms)
+✔ satisfiesRange: exact, caret, tilde, comparators, and prerelease strictness (10.454709ms)
+✔ healthy package reports ok and exit code 0 (10.20975ms)
+✔ the tool manifest cannot drift from the registered surface (0.397417ms)
+✔ the declared support matrix is exactly the verified host versions (0.191708ms)
+✔ unsupported host version is blocked with supported-range evidence (4.61375ms)
+✔ dependencies on non-public runtime surfaces are degraded, never silently ok (3.049292ms)
+✔ a missing required runtime service is blocked (1.978541ms)
+✔ incomplete tool registration is blocked and names the missing tools (1.904167ms)
+✔ cli mode marks live checks not-evaluated instead of guessing (1.861542ms)
+✔ damaged failure memory is degraded and recoverable, never a silent loss (2.139333ms)
+✔ valid failure memory and quarantined evidence are both reported (4.402125ms)
+✔ a failure memory the runtime quarantines is degraded, matching the runtime predicate (15.116333ms)
+✔ a memory file with a UTF-8 BOM is degraded, matching the runtime (1.81625ms)
+✔ a memory file that is not valid UTF-8 is degraded, matching the runtime (4.611792ms)
+✔ domain aggregate: absent ok, corrupt blocked, unreadable-never-rewritten (7.035ms)
+✔ domain aggregate fixture matches the runtime schema and tampering is blocked (6.910209ms)
+✔ a pending domain transaction without its archive is blocked, with the archive it is recoverable (4.95425ms)
+✔ orphan staging recovery is idempotent and refuses while a writer holds the lock (10.031667ms)
+✔ event bridge: verified ok, bad MAC blocked, conflicting event id blocked, partial tail repairable (21.291917ms)
+✔ event bridge with an unusable key is blocked and the key is never replaced (2.053583ms)
+✔ damaged cold archives are degraded and never rewritten (2.940458ms)
+✔ inspectJsonLines distinguishes a complete record from a partial tail (0.075208ms)
+✔ a verified import is ok, a tampered import is blocked, and a missing target degrades (10.730583ms)
+✔ an interrupted import keeps its only copy; a published one is cleaned idempotently (10.607709ms)
+✔ promotion journal states are classified: none, incomplete, canary, committed, rollback-failed, unknown (16.708542ms)
+✔ interrupted promotion rolls back from the journal and the repair is idempotent (30.761708ms)
+✔ a committed promotion cleans its journal without touching the composition (9.222916ms)
+✔ promotion repair is refused while a live process holds the promotion lock (6.561375ms)
+✔ a journal that escapes its configured roots is blocked and never applied (0.530875ms)
+✔ out-of-boundary composition rows and dangling rows are blocked; orphan directories degrade (5.739917ms)
+✔ migrated legacy pointers are reported as intentionally inactive, not as failures (3.687583ms)
+✔ parseComposedProfile reads bundle sections and entry state (0.252375ms)
+✔ a composed profile missing the bundle entries is blocked (1.503458ms)
+✔ a composed profile without the bundle layer is blocked (1.472375ms)
+✔ a profile that cannot compose is blocked with the CLI stderr tail (1.418542ms)
+✔ a disabled bundle entry is blocked (1.347292ms)
+✔ the cli writes nothing and reports exit codes that match the classification (439.165792ms)
+✔ profile detection picks the profile that lists the bundle and flags unusable installs (5.97775ms)
+✔ a stale domain archive lock is reported and repaired idempotently, never stolen from a live owner (11.113375ms)
+✔ the doctor CLI is reachable through a symlinked path (149.945625ms)
+✔ restart reconciliation preserves mixed JSONL index fields and object-only active deduplication (18.327292ms)
+✔ rotation seals the same raw bytes and resets active keys, including after restart (15.011959ms)
+✔ reconcile and compact parse each active archive line once (71.381542ms)
+ℹ archive-line JSON.parse per active line: reconcile 23 -> 12, compact 4 -> 2
+✔ a whitespace-only line is never active knowledge: filter(Boolean) + a throwing parse equals a trim() skip (8.019125ms)
+✔ the pre-change baseline and the working tree agree byte for byte across every archive shape (118.369958ms)
+✔ the derived baseline matches the pre-change pin, and survives a shared-scan re-pin (3.456333ms)
+ℹ the pin carries shared scans; the guarded reconstruction supplies the baseline
+✔ pure import cannot write, schedule or patch timers/EventEmitter (154.521834ms)
+✔ authority is fail-closed and transaction is explicit (6.527083ms)
+✔ metric projection/evaluation preserves independent gates and anti-gaming (2.002375ms)
+✔ historical snapshot copied to a temp root retains cold history across reload/restore (105.113208ms)
+ℹ {"schema":4,"counts":{"observations":0,"diagnoses":0,"gaps":0,"candidates":0,"proposals":0,"experiments":0,"experimentRecords":0,"journal":0,"selections":0,"promotions":0,"outcomes":0,"cycles":12,"lineage":0,"learnings":0,"strategies":0,"strategyMutations":0,"knowledge":1,"tombstones":0},"coldCollections":1}
+✔ discovery derives degradation and repeated failure, ignoring manual targets (3.515667ms)
+✔ lineage records parents and protects historical best (3.649292ms)
+✔ lineage shared cold memory deduplicates IDs across restart and restores full history (43.048125ms)
+✔ standalone lineage uses explicit transaction; missing authority/storage and write errors reject (1.315541ms)
+Evolution supervisor cycle failed: E_CONTINUOUS_PORT_REQUIRED: Persistence.memory.setAutonomousState
+✔ strategy success/failure conditions, ranking, mutation tree and causal result survive restart (28.473209ms)
+✔ supervisor wait/observe/analyze/experiment decision algorithm preserved (0.442167ms)
+✔ three synthetic domain generations produce lineage/learning/report, not official execution proof (5.671542ms)
+✔ missing execution/evidence/persistence reject; failure is recorded and not learned as success (10.246875ms)
+✔ anti-gaming domains reject isolated metric wins (1.958416ms)
+✔ 50 bounded synthetic trials retain resources/causality and do not claim runtime isolation (5223.182792ms)
+✔ 10 multi-generation domain trials retain parent versions and mutation tree (341.3365ms)
+✔ orphan evidence triggers rollback, restoration is fingerprint-verified (7.153458ms)
+✔ rollback assertion alone cannot certify registry restoration; rollback errors are retained (14.061625ms)
+✔ failure/regression/rollback budgets are finite, including zero regression budget (44.780042ms)
+✔ cooperative deadline settles work before rollback and stops further trials (13.022042ms)
+✔ trial fails closed without inspection/deadline/rollback/persistence; maintenance and disposal propagate errors (0.733708ms)
+✔ supervisor execution and scheduler stay within a cumulative cycle budget (0.951375ms)
+✔ unavailable post-execution inspection triggers rollback, never fabricated healthy evidence (6.233333ms)
+✔ custom stop-condition errors are visible and stop execution (6.449958ms)
+✔ facade construction performs no load and shares existing domain services (0.581583ms)
+✔ continuous import and facade construction do not patch timers/EventEmitter, write files, or start scheduling (151.8995ms)
+✔ all continuous imports remain inside the domain directory, no legacy runtime graph (6.546375ms)
+✔ live observation/cycle/proposal appends keep the archive index fresh (140.092875ms)
+✔ compact followed by live appends keeps index metadata current (170.194167ms)
+✔ restart reconciles an append that completed before its index write (18.375334ms)
+✔ restart rebuilds a sealed entry after a rotation/index crash (36.2405ms)
+✔ legacy index entries infer collections and ignore unknown collections on each load (47.189458ms)
+✔ stale index referencing rotated-away segments and wrong checksums is reconciled on load (1098.878125ms)
+✔ history window preserves full-history ordering/count and detached records (114.821083ms)
+✔ 关键增量记忆合并等价观察并拆分新根因与策略 (16.263208ms)
+✔ 关键增量记忆按 eventId 幂等并累计效果趋势 (0.856042ms)
+✔ compact 将旧重复历史迁移为 knowledge 并保留活动与 lineage (10.596875ms)
+✔ knowledge 冷归档重启后保持计数与代表记录 (48.944416ms)
+✔ 并发语义写入串行聚合且保留有界样本 (19.754833ms)
+✔ recovery 保留关系、修正和可追溯状态 (0.726459ms)
+✔ 带语义的 cycle compact 仍保留每轮身份 (2.2815ms)
+✔ P1: healthy info-level component observations are deduped (no durable growth) (24.644791ms)
+✔ P1: error signals are NOT deduped (minOccurrences evidence preserved) (11.057125ms)
+✔ P1: forceRecord bypasses dedup (9.1625ms)
+✔ P5: stable perf metrics are deduped within one cycle (no write storm) (19.867209ms)
+✔ P5: null->value perf transition bypasses dedup (restart recovery path) (9.36775ms)
+✔ cold-only failure blockers and verified canonical survive semantic GC/restart (142.833708ms)
+✔ retirement still consults every canonical record id (10.708666ms)
+✔ candidates: fitness, string timestamps and stable ties select winners without reordering survivors (13.818916ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ proposals: fitness, string timestamps and stable ties select winners without reordering survivors (4.248125ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ rule 1: recordId OR fingerprint hits suppress retirement; newly pushed ids are immediately reusable (2.895584ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ rule 4: an existing recordId suppresses duplicate tombstones without preserving the losing record (2.092ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ candidates: string and numeric members retain the baseline's primitive deduplication (2.271708ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ proposals: string and numeric members retain the baseline's primitive deduplication (2.840958ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ null tombstone: rule 1 preserves linear short-circuit hits and aborts at the first unmatched record (2.786708ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ null tombstone: rule 4 preserves the losing-record removal performed before the linear scan aborts (1.995083ms)
+ℹ minimal input: tombstones=[null], candidates=[{"id":"loser","fingerprint":"same"},{"id":"winner","fingerprint":"same","fitnessScore":2}]; before ids=["winner"], after ids=["winner"]
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ undefined tombstone: rule 1 preserves linear short-circuit hits and aborts at the first unmatched record (2.362125ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ undefined tombstone: rule 4 preserves the losing-record removal performed before the linear scan aborts (1.186958ms)
+ℹ minimal input: tombstones=[undefined], candidates=[{"id":"loser","fingerprint":"same"},{"id":"winner","fingerprint":"same","fitnessScore":2}]; before ids=["winner"], after ids=["winner"]
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ file store: a null tombstone aborts rule 5 before an archived terminal singleton can be ejected (17.584542ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ in-memory store: rules 5/7 require both an archive boundary and archiveKnown (2.473458ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ file store: rules 5/7 require both an archive boundary and archiveKnown (12.662833ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ deterministic writes, repeated housekeeping and same-state.json restart preserve full JSON and every archive byte (107.174ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+ℹ same absolute state.json reused; fullSnapshot JSON, tombstones, state/index/JSONL/.segments bytes compared without normalization
+✔ the baseline block is anchored to the frozen pre-change artifact (4.251958ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+ℹ guarded reconstruction matches dsh-evolution-0.2.0-rc.7.tgz (housekeeping block 7064 bytes) and its complete file
+✔ randomized differential: 300 generated states reach byte-identical snapshots (5771.317166ms)
+ℹ 300 generated states (half file-backed with rule 5/7 archives) agree on fullSnapshot JSON, tombstones and state/archive bytes
+✔ a null fingerprint still falls through to the derived fingerprint (9.858583ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+ℹ null fingerprint: both records derived their own fingerprint and survived
+✔ falsy tombstone 0 keeps the original truthiness and abort semantics (4.093292ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ falsy tombstone "" keeps the original truthiness and abort semantics (1.682625ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ falsy tombstone false keeps the original truthiness and abort semantics (3.495084ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ a throw while building a duplicate tombstone keeps the removals already done (3.907209ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+ℹ unconvertible problem field: the loser was already removed when the pass aborted
+✔ an abort in a later group keeps the removals of every earlier group (1.034875ms)
+ℹ before/after snapshots and tombstone JSON agree byte for byte
+✔ observation list normalizes a primitive query once without changing the filter result (1.058458ms)
+✔ strategy snapshot reports counts for the lists it returns (0.17325ms)
+✔ capability snapshot counts active lifecycle states in the capabilities it returns (0.13025ms)
+✔ failure memory retains on record and load without changing the public snapshots (16.645208ms)
+✔ domain evaluation evidence maps the matured record into evaluator inputs without synthesizing evidence (1.000625ms)
+✔ the extracted evaluator recommends promote only with goal, test, regression and measured improvement (1.335292ms)
+✔ the extracted evaluator returns rollback when a recognized metric regresses (the promotion veto condition) (0.191834ms)
+✔ the hand-written evolution domain spec satisfies the official storage-domain contract (0.77475ms)
+✔ assertDomainSpec fails loud on a unit name outside UNIT_NAME_RE (0.201958ms)
+✔ assertDomainSpec fails loud on a nullable global (medium null sentinel) (0.187584ms)
+✔ assertDomainSpec fails loud on an invalid table name (0.133875ms)
+✔ a staged tree shares the live inodes instead of copying the archive (6.244792ms)
+✔ a stage manifest round-trips and rejects unusable entries (3.458667ms)
+✔ installing a stage replaces only the changed files and verifies their bytes (31.617792ms)
+✔ a committed transaction leaves untouched archive files byte-identical (4217.96075ms)
+✔ recovery installs a staged archive when the install is interrupted (2663.8685ms)
+✔ a stage without a manifest is replayed as a full copy (91.476708ms)
+✔ a live archive write during a staged transaction fails loudly (26.467541ms)
+✔ the legacy full-copy path still copies a stage without a manifest (5.320375ms)
+✔ append and rotation privatize shared active files before writing (169.166208ms)
+✔ the reconstruction is anchored to the pinned pre-change artifact (5.751833ms)
+✔ a durable aggregate whose cold archive entry cannot be coerced still fails loudly (159.784208ms)
+✔ the real port commits byte-identical state before and after the change (9083.0495ms)
+✔ a rejected commit installs nothing in either implementation (3527.503584ms)
+✔ the committed value is never aliased to the live partition (437.025042ms)
+✔ the stored marker digest always describes the committed marker map (165.178792ms)
+✔ an authenticated prefix is reused and only new records need per-record work (150.340667ms)
+✔ a tampered consumed prefix is still rejected and never advances the checkpoint (125.491666ms)
+✔ a forged or rolled back checkpoint cannot skip verification (141.101542ms)
+✔ a rolled back marker map is refused by the witnesses and re-verified per record (81.934208ms)
+✔ a mid-history marker rollback between runs is repaired by a fresh process (253.928084ms)
+✔ a marker rewound through the official handle while the port is alive is repaired (589.910083ms)
+✔ a listener that rewrites the pending record cannot bypass its validation (231.026709ms)
+✔ a rejected commit does not install the staged archive (3091.517917ms)
+✔ replaced, truncated and torn logs fall back to full per-record verification (214.551541ms)
+✔ a malformed or unknown checkpoint document is treated as absent (13.378292ms)
+✔ a checkpoint the plugin can no longer write does not fail the pass (150.701334ms)
+✔ metadata forgery and a missing middle marker invalidate the entire checkpoint (159.400291ms)
+✔ every replay reads the full prefix and rejects same-size middle tampering with restored timestamps (262.009209ms)
+✔ metadata queries match the previous window path without cloning payloads (1114.549125ms)
+✔ official domain: single-event batch, durable replay, restart, bounded read-only projection (457.166208ms)
+✔ pending archive commit resumes without incrementing canary generation (129.727916ms)
+✔ committed duplicates still authenticate and reject conflicting signed IDs (295.824292ms)
+✔ untrusted envelope rejected, close propagates failure; schema and safe DTO reject raw data (24.319625ms)
+✔ an interrupted or dead-owner archive lock is reclaimed instead of bricking startup (36.4735ms)
+PASS authenticated bridge accepts legitimate evidence and does not disclose key material
+PASS unsigned, tampered, forged promotion and replayed records fail closed
+PASS sequence rollback is isolated without poisoning later valid events
+
+3 passed, 0 failed
+✔ test/event-bridge-authentication.test.mjs (152.858875ms)
+✔ canonical bridge MAC retains legacy key order, escaping and array semantics (2.829625ms)
+✔ canonical bridge MAC remains compatible after bounded key cache saturation (11.3875ms)
+PASS canonical orchestrator 暴露 HMAC 信封签名/校验原语
+PASS 合法信封被接受，并回传事件与序号
+PASS 篡改事件体或序号后校验失败
+PASS 过短密钥被拒绝（签名与校验两侧）
+PASS 结构非法或非正序号的信封直接返回 null 而不抛错
+
+5 passed, 0 failed
+✔ test/event-bridge-envelope.test.mjs (122.947208ms)
+✔ recovery preserves authentication, per-writer ordering, duplicates and complete evidence (9.751834ms)
+✔ chunk boundaries, huge lines, unicode and final partial lines match readFile decoding (335.179208ms)
+✔ file inputs, read errors, invalid options and subsequent rewrites retain behavior (7.270458ms)
+✔ mid-read failures outrank option failures and close the opened file (0.336125ms)
+✔ read and close failures preserve native aggregate ordering and error details (0.278709ms)
+✔ regular-file replay remains bounded by the initial size when events append (0.265208ms)
+✔ FIFO replay uses one reader rendezvous and matches the baseline (247.796666ms)
+PASS mergeEvidenceSources: monotonic downgrade protection
+PASS mergeEvidenceSources: priority order (archive > bridge) wins ties
+PASS mergeEvidenceSources: upgrade path (unknown -> recovered)
+PASS mergeEvidenceSources: no sources returns null
+PASS mergeEvidenceSources: metadata identity passes through in priority order
+✔ test/evidence-persistence.test.mjs (119.990459ms)
+✔ a record that is not an object quarantines the file instead of failing startup (17.67275ms)
+✔ one unusable record quarantines the whole file instead of silently dropping part of it (12.194083ms)
+✔ a record nested past the load bound is quarantined, never a startup overflow (8.309292ms)
+✔ records within the load bound still load (9.076875ms)
+✔ records at the depth bound keep distinct identities (17.542584ms)
+✔ records whose numbers JSON cannot represent are quarantined with their bytes (12.611417ms)
+✔ representable numbers stay usable and written records stay readable (9.397792ms)
+✔ records whose number literals lose precision are quarantined with their bytes (31.412833ms)
+✔ undefined array elements normalize to the value a reload produces (1.55575ms)
+✔ duplicate object keys are quarantined with their bytes (2.352333ms)
+✔ a memory file that is not valid UTF-8 is quarantined, never repaired (2.451ms)
+✔ a __proto__ own property survives compaction and keeps records apart (4.395375ms)
+✔ a UTF-8 BOM is not silently stripped from an accepted file (6.075125ms)
+✔ a non-string explicit signature is normalized instead of breaking retention (10.089083ms)
+✔ records restored without an identity are kept apart instead of merged (2.084875ms)
+✔ identical identity-less records still deduplicate (5.292792ms)
+✔ a derived identity is stable across reloads (7.506709ms)
+✔ a skewed clock cannot trim the record that was just written (9.646125ms)
+✔ exceeding the bound still trims the oldest records on a normal timeline (9.140083ms)
+✔ duplicate records still count up and keep their first-seen context (0.909666ms)
+PASS full cross-session: Session A durable write persists everything
+PASS full cross-session: Session B hydrate + canary + stable commit keeps evidence
+
+2 passed, 0 failed
+✔ test/full-cross-session.integration.test.mjs (142.601916ms)
+✔ repeat import never duplicates or overwrites evolved active memory (58.679459ms)
+✔ changed source conflicts without overwriting destination (60.7725ms)
+✔ pending legacy promotion fails closed and preserves source (10.464084ms)
+✔ legacy startup drift adapter is off by default and never guesses an external path (10.4475ms)
+✔ mode=autonomous subscribes to the official emit event without a next callback (1.919333ms)
+✔ async agent observer rejection is contained and recorded (1.379292ms)
+✔ advisory observation is opt-in, preserving passive default behavior (0.257875ms)
+PASS gate: negative (empty observations, unknown recovery) is REJECTED
+PASS gate: negative even with runtimeRecovered true but no measurement
+PASS gate: negative when runtime recovery missing but evidence ok
+PASS gate: positive (full evidence + recovery) is ELIGIBLE
+PASS gate: requireRuntimeRecovery=false allows evidence-only eligibility
+PASS gate: measuredEvidenceOf requires improving shared numeric metric
+
+6 passed, 0 failed
+✔ test/promotion-gate-regression.test.mjs (127.278042ms)
+✔ recovery and the doctor agree: a legal journal (19.539042ms)
+✔ recovery and the doctor agree: a symlink record, which recovery never accepted (36.840459ms)
+✔ recovery and the doctor agree: a record with a non-string target (27.282834ms)
+✔ recovery and the doctor agree: a target only inside dataRoot but outside the preset (20.431334ms)
+✔ recovery and the doctor agree: a target outside every configured root (25.4005ms)
+✔ recovery and the doctor agree: a record targeting the promotion state directory (27.121792ms)
+✔ recovery and the doctor agree: a file record with an escaping backup name (21.649792ms)
+✔ recovery and the doctor agree: a stateDir outside the configured promotion state directory (25.228417ms)
+✔ recovery and the doctor agree: a missing stateDir (28.288167ms)
+✔ recovery and the doctor agree: a stageDir outside its state directory (30.233417ms)
+✔ recovery and the doctor agree: a non-string stageDir (30.239708ms)
+✔ recovery and the doctor agree: records that are not an array (25.513333ms)
+✔ a journal without the complete configured roots is refused by both, not crashed on (7.602541ms)
+✔ the doctor reports a journal recovery would refuse as blocked, with the same reason (7.851375ms)
+✔ standalone synchronous Host only; harness helpers and async bodies fail closed (1.426709ms)
+✔ journaled composition uses absolute file URL and no profile mount; interrupted canary rollback restores disk (82.654667ms)
+✔ rollback CAS preserves concurrent composition edits and its recovery journal (69.037583ms)
+✔ client half and missing official adapter never write a promotion (18.647708ms)
+✔ the pin names this package version and a pre-release artifact (0.470083ms)
+✔ the committed artifact hashes to the pinned bytes (0.759791ms)
+✔ the committed artifact is the pinned content, not just the pinned bytes (13.222375ms)
+✔ the working tree still builds exactly the pinned content (5.718334ms)
+✔ every shipped file in the tree matches the artifact byte for byte (4.484375ms)
+✔ release/SHA256SUMS records the pinned artifact (0.941708ms)
+✔ the pin lists an acceptance evidence file per supported host (1.683667ms)
+✔ isFullSha accepts only a full lowercase object name (0.646125ms)
+✔ a consistent tag, commit, manifest and tree has no problems (0.452625ms)
+✔ a tag that names another version fails (0.107167ms)
+✔ a tag that points at another commit fails (0.057791ms)
+✔ a tag that does not resolve fails (0.068542ms)
+✔ a source commit outside the tagged history fails (0.060208ms)
+✔ an ancestor with different shipped content cannot be claimed as the source (0.106459ms)
+✔ the source digest reads committed files and detects later shipped changes (572.365416ms)
+✔ a malformed source commit fails (0.143041ms)
+✔ a missing source commit fails when a new release requires one (0.109334ms)
+✔ a missing source commit is tolerated for a legacy pin (0.079292ms)
+✔ a pin that disagrees with package.json fails (0.075542ms)
+✔ a tree that no longer builds the pinned content fails (0.047583ms)
+✔ an untagged verification still checks the pin and the tree (0.044834ms)
+✔ the CLI arguments are parsed strictly (0.326083ms)
+PASS upgrade: archive replay upgrades unknown recovery to recovered
+PASS restart: sidecar hydration after journal deletion keeps evidence
+
+2 passed, 0 failed
+✔ test/restart-recovery.test.mjs (147.087458ms)
+✔ full inspect output matches the original boundary and stays detached (4.219917ms)
+✔ snapshot exceptional values preserve clone then projection semantics (2.796333ms)
+✔ fallback reads accessors once and retains alias isolation (0.149667ms)
+✔ registered inspect projects once and proposal retains the complete detached baseline (2.415583ms)
+✔ registered inspect retains the legacy projection for unusual object prototypes (0.548541ms)
+✔ signature bytes and recovery decisions match the original across sizes and mutations (47.907584ms)
+✔ exotic sort values retain serialization calls, errors, and stable ties (12.006209ms)
+✔ nested event and package sort keys retain complete signatures (21.372875ms)
+✔ sort serialization is linear and keys are rebuilt after live mutations (6.596291ms)
+✔ unbound scope declaration is not reported as an unknown live owner (0.990166ms)
+✔ bound service without a fiber still fails closed (0.178708ms)
+✔ inspect the agent scope rather than the profile scope (0.112958ms)
+✔ shell mutation matching retains irreversible, redirect and trust-root decisions (3.771708ms)
+✔ uncontrolled shell input cannot stall the pre-execution guard (335.33025ms)
+✔ metric fallback identifiers use UUIDs once per record without weak randomness (3.776209ms)
+✔ caller-provided metric identities and projection data remain unchanged (0.898375ms)
+✔ pre-trial host loading does not invalidate cleanup, and the proof uses the actual trial boundary (23.151417ms)
+✔ drift during the trial still fails recovery and retains target ownership (16.104042ms)
+✔ drift while run is pending cannot be absorbed by a second trial call or a later inspect (30.862334ms)
+✔ an unreadable private service inventory cannot prove recovery even when both reads fail (0.337792ms)
+✔ an unreadable public service inventory fails closed while an unbound declaration stays empty (0.166917ms)
+✔ ordinary private service lookup retains its tolerant behavior (0.108084ms)
+✔ failed cleanup receipts cannot pass recovery with an unchanged runtime (31.214666ms)
+✔ every workflow file parses as YAML and has runnable steps (4.923708ms)
+✔ CI runs the unit tests, the package checks and both supported hosts (1.504209ms)
+✔ CI clean install and upload select only the pinned candidate when historical tarballs coexist (878.05025ms)
+✔ the release workflow only publishes a draft of the verified artifact, never to npm (2804.78175ms)
+✔ the release workflow cannot overwrite an existing release asset (0.565291ms)
+✔ the release workflow verifies the tag, the commit, the pin and the checksums (0.376291ms)
+✔ code scanning runs CodeQL against main and pull requests (0.18525ms)
+✔ every action runs on the Node.js 24 runtime (0.699125ms)
+✔ the workflows pin the current supported action majors (0.426166ms)
+✔ no workflow runs on pull_request_target or with write permissions by default (0.492667ms)
+ℹ tests 292
+ℹ suites 0
+ℹ pass 292
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14254.8915
+EXIT=0
