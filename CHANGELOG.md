@@ -6,6 +6,15 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.9 — 默认写入路径的重复工作
+
+- **恢复收尾的第二次文档校验**：`installPending()` 收尾写入的文档由上一步 `schema.parse(domain.global.get())` 的结果（已校验并投影的 `pending.aggregate` / `pending.applied`）与两个固定字面量（`schema: 1`、`pending: null`）组成，再解析一遍不可能拒绝第一个 parse 没有拒绝的文档，只是把整份 aggregate 又走一遍。必须在安装暂存文件之前完成的整份文档校验没有移动，仍由上面那次 parse 承担。
+- **`hydrate()` 的死 store**：局部变量 `observations` 在模块内没有任何读取点；构造 `EvolutionObservationStore` 并 `load()` 的唯一效果是调用已经加载过的 `memory.load()` 并丢弃返回的快照，无可观察副作用。
+- **`stateStore.update` 的冗余深拷贝**：入参先被 `structuredClone` 克隆一遍，而 `aggregateSchema` 的 `toJsonProjection` 本身就产生全新深值；交给这个 store 的 updater 都是纯展开，从不改写参数。
+- **`inlineSerialization`**：该 store 现声明 `inlineSerialization: true`，`EvolutionMemory.#save()` 不再先做一次 `snapshot()` 全量深拷贝。`PORTS.md` 要求的“transaction 在调用时同步捕获全部 payload 字节”由 `update` 内联的同步 JSON 投影满足，等价测试中有“已提交文档不被后续写入原地改写”的断言守护该契约。
+- 四项合起来把一次保存的“浅视图/快照深拷贝 → 入参深拷贝 → JSON 投影深拷贝”减为“浅视图 → JSON 投影深拷贝”，落盘字节不变。可复现 3 对严格交替 A/B（CPU 中位数 35272.196 → 30693.587 ms，**−12.98%**，两侧范围不重叠；墙钟 −9.31%）、等价性依据、收益边界与**已证伪并撤回**的 schema catchall 方案（16,411 个差分输入，441 个“旧拒绝/新接受”）见 `docs/performance/domain-write-path.md`。
+- 本候选已在本地固定（`release/dsh-evolution-0.2.0-rc.9.tgz`）并重跑两个官方宿主的完整验收；未创建 tag 或进行外部发布。`0.2.0-rc.8` 及更早的产物、校验和与固定点保持不变。
+
 ## 0.2.0-rc.8 — journal boundary、archive index 单次解析与 housekeeping 开销
 
 - **Promotion journal 边界**：doctor 与恢复共用 `checkJournalBoundary`；仅接受 `file` / `path` 记录，目标限于 `pluginRoot` / `presetDir` / `archiveDir` 且不得指向 promotion 状态目录，不以 `dataRoot` 扩大范围。`symlink` 等不支持的记录形状现报 `blocked` / `state-unknown`、`recoverable=false`，不再提供恢复必然拒绝的 `promotion-journal-recover`；边界拒绝保留 journal，缺失 `stateDir` 或 `stageDir: 42` 等原先触发 `TypeError` 的非法值返回明确拒绝原因。修正 README / COMPATIBILITY 与 doctor 摘要的描述。
