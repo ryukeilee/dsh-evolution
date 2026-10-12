@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-10-12T20:10:00+08:00",
+  "measuredAt": "2026-10-12T20:30:00+08:00",
   "command": "node scripts/benchmarks/housekeeping-save.mjs --scale all --rows 2000 --warmup 1 --runs 5",
   "environment": {
     "node": "v26.11.1",
@@ -10,28 +10,28 @@
     "logicalCpus": 8,
     "totalMemoryBytes": 17179869184,
     "loadavgBefore": [
-      1.31,
-      1.4,
-      1.61
+      2.12,
+      1.68,
+      1.73
     ],
     "loadavgAfter": [
-      1.9,
-      1.96,
+      1.88,
+      1.85,
       1.81
     ],
-    "note": "机器不是空闲机器：随后台进程波动，load average 全程约 1.3–1.96；测量期间没有并行测试或其它基准。"
+    "note": "机器不是空闲机器：随后台进程波动，load average 全程约 1.68–2.12；测量期间没有并行测试或其它基准。"
   },
   "sources": {
     "baseline": {
-      "source": "/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/dsh-housekeeping-benchmark-PkjA66/baseline-source.mjs",
+      "source": "/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/dsh-housekeeping-benchmark-znPAD7/baseline-source.mjs",
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed"
     },
     "after": {
       "source": "/Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js",
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3"
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3"
     }
   },
-  "pinPredatesIndex": true,
+  "pinPredatesIndex": false,
   "scope": "default-save: each public write including save/housekeeping/knowledge/archive/state I/O, plus public housekeeping before/after; hot-N: one public housekeeping after untimed fresh load; fixture reset, assertions, snapshots and hashes excluded",
   "order": "alternate baseline/after order per iteration; equality checked for every warmup and measured pair",
   "workload": {
@@ -47,7 +47,7 @@
       "equivalent": true,
       "digests": {
         "baseline": {
-          "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
+          "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
           "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
           "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
           "tombstones": 500,
@@ -61,7 +61,7 @@
           "archiveBytes": 2551371
         },
         "after": {
-          "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
+          "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
           "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
           "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
           "tombstones": 500,
@@ -79,75 +79,75 @@
       "baseline": {
         "beforeHousekeepingMs": {
           "samples": 5,
-          "medianMs": 0.0162,
-          "madMs": 0.0018,
-          "minMs": 0.014,
-          "maxMs": 0.028
+          "medianMs": 0.02,
+          "madMs": 0.0035,
+          "minMs": 0.0141,
+          "maxMs": 0.033
         },
         "afterHousekeepingMs": {
           "samples": 5,
-          "medianMs": 0.1518,
-          "madMs": 0.0058,
-          "minMs": 0.146,
-          "maxMs": 0.179
+          "medianMs": 0.1615,
+          "madMs": 0.014,
+          "minMs": 0.1471,
+          "maxMs": 0.1818
         },
         "writeTotalMs": {
           "samples": 5,
-          "medianMs": 61987.8003,
-          "madMs": 117.7331,
-          "minMs": 61777.321,
-          "maxMs": 62105.533
+          "medianMs": 61607.5528,
+          "madMs": 14.9758,
+          "minMs": 61545.9901,
+          "maxMs": 61819.1529
         },
         "writeMeanMs": {
           "samples": 5,
-          "medianMs": 30.9939,
-          "madMs": 0.0589,
-          "minMs": 30.889,
-          "maxMs": 31.053
+          "medianMs": 30.8038,
+          "madMs": 0.0075,
+          "minMs": 30.773,
+          "maxMs": 30.9096
         },
         "pooledWrites": {
           "samples": 10000,
-          "medianMs": 31.596,
-          "madMs": 14.396,
-          "minMs": 0.455,
-          "maxMs": 70.651
+          "medianMs": 31.3289,
+          "madMs": 14.4133,
+          "minMs": 0.5101,
+          "maxMs": 115.6833
         }
       },
       "after": {
         "beforeHousekeepingMs": {
           "samples": 5,
-          "medianMs": 0.014,
-          "madMs": 0.0105,
-          "minMs": 0.003,
-          "maxMs": 0.026
+          "medianMs": 0.0137,
+          "madMs": 0.007,
+          "minMs": 0.0034,
+          "maxMs": 0.0253
         },
         "afterHousekeepingMs": {
           "samples": 5,
-          "medianMs": 0.1351,
-          "madMs": 0.0188,
-          "minMs": 0.115,
-          "maxMs": 0.189
+          "medianMs": 0.1304,
+          "madMs": 0.0084,
+          "minMs": 0.116,
+          "maxMs": 0.1411
         },
         "writeTotalMs": {
           "samples": 5,
-          "medianMs": 61889.2533,
-          "madMs": 48.7254,
-          "minMs": 61840.528,
-          "maxMs": 63005.84
+          "medianMs": 61601.3931,
+          "madMs": 174.3594,
+          "minMs": 61340.6862,
+          "maxMs": 61952.715
         },
         "writeMeanMs": {
           "samples": 5,
-          "medianMs": 30.9446,
-          "madMs": 0.0244,
-          "minMs": 30.92,
-          "maxMs": 31.503
+          "medianMs": 30.8007,
+          "madMs": 0.0872,
+          "minMs": 30.6703,
+          "maxMs": 30.9764
         },
         "pooledWrites": {
           "samples": 10000,
-          "medianMs": 31.4411,
-          "madMs": 14.528,
-          "minMs": 0.47,
-          "maxMs": 204.164
+          "medianMs": 31.2621,
+          "madMs": 14.4256,
+          "minMs": 0.5021,
+          "maxMs": 140.0107
         }
       }
     },
@@ -157,7 +157,7 @@
       "equivalent": true,
       "digests": {
         "baseline": {
-          "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+          "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
           "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
           "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
           "tombstones": 1100,
@@ -169,7 +169,7 @@
           "archiveBytes": 102636
         },
         "after": {
-          "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+          "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
           "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
           "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
           "tombstones": 1100,
@@ -185,19 +185,19 @@
       "baseline": {
         "housekeepingMs": {
           "samples": 5,
-          "medianMs": 23.924,
-          "madMs": 0.1536,
-          "minMs": 23.7,
-          "maxMs": 24.39
+          "medianMs": 24.6678,
+          "madMs": 0.3302,
+          "minMs": 23.7802,
+          "maxMs": 26.2895
         }
       },
       "after": {
         "housekeepingMs": {
           "samples": 5,
-          "medianMs": 16.6043,
-          "madMs": 0.3858,
-          "minMs": 15.826,
-          "maxMs": 17.096
+          "medianMs": 16.9035,
+          "madMs": 0.598,
+          "minMs": 16.0606,
+          "maxMs": 17.5045
         }
       }
     },
@@ -207,7 +207,7 @@
       "equivalent": true,
       "digests": {
         "baseline": {
-          "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+          "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
           "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
           "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
           "tombstones": 5500,
@@ -219,7 +219,7 @@
           "archiveBytes": 517740
         },
         "after": {
-          "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+          "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
           "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
           "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
           "tombstones": 5500,
@@ -235,19 +235,19 @@
       "baseline": {
         "housekeepingMs": {
           "samples": 5,
-          "medianMs": 262.5184,
-          "madMs": 1.1087,
-          "minMs": 259.894,
-          "maxMs": 264.483
+          "medianMs": 263.9822,
+          "madMs": 1.9626,
+          "minMs": 260.7841,
+          "maxMs": 266.9095
         }
       },
       "after": {
         "housekeepingMs": {
           "samples": 5,
-          "medianMs": 79.9131,
-          "madMs": 0.7537,
-          "minMs": 78.556,
-          "maxMs": 81.813
+          "medianMs": 79.7924,
+          "madMs": 0.7086,
+          "minMs": 79.0837,
+          "maxMs": 83.0515
         }
       }
     },
@@ -257,7 +257,7 @@
       "equivalent": true,
       "digests": {
         "baseline": {
-          "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+          "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
           "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
           "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
           "tombstones": 27500,
@@ -269,7 +269,7 @@
           "archiveBytes": 2612244
         },
         "after": {
-          "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+          "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
           "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
           "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
           "tombstones": 27500,
@@ -285,19 +285,19 @@
       "baseline": {
         "housekeepingMs": {
           "samples": 5,
-          "medianMs": 4851.95,
-          "madMs": 74.2352,
-          "minMs": 3290.688,
-          "maxMs": 4978.373
+          "medianMs": 4885.5186,
+          "madMs": 31.563,
+          "minMs": 4666.3293,
+          "maxMs": 4917.0816
         }
       },
       "after": {
         "housekeepingMs": {
           "samples": 5,
-          "medianMs": 397.894,
-          "madMs": 0.5269,
-          "minMs": 395.839,
-          "maxMs": 400.787
+          "medianMs": 399.4117,
+          "madMs": 1.1173,
+          "minMs": 398.1032,
+          "maxMs": 411.9594
         }
       }
     }
@@ -314,132 +314,132 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "beforeHousekeepingMs": 0.1464,
-      "afterHousekeepingMs": 0.1605,
-      "writeTotalMs": 61877.3809,
-      "writeMeanMs": 30.9387,
-      "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
-        "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
-        "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
-        "tombstones": 500,
-        "hotTombstones": 500,
-        "archiveSha256": {
-          "state.json.candidates-archive.jsonl": "1a99fc3f0703d8b9a094b21a171455f6916dd3b36237b624c603eb65411dc728",
-          "state.json.knowledge-archive.jsonl": "5c64334bee2610987476aaf386f10b80f6c362f6b4546ccfabca5e4b1d073779",
-          "state.json.observations-archive.jsonl": "464a353e4b3d798b720acd9258ae94d292894c626f8759393df239a3b70bba82",
-          "state.json.proposals-archive.jsonl": "635726e7dd7a59ca110e2eedd03b5523c70c7f75835e23d856ba98e7689465ae"
-        },
-        "archiveBytes": 2551371
-      }
-    },
-    {
-      "scale": "default-save",
-      "rows": 2000,
-      "implementation": "after",
-      "iteration": 1,
-      "warmup": true,
-      "order": [
-        "baseline",
-        "after"
-      ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "beforeHousekeepingMs": 0.1995,
-      "afterHousekeepingMs": 0.1481,
-      "writeTotalMs": 62205.0276,
-      "writeMeanMs": 31.1025,
-      "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
-        "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
-        "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
-        "tombstones": 500,
-        "hotTombstones": 500,
-        "archiveSha256": {
-          "state.json.candidates-archive.jsonl": "1a99fc3f0703d8b9a094b21a171455f6916dd3b36237b624c603eb65411dc728",
-          "state.json.knowledge-archive.jsonl": "5c64334bee2610987476aaf386f10b80f6c362f6b4546ccfabca5e4b1d073779",
-          "state.json.observations-archive.jsonl": "464a353e4b3d798b720acd9258ae94d292894c626f8759393df239a3b70bba82",
-          "state.json.proposals-archive.jsonl": "635726e7dd7a59ca110e2eedd03b5523c70c7f75835e23d856ba98e7689465ae"
-        },
-        "archiveBytes": 2551371
-      }
-    },
-    {
-      "scale": "default-save",
-      "rows": 2000,
-      "implementation": "after",
-      "iteration": 2,
-      "warmup": false,
-      "order": [
-        "after",
-        "baseline"
-      ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "beforeHousekeepingMs": 0.026,
-      "afterHousekeepingMs": 0.1539,
-      "writeTotalMs": 62061.0227,
-      "writeMeanMs": 31.0305,
-      "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
-        "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
-        "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
-        "tombstones": 500,
-        "hotTombstones": 500,
-        "archiveSha256": {
-          "state.json.candidates-archive.jsonl": "1a99fc3f0703d8b9a094b21a171455f6916dd3b36237b624c603eb65411dc728",
-          "state.json.knowledge-archive.jsonl": "5c64334bee2610987476aaf386f10b80f6c362f6b4546ccfabca5e4b1d073779",
-          "state.json.observations-archive.jsonl": "464a353e4b3d798b720acd9258ae94d292894c626f8759393df239a3b70bba82",
-          "state.json.proposals-archive.jsonl": "635726e7dd7a59ca110e2eedd03b5523c70c7f75835e23d856ba98e7689465ae"
-        },
-        "archiveBytes": 2551371
-      }
-    },
-    {
-      "scale": "default-save",
-      "rows": 2000,
-      "implementation": "baseline",
-      "iteration": 2,
-      "warmup": false,
-      "order": [
-        "after",
-        "baseline"
-      ],
-      "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "beforeHousekeepingMs": 0.0143,
-      "afterHousekeepingMs": 0.1608,
-      "writeTotalMs": 62105.5333,
-      "writeMeanMs": 31.0528,
-      "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
-        "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
-        "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
-        "tombstones": 500,
-        "hotTombstones": 500,
-        "archiveSha256": {
-          "state.json.candidates-archive.jsonl": "1a99fc3f0703d8b9a094b21a171455f6916dd3b36237b624c603eb65411dc728",
-          "state.json.knowledge-archive.jsonl": "5c64334bee2610987476aaf386f10b80f6c362f6b4546ccfabca5e4b1d073779",
-          "state.json.observations-archive.jsonl": "464a353e4b3d798b720acd9258ae94d292894c626f8759393df239a3b70bba82",
-          "state.json.proposals-archive.jsonl": "635726e7dd7a59ca110e2eedd03b5523c70c7f75835e23d856ba98e7689465ae"
-        },
-        "archiveBytes": 2551371
-      }
-    },
-    {
-      "scale": "default-save",
-      "rows": 2000,
-      "implementation": "baseline",
-      "iteration": 3,
-      "warmup": false,
-      "order": [
-        "baseline",
-        "after"
-      ],
-      "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "beforeHousekeepingMs": 0.0249,
+      "beforeHousekeepingMs": 0.1445,
       "afterHousekeepingMs": 0.1793,
-      "writeTotalMs": 62102.2752,
-      "writeMeanMs": 31.0511,
+      "writeTotalMs": 61959.9662,
+      "writeMeanMs": 30.98,
       "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
+        "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
+        "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
+        "tombstones": 500,
+        "hotTombstones": 500,
+        "archiveSha256": {
+          "state.json.candidates-archive.jsonl": "1a99fc3f0703d8b9a094b21a171455f6916dd3b36237b624c603eb65411dc728",
+          "state.json.knowledge-archive.jsonl": "5c64334bee2610987476aaf386f10b80f6c362f6b4546ccfabca5e4b1d073779",
+          "state.json.observations-archive.jsonl": "464a353e4b3d798b720acd9258ae94d292894c626f8759393df239a3b70bba82",
+          "state.json.proposals-archive.jsonl": "635726e7dd7a59ca110e2eedd03b5523c70c7f75835e23d856ba98e7689465ae"
+        },
+        "archiveBytes": 2551371
+      }
+    },
+    {
+      "scale": "default-save",
+      "rows": 2000,
+      "implementation": "after",
+      "iteration": 1,
+      "warmup": true,
+      "order": [
+        "baseline",
+        "after"
+      ],
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "beforeHousekeepingMs": 0.2105,
+      "afterHousekeepingMs": 0.1605,
+      "writeTotalMs": 61768.3994,
+      "writeMeanMs": 30.8842,
+      "digest": {
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
+        "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
+        "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
+        "tombstones": 500,
+        "hotTombstones": 500,
+        "archiveSha256": {
+          "state.json.candidates-archive.jsonl": "1a99fc3f0703d8b9a094b21a171455f6916dd3b36237b624c603eb65411dc728",
+          "state.json.knowledge-archive.jsonl": "5c64334bee2610987476aaf386f10b80f6c362f6b4546ccfabca5e4b1d073779",
+          "state.json.observations-archive.jsonl": "464a353e4b3d798b720acd9258ae94d292894c626f8759393df239a3b70bba82",
+          "state.json.proposals-archive.jsonl": "635726e7dd7a59ca110e2eedd03b5523c70c7f75835e23d856ba98e7689465ae"
+        },
+        "archiveBytes": 2551371
+      }
+    },
+    {
+      "scale": "default-save",
+      "rows": 2000,
+      "implementation": "after",
+      "iteration": 2,
+      "warmup": false,
+      "order": [
+        "after",
+        "baseline"
+      ],
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "beforeHousekeepingMs": 0.0253,
+      "afterHousekeepingMs": 0.1411,
+      "writeTotalMs": 61952.715,
+      "writeMeanMs": 30.9764,
+      "digest": {
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
+        "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
+        "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
+        "tombstones": 500,
+        "hotTombstones": 500,
+        "archiveSha256": {
+          "state.json.candidates-archive.jsonl": "1a99fc3f0703d8b9a094b21a171455f6916dd3b36237b624c603eb65411dc728",
+          "state.json.knowledge-archive.jsonl": "5c64334bee2610987476aaf386f10b80f6c362f6b4546ccfabca5e4b1d073779",
+          "state.json.observations-archive.jsonl": "464a353e4b3d798b720acd9258ae94d292894c626f8759393df239a3b70bba82",
+          "state.json.proposals-archive.jsonl": "635726e7dd7a59ca110e2eedd03b5523c70c7f75835e23d856ba98e7689465ae"
+        },
+        "archiveBytes": 2551371
+      }
+    },
+    {
+      "scale": "default-save",
+      "rows": 2000,
+      "implementation": "baseline",
+      "iteration": 2,
+      "warmup": false,
+      "order": [
+        "after",
+        "baseline"
+      ],
+      "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
+      "beforeHousekeepingMs": 0.02,
+      "afterHousekeepingMs": 0.1615,
+      "writeTotalMs": 61819.1529,
+      "writeMeanMs": 30.9096,
+      "digest": {
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
+        "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
+        "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
+        "tombstones": 500,
+        "hotTombstones": 500,
+        "archiveSha256": {
+          "state.json.candidates-archive.jsonl": "1a99fc3f0703d8b9a094b21a171455f6916dd3b36237b624c603eb65411dc728",
+          "state.json.knowledge-archive.jsonl": "5c64334bee2610987476aaf386f10b80f6c362f6b4546ccfabca5e4b1d073779",
+          "state.json.observations-archive.jsonl": "464a353e4b3d798b720acd9258ae94d292894c626f8759393df239a3b70bba82",
+          "state.json.proposals-archive.jsonl": "635726e7dd7a59ca110e2eedd03b5523c70c7f75835e23d856ba98e7689465ae"
+        },
+        "archiveBytes": 2551371
+      }
+    },
+    {
+      "scale": "default-save",
+      "rows": 2000,
+      "implementation": "baseline",
+      "iteration": 3,
+      "warmup": false,
+      "order": [
+        "baseline",
+        "after"
+      ],
+      "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
+      "beforeHousekeepingMs": 0.023,
+      "afterHousekeepingMs": 0.1556,
+      "writeTotalMs": 61592.577,
+      "writeMeanMs": 30.7963,
+      "digest": {
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
         "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "tombstones": 500,
@@ -463,13 +463,13 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "beforeHousekeepingMs": 0.0188,
-      "afterHousekeepingMs": 0.1151,
-      "writeTotalMs": 61845.2649,
-      "writeMeanMs": 30.9226,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "beforeHousekeepingMs": 0.0143,
+      "afterHousekeepingMs": 0.122,
+      "writeTotalMs": 61775.7525,
+      "writeMeanMs": 30.8879,
       "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
         "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "tombstones": 500,
@@ -493,13 +493,13 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "beforeHousekeepingMs": 0.0028,
-      "afterHousekeepingMs": 0.1887,
-      "writeTotalMs": 61889.2533,
-      "writeMeanMs": 30.9446,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "beforeHousekeepingMs": 0.0034,
+      "afterHousekeepingMs": 0.1304,
+      "writeTotalMs": 61601.3931,
+      "writeMeanMs": 30.8007,
       "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
         "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "tombstones": 500,
@@ -524,12 +524,12 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "beforeHousekeepingMs": 0.0148,
-      "afterHousekeepingMs": 0.15,
-      "writeTotalMs": 61777.3207,
-      "writeMeanMs": 30.8887,
+      "beforeHousekeepingMs": 0.0141,
+      "afterHousekeepingMs": 0.1818,
+      "writeTotalMs": 61613.2543,
+      "writeMeanMs": 30.8066,
       "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
         "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "tombstones": 500,
@@ -554,12 +554,12 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "beforeHousekeepingMs": 0.0282,
-      "afterHousekeepingMs": 0.1518,
-      "writeTotalMs": 61858.668,
-      "writeMeanMs": 30.9293,
+      "beforeHousekeepingMs": 0.033,
+      "afterHousekeepingMs": 0.1755,
+      "writeTotalMs": 61545.9901,
+      "writeMeanMs": 30.773,
       "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
         "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "tombstones": 500,
@@ -583,13 +583,13 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "beforeHousekeepingMs": 0.014,
-      "afterHousekeepingMs": 0.1351,
-      "writeTotalMs": 61840.5279,
-      "writeMeanMs": 30.9203,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "beforeHousekeepingMs": 0.0137,
+      "afterHousekeepingMs": 0.116,
+      "writeTotalMs": 61340.6862,
+      "writeMeanMs": 30.6703,
       "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
         "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "tombstones": 500,
@@ -613,13 +613,13 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "beforeHousekeepingMs": 0.0035,
-      "afterHousekeepingMs": 0.133,
-      "writeTotalMs": 63005.8396,
-      "writeMeanMs": 31.5029,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "beforeHousekeepingMs": 0.0067,
+      "afterHousekeepingMs": 0.1346,
+      "writeTotalMs": 61436.007,
+      "writeMeanMs": 30.718,
       "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
         "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "tombstones": 500,
@@ -644,12 +644,12 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "beforeHousekeepingMs": 0.0162,
-      "afterHousekeepingMs": 0.146,
-      "writeTotalMs": 61987.8003,
-      "writeMeanMs": 30.9939,
+      "beforeHousekeepingMs": 0.0165,
+      "afterHousekeepingMs": 0.1471,
+      "writeTotalMs": 61607.5528,
+      "writeMeanMs": 30.8038,
       "digest": {
-        "snapshotSha256": "b2178581bbd80c04540ef4e1d78fe642a310b52b8a7110aaaf521ee815000d49",
+        "snapshotSha256": "1f68e7ebbdd270ff02840a44f66543ffeaf6f22de2ee5dba20e2dd73f6de100a",
         "tombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "hotTombstonesSha256": "16086a01deb447b52fc27366687a18713ea938e71109fde4b5eb3117fbdc5f40",
         "tombstones": 500,
@@ -674,9 +674,9 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 25.323,
+      "housekeepingMs": 26.0768,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -698,10 +698,10 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 18.3708,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 17.3249,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -723,10 +723,10 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 16.6043,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 16.9035,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -749,9 +749,9 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 24.3899,
+      "housekeepingMs": 24.6678,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -774,9 +774,9 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 23.924,
+      "housekeepingMs": 24.9981,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -798,10 +798,10 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 17.096,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 16.3055,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -823,10 +823,10 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 16.2186,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 16.0606,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -849,9 +849,9 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 23.8537,
+      "housekeepingMs": 23.7802,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -874,9 +874,9 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 23.6998,
+      "housekeepingMs": 26.2895,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -898,10 +898,10 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 16.9219,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 17.5045,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -923,10 +923,10 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 15.8256,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 17.2914,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -949,9 +949,9 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 24.0776,
+      "housekeepingMs": 24.6591,
       "digest": {
-        "snapshotSha256": "f742eff3a3b3751c196a9d1cf29bf8a0965a5321b39c167ea73216e386ac850b",
+        "snapshotSha256": "4bf5e5ed25638b53d6922145442002c47ae912bd6495f1239220e9a3af0abaa2",
         "tombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "hotTombstonesSha256": "364c1dda0fe8d96a9c89e82823a4c833030c5b4ca72246075b70cecf640b7f03",
         "tombstones": 1100,
@@ -974,9 +974,9 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 265.9833,
+      "housekeepingMs": 271.2414,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -998,10 +998,10 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 82.3953,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 87.0478,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1023,10 +1023,10 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 81.813,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 83.0515,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1049,9 +1049,9 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 264.4832,
+      "housekeepingMs": 266.9095,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1074,9 +1074,9 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 263.6271,
+      "housekeepingMs": 264.3599,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1098,10 +1098,10 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 80.6667,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 80.7133,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1123,10 +1123,10 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 79.9131,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 79.0837,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1149,9 +1149,9 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 261.8211,
+      "housekeepingMs": 262.0196,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1174,9 +1174,9 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 259.8945,
+      "housekeepingMs": 260.7841,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1198,10 +1198,10 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 78.5562,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 79.3475,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1223,10 +1223,10 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 79.3014,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 79.7924,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1249,9 +1249,9 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 262.5184,
+      "housekeepingMs": 263.9822,
       "digest": {
-        "snapshotSha256": "d835f7342a7ed822928808f8246e7812a09b06f636e2ffdc148f3df64c51e855",
+        "snapshotSha256": "b511a399cbfa8bbba77f15e7fcc983f845682235405fcde6f0ba7e59936c2600",
         "tombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "hotTombstonesSha256": "d4f07cc4e4814dd2e08021c9b50108c2aec8bc701df086c6c6274836adbda0e0",
         "tombstones": 5500,
@@ -1274,9 +1274,9 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 4830.3009,
+      "housekeepingMs": 4901.8353,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1298,10 +1298,10 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 399.6189,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 402.0114,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1323,10 +1323,10 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 395.8387,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 411.9594,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1349,9 +1349,9 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 4851.95,
+      "housekeepingMs": 4885.5186,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1374,9 +1374,9 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 4978.3727,
+      "housekeepingMs": 4666.3293,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1398,10 +1398,10 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 398.4209,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 398.1032,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1423,10 +1423,10 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 397.894,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 398.3195,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1449,9 +1449,9 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 4848.8093,
+      "housekeepingMs": 4917.0816,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1474,9 +1474,9 @@
         "after"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 4926.1852,
+      "housekeepingMs": 4904.6339,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1498,10 +1498,10 @@
         "baseline",
         "after"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 400.7866,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 399.4117,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1523,10 +1523,10 @@
         "after",
         "baseline"
       ],
-      "sourceSha256": "0d72173074a369d68f2e275168e2d8dac2f76731d3a74948a4a51fcfd9e422a3",
-      "housekeepingMs": 397.7548,
+      "sourceSha256": "ddefe6e12d8b3e2366df642018bda0b719acc10c849ad0391c59616a868adfc3",
+      "housekeepingMs": 400.5291,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1549,9 +1549,9 @@
         "baseline"
       ],
       "sourceSha256": "32adffb36332f42601917e6895edbbd0d55e688b72b9edd9929dbe2d696197ed",
-      "housekeepingMs": 3290.6877,
+      "housekeepingMs": 4851.865,
       "digest": {
-        "snapshotSha256": "c72e9a34ec2cd6dbe925832f36d910a2b7a0391038a4f3c581101c42595a2fb7",
+        "snapshotSha256": "79cce12120c569ff8944d0c1e465471d5af47a881f09fabda2ac0ec3afa6e207",
         "tombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "hotTombstonesSha256": "42f3cae63a1f8d929726ea4ecf11a7cadb188030e0ededdf528f04c1b3283fea",
         "tombstones": 27500,
@@ -1564,37 +1564,84 @@
       }
     }
   ],
+  "derived": {
+    "medianChangePercent": {
+      "default-save": -19.3,
+      "hot-200": -31.5,
+      "hot-1000": -69.8,
+      "hot-5000": -91.8
+    },
+    "medianDifferenceMs": {
+      "default-save": 0.0311,
+      "hot-200": 7.7643,
+      "hot-1000": 184.1898,
+      "hot-5000": 4486.1069
+    },
+    "housekeepingShareOfWriteMeanPercent": {
+      "baseline": 0.52,
+      "after": 0.42
+    }
+  },
   "equivalenceChecks": {
     "records": 24,
     "allEquivalent": true
   },
   "rawWriteSamples": {
     "records": 24000,
-    "note": "逐次公开写入的 writeMs 见同目录原始 JSONL（本次运行输出 24077 行，未入库）。"
+    "retained": false,
+    "note": "default-save 的 24000 条逐次写入 writeMs 未入库（原始 JSONL 约 5 MB），因此 pooledWrites 的 median/MAD 只能引用本字段记录的汇总值，不能被独立重算；每个会话的 writeTotalMs 与逐轮样本已保留在 invocationSamples。"
   },
   "baselineVerification": {
     "command": "node --test test/dockyard-domain/housekeeping-equivalence.test.js",
-    "reconstruction": "test/dockyard-domain/housekeeping-baseline.js 以 6 组精确形状断言从工作区源码逆向重建改动前的 #performHousekeeping，并断言重建结果与 git HEAD 的完整 memory.js 逐字节相同；函数块与固定产物 release/dsh-evolution-0.2.0-rc.7.tgz 中的 housekeeping 块逐字节一致。",
-    "tests": 16,
-    "pass": 16,
+    "tests": 22,
+    "pass": 22,
     "fail": 0,
+    "anchor": "test/dockyard-domain/housekeeping-baseline.js 用 6 组精确形状断言从工作区源码逆向重建改动前的 #performHousekeeping，并把重建结果与固定产物 release/dsh-evolution-0.2.0-rc.7.tgz（该产物早于本次改动）逐字节比较：housekeeping 块 7064 字节相同，且再叠加 archive-index 变更的逆向重建后，整个 memory.js 与产物逐字节相同。锚点缺失会直接失败，不会静默退化为只检查自身形状。",
     "randomizedDifferential": {
       "states": 300,
       "mismatches": 0,
-      "note": "固定 LCG 生成：重复/缺失指纹、分数并列、终态、原始类型成员、null/undefined tombstone；一半用 file store（含规则 5/7 归档），比较 fullSnapshot JSON、tombstones 与 state/archive 字节。"
+      "note": "固定 LCG 生成：重复/缺失/为 null 的指纹、分数与时间并列、终态、原始类型成员、假值 tombstone、无法转换的 problem/fitnessScore；一半用 file store（含规则 5/7 归档），比较 fullSnapshot JSON、tombstones 与 state/archive 字节。"
     },
     "negativeProbes": [
-      "把 --memory 指向 after 源码时脚本以退出码 1 失败（A/B 源码必须不同）。",
+      "把 --memory 指向 after 源码时基准脚本以退出码 1 失败（A/B 源码必须不同）。",
       "注入快照哈希差异、tombstone 顺序差异与归档字节差异时 assertEquivalent 均失败。",
       "对工作区源码注入形状漂移（tombstoneIndexBuilt 行）后 reconstructPreHousekeepingIndex 抛错，而不是静默跳过。"
     ]
   },
   "independentReview": {
-    "measuredAt": "2026-10-12T19:55:00+08:00",
-    "reviewer": "codex gpt-6.1-sol 子代理（独立编写 test/dockyard-domain/housekeeping-equivalence.test.js）",
-    "finding": "首次运行 15 例中 2 例失败：tombstones 含 null/undefined 时，基线在规则 4 里先 splice 掉失败者、再因异常 tombstone 中止；当时实现把删除推迟到 tombstone 检查之后，中止时尚未压缩，最终保留了两条候选。",
-    "minimalInput": "{ tombstones: [null], candidates: [{ id: \"loser\", fingerprint: \"same\" }, { id: \"winner\", fingerprint: \"same\", fitnessScore: 2 }] }",
-    "resolution": "规则 4 在 tombstone 索引不可用时改用原始逐条 indexOf/splice + 线性扫描循环，保留中止前的部分删除语义；异常输入断言随之改为与基线逐字节相等而不是“都不抛错”。",
-    "verification": "修复后同一用例连跑两次 housekeeping 与基线一致；本机另外做了 4000 次随机差分（同样输入形状，含 NaN 之外的原始类型、null tombstone），fullSnapshot 摘要 0 处不一致。"
+    "round1": {
+      "measuredAt": "2026-10-12T19:55:00+08:00",
+      "reviewer": "codex gpt-6.1-sol 子代理（独立编写 test/dockyard-domain/housekeeping-equivalence.test.js）",
+      "finding": "首次运行 15 例中 2 例失败：tombstones 含 null/undefined 时，基线在规则 4 里先 splice 掉失败者、再因异常 tombstone 中止；当时实现把删除推迟到 tombstone 检查之后，中止时尚未压缩，最终保留了两条候选。",
+      "minimalInput": "{ tombstones: [null], candidates: [{ id: \"loser\", fingerprint: \"same\" }, { id: \"winner\", fingerprint: \"same\", fitnessScore: 2 }] }",
+      "resolution": "规则 4 在 tombstone 索引不可用时改用原始逐条 indexOf/splice + 线性扫描循环，保留中止前的部分删除语义。"
+    },
+    "round2": {
+      "measuredAt": "2026-10-12T20:35:00+08:00",
+      "reviewer": "codex gpt-6.1-sol 子代理（只读对抗式复核，357 组独立构造输入）",
+      "verdict": "指出实现当时并不等价；三个 JSON 可表示的反例，以及性能文档的多处表述问题。",
+      "findings": [
+        {
+          "id": "null-fingerprint",
+          "minimalInput": "{ candidates: [{ id: \"a\", fingerprint: null, problem: \"a\" }, { id: \"b\", fingerprint: null, problem: \"b\" }] }",
+          "symptom": "指纹派生被 null 短路，两条不同记录被当成同一指纹后删掉一条。",
+          "fix": "只有非 nullish 的显式指纹才允许短路（explicit !== undefined && explicit !== null）。"
+        },
+        {
+          "id": "falsy-tombstone",
+          "minimalInput": "{ tombstones: [0], promotions: [{ status: \"obsolete\" }] }",
+          "symptom": "原实现取 find() 返回的元素并判断其真假；索引只返回存在性，于是假值元素命中时少建一条 tombstone（0 / 空字符串 / false 均触发）。",
+          "fix": "tombstone 列表出现任何假值元素时退回首部线性扫描，保留真假与中止语义。"
+        },
+        {
+          "id": "abort-partial-removal",
+          "minimalInput": "{ candidates: [{ id: \"a\", fingerprint: \"x\", problem: { toString: 0, valueOf: 0 } }, { id: \"b\", fingerprint: \"x\", fitnessScore: 1 }] }",
+          "symptom": "原实现在构造 tombstone 前已 splice 掉失败者，构造抛错时中止仍保留该删除；延迟压缩把删除一起丢了。",
+          "fix": "规则 4 用 try/catch 包住索引路径，出错时先回放已决定的删除再抛出。"
+        }
+      ],
+      "regressionTests": "test/dockyard-domain/housekeeping-equivalence.test.js 新增 null 指纹、0 / 空字符串 / false tombstone、构造抛错、后续分组中止四类用例；随机差分生成器加入 null 指纹、假值 tombstone 与无法转换的字段。",
+      "docCorrections": "初稿把 default-save 的 after 写入逐轮数字写错（已改为 JSON 原值）；把默认配置下的 11% 表述为稳定收益（有噪声重叠）过度；未标注 pooledWrites 原始样本未入库、无法独立重算；把基线描述为等于 git HEAD 已过时。以上均按复核意见修正。"
+    }
   }
 }

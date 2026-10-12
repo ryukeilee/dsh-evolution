@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
 import { JsonStateStore } from "./support.js";
 import { housekeepingBaseline, housekeepingBlock, reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
+import { reconstructPreSharedScan } from "./archive-index-baseline.js";
 
 const NOW = "2026-10-12T00:00:00.000Z";
 const FIRST = "2026-10-10T00:00:00.000Z";
@@ -346,24 +347,27 @@ test("deterministic writes, repeated housekeeping and same-state.json restart pr
   t.diagnostic("same absolute state.json reused; fullSnapshot JSON, tombstones, state/index/JSONL/.segments bytes compared without normalization");
 });
 
-test("the baseline block is self-consistent and guarded reconstruction rejects injected shape drift", async (t) => {
+test("the baseline block is anchored to the frozen pre-change artifact", async (t) => {
   const working = await readFile(WORKING_MEMORY, "utf8");
-  assert.equal(baseline.source, baseline.reconstructed);
-  assert.equal(reconstructPreHousekeepingIndex(working), baseline.source);
-  assert.equal(housekeepingBlock(baseline.source), housekeepingBlock(baseline.reconstructed));
-  assert.notEqual(housekeepingBlock(working), housekeepingBlock(baseline.source));
+  assert.equal(baseline.pinPredatesIndex, true, "the anchor artifact must predate this change");
+  assert.equal(baseline.anchor.artifact, "dsh-evolution-0.2.0-rc.7.tgz");
+  assert.ok(baseline.anchor.blockBytes > 0);
+  // The block equality against the artifact is asserted while loading the
+  // baseline; this pins the whole file it came from, so neither reversing this
+  // change nor the earlier shared-scan one can drift unnoticed.
+  assert.equal(reconstructPreSharedScan(baseline.source), baseline.anchor.pinnedSource,
+    "reversing this change and the earlier shared-scan refactor must reproduce the artifact byte for byte");
   const needle = "      let tombstoneIndexBuilt = false;";
   assert.equal(working.split(needle).length - 1, 1, "drift injection must change exactly one real source shape");
   assert.throws(() => reconstructPreHousekeepingIndex(working.replace(needle, `${needle} /* drift */`)),
     /housekeeping post-change shape must occur exactly once before reconstruction/);
+  assert.notEqual(housekeepingBlock(working), housekeepingBlock(baseline.source), "the working tree must carry the indexed housekeeping");
   equivalent(t, await pair(t, async (Memory, home) => {
     const { memory } = await seeded(Memory, home, { proposals: [row("base-low", "base"), row("base-best", "base", { fitnessScore: 2 })] });
     memory.housekeeping();
     return capture(memory);
   }));
-  t.diagnostic(baseline.pinPredatesIndex
-    ? "guarded reconstruction matches the pre-change release pin's housekeeping block"
-    : "release pin contains indexing; guarded reconstruction supplies the complete pre-change implementation");
+  t.diagnostic(`guarded reconstruction matches ${baseline.anchor.artifact} (housekeeping block ${baseline.anchor.blockBytes} bytes) and its complete file`);
 });
 
 /**
@@ -387,10 +391,13 @@ test("randomized differential: 300 generated states reach byte-identical snapsho
     if (next() < 0.5) entry.candidateFingerprint = fingerprint();
     if (next() < 0.4) entry.problemFingerprint = fingerprint();
     if (next() < 0.5) entry.fitnessScore = Math.floor(next() * 4);
+    if (next() < 0.03) entry.fitnessScore = { toString: 0, valueOf: 0 };
+    if (next() < 0.08) entry.fingerprint = null;
     if (next() < 0.5) entry.lastSeen = next() < 0.5 ? FIRST : LAST;
     if (next() < 0.3) entry.recordedAt = next() < 0.5 ? FIRST : LAST;
     entry.status = pick(["candidate", "OBSOLETE", "REVERTED", "PROMOTED", "FAILED", "NEEDS_EVIDENCE", "rejected", "superseded"]);
     entry.problem = `problem-${Math.floor(next() * 4)}`;
+    if (next() < 0.03) entry.problem = { toString: 0, valueOf: 0 };
     entry.change = { component: `c-${Math.floor(next() * 3)}` };
     return entry;
   };
@@ -409,7 +416,7 @@ test("randomized differential: 300 generated states reach byte-identical snapsho
     }
     const tombstones = Math.floor(next() * 8);
     for (let i = 0; i < tombstones; i += 1) {
-      if (next() < 0.1) { generated.tombstones.push(pick([null, undefined, "text", 7])); continue; }
+      if (next() < 0.12) { generated.tombstones.push(pick([null, undefined, "text", 7, 0, "", false])); continue; }
       generated.tombstones.push({ id: `tombstone-${i}`, recordId: next() < 0.7 ? `id-candidates-${Math.floor(next() * 10)}` : null,
         fingerprint: fingerprint(), candidateFingerprint: fingerprint(), state: "TOMBSTONE" });
     }
@@ -440,4 +447,77 @@ test("randomized differential: 300 generated states reach byte-identical snapsho
   await rm(home, { recursive: true, force: true });
   assert.equal(mismatches, 0, "every generated state must produce the same snapshot, tombstones and archive bytes as the baseline");
   t.diagnostic("300 generated states (half file-backed with rule 5/7 archives) agree on fullSnapshot JSON, tombstones and state/archive bytes");
+});
+
+// The cases below were found by adversarial review of the indexed
+// implementation and are kept as regressions: each one produced a different
+// snapshot before the corresponding fix.
+
+const hostile = () => ({ toString: 0, valueOf: 0 });
+
+test("a null fingerprint still falls through to the derived fingerprint", async (t) => {
+  const entries = [{ id: "a", fingerprint: null, problem: "a" }, { id: "b", fingerprint: null, problem: "b" }];
+  const result = equivalent(t, await pair(t, async (Memory, home) => {
+    const { memory } = await seeded(Memory, home, { candidates: entries });
+    memory.housekeeping();
+    return capture(memory);
+  }));
+  // Non-vacuous: had null short-circuited the `?? fingerprint ?? derived`
+  // chain, both records would share the null fingerprint and one would be lost.
+  assert.deepEqual(ids(result.snapshot.candidates), ["a", "b"]);
+  assert.deepEqual(result.snapshot.tombstones, []);
+  t.diagnostic("null fingerprint: both records derived their own fingerprint and survived");
+});
+
+for (const falsy of [0, "", false]) {
+  test(`falsy tombstone ${JSON.stringify(falsy)} keeps the original truthiness and abort semantics`, async (t) => {
+    const state = {
+      tombstones: [falsy],
+      promotions: [{ status: "obsolete", fingerprint: "promotion-fp" }],
+      candidates: [row("loser", "same"), row("winner", "same", { fitnessScore: 2 })],
+    };
+    const result = equivalent(t, await pair(t, async (Memory, home) => {
+      const { memory } = await seeded(Memory, home, state);
+      memory.housekeeping();
+      return capture(memory);
+    }));
+    // `find` returned the matched element `falsy` and the caller tested its
+    // truthiness, so the promotion is retired even though a match existed and
+    // the duplicate loser is removed as usual.
+    assert.deepEqual(result.snapshot.promotions, []);
+    assert.deepEqual(ids(result.snapshot.candidates), ["winner"]);
+    assert.equal(result.snapshot.tombstones.length, 3, "the falsy element is kept and both retirements are tombstoned");
+    assert.equal(result.snapshot.tombstones[0], falsy);
+  });
+}
+
+test("a throw while building a duplicate tombstone keeps the removals already done", async (t) => {
+  const candidates = [{ id: "a", fingerprint: "x", problem: hostile() }, { id: "b", fingerprint: "x", fitnessScore: 1 }];
+  const result = equivalent(t, await pair(t, async (Memory, home) => {
+    const { memory } = await seeded(Memory, home, { candidates });
+    memory.housekeeping();
+    return capture(memory);
+  }));
+  // Non-vacuous: the original spliced the loser out before tombstoneFor threw.
+  assert.deepEqual(ids(result.snapshot.candidates), ["b"]);
+  assert.deepEqual(result.snapshot.tombstones, []);
+  t.diagnostic("unconvertible problem field: the loser was already removed when the pass aborted");
+});
+
+test("an abort in a later group keeps the removals of every earlier group", async (t) => {
+  const candidates = [
+    row("first-loser", "first"), row("first-winner", "first", { fitnessScore: 2 }),
+    { id: "second-loser", fingerprint: "second", fitnessScore: hostile() },
+    { id: "second-winner", fingerprint: "second", fitnessScore: 1 },
+  ];
+  const result = equivalent(t, await pair(t, async (Memory, home) => {
+    const { memory } = await seeded(Memory, home, { candidates });
+    memory.housekeeping();
+    return capture(memory);
+  }));
+  // The throw happens while scoring the second group, before its loser could be
+  // removed, but after the first group was fully retired.
+  assert.deepEqual(ids(result.snapshot.candidates), ["first-winner", "second-loser", "second-winner"]);
+  assert.equal(result.snapshot.tombstones.length, 1, "the first group was tombstoned before the second group aborted");
+  assert.equal(result.snapshot.tombstones[0].recordId, "first-loser");
 });

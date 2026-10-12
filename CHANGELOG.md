@@ -12,7 +12,7 @@ you install before upgrading DSH.
 
 - **Archive index 单次解析**：reconcile 与 compact 重建共享一次 JSONL 分行/解析，保留索引字段、活动键、轮转字节与损坏行处理。等价测试使用固定产物中的完整旧实现，并以带形状断言的逆向重建证明字节一致；重新固定包含新实现的产物后仍保留基线，移除重复 vendored 源码。可复现性能数据与收益边界见 `docs/performance/archive-index-single-parse.md`。
 
-- **Housekeeping 开销**：`#performHousekeeping()` 在每次保存时执行，此前为每条被退休记录线性扫描 tombstones，去重对每个被删条目各做一次 `indexOf`/`splice`，并在规则 4 与规则 5 中重复派生同一条目的指纹。现在每次 pass 只建一次 tombstone 索引（记录 id / fingerprint / candidate fingerprint，退休时增量维护），缺指纹的记录在同一次 pass 内只派生一次，去重改为一次性原地压缩；tombstones 中出现非对象记录时保留原有的线性扫描与中止语义，去重胜出者、顺序、tombstone 内容与重启恢复语义不变。多规模可复现 A/B、收益边界与未观察到收益的负载见 `docs/performance/housekeeping-save.md`。
+- **Housekeeping 开销**：`#performHousekeeping()` 在每次保存时执行，此前为每条被退休记录线性扫描 tombstones，去重对每个被删条目各做一次 `indexOf`/`splice`，并在规则 4 与规则 5 中重复派生同一条目的指纹。现在每次 pass 只建一次 tombstone 索引（记录 id / fingerprint / candidate fingerprint，退休时增量维护），缺指纹的记录在同一次 pass 内只派生一次，去重改为一次性原地压缩。所有偏离常规形状的输入仍逐字节保留原语义：tombstones 出现假值或非对象元素时退回原来的线性扫描与真假判断，`fingerprint: null` 仍按 `candidateFingerprint ?? fingerprint ?? 派生` 继续派生，构造 tombstone 或转换字段抛错时保留中止前已完成的删除。两轮独立对抗式复核各自找到真实分歧（延迟删除、`null` 指纹短路、假值 tombstone、抛错时的部分删除），修复后都已固化为回归用例。多规模可复现 A/B、收益边界与默认配置未观察到收益的结论见 `docs/performance/housekeeping-save.md`。
 
 - 本候选已在本地固定（`release/dsh-evolution-0.2.0-rc.8.tgz`）并重跑两个官方宿主的完整验收；未创建 tag 或进行外部发布。`0.2.0-rc.7` 的产物、校验和与固定点保持不变。
 
