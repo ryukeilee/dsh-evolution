@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { readReleaseManifest, readTarEntries, releaseArtifactPath } from "../../scripts/release/release-lib.mjs";
+import { reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
 
 // Revert only the shared-scan refactor; everything else runs the full current
 // implementation. Exact, single-occurrence guards fail on any shape drift.
@@ -36,8 +37,12 @@ export async function archiveIndexBaseline() {
 // A shared-scan pin no longer contains historical source; guarded reversal
 // remains authoritative then. Keep this branch directly testable without
 // modifying a release artifact.
+//
+// Reversing this change alone is not enough once another change follows it in
+// the working tree: the pin predates every change after it, so the byte
+// identity check reverses them all (in any order — the regions are disjoint).
 export function baselineFromSources(working, pinned) {
-  const reconstructed = reconstructPreSharedScan(working);
+  const reconstructed = reconstructPreHousekeepingIndex(reconstructPreSharedScan(working));
   const pinPredatesScan = !pinned.includes("#scanArchiveRaw");
   if (pinPredatesScan) {
     assert.equal(reconstructed, pinned,
