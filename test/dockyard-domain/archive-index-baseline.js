@@ -3,9 +3,21 @@ import { readFile } from "node:fs/promises";
 import { readReleaseManifest, readTarEntries, releaseArtifactPath } from "../../scripts/release/release-lib.mjs";
 import { reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
 
-// Revert only the shared-scan refactor; everything else runs the full current
-// implementation. Exact, single-occurrence guards fail on any shape drift.
+// Revert the shared-scan refactor plus every other change that landed after the
+// rc.7 anchor, so the composed reconstruction still reaches the pinned source.
+// Each pair is [post-change text, pre-change text]; exact, single-occurrence
+// guards fail on any shape drift. The regions are disjoint, so the order does
+// not matter.
 const reversals = [
+  ["      rootCause: event.failure?.rootCauseHypothesis ?? event.failure?.error ?? null,\n" +
+   "      // Negative evidence must name the capability it applies to. Without it\n" +
+   "      // the canonical failure row carries only a signature and a root cause, so\n" +
+   "      // a later proposal for the same target could not recall that this exact\n" +
+   "      // approach already failed.\n" +
+   "      scope: event.target ?? event.capability ?? null,\n" +
+   "      failure: safeRecord(event.failure ?? {}),\n",
+   "      rootCause: event.failure?.rootCauseHypothesis ?? event.failure?.error ?? null,\n" +
+   "      failure: safeRecord(event.failure ?? {}),\n"],
   ["    };\n  }\n\n  #scanArchiveRaw(raw) {\n    const lines = raw.split(\"\\n\").filter(Boolean);\n    const records = [];\n    for (const line of lines) {\n      try { records.push(JSON.parse(line)); } catch { /* a torn line is not logical knowledge */ }\n    }\n    return { lines, records };\n  }\n\n  #indexEntryFromRaw(collection, file, raw, { sealed = file !== this.#archivePath(collection), updatedAt = timestamp(this.clock) } = {}, scanned = this.#scanArchiveRaw(raw)) {\n    const { lines, records } = scanned;\n    const first = records[0];\n    const last = records.at(-1);\n    const fileName = file.split(\"/\").at(-1);\n",
    "    };\n  }\n\n  #indexEntryFromRaw(collection, file, raw, { sealed = file !== this.#archivePath(collection), updatedAt = timestamp(this.clock) } = {}) {\n    const lines = raw.split(\"\\n\").filter(Boolean);\n    const records = [];\n    for (const line of lines) {\n      try { records.push(JSON.parse(line)); } catch { /* a torn line is not logical knowledge */ }\n    }\n    const first = records[0];\n    const last = records.at(-1);\n    const fileName = file.split(\"/\").at(-1);\n"],
   ["    };\n  }\n\n  #activeKeysFromRaw(collection, raw, scanned = this.#scanArchiveRaw(raw)) {\n    const keys = new Set();\n    for (const entry of scanned.records) {\n      if (entry && typeof entry === \"object\") keys.add(this.#archiveKey(entry));\n    }\n    this.archiveActiveKeys.set(collection, keys);\n    return keys;\n",

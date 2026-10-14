@@ -4,11 +4,11 @@
 
 本仓库是 `dsh-evolution` 的**唯一开发、测试与发布来源**；旧的 DSH 环境只作为历史迁移源和回滚基线，不再维护插件源码。
 
-- 包版本：`0.2.0-rc.9`（本地候选，未发布）
+- 包版本：`0.2.0-rc.10`（本地候选，未发布）
 - 支持的 DSH 版本范围：**`0.2.0-rc.2` / `0.2.1-alpha.1`**（精确列表）。`package.json` 的 `peerDependencies` 逐一列出经过真实安装验收的宿主版本，不通过 exemption 伪装其它版本兼容；列表之外的宿主由 `host.version` 报 `blocked`。
 - Node：`^22.19.0 || >=24.0.0`（在当前验证环境为 `v26.11.1`，pnpm `11.26.0`）。
 
-> 状态：官方 `0.2.0-rc.2` 与 `0.2.1-alpha.1` 上的完整验收均已完成并通过（干净 runtime 安装 / 官方 CLI 插件安装 / 启动 / 9 个工具注册 / 核心流程 inspect→propose→trial→measure→revert 且 disposer 恢复基线 / CLI 与最终 doctor / promotion 到 canary 并跨重启存活 / startup canary 提交 / canary regression 回滚 / 禁用启用 / 卸载重装 / 数据保留 / 不可兼容宿主阻断）。验收由本仓库的脚本执行，证据已入库：`docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json`；复现方式、产物与**尚未消除的发布风险**见 `RELEASE.md`。本仓库的验证入口是 `npm test`，用户侧的可复现验证入口是 `scripts/doctor.mjs`（见第 5 节）。最后公开版本 `v0.2.0-rc.6` 的发布状态、CI 与发布后验收以 GitHub Release 及 `docs/evidence/rc6-release-audit.json` 为准；当前 `0.2.0-rc.9` 仅在本地构建与验收，未创建 tag 或公开发布。
+> 状态：官方 `0.2.0-rc.2` 与 `0.2.1-alpha.1` 上的完整验收均已完成并通过（干净 runtime 安装 / 官方 CLI 插件安装 / 启动 / 9 个工具注册 / 核心流程 inspect→propose→trial→measure→revert 且 disposer 恢复基线 / CLI 与最终 doctor / promotion 到 canary 并跨重启存活 / startup canary 提交 / canary regression 回滚 / 禁用启用 / 卸载重装 / 数据保留 / 不可兼容宿主阻断）。验收由本仓库的脚本执行，证据已入库：`docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json`；复现方式、产物与**尚未消除的发布风险**见 `RELEASE.md`。本仓库的验证入口是 `npm test`，用户侧的可复现验证入口是 `scripts/doctor.mjs`（见第 5 节）。最后公开版本 `v0.2.0-rc.6` 的发布状态、CI 与发布后验收以 GitHub Release 及 `docs/evidence/rc6-release-audit.json` 为准；当前 `0.2.0-rc.10` 仅在本地构建与验收，未创建 tag 或公开发布。
 
 ## 1. 安装 DSH 与插件
 
@@ -19,7 +19,7 @@ npx @deepseek-ai/dsh web            # 官方推荐
 # 或源码：pnpm install && pnpm run build
 ```
 
-本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定的本地候选版本是 `0.2.0-rc.9`，尚未公开发布；它在 `0.2.0-rc.8` 的基础上删除默认写入路径中每次事务重复执行的三项工作（恢复收尾的第二次文档校验、`stateStore.update` 的冗余深拷贝，以及 `inlineSerialization` 缺失导致的全量快照），落盘字节不变。发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新匿名下载并执行双宿主验收。最后公开 `v0.2.0-rc.6` 的审计保留在 `docs/evidence/rc6-release-audit.json`；卸载/重装后 memory 哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`。
+本插件的发布产物与其校验信息发布在 GitHub Release 上，并随仓库固定在 `release/`（见 `RELEASE.md`）。本仓库固定的本地候选版本是 `0.2.0-rc.10`，尚未公开发布；它在 `0.2.0-rc.9` 的基础上新增按需经验检索（见 6.1），不改变既有写入路径、promotion 边界与数据格式。发布前验证 tag、sourceCommit 的实际包内容、固定产物与校验和，发布后重新匿名下载并执行双宿主验收。最后公开 `v0.2.0-rc.6` 的审计保留在 `docs/evidence/rc6-release-audit.json`；卸载/重装后 memory 哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`。
 
 ### 1.1 从公开 Release 安装（用户）
 
@@ -48,7 +48,7 @@ DSH_HOME=/isolated/home dsh web --no-open
 
 ### 1.2 从源码构建（贡献者）
 
-本地候选可用 `release/dsh-evolution-0.2.0-rc.9.tgz` 安装，校验信息见仓库的 `release/SHA256SUMS`；它与历史公开版本的下载校验信息不同。
+本地候选可用 `release/dsh-evolution-0.2.0-rc.10.tgz` 安装，校验信息见仓库的 `release/SHA256SUMS`；它与历史公开版本的下载校验信息不同。
 
 ```sh
 npm ci
@@ -56,7 +56,7 @@ npm run release:pack     # 生成 dist/；本机构建的压缩字节受 npm 版
 npm run pack:check       # 校验内容白名单、权限、发布固定点（pin）
 ```
 
-本机构建的字节**不保证**与发布产物相同（`npm pack` 的 gzip 输出随 npm 版本变化）；保证一致的是内容：用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.9.tgz --content-only` 核对内容摘要。
+本机构建的字节**不保证**与发布产物相同（`npm pack` 的 gzip 输出随 npm 版本变化）；保证一致的是内容：用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.10.tgz --content-only` 核对内容摘要。
 
 安装后官方 profile 的 `package.json` 会把 `dsh-evolution` 列入 `dsh.profile.bundles`，插件随 profile 加载，无需每 session 手工挂载 preset。
 
@@ -171,6 +171,14 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 - 提交与回滚调用公开 `Include.refresh()` / `EntryTree.await()`，验证公开 `tree.store` / `entry.fiber` 的 active 状态。
 - 领域层新增：`EvolutionMemory`（含冷档案/语义 GC）、`EvolutionObservationStore`、`EvolutionEvaluator`、`knowledge` 通过官方 `storageDomain` 接入。领域提交使用 staging + `domain.global.set` 的 pending 协议，重启后 `installPending` 重放。
 - 迁移白名单/guard 收紧，禁止重写 Cordis、禁止账户/provider/OAuth/旧 Web 与宿主主体写入。
+
+### 6.1 按需经验检索（无模型、无轮询）
+
+- 日常积累不引入模型：失败与观测继续由 `agent/error` / `tools/result` 事件与已签名 event bridge 折叠进 `EvolutionMemory` 与官方 `storageDomain` 的 canonical knowledge（`state` / `lastOutcome` / `effectStats` / `trend` / evidence）。
+- 只有显式动作才检索：`evolution_propose` 在返回中附带 `experienceRecall`；`evolution_history` 传 `query` 时返回同一结果。`inspect`、measurement、autonomous observer 与任何定时器都不会触发检索。
+- 结果分三组：`resolved`（已解决，优先复用）、`failures`（已失败，未换假设前不要重复）、`candidates`（已测量成功且带策略的复用候选）；`duplicate` 报告同一 target 的精确历史重放及其结果，`advice` 只复述记录到的事实。
+- 明确上限：默认每组最多 3 条、每来源最多 12 条、单字段 160 字符、2 条证据引用、只扫描最近 2000 条；调用方只能收紧不能放宽（`lib/experience-recall.js` 的 `EXPERIENCE_RECALL_LIMITS`）。检索只读，不写入、不改变 promotion 授权；`experienceRecall: false` 可整体关闭。
+- 领域失败证据现在记录其适用 target（`scope`），同一 target 的失败因此可跨会话被检索到；原始失败文本仍按既有边界在进入领域存储前被脱敏。
 
 ## 7. 已知限制（必须显式记录，不使用隐藏 patch 绕过）
 

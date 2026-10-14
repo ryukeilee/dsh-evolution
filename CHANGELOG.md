@@ -6,6 +6,15 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.10 — 按需经验检索（无模型、无轮询）
+
+- **新增 `lib/experience-recall.js`**：显式进化动作触发、纯函数、全部上限制在模块内的只读经验检索。使用已有的 canonical knowledge（`state` / `lastOutcome` / `effectStats` / `trend` / evidence）与本地 durable failure memory，输出 `resolved` / `failures` / `candidates` 三组、`duplicate` 精确重放与 `advice`；默认每组最多 3 条、每来源最多 12 条、单字段 160 字符、2 条证据引用、扫描最近 2000 条，调用方只能收紧不能放宽。
+- `evolution_propose` 在返回中附带 `experienceRecall`，`evolution_history` 新增可选 `query` / `target` / `impactScope` 返回同一结果；`inspect`、measurement、autonomous observer 与定时器不触发检索（单测断言 `recall` 调用次数）。`experienceRecall: false` 可整体关闭。
+- 领域端口的 `recall` 是唯一新增读取方法；检索不写入、不改变数据格式、不改变 promotion 授权与门禁。domain 存储缺失或读取失败时降级为本地 failure memory，并在 `unavailable` 中显式报告，而不是当作“没有历史”。
+- 负向证据现在带上它适用的 target（`#bridgeOutcome` 写入 `scope`），因此同一个 target 的历史失败可跨会话被检索；原始失败文本仍按既有边界在进入领域存储前脱敏。
+- 因宿主的 `#bridgeOutcome` 与 `lib/domain-storage.js` 位于两个固定基线锚点之下，两处逆向重建各自新增了一条显式 reversal 记录（只读 `recall` 方法与被反向重建的同一段源码），锚点仍逐字节对应固定产物。
+- 新增 `test/experience-recall.test.mjs`（16 个用例：分类、精确重放、上界、来源不可用时降级、`__proto__` 与损坏行、真实 `storageDomain` 端到端回读、未签名事件仍拒绝作答）。
+
 ## 0.2.0-rc.9 — 默认写入路径的重复工作
 
 - **恢复收尾的第二次文档校验**：`installPending()` 收尾写入的文档由上一步 `schema.parse(domain.global.get())` 的结果（已校验并投影的 `pending.aggregate` / `pending.applied`）与两个固定字面量（`schema: 1`、`pending: null`）组成，再解析一遍不可能拒绝第一个 parse 没有拒绝的文档，只是把整份 aggregate 又走一遍。必须在安装暂存文件之前完成的整份文档校验没有移动，仍由上面那次 parse 承担。

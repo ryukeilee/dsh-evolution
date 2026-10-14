@@ -48,7 +48,30 @@ const SOURCE_PATH = "lib/domain-storage.js";
 // call let the first commit after a durable aggregate with a non-coercible
 // entry succeed where the released implementation refuses it. See
 // `docs/performance/domain-write-path.md` section 4.
+//
+// The write-path variant is not the only change after the anchor: on-demand
+// experience recall added a read-only `recall` method to the same port, and a
+// read that never writes cannot change the persisted bytes this file's
+// benchmark compares. It is still reversed below so the reconstruction keeps
+// reproducing the pinned pre-change source byte for byte instead of silently
+// dropping the anchor.
 const reversals = [
+  ["import { EvolutionMemory, EvolutionObservationStore, EvolutionEvaluator } from './dockyard-domain/index.js';\n" +
+   "import { collectKnowledgeExperience } from './experience-recall.js';\n",
+   "import { EvolutionMemory, EvolutionObservationStore, EvolutionEvaluator } from './dockyard-domain/index.js';\n"],
+  ["    // Evaluator is deliberately advisory, never production authority.\n" +
+   "    evaluate: evidence => evaluator.evaluate(evidence),\n" +
+   "    // On-demand, bounded read of the canonical knowledge rows this store already\n" +
+   "    // owns. It is model-free and only called by an explicit owner-triggered\n" +
+   "    // action; a failure here is reported to the caller, never cached as\n" +
+   "    // \"no history\".\n" +
+   "    recall: (input = {}, options = {}) => {\n" +
+   "      if (closing) throw new Error('E_DOMAIN_CLOSED');\n" +
+   "      return collectKnowledgeExperience(memory.history('knowledge'), input, options);\n" +
+   "    },\n" +
+   "    close,\n",
+   "    // Evaluator is deliberately advisory, never production authority.\n" +
+   "    evaluate: evidence => evaluator.evaluate(evidence), close,\n"],
   ["    // The store is not read afterwards, but `load()` is not inert: its\n" +
    "    // `snapshot()` reads `memory.hasColdHistory`, which derives `Number(count)`\n" +
    "    // from every `coldArchives` entry and therefore rejects a durable\n" +
