@@ -1,0 +1,194 @@
+{
+  "status": "local-validated-not-published",
+  "note": "Re-pin of the four write-path rounds that landed after the rc.10 re-pin. rc.10 is tagged and published, so its bytes were left untouched and this round was cut as a new candidate.",
+  "pin": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.11",
+    "filename": "dsh-evolution-0.2.0-rc.11.tgz",
+    "sha256": "c81b36b2d8b837c86f269015fdee2aa983a34a8db2c9c137adc4b90824ea5069",
+    "contentSha256": "bfd04ee083a0ce0936e4811bfb7b10c98d6395fe93b63708299acefb5ecb1495",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.11.1",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "b903902e9567f125d6e5fbef9cd0bc8bac4db6fc",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json"
+    ]
+  },
+  "treeContentSha256": "bfd04ee083a0ce0936e4811bfb7b10c98d6395fe93b63708299acefb5ecb1495",
+  "checks": {
+    "tests": {
+      "command": "npm test",
+      "exitCode": 0,
+      "node": "v26.11.1",
+      "platform": "darwin-arm64",
+      "summary": {
+        "tests": 334,
+        "suites": 0,
+        "pass": 334,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    "packageChecks": {
+      "command": "npm run pack:check",
+      "exitCode": 0,
+      "checksPassed": 16,
+      "checksFailed": 0
+    },
+    "releaseVerify": {
+      "command": "npm run release:verify",
+      "exitCode": 0,
+      "sha256": "c81b36b2d8b837c86f269015fdee2aa983a34a8db2c9c137adc4b90824ea5069",
+      "contentSha256": "bfd04ee083a0ce0936e4811bfb7b10c98d6395fe93b63708299acefb5ecb1495",
+      "entries": 51
+    },
+    "rebuildContentOnly": {
+      "command": "npm run release:verify -- dist/dsh-evolution-0.2.0-rc.11.tgz --content-only",
+      "exitCode": 0,
+      "contentSha256": "bfd04ee083a0ce0936e4811bfb7b10c98d6395fe93b63708299acefb5ecb1495",
+      "byteHashMatchesPin": true
+    },
+    "provenance": {
+      "command": "node scripts/release/verify-provenance.mjs --require-source-commit",
+      "exitCode": 0,
+      "tag": null,
+      "head": "b903902e9567f125d6e5fbef9cd0bc8bac4db6fc",
+      "sourceCommit": "b903902e9567f125d6e5fbef9cd0bc8bac4db6fc",
+      "tagChecked": false,
+      "sourceCommitIsAncestor": true,
+      "sourceDigest": "bfd04ee083a0ce0936e4811bfb7b10c98d6395fe93b63708299acefb5ecb1495",
+      "treeDigest": "bfd04ee083a0ce0936e4811bfb7b10c98d6395fe93b63708299acefb5ecb1495",
+      "ok": true
+    }
+  },
+  "hosts": [
+    {
+      "host": "0.2.0-rc.2",
+      "stepsPassed": 21,
+      "stepsTotal": 21,
+      "freshRuntime": true,
+      "evidence": "docs/evidence/dsh-0.2.0-rc.2.json",
+      "evidenceSha256": "ebef51782d22e1772997a568dd0f7b69a50fb260a787ac7735e585b197cac055",
+      "contentSha256": "bfd04ee083a0ce0936e4811bfb7b10c98d6395fe93b63708299acefb5ecb1495",
+      "tarballSha256": "c81b36b2d8b837c86f269015fdee2aa983a34a8db2c9c137adc4b90824ea5069",
+      "hostModules": {
+        "@deepseek-ai/dsh": "0.2.0-rc.2",
+        "@deepseek-ai/cordis": "4.0.4",
+        "@deepseek-ai/cordis-plugin-include": "1.0.9",
+        "js-yaml": "4.3.2",
+        "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-cordis-host-runner": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-domain": "0.2.0-rc.2",
+        "@deepseek-ai/dsh-storage-json": "0.2.0-rc.2"
+      },
+      "modulesVerifiedAgainstRealInstall": {
+        "@deepseek-ai/cordis": "4.0.4",
+        "@deepseek-ai/cordis-plugin-include": "1.0.9",
+        "@deepseek-ai/cordis-plugin-loader": "1.0.5"
+      },
+      "finalDoctor": {
+        "name": "doctor-final",
+        "ok": true,
+        "status": "healthy",
+        "exitCode": 0
+      }
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "stepsPassed": 21,
+      "stepsTotal": 21,
+      "freshRuntime": true,
+      "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json",
+      "evidenceSha256": "615f61717ad7e7c4164d5d6d0738a6f249d297b16942388398626a3fc1564633",
+      "contentSha256": "bfd04ee083a0ce0936e4811bfb7b10c98d6395fe93b63708299acefb5ecb1495",
+      "tarballSha256": "c81b36b2d8b837c86f269015fdee2aa983a34a8db2c9c137adc4b90824ea5069",
+      "hostModules": {
+        "@deepseek-ai/dsh": "0.2.1-alpha.1",
+        "@deepseek-ai/cordis": "4.0.5-alpha.1",
+        "@deepseek-ai/cordis-plugin-include": "1.0.10-alpha.1",
+        "js-yaml": "4.3.2",
+        "@deepseek-ai/dsh-tools": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-cordis-host-runner": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-storage-domain": "0.2.1-alpha.1",
+        "@deepseek-ai/dsh-storage-json": "0.2.1-alpha.1"
+      },
+      "modulesVerifiedAgainstRealInstall": {
+        "@deepseek-ai/cordis": "4.0.5-alpha.1",
+        "@deepseek-ai/cordis-plugin-include": "1.0.10-alpha.1",
+        "@deepseek-ai/cordis-plugin-loader": "1.0.6-alpha.1"
+      },
+      "finalDoctor": {
+        "name": "doctor-final",
+        "ok": true,
+        "status": "healthy",
+        "exitCode": 0
+      }
+    }
+  ],
+  "historicalAnchors": [
+    {
+      "artifact": "release/dsh-evolution-0.2.0-rc.7.tgz",
+      "sha256": "03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9"
+    },
+    {
+      "artifact": "release/dsh-evolution-0.2.0-rc.8.tgz",
+      "sha256": "417faeba7c734287c6a62f4ffd5f8f14a933f7448792c25eb2651abd4bf4bade"
+    },
+    {
+      "artifact": "release/dsh-evolution-0.2.0-rc.10.tgz",
+      "sha256": "2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa"
+    }
+  ],
+  "anchorTests": {
+    "knowledgeIdentityBaseline": "test/dockyard-domain/knowledge-identity-equivalence.test.js anchors to release/dsh-evolution-0.2.0-rc.10.tgz instead of following release/manifest.json, so a re-pin cannot silently turn the differential into a self-comparison",
+    "rc7HousekeepingBaseline": "test/dockyard-domain/housekeeping-baseline.js plus test/dockyard-domain/archive-index-baseline.js still reconstruct rc.7 byte for byte (175,320 B / 58a75e35fc4f7aed780fc63314420adc2bfd9bfc13909252b26ca0f4e058f0d8)",
+    "rc8WritePathBaseline": "test/domain-storage/domain-storage-baseline.js and domain-storage-write-path-equivalence.test.js still reconstruct rc.8 byte for byte"
+  },
+  "reviews": [
+    {
+      "round": 1,
+      "scope": "independent read-only audit of the prepared pin, a different model from the preparing agent",
+      "blockers": [
+        {
+          "finding": "the draft CHANGELOG summarised the memo-removal marginal as \"within 2%\", which write CPU (-4.0% at 10k) and dryRun CPU (+2.0% at 40k) do not satisfy",
+          "resolution": "the entry and docs/performance/retention-plan-cost.md now state the wall and CPU ranges separately"
+        }
+      ],
+      "nonBlockers": [
+        {
+          "finding": "the new concurrent ObservationStore test asserted equal projection content but not that each default caller builds its own object",
+          "resolution": "the identity assertion was added"
+        }
+      ],
+      "confirmed": [
+        "pin bytes/content, tree digest, both host evidences and sourceCommit agree",
+        "rc.7 / rc.8 / rc.10 artifacts byte-identical to the previous commit, no tag created or moved",
+        "the other cited numbers and their baselines match the perf records",
+        "only lib/ change is the knowledge.js comment",
+        "rc.10 anchor exists and predates the change under test"
+      ]
+    }
+  ],
+  "verificationLimits": [
+    "Not tagged and not published in this round: v0.2.0-rc.11 does not exist, so the release workflow tag -> commit -> pin step has not run and the provenance check ran without a tag.",
+    "Local toolchain only (node v26.11.1 / npm 11.20.0 / darwin-arm64). The CI matrix (node 22.19.0 and 24.x, linux-x64) and CodeQL were not run here.",
+    "docs/evidence/cold-archive-write-path-*.json, retention-plan-*.json and write-path-reconcile-identity-*.json were produced against intermediate candidate builds during the rounds and are not pin evidence; only docs/evidence/dsh-<host>.json is referenced by release/manifest.json and pack:check.",
+    "The loader version in the README/RELEASE host table is not part of the recorded evidence; it was re-read from a fresh --keep acceptance install in this round (1.0.5 / 1.0.6-alpha.1) rather than being written into the evidence JSON.",
+    "Acceptance assertions cover 21 scripted steps per host; they compare evolution-memory.json by SHA-256 and the presence of event-bridge.key rather than every file under the data root."
+  ]
+}
