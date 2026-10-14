@@ -272,9 +272,7 @@ node scripts/benchmarks/knowledge-identity-cost.mjs --rows 10000 --knowledge-row
 备忘仍保留 **1,428,240 B ≈ 1.36 MiB**（≈71 B/键，含索引条目），即每 10,000 行活动键
 约 0.7 MiB；该数字随基准 JSON 一并保存。备忘上限 32 条，按同尺寸推导的最坏情形约
 22 MiB（**推导值**，本轮没有在 32 条满负荷下测量）。备忘与实例在记录侧与命中侧都各自
-持有 `Set` 副本、条目也是深拷贝，不共享可变状态；作为对比，改动前每次写入会同时持有
-两个实例各自的 `archiveActiveKeys`，备忘把这份状态在进程内复用，而不是额外长期保留
-多份。
+持有 `Set` 副本、条目也是深拷贝，不共享可变状态；备忘把这份状态在进程内复用，代价是它在模块级长期持有这些条目深拷贝与 `Set`（不随产生它们的实例回收，上限 32 条，实测每 10,000 行活动键仍存活约 0.7 MiB），而不是零成本的复用。
 
 **本轮未消除、已实测的剩余成本。** 工作树上一次写入 134.6 ms 中，约 **56 ms** 是
 `#readArchiveSync()`：解析 knowledge 冷档案找 canonical 行 45.2 ms + 解析 observations
@@ -323,7 +321,7 @@ npm run release:verify
 比较 `normalizeKnowledgeEvent()`、`knowledgeKeyOf()`、`canonicalKnowledgeKey()` 与整条
 append 路径的落盘字节，语料本轮扩充了折叠类与显式 key 的形状。
 `archive-index-baseline.js` 的逆变换表新增了本轮备忘区块，rc.7 → 工作树的组合重建仍与
-rc.7 固定产物逐字节相同（175,312 字节）。
+rc.7 固定产物逐字节相同（175,320 字节）。
 
 **新增回归（备忘）。** 独立的
 `test/dockyard-domain/archive-scan-memo.test.js` 里有

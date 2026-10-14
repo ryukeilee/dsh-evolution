@@ -369,3 +369,39 @@ test('the observation store still fails loudly without its projection', async ()
     assert.deepEqual(await store.load(), store.snapshot(), 'the default load still returns the snapshot');
   });
 });
+
+test('the observation store hands a concurrent caller the first load value, skip or not', async () => {
+  await withHome(async (home) => {
+    fs.mkdirSync(home, { recursive: true });
+    const healthy = path.join(home, 'concurrent-observations.json');
+    fs.writeFileSync(healthy, JSON.stringify({
+      evolution: { schema: 4, observations: [{ id: 'obs-1' }, { id: 'obs-2' }], coldArchives: {} },
+    }));
+    // A new store over its own memory each time, so every case starts unloaded.
+    const store = () => new EvolutionObservationStore({
+      memory: new EvolutionMemory({ stateStore: new JsonStateStore({ home, filePath: healthy }), mutationAuthority: { assertMutation() {} } }),
+    });
+
+    // A default caller starts the load. This store keeps the released
+    // `return this.loading` semantics, so the value it produces is handed on
+    // verbatim to a skipping caller that arrives during that run - the store
+    // has no snapshot flag to filter it by, unlike `EvolutionMemory`.
+    const projectedFirst = store();
+    const [projected, skipped] = await Promise.all([projectedFirst.load(), projectedFirst.load({ snapshot: false })]);
+    assert.notEqual(projected, undefined);
+    assert.equal(skipped, projected, 'the concurrent caller is handed the first load value, skip or not');
+
+    // A skipping caller starts the load: it builds none, and default callers
+    // that arrive during that run still each receive a projection of the same
+    // loaded state (`shared` is undefined, so they build their own).
+    const skippedFirst = store();
+    const [none, later, second] = await Promise.all([
+      skippedFirst.load({ snapshot: false }), skippedFirst.load(), skippedFirst.load(),
+    ]);
+    assert.equal(none, undefined, 'the skipping caller must not receive a projection');
+    assert.notEqual(later, undefined);
+    assert.deepEqual(later, second, 'every concurrent default caller receives the same projection content');
+    assert.notEqual(later, second, 'each concurrent default caller builds its own projection (the store shares the first value, not a projection for a skip run)');
+    assert.deepEqual(later, await store().load(), 'the default caller must still receive a projection of the loaded state');
+  });
+});

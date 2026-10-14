@@ -122,8 +122,10 @@ node scripts/benchmarks/observe-cold-archive.mjs --rows 10000 --rounds 3 --warmu
   `structuredClone`，每行成本与行的嵌套深度、字段数量成正比（本 fixture 的
   canonical knowledge 行含 `effectStats` / `effects` / `trend.recent` /
   `recentEvidence` / `sourceCounts` 等嵌套结构）。
-- 没有 cold knowledge 档案时没有收益：此时 `#mergeArchived` 只返回热层
-  （`maxEntries` 上限 1000 行），且命中通常落在热层，复制量本来就很小。
+- 没有 cold knowledge 档案时**未证实可测收益**：此时 `#mergeArchived` 只返回热层
+  （`maxEntries` 上限 1000 行），且命中通常落在热层，复制量本来就很小。代码在热层
+  分支上同样只 clone 命中行而不是整个热窗口，方向性上仍少复制，但本轮语料下两侧都在
+  噪声内（前半轮约 0.25 ms 对 0.23 ms），因此不声称收益，也不断言“代码未省工作”。
 - **收益不要求命中**：即使目标不在档案里（管线里最常见的情况），改动仍然省掉
   整段深拷贝——这正是上表 knowledge append 场景的情形。
 - recall / 只读投影路径**未**改动。它经公开 `memory.history('knowledge')` 读取，

@@ -4,9 +4,12 @@
 `load()`、`lib/dockyard-domain/observation.js` 的 `record()` 内部加载，以及该
 store 读取共享 Memory 观测窗口的方式。改动给两个加载器加了一个显式的
 `{ snapshot: false }`（默认行为不变），把"整份热投影深拷贝"从四条真实调用链上移除。
-**没有任何校验、失败边界或持久化语义被删除**：加载本身（状态读取、archive index
+**没有任何校验或持久化语义被删除**：加载本身（状态读取、archive index
 重建、淘汰与归档、冷历史强转）全部保留，跳过的只是加载末尾那次
-`clone(this.#data)`。未修改官方 DSH 源码，未触碰 `release/` 固定产物。
+`clone(this.#data)`。唯一的可观察差异是**“不可投影值”的报错时机**（见 3.3 第 2 条）：
+跳过投影的纯领域调用会等到第一次真正投影时才报同一个 `RangeError`；官方端口在
+`openDomainStorage()` 之前的 schema 读取里就已经拒绝这种文档，因此端口路径上的
+接受范围不变。未修改官方 DSH 源码，未触碰 `release/` 固定产物。
 
 原始数据（本轮实际运行，未引用历史数字）：
 
@@ -181,8 +184,15 @@ store 读取共享 Memory 观测窗口的方式。改动给两个加载器加了
 逐字节保持不变（新用例断言 `left === right`）。当**第一个**调用者要求跳过投影时，
 同时到达的默认调用者不再拿到共享对象，而是各自构建一份内容相等的投影。这个组合在
 改动前无法表达（`load()` 没有选项），仓内也没有任何调用点这样并发加载，因此它不是
-回归，而是新 API 组合的已固定语义：跳过者得到 `undefined`，默认调用者**一定**拿到
-一份投影（可能是自己构建的那份）。用例同时断言这三点。
+回归，而是新 API 组合的已固定语义。两个加载器的返回规则并不相同：`EvolutionMemory`
+在并发分支上按本次调用的 flag 筛选，跳过者得到 `undefined`，默认调用者**一定**拿到
+一份投影（可能是自己构建的那份）；`EvolutionObservationStore` 保留已发布实现的
+`return this.loading` 语义，把**首方的返回值原样交给后来者**，因此“跳过者一定得到
+`undefined`”在这个 store 上只在该次加载由跳过者发起时成立——默认调用者先发起时，随后
+到达的跳过者会收到那个投影对象（它不读返回值，所以不影响结果）。两个 store 的这两种
+顺序都由用例钉住（`load-projection-equivalence.test.js` 的
+“load({ snapshot: false }) loads the state and skips only the projection”与
+“the observation store hands a concurrent caller the first load value, skip or not”）。
 
 复核同时逐字节验证了两个反转表仍能重建 rc.8 / rc.7 锚点、新增差分测试确实加载了
 不同的三份实现、且负载确实触发 dedup、归档与冷层；失败后清空 `loading` 并可重试的

@@ -1,22 +1,27 @@
 /**
- * Differential equivalence for the experience-recall identity projection.
+ * Differential equivalence for the canonical knowledge identity projection.
  *
- * The working tree computes a record's canonical knowledge key without
- * materialising the outcome/metrics/recovery/reference fields, and scans a
- * source collection's complete history without copying it. Both are read-path
- * changes on the path `evolution_propose` triggers through
- * `domainStorage.recall()`, so they must leave every recorded value and every
- * retention decision byte-identical.
+ * The working tree computes a record's canonical knowledge key from the six
+ * identity dimensions without materialising the outcome/metrics/recovery/
+ * reference fields, and the append path scans a source collection's complete
+ * history without copying it (`#sourceMatches`). Both sit on the record path
+ * (`#upsertKnowledgeUnlocked` / `#knowledgeEntryFor`) and on
+ * `canonicalKnowledgeKey()`'s fallback; the public `memory.history('knowledge')`
+ * read that `domainStorage.recall()` uses is unchanged. They must leave every
+ * recorded value and every retention decision byte-identical.
  *
- * The baseline is the pinned release artifact, extracted into a temporary
+ * The baseline is a committed pre-change artifact, extracted into a temporary
  * directory and imported as-is; nothing is re-implemented here. `lib/` is a
- * shipped path, so the pinned tree is exactly the pre-change implementation
- * until the next release re-pin. The shape assertion below makes a future
- * re-pin fail loudly here instead of silently turning this test into a
- * self-comparison.
+ * shipped path, and `release/dsh-evolution-0.2.0-rc.10.tgz` is the released
+ * implementation this change landed on top of, so it is the frozen pre-change
+ * source for it. The manifest pin moves on with every candidate, so the anchor
+ * is named explicitly instead of following it. The shape assertion below makes
+ * a lost or moved anchor fail loudly here instead of silently turning this
+ * test into a self-comparison.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -26,22 +31,26 @@ import { pathToFileURL } from "node:url";
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
 import { canonicalKnowledgeKey, knowledgeKeyOf, normalizeKnowledgeEvent } from "../../lib/dockyard-domain/knowledge.js";
 import { JsonStateStore } from "./support.js";
-import { readReleaseManifest, releaseArtifactPath } from "../../scripts/release/release-lib.mjs";
+import { RELEASE_DIR } from "../../scripts/release/release-lib.mjs";
 
 const NOW = "2026-10-12T00:00:00.000Z";
 
-const pin = readReleaseManifest();
+const PRE_CHANGE_ARTIFACT = "dsh-evolution-0.2.0-rc.10.tgz";
+const baselineArtifact = join(RELEASE_DIR, PRE_CHANGE_ARTIFACT);
+assert.ok(existsSync(baselineArtifact),
+  `${PRE_CHANGE_ARTIFACT} is the authoritative pre-change source for the knowledge identity projection; restore it or move the anchor deliberately`);
 const baselineRoot = await mkdtemp(join(tmpdir(), "dsh-knowledge-baseline-"));
-execFileSync("tar", ["-xzf", releaseArtifactPath(pin), "-C", baselineRoot, "package/lib"], { stdio: "ignore" });
+execFileSync("tar", ["-xzf", baselineArtifact, "-C", baselineRoot, "package/lib"], { stdio: "ignore" });
 const baselineKnowledge = await import(pathToFileURL(join(baselineRoot, "package/lib/dockyard-domain/knowledge.js")).href);
 const baselineMemory = await import(pathToFileURL(join(baselineRoot, "package/lib/dockyard-domain/memory.js")).href);
 test.after(() => rm(baselineRoot, { recursive: true, force: true }));
 
-test("the pinned baseline predates this change", () => {
+test("the baseline anchor predates this change", () => {
+  assert.equal(PRE_CHANGE_ARTIFACT, "dsh-evolution-0.2.0-rc.10.tgz", "the anchor must be a deliberate, reviewed edit");
   assert.equal(
     typeof baselineKnowledge.knowledgeKeyOf,
     "undefined",
-    "the pinned artifact already contains knowledgeKeyOf: re-anchor this differential test to a pre-change baseline",
+    `${PRE_CHANGE_ARTIFACT} already contains knowledgeKeyOf: re-anchor this differential test to a pre-change baseline`,
   );
 });
 

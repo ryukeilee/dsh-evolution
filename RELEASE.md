@@ -2,18 +2,18 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前本地候选版本：`0.2.0-rc.10`，在 `0.2.0-rc.9` 之上新增按需经验检索（`lib/experience-recall.js`：显式 `evolution_propose` / `evolution_history` 触发、只读、有明确上限、无模型与轮询；领域负向证据记录其适用 target），不改变写入路径、promotion 边界与数据格式；同一版本内 `README.md` 重写为面向用户的产品说明，`AGENTS.md` 重写为与当前实现一致的开发约定。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本候选仅在本地固定与验收，未创建 tag 或进行外部发布。最后公开 `v0.2.0-rc.9` 的发布状态、发布后双宿主证据与历史资产校验见 `docs/evidence/rc9-release-audit.json`、`rc9-postpublish-*.json` 与 `rc6-release-audit.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
+当前本地候选版本：`0.2.0-rc.11`，在 `0.2.0-rc.10` 之上收束四轮删除重复计算、重复复制与重复遍历的改动（冷档案记录路径的来源扫描与身份重算、活动档案扫描备忘与逐行身份折叠、保留计划的单次规范化与冗余深拷贝、四条被丢弃热投影的加载链），并修正了一处独立对抗式复核发现的真实失败边界分歧（具体见 `CHANGELOG.md` 的 `0.2.0-rc.11` 条目）。`orchestrator` / `guard` / `registration` / `promotion-include` / `archive-stage` 无源码改动，持久化格式、认证、fsync、事务与回滚、跨进程锁、promotion 门禁与授权边界一律未改。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本轮未创建 tag、未进行外部发布，固定产物、两个官方宿主验收证据与历史锚点见 `release/manifest.json` 与 `docs/evidence/`。最后公开的 `v0.2.0-rc.10` 的发布状态、发布后双宿主证据与历史资产校验见 `docs/evidence/rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.10.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.11.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-本候选尚无公开发布入口。最后公开的 `v0.2.0-rc.9` 的入口、资产与发布后验收记录见 `docs/evidence/rc9-release-audit.json`、`rc9-postpublish-*.json`；更早版本的对应记录见同目录的 `rc*-release-audit.json`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
+本候选尚无公开发布入口。最后公开的 `v0.2.0-rc.10`（GitHub Release id 412881486，draft 验证后公开并重新匿名下载校验）的入口、资产与发布后验收记录见 `docs/evidence/rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`；更早版本的对应记录见同目录的 `rc*-release-audit.json`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
 
 `release/manifest.json` 只固定当前版本。历史 tarball 可以共存，发布流程仅选择 manifest 指定的文件；历史固定点也保留在对应 tag / commit 与各自 Release 附件中。
 
@@ -29,14 +29,14 @@
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.10，仓库内容）
+# 当前本地候选（0.2.0-rc.11，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
-# 尚未创建 v0.2.0-rc.10 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
+# 尚未创建 v0.2.0-rc.11 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.10，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0-rc.11，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -90,6 +90,8 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 | `0.2.1-alpha.1` | cordis `4.0.5-alpha.1`、include `1.0.10-alpha.1`、loader `1.0.6-alpha.1` | 21/21 步通过；最终诊断 `healthy` |
 
 首次 CLI 诊断为 `degraded`（`data.root` 尚未初始化）属于预期：数据根在首次运行时创建，最终诊断恢复 `healthy`。
+
+`docs/evidence/dsh-<host>.json` 是**固定点证据**：`pack:check` 与 `test/release-pin.test.mjs` 只核对这两个文件记录的 `contentSha256` / `tarballSha256` 是否等于当前固定内容与固定字节。`docs/evidence/` 下另有一些按轮次命名的验收记录（`cold-archive-write-path-*`、`retention-plan-*`、`write-path-reconcile-identity-*`）；它们是各轮开发中对**中间候选**运行的真实验收，其 `packageVersion` 是当时的版本号、内容摘要不等于任何固定点，因此**不构成固定点证据**，也不被任何校验引用。`0.2.0-rc.11` 的权威验收只有上面两个文件。
 
 ## 5. CI 与发布链
 
