@@ -146,3 +146,65 @@ test("the active-archive scan memo only answers for the bytes this process scann
     assert.deepEqual(await indexEntries(files.index), grown, "identical bytes keep the identical index entry");
   } finally { await rm(files.home, { recursive: true, force: true }); }
 });
+
+test("the memo hands out its own index entry, including an object-valued timestamp", async () => {
+  // `recordedAt` is whatever the archive row carried, and it can be an object,
+  // so the index entry can hold a nested value. The memo must not share that
+  // entry (or the value inside it) with any instance: mutating it through one
+  // instance would otherwise reach the next instance and the persisted index.
+  const raw = JSON.stringify({ id: "a", recordedAt: { label: "original" } }) + "\n";
+  const files = await fixture("observations", raw);
+  try {
+    const first = await newMemory(files.store);
+    const entry = first.archiveIndexEntries.get(files.archive);
+    assert.deepEqual(entry.firstTimestamp, { label: "original" });
+    entry.physicalCount = 999;
+    entry.firstTimestamp.label = "mutated";
+
+    const second = await newMemory(new JsonStateStore({ home: files.home }));
+    const reused = second.archiveIndexEntries.get(files.archive);
+    assert.equal(reused.physicalCount, 1, "an instance must not share its index entry with the memo");
+    assert.deepEqual(reused.firstTimestamp, { label: "original" },
+      "an instance must not share the entry's nested timestamp value with the memo");
+    const [persisted] = await indexEntries(files.index);
+    assert.equal(persisted.physicalCount, 1, "the persisted index must describe the scanned bytes");
+    assert.deepEqual(persisted.firstTimestamp, { label: "original" });
+
+    // The hit side must be detached as well: mutating the entry a reusing
+    // instance received must not reach the next one.
+    reused.physicalCount = 777;
+    reused.firstTimestamp.label = "mutated-again";
+    const third = await newMemory(new JsonStateStore({ home: files.home }));
+    const again = third.archiveIndexEntries.get(files.archive);
+    assert.equal(again.physicalCount, 1, "a reusing instance must not share its index entry with the memo");
+    assert.deepEqual(again.firstTimestamp, { label: "original" },
+      "a reusing instance must not share the entry's nested value with the memo");
+  } finally { await rm(files.home, { recursive: true, force: true }); }
+});
+
+test("a memoized entry names its own collection, not the file identity alone", async () => {
+  // Two collections' active archives are the same inode only if something
+  // outside this plugin hard-linked them; the memo answers by file identity, so
+  // the collection has to be part of the key or the entry's `segmentId`,
+  // `recordType` and `file` would describe the wrong collection on disk.
+  const home = await mkdtemp(join(tmpdir(), "dsh-archive-memo-"));
+  const store = new JsonStateStore({ home });
+  const observations = `${store.filePath}.observations-archive.jsonl`;
+  const knowledge = `${store.filePath}.knowledge-archive.jsonl`;
+  await mkdir(dirname(observations), { recursive: true });
+  await writeFile(observations, JSON.stringify({ id: "shared", recordedAt: NOW }) + "\n");
+  const { linkSync } = await import("node:fs");
+  linkSync(observations, knowledge);
+  try {
+    const memory = await newMemory(store);
+    const active = (collection) => memory.archiveIndexEntries.get(`${store.filePath}.${collection}-archive.jsonl`);
+    assert.equal(active("observations").segmentId, "active:observations");
+    assert.equal(active("observations").collection, "observations");
+    assert.equal(active("knowledge").segmentId, "active:knowledge");
+    assert.equal(active("knowledge").collection, "knowledge");
+    assert.equal(active("knowledge").file, knowledge.split("/").at(-1));
+    const [persistedObservations, persistedKnowledge] = await indexEntries(`${store.filePath}.evolution-archive-index.json`);
+    assert.equal(persistedObservations.collection, "observations");
+    assert.equal(persistedKnowledge.collection, "knowledge");
+  } finally { await rm(home, { recursive: true, force: true }); }
+});

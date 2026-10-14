@@ -121,11 +121,25 @@ function verifyFolds() {
   }
   // 2. The code points where `\b` itself differs: `i` + `u` also treats the
   //    characters that case-fold to an ASCII word character as word characters.
+  //    A non-class code point can only change a match through the boundary
+  //    assertion, so every code point is probed directly on both sides of a
+  //    matching identifier for both patterns - not through a `\w` proxy, and
+  //    not through a corpus that cannot match the patterns at all.
+  const [eight, dashed] = COLLAPSES.filter((collapse) => collapse.kind === "pattern");
+  const boundaryProbes = (character) => [
+    character + "deadbeef", "deadbeef" + character,
+    character + "abcdef12-3456", "abcdef12-3456" + character,
+  ];
   for (let codePoint = 0; codePoint <= 0x10ffff; codePoint += 1) {
     if (codePoint >= 0xd800 && codePoint <= 0xdfff) continue;
     const character = String.fromCodePoint(codePoint);
-    if (/\w/iu.test(character) !== /\w/.test(character)) report.boundaryDifferences.push(`U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`);
+    const differs = boundaryProbes(character).some((text) =>
+      text.replace(eight.before, "<id>") !== text.replace(eight.after, "<id>")
+      || text.replace(dashed.before, "<id>") !== text.replace(dashed.after, "<id>"));
+    if (differs) report.boundaryDifferences.push(`U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`);
+    if (/\w/iu.test(character) !== /\w/.test(character) && !differs) report.wordCharOnlyDifferences = (report.wordCharOnlyDifferences ?? 0) + 1;
   }
+  report.boundaryProbes = 0x110000 - 0x800;
   // 3. None of those code points can reach the collapses: `normalizeText()`
   //    normalizes to NFKC first, and no code point maps to one of them under
   //    NFKC (they have compatibility mappings out, and no canonical
@@ -156,7 +170,6 @@ function verifyFolds() {
   // 5. The general inequality is pinned, not hidden: this input must keep the
   //    two spellings apart, so a future engine that changes `\b` under `iu`
   //    fails loudly here instead of silently invalidating this argument.
-  const [eight] = COLLAPSES.filter((collapse) => collapse.label.startsWith("\\b[0-9a-f]{8,"));
   report.boundaryExampleDiffers = PATTERN_BOUNDARY_EXAMPLE.replace(eight.before, "<id>")
     !== PATTERN_BOUNDARY_EXAMPLE.replace(eight.after, "<id>");
   return report;

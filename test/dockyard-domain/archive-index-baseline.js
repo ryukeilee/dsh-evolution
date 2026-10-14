@@ -58,17 +58,20 @@ const reversals = [
    "   */\n" +
    "  async #reconcileActiveArchive(collection, file) {\n" +
    "    const info = await stat(file, { bigint: true });\n" +
-   "    const memo = recallArchiveScan(info);\n" +
+   "    const memo = recallArchiveScan(collection, info);\n" +
    "    if (memo) {\n" +
-   "      // Only the clock field differs from a fresh scan of these bytes.\n" +
+   "      // Only the clock field differs from a fresh scan of these bytes, and the\n" +
+   "      // copy keeps this instance's entry detached from the memo's.\n" +
+   "      const entry = clone(memo.entry);\n" +
+   "      entry.updatedAt = timestamp(this.clock);\n" +
    "      this.archiveActiveKeys.set(collection, new Set(memo.activeKeys));\n" +
-   "      return { ...memo.entry, updatedAt: timestamp(this.clock) };\n" +
+   "      return entry;\n" +
    "    }\n" +
    "    let raw = \"\";\n" +
    "    try { raw = await readFile(file, \"utf8\"); } catch (error) { if (error?.code !== \"ENOENT\") throw error; }\n" +
    "    const scanned = this.#scanArchiveRaw(raw);\n" +
    "    const rebuilt = this.#indexEntryFromRaw(collection, file, raw, { sealed: false }, scanned);\n" +
-   "    rememberArchiveScan(info, rebuilt, this.#activeKeysFromRaw(collection, raw, scanned));\n" +
+   "    rememberArchiveScan(collection, info, rebuilt, this.#activeKeysFromRaw(collection, raw, scanned));\n" +
    "    return rebuilt;\n" +
    "  }\n" +
    "\n" +
@@ -106,10 +109,16 @@ const reversals = [
    "const ARCHIVE_SCAN_MEMO_LIMIT = 32;\n" +
    "const archiveScanMemo = new Map();\n" +
    "\n" +
-   "function archiveScanKey(info) { return `${info.dev}\\u0000${info.ino}`; }\n" +
+   "/**\n" +
+   " * The key carries the collection as well as the file identity: the entry it\n" +
+   " * answers with names its own collection (`segmentId`, `recordType`, `file`), and\n" +
+   " * two collections' active archives are only ever the same inode if something\n" +
+   " * outside this plugin hard-linked them.\n" +
+   " */\n" +
+   "function archiveScanKey(collection, info) { return `${collection}\\u0000${info.dev}\\u0000${info.ino}`; }\n" +
    "\n" +
-   "function recallArchiveScan(info) {\n" +
-   "  const key = archiveScanKey(info);\n" +
+   "function recallArchiveScan(collection, info) {\n" +
+   "  const key = archiveScanKey(collection, info);\n" +
    "  const memo = archiveScanMemo.get(key);\n" +
    "  if (!memo || memo.size !== Number(info.size) || memo.mtimeNs !== String(info.mtimeNs)) return null;\n" +
    "  // Keep the most recently reused files last in the eviction order.\n" +
@@ -118,13 +127,18 @@ const reversals = [
    "  return memo;\n" +
    "}\n" +
    "\n" +
-   "function rememberArchiveScan(info, entry, activeKeys) {\n" +
-   "  const key = archiveScanKey(info);\n" +
+   "function rememberArchiveScan(collection, info, entry, activeKeys) {\n" +
+   "  const key = archiveScanKey(collection, info);\n" +
    "  archiveScanMemo.delete(key);\n" +
-   "  // The memo owns its own copy: the instance that produced the scan keeps\n" +
-   "  // appending to its own set as it writes, and the memo must keep describing\n" +
-   "  // the bytes it read.\n" +
-   "  archiveScanMemo.set(key, { size: Number(info.size), mtimeNs: String(info.mtimeNs), entry, activeKeys: new Set(activeKeys) });\n" +
+   "  // The memo owns deep copies of everything it records: the instance that\n" +
+   "  // produced the scan keeps appending to its own key set and keeps its own\n" +
+   "  // entry, and the entry can carry an object-valued timestamp from the archive\n" +
+   "  // row, so a shallow copy would not isolate it. What the memo answers with is\n" +
+   "  // exactly what a fresh scan of those bytes would have built.\n" +
+   "  archiveScanMemo.set(key, {\n" +
+   "    size: Number(info.size), mtimeNs: String(info.mtimeNs),\n" +
+   "    entry: clone(entry), activeKeys: new Set(activeKeys),\n" +
+   "  });\n" +
    "  while (archiveScanMemo.size > ARCHIVE_SCAN_MEMO_LIMIT) archiveScanMemo.delete(archiveScanMemo.keys().next().value);\n" +
    "}\n" +
    "\n" +
