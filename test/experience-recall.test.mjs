@@ -66,12 +66,13 @@ test('recall: resolved, failed, and candidate rows are classified and bounded', 
 test('recall: an exact replay is reported as a duplicate with its recorded outcome', () => {
   const key = experienceKnowledgeKey({ target: TARGET });
   const rows = [
-    { knowledgeKey: key, dimensions: { semanticFact: TARGET, scope: TARGET }, state: 'LEARNING', lastOutcome: 'neutral', effectStats: { successCount: 0, failureCount: 0, successRate: null }, occurrenceCount: 4, lastSeen: '2026-01-05T00:00:00.000Z' },
+    { knowledgeKey: key, dimensions: { semanticFact: TARGET, scope: TARGET }, state: 'LEARNING', lastOutcome: 'neutral', effectStats: { successCount: 0, failureCount: 0, successRate: null }, occurrenceCount: 4, firstSeen: '2025-12-01T00:00:00.000Z', lastSeen: '2026-01-05T00:00:00.000Z' },
   ];
   const result = finalizeExperienceRecall(INPUT, [collectKnowledgeExperience(rows, INPUT, {})], {});
   assert.equal(result.duplicate.key, key);
   assert.equal(result.duplicate.occurrences, 4);
   assert.equal(result.duplicate.outcome, 'neutral');
+  assert.equal(result.duplicate.firstSeen, '2025-12-01T00:00:00.000Z');
   assert.equal(result.duplicate.lastSeen, '2026-01-05T00:00:00.000Z');
   // A neutral replay is not mislabelled as a resolved or failed outcome.
   assert.equal(result.resolved.length, 0);
@@ -137,11 +138,15 @@ test('recall: durable failure memory contributes failed approaches and preventio
 });
 
 test('recall: a resolved failure-memory entry counts as a recorded resolution', () => {
-  const entries = [{ signature: 'sig-2', count: 2, status: 'resolved', problem: 'edge cache warmup latency', experiment: { patternKey: TARGET }, result: { category: 'runtime-trial' } }];
+  // The local memory also carries the experiment target; it must not be read as
+  // a reusable strategy, or a resolved failure would be reported as a candidate.
+  const entries = [{ signature: 'sig-2', count: 2, status: 'resolved', problem: 'edge cache warmup latency', experiment: { patternKey: TARGET, target: TARGET }, result: { category: 'runtime-trial' }, firstSeenAt: '2025-11-01T00:00:00.000Z' }];
   const result = finalizeExperienceRecall(INPUT, [collectFailureMemoryExperience(entries, INPUT, {})], {});
   assert.equal(result.resolved.length, 1);
+  assert.equal(result.candidates.length, 0, 'failure memory never invents a strategy to reuse');
   assert.equal(result.resolved[0].state, 'RESOLVED');
   assert.equal(result.resolved[0].successRate, 1);
+  assert.equal(result.resolved[0].firstSeen, '2025-11-01T00:00:00.000Z');
 });
 
 test('recall: an unavailable source is reported, never read as "no history"', () => {
