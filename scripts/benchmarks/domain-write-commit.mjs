@@ -22,22 +22,24 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import crypto, { createHash } from "node:crypto";
 import { syncBuiltinESMExports } from "node:module";
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DomainFacility } from "@deepseek-ai/dsh-storage-domain";
 import { JsonStorageBackend } from "@deepseek-ai/dsh-storage-json";
 import { domainStorageBaseline, materializeDomainStorage } from "../../test/domain-storage/domain-storage-baseline.js";
+import { REPO_ROOT } from "../release/release-lib.mjs";
 
 const WORKING_SOURCE = fileURLToPath(new URL("../../lib/domain-storage.js", import.meta.url));
+const WORKING_LIB = fileURLToPath(new URL("../../lib", import.meta.url));
 const QUERY_COLLECTIONS = ["cycles", "observations", "proposals", "experiments", "promotions", "outcomes", "lineage", "knowledge"];
 const FROZEN_NOW = Date.parse("2026-10-12T00:00:00.000Z");
 
 const args = process.argv.slice(2);
-const options = { memory: null, writes: 400, sessions: 3, warmup: 1, buckets: 8 };
+const options = { memory: null, baseline: null, lib: null, attribute: false, writes: 400, sessions: 3, warmup: 1, buckets: 8 };
 if (args.length === 1 && args[0] === "--help") {
   console.log(`Usage: node scripts/benchmarks/domain-write-commit.mjs [options]
   --writes <integer >= 1>    public port.observe() writes per session (default: 400)
@@ -45,22 +47,34 @@ if (args.length === 1 && args[0] === "--help") {
   --warmup <integer >= 0>    uncounted sessions (default: 1)
   --buckets <integer >= 1>   equal-size latency buckets reported per session (default: 8)
   --memory <file>            exact domainStorageBaseline().source, stored outside the tree
-Without --memory, a temporary baseline is generated and passed to a child run.
+  --baseline <commit>        whole pre-change tree from this commit instead of the rc.8 anchor
+  --lib <dir>                the candidate's own lib directory (default: the working tree)
+  --attribute                add an un-timed pass that counts the projections each side builds
+Without --memory or --baseline, a temporary baseline is generated and passed to
+--memory in a child run. --baseline compares whole trees, so it also covers the
+sibling modules the write path loads (memory.js, observation.js), which the
+single-file anchor cannot: both sides are imported as real modules in one
+process and must persist byte-identical trees and projections.
 The path measured is openDomainStorage + public observe() over the official
 DomainFacility/JsonStorageBackend, i.e. the real default-config transaction.
 JSONL: metadata, one sample per session, one summary; equivalence is asserted
 per session pair and the process exits non-zero on any divergence.
 Smoke: node scripts/benchmarks/domain-write-commit.mjs --writes 60 --sessions 1 --warmup 0
-Formal: node scripts/benchmarks/domain-write-commit.mjs --writes 400 --sessions 3 --warmup 1`);
+Formal: node scripts/benchmarks/domain-write-commit.mjs --writes 400 --sessions 3 --warmup 1
+Trees: node scripts/benchmarks/domain-write-commit.mjs --writes 400 --sessions 3 --warmup 1 --baseline <commit> --attribute`);
   process.exit(0);
 }
-for (let i = 0; i < args.length; i += 2) {
+for (let i = 0; i < args.length; i += 1) {
   const name = args[i].slice(2);
-  if (!args[i].startsWith("--") || !Object.hasOwn(options, name) || args[i + 1] === undefined || args[i + 1].startsWith("--")) {
+  if (args[i] === "--attribute" && (args[i + 1] === undefined || args[i + 1].startsWith("--"))) { options.attribute = true; continue; }
+  const value = args[i + 1];
+  if (!args[i].startsWith("--") || !Object.hasOwn(options, name) || value === undefined || value.startsWith("--")) {
     throw new Error(`Unknown/missing option: ${args[i]}`);
   }
-  options[name] = name === "memory" ? resolve(args[i + 1]) : Number(args[i + 1]);
+  i += 1;
+  options[name] = name === "memory" ? resolve(value) : name === "baseline" || name === "lib" ? value : Number(value);
 }
+if (options.memory && options.baseline) throw new Error("--memory and --baseline are two different baselines; pass one");
 for (const name of ["writes", "sessions", "buckets"]) {
   if (!Number.isSafeInteger(options[name]) || options[name] < 1) throw new Error(`Invalid --${name}: expected integer >= 1`);
 }
@@ -69,6 +83,60 @@ if (!Number.isSafeInteger(options.warmup) || options.warmup < 0) throw new Error
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const emit = (value) => console.log(JSON.stringify(value));
 const round = (value) => Math.round(value * 1000) / 1000;
+
+/**
+ * The pre-change tree for `--baseline <commit>`: the whole `lib/` directory at
+ * that commit, extracted next to a `node_modules` symlink so the tree's own bare
+ * specifiers (zod, the official packages) resolve exactly as the working tree's
+ * do. Nothing in it is rewritten or re-implemented; it is imported as committed.
+ */
+async function materializeCommitTree(commit, home) {
+  const directory = join(home, "baseline-tree");
+  await mkdir(directory, { recursive: true });
+  const tarball = join(directory, "lib.tar");
+  execFileSync("git", ["archive", "--format=tar", "-o", tarball, commit, "lib"], { cwd: REPO_ROOT });
+  execFileSync("tar", ["-xf", tarball, "-C", directory]);
+  await rm(tarball);
+  await symlink(join(REPO_ROOT, "node_modules"), join(directory, "node_modules"), "dir");
+  return join(directory, "lib");
+}
+
+/**
+ * Count the projections one implementation builds on the same workload. This
+ * pass is deliberately un-timed: it serialises every projection it observes, so
+ * its own duration says nothing. Callers read it as attribution for the 
+ * allocation the timed sessions spend, not as a second measurement.
+ */
+async function attribute(openDomainStorage, treeLib, home, uuid) {
+  const memory = await import(pathToFileURL(join(treeLib, "dockyard-domain", "memory.js")).href);
+  const observation = await import(pathToFileURL(join(treeLib, "dockyard-domain", "observation.js")).href);
+  const counters = { memoryLoad: 0, memorySnapshot: 0, memorySnapshotBytes: 0, observationLoad: 0, observationSnapshot: 0, observationSnapshotBytes: 0, structuredClone: 0 };
+  const serializedBytes = (value) => { try { return JSON.stringify(value).length; } catch { return 0; } };
+  const originals = new Map();
+  const wrap = (prototype, name, key, bytesKey) => {
+    const original = prototype[name];
+    originals.set(original, [prototype, name]);
+    prototype[name] = function (...called) {
+      counters[key] += 1;
+      const out = original.apply(this, called);
+      if (bytesKey) counters[bytesKey] += serializedBytes(out);
+      return out;
+    };
+  };
+  const originalClone = globalThis.structuredClone;
+  globalThis.structuredClone = function (value, ...rest) { counters.structuredClone += 1; return originalClone(value, ...rest); };
+  wrap(memory.EvolutionMemory.prototype, "load", "memoryLoad");
+  wrap(memory.EvolutionMemory.prototype, "snapshot", "memorySnapshot", "memorySnapshotBytes");
+  wrap(observation.EvolutionObservationStore.prototype, "load", "observationLoad");
+  wrap(observation.EvolutionObservationStore.prototype, "snapshot", "observationSnapshot", "observationSnapshotBytes");
+  try {
+    await run(openDomainStorage, home, options.writes, options.buckets, uuid);
+    return counters;
+  } finally {
+    globalThis.structuredClone = originalClone;
+    for (const [original, [prototype, name]] of originals) prototype[name] = original;
+  }
+}
 function summarize(values) {
   const sorted = [...values].sort((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
@@ -206,10 +274,14 @@ function assertEquivalent(baseline, after, label) {
 
 const home = await mkdtemp(join(tmpdir(), "dsh-domain-write-bench-"));
 try {
-  const baseline = await domainStorageBaseline();
-  if (!options.memory) {
+  // Two ways to name the pre-change side: the default is the single-file rc.8
+  // anchor (materialised by the parent run and handed over through --memory),
+  // and `--baseline <commit>` replaces it with the whole committed tree. The
+  // tree form is what covers the sibling modules the write path loads.
+  const anchor = options.baseline ? null : await domainStorageBaseline();
+  if (!options.memory && !options.baseline) {
     const baselineFile = join(home, "baseline-source.mjs");
-    await writeFile(baselineFile, baseline.source);
+    await writeFile(baselineFile, anchor.source);
     const code = await new Promise((fulfill, reject) => {
       const child = spawn(process.execPath, [fileURLToPath(import.meta.url), ...args, "--memory", baselineFile], { stdio: "inherit" });
       child.once("error", reject);
@@ -217,18 +289,30 @@ try {
     });
     process.exitCode = code;
   } else {
-    const baselineSource = await readFile(options.memory, "utf8");
-    assert.equal(baselineSource, baseline.source, "--memory must contain exactly domainStorageBaseline().source");
-    const afterSource = await readFile(WORKING_SOURCE, "utf8");
+    const afterLib = options.lib ? resolve(options.lib) : WORKING_LIB;
+    const afterSource = await readFile(join(afterLib, "domain-storage.js"), "utf8");
+    let baselineLib = afterLib;
+    let baselineSource;
+    let baselineSourcePath = options.memory ?? null;
+    if (options.baseline) {
+      baselineLib = await materializeCommitTree(options.baseline, home);
+      baselineSourcePath = join(baselineLib, "domain-storage.js");
+      baselineSource = await readFile(baselineSourcePath, "utf8");
+    } else {
+      baselineSource = await readFile(options.memory, "utf8");
+      assert.equal(baselineSource, anchor.source, "--memory must contain exactly domainStorageBaseline().source");
+    }
     const implementations = {
-      baseline: (await materializeDomainStorage(baselineSource, home, "baseline")).openDomainStorage,
-      after: (await materializeDomainStorage(afterSource, home, "after")).openDomainStorage,
+      baseline: (await materializeDomainStorage(baselineSource, home, "baseline", join(baselineLib, "domain-storage.js"))).openDomainStorage,
+      after: (await materializeDomainStorage(afterSource, home, "after", join(afterLib, "domain-storage.js"))).openDomainStorage,
     };
-    const sources = { baseline: { source: options.memory, sourceSha256: sha256(baselineSource) },
-      after: { source: WORKING_SOURCE, sourceSha256: sha256(afterSource) } };
+    const sources = { baseline: { source: baselineSourcePath, sourceSha256: sha256(baselineSource) },
+      after: { source: join(afterLib, "domain-storage.js"), sourceSha256: sha256(afterSource) } };
     assert.notEqual(sources.baseline.sourceSha256, sources.after.sourceSha256, "A/B implementations must differ");
     emit({ type: "metadata", node: process.version, platform: `${process.platform}/${process.arch}`,
-      sources, writes: options.writes, sessions: options.sessions, warmup: options.warmup, anchor: baseline.anchor.artifact,
+      sources, writes: options.writes, sessions: options.sessions, warmup: options.warmup,
+      anchor: options.baseline ? `lib/ tree at ${options.baseline}` : anchor.anchor.artifact,
+      family: options.baseline ? "whole-tree" : "single-file",
       clock: `frozen at ${new Date(FROZEN_NOW).toISOString()}`, uuid: "crypto.randomUUID replaced by a per-run deterministic sequence, counter reset before every run",
       scope: "openDomainStorage over the official DomainFacility/JsonStorageBackend, then public port.observe() per write: stage mirror, memory load, work, commit, archive install, hydrate; fixture reset, assertions, snapshots and hashes are outside the timed interval",
       order: "alternate baseline/after order per iteration; both run in the same fixture path; the persisted tree, the query projections and the post-restart projections are compared as raw bytes with no masking for every warmup and measured session",
@@ -255,6 +339,19 @@ try {
             perWriteMinMs: round(summary.min), perWriteMaxMs: round(summary.max),
             latency: result.latency, shape: result.shape, equivalent: true });
           if (!warmup) results[implementation].push(result);
+        }
+      }
+      if (options.attribute) {
+        // Un-timed, and deliberately outside the timed rounds: this pass
+        // serialises what it counts.
+        for (const implementation of ["baseline", "after"]) {
+          const treeLib = implementation === "baseline" ? baselineLib : afterLib;
+          const counters = await attribute(implementations[implementation], treeLib, home, uuid);
+          // `attribute()` drives the same `run()` as the timed sessions, which
+          // opens the port with one warm write before the counted loop.
+          const observedWrites = options.writes + 1;
+          emit({ type: "attribution", implementation, writes: options.writes, observedWrites, sourceSha256: sources[implementation].sourceSha256,
+            total: counters, perWrite: Object.fromEntries(Object.entries(counters).map(([key, value]) => [key, round(value / observedWrites)])) });
         }
       }
     } finally { uuid.restore(); unfreeze(); }

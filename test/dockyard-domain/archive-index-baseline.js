@@ -344,7 +344,47 @@ const reversals = [
   // dropped once no reader existed, and the reversal restores it so the
   // reconstruction still reaches the pinned pre-change source.
   ["    return { collections, records, canonical: [...canonicalByKey.values()], report };\n",
-   "    return { collections, histories, records, canonical: [...canonicalByKey.values()], report };\n"]
+   "    return { collections, histories, records, canonical: [...canonicalByKey.values()], report };\n"],
+  // `load()` gained the `snapshot: false` mode the domain port and the
+  // observation store use to skip a projection they discard. The reversal drops
+  // the option and the concurrency-sharing rewrite with it, so the
+  // reconstruction still reaches the pinned pre-change source.
+  ["  /**\n" +
+   "   * Load the durable state and, unless the caller asks otherwise, return the\n" +
+   "   * hot projection of it.\n" +
+   "   *\n" +
+   "   * The projection is the *returned* value, never a side effect of loading:\n" +
+   "   * every reader in this package either consumes it or discards it, and both\n" +
+   "   * call sites that discard it (the domain port's `createMemory()` and the\n" +
+   "   * observation store's observation-window read) pay for a deep clone of every\n" +
+   "   * collection only to drop it. `{ snapshot: false }` still performs the whole\n" +
+   "   * load - state-store read, archive index reconciliation, eviction and\n" +
+   "   * archival - and skips only the closing `snapshot()`, which clones state that\n" +
+   "   * loading has already finished mutating and cannot mutate again.\n" +
+   "   */\n" +
+   "  async load({ snapshot = true } = {}) {\n" +
+   "    if (this.loaded) return snapshot ? this.snapshot() : undefined;\n" +
+   "    if (this.loading) {\n" +
+   "      // A concurrent load shares the one loading run; the first caller's\n" +
+   "      // projection is handed on, which is what `return this.loading` gave back.\n" +
+   "      const shared = await this.loading;\n" +
+   "      return snapshot ? (shared ?? this.snapshot()) : undefined;\n" +
+   "    }\n" +
+   "    this.loading = (async () => {\n",
+   "  async load() {\n" +
+   "    if (this.loaded) return this.snapshot();\n" +
+   "    if (this.loading) return this.loading;\n" +
+   "    this.loading = (async () => {\n"],
+  ["      this.loaded = true;\n" +
+   "      return snapshot ? this.snapshot() : undefined;\n" +
+   "    })();\n" +
+   "    try { return await this.loading; } finally { this.loading = null; }\n" +
+   "  }\n",
+   "      this.loaded = true;\n" +
+   "      return this.snapshot();\n" +
+   "    })();\n" +
+   "    try { return await this.loading; } finally { this.loading = null; }\n" +
+   "  }\n"]
 ];
 
 export function reconstructPreSharedScan(source) {

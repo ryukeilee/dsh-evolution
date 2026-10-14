@@ -49,6 +49,12 @@ const SOURCE_PATH = "lib/domain-storage.js";
 // entry succeed where the released implementation refuses it. See
 // `docs/performance/domain-write-path.md` section 4.
 //
+// A later round added a fourth reversed piece: both load calls that discard the
+// projection they used to build now ask for it not to be built (`load({ snapshot:
+// false })`). Loading is unchanged apart from the skipped clone, and the
+// cold-history read the withdrawn candidate depended on is performed explicitly
+// by the observation store's own `load()`.
+//
 // The write-path variant is not the only change after the anchor: on-demand
 // experience recall added a read-only `recall` method to the same port, and a
 // read that never writes cannot change the persisted bytes this file's
@@ -72,13 +78,25 @@ const reversals = [
    "    close,\n",
    "    // Evaluator is deliberately advisory, never production authority.\n" +
    "    evaluate: evidence => evaluator.evaluate(evidence), close,\n"],
-  ["    // The store is not read afterwards, but `load()` is not inert: its\n" +
-   "    // `snapshot()` reads `memory.hasColdHistory`, which derives `Number(count)`\n" +
-   "    // from every `coldArchives` entry and therefore rejects a durable\n" +
-   "    // aggregate whose entry cannot be coerced. Removing this call silently\n" +
-   "    // accepted the first commit after such a state was written; keeping it\n" +
-   "    // preserves the loud failure the released implementation has.\n",
-   ""],
+  ["    // The store is not read afterwards, and neither is the projection its\n" +
+   "    // `load()` would return, so the load is asked for without it. What\n" +
+   "    // `hydrate()` does need from the load is its cold-history read:\n" +
+   "    // `memory.hasColdHistory` derives `Number(count)` from every\n" +
+   "    // `coldArchives` entry and therefore rejects a durable aggregate whose\n" +
+   "    // entry cannot be coerced. Removing this call silently accepted the first\n" +
+   "    // commit after such a state was written; keeping it preserves the loud\n" +
+   "    // failure the released implementation has, with or without the projection.\n" +
+   "    observations = new EvolutionObservationStore({ memory });\n" +
+   "    await observations.load({ snapshot: false });\n",
+   "    observations = new EvolutionObservationStore({ memory });\n" +
+   "    await observations.load();\n"],
+  ["    const instance = new EvolutionMemory({ stateStore, transaction: { persist: stateStore.update }, mutationAuthority: authority, archiveWriteGuard });\n" +
+   "    // The load's own work is required (state restore, archive index\n" +
+   "    // reconciliation, eviction and archival); the hot projection it would\n" +
+   "    // return is not: no caller of this factory reads it.\n" +
+   "    await instance.load({ snapshot: false });\n",
+   "    const instance = new EvolutionMemory({ stateStore, transaction: { persist: stateStore.update }, mutationAuthority: authority, archiveWriteGuard });\n" +
+   "    await instance.load();\n"],
   ["    // `current` is the output of `schema.parse` above, so `pending.aggregate`\n" +
    "    // and `pending.applied` are already validated projections of this exact\n" +
    "    // durable document; re-parsing them with the same schema can only\n" +
@@ -140,15 +158,16 @@ export async function domainStorageBaseline() {
 /**
  * Materialise one `lib/domain-storage.js` source as an importable module so an
  * A/B run or a differential test can load the pre-change and post-change
- * implementations side by side. Relative specifiers resolve to the working
- * tree, so both implementations share the same sibling modules; bare specifiers
- * resolve through this process's module map. Only the file under test differs.
+ * implementations side by side. Relative specifiers resolve to the tree the
+ * source belongs to (the working tree by default), so a whole-tree comparison
+ * really loads two trees' siblings; bare specifiers resolve through this
+ * process's module map. Only the file under test differs.
  */
-export async function materializeDomainStorage(source, home, label) {
+export async function materializeDomainStorage(source, home, label, resolveFrom = WORKING_SOURCE) {
   const modulePath = join(home, `${label}.mjs`);
   const rewritten = source
     .replace(/from (["'])(\.\/[^"']+)\1/g,
-      (_match, quote, specifier) => `from ${quote}${new URL(specifier, pathToFileURL(WORKING_SOURCE)).href}${quote}`)
+      (_match, quote, specifier) => `from ${quote}${new URL(specifier, pathToFileURL(resolveFrom)).href}${quote}`)
     .replace(/from (["'])([^."'][^"']*)\1/g,
       (_match, quote, specifier) => `from ${quote}${import.meta.resolve(specifier)}${quote}`);
   await writeFile(modulePath, rewritten);

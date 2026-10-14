@@ -13,11 +13,17 @@
 // A fourth candidate - dropping the `EvolutionObservationStore` that `hydrate()`
 // loads and never reads - was withdrawn after an independent review found a real
 // divergence, which is now a regression test here: its `load()` is not inert,
-// because `snapshot()` reads `memory.hasColdHistory`, which coerces every
-// `coldArchives` entry with `Number(count)`. Without the call, the first commit
-// after a durable aggregate with a non-coercible entry succeeded where the
-// pre-change implementation refuses it. See
-// `docs/performance/domain-write-path.md` section 4.
+// because it reads `memory.hasColdHistory`, which coerces every `coldArchives`
+// entry with `Number(count)`. Without the call, the first commit after a durable
+// aggregate with a non-coercible entry succeeded where the pre-change
+// implementation refuses it. See `docs/performance/domain-write-path.md`
+// section 4.
+//
+// A later round kept that read while removing the projections the two `load()`
+// calls in this file build and discard: `load({ snapshot: false })` performs the
+// same load and skips only the returned clone. The reversed pieces below cover
+// that option as well, and the cold-history read stays pinned both through the
+// port (the withdrawn-candidate test) and directly on the store.
 //
 // Everything is anchored to `release/dsh-evolution-0.2.0-rc.8.tgz`, which is
 // committed and predates the change. Both implementations are loaded as real
@@ -144,8 +150,13 @@ test('the reconstruction is anchored to the pinned pre-change artifact', async (
   assert.doesNotMatch(WORKING, /updater\(structuredClone\(aggregate\)\)/);
   assert.match(WORKING, /inlineSerialization: true/);
   assert.match(WORKING, /update: async updater => \{ aggregate = aggregateSchema\.parse\(updater\(aggregate\)\); \}/);
-  // The withdrawn fourth piece must stay exactly as the released artifact had it.
-  assert.match(WORKING, /observations = new EvolutionObservationStore\(\{ memory \}\);\n    await observations\.load\(\);/);
+  // The withdrawn fourth piece must stay: the store is still constructed and
+  // still loaded, and the added option removes only the projection that load
+  // built and every reader discarded. The cold-history read it must keep is
+  // pinned behaviourally below, in both the port-level test and directly on the
+  // store.
+  assert.match(WORKING, /observations = new EvolutionObservationStore\(\{ memory \}\);\n    await observations\.load\(\{ snapshot: false \}\);/);
+  assert.doesNotMatch(WORKING, /observations = new EvolutionObservationStore\(\{ memory \}\);\n    await observations\.load\(\);/);
 });
 
 test('a durable aggregate whose cold archive entry cannot be coerced still fails loudly', async () => {
