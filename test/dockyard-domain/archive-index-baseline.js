@@ -58,7 +58,7 @@ const reversals = [
    "   */\n" +
    "  async #reconcileActiveArchive(collection, file) {\n" +
    "    const info = await stat(file, { bigint: true });\n" +
-   "    const memo = recallArchiveScan(collection, info);\n" +
+   "    const memo = recallArchiveScan(collection, file, info);\n" +
    "    if (memo) {\n" +
    "      // Only the clock field differs from a fresh scan of these bytes, and the\n" +
    "      // copy keeps this instance's entry detached from the memo's.\n" +
@@ -71,7 +71,7 @@ const reversals = [
    "    try { raw = await readFile(file, \"utf8\"); } catch (error) { if (error?.code !== \"ENOENT\") throw error; }\n" +
    "    const scanned = this.#scanArchiveRaw(raw);\n" +
    "    const rebuilt = this.#indexEntryFromRaw(collection, file, raw, { sealed: false }, scanned);\n" +
-   "    rememberArchiveScan(collection, info, rebuilt, this.#activeKeysFromRaw(collection, raw, scanned));\n" +
+   "    rememberArchiveScan(collection, file, info, rebuilt, this.#activeKeysFromRaw(collection, raw, scanned));\n" +
    "    return rebuilt;\n" +
    "  }\n" +
    "\n" +
@@ -110,15 +110,17 @@ const reversals = [
    "const archiveScanMemo = new Map();\n" +
    "\n" +
    "/**\n" +
-   " * The key carries the collection as well as the file identity: the entry it\n" +
-   " * answers with names its own collection (`segmentId`, `recordType`, `file`), and\n" +
-   " * two collections' active archives are only ever the same inode if something\n" +
-   " * outside this plugin hard-linked them.\n" +
+   " * The key carries the collection and the file name as well as the file\n" +
+   " * identity: the entry it answers with names its own collection and file\n" +
+   " * (`segmentId`, `recordType`, `file`), and two active archives are only ever the\n" +
+   " * same inode under a different name or collection if something outside this\n" +
+   " * plugin hard-linked them. The staged mirror shares both, which is what makes\n" +
+   " * the repeated load hit.\n" +
    " */\n" +
-   "function archiveScanKey(collection, info) { return `${collection}\\u0000${info.dev}\\u0000${info.ino}`; }\n" +
+   "function archiveScanKey(collection, file, info) { return `${collection}\\u0000${file.split(\"/\").at(-1)}\\u0000${info.dev}\\u0000${info.ino}`; }\n" +
    "\n" +
-   "function recallArchiveScan(collection, info) {\n" +
-   "  const key = archiveScanKey(collection, info);\n" +
+   "function recallArchiveScan(collection, file, info) {\n" +
+   "  const key = archiveScanKey(collection, file, info);\n" +
    "  const memo = archiveScanMemo.get(key);\n" +
    "  if (!memo || memo.size !== Number(info.size) || memo.mtimeNs !== String(info.mtimeNs)) return null;\n" +
    "  // Keep the most recently reused files last in the eviction order.\n" +
@@ -127,8 +129,8 @@ const reversals = [
    "  return memo;\n" +
    "}\n" +
    "\n" +
-   "function rememberArchiveScan(collection, info, entry, activeKeys) {\n" +
-   "  const key = archiveScanKey(collection, info);\n" +
+   "function rememberArchiveScan(collection, file, info, entry, activeKeys) {\n" +
+   "  const key = archiveScanKey(collection, file, info);\n" +
    "  archiveScanMemo.delete(key);\n" +
    "  // The memo owns deep copies of everything it records: the instance that\n" +
    "  // produced the scan keeps appending to its own key set and keeps its own\n" +

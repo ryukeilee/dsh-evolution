@@ -17,7 +17,7 @@
  */
 import assert from "node:assert/strict";
 import test from "node:test";
-import { appendFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, mkdtemp, readFile, rename, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -145,6 +145,83 @@ test("the active-archive scan memo only answers for the bytes this process scann
     assert.equal(replaced.archiveActiveKeys.get("observations").has("id:appended"), true);
     assert.deepEqual(await indexEntries(files.index), grown, "identical bytes keep the identical index entry");
   } finally { await rm(files.home, { recursive: true, force: true }); }
+});
+
+test("the memo is keyed by the file identity, not by size and time alone", async () => {
+  // Every component is individually observable when the timestamps are pinned
+  // to whole seconds, which `utimes` reproduces exactly: a replacement file can
+  // share the size and the mtime of the scanned file while being a different
+  // inode, a rewrite can change the bytes without changing the size, and an
+  // append can be hidden behind a restored mtime.
+  const raw = JSON.stringify({ id: "a", recordedAt: NOW }) + "\n";
+  const files = await fixture("observations", raw);
+  const pinned = 1_000_000_000;
+  const lines = raw.split("\n").filter(Boolean);
+  try {
+    await utimes(files.archive, pinned, pinned);
+    const first = await newMemory(files.store);
+    assert.equal(first.archiveActiveKeys.get("observations").has("id:a"), true);
+
+    // Same size, same mtime, different inode: an inode-blind key would answer
+    // with the old entry and never see the replacement's row.
+    const replacementLine = JSON.stringify({ id: "b", recordedAt: NOW });
+    const replacement = `${files.archive}.replacement`;
+    await writeFile(replacement, replacementLine + "\n");
+    await utimes(replacement, pinned, pinned);
+    await rename(replacement, files.archive);
+    const replacedParses = await countArchiveLineParses([...lines, replacementLine],
+      () => newMemory(new JsonStateStore({ home: files.home })));
+    assert.equal(replacedParses.get(replacementLine), 1, "a new inode with the same size and mtime must be scanned");
+    const replaced = await newMemory(new JsonStateStore({ home: files.home }));
+    assert.deepEqual([...replaced.archiveActiveKeys.get("observations")], ["id:b"]);
+
+    // Same inode, same size, rewritten in place: only the mtime changes, and a
+    // time-blind key would keep answering with the replaced row.
+    const rewrittenLine = JSON.stringify({ id: "d", recordedAt: NOW });
+    assert.equal(Buffer.byteLength(rewrittenLine), Buffer.byteLength(replacementLine), "the rewrite must keep the byte size");
+    await writeFile(files.archive, rewrittenLine + "\n");
+    const rewrittenParses = await countArchiveLineParses([replacementLine, rewrittenLine],
+      () => newMemory(new JsonStateStore({ home: files.home })));
+    assert.equal(rewrittenParses.get(rewrittenLine), 1, "an in-place rewrite with the same size must be scanned");
+    const rewritten = await newMemory(new JsonStateStore({ home: files.home }));
+    assert.deepEqual([...rewritten.archiveActiveKeys.get("observations")], ["id:d"]);
+
+    // Same inode, same mtime, larger size: a size-blind key would answer with
+    // the old entry and never see the appended row. The mtime is pinned before
+    // the scan as well, so the memo's recorded stamp is (this size, this mtime)
+    // and only the size can tell the grown file apart.
+    await utimes(files.archive, pinned, pinned);
+    await newMemory(new JsonStateStore({ home: files.home }));
+    const appended = JSON.stringify({ id: "c", recordedAt: NOW });
+    await appendFile(files.archive, appended + "\n");
+    await utimes(files.archive, pinned, pinned);
+    const grownParses = await countArchiveLineParses([rewrittenLine, appended], () => newMemory(new JsonStateStore({ home: files.home })));
+    assert.equal(grownParses.get(appended), 1, "a grown file with a restored mtime must be scanned");
+    assert.equal(grownParses.get(rewrittenLine), 1, "the scan must cover the whole grown file");
+    const grown = await newMemory(new JsonStateStore({ home: files.home }));
+    assert.deepEqual([...grown.archiveActiveKeys.get("observations")].sort(), ["id:c", "id:d"]);
+  } finally { await rm(files.home, { recursive: true, force: true }); }
+});
+
+test("a memoized entry keeps the file name it was scanned under", async () => {
+  // The entry names its own file, so two names for the same inode and
+  // collection are two different entries even though they share every byte.
+  const home = await mkdtemp(join(tmpdir(), "dsh-archive-memo-"));
+  const firstStore = new JsonStateStore({ filePath: join(home, "a.json") });
+  const secondStore = new JsonStateStore({ filePath: join(home, "b.json") });
+  const firstArchive = `${firstStore.filePath}.observations-archive.jsonl`;
+  const secondArchive = `${secondStore.filePath}.observations-archive.jsonl`;
+  await mkdir(dirname(firstArchive), { recursive: true });
+  await writeFile(firstArchive, JSON.stringify({ id: "a", recordedAt: NOW }) + "\n");
+  const { linkSync } = await import("node:fs");
+  linkSync(firstArchive, secondArchive);
+  try {
+    const first = await newMemory(firstStore);
+    const second = await newMemory(secondStore);
+    assert.equal(first.archiveIndexEntries.get(firstArchive).file, "a.json.observations-archive.jsonl");
+    assert.equal(second.archiveIndexEntries.get(secondArchive).file, "b.json.observations-archive.jsonl",
+      "an entry must keep the name it was scanned under");
+  } finally { await rm(home, { recursive: true, force: true }); }
 });
 
 test("the memo hands out its own index entry, including an object-valued timestamp", async () => {

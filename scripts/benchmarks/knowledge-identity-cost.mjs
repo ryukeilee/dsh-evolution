@@ -253,6 +253,39 @@ function assertPinnedValues(pinned, keyOf, rows) {
   }
 }
 
+/**
+ * The fold argument is about the strings `normalizeText()` feeds the collapses,
+ * and the script's own copy of that pipeline cannot prove what the production
+ * module does. This anchors the production preprocessing behaviourally: a record
+ * whose field carries a code point that NFKC maps to ASCII must get exactly the
+ * identity of the same record with the ASCII form, and a boundary character must
+ * not make the 8+ collapse fire next to it. Both fail if the production step
+ * stops being NFKC (for example NFC, which leaves U+017F alone).
+ */
+function verifyProductionAnchor() {
+  const cases = [
+    ["\u017f", "long s"],
+    ["\u212a", "kelvin sign"],
+    ["\uff21", "fullwidth A"],
+    ["\u2460", "circled one"],
+  ];
+  const anchored = [];
+  for (const [character, label] of cases) {
+    const folded = character.normalize("NFKC");
+    assert.notEqual(folded, character, `${label} must actually be changed by NFKC`);
+    const withCharacter = { problem: character + "deadbeef", componentId: "plugin:anchor" };
+    const withAscii = { problem: folded + "deadbeef", componentId: "plugin:anchor" };
+    assert.equal(knowledgeKeyOf(withCharacter), knowledgeKeyOf(withAscii),
+      `the production pipeline must fold ${label} (U+${character.codePointAt(0).toString(16).toUpperCase()}) before the collapses`);
+    assert.equal(
+      JSON.stringify(normalizeKnowledgeEvent(withCharacter, { sourceCollection: "observations", now: new Date(NOW) })),
+      JSON.stringify(normalizeKnowledgeEvent(withAscii, { sourceCollection: "observations", now: new Date(NOW) })),
+      `the whole normalized event must agree for ${label}`);
+    anchored.push(`U+${character.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")}`);
+  }
+  return { cases: anchored.length, anchored };
+}
+
 async function main() {
   const report = {
     node: process.version, platform: `${process.platform}/${process.arch}`,
@@ -270,6 +303,8 @@ async function main() {
   assert.deepEqual(folds.nfkcSurvivors, [], "no code point may reach the collapses while making `\\b` disagree");
   assert.equal(folds.boundaryExampleDiffers, true, "the general inequality of the two patterns must stay pinned");
 
+  const anchor = verifyProductionAnchor();
+  report.productionAnchor = anchor;
   const pinned = await loadPinned();
   report.baseline = { version: pinned.pin.version, sha256: pinned.pin.sha256 };
   const sides = [{ label: "candidate", keyOf: knowledgeKeyOf, event: normalizeKnowledgeEvent }];
@@ -327,6 +362,7 @@ async function main() {
   } finally { await rm(pinned.directory, { recursive: true, force: true }); }
   if (options.json) { console.log(JSON.stringify(report, null, 2)); return; }
   console.log(`node ${report.node} ${report.platform} | pinned values dsh-evolution-${report.baseline.version}`);
+  console.log(`production anchor: ${anchor.cases} NFKC-sensitive code points (${anchor.anchored.join(", ")}) fold before the collapses`);
   console.log(`collapse spellings: ${folds.codePoints} code points + ${folds.strings} strings; class differences ${folds.classDifferences}, pipeline-pattern differences ${folds.patternDifferences}, \\b difference set ${folds.boundaryDifferences.join("+")}, NFKC survivors ${folds.nfkcSurvivors.length} (general-case example still differs: ${folds.boundaryExampleDiffers})`);
   for (const result of report.results) {
     console.log(`${result.label.padEnd(9)}${result.directory ?? ""} wall ${result.observations.wallMs.toFixed(3)} ms / ${result.knowledge.wallMs.toFixed(3)} ms  cpu ${result.observations.cpuMs.toFixed(3)} ms / ${result.knowledge.cpuMs.toFixed(3)} ms  (${result.observations.rows} observations + ${result.knowledge.rows} knowledge rows)`);

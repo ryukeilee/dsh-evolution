@@ -223,6 +223,11 @@ async function timeSession(Memory, root, rows, knowledgeRows, { warmup, samples 
   const reference = await runSession(Memory, root, rows, knowledgeRows);
   const counts = await runSession(Memory, join(root, "counted"), rows, knowledgeRows, { instrument: true });
   assert.deepEqual(counts.tree, reference.tree, "counting parses must not change the persisted tree");
+  // The control is the first load of a file this process has never scanned, so
+  // it must read every active line; the reduction below must come from the
+  // repeated loads, never from a control that stopped reading.
+  assert.equal(counts.liveParsed, rows.length + knowledgeRows.length,
+    "the first load of the live tree must parse every active line");
   const timed = [];
   for (let index = 0; index < warmup + samples; index += 1) {
     // A fresh fixture per sample, so the memo never carries over between them.
