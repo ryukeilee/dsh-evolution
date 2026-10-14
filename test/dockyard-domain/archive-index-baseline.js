@@ -178,6 +178,146 @@ const reversals = [
    "          // Active files are the bounded recovery surface after an append/index crash.\n          let raw = \"\";\n          try { raw = await readFile(file, \"utf8\"); } catch (error) { if (error?.code !== \"ENOENT\") throw error; }\n          const rebuilt = this.#indexEntryFromRaw(collection, file, raw, { sealed: false });\n          this.#activeKeysFromRaw(collection, raw);\n          if (JSON.stringify(current) !== JSON.stringify(rebuilt)) changed = true;\n          this.archiveIndexEntries.set(file, rebuilt);\n          continue;\n"],
   ["          let raw;\n          try { raw = await readFile(file, \"utf8\"); } catch { continue; }\n          const sealed = file !== this.#archivePath(collection);\n          const scanned = this.#scanArchiveRaw(raw);\n          entries.set(file, this.#indexEntryFromRaw(collection, file, raw, { sealed }, scanned));\n          if (!sealed) this.#activeKeysFromRaw(collection, raw, scanned);\n        }\n      }\n      this.archiveIndexEntries = entries;\n",
    "          let raw;\n          try { raw = await readFile(file, \"utf8\"); } catch { continue; }\n          const sealed = file !== this.#archivePath(collection);\n          entries.set(file, this.#indexEntryFromRaw(collection, file, raw, { sealed }));\n          if (!sealed) this.#activeKeysFromRaw(collection, raw);\n        }\n      }\n      this.archiveIndexEntries = entries;\n"],
+  // The retention plan: one memoized normalization per source row (the sweep that
+  // re-visited every source row is folded into the accumulation pass), knowledge
+  // rows reused instead of re-copied, and the classification loop in
+  // `#retentionPlan()` reading that memo instead of normalizing again.
+  [  "    });\n" +
+  "  }\n" +
+  "\n" +
+  "  /**\n" +
+  "   * Build the knowledge/retention plan for one snapshot of the histories.\n" +
+  "   *\n" +
+  "   * `histories` is already a plan-owned deep copy (`#mergeArchived` clones), so\n" +
+  "   * the plan's knowledge output reuses those row objects instead of copying\n" +
+  "   * them again: `records` is handed to the caller, which takes ownership, and\n" +
+  "   * nothing reads `histories` after this returns. The accumulator merge is the\n" +
+  "   * only step that produces new objects.\n" +
+  "   *\n" +
+  "   * Every source row is normalized exactly once per plan and the result is\n" +
+  "   * memoized for the two readers that need it: the accumulation pass below and\n" +
+  "   * the classification loop in `#retentionPlan()`. Only the accumulation pass\n" +
+  "   * reads anything past whether the row is knowledge-bearing at all, but each\n" +
+  "   * reader used to re-materialize the whole event (`outcome`, `metrics`,\n" +
+  "   * `recovery`, `relations`, references) for every row. The memo is keyed by\n" +
+  "   * collection and row identity and lives only for this call.\n" +
+  "   */\n" +
+  "  #knowledgeRetentionPlan(histories, references = new Set()) {\n" +
+  "    const normalizedByCollection = new Map();\n" +
+  "    const knowledgeEventOf = (collection, entry) => {\n" +
+  "      let cached = normalizedByCollection.get(collection);\n" +
+  "      if (cached === undefined) { cached = new Map(); normalizedByCollection.set(collection, cached); }\n" +
+  "      if (!cached.has(entry)) cached.set(entry, normalizeKnowledgeEvent(entry, { sourceCollection: collection, now: timestamp(this.clock) }));\n" +
+  "      return cached.get(entry);\n" +
+  "    };\n" +
+  "    const retainedEntries = new Map(this.#collections().map((collection) => [collection, new Set()]));\n" +
+  "    const knowledgeByKey = new Map();\n" +
+  "    const coveredRefs = new Set();\n" +
+  "    for (const entry of histories.knowledge ?? []) {\n" +
+  "      const key = entry?.knowledgeKey ?? canonicalKnowledgeKey(entry, { sourceCollection: \"knowledge\", now: timestamp(this.clock) });\n" +
+  "      if (!key) continue;\n" +
+  "      knowledgeByKey.set(key, entry);\n" +
+  "      for (const ref of entry?.sourceRefs ?? []) coveredRefs.add(String(ref));\n" +
+  "    }\n" +
+  "    const sourceGroups = new Map();\n" +
+  "    const sourceCollections = this.#collections().filter((collection) => collection !== \"knowledge\" && collection !== \"tombstones\");\n" +
+  "    for (const collection of sourceCollections) {\n" +
+  "      for (const entry of histories[collection] ?? []) {\n" +
+  "        const event = knowledgeEventOf(collection, entry);\n" +
+  "        // A row with no knowledge identity at all is not grouped and stays\n" +
+  "        // retained; the sweep that used to collect these rows second-hand is\n" +
+  "        // folded into this pass, since it visited exactly the same rows.\n" +
+  "        if (!event) { retainedEntries.get(collection)?.add(entry); continue; }\n" +
+  "        const key = event.knowledgeKey;\n" +
+  "        const sourceRef = sourceEventReference(collection, entry);\n" +
+  "        const existing = knowledgeByKey.get(key);\n",
+  "    });\n" +
+  "  }\n" +
+  "\n" +
+  "  #knowledgeRetentionPlan(histories, references = new Set()) {\n" +
+  "    const knowledgeByKey = new Map();\n" +
+  "    const coveredRefs = new Set();\n" +
+  "    for (const entry of histories.knowledge ?? []) {\n" +
+  "      const key = entry?.knowledgeKey ?? canonicalKnowledgeKey(entry, { sourceCollection: \"knowledge\", now: timestamp(this.clock) });\n" +
+  "      if (!key) continue;\n" +
+  "      knowledgeByKey.set(key, clone(entry));\n" +
+  "      for (const ref of entry?.sourceRefs ?? []) coveredRefs.add(String(ref));\n" +
+  "    }\n" +
+  "    const sourceGroups = new Map();\n" +
+  "    const sourceCollections = this.#collections().filter((collection) => collection !== \"knowledge\" && collection !== \"tombstones\");\n" +
+  "    for (const collection of sourceCollections) {\n" +
+  "      for (const entry of histories[collection] ?? []) {\n" +
+  "        const event = normalizeKnowledgeEvent(entry, { sourceCollection: collection, now: timestamp(this.clock) });\n" +
+  "        if (!event) continue;\n" +
+  "        const key = event.knowledgeKey;\n" +
+  "        const sourceRef = sourceEventReference(collection, entry);\n" +
+  "        const existing = knowledgeByKey.get(key);\n"],
+  [  "        sourceGroups.get(key).push({ collection, entry, event });\n" +
+  "      }\n" +
+  "    }\n" +
+  "    let consolidated = 0;\n" +
+  "    for (const group of sourceGroups.values()) {\n" +
+  "      const byCollection = new Map();\n",
+  "        sourceGroups.get(key).push({ collection, entry, event });\n" +
+  "      }\n" +
+  "    }\n" +
+  "    const retainedEntries = new Map(this.#collections().map((collection) => [collection, new Set()]));\n" +
+  "    let consolidated = 0;\n" +
+  "    for (const group of sourceGroups.values()) {\n" +
+  "      const byCollection = new Map();\n"],
+  [  "        }\n" +
+  "      }\n" +
+  "    }\n" +
+  "    return { knowledge: [...knowledgeByKey.values()], retainedEntries, consolidated, knowledgeEventOf };\n" +
+  "  }\n" +
+  "\n" +
+  "  #retentionPlan() {\n",
+  "        }\n" +
+  "      }\n" +
+  "    }\n" +
+  "    for (const collection of sourceCollections) {\n" +
+  "      for (const entry of histories[collection] ?? []) {\n" +
+  "        if (!normalizeKnowledgeEvent(entry, { sourceCollection: collection, now: timestamp(this.clock) })) retainedEntries.get(collection)?.add(entry);\n" +
+  "      }\n" +
+  "    }\n" +
+  "    return { knowledge: [...knowledgeByKey.values()].map(clone), retainedEntries, consolidated };\n" +
+  "  }\n" +
+  "\n" +
+  "  #retentionPlan() {\n"],
+  [  "    const report = { before: {}, after: {}, retired: 0, consolidated: 0, aggregatedObservations: 0, tombstones: 0, retainedCanonical: canonicalByKey.size, knowledgeBefore: histories.knowledge?.length ?? 0, knowledgeAfter: knowledgePlan.knowledge.length, canonicalKnowledge: knowledgePlan.knowledge.length };\n" +
+  "    for (const collection of collections) {\n" +
+  "      if (collection === \"knowledge\") {\n" +
+  "        // The plan's knowledge rows are already copies it owns (see\n" +
+  "        // `#knowledgeRetentionPlan()`); the caller consumes this array and\n" +
+  "        // nothing else holds it, so no second copy is made here.\n" +
+  "        records[collection] = knowledgePlan.knowledge;\n" +
+  "        report.before[collection] = histories[collection].length;\n" +
+  "        report.after[collection] = records[collection].length;\n" +
+  "        continue;\n",
+  "    const report = { before: {}, after: {}, retired: 0, consolidated: 0, aggregatedObservations: 0, tombstones: 0, retainedCanonical: canonicalByKey.size, knowledgeBefore: histories.knowledge?.length ?? 0, knowledgeAfter: knowledgePlan.knowledge.length, canonicalKnowledge: knowledgePlan.knowledge.length };\n" +
+  "    for (const collection of collections) {\n" +
+  "      if (collection === \"knowledge\") {\n" +
+  "        records[collection] = knowledgePlan.knowledge.map(clone);\n" +
+  "        report.before[collection] = histories[collection].length;\n" +
+  "        report.after[collection] = records[collection].length;\n" +
+  "        continue;\n"],
+  [  "      report.before[collection] = histories[collection].length;\n" +
+  "      for (const entry of histories[collection]) {\n" +
+  "        const recordId = entry?.id === undefined || entry?.id === null ? null : String(entry.id);\n" +
+  "        // Reads the plan's own memoized normalization: this loop only asks\n" +
+  "        // whether the row is knowledge-bearing, which `#knowledgeRetentionPlan()`\n" +
+  "        // already answered for the same row object while accumulating it.\n" +
+  "        const normalizedKnowledge = knowledgePlan.knowledgeEventOf(collection, entry);\n" +
+  "        if (normalizedKnowledge && !knowledgePlan.retainedEntries.get(collection)?.has(entry)) {\n" +
+  "          const replacedBy = recordId ? retiredByCanonical.get(recordId) ?? null : null;\n" +
+  "          const lineageLatest = entry?.lineageId && latestLineage.get(String(entry.lineageId))?.id === recordId;\n",
+  "      report.before[collection] = histories[collection].length;\n" +
+  "      for (const entry of histories[collection]) {\n" +
+  "        const recordId = entry?.id === undefined || entry?.id === null ? null : String(entry.id);\n" +
+  "        const normalizedKnowledge = normalizeKnowledgeEvent(entry, { sourceCollection: collection, now: timestamp(this.clock) });\n" +
+  "        if (normalizedKnowledge && !knowledgePlan.retainedEntries.get(collection)?.has(entry)) {\n" +
+  "          const replacedBy = recordId ? retiredByCanonical.get(recordId) ?? null : null;\n" +
+  "          const lineageLatest = entry?.lineageId && latestLineage.get(String(entry.lineageId))?.id === recordId;\n"]
 ];
 
 export function reconstructPreSharedScan(source) {
@@ -187,6 +327,7 @@ export function reconstructPreSharedScan(source) {
     source = source.replace(after, before);
   }
   assert.doesNotMatch(source, /#scanArchiveRaw/, "the baseline must predate shared scans");
+  assert.doesNotMatch(source, /knowledgeEventOf/, "the baseline must predate the retention-plan normalization memo");
   return source;
 }
 
