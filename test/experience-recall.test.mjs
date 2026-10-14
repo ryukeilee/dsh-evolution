@@ -150,6 +150,23 @@ test('recall: an unavailable source is reported, never read as "no history"', ()
   assert.equal(result.sources.find((entry) => entry.source === 'knowledge').available, false);
 });
 
+test('recall: an exact replay outside the scan window is still detected', () => {
+  const key = experienceKnowledgeKey({ target: TARGET });
+  const oldExact = { knowledgeKey: key, dimensions: { semanticFact: TARGET, scope: TARGET }, state: 'KNOWN', lastOutcome: 'success', effectStats: { successCount: 1, failureCount: 0, successRate: 1 }, occurrenceCount: 1, lastSeen: '2020-01-01T00:00:00.000Z' };
+  const oldUnrelated = { dimensions: { semanticFact: 'plugin:unrelated subsystem', scope: 'plugin:unrelated' }, state: 'KNOWN', lastOutcome: 'success', effectStats: { successCount: 1, failureCount: 0, successRate: 1 }, occurrenceCount: 1, lastSeen: '2020-01-01T00:00:00.000Z' };
+  const recent = Array.from({ length: 20 }, (_, index) => ({
+    dimensions: { semanticFact: `${TARGET} recent ${index}`, scope: TARGET },
+    state: 'KNOWN', lastOutcome: 'success', effectStats: { successCount: 1, failureCount: 0, successRate: 1 }, occurrenceCount: 1, lastSeen: '2026-01-01T00:00:00.000Z',
+  }));
+  const collected = collectKnowledgeExperience([oldExact, oldUnrelated, ...recent], INPUT, { limits: { maxConsidered: 5 } });
+  assert.equal(collected.considered, 5, 'tokenization stays inside the scan window');
+  assert.equal(collected.scanned, 22);
+  const result = finalizeExperienceRecall(INPUT, [collected], { limits: { maxConsidered: 5 } });
+  assert.equal(result.duplicate.key, key, 'the exact replay is found even though it is outside the window');
+  const returned = [...result.resolved, ...result.failures, ...result.candidates];
+  assert.equal(returned.some((record) => record.scope === 'plugin:unrelated'), false, 'a windowed-out non-key row is not scanned');
+});
+
 test('recall: malformed rows are ignored and cannot pollute the projection', () => {
   const rows = [
     null, 42, 'text', [],

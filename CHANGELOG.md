@@ -13,7 +13,7 @@ you install before upgrading DSH.
 - 领域端口的 `recall` 是唯一新增读取方法；检索不写入、不改变数据格式、不改变 promotion 授权与门禁。domain 存储缺失或读取失败时降级为本地 failure memory，并在 `unavailable` 中显式报告，而不是当作“没有历史”。
 - 负向证据现在带上它适用的 target（`#bridgeOutcome` 写入 `scope`），因此同一个 target 的历史失败可跨会话被检索；原始失败文本仍按既有边界在进入领域存储前脱敏。
 - 因宿主的 `#bridgeOutcome` 与 `lib/domain-storage.js` 位于两个固定基线锚点之下，两处逆向重建各自新增了一条显式 reversal 记录（只读 `recall` 方法与被反向重建的同一段源码），锚点仍逐字节对应固定产物。
-- 新增 `test/experience-recall.test.mjs`（16 个用例：分类、精确重放、上界、来源不可用时降级、`__proto__` 与损坏行、真实 `storageDomain` 端到端回读、未签名事件仍拒绝作答）。
+- 新增 `test/experience-recall.test.mjs`（17 个用例：分类、精确重放（含超出扫描窗口的旧记录）、上界、来源不可用时降级、`__proto__` 与损坏行、真实 `storageDomain` 端到端回读、未签名事件仍拒绝作答）。
 
 ## 0.2.0-rc.9 — 默认写入路径的重复工作
 

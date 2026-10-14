@@ -177,7 +177,7 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 - 日常积累不引入模型：失败与观测继续由 `agent/error` / `tools/result` 事件与已签名 event bridge 折叠进 `EvolutionMemory` 与官方 `storageDomain` 的 canonical knowledge（`state` / `lastOutcome` / `effectStats` / `trend` / evidence）。
 - 只有显式动作才检索：`evolution_propose` 在返回中附带 `experienceRecall`；`evolution_history` 传 `query` 时返回同一结果。`inspect`、measurement、autonomous observer 与任何定时器都不会触发检索。
 - 结果分三组：`resolved`（已解决，优先复用）、`failures`（已失败，未换假设前不要重复）、`candidates`（已测量成功且带策略的复用候选）；`duplicate` 报告同一 target 的精确历史重放及其结果，`advice` 只复述记录到的事实。
-- 明确上限：默认每组最多 3 条、每来源最多 12 条、单字段 160 字符、2 条证据引用、只扫描最近 2000 条；调用方只能收紧不能放宽（`lib/experience-recall.js` 的 `EXPERIENCE_RECALL_LIMITS`）。检索只读，不写入、不改变 promotion 授权；`experienceRecall: false` 可整体关闭。
+- 明确上限：默认每组最多 3 条、每来源最多 12 条、单字段 160 字符、2 条证据引用、只对最近 2000 条做文本匹配；调用方只能收紧不能放宽（`lib/experience-recall.js` 的 `EXPERIENCE_RECALL_LIMITS`）。精确重放按 `knowledgeKey` 等值判断，不受该窗口限制，因此很久以前探索过的同一 target 仍能被识别。检索只读，不写入、不改变 promotion 授权；`experienceRecall: false` 可整体关闭。
 - 领域失败证据现在记录其适用 target（`scope`），同一 target 的失败因此可跨会话被检索到；原始失败文本仍按既有边界在进入领域存储前被脱敏。
 
 ## 7. 已知限制（必须显式记录，不使用隐藏 patch 绕过）
