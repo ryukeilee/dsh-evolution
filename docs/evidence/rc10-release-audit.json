@@ -747,17 +747,48 @@
     "Documented in this release and not fixed: the autonomous observer mode/unattended values are not a precondition for starting an isolated Trial, and an unrecognised promotion journal phase is rolled back and removed by startup recovery while the doctor reports blocked with no repair.",
     "Not verified here: Code Scanning alert history beyond \"this analysis succeeded with no open alerts for this commit\", and any behaviour of DSH hosts outside the two declared, re-accepted versions."
   ],
-  "releaseRecordCommit": null,
+  "releaseRecordCommit": "7ddff97d725076a85bd0edcdd84ed73b05dcdeba",
   "postPublishCi": {
-    "releaseRecordCommitCi": null,
-    "note": "filled in by the follow-up commit once CI has run on the audit commit"
+    "releaseRecordCommitCi": {
+      "commit": "7ddff97d725076a85bd0edcdd84ed73b05dcdeba",
+      "ci": {
+        "id": 38592321757,
+        "conclusion": "success",
+        "jobs": [
+          "package (clean, pinned, installable)",
+          "unit tests (node 24.x)",
+          "unit tests (node 22.19.0)",
+          "host acceptance (0.2.0-rc.2)",
+          "host acceptance (0.2.1-alpha.1)"
+        ]
+      },
+      "codeScanning": {
+        "id": 38592322108,
+        "conclusion": "success"
+      },
+      "unitTests": {
+        "node 22.19.0": {
+          "tests": 309,
+          "pass": 309,
+          "fail": 0
+        },
+        "node 24.x": {
+          "tests": 309,
+          "pass": 309,
+          "fail": 0
+        }
+      },
+      "packCheck": "all package checks passed (16/16)",
+      "hostAcceptanceEvidenceMatchesPin": true
+    },
+    "note": "CI and Code Scanning re-ran on the audit commit, which only adds files under docs/evidence (outside the package allow-list); the package job still reports the pin and the host acceptance jobs still prove their evidence describes the pinned content."
   },
   "finalState": {
     "mainAtTagCommit": true,
     "tagObjectUnchanged": true,
     "publishedAssetsUnchanged": true,
     "historicalReleasesUnchanged": true,
-    "workingTreeClean": null,
-    "note": "workingTreeClean is asserted by the follow-up commit, which is the first commit after which the audit record itself is tracked"
+    "workingTreeClean": true,
+    "note": "workingTreeClean is asserted at write time of the follow-up commit, the first point at which the audit record itself is tracked. main advanced to the tagged commit by fast-forward and now carries one further documentation commit; the tag, its object, the published assets and every historical release are unchanged."
   }
 }
