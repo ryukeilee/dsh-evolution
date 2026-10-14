@@ -29,7 +29,7 @@
 | 结论没有证据 | 晋升必须同时满足 8 项门禁（真实收益、可测量证据、可重复、回归通过、可回滚、清理证据、无孤儿资源、运行时已恢复），缺一项即拒绝 |
 | 无人把关就上生产 | `evolution_promote` 默认只返回"等待所有者确认"，必须显式传 `confirmation: true` 才会写入生产 |
 | 晋升后突然崩 | 晋升后进入 canary 观察，跨重启验证启动、健康与依赖屏障；屏障上报告指标回归会触发自动回滚，且只回滚新候选 |
-| 经验不留存 | 失败与观测在**无模型**参与下折叠为有界知识；显式进化动作可检索历史结论，避免重复踩坑 |
+| 经验不留存 | 失败与观测在**无模型**参与下折叠为有界知识；提交 proposal 时可检索历史结论，避免重复踩坑 |
 | 宿主 API 漂移 | 诊断逐项探测真实运行状态，缺什么报什么，绝不假装健康 |
 
 ## 2. 能力总览
@@ -71,7 +71,7 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 
 - 生产晋升在任何模式下都要求 `evolution_promote` 的 `confirmation: true`；缺省或 `false` 只返回一次"等待所有者确认"的只读结果，不写任何生产状态。
 - 自主观察者即使已经走完 propose → trial → measure，也**不会**把自己的观测变成生产批准：它返回的仍是 `candidate-awaiting-confirmation`，`automatic: false`。
-- 自主观察者只在配置了匹配的 `autonomousStrategies` 条目、同一失败模式的观测数达到 `patternThreshold`（默认 3），且风险策略允许 `experiment` 时才启动一次**隔离** Trial。默认风险策略是 `low: experiment`、`medium: confirm`、`high: deny`。
+- 自主观察者只在同时满足三条时才启动一次**隔离** Trial：配置了匹配的 `autonomousStrategies` 条目、同一失败模式的观测数达到 `patternThreshold`（默认 3）、且风险等级为 `low` 并保持 `autonomousPolicy.low === "experiment"`。风险分级在代码里是硬约束：`high` 一律阻止（`blocked-high-risk`）、`medium` 一律判定为等待确认，都与 `autonomousPolicy` 取值无关；自定义风险字符串只会得到"等待确认"或"策略阻止"，不会启动实验。所以默认值 `{ low: "experiment", medium: "confirm", high: "deny" }` 描述的是实际行为，而不是可通过配置放宽的旋钮。
 - `mode` 默认 `advisory`（`mode: "autonomous"` 或历史写法 `autonomous: true` 会把 `evolution_runtime_inspect` 报告的策略标为 autonomous）；`unattended` 默认 `false`。这两个值会被记录在策略报告里，但**不是自主观察者的前置开关**——是否启动实验由策略表、`patternThreshold` 与风险等级决定。把它们读作"开关"会高估默认配置提供的保护；真正阻止自动上生产的是上面那条所有者确认。
 - 每次实验都落在隔离路径里：Trial 由官方 runner 拥有生命周期，失败即 `revert` 并记录失败学习，不会直接改写生产 composition。
 - 经验检索默认开启但只读，只由 `evolution_propose` / `evolution_history` 触发，`experienceRecall: false` 可整体关闭。
@@ -117,9 +117,12 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 | --- | --- |
 | 宿主 | `host.cli` / `host.version` / `host.modules`（按 `peerDependencies` 逐模块校验，DSH 版本必须落在经过真实验收的列表中）/ `host.install` / `host.composition`（调用官方 `--dump-config` 校验 bundle 层与两个 loader 入口） |
 | 运行时 | `runtime.capabilities`、`runtime.registration`（逐个用官方注册表解析全部 9 个工具）、`runtime.internal-api`（逐探针报告内部 API 可用性） |
-| 数据与状态 | `data.root`、`data.key`、`state.memory`、`state.archives`、`state.event-bridge`（逐行 MAC 验证）、`state.domain`（schema 校验、pending 事务、孤儿 staging、损坏锁） |
+| 数据与状态 | `data.root`、`data.key`、`state.memory`、`state.memory-quarantine`、`state.archives`、`state.event-bridge`（逐行 MAC 验证）、`state.domain`（schema 校验、pending 事务、孤儿 staging、损坏锁）、`state.dockyard-legacy` |
 | 迁移 | `migration.manifest`（`importId` 自洽性、不可变来源是否被改、目标缺失、残留 staging） |
 | 晋升 | `promotion.journal`（区分 `not-executed` / `incomplete` / `canary-observing` / `committed-pending-cleanup` / `rollback-failed` / `state-unknown`）、`promotion.composition`、`promotion.pointer` |
+| 包与已知限制 | `plugin.home`、`plugin.package`、`plugin.patch`、`plugin.support-matrix`、`compat.legacy-adapters`、`capabilities.known-limits` |
+
+上表是分组概览，不是完整清单：报告始终以 `coverage` 与各检查项的 `id` 为准。
 
 分级语义：
 
@@ -137,7 +140,7 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 - **Host-only。** 晋升的持久化代码只接受 Host half；Package 带 `client` 时直接拒绝。
 - **合作式执行 gate，不是沙箱。** 持久化源码通过 `Function(hostCode)()` 加载，只接受同步、独立返回 Cordis Plugin 的函数体；任何 `harness` token 保守拒绝。这是兼容性 gate，不是安全隔离——晋升执行需要可信审批。
 - **trust-root 守卫。** `dsh-evolution/guard` 拒绝直接修改 Cordis trust root 与绕过 Cordis 生命周期的明确不可逆操作；普通 composition、promoted plugin、guard 与 orchestrator 本身的演进不受影响。
-- **迁移与恢复不猜。** 未知或损坏的持久状态绝不静默合并、重写或删除现场；能修的项修复是幂等的，不能修的项报 `blocked` 并保留原字节。
+- **迁移与恢复不猜。** 未知或损坏的持久状态绝不静默合并、重写或删除现场；能修的项修复是幂等的，不能修的项报 `blocked` 并保留原字节。一个已记录的例外：**未识别的 journal 阶段**，doctor 报 `blocked` 且不提供 repair，但启动恢复仍会走默认 rollback 并在成功后删除 journal——见 6.1 的恢复表。
 
 ## 3. 典型使用场景
 
@@ -223,7 +226,7 @@ npm run pack:check       # 校验分发内容、兼容声明与发布固定点
 | `dataRoot` | `$DSH_HOME/storages/evolution` | Evolution 数据根 |
 | `mode` | `"advisory"` | `manual` / `advisory` / `autonomous`；历史写法 `autonomous: true` 等价于 `"autonomous"`。它记录在策略报告中，不是自主观察者的前置开关 |
 | `unattended` | `false` | 与 `mode` 一起记录在策略报告中；不构成自主观察者的前置开关 |
-| `autonomousPolicy` | `{ low: "experiment", medium: "confirm", high: "deny" }` | 按风险等级的策略 |
+| `autonomousPolicy` | `{ low: "experiment", medium: "confirm", high: "deny" }` | 按风险等级的策略。`high` 与 `medium` 是硬约束，改配置不会放宽它们；只有 `low` 能走到隔离实验，自定义风险字符串永远不会启动实验 |
 | `experienceRecall` | `true` | 设为 `false` 整体关闭按需经验检索 |
 | `domainSeed` | `false` | 显式授权把已迁移的 `dockyard/state.json` 种子载入领域聚合 |
 | `canaryWindow` | `2` | canary 观察需要的屏障数 |
@@ -258,7 +261,7 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 <profile>/node_modules/.bin/dsh-evolution-doctor --home "$DSH_HOME" --repair [--json]
 ```
 
-参数：`--home`、`--profile`、`--data-root`、`--dsh-cli`、`--json`、`--repair`、`--no-composition`、`--quiet`。
+参数：`--home`、`--profile`、`--data-root`、`--dsh-cli`、`--json`、`--repair`、`--no-composition`、`--quiet`、`--help` / `-h`。
 
 退出码：`0` 健康、`1` 存在可降级问题、`2` 存在阻塞问题；参数解析或诊断执行自身抛错时以 `3` 退出。报告写入 stdout，本地绝对路径只出现在本地输出中，不会被上传。
 
@@ -331,7 +334,7 @@ dsh plugin --profile web remove dsh-evolution
 
 1. **领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威；领域 evaluator 提供记录在案的决策与"识别到 regression 即否决"的硬性 veto，但本插件尚未接入宿主提供的独立生产 baseline/test 指标。因此只有自定义指标时 evaluator 会返回 `reject`（不阻塞），真实独立指标接入待补。
 2. **`continuous/` 与 `governance/` 领域模块已提取并单测通过，但未接入 orchestrator 实时循环。** 它们是纯领域实现，当前不启动第二套 Engine 或 scheduler；旧 `dockyard` 数据以文件形式完整保留，可用 `domainSeed` 载入。
-3. **Host-only，且不是安全沙箱。** Client half 一律拒绝；持久化源码走合作式 `Function(hostCode)()` gate，始终需要可信审批。
+3. **晋升是 Host-only，且不是安全沙箱。** 只有持久化晋升拒绝带 `client` 的 Package（`evolution_trial` 允许 Client half）；持久化源码走合作式 `Function(hostCode)()` gate，始终需要可信审批。
 4. **依赖内部/未文档化宿主接口。** introspection 使用 `ctx.registry.values()`、`ctx.reflect.props/_getImpl()`、`ctx.events._hooks`、Fiber effect 元数据；Include adapter 使用公开但未文档化的 `root.data` / `store` / `Entry.fiber` / `Fiber.state` / `ctx.get()`。这些不是稳定跨版本公共契约，升级 DSH 前必须重新验收；`runtime.internal-api` 会逐探针报告可用性，缺失时降级为 `degraded` 而不是假装健康。
 5. **手工 dispose 底层 bundle Fiber 的路径无法自我断言。** `disposeTrial` 走官方 runner 的 stop/undefine；直接 dispose bundle Fiber 会让探针自身注入的 `tools` 失活，因此不作为用户关闭流程。
 6. **Trial 期间持续存在的外部漂移会拒绝恢复。** 恢复签名是前后可观察清单的比较，不重建基线，因此不能记录已自行恢复的瞬态漂移，也不能证明任意合作式代码或 disposer 的全部外部效果。

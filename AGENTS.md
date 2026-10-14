@@ -71,7 +71,7 @@
 3. **Trial 基线只捕获一次。** 恢复基线在 Trial 首次修改运行时之前同步捕获，后续步骤不重建；因此 Trial 期间的真实并发漂移必须使恢复校验失败，并在 `revert` / `promote` 路径上保留目标锁。Trial 的 `define` / `run` 失败路径不激活任何东西，会释放目标锁并丢弃记录。
 4. **晋升门禁是生产权威。** `promotionGates` 的 8 项证据缺一不可；领域 evaluator 只是 advisory + regression veto，不得用它替代门禁。
 5. **生产晋升必须显式确认。** `confirmation: true` 之外的一切路径（包括 autonomous 观察者）都只能返回"等待所有者确认"。
-6. **默认不会自己上生产。** `mode` 默认 `advisory`、`unattended` 默认 `false`，两者只记录在策略报告里；**它们不是自主观察者的前置开关**。观察者是否启动隔离 Trial 由 `autonomousStrategies`、`patternThreshold` 与风险策略决定，且无论如何都停在 `candidate-awaiting-confirmation`。不要新增能让观察者自行批准生产的路径。
+6. **默认不会自己上生产。** `mode` 默认 `advisory`、`unattended` 默认 `false`，两者只记录在策略报告里；**它们不是自主观察者的前置开关**。观察者是否启动隔离 Trial 由 `autonomousStrategies`、`patternThreshold` 与风险等级决定（只有 `low` + `autonomousPolicy.low === "experiment"` 能走到实验，`medium` / `high` 是硬约束），且无论如何都停在 `candidate-awaiting-confirmation`。不要新增能让观察者自行批准生产的路径。
 7. **经验检索只读，且只由提交 proposal 的动作触发。** 入口是 `evolution_propose` 与 `evolution_history`（带 `query`）；不得让定时器、轮询或 measurement 触发它。自主观察者经 `evolution_propose` 间接触发属于这条路径本身，不是例外。上限只能由调用方收紧，不能放宽。
 8. **脱敏边界。** 原始错误文本在进入领域存储前必须经脱敏 DTO；不得把凭据、密钥或用户数据写入日志、证据或产物。
 9. **晋升是 Host-only，且不是安全沙箱。** `evolution_promote` 只接受 Host half，带 `client` 的 Package 直接拒绝（`evolution_trial` 允许 client）。合作式 `Function(hostCode)()` gate **不是**安全沙箱，晋升执行需要可信审批。
