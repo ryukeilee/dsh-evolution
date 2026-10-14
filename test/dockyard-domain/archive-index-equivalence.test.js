@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile, appendFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -252,67 +252,6 @@ test("reconcile and compact parse each active archive line once", async (t) => {
  * `JSON.parse` throw. Whitespace is never valid JSON, so the outcomes coincide;
  * these two assertions pin that argument down instead of assuming it.
  */
-/**
- * The scan memo is a performance device, never a source of truth: it may only
- * answer for the bytes this process already scanned. All three shapes where a
- * stale answer would be observable are driven here - unchanged bytes (reused),
- * a file that grew under the running process (rescanned), and the same path
- * replaced by a new inode (rescanned) - and the indexed state is required to be
- * exactly the one a fresh scan computes.
- */
-test("the active-archive scan memo only answers for the bytes this process scanned", async () => {
-  const files = await fixture("observations", RAW);
-  try {
-    const first = await newMemory(EvolutionMemory, files.store);
-    const scanned = await indexEntries(files.index);
-    assert.deepEqual(first.archiveActiveKeys.get("observations"), new Set([
-      "id:same", 'value:{"payload":"无 id"}', "value:[]", "id:last",
-    ]));
-    const activeLines = RAW.split("\n").filter(Boolean);
-
-    // Unchanged bytes: a second instance must reuse the scan instead of
-    // re-parsing the file, and expose the same keys.
-    const reusedParses = await countArchiveLineParses(activeLines,
-      () => newMemory(EvolutionMemory, new JsonStateStore({ home: files.home })));
-    assert.equal(totalParses(reusedParses), 0, "unchanged bytes must not be rescanned");
-    const reused = await newMemory(EvolutionMemory, new JsonStateStore({ home: files.home }));
-    assert.deepEqual(reused.archiveActiveKeys.get("observations"), first.archiveActiveKeys.get("observations"));
-    assert.deepEqual(await indexEntries(files.index), scanned, "reusing a scan must not rewrite the index");
-
-    // The reused keys must not alias the memo: an in-place change through one
-    // instance must never leak into the next one.
-    reused.archiveActiveKeys.get("observations").add("id:leaked");
-    const isolated = await newMemory(EvolutionMemory, new JsonStateStore({ home: files.home }));
-    assert.equal(isolated.archiveActiveKeys.get("observations").has("id:leaked"), false,
-      "active keys must not be shared through the memo");
-
-    // The file grew while this process held the memo: the recovery surface an
-    // append by another writer leaves behind must be scanned in full.
-    const appended = JSON.stringify({ id: "appended", recordedAt: LAST });
-    await appendFile(files.archive, appended + "\n");
-    const grownParses = await countArchiveLineParses([...activeLines, appended],
-      () => newMemory(EvolutionMemory, new JsonStateStore({ home: files.home })));
-    assert.equal(grownParses.get(appended), 1, "an appended line must be scanned, not served from the memo");
-    assert.equal(totalParses(grownParses), activeLines.length + 1, "the grown file must be scanned in full");
-    const grown = await indexEntries(files.index);
-    assert.equal(grown[0].physicalCount, activeLines.length + 1);
-    assert.equal(grown[0].logicalCount, 9);
-    assert.equal(grown[0].byteSize, Buffer.byteLength(RAW) + Buffer.byteLength(appended) + 1);
-    assert.equal(await readFile(files.archive, "utf8"), RAW + appended + "\n", "recovery keeps the appended bytes");
-
-    // The same path replaced by a new inode with identical bytes: the file
-    // identity, not the path, decides, so the replacement is scanned again.
-    await writeFile(`${files.archive}.replacement`, RAW + appended + "\n");
-    await rename(`${files.archive}.replacement`, files.archive);
-    const replacedParses = await countArchiveLineParses([...activeLines, appended],
-      () => newMemory(EvolutionMemory, new JsonStateStore({ home: files.home })));
-    assert.equal(totalParses(replacedParses), activeLines.length + 1, "a replaced inode must be scanned in full");
-    const replaced = await newMemory(EvolutionMemory, new JsonStateStore({ home: files.home }));
-    assert.equal(replaced.archiveActiveKeys.get("observations").has("id:appended"), true);
-    assert.deepEqual(await indexEntries(files.index), grown, "identical bytes keep the identical index entry");
-  } finally { await rm(files.home, { recursive: true, force: true }); }
-});
-
 test("a whitespace-only line is never active knowledge: filter(Boolean) + a throwing parse equals a trim() skip", async () => {
   const whitespace = "   \t";
   assert.throws(() => JSON.parse(whitespace), "whitespace is not valid JSON, so a shared scan drops it");

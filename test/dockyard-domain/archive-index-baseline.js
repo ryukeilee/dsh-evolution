@@ -96,11 +96,12 @@ const reversals = [
    " * An entry records the file identity observed while scanning - device, inode,\n" +
    " * byte size and mtime at nanosecond precision, the same identity\n" +
    " * `archive-stage.js` uses to decide whether two directory entries are the same\n" +
-   " * file. A file this process did not scan is never hit, and every way the plugin\n" +
-   " * mutates an archive changes that identity: appends grow the size, and sealing,\n" +
-   " * compaction and installation replace the inode. A rolled-back compaction\n" +
-   " * renames the original inode back, whose recorded identity still describes its\n" +
-   " * bytes. The map is bounded; eviction only costs a rescan.\n" +
+   " * file - plus its own copy of the active keys and the index entry. A file this\n" +
+   " * process did not scan is never hit, and every way the plugin mutates an archive\n" +
+   " * changes that identity: appends grow the size, and sealing, compaction and\n" +
+   " * installation replace the inode. A rolled-back compaction renames the original\n" +
+   " * inode back, whose recorded identity still describes its bytes. The map is\n" +
+   " * bounded; eviction only costs a rescan.\n" +
    " */\n" +
    "const ARCHIVE_SCAN_MEMO_LIMIT = 32;\n" +
    "const archiveScanMemo = new Map();\n" +
@@ -120,7 +121,10 @@ const reversals = [
    "function rememberArchiveScan(info, entry, activeKeys) {\n" +
    "  const key = archiveScanKey(info);\n" +
    "  archiveScanMemo.delete(key);\n" +
-   "  archiveScanMemo.set(key, { size: Number(info.size), mtimeNs: String(info.mtimeNs), entry, activeKeys });\n" +
+   "  // The memo owns its own copy: the instance that produced the scan keeps\n" +
+   "  // appending to its own set as it writes, and the memo must keep describing\n" +
+   "  // the bytes it read.\n" +
+   "  archiveScanMemo.set(key, { size: Number(info.size), mtimeNs: String(info.mtimeNs), entry, activeKeys: new Set(activeKeys) });\n" +
    "  while (archiveScanMemo.size > ARCHIVE_SCAN_MEMO_LIMIT) archiveScanMemo.delete(archiveScanMemo.keys().next().value);\n" +
    "}\n" +
    "\n" +

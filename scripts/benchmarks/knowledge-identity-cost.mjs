@@ -61,11 +61,25 @@ const median = (values) => { const sorted = [...values].sort((left, right) => le
 // --- the equivalence the collapses rest on ---------------------------------
 
 const COLLAPSES = [
-  { label: "[0-9a-f]", before: /^[0-9a-f]$/iu, after: /^[0-9a-fA-F]$/u },
-  { label: "[0-9a-f-]", before: /^[0-9a-f-]$/iu, after: /^[0-9a-fA-F-]$/u },
-  { label: "\\b[0-9a-f]{8,}\\b", before: /\b[0-9a-f]{8,}\b/giu, after: /\b[0-9a-fA-F]{8,}\b/gu },
-  { label: "\\b[0-9a-f]{4,}-[0-9a-f-]{4,}\\b", before: /\b[0-9a-f]{4,}-[0-9a-f-]{4,}\b/giu, after: /\b[0-9a-fA-F]{4,}-[0-9a-fA-F-]{4,}\b/gu },
+  { label: "[0-9a-f]", before: /^[0-9a-f]$/iu, after: /^[0-9a-fA-F]$/u, kind: "class" },
+  { label: "[0-9a-f-]", before: /^[0-9a-f-]$/iu, after: /^[0-9a-fA-F-]$/u, kind: "class" },
+  { label: "\\b[0-9a-f]{8,}\\b", before: /\b[0-9a-f]{8,}\b/giu, after: /\b[0-9a-fA-F]{8,}\b/gu, kind: "pattern" },
+  { label: "\\b[0-9a-f]{4,}-[0-9a-f-]{4,}\\b", before: /\b[0-9a-f]{4,}-[0-9a-f-]{4,}\b/giu, after: /\b[0-9a-fA-F]{4,}-[0-9a-fA-F-]{4,}\b/gu, kind: "pattern" },
 ];
+
+/**
+ * A string that the two spellings of the 8+ collapse genuinely disagree on.
+ *
+ * `\b` is not the same assertion under `i` + `u`: that flag pair also treats a
+ * code point that case-folds to an ASCII word character as a word character, so
+ * U+017F LATIN SMALL LETTER LONG S is a word character there and is not one
+ * without `i`. The two full patterns are therefore **not** equivalent on
+ * arbitrary text. `normalizeText()` runs `.normalize("NFKC").toLowerCase()`
+ * before them, and NFKC maps every code point that could make the difference to
+ * ASCII, so the strings the collapses actually see cannot contain one - which is
+ * what this phase verifies, instead of claiming a general equivalence.
+ */
+const PATTERN_BOUNDARY_EXAMPLE = "\u017fdeadbeef";
 
 /** Every Unicode code point as a one-character string, plus a generated corpus. */
 function* corpus() {
@@ -73,7 +87,7 @@ function* corpus() {
     if (codePoint >= 0xd800 && codePoint <= 0xdfff) continue;
     yield String.fromCodePoint(codePoint);
   }
-  const alphabet = ["a", "f", "F", "g", "z", "0", "9", "-", ":", " ", "\t", "é", "\uff21", "\u212a"];
+  const alphabet = ["a", "f", "F", "g", "z", "0", "9", "-", ":", " ", "\t", "é", "\uff21", "\u212a", "\u017f"];
   const strings = [""];
   let frontier = [""];
   for (let length = 1; length <= 4; length += 1) {
@@ -86,25 +100,65 @@ function* corpus() {
   yield "id deadbeefdeadbeef and 12345678-1234-1234-1234-123456789012";
   yield "ABCDEF12-3456-7890 and abcdef12-3456-7890";
   yield "ＡＢＣＤＥＦ１２３４ : colon";
+  yield PATTERN_BOUNDARY_EXAMPLE;
+  yield "deadbeef\u017f";
+  yield "\u212adeadbeef";
 }
 
 function verifyFolds() {
-  const report = { codePoints: 0x110000 - 0x800, strings: 0, differences: 0, collapses: COLLAPSES.map((collapse) => collapse.label) };
+  const report = {
+    codePoints: 0x110000 - 0x800, strings: 0, classDifferences: 0, patternDifferences: 0,
+    boundaryDifferences: [], collapses: COLLAPSES.map((collapse) => collapse.label),
+  };
+  // 1. The two character classes accept exactly the same code points, checked
+  //    for every code point there is.
+  for (const collapse of COLLAPSES.filter((entry) => entry.kind === "class")) {
+    for (let codePoint = 0; codePoint <= 0x10ffff; codePoint += 1) {
+      if (codePoint >= 0xd800 && codePoint <= 0xdfff) continue;
+      const character = String.fromCodePoint(codePoint);
+      if (collapse.before.test(character) !== collapse.after.test(character)) report.classDifferences += 1;
+    }
+  }
+  // 2. The code points where `\b` itself differs: `i` + `u` also treats the
+  //    characters that case-fold to an ASCII word character as word characters.
+  for (let codePoint = 0; codePoint <= 0x10ffff; codePoint += 1) {
+    if (codePoint >= 0xd800 && codePoint <= 0xdfff) continue;
+    const character = String.fromCodePoint(codePoint);
+    if (/\w/iu.test(character) !== /\w/.test(character)) report.boundaryDifferences.push(`U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`);
+  }
+  // 3. None of those code points can reach the collapses: `normalizeText()`
+  //    normalizes to NFKC first, and no code point maps to one of them under
+  //    NFKC (they have compatibility mappings out, and no canonical
+  //    decomposition that a composition step could produce them from).
+  report.nfkcSurvivors = [];
+  for (let codePoint = 0; codePoint <= 0x10ffff; codePoint += 1) {
+    if (codePoint >= 0xd800 && codePoint <= 0xdfff) continue;
+    const normalized = String.fromCodePoint(codePoint).normalize("NFKC");
+    for (const character of report.boundaryDifferences.map((label) => String.fromCodePoint(Number.parseInt(label.slice(2), 16)))) {
+      if (normalized.includes(character)) report.nfkcSurvivors.push(`U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`);
+    }
+  }
+  // 4. The two full patterns agree on the strings the pipeline actually feeds
+  //    them: NFKC-normalized, lower-cased text.
   for (const text of corpus()) {
     report.strings += 1;
+    const pipelineInput = text.normalize("NFKC").toLowerCase();
     for (const collapse of COLLAPSES) {
-      // Whole-string replacement for the two full patterns, which is what
-      // `normalizeText` runs; a single-character membership test for the two
-      // character classes those patterns are built from.
-      const same = collapse.label.startsWith("\\b")
-        ? text.replace(collapse.before, "<id>") === text.replace(collapse.after, "<id>")
-        : collapse.before.test(text) === collapse.after.test(text);
+      const same = collapse.kind === "class"
+        ? collapse.before.test(text) === collapse.after.test(text)
+        : pipelineInput.replace(collapse.before, "<id>") === pipelineInput.replace(collapse.after, "<id>");
       if (!same) {
-        report.differences += 1;
-        if (report.differences <= 5) console.error(`fold difference for ${collapse.label} on ${JSON.stringify(text)}`);
+        report.patternDifferences += 1;
+        if (report.patternDifferences <= 5) console.error(`pipeline difference for ${collapse.label} on ${JSON.stringify(text)}`);
       }
     }
   }
+  // 5. The general inequality is pinned, not hidden: this input must keep the
+  //    two spellings apart, so a future engine that changes `\b` under `iu`
+  //    fails loudly here instead of silently invalidating this argument.
+  const [eight] = COLLAPSES.filter((collapse) => collapse.label.startsWith("\\b[0-9a-f]{8,"));
+  report.boundaryExampleDiffers = PATTERN_BOUNDARY_EXAMPLE.replace(eight.before, "<id>")
+    !== PATTERN_BOUNDARY_EXAMPLE.replace(eight.after, "<id>");
   return report;
 }
 
@@ -197,7 +251,11 @@ async function main() {
   const folds = options.skipFolds ? { skipped: true } : verifyFolds();
   report.folds = folds;
   assert.notEqual(folds.skipped ?? false, true, "--skip-folds is only for quick local iteration, never for evidence");
-  assert.equal(folds.differences, 0, "the two collapse spellings must accept identical text");
+  assert.equal(folds.classDifferences, 0, "the two class spellings must accept identical code points");
+  assert.equal(folds.patternDifferences, 0, "the two patterns must agree on the NFKC-normalized text the pipeline feeds them");
+  assert.deepEqual(folds.boundaryDifferences, ["U+017F", "U+212A"], "the `\\b` word-character difference set must stay confined to the two code points NFKC removes");
+  assert.deepEqual(folds.nfkcSurvivors, [], "no code point may reach the collapses while making `\\b` disagree");
+  assert.equal(folds.boundaryExampleDiffers, true, "the general inequality of the two patterns must stay pinned");
 
   const pinned = await loadPinned();
   report.baseline = { version: pinned.pin.version, sha256: pinned.pin.sha256 };
@@ -255,7 +313,8 @@ async function main() {
     }));
   } finally { await rm(pinned.directory, { recursive: true, force: true }); }
   if (options.json) { console.log(JSON.stringify(report, null, 2)); return; }
-  console.log(`node ${report.node} ${report.platform} | pinned values dsh-evolution-${report.baseline.version} | collapse spellings: ${folds.strings} strings, ${folds.differences} differences`);
+  console.log(`node ${report.node} ${report.platform} | pinned values dsh-evolution-${report.baseline.version}`);
+  console.log(`collapse spellings: ${folds.codePoints} code points + ${folds.strings} strings; class differences ${folds.classDifferences}, pipeline-pattern differences ${folds.patternDifferences}, \\b difference set ${folds.boundaryDifferences.join("+")}, NFKC survivors ${folds.nfkcSurvivors.length} (general-case example still differs: ${folds.boundaryExampleDiffers})`);
   for (const result of report.results) {
     console.log(`${result.label.padEnd(9)}${result.directory ?? ""} wall ${result.observations.wallMs.toFixed(3)} ms / ${result.knowledge.wallMs.toFixed(3)} ms  cpu ${result.observations.cpuMs.toFixed(3)} ms / ${result.knowledge.cpuMs.toFixed(3)} ms  (${result.observations.rows} observations + ${result.knowledge.rows} knowledge rows)`);
   }
