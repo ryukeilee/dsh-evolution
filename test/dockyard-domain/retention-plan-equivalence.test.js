@@ -17,8 +17,9 @@
 // (`history`, `snapshot`, `fullSnapshot`) clones, so a black-box test cannot
 // observe whether a live row object was borrowed. That claim rests on
 // `#mergeArchived(..., { copy: true })` always cloning, on `mergeKnowledgeEntry`
-// being pure with respect to its previous entry, and on nothing reading
-// `plan.histories`; it is argued in `docs/performance/retention-plan-cost.md`.
+// being pure with respect to its previous entry, and on the plan result carrying
+// no `histories` field at all (removed once no reader existed); it is argued in
+// `docs/performance/retention-plan-cost.md`.
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createHash } from "node:crypto";
@@ -357,6 +358,17 @@ test("repeated compaction converges to a fixed point", async (t) => {
 // used to take; it is only observable at all with a clock that advances per
 // call. It is pinned here so that a future change cannot widen it silently,
 // because it cannot be removed without walking the rows again for no purpose.
+//
+// The classification loop's read stays even though its value is unused. It was
+// the normalization read of the pre-change plan, and dropping it would widen the
+// shift to a second read per row. That is not index-only:
+// `#knowledgeRetentionPlan()` orders a same-identity group by `occurredAt`,
+// which for a row without a timestamp is the clock value read while normalizing
+// it, so a later plan that starts from an earlier clock position can keep a
+// different member of the group and write different archive bytes. An
+// adversarial review reproduced exactly that with a per-call clock, one
+// timestamped and one timeless row sharing a knowledge identity, and two plans
+// in one process. The read-count assertion below is what keeps it.
 
 /**
  * A source row with knowledge dimensions but no timestamp of its own, so its

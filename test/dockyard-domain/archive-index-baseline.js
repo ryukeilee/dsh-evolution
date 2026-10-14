@@ -339,7 +339,12 @@ const reversals = [
   "        const normalizedKnowledge = normalizeKnowledgeEvent(entry, { sourceCollection: collection, now: timestamp(this.clock) });\n" +
   "        if (normalizedKnowledge && !knowledgePlan.retainedEntries.get(collection)?.has(entry)) {\n" +
   "          const replacedBy = recordId ? retiredByCanonical.get(recordId) ?? null : null;\n" +
-  "          const lineageLatest = entry?.lineageId && latestLineage.get(String(entry.lineageId))?.id === recordId;\n"]
+  "          const lineageLatest = entry?.lineageId && latestLineage.get(String(entry.lineageId))?.id === recordId;\n"],
+  // The plan result no longer carries the `histories` snapshot: the field was
+  // dropped once no reader existed, and the reversal restores it so the
+  // reconstruction still reaches the pinned pre-change source.
+  ["    return { collections, records, canonical: [...canonicalByKey.values()], report };\n",
+   "    return { collections, histories, records, canonical: [...canonicalByKey.values()], report };\n"]
 ];
 
 export function reconstructPreSharedScan(source) {
