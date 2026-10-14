@@ -26,6 +26,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
 import { mergeKnowledgeEntry, normalizeKnowledgeEvent } from "../../lib/dockyard-domain/knowledge.js";
@@ -488,33 +489,38 @@ test("the plan's clock contract: one read per source row per reader, and only th
     assert.deepEqual(sharedAfter.first, sharedBefore.first, "the second plan's decisions must still be identical");
     const sharedShiftMs = (sharedBefore.dryRunClockReads - sharedAfter.dryRunClockReads) * 1000;
     assert.equal(sharedShiftMs, walked * 1000, "the shared-clock shift must be the earlier plan's removed reads");
-    // Only a row whose stamp comes from the clock moves; a row that carries its
-    // own fixture timestamp does not, and nothing but a stamp moves at all.
+    // Only a row whose stamp comes from the clock may move; a row that carries
+    // its own fixture timestamp may not, and nothing but a stamp may move at all.
+    // A later plan in this process sees the clock earlier than the baseline by
+    // the reads the earlier plan no longer made, so the candidate's row is
+    // compared after moving those stamps *forward* into the baseline's frame.
+    // The whole row is compared, so no field is hidden behind a projection.
+    const shiftStamps = (row, ms) => {
+      const shift = (value) => (typeof value === "string" && Number.isFinite(Date.parse(value))
+        ? new Date(Date.parse(value) + ms).toISOString() : value);
+      const shiftList = (items) => (items ?? []).map((item) => ({ ...item, at: shift(item.at) }));
+      return {
+        ...row,
+        firstSeen: shift(row.firstSeen),
+        lastSeen: shift(row.lastSeen),
+        updatedAt: shift(row.updatedAt),
+        ...(Object.hasOwn(row, "lastCorrectionAt") ? { lastCorrectionAt: shift(row.lastCorrectionAt) } : {}),
+        ...(Object.hasOwn(row, "recentEvidence") ? { recentEvidence: shiftList(row.recentEvidence) } : {}),
+        ...(Object.hasOwn(row, "trend") ? { trend: { ...row.trend, recent: shiftList(row.trend.recent) } } : {}),
+      };
+    };
     const earlier = new Map(sharedBefore.knowledge.map((row) => [row.knowledgeKey, row]));
     const movedKeys = [];
     for (const row of sharedAfter.knowledge) {
       const previous = earlier.get(row.knowledgeKey);
       assert.ok(previous, `${row.knowledgeKey} must exist on the baseline too`);
-      if (row.firstSeen === previous.firstSeen) continue;
+      if (isDeepStrictEqual(row, previous)) continue;
       movedKeys.push(row.knowledgeKey);
-      assert.equal(row.firstSeen, new Date(Date.parse(previous.firstSeen) - sharedShiftMs).toISOString(),
-        "a clock-derived firstSeen may move only by the removed reads");
-      assert.equal(row.lastSeen, new Date(Date.parse(previous.lastSeen) - sharedShiftMs).toISOString(),
-        "a clock-derived lastSeen may move only by the removed reads");
-      assert.deepEqual((row.recentEvidence ?? []).map((item) => item.at),
-        (previous.recentEvidence ?? []).map((item) => new Date(Date.parse(item.at) - sharedShiftMs).toISOString()),
-        "a clock-derived evidence stamp may move only by the removed reads");
+      assert.deepEqual(shiftStamps(row, sharedShiftMs), previous,
+        "a later plan may differ only in clock-derived stamps, and only by the removed reads");
     }
     assert.deepEqual(movedKeys.sort(), Array.from({ length: TIMELESS_COUNT }, (_, index) => timelessKey(index)).sort(),
       "exactly the rows without a timestamp of their own may move");
-    // The accumulator carries clock-derived stamps in `firstSeen`/`lastSeen`/
-    // `updatedAt`, in every `recentEvidence[].at` and in every `trend.recent[].at`;
-    // everything else must be identical.
-    const decisionsOnly = (rows) => rows.map(({ firstSeen, lastSeen, updatedAt, lastCorrectionAt, recentEvidence, trend, ...rest }) => ({
-      ...rest, trend: trend ? { ...trend, recent: null } : trend,
-    }));
-    assert.deepEqual(decisionsOnly(sharedAfter.knowledge), decisionsOnly(sharedBefore.knowledge),
-      "a later plan must differ in clock-derived stamps and in nothing else");
     t.diagnostic(`walked ${walked} source rows: reads ${before.dryRunClockReads}->${after.dryRunClockReads} (dry run), index stamp and later clock-derived stamps move ${walked * 1000}ms`);
   } finally {
     await rm(home, { recursive: true, force: true });

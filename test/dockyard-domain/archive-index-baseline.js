@@ -317,11 +317,15 @@ const reversals = [
   "        // exactly the source collections that pass walked. A row in neither set is\n" +
   "        // knowledge-bearing and was not kept, so it is retired or consolidated.\n" +
   "        //\n" +
-  "        // The clock read stays. This row consumed a value when this loop\n" +
-  "        // normalized it, and the value now goes nowhere, but dropping the read\n" +
-  "        // would shorten the sequence of values the plan observes and stamp the\n" +
-  "        // archive index written later in this transaction correspondingly earlier\n" +
-  "        // (see the clock contract in `docs/performance/retention-plan-cost.md`).\n" +
+  "        // The clock read below is deliberate and its value is unused. The\n" +
+  "        // pre-change plan normalized this row in this loop and consumed one clock\n" +
+  "        // value doing it; that normalization is gone, and this read keeps the\n" +
+  "        // plan's clock-call sequence otherwise unchanged, so the only read that\n" +
+  "        // disappears is the folded sweep's - one per source row, and no more.\n" +
+  "        // Dropping this one as well would move the archive index written later in\n" +
+  "        // this transaction, and the clock-derived stamps of a later plan sharing\n" +
+  "        // this clock, by a second read per row (see the clock contract in\n" +
+  "        // `docs/performance/retention-plan-cost.md`).\n" +
   "        timestamp(this.clock);\n" +
   "        if (!knowledgePlan.retainedEntries.get(collection)?.has(entry)) {\n" +
   "          const replacedBy = recordId ? retiredByCanonical.get(recordId) ?? null : null;\n" +
