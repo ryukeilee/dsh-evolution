@@ -14,6 +14,7 @@ you install before upgrading DSH.
 - 负向证据现在带上它适用的 target（`#bridgeOutcome` 写入 `scope`），因此同一个 target 的历史失败可跨会话被检索；原始失败文本仍按既有边界在进入领域存储前脱敏。
 - 因宿主的 `#bridgeOutcome` 与 `lib/domain-storage.js` 位于两个固定基线锚点之下，两处逆向重建各自新增了一条显式 reversal 记录（只读 `recall` 方法与被反向重建的同一段源码），锚点仍逐字节对应固定产物。
 - 新增 `test/experience-recall.test.mjs`（17 个用例：分类、精确重放（含超出扫描窗口的旧记录）、上界、来源不可用时降级、`__proto__` 与损坏行、真实 `storageDomain` 端到端回读、未签名事件仍拒绝作答）。
+- 文档：`README.md` 重写为面向用户的产品说明（定位、能力、场景、安装、配置、使用、限制），`AGENTS.md` 重写为与当前实现一致的开发约定。两者不改变任何运行时行为、API 或数据格式。
 
 ## 0.2.0-rc.9 — 默认写入路径的重复工作
 

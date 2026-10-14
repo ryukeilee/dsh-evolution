@@ -1,37 +1,110 @@
 # dsh-evolution 项目指南
 
-## 项目定位与依据
+面向在本仓库工作的开发代理。只描述当前实现；改动前先以 `package.json`、`lib/`、`test/`、`scripts/` 和 `.github/workflows/` 的实际内容为准。
 
-- 本仓库是 Evolution 插件的开发、测试与发布来源，不是 DSH 本体 fork。通过官方 bundle/profile 机制接入；不得 patch 官方源码或向宿主 `node_modules` 复制实现。
-- 版本、Node engines、宿主兼容范围以 `package.json` 为准；安装与行为见 `README.md`，兼容限制见 `COMPATIBILITY.md`，发布流程见 `RELEASE.md`。不要用旧 dev tarball、历史验收次数或邻近备份仓库代替当前依据。
-- 当前实现是 ESM JavaScript，`lib/` 是手写源码，不是可以删除后重建的编译产物；本仓库没有 TypeScript build/lint 脚本。
+## 1. 项目定位
 
-## 目录与验证
+- 本仓库是 `dsh-evolution` 插件的**唯一开发、测试与发布来源**，不是 DSH 本体 fork。
+- 插件通过官方 bundle / profile 机制接入：不得 patch 官方源码、不得向宿主 `node_modules` 复制实现、不得在 profile 上合成 loader entry。
+- 当前实现是 ESM JavaScript，`lib/` 是**手写源码**，不是可删除后重建的编译产物。本仓库没有 TypeScript build/lint 脚本。
+- 版本、`engines`、宿主兼容范围以 `package.json` 为准；安装与行为见 `README.md`，接口审计与阻塞依赖见 `COMPATIBILITY.md`，发布流程见 `RELEASE.md`。
 
-- `lib/orchestrator.js`：实验、trial、measurement、promotion 生命周期；`lib/promotion-include.js`：官方 Include 适配。
-- `lib/dockyard-domain/`、`lib/domain-storage.js`：领域实现与存储；`lib/diagnostics.js`、`scripts/doctor.mjs`：运行时和 CLI 诊断。
-- `test/`：Node 原生测试与 fixtures；`scripts/acceptance/`：真实隔离宿主验收；`scripts/release/`：产物及发布固定点校验。
-- `release/` 保存固定产物、manifest 与校验和；`dist/` 是本地产物输出；`docs/evidence/` 是对应内容的验收记录。
+## 2. 目录与模块职责
+
+### 入口与生命周期
+
+| 文件 | 职责 |
+| --- | --- |
+| `lib/index.js` | bundle 入口：解析路径、初始化 `event-bridge.key`、打开领域存储、在 Include 加载任何子项**之前**恢复中断的晋升事务、挂载官方 Include adapter、构造诊断函数 |
+| `lib/registration.js` | 工具注册与系统提示词；`EVOLUTION_TOOLS` 是工具面的单一事实来源，doctor 用它对照实时注册表 |
+| `lib/orchestrator.js` | 实验 / trial / measurement / promotion 生命周期、journal 原子提交、CAS、跨进程锁、target claim、canary、失败学习、`promotionGates` |
+| `lib/promotion-include.js` | 官方 `@deepseek-ai/cordis-plugin-include` 适配：不合成 loader entry、不写 profile `node_modules`，提交/回滚走公开 `refresh()` / `EntryTree.resolve` / `Entry.fiber` |
+
+### 领域与存储
+
+| 文件 | 职责 |
+| --- | --- |
+| `lib/domain-storage.js` | 领域存储 adapter：`AsyncLocalStorage` 作用域、事件桥重放、pending 协议、领域 schema 校验、显式 `domainSeed` |
+| `lib/dockyard-domain/` | 纯领域实现：`memory.js`、`knowledge.js`、`observation.js`、`evaluator.js`、`metric-projection.js`、`manifest*.js`；`PORTS.md` 记录端口合同与非安全承诺 |
+| `lib/dockyard-domain/continuous/`、`governance/` | 已提取并单测的纯领域模块，**未接入** orchestrator 实时循环 |
+| `lib/archive-stage.js` | 冷档案树与进行中事务的隔离：staging、按变更集复制、逐字节校验、原子安装 |
+| `lib/event-log-checkpoint.js` | 事件桥日志的持久重放检查点：已消费字节长度、记录数、keyed digest 与 MAC |
+| `lib/experience-recall.js` | 只读、有界的按需经验检索；`EXPERIENCE_RECALL_LIMITS` 是全部上限的唯一来源 |
+
+### 兼容与安全
+
+| 文件 | 职责 |
+| --- | --- |
+| `lib/cordis-compat.js` | 本 bundle 触及的每一个 Cordis / 官方 Include 接口的分类与读取器；运行时与 doctor 共用同一张表 |
+| `lib/compat/legacy-startup-drift.js` | 明确禁用的 legacy 适配器；未显式启用时返回 `baseline-missing` / `backup-unavailable`，不猜路径 |
+| `lib/guard.js` | `dsh-evolution/guard`：只拒绝直接修改 Cordis trust root 与绕过 Cordis 生命周期的明确不可逆操作 |
+
+### 诊断与工具脚本
+
+| 路径 | 职责 |
+| --- | --- |
+| `lib/diagnostics.js`、`scripts/doctor.mjs` | 运行时与 CLI 诊断；共用同一份路径解析与判定函数，CLI 报告不得与运行时判断不一致 |
+| `scripts/acceptance/` | 真实隔离宿主验收（自包含安装官方 DSH）与 probes |
+| `scripts/release/` | 打包、发布固定点、产物与来源校验 |
+| `scripts/benchmarks/` | 可复现性能基准 |
+| `scripts/import-evolution-data.mjs` | 旧 preset / Dockyard 快照迁移 |
+
+### 测试与发布数据
+
+- `test/`：Node 原生测试与 fixtures（`.test.mjs` / `.test.js`），含差分等价性基线与故障注入。
+- `release/`：随仓库固定的发布产物、`manifest.json`、`SHA256SUMS`。**不要手工编辑这些文件。**
+- `docs/evidence/`：与固定产物对应的验收记录；`docs/performance/`：性能数据与收益边界。
+- `dist/`：本地产物输出，不入库。
+
+## 3. 开发约定
+
+- 只做必要修改，不做与目标无关的重构；保持既有持久化格式、API、默认行为与授权边界。
+- 性能改动必须能复现：给出交替 A/B 数据、收益边界，并把复现脚本与原始数据写入 `docs/performance/`。被反例击穿的方案要显式撤回并固化为回归用例，而不是悄悄删除。
+- 修改 `lib/dockyard-domain/` 下的 `stateStore` / transaction 合同时，先读 `lib/dockyard-domain/PORTS.md`：`inlineSerialization: true` 只有在 transaction 同步捕获全部 payload 字节时才可标记。
+- 新增宿主接口依赖时，必须在 `lib/cordis-compat.js` 分类，并让 `runtime.internal-api` 能探测到它。
+- 注释与文档只描述代码实际做的事；不写"已完成"而未经执行的验证结论。
+
+## 4. 必须保留的不变量
+
+1. **不建第二套运行时。** 不创建自己的 registry、resolver、生命周期管理器或 effect tracker；一切经由官方 Cordis API 与官方 runner。
+2. **先恢复、后加载。** 中断的磁盘事务必须在 Include 加载任何子项之前恢复。未知或损坏的持久状态**不得猜测、静默合并或删除现场**。
+3. **Trial 基线只捕获一次。** 恢复基线在 Trial 首次修改运行时之前同步捕获，后续步骤不重建；Trial 期间的真实并发漂移必须拒绝恢复并保留目标锁。
+4. **晋升门禁是生产权威。** `promotionGates` 的 8 项证据缺一不可；领域 evaluator 只是 advisory + regression veto，不得用它替代门禁。
+5. **生产晋升必须显式确认。** `confirmation: true` 之外的一切路径（包括 autonomous 观察者）都只能返回"等待所有者确认"。
+6. **默认关闭全自动进化。** `mode` 默认 `advisory`；自主发起实验需要 `mode: "autonomous"` 且 `unattended: true`，并继续受风险策略约束。
+7. **经验检索只读且只由显式动作触发。** 不得让定时器、轮询、measurement 或 observer 触发检索；上限只能由调用方收紧，不能放宽。
+8. **脱敏边界。** 原始错误文本在进入领域存储前必须经脱敏 DTO；不得把凭据、密钥或用户数据写入日志、证据或产物。
+9. **Host-only。** 晋升代码只接受 Host half；带 `client` 的 Package 直接拒绝。合作式 `Function(hostCode)()` gate **不是**安全沙箱。
+10. **发布字节固定。** 发布的字节由 `release/` 中固定的 tarball 决定，CI 不重新构建产物。
+
+## 5. 验证要求
 
 从仓库根执行，按变更选择必要检查：
 
 ```sh
-npm ci --ignore-scripts                     # 需要安装依赖时；与单测 CI 一致
+npm ci --ignore-scripts                          # 需要安装依赖时；与单测 CI 一致
 node --test test/trial-recovery-boundary.test.mjs  # 聚焦测试示例
-npm test                                   # 仓库回归入口
-npm run pack:check                         # 分发内容、兼容声明及发布固定点校验
-npm run release:verify                     # 校验已固定产物
+npm test                                         # 仓库回归入口（Node 原生测试）
+npm run pack:check                               # 分发内容、权限、锁文件、文档一致性、发布固定点
+npm run release:verify                           # 固定产物：字节 + 内容摘要 + 条目 + 权限
+npm run release:verify -- dist/<build>.tgz --content-only   # 本机重建只比内容
+node scripts/release/verify-provenance.mjs --tag vX --require-source-commit
 ```
 
-- `pack:check` 校验当前分发内容与固定产物/验收证据一致。修改分发文件后失败不是可忽略噪音；按 `RELEASE.md` 重新构建、验收并更新固定点，不手工伪造通过记录。
-- 真实宿主验收使用 `npm run acceptance:host -- --host <version> --out <evidence-path>`；会安装依赖并生成证据，须使用隔离 runtime/home，不碰正式 `DSH_HOME`。
-- `npm run release:pack` 生成本地产物；`release:publish` 会更新发布产物/固定点，不属于普通只读检查。外部发布、tag、push 另需授权。
-- 本机 npm 压缩字节不一定与已发布 tarball 相同；区分字节校验与 `release:verify -- <tarball> --content-only`。
+- 改动 **trial/teardown、跨进程锁、CAS、journal、canary 或重启恢复**时，必须补对应失败路径测试。
+- 真实宿主验收：`npm run acceptance:host -- --host <version> --out <evidence-path>`。它会安装依赖并生成证据，**必须使用隔离 runtime/home**，不得触碰正式 `DSH_HOME`。
+- 修改任何**分发文件**（`package.json#files` 覆盖的内容）都会改变 `contentSha256`，从而使 `pack:check` 失败。这不是可忽略的噪音：按 `RELEASE.md` 重新构建、重跑两个宿主的验收、再更新固定点，**不手工伪造通过记录**。
+- `release:pack` 只生成本地产物；`release:publish` 会更新 `release/` 固定点，不属于只读检查。
+- 本机 `npm pack` 压缩字节不一定与已发布 tarball 相同；始终区分字节校验与 `--content-only` 的内容校验。
+- 性能或行为改动优先用差分测试（对照固定基线）证明等价，而不只依赖新增用例。
+- 只报告本次实际执行的检查；不引用未重跑的历史验收数字。
 
-## 必须保留的行为边界
+## 6. 发布边界
 
-- 修改 trial/teardown、跨进程锁、CAS、journal、canary 与重启恢复时补对应失败路径测试；未知或损坏持久状态不得猜测、静默合并或删除现场。
-- 新宿主版本必须经过真实安装验收再扩展 peer 范围、CI 矩阵与兼容说明；不能用宽松范围绕过 doctor 的阻断。
-- 领域 evaluator 的 advisory/veto、continuous/governance 尚未接入实时循环、host-only 与内部 introspection 风险以 `COMPATIBILITY.md` 为准，不把单测当作生产闭环证明。
-- 不读取正式用户数据、密钥、`event-bridge.key` 或旧迁移目录来“补齐”测试。诊断 `--repair`、导入、启停、升级与卸载均须明确授权；测试优先临时 home。
-- 保留用户修改；不提交运行日志、session、凭据、动态 promoted 源码或私有数据。只报告本次实际执行的检查。
+- 发布流程与校验命令见 `RELEASE.md`；固定点语义见 `release/manifest.json` 的字段说明。
+- 新宿主版本必须**先通过真实安装验收**，才能扩展 `peerDependencies`、CI 矩阵与兼容说明；不得用宽松范围绕过 doctor 的阻断。
+- `release/manifest.json` 的 `sourceCommit` 必须是 tag 历史中的祖先，且 source commit、tag 树与 tarball 的 shipped 内容摘要三者相同。
+- CI 的 release workflow 只创建 **draft** Release 并上传固定产物，不自动公开；已存在资产的 Release 一律拒绝覆盖，上传不使用 `--clobber`。
+- 以下动作属于外部写入，**必须获得明确授权**后再执行：`git push`、创建/移动 tag、创建或公开 GitHub Release、`npm run release:publish`、任何 npm 发布。
+- 不读取正式用户数据、密钥、`event-bridge.key` 或旧迁移目录来"补齐"测试；优先使用临时 home。诊断 `--repair`、导入、启停、升级与卸载同样需要明确授权。
+- 不提交运行日志、session、凭据、动态 promoted 源码或私有数据。`docs/evidence/` 与 `docs/performance/` 不属于包内容白名单，可发布后写入而不改变发布字节。

@@ -2,7 +2,7 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前本地候选版本：`0.2.0-rc.10`，在 `0.2.0-rc.9` 之上新增按需经验检索（`lib/experience-recall.js`：显式 `evolution_propose` / `evolution_history` 触发、只读、有明确上限、无模型与轮询；领域负向证据记录其适用 target），不改变写入路径、promotion 边界与数据格式。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本候选仅在本地固定与验收，未创建 tag 或进行外部发布。最后公开 `v0.2.0-rc.6` 的发布状态、远端 CI / CodeQL、匿名下载与发布后双宿主证据见 `docs/evidence/rc6-release-audit.json` 及 `rc6-postpublish-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
+当前本地候选版本：`0.2.0-rc.10`，在 `0.2.0-rc.9` 之上新增按需经验检索（`lib/experience-recall.js`：显式 `evolution_propose` / `evolution_history` 触发、只读、有明确上限、无模型与轮询；领域负向证据记录其适用 target），不改变写入路径、promotion 边界与数据格式；同一版本内 `README.md` 重写为面向用户的产品说明，`AGENTS.md` 重写为与当前实现一致的开发约定。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本候选仅在本地固定与验收，未创建 tag 或进行外部发布。最后公开 `v0.2.0-rc.9` 的发布状态、发布后双宿主证据与历史资产校验见 `docs/evidence/rc9-release-audit.json`、`rc9-postpublish-*.json` 与 `rc6-release-audit.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
 
 ## 1. 产物
 
@@ -13,7 +13,7 @@
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-本候选尚无公开发布入口。历史公开 rc.6 的入口、资产与发布后验收记录见 `docs/evidence/rc6-release-audit.json`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
+本候选尚无公开发布入口。最后公开的 `v0.2.0-rc.9` 的入口、资产与发布后验收记录见 `docs/evidence/rc9-release-audit.json`、`rc9-postpublish-*.json`；更早版本的对应记录见同目录的 `rc*-release-audit.json`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
 
 `release/manifest.json` 只固定当前版本。历史 tarball 可以共存，发布流程仅选择 manifest 指定的文件；历史固定点也保留在对应 tag / commit 与各自 Release 附件中。
 
