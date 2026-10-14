@@ -201,13 +201,20 @@ const reversals = [
   "   * reader used to re-materialize the whole event (`outcome`, `metrics`,\n" +
   "   * `recovery`, `relations`, references) for every row. The memo is keyed by\n" +
   "   * collection and row identity and lives only for this call.\n" +
+  "   *\n" +
+  "   * The memo skips the normalization, never the clock read: each reader still\n" +
+  "   * evaluates `timestamp(this.clock)` once per row and passes it in, so the\n" +
+  "   * sequence of clock values a plan observes is unchanged for the readers that\n" +
+  "   * remain. Rows that are not objects are compared by value, so two identical\n" +
+  "   * primitives would share a Map key and must not share a normalization.\n" +
   "   */\n" +
   "  #knowledgeRetentionPlan(histories, references = new Set()) {\n" +
   "    const normalizedByCollection = new Map();\n" +
-  "    const knowledgeEventOf = (collection, entry) => {\n" +
+  "    const knowledgeEventOf = (collection, entry, now) => {\n" +
+  "      if (entry === null || typeof entry !== \"object\") return normalizeKnowledgeEvent(entry, { sourceCollection: collection, now });\n" +
   "      let cached = normalizedByCollection.get(collection);\n" +
   "      if (cached === undefined) { cached = new Map(); normalizedByCollection.set(collection, cached); }\n" +
-  "      if (!cached.has(entry)) cached.set(entry, normalizeKnowledgeEvent(entry, { sourceCollection: collection, now: timestamp(this.clock) }));\n" +
+  "      if (!cached.has(entry)) cached.set(entry, normalizeKnowledgeEvent(entry, { sourceCollection: collection, now }));\n" +
   "      return cached.get(entry);\n" +
   "    };\n" +
   "    const retainedEntries = new Map(this.#collections().map((collection) => [collection, new Set()]));\n" +
@@ -223,7 +230,7 @@ const reversals = [
   "    const sourceCollections = this.#collections().filter((collection) => collection !== \"knowledge\" && collection !== \"tombstones\");\n" +
   "    for (const collection of sourceCollections) {\n" +
   "      for (const entry of histories[collection] ?? []) {\n" +
-  "        const event = knowledgeEventOf(collection, entry);\n" +
+  "        const event = knowledgeEventOf(collection, entry, timestamp(this.clock));\n" +
   "        // A row with no knowledge identity at all is not grouped and stays\n" +
   "        // retained; the sweep that used to collect these rows second-hand is\n" +
   "        // folded into this pass, since it visited exactly the same rows.\n" +
@@ -306,8 +313,9 @@ const reversals = [
   "        const recordId = entry?.id === undefined || entry?.id === null ? null : String(entry.id);\n" +
   "        // Reads the plan's own memoized normalization: this loop only asks\n" +
   "        // whether the row is knowledge-bearing, which `#knowledgeRetentionPlan()`\n" +
-  "        // already answered for the same row object while accumulating it.\n" +
-  "        const normalizedKnowledge = knowledgePlan.knowledgeEventOf(collection, entry);\n" +
+  "        // already answered for the same row object while accumulating it. The\n" +
+  "        // clock read stays per row, as it was when this loop normalized.\n" +
+  "        const normalizedKnowledge = knowledgePlan.knowledgeEventOf(collection, entry, timestamp(this.clock));\n" +
   "        if (normalizedKnowledge && !knowledgePlan.retainedEntries.get(collection)?.has(entry)) {\n" +
   "          const replacedBy = recordId ? retiredByCanonical.get(recordId) ?? null : null;\n" +
   "          const lineageLatest = entry?.lineageId && latestLineage.get(String(entry.lineageId))?.id === recordId;\n",

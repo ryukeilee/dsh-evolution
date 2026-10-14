@@ -1,6 +1,9 @@
 // Real EvolutionMemory -> compact() -> #retentionPlan() A/B benchmark.
-// HEAD's whole lib/ tree is extracted into a disposable directory; --lib adds
-// trees imported as-is (without --lib, compare HEAD against the working lib/).
+// The baseline ref's whole lib/ tree is extracted into a disposable directory;
+// --lib adds trees imported as-is (without --lib, compare the baseline ref
+// against the working lib/). The default baseline ref is HEAD, which on a
+// committed tree compares the implementation against itself: pass the commit
+// the change was built on, e.g. `--baseline b7547f8`, to reproduce a gain.
 //
 // Each scale is TOTAL cold rows: 40% observations (repeated info envelopes with
 // no knowledge dimensions, plus repeated error/diagnostic knowledge subjects),
@@ -13,8 +16,8 @@
 // bounded sourceRefs window so HEAD itself reaches a one-pass fixed point.
 //
 // node --expose-gc scripts/benchmarks/retention-plan-cost.mjs
-//   [--lib <dir>]... [--scales 2000,10000,40000] [--samples N] [--rounds N]
-//   [--warmup N] [--out <path>] [--json]
+//   [--lib <dir>]... [--baseline <ref>] [--scales 2000,10000,40000] [--samples N]
+//   [--rounds N] [--warmup N] [--out <path>] [--json]
 // Samples are fresh fixtures; setup/load/reconciliation, snapshots, hashing and
 // the second compact() fixed-point check are outside the timed interval. The
 // write phase includes planning, archive rewrite/readback/index and state save,
@@ -53,17 +56,18 @@ const equal = (actual, expected, name) => {
 };
 
 function parseArgs(args) {
-  const options = { libs: [], scales: [2000, 10000, 40000], samples: 2, rounds: 2, warmup: 1, out: null, json: false };
+  const options = { libs: [], baseline: 'HEAD', scales: [2000, 10000, 40000], samples: 2, rounds: 2, warmup: 1, out: null, json: false };
   for (let i = 0; i < args.length; i += 1) {
     const key = args[i];
     if (key === '--json') { options.json = true; continue; }
     if (key === '--help') {
-      console.log('Usage: node --expose-gc scripts/benchmarks/retention-plan-cost.mjs [--lib <dir>]... [--scales 2000,10000,40000] [--samples N] [--rounds N] [--warmup N] [--out <path>] [--json]\nHEAD is always baseline; without --lib the working lib/ is the other side. Samples are per side, phase and round. Round orders alternate A/B then B/A (A/B/B/A).');
+      console.log('Usage: node --expose-gc scripts/benchmarks/retention-plan-cost.mjs [--lib <dir>]... [--baseline <ref>] [--scales 2000,10000,40000] [--samples N] [--rounds N] [--warmup N] [--out <path>] [--json]\nThe baseline ref (default HEAD) is one side; without --lib the working lib/ is the other. Samples are per side, phase and round. Round orders alternate A/B then B/A (A/B/B/A).');
       return null;
     }
     const value = args[++i];
     if (value === undefined || value.startsWith('--')) throw new Error(`missing value for ${key}`);
     if (key === '--lib') options.libs.push(resolve(value));
+    else if (key === '--baseline') options.baseline = value;
     else if (key === '--scales') options.scales = value.split(',').map(Number);
     else if (['--samples', '--rounds', '--warmup'].includes(key)) options[key.slice(2)] = Number(value);
     else if (key === '--out') options.out = resolve(value);
@@ -257,7 +261,7 @@ async function main() {
   try {
     const baselineRoot = join(temporary, 'head');
     await mkdir(baselineRoot);
-    const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: REPO, encoding: 'utf8' }).trim();
+    const commit = execFileSync('git', ['rev-parse', options.baseline], { cwd: REPO, encoding: 'utf8' }).trim();
     const tar = execFileSync('git', ['archive', commit, 'lib'], { cwd: REPO, maxBuffer: 64 * 1024 * 1024 });
     execFileSync('tar', ['-xf', '-', '-C', baselineRoot], { input: tar });
     await writeFile(join(baselineRoot, 'package.json'), '{"type":"module"}\n');
@@ -265,6 +269,7 @@ async function main() {
     const baseline = await loadSide('baseline', join(baselineRoot, 'lib'));
     const sides = [baseline];
     for (const [i, directory] of (options.libs.length ? options.libs : [join(REPO, 'lib')]).entries()) sides.push(await loadSide(`variant${i + 1}`, directory));
+    output.baselineRef = options.baseline;
     output.baselineCommit = commit;
     output.sides = sides.map(({ label, directory, treeSha256 }) => ({ label, directory, treeSha256 }));
     const knowledge = await import(pathToFileURL(join(baseline.directory, 'dockyard-domain/knowledge.js')).href);

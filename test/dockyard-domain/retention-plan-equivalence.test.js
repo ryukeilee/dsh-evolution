@@ -9,7 +9,15 @@
 // identical resulting state, identical on-disk bytes and an identical repeated
 // compaction. A row shape is only covered if the run actually takes the
 // corresponding decision, so the corpus asserts non-trivial retirement,
-// consolidation, aggregation and accumulator growth before comparing.
+// consolidation, aggregation, accumulator growth and accumulator-guard outcomes
+// before comparing.
+//
+// The plan's ownership of its output is not asserted here: every public read
+// (`history`, `snapshot`, `fullSnapshot`) clones, so a black-box test cannot
+// observe whether a live row object was borrowed. That claim rests on
+// `#mergeArchived(..., { copy: true })` always cloning, on `mergeKnowledgeEntry`
+// being pure with respect to its previous entry, and on nothing reading
+// `plan.histories`; it is argued in `docs/performance/retention-plan-cost.md`.
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createHash } from "node:crypto";
@@ -19,6 +27,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
+import { mergeKnowledgeEntry, normalizeKnowledgeEvent } from "../../lib/dockyard-domain/knowledge.js";
 import { JsonStateStore } from "./support.js";
 import { archiveIndexBaseline } from "./archive-index-baseline.js";
 
@@ -47,51 +56,42 @@ const BaselineMemory = await importMemorySource(baseline.source, "the derived pr
 
 // ---------------------------------------------------------------------------
 // Cold corpus. Every collection below is written as a real archive file, so the
-// plan reads the same bytes `load()` indexed and `compact()` rewrites.
+// plan reads the same bytes `load()` indexed and `compact()` rewrites; a few
+// rows are also written into the state file so both the hot and the archived
+// half of `#mergeArchived()` take part.
 // ---------------------------------------------------------------------------
 
-/** An accumulator row in the exact shape `mergeKnowledgeEntry` produces. */
-function knowledgeRow(index) {
+/** A source row with real dimensions; its identity is a hash of them. */
+function seedSource(index) {
   return {
-    id: `knowledge:acc-${index}`,
-    knowledgeKey: `knowledge:acc-${index}`,
-    schema: 1,
-    canonical: true,
-    retention: "CANONICAL_KNOWLEDGE",
-    state: "KNOWN",
-    issueType: "problem",
-    problemType: "problem",
+    id: `seed-${index}`,
+    issueType: "performance",
     rootCause: `root-cause-${index}`,
-    strategy: null,
-    failureMode: null,
-    semanticFact: `semantic-fact-${index}`,
-    scope: `scope-${index % 3}`,
-    dimensions: { issueType: "problem", rootCause: `root-cause-${index}`, strategy: null, failureMode: null, semanticFact: `semantic-fact-${index}`, scope: `scope-${index % 3}` },
-    count: 2,
-    occurrenceCount: 2,
-    firstSeen: AT,
-    lastSeen: AT,
-    lastSourceCollection: "observations",
-    lastOutcome: "failure",
-    sourceCounts: { observations: 2 },
-    sourceRefs: index % 2 === 0 ? [`obs:${index}`, `obs:${index + 100}`] : [],
-    lineageRefs: [],
-    relationRefs: [],
-    eventIds: [],
-    evidenceCount: 2,
-    recentEvidence: [{ at: AT, note: `evidence-${index}` }],
-    confidence: 0.4,
-    effectStats: { successCount: 0, failureCount: 2, neutralCount: 0, regressionCount: 0, fitnessCount: 0, fitnessSum: 0, fitnessMean: null, bestFitness: null, worstFitness: null, successRate: 0, metrics: {} },
-    effects: { successCount: 0, failureCount: 2 },
-    successCount: 0,
-    failureCount: 2,
-    regressionCount: 0,
-    contradicted: false,
-    contradictionCount: 0,
-    revision: 0,
-    learned: false,
-    updatedAt: AT,
+    strategy: "bounded retry",
+    componentId: `plugin:seed-${index}`,
+    status: "success",
+    recordedAt: AT,
+    metrics: { latency: index % 5 + 1 },
   };
+}
+
+/** The identity `seedSource(index)` and any replay of it normalize to. */
+function seedKey(index) {
+  return normalizeKnowledgeEvent(seedSource(index), { sourceCollection: "observations", now: new Date(AT) }).knowledgeKey;
+}
+
+/**
+ * An accumulator row in the exact shape `mergeKnowledgeEntry` produces.
+ * `sourceRefs: []` is the shape the merge guard short-circuits on.
+ */
+function knowledgeRow(index, { sourceRefs }) {
+  const event = normalizeKnowledgeEvent(seedSource(index), { sourceCollection: "observations", now: new Date(AT) });
+  return { ...mergeKnowledgeEntry(null, event, { now: new Date(AT) }), sourceRefs, dimensions: event.dimensions };
+}
+
+/** A second source row with the same dimensions: the same accumulator key. */
+function replayObservation(index) {
+  return { ...seedSource(index), id: `replay-${index}`, sourceRefs: undefined };
 }
 
 /** A consolidatable healthy observation (component/observation, info). */
@@ -125,17 +125,12 @@ function errorObservation(index) {
   };
 }
 
-/** A source row that names an accumulator key and nothing else. */
-function keyedObservation(index) {
-  return { id: `keyed-obs-${index}`, knowledgeKey: `knowledge:acc-${index}`, observedAt: AT, recordedAt: AT, note: `keyed ${index}` };
-}
-
 /** A row with no knowledge identity at all: retained, never grouped. */
 function opaqueRow(index) {
   return { id: `opaque-${index}`, note: `no identity ${index}`, recordedAt: AT };
 }
 
-function observedCycle(index, { meaningful = false } = {}) {
+function observedCycle(index, { meaningful = false, bearing = false } = {}) {
   return {
     id: `cycle-${index}`,
     lifecycleState: "OBSERVED",
@@ -143,6 +138,7 @@ function observedCycle(index, { meaningful = false } = {}) {
     observedAt: AT,
     recordedAt: AT,
     stages: meaningful ? [{ stage: "measurement" }] : [{ stage: "collect" }],
+    ...(bearing ? { problem: `cycle problem ${index}`, rootCause: `cycle root cause ${index}` } : {}),
   };
 }
 
@@ -156,14 +152,23 @@ function terminalPromotion(index) {
 
 function corpus() {
   return {
-    knowledge: Array.from({ length: 6 }, (_, index) => knowledgeRow(index)),
+    // 0 and 1 exist to drive the merge guard in both directions: 0 covers no
+    // reference of its replay, 1 has no sourceRefs at all.
+    knowledge: [
+      knowledgeRow(0, { sourceRefs: [`observations:seed-0`] }),
+      knowledgeRow(1, { sourceRefs: [] }),
+      ...Array.from({ length: 4 }, (_, index) => knowledgeRow(index + 2, { sourceRefs: [] })),
+    ],
     observations: [
       ...Array.from({ length: 12 }, (_, index) => infoObservation(index, index % 3)),
       ...Array.from({ length: 4 }, (_, index) => errorObservation(index)),
-      ...Array.from({ length: 4 }, (_, index) => keyedObservation(index)),
+      replayObservation(0),
+      replayObservation(1),
       ...Array.from({ length: 2 }, (_, index) => opaqueRow(index)),
     ],
-    cycles: [...Array.from({ length: 6 }, (_, index) => observedCycle(index)), observedCycle(99, { meaningful: true })],
+    // 99 is knowledge-bearing with a meaningful stage: it enters a retention
+    // group under the `cycles` collection, whose limit is unbounded.
+    cycles: [...Array.from({ length: 6 }, (_, index) => observedCycle(index)), observedCycle(99, { meaningful: true, bearing: true })],
     outcomes: Array.from({ length: 6 }, (_, index) => terminalOutcome(index)),
     promotions: Array.from({ length: 4 }, (_, index) => terminalPromotion(index)),
     lineage: [
@@ -177,10 +182,15 @@ function corpus() {
   };
 }
 
+/** The rows that start in the state file instead of the archive. */
+function hotRows(rows) {
+  return { observations: rows.observations.slice(0, 2), knowledge: rows.knowledge.slice(0, 1) };
+}
+
 async function seed(home, rows) {
   const store = new JsonStateStore({ home });
   await mkdir(dirname(store.filePath), { recursive: true });
-  await store.save({ evolution: {} });
+  await store.save({ evolution: hotRows(rows) });
   for (const [collection, entries] of Object.entries(rows)) {
     const file = collection === "cycles" ? `${store.filePath}.cycles-archive.jsonl` : `${store.filePath}.${collection}-archive.jsonl`;
     await writeFile(file, entries.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
@@ -198,6 +208,15 @@ async function diskDigests(home, relative = "") {
   return Object.fromEntries(Object.entries(digests).sort(([left], [right]) => left.localeCompare(right)));
 }
 
+function newMemory(MemoryClass, store) {
+  const memory = new MemoryClass({
+    stateStore: store, clock: () => new Date(NOW), maxEntries: 1000,
+    hotEntries: 3, hotCycles: 2, archiveMaxBytes: 4096,
+  });
+  memory.setMutationAuthority({ assertMutation() {}, isActive: () => true });
+  return memory;
+}
+
 /** Drive one implementation over the corpus and record everything observable. */
 async function runSide(MemoryClass, home) {
   // The same home is reused for both sides, so it starts from exactly the
@@ -206,11 +225,7 @@ async function runSide(MemoryClass, home) {
   await rm(home, { recursive: true, force: true });
   await mkdir(home, { recursive: true });
   const store = await seed(home, corpus());
-  const memory = new MemoryClass({
-    stateStore: store, clock: () => new Date(NOW), maxEntries: 1000,
-    hotEntries: 3, hotCycles: 2, archiveMaxBytes: 4096,
-  });
-  memory.setMutationAuthority({ assertMutation() {}, isActive: () => true });
+  const memory = newMemory(MemoryClass, store);
   await memory.load();
   const dryRun = await memory.compact({ dryRun: true });
   const first = await memory.compact();
@@ -220,6 +235,13 @@ async function runSide(MemoryClass, home) {
   const secondState = JSON.stringify(memory.fullSnapshot());
   const secondBytes = await diskDigests(home);
   return { dryRun, first, second, firstState, firstBytes, secondState, secondBytes };
+}
+
+/** In-memory state port: no file path, so the memory has no archive tier. */
+class InMemoryStore {
+  constructor(state) { this.state = state; }
+  async load() { return structuredClone(this.state); }
+  async update(change) { this.state = await change(structuredClone(this.state)); }
 }
 
 test("the retention plan and its compaction are byte-identical to the pre-change baseline", async (t) => {
@@ -240,6 +262,13 @@ test("the retention plan and its compaction are byte-identical to the pre-change
     assert.ok(before.first.tombstones > 0, "retirement must record tombstones");
     assert.ok(Object.keys(before.firstBytes).some((name) => name.includes(".segments/segment-")), "the corpus must seal at least one segment");
 
+    // ...and both directions of the accumulator guard must have been taken: the
+    // replay of seed-0 is absorbed, the replay of seed-1 is not.
+    const knowledge = JSON.parse(after.firstState).knowledge;
+    const byKey = new Map(knowledge.map((row) => [row.knowledgeKey, row]));
+    assert.equal(byKey.get(seedKey(0))?.count, 2, "a replay must merge into an accumulator that does not cover its reference");
+    assert.equal(byKey.get(seedKey(1))?.count, 1, "an accumulator with no sourceRefs must not absorb a replay");
+
     assert.deepEqual(after.dryRun, before.dryRun, "the dry-run report must be identical");
     assert.deepEqual(after.first, before.first, "the compaction report must be identical");
     assert.deepEqual(after.second, before.second, "the repeated compaction report must be identical");
@@ -253,31 +282,37 @@ test("the retention plan and its compaction are byte-identical to the pre-change
   }
 });
 
-test("repeated compaction converges to a fixed point and never aliases the pre-compaction records", async (t) => {
+test("the same plan is byte-identical without an archive tier", async (t) => {
+  // No file path means no archive: the plan runs over the in-memory partition
+  // only, which is the other half of every retention decision.
+  const rows = corpus();
+  const side = async (MemoryClass) => {
+    const memory = newMemory(MemoryClass, new InMemoryStore({ evolution: rows }));
+    await memory.load();
+    const dryRun = await memory.compact({ dryRun: true });
+    const first = await memory.compact();
+    const state = JSON.stringify(memory.fullSnapshot());
+    const second = await memory.compact();
+    return { dryRun, first, second, state, secondState: JSON.stringify(memory.fullSnapshot()) };
+  };
+  const before = await side(BaselineMemory);
+  const after = await side(EvolutionMemory);
+  assert.ok(before.first.retired > 0, "the in-memory corpus must still retire");
+  assert.deepEqual(after.dryRun, before.dryRun, "the in-memory dry-run report must be identical");
+  assert.deepEqual(after.first, before.first, "the in-memory report must be identical");
+  assert.equal(after.state, before.state, "the in-memory state must be byte-identical");
+  assert.deepEqual(after.second, before.second, "the in-memory repeated report must be identical");
+  assert.equal(after.secondState, before.secondState, "the in-memory second compaction must leave the same state");
+  t.diagnostic(`in-memory: retired ${before.first.retired}, consolidated ${before.first.consolidated}, knowledge ${before.first.knowledgeBefore}->${before.first.knowledgeAfter}`);
+});
+
+test("repeated compaction converges to a fixed point", async (t) => {
   const home = await mkdtemp(join(tmpdir(), "dsh-retention-idempotent-"));
   try {
     const store = await seed(home, corpus());
-    const memory = new EvolutionMemory({
-      stateStore: store, clock: () => new Date(NOW), maxEntries: 1000,
-      hotEntries: 3, hotCycles: 2, archiveMaxBytes: 4096,
-    });
-    memory.setMutationAuthority({ assertMutation() {}, isActive: () => true });
+    const memory = newMemory(EvolutionMemory, store);
     await memory.load();
-    const before = memory.fullSnapshot();
     await memory.compact();
-    const after = memory.fullSnapshot();
-
-    // The new live table must not be reachable from the pre-compaction table: a
-    // plan that published a live row object instead of its own copy would make
-    // these identities equal.
-    for (const collection of Object.keys(before)) {
-      const previous = before[collection];
-      const current = after[collection];
-      if (!Array.isArray(previous) || !Array.isArray(current)) continue;
-      for (const entry of previous) {
-        assert.ok(!current.includes(entry), `${collection}: compaction must not carry a pre-compaction object into the new state`);
-      }
-    }
 
     // Compaction folds repeated observations into aggregate rows, and an
     // aggregate is itself knowledge-bearing with an identity of its own, so the
