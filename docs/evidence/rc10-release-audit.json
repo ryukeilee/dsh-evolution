@@ -1,0 +1,763 @@
+{
+  "status": "released-and-post-publish-validated",
+  "tag": "v0.2.0-rc.10",
+  "tagObject": "8904c50a9ebc04764f8e35d09e580fcc3cae3550",
+  "tagCommit": "b25fc6d7b94e2c667898c5d60e9ddff45a4df867",
+  "remoteTagObject": "8904c50a9ebc04764f8e35d09e580fcc3cae3550",
+  "remoteTagTarget": "b25fc6d7b94e2c667898c5d60e9ddff45a4df867",
+  "tagObjectMatchesRemote": true,
+  "mainCommit": "b25fc6d7b94e2c667898c5d60e9ddff45a4df867",
+  "mergeStrategy": "fast-forward: main was a strict ancestor of the release commit, so it advanced to the tagged commit with no merge commit",
+  "candidateTreeEqualsMergeTree": true,
+  "candidate": null,
+  "sourceCommit": "3e29cd3136e325f44df817d22770309289b0e467",
+  "note": "rc.10 is the first release cut after rewriting README.md and AGENTS.md. README.md is inside the package allow-list, so the documentation rewrite changed the shipped content digest and required a full re-pin: rebuild, fresh acceptance on both supported hosts, then replace the pin. rc.8 was never tagged or published; rc.1-rc.9 tags and release assets were not touched.",
+  "pin": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.10",
+    "filename": "dsh-evolution-0.2.0-rc.10.tgz",
+    "sha256": "2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa",
+    "contentSha256": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.11.1",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "3e29cd3136e325f44df817d22770309289b0e467",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json"
+    ]
+  },
+  "pinBytesSha256": "2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa",
+  "pinBytesMatchManifest": true,
+  "provenance": {
+    "tag": "v0.2.0-rc.10",
+    "head": "b25fc6d7b94e2c667898c5d60e9ddff45a4df867",
+    "tagCommit": "b25fc6d7b94e2c667898c5d60e9ddff45a4df867",
+    "sourceCommit": "3e29cd3136e325f44df817d22770309289b0e467",
+    "sourceDigest": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea",
+    "packageVersion": "0.2.0-rc.10",
+    "pinVersion": "0.2.0-rc.10",
+    "treeDigest": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea",
+    "pinContentSha256": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea",
+    "requireSourceCommit": true,
+    "ok": true,
+    "problems": [],
+    "notes": [
+      "tag v0.2.0-rc.10 -> commit b25fc6d7b94e2c667898c5d60e9ddff45a4df867",
+      "source commit 3e29cd3136e325f44df817d22770309289b0e467 is in the tagged history",
+      "source commit content 1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea matches the pin",
+      "tagged tree content 1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea matches the pin"
+    ]
+  },
+  "pullRequest": null,
+  "release": {
+    "id": 412881486,
+    "tagName": "v0.2.0-rc.10",
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.10",
+    "isDraft": false,
+    "isPrerelease": true,
+    "publishedAt": "2026-10-14T15:38:38Z",
+    "assets": [
+      {
+        "id": 640807064,
+        "name": "dsh-evolution-0.2.0-rc.10.tgz",
+        "size": 260323,
+        "digest": "sha256:2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa",
+        "updatedAt": "2026-10-14T15:32:28Z",
+        "state": "uploaded"
+      },
+      {
+        "id": 640807066,
+        "name": "manifest.json",
+        "size": 662,
+        "digest": "sha256:26859144e84ddc1bbbeaf93db47afe1e8df3bba041c7d629a3606c250bdc64a1",
+        "updatedAt": "2026-10-14T15:32:28Z",
+        "state": "uploaded"
+      },
+      {
+        "id": 640807065,
+        "name": "SHA256SUMS",
+        "size": 96,
+        "digest": "sha256:30d832ac26109a6c467b3b372c6fe903216ed343af36ab2edc7f1c0e2b13e777",
+        "updatedAt": "2026-10-14T15:32:28Z",
+        "state": "uploaded"
+      }
+    ]
+  },
+  "noLatestRelease": {
+    "endpoint": "GET /repos/ryukeilee/dsh-evolution/releases/latest",
+    "httpStatus": 404,
+    "note": "rc.10 is a pre-release, so it is excluded from the \"latest\" marker; the repository still has no release marked latest, matching rc.9."
+  },
+  "draftAssets": {
+    "note": "the release workflow created the draft and uploaded the committed bytes; a partial or mismatched upload would have been caught by its own re-download step",
+    "isPrerelease": true,
+    "assetSha256": "2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa",
+    "verifiedByWorkflow": true
+  },
+  "anonymousDownload": {
+    "verified": true,
+    "method": "unauthenticated curl of the three release assets, no GitHub token and no repository permission",
+    "checksumVerification": "passed",
+    "equalsCommittedFile": {
+      "dsh-evolution-0.2.0-rc.10.tgz": true,
+      "SHA256SUMS": true,
+      "manifest.json": true
+    }
+  },
+  "localValidation": {
+    "npmTest": {
+      "tests": 309,
+      "pass": 309,
+      "fail": 0,
+      "skipped": 0
+    },
+    "npmTestOutput": "node --test \"test/**/*.test.mjs\" \"test/**/*.test.js\" on darwin-arm64 node v26.11.1",
+    "packCheck": {
+      "checks": 16,
+      "passed": 16,
+      "failed": 0
+    },
+    "releaseVerify": {
+      "result": "matches release/manifest.json (dsh-evolution@0.2.0-rc.10)",
+      "contentSha256": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea"
+    },
+    "provenanceLocal": "verify-provenance --tag v0.2.0-rc.10 --require-source-commit: tag, source commit content and tagged tree content all match the pin",
+    "sha256sumsCheck": "passed"
+  },
+  "pinHostAcceptance": {
+    "0.2.0-rc.2": {
+      "total": 21,
+      "passed": 21,
+      "node": "v26.11.1",
+      "platform": "darwin-arm64",
+      "contentSha256": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea",
+      "tarballSha256": "2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa",
+      "finalDoctorStatus": "healthy",
+      "finalDoctorExitCode": 0,
+      "note": "run on this machine (darwin-arm64, node v26.11.1) against the completed pin, before the pin commit"
+    },
+    "0.2.1-alpha.1": {
+      "total": 21,
+      "passed": 21,
+      "node": "v26.11.1",
+      "platform": "darwin-arm64",
+      "contentSha256": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea",
+      "tarballSha256": "2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa",
+      "finalDoctorStatus": "healthy",
+      "finalDoctorExitCode": 0,
+      "note": "run on this machine (darwin-arm64, node v26.11.1) against the completed pin, before the pin commit"
+    }
+  },
+  "postPublishHostAcceptance": {
+    "0.2.0-rc.2": {
+      "total": 21,
+      "passed": 21,
+      "node": "v26.11.1",
+      "platform": "darwin-arm64",
+      "contentSha256": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea",
+      "tarballSha256": "2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa",
+      "tarballSource": "the bytes downloaded anonymously from the published release, not the repository copy",
+      "finalDoctorStatus": "healthy",
+      "finalDoctorExitCode": 0
+    },
+    "0.2.1-alpha.1": {
+      "total": 21,
+      "passed": 21,
+      "node": "v26.11.1",
+      "platform": "darwin-arm64",
+      "contentSha256": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea",
+      "tarballSha256": "2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa",
+      "tarballSource": "the bytes downloaded anonymously from the published release, not the repository copy",
+      "finalDoctorStatus": "healthy",
+      "finalDoctorExitCode": 0
+    }
+  },
+  "linuxCIHosts": {
+    "0.2.0-rc.2": {
+      "total": 21,
+      "passed": 21,
+      "node": "v22.19.0",
+      "platform": "linux-x64",
+      "contentSha256": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea",
+      "tarballSha256": "3887c0f5a6cd6623c8341d6ce7ab1ab15d9b2fc80eb6f068eda72b9e484a900f",
+      "tarballSha256DiffersFromPin": true,
+      "note": "ubuntu-latest: npm compresses differently on that toolchain, so the byte hash differs while the content digest matches the pin, which is exactly what the job asserts",
+      "finalDoctorStatus": "healthy",
+      "finalDoctorExitCode": 0
+    },
+    "0.2.1-alpha.1": {
+      "total": 21,
+      "passed": 21,
+      "node": "v22.19.0",
+      "platform": "linux-x64",
+      "contentSha256": "1749210691d2dfe4aa875a03ded2fa4eb318ec84eb21c4305b6a5b568b1d56ea",
+      "tarballSha256": "3887c0f5a6cd6623c8341d6ce7ab1ab15d9b2fc80eb6f068eda72b9e484a900f",
+      "tarballSha256DiffersFromPin": true,
+      "note": "ubuntu-latest: npm compresses differently on that toolchain, so the byte hash differs while the content digest matches the pin, which is exactly what the job asserts",
+      "finalDoctorStatus": "healthy",
+      "finalDoctorExitCode": 0
+    }
+  },
+  "ciRebuildContent": {
+    "job": "package (clean, pinned, installable)",
+    "rebuildMatchesPin": true,
+    "evidence": "the job builds a local artifact and asserts its content digest equals release/manifest.json; the rebuilt byte hash was cc5275a7 at the first candidate and differs run to run, which is why only the content digest is compared"
+  },
+  "workflows": {
+    "ci": {
+      "id": 38590171340,
+      "headSha": "b25fc6d7b94e2c667898c5d60e9ddff45a4df867",
+      "conclusion": "success"
+    },
+    "codeScanning": {
+      "id": 38590171528,
+      "headSha": "b25fc6d7b94e2c667898c5d60e9ddff45a4df867",
+      "conclusion": "success"
+    },
+    "release": {
+      "id": 38590181021,
+      "headSha": "b25fc6d7b94e2c667898c5d60e9ddff45a4df867",
+      "conclusion": "success"
+    }
+  },
+  "ciTestCounts": {
+    "node 22.19.0": {
+      "tests": 309,
+      "pass": 309,
+      "fail": 0
+    },
+    "node 24.x": {
+      "tests": 309,
+      "pass": 309,
+      "fail": 0
+    }
+  },
+  "codeQL": {
+    "conclusion": "success",
+    "note": "the analysis for the tagged commit has no open alerts attributed to it; the two findings fixed earlier in this line (js/polynomial-redos, js/insecure-randomness) remain closed"
+  },
+  "historicalReleaseVerification": {
+    "historicalTagsUnchanged": true,
+    "historicalReleaseAssetMetadataUnchanged": true,
+    "tags": [
+      {
+        "tag": "v0.2.0-rc.1",
+        "localObject": "162903f9fc279adb0e88068bb3c42aae637216f1",
+        "localTarget": "98a64255b94c1cc7bdbfa99f2d425b18759fd173",
+        "remoteObject": "162903f9fc279adb0e88068bb3c42aae637216f1",
+        "remoteTarget": "98a64255b94c1cc7bdbfa99f2d425b18759fd173",
+        "recordedObject": "162903f9fc279adb0e88068bb3c42aae637216f1",
+        "recordedTarget": "98a64255b94c1cc7bdbfa99f2d425b18759fd173",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.2",
+        "localObject": "73a8de7617e15a8bf122f4a41b788ac40853c951",
+        "localTarget": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+        "remoteObject": "73a8de7617e15a8bf122f4a41b788ac40853c951",
+        "remoteTarget": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+        "recordedObject": "73a8de7617e15a8bf122f4a41b788ac40853c951",
+        "recordedTarget": "2f66a0897199d0dd7b9ba823b8007c823b3dfc74",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.3",
+        "localObject": "60375999e6b8f2c36afca005645ee96f0bcb7e2e",
+        "localTarget": "0944cc12e7fe7356125a38cd850becbd63bb1650",
+        "remoteObject": "60375999e6b8f2c36afca005645ee96f0bcb7e2e",
+        "remoteTarget": "0944cc12e7fe7356125a38cd850becbd63bb1650",
+        "recordedObject": "60375999e6b8f2c36afca005645ee96f0bcb7e2e",
+        "recordedTarget": "0944cc12e7fe7356125a38cd850becbd63bb1650",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.4",
+        "localObject": "8e1b391c37517ddbc170ccee0e9ca798979b2f5f",
+        "localTarget": "20a377706906149a987fd099c57cd0a05ef5a87e",
+        "remoteObject": "8e1b391c37517ddbc170ccee0e9ca798979b2f5f",
+        "remoteTarget": "20a377706906149a987fd099c57cd0a05ef5a87e",
+        "recordedObject": "8e1b391c37517ddbc170ccee0e9ca798979b2f5f",
+        "recordedTarget": "20a377706906149a987fd099c57cd0a05ef5a87e",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.5",
+        "localObject": "9f086ee092e951ba05212c25a66358f85b426130",
+        "localTarget": "8eddabd3e05901b11d425513a0ede0c66cb21742",
+        "remoteObject": "9f086ee092e951ba05212c25a66358f85b426130",
+        "remoteTarget": "8eddabd3e05901b11d425513a0ede0c66cb21742",
+        "recordedObject": "9f086ee092e951ba05212c25a66358f85b426130",
+        "recordedTarget": "8eddabd3e05901b11d425513a0ede0c66cb21742",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.6",
+        "localObject": "c466af6d3ee85f64286ec87d5d036ca0ea96d365",
+        "localTarget": "7eba617b434ba144f469e734313105361db39112",
+        "remoteObject": "c466af6d3ee85f64286ec87d5d036ca0ea96d365",
+        "remoteTarget": "7eba617b434ba144f469e734313105361db39112",
+        "recordedObject": "c466af6d3ee85f64286ec87d5d036ca0ea96d365",
+        "recordedTarget": "7eba617b434ba144f469e734313105361db39112",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.7",
+        "localObject": "b0e06fd5d4d38be2b48b5f66ec0e38cd278bb7eb",
+        "localTarget": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+        "remoteObject": "b0e06fd5d4d38be2b48b5f66ec0e38cd278bb7eb",
+        "remoteTarget": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+        "recordedObject": "b0e06fd5d4d38be2b48b5f66ec0e38cd278bb7eb",
+        "recordedTarget": "8fc70e549f0cc58bd377aaa4dcf04ad034be2c86",
+        "unchanged": true
+      },
+      {
+        "tag": "v0.2.0-rc.9",
+        "localObject": "e6d7c2566caf7de5c69f7e39c6132be98d6ff7bb",
+        "localTarget": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+        "remoteObject": "e6d7c2566caf7de5c69f7e39c6132be98d6ff7bb",
+        "remoteTarget": "9a935768a69a9edabe8cc2df04b0ccc1c062e1ea",
+        "recordedObject": null,
+        "recordedTarget": null,
+        "unchanged": true
+      }
+    ],
+    "assetChecks": [
+      {
+        "tag": "v0.2.0-rc.1",
+        "comparedTo": "prior audit record",
+        "metadataUnchanged": true,
+        "assets": [
+          {
+            "id": 616012646,
+            "name": "dsh-evolution-0.2.0-rc.1.tgz",
+            "size": 217006,
+            "digest": "sha256:fc41f0e0bd3a1f37f224275271d889a625e10a13cc6ff7103df183aaec48f4c8",
+            "updatedAt": "2026-10-06T16:16:10Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 616012654,
+            "name": "manifest.json",
+            "size": 598,
+            "digest": "sha256:192336e10d0e836940b722bd11ea4037fe54e7573d6b4717491c7341c68f56fc",
+            "updatedAt": "2026-10-06T16:16:10Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 616012653,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:44d8cdec8cbe5078e104802cd8f478e7a55535509d6de7c7dee983da41ce78d4",
+            "updatedAt": "2026-10-06T16:16:10Z",
+            "state": "uploaded"
+          }
+        ]
+      },
+      {
+        "tag": "v0.2.0-rc.2",
+        "comparedTo": "prior audit record",
+        "metadataUnchanged": true,
+        "assets": [
+          {
+            "id": 616180227,
+            "name": "dsh-evolution-0.2.0-rc.2.tgz",
+            "size": 221145,
+            "digest": "sha256:b611da72218bcb792ddbbba8d12eb6b410d98ce43885ed76a1f783e5a4cd33a1",
+            "updatedAt": "2026-10-06T17:28:37Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 616180228,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:ff9bf828c2ae9ca4cb5a6ec9c59dcafb638083e4e47c6cb400c44096129f2c62",
+            "updatedAt": "2026-10-06T17:28:37Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 616180224,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:525fe2c0d876768305acbed823a3cc81edd6a323f779857e76d386b75db3e995",
+            "updatedAt": "2026-10-06T17:28:37Z",
+            "state": "uploaded"
+          }
+        ]
+      },
+      {
+        "tag": "v0.2.0-rc.3",
+        "comparedTo": "prior audit record",
+        "metadataUnchanged": true,
+        "assets": [
+          {
+            "id": 617889348,
+            "name": "dsh-evolution-0.2.0-rc.3.tgz",
+            "size": 231636,
+            "digest": "sha256:da8444725d32ba5d37dbb6f2442fbba62a3094d5108772ad91a68c91e1b0e68a",
+            "updatedAt": "2026-10-07T07:08:03Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 617889349,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:8af8b11091ea37f756763686ac7014caea8be11a39e8abf6b5ba92741e223711",
+            "updatedAt": "2026-10-07T07:08:03Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 617889353,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:ba44f6901941c3160e8a82b436584f7fd1ce8e9667676c258b2dd7ea60bad90a",
+            "updatedAt": "2026-10-07T07:08:03Z",
+            "state": "uploaded"
+          }
+        ]
+      },
+      {
+        "tag": "v0.2.0-rc.4",
+        "comparedTo": "prior audit record",
+        "metadataUnchanged": true,
+        "assets": [
+          {
+            "id": 620787813,
+            "name": "dsh-evolution-0.2.0-rc.4.tgz",
+            "size": 235255,
+            "digest": "sha256:57f09a0f8ab1c0543d5bc1bf54aca5296960d2acf3edc61950f255580e99a4ff",
+            "updatedAt": "2026-10-08T05:05:08Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 620787811,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:f6ee7bb73d90c1ed9b7308242b3c6df8ae2159f10a26d0c0e3c7f24ade89936b",
+            "updatedAt": "2026-10-08T05:05:08Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 620787810,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:47f49b636a0c7cc351e0b2c7326796a4d06a6554d6f5d199bda08fb08e2ea86e",
+            "updatedAt": "2026-10-08T05:05:08Z",
+            "state": "uploaded"
+          }
+        ]
+      },
+      {
+        "tag": "v0.2.0-rc.5",
+        "comparedTo": "prior audit record",
+        "metadataUnchanged": true,
+        "assets": [
+          {
+            "id": 622006235,
+            "name": "dsh-evolution-0.2.0-rc.5.tgz",
+            "size": 236066,
+            "digest": "sha256:c738e04b268fa8a6fc6367da2257c99a971aa8bff8e8ff0cc9b7d0e1077936d3",
+            "updatedAt": "2026-10-08T14:05:19Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 622006244,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:291e8eed21ecf3d26c902bc2b9fd6a7ece3582d8f2dec7c79554141c725fcee6",
+            "updatedAt": "2026-10-08T14:05:19Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 622006236,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:ee067f99f9834ffec49306d4367305dedc41e8209a223b0712222020472f2b3c",
+            "updatedAt": "2026-10-08T14:05:19Z",
+            "state": "uploaded"
+          }
+        ]
+      },
+      {
+        "tag": "v0.2.0-rc.6",
+        "comparedTo": "prior audit record",
+        "metadataUnchanged": true,
+        "assets": [
+          {
+            "id": 628633152,
+            "name": "dsh-evolution-0.2.0-rc.6.tgz",
+            "size": 237772,
+            "digest": "sha256:b1c538d11c8c612bdd29bf574924fd690fffbd55f60243abc06ec8f39deae833",
+            "updatedAt": "2026-10-10T18:03:52Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 628633160,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:64bca9240a8a75773d6e3880ba8ccc5b3677efe9ace5f8901c347f5c1555f5d8",
+            "updatedAt": "2026-10-10T18:03:52Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 628633151,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:56b29ea5c39875a66e6d4b4eeb8ef5a105a821c32fec214483b26ed3dd100fe8",
+            "updatedAt": "2026-10-10T18:03:51Z",
+            "state": "uploaded"
+          }
+        ]
+      },
+      {
+        "tag": "v0.2.0-rc.7",
+        "comparedTo": "prior audit record",
+        "metadataUnchanged": true,
+        "assets": [
+          {
+            "id": 629926691,
+            "name": "dsh-evolution-0.2.0-rc.7.tgz",
+            "size": 243385,
+            "digest": "sha256:03ea494551b8c81f0d0d44c81689aba2c2b16c1371bb719cd7a4f8caadf556e9",
+            "updatedAt": "2026-10-11T05:54:50Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 629926698,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:ffa2b7c9552cd939b4af0dc15a790ea19d210d82f37b3565ca2b960807da1936",
+            "updatedAt": "2026-10-11T05:54:51Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 629926697,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:ce86827376190c6c818b09bb1151ac534024cdd05a6c64fba076a91f96cd9461",
+            "updatedAt": "2026-10-11T05:54:50Z",
+            "state": "uploaded"
+          }
+        ]
+      },
+      {
+        "tag": "v0.2.0-rc.9",
+        "comparedTo": "prior audit record",
+        "metadataUnchanged": true,
+        "assets": [
+          {
+            "id": 634191186,
+            "name": "dsh-evolution-0.2.0-rc.9.tgz",
+            "size": 247774,
+            "digest": "sha256:2942020d7c72f852b1d648c2c0337b8cdd88cd8250201cbdf80ecc6c74c208e3",
+            "updatedAt": "2026-10-12T15:35:10Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 634191187,
+            "name": "manifest.json",
+            "size": 660,
+            "digest": "sha256:960d9b1ce30829c7b2a65fb06089152534d8f5c4ebe1ba701f6e28ed09fa27de",
+            "updatedAt": "2026-10-12T15:35:10Z",
+            "state": "uploaded"
+          },
+          {
+            "id": 634191185,
+            "name": "SHA256SUMS",
+            "size": 95,
+            "digest": "sha256:8335dfb5f959584cce7dfbaf2e46da2be69b541eae70bdf2e2d9a8de23f25325",
+            "updatedAt": "2026-10-12T15:35:10Z",
+            "state": "uploaded"
+          }
+        ]
+      }
+    ],
+    "releasesNotTouched": [
+      {
+        "tagName": "v0.2.0-rc.9",
+        "id": 410763102,
+        "publishedAt": "2026-10-12T15:36:13Z",
+        "isPrerelease": true,
+        "isDraft": false
+      },
+      {
+        "tagName": "v0.2.0-rc.7",
+        "id": 409453591,
+        "publishedAt": "2026-10-11T05:55:43Z",
+        "isPrerelease": true,
+        "isDraft": false
+      },
+      {
+        "tagName": "v0.2.0-rc.6",
+        "id": 409114747,
+        "publishedAt": "2026-10-10T18:04:27Z",
+        "isPrerelease": true,
+        "isDraft": false
+      },
+      {
+        "tagName": "v0.2.0-rc.5",
+        "id": 406898692,
+        "publishedAt": "2026-10-08T14:06:42Z",
+        "isPrerelease": true,
+        "isDraft": false
+      },
+      {
+        "tagName": "v0.2.0-rc.4",
+        "id": 406432225,
+        "publishedAt": "2026-10-08T05:06:16Z",
+        "isPrerelease": true,
+        "isDraft": false
+      },
+      {
+        "tagName": "v0.2.0-rc.3",
+        "id": 405478313,
+        "publishedAt": "2026-10-07T07:09:54Z",
+        "isPrerelease": true,
+        "isDraft": false
+      },
+      {
+        "tagName": "v0.2.0-rc.2",
+        "id": 404980323,
+        "publishedAt": "2026-10-06T17:29:18Z",
+        "isPrerelease": true,
+        "isDraft": false
+      },
+      {
+        "tagName": "v0.2.0-rc.1",
+        "id": 404877980,
+        "publishedAt": "2026-10-06T15:23:19Z",
+        "isPrerelease": true,
+        "isDraft": false
+      }
+    ],
+    "baseline": "tag objects from rc9-release-audit.historicalReleaseVerification.tags; rc.1-rc.6 asset inventories from rc7-release-audit.historicalReleaseVerification.historicalReleases; rc.7 and rc.9 asset inventories from each audit's own release.assets",
+    "historicalAnonymousDownloadChecks": [
+      {
+        "tag": "v0.2.0-rc.9",
+        "anonymousDownload": true,
+        "checksumVerification": "passed",
+        "tarballSha256": "2942020d7c72f852b1d648c2c0337b8cdd88cd8250201cbdf80ecc6c74c208e3",
+        "equalsRecordedPin": true,
+        "manifestEqualsRecordedPin": true,
+        "note": "release/ pins only the current version, so the historical copy is compared against the pin recorded in rc9-release-audit.json instead of a repository copy"
+      }
+    ]
+  },
+  "officialDSHSourcePatch": false,
+  "officialDSHIntegration": "installed through the official `dsh plugin --profile web add` path on both hosts by the acceptance harness; no DSH source is modified, no host node_modules copy is made, and no profile node_modules mount is created",
+  "publishedArtifactRebuilt": false,
+  "packageUnchangedAfterPublication": true,
+  "auditFilesOutsidePackageAllowList": true,
+  "withdrawnCandidate": null,
+  "documentationRewrite": {
+    "files": [
+      "README.md",
+      "AGENTS.md",
+      "RELEASE.md",
+      "CHANGELOG.md"
+    ],
+    "shipped": [
+      "README.md",
+      "RELEASE.md",
+      "CHANGELOG.md"
+    ],
+    "readme": "rewritten as a user-facing product introduction: positioning, capability overview, scenarios, install/config/migrate/upgrade/rollback/uninstall, and the limitations that are actually recorded in code",
+    "agents": "rewritten against the current layout: real module responsibilities, the invariants that must survive a change, per-change verification, and the release boundary including which actions need explicit authorization",
+    "releaseNoteCorrection": "RELEASE.md and the rc.10 CHANGELOG entry previously described v0.2.0-rc.6 as the last public release; they now name v0.2.0-rc.9, which the release list and docs/evidence/rc9-release-audit.json confirm",
+    "runtimeBehaviourChanged": false,
+    "apiChanged": false,
+    "persistedFormatChanged": false,
+    "compatibilityChanged": false
+  },
+  "adversarialReview": {
+    "what": "two independent read-only fact-checks of the rewritten README.md and AGENTS.md, each executed by a different model through a delegated subagent with no shared conversation history, instructed to verify every behavioural claim against the implementation and to report file:line evidence for each discrepancy",
+    "rounds": [
+      {
+        "round": 1,
+        "findings": 13,
+        "materials": [
+          "the autonomous observer checks mode/unattended only after running propose -> trial -> measure, and both branches return the same candidate-awaiting-confirmation result, so those values are not a precondition for starting an isolated Trial",
+          "the autonomous observer reaches recall through propose(), so \"the observer never triggers recall\" was wrong",
+          "the startup canary transition passes metricRegression: false, so it verifies health and dependencies only; canary never compares metric values itself",
+          "trial passes a client half to the official runner; only durable promotion rejects one",
+          "the target-lock-retained guarantee holds on the revert/promote recovery path, not on the trial define/run failure path",
+          "recoverInterruptedPromotion still rolls back and removes the journal for an unrecognised phase, while the doctor reports blocked with no repair",
+          "the CLI doctor is not identical to the in-session tool: runtime.* is not-evaluated without a live context, and the CLI exits 3 on its own failures",
+          "the doctor keeps its own EVOLUTION_TOOL_NAMES rather than using EVOLUTION_TOOLS",
+          "the legacy drift adapter has no enable flag of its own; the default-off decision lives in the caller",
+          "ordinary CI does rebuild the package; only the release workflow uploads the committed bytes",
+          "acceptance asserts retention through the memory file hash and the presence of the key, not through a whole-tree comparison"
+        ],
+        "outcome": "all fixed and re-verified against the code before the final candidate was built"
+      },
+      {
+        "round": 2,
+        "findings": 4,
+        "materials": [
+          "the \"client half always rejected\" claim survived in the limitations list after the first fix, and was corrected there too",
+          "autonomousPolicy reads as a configurable knob, but high and medium are hard constraints in observeAutonomous; only low can reach an isolated trial",
+          "the doctor flag list omitted --help/-h",
+          "the diagnostic coverage table could be read as the complete list; it now states it is a grouped overview and adds the plugin.*, state.dockyard-legacy, compat.legacy-adapters and capabilities.known-limits checks"
+        ],
+        "outcome": "all fixed; round 2 also confirmed all twelve round-1 corrections as accurate"
+      }
+    ],
+    "effectOnRelease": "the documentation fixes changed shipped content twice, so the artifact was rebuilt and both hosts re-accepted after each round; the published bytes come from the post-round-2 tree"
+  },
+  "releaseNotes": {
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.10",
+    "contains": [
+      "verification summary with both digests",
+      "provenance chain",
+      "CI results",
+      "what changed in this version",
+      "known boundaries"
+    ]
+  },
+  "observations": [
+    "README.md is part of the shipped allow-list, so a documentation rewrite is a release-content change: it invalidates the pin and both pieces of acceptance evidence until they are regenerated.",
+    "The host acceptance is cheap enough (about 4 minutes for both hosts in parallel on this machine) that re-running it after each documentation correction was preferable to shipping a pin whose evidence described different bytes.",
+    "The two review rounds found 17 claims that no amount of self-review had caught; the failing classes were behavioural absolute statements (\"always\", \"never\", \"only when\") about code paths the docs summarised rather than read line by line."
+  ],
+  "remainingRisksAndUnverified": [
+    "The release bytes are fixed by the committed release/ tarball rather than rebuilt by CI (deliberate; see RELEASE.md section 1). pack:check, release:verify and test/release-pin.test.mjs make a silent drift impossible, but only if the tarball and the pin are changed together.",
+    "The v0.2.0-rc.1 tag still disagrees with the bytes published on its Release (fc41f0e0... vs the d24f5e52... pinned by that tag). Fixing it needs a tag move or an asset overwrite, both out of scope here; the hardened workflow now fails loudly on that shape.",
+    "The guard remains a heuristic policy check, not a shell/JavaScript sandbox. Promoted host code runs cooperatively and needs trusted approval.",
+    "The path that manually disposes the underlying bundle Fiber is still not covered: disposeTrial goes through the official runner stop/undefine, and a manual probe cannot assert on itself. It is not a documented user shutdown path.",
+    "The domain evaluator stays advisory: promotionGates is the production authority and the evaluator contributes a regression veto, but no host-provided independent production baseline/test metric is wired in yet.",
+    "continuous/ and governance/ are unit-tested pure domain modules and are not reached by the orchestrator runtime loop, so the host acceptance does not protect them.",
+    "Internal and undocumented host surfaces are still read (ctx.events._hooks, ctx.reflect._getImpl(), Include EntryTree/Entry internals). runtime.internal-api probes each one and degrades to `degraded` when missing, but every DSH upgrade still requires a full re-acceptance.",
+    "External drift that persists during a Trial is still refused rather than reconciled: the recovery signature is a before/after observable inventory and the baseline is never rebuilt.",
+    "event-bridge.key has no rotation or revocation procedure; it is created once in the data root and disable/uninstall leave it in place.",
+    "The file-backed failure memory remains last-writer-wins and save() does not fsync; the cross-process lock protects the domain archive transaction, not that file.",
+    "Metric IDs are not an authorization boundary.",
+    "No npm publication, code signing, provenance attestation (SLSA) or SBOM.",
+    "The npm dist-tag for 0.2.1-alpha.1 moves; the acceptance records that exact version, not the tag.",
+    "Documented in this release and not fixed: the autonomous observer mode/unattended values are not a precondition for starting an isolated Trial, and an unrecognised promotion journal phase is rolled back and removed by startup recovery while the doctor reports blocked with no repair.",
+    "Not verified here: Code Scanning alert history beyond \"this analysis succeeded with no open alerts for this commit\", and any behaviour of DSH hosts outside the two declared, re-accepted versions."
+  ],
+  "releaseRecordCommit": null,
+  "postPublishCi": {
+    "releaseRecordCommitCi": null,
+    "note": "filled in by the follow-up commit once CI has run on the audit commit"
+  },
+  "finalState": {
+    "mainAtTagCommit": true,
+    "tagObjectUnchanged": true,
+    "publishedAssetsUnchanged": true,
+    "historicalReleasesUnchanged": true,
+    "workingTreeClean": null,
+    "note": "workingTreeClean is asserted by the follow-up commit, which is the first commit after which the audit record itself is tracked"
+  }
+}
