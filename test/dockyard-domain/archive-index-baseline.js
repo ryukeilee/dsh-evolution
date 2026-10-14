@@ -9,6 +9,58 @@ import { reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
 // guards fail on any shape drift. The regions are disjoint, so the order does
 // not matter.
 const reversals = [
+  // The experience-recall read path: one knowledge lookup per append, a source
+  // scan that reads its history without copying it, and an identity comparison
+  // that skips the event fields no comparison reads.
+  ["import { canonicalKnowledgeKey, isDuplicateKnowledgeEvent, isKnowledgeCritical, knowledgeKeyOf, mergeKnowledgeEntry, normalizeKnowledgeEvent, sourceEventReference, sourceRetentionLimit } from \"./knowledge.js\";\n",
+   "import { canonicalKnowledgeKey, isDuplicateKnowledgeEvent, isKnowledgeCritical, mergeKnowledgeEntry, normalizeKnowledgeEvent, sourceEventReference, sourceRetentionLimit } from \"./knowledge.js\";\n"],
+  ["  async #upsertKnowledgeUnlocked(value = {}, { sourceCollection = \"event\", persist = false, previous: knownPrevious } = {}) {\n" +
+   "    const event = normalizeKnowledgeEvent(value, { sourceCollection, now: timestamp(this.clock) });\n" +
+   "    if (!event) return { accepted: false, duplicate: false, reason: \"not-knowledge-bearing\", event: null, knowledge: null };\n" +
+   "    // `#append` already resolved this exact key against the same unchanged\n" +
+   "    // history; re-resolving it here would read and parse the whole knowledge\n" +
+   "    // archive a second time for one record.\n" +
+   "    const previous = knownPrevious === undefined ? this.#knowledgeEntryFor(event) : knownPrevious;\n",
+   "  async #upsertKnowledgeUnlocked(value = {}, { sourceCollection = \"event\", persist = false } = {}) {\n" +
+   "    const event = normalizeKnowledgeEvent(value, { sourceCollection, now: timestamp(this.clock) });\n" +
+   "    if (!event) return { accepted: false, duplicate: false, reason: \"not-knowledge-bearing\", event: null, knowledge: null };\n" +
+   "    const previous = this.#knowledgeEntryFor(event);\n"],
+  ["  #sourceMatches(collection, event) {\n" +
+   "    if (!event?.knowledgeKey || !this.#collections().includes(collection) || collection === \"knowledge\") return [];\n" +
+   "    // Only the canonical key decides a match, and the rows are read, never\n" +
+   "    // returned as-is (the deferred returns below clone), so the complete\n" +
+   "    // history is scanned without copying it and without materialising the\n" +
+   "    // event fields no identity comparison reads.\n" +
+   "    return this.#mergeArchived(collection, this.#data[collection], { copy: false }).filter((entry) => {\n" +
+   "      if (entry?.knowledgeKey === event.knowledgeKey) return true;\n" +
+   "      return knowledgeKeyOf(entry) === event.knowledgeKey;\n" +
+   "    });\n" +
+   "  }\n",
+   "  #sourceMatches(collection, event) {\n" +
+   "    if (!event?.knowledgeKey || !this.#collections().includes(collection) || collection === \"knowledge\") return [];\n" +
+   "    return this.history(collection).filter((entry) => {\n" +
+   "      if (entry?.knowledgeKey === event.knowledgeKey) return true;\n" +
+   "      const normalized = normalizeKnowledgeEvent(entry, { sourceCollection: collection, now: timestamp(this.clock) });\n" +
+   "      return normalized?.knowledgeKey === event.knowledgeKey;\n" +
+   "    });\n" +
+   "  }\n"],
+  ["      const knowledgeResult = event ? await this.#upsertKnowledgeUnlocked(next, { sourceCollection: collection, previous: previousKnowledge }) : null;\n",
+   "      const knowledgeResult = event ? await this.#upsertKnowledgeUnlocked(next, { sourceCollection: collection }) : null;\n"],
+  // The knowledge lookup on the record path: the merged view is scanned
+  // without copying it, and only the matched row is detached.
+  ["  #knowledgeEntryFor(event) {\n" +
+   "    if (!event?.knowledgeKey) return null;\n" +
+   "    // `history()` detaches every row of the merged view; this lookup reads one\n" +
+   "    // row and its callers keep exactly that row, so the view is scanned without\n" +
+   "    // copying it and only the matched row is detached.\n" +
+   "    const entry = this.#mergeArchived(\"knowledge\", this.#data.knowledge, { copy: false })\n" +
+   "      .find((candidate) => candidate?.knowledgeKey === event.knowledgeKey || candidate?.id === event.knowledgeKey);\n" +
+   "    return entry === undefined || entry === null ? null : clone(entry);\n" +
+   "  }\n",
+   "  #knowledgeEntryFor(event) {\n" +
+   "    if (!event?.knowledgeKey) return null;\n" +
+   "    return this.history(\"knowledge\").find((entry) => entry?.knowledgeKey === event.knowledgeKey || entry?.id === event.knowledgeKey) ?? null;\n" +
+   "  }\n"],
   ["      rootCause: event.failure?.rootCauseHypothesis ?? event.failure?.error ?? null,\n" +
    "      // Negative evidence must name the capability it applies to. Without it\n" +
    "      // the canonical failure row carries only a signature and a root cause, so\n" +
