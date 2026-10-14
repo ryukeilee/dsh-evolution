@@ -239,16 +239,27 @@ test('a document too deep to project is still refused before any load, in both t
   await withHome(async (home) => {
     const baseline = await materializeProjectionBaselineTree(home);
     // 8 000 levels: past this engine's structural-clone and recursive-walk
-    // limits, while `JSON.stringify`/`JSON.parse` still accept it. The plugin's
-    // own document validation (`installPending()`'s `schema.parse`, whose
-    // `toJsonProjection` and `z.json()` walk both recurse) runs before any
-    // Memory exists, so the real port refuses this document in both trees and
-    // the projection-free load is never reached. That is the reachability limit
-    // of the one acceptance difference this round has: a value too deep to
-    // project is no longer rejected by the memory load itself when a host drives
-    // `EvolutionMemory` directly. See `docs/performance/load-projection.md`.
-    let deep = 0;
-    for (let i = 0; i < 8000; i += 1) deep = { x: deep };
+    // limits, while `JSON.parse` (iterative on every supported version) still
+    // accepts it. The plugin's own document validation (`installPending()`'s
+    // `schema.parse`, whose `toJsonProjection` and `z.json()` walk both recurse)
+    // runs before any Memory exists, so the real port refuses this document in
+    // both trees and the projection-free load is never reached. That is the
+    // reachability limit of the one acceptance difference this round has: a
+    // value too deep to project is no longer rejected by the memory load itself
+    // when a host drives `EvolutionMemory` directly. See
+    // `docs/performance/load-projection.md`.
+    //
+    // The deep value is written as text instead of with `JSON.stringify`: that
+    // call recursed once per level on Node 22/24, so serializing 8 000 levels
+    // overflowed the stack inside this fixture (instead of in the port) and the
+    // document was never written. Later V8 versions stringify iteratively, which
+    // is why the failure only appeared on the supported CI runtimes.
+    const levels = 8000;
+    const deepJson = '{"x":'.repeat(levels) + '0' + '}'.repeat(levels);
+    const deepGlobal = `{"schema":1,"aggregate":{"evolution":{"schema":4,"extra":${deepJson}}},"applied":{},"pending":null}`;
+    // A placeholder keeps the shallow document serialized normally; exactly the
+    // bytes `JSON.stringify` would have produced replace it.
+    const marker = '__deep_placeholder__';
     const uuid = freezeUuid();
     const run = async (open, name) => {
       const root = path.join(home, name);
@@ -258,8 +269,8 @@ test('a document too deep to project is still refused before any load, in both t
       await warm.close();
       const medium = path.join(root, 'official', 'evolution_domain.json');
       const stored = JSON.parse(fs.readFileSync(medium, 'utf8'));
-      stored.global = { schema: 1, aggregate: { evolution: { schema: 4, extra: deep } }, applied: {}, pending: null };
-      fs.writeFileSync(medium, JSON.stringify(stored));
+      stored.global = marker;
+      fs.writeFileSync(medium, JSON.stringify(stored).replace(JSON.stringify(marker), () => deepGlobal));
       await f.backend.close();
       const reopened = fixture(root);
       try {
