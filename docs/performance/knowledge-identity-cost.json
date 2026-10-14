@@ -1,0 +1,156 @@
+{
+  "node": "v26.11.1",
+  "platform": "darwin/arm64",
+  "rows": 10000,
+  "knowledgeRows": 10000,
+  "rounds": 3,
+  "warmup": 1,
+  "samples": 5,
+  "scope": "one knowledgeKeyOf() per row = one #sourceMatches() pass over a cold archive",
+  "variants": [
+    "/tmp/dsh-round/variants/main-plus-memo"
+  ],
+  "folds": {
+    "codePoints": 1112064,
+    "strings": 1153438,
+    "differences": 0,
+    "collapses": [
+      "[0-9a-f]",
+      "[0-9a-f-]",
+      "\\b[0-9a-f]{8,}\\b",
+      "\\b[0-9a-f]{4,}-[0-9a-f-]{4,}\\b"
+    ]
+  },
+  "baseline": {
+    "version": "0.2.0-rc.10",
+    "sha256": "2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa"
+  },
+  "gate": "every measured side returns the pinned key for every row",
+  "roundsDetail": [
+    {
+      "order": [
+        "candidate",
+        "variant1"
+      ]
+    },
+    {
+      "order": [
+        "variant1",
+        "candidate"
+      ]
+    },
+    {
+      "order": [
+        "candidate",
+        "variant1"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "label": "candidate",
+      "directory": null,
+      "observations": {
+        "rows": 10000,
+        "wallMs": 50.17495900000017,
+        "cpuMs": 50.228,
+        "raw": [
+          50.156,
+          50.097,
+          50.047,
+          50.302,
+          50.175,
+          50.241,
+          50.178,
+          50.284,
+          50.199,
+          50.141,
+          50.011,
+          50.08,
+          50.078,
+          50.388,
+          50.256
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 89.60412499999984,
+        "cpuMs": 89.699,
+        "raw": [
+          89.976,
+          89.496,
+          89.563,
+          89.714,
+          89.532,
+          89.652,
+          89.874,
+          89.891,
+          89.604,
+          89.329,
+          89.535,
+          89.595,
+          89.523,
+          89.783,
+          89.655
+        ]
+      }
+    },
+    {
+      "label": "variant1",
+      "directory": "/tmp/dsh-round/variants/main-plus-memo",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 73.30716699999994,
+        "cpuMs": 73.362,
+        "raw": [
+          74.579,
+          73.815,
+          73.503,
+          73.506,
+          73.251,
+          73.307,
+          73.27,
+          73.226,
+          73.254,
+          73.293,
+          73.421,
+          73.201,
+          73.188,
+          73.326,
+          73.376
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 132.0884160000005,
+        "cpuMs": 132.186,
+        "raw": [
+          133.294,
+          132.01,
+          132.095,
+          131.881,
+          131.913,
+          132.225,
+          131.906,
+          131.816,
+          132.232,
+          132.253,
+          131.964,
+          131.672,
+          132.118,
+          132.203,
+          132.088
+        ]
+      }
+    }
+  ],
+  "deltas": [
+    {
+      "label": "variant1",
+      "observationsWallPct": -31.55517931827837,
+      "knowledgeWallPct": -32.16352522540697,
+      "observationsCpuPct": -31.534036694746593,
+      "knowledgeCpuPct": -32.141830451031126
+    }
+  ]
+}

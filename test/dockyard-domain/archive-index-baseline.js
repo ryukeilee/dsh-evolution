@@ -46,6 +46,86 @@ const reversals = [
    "  }\n"],
   ["      const knowledgeResult = event ? await this.#upsertKnowledgeUnlocked(next, { sourceCollection: collection, previous: previousKnowledge }) : null;\n",
    "      const knowledgeResult = event ? await this.#upsertKnowledgeUnlocked(next, { sourceCollection: collection }) : null;\n"],
+  // The active-archive scan memo: the process-local record of files this
+  // process already scanned, and the reconcile that reads it. The loop-body
+  // reversal below restores the shape the shared-scan reversal expects, so it
+  // must stay ahead of it.
+  ["  /**\n" +
+   "   * The index entry of an active archive, reusing the process-local scan memo\n" +
+   "   * when this process already scanned exactly these bytes. The scan itself\n" +
+   "   * stays the recovery surface: it runs for every file whose identity this\n" +
+   "   * process has not recorded (see `archiveScanMemo`).\n" +
+   "   */\n" +
+   "  async #reconcileActiveArchive(collection, file) {\n" +
+   "    const info = await stat(file, { bigint: true });\n" +
+   "    const memo = recallArchiveScan(info);\n" +
+   "    if (memo) {\n" +
+   "      // Only the clock field differs from a fresh scan of these bytes.\n" +
+   "      this.archiveActiveKeys.set(collection, new Set(memo.activeKeys));\n" +
+   "      return { ...memo.entry, updatedAt: timestamp(this.clock) };\n" +
+   "    }\n" +
+   "    let raw = \"\";\n" +
+   "    try { raw = await readFile(file, \"utf8\"); } catch (error) { if (error?.code !== \"ENOENT\") throw error; }\n" +
+   "    const scanned = this.#scanArchiveRaw(raw);\n" +
+   "    const rebuilt = this.#indexEntryFromRaw(collection, file, raw, { sealed: false }, scanned);\n" +
+   "    rememberArchiveScan(info, rebuilt, this.#activeKeysFromRaw(collection, raw, scanned));\n" +
+   "    return rebuilt;\n" +
+   "  }\n" +
+   "\n" +
+   "  async #reconcileArchiveIndex() {\n",
+   "  async #reconcileArchiveIndex() {\n"],
+  ["          // Active files are the bounded recovery surface after an append/index crash.\n" +
+   "          const rebuilt = await this.#reconcileActiveArchive(collection, file);\n",
+   "          // Active files are the bounded recovery surface after an append/index crash.\n" +
+   "          let raw = \"\";\n" +
+   "          try { raw = await readFile(file, \"utf8\"); } catch (error) { if (error?.code !== \"ENOENT\") throw error; }\n" +
+   "          const scanned = this.#scanArchiveRaw(raw);\n" +
+   "          const rebuilt = this.#indexEntryFromRaw(collection, file, raw, { sealed: false }, scanned);\n" +
+   "          this.#activeKeysFromRaw(collection, raw, scanned);\n"],
+  ["/**\n" +
+   " * Process-local memo for the recovery scan `#reconcileArchiveIndex()` performs on\n" +
+   " * an active archive file.\n" +
+   " *\n" +
+   " * The scan has to run for every file whose bytes this process has not read yet:\n" +
+   " * it rebuilds the persisted index after a crash, so it may not be skipped or\n" +
+   " * trusted by size. What it does not have to do is run twice for the same\n" +
+   " * unchanged bytes. A staged domain mutation loads the live tree through a\n" +
+   " * hard-linked mirror and then loads the committed tree again, so one write\n" +
+   " * reconciles the same active archives once per memory instance.\n" +
+   " *\n" +
+   " * An entry records the file identity observed while scanning - device, inode,\n" +
+   " * byte size and mtime at nanosecond precision, the same identity\n" +
+   " * `archive-stage.js` uses to decide whether two directory entries are the same\n" +
+   " * file. A file this process did not scan is never hit, and every way the plugin\n" +
+   " * mutates an archive changes that identity: appends grow the size, and sealing,\n" +
+   " * compaction and installation replace the inode. A rolled-back compaction\n" +
+   " * renames the original inode back, whose recorded identity still describes its\n" +
+   " * bytes. The map is bounded; eviction only costs a rescan.\n" +
+   " */\n" +
+   "const ARCHIVE_SCAN_MEMO_LIMIT = 32;\n" +
+   "const archiveScanMemo = new Map();\n" +
+   "\n" +
+   "function archiveScanKey(info) { return `${info.dev}\\u0000${info.ino}`; }\n" +
+   "\n" +
+   "function recallArchiveScan(info) {\n" +
+   "  const key = archiveScanKey(info);\n" +
+   "  const memo = archiveScanMemo.get(key);\n" +
+   "  if (!memo || memo.size !== Number(info.size) || memo.mtimeNs !== String(info.mtimeNs)) return null;\n" +
+   "  // Keep the most recently reused files last in the eviction order.\n" +
+   "  archiveScanMemo.delete(key);\n" +
+   "  archiveScanMemo.set(key, memo);\n" +
+   "  return memo;\n" +
+   "}\n" +
+   "\n" +
+   "function rememberArchiveScan(info, entry, activeKeys) {\n" +
+   "  const key = archiveScanKey(info);\n" +
+   "  archiveScanMemo.delete(key);\n" +
+   "  archiveScanMemo.set(key, { size: Number(info.size), mtimeNs: String(info.mtimeNs), entry, activeKeys });\n" +
+   "  while (archiveScanMemo.size > ARCHIVE_SCAN_MEMO_LIMIT) archiveScanMemo.delete(archiveScanMemo.keys().next().value);\n" +
+   "}\n" +
+   "\n" +
+   "/** Durable, redacted memory for proposals, experiments, failures, and promotions. */",
+   "/** Durable, redacted memory for proposals, experiments, failures, and promotions. */"],
   // The knowledge lookup on the record path: the merged view is scanned
   // without copying it, and only the matched row is detached.
   ["  #knowledgeEntryFor(event) {\n" +

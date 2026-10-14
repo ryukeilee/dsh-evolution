@@ -74,6 +74,31 @@ const CORPUS = [
   { problem: "contradicted", contradictsKnowledgeKey: "knowledge:" + "b".repeat(32) },
   { problem: "related", experimentId: "exp-1", proposalId: "proposal-1", promotionId: "promotion-1", generationId: "gen-1" },
   { problem: "reference", knowledgeKey: "knowledge:" + "c".repeat(32), dimensions: { stale: true }, eventId: "event-1", id: "row-1" },
+  // The two identifier collapses now spell out their upper-case range instead
+  // of carrying the `i` flag. These shapes pin the class and its `\b`
+  // boundaries: an 8+ run, a dashed run, mixed case, digits, and the NFKC
+  // forms that normalize into them before the collapse runs.
+  { problem: "id DEADBEEFDEADBEEF and ABCDEF1234567890", componentId: "plugin:hex" },
+  { problem: "dash abcdef12-3456-7890-abcd-1234567890ab tail", componentId: "plugin:dash" },
+  { failureMode: "ABCDEF12-3456-7890", rootCause: "ABCDEF12-3456-7890" },
+  { problem: "ＡＢＣＤＥＦ１２３４ : colon １２３４", componentId: "plugin:fullwidth" },
+  { problem: "mixed DEADbeef12345678-ABCDEF12 shorter abcdef", componentId: "plugin:mixed" },
+  { problem: "hex before a word DEADBEEF12x and after xDEADBEEF12", componentId: "plugin:boundary" },
+  // Only the explicit key carries a signal, so these records are decided by the
+  // fallback path: its full normalization, and the canonical-prefix test that
+  // can never survive that normalization.
+  { knowledgeKey: "knowledge:" + "d".repeat(32) },
+  { knowledgeKey: "knowledge:DEAD-BEEF-1234" },
+  { knowledgeKey: "not-prefixed" },
+  { knowledgeKey: "!!!" },
+  { knowledgeKey: "’" },
+  { knowledgeKey: "  " },
+  { canonicalKnowledgeKey: "knowledge:" + "e".repeat(32) },
+  { semanticKey: "knowledge:Semantic-Key-0123456789" },
+  // A dimension signal and a canonical-looking explicit key together: the key
+  // must still come from the dimensions.
+  { knowledgeKey: "knowledge:" + "f".repeat(32), problem: "dimension wins", componentId: "plugin:precedence" },
+  { knowledgeKey: "knowledge:" + "1".repeat(32), type: "network-error", componentId: "plugin:precedence-2" },
 ];
 
 test("normalizeKnowledgeEvent stays value-identical to the pinned implementation", () => {
@@ -94,6 +119,30 @@ test("the key-only projection returns exactly the recomputed key", () => {
       `canonicalKnowledgeKey drifted for ${JSON.stringify(entry)?.slice(0, 80)}`,
     );
   }
+});
+
+/**
+ * The identity reads the explicit key only when no dimension carries a signal.
+ * This pins the rule itself rather than only its agreement with the pin, so a
+ * later re-pin cannot silently turn it into a self-comparison: a stored key
+ * that looks canonical must not override the dimensions, and a record whose
+ * dimensions carry no signal and whose explicit key normalizes away is not
+ * knowledge-bearing at all.
+ */
+test("a canonical-looking stored key never overrides the dimensions", () => {
+  const dimensionsOnly = { problem: "dimension wins", componentId: "plugin:precedence" };
+  const expected = normalizeKnowledgeEvent(dimensionsOnly, { sourceCollection: "observations", now: new Date(NOW) })?.knowledgeKey;
+  assert.ok(expected?.startsWith("knowledge:"));
+  for (const key of ["knowledge:" + "f".repeat(32), "knowledge:DEAD-BEEF-1234", "knowledge:"]) {
+    assert.equal(knowledgeKeyOf({ ...dimensionsOnly, knowledgeKey: key }), expected,
+      `a stored key must not change the identity of ${JSON.stringify(key)}`);
+  }
+  // No dimension signal: the explicit key decides, and only a non-empty
+  // normalization of it makes the record knowledge-bearing.
+  assert.equal(knowledgeKeyOf({ knowledgeKey: "not-prefixed" }),
+    normalizeKnowledgeEvent({ knowledgeKey: "not-prefixed" }, { sourceCollection: "observations", now: new Date(NOW) })?.knowledgeKey);
+  assert.equal(knowledgeKeyOf({ knowledgeKey: "!!!" }), null);
+  assert.equal(knowledgeKeyOf({ knowledgeKey: "  " }), null);
 });
 
 // ---------------------------------------------------------------------------
