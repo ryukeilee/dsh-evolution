@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "script": "scripts/benchmarks/domain-retention.mjs",
+  "command": "BENCH_RECORDS=20000 BENCH_CANONICAL=0,3000 BENCH_SAMPLES=7 node --expose-gc scripts/benchmarks/domain-retention.mjs",
+  "note": "Both sides run the same script from their own checkout; the baseline checkout is git archive b7547f8 extracted to a temporary directory with a node_modules symlink. The dated fixture is reused as-is, so this is a second, independent corpus (terminal outcomes, few knowledge rows).",
+  "baseline": {
+    "ref": "b7547f8",
+    "results": [
+      {
+        "records": 20000,
+        "canonicalSize": 0,
+        "samples": 7,
+        "medianMs": 1122.9835000000003,
+        "all": [
+          1115.8859579999998,
+          1118.5355829999999,
+          1120.3335410000004,
+          1122.9835000000003,
+          1125.074959,
+          1128.1631670000002,
+          1129.9242920000006
+        ]
+      },
+      {
+        "records": 20000,
+        "canonicalSize": 3000,
+        "samples": 7,
+        "medianMs": 1129.3924590000006,
+        "all": [
+          1113.0019580000007,
+          1116.576833000001,
+          1124.9864579999994,
+          1129.3924590000006,
+          1139.6904999999988,
+          1143.3256669999992,
+          1145.9715410000008
+        ]
+      }
+    ]
+  },
+  "final": {
+    "ref": "working tree (this change)",
+    "results": [
+      {
+        "records": 20000,
+        "canonicalSize": 0,
+        "samples": 7,
+        "medianMs": 883.3076249999995,
+        "all": [
+          875.1868749999994,
+          876.6735410000001,
+          879.347917,
+          883.3076249999995,
+          885.4653329999996,
+          886.599042,
+          894.3880829999998
+        ]
+      },
+      {
+        "records": 20000,
+        "canonicalSize": 3000,
+        "samples": 7,
+        "medianMs": 893.1451669999988,
+        "all": [
+          881.9159580000014,
+          884.3866670000007,
+          886.8317499999994,
+          893.1451669999988,
+          896.6544589999994,
+          897.7131250000002,
+          950.5254999999997
+        ]
+      }
+    ]
+  }
+}

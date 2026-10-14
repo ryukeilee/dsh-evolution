@@ -1,0 +1,3456 @@
+{
+  "schema": 1,
+  "environment": {
+    "node": "v26.11.1",
+    "platform": "darwin",
+    "kernel": "27.0.0",
+    "arch": "arm64",
+    "cpuModel": "Apple M2",
+    "logicalCpuCount": 8,
+    "totalMemoryBytes": 17179869184,
+    "loadAverageAtStart": [
+      2.2138671875,
+      2.0068359375,
+      1.92431640625
+    ]
+  },
+  "command": [
+    "/opt/homebrew/Cellar/node/26.11.1/bin/node",
+    "--expose-gc",
+    "/Users/ryukeili/GitHub/dsh-evolution/scripts/benchmarks/retention-plan-cost.mjs",
+    "--baseline",
+    "194fc6a",
+    "--samples",
+    "3",
+    "--rounds",
+    "2",
+    "--warmup",
+    "1",
+    "--out",
+    "/tmp/retention-memo-vs-final.json"
+  ],
+  "options": {
+    "libs": [],
+    "baseline": "194fc6a",
+    "scales": [
+      2000,
+      10000,
+      40000
+    ],
+    "samples": 3,
+    "rounds": 2,
+    "warmup": 1,
+    "out": "/tmp/retention-memo-vs-final.json",
+    "json": false
+  },
+  "scope": "public compact dryRun planning and compact including durable archive rewrite; setup/load, snapshots, hashes and second compact are untimed",
+  "memoryMeasurement": {
+    "intervalMs": 2,
+    "heapAllocationDeltaBytes": "sampled peak heapUsed minus heapUsed after global.gc(); lower bound, not total allocated bytes",
+    "peakSampledRssBytes": "per-run sampled RSS, including shared process/module/fixture memory",
+    "processLifetimeMaxRssBytes": "process-lifetime high-water mark"
+  },
+  "limitations": [
+    "no startup #reconcileArchiveIndex timing",
+    "no official host domain transaction, fsync or multi-process",
+    "timer cannot interrupt synchronous planning",
+    "synthetic fixed-time corpus, not production user data",
+    "OS page cache is not flushed",
+    "knowledge groups fit the bounded sourceRefs window; canonical protects outcomes, not terminal promotions"
+  ],
+  "order": "each baseline/variant pair uses A/B in even rounds and B/A in odd rounds: A/B/B/A across two rounds; samples repeat this order",
+  "results": [
+    {
+      "scale": 2000,
+      "coldCounts": {
+        "observations": 800,
+        "knowledge": 400,
+        "cycles": 400,
+        "outcomes": 200,
+        "promotions": 200
+      },
+      "initialCanonical": 13,
+      "pairs": [
+        {
+          "sides": [
+            "baseline",
+            "variant1"
+          ],
+          "phases": {
+            "dryRun": {
+              "samples": {
+                "baseline": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 58.509000000000015,
+                      "cpuUserMs": 69.57,
+                      "cpuSystemMs": 3.828,
+                      "cpuTotalMs": 73.398,
+                      "heapBaselineBytes": 13973920,
+                      "peakSampledHeapBytes": 21010864,
+                      "heapAllocationDeltaBytes": 7036944,
+                      "peakSampledRssBytes": 121781368,
+                      "processLifetimeMaxRssBytes": 152027136
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 52.603958000000034,
+                      "cpuUserMs": 65.15,
+                      "cpuSystemMs": 0.885,
+                      "cpuTotalMs": 66.035,
+                      "heapBaselineBytes": 14248168,
+                      "peakSampledHeapBytes": 21701432,
+                      "heapAllocationDeltaBytes": 7453264,
+                      "peakSampledRssBytes": 126320024,
+                      "processLifetimeMaxRssBytes": 156368896
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 54.574583000000075,
+                      "cpuUserMs": 73.796,
+                      "cpuSystemMs": 0.698,
+                      "cpuTotalMs": 74.494,
+                      "heapBaselineBytes": 14553304,
+                      "peakSampledHeapBytes": 21764504,
+                      "heapAllocationDeltaBytes": 7211200,
+                      "peakSampledRssBytes": 126516632,
+                      "processLifetimeMaxRssBytes": 156598272
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 52.7885,
+                      "cpuUserMs": 72.016,
+                      "cpuSystemMs": 0.696,
+                      "cpuTotalMs": 72.712,
+                      "heapBaselineBytes": 14970360,
+                      "peakSampledHeapBytes": 20789504,
+                      "heapAllocationDeltaBytes": 5819144,
+                      "peakSampledRssBytes": 128204232,
+                      "processLifetimeMaxRssBytes": 158285824
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 51.927791999999954,
+                      "cpuUserMs": 58.848,
+                      "cpuSystemMs": 0.525,
+                      "cpuTotalMs": 59.373,
+                      "heapBaselineBytes": 15134272,
+                      "peakSampledHeapBytes": 47055272,
+                      "heapAllocationDeltaBytes": 31921000,
+                      "peakSampledRssBytes": 128433608,
+                      "processLifetimeMaxRssBytes": 158515200
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 50.4057499999999,
+                      "cpuUserMs": 60.259,
+                      "cpuSystemMs": 0.557,
+                      "cpuTotalMs": 60.816,
+                      "heapBaselineBytes": 15220128,
+                      "peakSampledHeapBytes": 47184448,
+                      "heapAllocationDeltaBytes": 31964320,
+                      "peakSampledRssBytes": 128433608,
+                      "processLifetimeMaxRssBytes": 158515200
+                    }
+                  }
+                ],
+                "variant1": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 54.96041700000001,
+                      "cpuUserMs": 70.686,
+                      "cpuSystemMs": 1.394,
+                      "cpuTotalMs": 72.08,
+                      "heapBaselineBytes": 14177832,
+                      "peakSampledHeapBytes": 21279888,
+                      "heapAllocationDeltaBytes": 7102056,
+                      "peakSampledRssBytes": 126254488,
+                      "processLifetimeMaxRssBytes": 156303360
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 51.89999999999998,
+                      "cpuUserMs": 67.218,
+                      "cpuSystemMs": 0.938,
+                      "cpuTotalMs": 68.156,
+                      "heapBaselineBytes": 14429856,
+                      "peakSampledHeapBytes": 21117752,
+                      "heapAllocationDeltaBytes": 6687896,
+                      "peakSampledRssBytes": 126467480,
+                      "processLifetimeMaxRssBytes": 156516352
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 53.78258400000004,
+                      "cpuUserMs": 68.546,
+                      "cpuSystemMs": 0.827,
+                      "cpuTotalMs": 69.373,
+                      "heapBaselineBytes": 14641952,
+                      "peakSampledHeapBytes": 20844272,
+                      "heapAllocationDeltaBytes": 6202320,
+                      "peakSampledRssBytes": 126860744,
+                      "processLifetimeMaxRssBytes": 156942336
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 50.98116600000003,
+                      "cpuUserMs": 70.207,
+                      "cpuSystemMs": 0.705,
+                      "cpuTotalMs": 70.912,
+                      "heapBaselineBytes": 14808624,
+                      "peakSampledHeapBytes": 20121200,
+                      "heapAllocationDeltaBytes": 5312576,
+                      "peakSampledRssBytes": 126991816,
+                      "processLifetimeMaxRssBytes": 157073408
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 51.21854200000007,
+                      "cpuUserMs": 59.52,
+                      "cpuSystemMs": 0.72,
+                      "cpuTotalMs": 60.24,
+                      "heapBaselineBytes": 15029592,
+                      "peakSampledHeapBytes": 46865968,
+                      "heapAllocationDeltaBytes": 31836376,
+                      "peakSampledRssBytes": 128433608,
+                      "processLifetimeMaxRssBytes": 158515200
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 49.62191700000017,
+                      "cpuUserMs": 59.013,
+                      "cpuSystemMs": 0.577,
+                      "cpuTotalMs": 59.59,
+                      "heapBaselineBytes": 15181608,
+                      "peakSampledHeapBytes": 46965440,
+                      "heapAllocationDeltaBytes": 31783832,
+                      "peakSampledRssBytes": 128433608,
+                      "processLifetimeMaxRssBytes": 158515200
+                    }
+                  }
+                ]
+              },
+              "schedule": [
+                {
+                  "warmup": true,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 1,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 2,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 0,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 1,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 2,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                }
+              ],
+              "assertions": {
+                "report": true,
+                "fullState": true,
+                "archiveBytes": true,
+                "dryRunUnchanged": true
+              },
+              "report": {
+                "before": {
+                  "observations": 800,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 200,
+                  "outcomes": 200,
+                  "cycles": 400,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 400
+                },
+                "after": {
+                  "observations": 151,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 13,
+                  "cycles": 400,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 500
+                },
+                "retired": 387,
+                "consolidated": 1050,
+                "aggregatedObservations": 1,
+                "tombstones": 2,
+                "retainedCanonical": 13,
+                "knowledgeBefore": 400,
+                "knowledgeAfter": 500,
+                "canonicalKnowledge": 500,
+                "canonical": 13,
+                "beforeBytes": 1142370,
+                "afterBytes": 1142370,
+                "dryRun": true
+              },
+              "stateSha256": "67aee453f747758a912a542ef6f29b223353438b9b0a0d273b84a285684545e2",
+              "archive": [
+                {
+                  "file": "state.json.cycles-archive.jsonl",
+                  "bytes": 88235,
+                  "sha256": "fb1daa8fda6d51aaf763309c243d6cc5ec6459aa1020e8e122d550357569afab"
+                },
+                {
+                  "file": "state.json.evolution-archive-index.json",
+                  "bytes": 2569,
+                  "sha256": "0d9d4c686d7712f849f5c8c07d053f2ee150882263fd41a5b5bda660985e0a45"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl",
+                  "bytes": 811160,
+                  "sha256": "6bc867101af0dff45b20eec89860fdb19998d49429bf4710761f429971ee2d29"
+                },
+                {
+                  "file": "state.json.observations-archive.jsonl",
+                  "bytes": 168955,
+                  "sha256": "b5ba8fc935ae3479347a3614ca08d7169154c0dc1d4be65f90d4b2506ca618d1"
+                },
+                {
+                  "file": "state.json.outcomes-archive.jsonl",
+                  "bytes": 36210,
+                  "sha256": "2c158f6e660e49004c51eb8fd602763208adc961db4e294b7c1cfa269ea24268"
+                },
+                {
+                  "file": "state.json.promotions-archive.jsonl",
+                  "bytes": 37810,
+                  "sha256": "e7fad8183e0492aec8c4705d819acf0052697f15909228f019614963e91b65f0"
+                }
+              ],
+              "medians": {
+                "baseline": {
+                  "wallMs": 52.69622900000002,
+                  "cpuUserMs": 67.36,
+                  "cpuSystemMs": 0.697,
+                  "cpuTotalMs": 69.3735,
+                  "heapBaselineBytes": 14761832,
+                  "peakSampledHeapBytes": 21732968,
+                  "heapAllocationDeltaBytes": 7332232,
+                  "peakSampledRssBytes": 127360432,
+                  "processLifetimeMaxRssBytes": 157442048
+                },
+                "variant1": {
+                  "wallMs": 51.559271000000024,
+                  "cpuUserMs": 67.882,
+                  "cpuSystemMs": 0.7735,
+                  "cpuTotalMs": 68.7645,
+                  "heapBaselineBytes": 14725288,
+                  "peakSampledHeapBytes": 21198820,
+                  "heapAllocationDeltaBytes": 6894976,
+                  "peakSampledRssBytes": 126926280,
+                  "processLifetimeMaxRssBytes": 157007872
+                }
+              }
+            },
+            "write": {
+              "samples": {
+                "baseline": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 81.86233300000004,
+                      "cpuUserMs": 71.594,
+                      "cpuSystemMs": 20.579,
+                      "cpuTotalMs": 92.173,
+                      "heapBaselineBytes": 15757688,
+                      "peakSampledHeapBytes": 25745392,
+                      "heapAllocationDeltaBytes": 9987704,
+                      "peakSampledRssBytes": 134020768,
+                      "processLifetimeMaxRssBytes": 165101568
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 81.69512500000019,
+                      "cpuUserMs": 72.841,
+                      "cpuSystemMs": 20.314,
+                      "cpuTotalMs": 93.155,
+                      "heapBaselineBytes": 14745744,
+                      "peakSampledHeapBytes": 24734216,
+                      "heapAllocationDeltaBytes": 9988472,
+                      "peakSampledRssBytes": 135102328,
+                      "processLifetimeMaxRssBytes": 166084608
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 81.31841600000007,
+                      "cpuUserMs": 75.928,
+                      "cpuSystemMs": 19.965,
+                      "cpuTotalMs": 95.893,
+                      "heapBaselineBytes": 14762280,
+                      "peakSampledHeapBytes": 24585856,
+                      "heapAllocationDeltaBytes": 9823576,
+                      "peakSampledRssBytes": 135069584,
+                      "processLifetimeMaxRssBytes": 166084608
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 80.60491700000011,
+                      "cpuUserMs": 71.993,
+                      "cpuSystemMs": 19.554,
+                      "cpuTotalMs": 91.547,
+                      "heapBaselineBytes": 14881056,
+                      "peakSampledHeapBytes": 24712360,
+                      "heapAllocationDeltaBytes": 9831304,
+                      "peakSampledRssBytes": 135282696,
+                      "processLifetimeMaxRssBytes": 166084608
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 81.12408300000016,
+                      "cpuUserMs": 71.832,
+                      "cpuSystemMs": 20.262,
+                      "cpuTotalMs": 92.094,
+                      "heapBaselineBytes": 14880872,
+                      "peakSampledHeapBytes": 24643248,
+                      "heapAllocationDeltaBytes": 9762376,
+                      "peakSampledRssBytes": 135348232,
+                      "processLifetimeMaxRssBytes": 166117376
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 80.21608300000025,
+                      "cpuUserMs": 72.83,
+                      "cpuSystemMs": 20.095,
+                      "cpuTotalMs": 92.925,
+                      "heapBaselineBytes": 14892624,
+                      "peakSampledHeapBytes": 23922952,
+                      "heapAllocationDeltaBytes": 9030328,
+                      "peakSampledRssBytes": 135381000,
+                      "processLifetimeMaxRssBytes": 166182912
+                    }
+                  }
+                ],
+                "variant1": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 80.02995899999996,
+                      "cpuUserMs": 69.978,
+                      "cpuSystemMs": 19.966,
+                      "cpuTotalMs": 89.944,
+                      "heapBaselineBytes": 15790712,
+                      "peakSampledHeapBytes": 25778704,
+                      "heapAllocationDeltaBytes": 9987992,
+                      "peakSampledRssBytes": 134610784,
+                      "processLifetimeMaxRssBytes": 165429248
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 80.93183399999998,
+                      "cpuUserMs": 70.7,
+                      "cpuSystemMs": 20.539,
+                      "cpuTotalMs": 91.239,
+                      "heapBaselineBytes": 14758240,
+                      "peakSampledHeapBytes": 24726616,
+                      "heapAllocationDeltaBytes": 9968376,
+                      "peakSampledRssBytes": 135020432,
+                      "processLifetimeMaxRssBytes": 166084608
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 81.70329200000015,
+                      "cpuUserMs": 70.727,
+                      "cpuSystemMs": 20.811,
+                      "cpuTotalMs": 91.538,
+                      "heapBaselineBytes": 14796568,
+                      "peakSampledHeapBytes": 24566032,
+                      "heapAllocationDeltaBytes": 9769464,
+                      "peakSampledRssBytes": 135102376,
+                      "processLifetimeMaxRssBytes": 166084608
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 81.68516700000009,
+                      "cpuUserMs": 78.886,
+                      "cpuSystemMs": 20.553,
+                      "cpuTotalMs": 99.439,
+                      "heapBaselineBytes": 14828624,
+                      "peakSampledHeapBytes": 24631592,
+                      "heapAllocationDeltaBytes": 9802968,
+                      "peakSampledRssBytes": 135217136,
+                      "processLifetimeMaxRssBytes": 166084608
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 79.79841599999963,
+                      "cpuUserMs": 70.062,
+                      "cpuSystemMs": 19.616,
+                      "cpuTotalMs": 89.678,
+                      "heapBaselineBytes": 14855784,
+                      "peakSampledHeapBytes": 24633200,
+                      "heapAllocationDeltaBytes": 9777416,
+                      "peakSampledRssBytes": 135299080,
+                      "processLifetimeMaxRssBytes": 166100992
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 79.72970799999985,
+                      "cpuUserMs": 70.309,
+                      "cpuSystemMs": 19.926,
+                      "cpuTotalMs": 90.235,
+                      "heapBaselineBytes": 14894096,
+                      "peakSampledHeapBytes": 24649816,
+                      "heapAllocationDeltaBytes": 9755720,
+                      "peakSampledRssBytes": 135381000,
+                      "processLifetimeMaxRssBytes": 166166528
+                    }
+                  }
+                ]
+              },
+              "schedule": [
+                {
+                  "warmup": true,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 1,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 2,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 0,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 1,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 2,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                }
+              ],
+              "assertions": {
+                "report": true,
+                "fullState": true,
+                "archiveBytes": true,
+                "idempotencyState": true,
+                "idempotencyArchiveBytes": true,
+                "secondReport": true,
+                "persistedHotState": true
+              },
+              "report": {
+                "before": {
+                  "observations": 800,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 200,
+                  "outcomes": 200,
+                  "cycles": 400,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 400
+                },
+                "after": {
+                  "observations": 151,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 13,
+                  "cycles": 400,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 500
+                },
+                "retired": 387,
+                "consolidated": 1050,
+                "aggregatedObservations": 1,
+                "tombstones": 2,
+                "retainedCanonical": 13,
+                "knowledgeBefore": 400,
+                "knowledgeAfter": 500,
+                "canonicalKnowledge": 500,
+                "canonical": 13,
+                "beforeBytes": 1142370,
+                "afterBytes": 237862,
+                "dryRun": false,
+                "hotCollections": {
+                  "observations": 50,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 13,
+                  "cycles": 50,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 500,
+                  "tombstones": 2
+                }
+              },
+              "secondReport": {
+                "before": {
+                  "observations": 151,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 13,
+                  "cycles": 400,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 500
+                },
+                "after": {
+                  "observations": 151,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 13,
+                  "cycles": 400,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 500
+                },
+                "retired": 0,
+                "consolidated": 0,
+                "aggregatedObservations": 0,
+                "tombstones": 2,
+                "retainedCanonical": 13,
+                "knowledgeBefore": 500,
+                "knowledgeAfter": 500,
+                "canonicalKnowledge": 500,
+                "canonical": 13,
+                "beforeBytes": 237862,
+                "afterBytes": 237862,
+                "dryRun": false,
+                "hotCollections": {
+                  "observations": 50,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 13,
+                  "cycles": 50,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 500,
+                  "tombstones": 2
+                }
+              },
+              "stateSha256": "6aeebfae7f8f23293f5d76c7a5b459ce79825d9a4f3cbc6acd261bd2eb47f2b4",
+              "archive": [
+                {
+                  "file": "state.json.cycles-archive.jsonl",
+                  "bytes": 210130,
+                  "sha256": "19c3459ac9e25717f8f46b534a961bf59c7abd4dfa0daeb5a09027f02ee28084"
+                },
+                {
+                  "file": "state.json.evolution-archive-index.json",
+                  "bytes": 2424,
+                  "sha256": "071b76a8cab021b67a57591c05886e9af578635523002bfbbba99d25acab026b"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl",
+                  "bytes": 0,
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                },
+                {
+                  "file": "state.json.observations-archive.jsonl",
+                  "bytes": 27732,
+                  "sha256": "f5dd988d6b2c065d1302f680b92cbaf8750145c8f784614818dcdca1cb129a4a"
+                },
+                {
+                  "file": "state.json.outcomes-archive.jsonl",
+                  "bytes": 0,
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                },
+                {
+                  "file": "state.json.promotions-archive.jsonl",
+                  "bytes": 0,
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                }
+              ],
+              "medians": {
+                "baseline": {
+                  "wallMs": 81.22124950000011,
+                  "cpuUserMs": 72.41149999999999,
+                  "cpuSystemMs": 20.1785,
+                  "cpuTotalMs": 92.549,
+                  "heapBaselineBytes": 14880964,
+                  "peakSampledHeapBytes": 24677804,
+                  "heapAllocationDeltaBytes": 9827440,
+                  "peakSampledRssBytes": 135192512,
+                  "processLifetimeMaxRssBytes": 166084608
+                },
+                "variant1": {
+                  "wallMs": 80.48089649999997,
+                  "cpuUserMs": 70.50450000000001,
+                  "cpuSystemMs": 20.2525,
+                  "cpuTotalMs": 90.737,
+                  "heapBaselineBytes": 14842204,
+                  "peakSampledHeapBytes": 24641508,
+                  "heapAllocationDeltaBytes": 9790192,
+                  "peakSampledRssBytes": 135159756,
+                  "processLifetimeMaxRssBytes": 166084608
+                }
+              }
+            }
+          }
+        }
+      ],
+      "equivalent": true
+    },
+    {
+      "scale": 10000,
+      "coldCounts": {
+        "observations": 4000,
+        "knowledge": 2000,
+        "cycles": 2000,
+        "outcomes": 1000,
+        "promotions": 1000
+      },
+      "initialCanonical": 63,
+      "pairs": [
+        {
+          "sides": [
+            "baseline",
+            "variant1"
+          ],
+          "phases": {
+            "dryRun": {
+              "samples": {
+                "baseline": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 241.65020800000002,
+                      "cpuUserMs": 307.704,
+                      "cpuSystemMs": 2.742,
+                      "cpuTotalMs": 310.446,
+                      "heapBaselineBytes": 37739344,
+                      "peakSampledHeapBytes": 72902128,
+                      "heapAllocationDeltaBytes": 35162784,
+                      "peakSampledRssBytes": 206476672,
+                      "processLifetimeMaxRssBytes": 236142592
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 241.22237500000028,
+                      "cpuUserMs": 274.087,
+                      "cpuSystemMs": 2.354,
+                      "cpuTotalMs": 276.441,
+                      "heapBaselineBytes": 38442536,
+                      "peakSampledHeapBytes": 72038504,
+                      "heapAllocationDeltaBytes": 33595968,
+                      "peakSampledRssBytes": 215325232,
+                      "processLifetimeMaxRssBytes": 240893952
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 241.6353339999996,
+                      "cpuUserMs": 266.999,
+                      "cpuSystemMs": 2.605,
+                      "cpuTotalMs": 269.604,
+                      "heapBaselineBytes": 39009264,
+                      "peakSampledHeapBytes": 73430032,
+                      "heapAllocationDeltaBytes": 34420768,
+                      "peakSampledRssBytes": 215145008,
+                      "processLifetimeMaxRssBytes": 240893952
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 243.02049999999963,
+                      "cpuUserMs": 268.79,
+                      "cpuSystemMs": 2.945,
+                      "cpuTotalMs": 271.735,
+                      "heapBaselineBytes": 40003864,
+                      "peakSampledHeapBytes": 74208064,
+                      "heapAllocationDeltaBytes": 34204200,
+                      "peakSampledRssBytes": 215734880,
+                      "processLifetimeMaxRssBytes": 241352704
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 240.7985830000016,
+                      "cpuUserMs": 272.458,
+                      "cpuSystemMs": 2.318,
+                      "cpuTotalMs": 274.776,
+                      "heapBaselineBytes": 40562096,
+                      "peakSampledHeapBytes": 73954552,
+                      "heapAllocationDeltaBytes": 33392456,
+                      "peakSampledRssBytes": 216259240,
+                      "processLifetimeMaxRssBytes": 241778688
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 239.5940419999988,
+                      "cpuUserMs": 270.505,
+                      "cpuSystemMs": 2.242,
+                      "cpuTotalMs": 272.747,
+                      "heapBaselineBytes": 40866528,
+                      "peakSampledHeapBytes": 72548184,
+                      "heapAllocationDeltaBytes": 31681656,
+                      "peakSampledRssBytes": 216406744,
+                      "processLifetimeMaxRssBytes": 242139136
+                    }
+                  }
+                ],
+                "variant1": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 240.89345799999955,
+                      "cpuUserMs": 303.897,
+                      "cpuSystemMs": 2.631,
+                      "cpuTotalMs": 306.528,
+                      "heapBaselineBytes": 38080544,
+                      "peakSampledHeapBytes": 71729736,
+                      "heapAllocationDeltaBytes": 33649192,
+                      "peakSampledRssBytes": 215128624,
+                      "processLifetimeMaxRssBytes": 240517120
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 241.21229200000016,
+                      "cpuUserMs": 266.241,
+                      "cpuSystemMs": 2.373,
+                      "cpuTotalMs": 268.614,
+                      "heapBaselineBytes": 38697232,
+                      "peakSampledHeapBytes": 71791544,
+                      "heapAllocationDeltaBytes": 33094312,
+                      "peakSampledRssBytes": 215308848,
+                      "processLifetimeMaxRssBytes": 240893952
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 238.71579199999996,
+                      "cpuUserMs": 269.914,
+                      "cpuSystemMs": 2.423,
+                      "cpuTotalMs": 272.337,
+                      "heapBaselineBytes": 39284048,
+                      "peakSampledHeapBytes": 71086104,
+                      "heapAllocationDeltaBytes": 31802056,
+                      "peakSampledRssBytes": 215374384,
+                      "processLifetimeMaxRssBytes": 241025024
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 239.72204200000033,
+                      "cpuUserMs": 267.004,
+                      "cpuSystemMs": 2.215,
+                      "cpuTotalMs": 269.219,
+                      "heapBaselineBytes": 39603320,
+                      "peakSampledHeapBytes": 72580200,
+                      "heapAllocationDeltaBytes": 32976880,
+                      "peakSampledRssBytes": 215423536,
+                      "processLifetimeMaxRssBytes": 241025024
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 235.6068749999995,
+                      "cpuUserMs": 265.771,
+                      "cpuSystemMs": 2.069,
+                      "cpuTotalMs": 267.84,
+                      "heapBaselineBytes": 40248648,
+                      "peakSampledHeapBytes": 70984512,
+                      "heapAllocationDeltaBytes": 30735864,
+                      "peakSampledRssBytes": 215718520,
+                      "processLifetimeMaxRssBytes": 241565696
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 236.39304200000151,
+                      "cpuUserMs": 264.57,
+                      "cpuSystemMs": 2.269,
+                      "cpuTotalMs": 266.839,
+                      "heapBaselineBytes": 40811616,
+                      "peakSampledHeapBytes": 72665720,
+                      "heapAllocationDeltaBytes": 31854104,
+                      "peakSampledRssBytes": 216373952,
+                      "processLifetimeMaxRssBytes": 242089984
+                    }
+                  }
+                ]
+              },
+              "schedule": [
+                {
+                  "warmup": true,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 1,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 2,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 0,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 1,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 2,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                }
+              ],
+              "assertions": {
+                "report": true,
+                "fullState": true,
+                "archiveBytes": true,
+                "dryRunUnchanged": true
+              },
+              "report": {
+                "before": {
+                  "observations": 4000,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 1000,
+                  "outcomes": 1000,
+                  "cycles": 2000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 2000
+                },
+                "after": {
+                  "observations": 751,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 63,
+                  "cycles": 2000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 2500
+                },
+                "retired": 1937,
+                "consolidated": 5250,
+                "aggregatedObservations": 1,
+                "tombstones": 2,
+                "retainedCanonical": 63,
+                "knowledgeBefore": 2000,
+                "knowledgeAfter": 2500,
+                "canonicalKnowledge": 2500,
+                "canonical": 63,
+                "beforeBytes": 5729370,
+                "afterBytes": 5729370,
+                "dryRun": true
+              },
+              "stateSha256": "461103259976de1df28947b080632acc132f2f583c5f713ff54c5f9adbf9f94f",
+              "archive": [
+                {
+                  "file": "state.json.cycles-archive.jsonl",
+                  "bytes": 444335,
+                  "sha256": "04bbb48f52456d6912c20e75f6d60ab56bf12300de34051641d9fea4aa92fa32"
+                },
+                {
+                  "file": "state.json.evolution-archive-index.json",
+                  "bytes": 2584,
+                  "sha256": "23df74d1e2e38a20c3ae2a0a5f52d51393ec836963cfc5e8db1606bb405cb01b"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl",
+                  "bytes": 4061560,
+                  "sha256": "7c50ee82194de6e4ecb877c4a2458f569268319390bece306662729aba385fff"
+                },
+                {
+                  "file": "state.json.observations-archive.jsonl",
+                  "bytes": 851455,
+                  "sha256": "987327385893779d1026e6910d1f69129661a396c3f34eb13e46cd1c3dfd48cc"
+                },
+                {
+                  "file": "state.json.outcomes-archive.jsonl",
+                  "bytes": 182010,
+                  "sha256": "d6da3a7017f0537bbf383e9cee37e0aced5109f8566422be105b252c85c3b197"
+                },
+                {
+                  "file": "state.json.promotions-archive.jsonl",
+                  "bytes": 190010,
+                  "sha256": "2dc5300d3d2ad56839ea03bf07ba2eb99802c0bb1b566101c40d367c8f831247"
+                }
+              ],
+              "medians": {
+                "baseline": {
+                  "wallMs": 241.42885449999994,
+                  "cpuUserMs": 271.4815,
+                  "cpuSystemMs": 2.4795,
+                  "cpuTotalMs": 273.7615,
+                  "heapBaselineBytes": 39506564,
+                  "peakSampledHeapBytes": 73166080,
+                  "heapAllocationDeltaBytes": 33900084,
+                  "peakSampledRssBytes": 215530056,
+                  "processLifetimeMaxRssBytes": 241123328
+                },
+                "variant1": {
+                  "wallMs": 239.21891700000015,
+                  "cpuUserMs": 266.6225,
+                  "cpuSystemMs": 2.321,
+                  "cpuTotalMs": 268.9165,
+                  "heapBaselineBytes": 39443684,
+                  "peakSampledHeapBytes": 71760640,
+                  "heapAllocationDeltaBytes": 32415492,
+                  "peakSampledRssBytes": 215398960,
+                  "processLifetimeMaxRssBytes": 241025024
+                }
+              }
+            },
+            "write": {
+              "samples": {
+                "baseline": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 441.1828750000004,
+                      "cpuUserMs": 371.704,
+                      "cpuSystemMs": 158.479,
+                      "cpuTotalMs": 530.183,
+                      "heapBaselineBytes": 42175736,
+                      "peakSampledHeapBytes": 86015064,
+                      "heapAllocationDeltaBytes": 43839328,
+                      "peakSampledRssBytes": 241312368,
+                      "processLifetimeMaxRssBytes": 274972672
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 443.0401660000007,
+                      "cpuUserMs": 388.25,
+                      "cpuSystemMs": 162.65,
+                      "cpuTotalMs": 550.9,
+                      "heapBaselineBytes": 42102264,
+                      "peakSampledHeapBytes": 85498624,
+                      "heapAllocationDeltaBytes": 43396360,
+                      "peakSampledRssBytes": 263858600,
+                      "processLifetimeMaxRssBytes": 292126720
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 446.6311659999992,
+                      "cpuUserMs": 371.505,
+                      "cpuSystemMs": 167.797,
+                      "cpuTotalMs": 539.302,
+                      "heapBaselineBytes": 42171768,
+                      "peakSampledHeapBytes": 86240152,
+                      "heapAllocationDeltaBytes": 44068384,
+                      "peakSampledRssBytes": 263465432,
+                      "processLifetimeMaxRssBytes": 292339712
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 443.6165830000027,
+                      "cpuUserMs": 355.169,
+                      "cpuSystemMs": 164.198,
+                      "cpuTotalMs": 519.367,
+                      "heapBaselineBytes": 42270616,
+                      "peakSampledHeapBytes": 85370168,
+                      "heapAllocationDeltaBytes": 43099552,
+                      "peakSampledRssBytes": 255453488,
+                      "processLifetimeMaxRssBytes": 293273600
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 440.44537499999933,
+                      "cpuUserMs": 373.401,
+                      "cpuSystemMs": 162.614,
+                      "cpuTotalMs": 536.015,
+                      "heapBaselineBytes": 42215480,
+                      "peakSampledHeapBytes": 86084056,
+                      "heapAllocationDeltaBytes": 43868576,
+                      "peakSampledRssBytes": 255174984,
+                      "processLifetimeMaxRssBytes": 293273600
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 441.52800000000207,
+                      "cpuUserMs": 369.606,
+                      "cpuSystemMs": 165.93,
+                      "cpuTotalMs": 535.536,
+                      "heapBaselineBytes": 42194312,
+                      "peakSampledHeapBytes": 86114376,
+                      "heapAllocationDeltaBytes": 43920064,
+                      "peakSampledRssBytes": 255420840,
+                      "processLifetimeMaxRssBytes": 293273600
+                    }
+                  }
+                ],
+                "variant1": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 435.6718340000007,
+                      "cpuUserMs": 357.805,
+                      "cpuSystemMs": 156.192,
+                      "cpuTotalMs": 513.997,
+                      "heapBaselineBytes": 42083984,
+                      "peakSampledHeapBytes": 86127712,
+                      "heapAllocationDeltaBytes": 44043728,
+                      "peakSampledRssBytes": 261662616,
+                      "processLifetimeMaxRssBytes": 292126720
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 440.8372500000005,
+                      "cpuUserMs": 321.055,
+                      "cpuSystemMs": 163.904,
+                      "cpuTotalMs": 484.959,
+                      "heapBaselineBytes": 42139920,
+                      "peakSampledHeapBytes": 81907176,
+                      "heapAllocationDeltaBytes": 39767256,
+                      "peakSampledRssBytes": 265579016,
+                      "processLifetimeMaxRssBytes": 292339712
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 440.8236250000009,
+                      "cpuUserMs": 354.788,
+                      "cpuSystemMs": 163.127,
+                      "cpuTotalMs": 517.915,
+                      "heapBaselineBytes": 42240328,
+                      "peakSampledHeapBytes": 86812952,
+                      "heapAllocationDeltaBytes": 44572624,
+                      "peakSampledRssBytes": 256272712,
+                      "processLifetimeMaxRssBytes": 293273600
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 429.825417,
+                      "cpuUserMs": 355.645,
+                      "cpuSystemMs": 154.496,
+                      "cpuTotalMs": 510.141,
+                      "heapBaselineBytes": 42224456,
+                      "peakSampledHeapBytes": 85493592,
+                      "heapAllocationDeltaBytes": 43269136,
+                      "peakSampledRssBytes": 255977800,
+                      "processLifetimeMaxRssBytes": 293273600
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 435.2662500000006,
+                      "cpuUserMs": 358.285,
+                      "cpuSystemMs": 156.535,
+                      "cpuTotalMs": 514.82,
+                      "heapBaselineBytes": 42256608,
+                      "peakSampledHeapBytes": 86081656,
+                      "heapAllocationDeltaBytes": 43825048,
+                      "peakSampledRssBytes": 255387976,
+                      "processLifetimeMaxRssBytes": 293273600
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 440.7342499999977,
+                      "cpuUserMs": 367.768,
+                      "cpuSystemMs": 160.98,
+                      "cpuTotalMs": 528.748,
+                      "heapBaselineBytes": 42265016,
+                      "peakSampledHeapBytes": 86234320,
+                      "heapAllocationDeltaBytes": 43969304,
+                      "peakSampledRssBytes": 255388024,
+                      "processLifetimeMaxRssBytes": 293273600
+                    }
+                  }
+                ]
+              },
+              "schedule": [
+                {
+                  "warmup": true,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 1,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 2,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 0,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 1,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 2,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                }
+              ],
+              "assertions": {
+                "report": true,
+                "fullState": true,
+                "archiveBytes": true,
+                "idempotencyState": true,
+                "idempotencyArchiveBytes": true,
+                "secondReport": true,
+                "persistedHotState": true
+              },
+              "report": {
+                "before": {
+                  "observations": 4000,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 1000,
+                  "outcomes": 1000,
+                  "cycles": 2000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 2000
+                },
+                "after": {
+                  "observations": 751,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 63,
+                  "cycles": 2000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 2500
+                },
+                "retired": 1937,
+                "consolidated": 5250,
+                "aggregatedObservations": 1,
+                "tombstones": 2,
+                "retainedCanonical": 63,
+                "knowledgeBefore": 2000,
+                "knowledgeAfter": 2500,
+                "canonicalKnowledge": 2500,
+                "canonical": 63,
+                "beforeBytes": 5729370,
+                "afterBytes": 4409892,
+                "dryRun": false,
+                "hotCollections": {
+                  "observations": 50,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 50,
+                  "cycles": 50,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 1000,
+                  "tombstones": 2
+                }
+              },
+              "secondReport": {
+                "before": {
+                  "observations": 751,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 63,
+                  "cycles": 2000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 2500
+                },
+                "after": {
+                  "observations": 751,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 63,
+                  "cycles": 2000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 2500
+                },
+                "retired": 0,
+                "consolidated": 0,
+                "aggregatedObservations": 0,
+                "tombstones": 2,
+                "retainedCanonical": 63,
+                "knowledgeBefore": 2500,
+                "knowledgeAfter": 2500,
+                "canonicalKnowledge": 2500,
+                "canonical": 63,
+                "beforeBytes": 4409892,
+                "afterBytes": 4409892,
+                "dryRun": false,
+                "hotCollections": {
+                  "observations": 50,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 50,
+                  "cycles": 50,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 1000,
+                  "tombstones": 2
+                }
+              },
+              "stateSha256": "aa6c9a85b42e63e45177def7a9de745ac2cd1015114913d408233e5b656c0468",
+              "archive": [
+                {
+                  "file": "state.json.cycles-archive.jsonl",
+                  "bytes": 126027,
+                  "sha256": "17c9929c57833f6c964808f8d45ebfe845187ec01144004c658566b6e155e5e8"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000001.jsonl",
+                  "bytes": 261816,
+                  "sha256": "3a5e423d6a1d5c02468c816dfbde3e9b6f6d3abf6c5b1b425d37b930fda1d088"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000002.jsonl",
+                  "bytes": 262036,
+                  "sha256": "bce2d9102c64f77a857dbf6caa5889466a9afd857665e2c6f090f2f18de54619"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000003.jsonl",
+                  "bytes": 262049,
+                  "sha256": "e0ba186dc0fc1d38abd9b03e36c0c32280401e36bdd8f26a76be8599db738b3d"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000004.jsonl",
+                  "bytes": 261702,
+                  "sha256": "f762e8f3fba5f535b8bc82eb11768c15337f7f1c3189878db31678e3efe90209"
+                },
+                {
+                  "file": "state.json.evolution-archive-index.json",
+                  "bytes": 10406,
+                  "sha256": "ceb05e73186a16ff1b6a0d04fb51e51020a7e726e9d5b64ecfee19a36270e4ac"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl",
+                  "bytes": 170772,
+                  "sha256": "0a0069fdfd11c2d1d01e596bd9e524692e776e444aa5bc67b5020f7a8f847b98"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000001.jsonl",
+                  "bytes": 261301,
+                  "sha256": "62470b8d514865112c1abc20980db9668195da8817aeb6c7df504c8b6259fd25"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000002.jsonl",
+                  "bytes": 261741,
+                  "sha256": "244767c1ca436cb563c4640a68694b426df682494c95485113767d4cd1b35e35"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000003.jsonl",
+                  "bytes": 261741,
+                  "sha256": "cbc89244f2285c81ee0909fd4889be07113341fedf35f01c1bf037ff2d953fca"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000004.jsonl",
+                  "bytes": 261741,
+                  "sha256": "8f3319f5a5e35e69557f62bad41f9a2a3b272c6d5d7b3043cd5c7a2ab5c8d998"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000005.jsonl",
+                  "bytes": 261741,
+                  "sha256": "521ff3ac0499a2e2af057bfb15c9d742ab01b6daf1a83a00ff8368f986da0878"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000006.jsonl",
+                  "bytes": 261741,
+                  "sha256": "d1cdd889b1314d3a1e79afc473a8c52f1576e302427e745f47ade5e415a413db"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000007.jsonl",
+                  "bytes": 261741,
+                  "sha256": "743b2f9a53946866b189d240aaa9d1c0ce4e1880fc98e264311f3d2b9655960b"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000008.jsonl",
+                  "bytes": 261869,
+                  "sha256": "a1e7a7651405dc5b74cfe0820482c07824515da5bf1757c80f5c32d46f0b7bb4"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000009.jsonl",
+                  "bytes": 260224,
+                  "sha256": "edf819aaf3a35d67a215356d0ce8c778bb9490e95f7d8606718e4efccf0e532e"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000010.jsonl",
+                  "bytes": 260224,
+                  "sha256": "6897dc7868e4e0afaf761f8d85c01509c60f4241caa029747a1be0f766824e32"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000011.jsonl",
+                  "bytes": 260224,
+                  "sha256": "b0c8aad8598abaa80c419782a72b26b2f068149557fa2e361a97c856438fcc6d"
+                },
+                {
+                  "file": "state.json.observations-archive.jsonl",
+                  "bytes": 188849,
+                  "sha256": "511b8c472b77a07d29c6c1c6579ec5cfdb156d2c26a929b0246f1305bafcfbc7"
+                },
+                {
+                  "file": "state.json.outcomes-archive.jsonl",
+                  "bytes": 2353,
+                  "sha256": "ff3a3a75cf6d21242040c23a9a2872f2e8611b5a323be428f0f779ba644459f1"
+                },
+                {
+                  "file": "state.json.promotions-archive.jsonl",
+                  "bytes": 0,
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                }
+              ],
+              "medians": {
+                "baseline": {
+                  "wallMs": 442.2840830000014,
+                  "cpuUserMs": 371.60450000000003,
+                  "cpuSystemMs": 163.424,
+                  "cpuTotalMs": 535.7755,
+                  "heapBaselineBytes": 42185024,
+                  "peakSampledHeapBytes": 86049560,
+                  "heapAllocationDeltaBytes": 43853952,
+                  "peakSampledRssBytes": 255437164,
+                  "processLifetimeMaxRssBytes": 292806656
+                },
+                "variant1": {
+                  "wallMs": 438.2030419999992,
+                  "cpuUserMs": 356.725,
+                  "cpuSystemMs": 158.7575,
+                  "cpuTotalMs": 514.4085,
+                  "heapBaselineBytes": 42232392,
+                  "peakSampledHeapBytes": 86104684,
+                  "heapAllocationDeltaBytes": 43897176,
+                  "peakSampledRssBytes": 256125256,
+                  "processLifetimeMaxRssBytes": 293273600
+                }
+              }
+            }
+          }
+        }
+      ],
+      "equivalent": true
+    },
+    {
+      "scale": 40000,
+      "coldCounts": {
+        "observations": 16000,
+        "knowledge": 8000,
+        "cycles": 8000,
+        "outcomes": 4000,
+        "promotions": 4000
+      },
+      "initialCanonical": 250,
+      "pairs": [
+        {
+          "sides": [
+            "baseline",
+            "variant1"
+          ],
+          "phases": {
+            "dryRun": {
+              "samples": {
+                "baseline": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 935.8080000000009,
+                      "cpuUserMs": 1085.043,
+                      "cpuSystemMs": 8.622,
+                      "cpuTotalMs": 1093.665,
+                      "heapBaselineBytes": 127973000,
+                      "peakSampledHeapBytes": 228232296,
+                      "heapAllocationDeltaBytes": 100259296,
+                      "peakSampledRssBytes": 600461944,
+                      "processLifetimeMaxRssBytes": 696057856
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 926.8498330000002,
+                      "cpuUserMs": 1100.644,
+                      "cpuSystemMs": 9.08,
+                      "cpuTotalMs": 1109.724,
+                      "heapBaselineBytes": 130416320,
+                      "peakSampledHeapBytes": 244924064,
+                      "heapAllocationDeltaBytes": 114507744,
+                      "peakSampledRssBytes": 667675544,
+                      "processLifetimeMaxRssBytes": 757579776
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 938.4547500000044,
+                      "cpuUserMs": 1058.463,
+                      "cpuSystemMs": 8.003,
+                      "cpuTotalMs": 1066.466,
+                      "heapBaselineBytes": 132864160,
+                      "peakSampledHeapBytes": 232601912,
+                      "heapAllocationDeltaBytes": 99737752,
+                      "peakSampledRssBytes": 671919552,
+                      "processLifetimeMaxRssBytes": 760315904
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 933.1218750000044,
+                      "cpuUserMs": 1144.257,
+                      "cpuSystemMs": 8.148,
+                      "cpuTotalMs": 1152.405,
+                      "heapBaselineBytes": 136497840,
+                      "peakSampledHeapBytes": 236884464,
+                      "heapAllocationDeltaBytes": 100386624,
+                      "peakSampledRssBytes": 672591824,
+                      "processLifetimeMaxRssBytes": 760315904
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 924.3579169999939,
+                      "cpuUserMs": 1095.105,
+                      "cpuSystemMs": 8.32,
+                      "cpuTotalMs": 1103.425,
+                      "heapBaselineBytes": 138945720,
+                      "peakSampledHeapBytes": 257751304,
+                      "heapAllocationDeltaBytes": 118805584,
+                      "peakSampledRssBytes": 677344120,
+                      "processLifetimeMaxRssBytes": 768409600
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 930.7124589999949,
+                      "cpuUserMs": 1060.181,
+                      "cpuSystemMs": 9.857,
+                      "cpuTotalMs": 1070.038,
+                      "heapBaselineBytes": 140004488,
+                      "peakSampledHeapBytes": 240886632,
+                      "heapAllocationDeltaBytes": 100882144,
+                      "peakSampledRssBytes": 680981752,
+                      "processLifetimeMaxRssBytes": 771112960
+                    }
+                  }
+                ],
+                "variant1": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 925.479457999998,
+                      "cpuUserMs": 1091.068,
+                      "cpuSystemMs": 7.494,
+                      "cpuTotalMs": 1098.562,
+                      "heapBaselineBytes": 129184752,
+                      "peakSampledHeapBytes": 246471912,
+                      "heapAllocationDeltaBytes": 117287160,
+                      "peakSampledRssBytes": 619338088,
+                      "processLifetimeMaxRssBytes": 696057856
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 925.0867919999946,
+                      "cpuUserMs": 1123.101,
+                      "cpuSystemMs": 8.206,
+                      "cpuTotalMs": 1131.307,
+                      "heapBaselineBytes": 131483024,
+                      "peakSampledHeapBytes": 250227888,
+                      "heapAllocationDeltaBytes": 118744864,
+                      "peakSampledRssBytes": 668019848,
+                      "processLifetimeMaxRssBytes": 759480320
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 906.9027500000011,
+                      "cpuUserMs": 1076.021,
+                      "cpuSystemMs": 7.079,
+                      "cpuTotalMs": 1083.1,
+                      "heapBaselineBytes": 134208464,
+                      "peakSampledHeapBytes": 236614704,
+                      "heapAllocationDeltaBytes": 102406240,
+                      "peakSampledRssBytes": 626794704,
+                      "processLifetimeMaxRssBytes": 760315904
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 917.1864580000038,
+                      "cpuUserMs": 1122.427,
+                      "cpuSystemMs": 7.8,
+                      "cpuTotalMs": 1130.227,
+                      "heapBaselineBytes": 135226560,
+                      "peakSampledHeapBytes": 246431960,
+                      "heapAllocationDeltaBytes": 111205400,
+                      "peakSampledRssBytes": 632922656,
+                      "processLifetimeMaxRssBytes": 760315904
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 923.234166000002,
+                      "cpuUserMs": 1104.103,
+                      "cpuSystemMs": 7.596,
+                      "cpuTotalMs": 1111.699,
+                      "heapBaselineBytes": 137855384,
+                      "peakSampledHeapBytes": 252031480,
+                      "heapAllocationDeltaBytes": 114176096,
+                      "peakSampledRssBytes": 671412152,
+                      "processLifetimeMaxRssBytes": 760315904
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 919.9575000000041,
+                      "cpuUserMs": 1138.518,
+                      "cpuSystemMs": 7.729,
+                      "cpuTotalMs": 1146.247,
+                      "heapBaselineBytes": 139405808,
+                      "peakSampledHeapBytes": 255434136,
+                      "heapAllocationDeltaBytes": 116028328,
+                      "peakSampledRssBytes": 679408600,
+                      "processLifetimeMaxRssBytes": 768475136
+                    }
+                  }
+                ]
+              },
+              "schedule": [
+                {
+                  "warmup": true,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 1,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 2,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 0,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 1,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 2,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                }
+              ],
+              "assertions": {
+                "report": true,
+                "fullState": true,
+                "archiveBytes": true,
+                "dryRunUnchanged": true
+              },
+              "report": {
+                "before": {
+                  "observations": 16000,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 4000,
+                  "outcomes": 4000,
+                  "cycles": 8000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 8000
+                },
+                "after": {
+                  "observations": 3001,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 250,
+                  "cycles": 8000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 10000
+                },
+                "retired": 7750,
+                "consolidated": 21000,
+                "aggregatedObservations": 1,
+                "tombstones": 2,
+                "retainedCanonical": 250,
+                "knowledgeBefore": 8000,
+                "knowledgeAfter": 10000,
+                "canonicalKnowledge": 10000,
+                "canonical": 250,
+                "beforeBytes": 22967370,
+                "afterBytes": 22967370,
+                "dryRun": true
+              },
+              "stateSha256": "d616ef8b9fb5e34bd3379d386996b33bd209a9fbf1a5bf56a339c27c3a464650",
+              "archive": [
+                {
+                  "file": "state.json.cycles-archive.jsonl",
+                  "bytes": 1785335,
+                  "sha256": "196d4b2045601efd0cb1c8a21bc1db74c4c769cb459faae4def162e1c2d53c4c"
+                },
+                {
+                  "file": "state.json.evolution-archive-index.json",
+                  "bytes": 2589,
+                  "sha256": "bfa34c3c4b40eab6ddca44127747d63fd38fa87144176bda0bd6a70f917b25cf"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl",
+                  "bytes": 16259560,
+                  "sha256": "862e262c210248acda3c04fa561e4cf0ff0cf4bb29f8bb985b09c8dd1143d346"
+                },
+                {
+                  "file": "state.json.observations-archive.jsonl",
+                  "bytes": 3422455,
+                  "sha256": "b7022879a68b69d3582847883551dee03351b45f73f8f0714875ddabee1d4575"
+                },
+                {
+                  "file": "state.json.outcomes-archive.jsonl",
+                  "bytes": 734010,
+                  "sha256": "e3e73e3c668e0367b66289e4016e52dd07addd4a1969241a7141c4b93674604b"
+                },
+                {
+                  "file": "state.json.promotions-archive.jsonl",
+                  "bytes": 766010,
+                  "sha256": "6944069141b5956f365771b1ca94625def5413843c835bd6aa6ac606e2005d9a"
+                }
+              ],
+              "medians": {
+                "baseline": {
+                  "wallMs": 931.9171669999996,
+                  "cpuUserMs": 1090.074,
+                  "cpuSystemMs": 8.471,
+                  "cpuTotalMs": 1098.545,
+                  "heapBaselineBytes": 134681000,
+                  "peakSampledHeapBytes": 238885548,
+                  "heapAllocationDeltaBytes": 100634384,
+                  "peakSampledRssBytes": 672255688,
+                  "processLifetimeMaxRssBytes": 760315904
+                },
+                "variant1": {
+                  "wallMs": 921.595833000003,
+                  "cpuUserMs": 1113.2649999999999,
+                  "cpuSystemMs": 7.6625,
+                  "cpuTotalMs": 1120.9630000000002,
+                  "heapBaselineBytes": 134717512,
+                  "peakSampledHeapBytes": 248349900,
+                  "heapAllocationDeltaBytes": 115102212,
+                  "peakSampledRssBytes": 650471252,
+                  "processLifetimeMaxRssBytes": 760315904
+                }
+              }
+            },
+            "write": {
+              "samples": {
+                "baseline": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 1828.8015840000007,
+                      "cpuUserMs": 1316.217,
+                      "cpuSystemMs": 725.59,
+                      "cpuTotalMs": 2041.807,
+                      "heapBaselineBytes": 144386160,
+                      "peakSampledHeapBytes": 294938432,
+                      "heapAllocationDeltaBytes": 150552272,
+                      "peakSampledRssBytes": 748799760,
+                      "processLifetimeMaxRssBytes": 792002560
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 1849.4015,
+                      "cpuUserMs": 1328.747,
+                      "cpuSystemMs": 743.46,
+                      "cpuTotalMs": 2072.207,
+                      "heapBaselineBytes": 144280080,
+                      "peakSampledHeapBytes": 294989224,
+                      "heapAllocationDeltaBytes": 150709144,
+                      "peakSampledRssBytes": 838427776,
+                      "processLifetimeMaxRssBytes": 898531328
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 1885.0689589999965,
+                      "cpuUserMs": 1375.448,
+                      "cpuSystemMs": 740.576,
+                      "cpuTotalMs": 2116.024,
+                      "heapBaselineBytes": 144364640,
+                      "peakSampledHeapBytes": 296023536,
+                      "heapAllocationDeltaBytes": 151658896,
+                      "peakSampledRssBytes": 864955248,
+                      "processLifetimeMaxRssBytes": 917454848
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 1894.2892909999937,
+                      "cpuUserMs": 1359.211,
+                      "cpuSystemMs": 769.893,
+                      "cpuTotalMs": 2129.104,
+                      "heapBaselineBytes": 144556000,
+                      "peakSampledHeapBytes": 291698656,
+                      "heapAllocationDeltaBytes": 147142656,
+                      "peakSampledRssBytes": 847684880,
+                      "processLifetimeMaxRssBytes": 944062464
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 1851.996250000011,
+                      "cpuUserMs": 1332.65,
+                      "cpuSystemMs": 734.087,
+                      "cpuTotalMs": 2066.737,
+                      "heapBaselineBytes": 144476768,
+                      "peakSampledHeapBytes": 291457536,
+                      "heapAllocationDeltaBytes": 146980768,
+                      "peakSampledRssBytes": 854911280,
+                      "processLifetimeMaxRssBytes": 944062464
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 1838.588334,
+                      "cpuUserMs": 1316.369,
+                      "cpuSystemMs": 725.41,
+                      "cpuTotalMs": 2041.779,
+                      "heapBaselineBytes": 144440760,
+                      "peakSampledHeapBytes": 291172008,
+                      "heapAllocationDeltaBytes": 146731248,
+                      "peakSampledRssBytes": 867773872,
+                      "processLifetimeMaxRssBytes": 944062464
+                    }
+                  }
+                ],
+                "variant1": [
+                  {
+                    "round": 0,
+                    "sample": 0,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 1814.8236249999973,
+                      "cpuUserMs": 1316.79,
+                      "cpuSystemMs": 723.093,
+                      "cpuTotalMs": 2039.883,
+                      "heapBaselineBytes": 144410088,
+                      "peakSampledHeapBytes": 284234304,
+                      "heapAllocationDeltaBytes": 139824216,
+                      "peakSampledRssBytes": 830694000,
+                      "processLifetimeMaxRssBytes": 898531328
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 1,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 1920.182209000006,
+                      "cpuUserMs": 1395.964,
+                      "cpuSystemMs": 725.481,
+                      "cpuTotalMs": 2121.445,
+                      "heapBaselineBytes": 144334904,
+                      "peakSampledHeapBytes": 291561064,
+                      "heapAllocationDeltaBytes": 147226160,
+                      "peakSampledRssBytes": 862071232,
+                      "processLifetimeMaxRssBytes": 917454848
+                    }
+                  },
+                  {
+                    "round": 0,
+                    "sample": 2,
+                    "order": [
+                      "baseline",
+                      "variant1"
+                    ],
+                    "metrics": {
+                      "wallMs": 1872.4869999999937,
+                      "cpuUserMs": 1382.873,
+                      "cpuSystemMs": 726.03,
+                      "cpuTotalMs": 2108.903,
+                      "heapBaselineBytes": 144380576,
+                      "peakSampledHeapBytes": 284584432,
+                      "heapAllocationDeltaBytes": 140203856,
+                      "peakSampledRssBytes": 862907008,
+                      "processLifetimeMaxRssBytes": 917880832
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 0,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 1944.7594580000004,
+                      "cpuUserMs": 1344.827,
+                      "cpuSystemMs": 775.424,
+                      "cpuTotalMs": 2120.251,
+                      "heapBaselineBytes": 144382584,
+                      "peakSampledHeapBytes": 274847696,
+                      "heapAllocationDeltaBytes": 130465112,
+                      "peakSampledRssBytes": 855763152,
+                      "processLifetimeMaxRssBytes": 919355392
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 1,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 1868.9075000000012,
+                      "cpuUserMs": 1362.74,
+                      "cpuSystemMs": 747.816,
+                      "cpuTotalMs": 2110.556,
+                      "heapBaselineBytes": 144496880,
+                      "peakSampledHeapBytes": 284217688,
+                      "heapAllocationDeltaBytes": 139720808,
+                      "peakSampledRssBytes": 854943640,
+                      "processLifetimeMaxRssBytes": 944062464
+                    }
+                  },
+                  {
+                    "round": 1,
+                    "sample": 2,
+                    "order": [
+                      "variant1",
+                      "baseline"
+                    ],
+                    "metrics": {
+                      "wallMs": 1862.6547920000012,
+                      "cpuUserMs": 1315.418,
+                      "cpuSystemMs": 752.998,
+                      "cpuTotalMs": 2068.416,
+                      "heapBaselineBytes": 144404384,
+                      "peakSampledHeapBytes": 284080472,
+                      "heapAllocationDeltaBytes": 139676088,
+                      "peakSampledRssBytes": 863497360,
+                      "processLifetimeMaxRssBytes": 944062464
+                    }
+                  }
+                ]
+              },
+              "schedule": [
+                {
+                  "warmup": true,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 0,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 1,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 0,
+                  "sample": 2,
+                  "order": [
+                    "baseline",
+                    "variant1"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 0,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 1,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                },
+                {
+                  "warmup": false,
+                  "round": 1,
+                  "sample": 2,
+                  "order": [
+                    "variant1",
+                    "baseline"
+                  ]
+                }
+              ],
+              "assertions": {
+                "report": true,
+                "fullState": true,
+                "archiveBytes": true,
+                "idempotencyState": true,
+                "idempotencyArchiveBytes": true,
+                "secondReport": true,
+                "persistedHotState": true
+              },
+              "report": {
+                "before": {
+                  "observations": 16000,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 4000,
+                  "outcomes": 4000,
+                  "cycles": 8000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 8000
+                },
+                "after": {
+                  "observations": 3001,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 250,
+                  "cycles": 8000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 10000
+                },
+                "retired": 7750,
+                "consolidated": 21000,
+                "aggregatedObservations": 1,
+                "tombstones": 2,
+                "retainedCanonical": 250,
+                "knowledgeBefore": 8000,
+                "knowledgeAfter": 10000,
+                "canonicalKnowledge": 10000,
+                "canonical": 250,
+                "beforeBytes": 22967370,
+                "afterBytes": 23898680,
+                "dryRun": false,
+                "hotCollections": {
+                  "observations": 50,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 50,
+                  "cycles": 50,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 1000,
+                  "tombstones": 2
+                }
+              },
+              "secondReport": {
+                "before": {
+                  "observations": 3001,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 250,
+                  "cycles": 8000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 10000
+                },
+                "after": {
+                  "observations": 3001,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 250,
+                  "cycles": 8000,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 10000
+                },
+                "retired": 0,
+                "consolidated": 0,
+                "aggregatedObservations": 0,
+                "tombstones": 2,
+                "retainedCanonical": 250,
+                "knowledgeBefore": 10000,
+                "knowledgeAfter": 10000,
+                "canonicalKnowledge": 10000,
+                "canonical": 250,
+                "beforeBytes": 23898680,
+                "afterBytes": 23898680,
+                "dryRun": false,
+                "hotCollections": {
+                  "observations": 50,
+                  "diagnoses": 0,
+                  "gaps": 0,
+                  "candidates": 0,
+                  "proposals": 0,
+                  "experiments": 0,
+                  "experimentRecords": 0,
+                  "journal": 0,
+                  "selections": 0,
+                  "promotions": 0,
+                  "outcomes": 50,
+                  "cycles": 50,
+                  "lineage": 0,
+                  "learnings": 0,
+                  "strategies": 0,
+                  "strategyMutations": 0,
+                  "knowledge": 1000,
+                  "tombstones": 2
+                }
+              },
+              "stateSha256": "35f4f2e712c52337eca99be5f99e3f9c7407bd25e25bf3ca2190fe2970613d9b",
+              "archive": [
+                {
+                  "file": "state.json.cycles-archive.jsonl",
+                  "bytes": 80199,
+                  "sha256": "4a3e390136592b59b7557c5a1a91bc4fd581354e3d3eb99e997e87746af7dd75"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000001.jsonl",
+                  "bytes": 261816,
+                  "sha256": "3a5e423d6a1d5c02468c816dfbde3e9b6f6d3abf6c5b1b425d37b930fda1d088"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000002.jsonl",
+                  "bytes": 262036,
+                  "sha256": "bce2d9102c64f77a857dbf6caa5889466a9afd857665e2c6f090f2f18de54619"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000003.jsonl",
+                  "bytes": 262049,
+                  "sha256": "e0ba186dc0fc1d38abd9b03e36c0c32280401e36bdd8f26a76be8599db738b3d"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000004.jsonl",
+                  "bytes": 261702,
+                  "sha256": "f762e8f3fba5f535b8bc82eb11768c15337f7f1c3189878db31678e3efe90209"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000005.jsonl",
+                  "bytes": 261702,
+                  "sha256": "67262c96b8c4440e11b3c445ccbe8de3087802f604c572cc512757bda67a50d9"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000006.jsonl",
+                  "bytes": 261702,
+                  "sha256": "c8608fc27a76bcf2f74b6d247d3f06b5a2a079f20106b7fdd4fcee95caf0ac2f"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000007.jsonl",
+                  "bytes": 261702,
+                  "sha256": "19c2794c78ddf4e8a39b87b28d47aa267d5b1aebee29f8febf011c0a7e0dd0db"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000008.jsonl",
+                  "bytes": 261702,
+                  "sha256": "1bc374614b65455e750c855f7c7a2463dd6e96684cfdf5f4b2ed7b9d7c70e9f2"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000009.jsonl",
+                  "bytes": 261702,
+                  "sha256": "d6c31dbc032fdd3c4883b4c7648e9aee2a6dbfba4e9994693268e1d343128d31"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000010.jsonl",
+                  "bytes": 261702,
+                  "sha256": "deb75eb5989dd53b659cc3bde7be53d31550358e099c923437b619bcf0cef651"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000011.jsonl",
+                  "bytes": 261702,
+                  "sha256": "50ee6333d06d2158fe1c7ce5266cfbce568346126ffd7a3b6be7b7c2e746f4a4"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000012.jsonl",
+                  "bytes": 261702,
+                  "sha256": "3e05c9465f3135f1ea09132c101e95c688d542748f21788eec95c43b97932631"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000013.jsonl",
+                  "bytes": 261702,
+                  "sha256": "a86a3b07fa5b8663027c695b056c3f335fd0537654f4957c1664830197d64d2b"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000014.jsonl",
+                  "bytes": 261702,
+                  "sha256": "cba09e7f8a50e80e160a89766b1392c6662b7d21030d7d656e15f112f28108a0"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000015.jsonl",
+                  "bytes": 261702,
+                  "sha256": "9c12bd0f6465e0fad1ec5835376eec101b90dca25831fc815301cd49ba054747"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000016.jsonl",
+                  "bytes": 261702,
+                  "sha256": "103fa485c318fd73c5403c185d159daf173908c963e4b7a256921ec2bb278cd6"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000017.jsonl",
+                  "bytes": 261702,
+                  "sha256": "c166224c3575800a13a77e6c6778648e5a90262410a8ad0d7a9afa76e2412931"
+                },
+                {
+                  "file": "state.json.cycles-archive.jsonl.segments/segment-000000000018.jsonl",
+                  "bytes": 261702,
+                  "sha256": "eef6c207509211269a2e8ed5a36b99281830d5957a20a19b62b65f3ac93be033"
+                },
+                {
+                  "file": "state.json.evolution-archive-index.json",
+                  "bytes": 50264,
+                  "sha256": "4c92568a8b270ab0c4f55ddfe5f1ef1e02daa094009d5ab34a53503ad12a2cf0"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl",
+                  "bytes": 38418,
+                  "sha256": "cfb6ef5d46cbe220c578236ced8a877106b83d3ed52e74608ed864ffa96002e7"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000001.jsonl",
+                  "bytes": 261301,
+                  "sha256": "62470b8d514865112c1abc20980db9668195da8817aeb6c7df504c8b6259fd25"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000002.jsonl",
+                  "bytes": 261741,
+                  "sha256": "244767c1ca436cb563c4640a68694b426df682494c95485113767d4cd1b35e35"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000003.jsonl",
+                  "bytes": 261741,
+                  "sha256": "cbc89244f2285c81ee0909fd4889be07113341fedf35f01c1bf037ff2d953fca"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000004.jsonl",
+                  "bytes": 261741,
+                  "sha256": "8f3319f5a5e35e69557f62bad41f9a2a3b272c6d5d7b3043cd5c7a2ab5c8d998"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000005.jsonl",
+                  "bytes": 261741,
+                  "sha256": "521ff3ac0499a2e2af057bfb15c9d742ab01b6daf1a83a00ff8368f986da0878"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000006.jsonl",
+                  "bytes": 261741,
+                  "sha256": "d1cdd889b1314d3a1e79afc473a8c52f1576e302427e745f47ade5e415a413db"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000007.jsonl",
+                  "bytes": 261741,
+                  "sha256": "743b2f9a53946866b189d240aaa9d1c0ce4e1880fc98e264311f3d2b9655960b"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000008.jsonl",
+                  "bytes": 261869,
+                  "sha256": "a1e7a7651405dc5b74cfe0820482c07824515da5bf1757c80f5c32d46f0b7bb4"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000009.jsonl",
+                  "bytes": 260224,
+                  "sha256": "edf819aaf3a35d67a215356d0ce8c778bb9490e95f7d8606718e4efccf0e532e"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000010.jsonl",
+                  "bytes": 260224,
+                  "sha256": "6897dc7868e4e0afaf761f8d85c01509c60f4241caa029747a1be0f766824e32"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000011.jsonl",
+                  "bytes": 260224,
+                  "sha256": "b0c8aad8598abaa80c419782a72b26b2f068149557fa2e361a97c856438fcc6d"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000012.jsonl",
+                  "bytes": 260224,
+                  "sha256": "7b902cd4facdef0ee43c27f6bc8f78696ab735fc8af3ba54b31c42ea406dbba8"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000013.jsonl",
+                  "bytes": 260224,
+                  "sha256": "165529f58b3d437b955dc4c392bb7ba28ae6bc10aa459e3722ccc03f69f88715"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000014.jsonl",
+                  "bytes": 260224,
+                  "sha256": "123f7840d6ea36c02ea88642869eb12dd678f14d07023f17553fb3448ac1376a"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000015.jsonl",
+                  "bytes": 260224,
+                  "sha256": "fe123c356ebce7194d090f3859ea1780e663fefef5e8c8e4c514b1975e1a13f1"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000016.jsonl",
+                  "bytes": 260224,
+                  "sha256": "6ef2fababe60ff0131e26f4b6f3bdcfeb833af1edc6e6bb3a7b5f4bcd00d3395"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000017.jsonl",
+                  "bytes": 260224,
+                  "sha256": "089434019e9a8ae833b3603f6a87d9703f2b5e07fd87a093c00c1d4511d609ca"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000018.jsonl",
+                  "bytes": 260224,
+                  "sha256": "e76ca7cb8d8536aaf5f1ffadafb67505c4cd0ecf8541962bacb1acd11f0fadf8"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000019.jsonl",
+                  "bytes": 260224,
+                  "sha256": "638b16f7c68a31007376a5fb7eac266f8d03579b5bf952b75f3792a42d56b695"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000020.jsonl",
+                  "bytes": 260224,
+                  "sha256": "51b4633317d8ae17eff82c4505ea803d1cdacb005f610b3f30f99544953fbd67"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000021.jsonl",
+                  "bytes": 260224,
+                  "sha256": "a30189b039fc0cbaf0e4dd1a12914868da4c73d3d3d820ca2d6ae25b57c9d170"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000022.jsonl",
+                  "bytes": 260224,
+                  "sha256": "92514b499a0b1ac7ef080b90f3ef9c1d21b4156039a754399673a43d9e1e695c"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000023.jsonl",
+                  "bytes": 260224,
+                  "sha256": "7b4665b35313910913b14565c6887d38b5117836ff18b59d03922ea1a206e4d1"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000024.jsonl",
+                  "bytes": 260224,
+                  "sha256": "58d8363701442ee46d3be6763d0c96ac3febae0b842ea9595f75249e5a7e7d1d"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000025.jsonl",
+                  "bytes": 260224,
+                  "sha256": "50a27cce95e35c78dcb4087cc952e80a9d3e0c7040b52431dcd83e8d5b68e5f2"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000026.jsonl",
+                  "bytes": 260224,
+                  "sha256": "36a45601f9c2af95d93070a2b58d3049cb1d54ed401d928571c0d51afde7588d"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000027.jsonl",
+                  "bytes": 260224,
+                  "sha256": "ce5e9bbeebb6fd30e8819d15c42f546b33a79f3bede7127735cf1f27eb9e2ce7"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000028.jsonl",
+                  "bytes": 260224,
+                  "sha256": "840507aa47da53458289090234039765072f6617a661cb3cd937847280319700"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000029.jsonl",
+                  "bytes": 260224,
+                  "sha256": "8a64aec34fb3282d45441a9a0d6d311237acc63ffbe71a6e7b67d34dcd5c59df"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000030.jsonl",
+                  "bytes": 260224,
+                  "sha256": "50fe43b3507f1465d46fb6368fba01a41b8404ebd28cfd816f4f949547503d35"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000031.jsonl",
+                  "bytes": 260224,
+                  "sha256": "5990a08d759213df321097523d619613dc5183dd114c8a1706f9e48e32270740"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000032.jsonl",
+                  "bytes": 260224,
+                  "sha256": "6d2b8ff9dbb032c63dd65fb0a03f5da02c39570091c6eb835f92dbcd51c2818a"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000033.jsonl",
+                  "bytes": 260224,
+                  "sha256": "8777cac5bb01b78f05c9fcadb3e421edf24906af97905dab21f4ccf147b02649"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000034.jsonl",
+                  "bytes": 260224,
+                  "sha256": "3d833115baae46e9e50b775f8321fb73348af11a4d40e3bcc247ff11fe77a24a"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000035.jsonl",
+                  "bytes": 260224,
+                  "sha256": "58ce2c607ea66704377a4ab94b72ea71238987d6df3496ed7349871ba5b5e522"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000036.jsonl",
+                  "bytes": 260224,
+                  "sha256": "bee61c4456bc8e6dd7699d292038fc8653c574273e79c39bae19c88856e20920"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000037.jsonl",
+                  "bytes": 260224,
+                  "sha256": "a6c4db782a44b07296edf85063968d6d77e55bc6e7b5a3e2e294dacd85b0af6d"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000038.jsonl",
+                  "bytes": 260224,
+                  "sha256": "454389be606a869a7e16779db4b94622f4008b1b757d659910d51af718c02fd5"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000039.jsonl",
+                  "bytes": 260224,
+                  "sha256": "f11a01f312f9a2ec556f24af7ae83f254f983e0fa4f20df4bdd29ba966fa38e4"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000040.jsonl",
+                  "bytes": 260224,
+                  "sha256": "a225d18338669554b9040e72c149857082a08fc35806a1f14228842f2a62841a"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000041.jsonl",
+                  "bytes": 260224,
+                  "sha256": "be727f821419418a8d4f334f050ae708455d48fda37f79cd688641cc2f74f518"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000042.jsonl",
+                  "bytes": 260224,
+                  "sha256": "428bae5d4b8da53536dd86a2ed868ff7b9f72a150864f93a1ef7c1d4ab362fc1"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000043.jsonl",
+                  "bytes": 260224,
+                  "sha256": "a682877908021550f677a1bf5de523ec194d991a07e079ca9051ea063d28333c"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000044.jsonl",
+                  "bytes": 260224,
+                  "sha256": "c31be9d7a63ba8156a9a1032a10229c444d740c8b71be182413121cb7893d584"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000045.jsonl",
+                  "bytes": 260224,
+                  "sha256": "d7e31b17bb5b8b2256cdccf7d7e6b3a1ffa2dac8a94ec5a31c1852881b6461a6"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000046.jsonl",
+                  "bytes": 260224,
+                  "sha256": "5b7bd748e6d5a05e734c2f90618ade380f4c05b80532a2a4a48798e720dabd9a"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000047.jsonl",
+                  "bytes": 260224,
+                  "sha256": "89b4d520e58d342550d617390f74af9e6cf027cbdca38a6c1f5ba3c3f4eb1383"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000048.jsonl",
+                  "bytes": 260224,
+                  "sha256": "4c122f66c58802b7205257a4cbc85d70f7482b0149e66af69f0f1e0fa8ff643f"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000049.jsonl",
+                  "bytes": 260224,
+                  "sha256": "85aae9886d450b097779147e2b0ebe64533f2f408b99b70b29be7c262d553669"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000050.jsonl",
+                  "bytes": 260224,
+                  "sha256": "f5f129e93ea376735a788782ef3bb7d91b88867dde793a22123e70725e5b70bc"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000051.jsonl",
+                  "bytes": 260224,
+                  "sha256": "3276ddb2ded03c1d6004b92b8e84d94784227957b181d581129eec0efdc0bae8"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000052.jsonl",
+                  "bytes": 260224,
+                  "sha256": "d2e31ec25271f697ec945aed4da02da193f4d765570c4d85afc5335eb74f4de7"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000053.jsonl",
+                  "bytes": 260224,
+                  "sha256": "b2c0d581882bdfb197afaa54626cc26aa3196597071aaf8219db1a0e940e3e57"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000054.jsonl",
+                  "bytes": 260224,
+                  "sha256": "867cb9ab26b194fde65caa16870a38da12a5aa51c87d89fd459a55d8164336e2"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000055.jsonl",
+                  "bytes": 260224,
+                  "sha256": "a2a2bb2bfe0fd22008e78ba1e71e9113ed249cfb507b35991e56526ac7ec8e1c"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000056.jsonl",
+                  "bytes": 260224,
+                  "sha256": "ea4152b1f1aff744fbc0560fe326d0642ce2a9c178ef4b5e01b150df0306465c"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000057.jsonl",
+                  "bytes": 260224,
+                  "sha256": "cab755722c233994d2c146adb27ae1d2c75fb18b7d5dcd8a5e6f94ec9d3b40ca"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000058.jsonl",
+                  "bytes": 260224,
+                  "sha256": "39c45cc7812ae24791e26f8e5bbf2605f0ee0f19930358ca0a061db1df30f48f"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000059.jsonl",
+                  "bytes": 260224,
+                  "sha256": "d855a5613063c690cb8c806b68579956a9b8feefc2216a77d51d1086e139ce0b"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000060.jsonl",
+                  "bytes": 260224,
+                  "sha256": "da2398c36a089cb040157c1aec1c5848c844c1a3acc467f7b99f13b0387966bb"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000061.jsonl",
+                  "bytes": 260224,
+                  "sha256": "40acf2cbf12447aa431f1a99b50c553b005bf32811817934c5ddb34da038f210"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000062.jsonl",
+                  "bytes": 260224,
+                  "sha256": "c6a6ec729609b9992eada822dc744dcd6cff8c0c8417172922d6b0a8e454eba0"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000063.jsonl",
+                  "bytes": 262100,
+                  "sha256": "9a591d0d3338564a0d5ffbec5fbc703546969f4573a58ce31b5505279d36e10d"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000064.jsonl",
+                  "bytes": 261664,
+                  "sha256": "c2730ac994b5555a53187fc74767edd168473505670bcd98367f708fd3f23ffe"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000065.jsonl",
+                  "bytes": 261690,
+                  "sha256": "c8b36f9a2b1c1816c7dfacc9e3c4ecc167015fc9689fbd26718f525903c13088"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000066.jsonl",
+                  "bytes": 261690,
+                  "sha256": "121ff431d269fa71709ee9df4942f422446018eb4ba59ce93acabcc19494f484"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000067.jsonl",
+                  "bytes": 261690,
+                  "sha256": "93cc323b3198def2f5dab73e7f4f53e8c7bc2e40e21d82f8008ee2730ed07b55"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000068.jsonl",
+                  "bytes": 260559,
+                  "sha256": "8c58bce5123339f3a725ba121f88c47f39b57129a1f468682c0eb9f46b4c4f6e"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000069.jsonl",
+                  "bytes": 260838,
+                  "sha256": "2264c754b98c8d64025e9562aae6e3a062fb3db825047d7b5757b7f756a22cf3"
+                },
+                {
+                  "file": "state.json.knowledge-archive.jsonl.segments/segment-000000000070.jsonl",
+                  "bytes": 260838,
+                  "sha256": "348e98d75c2de6fdce905483427a55ce94b9c8ca4bfb23462ff1c4e8f3e6ea81"
+                },
+                {
+                  "file": "state.json.observations-archive.jsonl",
+                  "bytes": 9180,
+                  "sha256": "276aee5cd67dfec56395a33f0d3c764058db562e9430a93c03967c4adadbeb25"
+                },
+                {
+                  "file": "state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+                  "bytes": 262020,
+                  "sha256": "c8ca4abed9a5a625615e1ed950c8c9ac96881ebb4e11967756f115cc226a3690"
+                },
+                {
+                  "file": "state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+                  "bytes": 262077,
+                  "sha256": "5ef4f20a416463ea7bee7f2f30b3657e4883b743f854e2738139cdce676f4a48"
+                },
+                {
+                  "file": "state.json.observations-archive.jsonl.segments/segment-000000000003.jsonl",
+                  "bytes": 261900,
+                  "sha256": "a2661253de28d5bfc50989c4c2e0878c39c456760a7bce72d6530ded720ccbb4"
+                },
+                {
+                  "file": "state.json.outcomes-archive.jsonl",
+                  "bytes": 36674,
+                  "sha256": "bb6aa9e21e34c242f722a6a6409ed7e71d9d3ea6eb44287d8c43fc5151848fd0"
+                },
+                {
+                  "file": "state.json.promotions-archive.jsonl",
+                  "bytes": 0,
+                  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                }
+              ],
+              "medians": {
+                "baseline": {
+                  "wallMs": 1850.6988750000055,
+                  "cpuUserMs": 1330.6985,
+                  "cpuSystemMs": 737.3315,
+                  "cpuTotalMs": 2069.4719999999998,
+                  "heapBaselineBytes": 144413460,
+                  "peakSampledHeapBytes": 293318544,
+                  "heapAllocationDeltaBytes": 148847464,
+                  "peakSampledRssBytes": 851298080,
+                  "processLifetimeMaxRssBytes": 930758656
+                },
+                "variant1": {
+                  "wallMs": 1870.6972499999974,
+                  "cpuUserMs": 1353.7835,
+                  "cpuSystemMs": 736.923,
+                  "cpuTotalMs": 2109.7295,
+                  "heapBaselineBytes": 144393484,
+                  "peakSampledHeapBytes": 284225996,
+                  "heapAllocationDeltaBytes": 139772512,
+                  "peakSampledRssBytes": 858917192,
+                  "processLifetimeMaxRssBytes": 918618112
+                }
+              }
+            }
+          }
+        }
+      ],
+      "equivalent": true
+    }
+  ],
+  "baselineRef": "194fc6a",
+  "baselineCommit": "194fc6ace922195c359a5f2c1136bc85a279a773",
+  "sides": [
+    {
+      "label": "baseline",
+      "directory": "/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/dsh-retention-bench-11YryY/head/lib",
+      "treeSha256": "1704ea8ad0a70c5decaba5369c4941fb3d9889c8e47c4fbcd612889afa5a6c43"
+    },
+    {
+      "label": "variant1",
+      "directory": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "treeSha256": "a4dac3c13f5848246421c5831a5ef3e5a69065793692eaec073f4d8034e93ea7"
+    }
+  ],
+  "equivalent": true
+}

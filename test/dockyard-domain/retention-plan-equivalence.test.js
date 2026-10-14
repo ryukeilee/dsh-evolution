@@ -3,14 +3,15 @@
 //
 // The working tree normalizes each source row once per plan, reuses the plan's
 // own copy of a knowledge row, and collects non-knowledge-bearing rows in the
-// pass that already visited them. This test drives the guarded pre-change
-// implementation (`archiveIndexBaseline()` reverses the change) and the working
-// tree over the same cold archives, and requires identical plan reports,
-// identical resulting state, identical on-disk bytes and an identical repeated
-// compaction. A row shape is only covered if the run actually takes the
-// corresponding decision, so the corpus asserts non-trivial retirement,
-// consolidation, aggregation, accumulator growth and accumulator-guard outcomes
-// before comparing.
+// pass that already visited them. The classification loop in `#retentionPlan()`
+// reads that pass's own `retainedEntries` classification instead of normalizing
+// the row again. This test drives the guarded pre-change implementation
+// (`archiveIndexBaseline()` reverses the change) and the working tree over the
+// same cold archives, and requires identical plan reports, identical resulting
+// state, identical on-disk bytes and an identical repeated compaction. A row
+// shape is only covered if the run actually takes the corresponding decision, so
+// the corpus asserts non-trivial retirement, consolidation, aggregation,
+// accumulator growth and accumulator-guard outcomes before comparing.
 //
 // The plan's ownership of its output is not asserted here: every public read
 // (`history`, `snapshot`, `fullSnapshot`) clones, so a black-box test cannot
@@ -327,6 +328,194 @@ test("repeated compaction converges to a fixed point", async (t) => {
     assert.deepEqual(await diskDigests(home), settledBytes, "the converged point must also hold on disk");
     assert.equal(third.knowledgeAfter, third.knowledgeBefore, "the converged accumulator must stop growing");
     t.diagnostic(`compaction converged: knowledge ${third.knowledgeBefore}, retired ${third.retired}, consolidated ${third.consolidated}`);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// The clock contract.
+//
+// The plan reads the clock once per source row in the pass that normalizes the
+// row and once per source row in the classification loop, and it derives each
+// knowledge record's `firstSeen`/`lastSeen`/`recentEvidence[].at` from the read
+// that belongs to its own row. The pre-change plan additionally walked every
+// source row a third time, and that pass is the one this change folds away, so
+// its clock read is the only one that disappears. One read per source row is
+// therefore the entire, exact bound of what moved:
+//
+// - a plan started from the same clock position derives every knowledge record
+//   timestamp exactly as the pre-change plan did;
+// - every clock read after the plan - the write-time stamps of the archive index
+//   document, and a later plan's own derived stamps in the same process - sees
+//   the value the removed reads would have consumed;
+// - the retention decisions, the knowledge identities, the archive record bytes
+//   and the set of files written do not move at all.
+//
+// Under a real clock the second point is simply the time the removed row walk
+// used to take; it is only observable at all with a clock that advances per
+// call. It is pinned here so that a future change cannot widen it silently,
+// because it cannot be removed without walking the rows again for no purpose.
+
+/**
+ * A source row with knowledge dimensions but no timestamp of its own, so its
+ * derived stamp is exactly the clock value the plan read while normalizing it.
+ * Five of them, walked in order, make a collapsed or shortened clock sequence
+ * visible as a repeated or shifted timestamp.
+ */
+function timelessSource(index) {
+  return {
+    id: `timeless-${index}`,
+    issueType: "performance",
+    rootCause: `timeless root cause ${index}`,
+    strategy: "bounded retry",
+    componentId: `plugin:timeless-${index}`,
+    status: "success",
+    metrics: { latency: index + 1 },
+  };
+}
+
+const TIMELESS_COUNT = 5;
+
+/** The accumulator identity `timelessSource(index)` normalizes to. */
+function timelessKey(index) {
+  return normalizeKnowledgeEvent(timelessSource(index), { sourceCollection: "observations", now: new Date(AT) }).knowledgeKey;
+}
+
+function clockCorpus() {
+  const rows = corpus();
+  rows.observations = [...rows.observations, ...Array.from({ length: TIMELESS_COUNT }, (_, index) => timelessSource(index))];
+  return rows;
+}
+
+const INDEX_SUFFIX = ".evolution-archive-index.json";
+
+/**
+ * Drive a dry run and a full compaction with a per-call advancing clock.
+ * `resetPerPlan` restarts the clock before each plan, which is the "same clock
+ * position" case; without it the two plans share one advancing clock, which is
+ * the "later plan in the same process" case.
+ */
+async function clockSide(MemoryClass, home, rows, { resetPerPlan }) {
+  // The same home is reused for both sides, so each side starts from the corpus
+  // bytes and neither side's compacted archives are visible to the other.
+  await rm(home, { recursive: true, force: true });
+  await mkdir(home, { recursive: true });
+  const store = await seed(home, rows);
+  let ticks = 0;
+  const memory = new MemoryClass({
+    stateStore: store, clock: () => new Date(Date.parse(NOW) + (ticks += 1) * 1000),
+    maxEntries: 1000, hotEntries: 3, hotCycles: 2, archiveMaxBytes: 4096,
+  });
+  memory.setMutationAuthority({ assertMutation() {}, isActive: () => true });
+  await memory.load();
+  // Only the plan's own reads are counted: load() and the fixture are the same
+  // on both sides.
+  if (resetPerPlan) ticks = 0;
+  const beforeDryRun = ticks;
+  const dryRun = await memory.compact({ dryRun: true });
+  const dryRunClockReads = ticks - beforeDryRun;
+  if (resetPerPlan) ticks = 0;
+  const beforeCompact = ticks;
+  const first = await memory.compact();
+  const compactClockReads = ticks - beforeCompact;
+  const indexDocument = JSON.parse(await readFile(`${store.filePath}${INDEX_SUFFIX}`, "utf8"));
+  return { dryRun, first, dryRunClockReads, compactClockReads, indexDocument, knowledge: memory.fullSnapshot().knowledge, bytes: await diskDigests(home) };
+}
+
+/** The index document's shape with only its wall-clock stamps removed. */
+function withoutWallClockStamps(document) {
+  return {
+    ...document,
+    updatedAt: null,
+    segments: (document.segments ?? []).map((segment) => ({ ...segment, updatedAt: null })),
+  };
+}
+
+test("the plan's clock contract: one read per source row per reader, and only the clock position moves", async (t) => {
+  const home = await mkdtemp(join(tmpdir(), "dsh-retention-clock-"));
+  try {
+    // Same clock position for each plan on both sides: nothing but the read
+    // count may differ.
+    const before = await clockSide(BaselineMemory, home, clockCorpus(), { resetPerPlan: true });
+    const after = await clockSide(EvolutionMemory, home, clockCorpus(), { resetPerPlan: true });
+
+    // The dry run reports exactly the rows the plan walked, so the number of
+    // clock reads the change removed is knowable from the plan itself.
+    const walked = Object.entries(before.dryRun.before)
+      .filter(([collection]) => collection !== "knowledge")
+      .reduce((sum, [, count]) => sum + count, 0);
+    assert.ok(walked > 20, "the corpus must walk a non-trivial number of source rows");
+    assert.equal(before.dryRunClockReads - after.dryRunClockReads, walked,
+      "exactly the folded sweep's one clock read per source row may disappear");
+    assert.ok(after.dryRunClockReads > walked, "the plan must still read the clock per row in both remaining passes");
+    assert.equal(before.compactClockReads - after.compactClockReads, walked,
+      "the write phase must read the clock exactly as often as before");
+
+    // Both sides keep the same decisions and the same derived timestamps. The
+    // timeless rows are stamped by their own read, so a collapsed or shared
+    // read would move them.
+    assert.deepEqual(after.dryRun, before.dryRun, "the dry-run report must be identical under an advancing clock");
+    assert.deepEqual(after.first, before.first, "the compaction report must be identical under an advancing clock");
+    assert.deepEqual(after.knowledge, before.knowledge, "every knowledge record, timestamp included, must be identical");
+    const firstSeen = new Map(after.knowledge.map((row) => [row.knowledgeKey, row.firstSeen]));
+    const timelessStamps = Array.from({ length: TIMELESS_COUNT }, (_, index) => firstSeen.get(timelessKey(index)));
+    assert.ok(timelessStamps.every((value) => typeof value === "string"), "every timeless row must reach the accumulator table");
+    assert.equal(new Set(timelessStamps).size, TIMELESS_COUNT,
+      "each timeless row must be stamped by the clock read of its own row");
+    assert.ok(timelessStamps.every((value) => value !== NOW), "the stamp must come from the advancing clock, not the fixture time");
+
+    // Every persisted file but the index is byte-identical. The index differs
+    // only in its wall-clock stamps, and by exactly the removed reads.
+    assert.deepEqual(Object.keys(after.bytes).sort(), Object.keys(before.bytes).sort(), "both sides must write the same files");
+    for (const [name, digest] of Object.entries(before.bytes)) {
+      if (name.endsWith(INDEX_SUFFIX)) continue;
+      assert.equal(after.bytes[name], digest, `${name} must be byte-identical under an advancing clock`);
+    }
+    const indexName = Object.keys(before.bytes).find((name) => name.endsWith(INDEX_SUFFIX));
+    assert.ok(indexName, "the corpus must write an archive index document");
+    assert.notEqual(after.bytes[indexName], before.bytes[indexName], "the index is the one file a wall-clock stamp moves");
+    assert.deepEqual(withoutWallClockStamps(after.indexDocument), withoutWallClockStamps(before.indexDocument),
+      "the index must differ in nothing but its wall-clock stamps");
+    assert.equal(Date.parse(before.indexDocument.updatedAt) - Date.parse(after.indexDocument.updatedAt), walked * 1000,
+      "the index stamp must move by exactly the folded reads and nothing else");
+
+    // A later plan in the same process, sharing one advancing clock: the dry run
+    // no longer consumes the folded read, so the plan that persists sees the
+    // clock exactly that much earlier - and nothing else moves.
+    const sharedBefore = await clockSide(BaselineMemory, home, clockCorpus(), { resetPerPlan: false });
+    const sharedAfter = await clockSide(EvolutionMemory, home, clockCorpus(), { resetPerPlan: false });
+    assert.deepEqual(sharedAfter.first, sharedBefore.first, "the second plan's decisions must still be identical");
+    const sharedShiftMs = (sharedBefore.dryRunClockReads - sharedAfter.dryRunClockReads) * 1000;
+    assert.equal(sharedShiftMs, walked * 1000, "the shared-clock shift must be the earlier plan's removed reads");
+    // Only a row whose stamp comes from the clock moves; a row that carries its
+    // own fixture timestamp does not, and nothing but a stamp moves at all.
+    const earlier = new Map(sharedBefore.knowledge.map((row) => [row.knowledgeKey, row]));
+    const movedKeys = [];
+    for (const row of sharedAfter.knowledge) {
+      const previous = earlier.get(row.knowledgeKey);
+      assert.ok(previous, `${row.knowledgeKey} must exist on the baseline too`);
+      if (row.firstSeen === previous.firstSeen) continue;
+      movedKeys.push(row.knowledgeKey);
+      assert.equal(row.firstSeen, new Date(Date.parse(previous.firstSeen) - sharedShiftMs).toISOString(),
+        "a clock-derived firstSeen may move only by the removed reads");
+      assert.equal(row.lastSeen, new Date(Date.parse(previous.lastSeen) - sharedShiftMs).toISOString(),
+        "a clock-derived lastSeen may move only by the removed reads");
+      assert.deepEqual((row.recentEvidence ?? []).map((item) => item.at),
+        (previous.recentEvidence ?? []).map((item) => new Date(Date.parse(item.at) - sharedShiftMs).toISOString()),
+        "a clock-derived evidence stamp may move only by the removed reads");
+    }
+    assert.deepEqual(movedKeys.sort(), Array.from({ length: TIMELESS_COUNT }, (_, index) => timelessKey(index)).sort(),
+      "exactly the rows without a timestamp of their own may move");
+    // The accumulator carries clock-derived stamps in `firstSeen`/`lastSeen`/
+    // `updatedAt`, in every `recentEvidence[].at` and in every `trend.recent[].at`;
+    // everything else must be identical.
+    const decisionsOnly = (rows) => rows.map(({ firstSeen, lastSeen, updatedAt, lastCorrectionAt, recentEvidence, trend, ...rest }) => ({
+      ...rest, trend: trend ? { ...trend, recent: null } : trend,
+    }));
+    assert.deepEqual(decisionsOnly(sharedAfter.knowledge), decisionsOnly(sharedBefore.knowledge),
+      "a later plan must differ in clock-derived stamps and in nothing else");
+    t.diagnostic(`walked ${walked} source rows: reads ${before.dryRunClockReads}->${after.dryRunClockReads} (dry run), index stamp and later clock-derived stamps move ${walked * 1000}ms`);
   } finally {
     await rm(home, { recursive: true, force: true });
   }

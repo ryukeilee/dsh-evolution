@@ -178,10 +178,11 @@ const reversals = [
    "          // Active files are the bounded recovery surface after an append/index crash.\n          let raw = \"\";\n          try { raw = await readFile(file, \"utf8\"); } catch (error) { if (error?.code !== \"ENOENT\") throw error; }\n          const rebuilt = this.#indexEntryFromRaw(collection, file, raw, { sealed: false });\n          this.#activeKeysFromRaw(collection, raw);\n          if (JSON.stringify(current) !== JSON.stringify(rebuilt)) changed = true;\n          this.archiveIndexEntries.set(file, rebuilt);\n          continue;\n"],
   ["          let raw;\n          try { raw = await readFile(file, \"utf8\"); } catch { continue; }\n          const sealed = file !== this.#archivePath(collection);\n          const scanned = this.#scanArchiveRaw(raw);\n          entries.set(file, this.#indexEntryFromRaw(collection, file, raw, { sealed }, scanned));\n          if (!sealed) this.#activeKeysFromRaw(collection, raw, scanned);\n        }\n      }\n      this.archiveIndexEntries = entries;\n",
    "          let raw;\n          try { raw = await readFile(file, \"utf8\"); } catch { continue; }\n          const sealed = file !== this.#archivePath(collection);\n          entries.set(file, this.#indexEntryFromRaw(collection, file, raw, { sealed }));\n          if (!sealed) this.#activeKeysFromRaw(collection, raw);\n        }\n      }\n      this.archiveIndexEntries = entries;\n"],
-  // The retention plan: one memoized normalization per source row (the sweep that
+  // The retention plan: one normalization per source row (the sweep that
   // re-visited every source row is folded into the accumulation pass), knowledge
   // rows reused instead of re-copied, and the classification loop in
-  // `#retentionPlan()` reading that memo instead of normalizing again.
+  // `#retentionPlan()` reading the plan's own `retainedEntries` classification
+  // instead of normalizing the same row again.
   [  "    });\n" +
   "  }\n" +
   "\n" +
@@ -194,29 +195,28 @@ const reversals = [
   "   * nothing reads `histories` after this returns. The accumulator merge is the\n" +
   "   * only step that produces new objects.\n" +
   "   *\n" +
-  "   * Every source row is normalized exactly once per plan and the result is\n" +
-  "   * memoized for the two readers that need it: the accumulation pass below and\n" +
-  "   * the classification loop in `#retentionPlan()`. Only the accumulation pass\n" +
-  "   * reads anything past whether the row is knowledge-bearing at all, but each\n" +
-  "   * reader used to re-materialize the whole event (`outcome`, `metrics`,\n" +
-  "   * `recovery`, `relations`, references) for every row. The memo is keyed by\n" +
-  "   * collection and row identity and lives only for this call.\n" +
+  "   * Every source row is normalized exactly once, in the accumulation pass below,\n" +
+  "   * and that pass also answers the only other question anything asks about a\n" +
+  "   * source row: whether it is knowledge-bearing at all. A row whose normalized\n" +
+  "   * event is falsy is recorded in `retainedEntries` here, and a knowledge-bearing\n" +
+  "   * row is recorded there by the consolidation loop when it is kept, so\n" +
+  "   * `retainedEntries` classifies every row of every source collection. The\n" +
+  "   * classification loop in `#retentionPlan()` visits exactly those rows - it\n" +
+  "   * skips `knowledge`, which is not a source collection - and asks exactly that\n" +
+  "   * question, so it reads this set instead of normalizing the row a second time.\n" +
+  "   * An earlier revision memoized each normalized event for it, which retained one\n" +
+  "   * map entry per source row, plus a collection-keyed two-level key that had to\n" +
+  "   * special-case non-object rows, to answer a question this pass had already\n" +
+  "   * answered.\n" +
   "   *\n" +
-  "   * The memo skips the normalization, never the clock read: each reader still\n" +
-  "   * evaluates `timestamp(this.clock)` once per row and passes it in, so the\n" +
-  "   * sequence of clock values a plan observes is unchanged for the readers that\n" +
-  "   * remain. Rows that are not objects are compared by value, so two identical\n" +
-  "   * primitives would share a Map key and must not share a normalization.\n" +
+  "   * The clock read is not folded away: every pass still evaluates\n" +
+  "   * `timestamp(this.clock)` once per row, in the order the pre-optimization plan\n" +
+  "   * did, so a clock that advances between reads derives the same knowledge record\n" +
+  "   * timestamps as before. Only the folded sweep's own read disappears; what that\n" +
+  "   * does to the write-time stamps written later in the same transaction is stated\n" +
+  "   * and pinned in `docs/performance/retention-plan-cost.md`.\n" +
   "   */\n" +
   "  #knowledgeRetentionPlan(histories, references = new Set()) {\n" +
-  "    const normalizedByCollection = new Map();\n" +
-  "    const knowledgeEventOf = (collection, entry, now) => {\n" +
-  "      if (entry === null || typeof entry !== \"object\") return normalizeKnowledgeEvent(entry, { sourceCollection: collection, now });\n" +
-  "      let cached = normalizedByCollection.get(collection);\n" +
-  "      if (cached === undefined) { cached = new Map(); normalizedByCollection.set(collection, cached); }\n" +
-  "      if (!cached.has(entry)) cached.set(entry, normalizeKnowledgeEvent(entry, { sourceCollection: collection, now }));\n" +
-  "      return cached.get(entry);\n" +
-  "    };\n" +
   "    const retainedEntries = new Map(this.#collections().map((collection) => [collection, new Set()]));\n" +
   "    const knowledgeByKey = new Map();\n" +
   "    const coveredRefs = new Set();\n" +
@@ -230,7 +230,7 @@ const reversals = [
   "    const sourceCollections = this.#collections().filter((collection) => collection !== \"knowledge\" && collection !== \"tombstones\");\n" +
   "    for (const collection of sourceCollections) {\n" +
   "      for (const entry of histories[collection] ?? []) {\n" +
-  "        const event = knowledgeEventOf(collection, entry, timestamp(this.clock));\n" +
+  "        const event = normalizeKnowledgeEvent(entry, { sourceCollection: collection, now: timestamp(this.clock) });\n" +
   "        // A row with no knowledge identity at all is not grouped and stays\n" +
   "        // retained; the sweep that used to collect these rows second-hand is\n" +
   "        // folded into this pass, since it visited exactly the same rows.\n" +
@@ -275,7 +275,7 @@ const reversals = [
   [  "        }\n" +
   "      }\n" +
   "    }\n" +
-  "    return { knowledge: [...knowledgeByKey.values()], retainedEntries, consolidated, knowledgeEventOf };\n" +
+  "    return { knowledge: [...knowledgeByKey.values()], retainedEntries, consolidated };\n" +
   "  }\n" +
   "\n" +
   "  #retentionPlan() {\n",
@@ -311,12 +311,19 @@ const reversals = [
   [  "      report.before[collection] = histories[collection].length;\n" +
   "      for (const entry of histories[collection]) {\n" +
   "        const recordId = entry?.id === undefined || entry?.id === null ? null : String(entry.id);\n" +
-  "        // Reads the plan's own memoized normalization: this loop only asks\n" +
-  "        // whether the row is knowledge-bearing, which `#knowledgeRetentionPlan()`\n" +
-  "        // already answered for the same row object while accumulating it. The\n" +
-  "        // clock read stays per row, as it was when this loop normalized.\n" +
-  "        const normalizedKnowledge = knowledgePlan.knowledgeEventOf(collection, entry, timestamp(this.clock));\n" +
-  "        if (normalizedKnowledge && !knowledgePlan.retainedEntries.get(collection)?.has(entry)) {\n" +
+  "        // `retainedEntries` is `#knowledgeRetentionPlan()`'s own classification of\n" +
+  "        // this row: it holds every row whose normalized event was falsy and every\n" +
+  "        // knowledge-bearing row the consolidation loop kept, and this loop visits\n" +
+  "        // exactly the source collections that pass walked. A row in neither set is\n" +
+  "        // knowledge-bearing and was not kept, so it is retired or consolidated.\n" +
+  "        //\n" +
+  "        // The clock read stays. This row consumed a value when this loop\n" +
+  "        // normalized it, and the value now goes nowhere, but dropping the read\n" +
+  "        // would shorten the sequence of values the plan observes and stamp the\n" +
+  "        // archive index written later in this transaction correspondingly earlier\n" +
+  "        // (see the clock contract in `docs/performance/retention-plan-cost.md`).\n" +
+  "        timestamp(this.clock);\n" +
+  "        if (!knowledgePlan.retainedEntries.get(collection)?.has(entry)) {\n" +
   "          const replacedBy = recordId ? retiredByCanonical.get(recordId) ?? null : null;\n" +
   "          const lineageLatest = entry?.lineageId && latestLineage.get(String(entry.lineageId))?.id === recordId;\n",
   "      report.before[collection] = histories[collection].length;\n" +
