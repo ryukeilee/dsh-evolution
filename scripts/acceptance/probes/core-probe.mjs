@@ -111,6 +111,25 @@ export function apply(ctx) {
       });
       if (proposed?.ok === false) return { tools, toolCount: tools.length, steps, failure: 'propose refused' };
 
+      // The explicit proposal is the only trigger for experience recall. Prove
+      // in the real host that it comes back bounded and self-describing, so a
+      // regression that drops the limits or the source report fails acceptance.
+      const recall = proposed.experienceRecall;
+      const recallLimits = recall?.limits;
+      const recallGroups = [...(recall?.resolved ?? []), ...(recall?.failures ?? []), ...(recall?.candidates ?? [])];
+      const recallBounded = Boolean(recallLimits)
+        && typeof recallLimits.maxEntries === 'number' && recallLimits.maxEntries > 0
+        && typeof recallLimits.maxText === 'number' && recallLimits.maxText > 0
+        && (recall.resolved?.length ?? 0) <= recallLimits.maxEntries
+        && (recall.failures?.length ?? 0) <= recallLimits.maxEntries
+        && (recall.candidates?.length ?? 0) <= recallLimits.maxEntries
+        && recallGroups.every((record) => record.source && record.scope.length <= recallLimits.maxText
+          && record.evidenceRefs.length <= recallLimits.maxEvidenceRefs)
+        && Array.isArray(recall.unavailable)
+        && Array.isArray(recall.advice);
+      if (!recallBounded) throw new Error('propose did not return a bounded experience recall');
+      steps.push({ name: 'experience-recall', ok: true, matched: recall.counts?.matched ?? 0, limits: recallLimits });
+
       let loaded = false;
       const lateHost = ctx.plugin({ name: 'acceptance-late-host', apply(scope) {
         scope.on('evolution/acceptance-late-host', () => {});
