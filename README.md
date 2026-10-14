@@ -28,7 +28,7 @@
 | 变更无法撤销 | 实验先走 Trial：由官方 runner 动态激活临时 Cordis Package，回滚时 dispose 并**证明** Runtime 签名回到基线 |
 | 结论没有证据 | 晋升必须同时满足 8 项门禁（真实收益、可测量证据、可重复、回归通过、可回滚、清理证据、无孤儿资源、运行时已恢复），缺一项即拒绝 |
 | 无人把关就上生产 | `evolution_promote` 默认只返回"等待所有者确认"，必须显式传 `confirmation: true` 才会写入生产 |
-| 晋升后突然崩 | 晋升后进入 canary 观察，跨重启验证启动/健康/依赖/指标屏障；任何指标回归自动回滚 |
+| 晋升后突然崩 | 晋升后进入 canary 观察，跨重启验证启动、健康与依赖屏障；屏障上报告指标回归会触发自动回滚，且只回滚新候选 |
 | 经验不留存 | 失败与观测在**无模型**参与下折叠为有界知识；显式进化动作可检索历史结论，避免重复踩坑 |
 | 宿主 API 漂移 | 诊断逐项探测真实运行状态，缺什么报什么，绝不假装健康 |
 
@@ -43,16 +43,16 @@ evolution_runtime_inspect   读取真实 Cordis 运行时（组件/服务/工具
         ↓
 evolution_propose           记录 why / target / impactScope / successMetrics / risk
         ↓                    返回附带的 experienceRecall（历史经验，见 2.3）
-evolution_trial             通过 dynamicCordisRunner 定义并激活临时 Host-only Package
-        ↓
+evolution_trial             通过 dynamicCordisRunner 定义并激活临时 Cordis Package
+        ↓                    （Host half 必需；Client half 只在 Trial 中允许）
 evolution_measure           记录观测（问题是否解决、副作用、性能、错误、可重复性、
         ↓                    回归、可回滚性、清理证据），并评估晋升门禁
 evolution_revert            通过 Cordis dispose，验证 Runtime 签名回到基线
   或
 evolution_promote           二次确认后写入持久 Plugin + archive 指针，进入 canary 观察期
         ↓
-evolution_canary_observe    在确定性屏障上推进 canary；指标回归自动回滚
-        ↓
+evolution_canary_observe    调用方在确定性屏障上报告启动/健康/依赖/指标结果并推进
+        ↓                    canary；报告指标回归即自动回滚
 （跨重启）启动屏障将候选提交为 stable，或回滚到上一个已知良好状态
 
 evolution_history           读取有界领域历史；传 query 时返回同一套经验检索结果
@@ -62,17 +62,19 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 设计约束：
 
 - **不建第二套运行时。** 插件不创建自己的 registry、resolver、生命周期管理器或 effect tracker；Component / Service / Fiber / Effect / 事件监听 / Tool / Dispose 全部由 Cordis 拥有。
-- **Trial 一定有基线。** 在 Trial 首次修改运行时**之前**同步捕获恢复基线；基线不在后续步骤重建，Trial 期间的真实并发漂移会拒绝恢复并保留目标锁。
+- **Trial 基线只捕获一次。** 恢复基线在 Trial 首次修改运行时**之前**同步捕获，且不在后续 inspect、measure 或清理时重建。因此 Trial 期间真实发生的并发漂移会让恢复校验失败：此时实验判为 `revert-failed`、目标锁保留、不会继续晋升。Trial 的 `define` / `run` 失败路径没有激活任何东西，会释放目标锁并丢弃该实验记录。
 - **晋升写的是下一 session 的状态。** 提交先落 journal，再有备份、原子写入、reload/mount 校验；中断的事务在下次启动时按边界规则恢复或清理。
 
-### 2.2 默认不自动进化
+### 2.2 默认不会自己上生产
 
-进化能力默认是**建议式**的，不是自动式的：
+进化能力的真正闸门是**所有者确认**，不是模式开关：
 
-- `mode` 默认 `advisory`。只有显式配置 `mode: "autonomous"`（或历史写法 `autonomous: true`）且 `unattended: true` 时，自主观察者才会自行发起实验。
-- 即使在 autonomous 模式下，风险策略默认是 `low: experiment`、`medium: confirm`、`high: deny`，且**自主观察者不能把自己的观测变成生产批准**——它仍然只能返回"等待所有者确认"。
-- 生产晋升始终需要 `confirmation: true`。
-- 经验检索默认开启但只读、只由显式工具调用触发，`experienceRecall: false` 可整体关闭。
+- 生产晋升在任何模式下都要求 `evolution_promote` 的 `confirmation: true`；缺省或 `false` 只返回一次"等待所有者确认"的只读结果，不写任何生产状态。
+- 自主观察者即使已经走完 propose → trial → measure，也**不会**把自己的观测变成生产批准：它返回的仍是 `candidate-awaiting-confirmation`，`automatic: false`。
+- 自主观察者只在配置了匹配的 `autonomousStrategies` 条目、同一失败模式的观测数达到 `patternThreshold`（默认 3），且风险策略允许 `experiment` 时才启动一次**隔离** Trial。默认风险策略是 `low: experiment`、`medium: confirm`、`high: deny`。
+- `mode` 默认 `advisory`（`mode: "autonomous"` 或历史写法 `autonomous: true` 会把 `evolution_runtime_inspect` 报告的策略标为 autonomous）；`unattended` 默认 `false`。这两个值会被记录在策略报告里，但**不是自主观察者的前置开关**——是否启动实验由策略表、`patternThreshold` 与风险等级决定。把它们读作"开关"会高估默认配置提供的保护；真正阻止自动上生产的是上面那条所有者确认。
+- 每次实验都落在隔离路径里：Trial 由官方 runner 拥有生命周期，失败即 `revert` 并记录失败学习，不会直接改写生产 composition。
+- 经验检索默认开启但只读，只由 `evolution_propose` / `evolution_history` 触发，`experienceRecall: false` 可整体关闭。
 
 ### 2.3 无模型的经验积累与按需检索
 
@@ -82,7 +84,7 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 - 事件桥写入带 MAC 的签名 JSONL；同 id 冲突 MAC、重复事件、截断尾行都会被诊断识别。
 - 进入领域存储之前，原始错误文本会先被脱敏；领域 schema 在模块加载时按官方规则 fail-loud 校验。
 
-**只有显式动作才检索。** `evolution_propose` 在返回中附带 `experienceRecall`；`evolution_history` 传 `query` 时返回同一结果。`runtime_inspect`、measurement、自主观察者与任何定时器都不会触发检索（单测直接断言检索调用次数）。
+**检索只由提交 proposal 的动作触发。** `evolution_propose` 在返回中附带 `experienceRecall`；`evolution_history` 传 `query` 时返回同一结果。`evolution_runtime_inspect`、measurement 与 canary 不触发检索，**任何定时器、轮询或后台模型回合也不会**。注意自主观察者新建提案时同样走 `evolution_propose`，因此那条路径也会检索——它不产生额外的、独立于提案的检索路径（单测直接断言检索调用次数）。
 
 检索结果是三组有界事实：
 
@@ -107,7 +109,7 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 
 ### 2.4 无模型的健康诊断
 
-`evolution_doctor` 与 `dsh-evolution-doctor` CLI 返回同一份报告，不依赖模型推理、不联网、不上传任何 Evolution 数据。所有结论都来自真实运行状态并附可定位的 `evidence`，不是"配置项是否存在"。
+`evolution_doctor` 工具与 `dsh-evolution-doctor` CLI 使用同一套检查项与分级规则，不依赖模型推理、不联网、不上传任何 Evolution 数据。两者覆盖面不同：CLI 没有实时 context，`runtime.capabilities` / `runtime.registration` / `runtime.internal-api` 会报 `not-evaluated`；要判断具体哪个内部接口探针失效，必须用**会话内**的 `evolution_doctor`。所有结论都来自真实运行状态并附可定位的 `evidence`，不是"配置项是否存在"。
 
 覆盖面：
 
@@ -139,9 +141,9 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 
 ## 3. 典型使用场景
 
-**场景 A — "这个插件让 Agent 变慢了，能不能换个实现？"**
+**场景 A — "这个功能让 Agent 变慢了，能不能换个实现？"**
 
-Agent 用 `evolution_runtime_inspect` 读出让时延变高的组件，`evolution_propose` 记录目标与成功指标，`evolution_trial` 临时换上替代实现，`evolution_measure` 记录前后指标。收益成立且回归通过 → `evolution_promote`（带确认）进入 canary；指标回归 → 自动回滚，Runtime 回到基线。
+Agent 用 `evolution_runtime_inspect` 读出让时延变高的组件，`evolution_propose` 记录目标与成功指标，`evolution_trial` 临时换上替代实现，`evolution_measure` 记录前后指标。收益成立且回归通过 → `evolution_promote`（带确认）进入 canary；屏障上报告指标回归 → 自动回滚，Runtime 回到基线。
 
 **场景 B — "同一类失败反复出现。"**
 
@@ -152,14 +154,17 @@ Agent 用 `evolution_runtime_inspect` 读出让时延变高的组件，`evolutio
 先跑只读诊断：
 
 ```sh
+# 不需要模型，也不需要应用正在运行
 dsh-evolution-doctor --home "$DSH_HOME"
 ```
 
-`host.version` / `host.modules` 会指出是宿主版本越界还是某个宿主模块越界，`runtime.internal-api` 会指出哪个内部接口探针失效。诊断只报告，不改动现场；只有 `--repair` 会处理报告标记为 `recoverable=true` 且幂等的项。
+`host.cli` / `host.version` / `host.modules` / `host.install` / `host.composition` 会指出是宿主版本越界、某个宿主模块越界，还是安装与 compose 有问题。诊断只报告，不改动现场；只有 `--repair` 会处理报告标记为 `recoverable=true` 且幂等的项。
+
+CLI 没有实时 context，因此 `runtime.*` 三项在 CLI 模式下报 `not-evaluated`。要知道具体哪个内部接口探针失效，在会话里调 `evolution_doctor`。
 
 **场景 D — "晋升之后重启，谁来保证它还能起来？"**
 
-晋升写入的是**下一个 session** 的持久 Plugin 行与 archive 指针，随后停留在 canary 观察期。启动屏障在重启后验证启动、健康、依赖与指标；全部通过才提交为 stable，否则回滚到上一个已知良好状态，且只回滚新候选。
+晋升写入的是**下一个 session** 的持久 Plugin 行与 archive 指针，随后停留在 canary 观察期。重启时启动屏障会校验插件健康与依赖，并把结果作为一次 `startup` 屏障提交给 canary（这条路径固定传入 `metricRegression: false`）。健康或依赖不成立则回滚到上一个已知良好状态，且只回滚新候选。指标回归需要由调用方在显式屏障上报告——canary 不会自己去比较指标数值。
 
 ## 4. 安装
 
@@ -216,15 +221,16 @@ npm run pack:check       # 校验分发内容、兼容声明与发布固定点
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
 | `dataRoot` | `$DSH_HOME/storages/evolution` | Evolution 数据根 |
-| `mode` | `"advisory"` | `manual` / `advisory` / `autonomous`；历史写法 `autonomous: true` 等价于 `"autonomous"` |
-| `unattended` | `false` | autonomous 模式下才允许自主发起实验 |
+| `mode` | `"advisory"` | `manual` / `advisory` / `autonomous`；历史写法 `autonomous: true` 等价于 `"autonomous"`。它记录在策略报告中，不是自主观察者的前置开关 |
+| `unattended` | `false` | 与 `mode` 一起记录在策略报告中；不构成自主观察者的前置开关 |
 | `autonomousPolicy` | `{ low: "experiment", medium: "confirm", high: "deny" }` | 按风险等级的策略 |
 | `experienceRecall` | `true` | 设为 `false` 整体关闭按需经验检索 |
 | `domainSeed` | `false` | 显式授权把已迁移的 `dockyard/state.json` 种子载入领域聚合 |
 | `canaryWindow` | `2` | canary 观察需要的屏障数 |
+| `patternThreshold` | `3` | 同一失败模式达到多少次观测才成为候选 |
 | `promotionLockTtlMs` | 15 分钟 | 跨进程晋升锁 TTL |
+| `autonomousStrategies` | 未配置 | 按失败模式提供 `target` / `composition` / `measure` / `risk` 的显式策略表；没有匹配条目时观察者只停留在 `candidate` |
 | `memoryMaxEntries` / `memoryMaxText` / `memoryMaxItems` | `200` / `1200` / `8` | 有界失败记忆的容量上限 |
-| `observe` | 已连接领域存储时注册 | 显式要求注册自主观察者；实际是否发起实验仍由 `mode`、`unattended` 与风险策略决定 |
 
 ### 5.1 数据边界
 
@@ -254,7 +260,7 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 
 参数：`--home`、`--profile`、`--data-root`、`--dsh-cli`、`--json`、`--repair`、`--no-composition`、`--quiet`。
 
-退出码：`0` 健康、`1` 存在可降级问题、`2` 存在阻塞问题。报告写入 stdout，本地绝对路径只出现在本地输出中，不会被上传。
+退出码：`0` 健康、`1` 存在可降级问题、`2` 存在阻塞问题；参数解析或诊断执行自身抛错时以 `3` 退出。报告写入 stdout，本地绝对路径只出现在本地输出中，不会被上传。
 
 `--repair` 只处理报告中 `recoverable=true` 且带 repair 的项；`recoverable=false` 的状态永远不会被自动改动。全部恢复操作都是幂等的。
 
@@ -262,7 +268,8 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 | --- | --- |
 | 边界校验通过的 journal `prepared` / `committing` | 从 journal 备份回滚（CAS 保护，不覆盖并发修改）；`--repair` 或下次启动自动完成 |
 | 边界校验通过的 journal `stable-committed` / `committed` | 只清理 journal 目录，不动 composition 与已提交插件 |
-| journal `rollback-failed` / 无法解析 / 边界拒绝 / 阶段未知 | **不自动处理**：报 `blocked`、`recoverable=false`，保留现场 |
+| journal `rollback-failed` / 无法解析 / 边界拒绝 | **不自动处理**：报 `blocked`、`recoverable=false`，保留现场 |
+| journal 阶段未知（边界校验通过） | doctor 报 `blocked` / `state-unknown`、`recoverable=false`，**不提供 repair**；但启动恢复目前对未识别的阶段仍走默认 rollback 并在成功后删除 journal，所以启动前必须人工检查现场 |
 | event bridge 未闭合尾行 | 只丢弃不构成记录的尾部字节 |
 | domain 孤儿 staging | 仅在无活进程持有 archive 锁时清理；有活进程时报告并拒绝 |
 | domain archive 锁无主（空内容或死 pid） | 运行时自动回收；`--repair` 可显式清理；有活主的锁永不抢占 |
@@ -354,10 +361,10 @@ npm run acceptance:host -- --host 0.2.1-alpha.1 --out <evidence-path>
 
 1. 官方 CLI 只读诊断（`host.version` 必须 `verified: true`、状态不得为 `blocked`）
 2. 核心流程 `inspect → propose → trial → measure → revert`（要求 `runtimeRecovered: true` 与 9 个工具全部注册）
-3. 官方 `pluginManager` 禁用/启用语义，且用户数据逐字节不变
+3. 官方 `pluginManager` 禁用/启用语义，且 `evolution-memory.json` 逐字节不变（同时确认 `event-bridge.key` 仍存在）
 4. 官方 CLI 卸载、插件缺席时宿主仍能启动、再重新安装
 5. 重装后核心流程再次通过且原有 memory 条目全部保留
-6. 升级与回滚流程，两步之后宿主仍注册 9 个工具且用户数据不变
+6. 升级与回滚流程，两步之后宿主仍注册 9 个工具且 memory 哈希不变
 7. 真实晋升到 canary 观察期，监听器可被真实触发并跨进程重启存活
 8. 重启后 startup canary 提交为 `stable`；新候选注入 `metricRegression` 触发 canary 回滚，且只回滚新候选
 9. 再次重启后已提交候选仍存活、被回滚候选未复活，最终诊断 `healthy`
@@ -370,6 +377,8 @@ npm run acceptance:host -- --host 0.2.1-alpha.1 --out <evidence-path>
 | `0.2.1-alpha.1` | cordis `4.0.5-alpha.1`、include `1.0.10-alpha.1`、loader `1.0.6-alpha.1` | 21/21 步通过，最终诊断 `healthy` |
 
 证据文件 `docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json` 同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：**任何被发布文件的变化都会使 `pack:check` 失败，直到两个宿主的验收重新运行**。
+
+验收断言的"数据保留"范围需要说清楚：生命周期、升级与回滚步骤比较的是 `evolution-memory.json` 的 SHA256 并确认 `event-bridge.key` 仍存在，**不是对整个数据根逐文件比较**。
 
 发布产物、复现步骤与**尚未消除的发布风险**见 `RELEASE.md`；发布固定点见 `release/manifest.json`；CI 见 `.github/workflows/ci.yml`（单测矩阵、可复现打包与内容白名单、两个宿主的真实安装验收）。
 
