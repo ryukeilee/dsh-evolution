@@ -8,7 +8,7 @@ import v8 from 'node:v8';
 import {session,freezeClock} from './helpers.mjs';
 const [label,scaleText,fixturePath]=process.argv.slice(2);
 const scale=Number(scaleText); freezeClock();
-const directory=join('/tmp/dsh-rss-research',label,'lib');
+const directory=join(process.env.RSS_ROOT ?? "/tmp/dsh-rss-research",label,'lib');
 const {EvolutionMemory}=await import(pathToFileURL(join(directory,'dockyard-domain/memory.js')));
 let fixture=JSON.parse(await readFile(fixturePath,'utf8'));
 const fixtureSha256=createHash('sha256').update(JSON.stringify(fixture)).digest('hex');

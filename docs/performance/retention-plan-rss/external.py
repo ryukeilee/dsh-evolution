@@ -1,6 +1,7 @@
 import ctypes,json,subprocess,threading,time,statistics
 from pathlib import Path
-root=Path('/tmp/dsh-rss-research')
+root=Path(os.environ.get('RSS_ROOT','/tmp/dsh-rss-research'))
+import os
 lib=ctypes.CDLL('/usr/lib/libproc.dylib')
 def sample(pid):
  buf=ctypes.create_string_buffer(96)

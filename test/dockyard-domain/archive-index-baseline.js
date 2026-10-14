@@ -6,8 +6,11 @@ import { reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
 // Revert the shared-scan refactor plus every other change that landed after the
 // rc.7 anchor, so the composed reconstruction still reaches the pinned source.
 // Each pair is [post-change text, pre-change text]; exact, single-occurrence
-// guards fail on any shape drift. The regions are disjoint, so the order does
-// not matter.
+// guards fail on any shape drift. The fragments are applied in order and each
+// must match exactly once *at the point it is applied*: most regions are
+// disjoint, but a few later fragments only take the shape they describe after an
+// earlier reversal has restored it, so reordering them breaks the guards even
+// though the composed result would be the same.
 const reversals = [
   // The experience-recall read path: one knowledge lookup per append, a source
   // scan that reads its history without copying it, and an identity comparison
@@ -364,7 +367,7 @@ export async function archiveIndexBaseline() {
 //
 // Reversing this change alone is not enough once another change follows it in
 // the working tree: the pin predates every change after it, so the byte
-// identity check reverses them all (in any order — the regions are disjoint).
+// identity check reverses them all, in the order the table lists them.
 export function baselineFromSources(working, pinned) {
   const reconstructed = reconstructPreHousekeepingIndex(reconstructPreSharedScan(working));
   const pinPredatesScan = !pinned.includes("#scanArchiveRaw");

@@ -1,6 +1,7 @@
 import json,statistics
 from pathlib import Path
-root=Path('/tmp/dsh-rss-research')
+root=Path(os.environ.get('RSS_ROOT','/tmp/dsh-rss-research'))
+import os
 def read(name):return [json.loads(x)for x in (root/name).read_text().splitlines()]
 def f(xs):return f'{statistics.median(xs)/2**20:.2f} [{min(xs)/2**20:.2f}, {max(xs)/2**20:.2f}]'
 lines=['|堆设置|冷行|侧|maxRSS 增量|GC 后 RSS|GC 后 heapUsed|同 shipped 算法的堆增量|','|---|---:|---|---:|---:|---:|---:|']

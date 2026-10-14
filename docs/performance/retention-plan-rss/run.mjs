@@ -2,7 +2,7 @@ import {corpus,freezeClock} from './helpers.mjs';
 import {writeFile,appendFile,readFile} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
-const root='/tmp/dsh-rss-research'; freezeClock();
+const root=process.env.RSS_ROOT ?? "/tmp/dsh-rss-research"; freezeClock();
 const knowledge=await import(pathToFileURL(root+'/B/lib/dockyard-domain/knowledge.js'));
 for(const scale of [10000,40000]) await writeFile(`${root}/fixture-${scale}.json`,JSON.stringify(corpus(scale,knowledge)));
 const orders=[['B','C','M'],['M','C','B'],['C','M','B'],['B','M','C'],['M','B','C'],['C','B','M']];

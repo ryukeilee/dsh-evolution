@@ -3,7 +3,7 @@ import {readFile,mkdtemp,rm} from 'node:fs/promises';
 import {EvolutionMemory} from './D/lib/dockyard-domain/memory.js';
 freezeClock();
 const [scale,mode]=process.argv.slice(2);
-const fixture=JSON.parse(await readFile(`/tmp/dsh-rss-research/fixture-${scale}.json`,'utf8'));
+const fixture=JSON.parse(await readFile(`${process.env.RSS_ROOT ?? "/tmp/dsh-rss-research"}/fixture-${scale}.json`,'utf8'));
 const temp=await mkdtemp('/tmp/dsh-memo-child-');
 const memory=await session({EvolutionMemory},temp,fixture);
 const sentinel=new Error('probe-stop'); let result;

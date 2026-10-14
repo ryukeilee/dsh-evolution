@@ -1,6 +1,7 @@
 from pathlib import Path
 import shutil
-r=Path('/tmp/dsh-rss-research');shutil.copytree(r/'C',r/'D',dirs_exist_ok=True)
+import os
+r=Path(os.environ.get('RSS_ROOT','/tmp/dsh-rss-research'));shutil.copytree(r/'C',r/'D',dirs_exist_ok=True)
 p=r/'D/lib/dockyard-domain/memory.js';s=p.read_text()
 needle='    return { knowledge: [...knowledgeByKey.values()], retainedEntries, consolidated, knowledgeEventOf };'
 assert s.count(needle)==1
