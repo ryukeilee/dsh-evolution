@@ -7,8 +7,9 @@
   "remoteTagTarget": "facdcc296e56947e91cde0410fa70a8f526def41",
   "tagObjectMatchesRemote": true,
   "mainCommit": "facdcc296e56947e91cde0410fa70a8f526def41",
+  "mainCommitMeaning": "the commit main was at when the tag was cut; main reached it by fast-forward, so it equals the tag commit. main was at c7f78f6 when the release was independently verified afterwards - see finalState and independentVerification.",
   "sourceCommit": "b903902e9567f125d6e5fbef9cd0bc8bac4db6fc",
-  "note": "The source commit b903902 fixes the four write-path rounds and is the commit the pinned artifact was built from. The tag commit facdcc2 adds one test-only commit on top: the projection-free load round's too-deep fixture serialized an 8 000-level document with JSON.stringify, which recursed once per level on Node 22/24 and overflowed the stack inside the fixture, so it failed before it could compare the two trees. The case had left `unit tests (node 22.19.0)` and `unit tests (node 24.x)` red since 61a151a while local validation on Node 26 passed, because V8 now stringifies deep values iteratively. The deep value is written as text now (byte-identical to JSON.stringify on an engine that can still serialize it) and spliced into the normally serialized document. `test/` is not part of the package, so the tag tree, the source commit content and the pinned content digest are still the same value.",
+  "note": "The source commit b903902 fixes the four write-path rounds and is the commit the pinned artifact was built from. b903902..facdcc2 is two commits: b3d6b4d re-pins the artifact, the checksum file and both host acceptance evidences after that acceptance, and facdcc2 is test-only. facdcc2 fixes the projection-free load round's too-deep fixture, which serialized an 8 000-level document with JSON.stringify; that call recursed once per level on Node 22/24 and overflowed the stack inside the fixture, so the case failed before it could compare the two trees. The case had left `unit tests (node 22.19.0)` and `unit tests (node 24.x)` red since 61a151a while local validation on Node 26 passed, because V8 now stringifies deep values iteratively. The deep value is written as text now (byte-identical to JSON.stringify on an engine that can still serialize it) and spliced into the normally serialized document. `test/` is not part of the package, so the tag tree, the source commit content and the pinned content digest are still the same value.",
   "blockerFoundAndFixed": {
     "foundBy": "reading the GitHub Actions runs for the candidate commit before tagging",
     "ciRuns": [
@@ -152,8 +153,8 @@
       { "tag": "v0.2.0-rc.10", "tagObject": "8904c50a9ebc04764f8e35d09e580fcc3cae3550", "tagCommit": "b25fc6d7b94e2c667898c5d60e9ddff45a4df867", "releasedTarballDigest": "sha256:2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa", "committedTarballSha256": "2f1e3a7d63467f0a63c35d5da6dc8db825fc7bbc571796245e11e058972c0afa", "publishedAt": "2026-10-14T15:38:38Z", "unchanged": true }
     ],
     "method": "git ls-remote for the tag objects plus gh release view per tag; the released digests are read from GitHub, the committed sha256 from the working tree",
-    "historicalAnonymousDownloadChecks": 1,
-    "historicalAnonymousDownloadNote": "the rc.11 assets were the only anonymous download performed in this round; the historical digests above are GitHub's own asset digests, which cannot change without a re-upload"
+    "historicalAssetsReDownloadedThisRound": false,
+    "historicalAnonymousDownloadNote": "no historical asset was downloaded anonymously in this round, and no count of earlier downloads is claimed here; the historical values above are GitHub's own reported asset digests (read through the authenticated API), which cannot change without re-uploading the asset. This shows the values match the record now; it cannot prove the asset was never replaced and restored in between."
   },
   "withdrawnCandidate": null,
   "officialDSHSourcePatch": false,
@@ -163,7 +164,9 @@
   "auditFilesOutsidePackageAllowList": true,
   "releaseNotes": {
     "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.11",
-    "bodySha256": "5ea90cb6faee3b16e90e43c104f9ecc7732284175edffaf781f5cd35229bd725",
+    "bodySha256ApiString": "f40d41e694c109b5e399b1e5ca40ffdc40f5456f803d6f2e7f135873240ed667",
+    "bodySha256WithTrailingNewline": "5ea90cb6faee3b16e90e43c104f9ecc7732284175edffaf781f5cd35229bd725",
+    "bodySha256Input": "both digests cover the same 5813 bytes of published notes: `bodySha256ApiString` hashes the body string exactly as the release API returns it, and `bodySha256WithTrailingNewline` hashes those bytes plus one LF, which is what `gh release view --json body --jq .body` writes and what the prepared notes file (5814 bytes) produces. The published body therefore equals the prepared body; the digest is not a change detector unless its input rule is stated.",
     "contains": [
       "验证摘要 with the pinned sha256 / contentSha256 / 51 entries",
       "the tag -> commit facdcc2 -> sourceCommit b903902 provenance line",
@@ -194,8 +197,9 @@
     "The 0.2.1-alpha.1 npm dist-tag may move; the acceptance pins the exact version.",
     "Metric ids are not authorization.",
     "The file backend's failure memory is still last-writer-wins and save() does not fsync.",
-    "The release body and the RC version statements inside RELEASE.md describe the candidate, not the published state; RELEASE.md is shipped content, so it is not edited after the pin (the publication record lives in docs/evidence, which is outside the package allow-list).",
-    "The audit's `finalState.workingTreeClean` and the CI on the audit commit are filled in by the follow-up commit; until that commit lands, main is ahead of the tag by docs-only commits."
+    "The shipped RELEASE.md still describes 0.2.0-rc.11 as a local candidate (it says no tag was created, no public entry point exists, and rc.10 is the last public release) because RELEASE.md is part of the package: editing it after the pin would move contentSha256, so the publication state is recorded in docs/evidence instead. The published Release notes are not stale - they name the real tag, its CI and the public download commands.",
+    "main is ahead of the tag by audit commits that only add files under docs/evidence. That is deliberate: the record for a release cannot live inside the pinned bytes, and `git log --name-only facdcc2..main` shows every such commit is docs-only. The shipped content digest of main still equals the pin.",
+    "The identity of the action that published the draft cannot be established from release metadata or workflow logs alone: the logs show the draft being created, its assets uploaded and verified, and no publish step, but publishing is a separate action outside CI."
   ],
   "releaseRecordCommit": "635506ef7be96db44f14d99bd8a28d2d838b8a4f",
   "postPublishCi": {
@@ -220,14 +224,76 @@
       "packCheck": "all package checks passed (16/16)",
       "hostAcceptanceEvidenceMatchesPin": true
     },
-    "note": "CI and Code Scanning re-ran on the audit commit, which only adds files under docs/evidence (outside the package allow-list), so the published bytes and the tag are untouched by it. The release workflow did not re-run: it triggers on the tag, and the tag did not move."
+    "note": "CI and Code Scanning re-ran on the audit commit, which only adds files under docs/evidence (outside the package allow-list), so the published bytes and the tag are untouched by it. The release workflow did not re-run: it triggers on the tag, and the tag did not move.",
+    "auditCloseOutCommitCi": {
+      "commit": "c7f78f6d20eed48262244e6dd7f294da18e08927",
+      "note": "the follow-up commit that filled in releaseRecordCommit, postPublishCi and finalState; it only edits docs/evidence/rc11-release-audit.json",
+      "ci": {
+        "id": 38658548569,
+        "conclusion": "success",
+        "jobs": [
+          { "name": "unit tests (node 22.19.0)", "conclusion": "success" },
+          { "name": "unit tests (node 24.x)", "conclusion": "success" },
+          { "name": "package (clean, pinned, installable)", "conclusion": "success" },
+          { "name": "host acceptance (0.2.0-rc.2)", "conclusion": "success" },
+          { "name": "host acceptance (0.2.1-alpha.1)", "conclusion": "success" }
+        ]
+      },
+      "codeScanning": { "id": 38658548490, "conclusion": "success" }
+    }
   },
+  "independentVerification": {
+    "what": "a read-only independent verification of the already-published release, executed by a different model (gpt-6.1-sol via Codex) on the record commit c7f78f6: it recomputed the digests, downloaded the published assets with plain curl and no token, compared them byte for byte, replayed the tag/commit/pin chain and read each named CI run",
+    "blockers": [],
+    "confirmed": [
+      "no release blocker: the published artifact, its provenance and the CI record all hold up",
+      "the three anonymous downloads are byte-identical to release/manifest.json, SHA256SUMS and release/manifest.json's pinned tarball; GitHub's own digest equals the pin",
+      "commitContentDigest('b903902') = commitContentDigest('v0.2.0-rc.11') = treeContentDigest() = bfd04ee0..., and `git diff b3d6b4d facdcc2 -- lib/ scripts/ package.json release/` is empty, so the fix is test-only",
+      "the deep-value text equals JSON.stringify's output for the same 8 000-level value on node 26.11.1",
+      "all five named runs and the extra Code Scanning run match the recorded ids and conclusions, with 334 pass / 0 fail on both node jobs in all three CI runs",
+      "rc.7 / rc.9 / rc.10 tag objects, published asset digests and committed tarballs are unchanged; there is no rc.8 tag or release"
+    ],
+    "recordCorrectionsItFound": [
+      {
+        "finding": "finalState.mainAtTagCommit and mainCommit described main as the tag commit, but main had moved to c7f78f6 by two docs-only commits",
+        "resolution": "mainCommit now states what it means, finalState records mainReachedTagCommit plus the head the reviewer verified, and an explicit risk item records that audit commits are docs-only"
+      },
+      {
+        "finding": "the note said the tag commit adds one commit on top of the source commit; the range b903902..facdcc2 is two commits",
+        "resolution": "the note now names both commits and keeps the point that facdcc2 itself is test-only"
+      },
+      {
+        "finding": "releaseNotes.bodySha256 hashed the API body plus a trailing LF without saying so",
+        "resolution": "both digests are recorded with the input rule, so the value can no longer be read as showing a body change"
+      },
+      {
+        "finding": "a risk item said the close-out CI had not landed yet, and grouped the published release notes with the stale RELEASE.md text",
+        "resolution": "the close-out run is recorded under postPublishCi and the two documents are described separately"
+      },
+      {
+        "finding": "historicalAnonymousDownloadChecks contradicted its own note about which assets were downloaded anonymously",
+        "resolution": "the count is replaced by a boolean that states no historical asset was re-downloaded in this round"
+      }
+    ],
+    "limits": [
+      "It did not re-run the host acceptance, the full test suite or the local rebuild; those rest on the recorded evidence and the CI logs.",
+      "It could not trace the earlier locally executed commands, only their committed records.",
+      "It could not establish which action published the draft.",
+      "Its own commands and outputs are not committed here; this is a summary of its report."
+    ]
+  },
+  "verificationLimits": [
+    "Everything in this file is either a digest, a git object name, a GitHub-reported value or a CI log line. Claims that depend on a person or an agent having run something earlier rest on the committed evidence files.",
+    "The rc.11 pin evidence is docs/evidence/dsh-<host>.json; the rc11-ci-* and rc11-postpublish-* files are additional records and are not referenced by pack:check or test/release-pin.test.mjs.",
+    "The anonymous download was performed by both the release workflow and this round's audit, once per action; it proves the bytes GitHub serves equal the pin at that moment."
+  ],
   "finalState": {
-    "mainAtTagCommit": true,
+    "mainReachedTagCommit": true,
+    "mainHeadWhenIndependentlyVerified": "c7f78f6d20eed48262244e6dd7f294da18e08927",
     "tagObjectUnchanged": true,
     "publishedAssetsUnchanged": true,
     "historicalReleasesUnchanged": true,
     "workingTreeClean": true,
-    "note": "workingTreeClean is asserted by the follow-up commit, which is the first commit after which the audit record itself is tracked. main reached the tag commit facdcc2 and the audit commits only add files under docs/evidence, which is outside the package allow-list, so the shipped content digest of main still equals the pin."
+    "note": "main reached the tag commit facdcc2 by fast-forward when the release was cut. Every commit after it only adds or edits files under docs/evidence, which is outside the package allow-list, so the shipped content digest of main still equals the pin; `git log --name-only facdcc2..main` is the check for that (it shows docs/evidence paths only). workingTreeClean was verified by the independent round against HEAD c7f78f6, and re-verified when this record was corrected."
   }
 }
