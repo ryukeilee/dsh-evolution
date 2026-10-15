@@ -197,17 +197,37 @@
     "The release body and the RC version statements inside RELEASE.md describe the candidate, not the published state; RELEASE.md is shipped content, so it is not edited after the pin (the publication record lives in docs/evidence, which is outside the package allow-list).",
     "The audit's `finalState.workingTreeClean` and the CI on the audit commit are filled in by the follow-up commit; until that commit lands, main is ahead of the tag by docs-only commits."
   ],
-  "releaseRecordCommit": null,
+  "releaseRecordCommit": "635506ef7be96db44f14d99bd8a28d2d838b8a4f",
   "postPublishCi": {
-    "releaseRecordCommitCi": null,
-    "note": "filled in by the follow-up commit once CI has run on the audit commit"
+    "releaseRecordCommitCi": {
+      "commit": "635506ef7be96db44f14d99bd8a28d2d838b8a4f",
+      "ci": {
+        "id": 38658243146,
+        "conclusion": "success",
+        "jobs": [
+          { "name": "unit tests (node 22.19.0)", "conclusion": "success" },
+          { "name": "unit tests (node 24.x)", "conclusion": "success" },
+          { "name": "package (clean, pinned, installable)", "conclusion": "success" },
+          { "name": "host acceptance (0.2.0-rc.2)", "conclusion": "success" },
+          { "name": "host acceptance (0.2.1-alpha.1)", "conclusion": "success" }
+        ]
+      },
+      "codeScanning": { "id": 38658243238, "conclusion": "success" },
+      "unitTests": {
+        "node 22.19.0": { "tests": 334, "pass": 334, "fail": 0 },
+        "node 24.x": { "tests": 334, "pass": 334, "fail": 0 }
+      },
+      "packCheck": "all package checks passed (16/16)",
+      "hostAcceptanceEvidenceMatchesPin": true
+    },
+    "note": "CI and Code Scanning re-ran on the audit commit, which only adds files under docs/evidence (outside the package allow-list), so the published bytes and the tag are untouched by it. The release workflow did not re-run: it triggers on the tag, and the tag did not move."
   },
   "finalState": {
     "mainAtTagCommit": true,
     "tagObjectUnchanged": true,
     "publishedAssetsUnchanged": true,
     "historicalReleasesUnchanged": true,
-    "workingTreeClean": null,
+    "workingTreeClean": true,
     "note": "workingTreeClean is asserted by the follow-up commit, which is the first commit after which the audit record itself is tracked. main reached the tag commit facdcc2 and the audit commits only add files under docs/evidence, which is outside the package allow-list, so the shipped content digest of main still equals the pin."
   }
 }
