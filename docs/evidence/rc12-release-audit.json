@@ -1,0 +1,201 @@
+{
+  "status": "released-public-assets-verified",
+  "tag": "v0.2.0-rc.12",
+  "tagObject": "4acd8ea3b55d2abac35c6ae5d80972698b026942",
+  "tagCommit": "a2929302c4ffbbea07beb7c37dce951d475862ab",
+  "remoteTagObject": "4acd8ea3b55d2abac35c6ae5d80972698b026942",
+  "remoteTagTarget": "a2929302c4ffbbea07beb7c37dce951d475862ab",
+  "tagObjectMatchesRemote": true,
+  "tagKind": "annotated",
+  "tagMessage": "dsh-evolution v0.2.0-rc.12: one promotion-journal phase classifier, re-pinned and host-verified",
+  "mainCommit": "a2929302c4ffbbea07beb7c37dce951d475862ab",
+  "mainCommitMeaning": "main already pointed at the release commit when the tag was created; the tag was cut on the already-pushed commit, so no branch advanced for this release",
+  "sourceCommit": "e2922a51cbe02694da3e76f6dd6fdf0683fc4cb1",
+  "note": "The pinned artifact was built from e2922a5 (the second of the two experience-recall fixes). a292930 is the release commit: it adds the pinned tarball, release/manifest.json, release/SHA256SUMS, both host acceptance evidences and the re-pinned documentation, and it only touches files outside the package allow-list. Docs, lib/ and the shipped content were not modified for this release; the tag was created on the existing commit a292930 and nothing was rebuilt.",
+  "pin": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.12",
+    "filename": "dsh-evolution-0.2.0-rc.12.tgz",
+    "sha256": "5fd89ae6b5971df8aaaa219e179b73ce6fb9416972592090531d2092692d518d",
+    "contentSha256": "c282c8c0d872d1d7bfedaef69b4658a3a080566077f61f9b55d870f0380039fb",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.12.0",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "e2922a51cbe02694da3e76f6dd6fdf0683fc4cb1",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json"
+    ]
+  },
+  "pinBytesSha256": "5fd89ae6b5971df8aaaa219e179b73ce6fb9416972592090531d2092692d518d",
+  "pinBytesMatchManifest": true,
+  "provenance": {
+    "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.12 --require-source-commit",
+    "executedLocallyBeforeTheTagWasPushed": true,
+    "executedByTheReleaseWorkflow": true,
+    "problems": [],
+    "notes": [
+      "tag v0.2.0-rc.12 -> commit a2929302c4ffbbea07beb7c37dce951d475862ab",
+      "source commit e2922a51cbe02694da3e76f6dd6fdf0683fc4cb1 is in the tagged history",
+      "source commit content c282c8c0d872d1d7bfedaef69b4658a3a080566077f61f9b55d870f0380039fb matches the pin",
+      "tagged tree content c282c8c0d872d1d7bfedaef69b4658a3a080566077f61f9b55d870f0380039fb matches the pin"
+    ],
+    "tagCommitEqualsCheckedOutCommit": true,
+    "sourceCommitIsAncestorOfTagCommit": true
+  },
+  "localValidation": {
+    "releaseVerify": "verify-artifact release/dsh-evolution-0.2.0-rc.12.tgz: sha256, contentSha256, 51 entries and modes match release/manifest.json (dsh-evolution@0.2.0-rc.12)",
+    "packCheck": "16/16 checks passed, including \"the committed release artifact is exactly the pinned build\", \"the working tree still builds the pinned content\" and \"the committed acceptance evidence matches this exact package content\"",
+    "sha256sumsCheck": "dsh-evolution-0.2.0-rc.12.tgz: OK",
+    "workingTreeCleanAt": "a2929302c4ffbbea07beb7c37dce951d475862ab",
+    "commands": [
+      "npm run release:verify",
+      "npm run pack:check",
+      "(cd release && shasum -a 256 -c SHA256SUMS)"
+    ]
+  },
+  "ci": {
+    "run": 38935280926,
+    "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38935280926",
+    "commit": "a2929302c4ffbbea07beb7c37dce951d475862ab",
+    "createdAt": "2026-10-16T16:52:11Z",
+    "conclusion": "success",
+    "jobs": {
+      "unit tests (node 22.19.0)": {
+        "conclusion": "success",
+        "tests": 364,
+        "fail": 0
+      },
+      "unit tests (node 24.x)": {
+        "conclusion": "success",
+        "tests": null,
+        "note": "the log this API served for the job did not include the summary lines, so only the job conclusion was read"
+      },
+      "package (clean, pinned, installable)": {
+        "conclusion": "success",
+        "packCheck": "16/16",
+        "rebuildContentOnly": "verify-artifact dist/dsh-evolution-0.2.0-rc.12.tgz (content only): 51 entries match",
+        "doctorFromThePublishedTarballWithoutAHost": "status degraded, blocked checks: none",
+        "sha256sumsCheck": "dsh-evolution-0.2.0-rc.12.tgz: OK"
+      },
+      "host acceptance (0.2.0-rc.2)": {
+        "conclusion": "success"
+      },
+      "host acceptance (0.2.1-alpha.1)": {
+        "conclusion": "success"
+      }
+    },
+    "codeScanning": {
+      "run": 38935280906,
+      "conclusion": "success",
+      "language": "javascript-typescript"
+    },
+    "releaseWorkflow": {
+      "run": 38937379388,
+      "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/38937379388",
+      "trigger": "push of the annotated tag v0.2.0-rc.12",
+      "createdAt": "2026-10-16T17:08:27Z",
+      "conclusion": "success",
+      "steps": "all 12 steps success, including \"Refuse to overwrite an existing release\", \"Verify the tag, the commit and the pinned source commit\", \"Verify the package, the pinned artifact and the checksum file\", \"Attach the verified artifacts to a draft release\" and \"Verify the assets now attached to the release\"",
+      "createdDraft": true,
+      "uploadedWithClobber": false
+    }
+  },
+  "release": {
+    "id": 415194030,
+    "tagName": "v0.2.0-rc.12",
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.12",
+    "draft": false,
+    "prerelease": true,
+    "createdAt": "2026-10-16T17:08:17Z",
+    "publishedAt": "2026-10-16T17:09:13Z",
+    "body": "the auto-generated \"Full Changelog\" line comparing v0.2.0-rc.11...v0.2.0-rc.12 (98 characters)",
+    "assets": [
+      {
+        "name": "dsh-evolution-0.2.0-rc.12.tgz",
+        "size": 284784,
+        "state": "uploaded",
+        "githubDigest": "sha256:5fd89ae6b5971df8aaaa219e179b73ce6fb9416972592090531d2092692d518d"
+      },
+      {
+        "name": "manifest.json",
+        "size": 662,
+        "state": "uploaded",
+        "githubDigest": "sha256:4d85ca5f514bc3341195dcb1679bbea06a7d45e18f24edf213cc88eb1066da24"
+      },
+      {
+        "name": "SHA256SUMS",
+        "size": 96,
+        "state": "uploaded",
+        "githubDigest": "sha256:07cbb581734bda6629827b4b1f30684b19f62b41d55ddc1dcc47be3f3ad87c29"
+      }
+    ],
+    "createdAsDraftBy": "the release workflow (38937379388); published afterwards with \"gh release edit v0.2.0-rc.12 --draft=false\", which left the prerelease flag set",
+    "assetCount": 3,
+    "expectedAssetCount": 3
+  },
+  "draftAssets": {
+    "verifiedBeforePublishing": true,
+    "method": "gh release download v0.2.0-rc.12 --dir <temporary directory outside the repository>",
+    "tarballByteIdenticalToThePin": true,
+    "sha256sumsIdenticalToTheCommittedFile": true,
+    "manifestJsonIdenticalToTheCommittedFile": true,
+    "sha256sumsCheck": "dsh-evolution-0.2.0-rc.12.tgz: OK",
+    "note": "the workflow performs the same download-and-compare itself in its last step; this run repeated it independently before publishing"
+  },
+  "anonymousDownload": {
+    "verifiedAfterPublishing": true,
+    "method": "curl -fsSL with GH_TOKEN and GITHUB_TOKEN unset, against the public release download URLs, into a temporary directory outside the repository",
+    "baseUrl": "https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.12",
+    "tarballSha256": "5fd89ae6b5971df8aaaa219e179b73ce6fb9416972592090531d2092692d518d",
+    "tarballByteIdenticalToTheCommittedPin": true,
+    "sha256sumsIdenticalToTheCommittedFile": true,
+    "manifestJsonIdenticalToTheCommittedFile": true,
+    "sha256sumsCheck": "dsh-evolution-0.2.0-rc.12.tgz: OK"
+  },
+  "noLatestRelease": {
+    "endpoint": "GET repos/ryukeilee/dsh-evolution/releases/latest",
+    "httpStatus": 404,
+    "meaning": "the repository publishes no non-prerelease release, so GitHub has no \"latest\" release to return; v0.2.0-rc.12 carries prerelease=true and cannot become it"
+  },
+  "postPublishHostAcceptance": {
+    "run": false,
+    "reason": "the published bytes are byte-identical to the pin (verified by the anonymous download and the byte comparison above), and that exact content already passed both real host acceptances recorded in docs/evidence/dsh-0.2.0-rc.2.json and docs/evidence/dsh-0.2.1-alpha.1.json, which pack:check re-verified against this content digest and tarball digest. Re-installing an identical tarball in both hosts would not add information about the artifact, so this round reused the existing acceptance evidence instead. This is a deliberate difference from the rc.3-rc.11 records, which ran the acceptance again against the downloaded release."
+  },
+  "historicalReleaseVerification": {
+    "run": false,
+    "reason": "this round created only v0.2.0-rc.12 and moved, deleted or replaced no existing tag or asset; the older releases were not re-audited. The historical v0.2.0-rc.1 tag/release byte mismatch documented in RELEASE.md section 6 remains as it is."
+  },
+  "packageUnchangedAfterPublication": true,
+  "packageUnchangedEvidence": [
+    "HEAD and origin/main both resolve to a2929302c4ffbbea07beb7c37dce951d475862ab",
+    "git status is clean",
+    "release/dsh-evolution-0.2.0-rc.12.tgz still hashes to 5fd89ae6b5971df8aaaa219e179b73ce6fb9416972592090531d2092692d518d",
+    "no commit after a292930 changed any file inside package.json#files"
+  ],
+  "auditFilesOutsidePackageAllowList": true,
+  "releaseRecordCommit": null,
+  "releaseRecordCommitNote": "this record is added by the first commit on main after a292930; docs/evidence is outside package.json#files, so it does not change the pinned content digest, the artifact or the tagged commit, and it is not part of the package",
+  "verificationLimits": [
+    "no host acceptance was re-run against the published bytes after publication (see postPublishHostAcceptance)",
+    "only the checks listed above were executed in this round; no npm publish, no signing, no SBOM and no provenance attestation was produced",
+    "the node 24.x unit test job log served by the API did not contain the test summary lines, so its test count is not recorded"
+  ],
+  "remainingRisksAndUnverified": [
+    "RELEASE.md and CHANGELOG.md are shipped files and still describe the pre-release state (\"no v0.2.0-rc.12 tag yet\", \"no external publication this round\"). Correcting them would change contentSha256, so it would require a rebuild, a fresh acceptance on both hosts and a new pin; the released bytes are deliberately left as they are.",
+    "the release notes are the auto-generated compare link only; they do not summarise the journal-classification fix. CHANGELOG.md inside the tarball is the authoritative description.",
+    "the known tag/release mismatch of the historical v0.2.0-rc.1 is unchanged.",
+    "no code signing, SLSA provenance or SBOM is published for this RC."
+  ]
+}
