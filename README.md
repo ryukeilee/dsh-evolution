@@ -94,18 +94,18 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 | `failures` | 已失败的做法，换假设前不要重复 |
 | `candidates` | 已测量成功且带策略的复用候选 |
 
-此外 `duplicate` 报告同一 target 的精确历史重放及其结果，`advice` 只复述记录中已有的事实。全部上限硬编码在 `lib/experience-recall.js`，调用方只能收紧不能放宽：
+此外 `duplicate` 报告同一 target 的精确历史重放及其结果，`advice` 只复述记录中已有的事实。三组结果按**同一个**相关性-证据评分排序：该评分由匹配覆盖度、记录成功率、实测 fitness 与证据量级四项加权得出（最高值为四项权重之和 **0.95**，不是 1），是「记录 + 它自己的匹配覆盖度」的纯函数——不读时钟、不读其它记录；单来源 `maxRecords` 保留与最终排序用的是同一个值，所以一个来源留下的就是它自己按同一比较器排出的前 `maxRecords` 条，与来源顺序无关。仅当评分相同时才按 `lastSeen` 降序、再按与 locale 无关的完整排序键排序——该键按固定顺序逐字段长度前缀地编码**全部报告字段**（六字段描述、`key`、`coverage`、`source`、`state`、`lastOutcome`、`successCount`、`failureCount`、`successRate`、`fitnessMean`、`regressionCount`、`occurrences`、`firstSeen`、`lastSeen` 与有界的 `evidenceRefs`），因此输出不同的两条记录绝不相等，排序不可能退回来源合并顺序。精确 `knowledgeKey` 重放排在普通文本匹配之前，因此在 `maxRecords` 内优先占位，但该上限仍适用于它：超过 `maxRecords` 条的精确重放同样会被截断。只有描述（`problem` / `scope` / `strategy` / `failureMode` / `rootCause` / `prevention` 归一化后）与**整组已记录的结果/测量**（`lastOutcome`、`occurrences`、`regressionCount`、`successCount`、`failureCount`、`successRate`、`fitnessMean`）都相同的事实才会合并成一条：任何结果或计数不同都是另一条观测，绝不被合并丢掉。来源内合并数记在每个 `sources[].duplicates`，来源内加跨来源的合计记在 `counts.duplicates`，`counts.matched` 是去重后进入最终阶段的候选数。`duplicate.occurrences` 是同一 `knowledgeKey` 各快照中的**最高**记录次数，不是求和（每条精确记录都是同一 key 的快照，求和会把同一批事件重复计数），`firstSeen` 取最早、`lastSeen` / `state` / `outcome` 取最新快照。`truncated` 同时覆盖两种情况：返回的三组小于去重后的集合，以及任一来源在进入最终阶段前丢掉过候选——后者记在每个 `sources[].dropped`（来源自身 `maxRecords` 保留所致）。全部上限硬编码在 `lib/experience-recall.js`，调用方只能收紧不能放宽：
 
 | 上限 | 值 |
 | --- | --- |
 | 每组返回条数 | 3 |
-| 每个来源贡献条数 | 12 |
+| 每个来源贡献条数 | 12（精确重放优先占位，仍受同一上限约束） |
 | 单字段长度 | 160 字符 |
 | 证据引用数 | 2 |
 | 文本匹配扫描范围 | 最近 2000 条 |
 | 建议条数 / token 数 / 引用长度 | 3 / 48 / 96 |
 
-精确重放按 `knowledgeKey` 等值判断，**不受扫描窗口限制**——很久以前探索过的同一 target 仍能被识别。检索只读，不写入、不改变数据格式、不改变晋升授权。领域存储缺失或读取失败时降级为本地失败记忆，并在 `unavailable` 中显式报告，而不是伪装成"没有历史"。
+精确重放按 `knowledgeKey` 等值判断，**不受扫描窗口限制**——很久以前探索过的同一 target 仍能被识别，也不会被高分普通匹配挤出 `maxRecords`；但该上限本身仍适用于精确重放，超过 12 条精确重放时同样截断。检索只读：`finalizeExperienceRecall` 把每个来源交来的记录按已知投影字段**重建**成副本并夹到已声明上限内（六字段夹到 `maxText`、`state` / `lastOutcome` 夹到 40、计数经 `integer()`、日期经 `isoOrNull()`、`evidenceRefs` 去重并限制在 `maxEvidenceRefs` 条且每条不超过 `maxRefLength`），因此第三方 `domainStorage.recall()` 不能加宽它重建的那些字段、带出未声明字段，也不能让单个来源贡献超过 `maxRecords` 条不同事实；身份字段 `source` 与字符串 `key` 按原样带过，其大小由提供它们的来源决定，而不是由本模块限制；调用方传入的记录本身从不被改写。领域存储缺失或读取失败时降级为本地失败记忆，并在 `unavailable` 中显式报告，而不是伪装成"没有历史"。
 
 ### 2.4 无模型的健康诊断
 
