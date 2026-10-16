@@ -2,13 +2,13 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前本地候选版本：`0.2.0-rc.11`，在 `0.2.0-rc.10` 之上收束四轮删除重复计算、重复复制与重复遍历的改动（冷档案记录路径的来源扫描与身份重算、活动档案扫描备忘与逐行身份折叠、保留计划的单次规范化与冗余深拷贝、四条被丢弃热投影的加载链），并修正了一处独立对抗式复核发现的真实失败边界分歧（具体见 `CHANGELOG.md` 的 `0.2.0-rc.11` 条目）。`orchestrator` / `guard` / `registration` / `promotion-include` / `archive-stage` 无源码改动，持久化格式、认证、fsync、事务与回滚、跨进程锁、promotion 门禁与授权边界一律未改。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本轮未创建 tag、未进行外部发布，固定产物、两个官方宿主验收证据与历史锚点见 `release/manifest.json` 与 `docs/evidence/`。最后公开的 `v0.2.0-rc.10` 的发布状态、发布后双宿主证据与历史资产校验见 `docs/evidence/rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
+当前本地候选版本：`0.2.0-rc.12`，在 `0.2.0-rc.11` 之上修复晋升 journal 阶段判定的恢复安全缺陷：doctor、启动恢复与 canary 读取此前各有一份判定，未知或缺失阶段在 doctor 里报 `blocked` 且不提供 repair，而 `recoverInterruptedPromotion` 会走默认 rollback 并在成功后删除 journal 与备份，`readCanaryJournal` 还会把它当作“没有 journal”并让 `observeCanary` 合成新 journal 覆盖或删除现场。现在三者共用 `classifyPromotionJournal` 与 `assertJournalRecoverable`（具体见 `CHANGELOG.md` 的 `0.2.0-rc.12` 条目）：未知/缺失阶段、边界违规与 `rollback-failed` 一律拒绝并逐字节保留现场，合法阶段的恢复语义、CAS、跨进程锁、Cordis 生命周期与 promotion 授权边界未改；同时按上游补丁漂移（cordis `4.0.5-alpha.2`、include `1.0.10-alpha.2`，审计确认仅 `package.json` 变化）扩展这两个补丁级别的 `peerDependencies`，并以完整真实验收确认。`guard` / `registration` / `promotion-include` / `archive-stage` 与领域模块无源码改动。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本轮未创建 tag、未进行外部发布，固定产物、两个官方宿主验收证据与历史锚点见 `release/manifest.json` 与 `docs/evidence/`。最后公开的 `v0.2.0-rc.10` 的发布状态、发布后双宿主证据与历史资产校验见 `docs/evidence/rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.11.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.12.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
@@ -29,14 +29,14 @@
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.11，仓库内容）
+# 当前本地候选（0.2.0-rc.12，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
-# 尚未创建 v0.2.0-rc.11 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
+# 尚未创建 v0.2.0-rc.12 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.11，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0-rc.12，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -87,11 +87,11 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 | 宿主 | 宿主模块 | 结果 |
 | --- | --- | --- |
 | `0.2.0-rc.2` | cordis `4.0.4`、include `1.0.9`、loader `1.0.5` | 21/21 步通过；最终诊断 `healthy` |
-| `0.2.1-alpha.1` | cordis `4.0.5-alpha.1`、include `1.0.10-alpha.1`、loader `1.0.6-alpha.1` | 21/21 步通过；最终诊断 `healthy` |
+| `0.2.1-alpha.1` | cordis `4.0.5-alpha.2`、include `1.0.10-alpha.2`、loader `1.0.6-alpha.2` | 21/21 步通过；最终诊断 `healthy` |
 
 首次 CLI 诊断为 `degraded`（`data.root` 尚未初始化）属于预期：数据根在首次运行时创建，最终诊断恢复 `healthy`。
 
-`docs/evidence/dsh-<host>.json` 是**固定点证据**：`pack:check` 与 `test/release-pin.test.mjs` 只核对这两个文件记录的 `contentSha256` / `tarballSha256` 是否等于当前固定内容与固定字节。`docs/evidence/` 下另有一些按轮次命名的验收记录（`cold-archive-write-path-*`、`retention-plan-*`、`write-path-reconcile-identity-*`）；它们是各轮开发中对**中间候选**运行的真实验收，其 `packageVersion` 是当时的版本号、内容摘要不等于任何固定点，因此**不构成固定点证据**，也不被任何校验引用。`0.2.0-rc.11` 的权威验收只有上面两个文件。
+`docs/evidence/dsh-<host>.json` 是**固定点证据**：`pack:check` 与 `test/release-pin.test.mjs` 只核对这两个文件记录的 `contentSha256` / `tarballSha256` 是否等于当前固定内容与固定字节。`docs/evidence/` 下另有一些按轮次命名的验收记录（`cold-archive-write-path-*`、`retention-plan-*`、`write-path-reconcile-identity-*`）；它们是各轮开发中对**中间候选**运行的真实验收，其 `packageVersion` 是当时的版本号、内容摘要不等于任何固定点，因此**不构成固定点证据**，也不被任何校验引用。`0.2.0-rc.12` 的权威验收只有上面两个文件。
 
 ## 5. CI 与发布链
 

@@ -6,6 +6,19 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.12 — 晋升 Journal 阶段判定的统一与安全阻断
+
+本候选修复一处恢复安全缺陷：`promotion.journal` 的阶段判定此前分散在三条路径里。doctor（`lib/diagnostics.js` 的 `inspectPromotionJournal`）对无法识别的阶段报 `blocked` / `state-unknown` 且不提供 repair；`recoverInterruptedPromotion` 的默认分支却会对同一 journal 执行 rollback，并在成功后删除整个 state 目录（journal 与备份）；`readCanaryJournal` 还会把它当作“没有 journal”，让 `observeCanary` / `verifyStartupCanary` 从 durable sidecar 合成新 journal——未完成路径覆盖 `journal.json`，stable 与 regression 路径删除 state 目录。生产 delta 只涉及 `lib/orchestrator.js` 与 `lib/diagnostics.js`；`guard` / `registration` / `promotion-include` / `archive-stage` 与领域模块未改，持久化格式、认证、fsync、事务与回滚、跨进程锁、promotion 门禁与授权边界一律未改。
+
+- **单一判定**：`lib/orchestrator.js` 新增导出 `classifyPromotionJournal(journal, paths)`，边界校验（`checkJournalBoundary`）优先，随后是唯一的阶段表：`prepared` / `committing` → `incomplete`、`canary-observing` → `canary-observing`、`stable-committed` / `committed` → `committed-pending-cleanup`、`rollback-failed` → `rollback-failed`，其余（含缺失阶段）→ `state-unknown`。`lib/diagnostics.js` 直接消费该函数并删除自己的内联阶段映射；doctor 的 `state-unknown` 摘要现在带上真实阶段值，`blocked` / `recoverable: false` / 不提供 repair 的判定不变。
+- **拒绝而不是猜测**：`recoverInterruptedPromotion` 与 `readCanaryJournal` 共用 `assertJournalRecoverable`。边界违规、`state-unknown` 与 `rollback-failed` 都抛出携带原因与现场路径的普通 `Error`（不再是未分类的默认回滚，也不是 `TypeError`），journal、备份、目标文件与 staging 逐字节保持不变；`applyRepairs` 按 id 直接调用 `promotion-journal-recover` 时也只记录 `failed`，不动现场。
+- **合法阶段语义不变**：`prepared` / `committing` 仍按 CAS 回滚并清理（并发修改仍保留 `rollback-failed` 现场），`canary-observing` 仍返回 pending，`stable-committed` / `committed` 仍只清理 journal 目录，`rollback-failed` 仍阻断并保留。以 `release/` 固定产物对应的 HEAD 实现为基线逐项比对恢复返回值、错误文本与磁盘字节（另含 CAS 冲突注入），六条合法阶段路径完全一致；`readCanaryJournal` 对 `incomplete` / `committed-pending-cleanup` 仍返回 `null`。
+- **回归测试**：新增 `test/promotion-journal-phase.test.mjs`：阶段矩阵（含 `null` 与数字阶段）证明 doctor 与恢复共用同一判定；未知/缺失阶段的故障注入断言重复启动、重复诊断与 `applyRepairs` 都拒绝且现场逐字节不变；“拒绝不会毒化状态”用例证明改回 `committing` 后仍能正常回滚；canary 读取用例用真实 `EvolutionOrchestrator` 覆盖 pending 覆盖、stable 删除、regression 回滚、缺失阶段与 `rollback-failed` 五种旧实现会破坏现场的分支。以 HEAD 恢复实现为反例验证过这些用例确实失败（旧实现覆盖 `journal.json` 或删除 state 目录）。
+- **独立复核**：两轮对抗式复核均以真实 `EvolutionOrchestrator`、临时 home 与磁盘快照运行；第一轮发现并驱动修复了 canary 读取旁路，第二轮确认所有 journal 读取入口、合法阶段等价性与反例实验后无阻塞问题。
+- **上游补丁漂移**：官方 `0.2.1-alpha.1` 宿主用 `~` 范围声明 cordis 与 include，上游随后发布 `4.0.5-alpha.2`、`1.0.10-alpha.2`（及 loader `1.0.6-alpha.2`），fresh install 会解析到它们，而 `peerDependencies` 只声明了 `alpha.1`，doctor 的 `host.modules` 因此阻断。逐一解包审计确认三个包只有 `package.json` 变化（版本与自身依赖范围），所有随包源码逐字节相同；据此把这两个补丁级别加入 `peerDependencies`，并用两个宿主的完整真实验收验证（具体见 `COMPATIBILITY.md` 的验证矩阵与接口差分表）。
+- 文档：`README.md` 的恢复表与 `AGENTS.md` 的不变量删除“未识别阶段仍会被启动恢复回滚”的旧例外，并更新到本候选版本与上游补丁级别。
+- 本候选的固定产物、两个官方宿主验收证据与校验和分别见 `release/manifest.json` 与 `docs/evidence/dsh-0.2.0-rc.2.json` / `docs/evidence/dsh-0.2.1-alpha.1.json`；`npm run pack:check` 与 `test/release-pin.test.mjs` 会核对“工作树内容 = 固定内容 = 两个宿主验收所针对的内容”。本轮未创建 tag、未进行外部发布；`0.2.0-rc.11` 及更早的 tag、发布附件与产物字节保持不变。
+
 ## 0.2.0-rc.11 — 写入路径与保留计划的重复工作（四轮，含撤回）
 
 本候选在 `0.2.0-rc.10` 之上收束四轮“删除重复计算、重复复制与重复遍历”的改动。生产 delta 只涉及 `lib/dockyard-domain/memory.js`、`knowledge.js`、`observation.js` 与 `lib/domain-storage.js`；`orchestrator`、`guard`、`registration`、`promotion-include`、`archive-stage` 无源码改动，持久化格式、认证、fsync、事务与回滚、跨进程锁、promotion 门禁与授权边界一律未改。

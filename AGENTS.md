@@ -67,7 +67,7 @@
 ## 4. 必须保留的不变量
 
 1. **不建第二套运行时。** 不创建自己的 registry、resolver、生命周期管理器或 effect tracker；一切经由官方 Cordis API 与官方 runner。
-2. **先恢复、后加载。** 中断的磁盘事务必须在 Include 加载任何子项之前恢复。未知或损坏的持久状态**不得猜测、静默合并或删除现场**。注意已知的不一致：doctor 对未识别的 journal 阶段报 `blocked` 且不提供 repair，但 `recoverInterruptedPromotion` 对未识别的阶段仍会走默认 rollback 并在成功后删除 journal。改动这块时必须同时移动 doctor 与恢复的行为，不要只改一边。
+2. **先恢复、后加载。** 中断的磁盘事务必须在 Include 加载任何子项之前恢复。未知或损坏的持久状态**不得猜测、静默合并或删除现场**。晋升 journal 的阶段判定只有一份：`classifyPromotionJournal` 把 `prepared` / `committing` / `canary-observing` / `stable-committed` / `committed` / `rollback-failed` 映射到各自的恢复状态，其余（含缺失阶段）是 `state-unknown`；doctor 对它报 `blocked` 且不提供 repair，`recoverInterruptedPromotion` 与 canary 读取（`readCanaryJournal`，被 `observeCanary` / `verifyStartupCanary` 使用）共用同一拒绝，未知阶段、边界违规与 `rollback-failed` 都不得回滚或删除现场。改动判定时必须同时移动 doctor、启动恢复与 canary 读取，不要只改一边。
 3. **Trial 基线只捕获一次。** 恢复基线在 Trial 首次修改运行时之前同步捕获，后续步骤不重建；因此 Trial 期间的真实并发漂移必须使恢复校验失败，并在 `revert` / `promote` 路径上保留目标锁。Trial 的 `define` / `run` 失败路径不激活任何东西，会释放目标锁并丢弃记录。
 4. **晋升门禁是生产权威。** `promotionGates` 的 8 项证据缺一不可；领域 evaluator 只是 advisory + regression veto，不得用它替代门禁。
 5. **生产晋升必须显式确认。** `confirmation: true` 之外的一切路径（包括 autonomous 观察者）都只能返回"等待所有者确认"。

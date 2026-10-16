@@ -6,7 +6,7 @@
 
 它不是 DSH 的 fork，也不是"自动改代码"的黑箱。DSH 主体保持官方原样，本插件通过官方 bundle / profile 机制加载，不修改官方源码、不向官方 `node_modules` 复制文件、不 patch 官方仓库。
 
-- 包版本：**`0.2.0-rc.11`**（发布候选）
+- 包版本：**`0.2.0-rc.12`**（发布候选）
 - 支持的 DSH 宿主：**`0.2.0-rc.2`** 与 **`0.2.1-alpha.1`**（精确列表，逐个通过真实安装验收）
 - Node：`^22.19.0 || >=24.0.0`
 - 分发形态：GitHub Release 上的 tarball，不发布 npm 包
@@ -140,7 +140,7 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 - **Host-only。** 晋升的持久化代码只接受 Host half；Package 带 `client` 时直接拒绝。
 - **合作式执行 gate，不是沙箱。** 持久化源码通过 `Function(hostCode)()` 加载，只接受同步、独立返回 Cordis Plugin 的函数体；任何 `harness` token 保守拒绝。这是兼容性 gate，不是安全隔离——晋升执行需要可信审批。
 - **trust-root 守卫。** `dsh-evolution/guard` 拒绝直接修改 Cordis trust root 与绕过 Cordis 生命周期的明确不可逆操作；普通 composition、promoted plugin、guard 与 orchestrator 本身的演进不受影响。
-- **迁移与恢复不猜。** 未知或损坏的持久状态绝不静默合并、重写或删除现场；能修的项修复是幂等的，不能修的项报 `blocked` 并保留原字节。一个已记录的例外：**未识别的 journal 阶段**，doctor 报 `blocked` 且不提供 repair，但启动恢复仍会走默认 rollback 并在成功后删除 journal——见 6.1 的恢复表。
+- **迁移与恢复不猜。** 未知或损坏的持久状态绝不静默合并、重写或删除现场；能修的项修复是幂等的，不能修的项报 `blocked` 并保留原字节。晋升 journal 的阶段判定只有一份（`classifyPromotionJournal`）：未知或缺失阶段在 doctor 里是 `blocked` / `state-unknown` 且不提供 repair，启动恢复与 canary 读取也以同一判定拒绝，journal、备份、目标文件与 staging 一律保留——见 6.1 的恢复表。
 
 ## 3. 典型使用场景
 
@@ -185,13 +185,13 @@ npx @deepseek-ai/dsh web            # 官方推荐
 从 GitHub Release 下载产物与校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.11
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.11.tgz" -o dsh-evolution-0.2.0-rc.11.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.12
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.12.tgz" -o dsh-evolution-0.2.0-rc.12.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 curl -fL "$RELEASE_URL/manifest.json" -o manifest.json
 
 # 也可使用 GitHub CLI（公开仓库无需先 gh auth login）
-gh release download v0.2.0-rc.11 --repo ryukeilee/dsh-evolution \
+gh release download v0.2.0-rc.12 --repo ryukeilee/dsh-evolution \
   --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS' --pattern 'manifest.json'
 
 # 校验：必须与本次下载的 SHA256SUMS 一致
@@ -201,7 +201,7 @@ sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
 用官方 CLI 安装（同一条命令也用于升级）：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.11.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.12.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
@@ -215,7 +215,7 @@ npm run release:pack     # 生成 dist/
 npm run pack:check       # 校验分发内容、兼容声明与发布固定点
 ```
 
-> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.11.tgz --content-only` 核对。
+> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.12.tgz --content-only` 核对。
 
 ## 5. 配置
 
@@ -272,7 +272,7 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 | 边界校验通过的 journal `prepared` / `committing` | 从 journal 备份回滚（CAS 保护，不覆盖并发修改）；`--repair` 或下次启动自动完成 |
 | 边界校验通过的 journal `stable-committed` / `committed` | 只清理 journal 目录，不动 composition 与已提交插件 |
 | journal `rollback-failed` / 无法解析 / 边界拒绝 | **不自动处理**：报 `blocked`、`recoverable=false`，保留现场 |
-| journal 阶段未知（边界校验通过） | doctor 报 `blocked` / `state-unknown`、`recoverable=false`，**不提供 repair**；但启动恢复目前对未识别的阶段仍走默认 rollback 并在成功后删除 journal，所以启动前必须人工检查现场 |
+| journal 阶段未知或缺失（边界校验通过） | doctor 报 `blocked` / `state-unknown`、`recoverable=false`、**不提供 repair**；启动恢复与 canary 读取用同一判定拒绝，journal、备份、目标文件与 staging 保持不变，必须人工检查现场 |
 | event bridge 未闭合尾行 | 只丢弃不构成记录的尾部字节 |
 | domain 孤儿 staging | 仅在无活进程持有 archive 锁时清理；有活进程时报告并拒绝 |
 | domain archive 锁无主（空内容或死 pid） | 运行时自动回收；`--repair` 可显式清理；有活主的锁永不抢占 |
@@ -377,7 +377,7 @@ npm run acceptance:host -- --host 0.2.1-alpha.1 --out <evidence-path>
 | 宿主 | 宿主模块 | 结果 |
 | --- | --- | --- |
 | `0.2.0-rc.2` | cordis `4.0.4`、include `1.0.9`、loader `1.0.5` | 21/21 步通过，最终诊断 `healthy` |
-| `0.2.1-alpha.1` | cordis `4.0.5-alpha.1`、include `1.0.10-alpha.1`、loader `1.0.6-alpha.1` | 21/21 步通过，最终诊断 `healthy` |
+| `0.2.1-alpha.1` | cordis `4.0.5-alpha.2`、include `1.0.10-alpha.2`、loader `1.0.6-alpha.2` | 21/21 步通过，最终诊断 `healthy` |
 
 证据文件 `docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json` 同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：**任何被发布文件的变化都会使 `pack:check` 失败，直到两个宿主的验收重新运行**。
 

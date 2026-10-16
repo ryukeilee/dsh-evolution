@@ -42,7 +42,7 @@ runs the same command per host (`ci.yml` on `ubuntu-latest`).
 | Host | `@deepseek-ai/cordis` | `cordis-plugin-include` | `cordis-plugin-loader` | Verified |
 | --- | --- | --- | --- | --- |
 | `0.2.0-rc.2` | `4.0.4` | `1.0.9` | `1.0.5` | yes — `docs/evidence/dsh-0.2.0-rc.2.json` (full acceptance + unit suite) |
-| `0.2.1-alpha.1` | `4.0.5-alpha.1` | `1.0.10-alpha.1` | `1.0.6-alpha.1` | yes — `docs/evidence/dsh-0.2.1-alpha.1.json` (full acceptance, same key paths) |
+| `0.2.1-alpha.1` | `4.0.5-alpha.2` | `1.0.10-alpha.2` | `1.0.6-alpha.2` | yes — `docs/evidence/dsh-0.2.1-alpha.1.json` (full acceptance, same key paths; the declared range also accepts the `alpha.1` patch level) |
 
 The whole acceptance is re-run per host against a fresh `$DSH_HOME`: official
 `dsh plugin add` of the packed tarball, first boot, all 9 tool registrations,
@@ -66,7 +66,10 @@ by this harness.
 
 At verification time npm's `alpha` tag pointed at `0.2.1-alpha.1` while
 `latest`/`next` pointed at `0.2.0-rc.2`; both were accepted only after the run
-above passed.
+above passed. The official `0.2.1-alpha.1` host declares `~4.0.5-alpha.1` and
+`~1.0.10-alpha.1`, so a later `npm install` of the same host resolved the
+`alpha.2` patch level; `peerDependencies` declares both patch levels and the
+committed acceptance recorded the `alpha.2` combination.
 
 ### Interface changes between the verified hosts
 
@@ -77,6 +80,9 @@ sources and type declarations, not by inference:
 | --- | --- | --- |
 | `@deepseek-ai/cordis` | `4.0.4` -> `4.0.5-alpha.1`: **zero source diff** | none |
 | `@deepseek-ai/cordis-plugin-include` | `1.0.9` -> `1.0.10-alpha.1`: **zero source diff** | none |
+| `@deepseek-ai/cordis` | `4.0.5-alpha.1` -> `4.0.5-alpha.2`: only `package.json` changed (its version and its own dependency ranges); every shipped source file is byte-identical | none |
+| `@deepseek-ai/cordis-plugin-include` | `1.0.10-alpha.1` -> `1.0.10-alpha.2`: only `package.json` changed (its version and its own dependency ranges); every shipped source file is byte-identical | none |
+| `@deepseek-ai/cordis-plugin-loader` | `1.0.6-alpha.1` -> `1.0.6-alpha.2`: only `package.json` changed (its version and its own dependency ranges); every shipped source file is byte-identical | none |
 | `@deepseek-ai/cordis-plugin-loader` | `1.0.5` -> `1.0.6-alpha.1`: adds `Entry.moduleNamespace` (the raw import result, retained for HMR); `Entry`/`EntryGroup`/`EntryTree` members this bundle reads are unchanged | none |
 | `@deepseek-ai/dsh-tools` | `lib/types/index.d.ts` identical | none |
 | `@deepseek-ai/dsh-cordis-host-runner` | `lib/index.js` identical; `lib/typert.host.js` only registers new LLM-retry event types | none |
