@@ -465,6 +465,52 @@ test('recall: collapsing snapshots keeps the earliest firstSeen', () => {
   assert.equal(fromSources([recent, old]).duplicate.firstSeen, '2020-01-01T00:00:00.000Z');
 });
 
+test('recall: an extended-year firstSeen cannot win the earliest slot', () => {
+  // `isoOrNull` returns `toISOString()`, so an extended-year snapshot is wider
+  // than the usual 24 characters: "+010000-01-01T00:00:00.000Z" is 27. Selecting
+  // the earliest `firstSeen` by plain string sort put the leading `+` (0x2B)
+  // ahead of `2` (0x32), so the year-+010000 snapshot was reported as the
+  // earliest of a 2020/2025 pair. Every value that reaches the two selections
+  // has already passed `isoOrNull`, so both must order by parsed epoch.
+  const key = experienceKnowledgeKey({ target: TARGET });
+  const snapshot = (firstSeen, lastSeen, state) => ({
+    knowledgeKey: key,
+    dimensions: { semanticFact: TARGET, scope: TARGET },
+    state,
+    lastOutcome: 'neutral',
+    effectStats: { successCount: 0, failureCount: 0, successRate: null },
+    occurrenceCount: 4,
+    firstSeen,
+    lastSeen,
+  });
+  const present = snapshot('2020-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', 'LEARNING');
+  const wide = snapshot('+010000-01-01T00:00:00.000Z', '2025-01-01T00:00:00.000Z', 'KNOWN');
+  for (const rows of [[present, wide], [wide, present]]) {
+    const collected = collectKnowledgeExperience(rows, INPUT, {});
+    assert.equal(collected.records.length, 1, 'the collector collapses the two snapshots into one fact');
+    assert.equal(collected.records[0].firstSeen, '2020-01-01T00:00:00.000Z', 'the collector keeps the 2020 snapshot, not the wider extended-year string');
+    const result = finalizeExperienceRecall(INPUT, [collected], {});
+    assert.equal(result.duplicate.firstSeen, '2020-01-01T00:00:00.000Z', 'the reported firstSeen is the earliest by epoch');
+    assert.equal(result.duplicate.lastSeen, '2025-01-01T00:00:00.000Z', 'the newest snapshot still supplies lastSeen');
+    assert.equal(result.duplicate.state, 'KNOWN', 'the newest snapshot still supplies state');
+    assert.equal(result.duplicate.occurrences, 4, 'the shared occurrence count is unchanged');
+  }
+  const projected = (entry) => collectKnowledgeExperience([entry], INPUT, {}).records[0];
+  const fromSources = (order) => finalizeExperienceRecall(
+    INPUT,
+    order.map((entry, index) => ({ source: `s${index}`, considered: 1, scanned: 1, records: [projected(entry)] })),
+    {},
+  );
+  for (const order of [[present, wide], [wide, present]]) {
+    const result = fromSources(order);
+    assert.equal(result.counts.duplicates, 1, 'the two sources hold one collapsed fact');
+    assert.equal(result.duplicate.firstSeen, '2020-01-01T00:00:00.000Z', 'the cross-source duplicate reports the earliest snapshot by epoch');
+    assert.equal(result.duplicate.lastSeen, '2025-01-01T00:00:00.000Z');
+    assert.equal(result.duplicate.state, 'KNOWN');
+    assert.equal(result.duplicate.occurrences, 4);
+  }
+});
+
 test('recall: finalize never writes to the records a source handed over', () => {
   const collected = collectKnowledgeExperience([twoOccurrenceFailureRow()], INPUT, {});
   const first = finalizeExperienceRecall(INPUT, [collected], {});
