@@ -129,7 +129,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 8. **Trial 期间持续存在的外部漂移仍拒绝恢复。** rc.5 在 Trial 首次修改运行时前同步捕获基线，解决 propose→trial 正常宿主加载的误报；不会重建基线来接纳 Trial 期间的变化。签名仍是前后可观察清单比较，不能记录已自行恢复的瞬态漂移，也不能证明任意合作式代码或 disposer 的全部外部效果。
 9. **事件签名密钥 `event-bridge.key` 无轮换/吊销流程。** 它只在该数据根首次创建，禁用与卸载都不会删除。
 10. **未做的发布动作：** npm 发布、代码签名 / provenance（SLSA）、SBOM。Code scanning 现已启用，但本 RC 仍不提供供应链签名。
-11. **`0.2.1-alpha.1` 与 `0.2.1-rc.2` 的 npm dist-tag 会移动。** 验收记录的是精确版本号。本轮验证时 `alpha` 指向 `0.2.1-alpha.5`、`latest` 指向 `0.2.0-rc.2`、`next` 指向 `0.2.1-rc.2`；tag 移动后本仓库声明的仍是那三个精确版本号。
+11. **`0.2.1-alpha.1` 与 `0.2.1-rc.2` 的 npm dist-tag 会移动。** 验收记录的是精确版本号。这里的日期取自验收证据 `docs/evidence/dsh-0.2.1-rc.2.json` 的 `startedAt`（2026-10-17）；该日期查询 npm registry 得到 `alpha` 指向 `0.2.1-alpha.5`、`latest` 指向 `0.2.0-rc.2`、`next` 指向 `0.2.1-rc.2`（**这些 tag 取值不在验收证据中**，验收脚本不查询 dist-tag，只是该日期对 registry 的只读观测快照）；tag 移动后本仓库声明的仍是那三个精确版本号。
 12. **指标 ID 不是授权凭证。** 兜底 ID 改为 `crypto.randomUUID()`，同一记录只生成一次，显式 ID 的优先级不变；调用方仍可提供 ID，不能把可猜测/不可猜测的 ID 当作权限控制。
 13. **file 后端的失败记忆仍是 last-writer-wins，`save()` 也不做 fsync。** 同一数据根下两个 host 实例同时执行 `archive()` 时，后写者覆盖先写者的整份快照（隔离实验中 100 条记录只剩 50 条）；断电时最后一次 `record()` 也可能丢失。`openDomainStorage` 在同一数据根上的跨进程锁保护的是领域归档事务，不是这个文件。它是有界、advisory 的失败记忆（`promotionGates` 仍是生产权威），因此本次不引入锁或 fsync，而是记录为已知边界；单实例使用不触发。另外，从旧数据恢复且缺少 `signature` 的记录只能按整条内容去重，不参与后续的模式匹配。
 

@@ -74,8 +74,12 @@ above passed. The official `0.2.1-alpha.1` host declares `~4.0.5-alpha.1` and
 `alpha.2` patch level; `peerDependencies` declares both patch levels and the
 committed acceptance recorded the `alpha.2` combination.
 
-`0.2.1-rc.2` is likewise an exact declared version. At verification time npm's
-dist-tags were `latest: 0.2.0-rc.2`, `next: 0.2.1-rc.2`, `alpha: 0.2.1-alpha.5`;
+`0.2.1-rc.2` is likewise an exact declared version. The date here is this
+host's acceptance evidence's own `startedAt` (2026-10-17); the tag values are
+**not** part of any evidence file — the acceptance harness never queries
+dist-tags — but a separate read-only observation of the npm registry made for
+that date. On that date npm's dist-tags were `latest: 0.2.0-rc.2`,
+`next: 0.2.1-rc.2`, `alpha: 0.2.1-alpha.5`;
 there is no `rc` tag, so `0.2.1-rc.2` was resolved by exact version number and
 the acceptance below is the only thing that accepted it. It depends on the
 **stable** `@deepseek-ai/cordis` `4.0.5`,
@@ -111,9 +115,16 @@ sources and type declarations, not by inference:
 | `@deepseek-ai/dsh-tools` | removed `lib/invariant.js`, added `lib/ptc-calls.js`, and `PtcDispatchEventData` gained an optional `meta?: JsonValue`; `ToolsService.schemas()` / `get()` are unchanged | none |
 | `@deepseek-ai/dsh` (the host itself) | `profile-boot` semantics changed: `initializeProfileFromDefault` now **replaces** an existing profile (staging directory + atomic rename) instead of only initializing a missing one, and `prepareProfile`'s `fromDefaultProfile` became a pre-start replacement | none on the surfaces this bundle reads; the acceptance runs the ordinary CLI install/upgrade/rollback paths (it never passes `--from-default-profile`), so the upstream profile-replacement branch itself is **not** covered by this repository's acceptance and is not on this bundle's dependency surface |
 
-The delta above is additive or comment-level, so no compatibility adapter was
-added for it either: every surface listed at the top of this file still exists
-with the same shape on `0.2.1-rc.2`.
+No compatibility adapter was added for the `0.2.1-alpha.1` -> `0.2.1-rc.2`
+delta either, and the claim is narrower than "the whole table is additive":
+**every surface this bundle actually reads** is unchanged by it (zero source
+diff, purely additive, or comment-level only), so every interface listed at the
+top of this file still exists with the same shape on `0.2.1-rc.2`. The two
+remaining rows of that table are not on this bundle's dependency surface, so
+they need no adapter for the same reason: `@deepseek-ai/dsh-tools` removed its
+own `lib/invariant.js` (this bundle never imports it), and the host's
+`--from-default-profile` replacement semantics are never exercised by the CLI
+install/upgrade/rollback paths the acceptance runs.
 
 No breaking change was found, so no compatibility adapter was added: this bundle
 still modifies no DSH code, keeps no host fork, and hides no downgrade. The
