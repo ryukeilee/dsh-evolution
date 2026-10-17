@@ -253,7 +253,7 @@ test('the declared support matrix is exactly the verified host versions', () => 
   // Every version in the declared range is verified by a real install run; see
   // COMPATIBILITY.md. This test keeps the declaration and the code in step.
   const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
-  assert.equal(manifest.peerDependencies['@deepseek-ai/dsh'], '0.2.0-rc.2 || 0.2.1-alpha.1');
+  assert.equal(manifest.peerDependencies['@deepseek-ai/dsh'], '0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2');
   assert.deepEqual(
     [...SUPPORTED_DSH_VERSIONS],
     manifest.peerDependencies['@deepseek-ai/dsh'].split('||').map((range) => range.trim()),
@@ -278,9 +278,10 @@ test('unsupported host version is blocked with supported-range evidence', async 
   assert.equal(levelOf(report, 'host.version'), 'blocked');
   assert.equal(report.status, 'blocked');
   assert.equal(exitCodeFor(report), 2);
-  assert.match(checkOf(report, 'host.version').evidence.supported, /^0\.2\.0-rc\.2 \|\| 0\.2\.1-alpha\.1$/);
+  assert.match(checkOf(report, 'host.version').evidence.supported, /^0\.2\.0-rc\.2 \|\| 0\.2\.1-alpha\.1 \|\| 0\.2\.1-rc\.2$/);
   assert.match(checkOf(report, 'host.version').remediation, /0\.2\.0-rc\.2/);
   assert.match(checkOf(report, 'host.version').remediation, /0\.2\.1-alpha\.1/);
+  assert.match(checkOf(report, 'host.version').remediation, /0\.2\.1-rc\.2/);
 });
 
 test('dependencies on non-public runtime surfaces are degraded, never silently ok', async () => {

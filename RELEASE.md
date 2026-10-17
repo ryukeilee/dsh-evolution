@@ -2,13 +2,13 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前本地候选版本：`0.2.0-rc.12`，在 `0.2.0-rc.11` 之上修复晋升 journal 阶段判定的恢复安全缺陷：doctor、启动恢复与 canary 读取此前各有一份判定，未知或缺失阶段在 doctor 里报 `blocked` 且不提供 repair，而 `recoverInterruptedPromotion` 会走默认 rollback 并在成功后删除 journal 与备份，`readCanaryJournal` 还会把它当作“没有 journal”并让 `observeCanary` 合成新 journal 覆盖或删除现场。现在三者共用 `classifyPromotionJournal` 与 `assertJournalRecoverable`（具体见 `CHANGELOG.md` 的 `0.2.0-rc.12` 条目）：未知/缺失阶段、边界违规与 `rollback-failed` 一律拒绝并逐字节保留现场，合法阶段的恢复语义、CAS、跨进程锁、Cordis 生命周期与 promotion 授权边界未改；同时按上游补丁漂移（cordis `4.0.5-alpha.2`、include `1.0.10-alpha.2`，审计确认仅 `package.json` 变化）扩展这两个补丁级别的 `peerDependencies`，并以完整真实验收确认。`guard` / `registration` / `promotion-include` / `archive-stage` 与领域模块无源码改动；同一候选还包含 `lib/experience-recall.js` 的检索排序与只读加固（见 `CHANGELOG.md` 的 `0.2.0-rc.12` 条目）。源码、固定产物和两个官方宿主验收必须对应同一内容及字节。本轮未创建 tag、未进行外部发布，固定产物、两个官方宿主验收证据与历史锚点见 `release/manifest.json` 与 `docs/evidence/`。最后公开的 `v0.2.0-rc.10` 的发布状态、发布后双宿主证据与历史资产校验见 `docs/evidence/rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
+当前本地候选版本：`0.2.0-rc.13`，在 `0.2.0-rc.12` 之上把宿主支持扩到官方 DSH `0.2.1-rc.2`：逐一解包比对确认 `0.2.1-alpha.1 → 0.2.1-rc.2` 的全部上游差分要么是**零源码差异**（cordis `4.0.5-alpha.2 → 4.0.5`、include `1.0.10-alpha.2 → 1.0.10`：只有 `package.json` 的版本与自身依赖范围变）、要么是**注释级**（storage-domain 两处 JSDoc）、要么是**纯增量或重命名**（dsh-tools 删 `lib/invariant.js`、新增 `lib/ptc-calls.js`，`PtcDispatchEventData` 新增可选 `meta?`；dsh-cordis-host-runner 只重命名内部品牌函数，导出名与签名不变），宿主本体的 `profile-boot` 则从“初始化缺失 profile”改为“启动前替换已有 profile”。本插件实际读取的每一个宿主面都落在零差异或纯增量包上，因此 **`lib/` 下没有任何代码修改**：只改了 `peerDependencies` 的版本声明（`@deepseek-ai/dsh` / `dsh-cordis-host-runner` / `dsh-tools` 追加 `0.2.1-rc.2`，include 追加精确 `1.0.10`；`@deepseek-ai/cordis` 的 `^4.0.1` 已覆盖 `4.0.5`、`js-yaml` 的 `^4.2.0` 已覆盖 `4.3.2`），并把 CI 矩阵、文档与 `CHANGELOG.md` 更新到三个宿主。`promotionGates`、晋升确认逻辑、Trial 基线、journal 阶段判定、跨进程锁与授权边界一律未改。源码、固定产物和三个官方宿主验收必须对应同一内容及字节。本轮未创建 tag、未进行外部发布，固定产物、三个官方宿主验收证据与历史锚点见 `release/manifest.json` 与 `docs/evidence/`。最后公开的 `v0.2.0-rc.10` 的发布状态、发布后双宿主证据与历史资产校验见 `docs/evidence/rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.12.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.13.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
@@ -29,14 +29,14 @@
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.12，仓库内容）
+# 当前本地候选（0.2.0-rc.13，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
-# 尚未创建 v0.2.0-rc.12 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
+# 尚未创建 v0.2.0-rc.13 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.12，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0-rc.13，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -61,6 +61,7 @@ node --version         # 需要 ^22.19.0 || >=24.0.0
 ```sh
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 ```
 
 脚本是自包含的：它在一个临时目录里用 pnpm 安装指定版本的官方 `@deepseek-ai/dsh`，在全新的 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步：
@@ -79,8 +80,9 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 
 - `docs/evidence/dsh-0.2.0-rc.2.json`
 - `docs/evidence/dsh-0.2.1-alpha.1.json`
+- `docs/evidence/dsh-0.2.1-rc.2.json`
 
-证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节），`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：任何被发布文件的变化都会使 `pack:check` 失败，直到两个宿主的验收重新运行。
+证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节），`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：任何被发布文件的变化都会使 `pack:check` 失败，直到三个宿主的验收重新运行。
 
 ### 4.1 已执行的验收记录
 
@@ -88,17 +90,18 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 | --- | --- | --- |
 | `0.2.0-rc.2` | cordis `4.0.4`、include `1.0.9`、loader `1.0.5` | 21/21 步通过；最终诊断 `healthy` |
 | `0.2.1-alpha.1` | cordis `4.0.5-alpha.2`、include `1.0.10-alpha.2`、loader `1.0.6-alpha.2` | 21/21 步通过；最终诊断 `healthy` |
+| `0.2.1-rc.2` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过；最终诊断 `healthy` |
 
 首次 CLI 诊断为 `degraded`（`data.root` 尚未初始化）属于预期：数据根在首次运行时创建，最终诊断恢复 `healthy`。
 
-`docs/evidence/dsh-<host>.json` 是**固定点证据**：`pack:check` 与 `test/release-pin.test.mjs` 只核对这两个文件记录的 `contentSha256` / `tarballSha256` 是否等于当前固定内容与固定字节。`docs/evidence/` 下另有一些按轮次命名的验收记录（`cold-archive-write-path-*`、`retention-plan-*`、`write-path-reconcile-identity-*`）；它们是各轮开发中对**中间候选**运行的真实验收，其 `packageVersion` 是当时的版本号、内容摘要不等于任何固定点，因此**不构成固定点证据**，也不被任何校验引用。`0.2.0-rc.12` 的权威验收只有上面两个文件。
+`docs/evidence/dsh-<host>.json` 是**固定点证据**：`pack:check` 与 `test/release-pin.test.mjs` 只核对这三个文件记录的 `contentSha256` / `tarballSha256` 是否等于当前固定内容与固定字节。`docs/evidence/` 下另有一些按轮次命名的验收记录（`cold-archive-write-path-*`、`retention-plan-*`、`write-path-reconcile-identity-*`）；它们是各轮开发中对**中间候选**运行的真实验收，其 `packageVersion` 是当时的版本号、内容摘要不等于任何固定点，因此**不构成固定点证据**，也不被任何校验引用。`0.2.0-rc.13` 的权威验收只有上面三个文件。
 
 ## 5. CI 与发布链
 
 - `.github/workflows/ci.yml`
   - `test`：Node `22.19.0` 与 `24.x`，`npm ci --ignore-scripts`，`npm test`
   - `package`：`pack:check`、对固定产物的 `release:verify`、本机重建的 `--content-only` 校验、从**发布 tarball** 解包后在没有任何 `node_modules` 的情况下启动 doctor、`sha256sum --check`
-  - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1`，用真实官方宿主执行第 4 节的全部步骤，并断言证据的内容摘要等于发布固定点
+  - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1` / `0.2.1-rc.2`，用真实官方宿主执行第 4 节的全部步骤，并断言证据的内容摘要等于发布固定点
 - `.github/workflows/codeql.yml`：对 `javascript-typescript` 在 `main`、pull request 与每周运行 CodeQL，并把 SARIF 上传到 GitHub code scanning（job 权限仅 `security-events: write` + 只读内容）
 - `.github/workflows/release.yml`：tag push 或 `workflow_dispatch` 时
   1. 校验 tag 形如 `v*`，并核对 tag 版本、checkout 到的 commit、`release/manifest.json` 的 `sourceCommit`（新版本必须有，必须是 tag 历史中的祖先，并从 git 对象计算其实际包内容摘要）与工作树内容摘要（`scripts/release/verify-provenance.mjs`）
@@ -126,7 +129,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 8. **Trial 期间持续存在的外部漂移仍拒绝恢复。** rc.5 在 Trial 首次修改运行时前同步捕获基线，解决 propose→trial 正常宿主加载的误报；不会重建基线来接纳 Trial 期间的变化。签名仍是前后可观察清单比较，不能记录已自行恢复的瞬态漂移，也不能证明任意合作式代码或 disposer 的全部外部效果。
 9. **事件签名密钥 `event-bridge.key` 无轮换/吊销流程。** 它只在该数据根首次创建，禁用与卸载都不会删除。
 10. **未做的发布动作：** npm 发布、代码签名 / provenance（SLSA）、SBOM。Code scanning 现已启用，但本 RC 仍不提供供应链签名。
-11. **`0.2.1-alpha.1` 的 npm dist-tag 会移动。** 验收记录的是该精确版本号；上游把 `alpha` 指向新版本后，本仓库声明的仍是 `0.2.1-alpha.1`。
+11. **`0.2.1-alpha.1` 与 `0.2.1-rc.2` 的 npm dist-tag 会移动。** 验收记录的是精确版本号。本轮验证时 `alpha` 指向 `0.2.1-alpha.5`、`latest` 指向 `0.2.0-rc.2`、`next` 指向 `0.2.1-rc.2`；tag 移动后本仓库声明的仍是那三个精确版本号。
 12. **指标 ID 不是授权凭证。** 兜底 ID 改为 `crypto.randomUUID()`，同一记录只生成一次，显式 ID 的优先级不变；调用方仍可提供 ID，不能把可猜测/不可猜测的 ID 当作权限控制。
 13. **file 后端的失败记忆仍是 last-writer-wins，`save()` 也不做 fsync。** 同一数据根下两个 host 实例同时执行 `archive()` 时，后写者覆盖先写者的整份快照（隔离实验中 100 条记录只剩 50 条）；断电时最后一次 `record()` 也可能丢失。`openDomainStorage` 在同一数据根上的跨进程锁保护的是领域归档事务，不是这个文件。它是有界、advisory 的失败记忆（`promotionGates` 仍是生产权威），因此本次不引入锁或 fsync，而是记录为已知边界；单实例使用不触发。另外，从旧数据恢复且缺少 `signature` 的记录只能按整条内容去重，不参与后续的模式匹配。
 

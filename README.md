@@ -6,8 +6,8 @@
 
 它不是 DSH 的 fork，也不是"自动改代码"的黑箱。DSH 主体保持官方原样，本插件通过官方 bundle / profile 机制加载，不修改官方源码、不向官方 `node_modules` 复制文件、不 patch 官方仓库。
 
-- 包版本：**`0.2.0-rc.12`**（发布候选）
-- 支持的 DSH 宿主：**`0.2.0-rc.2`** 与 **`0.2.1-alpha.1`**（精确列表，逐个通过真实安装验收）
+- 包版本：**`0.2.0-rc.13`**（发布候选）
+- 支持的 DSH 宿主：**`0.2.0-rc.2`**、**`0.2.1-alpha.1`** 与 **`0.2.1-rc.2`**（精确列表，逐个通过真实安装验收）
 - Node：`^22.19.0 || >=24.0.0`
 - 分发形态：GitHub Release 上的 tarball，不发布 npm 包
 
@@ -185,13 +185,13 @@ npx @deepseek-ai/dsh web            # 官方推荐
 从 GitHub Release 下载产物与校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.12
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.12.tgz" -o dsh-evolution-0.2.0-rc.12.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.13
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.13.tgz" -o dsh-evolution-0.2.0-rc.13.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 curl -fL "$RELEASE_URL/manifest.json" -o manifest.json
 
 # 也可使用 GitHub CLI（公开仓库无需先 gh auth login）
-gh release download v0.2.0-rc.12 --repo ryukeilee/dsh-evolution \
+gh release download v0.2.0-rc.13 --repo ryukeilee/dsh-evolution \
   --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS' --pattern 'manifest.json'
 
 # 校验：必须与本次下载的 SHA256SUMS 一致
@@ -201,7 +201,7 @@ sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
 用官方 CLI 安装（同一条命令也用于升级）：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.12.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.13.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
@@ -215,7 +215,7 @@ npm run release:pack     # 生成 dist/
 npm run pack:check       # 校验分发内容、兼容声明与发布固定点
 ```
 
-> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.12.tgz --content-only` 核对。
+> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.13.tgz --content-only` 核对。
 
 ## 5. 配置
 
@@ -343,7 +343,7 @@ dsh plugin --profile web remove dsh-evolution
 9. **指标 ID 不是授权凭证。** 兜底 ID 使用 `crypto.randomUUID()`，同一记录只生成一次；调用方仍可提供 ID，不能把可猜测/不可猜测的 ID 当作权限控制。
 10. **不提供供应链签名。** 未做 npm 发布、代码签名 / provenance（SLSA）或 SBOM；已启用 GitHub Code Scanning。
 11. **宿主版本只在验收后扩展。** 列表之外的宿主由 `host.version` 报 `blocked`，不用宽松范围绕过诊断的阻断。
-12. **`0.2.1-alpha.1` 的 npm dist-tag 会移动。** 验收记录的是该精确版本号；上游把 `alpha` 指向新版本后，本仓库声明的仍是 `0.2.1-alpha.1`。
+12. **`0.2.1-alpha.1` 与 `0.2.1-rc.2` 的 npm dist-tag 会移动。** 验收记录的是精确版本号。2026-02 验证时 `alpha` 指向 `0.2.1-alpha.5`、`latest` 指向 `0.2.0-rc.2`、`next` 指向 `0.2.1-rc.2`；这些 tag 后续都会移动，本仓库声明的仍是那三个精确版本号。
 
 ## 8. 验证与证据
 
@@ -358,6 +358,7 @@ npm run release:verify       # 固定产物：字节 sha256 + 内容摘要 + 条
 # 真实隔离宿主验收（自包含：自己安装官方 DSH，使用独立 DSH_HOME）
 npm run acceptance:host -- --host 0.2.0-rc.2 --out <evidence-path>
 npm run acceptance:host -- --host 0.2.1-alpha.1 --out <evidence-path>
+npm run acceptance:host -- --host 0.2.1-rc.2 --out <evidence-path>
 ```
 
 宿主验收脚本在临时目录里安装指定版本的官方 `@deepseek-ai/dsh`，在全新 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步，覆盖：
@@ -378,12 +379,13 @@ npm run acceptance:host -- --host 0.2.1-alpha.1 --out <evidence-path>
 | --- | --- | --- |
 | `0.2.0-rc.2` | cordis `4.0.4`、include `1.0.9`、loader `1.0.5` | 21/21 步通过，最终诊断 `healthy` |
 | `0.2.1-alpha.1` | cordis `4.0.5-alpha.2`、include `1.0.10-alpha.2`、loader `1.0.6-alpha.2` | 21/21 步通过，最终诊断 `healthy` |
+| `0.2.1-rc.2` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过，最终诊断 `healthy` |
 
-证据文件 `docs/evidence/dsh-0.2.0-rc.2.json` 与 `docs/evidence/dsh-0.2.1-alpha.1.json` 同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：**任何被发布文件的变化都会使 `pack:check` 失败，直到两个宿主的验收重新运行**。
+证据文件 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json` 与 `docs/evidence/dsh-0.2.1-rc.2.json` 同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：**任何被发布文件的变化都会使 `pack:check` 失败，直到三个宿主的验收重新运行**。
 
 验收断言的"数据保留"范围需要说清楚：生命周期、升级与回滚步骤比较的是 `evolution-memory.json` 的 SHA256 并确认 `event-bridge.key` 仍存在，**不是对整个数据根逐文件比较**。
 
-发布产物、复现步骤与**尚未消除的发布风险**见 `RELEASE.md`；发布固定点见 `release/manifest.json`；CI 见 `.github/workflows/ci.yml`（单测矩阵、可复现打包与内容白名单、两个宿主的真实安装验收）。
+发布产物、复现步骤与**尚未消除的发布风险**见 `RELEASE.md`；发布固定点见 `release/manifest.json`；CI 见 `.github/workflows/ci.yml`（单测矩阵、可复现打包与内容白名单、三个宿主的真实安装验收）。
 
 ## 9. 相关文档
 

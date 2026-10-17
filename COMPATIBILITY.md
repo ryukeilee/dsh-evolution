@@ -9,7 +9,7 @@ none of them is hidden behind an implicit patch.
 
 | Component | Range |
 | --- | --- |
-| DSH | `0.2.0-rc.2` or `0.2.1-alpha.1` (exact alternatives, enforced by `peerDependencies`) |
+| DSH | `0.2.0-rc.2`, `0.2.1-alpha.1` or `0.2.1-rc.2` (exact alternatives, enforced by `peerDependencies`) |
 | Node | `^22.19.0 || >=24.0.0` |
 | Bundle format | `dsh.bundle.patch` + profile `dsh.profile.bundles` |
 
@@ -26,15 +26,17 @@ alongside it:
 npm run release:pack
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 ```
 
-Evidence: `docs/evidence/dsh-0.2.0-rc.2.json` and
-`docs/evidence/dsh-0.2.1-alpha.1.json` (host scratch paths redacted). Each file
+Evidence: `docs/evidence/dsh-0.2.0-rc.2.json`,
+`docs/evidence/dsh-0.2.1-alpha.1.json` and
+`docs/evidence/dsh-0.2.1-rc.2.json` (host scratch paths redacted). Each file
 records the `contentSha256` of the package it installed and the `sha256` of the
 bytes it installed; both are checked against the committed pin in
 `release/manifest.json` by `npm run pack:check` and
 `test/release-pin.test.mjs`. The harness is self-contained: it installs the
-official host release itself, so a fresh checkout can re-derive both files. CI
+official host release itself, so a fresh checkout can re-derive every file. CI
 runs the same command per host (`ci.yml` on `ubuntu-latest`).
 
 ### Verified compatibility matrix
@@ -43,6 +45,7 @@ runs the same command per host (`ci.yml` on `ubuntu-latest`).
 | --- | --- | --- | --- | --- |
 | `0.2.0-rc.2` | `4.0.4` | `1.0.9` | `1.0.5` | yes — `docs/evidence/dsh-0.2.0-rc.2.json` (full acceptance + unit suite) |
 | `0.2.1-alpha.1` | `4.0.5-alpha.2` | `1.0.10-alpha.2` | `1.0.6-alpha.2` | yes — `docs/evidence/dsh-0.2.1-alpha.1.json` (full acceptance, same key paths; the declared range also accepts the `alpha.1` patch level) |
+| `0.2.1-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.1-rc.2.json` (full acceptance + unit suite) |
 
 The whole acceptance is re-run per host against a fresh `$DSH_HOME`: official
 `dsh plugin add` of the packed tarball, first boot, all 9 tool registrations,
@@ -71,6 +74,16 @@ above passed. The official `0.2.1-alpha.1` host declares `~4.0.5-alpha.1` and
 `alpha.2` patch level; `peerDependencies` declares both patch levels and the
 committed acceptance recorded the `alpha.2` combination.
 
+`0.2.1-rc.2` is likewise an exact declared version. At verification time npm's
+dist-tags were `latest: 0.2.0-rc.2`, `next: 0.2.1-rc.2`, `alpha: 0.2.1-alpha.5`;
+there is no `rc` tag, so `0.2.1-rc.2` was resolved by exact version number and
+the acceptance below is the only thing that accepted it. It depends on the
+**stable** `@deepseek-ai/cordis` `4.0.5`,
+`@deepseek-ai/cordis-plugin-include` `1.0.10` and
+`@deepseek-ai/cordis-plugin-loader` `1.0.6`. The already-declared cordis range
+`^4.0.1` covers `4.0.5`, and `1.0.10` was added as an explicit alternative
+because `1.0.9` is an exact match that does not cover `1.0.10`.
+
 ### Interface changes between the verified hosts
 
 Measured by unpacking both releases from the registry and diffing the shipped
@@ -87,6 +100,20 @@ sources and type declarations, not by inference:
 | `@deepseek-ai/dsh-tools` | `lib/types/index.d.ts` identical | none |
 | `@deepseek-ai/dsh-cordis-host-runner` | `lib/index.js` identical; `lib/typert.host.js` only registers new LLM-retry event types | none |
 | `@deepseek-ai/dsh-storage-domain` | one JSDoc sentence changed | none |
+
+| Package | `0.2.1-alpha.1` -> `0.2.1-rc.2` | Effect on this bundle |
+| --- | --- | --- |
+| `@deepseek-ai/cordis` | `4.0.5-alpha.2` -> `4.0.5`: **zero source diff**; only `package.json` changed (its own version and its peer ranges `include ~1.0.10`, `loader ~1.0.6`, `cosmokit ~1.8.6`) | none |
+| `@deepseek-ai/cordis-plugin-include` | `1.0.10-alpha.2` -> `1.0.10`: `src/index.ts` and `lib/index.js` are byte-identical to the previous release; only `package.json` changed | none |
+| `@deepseek-ai/dsh-storage-domain` | `0.2.0-rc.2` -> `0.2.1-rc.2`: one JSDoc sentence changed in each of `lib/index.js` and `types/index.d.ts` | none |
+| `@deepseek-ai/dsh-storage-json` | `0.2.0-rc.2` -> `0.2.1-rc.2`: `lib/` is byte-identical | none |
+| `@deepseek-ai/dsh-cordis-host-runner` | internal brand helpers renamed (`CordisDynamicPluginId` -> `brandCordisDynamicPluginId` and siblings); exported names and signatures are unchanged | none |
+| `@deepseek-ai/dsh-tools` | removed `lib/invariant.js`, added `lib/ptc-calls.js`, and `PtcDispatchEventData` gained an optional `meta?: JsonValue`; `ToolsService.schemas()` / `get()` are unchanged | none |
+| `@deepseek-ai/dsh` (the host itself) | `profile-boot` semantics changed: `initializeProfileFromDefault` now **replaces** an existing profile (staging directory + atomic rename) instead of only initializing a missing one, and `prepareProfile`'s `fromDefaultProfile` became a pre-start replacement | none on the surfaces this bundle reads; the install/upgrade/rollback steps of the acceptance cover the CLI paths |
+
+The delta above is additive or comment-level, so no compatibility adapter was
+added for it either: every surface listed at the top of this file still exists
+with the same shape on `0.2.1-rc.2`.
 
 No breaking change was found, so no compatibility adapter was added: this bundle
 still modifies no DSH code, keeps no host fork, and hides no downgrade. The
