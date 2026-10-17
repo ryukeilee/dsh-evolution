@@ -297,7 +297,16 @@ async function main() {
   if (versionCheck?.evidence?.verified !== true) throw new Error(`host.version did not report the host as verified: ${JSON.stringify(versionCheck?.evidence)}`);
   const moduleCheck = doctorCheck('host.modules');
   if (moduleCheck?.evidence?.modules) {
-    evidence.hostModules = Object.fromEntries(moduleCheck.evidence.modules.map((module) => [module.name, module.version]));
+    // Merge, never replace: the doctor's HOST_MODULES list has no
+    // `@deepseek-ai/cordis-plugin-loader`, which this bundle reads as a
+    // transitive dependency of the official Include adapter, so overwriting here
+    // would silently drop it from the evidence. The doctor stays authoritative
+    // for every module it does report; modules it does not report keep the
+    // version read straight from the installed runtime above.
+    evidence.hostModules = {
+      ...evidence.hostModules,
+      ...Object.fromEntries(moduleCheck.evidence.modules.map((module) => [module.name, module.version])),
+    };
   }
   evidence.doctor = {
     status: report.status,

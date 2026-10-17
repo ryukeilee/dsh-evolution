@@ -109,7 +109,7 @@ sources and type declarations, not by inference:
 | `@deepseek-ai/dsh-storage-json` | `0.2.0-rc.2` -> `0.2.1-rc.2`: `lib/` is byte-identical | none |
 | `@deepseek-ai/dsh-cordis-host-runner` | internal brand helpers renamed (`CordisDynamicPluginId` -> `brandCordisDynamicPluginId` and siblings); exported names and signatures are unchanged | none |
 | `@deepseek-ai/dsh-tools` | removed `lib/invariant.js`, added `lib/ptc-calls.js`, and `PtcDispatchEventData` gained an optional `meta?: JsonValue`; `ToolsService.schemas()` / `get()` are unchanged | none |
-| `@deepseek-ai/dsh` (the host itself) | `profile-boot` semantics changed: `initializeProfileFromDefault` now **replaces** an existing profile (staging directory + atomic rename) instead of only initializing a missing one, and `prepareProfile`'s `fromDefaultProfile` became a pre-start replacement | none on the surfaces this bundle reads; the install/upgrade/rollback steps of the acceptance cover the CLI paths |
+| `@deepseek-ai/dsh` (the host itself) | `profile-boot` semantics changed: `initializeProfileFromDefault` now **replaces** an existing profile (staging directory + atomic rename) instead of only initializing a missing one, and `prepareProfile`'s `fromDefaultProfile` became a pre-start replacement | none on the surfaces this bundle reads; the acceptance runs the ordinary CLI install/upgrade/rollback paths (it never passes `--from-default-profile`), so the upstream profile-replacement branch itself is **not** covered by this repository's acceptance and is not on this bundle's dependency surface |
 
 The delta above is additive or comment-level, so no compatibility adapter was
 added for it either: every surface listed at the top of this file still exists
