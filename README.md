@@ -343,7 +343,7 @@ dsh plugin --profile web remove dsh-evolution
 9. **指标 ID 不是授权凭证。** 兜底 ID 使用 `crypto.randomUUID()`，同一记录只生成一次；调用方仍可提供 ID，不能把可猜测/不可猜测的 ID 当作权限控制。
 10. **不提供供应链签名。** 未做 npm 发布、代码签名 / provenance（SLSA）或 SBOM；已启用 GitHub Code Scanning。
 11. **宿主版本只在验收后扩展。** 列表之外的宿主由 `host.version` 报 `blocked`，不用宽松范围绕过诊断的阻断。
-12. **`0.2.1-alpha.1` 与 `0.2.1-rc.2` 的 npm dist-tag 会移动。** 验收记录的是精确版本号。2026-02 验证时 `alpha` 指向 `0.2.1-alpha.5`、`latest` 指向 `0.2.0-rc.2`、`next` 指向 `0.2.1-rc.2`；这些 tag 后续都会移动，本仓库声明的仍是那三个精确版本号。
+12. **`0.2.1-alpha.1` 与 `0.2.1-rc.2` 的 npm dist-tag 会移动。** 验收记录的是精确版本号。`docs/evidence/dsh-0.2.1-rc.2.json` 这一次验收（2026-10-17）时 `alpha` 指向 `0.2.1-alpha.5`、`latest` 指向 `0.2.0-rc.2`、`next` 指向 `0.2.1-rc.2`，这只是该时间点的快照；这些 tag 后续都会移动，本仓库声明的仍是那三个精确版本号。
 
 ## 8. 验证与证据
 
