@@ -14,9 +14,9 @@ import { fileURLToPath } from 'node:url';
 import {
   collectDiagnostics, runDiagnostics, exitCodeFor, applyRepairs,
   resolveEvolutionPaths, satisfiesRange, inspectJsonLines, checkJournalBoundary,
-  parseComposedProfile, EVOLUTION_TOOL_NAMES, SUPPORTED_DSH_VERSIONS,
+  parseComposedProfile, composedEventBridgeWriter, EVOLUTION_TOOL_NAMES, SUPPORTED_DSH_VERSIONS,
 } from '../lib/diagnostics.js';
-import { signEventBridgeEnvelope } from '../lib/orchestrator.js';
+import { EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, signEventBridgeEnvelope, verifyEventBridgeEnvelope } from '../lib/orchestrator.js';
 import { evolutionDomainSpec } from '../lib/domain-storage.js';
 import { EVOLUTION_TOOLS } from '../lib/registration.js';
 
@@ -81,6 +81,33 @@ function writePromotedPlugin(paths, durableId) {
 function writeComposition(paths, rows) {
   const yaml = rows.map((row) => `- id: ${row.id}\n  name: ${row.name}\n`).join('');
   fs.writeFileSync(paths.compositionPath, yaml);
+}
+
+/**
+ * A `--dump-config` stdout carrying both bundle entries. `patchTitle` splits it
+ * into the two sections the official CLI emits when a profile patch targets the
+ * bundle (`# == dsh-evolution, patched by <path>` then `# == dsh-evolution`).
+ */
+function composedDump({ writer = null, patchTitle = null, includeOrchestrator = true, includeGuard = true } = {}) {
+  const orchestrator = [];
+  if (includeOrchestrator) {
+    orchestrator.push('- id: evolution-orchestrator', '  name: dsh-evolution');
+    if (writer !== null) orchestrator.push('  config:', `    eventBridgeWriter: ${writer}`);
+  }
+  const guard = includeGuard ? ['- id: evolution-trust-root-guard', '  name: dsh-evolution/guard', '  inject:', '    - tools'] : [];
+  const lines = patchTitle
+    ? [`# == ${patchTitle}`, ...orchestrator, '# == dsh-evolution', ...guard]
+    : ['# == dsh-evolution', ...orchestrator, ...guard];
+  lines.push('');
+  return lines.join('\n');
+}
+
+/**
+ * A `--dump-config` stdout whose `evolution-orchestrator` entry is followed by
+ * exactly these body lines, at the two-space indent the official CLI emits.
+ */
+function orchestratorDump(bodyLines) {
+  return ['# == dsh-evolution', '- id: evolution-orchestrator', '  name: dsh-evolution', ...bodyLines, '- id: evolution-trust-root-guard', '  name: dsh-evolution/guard', ''].join('\n');
 }
 
 function writeJournal(paths, { phase, records = [], experimentId = 'exp-test-1', canary = null, stateDir = paths.promotionStateDir, stageDir = null }) {
@@ -250,7 +277,7 @@ test('the tool manifest cannot drift from the registered surface', () => {
 });
 
 test('the declared support matrix is exactly the verified host versions', () => {
-  // Every version in the declared range is verified by a real install run; see
+  // Every exact declared alternative is verified by a real install run; see
   // COMPATIBILITY.md. This test keeps the declaration and the code in step.
   const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
   assert.equal(manifest.peerDependencies['@deepseek-ai/dsh'], '0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2');
@@ -282,6 +309,24 @@ test('unsupported host version is blocked with supported-range evidence', async 
   assert.match(checkOf(report, 'host.version').remediation, /0\.2\.0-rc\.2/);
   assert.match(checkOf(report, 'host.version').remediation, /0\.2\.1-alpha\.1/);
   assert.match(checkOf(report, 'host.version').remediation, /0\.2\.1-rc\.2/);
+});
+
+test('a host version that only satisfies the range by build metadata is blocked, not accepted', async () => {
+  const dir = scratch('host-metadata');
+  const hostRoot = path.join(dir, 'fake-host', 'node_modules', '@deepseek-ai', 'dsh');
+  fs.mkdirSync(path.join(hostRoot, 'lib'), { recursive: true });
+  const version = `${SUPPORTED_DSH_VERSIONS[0]}+unverified`;
+  fs.writeFileSync(path.join(hostRoot, 'package.json'), JSON.stringify({ name: '@deepseek-ai/dsh', version, bin: { dsh: 'lib/bin.js' } }));
+  const { home } = freshHome('host-metadata-home');
+  const report = await collectDiagnostics(baseOptions(home, { cliPath: path.join(hostRoot, 'lib', 'bin.js') }));
+  const check = checkOf(report, 'host.version');
+  // `satisfiesRange` ignores build metadata, so the range comparison alone would
+  // accept this string; only the exact declared alternatives are verified hosts.
+  assert.equal(satisfiesRange(version, check.evidence.supported), true);
+  assert.equal(check.evidence.verified, false);
+  assert.equal(levelOf(report, 'host.version'), 'blocked');
+  assert.equal(exitCodeFor(report), 2);
+  assert.match(check.summary, /not one of the versions verified/);
 });
 
 test('dependencies on non-public runtime surfaces are degraded, never silently ok', async () => {
@@ -498,6 +543,38 @@ test('event bridge: verified ok, bad MAC blocked, conflicting event id blocked, 
   const again = await runDiagnostics({ ...baseOptions(tail.home), repair: true });
   assert.deepEqual(again.repairsApplied, []);
   assert.equal(fs.readFileSync(tail.paths.eventBridgePath, 'utf8'), trimmed);
+});
+
+// The doctor and the runtime replay must apply one authentication rule. The
+// runtime rejection this pins is test/domain-storage/storage.test.js, mode
+// 'writer', where a MAC-valid envelope naming another writer throws
+// 'E_DOMAIN_EVENT_AUTH'. Here the same log must not be reported ok.
+test('event bridge: a MAC-valid record naming another writer is blocked, not verified', async () => {
+  const { home, paths } = freshHome('bridge-writer');
+  const foreign = signEventBridgeEnvelope({ eventId: 'evt-1', eventType: 'measurement-completed' }, { key: KEY, writer: 'other-writer', sequence: 1 });
+  fs.writeFileSync(paths.eventBridgePath, `${JSON.stringify(foreign)}\n`);
+  const report = await collectDiagnostics(baseOptions(home));
+  assert.equal(report.status, 'blocked');
+  assert.deepEqual(report.checks.filter((entry) => entry.level === 'blocked').map((entry) => entry.id), ['state.event-bridge'],
+    'the foreign-writer log itself must be what blocks the report');
+  assert.equal(levelOf(report, 'state.event-bridge'), 'blocked');
+  const check = checkOf(report, 'state.event-bridge');
+  assert.equal(check.recoverable, false, 'a foreign-writer log is not repairable here');
+  assert.match(check.summary, /other-writer/, 'the summary must name the offending writer');
+  assert.equal(check.evidence.verifiedEvents, 0, 'a foreign-writer record is not a verified event');
+  assert.deepEqual(check.evidence.untrustedWriters, [{ line: 1, sequence: 1, writer: 'other-writer' }]);
+
+  // The same file rewritten with a default-writer envelope stays ok: the new
+  // gate must not broaden the existing verdict.
+  const trusted = signEventBridgeEnvelope({ eventId: 'evt-1', eventType: 'measurement-completed' }, { key: KEY, sequence: 1 });
+  fs.writeFileSync(paths.eventBridgePath, `${JSON.stringify(trusted)}\n`);
+  const control = await collectDiagnostics(baseOptions(home));
+  assert.equal(levelOf(control, 'state.event-bridge'), 'ok');
+  assert.equal(checkOf(control, 'state.event-bridge').evidence.verifiedEvents, 1);
+
+  // Both envelopes carry a valid MAC; only the writer identity separates them.
+  assert.equal(eventBridgeWriterTrusted(verifyEventBridgeEnvelope(foreign, KEY), EVENT_BRIDGE_DEFAULT_WRITER), false);
+  assert.equal(eventBridgeWriterTrusted(verifyEventBridgeEnvelope(trusted, KEY), EVENT_BRIDGE_DEFAULT_WRITER), true);
 });
 
 test('event bridge with an unusable key is blocked and the key is never replaced', async () => {
@@ -814,6 +891,386 @@ test('a disabled bundle entry is blocked', async () => {
   }));
   assert.equal(levelOf(report, 'host.composition'), 'blocked');
   assert.ok(checkOf(report, 'host.composition').evidence.problems.some((problem) => problem.includes('disabled')));
+});
+
+// The official CLI splits a bundle into two sections when a profile patch
+// targets it. Looking the layer up by raw title used to report such a healthy
+// install as blocked.
+test('a profile patched by the user keeps one merged dsh-evolution layer and stays ok', async () => {
+  const { home } = freshHome('composition-patched');
+  const stdout = composedDump({ patchTitle: 'dsh-evolution, patched by /tmp/x/cordis.patch.yml', writer: 'custom-writer' });
+  const parsed = parseComposedProfile(stdout);
+  assert.deepEqual(parsed.titles, ['dsh-evolution, patched by /tmp/x/cordis.patch.yml', 'dsh-evolution']);
+  const section = parsed.sections.get('dsh-evolution');
+  assert.equal(section.entries.length, 2, 'both sections merge into one layer');
+  assert.deepEqual(section.rawTitles, ['dsh-evolution, patched by /tmp/x/cordis.patch.yml', 'dsh-evolution']);
+  assert.equal(section.patched, true);
+  assert.deepEqual(composedEventBridgeWriter(parsed), { writer: 'custom-writer', unreadable: false });
+
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'web',
+    probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) },
+  }));
+  const composition = checkOf(report, 'host.composition');
+  assert.equal(composition.level, 'ok', JSON.stringify(composition.evidence.problems));
+  assert.equal(composition.evidence.patched, true);
+  assert.deepEqual(composition.evidence.sectionTitles, ['dsh-evolution, patched by /tmp/x/cordis.patch.yml', 'dsh-evolution']);
+});
+
+test('a patched profile that still lacks an entry is blocked with the unchanged message', async () => {
+  const { home } = freshHome('composition-patched-missing');
+  const stdout = composedDump({ patchTitle: 'dsh-evolution, patched by /tmp/x/cordis.patch.yml', includeGuard: false });
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'web',
+    probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) },
+  }));
+  assert.equal(levelOf(report, 'host.composition'), 'blocked');
+  assert.deepEqual(checkOf(report, 'host.composition').evidence.problems, ['evolution-trust-root-guard entry is absent']);
+  assert.match(checkOf(report, 'host.composition').summary, /missing 1 required bundle entry/);
+});
+
+// A composed writer is only read from the entry's own `config:` block, as a
+// direct child line, named exactly `eventBridgeWriter`, stated exactly once,
+// and only when its scalar can be recovered verbatim. A nested key is ignored
+// (it is not this key); a non-canonical spelling of it is unreadable (the
+// runtime would bind it). Anything else keeps the three states apart instead
+// of guessing, so the doctor can never verify the log against a writer the
+// runtime does not use.
+const writerState = (dump) => composedEventBridgeWriter(parseComposedProfile(dump));
+const wrote = (state) => (state.unreadable === false && typeof state.writer === 'string' ? state.writer : null);
+
+test('a composed writer is read only from the direct, unique, readable key', () => {
+  assert.deepEqual(writerState(''), { writer: null, unreadable: false }, 'no layer at all');
+  assert.deepEqual(writerState('# == dsh-evolution\n'), { writer: null, unreadable: false }, 'no entries');
+  assert.deepEqual(writerState('# == dsh-evolution\n- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n'), { writer: null, unreadable: false }, 'no orchestrator entry');
+  assert.deepEqual(writerState(orchestratorDump([])), { writer: null, unreadable: false }, 'no config key at all');
+  assert.deepEqual(writerState(orchestratorDump(['  config:'])), { writer: null, unreadable: false }, 'an empty config mapping');
+
+  // Plain and quoted strings are kept verbatim.
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: custom-writer'])), { writer: 'custom-writer', unreadable: false });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', "    eventBridgeWriter: 'custom-writer'"])), { writer: 'custom-writer', unreadable: false }, 'single quotes');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: "custom-writer"'])), { writer: 'custom-writer', unreadable: false }, 'double quotes');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: " padded "'])), { writer: ' padded ', unreadable: false }, 'a quoted scalar keeps its inner spaces');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter:   custom-writer   '])), { writer: 'custom-writer', unreadable: false }, 'a plain scalar is trimmed');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: CUSTOM-Writer'])), { writer: 'CUSTOM-Writer', unreadable: false }, 'value case is preserved');
+
+  // A colon or a hash is part of the value unless a comment could start there.
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: writer:scope'])), { writer: 'writer:scope', unreadable: false });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: "writer: scope"'])), { writer: 'writer: scope', unreadable: false });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: writer#scope'])), { writer: 'writer#scope', unreadable: false });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: "writer # scope"'])), { writer: 'writer # scope', unreadable: false });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: writer # comment'])), { writer: null, unreadable: true, reason: 'inline-comment-ambiguous' });
+
+  // A nested `other.eventBridgeWriter` is a different key, whichever side of
+  // the direct key it appears on.
+  assert.deepEqual(
+    writerState(orchestratorDump(['  config:', '    other:', '      eventBridgeWriter: nested-writer', '    eventBridgeWriter: custom-writer'])),
+    { writer: 'custom-writer', unreadable: false }, 'nested key before the direct key');
+  assert.deepEqual(
+    writerState(orchestratorDump(['  config:', '    eventBridgeWriter: custom-writer', '    other:', '      eventBridgeWriter: nested-writer'])),
+    { writer: 'custom-writer', unreadable: false }, 'nested key after the direct key');
+
+  // Indentation decides which key is the entry's own config and which is a child.
+  assert.deepEqual(writerState(orchestratorDump(['  writer: custom-writer', '  config:'])), { writer: null, unreadable: false }, 'a `writer` sibling of `config` is not the key');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '  eventBridgeWriter: custom-writer'])), { writer: null, unreadable: false }, 'a key at the same indent as `config:` is not a child');
+  assert.deepEqual(
+    writerState(['# == dsh-evolution', '- id: evolution-orchestrator', '  name: dsh-evolution', '  extra:', '    config:', '      eventBridgeWriter: nested-writer', '- id: evolution-trust-root-guard', '  name: dsh-evolution/guard', '']),
+    { writer: null, unreadable: false }, '`extra.config` is not the entry config');
+  assert.deepEqual(
+    writerState(['# == dsh-evolution', '- id: evolution-orchestrator', '  name: dsh-evolution', '- id: other-entry', '  config:', '    eventBridgeWriter: custom-writer', '']),
+    { writer: null, unreadable: false }, 'a config on another entry says nothing about this one');
+
+  // Blank lines inside a block mapping do not end it: the reader keeps
+  // scanning and reads the key that follows them.
+  assert.deepEqual(
+    writerState(orchestratorDump(['  config:', '    eventBridgeWriter: custom-writer', '', '    other: 1'])),
+    { writer: 'custom-writer', unreadable: false }, 'blank line after the key');
+  assert.deepEqual(
+    writerState(orchestratorDump(['  config:', '', '    eventBridgeWriter: custom-writer'])),
+    { writer: 'custom-writer', unreadable: false }, 'blank line before the key');
+
+  // Key spelling is matched verbatim: a case variant or another name is a
+  // different YAML key and says nothing about this one, so it stays undeclared.
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    EventBridgeWriter: custom-writer'])), { writer: null, unreadable: false }, 'case variant');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    otherKey: custom-writer'])), { writer: null, unreadable: false }, 'another key name');
+
+  // A non-canonical spelling of the same key resolves to `eventBridgeWriter`
+  // when YAML parses it, so the runtime would bind that value. Reading it as
+  // "undeclared" would default the expectation the runtime does not use, so it
+  // is unreadable instead — never undeclared, never a guessed value.
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    "eventBridgeWriter": custom-writer'])), { writer: null, unreadable: true, reason: 'non-canonical-key' }, 'double-quoted key name');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', "    'eventBridgeWriter': custom-writer"])), { writer: null, unreadable: true, reason: 'non-canonical-key' }, 'single-quoted key name');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter : custom-writer'])), { writer: null, unreadable: true, reason: 'non-canonical-key' }, 'space before the colon');
+
+  // The verbatim key next to a non-canonical spelling of the same key is the
+  // same YAML key twice: which one the loader keeps is not guessed.
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: custom-writer', '    "eventBridgeWriter": other-writer'])), { writer: null, unreadable: true, reason: 'duplicate-key' }, 'verbatim key next to a non-canonical spelling');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', "    'eventBridgeWriter': custom-writer", '    eventBridgeWriter : other-writer'])), { writer: null, unreadable: true, reason: 'duplicate-key' }, 'two non-canonical spellings of the key');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: custom-writer', '    eventBridgeWriter: other-writer'])), { writer: null, unreadable: true, reason: 'duplicate-key' }, 'the key twice');
+  assert.deepEqual(writerState(['# == dsh-evolution', '- id: evolution-orchestrator', '  name: dsh-evolution', '- id: evolution-orchestrator', '  name: dsh-evolution', '  config:', '    eventBridgeWriter: custom-writer', ''].join('\n')), { writer: null, unreadable: true, reason: 'duplicate-entry' }, 'the entry twice');
+});
+
+test('a composed writer the dump does not state exactly is unreadable, not guessed', () => {
+  assert.deepEqual(writerState(orchestratorDump(['  config: { eventBridgeWriter: custom-writer }'])), { writer: null, unreadable: true, reason: 'inline-config' }, 'inline flow map');
+  assert.deepEqual(writerState(orchestratorDump(['  config: [custom-writer]'])), { writer: null, unreadable: true, reason: 'inline-config' }, 'inline flow seq');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: !!js process.env.WRITER'])), { writer: null, unreadable: true, reason: 'yaml-tag' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: !!str custom-writer'])), { writer: null, unreadable: true, reason: 'yaml-tag' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: ${process.env.WRITER}'])), { writer: null, unreadable: true, reason: 'template' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: {{ writer }}'])), { writer: null, unreadable: true, reason: 'template' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: &anchor custom-writer'])), { writer: null, unreadable: true, reason: 'yaml-anchor' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: *anchor'])), { writer: null, unreadable: true, reason: 'yaml-anchor' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: |', '      custom-writer'])), { writer: null, unreadable: true, reason: 'block-scalar' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: "custom\\nwriter"'])), { writer: null, unreadable: true, reason: 'escaped-quote-value' }, 'a double-quoted backslash escape');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', "    eventBridgeWriter: 'it''s-writer'"])), { writer: null, unreadable: true, reason: 'escaped-single-quote' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: "custom-writer'])), { writer: null, unreadable: true, reason: 'unterminated-quote' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: true'])), { writer: null, unreadable: true, reason: 'non-string-scalar' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: null'])), { writer: null, unreadable: true, reason: 'non-string-scalar' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: 42'])), { writer: null, unreadable: true, reason: 'non-string-scalar' });
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: 2024-01-01'])), { writer: null, unreadable: true, reason: 'non-string-scalar' }, 'a date is not a writer name');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter:'])), { writer: null, unreadable: false }, 'a bare key is YAML null, which the runtime reads as the default');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: ""'])), { writer: null, unreadable: false }, 'an empty string is falsy for the runtime, so it is the default');
+  assert.deepEqual(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: custom-writer', '  config:', '    eventBridgeWriter: other-writer'])), { writer: null, unreadable: true, reason: 'duplicate-config-key' }, 'two config keys in one entry');
+  assert.equal(wrote(writerState(orchestratorDump(['  config:', '    eventBridgeWriter: custom-writer']))), 'custom-writer');
+});
+
+test('the doctor expects the writer the composed profile configures, matching the runtime', async () => {
+  const stdout = composedDump({ writer: 'custom-writer' });
+  const probe = { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) };
+
+  // The log this installation writes under the bundle default is exactly what
+  // the runtime replay rejects with E_DOMAIN_EVENT_AUTH.
+  const foreign = freshHome('writer-composition-default-log');
+  writeBridge(foreign.paths, [{ eventId: 'evt-1', eventType: 'measurement-completed' }]);
+  const blocked = await collectDiagnostics(baseOptions(foreign.home, { profile: 'web', probe }));
+  const check = checkOf(blocked, 'state.event-bridge');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.evidence.writerSource, 'composition');
+  assert.equal(check.evidence.trustedWriter, 'custom-writer');
+  assert.deepEqual(check.evidence.untrustedWriters, [{ line: 1, sequence: 1, writer: EVENT_BRIDGE_DEFAULT_WRITER }]);
+  assert.match(check.summary, /name a writer other than custom-writer/);
+  assert.match(check.remediation, /only trusts `custom-writer` \(composition\)/);
+
+  const accepted = freshHome('writer-composition-custom-log');
+  fs.writeFileSync(accepted.paths.eventBridgePath, `${JSON.stringify(signEventBridgeEnvelope({ eventId: 'evt-1', eventType: 'measurement-completed' }, { key: KEY, writer: 'custom-writer', sequence: 1 }))}\n`);
+  const ok = await collectDiagnostics(baseOptions(accepted.home, { profile: 'web', probe }));
+  assert.equal(levelOf(ok, 'state.event-bridge'), 'ok');
+  assert.equal(checkOf(ok, 'state.event-bridge').evidence.writerSource, 'composition');
+  assert.match(checkOf(ok, 'state.event-bridge').summary, /verified against the trusted writer `custom-writer` \(composition\)/);
+});
+
+test('without a composed writer the doctor uses the bundle default, and an explicit config wins', async () => {
+  const { home, paths } = freshHome('writer-default');
+  writeBridge(paths, [{ eventId: 'evt-1', eventType: 'measurement-completed' }]);
+
+  const composed = await collectDiagnostics(baseOptions(home, {
+    profile: 'web',
+    probe: { runDumpConfig: () => ({ status: 0, stdout: composedDump(), stderr: '' }) },
+  }));
+  assert.equal(levelOf(composed, 'state.event-bridge'), 'ok');
+  assert.equal(checkOf(composed, 'state.event-bridge').evidence.writerSource, 'bundle-default');
+  assert.equal(checkOf(composed, 'state.event-bridge').evidence.trustedWriter, EVENT_BRIDGE_DEFAULT_WRITER);
+
+  const skipped = await collectDiagnostics(baseOptions(home));
+  assert.equal(checkOf(skipped, 'state.event-bridge').evidence.writerSource, 'bundle-default');
+
+  const explicit = await collectDiagnostics(baseOptions(home, {
+    profile: 'web',
+    probe: { runDumpConfig: () => ({ status: 0, stdout: composedDump({ writer: 'custom-writer' }), stderr: '' }) },
+    config: { eventBridgeWriter: 'in-session-writer' },
+  }));
+  assert.equal(checkOf(explicit, 'state.event-bridge').evidence.writerSource, 'config');
+  assert.equal(checkOf(explicit, 'state.event-bridge').evidence.trustedWriter, 'in-session-writer');
+});
+
+// The in-session expectation is the runtime's own expression, byte for byte:
+// `config.eventBridgeWriter || EVENT_BRIDGE_DEFAULT_WRITER` (`lib/domain-storage.js`).
+// It is not trimmed, never falls back to the composed profile, and a falsy value
+// (including an empty string) lands on the bundle default exactly as it does in
+// the replay path.
+test('an in-session config writer follows the runtime expression exactly', async () => {
+  const runtimeWriter = (config) => config.eventBridgeWriter || EVENT_BRIDGE_DEFAULT_WRITER;
+  const { home, paths } = freshHome('writer-config-parity');
+  // Signed with the padded writer, so the log only verifies under that exact value.
+  fs.writeFileSync(paths.eventBridgePath, `${JSON.stringify(signEventBridgeEnvelope({ eventId: 'evt-1', eventType: 'measurement-completed' }, { key: KEY, writer: ' custom-writer ', sequence: 1 }))}\n`);
+  const composition = composedDump({ writer: 'composition-writer' });
+  const diagnose = (config) => collectDiagnostics(baseOptions(home, { profile: 'web', probe: { runDumpConfig: () => ({ status: 0, stdout: composition, stderr: '' }) }, config }));
+
+  const padded = await diagnose({ eventBridgeWriter: ' custom-writer ' });
+  assert.equal(checkOf(padded, 'state.event-bridge').evidence.trustedWriter, ' custom-writer ');
+  assert.equal(checkOf(padded, 'state.event-bridge').evidence.trustedWriter, runtimeWriter({ eventBridgeWriter: ' custom-writer ' }));
+  assert.equal(checkOf(padded, 'state.event-bridge').evidence.writerSource, 'config', 'an explicit config never falls back to the composition');
+  assert.equal(levelOf(padded, 'state.event-bridge'), 'ok', 'the untrimmed value is what the log was signed with');
+
+  const empty = await diagnose({ eventBridgeWriter: '' });
+  assert.equal(checkOf(empty, 'state.event-bridge').evidence.trustedWriter, EVENT_BRIDGE_DEFAULT_WRITER);
+  assert.equal(checkOf(empty, 'state.event-bridge').evidence.trustedWriter, runtimeWriter({ eventBridgeWriter: '' }));
+  assert.equal(checkOf(empty, 'state.event-bridge').evidence.writerSource, 'config');
+
+  const absent = await diagnose({});
+  assert.equal(checkOf(absent, 'state.event-bridge').evidence.trustedWriter, runtimeWriter({}));
+  assert.equal(checkOf(absent, 'state.event-bridge').evidence.writerSource, 'config', 'a present config with no writer still does not fall back');
+
+  const numeric = await diagnose({ eventBridgeWriter: 42 });
+  assert.equal(checkOf(numeric, 'state.event-bridge').evidence.trustedWriter, runtimeWriter({ eventBridgeWriter: 42 }));
+  assert.equal(levelOf(numeric, 'state.event-bridge'), 'blocked', 'a non-string expectation can never match a string writer, exactly as the runtime rejects it');
+  assert.deepEqual(checkOf(numeric, 'state.event-bridge').evidence.untrustedWriters, [{ line: 1, sequence: 1, writer: ' custom-writer ' }]);
+
+  const trimmed = await collectDiagnostics(baseOptions(home, { profile: 'web', probe: { runDumpConfig: () => ({ status: 0, stdout: composition, stderr: '' }) }, config: { eventBridgeWriter: 'custom-writer' } }));
+  assert.equal(checkOf(trimmed, 'state.event-bridge').evidence.trustedWriter, 'custom-writer');
+  assert.equal(levelOf(trimmed, 'state.event-bridge'), 'blocked', 'the untrimmed log is not accepted under the trimmed expectation');
+});
+
+// A composition that does not state the value must not be defaulted: verifying
+// the log against the bundle default would report a verdict the runtime may not
+// share. The log still gets its MAC-level checks, and the verdict degrades with
+// the writers actually seen in it.
+test('an unreadable composed writer degrades the verdict instead of defaulting it', async () => {
+  const { home, paths } = freshHome('writer-unknown');
+  fs.writeFileSync(paths.eventBridgePath, `${JSON.stringify(signEventBridgeEnvelope({ eventId: 'evt-1', eventType: 'measurement-completed' }, { key: KEY, writer: 'custom-writer', sequence: 1 }))}\n`);
+  const stdout = orchestratorDump(['  config:', '    eventBridgeWriter: ${process.env.WRITER}']);
+  const report = await collectDiagnostics(baseOptions(home, { profile: 'web', probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) } }));
+  const check = checkOf(report, 'state.event-bridge');
+  assert.equal(check.level, 'degraded', 'the only thing wrong here is the unreadable expectation, not a MAC-level problem');
+  assert.equal(check.evidence.writerSource, 'unknown');
+  assert.equal(check.evidence.trustedWriter, null);
+  assert.equal(check.evidence.writerExpectationReason, 'template');
+  assert.deepEqual(check.evidence.writersSeen, ['custom-writer'], 'the writers actually in the log are listed for a human to judge');
+  assert.deepEqual(check.evidence.untrustedWriters, [], 'no record is called untrusted against a writer that was never read');
+  assert.equal(check.evidence.verifiedEvents, 1, 'the MAC-level verdict still runs');
+  assert.match(check.summary, /trusted writer could not be read/);
+  assert.match(check.remediation, /Make the configured writer readable/);
+  assert.equal(report.repairs.some((repair) => repair.id === 'event-bridge-trim-partial-tail'), false);
+});
+
+// The same degradation applies to a key the dump spells non-canonically: the
+// runtime would bind it, so the doctor must not fall back to the bundle
+// default and report a verdict the runtime does not share.
+test('a non-canonically spelled composed writer degrades the verdict instead of defaulting it', async () => {
+  for (const [name, keyLine] of [['double quotes', '    "eventBridgeWriter": custom-writer'], ['single quotes', "    'eventBridgeWriter': custom-writer"], ['space before colon', '    eventBridgeWriter : custom-writer']]) {
+    const { home, paths } = freshHome(`writer-non-canonical-${name.replace(/\s+/g, '-')}`);
+    fs.writeFileSync(paths.eventBridgePath, `${JSON.stringify(signEventBridgeEnvelope({ eventId: 'evt-1', eventType: 'measurement-completed' }, { key: KEY, writer: 'custom-writer', sequence: 1 }))}\n`);
+    const stdout = orchestratorDump(['  config:', keyLine]);
+    const report = await collectDiagnostics(baseOptions(home, { profile: 'web', probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) } }));
+    const check = checkOf(report, 'state.event-bridge');
+    assert.equal(check.level, 'degraded', `${name}: the writer is not the bundle default, so the verdict cannot be defaulted`);
+    assert.equal(check.evidence.writerSource, 'unknown', name);
+    assert.equal(check.evidence.trustedWriter, null, name);
+    assert.equal(check.evidence.writerExpectationReason, 'non-canonical-key', name);
+    assert.deepEqual(check.evidence.writersSeen, ['custom-writer'], name);
+    assert.deepEqual(check.evidence.untrustedWriters, [], name);
+    assert.equal(check.evidence.verifiedEvents, 1, `${name}: the MAC-level verdict still runs`);
+    assert.match(check.summary, /trusted writer could not be read/, name);
+  }
+});
+
+test('an unreadable composed writer still reports MAC-level problems as blocked', async () => {
+  const { home, paths } = freshHome('writer-unknown-blocked');
+  writeBridge(paths, [{ eventId: 'evt-1', eventType: 'measurement-completed' }], { corruptMac: true });
+  const stdout = orchestratorDump(['  config:', '    eventBridgeWriter: !!js process.env.WRITER']);
+  const report = await collectDiagnostics(baseOptions(home, { profile: 'web', probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) } }));
+  const check = checkOf(report, 'state.event-bridge');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.evidence.writerSource, 'unknown');
+  assert.equal(check.evidence.untrustedWriters.length, 0);
+  assert.match(check.summary, /fail MAC verification/);
+});
+
+// The repair plan is derived from one read; acting on it later without
+// re-establishing its condition deletes whatever the tail became meanwhile.
+test('an expired partial-tail repair is skipped instead of deleting a trusted event', async () => {
+  const { home, paths } = freshHome('repair-expired');
+  writeBridge(paths, [{ eventId: 'evt-1', eventType: 'measurement-completed' }], { truncateTail: true });
+  const planned = await collectDiagnostics(baseOptions(home));
+  const repair = checkOf(planned, 'state.event-bridge').repair;
+  assert.equal(repair.id, 'event-bridge-trim-partial-tail');
+
+  const first = JSON.stringify(signEventBridgeEnvelope({ eventId: 'evt-1', eventType: 'measurement-completed' }, { key: KEY, sequence: 1 }));
+  const trusted = JSON.stringify(signEventBridgeEnvelope({ eventId: 'evt-2', eventType: 'measurement-completed' }, { key: KEY, sequence: 2 }));
+  const replaced = `${first}\n${trusted}`;
+  fs.writeFileSync(paths.eventBridgePath, replaced);
+
+  const applied = await applyRepairs([repair], { paths });
+  assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
+  assert.match(applied[0].detail, /no longer matches the plan/);
+  assert.equal(fs.readFileSync(paths.eventBridgePath, 'utf8'), replaced, 'the trusted event must survive byte for byte');
+});
+
+// The bridge file's writers hold no lock, so the repair is check-then-act. The
+// re-read before the rename closes the window that covers the preparation; an
+// append that lands inside it must leave the file untouched. `fs.fsyncSync` is
+// the last call between the snapshot and the re-read, so hooking it puts the
+// concurrent append exactly in that window (controlled scheduling, no sleep).
+test('a partial-tail repair whose file grew while it was prepared writes nothing', async () => {
+  const { home, paths } = freshHome('repair-raced');
+  writeBridge(paths, [{ eventId: 'evt-1', eventType: 'measurement-completed' }], { truncateTail: true });
+  const planned = await collectDiagnostics(baseOptions(home));
+  const repair = checkOf(planned, 'state.event-bridge').repair;
+  assert.equal(repair.id, 'event-bridge-trim-partial-tail');
+
+  // A concurrent writer appends one complete trusted event (the runtime writes
+  // `${envelope}\n` with O_APPEND), which lands after the unterminated tail.
+  const appended = `${JSON.stringify(signEventBridgeEnvelope({ eventId: 'evt-2', eventType: 'measurement-completed' }, { key: KEY, sequence: 2 }))}\n`;
+  const realFsync = fs.fsyncSync;
+  let raced = null;
+  fs.fsyncSync = (fd) => {
+    if (raced === null) {
+      fs.writeFileSync(paths.eventBridgePath, `${fs.readFileSync(paths.eventBridgePath, 'utf8')}${appended}`);
+      raced = fs.readFileSync(paths.eventBridgePath, 'utf8');
+    }
+    return realFsync(fd);
+  };
+  let applied;
+  try {
+    applied = await applyRepairs([repair], { paths });
+  } finally {
+    fs.fsyncSync = realFsync;
+  }
+
+  assert.notEqual(raced, null, 'the hook must have fired; otherwise the test proves nothing');
+  assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
+  assert.match(applied[0].detail, /changed while the replacement was prepared/);
+  assert.equal(fs.readFileSync(paths.eventBridgePath, 'utf8'), raced, 'the file must keep the bytes the concurrent writer produced');
+  assert.ok(fs.readFileSync(paths.eventBridgePath, 'utf8').includes(appended), 'the trusted event must survive');
+  assert.equal(fs.existsSync(`${paths.eventBridgePath}.${process.pid}.trim.tmp`), false, 'the prepared temp file must be removed');
+
+  // Control: with no concurrent writer the same plan is applied, so the only
+  // difference above is the re-read.
+  fs.writeFileSync(paths.eventBridgePath, fs.readFileSync(paths.eventBridgePath, 'utf8').replace(appended, ''));
+  const again = await applyRepairs([repair], { paths });
+  assert.deepEqual(again.map((entry) => entry.status), ['applied']);
+});
+
+// A single unterminated record has no verified prefix to keep, so the trim is
+// not offered at all; the remediation says so instead of promising a repair.
+test('a partial tail with no complete line is not offered as a repair', async () => {
+  const { home, paths } = freshHome('repair-no-prefix');
+  fs.writeFileSync(paths.eventBridgePath, '{"schema":2,"writer":"dsh-evolution');
+  const report = await collectDiagnostics(baseOptions(home));
+  const check = checkOf(report, 'state.event-bridge');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.recoverable, false);
+  assert.equal(check.repair, undefined);
+  assert.equal(report.repairs.some((repair) => repair.id === 'event-bridge-trim-partial-tail'), false);
+  assert.deepEqual(check.evidence.malformed.map((entry) => entry.line), [1]);
+  assert.match(check.remediation, /no verified complete prefix to keep/);
+
+  // The repair path keeps its own depth-of-defence skip for an empty prefix.
+  const applied = await applyRepairs([{ id: 'event-bridge-trim-partial-tail', safe: true }], { paths });
+  assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
+  assert.equal(fs.readFileSync(paths.eventBridgePath, 'utf8'), '{"schema":2,"writer":"dsh-evolution', 'nothing may be written');
+});
+
+test('a partial-tail repair that still matches is applied and keeps the trusted prefix', async () => {
+  const { home, paths } = freshHome('repair-matching');
+  const withTail = writeBridge(paths, [{ eventId: 'evt-1', eventType: 'measurement-completed' }], { truncateTail: true });
+  const planned = await collectDiagnostics(baseOptions(home));
+  const repair = checkOf(planned, 'state.event-bridge').repair;
+  const applied = await applyRepairs([repair], { paths });
+  assert.deepEqual(applied.map((entry) => entry.status), ['applied']);
+  assert.match(applied[0].detail, /re-verified/);
+  const kept = fs.readFileSync(paths.eventBridgePath, 'utf8');
+  assert.equal(kept, withTail.slice(0, withTail.lastIndexOf('\n') + 1));
+  assert.equal(inspectJsonLines(kept).complete, true);
 });
 
 test('the cli writes nothing and reports exit codes that match the classification', () => {

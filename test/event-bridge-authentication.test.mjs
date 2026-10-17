@@ -41,4 +41,33 @@ await test('sequence rollback is isolated without poisoning later valid events',
   assert(result?.latestObservation?.sampleCount === 1, 'valid record remains usable');
 });
 
+await test('a foreign writer record cannot occupy a dedup slot or advance the trusted sequence', async () => {
+  const dedupDir = fs.mkdtempSync(path.join(os.tmpdir(), 'evo-bridge-dedup-'));
+  registerCleanup(dedupDir);
+  const file = path.join(dedupDir, 'events.jsonl');
+  const eventId = 'evolution:trial-completed:exp-dedup';
+  const foreign = mod.signEventBridgeEnvelope({ ...event, eventId, eventType: 'trial-completed', experimentId: 'exp-dedup' }, { key, writer: 'other-writer', sequence: 7 });
+  fs.writeFileSync(file, JSON.stringify(foreign) + '\n');
+
+  const bridge = new mod.EvolutionEventBridge({ file, key, writer: mod.EVENT_BRIDGE_DEFAULT_WRITER });
+  assert(!bridge.seen.has(eventId), 'a valid-MAC foreign writer record does not take a dedup slot');
+  assert(bridge.sequence === 0, 'a valid-MAC foreign writer record does not advance the trusted sequence');
+
+  bridge.emit('trial-completed', { id: 'exp-dedup' });
+  const lines = fs.readFileSync(file, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  assert(lines.length === 2, 'the trusted event is appended instead of being silently skipped');
+  assert(lines[1].writer === mod.EVENT_BRIDGE_DEFAULT_WRITER, 'the appended record names the trusted writer');
+  assert(lines[1].sequence === 1, 'the appended record does not reuse the foreign sequence number');
+
+  // Control: the writer gate did not switch dedup off for this installation's
+  // own records. This second emit is deduplicated in memory; a bridge
+  // reconstructed from the file must also read the trusted record it now holds
+  // back into the dedup set and sequence, unlike the foreign record above.
+  bridge.emit('trial-completed', { id: 'exp-dedup' });
+  assert(fs.readFileSync(file, 'utf8').trim().split('\n').length === 2, 'a trusted duplicate still does not append a second line');
+  const reopened = new mod.EvolutionEventBridge({ file, key, writer: mod.EVENT_BRIDGE_DEFAULT_WRITER });
+  assert(reopened.seen.has(eventId), 'a trusted record on disk is read back into the dedup set');
+  assert(reopened.sequence === 1, 'the trusted sequence is read back from disk');
+});
+
 summary();

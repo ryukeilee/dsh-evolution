@@ -118,6 +118,22 @@ const reversals = [
    "      update: async updater => { aggregate = aggregateSchema.parse(updater(aggregate)); } };\n",
    "    const stateStore = { filePath: path.join(dir, 'state.json'), load: async () => structuredClone(aggregate),\n" +
    "      update: async updater => { aggregate = aggregateSchema.parse(updater(structuredClone(aggregate))); } };\n"],
+  // The event-bridge authentication rule was unified after the anchor: the
+  // replay path now calls the same exported predicate the doctor uses, and the
+  // writer default comes from one exported constant. The rule is unchanged - a
+  // record is replayable only when its MAC verifies and it names the trusted
+  // writer - so reversing these three lines restores the pinned source instead
+  // of dropping the anchor.
+  ["import { EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, verifyEventBridgeEnvelope } from './orchestrator.js';\n",
+   "import { verifyEventBridgeEnvelope } from './orchestrator.js';\n"],
+  ["    const writer = config.eventBridgeWriter || EVENT_BRIDGE_DEFAULT_WRITER;\n",
+   "    const writer = config.eventBridgeWriter || 'dsh-evolution-orchestrator';\n"],
+  ["      if (!eventBridgeWriterTrusted(verified, writer)) throw new Error('E_DOMAIN_EVENT_AUTH');\n",
+   "      if (!verified || verified.writer !== writer) throw new Error('E_DOMAIN_EVENT_AUTH');\n"],
+  // The archive-lock comment now states what the settle window and the
+  // live-owner rule actually guarantee; reversing it restores the pinned text.
+  ["/**\n * Acquire the cross-process archive lock. A lock whose owner is dead, or whose\n * content was never written (the writer was killed between create and write),\n * must not brick the plugin: a lock that cannot be read or parsed is reclaimed\n * only once the file has not been modified for LOCK_SETTLE_MS, while a lock\n * whose readable content names a live owner is refused, never taken.\n */",
+   "/**\n * Acquire the cross-process archive lock. A lock whose owner is dead, or whose\n * content was never written (the writer was killed between create and write),\n * must not brick the plugin: an unparsable lock is reclaimed only after it has\n * definitively settled, so an in-flight writer can never be displaced.\n */"],
 ];
 
 /** Revert only the retained write-path variant; everything else stays as written. */
