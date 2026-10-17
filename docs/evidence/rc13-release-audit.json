@@ -1,0 +1,282 @@
+{
+  "status": "released-public-assets-verified",
+  "tag": "v0.2.0-rc.13",
+  "tagKind": "lightweight",
+  "tagObject": null,
+  "tagCommit": "513ffacfb3cd7896114dcc0579c208f482108448",
+  "remoteTagTarget": "513ffacfb3cd7896114dcc0579c208f482108448",
+  "tagObjectMatchesRemote": true,
+  "tagMessage": null,
+  "tagKindNote": "Every earlier release tag in this repository is annotated; v0.2.0-rc.13 was cut as a lightweight tag. It was kept as pushed instead of being deleted and recreated, because recreating a tag under an already published Release risks the release/tag association and would re-trigger the release workflow, whose overwrite guard refuses to touch a published release. The tag resolves to the same commit as the release target and the provenance check passes.",
+  "mainCommit": "513ffacfb3cd7896114dcc0579c208f482108448",
+  "mainCommitMeaning": "main was pushed to the release commit before the tag was pushed, so the release was cut on an already published branch commit",
+  "sourceCommit": "f7c9a2f013391fc482a90d5bb294fa3c685e5419",
+  "note": "The pinned artifact was built from f7c9a2f (the documentation commit, which carries the six consistency fixes and the re-pinned documentation). 513ffac is the release commit: it only adds the pinned tarball, release/manifest.json, release/SHA256SUMS and the rewritten host acceptance evidence, and it changes no file inside the package allow-list. Nothing was rebuilt for the tag.",
+  "pin": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.13",
+    "filename": "dsh-evolution-0.2.0-rc.13.tgz",
+    "sha256": "6437966edb337aeb5ed1c1198fd189b34c335fcd1abb927e799a446716d7d64d",
+    "contentSha256": "a274f2e160a1dd65da2c2628b30999307c702a3a6e85958879d84bf5bde55743",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.12.0",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "f7c9a2f013391fc482a90d5bb294fa3c685e5419",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1",
+      "0.2.1-rc.2"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json",
+      "docs/evidence/dsh-0.2.1-rc.2.json"
+    ]
+  },
+  "pinBytesSha256": "6437966edb337aeb5ed1c1198fd189b34c335fcd1abb927e799a446716d7d64d",
+  "pinBytesMatchManifest": true,
+  "provenance": {
+    "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.13 --require-source-commit",
+    "executedLocallyBeforeTheTagWasPushed": true,
+    "executedByTheReleaseWorkflow": true,
+    "problems": [],
+    "notes": [
+      "tag v0.2.0-rc.13 -> commit 513ffacfb3cd7896114dcc0579c208f482108448",
+      "source commit f7c9a2f013391fc482a90d5bb294fa3c685e5419 is in the tagged history",
+      "source commit content a274f2e160a1dd65da2c2628b30999307c702a3a6e85958879d84bf5bde55743 matches the pin",
+      "tagged tree content a274f2e160a1dd65da2c2628b30999307c702a3a6e85958879d84bf5bde55743 matches the pin"
+    ]
+  },
+  "localValidation": {
+    "commands": [
+      "npm test",
+      "npm run pack:check",
+      "npm run release:verify",
+      "shasum -a 256 -c release/SHA256SUMS"
+    ],
+    "node": "v26.12.0",
+    "npm": "11.20.0",
+    "unitTests": {
+      "tests": 380,
+      "pass": 380,
+      "fail": 0
+    },
+    "packCheck": "16/16 checks passed",
+    "releaseVerify": "matches release/manifest.json (dsh-evolution@0.2.0-rc.13)",
+    "checksumFile": "dsh-evolution-0.2.0-rc.13.tgz: OK",
+    "hostAcceptanceAgainstThePinnedTarball": [
+      {
+        "host": "0.2.0-rc.2",
+        "ok": true,
+        "steps": 21,
+        "doctorFinal": "healthy"
+      },
+      {
+        "host": "0.2.1-alpha.1",
+        "ok": true,
+        "steps": 21,
+        "doctorFinal": "healthy"
+      },
+      {
+        "host": "0.2.1-rc.2",
+        "ok": true,
+        "steps": 21,
+        "doctorFinal": "healthy"
+      }
+    ]
+  },
+  "ci": {
+    "workflow": "CI",
+    "runId": 39063654366,
+    "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/39063654366",
+    "commit": "513ffacfb3cd7896114dcc0579c208f482108448",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "package (clean, pinned, installable)",
+        "conclusion": "success"
+      },
+      {
+        "name": "unit tests (node 22.19.0)",
+        "conclusion": "success"
+      },
+      {
+        "name": "unit tests (node 24.x)",
+        "conclusion": "success"
+      },
+      {
+        "name": "host acceptance (0.2.0-rc.2)",
+        "conclusion": "success"
+      },
+      {
+        "name": "host acceptance (0.2.1-alpha.1)",
+        "conclusion": "success"
+      },
+      {
+        "name": "host acceptance (0.2.1-rc.2)",
+        "conclusion": "success"
+      }
+    ],
+    "hostAcceptanceOnTheCiRunner": [
+      {
+        "host": "0.2.0-rc.2",
+        "ok": true,
+        "steps": 21,
+        "contentSha256": "a274f2e160a1dd65da2c2628b30999307c702a3a6e85958879d84bf5bde55743",
+        "tarballSha256": "c8c7a0a3e01700b9ae72820a8be94aac32fcbcd932a0bbfc977c131546a1df17",
+        "node": "v22.19.0",
+        "hostModules": {
+          "cordis": "4.0.5",
+          "include": "1.0.10",
+          "loader": "1.0.6",
+          "jsYaml": "4.3.2"
+        },
+        "startedAt": "2026-10-17T19:43:33.918Z"
+      },
+      {
+        "host": "0.2.1-alpha.1",
+        "ok": true,
+        "steps": 21,
+        "contentSha256": "a274f2e160a1dd65da2c2628b30999307c702a3a6e85958879d84bf5bde55743",
+        "tarballSha256": "c8c7a0a3e01700b9ae72820a8be94aac32fcbcd932a0bbfc977c131546a1df17",
+        "node": "v22.19.0",
+        "hostModules": {
+          "cordis": "4.0.5",
+          "include": "1.0.10",
+          "loader": "1.0.6",
+          "jsYaml": "4.3.2"
+        },
+        "startedAt": "2026-10-17T19:43:31.623Z"
+      },
+      {
+        "host": "0.2.1-rc.2",
+        "ok": true,
+        "steps": 21,
+        "contentSha256": "a274f2e160a1dd65da2c2628b30999307c702a3a6e85958879d84bf5bde55743",
+        "tarballSha256": "c8c7a0a3e01700b9ae72820a8be94aac32fcbcd932a0bbfc977c131546a1df17",
+        "node": "v22.19.0",
+        "hostModules": {
+          "cordis": "4.0.5",
+          "include": "1.0.10",
+          "loader": "1.0.6",
+          "jsYaml": "4.3.2"
+        },
+        "startedAt": "2026-10-17T19:43:32.846Z"
+      }
+    ],
+    "ciHostAcceptanceNote": "The CI runner repacks with the npm bundled with Node 22.19.0, so its tarball bytes differ from the pinned ones (c8c7a0a3...); the job asserts the recorded contentSha256 equals the pin, which is the environment-independent value.",
+    "codeScanning": {
+      "runId": 39063654323,
+      "conclusion": "success"
+    }
+  },
+  "release": {
+    "id": 416021746,
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.13",
+    "workflowRunId": 39063769843,
+    "workflowConclusion": "success",
+    "createdAsDraftByTheWorkflow": true,
+    "publishedByOwner": true,
+    "isDraft": false,
+    "isPrerelease": true,
+    "createdAt": "2026-10-17T19:42:48Z",
+    "publishedAt": "2026-10-17T19:45:26Z",
+    "targetCommitish": "main",
+    "assetsAttachedByTheWorkflow": [
+      "dsh-evolution-0.2.0-rc.13.tgz",
+      "SHA256SUMS",
+      "manifest.json"
+    ],
+    "workflowDownloadedAndComparedTheUploadedAssets": true
+  },
+  "draftAssets": [
+    {
+      "name": "dsh-evolution-0.2.0-rc.13.tgz",
+      "size": 303967,
+      "state": "uploaded"
+    },
+    {
+      "name": "manifest.json",
+      "size": 721,
+      "state": "uploaded"
+    },
+    {
+      "name": "SHA256SUMS",
+      "size": 96,
+      "state": "uploaded"
+    }
+  ],
+  "anonymousDownload": {
+    "baseUrl": "https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.13",
+    "authentication": "none (curl without any token)",
+    "files": [
+      "SHA256SUMS",
+      "dsh-evolution-0.2.0-rc.13.tgz",
+      "manifest.json"
+    ],
+    "sha256OfDownloadedTarball": "6437966edb337aeb5ed1c1198fd189b34c335fcd1abb927e799a446716d7d64d",
+    "matchesPin": true,
+    "checksumFileVerified": true,
+    "downloadedManifestIdenticalToTheCommittedPin": true,
+    "downloadedSha256sumsIdenticalToTheCommittedPin": true,
+    "verifyArtifactAgainstThePin": "matches release/manifest.json (dsh-evolution@0.2.0-rc.13)",
+    "versionInsideTheTarball": "0.2.0-rc.13"
+  },
+  "noLatestRelease": {
+    "query": "GET /repos/ryukeilee/dsh-evolution/releases/latest",
+    "result": "404 Not Found",
+    "meaning": "every published release is a pre-release, so the repository has no latest release and an RC cannot be mistaken for a stable channel"
+  },
+  "postPublishHostAcceptance": {
+    "command": "node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2 --tarball <the anonymously downloaded tarball>",
+    "host": "0.2.1-rc.2",
+    "ok": true,
+    "steps": 21,
+    "doctorFinal": "healthy",
+    "contentSha256": "a274f2e160a1dd65da2c2628b30999307c702a3a6e85958879d84bf5bde55743",
+    "tarballSha256": "6437966edb337aeb5ed1c1198fd189b34c335fcd1abb927e799a446716d7d64d",
+    "hostModules": {
+      "cordis": "4.0.5",
+      "include": "1.0.10",
+      "loader": "1.0.6",
+      "jsYaml": "4.3.2"
+    },
+    "evidenceFile": "docs/evidence/rc13-postpublish-dsh-0.2.1-rc.2.json"
+  },
+  "packageUnchangedAfterPublication": {
+    "statement": "The published bytes and the pinned content were re-checked after the release; no file inside the package allow-list changed between the source commit and the release commit.",
+    "releaseCommitOnlyTouches": [
+      "release/dsh-evolution-0.2.0-rc.13.tgz",
+      "release/manifest.json",
+      "release/SHA256SUMS",
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json",
+      "docs/evidence/dsh-0.2.1-rc.2.json"
+    ]
+  },
+  "auditFilesOutsidePackageAllowList": [
+    "docs/evidence/rc13-release-audit.json",
+    "docs/evidence/rc13-ci-dsh-0.2.0-rc.2.json",
+    "docs/evidence/rc13-ci-dsh-0.2.1-alpha.1.json",
+    "docs/evidence/rc13-ci-dsh-0.2.1-rc.2.json",
+    "docs/evidence/rc13-postpublish-dsh-0.2.1-rc.2.json"
+  ],
+  "verificationLimits": [
+    "The acceptance harness ran on macOS arm64 with Node v26.12.0; the CI run covers the same content on ubuntu-latest with Node 22.19.0 and 24.x.",
+    "CI host acceptance repacks with Node 22 npm, so its bytes differ from the pinned ones; only the content digest is compared there, as documented in RELEASE.md section 1.",
+    "Only 0.2.1-rc.2 was re-accepted against the anonymously downloaded bytes; the other two hosts were accepted locally against the pinned tarball and in CI against the same content."
+  ],
+  "remainingRisksAndUnverified": [
+    "The event-bridge tail repair is a check-then-act over a file no writer locks: an append landing between the final read and the rename can still be dropped. The repair re-reads and refuses when the file changed while it was prepared; RELEASE.md risk 14, COMPATIBILITY.md and the README recovery table state the boundary.",
+    "The trusted event-bridge writer is read from an in-session config, else from the composed profile dump, else the bundle default; a writer that the dump states in a form this reader cannot read exactly (tag, template, inline config, duplicate key, duplicate entry, non-canonical key spelling) is reported as unknown (degraded) instead of guessed.",
+    "satisfiesRange() compares pre-release identifiers with localeCompare, so a multi-digit pre-release ordinal orders wrongly (satisfiesRange(\"1.0.0-rc.10\", \">=1.0.0-rc.2\") is false). Not fixed; the verified host combinations do not exercise it. RELEASE.md risk 15.",
+    "The released tag v0.2.0-rc.13 is lightweight while every earlier release tag is annotated (see tagKindNote)."
+  ]
+}
