@@ -273,7 +273,7 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 | 边界校验通过的 journal `stable-committed` / `committed` | 只清理 journal 目录，不动 composition 与已提交插件 |
 | journal `rollback-failed` / 无法解析 / 边界拒绝 | **不自动处理**：报 `blocked`、`recoverable=false`，保留现场 |
 | journal 阶段未知或缺失（边界校验通过） | doctor 报 `blocked` / `state-unknown`、`recoverable=false`、**不提供 repair**；启动恢复与 canary 读取用同一判定拒绝，journal、备份、目标文件与 staging 保持不变，必须人工检查现场 |
-| event bridge 未闭合尾行 | 只丢弃不构成记录的尾部字节 |
+| event bridge 未闭合尾行 | 只丢弃不构成记录的尾部字节：执行前重读快照并重建计划条件，准备期间文件变化则跳过且不写任何字节；整份文件没有完整行可保留时不提供该 repair。写入方不持锁，最后一次重读与 `rename` 之间的追加仍可能被丢弃，建议在宿主停止时执行 |
 | domain 孤儿 staging | 仅在无活进程持有 archive 锁时清理；有活进程时报告并拒绝 |
 | domain archive 锁无主（空内容或死 pid） | 运行时自动回收；`--repair` 可显式清理；有活主的锁永不抢占 |
 | 损坏的 failure memory | 不删除：报 `degraded` 并说明下次启动会隔离（quarantine）保留原字节 |
@@ -377,9 +377,11 @@ npm run acceptance:host -- --host 0.2.1-rc.2 --out <evidence-path>
 
 | 宿主 | 宿主模块 | 结果 |
 | --- | --- | --- |
-| `0.2.0-rc.2` | cordis `4.0.4`、include `1.0.9`、loader `1.0.5` | 21/21 步通过，最终诊断 `healthy` |
-| `0.2.1-alpha.1` | cordis `4.0.5-alpha.2`、include `1.0.10-alpha.2`、loader `1.0.6-alpha.2` | 21/21 步通过，最终诊断 `healthy` |
+| `0.2.0-rc.2` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过，最终诊断 `healthy` |
+| `0.2.1-alpha.1` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过，最终诊断 `healthy` |
 | `0.2.1-rc.2` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过，最终诊断 `healthy` |
+
+上表是三个宿主在**固定产物**上重跑时解析到的模块版本（取自 `docs/evidence/dsh-<host>.json` 的 `startedAt` 与 `hostModules`）：三个宿主都落在稳定补丁级别，`js-yaml` 均为 `4.3.2`。宿主自身用 `~` 范围声明这些依赖（`0.2.0-rc.2` 为 `~4.0.4` / `~1.0.9` / `~1.0.5`），因此同 patch 行的稳定版一发布就会被解析到；这三份证据记录的就是这次重跑，与 `release/` 固定点一一对应。
 
 证据文件 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json` 与 `docs/evidence/dsh-0.2.1-rc.2.json` 同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：**任何被发布文件的变化都会使 `pack:check` 失败，直到三个宿主的验收重新运行**。
 

@@ -43,36 +43,57 @@ runs the same command per host (`ci.yml` on `ubuntu-latest`).
 
 | Host | `@deepseek-ai/cordis` | `cordis-plugin-include` | `cordis-plugin-loader` | Verified |
 | --- | --- | --- | --- | --- |
-| `0.2.0-rc.2` | `4.0.4` | `1.0.9` | `1.0.5` | yes — `docs/evidence/dsh-0.2.0-rc.2.json` (full acceptance + unit suite) |
-| `0.2.1-alpha.1` | `4.0.5-alpha.2` | `1.0.10-alpha.2` | `1.0.6-alpha.2` | yes — `docs/evidence/dsh-0.2.1-alpha.1.json` (full acceptance, same key paths; the declared range also accepts the `alpha.1` patch level) |
-| `0.2.1-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.1-rc.2.json` (full acceptance + unit suite) |
+| `0.2.0-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.0-rc.2.json` (full acceptance, 21/21 steps) |
+| `0.2.1-alpha.1` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.1-alpha.1.json` (full acceptance, 21/21 steps) |
+| `0.2.1-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.1-rc.2.json` (full acceptance, 21/21 steps) |
+
+The unit suite is not run per host: `ci.yml` runs it in a separate job on Node
+`22.19.0` and `24.x`, against the module versions locked in `package-lock.json`
+(`4.0.4` / `1.0.9` / `1.0.5`, from the devDependency baseline pinned to the
+`0.2.0-rc.2` host), not against the versions a host resolves today.
 
 The whole acceptance is re-run per host against a fresh `$DSH_HOME`: official
 `dsh plugin add` of the packed tarball, first boot, all 9 tool registrations,
-in-session doctor, core `inspect→propose→trial→measure→revert` with proven
-runtime recovery, read-only CLI doctor over the official composition,
-execution-bridge fault injection with an idempotent repair, restart recovery,
-real promotion to `canary-observing` through a second confirmation gate, stable
+core `inspect→propose→trial→measure→revert` with proven runtime recovery,
+read-only CLI doctor over the official composition, restart recovery, real
+promotion to `canary-observing` through a second confirmation gate, stable
 commit at the startup barrier across a restart, canary rollback that removes
-only the new candidate, unsupported-host blocking, disable/enable,
-uninstall/reinstall with data retention, and a final doctor.
+only the new candidate, disable/enable, uninstall/reinstall with data
+retention, and a final doctor.
 
 The committed `docs/evidence/` files are produced by the harness and cover
 install, boot, all 9 tools, CLI doctor, the core flow, the official
 pluginManager lifecycle, CLI uninstall/reinstall with data retention, the
 README upgrade and rollback flows, real promotion, startup-canary commit across
 a restart, canary rollback, and the final doctor. The unit suite covers
-unsupported-host blocking, execution-bridge fault injection and idempotent
-repair, and restart recovery, and parses the CI workflows themselves;
-`RELEASE.md` records which parts of the earlier acceptance are not re-executed
-by this harness.
+unsupported-host blocking, event-bridge fault injection and idempotent repair,
+and restart recovery, and parses the CI workflows themselves;
+`RELEASE.md` section 4 documents what this harness runs, and section 6 lists the
+paths it does not cover.
 
 At verification time npm's `alpha` tag pointed at `0.2.1-alpha.1` while
 `latest`/`next` pointed at `0.2.0-rc.2`; both were accepted only after the run
-above passed. The official `0.2.1-alpha.1` host declares `~4.0.5-alpha.1` and
-`~1.0.10-alpha.1`, so a later `npm install` of the same host resolved the
-`alpha.2` patch level; `peerDependencies` declares both patch levels and the
-committed acceptance recorded the `alpha.2` combination.
+above passed. Those tag values are a read-only observation of the registry made
+for that date, not an input to the harness, which installs exact version
+numbers.
+
+The module versions above are the ones the three hosts resolve **now**. They
+were observed by re-running the whole harness for all three hosts on
+2026-10-17 (each run's `startedAt` and `hostModules` record; those runs are not
+the committed `docs/evidence/` files). All three hosts resolved
+`@deepseek-ai/cordis` `4.0.5`, `cordis-plugin-include` `1.0.10`,
+`cordis-plugin-loader` `1.0.6` and `js-yaml` `4.3.2` — including
+`0.2.1-alpha.1`, whose committed acceptance had recorded the `alpha.2` patch
+level. The cause is the hosts' own ranges, which are tilde ranges over a patch
+line (`0.2.0-rc.2` declares `~4.0.4` / `~1.0.9` / `~1.0.5`; `0.2.1-alpha.1`
+declares `~4.0.5-alpha.1` / `~1.0.10-alpha.1`): a stable `4.0.5` is a higher
+version than `4.0.5-alpha.2` and is still inside `~4.0.4`, so once the stable
+patch releases were published npm resolved them. This package's own
+`peerDependencies` accept every one of those versions (`^4.0.1` covers `4.0.5`,
+the include alternatives list `1.0.10`, `^4.2.0` covers `4.3.2`) and the doctor
+reports them in range. The committed `docs/evidence/dsh-<host>.json` files still
+describe an earlier content of this working tree and still record the older
+module versions; the release flow regenerates them.
 
 `0.2.1-rc.2` is likewise an exact declared version. The date here is this
 host's acceptance evidence's own `startedAt` (2026-10-17); the tag values are
@@ -222,14 +243,17 @@ context-member resolution.
   is reported `degraded` with the exact missing probe rather than an empty
   listener set.
 - **`ctx.reflect._getImpl()`.** Retained only as the fallback for a host where
-  `ctx.reflect.store` is unreachable under the isolate key. On both verified
-  hosts the doctor reports `public: ctx.reflect.store + Context.isolate`, so the
-  private method is not on the live read path.
+  `ctx.reflect.store` is unreachable under the isolate key. Wherever the public
+  path works, the live-context diagnostics resolve service implementations
+  through `ctx.reflect.store` + `Context.isolate`, so the private method is not
+  on the live read path then; it stays in `lib/cordis-compat.js` as the fallback
+  probe and is only used when the public read fails.
 - **`Fiber.state` numeric values.** `FiberState` is a `const enum`, erased from
   the published runtime. `fiberIsActive()` decides ACTIVE from
-  `uid`/`store`/`inertia`, and `test/cordis-compat.test.mjs` asserts equality
-  with `state === FiberState.ACTIVE` across every lifecycle transition against
-  the real package, so a renumbering fails the suite instead of being accepted.
+  `uid`/`store`/`inertia`, and `test/cordis-compat.test.mjs` restates the erased
+  ACTIVE value as `2` and asserts equality with `state === 2` for every lifecycle
+  transition it records from the real package, so a renumbering fails the suite
+  instead of being accepted.
 - **`Fiber state` naming.** `safeState()` still maps the numeric state to a name
   and always reports the raw number alongside it, so a renumbering shows up as a
   changed state, never as a silently renamed one.
@@ -253,9 +277,12 @@ plugin `README.md` for the supported-version contract.
 1. **Startup drift** — `lib/compat/legacy-startup-drift.js`.
    The previous installation imported `scripts/shared/drift-engine.js` from a
    local DSH working tree. That module is external and can never be part of this
-   package. The adapter is disabled by default (`startupDrift: false` in
-   `lib/index.js`) and only runs if a caller explicitly enables it *and*
-   configures a `driftStatePath` pointing at such a tree.
+   package. The bundle entry passes `startupDrift: false` (`lib/index.js`), so the
+   adapter is off in the plugin path; a standalone caller that omits that flag
+   enables it, and it then reads its default state file
+   (`~/.local/share/dsh-local/dsh-profiles-state.json`, or a configured
+   `driftStatePath`) and imports the external engine only when that state names
+   an existing engine.
    *Removal condition:* delete once no supported DSH layout publishes a
    `repoRoot` + drift engine state file.
 
@@ -304,30 +331,94 @@ resolution path.
 ## Reliability boundaries added by the diagnostics work
 
 - **Startup is never bricked by a partial lock write.** `openDomainStorage`
-  reclaims a lock whose pid is dead, and waits for an unparsable lock to settle
-  (1s) before reclaiming it, so an in-flight writer is never displaced. The
-  previous behaviour threw `E_DOMAIN_ARCHIVE_LOCK` forever on an empty lock
-  file left by a killed process.
-- **Safe repairs are idempotent.** Promotion-journal rollback, committed-journal
-  cleanup, event-bridge tail trimming, orphan staging removal, migration staging
-  cleanup and stale-lock removal all re-verify before acting and are proven
-  no-ops on a second run (`test/diagnostics.test.mjs`).
+  reclaims a lock whose readable content names a dead pid. A lock it cannot read
+  or parse is treated as abandoned once the file has not been modified for 1s;
+  until then it retries within a 5s budget and then throws
+  `E_DOMAIN_ARCHIVE_LOCK`. A lock whose readable content names a live pid is
+  refused, never taken. The previous behaviour threw `E_DOMAIN_ARCHIVE_LOCK`
+  forever on an empty lock file left by a killed process.
+- **Safe repairs are idempotent.** Promotion-journal rollback, event-bridge tail
+  trimming, orphan staging removal, migration staging cleanup and stale-lock
+  removal are each offered only from an on-disk check in the same run, and the
+  event-bridge tail trim re-reads the file and re-establishes its plan
+  condition before acting, then re-reads once more before the rename and skips
+  without writing anything when the bytes changed while the replacement was
+  prepared (an expired plan is `skipped` and writes nothing, and the repair is
+  not offered at all when the file holds no complete line to keep). That is not
+  concurrency safety: the bridge file's writers hold no lock, so an append that
+  lands between the last re-read and the rename can still be dropped — run the
+  repair while the host is stopped. All of them are proven no-ops on a second
+  run (`test/diagnostics.test.mjs`). Committed-journal
+  cleanup is asserted on its first run only: the test checks that it removes the
+  promotion state directory while the composition row and the promoted module
+  stay in place, and no second-run no-op is asserted for it.
 - **Unknown states fail safe.** `rollback-failed`, unparsable or out-of-boundary
   journals (including unsupported record shapes such as `symlink`), unverifiable
-  event MACs, conflicting event ids, missing pending
-  archives and altered immutable migration evidence are reported `blocked` with
-  `recoverable=false`; the doctor offers no repair and never mutates them.
+  event MACs, event envelopes that name a writer other than the trusted one,
+  conflicting event ids, missing pending
+  archives and altered immutable migration evidence are reported `blocked`, and
+  the doctor offers no repair for any of them and never mutates them; a
+  `recoverable` flag in the same report can then only come from a safe repair
+  for a different problem.
   Journal diagnostics and recovery share one boundary rule: only `file`/`path`
   records targeting `pluginRoot`, `presetDir` or `archiveDir` are allowed, never
   the promotion state directory; `dataRoot` does not widen these roots. Only
   boundary-valid interrupted/committed journals offer `promotion-journal-recover`
-  / `promotion-journal-cleanup`, respectively.
+  / `promotion-journal-cleanup`, respectively. The event-bridge verdict and the
+  runtime replay call the same `eventBridgeWriterTrusted()` predicate, so a
+  record rejected for its MAC or for its writer identity is never reported `ok`
+  when both sides use the same expected writer.
+- **The trusted event-bridge writer is resolved per entry point.** The runtime
+  binds the bridge to `config.eventBridgeWriter` from the plugin's resolved
+  config (undocumented; default `dsh-evolution-orchestrator`, exported as
+  `EVENT_BRIDGE_DEFAULT_WRITER`). The doctor resolves the expected writer in
+  this order: an explicit in-session `config.eventBridgeWriter` — the same
+  resolved config the runtime holds — wins; otherwise the writer the composed
+  profile configures on the `evolution-orchestrator` entry
+  (`config.eventBridgeWriter` in the `--dump-config` output, read after merging
+  the sections a profile patch can split the bundle into); otherwise the bundle
+  default. The report records both the value and its source
+  (`evidence.trustedWriter` / `evidence.writerSource`: `config` |
+  `composition` | `bundle-default`), and a healthy event-bridge check says which
+  writer it verified against.
+  *Three states, not a guess:* the composition reader states a writer only when
+  the dump determines it exactly — one `evolution-orchestrator` entry, a block
+  `config:`, the key as a direct child exactly once, and a scalar it can recover
+  verbatim (a plain or quoted string; `eventBridgeWriter:` and `""` are YAML
+  null / falsy and mean the default). Only direct child keys participate: a
+  nested key such as `other.eventBridgeWriter` is a different key and is
+  ignored entirely (the direct key is read if there is one; only an entry with
+  no direct key at all is *undeclared*, which is what falls back to the bundle
+  default). A key spelled equivalently but non-canonically —
+  `"eventBridgeWriter"`, `'eventBridgeWriter'`, `eventBridgeWriter :` —
+  resolves to the same YAML key at runtime, so it is *unreadable* rather than
+  undeclared. An inline `config:` mapping, a YAML tag, anchor, alias, block
+  scalar or flow collection, a `${...}` / `{{...}}` template, a
+  comment-ambiguous value, a non-string scalar, a repeated key or a repeated
+  entry is *unreadable* and is never defaulted: the event-bridge check reports
+  `degraded` with `writerSource: 'unknown'`, `trustedWriter: null`,
+  `writerExpectationReason` and the `writersSeen` actually in the log, unless a
+  MAC-level problem (malformed / unverifiable / conflicts) makes it `blocked`.
+  An in-session `config.eventBridgeWriter` is used verbatim, exactly as the
+  runtime reads it (`config.eventBridgeWriter || EVENT_BRIDGE_DEFAULT_WRITER`:
+  no trimming, no fallback to the composition). When the composition probe is
+  skipped (`--no-composition`) or no DSH CLI is resolved, the doctor has no
+  profile config and evaluates the log against the bundle default
+  (`writerSource: 'bundle-default'`, identifiable in the summary and evidence),
+  so an installation that overrides `eventBridgeWriter` in its profile can
+  still have its own log reported as untrusted in that call; the same
+  installation read through the composition probe, or in session, agrees with
+  the runtime.
 - **The doctor CLI is symlink-safe** and resolves the plugin package through
   `realpath`, so a `$DSH_HOME` or install path that contains symlinks still runs
   the diagnostic entry.
 - **The doctor's import graph contains no host package.** `lib/cordis-compat.js`
-  imports nothing from the host and the doctor entry only reaches
-  `lib/diagnostics.js`, `lib/orchestrator.js` and `lib/cordis-compat.js`.
+  imports nothing from the host, and the doctor entry reaches only this
+  package's own modules: `lib/diagnostics.js`, `lib/orchestrator.js`,
+  `lib/cordis-compat.js`, `lib/experience-recall.js` and
+  `lib/compat/legacy-startup-drift.js`, plus `lib/domain-storage.js` (which
+  brings in `zod`, `lib/archive-stage.js`, `lib/event-log-checkpoint.js` and
+  the domain modules) and `js-yaml`, both loaded lazily and guarded.
   `test/cordis-compat.test.mjs` copies the bundle without any `node_modules` and
   runs the doctor from it, so a reintroduced host import fails the suite.
 - **A promoted row that cannot be observed is never reported as healthy.**
@@ -337,8 +428,10 @@ resolution path.
 
 ## Data and privacy
 
-- The repository contains no user data, credentials, tokens, logs, sessions, or
-  machine-specific paths.
+- The shipped package contains no user data, credentials, tokens, logs,
+  sessions, or machine-specific paths; `pack:check` rejects shipped text that
+  carries a home path or credential material. `docs/evidence/` and
+  `docs/performance/` are outside the package.
 - Tests use synthetic fixtures created in `os.tmpdir()`; no real Evolution
   memory or migration source is read.
 - Installed state is created at runtime under the user's own
