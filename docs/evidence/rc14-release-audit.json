@@ -42,7 +42,7 @@
   "pinBytesMatchManifest": true,
   "provenance": {
     "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.14 --require-source-commit",
-    "executedLocallyBeforeTheTagWasPushed": false,
+    "executedLocallyBeforeTheTagWasPushed": null,
     "executedLocallyAfterTheTagWasPushed": true,
     "executedByTheReleaseWorkflow": true,
     "problems": [],
@@ -51,7 +51,8 @@
       "source commit fd63317a3ac7ee1d53d675255532ac06cba629b2 is in the tagged history",
       "source commit content 4dabf50a7e3c0dc05a81c2dc444fbf352fe1fda98b2e8959fec2a4c1bee76881 matches the pin",
       "tagged tree content 4dabf50a7e3c0dc05a81c2dc444fbf352fe1fda98b2e8959fec2a4c1bee76881 matches the pin"
-    ]
+    ],
+    "executionHistoryNote": "Whether a local command ran before or after a particular moment cannot be proven from the repository state afterwards. What is observable: the tag points at a433b6e, that commit already carried the pin, and re-running the command against a fresh clone checked out at the tag passes. The boolean above records only that the command passes now, on the tagged commit."
   },
   "localValidation": {
     "commands": [
@@ -167,7 +168,9 @@
       "SHA256SUMS",
       "manifest.json"
     ],
-    "workflowDownloadedAndComparedTheUploadedAssets": true
+    "workflowDownloadedAndComparedTheUploadedAssets": true,
+    "actionHistoryNote": "Whether the draft was published by a human rather than the workflow is not derivable from the current release state; the workflow only ever creates a draft and the publication was performed afterwards by the owner. The observable facts are isDraft=false, isPrerelease=true, and the 404 from the releases/latest endpoint.",
+    "latestFlagNote": "`latestFlag: false` records that the release was not marked latest; GitHub exposes this only indirectly, through the 404 of GET /releases/latest while every published release is a pre-release."
   },
   "publishedAssets": [
     {
@@ -227,11 +230,12 @@
     "The acceptance harness ran on macOS arm64 with Node v26.12.0; the CI run covers the same content on ubuntu-latest with Node 22.19.0 and 24.x.",
     "CI host acceptance repacks with Node 22 npm, so its bytes differ from the pinned ones; only the content digest is compared there, as documented in RELEASE.md section 1.",
     "Only 0.2.1-rc.2 was re-accepted against the anonymously downloaded bytes; the other two hosts were accepted locally against the pinned tarball and in CI against the same content.",
-    "The Node 22.19.0 and 24.9.0 unit runs were executed on a copy of the release tree with the repository node_modules symlinked; they are not a full npm ci in a clean checkout (CI performs that on both versions)."
+    "The Node 22.19.0 and 24.9.0 unit runs were executed on a copy of the release tree with the repository node_modules symlinked, and their logs are not preserved as committed artifacts; the durable evidence for both versions is the CI unit-test matrix on a433b6e, which runs npm ci in a clean checkout.",
+    "The differential runs are exhaustive over the code-point and structural corpora listed in docs/performance/knowledge-identity-normalization.md sections 2 and 5.2, and over the 105-entry identity corpus in the test file. They are not a proof over arbitrary input: the argument for the removed collapses rests on the stated character-class containment plus those runs."
   ],
   "remainingRisksAndUnverified": [
     "The A–E equivalence argument for the identity path rests on exhaustive differential runs plus the frozen rc.10 baseline, not on a formal proof of the regex engine: RELEASE.md risk list and docs/performance/knowledge-identity-normalization.md section 7 state that rewriting, moving or reinterpreting those collapses requires re-running the comparison.",
-    "The identity literal in identitySerialization() hard-codes six dimension names. A seventh dimension, a rename, or a dimension name added to VOLATILE_KEYS fails the property test before any pinned value is consulted, but a change that alters a value of an existing dimension is caught only by the frozen-baseline differentials.",
+    "The identity literal in identitySerialization() hard-codes six dimension names. A seventh dimension, a rename, or a dimension name added to VOLATILE_KEYS fails the same test file's working-tree self-consistency assertions (the projection must expose exactly six names, the working key must be the sorted projection of the working tree's own dimensions, and this tree's compaction must keep every name) — but those assertions run after the pinned-value assertion in that test, so the failure surfaces on the pinned comparison first. A change that alters the value of an existing dimension is caught only by the frozen-baseline differentials.",
     "The event-bridge tail repair is a check-then-act over a file no writer locks: an append landing between the final read and the rename can still be dropped (RELEASE.md risk 14).",
     "satisfiesRange() compares pre-release identifiers with localeCompare, so a multi-digit pre-release ordinal orders wrongly. Not fixed; the verified host combinations do not exercise it (RELEASE.md risk 15)."
   ]
