@@ -21,6 +21,7 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -108,6 +109,56 @@ const CORPUS = [
   // must still come from the dimensions.
   { knowledgeKey: "knowledge:" + "f".repeat(32), problem: "dimension wins", componentId: "plugin:precedence" },
   { knowledgeKey: "knowledge:" + "1".repeat(32), type: "network-error", componentId: "plugin:precedence-2" },
+  // The separator collapse that used to run in front of the class collapse is a
+  // subset of it, and both replace a maximal run with one space, so a separator
+  // run, the class run that contains it and the same shape written with a plain
+  // space must all normalize alike.
+  { problem: "a_/\\|:b", componentId: "plugin:sep" },
+  { problem: "a!b@c", componentId: "plugin:sep" },
+  { problem: "a b", componentId: "plugin:sep" },
+  { problem: "a_/\\|:b !c", componentId: "plugin:sep" },
+  { failureMode: "a\\|/_:b", rootCause: "a_/\\|:b" },
+  // The phrase replacements sit below the class collapse and still match when
+  // the space between their words arrives as a control character: the class
+  // collapse converts that run before them.
+  { problem: "time\u0000out", componentId: "plugin:control-phrase" },
+  { problem: "network\u0000error", componentId: "plugin:control-phrase" },
+  { problem: "not\u0000found", componentId: "plugin:control-phrase" },
+  { problem: "out\u0000of\u0000memory", componentId: "plugin:control-phrase" },
+  { problem: "rate\u0000limit", componentId: "plugin:control-phrase" },
+  { failureMode: "time\u001fout", rootCause: "network\u0000error" },
+  { failureMode: "not\u0000found" },
+  { failureMode: "out\u0000of\u0000memory" },
+  { failureMode: "rate\u0000limit" },
+  // A run of whitespace or invisible spaces collapses to one space, and the trim
+  // `boundedText()` performs is the only trim left on this path.
+  { problem: "  double  spaced  ", componentId: "plugin:space" },
+  { problem: '"lead", trailing ', componentId: "plugin:space" },
+  { problem: "   leading", componentId: "plugin:space" },
+  { problem: "trailing\t\t", componentId: "plugin:space" },
+  { problem: "a\tb\nc", componentId: "plugin:space" },
+  { problem: "a\u00a0b", componentId: "plugin:space" },
+  { problem: "a\u3000b", componentId: "plugin:space" },
+  { problem: "\u0000lead\t", componentId: "plugin:space" },
+  { semanticFact: "\u0000\u001f  mixed\t\u00a0\u3000 run  ", componentId: "plugin:space" },
+  { problem: "\u0000@\u0001 mixed_\t/ run", componentId: "plugin:control-run" },
+  // The two quote folds stay chained ahead of the class collapse.
+  { problem: "’‘“”", componentId: "plugin:quotes" },
+  { problem: "a’b‘c“d”e", componentId: "plugin:quotes" },
+  { failureMode: "’unclosed", rootCause: "“opened" },
+  // The dashed identifier collapse is retained: a dashed hex run folds even
+  // when its letters are lower case.
+  { problem: "deadbeef-feedface", componentId: "plugin:dashed" },
+  { problem: "12345678-1234-1234-1234-123456789012", componentId: "plugin:dashed" },
+  { problem: "abcd-1234", componentId: "plugin:dashed" },
+  // Each of the six dimensions carries a signal on its own here, so the hash
+  // projection's key set and sorted order are exercised by every one of them.
+  { issueType: "latency-regression", scope: "plugin:dimension-type" },
+  { rootCause: "dimension root cause, only signal", componentId: "plugin:dimension-root" },
+  { strategy: "raise the retry budget", scope: "plugin:dimension-strategy" },
+  { failureMode: "dimension failure mode, only signal", componentId: "plugin:dimension-pattern" },
+  { semanticFact: "dimension semantic fact, only signal", componentId: "plugin:dimension-fact" },
+  { problem: "dimension scope signal", componentId: "plugin:dimension-scope" },
 ];
 
 test("normalizeKnowledgeEvent stays value-identical to the pinned implementation", () => {
@@ -115,6 +166,98 @@ test("normalizeKnowledgeEvent stays value-identical to the pinned implementation
     const before = baselineKnowledge.normalizeKnowledgeEvent(entry, { sourceCollection: "observations", now: new Date(NOW) });
     const after = normalizeKnowledgeEvent(entry, { sourceCollection: "observations", now: new Date(NOW) });
     assert.deepEqual(after, before, `normalizeKnowledgeEvent drifted for ${JSON.stringify(entry)?.slice(0, 80)}`);
+  }
+});
+
+/**
+ * The six dimension names the canonical projection is built from. A record whose
+ * identity is decided by its dimensions must expose exactly these, and no
+ * dimension name may be dropped by the compaction the pre-change hash applied
+ * to them.
+ */
+const DIMENSION_NAMES = ["failureMode", "issueType", "rootCause", "scope", "semanticFact", "strategy"];
+
+/**
+ * The projection `stableStringify()` produces for a six-dimension object: keys in
+ * sorted order, every value kept. Re-derived here instead of imported, so the
+ * hashes below are an independent reconstruction rather than a copy.
+ */
+function projectionHash(dimensions) {
+  const projection = {};
+  for (const key of Object.keys(dimensions).sort()) projection[key] = dimensions[key];
+  return createHash("sha256").update(JSON.stringify(projection)).digest("hex").slice(0, 32);
+}
+
+/**
+ * Whether the working tree's own compaction keeps a dimension name, read through
+ * its public API rather than copied from `VOLATILE_KEYS`: an object-valued
+ * `strategy` is a `stableStringify()` of the caller's object, so this is exactly
+ * the filter the pre-change `hash(dimensions)` applied to the projection. A name
+ * this filter drops would make `identitySerialization()` hash a projection the
+ * pre-change code would not have hashed. `assert.ok(hashed >= 50)` below keeps
+ * the probe's cost bounded to one call per name.
+ */
+function workingCompactionKeeps(name) {
+  const probe = normalizeKnowledgeEvent({ strategy: { [name]: "probe" }, rootCause: "anchor" }, { sourceCollection: "observations", now: new Date(NOW) });
+  return probe?.dimensions?.strategy === JSON.stringify({ [name]: "probe" });
+}
+
+/**
+ * Two stored keys that normalize to two different non-empty texts. A record
+ * whose identity ignores both of them is decided by its dimensions, so its key
+ * is the hash of the projection; a record whose key follows the stored key is
+ * decided by the explicit-key path and is skipped, because no hash of a
+ * projection decides it.
+ */
+const PROBE_KEYS = ["probe key one", "probe key two"];
+
+/**
+ * The identity hash is the digest of the six-dimension projection in sorted key
+ * order. Two different checks keep that true, and each catches a different
+ * failure:
+ *
+ * - the *pinned* side below re-hashes the released implementation's own
+ *   `dimensions`, so it pins the values the projection hashes; a dimension
+ *   rename or a name that changes the released identity fails here, and the
+ *   file's other differential tests fail with it;
+ * - the *working* side is self-consistency: the working key must be the sorted
+ *   projection of the working tree's own `dimensions`, that projection must
+ *   expose exactly the six names, and the working tree's compaction must keep
+ *   every one of them. Dropping a name from `identitySerialization()`, adding a
+ *   seventh dimension to the projection without extending the literal, or
+ *   teaching the working tree's volatile filter a dimension name fails here,
+ *   before any pinned value is even consulted.
+ */
+test("the identity hash is the sorted six-dimension projection of the pin", () => {
+  const signalled = new Set();
+  let hashed = 0;
+  for (const entry of CORPUS) {
+    const label = JSON.stringify(entry)?.slice(0, 80);
+    const before = baselineKnowledge.normalizeKnowledgeEvent(entry, { sourceCollection: "observations", now: new Date(NOW) });
+    const pinnedKey = before?.knowledgeKey ?? null;
+    const probeKeys = PROBE_KEYS.map((key) => baselineKnowledge.normalizeKnowledgeEvent({ ...entry, knowledgeKey: key }, { sourceCollection: "observations", now: new Date(NOW) })?.knowledgeKey ?? null);
+    if (pinnedKey === null || probeKeys.some((key) => key !== pinnedKey)) continue;
+    assert.ok(before?.dimensions, `a hashed record must expose its dimensions: ${label}`);
+    const expected = "knowledge:" + projectionHash(before.dimensions);
+    assert.equal(before.knowledgeKey, expected, `the pinned hash is not the sorted projection of its own dimensions for ${label}`);
+    assert.equal(knowledgeKeyOf(entry), expected, `the working hash drifted from the pinned projection for ${label}`);
+    // Self-consistency, so a projection that grows past the literal cannot hide
+    // behind the pinned expectation: the working key must hash the projection
+    // the working tree itself produced.
+    const working = normalizeKnowledgeEvent(entry, { sourceCollection: "observations", now: new Date(NOW) });
+    assert.deepEqual(Object.keys(working?.dimensions ?? {}).sort(), DIMENSION_NAMES,
+      `the working projection must expose exactly the six dimensions for ${label}`);
+    assert.equal(knowledgeKeyOf(entry), "knowledge:" + projectionHash(working.dimensions),
+      `the working hash must be the sorted projection of its own dimensions for ${label}`);
+    for (const [name, value] of Object.entries(before.dimensions)) if (value) signalled.add(name);
+    hashed += 1;
+  }
+  assert.ok(hashed >= 50, `only ${hashed} records exercised the hash branch; the projection property must not be vacuous`);
+  assert.deepEqual([...signalled].sort(), DIMENSION_NAMES,
+    "every dimension must carry a signal in at least one hashed record, so all six names are exercised");
+  for (const name of DIMENSION_NAMES) {
+    assert.ok(workingCompactionKeeps(name),
+      `the working tree's own compaction must keep the dimension name ${name}: a name it drops would make the serialized projection disagree with the projection compactValue() defines`);
   }
 });
 
@@ -291,6 +434,32 @@ async function fallbackScenario(MemoryClass, home) {
   };
 }
 
+/**
+ * The same cold fixture as `fallbackScenario`, but the row carries a stored
+ * canonical-looking key belonging to a different subject. `#sourceMatches()`
+ * compares that key first and then recomputes the row's own identity, so a
+ * stale key must not lose the match and must not be treated as authoritative.
+ */
+const STALE_COLD = { ...LEGACY, id: "stale-key-observation", knowledgeKey: "knowledge:" + "9".repeat(32) };
+
+async function staleKeyScenario(MemoryClass, home) {
+  const store = new JsonStateStore({ home });
+  const archive = `${store.filePath}.observations-archive.jsonl`;
+  await mkdir(dirname(archive), { recursive: true });
+  await writeFile(archive, `${JSON.stringify(STALE_COLD)}\n`);
+  const instance = memory(MemoryClass, store, { hotEntries: 8 });
+  await instance.load();
+  const matched = await instance.recordObservation(SUCCESS_INCOMING);
+  const unrelated = await instance.recordObservation({ ...SUCCESS_INCOMING, id: "unrelated-observation", componentId: "plugin:other", target: "plugin:other", capabilityId: "plugin:other" });
+  return {
+    matchedReturned: matched.id,
+    retained: (instance.snapshot().observations ?? []).map((entry) => entry.id),
+    unrelatedReturned: unrelated.id,
+    archive: await readFile(archive, "utf8"),
+    state: existsSync(store.filePath) ? (await readFile(store.filePath, "utf8")).split(home).join("<home>") : null,
+  };
+}
+
 test("a cold row without a stored key still matches by its recomputed key", async () => {
   const beforeHome = await mkdtemp(join(tmpdir(), "dsh-knowledge-fallback-before-"));
   const afterHome = await mkdtemp(join(tmpdir(), "dsh-knowledge-fallback-after-"));
@@ -302,6 +471,27 @@ test("a cold row without a stored key still matches by its recomputed key", asyn
     // the cold one, not the incoming id), while the unrelated subject is kept.
     assert.equal(after.matchedReturned, LEGACY.id);
     assert.deepEqual(after.retained, ["unrelated-observation"]);
+  } finally {
+    await rm(beforeHome, { recursive: true, force: true });
+    await rm(afterHome, { recursive: true, force: true });
+  }
+});
+
+test("a cold row with a stale stored key still matches by its recomputed key", async () => {
+  const beforeHome = await mkdtemp(join(tmpdir(), "dsh-knowledge-stale-before-"));
+  const afterHome = await mkdtemp(join(tmpdir(), "dsh-knowledge-stale-after-"));
+  try {
+    const before = await staleKeyScenario(baselineMemory.EvolutionMemory, beforeHome);
+    const after = await staleKeyScenario(EvolutionMemory, afterHome);
+    assert.deepEqual(after, before, "a stale stored key changed the match, the retention or the persisted bytes");
+    // `#sourceMatches()` compares the stored key first, so the stale key does
+    // not describe this row's subject at all; the recomputation is what finds
+    // it, and retention folds the incoming source into that cold row.
+    assert.equal(after.matchedReturned, STALE_COLD.id);
+    assert.equal(after.unrelatedReturned, "unrelated-observation");
+    assert.deepEqual(after.retained, ["unrelated-observation"]);
+    assert.ok(after.archive.includes(STALE_COLD.knowledgeKey),
+      "the cold row's own stored key must survive the fold; only the recomputation proves the match");
   } finally {
     await rm(beforeHome, { recursive: true, force: true });
     await rm(afterHome, { recursive: true, force: true });

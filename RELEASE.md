@@ -2,15 +2,17 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前本地候选版本：`0.2.0-rc.13`，在 `0.2.0-rc.12` 之上做两件事：把宿主支持扩到官方 DSH `0.2.1-rc.2`，并修复六处同源的“doctor / 运行时 / 磁盘事实不一致”缺陷。宿主面扩展侧：逐一解包比对确认 `0.2.1-alpha.1 → 0.2.1-rc.2` 的全部上游差分要么是**零源码差异**（cordis `4.0.5-alpha.2 → 4.0.5`、include `1.0.10-alpha.2 → 1.0.10`：只有 `package.json` 的版本与自身依赖范围变）、要么是**注释级**（storage-domain 两处 JSDoc）、要么是**纯增量或重命名**（dsh-tools 删 `lib/invariant.js`、新增 `lib/ptc-calls.js`，`PtcDispatchEventData` 新增可选 `meta?`；dsh-cordis-host-runner 只重命名内部品牌函数，导出名与签名不变），宿主本体的 `profile-boot` 则从“初始化缺失 profile”改为“启动前替换已有 profile”；本插件实际读取的每一个宿主面都落在零差异或纯增量包上。这部分只改 `peerDependencies` 的版本声明（`@deepseek-ai/dsh` / `dsh-cordis-host-runner` / `dsh-tools` 追加 `0.2.1-rc.2`，include 追加精确 `1.0.10`；`@deepseek-ai/cordis` 的 `^4.0.1` 已覆盖 `4.0.5`、`js-yaml` 的 `^4.2.0` 已覆盖 `4.3.2`），并把 CI 矩阵、文档与 `CHANGELOG.md` 更新到三个宿主。
+当前本地候选版本：`0.2.0-rc.14`，在 `0.2.0-rc.13` 之上只做一件事：删除 `lib/dockyard-domain/knowledge.js` 冷档案身份路径上五处**可证明等价**的多余计算（A–E：被类折叠完全包含的控制字符折叠与分隔符折叠、它们之后不可能生效的尾部空白折叠与内层 `trim()`、`knowledgeIdentity()` 为算 hash 重建的六键投影、以及 `hash()` 的中间 `Hash` 对象）。这些改动只让**每次身份重算**更便宜，扫描行数、去重与 retention 决策、`knowledgeDimensions` 的键顺序（进入持久化字节）、持久化格式、认证、恢复、回滚、跨进程锁与 promotion 边界一律未改；已存储身份的值由冻结基线差分钉住，与 rc.13 逐字节相同。收益与边界（含必须读作噪声的 50 + 50 与空档案两档）见 `docs/performance/knowledge-identity-normalization.md` 与 `CHANGELOG.md` 的 rc.14 条目。
 
-本候选还包含生产代码修复，因此 `lib/` 有改动：`lib/diagnostics.js`（`diagnoseHostCli` 改为只有精确声明的宿主版本才 `verified`；`diagnoseEventBridge` 增加 writer 判定与 `untrustedWriters` 证据；`parseComposedProfile` 按基础名归并 section 并读取 `evolution-orchestrator.config.eventBridgeWriter`；`applyRepairs` 在截断 partial tail 前重新验证；`collectDiagnostics` 按 config → composition → bundle 默认解析期望 writer）、`lib/orchestrator.js`（新增导出 `EVENT_BRIDGE_DEFAULT_WRITER` / `eventBridgeWriterTrusted()`，`EvolutionEventBridge` 构造函数把 sequence 推进与去重占位放进同一可信判定）、`lib/domain-storage.js`（事件桥重放改用同一谓词，锁与常量注释同步）以及 `lib/compat/legacy-startup-drift.js` 的模块注释（只描述实际触发条件，无逻辑改动）。六处修复前的实测行为、修复后的判定与对应回归用例名见 `CHANGELOG.md` 的 rc.13 条目。**未改的不变量**：`promotionGates` 的八项门禁、晋升二次确认逻辑、Trial 基线捕获、journal 阶段判定、跨进程锁、CAS、领域存储格式、授权边界与事件信封/落盘格式。源码、固定产物和三个官方宿主验收必须对应同一内容及字节；这些 `lib/` 改动改变了 `contentSha256`，因此 `release/` 固定产物、三个宿主的验收证据与 `SHA256SUMS` 已按第 2 节重新生成（`npm run release:pack` → `npm run release:publish` → 针对固定 tarball 重跑三宿主验收），三者与工作树内容一致，见第 1 节与 4.1。写入固定点时本轮未创建 tag、未进行外部发布，固定产物、三个官方宿主验收证据与历史锚点见 `release/manifest.json` 与 `docs/evidence/`。最后公开的 `v0.2.0-rc.10` 的发布状态、发布后双宿主证据与历史资产校验见 `docs/evidence/rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
+`0.2.0-rc.13` 的内容（宿主支持扩到官方 DSH `0.2.1-rc.2` 与六处“doctor / 运行时 / 磁盘事实不一致”修复）原样保留在本候选里：它的 `lib/` 修复与三个宿主的验收结论未被本次改动触碰，只因为 `knowledge.js` 变化而必须重新固定产物并重跑三宿主验收。rc.13 的宿主面差分、六处修复的实测行为与回归用例名见 `CHANGELOG.md` 的 rc.13 条目；rc.13 及更早的 tarball、校验和与 tag 字节保持不变，也未被覆盖。
+
+源码、固定产物和三个官方宿主验收必须对应同一内容及字节；本次 `lib/` 改动改变了 `contentSha256`，因此 `release/` 固定产物、三个宿主的验收证据与 `SHA256SUMS` 已按第 2 节重新生成（`npm run release:pack` → `npm run release:publish` → 针对固定 tarball 重跑三宿主验收），三者与工作树内容一致，见第 1 节与 4.1。固定产物、三个官方宿主验收证据与历史锚点见 `release/manifest.json` 与 `docs/evidence/`。最后公开的 `v0.2.0-rc.13` 的发布状态、发布后证据与历史资产校验见 `docs/evidence/rc13-release-audit.json`、`rc13-ci-*.json` 与 `rc13-postpublish-*.json`；卸载/重装后 memory 文件哈希变化的调查结论见 `docs/evidence/memory-hash-investigation.md`；本轮不修改历史 tag 或发布附件。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.13.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.14.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
@@ -31,14 +33,15 @@
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.13，仓库内容）
+# 当前本地候选（0.2.0-rc.14，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
-# 尚未创建 v0.2.0-rc.13 tag；发布前再验证 tag -> commit -> 固定点 -> 工作树
+# 发布后：验证 tag -> commit -> 固定点 -> 工作树（发布前在同一 commit 上也能跑）
+node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.14 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.13，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0-rc.14，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -88,7 +91,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 
 ### 4.1 已执行的验收记录
 
-下表是内容冻结后针对 `release/` 固定产物重跑的结果：`npm run release:publish` 写入 `release/` 的 tarball、`manifest.json` 与 `SHA256SUMS`，随后脚本按第 4 节用 `--tarball release/dsh-evolution-0.2.0-rc.13.tgz` 依次重跑三个宿主，并把证据写回 `docs/evidence/dsh-<host>.json`；`npm run pack:check` 与 `test/release-pin.test.mjs` 核对这三份证据记录的 `contentSha256` / `tarballSha256` 与固定点一致。三个宿主当前都解析到稳定补丁级别（宿主自身是 `~` 范围，稳定补丁版一发布就被解析到），见 `COMPATIBILITY.md` 的验证矩阵。
+下表是内容冻结后针对 `release/` 固定产物重跑的结果：`npm run release:publish` 写入 `release/` 的 tarball、`manifest.json` 与 `SHA256SUMS`，随后脚本按第 4 节用 `--tarball release/dsh-evolution-0.2.0-rc.14.tgz` 依次重跑三个宿主，并把证据写回 `docs/evidence/dsh-<host>.json`；`npm run pack:check` 与 `test/release-pin.test.mjs` 核对这三份证据记录的 `contentSha256` / `tarballSha256` 与固定点一致。三个宿主当前都解析到稳定补丁级别（宿主自身是 `~` 范围，稳定补丁版一发布就被解析到），见 `COMPATIBILITY.md` 的验证矩阵。
 
 | 宿主 | 宿主模块 | 结果 |
 | --- | --- | --- |
@@ -98,7 +101,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 
 首次 CLI 诊断为 `degraded`（`data.root` 尚未初始化）属于预期：数据根在首次运行时创建，最终诊断恢复 `healthy`。
 
-`docs/evidence/dsh-<host>.json` 是**固定点证据**：`pack:check` 与 `test/release-pin.test.mjs` 只核对这三个文件记录的 `contentSha256` / `tarballSha256` 是否等于当前固定内容与固定字节。`docs/evidence/` 下另有一些按轮次命名的验收记录（`cold-archive-write-path-*`、`retention-plan-*`、`write-path-reconcile-identity-*`）；它们是各轮开发中对**中间候选**运行的真实验收，其 `packageVersion` 是当时的版本号、内容摘要不等于任何固定点，因此**不构成固定点证据**，也不被任何校验引用。`0.2.0-rc.13` 的权威验收只有上面三个文件，且必须在本轮改动后重跑；在重跑完成前它们不描述当前候选。
+`docs/evidence/dsh-<host>.json` 是**固定点证据**：`pack:check` 与 `test/release-pin.test.mjs` 只核对这三个文件记录的 `contentSha256` / `tarballSha256` 是否等于当前固定内容与固定字节。`docs/evidence/` 下另有一些按轮次命名的验收记录（`cold-archive-write-path-*`、`retention-plan-*`、`write-path-reconcile-identity-*`）；它们是各轮开发中对**中间候选**运行的真实验收，其 `packageVersion` 是当时的版本号、内容摘要不等于任何固定点，因此**不构成固定点证据**，也不被任何校验引用。`0.2.0-rc.14` 的权威验收只有上面三个文件，且必须在本轮改动后重跑；在重跑完成前它们不描述当前候选。
 
 ## 5. CI 与发布链
 

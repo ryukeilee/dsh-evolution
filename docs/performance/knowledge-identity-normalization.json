@@ -1,0 +1,112 @@
+{
+  "node": "v26.12.0",
+  "platform": "darwin/arm64",
+  "rows": 10000,
+  "knowledgeRows": 10000,
+  "rounds": 3,
+  "warmup": 1,
+  "samples": 5,
+  "scope": "one knowledgeKeyOf() per row = one #sourceMatches() pass over a cold archive",
+  "variants": [],
+  "folds": {
+    "codePoints": 1112064,
+    "strings": 1166311,
+    "classDifferences": 0,
+    "patternDifferences": 0,
+    "boundaryDifferences": [
+      "U+017F",
+      "U+212A"
+    ],
+    "collapses": [
+      "[0-9a-f]",
+      "[0-9a-f-]",
+      "\\b[0-9a-f]{8,}\\b",
+      "\\b[0-9a-f]{4,}-[0-9a-f-]{4,}\\b"
+    ],
+    "boundaryProbes": 1112064,
+    "nfkcSurvivors": [],
+    "boundaryExampleDiffers": true
+  },
+  "productionAnchor": {
+    "cases": 4,
+    "anchored": [
+      "U+017F",
+      "U+212A",
+      "U+FF21",
+      "U+2460"
+    ]
+  },
+  "baseline": {
+    "version": "0.2.0-rc.13",
+    "sha256": "6437966edb337aeb5ed1c1198fd189b34c335fcd1abb927e799a446716d7d64d"
+  },
+  "gate": "every measured side returns the pinned key for every row",
+  "roundsDetail": [
+    {
+      "order": [
+        "candidate"
+      ]
+    },
+    {
+      "order": [
+        "candidate"
+      ]
+    },
+    {
+      "order": [
+        "candidate"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "label": "candidate",
+      "directory": null,
+      "observations": {
+        "rows": 10000,
+        "wallMs": 36.592417000000296,
+        "cpuMs": 36.648,
+        "raw": [
+          36.908,
+          36.592,
+          36.477,
+          36.429,
+          36.745,
+          36.451,
+          36.503,
+          36.525,
+          36.451,
+          36.393,
+          36.608,
+          36.876,
+          36.819,
+          36.799,
+          36.841
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 67.2180830000002,
+        "cpuMs": 67.298,
+        "raw": [
+          67.218,
+          67.31,
+          67.092,
+          67.149,
+          67.324,
+          67.113,
+          67.076,
+          67.215,
+          66.858,
+          67.108,
+          67.328,
+          67.256,
+          67.317,
+          67.352,
+          67.354
+        ]
+      }
+    }
+  ],
+  "deltas": []
+}

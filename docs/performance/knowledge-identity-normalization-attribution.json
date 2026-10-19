@@ -1,0 +1,586 @@
+{
+  "node": "v26.12.0",
+  "platform": "darwin/arm64",
+  "rows": 10000,
+  "knowledgeRows": 10000,
+  "rounds": 3,
+  "warmup": 1,
+  "samples": 5,
+  "scope": "one knowledgeKeyOf() per row = one #sourceMatches() pass over a cold archive",
+  "variants": [
+    "/tmp/kb-rc13/package/lib",
+    "/tmp/kb-variants/A-separator-only",
+    "/tmp/kb-variants/B-tail-only",
+    "/tmp/kb-variants/C-serialization-only",
+    "/tmp/kb-variants/D-digest-only",
+    "/tmp/kb-variants/E-control-only",
+    "/tmp/kb-variants/rejected-quote-merge",
+    "/tmp/kb-variants/rejected-dash-guard"
+  ],
+  "folds": {
+    "codePoints": 1112064,
+    "strings": 1166311,
+    "classDifferences": 0,
+    "patternDifferences": 0,
+    "boundaryDifferences": [
+      "U+017F",
+      "U+212A"
+    ],
+    "collapses": [
+      "[0-9a-f]",
+      "[0-9a-f-]",
+      "\\b[0-9a-f]{8,}\\b",
+      "\\b[0-9a-f]{4,}-[0-9a-f-]{4,}\\b"
+    ],
+    "boundaryProbes": 1112064,
+    "nfkcSurvivors": [],
+    "boundaryExampleDiffers": true
+  },
+  "productionAnchor": {
+    "cases": 4,
+    "anchored": [
+      "U+017F",
+      "U+212A",
+      "U+FF21",
+      "U+2460"
+    ]
+  },
+  "baseline": {
+    "version": "0.2.0-rc.13",
+    "sha256": "6437966edb337aeb5ed1c1198fd189b34c335fcd1abb927e799a446716d7d64d"
+  },
+  "gate": "every measured side returns the pinned key for every row",
+  "roundsDetail": [
+    {
+      "order": [
+        "candidate",
+        "variant1",
+        "variant2",
+        "variant3",
+        "variant4",
+        "variant5",
+        "variant6",
+        "variant7",
+        "variant8"
+      ]
+    },
+    {
+      "order": [
+        "variant1",
+        "variant2",
+        "variant3",
+        "variant4",
+        "variant5",
+        "variant6",
+        "variant7",
+        "variant8",
+        "candidate"
+      ]
+    },
+    {
+      "order": [
+        "variant2",
+        "variant3",
+        "variant4",
+        "variant5",
+        "variant6",
+        "variant7",
+        "variant8",
+        "candidate",
+        "variant1"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "label": "candidate",
+      "directory": null,
+      "observations": {
+        "rows": 10000,
+        "wallMs": 36.377166000002035,
+        "cpuMs": 36.425,
+        "raw": [
+          36.37,
+          36.417,
+          36.337,
+          36.459,
+          36.612,
+          36.469,
+          36.377,
+          36.29,
+          36.441,
+          36.499,
+          36.339,
+          36.217,
+          36.731,
+          36.369,
+          36.257
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 67.17966700000034,
+        "cpuMs": 67.241,
+        "raw": [
+          67.18,
+          67.193,
+          67.286,
+          67.257,
+          67.28,
+          67.105,
+          67.132,
+          67.112,
+          67.055,
+          67.194,
+          67.038,
+          67.218,
+          67.246,
+          67.14,
+          66.949
+        ]
+      }
+    },
+    {
+      "label": "variant1",
+      "directory": "/tmp/kb-rc13/package/lib",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 49.8759170000003,
+        "cpuMs": 49.94,
+        "raw": [
+          50.06,
+          50.651,
+          49.876,
+          49.857,
+          49.956,
+          49.872,
+          49.78,
+          49.808,
+          49.715,
+          49.912,
+          49.974,
+          49.945,
+          49.863,
+          49.764,
+          50.081
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 90.30083399999967,
+        "cpuMs": 90.391,
+        "raw": [
+          90.142,
+          91.102,
+          90.541,
+          90.392,
+          90.355,
+          90.367,
+          90.174,
+          90.081,
+          90.301,
+          90.122,
+          90.338,
+          90.067,
+          89.916,
+          90.233,
+          90.534
+        ]
+      }
+    },
+    {
+      "label": "variant2",
+      "directory": "/tmp/kb-variants/A-separator-only",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 47.510417000001326,
+        "cpuMs": 47.574,
+        "raw": [
+          47.485,
+          47.407,
+          47.439,
+          47.317,
+          47.397,
+          47.39,
+          47.581,
+          47.571,
+          47.602,
+          47.562,
+          47.585,
+          47.544,
+          47.51,
+          47.517,
+          47.431
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 84.93000000000029,
+        "cpuMs": 85.022,
+        "raw": [
+          84.745,
+          85.04,
+          85.125,
+          85.043,
+          84.93,
+          85.207,
+          85.146,
+          84.898,
+          84.883,
+          84.879,
+          84.975,
+          84.895,
+          85.052,
+          84.883,
+          84.881
+        ]
+      }
+    },
+    {
+      "label": "variant3",
+      "directory": "/tmp/kb-variants/B-tail-only",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 45.35741700000108,
+        "cpuMs": 45.422,
+        "raw": [
+          45.375,
+          45.235,
+          45.288,
+          45.146,
+          45.357,
+          45.316,
+          45.504,
+          45.4,
+          45.44,
+          45.621,
+          45.632,
+          45.281,
+          45.325,
+          45.52,
+          45.255
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 80.70266700000047,
+        "cpuMs": 80.787,
+        "raw": [
+          80.801,
+          80.829,
+          80.703,
+          80.386,
+          80.466,
+          80.371,
+          80.266,
+          80.825,
+          80.931,
+          80.856,
+          80.689,
+          80.706,
+          80.627,
+          80.399,
+          80.838
+        ]
+      }
+    },
+    {
+      "label": "variant4",
+      "directory": "/tmp/kb-variants/C-serialization-only",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 45.83354200000031,
+        "cpuMs": 45.881,
+        "raw": [
+          46.017,
+          45.755,
+          45.718,
+          45.865,
+          45.642,
+          45.848,
+          46.069,
+          45.788,
+          45.853,
+          45.834,
+          46.097,
+          45.8,
+          45.852,
+          45.744,
+          45.818
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 85.80079199999818,
+        "cpuMs": 85.893,
+        "raw": [
+          85.644,
+          85.982,
+          85.615,
+          85.597,
+          85.785,
+          86,
+          85.813,
+          85.965,
+          85.663,
+          85.948,
+          85.723,
+          86.016,
+          85.72,
+          85.801,
+          85.816
+        ]
+      }
+    },
+    {
+      "label": "variant5",
+      "directory": "/tmp/kb-variants/D-digest-only",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 48.362457999999606,
+        "cpuMs": 48.427,
+        "raw": [
+          48.343,
+          48.256,
+          48.257,
+          48.287,
+          48.348,
+          48.415,
+          48.412,
+          48.58,
+          48.381,
+          48.445,
+          48.408,
+          48.362,
+          48.361,
+          48.478,
+          48.322
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 88.32012499999837,
+        "cpuMs": 88.414,
+        "raw": [
+          88.041,
+          88.159,
+          88.444,
+          88.146,
+          88.218,
+          88.614,
+          88.509,
+          88.43,
+          88.34,
+          88.351,
+          88.32,
+          88.279,
+          88.247,
+          88.337,
+          88.144
+        ]
+      }
+    },
+    {
+      "label": "variant6",
+      "directory": "/tmp/kb-variants/E-control-only",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 48.813084000001254,
+        "cpuMs": 48.876,
+        "raw": [
+          48.666,
+          48.764,
+          48.692,
+          48.685,
+          48.846,
+          48.738,
+          48.818,
+          49.006,
+          48.976,
+          48.907,
+          48.776,
+          48.873,
+          48.813,
+          48.93,
+          48.676
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 87.7099589999998,
+        "cpuMs": 87.8,
+        "raw": [
+          87.671,
+          87.65,
+          87.564,
+          87.64,
+          87.71,
+          87.863,
+          87.786,
+          87.786,
+          87.989,
+          87.898,
+          87.519,
+          87.704,
+          87.751,
+          87.636,
+          87.764
+        ]
+      }
+    },
+    {
+      "label": "variant7",
+      "directory": "/tmp/kb-variants/rejected-quote-merge",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 36.49499999999898,
+        "cpuMs": 36.532,
+        "raw": [
+          36.539,
+          36.411,
+          36.38,
+          36.444,
+          36.431,
+          36.528,
+          36.554,
+          36.463,
+          36.515,
+          36.525,
+          36.642,
+          36.54,
+          36.488,
+          36.495,
+          36.492
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 67.2827500000003,
+        "cpuMs": 67.344,
+        "raw": [
+          67.245,
+          67.238,
+          67.213,
+          67.283,
+          67.283,
+          67.297,
+          67.279,
+          67.339,
+          67.395,
+          67.444,
+          67.356,
+          67.353,
+          67.196,
+          67.216,
+          67.287
+        ]
+      }
+    },
+    {
+      "label": "variant8",
+      "directory": "/tmp/kb-variants/rejected-dash-guard",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 36.3214169999992,
+        "cpuMs": 36.354,
+        "raw": [
+          36.192,
+          36.233,
+          36.323,
+          36.154,
+          36.226,
+          36.321,
+          36.346,
+          36.413,
+          36.342,
+          36.415,
+          36.557,
+          36.229,
+          36.401,
+          36.236,
+          36.286
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 67.6660410000004,
+        "cpuMs": 67.73,
+        "raw": [
+          67.538,
+          67.801,
+          67.645,
+          67.666,
+          67.553,
+          67.95,
+          67.817,
+          67.861,
+          67.759,
+          67.551,
+          67.66,
+          67.806,
+          67.861,
+          67.629,
+          67.511
+        ]
+      }
+    }
+  ],
+  "deltas": [
+    {
+      "label": "variant1",
+      "observationsWallPct": -27.06466730225368,
+      "knowledgeWallPct": -25.60459962086221,
+      "observationsCpuPct": -27.062474969963958,
+      "knowledgeCpuPct": -25.610956843048537
+    },
+    {
+      "label": "variant2",
+      "observationsWallPct": -23.43328411535302,
+      "knowledgeWallPct": -20.899956434710816,
+      "observationsCpuPct": -23.435069575818726,
+      "knowledgeCpuPct": -20.913410646656168
+    },
+    {
+      "label": "variant3",
+      "observationsWallPct": -19.798858916500535,
+      "knowledgeWallPct": -16.756571378242132,
+      "observationsCpuPct": -19.807582228875876,
+      "knowledgeCpuPct": -16.76754923440653
+    },
+    {
+      "label": "variant4",
+      "observationsWallPct": -20.63199915903992,
+      "knowledgeWallPct": -21.702742557432618,
+      "observationsCpuPct": -20.609838495237685,
+      "knowledgeCpuPct": -21.7153900783533
+    },
+    {
+      "label": "variant5",
+      "observationsWallPct": -24.782222607456532,
+      "knowledgeWallPct": -23.936173097579317,
+      "observationsCpuPct": -24.783695046151948,
+      "knowledgeCpuPct": -23.94756486529283
+    },
+    {
+      "label": "variant6",
+      "observationsWallPct": -25.47660787013355,
+      "knowledgeWallPct": -23.40702496508921,
+      "observationsCpuPct": -25.47467059497504,
+      "knowledgeCpuPct": -23.415717539863323
+    },
+    {
+      "label": "variant7",
+      "observationsWallPct": -0.3228771064445813,
+      "knowledgeWallPct": -0.15320866046641843,
+      "observationsCpuPct": -0.2928939012372696,
+      "knowledgeCpuPct": -0.15294606794962348
+    },
+    {
+      "label": "variant8",
+      "observationsWallPct": 0.15348795451134248,
+      "knowledgeWallPct": -0.7187859564594092,
+      "observationsCpuPct": 0.1953017549650601,
+      "knowledgeCpuPct": -0.7219843496235114
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "node": "v26.12.0",
+  "platform": "darwin/arm64",
+  "rows": 10000,
+  "knowledgeRows": 10000,
+  "rounds": 3,
+  "warmup": 1,
+  "samples": 5,
+  "scope": "one knowledgeKeyOf() per row = one #sourceMatches() pass over a cold archive",
+  "variants": [
+    "/tmp/kb-variants/rejected-quote-merge",
+    "/tmp/kb-variants/rejected-dash-guard"
+  ],
+  "folds": {
+    "codePoints": 1112064,
+    "strings": 1166311,
+    "classDifferences": 0,
+    "patternDifferences": 0,
+    "boundaryDifferences": [
+      "U+017F",
+      "U+212A"
+    ],
+    "collapses": [
+      "[0-9a-f]",
+      "[0-9a-f-]",
+      "\\b[0-9a-f]{8,}\\b",
+      "\\b[0-9a-f]{4,}-[0-9a-f-]{4,}\\b"
+    ],
+    "boundaryProbes": 1112064,
+    "nfkcSurvivors": [],
+    "boundaryExampleDiffers": true
+  },
+  "productionAnchor": {
+    "cases": 4,
+    "anchored": [
+      "U+017F",
+      "U+212A",
+      "U+FF21",
+      "U+2460"
+    ]
+  },
+  "baseline": {
+    "version": "0.2.0-rc.13",
+    "sha256": "6437966edb337aeb5ed1c1198fd189b34c335fcd1abb927e799a446716d7d64d"
+  },
+  "gate": "every measured side returns the pinned key for every row",
+  "roundsDetail": [
+    {
+      "order": [
+        "candidate",
+        "variant1",
+        "variant2"
+      ]
+    },
+    {
+      "order": [
+        "variant1",
+        "variant2",
+        "candidate"
+      ]
+    },
+    {
+      "order": [
+        "variant2",
+        "candidate",
+        "variant1"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "label": "candidate",
+      "directory": null,
+      "observations": {
+        "rows": 10000,
+        "wallMs": 35.8032919999996,
+        "cpuMs": 35.836,
+        "raw": [
+          35.86,
+          35.852,
+          35.827,
+          35.83,
+          35.794,
+          35.803,
+          35.771,
+          35.691,
+          35.81,
+          35.765,
+          35.731,
+          35.793,
+          35.821,
+          35.748,
+          35.909
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 66.24012500000026,
+        "cpuMs": 66.297,
+        "raw": [
+          66.402,
+          66.24,
+          66.404,
+          66.394,
+          66.217,
+          66.222,
+          66.13,
+          70.88,
+          66.725,
+          66.163,
+          66.393,
+          66.352,
+          66.177,
+          66.222,
+          66.025
+        ]
+      }
+    },
+    {
+      "label": "variant1",
+      "directory": "/tmp/kb-variants/rejected-quote-merge",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 35.77745800000048,
+        "cpuMs": 35.851,
+        "raw": [
+          35.961,
+          36.014,
+          35.824,
+          35.946,
+          35.937,
+          35.725,
+          35.777,
+          35.675,
+          35.715,
+          35.756,
+          35.824,
+          35.746,
+          35.853,
+          35.743,
+          35.75
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 66.34820899999977,
+        "cpuMs": 66.403,
+        "raw": [
+          66.482,
+          66.556,
+          66.295,
+          66.608,
+          66.407,
+          66.348,
+          66.253,
+          66.269,
+          66.158,
+          66.153,
+          66.41,
+          66.614,
+          66.479,
+          66.244,
+          66.201
+        ]
+      }
+    },
+    {
+      "label": "variant2",
+      "directory": "/tmp/kb-variants/rejected-dash-guard",
+      "observations": {
+        "rows": 10000,
+        "wallMs": 35.72108300000036,
+        "cpuMs": 35.749,
+        "raw": [
+          35.664,
+          35.518,
+          35.671,
+          35.733,
+          35.64,
+          35.721,
+          35.409,
+          35.807,
+          35.699,
+          35.774,
+          35.721,
+          35.777,
+          35.722,
+          35.738,
+          35.726
+        ]
+      },
+      "knowledge": {
+        "rows": 10000,
+        "wallMs": 66.2505000000001,
+        "cpuMs": 66.308,
+        "raw": [
+          66.262,
+          66.185,
+          66.42,
+          66.346,
+          66.273,
+          66.222,
+          66.435,
+          66.22,
+          66.095,
+          66.184,
+          66.196,
+          66.342,
+          66.251,
+          66.321,
+          66.21
+        ]
+      }
+    }
+  ],
+  "deltas": [
+    {
+      "label": "variant1",
+      "observationsWallPct": 0.07220747767804472,
+      "knowledgeWallPct": -0.16290417123318005,
+      "observationsCpuPct": -0.04183983710356913,
+      "knowledgeCpuPct": -0.15963134195745485
+    },
+    {
+      "label": "variant2",
+      "observationsWallPct": 0.23014139856632498,
+      "knowledgeWallPct": -0.015660259167613697,
+      "observationsCpuPct": 0.24336345072588375,
+      "knowledgeCpuPct": -0.016589250165907416
+    }
+  ]
+}

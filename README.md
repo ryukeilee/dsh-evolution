@@ -6,7 +6,7 @@
 
 它不是 DSH 的 fork，也不是"自动改代码"的黑箱。DSH 主体保持官方原样，本插件通过官方 bundle / profile 机制加载，不修改官方源码、不向官方 `node_modules` 复制文件、不 patch 官方仓库。
 
-- 包版本：**`0.2.0-rc.13`**（发布候选）
+- 包版本：**`0.2.0-rc.14`**（发布候选）
 - 支持的 DSH 宿主：**`0.2.0-rc.2`**、**`0.2.1-alpha.1`** 与 **`0.2.1-rc.2`**（精确列表，逐个通过真实安装验收）
 - Node：`^22.19.0 || >=24.0.0`
 - 分发形态：GitHub Release 上的 tarball，不发布 npm 包
@@ -185,13 +185,13 @@ npx @deepseek-ai/dsh web            # 官方推荐
 从 GitHub Release 下载产物与校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.13
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.13.tgz" -o dsh-evolution-0.2.0-rc.13.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.14
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.14.tgz" -o dsh-evolution-0.2.0-rc.14.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 curl -fL "$RELEASE_URL/manifest.json" -o manifest.json
 
 # 也可使用 GitHub CLI（公开仓库无需先 gh auth login）
-gh release download v0.2.0-rc.13 --repo ryukeilee/dsh-evolution \
+gh release download v0.2.0-rc.14 --repo ryukeilee/dsh-evolution \
   --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS' --pattern 'manifest.json'
 
 # 校验：必须与本次下载的 SHA256SUMS 一致
@@ -201,7 +201,7 @@ sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
 用官方 CLI 安装（同一条命令也用于升级）：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.13.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.14.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
@@ -215,7 +215,7 @@ npm run release:pack     # 生成 dist/
 npm run pack:check       # 校验分发内容、兼容声明与发布固定点
 ```
 
-> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.13.tgz --content-only` 核对。
+> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.14.tgz --content-only` 核对。
 
 ## 5. 配置
 
