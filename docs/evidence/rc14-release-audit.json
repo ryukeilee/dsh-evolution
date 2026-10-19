@@ -1,0 +1,238 @@
+{
+  "status": "released-public-assets-verified",
+  "tag": "v0.2.0-rc.14",
+  "tagKind": "annotated",
+  "tagObject": "58a5576f73fdf0fed270bde7a524e9791ab16783",
+  "tagCommit": "a433b6eee5e929e3e7467da8719e929f36d28a72",
+  "remoteTagTarget": "58a5576f73fdf0fed270bde7a524e9791ab16783",
+  "tagObjectMatchesRemote": true,
+  "mainCommit": "a433b6eee5e929e3e7467da8719e929f36d28a72",
+  "mainCommitMeaning": "main was pushed to the release commit before the tag was pushed, so the release was cut on an already published branch commit",
+  "sourceCommit": "fd63317a3ac7ee1d53d675255532ac06cba629b2",
+  "note": "The pinned artifact was built from fd63317 (the source commit that carries the cold-archive identity changes). a433b6e is the release commit: it only adds the pinned tarball, release/manifest.json, release/SHA256SUMS and the rewritten host acceptance evidence, and it changes no file inside the package allow-list. Nothing was rebuilt for the tag.",
+  "pin": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.14",
+    "filename": "dsh-evolution-0.2.0-rc.14.tgz",
+    "sha256": "a61a482da89d0f45ffb9a5a81b4953d04a208d0097747bcb0130dfb63a21216a",
+    "contentSha256": "4dabf50a7e3c0dc05a81c2dc444fbf352fe1fda98b2e8959fec2a4c1bee76881",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.12.0",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    },
+    "sourceCommit": "fd63317a3ac7ee1d53d675255532ac06cba629b2",
+    "verifiedHosts": [
+      "0.2.0-rc.2",
+      "0.2.1-alpha.1",
+      "0.2.1-rc.2"
+    ],
+    "evidence": [
+      "docs/evidence/dsh-0.2.0-rc.2.json",
+      "docs/evidence/dsh-0.2.1-alpha.1.json",
+      "docs/evidence/dsh-0.2.1-rc.2.json"
+    ]
+  },
+  "pinBytesSha256": "a61a482da89d0f45ffb9a5a81b4953d04a208d0097747bcb0130dfb63a21216a",
+  "pinBytesMatchManifest": true,
+  "provenance": {
+    "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.14 --require-source-commit",
+    "executedLocallyBeforeTheTagWasPushed": false,
+    "executedLocallyAfterTheTagWasPushed": true,
+    "executedByTheReleaseWorkflow": true,
+    "problems": [],
+    "notes": [
+      "tag v0.2.0-rc.14 -> commit a433b6eee5e929e3e7467da8719e929f36d28a72",
+      "source commit fd63317a3ac7ee1d53d675255532ac06cba629b2 is in the tagged history",
+      "source commit content 4dabf50a7e3c0dc05a81c2dc444fbf352fe1fda98b2e8959fec2a4c1bee76881 matches the pin",
+      "tagged tree content 4dabf50a7e3c0dc05a81c2dc444fbf352fe1fda98b2e8959fec2a4c1bee76881 matches the pin"
+    ]
+  },
+  "localValidation": {
+    "commands": [
+      "npm test",
+      "npm run pack:check",
+      "npm run release:verify",
+      "shasum -a 256 -c release/SHA256SUMS"
+    ],
+    "node": "v26.12.0",
+    "npm": "11.20.0",
+    "unitTests": {
+      "tests": 382,
+      "pass": 382,
+      "fail": 0
+    },
+    "packCheck": "16/16 checks passed",
+    "releaseVerify": "matches release/manifest.json (dsh-evolution@0.2.0-rc.14)",
+    "checksumFile": "dsh-evolution-0.2.0-rc.14.tgz: OK",
+    "node22": {
+      "node": "v22.19.0",
+      "npm": "10.9.3",
+      "tests": 382,
+      "pass": 382,
+      "fail": 0,
+      "note": "the official darwin-arm64 binary downloaded from nodejs.org, run on a copy of the release tree"
+    },
+    "node24": {
+      "node": "v24.9.0",
+      "npm": "11.6.0",
+      "tests": 382,
+      "pass": 382,
+      "fail": 0,
+      "note": "same tree, same command"
+    },
+    "hostAcceptanceAgainstThePinnedTarball": [
+      {
+        "host": "0.2.0-rc.2",
+        "ok": true,
+        "steps": 21,
+        "doctorFinal": "healthy"
+      },
+      {
+        "host": "0.2.1-alpha.1",
+        "ok": true,
+        "steps": 21,
+        "doctorFinal": "healthy"
+      },
+      {
+        "host": "0.2.1-rc.2",
+        "ok": true,
+        "steps": 21,
+        "doctorFinal": "healthy"
+      }
+    ]
+  },
+  "ci": {
+    "workflow": "CI",
+    "runId": 39225300468,
+    "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/39225300468",
+    "commit": "a433b6eee5e929e3e7467da8719e929f36d28a72",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "package (clean, pinned, installable)",
+        "conclusion": "success"
+      },
+      {
+        "name": "unit tests (node 22.19.0)",
+        "conclusion": "success"
+      },
+      {
+        "name": "unit tests (node 24.x)",
+        "conclusion": "success"
+      },
+      {
+        "name": "host acceptance (0.2.0-rc.2)",
+        "conclusion": "success"
+      },
+      {
+        "name": "host acceptance (0.2.1-alpha.1)",
+        "conclusion": "success"
+      },
+      {
+        "name": "host acceptance (0.2.1-rc.2)",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "releaseWorkflow": {
+    "workflow": "Release artifacts",
+    "runId": 39225318941,
+    "url": "https://github.com/ryukeilee/dsh-evolution/actions/runs/39225318941",
+    "conclusion": "success",
+    "verifiedProvenance": true,
+    "verifiedThePinnedArtifactAndChecksums": true,
+    "createdADraft": true,
+    "uploadedWithoutClobber": true,
+    "downloadedAndByteComparedTheUploadedAssets": true
+  },
+  "release": {
+    "id": 417077765,
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.14",
+    "createdAsDraftByTheWorkflow": true,
+    "publishedByOwner": true,
+    "isDraft": false,
+    "isPrerelease": true,
+    "latestFlag": false,
+    "createdAt": "2026-10-19T08:47:40Z",
+    "publishedAt": "2026-10-19T08:52:19Z",
+    "targetCommitish": "main",
+    "assetsAttachedByTheWorkflow": [
+      "dsh-evolution-0.2.0-rc.14.tgz",
+      "SHA256SUMS",
+      "manifest.json"
+    ],
+    "workflowDownloadedAndComparedTheUploadedAssets": true
+  },
+  "publishedAssets": [
+    {
+      "name": "dsh-evolution-0.2.0-rc.14.tgz",
+      "size": 309016,
+      "digest": "sha256:a61a482da89d0f45ffb9a5a81b4953d04a208d0097747bcb0130dfb63a21216a"
+    },
+    {
+      "name": "manifest.json",
+      "size": 721,
+      "digest": "sha256:540a9d5549b56a2ee08b9129069153c898624670f67534ae6aa6b346734b078f"
+    },
+    {
+      "name": "SHA256SUMS",
+      "size": 96,
+      "digest": "sha256:1e724836dbcdd54f8a0a1a344f0469d1429f126931dd6e2b42dd3415f21c8667"
+    }
+  ],
+  "anonymousDownload": {
+    "baseUrl": "https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.14",
+    "authentication": "none (curl without any token)",
+    "files": [
+      "SHA256SUMS",
+      "dsh-evolution-0.2.0-rc.14.tgz",
+      "manifest.json"
+    ],
+    "sha256OfDownloadedTarball": "a61a482da89d0f45ffb9a5a81b4953d04a208d0097747bcb0130dfb63a21216a",
+    "matchesPin": true,
+    "checksumFileVerified": true,
+    "downloadedManifestIdenticalToTheCommittedPin": true,
+    "downloadedSha256sumsIdenticalToTheCommittedPin": true,
+    "downloadedTarballByteIdenticalToTheCommittedArtifact": true,
+    "verifyArtifactAgainstThePin": "matches release/manifest.json (dsh-evolution@0.2.0-rc.14)"
+  },
+  "noLatestRelease": {
+    "query": "GET /repos/ryukeilee/dsh-evolution/releases/latest",
+    "result": "404 Not Found",
+    "meaning": "every published release is a pre-release, so the repository has no latest release and an RC cannot be mistaken for a stable channel"
+  },
+  "previousReleaseUnchanged": {
+    "tag": "v0.2.0-rc.13",
+    "stillPrerelease": true,
+    "anonymousSha256SumsCheck": "dsh-evolution-0.2.0-rc.13.tgz: OK",
+    "sha256": "6437966edb337aeb5ed1c1198fd189b34c335fcd1abb927e799a446716d7d64d"
+  },
+  "postPublishHostAcceptance": {
+    "host": "0.2.1-rc.2",
+    "installedTarball": "the tarball anonymously downloaded from the public release URL, not the local release/ copy",
+    "ok": true,
+    "steps": 21,
+    "doctorFinal": "healthy",
+    "tarballSha256": "a61a482da89d0f45ffb9a5a81b4953d04a208d0097747bcb0130dfb63a21216a",
+    "matchesPin": true,
+    "evidence": "docs/evidence/rc14-postpublish-dsh-0.2.1-rc.2.json"
+  },
+  "verificationLimits": [
+    "The acceptance harness ran on macOS arm64 with Node v26.12.0; the CI run covers the same content on ubuntu-latest with Node 22.19.0 and 24.x.",
+    "CI host acceptance repacks with Node 22 npm, so its bytes differ from the pinned ones; only the content digest is compared there, as documented in RELEASE.md section 1.",
+    "Only 0.2.1-rc.2 was re-accepted against the anonymously downloaded bytes; the other two hosts were accepted locally against the pinned tarball and in CI against the same content.",
+    "The Node 22.19.0 and 24.9.0 unit runs were executed on a copy of the release tree with the repository node_modules symlinked; they are not a full npm ci in a clean checkout (CI performs that on both versions)."
+  ],
+  "remainingRisksAndUnverified": [
+    "The A–E equivalence argument for the identity path rests on exhaustive differential runs plus the frozen rc.10 baseline, not on a formal proof of the regex engine: RELEASE.md risk list and docs/performance/knowledge-identity-normalization.md section 7 state that rewriting, moving or reinterpreting those collapses requires re-running the comparison.",
+    "The identity literal in identitySerialization() hard-codes six dimension names. A seventh dimension, a rename, or a dimension name added to VOLATILE_KEYS fails the property test before any pinned value is consulted, but a change that alters a value of an existing dimension is caught only by the frozen-baseline differentials.",
+    "The event-bridge tail repair is a check-then-act over a file no writer locks: an append landing between the final read and the rename can still be dropped (RELEASE.md risk 14).",
+    "satisfiesRange() compares pre-release identifiers with localeCompare, so a multi-digit pre-release ordinal orders wrongly. Not fixed; the verified host combinations do not exercise it (RELEASE.md risk 15)."
+  ]
+}
