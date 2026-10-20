@@ -1,0 +1,217 @@
+{
+  "schema": 1,
+  "record": "v0.2.0-rc.16 release audit",
+  "recordedAt": "2026-10-20",
+  "version": "0.2.0-rc.16",
+  "tag": "v0.2.0-rc.16",
+  "tagCommit": "f6da2bed797e85e74aef0231c13fd2afc30977b7",
+  "sourceCommit": "cd8e29db27021398e5ca1c3854a163b2baab101f",
+  "artifacts": {
+    "filename": "dsh-evolution-0.2.0-rc.16.tgz",
+    "sha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6",
+    "contentSha256": "aeae8ffe342abfc5332a6e161b6972f736c01bd4440ca9fd7f15540ada39a006",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.12.0",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    }
+  },
+  "release": {
+    "id": 418342252,
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.16",
+    "isDraft": false,
+    "isPrerelease": true,
+    "publishedAt": "2026-10-20T11:54:40Z",
+    "assets": [
+      "dsh-evolution-0.2.0-rc.16.tgz",
+      "manifest.json",
+      "SHA256SUMS"
+    ],
+    "overwroteExistingAssets": false,
+    "assetDigestsFromTheApi": {
+      "dsh-evolution-0.2.0-rc.16.tgz": "sha256:1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6",
+      "manifest.json": "sha256:7e539950237feea75ae648dd6240cf3f5addb0bc9fafc5cd3562a3b20fa96c73",
+      "SHA256SUMS": "sha256:8e0c54286288be0696fdfb5b1bf109ac484155f4841930c1a10980e3c318f170"
+    },
+    "latestChannel": "unaffected: the release is marked prerelease, GET /releases/latest returns 404 both before and after publishing (no stable release exists for it to move)"
+  },
+  "provenance": {
+    "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.16 --require-source-commit",
+    "result": "ok",
+    "checks": [
+      "tag v0.2.0-rc.16 -> commit f6da2be",
+      "source commit cd8e29d is in the tagged history",
+      "source commit content aeae8ffe… equals the pin",
+      "tagged tree content aeae8ffe… equals the pin"
+    ]
+  },
+  "prePublishVerification": {
+    "packCheck": "16/16 ok",
+    "releaseVerify": "matches release/manifest.json (dsh-evolution@0.2.0-rc.16)",
+    "checkedOutContentOnly": "npm run release:verify -- dist/dsh-evolution-0.2.0-rc.16.tgz --content-only -> content aeae8ffe…, 51 entries, matches the pin",
+    "checksumFile": "shasum -a 256 -c release/SHA256SUMS -> OK",
+    "unitTests": {
+      "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+      "tests": 632,
+      "pass": 632,
+      "fail": 0,
+      "skipped": 0
+    }
+  },
+  "draftAssetVerification": {
+    "method": "gh release download v0.2.0-rc.16 before publishing the draft, compared with release/ using cmp",
+    "result": "dsh-evolution-0.2.0-rc.16.tgz, manifest.json and SHA256SUMS byte-identical; verify-artifact on the downloaded tarball matched the pin; checksum OK"
+  },
+  "anonymousDownloadVerification": {
+    "method": "curl with GITHUB_TOKEN and GH_TOKEN removed from the environment, from the public download URL of the published release",
+    "files": [
+      "SHA256SUMS",
+      "dsh-evolution-0.2.0-rc.16.tgz",
+      "manifest.json"
+    ],
+    "result": "downloaded, checksum OK, all three byte-identical to release/"
+  },
+  "hostAcceptanceAgainstPinnedTarball": [
+    {
+      "host": "0.2.0-rc.2",
+      "steps": "21/21",
+      "ok": true,
+      "finalDiagnosis": "healthy",
+      "contentSha256": "aeae8ffe342abfc5332a6e161b6972f736c01bd4440ca9fd7f15540ada39a006",
+      "tarballSha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6",
+      "evidence": "docs/evidence/dsh-0.2.0-rc.2.json"
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "steps": "21/21",
+      "ok": true,
+      "finalDiagnosis": "healthy",
+      "contentSha256": "aeae8ffe342abfc5332a6e161b6972f736c01bd4440ca9fd7f15540ada39a006",
+      "tarballSha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6",
+      "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json"
+    },
+    {
+      "host": "0.2.1-rc.2",
+      "steps": "21/21",
+      "ok": true,
+      "finalDiagnosis": "healthy",
+      "contentSha256": "aeae8ffe342abfc5332a6e161b6972f736c01bd4440ca9fd7f15540ada39a006",
+      "tarballSha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6",
+      "evidence": "docs/evidence/dsh-0.2.1-rc.2.json"
+    }
+  ],
+  "postPublishAcceptanceFromDownloadedBytes": {
+    "tarball": "the anonymously downloaded dsh-evolution-0.2.0-rc.16.tgz",
+    "contentSha256ObservedByEachRun": "aeae8ffe342abfc5332a6e161b6972f736c01bd4440ca9fd7f15540ada39a006",
+    "runs": [
+      {
+        "host": "0.2.0-rc.2",
+        "steps": "21/21",
+        "ok": true,
+        "finalDiagnosis": "healthy",
+        "evidence": "docs/evidence/rc16-postpublish-0.2.0-rc.2.json"
+      },
+      {
+        "host": "0.2.1-alpha.1",
+        "steps": "21/21",
+        "ok": true,
+        "finalDiagnosis": "healthy",
+        "evidence": "docs/evidence/rc16-postpublish-0.2.1-alpha.1.json"
+      },
+      {
+        "host": "0.2.1-rc.2",
+        "steps": "21/21",
+        "ok": true,
+        "finalDiagnosis": "healthy",
+        "evidence": "docs/evidence/rc16-postpublish-0.2.1-rc.2.json"
+      }
+    ]
+  },
+  "workflows": [
+    {
+      "name": "CI",
+      "id": 39418042752,
+      "conclusion": "success",
+      "jobs": [
+        "unit tests (node 22.19.0)",
+        "unit tests (node 24.x)",
+        "package (clean, pinned, installable)",
+        "host acceptance (0.2.0-rc.2)",
+        "host acceptance (0.2.1-alpha.1)",
+        "host acceptance (0.2.1-rc.2)"
+      ]
+    },
+    {
+      "name": "Release artifacts",
+      "id": 39418046917,
+      "conclusion": "success",
+      "jobs": [
+        "verify and attach release artifacts"
+      ]
+    },
+    {
+      "name": "Code scanning",
+      "id": 39418042725,
+      "conclusion": "success"
+    }
+  ],
+  "commitChain": {
+    "sourceCommits": [
+      "7cd5453 perf: stop copying the knowledge history the recall window never reads",
+      "93a4f64 build: advance to 0.2.0-rc.16 and document the recall-view round",
+      "f750243 docs: require the heap cap in the reproduction steps and re-date the dist-tag note",
+      "4678654 docs: attribute the dist-tag snapshot to the run that actually recorded it",
+      "cd8e29d docs: stop COMPATIBILITY from describing the previous pin's evidence"
+    ],
+    "releaseCommit": "f6da2be build: re-pin 0.2.0-rc.16 over the three-host acceptance",
+    "note": "manifest.sourceCommit is cd8e29d, the last commit whose shipped content equals the pin; f6da2be adds only release/ and docs/evidence/, neither of which is shipped"
+  },
+  "independentReview": {
+    "rounds": [
+      {
+        "round": 1,
+        "verdict": "RELEASE-BLOCKING",
+        "blockers": [
+          "RELEASE.md section 3 and README section 8 both told a reader to run `npm test` bare, which AGENTS.md section 5 forbids for a full run",
+          "docs/performance/recall-view.md called the rc.15 tarball the current pin"
+        ],
+        "resolution": "f750243 (shipped-document fix) and a full re-pack, re-pin and three-host acceptance run"
+      },
+      {
+        "round": 2,
+        "verdict": "NOT BLOCKING",
+        "findings": [
+          "f750243 attributed 2026-10-17 to an \"rc.15 stage\" run; git objects show it belongs to the 0.2.0-rc.13 stage (0237bd7), and README had the same attribution"
+        ],
+        "resolution": "4678654 (attribution corrected) and another full re-pack, re-pin and three-host acceptance run"
+      },
+      {
+        "round": 3,
+        "verdict": "NOT BLOCKING",
+        "findings": [
+          "COMPATIBILITY.md still said the committed evidence describes an earlier content and older module versions",
+          "COMPATIBILITY.md read the 2026-10-17 date as the committed evidence file's startedAt"
+        ],
+        "resolution": "cd8e29d (both corrected) and another full re-pack, re-pin and three-host acceptance run"
+      },
+      {
+        "round": 4,
+        "verdict": "NOT BLOCKING",
+        "findings": [],
+        "resolution": "released; the reviewer cleared committing the pin and cutting the tag"
+      }
+    ],
+    "note": "Each round was a fresh delegated task with its own task id and its own context; none of them modified the repository."
+  },
+  "scope": {
+    "shippedDelta": "three lib/ files (lib/dockyard-domain/memory.js, lib/domain-storage.js, lib/dockyard-domain/PORTS.md), package.json, and the shipped documents CHANGELOG.md, README.md, RELEASE.md and COMPATIBILITY.md",
+    "notChanged": "peerDependencies, engines, dependencies, host support range, persisted domain format and schema, promotion gates and confirmation, trial baseline capture, journal classification, cross-process lock, CAS, tombstone and retention semantics, event envelope and signature algorithm, redaction boundary and authorization",
+    "securityBoundary": "no redaction, guard, authorization or promotion-gate code changed in this candidate; the three lib/ files touch the knowledge history read path and the profile write path's metric branch only"
+  },
+  "historicalAssets": "release/dsh-evolution-0.2.0-rc.15.tgz and every earlier tarball, checksum entry and tag are unchanged in this commit; no historical tag or release asset was moved or overwritten. release/SHA256SUMS lists only the current artifact."
+}
