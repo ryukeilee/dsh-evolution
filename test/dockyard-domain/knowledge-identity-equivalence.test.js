@@ -28,6 +28,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
 import { canonicalKnowledgeKey, knowledgeKeyOf, normalizeKnowledgeEvent } from "../../lib/dockyard-domain/knowledge.js";
@@ -59,6 +60,9 @@ test("the baseline anchor predates this change", () => {
 // The identity projection is value-identical
 // ---------------------------------------------------------------------------
 
+/** One astral code point, which is two UTF-16 code units. */
+const ASTRAL = "\u{20000}";
+
 const CORPUS = [
   42, "text", null, undefined, [], {}, { problem: "real problem" },
   { type: "network-error", componentId: "plugin:edge-cache" },
@@ -74,6 +78,10 @@ const CORPUS = [
   { semanticFact: "warmup latency regression", strategyKeyGenerated: false, solution: "raise ttl" },
   { problem: "中文问题描述：边缘缓存预热延迟", componentId: "plugin:中文" },
   { problem: "p".repeat(600), scope: "s".repeat(600) },
+  // 121 astral characters: 242 UTF-16 code units but only 121 code points, so
+  // the pin's unit bound cut this dimension while this tree keeps it whole.
+  // See `ASTRAL_RECORD`.
+  { problem: ASTRAL.repeat(121) },
   { problem: "same", scope: "same", type: "observation" },
   { problem: "same", scope: "same", type: "diagnosis" },
   { problem: "numbers 123 and 456", componentId: "plugin:numbers" },
@@ -161,12 +169,264 @@ const CORPUS = [
   { problem: "dimension scope signal", componentId: "plugin:dimension-scope" },
 ];
 
+// ---------------------------------------------------------------------------
+// The deliberate identity drift, and the bound that contains it
+// ---------------------------------------------------------------------------
+
+/**
+ * The value bound the pin applied to one identity dimension, in the units the
+ * pin applied it to: UTF-16 code units. A value can sit inside this bound as a
+ * number of code points and still be past it as a number of units, which is why
+ * "fits in 240 code points" is not the condition that keeps a value identical.
+ */
+const IDENTITY_BOUND = 240;
+/** The digest a repaired dimension carries, in hex characters. */
+const IDENTITY_DIGEST_CHARS = 16;
+/**
+ * The two bounds `knowledge.js` bounds an identity dimension with: `MAX_TEXT`
+ * for a string dimension and the 360 it uses for the serialized object form of
+ * `strategy`. Both are the bounds of this file's anchor, so neither is derived
+ * from the working tree.
+ */
+const IDENTITY_BOUNDED_LENGTHS = [240, 360];
+const IDENTITY_DIGEST = new RegExp(`…#[0-9a-f]{${IDENTITY_DIGEST_CHARS}}$`);
+
+function pinnedEvent(input) { return baselineKnowledge.normalizeKnowledgeEvent(input, { sourceCollection: "observations", now: new Date(NOW) }); }
+function workingEvent(input) { return normalizeKnowledgeEvent(input, { sourceCollection: "observations", now: new Date(NOW) }); }
+
+/**
+ * Whether a record is inside the identity drift this round repaired on purpose.
+ *
+ * The defect: the bounded form of a dimension cut it at its 240th UTF-16 code
+ * unit and replaced the rest with `…`, so two facts that agreed in their first
+ * 239 units shared one `knowledgeKey` - measured: `"z".repeat(300) + "x"` and
+ * `"z".repeat(300) + "y"` reached one key - and a cut could split a surrogate
+ * pair. The repair keeps the bounded prefix cut on a code point boundary and
+ * appends a 16-character digest of the complete normalized text, so a dimension
+ * the pin had to cut carries that digest in this tree and a dimension it did not
+ * cut is returned byte-identically.
+ *
+ * The drift therefore starts at the pin's own bound - 240 UTF-16 code units, not
+ * 240 code points - and it has exactly two shapes, both exempted here and both
+ * pinned by literal below:
+ *
+ * - the pin cut the value and this tree cut it too, so the working value is the
+ *   digest form inside one of the two identity bounds (`REDACTED_RECORD`);
+ * - the pin cut the value and this tree keeps it whole, because its length is
+ *   past the bound in units while its code point count is not - astral text such
+ *   as 121 `U+20000`, the surrogate-pair half of the same repair
+ *   (`ASTRAL_RECORD`).
+ *
+ * The exemption is exactly those two shapes and nothing else: the pinned value
+ * must end with the cut marker (`…`), the working value must differ from it, and
+ * the working value must then be the digest form at one of the two identity
+ * bounds, or a value inside the bound as this tree counts it. A record that
+ * merely *looks* cut - a short fact that ends with `…` - is not exempted, and
+ * neither is any other difference: those fail the byte-equality assertions below
+ * instead of widening this predicate.
+ */
+function dimensionIsIntentionallyRedacted(record) {
+  const before = pinnedEvent(record);
+  const after = workingEvent(record);
+  if (!before?.dimensions || !after?.dimensions) return false;
+  for (const name of new Set([...Object.keys(before.dimensions), ...Object.keys(after.dimensions)])) {
+    const pinnedValue = before.dimensions[name];
+    const workingValue = after.dimensions[name];
+    if (typeof pinnedValue !== "string" || typeof workingValue !== "string") continue;
+    if (pinnedValue === workingValue || !pinnedValue.endsWith("…")) continue;
+    // Cut here as well: the value carries the digest of its complete text.
+    if (IDENTITY_DIGEST.test(workingValue) && IDENTITY_BOUNDED_LENGTHS.includes([...workingValue].length)) return true;
+    // Kept whole instead of cut: the pin's bound is a unit bound, so a value past
+    // it in units can still fit inside it in code points.
+    if ([...workingValue].length <= IDENTITY_BOUND) return true;
+  }
+  return false;
+}
+
+/**
+ * The two corpus records inside that drift.
+ *
+ * `REDACTED_RECORD` is the digest shape: the retained 222 code points of each
+ * long dimension, the digest of its complete normalized text, and the key the
+ * six-dimension projection hashes to.
+ *
+ * `ASTRAL_RECORD` is the kept-whole shape: 121 `U+20000` are 121 code points but
+ * 242 UTF-16 code units, so the pin's unit bound cut the dimension - inside the
+ * 121st code point, leaving an unpaired high surrogate in `PINNED_ASTRAL_DIMENSION`
+ * - while this tree keeps it whole, which is why the two keys differ.
+ *
+ * Both are written out here instead of recomputed, so a change to the digest, to
+ * the retained prefix, to the kept-whole boundary or to the projection fails on a
+ * literal instead of comparing the tree with itself.
+ */
+const REDACTED_RECORD = { problem: "p".repeat(600), scope: "s".repeat(600) };
+const REDACTED_DIMENSIONS = {
+  issueType: "problem",
+  rootCause: "",
+  strategy: "",
+  failureMode: "",
+  semanticFact: `${"p".repeat(222)}…#61ec9a9a3abbc531`,
+  scope: `${"s".repeat(222)}…#1a30f3c9486b338d`,
+};
+const REDACTED_KEY = "knowledge:c6df9a460b39ebb6bbeb3a6c32aa5ffd";
+/** The cut key the pin computes for that same record. */
+const PINNED_REDACTED_KEY = "knowledge:a4140724cdaede476430ef1bf3eee498";
+
+const ASTRAL_RECORD = { problem: ASTRAL.repeat(121) };
+const ASTRAL_DIMENSIONS = {
+  issueType: "problem",
+  rootCause: "",
+  strategy: "",
+  failureMode: "",
+  semanticFact: ASTRAL.repeat(121),
+  scope: "",
+};
+const ASTRAL_KEY = "knowledge:0d3f950e4e395edeca11d94df07e5135";
+/** What the pin stored for that dimension: 239 UTF-16 units, then the marker. */
+const PINNED_ASTRAL_DIMENSION = `${ASTRAL.repeat(119)}\ud840…`;
+/** The cut key the pin computes for that same record. */
+const PINNED_ASTRAL_KEY = "knowledge:4cfc70bfe3b1b7992b73262d0419f46d";
+
+/**
+ * Every corpus record inside the deliberate drift, with the exact values this
+ * tree produces for it and the exact key the pin produced. A record the
+ * predicate exempts but this list does not hold fails in the drift test below, so
+ * the exemption can never cover a shape that is not pinned here.
+ */
+const DRIFTED_RECORDS = [
+  { record: REDACTED_RECORD, dimensions: REDACTED_DIMENSIONS, knowledgeKey: REDACTED_KEY, pinnedKey: PINNED_REDACTED_KEY },
+  { record: ASTRAL_RECORD, dimensions: ASTRAL_DIMENSIONS, knowledgeKey: ASTRAL_KEY, pinnedKey: PINNED_ASTRAL_KEY },
+];
+
+function driftedRecordFor(entry) { return DRIFTED_RECORDS.find((drifted) => isDeepStrictEqual(entry, drifted.record)); }
+
+/**
+ * How many dimensions of the whole corpus take each of the two drift shapes. The
+ * digest form is the two long dimensions of `REDACTED_RECORD`; the kept-whole
+ * form is the single astral dimension of `ASTRAL_RECORD`, which carries no digest
+ * because this tree never cut it. The counts stay separate on purpose: neither
+ * shape may spread to a second dimension, and neither may stand in for the other.
+ */
+const DIGEST_DIMENSIONS = 2;
+const KEPT_WHOLE_DIMENSIONS = 1;
+
 test("normalizeKnowledgeEvent stays value-identical to the pinned implementation", () => {
+  const redacted = [];
   for (const entry of CORPUS) {
-    const before = baselineKnowledge.normalizeKnowledgeEvent(entry, { sourceCollection: "observations", now: new Date(NOW) });
-    const after = normalizeKnowledgeEvent(entry, { sourceCollection: "observations", now: new Date(NOW) });
+    const before = pinnedEvent(entry);
+    const after = workingEvent(entry);
+    if (dimensionIsIntentionallyRedacted(entry)) {
+      // The shapes this round changes on purpose: a dimension the pin had to cut
+      // at its bound, and a dimension the pin cut but this tree keeps whole. Their
+      // exact new values are pinned in `DRIFTED_RECORDS`, and every other record
+      // still has to match the pin byte for byte below.
+      const drifted = driftedRecordFor(entry);
+      assert.ok(drifted, `a record inside the drift must be one of the ${DRIFTED_RECORDS.length} pinned ones: ${JSON.stringify(entry)?.slice(0, 80)}`);
+      redacted.push(entry);
+      assert.deepEqual(after.dimensions, drifted.dimensions, `the repaired dimensions of ${JSON.stringify(entry)?.slice(0, 60)} changed`);
+      assert.equal(after.knowledgeKey, drifted.knowledgeKey, `the repaired key of ${JSON.stringify(entry)?.slice(0, 60)} changed`);
+      assert.equal(before.knowledgeKey, drifted.pinnedKey, `the pin's key for ${JSON.stringify(entry)?.slice(0, 60)} changed`);
+      continue;
+    }
     assert.deepEqual(after, before, `normalizeKnowledgeEvent drifted for ${JSON.stringify(entry)?.slice(0, 80)}`);
   }
+  assert.deepEqual(redacted, DRIFTED_RECORDS.map((drifted) => drifted.record),
+    `exactly ${DRIFTED_RECORDS.length} corpus records are inside the deliberate drift; a wider drift must fail here`);
+});
+
+/**
+ * The deliberate drift starts exactly past the bound and nowhere before it. The
+ * bound is the pin's own: 240 UTF-16 code units. A dimension at or below it is
+ * returned whole and keeps the pin's bytes; past it every value changes, either
+ * to the digest form (the cut stands) or to the whole value (a cut that landed
+ * inside a surrogate pair is undone). This is the property that makes the
+ * exemption above safe, so it is pinned directly as well as over the whole
+ * corpus.
+ */
+test("the deliberate identity drift starts exactly past the 240-UTF-16-unit bound", () => {
+  // ASCII: one unit per code point, so this loop pins the unit bound and the code
+  // point bound at once.
+  for (const length of [1, 221, 222, 239, 240]) {
+    const input = { semanticFact: "w".repeat(length) };
+    assert.equal(workingEvent(input).dimensions.semanticFact, "w".repeat(length), `a ${length}-unit dimension must be returned whole`);
+    assert.deepEqual(workingEvent(input), pinnedEvent(input), `a ${length}-unit dimension must stay byte-identical to the pin`);
+    assert.equal(dimensionIsIntentionallyRedacted(input), false, `a ${length}-unit dimension is not inside the drift`);
+  }
+  for (const length of [241, 242, 500]) {
+    const input = { semanticFact: "w".repeat(length) };
+    const pinnedValue = pinnedEvent(input).dimensions.semanticFact;
+    const workingValue = workingEvent(input).dimensions.semanticFact;
+    assert.equal(pinnedValue, `${"w".repeat(239)}…`, `the pin must have cut the ${length}-unit dimension at its own bound`);
+    assert.match(workingValue, /^w{222}…#[0-9a-f]{16}$/, `the repaired ${length}-unit dimension must be the bounded digest form`);
+    assert.equal([...workingValue].length, IDENTITY_BOUND, `the repaired ${length}-unit dimension must stay inside the bound`);
+    assert.equal(dimensionIsIntentionallyRedacted(input), true, `a ${length}-unit dimension is inside the drift`);
+    assert.notEqual(workingEvent(input).knowledgeKey, pinnedEvent(input).knowledgeKey, `a ${length}-unit dimension must not keep the cut identity`);
+  }
+  // Astral: 120 characters are 240 units, the last value the pin returned whole.
+  const atBound = ASTRAL.repeat(120);
+  assert.equal(atBound.length, IDENTITY_BOUND, "the astral value at the bound must be exactly 240 UTF-16 units");
+  assert.equal([...atBound].length, 120);
+  assert.equal(workingEvent({ semanticFact: atBound }).dimensions.semanticFact, atBound, "a 240-unit astral dimension must be returned whole");
+  assert.deepEqual(workingEvent({ semanticFact: atBound }), pinnedEvent({ semanticFact: atBound }), "a 240-unit astral dimension must stay byte-identical to the pin");
+  assert.equal(dimensionIsIntentionallyRedacted({ semanticFact: atBound }), false, "a 240-unit astral dimension is not inside the drift");
+  // 121 characters are 121 code points but 242 units, so the pin cut this value.
+  const input = { semanticFact: ASTRAL.repeat(121) };
+  const pinnedValue = pinnedEvent(input).dimensions.semanticFact;
+  const workingValue = workingEvent(input).dimensions.semanticFact;
+  assert.equal(pinnedValue, PINNED_ASTRAL_DIMENSION, "the pin's cut of the astral dimension changed");
+  assert.equal(pinnedValue, `${ASTRAL.repeat(119)}\ud840…`, "the pin's cut must land inside the 121st code point");
+  assert.equal(pinnedValue.isWellFormed(), false, "the pin's cut must have left an unpaired high surrogate behind");
+  assert.equal(workingValue, ASTRAL.repeat(121), "the repaired astral dimension must be kept whole even though it is past the bound in units");
+  assert.equal([...workingValue].length, 121, "the kept astral dimension must sit inside the bound in code points");
+  assert.equal(workingValue.isWellFormed(), true, "the kept astral dimension must not carry a split surrogate pair");
+  assert.equal(dimensionIsIntentionallyRedacted(input), true, "a value the pin cut and this tree keeps whole is inside the drift");
+  assert.notEqual(workingEvent(input).knowledgeKey, pinnedEvent(input).knowledgeKey, "a kept astral dimension must not keep the cut identity");
+});
+
+/**
+ * The convergence check over the whole corpus: a dimension outside the two drift
+ * shapes is byte-identical to the pin, and each shape appears exactly as often as
+ * `DRIFTED_RECORDS` says - the digest form twice (the two long dimensions of the
+ * `REDACTED_RECORD`) and the kept-whole form once (the astral dimension of
+ * `ASTRAL_RECORD`) - and nowhere else. A drift that reached a second shape,
+ * spread to a second dimension, or touched a dimension the bound never applied to
+ * fails here before any exemption could cover it; the exact values of the shapes
+ * that are allowed are pinned by literal in the drift test above.
+ */
+test("every dimension outside the two drift shapes keeps the pin's bytes", () => {
+  let compared = 0;
+  let digests = 0;
+  let keptWhole = 0;
+  for (const entry of CORPUS) {
+    const before = pinnedEvent(entry);
+    const after = workingEvent(entry);
+    if (!before?.dimensions || !after?.dimensions) continue;
+    for (const name of new Set([...Object.keys(before.dimensions), ...Object.keys(after.dimensions)])) {
+      const pinnedValue = before.dimensions[name];
+      const workingValue = after.dimensions[name];
+      if (typeof workingValue === "string" && workingValue !== pinnedValue && IDENTITY_DIGEST.test(workingValue)) {
+        digests += 1;
+        assert.equal([...workingValue].length, IDENTITY_BOUND, `the digest dimension ${name} must sit inside the bound`);
+        assert.ok(pinnedValue.endsWith("…"), `the digest dimension ${name} must be one the pin cut`);
+        continue;
+      }
+      if (typeof workingValue === "string" && workingValue !== pinnedValue && [...workingValue].length <= IDENTITY_BOUND) {
+        keptWhole += 1;
+        assert.ok(pinnedValue.endsWith("…"), `the kept-whole dimension ${name} must be one the pin cut`);
+        assert.ok(pinnedValue.length === IDENTITY_BOUND, `the kept-whole dimension ${name} must be one the pin cut at its unit bound`);
+        assert.ok(workingValue.isWellFormed(), `the kept-whole dimension ${name} must not carry the pin's split surrogate pair`);
+        continue;
+      }
+      assert.equal(workingValue, pinnedValue,
+        `the dimension ${name} of ${JSON.stringify(entry)?.slice(0, 60)} must stay byte-identical to the pin`);
+      compared += 1;
+    }
+  }
+  assert.equal(digests, DIGEST_DIMENSIONS,
+    `exactly the ${DIGEST_DIMENSIONS} long dimensions of the digest-shaped record may carry the digest`);
+  assert.equal(keptWhole, KEPT_WHOLE_DIMENSIONS,
+    `exactly the ${KEPT_WHOLE_DIMENSIONS} dimension the pin cut and this tree keeps whole may differ without a digest`);
+  assert.ok(compared >= 200, `only ${compared} dimensions were compared; the bound check must not be vacuous`);
 });
 
 /**
@@ -239,8 +499,19 @@ test("the identity hash is the sorted six-dimension projection of the pin", () =
     if (pinnedKey === null || probeKeys.some((key) => key !== pinnedKey)) continue;
     assert.ok(before?.dimensions, `a hashed record must expose its dimensions: ${label}`);
     const expected = "knowledge:" + projectionHash(before.dimensions);
-    assert.equal(before.knowledgeKey, expected, `the pinned hash is not the sorted projection of its own dimensions for ${label}`);
-    assert.equal(knowledgeKeyOf(entry), expected, `the working hash drifted from the pinned projection for ${label}`);
+    if (dimensionIsIntentionallyRedacted(entry)) {
+      // The pin cut this record's long dimensions, so the pinned projection is the
+      // projection of the cut values and no longer this tree's identity. The test
+      // above pins the exact replacement, including the key asserted here; the
+      // two self-consistency assertions below still run, so the working hash must
+      // still be the sorted projection of the working tree's own dimensions.
+      const drifted = driftedRecordFor(entry);
+      assert.ok(drifted, `a record inside the drift must be one of the ${DRIFTED_RECORDS.length} pinned ones: ${label}`);
+      assert.equal(knowledgeKeyOf(entry), drifted.knowledgeKey, `the repaired key drifted for ${label}`);
+    } else {
+      assert.equal(before.knowledgeKey, expected, `the pinned hash is not the sorted projection of its own dimensions for ${label}`);
+      assert.equal(knowledgeKeyOf(entry), expected, `the working hash drifted from the pinned projection for ${label}`);
+    }
     // Self-consistency, so a projection that grows past the literal cannot hide
     // behind the pinned expectation: the working key must hash the projection
     // the working tree itself produced.
@@ -263,7 +534,18 @@ test("the identity hash is the sorted six-dimension projection of the pin", () =
 
 test("the key-only projection returns exactly the recomputed key", () => {
   for (const entry of CORPUS) {
-    const recomputed = baselineKnowledge.normalizeKnowledgeEvent(entry, { sourceCollection: "observations", now: new Date(NOW) })?.knowledgeKey ?? null;
+    const recomputed = pinnedEvent(entry)?.knowledgeKey ?? null;
+    if (dimensionIsIntentionallyRedacted(entry)) {
+      // The pin recomputes the cut identity for these records; the exact repaired
+      // key and the repaired canonical key are pinned in the drift test above.
+      const drifted = driftedRecordFor(entry);
+      assert.ok(drifted, `a record inside the drift must be one of the ${DRIFTED_RECORDS.length} pinned ones: ${JSON.stringify(entry)?.slice(0, 80)}`);
+      assert.equal(recomputed, drifted.pinnedKey, `the pin's recomputation of ${JSON.stringify(entry)?.slice(0, 60)} changed`);
+      assert.equal(knowledgeKeyOf(entry), drifted.knowledgeKey, `knowledgeKeyOf drifted for ${JSON.stringify(entry)?.slice(0, 80)}`);
+      assert.equal(canonicalKnowledgeKey(entry, { sourceCollection: "observations", now: new Date(NOW) }), drifted.knowledgeKey,
+        `canonicalKnowledgeKey drifted for ${JSON.stringify(entry)?.slice(0, 80)}`);
+      continue;
+    }
     assert.equal(knowledgeKeyOf(entry), recomputed, `knowledgeKeyOf drifted for ${JSON.stringify(entry)?.slice(0, 80)}`);
     assert.equal(
       canonicalKnowledgeKey(entry, { sourceCollection: "observations", now: new Date(NOW) }),

@@ -71,9 +71,43 @@ function cString(buffer, start, length) {
 }
 
 /**
+ * Names for the entry types this reader refuses to model, so a rejection says
+ * what it found instead of only printing a raw type byte.
+ */
+const UNMODELLED_TAR_TYPES = new Map([
+  ['1', 'hard link'],
+  ['2', 'symbolic link'],
+  ['3', 'character device'],
+  ['4', 'block device'],
+  ['5', 'directory'],
+  ['6', 'FIFO'],
+  ['7', 'contiguous file'],
+  ['S', 'GNU sparse file'],
+  ['x', 'pax extended header'],
+  ['g', 'pax global header'],
+  ['L', 'GNU long name'],
+  ['K', 'GNU long link name'],
+]);
+
+/**
  * Read a gzipped npm tarball into `{ path, mode, bytes }` entries, using only
  * Node's zlib and a minimal ustar reader. This keeps the release verification
  * dependency-free and identical on every platform.
+ *
+ * Only regular files are modelled, and every other entry type is an error
+ * rather than a skip. A skipped entry is invisible to `contentDigestOf`, so an
+ * archive that keeps the same regular files and adds or drops a symlink would
+ * still produce the pinned `contentSha256`: the digest would no longer identify
+ * the artifact's content. `commitContentDigest()` already fails closed the same
+ * way for a non-blob or non-0644/0755 git entry, so both sides of the release
+ * now reject what they cannot model instead of one of them ignoring it.
+ *
+ * A directory entry would not change any file's bytes, but skipping it would
+ * still drop its existence and its mode from the digest, so it is rejected like
+ * the other types rather than quietly allowed. No released artifact needs it:
+ * every entry of every committed `release/*.tgz` is a regular file (measured at
+ * the rc.14 pin: 555 of 555 entries carry type `0`). Widen this only against an
+ * artifact that actually shows the type.
  */
 export function readTarEntries(tarball) {
   const tar = zlib.gunzipSync(fs.readFileSync(tarball));
@@ -88,13 +122,15 @@ export function readTarEntries(tarball) {
     const type = String.fromCharCode(header[156]);
     const prefix = cString(header, 345, 155);
     const dataStart = offset + 512;
+    // npm archives everything under a single top-level `package/` directory.
+    const raw = prefix ? `${prefix}/${name}` : name;
+    const relative = raw.startsWith('package/') ? raw.slice('package/'.length) : raw;
     const isFile = type === '0' || type === '\u0000' || type === '';
-    if (isFile) {
-      // npm archives everything under a single top-level `package/` directory.
-      const raw = prefix ? `${prefix}/${name}` : name;
-      const relative = raw.startsWith('package/') ? raw.slice('package/'.length) : raw;
-      entries.push({ path: relative, mode: mode & 0o777, bytes: tar.subarray(dataStart, dataStart + size) });
+    if (!isFile) {
+      const label = UNMODELLED_TAR_TYPES.get(type);
+      throw new Error(`unsupported archive entry: ${relative} (tar type ${JSON.stringify(type)}${label ? `, ${label}` : ''})`);
     }
+    entries.push({ path: relative, mode: mode & 0o777, bytes: tar.subarray(dataStart, dataStart + size) });
     offset = dataStart + Math.ceil(size / 512) * 512;
   }
   return entries;

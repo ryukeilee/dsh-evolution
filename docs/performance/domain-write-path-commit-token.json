@@ -1,0 +1,3494 @@
+{
+  "schema": "dsh-evolution/domain-write-path-commit-token@2",
+  "what": "Cost of the durable commit token (domain-commit.token) on the default-config domain write path: the same working tree with the token I/O and without it. Three invocations of the same protocol; two are used, the third is kept and discarded because the host was taken over mid-run.",
+  "environment": {
+    "node": "v26.12.0",
+    "platform": "darwin/arm64",
+    "host": "8 logical CPUs, darwin-arm64, APFS"
+  },
+  "measuredSource": {
+    "path": "lib/domain-storage.js",
+    "sha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+    "tokenOnSide": "byte copy of this file, verified by the script before measuring",
+    "tokenOffSide": "this file with writeCommitToken()'s file operations replaced by a no-op that still draws the same two commitTokenEntropy() values",
+    "tokenOffSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+    "note": "Earlier revisions of this file (schema @1) measured abbc8df8c65e8f5ab5dc312575adb8c60bef91473bc83308aaa5c2d37f5d582e, an implementation whose token draw came from the stubbed crypto.randomUUID() sequence. That record is superseded: the numbers below are for the source digest above and nothing else."
+  },
+  "protocol": {
+    "workload": "openDomainStorage over the official DomainFacility/JsonStorageBackend, then public port.observe() per write: stage mirror, memory load, work, commit, archive install, hydrate; fixture reset, assertions, snapshots and hashes are outside the timed interval",
+    "writesPerSession": 400,
+    "sessions": 3,
+    "warmup": 1,
+    "buckets": 8,
+    "order": "alternate tokenon/tokenoff per iteration; both sides run in the same fixture path; measured pairs are iterations 2-4",
+    "clock": "frozen at 2026-10-12T00:00:00.000Z",
+    "uuid": "crypto.randomUUID replaced by a per-run deterministic sequence, counter reset before every run",
+    "entropy": "commitTokenEntropy() is randomBytes(16).toString('hex'), which is not stubbed, so the token draw does not shift the record-id sequence on either side",
+    "compared": "every persisted byte except domain-archive-lock and domain-commit.token, the query projections, the post-restart projections and the persisted shape; asserted for every pair (warmup included)",
+    "deviationFromPinnedHarness": [
+      "The two sides are the same working tree with and without the token I/O, not release/dsh-evolution-0.2.0-rc.8.tgz vs the working tree. The pinned harness asserts every persisted byte is identical, which the token round cannot satisfy: the token adds a file to the compared tree.",
+      "domain-commit.token is excluded from the persisted-tree digest because it is the artifact under measurement; every other file, the query projections and the post-restart projections are still compared exactly. The exclusion is one path, not a mask over the rest of the tree."
+    ],
+    "tokenOffVariant": {
+      "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+      "tokenOnSourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+      "diff": [
+        "-  const temporary = `${file}.${commitTokenEntropy()}.tmp`;",
+        "-  fs.writeFileSync(temporary, `${commitTokenEntropy()}\\n`, { mode: 0o600 });",
+        "-  try { fs.renameSync(temporary, file); }",
+        "-  catch (error) { try { fs.unlinkSync(temporary); } catch {} throw error; }",
+        "+  void `${file}.${commitTokenEntropy()}.tmp`;",
+        "+  void `${commitTokenEntropy()}\\n`;"
+      ],
+      "note": "writeCommitToken keeps both commitTokenEntropy() draws so the two sides evaluate the same expression sequence and only the two file operations are removed. The script asserts the four replaced lines still occur exactly once in writeCommitToken() and exits non-zero otherwise, so a source drift cannot silently degrade this into 'token on vs a slightly different token on'.",
+      "tokenBytes": {
+        "tokenoff": null,
+        "tokenon": 32
+      }
+    }
+  },
+  "tokenOperationsPerCommit": {
+    "method": "node:fs patched by path before the port module is materialized, then one live port.observe() per sample (five samples) over the same fixture as the A/B",
+    "counters": {
+      "opening": {
+        "read": 0,
+        "write": 0,
+        "rename": 0,
+        "unlink": 0
+      },
+      "perWrite": [
+        {
+          "read": 2,
+          "write": 2,
+          "rename": 2,
+          "unlink": 0
+        },
+        {
+          "read": 2,
+          "write": 2,
+          "rename": 2,
+          "unlink": 0
+        },
+        {
+          "read": 2,
+          "write": 2,
+          "rename": 2,
+          "unlink": 0
+        },
+        {
+          "read": 2,
+          "write": 2,
+          "rename": 2,
+          "unlink": 0
+        },
+        {
+          "read": 2,
+          "write": 2,
+          "rename": 2,
+          "unlink": 0
+        }
+      ],
+      "tokenBytes": 32
+    },
+    "entropyDrawsPerWrite": 4,
+    "note": "read=2, write=2 (each write is one temporary file plus one rename), unlink=0, and nothing at open; the count is steady from the first write. 4 commitTokenEntropy() draws per write, two per atomic replace."
+  },
+  "runs": [
+    {
+      "label": "run-1",
+      "valid": true,
+      "invalidReason": null,
+      "derivation": "docs/performance/domain-write-path-commit-token.mjs: both trees derived from the working lib/ in one temporary directory, stub shape asserted before measuring",
+      "window": "2026-10-19T17:18:03Z..17:22:45Z",
+      "wallSeconds": 282.6,
+      "loadAverage": {
+        "before": [
+          1.6,
+          1.55,
+          1.57
+        ],
+        "after": [
+          2.56,
+          2.03,
+          1.77
+        ]
+      },
+      "sources": {
+        "tokenoff": {
+          "path": "<temp>/lib-tokenoff/domain-storage.js",
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "note": "the temporary directory prefix is omitted from this evidence file; the digest identifies the measured bytes"
+        },
+        "tokenon": {
+          "path": "<temp>/lib-tokenon/domain-storage.js",
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "note": "the temporary directory prefix is omitted from this evidence file; the digest identifies the measured bytes"
+        }
+      },
+      "repoSourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+      "equivalence": [
+        {
+          "iteration": 1,
+          "warmup": true,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "e60ec304debfb8fa1970823bd5fde09625b5980d3ef09580c042c4ced34bbfdb"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "e60ec304debfb8fa1970823bd5fde09625b5980d3ef09580c042c4ced34bbfdb"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "e60ec304debfb8fa1970823bd5fde09625b5980d3ef09580c042c4ced34bbfdb"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "e60ec304debfb8fa1970823bd5fde09625b5980d3ef09580c042c4ced34bbfdb"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "e60ec304debfb8fa1970823bd5fde09625b5980d3ef09580c042c4ced34bbfdb"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "e60ec304debfb8fa1970823bd5fde09625b5980d3ef09580c042c4ced34bbfdb"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "e60ec304debfb8fa1970823bd5fde09625b5980d3ef09580c042c4ced34bbfdb"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "e60ec304debfb8fa1970823bd5fde09625b5980d3ef09580c042c4ced34bbfdb"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        }
+      ],
+      "samples": [
+        {
+          "iteration": 1,
+          "warmup": true,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 33814.839,
+          "cpuMs": 25811.259,
+          "cpuPerWriteMs": 64.528,
+          "perWriteMedianMs": 84.998,
+          "perWriteMadMs": 19.675,
+          "perWriteMinMs": 20.176,
+          "perWriteMaxMs": 256.133,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 31.686
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 61.908
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 69.962
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 80.063
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 89.838
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 101.069
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 113.983
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 122.192
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "implementation": "tokenon",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 35438.513,
+          "cpuMs": 27071.499,
+          "cpuPerWriteMs": 67.679,
+          "perWriteMedianMs": 88.115,
+          "perWriteMadMs": 21.826,
+          "perWriteMinMs": 25.91,
+          "perWriteMaxMs": 144.976,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 35.133
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 64.966
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 73.268
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 84.062
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 94.88
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 106.148
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 119.319
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 129.04
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "implementation": "tokenon",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 35310.107,
+          "cpuMs": 26832.085,
+          "cpuPerWriteMs": 67.08,
+          "perWriteMedianMs": 87.932,
+          "perWriteMadMs": 21.13,
+          "perWriteMinMs": 21.049,
+          "perWriteMaxMs": 138.981,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 34.926
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 65.27
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 73.45
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 83.427
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 94.997
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 107.947
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 118.518
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 130.461
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 35105.731,
+          "cpuMs": 26685.198,
+          "cpuPerWriteMs": 66.713,
+          "perWriteMedianMs": 87.429,
+          "perWriteMadMs": 22.21,
+          "perWriteMinMs": 23.171,
+          "perWriteMaxMs": 262.99,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 32.969
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 62.644
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 72.747
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 82.838
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 93.193
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 104.581
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 117.982
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 128.028
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 35090.67,
+          "cpuMs": 26641.051,
+          "cpuPerWriteMs": 66.603,
+          "perWriteMedianMs": 89.484,
+          "perWriteMadMs": 21.7,
+          "perWriteMinMs": 21.167,
+          "perWriteMaxMs": 151.658,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 35.472
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 63.99
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 72.162
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 81.962
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 93.493
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 106.85
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 117.157
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 129.504
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "implementation": "tokenon",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 35495.878,
+          "cpuMs": 27073.347,
+          "cpuPerWriteMs": 67.683,
+          "perWriteMedianMs": 89.383,
+          "perWriteMadMs": 21.245,
+          "perWriteMinMs": 21.025,
+          "perWriteMaxMs": 151.683,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 35.033
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 65.91
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 73.109
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 81.984
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 94.972
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 107.111
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 119.155
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 130.899
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "implementation": "tokenon",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 36879.914,
+          "cpuMs": 28129.892,
+          "cpuPerWriteMs": 70.325,
+          "perWriteMedianMs": 88.841,
+          "perWriteMadMs": 27.118,
+          "perWriteMinMs": 18.857,
+          "perWriteMaxMs": 161.105,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 33.876
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 67.515
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 74.12
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 83.787
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 95.02
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 123.78
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 126.973
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 131
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 34604.783,
+          "cpuMs": 26479.613,
+          "cpuPerWriteMs": 66.199,
+          "perWriteMedianMs": 87.59,
+          "perWriteMadMs": 21.505,
+          "perWriteMinMs": 22.074,
+          "perWriteMaxMs": 138.95,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 34.433
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 62.07
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 69.138
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 81.761
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 94.929
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 104.211
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 116.803
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 127.938
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        }
+      ],
+      "summary": {
+        "tokenoff": {
+          "totalMs": {
+            "samples": 3,
+            "median": 35090.669837999565,
+            "mad": 15.061285000367207,
+            "min": 34604.783379000204,
+            "max": 35105.73112299993
+          },
+          "cpuMs": {
+            "samples": 3,
+            "median": 26641.051,
+            "mad": 44.147000000000844,
+            "min": 26479.613,
+            "max": 26685.198
+          },
+          "perWriteMedianMs": {
+            "samples": 1200,
+            "median": 87.9565,
+            "mad": 21.872499999999995,
+            "min": 21.167,
+            "max": 262.99
+          },
+          "perSessionMedianMs": {
+            "samples": 3,
+            "median": 87.59018749999814,
+            "mad": 0.1608540000015637,
+            "min": 87.42933349999657,
+            "max": 89.48425000000861
+          },
+          "lastBucketMedianMs": {
+            "samples": 3,
+            "median": 128.028,
+            "mad": 0.0899999999999892,
+            "min": 127.938,
+            "max": 129.504
+          }
+        },
+        "tokenon": {
+          "totalMs": {
+            "samples": 3,
+            "median": 35495.87770799987,
+            "mad": 185.77092799983802,
+            "min": 35310.10678000003,
+            "max": 36879.91445199962
+          },
+          "cpuMs": {
+            "samples": 3,
+            "median": 27073.347,
+            "mad": 241.26200000000244,
+            "min": 26832.085,
+            "max": 28129.892
+          },
+          "perWriteMedianMs": {
+            "samples": 1200,
+            "median": 88.49549999999999,
+            "mad": 21.636499999999998,
+            "min": 18.857,
+            "max": 161.105
+          },
+          "perSessionMedianMs": {
+            "samples": 3,
+            "median": 88.84064549999312,
+            "mad": 0.5423125000088476,
+            "min": 87.93193749999773,
+            "max": 89.38295800000196
+          },
+          "lastBucketMedianMs": {
+            "samples": 3,
+            "median": 130.899,
+            "mad": 0.10099999999999909,
+            "min": 130.461,
+            "max": 131
+          }
+        }
+      },
+      "comparison": {
+        "totalMs": {
+          "before": 35090.669837999565,
+          "after": 35495.87770799987,
+          "deltaPercent": 1.155
+        },
+        "cpuMs": {
+          "before": 26641.051,
+          "after": 27073.347,
+          "deltaPercent": 1.623
+        },
+        "perWriteMedianMs": {
+          "before": 87.9565,
+          "after": 88.49549999999999,
+          "deltaPercent": 0.613
+        },
+        "perSessionMedianMs": {
+          "before": 87.59018749999814,
+          "after": 88.84064549999312,
+          "deltaPercent": 1.428
+        },
+        "lastBucketMedianMs": {
+          "before": 128.028,
+          "after": 130.899,
+          "deltaPercent": 2.242
+        }
+      },
+      "pairs": [
+        {
+          "iteration": 2,
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "cpuMs": {
+            "off": 26685.198,
+            "on": 26832.085,
+            "deltaPercent": 0.55
+          },
+          "totalMs": {
+            "off": 35105.731,
+            "on": 35310.107,
+            "deltaPercent": 0.582
+          },
+          "perWriteMedianMs": {
+            "off": 87.429,
+            "on": 87.932
+          },
+          "lastBucketMedianMs": {
+            "off": 128.028,
+            "on": 130.461
+          }
+        },
+        {
+          "iteration": 3,
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "cpuMs": {
+            "off": 26641.051,
+            "on": 27073.347,
+            "deltaPercent": 1.623
+          },
+          "totalMs": {
+            "off": 35090.67,
+            "on": 35495.878,
+            "deltaPercent": 1.155
+          },
+          "perWriteMedianMs": {
+            "off": 89.484,
+            "on": 89.383
+          },
+          "lastBucketMedianMs": {
+            "off": 129.504,
+            "on": 130.899
+          }
+        },
+        {
+          "iteration": 4,
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "cpuMs": {
+            "off": 26479.613,
+            "on": 28129.892,
+            "deltaPercent": 6.232
+          },
+          "totalMs": {
+            "off": 34604.783,
+            "on": 36879.914,
+            "deltaPercent": 6.575
+          },
+          "perWriteMedianMs": {
+            "off": 87.59,
+            "on": 88.841
+          },
+          "lastBucketMedianMs": {
+            "off": 127.938,
+            "on": 131
+          }
+        }
+      ],
+      "intervals": {
+        "cpu": {
+          "tokenoff": [
+            26479.613,
+            26685.198
+          ],
+          "tokenon": [
+            26832.085,
+            28129.892
+          ],
+          "overlap": false
+        },
+        "wallClock": {
+          "tokenoff": [
+            34604.783379000204,
+            35105.73112299993
+          ],
+          "tokenon": [
+            35310.10678000003,
+            36879.91445199962
+          ],
+          "overlap": false
+        }
+      },
+      "derived": {
+        "cpuMsPerCommit": 1.081,
+        "totalMsPerCommit": 1.013,
+        "note": "median-of-3 delta divided by the 400 writes of one session; a component measurement, not an attribution of where the difference is spent"
+      }
+    },
+    {
+      "label": "run-2",
+      "valid": true,
+      "invalidReason": null,
+      "derivation": "same command, second invocation, same derived trees",
+      "window": "2026-10-19T17:22:59Z..17:27:47Z",
+      "wallSeconds": 287.75,
+      "loadAverage": {
+        "before": [
+          2.37,
+          2.01,
+          1.77
+        ],
+        "after": [
+          2.87,
+          2.28,
+          1.93
+        ]
+      },
+      "sources": {
+        "tokenoff": {
+          "path": "<temp>/lib-tokenoff/domain-storage.js",
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "note": "the temporary directory prefix is omitted from this evidence file; the digest identifies the measured bytes"
+        },
+        "tokenon": {
+          "path": "<temp>/lib-tokenon/domain-storage.js",
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "note": "the temporary directory prefix is omitted from this evidence file; the digest identifies the measured bytes"
+        }
+      },
+      "repoSourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+      "equivalence": [
+        {
+          "iteration": 1,
+          "warmup": true,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "0b0e3973154eafee2140d2b231d6b879d6ef5c4a31b9bd2234ffe475632ab99f"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "0b0e3973154eafee2140d2b231d6b879d6ef5c4a31b9bd2234ffe475632ab99f"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "0b0e3973154eafee2140d2b231d6b879d6ef5c4a31b9bd2234ffe475632ab99f"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "0b0e3973154eafee2140d2b231d6b879d6ef5c4a31b9bd2234ffe475632ab99f"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "0b0e3973154eafee2140d2b231d6b879d6ef5c4a31b9bd2234ffe475632ab99f"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "0b0e3973154eafee2140d2b231d6b879d6ef5c4a31b9bd2234ffe475632ab99f"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "0b0e3973154eafee2140d2b231d6b879d6ef5c4a31b9bd2234ffe475632ab99f"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "0b0e3973154eafee2140d2b231d6b879d6ef5c4a31b9bd2234ffe475632ab99f"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        }
+      ],
+      "samples": [
+        {
+          "iteration": 1,
+          "warmup": true,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 33966.415,
+          "cpuMs": 25980.834,
+          "cpuPerWriteMs": 64.952,
+          "perWriteMedianMs": 83.914,
+          "perWriteMadMs": 19.566,
+          "perWriteMinMs": 23.119,
+          "perWriteMaxMs": 136.709,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 34.411
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 63.37
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 71.071
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 79.96
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 88.407
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 102.776
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 114.34
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 124.095
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "implementation": "tokenon",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 35527.222,
+          "cpuMs": 27103.922,
+          "cpuPerWriteMs": 67.76,
+          "perWriteMedianMs": 88.105,
+          "perWriteMadMs": 21.65,
+          "perWriteMinMs": 23.119,
+          "perWriteMaxMs": 156.103,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 34.803
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 65.732
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 73.093
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 83.984
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 94.718
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 107.703
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 118.938
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 131.179
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "implementation": "tokenon",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 35507.115,
+          "cpuMs": 26997.907,
+          "cpuPerWriteMs": 67.495,
+          "perWriteMedianMs": 88.76,
+          "perWriteMadMs": 21.857,
+          "perWriteMinMs": 23.085,
+          "perWriteMaxMs": 141.188,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 33.167
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 65.043
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 74.03
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 82.995
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 96.525
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 105.618
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 119.504
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 130.368
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 35496.925,
+          "cpuMs": 26960.482,
+          "cpuPerWriteMs": 67.401,
+          "perWriteMedianMs": 87.159,
+          "perWriteMadMs": 21.492,
+          "perWriteMinMs": 22.973,
+          "perWriteMaxMs": 240.418,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 33.994
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 63.36
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 72.181
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 82.127
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 94.128
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 104.072
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 116.571
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 131.281
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 35308.939,
+          "cpuMs": 26789.348,
+          "cpuPerWriteMs": 66.973,
+          "perWriteMedianMs": 87.978,
+          "perWriteMadMs": 20.833,
+          "perWriteMinMs": 25.811,
+          "perWriteMaxMs": 237.383,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 34.123
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 64.085
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 71.402
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 81.937
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 92.174
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 105.877
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 116.584
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 128.837
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "implementation": "tokenon",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 36278.511,
+          "cpuMs": 27320.157,
+          "cpuPerWriteMs": 68.3,
+          "perWriteMedianMs": 91.997,
+          "perWriteMadMs": 22.779,
+          "perWriteMinMs": 27.249,
+          "perWriteMaxMs": 189.023,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 36.033
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 65.076
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 71.928
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 87.941
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 94.635
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 107.413
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 119.042
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 131.064
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "implementation": "tokenon",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 35580.784,
+          "cpuMs": 27129.831,
+          "cpuPerWriteMs": 67.825,
+          "perWriteMedianMs": 88.456,
+          "perWriteMadMs": 20.779,
+          "perWriteMinMs": 22.686,
+          "perWriteMaxMs": 164.554,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 35.002
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 65.158
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 74.074
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 82.138
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 92.41
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 105.089
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 120.546
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 131.417
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 39227.909,
+          "cpuMs": 29223.342,
+          "cpuPerWriteMs": 73.058,
+          "perWriteMedianMs": 88.535,
+          "perWriteMadMs": 25.515,
+          "perWriteMinMs": 21.731,
+          "perWriteMaxMs": 185.965,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 36.359
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 64
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 71.874
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 82.639
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 93.358
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 121.443
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 148.89
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 160.287
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        }
+      ],
+      "summary": {
+        "tokenoff": {
+          "totalMs": {
+            "samples": 3,
+            "median": 35496.92487000006,
+            "mad": 187.98603400010325,
+            "min": 35308.93883599996,
+            "max": 39227.9089259998
+          },
+          "cpuMs": {
+            "samples": 3,
+            "median": 26960.482,
+            "mad": 171.1339999999982,
+            "min": 26789.348,
+            "max": 29223.342
+          },
+          "perWriteMedianMs": {
+            "samples": 1200,
+            "median": 87.961,
+            "mad": 22.2245,
+            "min": 21.731,
+            "max": 240.418
+          },
+          "perSessionMedianMs": {
+            "samples": 3,
+            "median": 87.97779099999752,
+            "mad": 0.5571255000104429,
+            "min": 87.15941700000258,
+            "max": 88.53491650000797
+          },
+          "lastBucketMedianMs": {
+            "samples": 3,
+            "median": 131.281,
+            "mad": 2.444000000000017,
+            "min": 128.837,
+            "max": 160.287
+          }
+        },
+        "tokenon": {
+          "totalMs": {
+            "samples": 3,
+            "median": 35580.78412299967,
+            "mad": 73.66953399968043,
+            "min": 35507.11458899999,
+            "max": 36278.511012999894
+          },
+          "cpuMs": {
+            "samples": 3,
+            "median": 27129.831,
+            "mad": 131.92399999999907,
+            "min": 26997.907,
+            "max": 27320.157
+          },
+          "perWriteMedianMs": {
+            "samples": 1200,
+            "median": 89.911,
+            "mad": 21.9705,
+            "min": 22.686,
+            "max": 189.023
+          },
+          "perSessionMedianMs": {
+            "samples": 3,
+            "median": 88.76039599999785,
+            "mad": 0.3043540000071516,
+            "min": 88.4560419999907,
+            "max": 91.99710449999839
+          },
+          "lastBucketMedianMs": {
+            "samples": 3,
+            "median": 131.064,
+            "mad": 0.35300000000000864,
+            "min": 130.368,
+            "max": 131.417
+          }
+        }
+      },
+      "comparison": {
+        "totalMs": {
+          "before": 35496.92487000006,
+          "after": 35580.78412299967,
+          "deltaPercent": 0.236
+        },
+        "cpuMs": {
+          "before": 26960.482,
+          "after": 27129.831,
+          "deltaPercent": 0.628
+        },
+        "perWriteMedianMs": {
+          "before": 87.961,
+          "after": 89.911,
+          "deltaPercent": 2.217
+        },
+        "perSessionMedianMs": {
+          "before": 87.97779099999752,
+          "after": 88.76039599999785,
+          "deltaPercent": 0.89
+        },
+        "lastBucketMedianMs": {
+          "before": 131.281,
+          "after": 131.064,
+          "deltaPercent": -0.165
+        }
+      },
+      "pairs": [
+        {
+          "iteration": 2,
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "cpuMs": {
+            "off": 26960.482,
+            "on": 26997.907,
+            "deltaPercent": 0.139
+          },
+          "totalMs": {
+            "off": 35496.925,
+            "on": 35507.115,
+            "deltaPercent": 0.029
+          },
+          "perWriteMedianMs": {
+            "off": 87.159,
+            "on": 88.76
+          },
+          "lastBucketMedianMs": {
+            "off": 131.281,
+            "on": 130.368
+          }
+        },
+        {
+          "iteration": 3,
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "cpuMs": {
+            "off": 26789.348,
+            "on": 27320.157,
+            "deltaPercent": 1.981
+          },
+          "totalMs": {
+            "off": 35308.939,
+            "on": 36278.511,
+            "deltaPercent": 2.746
+          },
+          "perWriteMedianMs": {
+            "off": 87.978,
+            "on": 91.997
+          },
+          "lastBucketMedianMs": {
+            "off": 128.837,
+            "on": 131.064
+          }
+        },
+        {
+          "iteration": 4,
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "cpuMs": {
+            "off": 29223.342,
+            "on": 27129.831,
+            "deltaPercent": -7.164
+          },
+          "totalMs": {
+            "off": 39227.909,
+            "on": 35580.784,
+            "deltaPercent": -9.297
+          },
+          "perWriteMedianMs": {
+            "off": 88.535,
+            "on": 88.456
+          },
+          "lastBucketMedianMs": {
+            "off": 160.287,
+            "on": 131.417
+          }
+        }
+      ],
+      "intervals": {
+        "cpu": {
+          "tokenoff": [
+            26789.348,
+            29223.342
+          ],
+          "tokenon": [
+            26997.907,
+            27320.157
+          ],
+          "overlap": true
+        },
+        "wallClock": {
+          "tokenoff": [
+            35308.93883599996,
+            39227.9089259998
+          ],
+          "tokenon": [
+            35507.11458899999,
+            36278.511012999894
+          ],
+          "overlap": true
+        }
+      },
+      "derived": {
+        "cpuMsPerCommit": 0.423,
+        "totalMsPerCommit": 0.21,
+        "note": "median-of-3 delta divided by the 400 writes of one session; a component measurement, not an attribution of where the difference is spent"
+      }
+    },
+    {
+      "label": "run-3-discarded",
+      "valid": false,
+      "invalidReason": "the host was taken over by unrelated work during the run: load average 2.02 -> 53.00 (1-min 20.34 after the run), and the sessions under load 35.8-56.2 s wall against 33.8-36.9 s in run-1/run-2. Sessions 5-8 recovered, sessions 2-4 did not, so the run compares differently-loaded sessions and its summary reverses to -0.97% CPU. This is an environment defect, not a measurement of the token.",
+      "derivation": "same command, third invocation; kept in this file but excluded from every conclusion",
+      "window": "2026-10-19T17:28:20Z..17:34:02Z",
+      "wallSeconds": 342.47,
+      "loadAverage": {
+        "before": [
+          3.46,
+          2.5,
+          2.02
+        ],
+        "after": [
+          20.34,
+          53.0,
+          31.95
+        ]
+      },
+      "sources": {
+        "tokenoff": {
+          "path": "<temp>/lib-tokenoff/domain-storage.js",
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "note": "the temporary directory prefix is omitted from this evidence file; the digest identifies the measured bytes"
+        },
+        "tokenon": {
+          "path": "<temp>/lib-tokenon/domain-storage.js",
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "note": "the temporary directory prefix is omitted from this evidence file; the digest identifies the measured bytes"
+        }
+      },
+      "repoSourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+      "equivalence": [
+        {
+          "iteration": 1,
+          "warmup": true,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "3bc83ac4f9a6fac76f5d03293eb8c490d6d2d790dbf37c24cc5692daac00e0dd"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "3bc83ac4f9a6fac76f5d03293eb8c490d6d2d790dbf37c24cc5692daac00e0dd"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "3bc83ac4f9a6fac76f5d03293eb8c490d6d2d790dbf37c24cc5692daac00e0dd"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "3bc83ac4f9a6fac76f5d03293eb8c490d6d2d790dbf37c24cc5692daac00e0dd"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "3bc83ac4f9a6fac76f5d03293eb8c490d6d2d790dbf37c24cc5692daac00e0dd"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "3bc83ac4f9a6fac76f5d03293eb8c490d6d2d790dbf37c24cc5692daac00e0dd"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "tokenBytes": {
+            "tokenoff": null,
+            "tokenon": 32
+          },
+          "equalOutsideToken": true,
+          "digests": {
+            "tokenoff": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "3bc83ac4f9a6fac76f5d03293eb8c490d6d2d790dbf37c24cc5692daac00e0dd"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            },
+            "tokenon": {
+              "tree": {
+                "dockyard/state.json.evolution-archive-index.json": "ae2f20491501e0a9f2b93c5b534e17e0752a2579271e2ccd11c69cd4e805a9e4",
+                "dockyard/state.json.observations-archive.jsonl": "9f5f8bcd04553fc58fc90fc6b459f666f5c2e24291a761d28cac228bf8820aaa",
+                "official/evolution_domain.json": "3bc83ac4f9a6fac76f5d03293eb8c490d6d2d790dbf37c24cc5692daac00e0dd"
+              },
+              "queries": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              },
+              "restarted": {
+                "cycles": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "observations": "401:501725cbf5b09734cba5e5675a9ed283a2be9f37eddbe8d775e808c8479da22f",
+                "proposals": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "experiments": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "promotions": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "outcomes": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "lineage": "0:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+                "knowledge": "401:bb613798d72506d71748e88d1cc6ee1d9665d099677294a947cc4ea832b01bf9"
+              }
+            }
+          },
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          }
+        }
+      ],
+      "samples": [
+        {
+          "iteration": 1,
+          "warmup": true,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 47097.759,
+          "cpuMs": 29887.313,
+          "cpuPerWriteMs": 74.718,
+          "perWriteMedianMs": 96.885,
+          "perWriteMadMs": 28.117,
+          "perWriteMinMs": 25.176,
+          "perWriteMaxMs": 1235.582,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 38.694
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 80.02
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 97.804
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 88.437
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 94.546
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 145.086
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 157.147
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 179.074
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "implementation": "tokenon",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 56236.111,
+          "cpuMs": 32656.346,
+          "cpuPerWriteMs": 81.641,
+          "perWriteMedianMs": 134.924,
+          "perWriteMadMs": 30.741,
+          "perWriteMinMs": 27.779,
+          "perWriteMaxMs": 1789.357,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 48.244
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 99.537
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 116.863
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 127.921
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 152.802
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 179.316
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 184.76
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 144.392
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "implementation": "tokenon",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 46257.528,
+          "cpuMs": 31018.29,
+          "cpuPerWriteMs": 77.546,
+          "perWriteMedianMs": 117.094,
+          "perWriteMadMs": 47.377,
+          "perWriteMinMs": 20.142,
+          "perWriteMaxMs": 363.483,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 36.783
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 65.48
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 77.635
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 98.643
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 123.911
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 143.654
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 180.556
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 185.283
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 48055.953,
+          "cpuMs": 32157.258,
+          "cpuPerWriteMs": 80.393,
+          "perWriteMedianMs": 117.023,
+          "perWriteMadMs": 25.074,
+          "perWriteMinMs": 28.695,
+          "perWriteMaxMs": 1655.996,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 41.35
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 81.538
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 93.752
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 110.019
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 126.038
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 138.648
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 151.329
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 158.384
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 36818.118,
+          "cpuMs": 27654.077,
+          "cpuPerWriteMs": 69.135,
+          "perWriteMedianMs": 94.666,
+          "perWriteMadMs": 27.428,
+          "perWriteMinMs": 21.847,
+          "perWriteMaxMs": 158.644,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 36.422
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 59.384
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 73.177
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 85.03
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 99.853
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 112.118
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 126.907
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 139.066
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "implementation": "tokenon",
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "totalMs": 35846.594,
+          "cpuMs": 27320.258,
+          "cpuPerWriteMs": 68.301,
+          "perWriteMedianMs": 89.892,
+          "perWriteMadMs": 21.847,
+          "perWriteMinMs": 21.737,
+          "perWriteMaxMs": 145.268,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 36.562
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 65.75
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 74.47
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 84.388
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 95.417
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 107.957
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 119.607
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 132.09
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "implementation": "tokenon",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 35828.93,
+          "cpuMs": 27384.709,
+          "cpuPerWriteMs": 68.462,
+          "perWriteMedianMs": 88.935,
+          "perWriteMadMs": 21.301,
+          "perWriteMinMs": 23.038,
+          "perWriteMaxMs": 149.913,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 36.984
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 66.159
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 73.668
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 84.06
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 95.184
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 107.998
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 119.766
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 131.569
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+          "equivalent": true
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "implementation": "tokenoff",
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "totalMs": 35315.05,
+          "cpuMs": 26821.895,
+          "cpuPerWriteMs": 67.055,
+          "perWriteMedianMs": 88.184,
+          "perWriteMadMs": 22.093,
+          "perWriteMinMs": 21.048,
+          "perWriteMaxMs": 161.709,
+          "latency": [
+            {
+              "from": 1,
+              "to": 50,
+              "median": 31.894
+            },
+            {
+              "from": 51,
+              "to": 100,
+              "median": 63.888
+            },
+            {
+              "from": 101,
+              "to": 150,
+              "median": 71.971
+            },
+            {
+              "from": 151,
+              "to": 200,
+              "median": 83.056
+            },
+            {
+              "from": 201,
+              "to": 250,
+              "median": 92.535
+            },
+            {
+              "from": 251,
+              "to": 300,
+              "median": 108.869
+            },
+            {
+              "from": 301,
+              "to": 350,
+              "median": 117.632
+            },
+            {
+              "from": 351,
+              "to": 400,
+              "median": 134.578
+            }
+          ],
+          "shape": {
+            "globalBytes": 1419222,
+            "archiveFiles": 1,
+            "archiveBytes": 373488,
+            "hotObservations": 401,
+            "knowledge": 401
+          },
+          "sourceSha256": "5e8fe80a1de046adf5a3b350383c4bd95fd7f8a9d08cda29e0ff10a051f22a5f",
+          "equivalent": true
+        }
+      ],
+      "summary": {
+        "tokenoff": {
+          "totalMs": {
+            "samples": 3,
+            "median": 36818.11775200043,
+            "mad": 1503.0679610004008,
+            "min": 35315.04979100003,
+            "max": 48055.95326599991
+          },
+          "cpuMs": {
+            "samples": 3,
+            "median": 27654.077,
+            "mad": 832.1820000000007,
+            "min": 26821.895,
+            "max": 32157.258
+          },
+          "perWriteMedianMs": {
+            "samples": 1200,
+            "median": 98.4855,
+            "mad": 26.479,
+            "min": 21.048,
+            "max": 1655.996
+          },
+          "perSessionMedianMs": {
+            "samples": 3,
+            "median": 94.66631249999045,
+            "mad": 6.482437499973457,
+            "min": 88.183875000017,
+            "max": 117.02256250001665
+          },
+          "lastBucketMedianMs": {
+            "samples": 3,
+            "median": 139.066,
+            "mad": 4.4879999999999995,
+            "min": 134.578,
+            "max": 158.384
+          }
+        },
+        "tokenon": {
+          "totalMs": {
+            "samples": 3,
+            "median": 35846.5940860002,
+            "mad": 17.663997999596177,
+            "min": 35828.930088000605,
+            "max": 46257.52775000005
+          },
+          "cpuMs": {
+            "samples": 3,
+            "median": 27384.709,
+            "mad": 64.4509999999973,
+            "min": 27320.258,
+            "max": 31018.29
+          },
+          "perWriteMedianMs": {
+            "samples": 1200,
+            "median": 93.76050000000001,
+            "mad": 25.93849999999999,
+            "min": 20.142,
+            "max": 363.483
+          },
+          "perSessionMedianMs": {
+            "samples": 3,
+            "median": 89.89225049999368,
+            "mad": 0.9573965000017779,
+            "min": 88.9348539999919,
+            "max": 117.09400050000113
+          },
+          "lastBucketMedianMs": {
+            "samples": 3,
+            "median": 132.09,
+            "mad": 0.521000000000015,
+            "min": 131.569,
+            "max": 185.283
+          }
+        }
+      },
+      "comparison": {
+        "totalMs": {
+          "before": 36818.11775200043,
+          "after": 35846.5940860002,
+          "deltaPercent": -2.639
+        },
+        "cpuMs": {
+          "before": 27654.077,
+          "after": 27384.709,
+          "deltaPercent": -0.974
+        },
+        "perWriteMedianMs": {
+          "before": 98.4855,
+          "after": 93.76050000000001,
+          "deltaPercent": -4.798
+        },
+        "perSessionMedianMs": {
+          "before": 94.66631249999045,
+          "after": 89.89225049999368,
+          "deltaPercent": -5.043
+        },
+        "lastBucketMedianMs": {
+          "before": 139.066,
+          "after": 132.09,
+          "deltaPercent": -5.016
+        }
+      },
+      "pairs": [
+        {
+          "iteration": 2,
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "cpuMs": {
+            "off": 32157.258,
+            "on": 31018.29,
+            "deltaPercent": -3.542
+          },
+          "totalMs": {
+            "off": 48055.953,
+            "on": 46257.528,
+            "deltaPercent": -3.742
+          },
+          "perWriteMedianMs": {
+            "off": 117.023,
+            "on": 117.094
+          },
+          "lastBucketMedianMs": {
+            "off": 158.384,
+            "on": 185.283
+          }
+        },
+        {
+          "iteration": 3,
+          "order": [
+            "tokenoff",
+            "tokenon"
+          ],
+          "cpuMs": {
+            "off": 27654.077,
+            "on": 27320.258,
+            "deltaPercent": -1.207
+          },
+          "totalMs": {
+            "off": 36818.118,
+            "on": 35846.594,
+            "deltaPercent": -2.639
+          },
+          "perWriteMedianMs": {
+            "off": 94.666,
+            "on": 89.892
+          },
+          "lastBucketMedianMs": {
+            "off": 139.066,
+            "on": 132.09
+          }
+        },
+        {
+          "iteration": 4,
+          "order": [
+            "tokenon",
+            "tokenoff"
+          ],
+          "cpuMs": {
+            "off": 26821.895,
+            "on": 27384.709,
+            "deltaPercent": 2.098
+          },
+          "totalMs": {
+            "off": 35315.05,
+            "on": 35828.93,
+            "deltaPercent": 1.455
+          },
+          "perWriteMedianMs": {
+            "off": 88.184,
+            "on": 88.935
+          },
+          "lastBucketMedianMs": {
+            "off": 134.578,
+            "on": 131.569
+          }
+        }
+      ],
+      "intervals": {
+        "cpu": {
+          "tokenoff": [
+            26821.895,
+            32157.258
+          ],
+          "tokenon": [
+            27320.258,
+            31018.29
+          ],
+          "overlap": true
+        },
+        "wallClock": {
+          "tokenoff": [
+            35315.04979100003,
+            48055.95326599991
+          ],
+          "tokenon": [
+            35828.930088000605,
+            46257.52775000005
+          ],
+          "overlap": true
+        }
+      },
+      "derived": {
+        "cpuMsPerCommit": -0.673,
+        "totalMsPerCommit": -2.429,
+        "note": "median-of-3 delta divided by the 400 writes of one session; a component measurement, not an attribution of where the difference is spent"
+      }
+    }
+  ],
+  "combined": {
+    "basis": "the six measured pairs of run-1 and run-2 (run-3-discarded excluded)",
+    "sessionsPerSide": 6,
+    "pooled": {
+      "tokenoff": {
+        "cpuMs": {
+          "samples": 6,
+          "median": 26737.273,
+          "mad": 159.71550000000025,
+          "min": 26479.613,
+          "max": 29223.342
+        },
+        "totalMs": {
+          "samples": 6,
+          "median": 35207.335,
+          "mad": 203.12750000000233,
+          "min": 34604.783,
+          "max": 39227.909
+        },
+        "perWriteMedianMs": {
+          "samples": 6,
+          "median": 87.78399999999999,
+          "mad": 0.4899999999999878,
+          "min": 87.159,
+          "max": 89.484
+        }
+      },
+      "tokenon": {
+        "cpuMs": {
+          "samples": 6,
+          "median": 27101.589,
+          "mad": 161.125,
+          "min": 26832.085,
+          "max": 28129.892
+        },
+        "totalMs": {
+          "samples": 6,
+          "median": 35543.9495,
+          "mad": 140.95700000000215,
+          "min": 35310.107,
+          "max": 36879.914
+        },
+        "perWriteMedianMs": {
+          "samples": 6,
+          "median": 88.8005,
+          "mad": 0.46349999999999625,
+          "min": 87.932,
+          "max": 91.997
+        }
+      }
+    },
+    "cpuMsPercent": 1.363,
+    "cpuMsPerCommit": 0.911,
+    "wallMsPerCommit": 0.842,
+    "pairCpuPercentMedian": 1.087,
+    "pairCpuPercentAll": [
+      -7.164,
+      0.139,
+      0.55,
+      1.623,
+      1.981,
+      6.232
+    ],
+    "pairWallPercentAll": [
+      -9.297,
+      0.029,
+      0.582,
+      1.155,
+      2.746,
+      6.575
+    ],
+    "pairsPositive": 5,
+    "pairsNegative": 1,
+    "overlaps": [
+      {
+        "run": "run-1",
+        "cpu": {
+          "tokenoff": [
+            26479.613,
+            26685.198
+          ],
+          "tokenon": [
+            26832.085,
+            28129.892
+          ],
+          "overlap": false
+        },
+        "wallClock": {
+          "tokenoff": [
+            34604.783379000204,
+            35105.73112299993
+          ],
+          "tokenon": [
+            35310.10678000003,
+            36879.91445199962
+          ],
+          "overlap": false
+        }
+      },
+      {
+        "run": "run-2",
+        "cpu": {
+          "tokenoff": [
+            26789.348,
+            29223.342
+          ],
+          "tokenon": [
+            26997.907,
+            27320.157
+          ],
+          "overlap": true
+        },
+        "wallClock": {
+          "tokenoff": [
+            35308.93883599996,
+            39227.9089259998
+          ],
+          "tokenon": [
+            35507.11458899999,
+            36278.511012999894
+          ],
+          "overlap": true
+        }
+      },
+      {
+        "run": "run-3-discarded",
+        "cpu": {
+          "tokenoff": [
+            26821.895,
+            32157.258
+          ],
+          "tokenon": [
+            27320.258,
+            31018.29
+          ],
+          "overlap": true
+        },
+        "wallClock": {
+          "tokenoff": [
+            35315.04979100003,
+            48055.95326599991
+          ],
+          "tokenon": [
+            35828.930088000605,
+            46257.52775000005
+          ],
+          "overlap": true
+        }
+      }
+    ],
+    "note": "the two valid runs disagree on whether the per-side ranges are disjoint: run-1 excludes 0, run-2 does not, because one session of run-2 (tokenoff, iteration 4) ran 39228 ms of wall clock against a 35497 ms run median while its own pair partner stayed normal. The pooled median over the six sessions per side is reported as the central estimate, and the per-pair spread is reported instead of a confidence interval."
+  },
+  "tokenOperationsInIsolation": {
+    "type": "isolated",
+    "source": "lib/domain-storage.js (extracted function bodies; the host path is omitted)",
+    "sourceSha256": "9fb610c2edbb86af56b414abb2012ce8da0705434e442e8a14ab5bba211ee38b",
+    "extraction": {
+      "entropyBlock": "const commitTokenEntropy = () => randomBytes(16).toString('hex');",
+      "readBlock": "function readCommitToken(file) {",
+      "writeBlock": "function writeCommitToken(file) {"
+    },
+    "rounds": 5,
+    "operationsPerRound": 400,
+    "entropyBytes": 16,
+    "writeMs": {
+      "samples": 2000,
+      "median": 0.155,
+      "min": 0.144,
+      "max": 0.796
+    },
+    "readMs": {
+      "samples": 2000,
+      "median": 0.016,
+      "min": 0.016,
+      "max": 0.271
+    },
+    "perCommitMs": {
+      "median": 0.342,
+      "composition": "2 reads + 2 atomic replaces",
+      "note": "counted, not assumed: a patched node:fs around one live port.observe() reports read=2, write=2, rename=2, unlink=0 for every write (the pending publication and installPending() closing the record), with no token I/O at open"
+    },
+    "components": {
+      "oneWrite": 0.155,
+      "oneRead": 0.016
+    }
+  }
+}

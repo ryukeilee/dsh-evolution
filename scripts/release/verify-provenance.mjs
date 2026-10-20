@@ -12,6 +12,8 @@
  * can be wrong in ways that artifact verification alone cannot see:
  *
  *   - the tag names a different version than `package.json` (typo, wrong tag);
+ *   - the tag is a branch or another ref of that name (only `refs/tags/<tag>`
+ *     is a release tag, so `git rev-parse <tag>` alone is not enough);
  *   - the tag points at a different commit than the one that was checked out;
  *   - `release/manifest.json` pins a source commit that is not in this
  *     tag's history (a pin copied from somewhere else, or a rewritten tag);
@@ -77,7 +79,7 @@ export function evaluateProvenance(input) {
       problems.push(`tag ${tag} does not match package.json version ${packageVersion}`);
     }
     if (!tagCommit) {
-      problems.push(`tag ${tag} does not resolve to a commit in this checkout`);
+      problems.push(`tag ${tag} does not resolve to refs/tags/${tag} in this checkout`);
     } else if (tagCommit !== head) {
       problems.push(`checked out ${head}, but tag ${tag} points to ${tagCommit}`);
     } else {
@@ -121,7 +123,12 @@ export function collectProvenance({ tag, cwd = REPO_ROOT, gitRun = git } = {}) {
   const head = gitRun(['rev-parse', 'HEAD'], cwd);
   let tagCommit = null;
   if (tag) {
-    try { tagCommit = gitRun(['rev-parse', `${tag}^{commit}`], cwd); } catch { tagCommit = null; }
+    // Only `refs/tags/<tag>` counts. A bare `git rev-parse <tag>` also resolves
+    // a branch or any other ref that happens to share the name, which would let
+    // a branch stand in for the release tag being verified.
+    try {
+      tagCommit = gitRun(['rev-parse', '--verify', '--quiet', `refs/tags/${tag}^{commit}`], cwd);
+    } catch { tagCommit = null; }
   }
   const isAncestor = (ancestor, descendant) => {
     try {

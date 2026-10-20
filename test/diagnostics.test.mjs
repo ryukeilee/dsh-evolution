@@ -715,9 +715,13 @@ test('promotion journal states are classified: none, incomplete, canary, committ
   const leftover = freshHome('promotion-leftover');
   fs.mkdirSync(path.join(leftover.paths.promotionStateDir, 'backups'), { recursive: true });
   const leftoverReport = await collectDiagnostics(baseOptions(leftover.home));
-  assert.equal(levelOf(leftoverReport, 'promotion.journal'), 'degraded');
-  assert.equal(checkOf(leftoverReport, 'promotion.journal').evidence.state, 'unknown');
+  // The orchestrator's `promotionStateKnown()` throws on this same state, so
+  // the plugin does not start; `degraded` would claim it still works.
+  assert.equal(levelOf(leftoverReport, 'promotion.journal'), 'blocked');
+  assert.equal(checkOf(leftoverReport, 'promotion.journal').evidence.state, 'state-unknown');
   assert.equal(checkOf(leftoverReport, 'promotion.journal').recoverable, false);
+  assert.equal(leftoverReport.repairs.some((repair) => repair.id.startsWith('promotion-journal')), false);
+  assert.deepEqual(fs.readdirSync(leftover.paths.promotionStateDir), ['backups'], 'the doctor never moves or deletes unclassifiable state');
 });
 
 test('interrupted promotion rolls back from the journal and the repair is idempotent', async () => {

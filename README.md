@@ -6,7 +6,7 @@
 
 它不是 DSH 的 fork，也不是"自动改代码"的黑箱。DSH 主体保持官方原样，本插件通过官方 bundle / profile 机制加载，不修改官方源码、不向官方 `node_modules` 复制文件、不 patch 官方仓库。
 
-- 包版本：**`0.2.0-rc.14`**（发布候选）
+- 包版本：**`0.2.0-rc.15`**（发布候选）
 - 支持的 DSH 宿主：**`0.2.0-rc.2`**、**`0.2.1-alpha.1`** 与 **`0.2.1-rc.2`**（精确列表，逐个通过真实安装验收）
 - Node：`^22.19.0 || >=24.0.0`
 - 分发形态：GitHub Release 上的 tarball，不发布 npm 包
@@ -62,7 +62,7 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 设计约束：
 
 - **不建第二套运行时。** 插件不创建自己的 registry、resolver、生命周期管理器或 effect tracker；Component / Service / Fiber / Effect / 事件监听 / Tool / Dispose 全部由 Cordis 拥有。
-- **Trial 基线只捕获一次。** 恢复基线在 Trial 首次修改运行时**之前**同步捕获，且不在后续 inspect、measure 或清理时重建。因此 Trial 期间真实发生的并发漂移会让恢复校验失败：此时实验判为 `revert-failed`、目标锁保留、不会继续晋升。Trial 的 `define` / `run` 失败路径没有激活任何东西，会释放目标锁并丢弃该实验记录。
+- **Trial 基线只捕获一次。** 恢复基线在 Trial 首次修改运行时**之前**同步捕获，且不在后续 inspect、measure 或清理时重建。因此 Trial 期间真实发生的并发漂移会让恢复校验失败：此时实验判为 `revert-failed`、目标锁保留、不会继续晋升。Trial 的 `define` / `run` 失败路径没有激活任何东西，因此**无论失败学习/归档写入本身成不成功**，都会释放目标锁并丢弃该实验记录（归档或事件写入失败只记一条 warning，不会把清理卡住）。
 - **晋升写的是下一 session 的状态。** 提交先落 journal，再有备份、原子写入、reload/mount 校验；中断的事务在下次启动时按边界规则恢复或清理。
 
 ### 2.2 默认不会自己上生产
@@ -82,7 +82,7 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 
 - `agent/error` 与 `tools/result` 事件记录失败，并带上其适用的 target（scope），使同一 target 的失败可以跨会话检索。
 - 事件桥写入带 MAC 的签名 JSONL；同 id 冲突 MAC、重复事件、截断尾行都会被诊断识别。
-- 进入领域存储之前，原始错误文本会先被脱敏；领域 schema 在模块加载时按官方规则 fail-loud 校验。
+- **原始错误文本不落盘，也不出现在工具输出。** 失败学习、实验档案、事件桥与 `evolution_runtime_inspect` 里只有错误码（`errorCode`）、类别（`errorCategory`）、不可逆摘要（`errorDigest`，`sha256:` 前缀加 16 位十六进制）与脱敏后的短摘要（`errorSummary`，最多 240 字符，另附原始长度）；重放与去重靠摘要而不是原文。领域 schema 在模块加载时按官方规则 fail-loud 校验。
 
 **检索只由提交 proposal 的动作触发。** `evolution_propose` 在返回中附带 `experienceRecall`；`evolution_history` 传 `query` 时返回同一结果。`evolution_runtime_inspect`、measurement 与 canary 不触发检索，**任何定时器、轮询或后台模型回合也不会**。注意自主观察者新建提案时同样走 `evolution_propose`，因此那条路径也会检索——它不产生额外的、独立于提案的检索路径（单测直接断言检索调用次数）。
 
@@ -169,6 +169,8 @@ CLI 没有实时 context，因此 `runtime.*` 三项在 CLI 模式下报 `not-ev
 
 晋升写入的是**下一个 session** 的持久 Plugin 行与 archive 指针，随后停留在 canary 观察期。重启时启动屏障会校验插件健康与依赖，并把结果作为一次 `startup` 屏障提交给 canary（这条路径固定传入 `metricRegression: false`）。健康或依赖不成立则回滚到上一个已知良好状态，且只回滚新候选。指标回归需要由调用方在显式屏障上报告——canary 不会自己去比较指标数值。
 
+跨会话调用 `evolution_canary_observe` 的前提是**存在活的 canary journal**。journal 不存在（例如晋升已 stable 提交并清理了 journal）时，调用会被拒绝：它不会从 durable 证据（evidence sidecar / archive / 事件桥）物化出一条记录再继续推进，因此已 stable 的晋升不能被重新打开为 `canary-observing`。晋升的所有者只从 durable 状态读取（journal → evidence sidecar → 本 session 的记录），调用方自己的 agent id 永远不是 fallback；不匹配时直接报“owned by another Agent”。同一 experiment 的并发观察用与 revert/promote 同一套 in-process claim 串行化：第二个调用收到 `experiment <id> is busy with canary`，而不是两个调用读到同一批 barrier、后写者静默覆盖先写者。
+
 ## 4. 安装
 
 ### 4.1 安装 DSH
@@ -185,13 +187,13 @@ npx @deepseek-ai/dsh web            # 官方推荐
 从 GitHub Release 下载产物与校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.14
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.14.tgz" -o dsh-evolution-0.2.0-rc.14.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.15
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.15.tgz" -o dsh-evolution-0.2.0-rc.15.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 curl -fL "$RELEASE_URL/manifest.json" -o manifest.json
 
 # 也可使用 GitHub CLI（公开仓库无需先 gh auth login）
-gh release download v0.2.0-rc.14 --repo ryukeilee/dsh-evolution \
+gh release download v0.2.0-rc.15 --repo ryukeilee/dsh-evolution \
   --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS' --pattern 'manifest.json'
 
 # 校验：必须与本次下载的 SHA256SUMS 一致
@@ -201,7 +203,7 @@ sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
 用官方 CLI 安装（同一条命令也用于升级）：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.14.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.15.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
@@ -215,7 +217,7 @@ npm run release:pack     # 生成 dist/
 npm run pack:check       # 校验分发内容、兼容声明与发布固定点
 ```
 
-> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.14.tgz --content-only` 核对。
+> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.15.tgz --content-only` 核对。
 
 ## 5. 配置
 
@@ -241,7 +243,7 @@ npm run pack:check       # 校验分发内容、兼容声明与发布固定点
 - 事件签名密钥 `event-bridge.key` 只在该目录首次创建（`0600`），**禁用与卸载都不会删除它**。
 - 官方 `ctx.storageDomain`（`backend: json`，root `$DSH_HOME/storages`）承载领域聚合元数据；领域名 `evolution_domain`（官方 `UNIT_NAME_RE` 不允许连字符）。
 - 冷档案与轮转文件仍由插件文件后端写入 `<dataRoot>/dockyard`。
-- 原始错误内容只经脱敏 DTO 进入领域存储。
+- 原始错误内容不落盘、也不进工具输出：进入领域存储与 `evolution_runtime_inspect` 的是错误码、类别、不可逆摘要与脱敏短摘要（见 2.3）。
 
 ## 6. 使用方式
 
@@ -272,8 +274,11 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 | 边界校验通过的 journal `prepared` / `committing` | 从 journal 备份回滚（CAS 保护，不覆盖并发修改）；`--repair` 或下次启动自动完成 |
 | 边界校验通过的 journal `stable-committed` / `committed` | 只清理 journal 目录，不动 composition 与已提交插件 |
 | journal `rollback-failed` / 无法解析 / 边界拒绝 | **不自动处理**：报 `blocked`、`recoverable=false`，保留现场 |
+| 晋升提交检测到 `EVOLUTION.md` / 归档被外部并发修改而拒绝覆盖（journal 保留为 `rollback-failed`） | 本实验的 `exp-*.md` **不会被改写**，失败证据写到同目录的 `<experimentId>.failure.json`（含 `promotionJournal`、脱敏后的失败摘要与 digest），供人工处置 |
 | journal 阶段未知或缺失（边界校验通过） | doctor 报 `blocked` / `state-unknown`、`recoverable=false`、**不提供 repair**；启动恢复与 canary 读取用同一判定拒绝，journal、备份、目标文件与 staging 保持不变，必须人工检查现场 |
 | event bridge 未闭合尾行 | 只丢弃不构成记录的尾部字节：执行前重读快照并重建计划条件，准备期间文件变化则跳过且不写任何字节；整份文件没有完整行可保留时不提供该 repair。写入方不持锁，最后一次重读与 `rename` 之间的追加仍可能被丢弃，建议在宿主停止时执行 |
+| 活动档案文件不以换行结尾（追加被中断） | 下一次追加前把残片**逐字节**追加进同目录的 `state.json.<collection>quarantine-archive.jsonl`，再原子重写活动档案、只保留完整行。隔离文件是 append-only 现场保留，插件不会删除它；残片通常不是完整 JSON，因此 `state.archives` 会把它报为含不可解析行的 `degraded` 项（`recoverable: false`），处置由人完成 |
+| 冷档案出现不可解析的行（中段或 sealed 段） | `state.archives` 报 `degraded` 并保留原字节。运行时的 `EvolutionMemory.archiveIntegrity()` 能读到分类后的故障；`verifyConsistency()` 把它判为 `valid:false`（reason `archive_bytes_unreadable`），因此该数据根上的 `reconcile()` 会以 verifier 失败抛出并回滚自己刚做的改动。这是 fail-closed，需要人工处置档案 |
 | domain 孤儿 staging | 仅在无活进程持有 archive 锁时清理；有活进程时报告并拒绝 |
 | domain archive 锁无主（空内容或死 pid） | 运行时自动回收；`--repair` 可显式清理；有活主的锁永不抢占 |
 | 损坏的 failure memory | 不删除：报 `degraded` 并说明下次启动会隔离（quarantine）保留原字节 |
@@ -328,6 +333,8 @@ dsh plugin --profile web remove dsh-evolution
 
 卸载**不删除用户数据**。官方 `pluginManager.setBundleEnabled` 支持热禁用（实测 `applied`，插件工具与服务立即下线）或 `restart-required`；禁用或卸载父 bundle 会 dispose promoted 子 Fiber，而 composition、源码与档案保留。
 
+若 `<dataRoot>` 下的 `promotion/` 目录存在、而里面没有可读的 `journal.json`，**启动会被阻断**（fail-closed）：启动恢复与 canary 读取都把这种现场当作未知状态，拒绝猜测，也不会在下一次晋升准备时把它删掉。处置方向只有一个：人工确认现场——先拷走该目录，确认 composition 与 promoted 目录的真实状态后自行决定保留或移走，本插件不会替你删除。
+
 ## 7. 已知限制
 
 以下边界是显式记录在产品行为里的，不通过隐藏 patch 绕过。完整清单与剩余发布风险见 `COMPATIBILITY.md` 与 `RELEASE.md`。
@@ -344,6 +351,9 @@ dsh plugin --profile web remove dsh-evolution
 10. **不提供供应链签名。** 未做 npm 发布、代码签名 / provenance（SLSA）或 SBOM；已启用 GitHub Code Scanning。
 11. **宿主版本只在验收后扩展。** 列表之外的宿主由 `host.version` 报 `blocked`，不用宽松范围绕过诊断的阻断。
 12. **`0.2.1-alpha.1` 与 `0.2.1-rc.2` 的 npm dist-tag 会移动。** 验收记录的是精确版本号。这里的日期取自 `docs/evidence/dsh-0.2.1-rc.2.json` 的 `startedAt`（2026-10-17）；该日期查询 npm registry 得到 `alpha` 指向 `0.2.1-alpha.5`、`latest` 指向 `0.2.0-rc.2`、`next` 指向 `0.2.1-rc.2`。**这些 tag 取值不在验收证据中**（验收脚本不查询 dist-tag），只是该日期对 registry 的只读观测快照；这些 tag 后续都会移动，本仓库声明的仍是那三个精确版本号。
+13. **冷档案读取缓存依赖文件系统的纳秒 mtime，并占用内存。** 解析结果按“设备 + inode + 字节数 + 纳秒 mtime”缓存，因此在一个 mtime 精度只有秒级的文件系统上，**同尺寸的原地重写**可能读不到新内容（插件自己追加一定会改变字节数，所以不受影响）。常驻成本约 **0.7 MiB heap / MiB 冷档案**（例如 28 MiB 冷档案约 20 MiB），`compact()` 后丢弃重建；数字、假设与复现脚本见 `RELEASE.md` 第 6 节第 20 条与 `docs/performance/archive-read-cost.md`。
+14. **只带显式 `knowledgeKey`、没有任何身份维度的知识事件会塌缩到同一个身份。** 已知、本轮未修：六个维度全空时身份落在一个常量桶（`knowledge:a615…`），不同的显式 key 会合并成一行。本插件所有生产写入路径都会同时给出维度，所以普通使用遇不到；只有外部代码直接调用 `EvolutionMemory.recordKnowledgeEvent()` 且只给 `knowledgeKey` 时才会触发。修它会改变持久化身份语义（需要迁移决策）并改动冻结身份基线。
+15. **UTF-16 长度超过 240 的身份维度会得到新身份。** 旧实现按 UTF-16 code unit 只保留前 239 个单位（还会切在代理对中间），于是差别落在其后的事实被合并成一条。现在保留前缀按 code point 切，并附上完整文本的 16 位摘要，这类事实因此能被区分；代价是这些维度会带上新的身份，旧行保留到 retention 到期。归一化后 **UTF-16 长度** ≤ 240 的维度值逐字节不变（因此身份不变）；UTF-16 长度 > 240 的维度值会改变：code point 数 ≤ 240 时整段保留（旧实现会截断，还可能切断代理对），> 240 时截断到 240 code point 并附 16 位摘要。因此既有记录的身份、命中与保留结果只在后一类维度上变化。
 
 ## 8. 验证与证据
 
@@ -383,7 +393,7 @@ npm run acceptance:host -- --host 0.2.1-rc.2 --out <evidence-path>
 
 上表是三个宿主在**固定产物**上重跑时解析到的模块版本（取自 `docs/evidence/dsh-<host>.json` 的 `startedAt` 与 `hostModules`）：三个宿主都落在稳定补丁级别，`js-yaml` 均为 `4.3.2`。宿主自身用 `~` 范围声明这些依赖（`0.2.0-rc.2` 为 `~4.0.4` / `~1.0.9` / `~1.0.5`），因此同 patch 行的稳定版一发布就会被解析到；这三份证据记录的就是这次重跑，与 `release/` 固定点一一对应。
 
-证据文件 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json` 与 `docs/evidence/dsh-0.2.1-rc.2.json` 同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：**任何被发布文件的变化都会使 `pack:check` 失败，直到三个宿主的验收重新运行**。
+证据文件 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json` 与 `docs/evidence/dsh-0.2.1-rc.2.json` 同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：**任何被发布文件的变化都会使 `pack:check` 失败，直到三个宿主的验收重新运行**。`0.2.0-rc.15` 已按 `RELEASE.md` 第 2 节重新构建、重跑三宿主验收并重新固定，因此 `npm run pack:check` 的 16 项检查（含固定点与三份验收证据的内容摘要）全绿；若将来再改任何分发文件，这三条固定点检查会如实失败，处置流程见 `RELEASE.md` 第 6 节第 16 条。
 
 验收断言的"数据保留"范围需要说清楚：生命周期、升级与回滚步骤比较的是 `evolution-memory.json` 的 SHA256 并确认 `event-bridge.key` 仍存在，**不是对整个数据根逐文件比较**。
 

@@ -86,7 +86,10 @@ function readTree(root) {
     }
   };
   walk(root, '');
+  // The lock and the commit token are runtime coordination state, not domain
+  // data, so they are the only two entries excluded from the byte comparison.
   files.delete('domain-archive-lock');
+  files.delete('domain-commit.token');
   return files;
 }
 

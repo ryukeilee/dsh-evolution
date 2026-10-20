@@ -12,6 +12,749 @@ import { reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
 // earlier reversal has restored it, so reordering them breaks the guards even
 // though the composed result would be the same.
 const reversals = [
+  // The torn-tail completeness round, which landed last. An unterminated final
+  // line that already parses as a complete record keeps its bytes and gains only
+  // the separator it lacks (`#activeTailIsComplete`); a genuine fragment still
+  // moves to the quarantine file. Both regions sit inside spans that earlier
+  // rounds changed, so these fragments are listed first and reversed first:
+  // reverting them restores the shape every fragment below expects. The method
+  // insert and the branch are disjoint from each other, so their mutual order is
+  // free; what fixes their position is that they must precede the reversals that
+  // own the surrounding text.
+  ["  }\n" +
+   "\n" +
+   "  /**\n" +
+   "   * Whether the active archive's unterminated final line is already a complete\n" +
+   "   * record. An external writer that does not terminate its last line leaves one:\n" +
+   "   * the reader parses it, so it must not be treated as a fragment and moved into\n" +
+   "   * the quarantine file, which would drop it from `history()` while keeping its\n" +
+   "   * bytes. Such a line only lacks the separator, and appending one byte supplies\n" +
+   "   * it without rewriting or removing anything.\n" +
+   "   */\n" +
+   "  async #activeTailIsComplete(path) {\n" +
+   "    let raw;\n" +
+   "    try { raw = await readFile(path); } catch { return false; }\n" +
+   "    const breakAt = raw.lastIndexOf(NEWLINE_BYTE);\n" +
+   "    const fragment = breakAt === -1 ? raw : raw.subarray(breakAt + 1);\n" +
+   "    if (!fragment.length) return false;\n" +
+   "    try {\n" +
+   "      const value = JSON.parse(fragment.toString(\"utf8\"));\n" +
+   "      return Boolean(value) && typeof value === \"object\";\n" +
+   "    } catch { return false; }\n",
+   ""],
+  ["          if (await this.#activeTailIsComplete(path)) {\n" +
+   "            // The unterminated line is already a record, so it is kept and only\n" +
+   "            // the separator it is missing is added; quarantining it would remove\n" +
+   "            // a readable record from the history.\n" +
+   "            await this.#beforeArchiveWrite(path);\n" +
+   "            await appendFile(path, \"\\n\", { mode: 0o600 });\n" +
+   "            activeBytes += 1;\n" +
+   "          } else {\n" +
+   "            const repaired = await this.#quarantineTornTail(collection, path);\n" +
+   "            activeBytes = Buffer.byteLength(repaired.kept);\n" +
+   "            this.#noteArchiveFault(collection, { file: path, line: null, kind: \"torn-tail\", quarantined: repaired.file, bytes: repaired.bytes });\n" +
+   "            // The rewritten bytes are what the index entry and the active key set\n" +
+   "            // describe from here on: the fragment's line and bytes are gone from\n" +
+   "            // both.\n" +
+   "            this.archiveIndexEntries.set(path, this.#indexEntryFromRaw(collection, path, repaired.kept, { sealed: false }));\n" +
+   "            this.#activeKeysFromRaw(collection, repaired.kept);\n" +
+   "          }\n",
+   "          const repaired = await this.#quarantineTornTail(collection, path);\n" +
+   "          activeBytes = Buffer.byteLength(repaired.kept);\n" +
+   "          this.#noteArchiveFault(collection, { file: path, line: null, kind: \"torn-tail\", quarantined: repaired.file, bytes: repaired.bytes });\n" +
+   "          // The rewritten bytes are what the index entry and the active key set\n" +
+   "          // describe from here on: the fragment's line and bytes are gone from\n" +
+   "          // both.\n" +
+   "          this.archiveIndexEntries.set(path, this.#indexEntryFromRaw(collection, path, repaired.kept, { sealed: false }));\n" +
+   "          this.#activeKeysFromRaw(collection, repaired.kept);\n"],
+  // The append-identity round, which landed after the torn-tail round above. The
+  // three regions below - the `#recordActiveArchiveWrite` signature, the chunked
+  // append, and the single-line-over-target append - are disjoint from every other
+  // fragment in this table and in the housekeeping table, so their own order is
+  // free. `#extendArchiveReadCache` now carries an append forward only while the
+  // identity taken *before* the append equals, field for field, the identity the
+  // cache recorded for those bytes; the identity it records afterwards is read
+  // from the file again, so a same-length rewrite by another writer is caught by
+  // the mtime. The pre-append identity (`#archiveAppendIdentity`) is taken at both
+  // append sites and threaded through `#recordActiveArchiveWrite`, so the method
+  // signature and the two call sites move with it.
+  ["  #recordActiveArchiveWrite(collection, records, before = null) {\n",
+   "  #recordActiveArchiveWrite(collection, records) {\n"],
+  ["          // The identity of the bytes the cached parse describes, taken before\n" +
+   "          // the append that adds to them. See `#extendArchiveReadCache`.\n" +
+   "          const before = this.#archiveAppendIdentity(path);\n" +
+   "          await appendFile(path, payload, { mode: 0o600 });\n" +
+   "          activeBytes += Buffer.byteLength(payload);\n" +
+   "          this.#recordActiveArchiveWrite(collection, chunkRecords, before);\n",
+   "          await appendFile(path, payload, { mode: 0o600 });\n" +
+   "          activeBytes += Buffer.byteLength(payload);\n" +
+   "          this.#recordActiveArchiveWrite(collection, chunkRecords);\n"],
+  ["            // Same pre-append identity as the chunked path above: a single line\n" +
+   "            // over the target is still an append to the file the cache parsed.\n" +
+   "            const before = this.#archiveAppendIdentity(path);\n" +
+   "            await appendFile(path, line + \"\\n\", { mode: 0o600 });\n" +
+   "            activeBytes += lineBytes;\n" +
+   "            this.#recordActiveArchiveWrite(collection, [{ entry: bounded.entry, line }], before);\n",
+   "            await appendFile(path, line + \"\\n\", { mode: 0o600 });\n" +
+   "            activeBytes += lineBytes;\n" +
+   "            this.#recordActiveArchiveWrite(collection, [{ entry: bounded.entry, line }]);\n"],
+  // The parse-cache round (`#readArchiveSync` rereads a file only when its identity
+  // changed) and, before it, the cold-archive integrity round. Both landed after the
+  // anchor, so their fragments are reversed before every region the anchor already
+  // pins: the integrity fragments describe `#readArchiveSync` as that round left it,
+  // which is the shape the parse-cache reversal restores.
+  // The parse cache for the cold-archive read: the file identity a read is keyed by
+  // (`#archiveReadParts`, `#archiveReadIdentity`), the known set derived from the scanned
+  // positions (`#archiveKnownFrom`), the cache lookup, store and replay
+  // (`#archiveReadCacheFor`, `#rememberArchiveRead`, `#replayArchiveRead`) and the append
+  // carried into it (`#extendArchiveReadCache`), plus the read head that consults them.
+  // One region: the helpers sit directly above the read they serve.
+  ["  /**\n" +
+   "   * The identity of every file `#readArchiveSync` reads for one collection, in\n" +
+   "   * read order: device, inode, byte size and nanosecond mtime - the same\n" +
+   "   * identity `archive-stage.js` and `archiveScanMemo` use to decide whether two\n" +
+   "   * directory entries are the same bytes. Every way this plugin changes an\n" +
+   "   * archive changes one of those fields: an append grows the size, sealing,\n" +
+   "   * compaction and quarantine repair replace the inode, and a write from\n" +
+   "   * outside this instance changes at least the mtime.\n" +
+   "   *\n" +
+   "   * Returns null when a listed file cannot be stat'ed or is not a regular file.\n" +
+   "   * The caller then reads plainly, which is the path that reports an unreadable\n" +
+   "   * archive as a fault.\n" +
+   "   */\n" +
+   "  #archiveReadParts(collection) {\n" +
+   "    const files = this.#archiveFiles(collection);\n" +
+   "    const parts = [];\n" +
+   "    for (const file of files) {\n" +
+   "      let info;\n" +
+   "      try { info = statSync(file, { bigint: true }); } catch { return null; }\n" +
+   "      if (!info.isFile()) return null;\n" +
+   "      parts.push({ name: file.split(\"/\").at(-1), dev: String(info.dev), ino: String(info.ino), size: String(info.size), mtimeNs: String(info.mtimeNs) });\n" +
+   "    }\n" +
+   "    return { files, parts, identity: this.#archiveReadIdentity(parts) };\n" +
+   "  }\n" +
+   "\n" +
+   "  #archiveReadIdentity(parts) {\n" +
+   "    return parts.map((part) => `${part.name}\\u0000${part.dev}\\u0000${part.ino}\\u0000${part.size}\\u0000${part.mtimeNs}`).join(\"\\u0001\");\n" +
+   "  }\n" +
+   "\n" +
+   "  /** `archiveKnown` for one scan: every key the files hold except the stale ones. */\n" +
+   "  #archiveKnownFrom(collection, positions) {\n" +
+   "    const known = new Set(positions.keys());\n" +
+   "    const stale = this.archiveStale.get(collection);\n" +
+   "    if (stale?.size) for (const key of stale) known.delete(key);\n" +
+   "    return known;\n" +
+   "  }\n" +
+   "\n" +
+   "  /**\n" +
+   "   * The parse of one collection's cold archive files, keyed by\n" +
+   "   * `#archiveReadIdentity`.\n" +
+   "   *\n" +
+   "   * Reading these files is how a caller learns what the archive holds, so the\n" +
+   "   * answer is only reused for bytes this process has already parsed *and* whose\n" +
+   "   * identity is unchanged. It is a cache of the file, never an index of it: a\n" +
+   "   * miss runs the ordinary scan, an identity this method cannot build is a miss,\n" +
+   "   * and the entry is dropped whenever an append cannot be carried forward\n" +
+   "   * exactly. The records it holds are shared with the returned arrays, which is\n" +
+   "   * what makes a hit cheap; every caller builds its own projection from them and\n" +
+   "   * a caller asking for detached rows (`history`, `fullSnapshot`) still clones.\n" +
+   "   *\n" +
+   "   * Its memory is bounded by the cold tier itself: one parsed row per archived\n" +
+   "   * record, which `compactionTriggerBytes` already bounds.\n" +
+   "   */\n" +
+   "  #archiveReadCacheFor(collection) {\n" +
+   "    if (!this.archiveReadCache) this.archiveReadCache = new Map();\n" +
+   "    return this.archiveReadCache.get(collection) ?? null;\n" +
+   "  }\n" +
+   "\n" +
+   "  #rememberArchiveRead(collection, located, records, positions, tombstones, faults) {\n" +
+   "    if (!this.archiveReadCache) this.archiveReadCache = new Map();\n" +
+   "    this.archiveReadCache.set(collection, { identity: located.identity, parts: located.parts, records, positions, tombstones, faults });\n" +
+   "  }\n" +
+   "\n" +
+   "  /**\n" +
+   "   * Answer one read from the cached parse of exactly the bytes on disk. The\n" +
+   "   * faults the scan observed are reported again, so a repeated read describes\n" +
+   "   * them the same way a rescan does, and `archiveKnown` is rebuilt from the\n" +
+   "   * cached positions rather than reused: callers mutate their copy.\n" +
+   "   */\n" +
+   "  #replayArchiveRead(collection, cached) {\n" +
+   "    for (const fault of cached.faults) this.#noteArchiveFault(collection, fault);\n" +
+   "    this.archiveKnown.set(collection, this.#archiveKnownFrom(collection, cached.positions));\n" +
+   "    this.archiveTombstones.set(collection, new Set(cached.tombstones));\n" +
+   "    return collection === \"tombstones\" ? [...cached.records] : cached.records.filter((entry) => !this.#isTombstone(entry, collection));\n" +
+   "  }\n" +
+   "\n" +
+   "  /**\n" +
+   "   * The identity of one archive file as it is at this moment, in exactly the\n" +
+   "   * form `#archiveReadParts` records: name, device, inode, byte size and\n" +
+   "   * nanosecond mtime. `null` when the file cannot be stat'ed or is not a regular\n" +
+   "   * file, which every caller reads as \"no identity this process can prove\".\n" +
+   "   */\n" +
+   "  #archiveAppendIdentity(file) {\n" +
+   "    let info;\n" +
+   "    try { info = statSync(file, { bigint: true }); } catch { return null; }\n" +
+   "    if (!info.isFile()) return null;\n" +
+   "    return { name: file.split(\"/\").at(-1), dev: String(info.dev), ino: String(info.ino), size: String(info.size), mtimeNs: String(info.mtimeNs) };\n" +
+   "  }\n" +
+   "\n" +
+   "  /**\n" +
+   "   * Carry lines this instance just appended to the active archive file into that\n" +
+   "   * collection's cached parse, instead of invalidating it.\n" +
+   "   *\n" +
+   "   * This is safe only under the facts this method checks. The active file has to\n" +
+   "   * be the last file in the read order, so an append adds records behind every\n" +
+   "   * record the scan already placed (first positions and latest-value-wins are\n" +
+   "   * what a rescan would compute), and `before` - the identity of the file taken\n" +
+   "   * *before* the appended bytes were written - has to equal, field for field,\n" +
+   "   * the identity the cache recorded for those bytes. Only the pre-append\n" +
+   "   * identity describes the bytes the cached parse holds; an identity read after\n" +
+   "   * the append cannot vouch for them, because a same-length rewrite by another\n" +
+   "   * writer leaves the size alone and moves only the mtime. Whenever it is not\n" +
+   "   * exactly equal - including a mtime that moved - the entry is dropped and the\n" +
+   "   * next read scans the file again. The same holds for a truncated or replaced\n" +
+   "   * file, an unexpected inode, and a line that does not parse.\n" +
+   "   */\n" +
+   "  #extendArchiveReadCache(collection, file, appended, before) {\n" +
+   "    const cached = this.#archiveReadCacheFor(collection);\n" +
+   "    if (!cached) return;\n" +
+   "    const last = cached.parts.at(-1);\n" +
+   "    if (!last || last.name !== file.split(\"/\").at(-1)) { this.archiveReadCache.delete(collection); return; }\n" +
+   "    if (!before || before.dev !== last.dev || before.ino !== last.ino || before.size !== last.size || before.mtimeNs !== last.mtimeNs) {\n" +
+   "      this.archiveReadCache.delete(collection);\n" +
+   "      return;\n" +
+   "    }\n" +
+   "    let appendedBytes = 0;\n" +
+   "    for (const { line } of appended) appendedBytes += Buffer.byteLength(line) + 1;\n" +
+   "    const { records, positions, tombstones } = cached;\n" +
+   "    for (const { line } of appended) {\n" +
+   "      let value;\n" +
+   "      try { value = JSON.parse(line); } catch { this.archiveReadCache.delete(collection); return; }\n" +
+   "      if (!value || typeof value !== \"object\") continue;\n" +
+   "      const key = this.#archiveKey(value);\n" +
+   "      const position = positions.get(key);\n" +
+   "      if (position === undefined) { positions.set(key, records.length); records.push(value); }\n" +
+   "      else records[position] = value;\n" +
+   "      if (this.#isTombstone(value, collection)) tombstones.add(key);\n" +
+   "      else tombstones.delete(key);\n" +
+   "    }\n" +
+   "    // The appended bytes are on disk now, so the cached parse holds exactly the\n" +
+   "    // bytes the pre-append identity described plus these lines. The entry is\n" +
+   "    // kept only while the file still holds exactly that: a file that grew by\n" +
+   "    // anything else, or that is no longer the same entry, describes bytes this\n" +
+   "    // parse does not cover. The identity recorded here is the identity of the\n" +
+   "    // bytes the parse now holds, not a fact used to decide the carry-forward\n" +
+   "    // above, which only the pre-append identity can decide.\n" +
+   "    const after = this.#archiveAppendIdentity(file);\n" +
+   "    if (!after || after.dev !== before.dev || after.ino !== before.ino || Number(after.size) !== Number(before.size) + appendedBytes) {\n" +
+   "      this.archiveReadCache.delete(collection);\n" +
+   "      return;\n" +
+   "    }\n" +
+   "    cached.parts = [...cached.parts.slice(0, -1), after];\n" +
+   "    cached.identity = this.#archiveReadIdentity(cached.parts);\n" +
+   "  }\n" +
+   "\n" +
+   "  #readArchiveSync(collection) {\n" +
+   "    // One stat per archive file decides whether this read has to parse bytes\n" +
+   "    // this process does not already hold. A knowledge-bearing append reads this\n" +
+   "    // collection and the knowledge accumulator on every mutation, and the\n" +
+   "    // records those reads return do not change between two appends, so without\n" +
+   "    // this the cost of one mutation would grow with the whole cold history.\n" +
+   "    const located = this.#archiveReadParts(collection);\n" +
+   "    const files = located?.files ?? this.#archiveFiles(collection);\n",
+   "  #readArchiveSync(collection) {\n" +
+   "    const files = this.#archiveFiles(collection);\n"],
+  // An empty file list drops the cached parse, and a read whose file identity is
+  // unchanged is answered from the cache instead of parsing those bytes again.
+  ["    if (!files.length) {\n" +
+   "      this.archiveReadCache?.delete(collection);\n" +
+   "      this.archiveKnown.set(collection, new Set());\n" +
+   "      this.archiveTombstones.set(collection, new Set());\n" +
+   "      return [];\n" +
+   "    }\n" +
+   "    const cached = this.#archiveReadCacheFor(collection);\n" +
+   "    if (located && cached && cached.identity === located.identity) return this.#replayArchiveRead(collection, cached);\n",
+   "    if (!files.length) {\n" +
+   "      this.archiveKnown.set(collection, new Set());\n" +
+   "      this.archiveTombstones.set(collection, new Set());\n" +
+   "      return [];\n" +
+   "    }\n"],
+  // The faults the walk observes are collected as it goes, so a replay can report them
+  // the same way a rescan does; the lines below report through that collector.
+  ["    const records = [];\n" +
+   "    const positions = new Map();\n" +
+   "    const tombstones = new Set();\n" +
+   "    const faults = [];\n" +
+   "    const note = (fault) => { faults.push(fault); this.#noteArchiveFault(collection, fault); };\n" +
+   "    const activeFile = this.#archivePath(collection);\n",
+   "    const records = [];\n" +
+   "    const positions = new Map();\n" +
+   "    const tombstones = new Set();\n" +
+   "    const activeFile = this.#archivePath(collection);\n"],
+  // The unreadable-file fault goes through that collector.
+  ["          note({ file, line: null, kind: \"unreadable\", code: error?.code ?? null });\n",
+   "          this.#noteArchiveFault(collection, { file, line: null, kind: \"unreadable\", code: error?.code ?? null });\n"],
+  // The invalid-line fault goes through that collector too.
+  ["          note({ file, line: index + 1, kind, bytes: Buffer.byteLength(line) });\n",
+   "          this.#noteArchiveFault(collection, { file, line: index + 1, kind, bytes: Buffer.byteLength(line) });\n"],
+  // `archiveKnown` is rebuilt from the scanned positions instead of a local copy, and
+  // only a read that could build a file identity is cached: without one there is nothing
+  // to compare a later read against.
+  ["    this.archiveKnown.set(collection, this.#archiveKnownFrom(collection, positions));\n" +
+   "    this.archiveTombstones.set(collection, tombstones);\n" +
+   "    // Only a read whose file identity could be built is cacheable: without it\n" +
+   "    // there is nothing to compare a later read against.\n" +
+   "    if (located) this.#rememberArchiveRead(collection, located, records, positions, tombstones, faults);\n",
+   "    const stale = this.archiveStale.get(collection);\n" +
+   "    const known = new Set(positions.keys());\n" +
+   "    if (stale?.size) for (const key of stale) known.delete(key);\n" +
+   "    this.archiveKnown.set(collection, known);\n" +
+   "    this.archiveTombstones.set(collection, tombstones);\n"],
+  // `#reconcileArchiveIndex()`: why the active file is parsed on every load, stated
+  // where the recovery decision is made.
+  ["          // An append lands before the index document that describes it, so a\n" +
+   "          // crash can leave the file ahead of its entry. Parsing the active file\n" +
+   "          // on every load is therefore the recovery, not a validation: a torn\n" +
+   "          // tail is quarantined and reported, never dropped. Skipping it would\n" +
+   "          // need the index to be authoritative about bytes written after it.\n" +
+   "          // Active files are the bounded recovery surface after an append/index crash.\n",
+   "          // Active files are the bounded recovery surface after an append/index crash.\n"],
+  // `#reconcileArchiveIndex()`: why a sealed segment is accepted on its recorded size
+  // alone without re-reading it.
+  ["        // A sealed segment is written under a temporary name, renamed into place\n" +
+   "        // and never appended to again, so this rebuild accepts its index entry\n" +
+   "        // whenever the recorded byte size is still the file's size, without\n" +
+   "        // reading or re-hashing the bytes. A change that keeps the size is\n" +
+   "        // therefore invisible at load; `verifyConsistency()` is the operation\n" +
+   "        // that re-reads and re-hashes every sealed segment and reports a digest\n" +
+   "        // mismatch as `checksum`.\n",
+   ""],
+  // `#recordActiveArchiveWrite()`: the lines just appended are carried into the cached
+  // parse instead of dropping it.
+  ["    // The appended lines are on disk now, so the cached parse of these files can\n" +
+   "    // carry them instead of being thrown away - but only under the identity the\n" +
+   "    // file had before this append: see `#extendArchiveReadCache`.\n" +
+   "    this.#extendArchiveReadCache(collection, file, records, before);\n",
+   ""],
+  // The cold-archive integrity round: the faults an archive read records and
+  // `archiveIntegrity()` reports (`#noteArchiveFault`, `this.archiveFaults`), the stale
+  // marks that keep a value whose write failed from being read as the record
+  // (`this.archiveStale`, `#markArchiveStale`, `#resolveArchiveStale`), the torn-tail
+  // quarantine (`#activeTailIsTorn`, `#quarantineTornTail`), the archival rollback that
+  // restores the known and tombstone sets after a failed append, the knowledge append
+  // that keeps a row hot instead of dropping it, and the `deferLoadArchiveWrites` load
+  // hook that keeps a live load from appending to a live archive file.
+  ["// Extracted domain algorithms; no legacy runtime imports. See domain-extraction-report.md.\n" +
+   "import { createHash, randomUUID } from \"node:crypto\";\n" +
+   "import { appendFile, copyFile, mkdir, open, readFile, readdir, rename, rm, stat, writeFile } from \"node:fs/promises\";\n" +
+   "import { readFileSync, readdirSync, statSync } from \"node:fs\";\n" +
+   "import { dirname, join } from \"node:path\";\n",
+   "// Extracted domain algorithms; no legacy runtime imports. See domain-extraction-report.md.\n" +
+   "import { createHash, randomUUID } from \"node:crypto\";\n" +
+   "import { appendFile, copyFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from \"node:fs/promises\";\n" +
+   "import { readFileSync, readdirSync, statSync } from \"node:fs\";\n" +
+   "import { dirname, join } from \"node:path\";\n"],
+  ["const MEMORY_TOMBSTONE = \"__evolutionTombstone\";\n" +
+   "const MEMORY_CONSOLIDATED = \"__evolutionConsolidated\";\n" +
+   "// The JSONL record separator, as the byte an append must land after.\n" +
+   "const NEWLINE_BYTE = 0x0a;\n" +
+   "// At most this many cold-archive faults are remembered per collection.\n" +
+   "const ARCHIVE_FAULT_LIMIT = 16;\n" +
+   "// Faults a scan reported over bytes that could not become records. `torn-tail`\n" +
+   "// is the active file's incomplete final line - an append that did not finish,\n" +
+   "// which the next append quarantines and repairs - and stays out of this set\n" +
+   "// because a restart after an interrupted append is expected to leave one.\n" +
+   "const HARD_ARCHIVE_FAULTS = new Set([\"invalid-line\", \"unreadable\"]);\n" +
+   "const DEFAULT_ARCHIVE_TARGET_BYTES = 8 * 1024 * 1024;\n" +
+   "const DEFAULT_ARCHIVE_HARD_CEILING_BYTES = 16 * 1024 * 1024;\n",
+   "const MEMORY_TOMBSTONE = \"__evolutionTombstone\";\n" +
+   "const MEMORY_CONSOLIDATED = \"__evolutionConsolidated\";\n" +
+   "const DEFAULT_ARCHIVE_TARGET_BYTES = 8 * 1024 * 1024;\n" +
+   "const DEFAULT_ARCHIVE_HARD_CEILING_BYTES = 16 * 1024 * 1024;\n"],
+  ["  #data;\n" +
+   "\n" +
+   "  constructor({ stateStore = null, key = \"evolution\", clock = () => new Date(), maxEntries = 1000, hotCycles = 50, hotEntries = 50, archiveMaxBytes = DEFAULT_ARCHIVE_TARGET_BYTES, absoluteMaxSegmentBytes = DEFAULT_ARCHIVE_HARD_CEILING_BYTES, compactionTriggerBytes = 48 * 1024 * 1024, compactionMinIntervalMs = 10 * 60_000, eventBridgePath = null, transaction = null, mutationAuthority = null, archiveWriteGuard = null, deferLoadArchiveWrites = false } = {}) {\n" +
+   "    if (transaction !== null && typeof transaction.persist !== \"function\") throw new TypeError(\"transaction.persist must be a function\");\n" +
+   "    if (archiveWriteGuard !== null && typeof archiveWriteGuard !== \"function\") throw new TypeError(\"archiveWriteGuard must be a function\");\n",
+   "  #data;\n" +
+   "\n" +
+   "  constructor({ stateStore = null, key = \"evolution\", clock = () => new Date(), maxEntries = 1000, hotCycles = 50, hotEntries = 50, archiveMaxBytes = DEFAULT_ARCHIVE_TARGET_BYTES, absoluteMaxSegmentBytes = DEFAULT_ARCHIVE_HARD_CEILING_BYTES, compactionTriggerBytes = 48 * 1024 * 1024, compactionMinIntervalMs = 10 * 60_000, eventBridgePath = null, transaction = null, mutationAuthority = null, archiveWriteGuard = null } = {}) {\n" +
+   "    if (transaction !== null && typeof transaction.persist !== \"function\") throw new TypeError(\"transaction.persist must be a function\");\n" +
+   "    if (archiveWriteGuard !== null && typeof archiveWriteGuard !== \"function\") throw new TypeError(\"archiveWriteGuard must be a function\");\n"],
+  ["    this.archiveTombstones = new Map();\n" +
+   "    this.archiveWriting = Promise.resolve();\n" +
+   "    // Keys whose archived copy is stale: an archive write for them failed while\n" +
+   "    // the hot window kept the newer value, so the next eviction has to write\n" +
+   "    // them even though the archive already owns their key. This describes the\n" +
+   "    // hot window, not the file, so `#readArchiveSync` never touches it.\n" +
+   "    this.archiveStale = new Map();\n" +
+   "    // Faults this process observed on cold archive bytes and cold archive\n" +
+   "    // writes, keyed by collection. See `archiveIntegrity()`.\n" +
+   "    this.archiveFaults = new Map();\n" +
+   "    // A live (unstaged) load must not append to live archive files: the caller\n" +
+   "    // asks for that with this flag and the over-limit records stay in the hot\n" +
+   "    // projection until the next staged mutation archives them in its own\n" +
+   "    // transaction. Off by default, so an ordinary load keeps evicting.\n" +
+   "    this.deferLoadArchiveWrites = deferLoadArchiveWrites === true;\n" +
+   "    this.compacting = false;\n" +
+   "    // Semantic-GC insurance trigger: periodic schedulers ask maintenance()\n",
+   "    this.archiveTombstones = new Map();\n" +
+   "    this.archiveWriting = Promise.resolve();\n" +
+   "    this.compacting = false;\n" +
+   "    // Semantic-GC insurance trigger: periodic schedulers ask maintenance()\n"],
+  ["        const limit = this.#hotLimit(collection);\n" +
+   "        if (this.archiveFile && this.#data[collection].length > limit) {\n" +
+   "          // A deferred load leaves the excess in the hot projection instead of\n" +
+   "          // appending to a live archive file outside any staged transaction.\n" +
+   "          if (this.deferLoadArchiveWrites) continue;\n" +
+   "          const evicted = this.#data[collection].slice(0, -limit);\n" +
+   "          // The state file is still authoritative until the next successful\n",
+   "        const limit = this.#hotLimit(collection);\n" +
+   "        if (this.archiveFile && this.#data[collection].length > limit) {\n" +
+   "          const evicted = this.#data[collection].slice(0, -limit);\n" +
+   "          // The state file is still authoritative until the next successful\n"],
+  ["  #isTombstone(entry, collection = null) { return collection !== \"tombstones\" && Boolean(entry && typeof entry === \"object\" && entry[MEMORY_TOMBSTONE] === 1); }\n" +
+   "\n" +
+   "  /**\n" +
+   "   * Cold-archive faults this process observed, keyed by collection:\n" +
+   "   * `torn-tail` is the incomplete final line of an active archive file, which\n" +
+   "   * the next append quarantines and repairs; `invalid-line` and `unreadable`\n" +
+   "   * are bytes a scan could not turn into records, so the logical history is\n" +
+   "   * missing records the file still holds; `deferred-write` is an archive write\n" +
+   "   * that failed while the caller kept the record in the hot window instead of\n" +
+   "   * dropping it. A completed write to the same archive clears its\n" +
+   "   * `deferred-write` fault. Empty when every observed read and write completed.\n" +
+   "   */\n" +
+   "  archiveIntegrity() {\n" +
+   "    return Object.fromEntries([...this.archiveFaults].map(([collection, faults]) => [collection, faults.map((fault) => ({ ...fault }))]));\n" +
+   "  }\n" +
+   "\n" +
+   "  #noteArchiveFault(collection, fault) {\n" +
+   "    const faults = this.archiveFaults.get(collection) ?? [];\n" +
+   "    const identity = (entry) => `${entry.kind}\\u0000${entry.file}\\u0000${entry.line ?? \"\"}`;\n" +
+   "    const observed = { ...fault, at: timestamp(this.clock) };\n" +
+   "    const index = faults.findIndex((entry) => identity(entry) === identity(observed));\n" +
+   "    if (index < 0) faults.push(observed);\n" +
+   "    else faults[index] = observed;\n" +
+   "    if (faults.length > ARCHIVE_FAULT_LIMIT) faults.splice(0, faults.length - ARCHIVE_FAULT_LIMIT);\n" +
+   "    this.archiveFaults.set(collection, faults);\n" +
+   "  }\n" +
+   "\n" +
+   "  #clearArchiveWriteFaults(collection) {\n" +
+   "    const faults = this.archiveFaults.get(collection);\n" +
+   "    if (!faults?.some((fault) => fault.kind === \"deferred-write\")) return;\n" +
+   "    const kept = faults.filter((fault) => fault.kind !== \"deferred-write\");\n" +
+   "    if (kept.length) this.archiveFaults.set(collection, kept);\n" +
+   "    else this.archiveFaults.delete(collection);\n" +
+   "  }\n" +
+   "\n" +
+   "  /**\n" +
+   "   * Remember that the archive's copy of one key is older than the hot row. The\n" +
+   "   * key is not known to the archive until a completed append writes it again,\n" +
+   "   * so evictions and housekeeping keep the row that carries the newer value.\n" +
+   "   */\n" +
+   "  #markArchiveStale(collection, key) {\n" +
+   "    const keys = this.archiveStale.get(collection) ?? new Set();\n" +
+   "    keys.add(key);\n" +
+   "    this.archiveKnown.get(collection)?.delete(key);\n" +
+   "    this.archiveStale.set(collection, keys);\n" +
+   "  }\n" +
+   "\n" +
+   "  /** A key written by a completed append no longer has a stale archive copy. */\n" +
+   "  #resolveArchiveStale(collection, entries) {\n" +
+   "    const keys = this.archiveStale.get(collection);\n" +
+   "    if (!keys?.size) return;\n" +
+   "    for (const entry of entries) keys.delete(this.#archiveKey(entry));\n" +
+   "    if (!keys.size) this.archiveStale.delete(collection);\n" +
+   "  }\n" +
+   "\n" +
+   "  #readArchiveSync(collection) {\n" +
+   "    const files = this.#archiveFiles(collection);\n",
+   "  #isTombstone(entry, collection = null) { return collection !== \"tombstones\" && Boolean(entry && typeof entry === \"object\" && entry[MEMORY_TOMBSTONE] === 1); }\n" +
+   "\n" +
+   "  #readArchiveSync(collection) {\n" +
+   "    const files = this.#archiveFiles(collection);\n"],
+  ["    const positions = new Map();\n" +
+   "    const tombstones = new Set();\n" +
+   "    const activeFile = this.#archivePath(collection);\n" +
+   "    for (const file of files) {\n" +
+   "      let raw;\n" +
+   "      try { raw = readFileSync(file, \"utf8\"); } catch (error) {\n" +
+   "        // Every archive file other than this collection's active file is\n" +
+   "        // expected to exist; a file that cannot be read is reported instead of\n" +
+   "        // read as an empty archive.\n" +
+   "        if (error?.code !== \"ENOENT\" || file !== activeFile) {\n" +
+   "          this.#noteArchiveFault(collection, { file, line: null, kind: \"unreadable\", code: error?.code ?? null });\n" +
+   "        }\n" +
+   "        continue;\n" +
+   "      }\n" +
+   "      // A file that does not end with a newline ends inside a record. Only the\n" +
+   "      // active file may legitimately end that way; anywhere else the bytes were\n" +
+   "      // never readable as a record.\n" +
+   "      const complete = raw.endsWith(\"\\n\");\n" +
+   "      const lines = raw.split(\"\\n\");\n" +
+   "      for (let index = 0; index < lines.length; index += 1) {\n" +
+   "        const line = lines[index];\n" +
+   "        if (!line.trim()) continue;\n" +
+   "        try {\n",
+   "    const positions = new Map();\n" +
+   "    const tombstones = new Set();\n" +
+   "    for (const file of files) {\n" +
+   "      let raw;\n" +
+   "      try { raw = readFileSync(file, \"utf8\"); } catch (error) {\n" +
+   "        if (error?.code === \"ENOENT\") continue;\n" +
+   "        continue;\n" +
+   "      }\n" +
+   "      for (const line of raw.split(\"\\n\")) {\n" +
+   "        if (!line.trim()) continue;\n" +
+   "        try {\n"],
+  ["          if (this.#isTombstone(value, collection)) tombstones.add(key);\n" +
+   "          else tombstones.delete(key);\n" +
+   "        } catch {\n" +
+   "          const last = index === lines.length - 1;\n" +
+   "          const kind = last && !complete && file === activeFile ? \"torn-tail\" : \"invalid-line\";\n" +
+   "          this.#noteArchiveFault(collection, { file, line: index + 1, kind, bytes: Buffer.byteLength(line) });\n" +
+   "        }\n" +
+   "      }\n" +
+   "    }\n" +
+   "    // A stale mark means the archive's value for that key is not the record:\n" +
+   "    // an update could not be written, so the archive no longer owns the key.\n" +
+   "    // Keeping it out of `archiveKnown` is what keeps every reader of that set -\n" +
+   "    // eviction and housekeeping - from treating the old value as the record.\n" +
+   "    const stale = this.archiveStale.get(collection);\n" +
+   "    const known = new Set(positions.keys());\n" +
+   "    if (stale?.size) for (const key of stale) known.delete(key);\n" +
+   "    this.archiveKnown.set(collection, known);\n" +
+   "    this.archiveTombstones.set(collection, tombstones);\n" +
+   "    return collection === \"tombstones\" ? records : records.filter((entry) => !this.#isTombstone(entry, collection));\n",
+   "          if (this.#isTombstone(value, collection)) tombstones.add(key);\n" +
+   "          else tombstones.delete(key);\n" +
+   "        } catch { /* a torn final line is ignored */ }\n" +
+   "      }\n" +
+   "    }\n" +
+   "    this.archiveKnown.set(collection, new Set(positions.keys()));\n" +
+   "    this.archiveTombstones.set(collection, tombstones);\n" +
+   "    return collection === \"tombstones\" ? records : records.filter((entry) => !this.#isTombstone(entry, collection));\n"],
+  ["  }\n" +
+   "\n" +
+   "  /**\n" +
+   "   * True when an active archive file ends inside a record instead of at the\n" +
+   "   * newline that terminates it. Appending there would concatenate the new\n" +
+   "   * record into the fragment's line, which no reader can parse, so the caller\n" +
+   "   * must repair the file first.\n" +
+   "   */\n" +
+   "  async #activeTailIsTorn(path) {\n" +
+   "    let size = 0;\n" +
+   "    try { size = (await stat(path)).size; } catch { return false; }\n" +
+   "    if (size === 0) return false;\n" +
+   "    const handle = await open(path, \"r\");\n" +
+   "    try {\n" +
+   "      const last = Buffer.alloc(1);\n" +
+   "      const { bytesRead } = await handle.read(last, 0, 1, size - 1);\n" +
+   "      return bytesRead === 1 && last[0] !== NEWLINE_BYTE;\n" +
+   "    } finally { await handle.close(); }\n" +
+   "  }\n" +
+   "\n" +
+   "  /**\n" +
+   "   * The append-only audit file that keeps the incomplete final lines removed\n" +
+   "   * from one collection's active archive, one fragment per line and every byte\n" +
+   "   * as it was written. It is named like an archive file because that is what\n" +
+   "   * makes the durability machinery keep it: a staged transaction installs it\n" +
+   "   * with the rest of the tree, and compaction - which rebuilds only the active\n" +
+   "   * file and the segment directory - never touches it. No collection claims it,\n" +
+   "   * so nothing reads it as an archive; the doctor's archive scan lists it, and\n" +
+   "   * the one unparsable line is exactly the fragment it preserves.\n" +
+   "   */\n" +
+   "  #archiveQuarantinePath(collection) {\n" +
+   "    const path = this.#archivePath(collection);\n" +
+   "    return path ? `${path.slice(0, -\"-archive.jsonl\".length)}quarantine-archive.jsonl` : null;\n" +
+   "  }\n" +
+   "\n" +
+   "  /**\n" +
+   "   * Preserve the incomplete final line of an active archive byte for byte in\n" +
+   "   * that collection's quarantine file, then rewrite the active file with its\n" +
+   "   * complete lines. The fragment is never parsed as a record and never deleted:\n" +
+   "   * an operator can still read it from the quarantine file. The fragment is\n" +
+   "   * appended before the active file is replaced, so a failure or a crash in\n" +
+   "   * between cannot lose bytes no reader has seen.\n" +
+   "   */\n" +
+   "  async #quarantineTornTail(collection, path) {\n" +
+   "    const raw = await readFile(path);\n" +
+   "    const breakAt = raw.lastIndexOf(NEWLINE_BYTE);\n" +
+   "    const fragment = breakAt === -1 ? raw : raw.subarray(breakAt + 1);\n" +
+   "    const complete = breakAt === -1 ? Buffer.alloc(0) : raw.subarray(0, breakAt + 1);\n" +
+   "    const quarantine = this.#archiveQuarantinePath(collection);\n" +
+   "    // Both writes are in-place writes to a file the staged view may share with\n" +
+   "    // the live tree, so both take the guard that hands this transaction its own\n" +
+   "    // copy first.\n" +
+   "    await this.#beforeArchiveWrite(path);\n" +
+   "    await this.#beforeArchiveWrite(quarantine);\n" +
+   "    // Append-only: the newline added after each fragment is the only byte this\n" +
+   "    // file contributes, and an earlier fragment is never overwritten.\n" +
+   "    await appendFile(quarantine, Buffer.concat([fragment, Buffer.from(\"\\n\")]), { mode: 0o600 });\n" +
+   "    let rewritten = `${path}.${randomUUID()}.repair`;\n" +
+   "    try {\n" +
+   "      await writeFile(rewritten, complete, { mode: 0o600 });\n" +
+   "      await rename(rewritten, path);\n" +
+   "      rewritten = null;\n" +
+   "    } finally {\n" +
+   "      if (rewritten) await rm(rewritten, { force: true }).catch(() => {});\n" +
+   "    }\n" +
+   "    return { file: quarantine, bytes: fragment.length, kept: complete.toString(\"utf8\") };\n" +
+   "  }\n" +
+   "\n" +
+   "  async #archiveEntries(collection, entries, { replaceExisting = false } = {}) {\n" +
+   "    const run = async () => {\n",
+   "  }\n" +
+   "\n" +
+   "  async #archiveEntries(collection, entries, { replaceExisting = false } = {}) {\n" +
+   "    const run = async () => {\n"],
+  ["      const originalKnown = new Set(known);\n" +
+   "      const originalTombstones = new Set(tombstones);\n" +
+   "      // A key the archive already owns is skipped: its archived value is the\n" +
+   "      // record. A key marked stale is the exception - the archive holds an\n" +
+   "      // older value and this append is the update that reaches it.\n" +
+   "      const stale = this.archiveStale.get(collection) ?? null;\n" +
+   "      const fresh = [];\n" +
+   "      for (const entry of entries) {\n" +
+   "        if (!entry || typeof entry !== \"object\") continue;\n" +
+   "        const key = this.#archiveKey(entry);\n" +
+   "        if (known.has(key) && !replaceExisting && !stale?.has(key)) continue;\n" +
+   "        const previous = existingByKey.get(key);\n" +
+   "        try { if (previous !== undefined && JSON.stringify(previous) === JSON.stringify(entry)) continue; } catch {}\n",
+   "      const originalKnown = new Set(known);\n" +
+   "      const originalTombstones = new Set(tombstones);\n" +
+   "      const fresh = [];\n" +
+   "      for (const entry of entries) {\n" +
+   "        if (!entry || typeof entry !== \"object\") continue;\n" +
+   "        const key = this.#archiveKey(entry);\n" +
+   "        if (known.has(key) && !replaceExisting) continue;\n" +
+   "        const previous = existingByKey.get(key);\n" +
+   "        try { if (previous !== undefined && JSON.stringify(previous) === JSON.stringify(entry)) continue; } catch {}\n"],
+  ["        let activeBytes = 0;\n" +
+   "        try { activeBytes = (await stat(path)).size; } catch { activeBytes = 0; }\n" +
+   "        // A torn active tail is repaired before anything is appended: the\n" +
+   "        // fragment moves to a quarantine file and the active file keeps only\n" +
+   "        // complete lines, so every new record starts on a line of its own.\n" +
+   "        // Without this the new record and the fragment form one unparseable\n" +
+   "        // line, the reader drops it, and the caller removes the record from its\n" +
+   "        // hot window once this returns true - the record would then be gone\n" +
+   "        // from the hot projection and the archive at the same time.\n" +
+   "        if (activeBytes > 0 && await this.#activeTailIsTorn(path)) {\n" +
+   "          const repaired = await this.#quarantineTornTail(collection, path);\n" +
+   "          activeBytes = Buffer.byteLength(repaired.kept);\n" +
+   "          this.#noteArchiveFault(collection, { file: path, line: null, kind: \"torn-tail\", quarantined: repaired.file, bytes: repaired.bytes });\n" +
+   "          // The rewritten bytes are what the index entry and the active key set\n" +
+   "          // describe from here on: the fragment's line and bytes are gone from\n" +
+   "          // both.\n" +
+   "          this.archiveIndexEntries.set(path, this.#indexEntryFromRaw(collection, path, repaired.kept, { sealed: false }));\n" +
+   "          this.#activeKeysFromRaw(collection, repaired.kept);\n" +
+   "        }\n" +
+   "        let chunk = [];\n" +
+   "        let chunkRecords = [];\n",
+   "        let activeBytes = 0;\n" +
+   "        try { activeBytes = (await stat(path)).size; } catch { activeBytes = 0; }\n" +
+   "        let chunk = [];\n" +
+   "        let chunkRecords = [];\n"],
+  ["        await flush();\n" +
+   "        this.#setArchiveMetadata(collection, known, tombstones);\n" +
+   "        this.#resolveArchiveStale(collection, fresh);\n" +
+   "        this.archiveIndexOperations += 1;\n" +
+   "        this.#clearArchiveWriteFaults(collection);\n" +
+   "        // Persist only the small index document. Active entry metadata is\n" +
+   "        // updated incrementally above; sealed files receive their final hash\n",
+   "        await flush();\n" +
+   "        this.#setArchiveMetadata(collection, known, tombstones);\n" +
+   "        this.archiveIndexOperations += 1;\n" +
+   "        // Persist only the small index document. Active entry metadata is\n" +
+   "        // updated incrementally above; sealed files receive their final hash\n"],
+  ["        await this.#writeArchiveIndexIncremental();\n" +
+   "        return true;\n" +
+   "      } catch (error) {\n" +
+   "        this.archiveKnown.set(collection, originalKnown);\n" +
+   "        this.archiveTombstones.set(collection, originalTombstones);\n" +
+   "        this.#noteArchiveFault(collection, { file: path, line: null, kind: \"deferred-write\", code: error?.code ?? null, reason: error?.message ?? String(error) });\n" +
+   "        return false;\n" +
+   "      }\n",
+   "        await this.#writeArchiveIndexIncremental();\n" +
+   "        return true;\n" +
+   "      } catch {\n" +
+   "        this.archiveKnown.set(collection, originalKnown);\n" +
+   "        this.archiveTombstones.set(collection, originalTombstones);\n" +
+   "        return false;\n" +
+   "      }\n"],
+  ["    const archive = await this.#archiveConsistencyReport();\n" +
+   "    if (!archive.valid) reasons.push(\"archive_index_inconsistent\");\n" +
+   "    const faults = this.archiveIntegrity();\n" +
+   "    const degraded = Object.entries(faults)\n" +
+   "      .flatMap(([collection, entries]) => entries.filter((fault) => HARD_ARCHIVE_FAULTS.has(fault.kind)).map((fault) => ({ collection, ...fault })));\n" +
+   "    if (degraded.length) reasons.push(\"archive_bytes_unreadable\");\n" +
+   "    return {\n" +
+   "      valid: reasons.length === 0,\n",
+   "    const archive = await this.#archiveConsistencyReport();\n" +
+   "    if (!archive.valid) reasons.push(\"archive_index_inconsistent\");\n" +
+   "    return {\n" +
+   "      valid: reasons.length === 0,\n"],
+  ["      tombstoneCount: complete.tombstones?.length ?? 0,\n" +
+   "      duplicateIds,\n" +
+   "      archive: { ...archive, degraded, faults },\n" +
+   "    };\n" +
+   "  }\n",
+   "      tombstoneCount: complete.tombstones?.length ?? 0,\n" +
+   "      duplicateIds,\n" +
+   "      archive,\n" +
+   "    };\n" +
+   "  }\n"],
+  ["    const knowledge = mergeKnowledgeEntry(previous, event, { now: this.clock() });\n" +
+   "    const hotIndex = this.#data.knowledge.findIndex((entry) => entry?.knowledgeKey === event.knowledgeKey || entry?.id === event.knowledgeKey);\n" +
+   "    if (hotIndex >= 0) {\n" +
+   "      this.#data.knowledge[hotIndex] = knowledge;\n" +
+   "      // The archive can also own this key with an older value - a restored hot\n" +
+   "      // window, or a row an earlier eviction archived. The hot row now carries\n" +
+   "      // the newer value, so the key must not read as archived until the archive\n" +
+   "      // carries it too; the eviction that writes the row appends it there. No\n" +
+   "      // write happens here: the write an eviction performs is the one the cold\n" +
+   "      // bytes of a hot update have always been left to.\n" +
+   "      if (this.archiveFile && this.archiveKnown.get(\"knowledge\")?.has(this.#archiveKey(knowledge))) {\n" +
+   "        this.#markArchiveStale(\"knowledge\", this.#archiveKey(knowledge));\n" +
+   "      }\n" +
+   "    } else if (previous && this.archiveFile && this.archiveKnown.get(\"knowledge\")?.has(this.#archiveKey(previous))) {\n" +
+   "      // The row exists only in the cold archive, so this append *is* the\n" +
+   "      // update: a failure that was ignored would leave the archive at the\n" +
+   "      // previous value while the caller received the merged row, losing the\n" +
+   "      // update silently. Nothing has been mutated yet, so failing the whole\n" +
+   "      // mutation leaves the caller a consistent state to retry from.\n" +
+   "      if (!await this.#archiveEntries(\"knowledge\", [knowledge], { replaceExisting: true })) {\n" +
+   "        const failure = new Error(\"Evolution knowledge archive update failed\");\n" +
+   "        failure.code = \"E_ARCHIVE_WRITE_FAILED\";\n" +
+   "        throw failure;\n" +
+   "      }\n" +
+   "    } else this.#data.knowledge.push(knowledge);\n" +
+   "    if (this.archiveFile && this.#data.knowledge.length > this.#hotLimit(\"knowledge\")) {\n",
+   "    const knowledge = mergeKnowledgeEntry(previous, event, { now: this.clock() });\n" +
+   "    const hotIndex = this.#data.knowledge.findIndex((entry) => entry?.knowledgeKey === event.knowledgeKey || entry?.id === event.knowledgeKey);\n" +
+   "    if (hotIndex >= 0) this.#data.knowledge[hotIndex] = knowledge;\n" +
+   "    else if (previous && this.archiveFile && this.archiveKnown.get(\"knowledge\")?.has(this.#archiveKey(previous))) {\n" +
+   "      await this.#archiveEntries(\"knowledge\", [knowledge], { replaceExisting: true });\n" +
+   "    } else this.#data.knowledge.push(knowledge);\n" +
+   "    if (this.archiveFile && this.#data.knowledge.length > this.#hotLimit(\"knowledge\")) {\n"],
+  ["        if (!this.archiveKnown.has(collection)) this.#readArchiveSync(collection);\n" +
+   "        const archivedHas = this.archiveKnown.get(collection)?.has(this.#archiveKey(next)) === true;\n" +
+   "        if (archivedHas && !await this.#archiveEntries(collection, [merged], { replaceExisting: true })) {\n" +
+   "          // The archive still holds the previous value, and an eviction skips\n" +
+   "          // keys the archive already owns, so the merged row would be dropped\n" +
+   "          // from the hot window without ever reaching the archive. Mark the key\n" +
+   "          // stale instead: it stays hot, and the next eviction appends it. The\n" +
+   "          // failure is also recorded as a `deferred-write` fault.\n" +
+   "          this.#markArchiveStale(collection, this.#archiveKey(merged));\n" +
+   "        }\n" +
+   "      }\n" +
+   "      if (this.archiveFile && collectionEntries.length > this.#hotLimit(collection)) {\n",
+   "        if (!this.archiveKnown.has(collection)) this.#readArchiveSync(collection);\n" +
+   "        const archivedHas = this.archiveKnown.get(collection)?.has(this.#archiveKey(next)) === true;\n" +
+   "        if (archivedHas) await this.#archiveEntries(collection, [merged], { replaceExisting: true });\n" +
+   "      }\n" +
+   "      if (this.archiveFile && collectionEntries.length > this.#hotLimit(collection)) {\n"],
   // The experience-recall read path: one knowledge lookup per append, a source
   // scan that reads its history without copying it, and an identity comparison
   // that skips the event fields no comparison reads.

@@ -52,6 +52,8 @@ jobs:
           node-version: '22.19.0'
           cache: npm
       - name: Use the release tooling from the default branch when the tag predates it
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           # A workflow_dispatch can target a tag cut before this tooling existed.
@@ -60,28 +62,36 @@ jobs:
           # files are part of the package, so the pin and the artifact are
           # unaffected. A tag that already ships the tooling keeps its own copy.
           if [ ! -f scripts/release/verify-provenance.mjs ]; then
-            echo "the tag predates the provenance tooling; taking scripts/release from ${{ github.event.repository.default_branch }}"
-            git fetch --no-tags --depth=1 origin "${{ github.event.repository.default_branch }}"
+            echo "the tag predates the provenance tooling; taking scripts/release from $DEFAULT_BRANCH"
+            git fetch --no-tags --depth=1 origin "$DEFAULT_BRANCH"
             git checkout FETCH_HEAD -- scripts/release
           fi
       - name: Resolve the release tag
         id: tag
+        env:
+          # A workflow_dispatch input and a pushed ref are both caller-supplied
+          # text; only this step reads them, and every later step gets the
+          # validated value through `env:` instead of a splice into its script.
+          REQUESTED_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
-          tag="${{ github.event.inputs.tag || github.ref_name }}"
-          case "$tag" in
-            v*) ;;
-            *) echo "release tags must start with v, got: $tag" >&2; exit 1 ;;
-          esac
+          tag="$REQUESTED_TAG"
+          # vMAJOR.MINOR.PATCH with an optional -prerelease. Anything else (a
+          # branch name, shell syntax, a partial version) is not a release tag.
+          if ! [[ "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+            echo "not a release tag (expected vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-prerelease): $tag" >&2
+            exit 1
+          fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "release tag: $tag"
       - name: Refuse to overwrite an existing release
         if: ${{ github.event.inputs.dry_run != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
           set -euo pipefail
-          tag="${{ steps.tag.outputs.tag }}"
+          tag="$RELEASE_TAG"
           if gh release view "$tag" >/dev/null 2>&1; then
             draft="$(gh release view "$tag" --json isDraft --jq '.isDraft')"
             assets="$(gh release view "$tag" --json assets --jq '.assets | length')"
@@ -93,10 +103,11 @@ jobs:
           fi
       - name: Verify the tag, the commit and the pinned source commit
         env:
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
           REQUIRE_SOURCE_COMMIT: ${{ github.event.inputs.dry_run != 'true' && '--require-source-commit' || '' }}
         run: |
           set -euo pipefail
-          node scripts/release/verify-provenance.mjs --tag "${{ steps.tag.outputs.tag }}" $REQUIRE_SOURCE_COMMIT
+          node scripts/release/verify-provenance.mjs --tag "$RELEASE_TAG" $REQUIRE_SOURCE_COMMIT
       - name: Verify the package, the pinned artifact and the checksum file
         run: |
           set -euo pipefail
@@ -107,9 +118,10 @@ jobs:
         if: ${{ github.event.inputs.dry_run != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
           set -euo pipefail
-          tag="${{ steps.tag.outputs.tag }}"
+          tag="$RELEASE_TAG"
           if ! gh release view "$tag" >/dev/null 2>&1; then
             # An RC must never become the repository's "latest" release, so a
             # version with a pre-release component is created as one.
@@ -117,7 +129,10 @@ jobs:
               *-*) prerelease="--prerelease" ;;
               *) prerelease="" ;;
             esac
-            gh release create "$tag" --draft --generate-notes $prerelease --title "dsh-evolution $tag"
+            # --verify-tag: the release must attach to the tag provenance just
+            # verified. Without it `gh` silently creates a missing tag from the
+            # default branch, breaking the tag -> commit -> pin chain.
+            gh release create "$tag" --draft --verify-tag --generate-notes $prerelease --title "dsh-evolution $tag"
           fi
           # No --clobber: an asset name that already exists is an error, so a
           # second run can never replace published bytes.
@@ -127,9 +142,10 @@ jobs:
         if: ${{ github.event.inputs.dry_run != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
           set -euo pipefail
-          tag="${{ steps.tag.outputs.tag }}"
+          tag="$RELEASE_TAG"
           mkdir -p /tmp/uploaded
           # Download the bytes GitHub is now serving and re-verify them against
           # the committed pin, so a partly failed or mismatched upload is caught.

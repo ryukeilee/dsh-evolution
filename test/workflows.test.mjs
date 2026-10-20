@@ -37,6 +37,20 @@ function releaseWorkflowRuns() {
   return release.jobs.release.steps.map((step) => step.run).filter(Boolean).join('\n');
 }
 
+/**
+ * `permissions: write-all` grants every scope to the workflow and to a job, so
+ * no workflow here may request it. The check reads the parsed document: a
+ * serialized workflow renders the value as `"permissions":"write-all"`, never
+ * as the YAML text `permissions: write-all`, so searching the serialized form
+ * for the YAML spelling could never fail.
+ */
+function assertNoWriteAll(name, workflow) {
+  assert.notEqual(workflow.permissions, 'write-all', `${name} must not request write-all for the workflow`);
+  for (const [jobName, job] of Object.entries(workflow.jobs || {})) {
+    assert.notEqual(job.permissions, 'write-all', `${name}:${jobName} must not request write-all for the job`);
+  }
+}
+
 test('every workflow file parses as YAML and has runnable steps', () => {
   const files = fs.readdirSync(workflowsDir).filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'));
   assert.ok(files.length >= 2, `expected at least two workflow files, found ${files.length}`);
@@ -156,8 +170,8 @@ if (args[1] === 'download') {
     const callsFile = path.join(scratch, 'calls.jsonl');
     const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, GH_CALLS: callsFile };
     for (const step of release.jobs.release.steps.filter((step) => /gh release (upload|download)/.test(step.run || ''))) {
-      const run = step.run.replaceAll('${{ steps.tag.outputs.tag }}', 'v-local-test').replaceAll('/tmp/uploaded', path.join(scratch, 'uploaded'));
-      execFileSync('bash', ['-c', run], { cwd: scratch, env });
+      const run = step.run.replaceAll('/tmp/uploaded', path.join(scratch, 'uploaded'));
+      execFileSync('bash', ['-c', run], { cwd: scratch, env: { ...env, RELEASE_TAG: 'v-local-test' } });
     }
     const calls = fs.readFileSync(callsFile, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
     const pin = JSON.parse(fs.readFileSync(path.join(scratch, 'release', 'manifest.json'), 'utf8'));
@@ -193,7 +207,9 @@ test('the release workflow cannot overwrite an existing release asset', () => {
 test('the release workflow verifies the tag, the commit, the pin and the checksums', () => {
   const release = loadWorkflow('release.yml');
   const runs = releaseWorkflowRuns();
-  assert.match(runs, /verify-provenance\.mjs --tag "\$\{\{ steps\.tag\.outputs\.tag \}\}"/);
+  // The tag arrives through `env:` so a caller-supplied value is data, not code.
+  assert.match(runs, /verify-provenance\.mjs --tag "\$RELEASE_TAG"/);
+  assert.equal(runs.includes('steps.tag.outputs.tag'), false);
   assert.match(JSON.stringify(release), /--require-source-commit/);
   assert.match(runs, /npm run pack:check/);
   assert.match(runs, /npm run release:verify/);
@@ -249,7 +265,20 @@ test('no workflow runs on pull_request_target or with write permissions by defau
     if (!/\.ya?ml$/.test(name)) continue;
     const workflow = loadWorkflow(name);
     assert.equal(Boolean(workflow.on?.pull_request_target), false, `${name} must not use pull_request_target`);
-    const serialized = JSON.stringify(workflow);
-    assert.equal(serialized.includes('permissions: write-all'), false, `${name} must not request write-all`);
+    assertNoWriteAll(name, workflow);
   }
+});
+
+test('the write-all guard rejects a workflow that actually requests it', () => {
+  // Positive control: the guard must fail on the value it forbids, otherwise it
+  // is decoration. These fixtures never touch the repository's real workflows.
+  assert.throws(
+    () => assertNoWriteAll('fixture.yml', { permissions: 'write-all', jobs: { release: { steps: [] } } }),
+    /must not request write-all for the workflow/,
+  );
+  assert.throws(
+    () => assertNoWriteAll('fixture.yml', { permissions: { contents: 'read' }, jobs: { release: { permissions: 'write-all', steps: [] } } }),
+    /must not request write-all for the job/,
+  );
+  assert.doesNotThrow(() => assertNoWriteAll('fixture.yml', { permissions: { contents: 'write' }, jobs: { release: { steps: [] } } }));
 });

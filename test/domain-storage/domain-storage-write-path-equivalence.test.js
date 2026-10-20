@@ -109,7 +109,12 @@ function readTree(root) {
     }
   };
   walk(root, '');
+  // Both entries are runtime coordination state, not domain data: the lock is
+  // this port's mutual exclusion and the token is the opaque commit counter it
+  // advances. Neither is compared - but every domain file (the shared document,
+  // the archives, the index) stays in the map and stays byte-compared.
   files.delete('domain-archive-lock');
+  files.delete('domain-commit.token');
   return files;
 }
 
