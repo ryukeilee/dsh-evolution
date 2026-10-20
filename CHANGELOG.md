@@ -6,6 +6,33 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.16 — 召回窗口不再复制它从不读取的行，指标分支每行只规范化一次
+
+本候选在 `0.2.0-rc.15` 之上只做两处可证明等价的重复计算删除（召回读取与指标规范化）、把全量套件的 4 GiB 堆上限从文档要求变成 CI 的断言，并把 2026-10-20 全量测试内存事件做成一次有界定位。生产 delta 只有三个随包分发文件——`lib/dockyard-domain/memory.js`（新增 `historyView`、指标分支每行只规范化一次）、`lib/domain-storage.js`（`recall` 改用它）、`lib/dockyard-domain/PORTS.md`（记录只读视图的契约）——加上版本号与随包分发的文档；宿主支持范围、`peerDependencies`、`engines`、依赖、领域存储的持久化格式与 schema 一律未动。
+
+**未改的不变量**：`promotionGates` 的八项门禁、晋升的二次显式确认、Trial 基线的单次同步捕获、journal 阶段判定（`classifyPromotionJournal`）、跨进程锁、CAS、tombstone、latest-wins、去重与 retention 决策、事件信封与签名算法、经验检索的只读性与触发路径。`history()` 仍是 detached 契约：新增的只读视图是**另一个**方法，没有把既有契约改宽。
+
+### 召回读取：窗口之外的行不再复制
+
+- **`EvolutionMemory.historyView(collection)` 是 `history()` 那次合并的无副本版本。** 同一份 `#mergeArchived(..., { copy: false })`、同样的行、同样的顺序、同样的 latest-value 与 tombstone 结果，只是不逐行复制；返回的**数组**属于本次调用（调用方 `push` 或重排不会改到 store 的数组），而数组里的元素是热记录与档案读缓存里的冷记录本身，因此契约是**只读**，`history()` 保持不变。`port.recall()` 是唯一调用方：它把保留的字段投影成 `collectKnowledgeExperience()` 自己的有界记录，所以下游拿到的仍是新对象；`test/experience-recall.test.mjs` 的 `recall: a mutated answer cannot write back into the stored knowledge rows` 断言把召回结果深度改坏之后，下一次召回与 `port.query("knowledge")` 都是原值。
+- **为什么改**：`port.recall()` 原先经 `history()` 取整段冷热合并的 knowledge 历史，然后最多只用最新的 2,000 行（`maxConsidered`）加上窗口之外精确命中 `knowledgeKey` 的几行；窗口外的其余行被复制了一遍却从未被投影。同一份热缓存档案上的隔离测量（`docs/performance/recall-view.md` 第 1.1 节）：10,000 行（17.5 MiB）的 `history("knowledge")` 是 83.5 ms，其中复制约 63 ms（纯 JSON 往返 63.3 ms 只作量级参考），收集器本身约 15 ms。
+- **收益**（`--op recall`，窗口查询与精确命中查询各一次，同机交替、按侧取中位数）：2,000 行 60.96 → 27.48 ms（wall −54.92%）；10,000 行 203.88 → 29.97 ms（−85.30%）；40,000 行 723.92 → 41.70 ms（−94.24%）。收益边界就是省掉的“窗口之外的行被复制”这一部分，因此随 `总行数 / 2,000` 增长；2,000 行正好等于窗口时仍有 −55%，因为窗口内的行原先也被整体复制了一次，而现在只复制收集器真正保留的记录。改动后每次召回仍是 O(总行数) 的一次合并（40,000 行约 7 ms）加窗口投影，**冷档案首次解析、合并与 latest-wins 完整保留**。
+- **等价性**：基准脚本每一轮都断言两侧落盘的 `dockyard` 档案树逐字节相同，`--op recall` 另外断言两侧 `port.recall()` 的输出 JSON（记录、顺序、`coverage` / `exact` / `score`、`considered` / `scanned` / `duplicates` / `dropped`）逐字节相同，并断言档案头部那条“窗口之外的精确命中”仍然被召回；`test/dockyard-domain/evolution-archive-index.test.js` 的 `history view is history()'s merge without its copies, and history() stays detached` 断言视图与 `history()` 的合并结果（含 latest-value 覆盖与 tombstone）逐字段相同、`history()` 每条仍是副本、而视图两次调用返回同一批行对象。
+
+### 指标分支：每行只规范化一次
+
+- **`#shouldRetainSource()` 的观测指标分支不再为每个指标规范化同一行一次。** 该分支原来按“指标 × 匹配行”遍历，每个（指标，行）组合都调用一次 `normalizeKnowledgeEvent()` 只为读 `.metrics[key]`，而 `.metrics` 与调用时的 `now` 无关（`now` 只影响 `occurredAt`）；现在每个匹配行在一次调用内只规范化一次，比较的表达式、短路顺序、`undefined` / `null` 先验与 5% 判定完全不变。顺带更正一个此前的估算：`.every()` 会在第一个“非实质变化”的匹配行处停下，所以这一分支从来不是最坏的 K×M 次，每个指标最多走到第一个不变化的行。
+- **实测**（小档案、重复的 measured 观测、8 个指标，最终代码保留时钟读取）：0.500 → 0.447 ms，三轮重复的中位数 wall −10.61%（区间 −16.0%…−9.9%）、CPU −11.13%。同一配置里“不该变化”的另外三个场景 wall 与 CPU 变化都在 ±6% 内，且没有同号的一致信号（例如冷 knowledge 场景 wall −5.75% 而 CPU +3.11%），不读作收益。数据与复现命令见 `docs/performance/recall-view.md` 第 2.2 与第 5 节。
+- **被撤回的变体：连时钟读取一起缓存。** 把 `timestamp(this.clock)` 也提到求值之外能把该场景推到 −16.9%，但用递增时钟复现出持久化差异——同一轮写入里后续记录的 `recordedAt` 因为少读一次时钟而提前了一个 tick（`00:00:08` → `00:00:07`）。这属于行为改动而不是删除重复计算，因此撤回；最终实现仍在**每次求值时**读一次时钟，只复用规范化结果。
+- **回归测试同时钉住持久化字节与读取次数**：`test/dockyard-domain/knowledge-identity-equivalence.test.js` 的 `the metric branch keeps the pinned clock read count and bytes` 以 `rc.15` 固定产物为基线、用每次读取都递增的时钟，断言持久化字节**与时钟读取次数**都与基线相同；把时钟读取也缓存起来（即上面被否的写法）该用例立即失败（实测 14 ≠ 17）。
+
+### CI 与事故定位
+
+- **全量套件的堆上限成为断言。** `.github/workflows/ci.yml` 的单元测试作业此前没有任何堆上限，正是 `AGENTS.md` 第 5 节禁止、也是 2026-10-20 事故被记录时的状态；现在它在作业级设 `env: NODE_OPTIONS: --max-old-space-size=4096`，`test/workflows.test.mjs` 断言这个取值。设在作业级是为了让安装步骤与测试 runner 起的每个子进程都带同一个上限，不会出现“父进程带了限、某个子进程没带”的分叉。
+- **2026-10-20 全量测试内存事件做了有界定位，但没有定论成“根因”。** 95 个测试文件各起一个独立进程组复测（4096 MiB 堆上限、2 GiB RSS 上限、300 s 超时）全部通过，峰值最高 459 MiB，没有任何文件被杀；事故点名的 8 MiB 病态输入在绕过 64 KiB `REDACTION_TEXT_BOUND` 之后只需 27 ms、RSS +9 MiB、不再抛错。**不能**由此推出的是：历史根因已经确定、事故时的有效堆上限已被证明、报告里 `rpages × 16 KiB ≈ 203 GB` 那个数值已被复现——这三条都没有成立，事故时的 Node 发行版、工作树与产生那次分配的中间规则表版本都没有留存。能说的是：当前代码在 4 GiB 上限下的逐文件复测与整套复测都没有出现失控分配。方法与边界见 `docs/performance/oom-localization.md` 第 3 与第 6 节。
+- **固定点与验收**：上面三个 `lib/` 文件与随包分发的文档都属于分发内容，因此本轮改动改变了 `contentSha256`；`release/` 固定产物、`release/SHA256SUMS` 与三个宿主的验收证据按 `RELEASE.md` 第 2 节重新生成（`npm run release:pack` → `npm run release:publish` → 针对固定 tarball 重跑三宿主验收），重新固定后的内容摘要与这棵树一致。三条固定点检查就是这条约束的报错方式（`RELEASE.md` 第 6 节第 16 条）。`0.2.0-rc.15` 及更早的 tarball、校验和与 tag 字节保持不变，也未被覆盖；rc.15 已是公开 tag 与公开 Release，其发布后资产校验见 `docs/evidence/rc15-release-audit.json`。
+- 性能数据、等价性依据、被撤回的候选与剩余风险见 `docs/performance/recall-view.md`（`docs/performance/` 不在包内容白名单内，不改变发布字节）。它的第 6 节记着这条改动留下的边界：`historyView()` 是一个会暴露内部行的只读接口，目前只有一个调用点并有针对性的回写隔离测试，但将来若有调用方把它用在会写回记录的路径上，就会同时破坏 store 与读缓存。
+
 ## 0.2.0-rc.15 — 凭据边界的结构性收敛与全仓库缺陷修复
 
 本候选把上面这一整轮修复固定下来，并在最终安全验收中把凭据边界从「按形状枚举、逐段截断」收敛为「命中凭据键即丢弃剩余文本」。

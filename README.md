@@ -6,7 +6,7 @@
 
 它不是 DSH 的 fork，也不是"自动改代码"的黑箱。DSH 主体保持官方原样，本插件通过官方 bundle / profile 机制加载，不修改官方源码、不向官方 `node_modules` 复制文件、不 patch 官方仓库。
 
-- 包版本：**`0.2.0-rc.15`**（发布候选）
+- 包版本：**`0.2.0-rc.16`**（发布候选）
 - 支持的 DSH 宿主：**`0.2.0-rc.2`**、**`0.2.1-alpha.1`** 与 **`0.2.1-rc.2`**（精确列表，逐个通过真实安装验收）
 - Node：`^22.19.0 || >=24.0.0`
 - 分发形态：GitHub Release 上的 tarball，不发布 npm 包
@@ -187,13 +187,13 @@ npx @deepseek-ai/dsh web            # 官方推荐
 从 GitHub Release 下载产物与校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.15
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.15.tgz" -o dsh-evolution-0.2.0-rc.15.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.16
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.16.tgz" -o dsh-evolution-0.2.0-rc.16.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 curl -fL "$RELEASE_URL/manifest.json" -o manifest.json
 
 # 也可使用 GitHub CLI（公开仓库无需先 gh auth login）
-gh release download v0.2.0-rc.15 --repo ryukeilee/dsh-evolution \
+gh release download v0.2.0-rc.16 --repo ryukeilee/dsh-evolution \
   --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS' --pattern 'manifest.json'
 
 # 校验：必须与本次下载的 SHA256SUMS 一致
@@ -203,7 +203,7 @@ sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
 用官方 CLI 安装（同一条命令也用于升级）：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.15.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.16.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
@@ -217,7 +217,7 @@ npm run release:pack     # 生成 dist/
 npm run pack:check       # 校验分发内容、兼容声明与发布固定点
 ```
 
-> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.15.tgz --content-only` 核对。
+> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.16.tgz --content-only` 核对。
 
 ## 5. 配置
 
@@ -393,7 +393,7 @@ npm run acceptance:host -- --host 0.2.1-rc.2 --out <evidence-path>
 
 上表是三个宿主在**固定产物**上重跑时解析到的模块版本（取自 `docs/evidence/dsh-<host>.json` 的 `startedAt` 与 `hostModules`）：三个宿主都落在稳定补丁级别，`js-yaml` 均为 `4.3.2`。宿主自身用 `~` 范围声明这些依赖（`0.2.0-rc.2` 为 `~4.0.4` / `~1.0.9` / `~1.0.5`），因此同 patch 行的稳定版一发布就会被解析到；这三份证据记录的就是这次重跑，与 `release/` 固定点一一对应。
 
-证据文件 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json` 与 `docs/evidence/dsh-0.2.1-rc.2.json` 同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：**任何被发布文件的变化都会使 `pack:check` 失败，直到三个宿主的验收重新运行**。`0.2.0-rc.15` 已按 `RELEASE.md` 第 2 节重新构建、重跑三宿主验收并重新固定，因此 `npm run pack:check` 的 16 项检查（含固定点与三份验收证据的内容摘要）全绿；若将来再改任何分发文件，这三条固定点检查会如实失败，处置流程见 `RELEASE.md` 第 6 节第 16 条。
+证据文件 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json` 与 `docs/evidence/dsh-0.2.1-rc.2.json` 同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 都会核对它们与发布固定点一致：**任何被发布文件的变化都会使 `pack:check` 失败，直到三个宿主的验收重新运行**。`0.2.0-rc.16` 已按 `RELEASE.md` 第 2 节重新构建、重跑三宿主验收并重新固定，因此 `npm run pack:check` 的 16 项检查（含固定点与三份验收证据的内容摘要）全绿（`0.2.0-rc.15` 当时按同一节重新固定，同样 16 项全绿）；若将来再改任何分发文件，这三条固定点检查会如实失败，处置流程见 `RELEASE.md` 第 6 节第 16 条。
 
 验收断言的"数据保留"范围需要说清楚：生命周期、升级与回滚步骤比较的是 `evolution-memory.json` 的 SHA256 并确认 `event-bridge.key` 仍存在，**不是对整个数据根逐文件比较**。
 

@@ -2,24 +2,26 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前本地候选版本：`0.2.0-rc.15`，在 `0.2.0-rc.14` 之上做两件事。第一，把 rc.14 之后积压的一整轮全仓库缺陷修复固定下来（38 项审查问题与 13 项附加缺陷，逐条见 `CHANGELOG.md` 的 `0.2.0-rc.15` 一节）。第二，在最终安全验收中把**凭据脱敏的值规则结构性收敛**：一旦命中 `CREDENTIAL_KEY` 中的键名与分隔符，值就是**文本剩余的全部内容**，替换为「键名 + `[redacted]`」。原先「按形状找结构终点」的一层被整体删除——`STRUCTURAL_VALUE_END`、`VALUE_TAIL`、`BARE_VALUE`、`DOUBLE_QUOTED_VALUE`、`SINGLE_QUOTED_VALUE`、`UNTERMINATED_QUOTED_VALUE`、`CONTAINER_VALUE` 与 `QUOTED_RUN` 共 8 个常量、5 个值分支和 1 个重发引号的捕获组都不在了。同时补上结构化键名（`isCredentialKeyName`，与文本规则共用同一份 `CREDENTIAL_KEY`）、`measure()` 的 `sideEffects` / `orphanResources`、`snapshotEvidenceFromRecord()`、`archive()` 与晋升渲染器、事件桥显式 `payload.measurement` 这些此前绕过脱敏的入口。
+当前本地候选版本：`0.2.0-rc.16`，在 `0.2.0-rc.15` 之上做四件事。第一，`port.recall()` 不再经 `history()` 复制它从不读取的 knowledge 行：`EvolutionMemory.historyView(collection)` 是同一个合并的无副本只读视图，`lib/domain-storage.js` 的 `recall` 改用它（`history()` 仍是 detached 契约）。第二，`#shouldRetainSource()` 的观测指标分支对每个匹配行每次调用只规范化一次，不再每个指标一次。第三，全量套件的 4 GiB 堆上限从文档要求变成 CI 的作业级 `NODE_OPTIONS`，并由 `test/workflows.test.mjs` 断言。第四，2026-10-20 全量测试内存事件做了有界定位，方法、实测值与**不能**推出的结论见 `docs/performance/oom-localization.md`。逐条说明见 `CHANGELOG.md` 的 `0.2.0-rc.16` 一节；性能数字、等价性依据与被撤回的候选见 `docs/performance/recall-view.md`。
 
-`0.2.0-rc.14` 的内容（`knowledge.js` 冷档案身份路径上五处可证明等价的冗余计算 A–E）与 `0.2.0-rc.13` 的内容（宿主支持扩到官方 DSH `0.2.1-rc.2` 与六处“doctor / 运行时 / 磁盘事实不一致”修复）都原样保留：rc.15 只改凭据边界与上面那一轮缺陷修复，未回退它们的 `lib/` 改动，也未改动宿主支持范围。这些版本的历史 tarball、校验和与 tag 字节保持不变，未被覆盖。
+`0.2.0-rc.15` 的内容是：把 rc.14 之后积压的一整轮全仓库缺陷修复固定下来（38 项审查问题与 13 项附加缺陷，逐条见 `CHANGELOG.md` 的 `0.2.0-rc.15` 一节），并在最终安全验收中把**凭据脱敏的值规则结构性收敛**：一旦命中 `CREDENTIAL_KEY` 中的键名与分隔符，值就是**文本剩余的全部内容**，替换为「键名 + `[redacted]`」。原先「按形状找结构终点」的一层被整体删除——`STRUCTURAL_VALUE_END`、`VALUE_TAIL`、`BARE_VALUE`、`DOUBLE_QUOTED_VALUE`、`SINGLE_QUOTED_VALUE`、`UNTERMINATED_QUOTED_VALUE`、`CONTAINER_VALUE` 与 `QUOTED_RUN` 共 8 个常量、5 个值分支和 1 个重发引号的捕获组都不在了。同时补上结构化键名（`isCredentialKeyName`，与文本规则共用同一份 `CREDENTIAL_KEY`）、`measure()` 的 `sideEffects` / `orphanResources`、`snapshotEvidenceFromRecord()`、`archive()` 与晋升渲染器、事件桥显式 `payload.measurement` 这些此前绕过脱敏的入口。
 
-源码、固定产物和三个官方宿主验收必须对应同一内容及字节；rc.15 的 `lib/` 与分发文档改动改变了 `contentSha256`，因此 `release/` 固定产物、三个宿主的验收证据与 `SHA256SUMS` 按第 2 节重新生成（`npm run release:pack` → `npm run release:publish` → 针对固定 tarball 重跑三宿主验收），三者与**rc.15 那棵树**的内容一致，见第 1 节与 4.1。固定产物、三个官方宿主验收证据与历史锚点见 `release/manifest.json` 与 `docs/evidence/`。最后公开的 `v0.2.0-rc.14` 的发布状态、发布后证据与历史资产校验见 `docs/evidence/rc14-release-audit.json`；本轮不修改历史 tag 或发布附件。
+`0.2.0-rc.14` 的内容（`knowledge.js` 冷档案身份路径上五处可证明等价的冗余计算 A–E）与 `0.2.0-rc.13` 的内容（宿主支持扩到官方 DSH `0.2.1-rc.2` 与六处“doctor / 运行时 / 磁盘事实不一致”修复）都原样保留：rc.16 只动 `lib/dockyard-domain/memory.js`、`lib/domain-storage.js` 与 `lib/dockyard-domain/PORTS.md` 三个分发文件，加上版本号与随包分发的文档，未回退它们的 `lib/` 改动，也未改动宿主支持范围。这些版本的历史 tarball、校验和与 tag 字节保持不变，未被覆盖。
 
-**rc.15 之前的漂移已在本轮关闭。** `0.2.0-rc.14` 之后积压的未发布改动曾使工作树内容不等于任何固定点，`npm run pack:check` 因此如实报出三条固定点失败；本轮按第 2 节重新构建、重跑三宿主验收并重新固定后，这三条检查转绿（`pack:check` 共 16 项，全绿）。处置流程与判据保留在第 6 节第 16 条，作为下次漂移时的处置说明。
+源码、固定产物和三个官方宿主验收必须对应同一内容及字节；rc.16 的 `lib/` 与分发文档改动改变了 `contentSha256`，因此 `release/` 固定产物、三个宿主的验收证据与 `SHA256SUMS` 按第 2 节重新生成（`npm run release:pack` → `npm run release:publish` → 针对固定 tarball 重跑三宿主验收），三者与**rc.16 那棵树**的内容一致，见第 1 节与 4.1。固定产物、三个官方宿主验收证据与历史锚点见 `release/manifest.json` 与 `docs/evidence/`。最后公开的 `v0.2.0-rc.15`（tag 指向 `f1f2492`，prerelease 发布）的发布状态、发布后证据与历史资产校验见 `docs/evidence/rc15-release-audit.json` 与同轮的 `rc15-postpublish-*.json`；rc.16 不修改历史 tag 或发布附件。
+
+**漂移按同一流程逐轮关闭：rc.15 关闭了 rc.14 之后积压的那一轮，rc.16 关闭了 `7cd5453` 造成的那一轮。** `0.2.0-rc.14` 之后积压的未发布改动曾使工作树内容不等于任何固定点，`npm run pack:check` 因此如实报出三条固定点失败；rc.15 按第 2 节重新构建、重跑三宿主验收并重新固定后，这三条检查转绿（`pack:check` 共 16 项，全绿）。`7cd5453` 之后同样：三个分发文件再次离开固定点、`pack:check` 再次报出三条固定点失败，rc.16 按同一节重新固定后回到 16 项全绿。处置流程与判据保留在第 6 节第 16 条，作为下次漂移时的处置说明。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.15.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.16.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-本候选尚无公开发布入口。最后公开的 `v0.2.0-rc.10`（GitHub Release id 412881486，draft 验证后公开并重新匿名下载校验）的入口、资产与发布后验收记录见 `docs/evidence/rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`；更早版本的对应记录见同目录的 `rc*-release-audit.json`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
+本候选尚无公开发布入口。最后公开的是 `v0.2.0-rc.15`（prerelease，tag 指向 `f1f2492`；draft 上逐字节校验后才公开，三个宿主从匿名下载的字节重装后 21/21 通过），它的入口、资产与发布后校验记录见 `docs/evidence/rc15-release-audit.json` 与 `rc15-postpublish-*.json`；更早版本的对应记录见同目录的 `rc*-release-audit.json`，其中 `v0.2.0-rc.10`（GitHub Release id 412881486，draft 验证后公开并重新匿名下载校验）的入口、资产与发布后验收记录见 `rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`。流程先在 draft 上验证附件，再公开并重新匿名下载校验；没有通过全部验证的 draft 不会公开。
 
 `release/manifest.json` 只固定当前版本。历史 tarball 可以共存，发布流程仅选择 manifest 指定的文件；历史固定点也保留在对应 tag / commit 与各自 Release 附件中。
 
@@ -35,15 +37,15 @@
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.15，仓库内容）
+# 当前本地候选（0.2.0-rc.16，仓库内容）
 npm run pack:check                              # 打包稳定性、内容白名单、权限、锁文件、文档一致性、固定点
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
 # 发布后：验证 tag -> commit -> 固定点 -> 工作树（发布前在同一 commit 上也能跑）
-node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.15 --require-source-commit
+node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.16 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.15，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0-rc.16，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -93,7 +95,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 
 ### 4.1 已执行的验收记录
 
-下表是内容冻结后针对 `release/` 固定产物重跑的结果：`npm run release:publish` 写入 `release/` 的 tarball、`manifest.json` 与 `SHA256SUMS`，随后脚本按第 4 节用 `--tarball release/dsh-evolution-0.2.0-rc.15.tgz` 依次重跑三个宿主，并把证据写回 `docs/evidence/dsh-<host>.json`；`npm run pack:check` 与 `test/release-pin.test.mjs` 核对这三份证据记录的 `contentSha256` / `tarballSha256` 与固定点一致。三个宿主当前都解析到稳定补丁级别（宿主自身是 `~` 范围，稳定补丁版一发布就被解析到），见 `COMPATIBILITY.md` 的验证矩阵。
+下表是内容冻结后针对 `release/` 固定产物重跑的结果：`npm run release:publish` 写入 `release/` 的 tarball、`manifest.json` 与 `SHA256SUMS`，随后脚本按第 4 节用 `--tarball release/dsh-evolution-0.2.0-rc.16.tgz` 依次重跑三个宿主，并把证据写回 `docs/evidence/dsh-<host>.json`；`npm run pack:check` 与 `test/release-pin.test.mjs` 核对这三份证据记录的 `contentSha256` / `tarballSha256` 与固定点一致。表里的三行是这三份证据文件记录的宿主结果，每个版本重新固定时都必须在新固定 tarball 上重跑并重写它们；写回之前它们记录的仍是上一个固定点（`0.2.0-rc.15`）那棵树。三个宿主当前都解析到稳定补丁级别（宿主自身是 `~` 范围，稳定补丁版一发布就被解析到），见 `COMPATIBILITY.md` 的验证矩阵。
 
 | 宿主 | 宿主模块 | 结果 |
 | --- | --- | --- |
@@ -103,12 +105,12 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 
 首次 CLI 诊断为 `degraded`（`data.root` 尚未初始化）属于预期：数据根在首次运行时创建，最终诊断恢复 `healthy`。
 
-`docs/evidence/dsh-<host>.json` 是**固定点证据**：`pack:check` 与 `test/release-pin.test.mjs` 只核对这三个文件记录的 `contentSha256` / `tarballSha256` 是否等于当前固定内容与固定字节。`docs/evidence/` 下另有一些按轮次命名的验收记录（`cold-archive-write-path-*`、`retention-plan-*`、`write-path-reconcile-identity-*`）；它们是各轮开发中对**中间候选**运行的真实验收，其 `packageVersion` 是当时的版本号、内容摘要不等于任何固定点，因此**不构成固定点证据**，也不被任何校验引用。`0.2.0-rc.15` 的权威验收只有上面三个文件，它们描述的是 rc.15 那棵树，与 `release/` 固定点一一对应。
+`docs/evidence/dsh-<host>.json` 是**固定点证据**：`pack:check` 与 `test/release-pin.test.mjs` 只核对这三个文件记录的 `contentSha256` / `tarballSha256` 是否等于当前固定内容与固定字节。`docs/evidence/` 下另有一些按轮次命名的验收记录（`cold-archive-write-path-*`、`retention-plan-*`、`write-path-reconcile-identity-*`）；它们是各轮开发中对**中间候选**运行的真实验收，其 `packageVersion` 是当时的版本号、内容摘要不等于任何固定点，因此**不构成固定点证据**，也不被任何校验引用。`0.2.0-rc.16` 的权威验收只有上面三个文件；它们必须由本轮重新固定时的重跑写回，写回后与 `release/` 固定点一一对应（在此之前它们记录的仍是 rc.15 那棵树）。
 
 ## 5. CI 与发布链
 
 - `.github/workflows/ci.yml`
-  - `test`：Node `22.19.0` 与 `24.x`，`npm ci --ignore-scripts`，`npm test`
+  - `test`：Node `22.19.0` 与 `24.x`，`npm ci --ignore-scripts`，`npm test`；作业级 `env: NODE_OPTIONS=--max-old-space-size=4096`（`AGENTS.md` 第 5 节要求的堆上限，由 `test/workflows.test.mjs` 断言，安装步骤与 runner 起的每个子进程都带同一个上限）
   - `package`：`pack:check`、对固定产物的 `release:verify`、本机重建的 `--content-only` 校验、从**发布 tarball** 解包后在没有任何 `node_modules` 的情况下启动 doctor、`sha256sum --check`
   - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1` / `0.2.1-rc.2`，用真实官方宿主执行第 4 节的全部步骤，并断言证据的内容摘要等于发布固定点
 - `.github/workflows/codeql.yml`：对 `javascript-typescript` 在 `main`、pull request 与每周运行 CodeQL，并把 SARIF 上传到 GitHub code scanning（job 权限仅 `security-events: write` + 只读内容）
@@ -143,7 +145,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 13. **file 后端的失败记忆仍是 last-writer-wins，`save()` 也不做 fsync。** 同一数据根下两个 host 实例同时执行 `archive()` 时，后写者覆盖先写者的整份快照（隔离实验中 100 条记录只剩 50 条）；断电时最后一次 `record()` 也可能丢失。`openDomainStorage` 在同一数据根上的跨进程锁保护的是领域归档事务，不是这个文件。它是有界、advisory 的失败记忆（`promotionGates` 仍是生产权威），因此本次不引入锁或 fsync，而是记录为已知边界；单实例使用不触发。另外，从旧数据恢复且缺少 `signature` 的记录只能按整条内容去重，不参与后续的模式匹配。rc.14 之后 fsync 只加在**晋升事务**这一条路径上：晋升 journal、晋升写入的目标（composition、`EVOLUTION.md`、archive）与晋升的 evidence 快照走 `durable` 原子写入，先 fsync 文件字节再 `rename`，随后 fsync 所在目录，目标目录是本次新建时再 fsync 它的父目录（`test/orchestrator-durability-promotion-transaction.test.mjs` 的 `P2-8` 两项断言：晋升确实 fsync 文件与目录，普通实验档案写入仍然 0 次 fsync）。**失败记忆与其它高频路径没有加 fsync**，本条描述的行为不变。
 14. **事件桥“可信 writer”的期望值已统一，但组合读取有三态与残余边界。** doctor 与运行时对“本安装写出的日志”使用同一判定 `eventBridgeWriterTrusted()`：MAC 通过**且**记录声明的 `writer` 等于期望值。期望值来源为 in-session `config.eventBridgeWriter`（逐字照搬运行时表达式 `config.eventBridgeWriter || EVENT_BRIDGE_DEFAULT_WRITER`，不 trim、不回落组合） → 组合 profile 中 `evolution-orchestrator` 条目的 `config.eventBridgeWriter`（`--dump-config`，在归并 profile patch 拆出的多个 section 之后读取） → bundle 默认 `dsh-evolution-orchestrator`；报告记录 `evidence.trustedWriter` 与 `evidence.writerSource`，`state.event-bridge` 的 `ok` 摘要写明它验证的是哪个 writer 及其来源。组合读取只有三态：**已声明**（唯一一个 `evolution-orchestrator` 条目 + 块形式 `config:` + 直接子键恰好出现一次 + 标量可逐字恢复）→ 用该值，`writerSource: 'composition'`；**未声明**（无该层、无该条目、无该键，或 `eventBridgeWriter:` 为空 / 空串）→ bundle 默认，`writerSource: 'bundle-default'`；**无法读出**（内联 `config:`、YAML 标签/锚点/别名/块标量/flow 集合、`${...}` / `{{...}}`、注释歧义、非字符串标量、重复键、重复条目、引号内的转义）→ **不默认化**：`state.event-bridge` 报 `degraded`、`writerSource: 'unknown'`、`trustedWriter: null`，附 `writerExpectationReason` 与日志中实际出现的 `writersSeen` 供人工判断；若同时存在 MAC 层面的阻塞问题（malformed / unverifiable / conflicts），仍按 `blocked` 报告。跳过组合探针（`--no-composition`）或未解析到 DSH CLI 时，doctor 读不到 profile config，只能按 bundle 默认值判定（`writerSource: 'bundle-default'`，摘要与证据中可辨识），因此覆写了 `eventBridgeWriter` 的安装在那种调用下仍可能把自己写的日志报为 untrusted；同一次安装走组合探针或 in-session 诊断时与运行时一致。残余边界：`event-bridge-trim-partial-tail` 的修复是 check-then-act，桥文件的写入方不持锁，落在“最后一次重读”与 `rename` 之间的追加仍可能被丢弃（见 `README.md` 恢复表与 `COMPATIBILITY.md`），建议在宿主停止时执行。另需注意 `writer` 不是独立的密码学身份：它只是信封里与 MAC 一同校验的字段，`signEventBridgeEnvelope()` 接受调用方给出的任意 `writer`，因此持有同一密钥的进程可以自行声明任意 writer（密钥本身仍无轮换/吊销流程，见第 9 条）；这条判定对准的是“本安装写出的日志”，不是同一密钥下的对抗性伪造。
 15. **`satisfiesRange()` 的 prerelease 比较曾用 `localeCompare`，与 semver 的排序不一致（本轮已修，不再是待修项）。** 旧的 `compare()` 对 prerelease 段用 `localeCompare`，探针实测 `satisfiesRange('1.0.0-rc.10', '>=1.0.0-rc.2')` 返回 `false`，而 semver 中 `1.0.0-rc.10 > 1.0.0-rc.2`：两位数的序号（`10`）被字典序排到单位数（`2`）之前，比较结果与 semver 相反（同一范围下的 `1.0.0-rc.3` 仍返回 `true`，所以错的只是多位数字序号这一类）。现在 `lib/diagnostics.js` 按 semver 规范比较 prerelease 标识符（数字标识符按数值、数字低于字母数字、字母数字按 ASCII 序、标识符集更长者更大、无 prerelease 的版本高于同元组带 prerelease 的版本），并实现了 comparator 集合层的 prerelease 资格规则：只有当同一 `major.minor.patch` 元组在**该集合内**被某个带 prerelease 的比较符点名时，prerelease 版本才满足这个集合，因此 `4.0.5-alpha.2` 满足 `>=4.0.5-alpha.1 <5.0.0`，而 `4.0.6-alpha.1` 不满足 `>=4.0.5-alpha.1`（另一个 `||` 候选用自己的比较符重新接纳时才行）。版本解析同时按规范拒绝前导零（`1.02.3` 与 `1.0.0-01` 都不是合法版本）。**改动前后对当前已声明的范围与已验收宿主没有判定差异**：`test/release-integrity-version-range.test.mjs` 的既有正负例逐条不变——三个已验收宿主满足 `@deepseek-ai/dsh` 的精确替代列表，`0.2.0-rc.3` / `0.2.1-rc.1` / `0.3.0` 等仍然不满足，`^4.0.1`、include 的 `1.0.9 || 1.0.10-alpha.1 || 1.0.10-alpha.2 || 1.0.10`、`js-yaml ^4.2.0` 与 `engines` 的判定同样不变；另用广域差分脚本对受支持范围形态逐项与 node-semver 对照，结论是全部行为变化都与 node-semver 一致，因此这是一次修正而不是新增判定。它此前被记为“不修”的理由是当前三个已验证宿主解析到的模块版本（cordis `4.0.5`、include `1.0.10`、loader `1.0.6`、js-yaml `4.3.2`）都是稳定版；现在这条依赖不再靠“不会触发”结账。
-16. **固定点漂移的判据与处置（本轮已关闭，条目保留作为下次漂移的说明书）。** 任何分发文件变化都会改变 `contentSha256`，此时 `npm run pack:check` 会如实报出三条失败：`the committed acceptance evidence matches this exact package content`、`release/manifest.json pins this tree content`、`the working tree still builds the pinned content`；`npm run release:verify` **仍然通过**，因为它只校验 `release/` 里固定产物与固定点彼此一致、不看工作树。要发现工作树漂移只能用 `pack:check`，或 `npm run release:pack` 后跑 `release:verify -- dist/<本机构建>.tgz --content-only`（CI 的 `package` job 就是这么做的）。这三条失败是刻意设计而不是噪音：它们必须在**重新构建 → 重跑三宿主验收 → 重新固定**之后转绿。rc.15 在发布前正是这样做的：工作树曾因 rc.14 之后积压的一轮修复而漂移（`pack:check` 13 绿 3 红），重新固定后 16 项全绿。
+16. **固定点漂移的判据与处置（rc.15 与 rc.16 均已关闭，条目保留作为下次漂移的说明书）。** 任何分发文件变化都会改变 `contentSha256`，此时 `npm run pack:check` 会如实报出三条失败：`the committed acceptance evidence matches this exact package content`、`release/manifest.json pins this tree content`、`the working tree still builds the pinned content`；`npm run release:verify` **仍然通过**，因为它只校验 `release/` 里固定产物与固定点彼此一致、不看工作树。要发现工作树漂移只能用 `pack:check`，或 `npm run release:pack` 后跑 `release:verify -- dist/<本机构建>.tgz --content-only`（CI 的 `package` job 就是这么做的）。这三条失败是刻意设计而不是噪音：它们必须在**重新构建 → 重跑三宿主验收 → 重新固定**之后转绿。rc.15 在发布前正是这样做的：工作树曾因 rc.14 之后积压的一轮修复而漂移（`pack:check` 13 绿 3 红），重新固定后 16 项全绿。rc.16 也一样：`7cd5453` 改了三个分发文件，工作树的内容摘要因此变成不等于任何固定点，`pack:check` 报出同样的固定点失败（它同时点名这三个文件），重新固定后同样 16 项全绿。
 17. **冷档案的残尾是隔离保留，不是自动清理。** 活动档案文件若不以换行结尾（上一次追加被中断、或进程在写入中途死亡），下一次追加前会先把残片**逐字节**追加进同目录的 `state.json.<collection>quarantine-archive.jsonl`，再用临时文件 + `rename` 原子重写活动档案，只保留完整行（`test/memory-integrity-cold-archive.test.mjs` 的 `P1-1` 断言残片逐字节保留、档案只剩完整行、重启后新旧记录都还在且第二个残尾仍追加到同一文件）。该隔离文件是 append-only 现场保留，**不会被插件自动删除**；它会被 doctor 的 `state.archives` 扫描到（它按 `*.jsonl` 扫整个 `dockyard/` 目录），残片本身通常不是完整 JSON，于是报为“`N unparsable line(s)`”的 `degraded` 项，`recoverable: false`。处置需人工：确认残片不再需要后自行移走或归档。
 18. **冷档案的不可解析字节不再静默丢弃，代价是这种档案上 `reconcile()` 会拒绝执行。** 活动档案中段或 sealed 段文件里无法解析的行现在会记成 `archiveIntegrity()` 可读到的分类故障（`invalid-line` / `unreadable`；活动文件未终止的最后一行是 `torn-tail`，写入失败是 `deferred-write`），不再被当作“没有这一行”。`verifyConsistency()` 把 `invalid-line` / `unreadable` 判为硬降级，结果 `valid: false`，`reasons` 含 `archive_bytes_unreadable`；`reconcile()` 在写回后再跑一次 `verifyConsistency()`，因此在这种档案上会以 `Evolution reconciliation verifier failed` 抛出并回滚它自己刚刚做的改动（`reconciliationRollback` 记录 `rolled_back` 或 `rollback_failed`）。这是刻意的“不静默合并损坏状态”，不是 regression：但这也意味着拥有这种档案的数据根不能用 `reconcile()` 修正其它不一致，必须先人工处置。注意 `archiveIntegrity()` 是 `EvolutionMemory` 实例上的公开方法，`evolution_runtime_inspect` 与 doctor **都不输出**它；operator 通过 doctor 看到的是 `state.archives` 的降级项。
 19. **冷档案 sealed 段在 `load()` 只比较字节长度，不重算 sha256。** `#reconcileArchiveIndex()` 对 sealed 段的判据是索引里 `sealed: true` + `checksumState: "final"` + `sha256` 是字符串 + 记录的 `byteSize` 等于目录项 `stat` 的 `size`，成立就不读不重算；同尺寸的内容篡改因此在启动时不可见。全量摘要校验只在 `verifyConsistency()`（由 `reconcile()` 调用）里执行，报 `reason: "checksum"`。不把它放到每次启动路径上是因为成本很高：实测 sealed 段全量重算占 `load()` 的 26% / 45% / 57%（对应 1.41 / 7.08 / 28.38 MiB 冷档案，`load()` 2.69 / 7.01 / 22.92 ms，重算 0.69 / 3.18 / 13.11 ms），按 48 MB 压缩上限外推约 +28 ms 纯哈希再加那些字节的真实磁盘 I/O。数据与复现脚本见 `docs/performance/archive-read-cost.md` 与 `scripts/benchmarks/archive-read-cost.mjs`；`test/memory-perf-archive-read-cache.test.mjs` 用“同尺寸改写后 `load()` 不报、`verifyConsistency()` 报 `checksum`”钉住这条边界。
