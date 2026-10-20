@@ -22,6 +22,11 @@ jobs:
     name: unit tests (node ${{ matrix.node }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # AGENTS.md section 5 requires the V8 heap cap on a full run. It is set once
+      # for the whole job so the install step and every test process the runner
+      # spawns see the same ceiling.
+      NODE_OPTIONS: --max-old-space-size=4096
     strategy:
       fail-fast: false
       matrix:

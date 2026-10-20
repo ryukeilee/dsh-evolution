@@ -60,7 +60,10 @@ const SOURCE_PATH = "lib/domain-storage.js";
 // read that never writes cannot change the persisted bytes this file's
 // benchmark compares. It is still reversed below so the reconstruction keeps
 // reproducing the pinned pre-change source byte for byte instead of silently
-// dropping the anchor.
+// dropping the anchor. A later round stopped copying the rows that method reads
+// (`memory.historyView`, the read-only view) because the collector projects
+// every field it keeps into its own record; that is the same insertion, so the
+// same piece reverses it.
 //
 // The last round after the anchor added the durable commit token and the
 // pre-publication compare: `createHash` for the aggregate digest, one block of
@@ -557,7 +560,11 @@ const reversals = [
    "    // \"no history\".\n" +
    "    recall: (input = {}, options = {}) => {\n" +
    "      if (closing) throw new Error('E_DOMAIN_CLOSED');\n" +
-   "      return collectKnowledgeExperience(memory.history('knowledge'), input, options);\n" +
+   "      // The collector below projects every field it keeps into its own bounded\n" +
+   "      // record and never returns or writes an input row, so the read-only view\n" +
+   "      // is enough: copying the rows outside its `maxConsidered` window is the\n" +
+   "      // whole cost of the detached history read at this size.\n" +
+   "      return collectKnowledgeExperience(memory.historyView('knowledge'), input, options);\n" +
    "    },\n" +
    "    close,\n",
    "    // Evaluator is deliberately advisory, never production authority.\n" +

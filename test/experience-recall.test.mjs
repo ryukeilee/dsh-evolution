@@ -1030,6 +1030,52 @@ test('recall: real domain storage returns the recorded resolution, failure, and 
   }
 });
 
+test('recall: a mutated answer cannot write back into the stored knowledge rows', async () => {
+  // The recall read shares the store's live rows instead of copying them (see
+  // `EvolutionMemory.historyView`), so the one property that keeps that safe is
+  // asserted here: every record the port returns is the collector's own bounded
+  // projection, never a stored row, and mutating it cannot change the store or
+  // the next answer.
+  const root = scratch('evo-recall-writeback-');
+  const backend = new JsonStorageBackend(path.join(root, 'official'));
+  const ctx = { emit() {}, logger: { warn() {}, error() {} }, storage: { backend: { get: () => backend } }, effect() {} };
+  ctx.storageDomain = new DomainFacility(ctx, { backend: 'json' });
+  const config = { presetDir: root, eventBridgePath: path.join(root, 'execution-events.jsonl'), eventBridgeKey: 'e'.repeat(64) };
+  const bridge = new EvolutionEventBridge({ file: config.eventBridgePath, key: config.eventBridgeKey });
+  const port = await openDomainStorage(ctx, config);
+  try {
+    bridge.emit('proposal-created', { id: 'exp-writeback', proposal: { target: TARGET } });
+    bridge.emit('experiment-rejected', {
+      id: 'exp-writeback', proposal: { target: TARGET }, state: 'trial-failed',
+      failure: { error: 'warmup race', errorCategory: 'runtime-trial', failurePhase: 'trial', rootCauseHypothesis: 'cache warms up before dependencies' },
+    });
+    assert.equal((await port.replay()).applied, 2);
+
+    const input = { why: 'edge cache warmup latency', target: TARGET, impactScope: ['runtime'] };
+    const before = port.query('knowledge');
+    const first = port.recall(input);
+    assert.ok(first.records.length > 0, 'the fixture records reachable knowledge rows');
+    const snapshot = structuredClone(first);
+
+    for (const record of first.records) {
+      record.problem = 'mutated';
+      record.scope = 'mutated';
+      record.evidenceRefs.length = 0;
+      if (record.key) record.key = `mutated:${record.key}`;
+    }
+    first.records.length = 0;
+    first.considered = -1;
+    first.scanned = -1;
+
+    assert.deepEqual(port.recall(input), snapshot, 'the next answer is the recorded one, not the mutated one');
+    assert.deepEqual(port.query('knowledge'), before, 'the mutation never reached the stored rows');
+  } finally {
+    await port.close();
+    await backend.close();
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('recall: an unauthenticated event log still refuses to answer from a partial view', async () => {
   const root = scratch('evo-recall-domain-bad-');
   const backend = new JsonStorageBackend(path.join(root, 'official'));

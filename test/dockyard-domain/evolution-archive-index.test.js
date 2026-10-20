@@ -284,3 +284,27 @@ test("history window preserves full-history ordering/count and detached records"
     assert.deepEqual(reloaded.historyWindow("cycles", 3), memory.historyWindow("cycles", 3));
   } finally { await rm(home, { recursive: true, force: true }); }
 });
+
+test("history view is history()'s merge without its copies, and history() stays detached", async () => {
+  const home = await mkdtemp(join(tmpdir(), "evolution-view-"));
+  try {
+    const memory = await newMemory(home);
+    for (let i = 0; i < 6; i++) await memory.recordCycle({ id: `view-${i}`, status: "observed", details: { value: i } });
+    const archive = join(home, ".dockyard-dsh", archiveName("cycles"));
+    // The same legacy shapes the window test uses: a later value for an existing
+    // id and a tombstone. The view must reproduce the merged result, not the raw
+    // lines.
+    await appendFile(archive, JSON.stringify({ id: "view-0", status: "updated", details: { value: 99 } }) + "\n"
+      + JSON.stringify({ id: "view-1", __evolutionTombstone: 1 }) + "\n");
+    const view = memory.historyView("cycles");
+    const detached = memory.history("cycles");
+    assert.deepEqual(view, detached, "the view is the same rows in the same merged order");
+    assert.ok(view.length > 0);
+    for (let i = 0; i < view.length; i++) assert.notEqual(view[i], detached[i], "history() still returns detached rows");
+    // A no-copy read returns the rows the store already holds, so a second call
+    // hands back the same objects instead of a fresh equal copy.
+    const again = memory.historyView("cycles");
+    for (let i = 0; i < view.length; i++) assert.equal(again[i], view[i]);
+    assert.deepEqual(memory.historyView("unknown"), []);
+  } finally { await rm(home, { recursive: true, force: true }); }
+});

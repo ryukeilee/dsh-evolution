@@ -34,11 +34,19 @@ import { pathToFileURL } from "node:url";
 import { DomainFacility } from "@deepseek-ai/dsh-storage-domain";
 import { JsonStorageBackend } from "@deepseek-ai/dsh-storage-json";
 import { openDomainStorage as candidateOpen, evolutionDomainSpec } from "../../lib/domain-storage.js";
+import { canonicalKnowledgeKey } from "../../lib/dockyard-domain/knowledge.js";
 import { readReleaseManifest, releaseArtifactPath, REPO_ROOT } from "../release/release-lib.mjs";
 
 const FROZEN_NOW = Date.parse("2026-10-12T00:00:00.000Z");
 const NOW = new Date(FROZEN_NOW).toISOString();
 const TARGET = "plugin:edge-cache";
+// The recall query is the production shape: the explicit proposal's own target.
+// `--op recall` seeds one row carrying the key this query resolves, at the head
+// of the archive, so an exact-key hit that sits outside the collector's 2,000
+// row window is exercised too.
+const RECALL_INPUT = { why: "edge cache warmup latency", target: TARGET, impactScope: ["runtime"], successMetrics: ["p95 latency decreases"] };
+const RECALL_KEY_TARGET = "plugin:knowledge-exact";
+const RECALL_INPUT_EXACT = { why: "warmup latency regression", target: RECALL_KEY_TARGET };
 
 /** Freeze the clock so two runs persist byte-comparable trees. */
 function freezeClock() {
@@ -53,7 +61,7 @@ function freezeClock() {
 }
 
 function parseArgs(argv) {
-  const options = { rows: 10000, knowledgeRows: 0, rounds: 3, warmup: 1, samples: 5, json: false, variants: [] };
+  const options = { rows: 10000, knowledgeRows: 0, hotRows: 0, rounds: 3, warmup: 1, samples: 5, json: false, variants: [], op: "observe" };
   for (let index = 0; index < argv.length; index += 1) {
     const key = argv[index];
     if (key === "--json") { options.json = true; continue; }
@@ -61,10 +69,14 @@ function parseArgs(argv) {
     index += 1;
     if (key === "--rows") options.rows = Number(value);
     else if (key === "--knowledge-rows") options.knowledgeRows = Number(value);
+    else if (key === "--hot-rows") options.hotRows = Number(value);
     else if (key === "--rounds") options.rounds = Number(value);
     else if (key === "--warmup") options.warmup = Number(value);
     else if (key === "--samples") options.samples = Number(value);
-    else if (key === "--variant") options.variants.push(resolve(value));
+    else if (key === "--op") {
+      if (value !== "observe" && value !== "recall") throw new Error(`unknown op ${value}`);
+      options.op = value;
+    } else if (key === "--variant") options.variants.push(resolve(value));
     else throw new Error(`unknown option ${key}`);
   }
   return options;
@@ -130,13 +142,49 @@ function knowledgeRow(index) {
   };
 }
 
-async function session(openDomainStorage, rows, knowledgeRows = []) {
+/** One knowledge row whose stored key is the key `RECALL_INPUT_EXACT` resolves,
+ *  placed at the head of the archive so the collector's exact-key path has to
+ *  reach past its `maxConsidered` window. Written by hand (not by the memory
+ *  layer) so both sides read identical bytes. */
+function exactHitRow() {
+  const key = canonicalKnowledgeKey({ problem: RECALL_KEY_TARGET, target: RECALL_KEY_TARGET, capabilityId: RECALL_KEY_TARGET });
+  assert.match(String(key), /^knowledge:[0-9a-f]{32}$/, "the exact-hit fixture key must be a canonical knowledge key");
+  return {
+    id: "key-exact",
+    knowledgeKey: key,
+    schema: 1, canonical: true, retention: "CANONICAL_KNOWLEDGE", state: "RESOLVED",
+    issueType: "performance", problemType: "latency",
+    rootCause: "candidate warmup race in the pooled client",
+    strategy: "reuse the pooled client",
+    failureMode: "timeout",
+    semanticFact: RECALL_KEY_TARGET,
+    scope: RECALL_KEY_TARGET,
+    count: 5, occurrenceCount: 5,
+    firstSeen: NOW, lastSeen: NOW,
+    lastSourceCollection: "observations", lastStatus: "resolved", lastOutcome: "success",
+    sourceCounts: { observations: 5 },
+    sourceRefs: ["observations:obs-exact"],
+    lineageRefs: [], relationRefs: [], eventIds: ["event-exact"],
+    evidenceCount: 5,
+    recentEvidence: [{ source: "observations", id: "obs-exact", at: NOW, outcome: "success", status: "resolved", digest: "dexact" }],
+    confidence: 0.7,
+    effectStats: { successCount: 4, failureCount: 1, successRate: 0.8, fitnessMean: 0.7, metrics: {} },
+    successCount: 4, failureCount: 1, successRate: 0.8, fitnessMean: 0.7, regressionCount: 0,
+    learned: true, updatedAt: NOW,
+  };
+}
+
+async function session(openDomainStorage, rows, knowledgeRows = [], op = "observe", hotRows = []) {
   const root = await mkdtemp(join(tmpdir(), "dsh-observe-bench-"));
   const backend = new JsonStorageBackend(join(root, "official"));
   const ctx = { emit() {}, logger: { warn() {}, error() {} }, storage: { backend: { get: () => backend } }, effect() {} };
   ctx.storageDomain = new DomainFacility(ctx, { backend: "json" });
   const domain = await ctx.storageDomain.open(evolutionDomainSpec);
-  await domain.global.set({ schema: 1, aggregate: {}, applied: {}, pending: null });
+  // Hot rows are the instance's own hot knowledge window; they live in the
+  // aggregate, not in an archive file, so a recall over a long-running host
+  // reads a mixed hot+cold view exactly as this fixture does.
+  const aggregate = hotRows.length ? { evolution: { schema: 4, knowledge: hotRows } } : {};
+  await domain.global.set({ schema: 1, aggregate, applied: {}, pending: null });
   await domain.close();
   const dockyard = join(root, "dockyard");
   await mkdir(dockyard, { recursive: true });
@@ -153,13 +201,21 @@ async function session(openDomainStorage, rows, knowledgeRows = []) {
     const contents = await Promise.all(files.map(async (file) => `${file}\n${(await readFile(join(dockyard, file), "utf8")).split(root).join("<root>")}`));
     return contents.join("\n---\n");
   };
+  let recallOutput = null;
   return {
     bytes: rows.length,
     async run() {
+      if (op === "recall") {
+        // Both reads are the public port: the windowed query, and the exact-key
+        // query that has to reach past the window.
+        recallOutput = JSON.stringify({ window: port.recall(RECALL_INPUT, {}), exact: port.recall(RECALL_INPUT_EXACT, {}) });
+        return;
+      }
       count += 1;
       await port.observe({ id: `incoming-${count}`, type: "tool/error", code: "HOST_OPERATION_FAILED", message: "official operation failed", target: TARGET, componentId: TARGET, severity: "error", status: "failed", recordedAt: NOW });
     },
     tree,
+    output: () => recallOutput,
     async dispose() { await port.close(); await backend.close(); await rm(root, { recursive: true, force: true }); },
   };
 }
@@ -169,8 +225,8 @@ function median(values) {
   return sorted[Math.floor(sorted.length / 2)];
 }
 
-async function timeSession(openDomainStorage, rows, options, knowledgeRows) {
-  const current = await session(openDomainStorage, rows, knowledgeRows);
+async function timeSession(openDomainStorage, rows, options, knowledgeRows, hotRows) {
+  const current = await session(openDomainStorage, rows, knowledgeRows, options.op, hotRows);
   try {
     for (let index = 0; index < options.warmup; index += 1) await current.run();
     const samples = [];
@@ -180,7 +236,7 @@ async function timeSession(openDomainStorage, rows, options, knowledgeRows) {
       await current.run();
       samples.push({ wallMs: performance.now() - start, cpuMs: (process.cpuUsage(cpu).user + process.cpuUsage(cpu).system) / 1000 });
     }
-    return { samples, tree: await current.tree() };
+    return { samples, tree: await current.tree(), output: current.output() };
   } finally {
     await current.dispose();
   }
@@ -196,7 +252,10 @@ async function main() {
   for (const [index, variant] of variants.entries()) sides[`variant${index + 1}`] = variant.openDomainStorage;
   const rows = Array.from({ length: options.rows }, (_, index) => observationRow(index));
   const knowledgeRows = Array.from({ length: options.knowledgeRows }, (_, index) => knowledgeRow(index));
-  const report = { node: process.version, platform: `${process.platform}/${process.arch}`, baseline: { version: baseline.pin.version, sha256: baseline.pin.sha256 }, rows: options.rows, knowledgeRows: options.knowledgeRows, rounds: options.rounds, warmup: options.warmup, samples: options.samples, variants: variants.map((variant) => variant.directory), roundsDetail: [] };
+  const hotRows = Array.from({ length: options.hotRows }, (_, index) => ({ ...knowledgeRow(options.knowledgeRows + index), id: `hot-${index}`, knowledgeKey: `knowledge:${String(index).padStart(32, "c")}` }));
+  const exactRow = options.op === "recall" ? exactHitRow() : null;
+  if (exactRow) knowledgeRows.unshift(exactRow);
+  const report = { node: process.version, platform: `${process.platform}/${process.arch}`, baseline: { version: baseline.pin.version, sha256: baseline.pin.sha256 }, op: options.op, rows: options.rows, knowledgeRows: options.knowledgeRows, hotRows: options.hotRows, rounds: options.rounds, warmup: options.warmup, samples: options.samples, variants: variants.map((variant) => variant.directory), roundsDetail: [] };
   try {
     for (let round = 0; round < options.rounds; round += 1) {
       // The baseline opens and closes every round while the other sides rotate
@@ -205,9 +264,19 @@ async function main() {
       const rotation = round % order.length;
       const schedule = [...order.slice(rotation), ...order.slice(0, rotation)];
       const result = {};
-      for (const side of schedule) result[side] = await timeSession(sides[side], rows, options, knowledgeRows);
+      for (const side of schedule) result[side] = await timeSession(sides[side], rows, options, knowledgeRows, hotRows);
       for (const [side, value] of Object.entries(result)) {
         assert.equal(value.tree, result.baseline.tree, `the ${side} implementation did not persist the same tree`);
+        if (options.op === "recall") {
+          // The recall answer itself is the equivalence proof: same records, same
+          // order, same coverage/exact/score, same window and exact-key counts.
+          assert.equal(value.output, result.baseline.output, `the ${side} implementation did not return the same recall records`);
+          if (exactRow) {
+            const exact = JSON.parse(value.output).exact;
+            assert.ok(exact.records.some((record) => record.key === exactRow.knowledgeKey && record.exact === true),
+              `the ${side} implementation lost the exact-key hit outside the window`);
+          }
+        }
       }
       report.roundsDetail.push({ order: schedule, ...Object.fromEntries(Object.entries(result).map(([side, value]) => [side, value.samples])) });
     }
@@ -233,9 +302,10 @@ async function main() {
       cpuPct: ((cpuMs - report.baselineCpuMs) / report.baselineCpuMs) * 100 };
   });
   if (options.json) { console.log(JSON.stringify(report, null, 2)); return; }
-  console.log(`node ${report.node} ${report.platform} | baseline dsh-evolution-${report.baseline.version} | cold rows ${report.rows} (+${report.knowledgeRows} knowledge, ${((rows.map((row) => JSON.stringify(row)).join("\n").length + knowledgeRows.map((row) => JSON.stringify(row)).join("\n").length) / 1024 / 1024).toFixed(2)} MiB)`);
-  console.log(`port.observe() wall  ${report.baselineWallMs.toFixed(2)} -> ${report.candidateWallMs.toFixed(2)} ms (${report.delta.wallPct.toFixed(2)}%)`);
-  console.log(`port.observe() cpu   ${report.baselineCpuMs.toFixed(2)} -> ${report.candidateCpuMs.toFixed(2)} ms (${report.delta.cpuPct.toFixed(2)}%)`);
+  const label = options.op === "recall" ? "port.recall() x2 (window + exact)" : "port.observe()";
+  console.log(`node ${report.node} ${report.platform} | baseline dsh-evolution-${report.baseline.version} | cold rows ${report.rows} (+${report.knowledgeRows} knowledge, ${report.hotRows} hot, ${((rows.map((row) => JSON.stringify(row)).join("\n").length + knowledgeRows.map((row) => JSON.stringify(row)).join("\n").length) / 1024 / 1024).toFixed(2)} MiB)`);
+  console.log(`${label} wall  ${report.baselineWallMs.toFixed(2)} -> ${report.candidateWallMs.toFixed(2)} ms (${report.delta.wallPct.toFixed(2)}%)`);
+  console.log(`${label} cpu   ${report.baselineCpuMs.toFixed(2)} -> ${report.candidateCpuMs.toFixed(2)} ms (${report.delta.cpuPct.toFixed(2)}%)`);
   for (const variant of report.variantResults) {
     console.log(`variant ${variant.directory}\n  wall ${variant.wallMs.toFixed(2)} ms (${variant.wallPct.toFixed(2)}%)  cpu ${variant.cpuMs.toFixed(2)} ms (${variant.cpuPct.toFixed(2)}%)`);
   }

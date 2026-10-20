@@ -30,6 +30,7 @@ const observations = new EvolutionObservationStore({ memory });
 ## 读取与学习
 
 - `snapshot()` 是 hot projection；`fullSnapshot()`、`history(collection)`、`knowledgeSnapshot()`、`findBlockingOutcomes(signature)` 使用 hot+cold。
+- `history(collection)` 返回 detached 记录；`historyView(collection)` 是同一个合并的**只读**视图，不复制行（数组本身是本次调用自己的），只允许“把读到的字段投影成自己的记录、不保留入参”的消费者使用（当前唯一调用点是 `domain-storage.js` 的 `recall`）。它返回的元素就是热记录与档案读缓存里的冷记录，写回会同时破坏 store 与缓存。
 - `restore(fullSnapshot)` 支持跨冷边界去重，不应传热 snapshot 冒充完整历史。
 - `compact()` 保留失败 blocker、引用源、canonical/tombstone 语义；不生成 provenance 晋升事实。
 - `EvolutionObservationStore` 必须显式共享这个 Memory，不能走简单 JSON 独立回退。保留健康信息 dedup、error 样本、forceRecord 和 >5% perf 转变。它只接收 DTO，不采集 process perf、不订阅运行时事件。

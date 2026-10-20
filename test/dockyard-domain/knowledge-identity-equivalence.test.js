@@ -6,8 +6,10 @@
  * reference fields, and the append path scans a source collection's complete
  * history without copying it (`#sourceMatches`). Both sit on the record path
  * (`#upsertKnowledgeUnlocked` / `#knowledgeEntryFor`) and on
- * `canonicalKnowledgeKey()`'s fallback; the public `memory.history('knowledge')`
- * read that `domainStorage.recall()` uses is unchanged. They must leave every
+ * `canonicalKnowledgeKey()`'s fallback; the knowledge read that
+ * `domainStorage.recall()` performs (`memory.historyView('knowledge')`, the same
+ * merge as `memory.history('knowledge')` without the per-row copy) returns the
+ * same rows. They must leave every
  * recorded value and every retention decision byte-identical.
  *
  * The baseline is a committed pre-change artifact, extracted into a temporary
@@ -46,6 +48,20 @@ execFileSync("tar", ["-xzf", baselineArtifact, "-C", baselineRoot, "package/lib"
 const baselineKnowledge = await import(pathToFileURL(join(baselineRoot, "package/lib/dockyard-domain/knowledge.js")).href);
 const baselineMemory = await import(pathToFileURL(join(baselineRoot, "package/lib/dockyard-domain/memory.js")).href);
 test.after(() => rm(baselineRoot, { recursive: true, force: true }));
+
+// The clock-cadence differential below needs the implementation this round
+// changed, which is the current pin (its `lib/` is the commit this round started
+// from), not the older identity anchor. It is named explicitly for the same
+// reason: a moved pin must fail here instead of silently comparing the tree to
+// itself.
+const CLOCK_BASELINE_ARTIFACT = "dsh-evolution-0.2.0-rc.15.tgz";
+const clockBaselineArtifact = join(RELEASE_DIR, CLOCK_BASELINE_ARTIFACT);
+assert.ok(existsSync(clockBaselineArtifact),
+  `${CLOCK_BASELINE_ARTIFACT} is the pre-change source for this round's record-path change; restore it or move the anchor deliberately`);
+const clockBaselineRoot = await mkdtemp(join(tmpdir(), "dsh-clock-baseline-"));
+execFileSync("tar", ["-xzf", clockBaselineArtifact, "-C", clockBaselineRoot, "package/lib"], { stdio: "ignore" });
+const clockBaselineMemory = await import(pathToFileURL(join(clockBaselineRoot, "package/lib/dockyard-domain/memory.js")).href);
+test.after(() => rm(clockBaselineRoot, { recursive: true, force: true }));
 
 test("the baseline anchor predates this change", () => {
   assert.equal(PRE_CHANGE_ARTIFACT, "dsh-evolution-0.2.0-rc.10.tgz", "the anchor must be a deliberate, reviewed edit");
@@ -658,6 +674,62 @@ async function scenario(MemoryClass, home) {
     snapshot: JSON.stringify(instance.snapshot()).split(home).join("<home>"),
   };
 }
+
+/**
+ * The observation metric branch reads the injected clock once per (metric,
+ * matching row) evaluation. Reusing the normalized row must not reuse the tick:
+ * `recordedAt` of a later record in the same append is taken from that clock, so
+ * a cached read would move it by one tick. The clock here advances on every
+ * read, and both the persisted bytes and the number of reads are compared.
+ */
+const METRIC_ROW = {
+  type: "tool/result", code: "MEASURED", message: "edge cache warmup latency",
+  componentId: "plugin:edge-cache", target: "plugin:edge-cache", capabilityId: "plugin:edge-cache",
+  problem: "edge cache warmup latency", status: "measured", success: true, severity: "info",
+  metrics: { latency: 12, throughput: 100 }, recordedAt: NOW,
+};
+
+async function metricBranchScenario(MemoryClass, home) {
+  const store = new JsonStateStore({ home });
+  const archive = `${store.filePath}.observations-archive.jsonl`;
+  await mkdir(dirname(archive), { recursive: true });
+  await writeFile(archive, [{ ...METRIC_ROW, id: "cold-a" }, { ...METRIC_ROW, id: "cold-b" }]
+    .map((entry) => JSON.stringify(entry)).join("\n") + "\n");
+  let reads = 0;
+  const instance = memory(MemoryClass, store, {
+    clock: () => new Date(Date.parse(NOW) + (reads += 1) * 1000),
+  });
+  await instance.load();
+  for (let index = 0; index < 3; index += 1) {
+    await instance.recordObservation({ ...METRIC_ROW, id: `incoming-metric-${index}` });
+  }
+  return {
+    reads,
+    state: (await readFile(store.filePath, "utf8")).split(home).join("<home>"),
+    archive: await readFile(archive, "utf8"),
+    snapshot: JSON.stringify(instance.snapshot()).split(home).join("<home>"),
+  };
+}
+
+test("the metric branch keeps the pinned clock read count and bytes", async () => {
+  // The anchor guard: this artifact must be the pre-change implementation, i.e.
+  // it must still normalize once per (metric, row) evaluation.
+  assert.equal(typeof clockBaselineMemory.EvolutionMemory.prototype.historyView, "undefined",
+    `${CLOCK_BASELINE_ARTIFACT} already carries this round's change: re-anchor the clock differential`);
+  const beforeHome = await mkdtemp(join(tmpdir(), "dsh-metric-before-"));
+  const afterHome = await mkdtemp(join(tmpdir(), "dsh-metric-after-"));
+  try {
+    const before = await metricBranchScenario(clockBaselineMemory.EvolutionMemory, beforeHome);
+    const after = await metricBranchScenario(EvolutionMemory, afterHome);
+    assert.equal(after.reads, before.reads, "the number of clock reads changed");
+    assert.equal(after.state, before.state, "the persisted durable state changed");
+    assert.equal(after.archive, before.archive, "the cold archive bytes changed");
+    assert.equal(after.snapshot, before.snapshot, "the in-memory projection changed");
+  } finally {
+    await rm(beforeHome, { recursive: true, force: true });
+    await rm(afterHome, { recursive: true, force: true });
+  }
+});
 
 test("the append path stays byte-identical to the pinned implementation", async () => {
   const beforeHome = await mkdtemp(join(tmpdir(), "dsh-knowledge-before-"));

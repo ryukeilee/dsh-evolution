@@ -91,11 +91,11 @@ npm run release:verify -- dist/<build>.tgz --content-only   # 本机重建只比
 node scripts/release/verify-provenance.mjs --tag vX --require-source-commit
 ```
 
-- **全量测试必须带 V8 堆上限，不要裸跑 `npm test`。** 2026-10-20 的实际事故：用 `/tmp/nodedist/v24.9.0/bin/node` 跑全量套件时，单个 `node --test` 子进程累计分配约 200 GB 匿名内存（`JetsamEvent` 中 `rpages` = 13,002,874 × 16 KB ≈ 203 GB，`largestProcess` = `node`），被内核以 `memorystatus: killing ... due to low-swap` 强杀，连带弹出「应用程序内存不足」并清理 `cfprefsd` / `suggestd` / Dock 相关等系统进程。01:28–09:19 间共触发 4 次，峰值稳定在约 201,9xx MiB，是确定性的无界分配而非偶发抖动。
+- **全量测试必须带 V8 堆上限，不要裸跑 `npm test`。** 2026-10-20 的实际事故：用 `/tmp/nodedist/v24.9.0/bin/node` 跑全量套件时，单个 `node --test` 子进程累计分配约 200 GB 匿名内存（`JetsamEvent` 中 `rpages` = 13,002,874 × 16 KB ≈ 203 GB，`largestProcess` = `node`），被内核以 `memorystatus: killing ... due to low-swap` 强杀，连带弹出「应用程序内存不足」并清理 `cfprefsd` / `suggestd` / Dock 相关等系统进程。01:28–09:19 间共触发 4 次，峰值稳定在约 201,9xx MiB。事故记录把这归为确定性的无界分配；该归因本身没有被本轮验证，边界见 §5 最后一条与 `docs/performance/oom-localization.md`。
   - 全量回归用 `NODE_OPTIONS=--max-old-space-size=4096 npm test`；单文件用 `node --max-old-space-size=4096 --test <file>`。不得用 `--no-max-old-space-size` 或空 `NODE_OPTIONS` 覆盖该上限。
   - 不得用临时下载的 Node 发行版（如 `/tmp/nodedist/v*/bin/node`）跑全量套件 —— 那正是本次事故的触发方式。多版本验证走 `package.json#engines` 声明的范围，并保留堆上限。
   - 出现 `RangeError: Maximum call stack size exceeded`、正则回溯超时或 RSS 单调增长时立即中止、不要重试；先二分到单文件，并确认 `REDACTION_TEXT_BOUND`（`lib/orchestrator.js`）这类输入边界仍然生效。
-  - 单文件二分**尚未完成**：已知邻域是 `test/memory-*.test.mjs` 与 `test/orchestrator-integrity-bounded-redaction-cleanup.test.mjs`（后者构造 8 MiB 病态 `\x` 输入，摘要 `REDACTION_TEXT_BOUND` 为 64 KiB）。定位必须在带堆上限的前提下进行，否则即等于复现事故。
+  - 单文件二分**已完成（有界）**：`docs/performance/oom-localization.md` 记录了对 95 个测试文件逐个起独立进程组的复测（`--max-old-space-size=4096`、2 GiB RSS 上限、300 s 超时），全部通过，峰值最高为 `test/dockyard-domain/continuous/continuous.test.js` 的 459 MiB，没有任何文件被上限杀掉；与此同时，事故点名的 8 MiB 病态 `\x` 输入在当前规则表上（绕过 64 KiB `REDACTION_TEXT_BOUND`）只需 27 ms、RSS 增加 9 MiB、不再抛错。结论的边界要说清楚：在本次环境（Node v26.12.0）与当前代码上，那次无界分配与事故点名的 `RangeError` 都无法复现；事故时的 Node 发行版与工作树、以及产生它的中间规则表版本都没有留存，所以这不是对历史根因的定论。「`rpages` ≈ 203 GB」那个具体数值也**未复现**，不要把它当作已被验证的上界。CI 的单元测试作业现在通过作业级 `NODE_OPTIONS` 强制执行同一个上限（`test/workflows.test.mjs` 断言），定位与复测都必须继续在带堆上限的前提下进行。
 - 改动 **trial/teardown、跨进程锁、CAS、journal、canary 或重启恢复**时，必须补对应失败路径测试。
 - 真实宿主验收：`npm run acceptance:host -- --host <version> --out <evidence-path>`。它会安装依赖并生成证据，**必须使用隔离 runtime/home**，不得触碰正式 `DSH_HOME`。
 - 修改任何**分发文件**（`package.json#files` 覆盖的内容）都会改变 `contentSha256`，从而使 `pack:check` 失败。这不是可忽略的噪音：按 `RELEASE.md` 重新构建、重跑两个宿主的验收、再更新固定点，**不手工伪造通过记录**。

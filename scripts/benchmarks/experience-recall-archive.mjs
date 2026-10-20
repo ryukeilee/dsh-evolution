@@ -111,6 +111,23 @@ const INCOMING = {
   metrics: { latency: 12 }, recordedAt: NOW,
 };
 
+// A measured (non-critical) observation that repeats an identity the archive
+// already holds. This is the shape that enters `#shouldRetainSource`'s metric
+// branch at all; the small row count is deliberate, because that branch's cost
+// is per matching row rather than per archived row.
+const MEASURED_METRICS = Object.fromEntries(Array.from({ length: 8 }, (_, index) => [`metric${index}`, 10 + index]));
+const MEASURED_INCOMING = {
+  id: "incoming-measured",
+  type: "tool/result", code: "MEASURED", message: "edge cache warmup latency",
+  componentId: TARGET, target: TARGET, capabilityId: TARGET,
+  problem: "edge cache warmup latency", status: "measured", success: true, severity: "info",
+  metrics: MEASURED_METRICS, recordedAt: NOW,
+};
+
+function repeatedMeasuredRow(index) {
+  return { ...MEASURED_INCOMING, id: `measured-${index}` };
+}
+
 function storeFor(home) {
   const filePath = join(home, ".dockyard-dsh", "state.json");
   let aggregate = {};
@@ -177,10 +194,24 @@ async function scenarioRecallControl(MemoryClass, rows) {
   };
 }
 
+async function scenarioRepeatedMeasuredAppend(MemoryClass, rows) {
+  const memory = await makeMemory(MemoryClass, "observations", rows, { hotEntries: 8 });
+  let count = 0;
+  return {
+    async run() { await memory.instance.recordObservation({ ...MEASURED_INCOMING, id: `incoming-measured-${count += 1}` }); },
+    async finish() { return { ...(await persisted(memory)), rows: rows.length }; },
+    async dispose() { await rm(memory.home, { recursive: true, force: true }); },
+  };
+}
+
 const SCENARIOS = [
   ["append with a cold knowledge archive", "knowledge", scenarioAppendColdKnowledge],
   ["append with a cold source archive", "observations", scenarioAppendColdSource],
   ["recall over a cold knowledge archive (control)", "knowledge", scenarioRecallControl],
+  // The metric-branch scenario keeps a fixed six-row archive: its cost is per
+  // matching row, so `--rows` would only add the identity scan the scenarios
+  // above already measure.
+  ["append repeating a measured identity (metric branch)", "measured", scenarioRepeatedMeasuredAppend],
 ];
 
 function median(values) {
@@ -210,6 +241,7 @@ async function main() {
   const rows = {
     knowledge: Array.from({ length: options.rows }, (_, index) => knowledgeRow(index)),
     observations: Array.from({ length: options.rows }, (_, index) => observationRow(index)),
+    measured: Array.from({ length: 6 }, (_, index) => repeatedMeasuredRow(index)),
   };
   const report = { node: process.version, platform: `${process.platform}/${process.arch}`, baseline: { version: baseline.pin.version, sha256: baseline.pin.sha256 }, rows: options.rows, rounds: options.rounds, warmup: options.warmup, samples: options.samples, scenarios: [] };
   try {

@@ -81,6 +81,11 @@ test('CI runs the unit tests, the package checks and both supported hosts', () =
   assert.ok(stepNames(jobs.test).includes('Unit tests'));
   assert.ok(jobs.test.steps.some((step) => step.run === 'npm test'));
   assert.ok(jobs.test.steps.some((step) => step.run === 'npm ci --ignore-scripts'));
+  // AGENTS.md section 5 requires the V8 heap cap on a full run; this job runs the
+  // full suite, so it carries it. The requirement is asserted here instead of
+  // documented only.
+  assert.equal(jobs.test.env?.NODE_OPTIONS, '--max-old-space-size=4096',
+    'the unit test job must cap the V8 heap for every test process');
 
   // Packaging: reproducible, clean, pinned, and the doctor must start with no host.
   const packageRuns = jobs.package.steps.map((step) => step.run).filter(Boolean).join('\n');

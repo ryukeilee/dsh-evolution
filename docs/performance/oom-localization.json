@@ -1,0 +1,674 @@
+{
+  "generatedAt": "2026-10-20T04:56:32.848Z",
+  "node": "v26.12.0",
+  "platform": "darwin/arm64",
+  "cpus": 8,
+  "totalMemGiB": 16,
+  "method": "one child per test file, own process group, --max-old-space-size=4096, RSS ceiling 2048 MiB sampled from ps every 120 ms, 300 s wall timeout; no file was killed",
+  "files": 95,
+  "failures": 0,
+  "maxPeakRssMiB": 459,
+  "maxPeakFile": "test/dockyard-domain/continuous/continuous.test.js",
+  "totalSequentialMs": 64220,
+  "top10": [
+    {
+      "file": "test/dockyard-domain/continuous/continuous.test.js",
+      "peakRssMiB": 459,
+      "ms": 4732,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-storage/storage.test.js",
+      "peakRssMiB": 249,
+      "ms": 773,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-storage/load-projection-equivalence.test.js",
+      "peakRssMiB": 247,
+      "ms": 7725,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-storage/domain-storage-write-path-equivalence.test.js",
+      "peakRssMiB": 244,
+      "ms": 10133,
+      "exit": 0
+    },
+    {
+      "file": "test/guard-coverage-trust-root-direct-writes.test.mjs",
+      "peakRssMiB": 232,
+      "ms": 405,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-storage/archive-stage.test.js",
+      "peakRssMiB": 225,
+      "ms": 4222,
+      "exit": 0
+    },
+    {
+      "file": "test/security-regression.test.mjs",
+      "peakRssMiB": 225,
+      "ms": 500,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-escape-unknown-scheme.test.mjs",
+      "peakRssMiB": 215,
+      "ms": 1055,
+      "exit": 0
+    },
+    {
+      "file": "test/workflows.test.mjs",
+      "peakRssMiB": 214,
+      "ms": 2819,
+      "exit": 0
+    },
+    {
+      "file": "test/event-bridge-evidence.test.mjs",
+      "peakRssMiB": 210,
+      "ms": 665,
+      "exit": 0
+    }
+  ],
+  "perFile": [
+    {
+      "file": "test/dockyard-domain/continuous/continuous.test.js",
+      "peakRssMiB": 459,
+      "ms": 4732,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-storage/storage.test.js",
+      "peakRssMiB": 249,
+      "ms": 773,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-storage/load-projection-equivalence.test.js",
+      "peakRssMiB": 247,
+      "ms": 7725,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-storage/domain-storage-write-path-equivalence.test.js",
+      "peakRssMiB": 244,
+      "ms": 10133,
+      "exit": 0
+    },
+    {
+      "file": "test/guard-coverage-trust-root-direct-writes.test.mjs",
+      "peakRssMiB": 232,
+      "ms": 405,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-storage/archive-stage.test.js",
+      "peakRssMiB": 225,
+      "ms": 4222,
+      "exit": 0
+    },
+    {
+      "file": "test/security-regression.test.mjs",
+      "peakRssMiB": 225,
+      "ms": 500,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-escape-unknown-scheme.test.mjs",
+      "peakRssMiB": 215,
+      "ms": 1055,
+      "exit": 0
+    },
+    {
+      "file": "test/workflows.test.mjs",
+      "peakRssMiB": 214,
+      "ms": 2819,
+      "exit": 0
+    },
+    {
+      "file": "test/event-bridge-evidence.test.mjs",
+      "peakRssMiB": 210,
+      "ms": 665,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-storage/event-log-checkpoint.test.js",
+      "peakRssMiB": 208,
+      "ms": 3099,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/housekeeping-equivalence.test.js",
+      "peakRssMiB": 160,
+      "ms": 1357,
+      "exit": 0
+    },
+    {
+      "file": "test/orchestrator-integrity-bounded-redaction-cleanup.test.mjs",
+      "peakRssMiB": 153,
+      "ms": 359,
+      "exit": 0
+    },
+    {
+      "file": "test/diagnostics.test.mjs",
+      "peakRssMiB": 136,
+      "ms": 961,
+      "exit": 0
+    },
+    {
+      "file": "test/release-integrity-tar-entry-types.test.mjs",
+      "peakRssMiB": 136,
+      "ms": 257,
+      "exit": 0
+    },
+    {
+      "file": "test/storage-transaction-init-lock.test.mjs",
+      "peakRssMiB": 134,
+      "ms": 499,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/retention-plan-equivalence.test.js",
+      "peakRssMiB": 129,
+      "ms": 471,
+      "exit": 0
+    },
+    {
+      "file": "test/experience-recall.test.mjs",
+      "peakRssMiB": 127,
+      "ms": 391,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-storage-lock-cas-overwrite.test.mjs",
+      "peakRssMiB": 126,
+      "ms": 625,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-storage-lock-fencing.test.mjs",
+      "peakRssMiB": 126,
+      "ms": 697,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-quoted-value-closing.test.mjs",
+      "peakRssMiB": 119,
+      "ms": 280,
+      "exit": 0
+    },
+    {
+      "file": "test/storage-transaction-applied-ledger.test.mjs",
+      "peakRssMiB": 116,
+      "ms": 403,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-storage-ledger-conflict.test.mjs",
+      "peakRssMiB": 115,
+      "ms": 409,
+      "exit": 0
+    },
+    {
+      "file": "test/runtime-signature.test.mjs",
+      "peakRssMiB": 113,
+      "ms": 285,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-storage-lock-reclaim.test.mjs",
+      "peakRssMiB": 111,
+      "ms": 468,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/archive-index-equivalence.test.js",
+      "peakRssMiB": 110,
+      "ms": 311,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/knowledge-identity-equivalence.test.js",
+      "peakRssMiB": 110,
+      "ms": 310,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/evolution-archive-index.test.js",
+      "peakRssMiB": 109,
+      "ms": 482,
+      "exit": 0
+    },
+    {
+      "file": "test/storage-transaction-load-archive-writes.test.mjs",
+      "peakRssMiB": 109,
+      "ms": 355,
+      "exit": 0
+    },
+    {
+      "file": "test/failure-memory-integrity.test.mjs",
+      "peakRssMiB": 108,
+      "ms": 258,
+      "exit": 0
+    },
+    {
+      "file": "test/cordis-compat.test.mjs",
+      "peakRssMiB": 107,
+      "ms": 441,
+      "exit": 0
+    },
+    {
+      "file": "test/diagnostics-performance.test.mjs",
+      "peakRssMiB": 104,
+      "ms": 343,
+      "exit": 0
+    },
+    {
+      "file": "test/promotion-journal-boundary.test.mjs",
+      "peakRssMiB": 104,
+      "ms": 335,
+      "exit": 0
+    },
+    {
+      "file": "test/promotion-journal-phase.test.mjs",
+      "peakRssMiB": 104,
+      "ms": 314,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-scheme-key-anchored.test.mjs",
+      "peakRssMiB": 104,
+      "ms": 343,
+      "exit": 0
+    },
+    {
+      "file": "test/memory-perf-archive-read-cache.test.mjs",
+      "peakRssMiB": 103,
+      "ms": 317,
+      "exit": 0
+    },
+    {
+      "file": "test/orchestrator-durability-stable-commit-evidence.test.mjs",
+      "peakRssMiB": 103,
+      "ms": 603,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/evolution-key-memory.test.js",
+      "peakRssMiB": 102,
+      "ms": 271,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/failure-retention.test.js",
+      "peakRssMiB": 102,
+      "ms": 279,
+      "exit": 0
+    },
+    {
+      "file": "test/release-provenance.test.mjs",
+      "peakRssMiB": 102,
+      "ms": 502,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-structural-keys.test.mjs",
+      "peakRssMiB": 102,
+      "ms": 331,
+      "exit": 0
+    },
+    {
+      "file": "test/orchestrator-durability-refresh-dispose.test.mjs",
+      "peakRssMiB": 101,
+      "ms": 1088,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-archive-cas-preservation.test.mjs",
+      "peakRssMiB": 101,
+      "ms": 381,
+      "exit": 0
+    },
+    {
+      "file": "test/memory-integrity-cold-archive.test.mjs",
+      "peakRssMiB": 100,
+      "ms": 276,
+      "exit": 0
+    },
+    {
+      "file": "test/orchestrator-durability-promotion-transaction.test.mjs",
+      "peakRssMiB": 100,
+      "ms": 392,
+      "exit": 0
+    },
+    {
+      "file": "test/orchestrator-integrity-safe-error.test.mjs",
+      "peakRssMiB": 100,
+      "ms": 260,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-plaintext-proof-keys-and-log-sites.test.mjs",
+      "peakRssMiB": 100,
+      "ms": 351,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-coercion-cleanup.test.mjs",
+      "peakRssMiB": 100,
+      "ms": 321,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-json-credentials.test.mjs",
+      "peakRssMiB": 100,
+      "ms": 276,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-round5-value-and-key-boundaries.test.mjs",
+      "peakRssMiB": 100,
+      "ms": 337,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-parameter-prefix.test.mjs",
+      "peakRssMiB": 99,
+      "ms": 298,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-proof-boundary.test.mjs",
+      "peakRssMiB": 99,
+      "ms": 290,
+      "exit": 0
+    },
+    {
+      "file": "test/orchestrator-integrity-orphan-promotion-state.test.mjs",
+      "peakRssMiB": 98,
+      "ms": 303,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-journal-failure-projection.test.mjs",
+      "peakRssMiB": 98,
+      "ms": 379,
+      "exit": 0
+    },
+    {
+      "file": "test/orchestrator-integrity-canary-owner.test.mjs",
+      "peakRssMiB": 97,
+      "ms": 260,
+      "exit": 0
+    },
+    {
+      "file": "test/promotion-official-include.test.mjs",
+      "peakRssMiB": 97,
+      "ms": 362,
+      "exit": 0
+    },
+    {
+      "file": "test/release-integrity-release-workflow.test.mjs",
+      "peakRssMiB": 97,
+      "ms": 444,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/boundary-history.test.js",
+      "peakRssMiB": 95,
+      "ms": 361,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/continuous/import-boundary.test.js",
+      "peakRssMiB": 91,
+      "ms": 321,
+      "exit": 0
+    },
+    {
+      "file": "test/archive-md-parser.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 206,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-input-knowledge-truncation.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 221,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-input-manifest-version.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 213,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-input-metric-boolean.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 216,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-input-observation-redaction.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 216,
+      "exit": 0
+    },
+    {
+      "file": "test/event-bridge-envelope.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 212,
+      "exit": 0
+    },
+    {
+      "file": "test/evidence-persistence.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 211,
+      "exit": 0
+    },
+    {
+      "file": "test/full-cross-session.integration.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 241,
+      "exit": 0
+    },
+    {
+      "file": "test/observer-event-contract.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 219,
+      "exit": 0
+    },
+    {
+      "file": "test/orchestrator-durability-lock-and-log.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 236,
+      "exit": 0
+    },
+    {
+      "file": "test/orchestrator-durability-trial-failure-cleanup.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 257,
+      "exit": 0
+    },
+    {
+      "file": "test/release-integrity-version-range.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 218,
+      "exit": 0
+    },
+    {
+      "file": "test/restart-recovery.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 233,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-round6-container-marker-and-array-proxy.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 224,
+      "exit": 0
+    },
+    {
+      "file": "test/runtime-inspect.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 229,
+      "exit": 0
+    },
+    {
+      "file": "test/scoped-services.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 215,
+      "exit": 0
+    },
+    {
+      "file": "test/storage-transaction-archive-install.test.mjs",
+      "peakRssMiB": 47,
+      "ms": 229,
+      "exit": 0
+    },
+    {
+      "file": "test/cross-session-hydration.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 212,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/archive-scan-memo.test.js",
+      "peakRssMiB": 46,
+      "ms": 241,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/evolution-p1-dedup.test.js",
+      "peakRssMiB": 46,
+      "ms": 237,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/evolution-p5-perf.test.js",
+      "peakRssMiB": 46,
+      "ms": 229,
+      "exit": 0
+    },
+    {
+      "file": "test/dockyard-domain/projection-snapshot.test.js",
+      "peakRssMiB": 46,
+      "ms": 233,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-evaluator-promotion.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 217,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-input-knowledge-accumulator.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 228,
+      "exit": 0
+    },
+    {
+      "file": "test/domain-spec.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 255,
+      "exit": 0
+    },
+    {
+      "file": "test/event-bridge-authentication.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 223,
+      "exit": 0
+    },
+    {
+      "file": "test/event-bridge-canonical.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 223,
+      "exit": 0
+    },
+    {
+      "file": "test/import-evolution-data.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 233,
+      "exit": 0
+    },
+    {
+      "file": "test/legacy-startup-drift.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 211,
+      "exit": 0
+    },
+    {
+      "file": "test/orchestrator-integrity-startup-canary.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 217,
+      "exit": 0
+    },
+    {
+      "file": "test/promotion-gate-regression.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 207,
+      "exit": 0
+    },
+    {
+      "file": "test/release-pin.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 236,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-auth-continuation.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 222,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-redaction-round7-whole-remainder-value.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 219,
+      "exit": 0
+    },
+    {
+      "file": "test/review-fix-storage-archive-cache.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 257,
+      "exit": 0
+    },
+    {
+      "file": "test/trial-recovery-boundary.test.mjs",
+      "peakRssMiB": 46,
+      "ms": 239,
+      "exit": 0
+    }
+  ],
+  "fullSuite": {
+    "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+    "tests": 632,
+    "pass": 630,
+    "fail": 2,
+    "failNote": "the two failures are the release-pin anchors (test/release-pin.test.mjs), caused by this round changing three shipped lib/ files; completing the pin is a release step outside this round",
+    "durationMs": 19652
+  },
+  "ruleCost": {
+    "note": "the credential rule table extracted from lib/orchestrator.js (ESCAPED_WS..CREDENTIAL_TEXT_PATTERNS) run on adversarial shapes at the 64 KiB bound, and on the 8 MiB audit payload with the bound bypassed",
+    "boundBypassed8MiB": {
+      "ms": 27.14,
+      "threw": null,
+      "rssDeltaMB": 9
+    },
+    "adversarialAtBound": {
+      "backslashRun": 1.381,
+      "backslashes": 4.731,
+      "quotes": 0.515,
+      "singles": 0.496,
+      "assignmentRun": 0.193,
+      "passwordRun": 0.498,
+      "bearerRun": 0.595,
+      "urlUserinfo": 0.072,
+      "mixed": 0.224
+    }
+  }
+}
