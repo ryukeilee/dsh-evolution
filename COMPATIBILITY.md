@@ -91,12 +91,15 @@ version than `4.0.5-alpha.2` and is still inside `~4.0.4`, so once the stable
 patch releases were published npm resolved them. This package's own
 `peerDependencies` accept every one of those versions (`^4.0.1` covers `4.0.5`,
 the include alternatives list `1.0.10`, `^4.2.0` covers `4.3.2`) and the doctor
-reports them in range. The committed `docs/evidence/dsh-<host>.json` files still
-describe an earlier content of this working tree and still record the older
-module versions; the release flow regenerates them.
+reports them in range. Every re-pin regenerates the committed
+`docs/evidence/dsh-<host>.json` files, so what they record moves with the pin:
+for the `0.2.0-rc.16` pin all three record `4.0.5` / `1.0.10` / `1.0.6` / `4.3.2`
+themselves, the same values the doctor reports above. A statement about what
+they record therefore only holds for the pin it names.
 
-`0.2.1-rc.2` is likewise an exact declared version. The date here is this
-host's acceptance evidence's own `startedAt` (2026-10-17); the tag values are
+`0.2.1-rc.2` is likewise an exact declared version. The date here is the
+`startedAt` of the 2026-10-17 run described above, not of a committed evidence
+file (each re-pin rewrites those); the tag values are
 **not** part of any evidence file — the acceptance harness never queries
 dist-tags — but a separate read-only observation of the npm registry made for
 that date. On that date npm's dist-tags were `latest: 0.2.0-rc.2`,
