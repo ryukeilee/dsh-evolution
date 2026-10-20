@@ -361,7 +361,7 @@ dsh plugin --profile web remove dsh-evolution
 
 ```sh
 npm ci                       # 严格按 package-lock.json 安装
-npm test                     # 仓库回归入口（Node 原生测试）
+NODE_OPTIONS=--max-old-space-size=4096 npm test   # 仓库回归入口（Node 原生测试；堆上限是必需的）
 npm run pack:check           # 分发内容、权限、锁文件、文档一致性、发布固定点
 npm run release:verify       # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 

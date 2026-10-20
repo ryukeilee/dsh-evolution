@@ -6,7 +6,7 @@ tombstone、去重与顺序语义。原始逐轮样本见
 [`recall-view.json`](recall-view.json)。
 
 环境：Node `v26.12.0` / darwin-arm64，Apple M2，8 逻辑 CPU、16 GiB 内存。
-基线是当前固定点 `release/dsh-evolution-0.2.0-rc.15.tgz` 中的 `lib/`，基准脚本直接
+基线是**测量时**的固定点 `release/dsh-evolution-0.2.0-rc.15.tgz` 中的 `lib/`（该 tarball 作为历史固定产物保留在 `release/`，当前固定点已是 rc.16），基准脚本直接
 解包该固定产物后 import，不靠人工重写基线；两侧在同一进程内交替轮换、按侧取中位数，
 并且每轮都断言两侧落盘的档案树字节相同（召回场景还断言两次召回的输出 JSON 逐字节
 相同）。测量期间没有并行跑测试或其它基准。
