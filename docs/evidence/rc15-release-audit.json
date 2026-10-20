@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "record": "v0.2.0-rc.15 release audit",
+  "recordedAt": "2026-10-20",
+  "version": "0.2.0-rc.15",
+  "tag": "v0.2.0-rc.15",
+  "tagCommit": "f1f2492d5732af023fccb06016fcf35a89f5f57e",
+  "sourceCommit": "41798cac2b6e3208a9b6e9a547e9d65cdc1faed1",
+  "artifacts": {
+    "filename": "dsh-evolution-0.2.0-rc.15.tgz",
+    "sha256": "50812eb5e6ee13c2ec843d801e864ea8c0f464733c193d9a160dcf3cc1c8ac1f",
+    "contentSha256": "7821f2eda5db4ce8df74e2be9cfd43f5aef429b039f31e3873ea2a7eb1bb9444",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.12.0",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    }
+  },
+  "release": {
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.15",
+    "isDraft": false,
+    "isPrerelease": true,
+    "publishedAt": "2026-10-20T03:51:23Z",
+    "assets": [
+      "dsh-evolution-0.2.0-rc.15.tgz",
+      "manifest.json",
+      "SHA256SUMS"
+    ],
+    "overwroteExistingAssets": false,
+    "latestChannel": "unaffected: the release is marked prerelease and GET /releases/latest returns 404, i.e. no stable latest release exists for it to move"
+  },
+  "provenance": {
+    "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.15 --require-source-commit",
+    "result": "ok",
+    "checks": [
+      "tag v0.2.0-rc.15 -> commit f1f2492",
+      "source commit 41798ca is in the tagged history",
+      "source commit content equals the pin",
+      "tagged tree content equals the pin"
+    ]
+  },
+  "prePublishVerification": {
+    "packCheck": "16/16 ok",
+    "releaseVerify": "matches release/manifest.json (dsh-evolution@0.2.0-rc.15)",
+    "checksumFile": "shasum -a 256 -c release/SHA256SUMS -> OK",
+    "unitTests": {
+      "command": "NODE_OPTIONS=--max-old-space-size=4096 node --test test/**/*.test.mjs test/**/*.test.js",
+      "tests": 629,
+      "pass": 629,
+      "fail": 0,
+      "skipped": 0
+    }
+  },
+  "draftAssetVerification": {
+    "method": "gh release download before publishing the draft, compared with release/",
+    "result": "dsh-evolution-0.2.0-rc.15.tgz, manifest.json and SHA256SUMS byte-identical; checksum OK"
+  },
+  "anonymousDownloadVerification": {
+    "method": "curl with GITHUB_TOKEN and GH_TOKEN removed, from the public download URL",
+    "files": [
+      "SHA256SUMS",
+      "dsh-evolution-0.2.0-rc.15.tgz",
+      "manifest.json"
+    ],
+    "result": "downloaded, checksum OK, all three byte-identical to release/"
+  },
+  "hostAcceptanceAgainstPinnedTarball": [
+    {
+      "host": "0.2.0-rc.2",
+      "steps": "21/21",
+      "ok": true,
+      "finalDiagnosis": "healthy",
+      "evidence": "docs/evidence/dsh-0.2.0-rc.2.json"
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "steps": "21/21",
+      "ok": true,
+      "finalDiagnosis": "healthy",
+      "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json"
+    },
+    {
+      "host": "0.2.1-rc.2",
+      "steps": "21/21",
+      "ok": true,
+      "finalDiagnosis": "healthy",
+      "evidence": "docs/evidence/dsh-0.2.1-rc.2.json"
+    }
+  ],
+  "postPublishAcceptanceFromDownloadedBytes": {
+    "tarball": "the anonymously downloaded dsh-evolution-0.2.0-rc.15.tgz",
+    "contentSha256ObservedByEachRun": "7821f2eda5db4ce8df74e2be9cfd43f5aef429b039f31e3873ea2a7eb1bb9444",
+    "runs": [
+      {
+        "host": "0.2.0-rc.2",
+        "steps": "21/21",
+        "ok": true,
+        "evidence": "docs/evidence/rc15-postpublish-0.2.0-rc.2.json"
+      },
+      {
+        "host": "0.2.1-alpha.1",
+        "steps": "21/21",
+        "ok": true,
+        "evidence": "docs/evidence/rc15-postpublish-0.2.1-alpha.1.json"
+      },
+      {
+        "host": "0.2.1-rc.2",
+        "steps": "21/21",
+        "ok": true,
+        "evidence": "docs/evidence/rc15-postpublish-0.2.1-rc.2.json"
+      }
+    ]
+  },
+  "workflows": [
+    {
+      "name": "CI",
+      "id": 39366337006,
+      "conclusion": "success",
+      "jobs": [
+        "package (clean, pinned, installable)",
+        "unit tests (node 22.19.0)",
+        "unit tests (node 24.x)",
+        "host acceptance (0.2.0-rc.2)",
+        "host acceptance (0.2.1-alpha.1)",
+        "host acceptance (0.2.1-rc.2)"
+      ]
+    },
+    {
+      "name": "Release artifacts",
+      "id": 39366339661,
+      "conclusion": "success",
+      "jobs": [
+        "verify and attach release artifacts"
+      ]
+    },
+    {
+      "name": "Code scanning",
+      "id": 39366336786,
+      "conclusion": "success"
+    }
+  ],
+  "securityAcceptance": {
+    "convergedRule": "once a CREDENTIAL_KEY name and its separator match, the value is the whole remainder of the text and is replaced by the key plus [redacted]; eight constants, five value branches and one capture group were deleted",
+    "defectsClosed": [
+      "auth-scheme grammar truncation (scheme layer deleted)",
+      "separated key/value pairs never matched (key-aware whole-value rule in compactValue and safeErrorEvidence)",
+      "proposal and measurement evidence reached exp-*.md unprojected",
+      "snapshotEvidenceFromRecord, archive(), the promotion renderer and an explicit event-bridge payload bypassed the projection",
+      "three logger sites interpolated the raw error message",
+      "error boundaries could throw on hostile getters, proxies and array shapes"
+    ],
+    "independentReview": "three adversarial passes by a separate reviewer; the first two returned RELEASE-BLOCKING with concrete reproductions, the third returned NOT BLOCKING after 14,099 comparisons",
+    "acceptedCosts": [
+      "after a credential key the closing quote, the comma, sibling fields and the outer brace are discarded, so such a fragment is not valid JSON on its own (safe as an embedded string)",
+      "a key whose normalized name ends with a credential spelling (e.g. notatoken) is redacted wholesale",
+      "unlabelled high-entropy values are not detected (no key, no shape)",
+      "text above REDACTION_TEXT_BOUND (65,536) is withheld and keeps none of its leading characters",
+      "errorCategory classifies only the first 4 KiB",
+      "more than four layers of escaped JSON is outside the recognised escape bound"
+    ]
+  },
+  "historicalAssets": "release/dsh-evolution-0.2.0-rc.14.tgz and every earlier tarball, checksum entry and tag are unchanged in this commit; no historical tag or release asset was moved or overwritten"
+}
