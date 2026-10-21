@@ -195,6 +195,10 @@ export function formatRelation(relation) {
   const artifact = path.basename(releaseArtifactPath(relation.pin));
   if (relation.state === PIN_RELATION.PINNED) {
     lines.push(`the tree is the pinned release (${artifact}, content ${relation.pin.contentSha256})`);
+    // A matching tree says nothing about where the pin came from: report the
+    // pin's own claim here too, so this diagnostic never exits 0 while
+    // `pack:check` refuses the same repository.
+    for (const problem of relation.attribution) lines.push(problem);
     return lines;
   }
   if (relation.state === PIN_RELATION.AHEAD) {
@@ -233,5 +237,5 @@ if (invokedDirectly) {
   };
   if (process.argv.includes('--json')) console.log(JSON.stringify(report, null, 2));
   else for (const line of formatRelation(relation)) console.log(line);
-  process.exit(relation.state === PIN_RELATION.UNVERIFIED ? 1 : 0);
+  process.exit(relation.state === PIN_RELATION.UNVERIFIED || relation.attribution.length > 0 ? 1 : 0);
 }
