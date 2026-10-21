@@ -251,6 +251,57 @@ test('an interrupted group commit is recovered from its pending record exactly o
   } finally { await restarted.close(); await teardown(f); }
 });
 
+test('a group longer than the bridge marker window is not re-applied by a same-port retry', async () => {
+  // `EvolutionMemory` keeps only the last 4096 bridge markers
+  // (`#markBridgeApplied`), so a group that is longer than that window cannot
+  // recognise its own recovered records by its in-memory marker list: the head
+  // of the group has already scrolled out, and re-applying it scrolls the window
+  // again, cascading through the rest. The committed ledger the transaction
+  // recovers must therefore decide. Before it did, this retry reported
+  // `{ applied: 4097, duplicates: 0 }` and appended a second lineage generation
+  // for the single `canary-passed` record at the head of the group.
+  //
+  // Expensive by construction (4097 events, one full aggregate projection each):
+  // the window is a production constant, so the bound cannot be lowered just for
+  // the test. It runs in the repository suite because a silently re-applied
+  // event is exactly what this round promised not to introduce.
+  const f = await fixture();
+  const port = await openDomainStorage(f.ctx, f.config);
+  const domain = f.ctx.storageDomain.get(evolutionDomainSpec.name);
+  const set = domain.global.set;
+  const events = [eventFor('window-0', 'canary-passed')];
+  for (let index = 1; index <= 4096; index += 1) events.push(eventFor(`window-${index}`));
+  const envelopes = events.map((event, index) => signed(event, index + 1));
+  try {
+    let injected = false;
+    domain.global.set = async (value) => {
+      // The commit point becomes durable and the closing write - the one that
+      // installs the pending record - fails.
+      if (!injected && value.pending === null && Object.keys(value.applied).length) { injected = true; throw new Error('INJECTED_WINDOW_CLOSE'); }
+      return set(value);
+    };
+    fs.writeFileSync(f.config.eventBridgePath, `${envelopes.map((envelope) => JSON.stringify(envelope)).join('\n')}\n`);
+    await assert.rejects(port.flush(), /INJECTED_WINDOW_CLOSE/);
+    assert.equal(injected, true);
+    assert.ok(domain.global.get().pending, 'the interrupted group must stay recoverable');
+    // Same port, same process: a restart would re-read the installed aggregate
+    // and hide the defect, which is why the recovery test above cannot cover it.
+    assert.deepEqual(await port.flush(), { applied: 0, duplicates: envelopes.length });
+  } finally {
+    domain.global.set = set;
+    await port.close().catch(() => {});
+  }
+  try {
+    const order = envelopes.map((envelope) => envelope.event.eventId);
+    assert.deepEqual(Object.keys(appliedMarkers(f)), order, 'every record of the recovered group is committed exactly once');
+    // The memory's window keeps the last 4096 markers, once each: the evicted
+    // head must not come back as a second application of anything.
+    assert.deepEqual(bridgeApplied(f).map((entry) => entry.eventId), order.slice(-4096));
+    const lineage = committed(f).aggregate.evolution.lineage;
+    assert.deepEqual(lineage.map((entry) => entry.generation), [1], 'the recovered canary event must not append a second generation');
+  } finally { await teardown(f); }
+});
+
 test('the state a burst commits matches one record per transaction', async () => {
   // The group only changes how many transactions carry the same records, so the
   // committed state must be identical: the same marker map, the same memory
@@ -266,6 +317,16 @@ test('the state a burst commits matches one record per transaction', async () =>
   // Every file the port commits, not a summary of it: the whole durable global
   // document (aggregate included, so a dropped experiment or knowledge row shows
   // up) plus a digest per archive file. Nothing is masked.
+  //
+  // One field is normalised, and only one: a transaction snapshots the aggregate
+  // from inside its own stage, so cold-archive metadata records that stage's
+  // directory (`domain-staging/stage-<uuid>/state.json.…`) and it is re-derived
+  // from the live path on the next load. A grouped commit allocates fewer stages,
+  // so those identifiers differ between the two runs by construction while every
+  // other byte must not - the cold archive is seeded below so that difference is
+  // visible, instead of leaving the cold-archive path untested.
+  const withoutStagePaths = (document, root) => JSON.parse(
+    JSON.stringify(document).split(root).join('<root>').replace(/stage-[0-9a-f-]{36}/g, 'stage-<uuid>'));
   const committedState = (f) => {
     const global = JSON.parse(fs.readFileSync(path.join(f.root, 'official', 'evolution_domain.json'), 'utf8')).global;
     const tree = {};
@@ -276,7 +337,7 @@ test('the state a burst commits matches one record per transaction', async () =>
         tree[path.relative(directory, file)] = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
       }
     }
-    return { global, tree };
+    return { global: withoutStagePaths(global, f.root), tree };
   };
   const run = async (oneAtATime) => {
     const f = await fixture();
@@ -285,6 +346,11 @@ test('the state a burst commits matches one record per transaction', async () =>
     // A throw from `flush()` or `close()` must fail this test, so nothing is
     // returned from `finally`: only the fixture cleanup is guaranteed.
     try {
+      // A committed cold archive, so the aggregate carries archive metadata
+      // (paths included) rather than only the bridge ledger.
+      fs.mkdirSync(path.join(f.root, 'dockyard'), { recursive: true });
+      fs.writeFileSync(path.join(f.root, 'dockyard', 'state.json.observations-archive.jsonl'),
+        `${JSON.stringify({ id: 'cold-seed', type: 'tool/error', message: 'archived', audit: { at: '2026-10-12T00:00:00.000Z' } })}\n`);
       const port = await openDomainStorage(f.ctx, f.config);
       const envelopes = events.map((event, index) => signed(event, index + 1));
       for (let index = 0; index < envelopes.length; index += 1) {
@@ -308,6 +374,9 @@ test('the state a burst commits matches one record per transaction', async () =>
     const oneAtATime = await run(true);
     assert.equal(Object.keys(once.global.applied).length, 3);
     assert.deepEqual(once.global, oneAtATime.global, 'the grouped commit must produce the same durable document');
+    // …and the normalised field really is present, so the comparison above cannot
+    // be passing because no archive metadata was written at all.
+    assert.match(JSON.stringify(once.global), /stage-<uuid>/, 'the seeded cold archive must reach the committed document');
     assert.deepEqual(once.global.aggregate.evolution.eventBridge.applied.map((entry) => entry.eventId),
       events.map((event) => event.eventId));
     assert.deepEqual(once.tree, oneAtATime.tree, 'the grouped commit must install the same archive tree');

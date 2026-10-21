@@ -50,6 +50,34 @@
 - 没有新增缓存、缓存失效信号或新的持久字段；持久化格式、fsync 次数（每组一次
   协议）、跨进程锁、CAS 与恢复路径不变。
 
+### 3.1 收口修复：组大于标记窗口时的同端口重试（独立审核发现）
+
+独立对抗式审核在合并前复现了一个阻塞缺陷，它在逐条路径上不存在、在分组路径上
+存在，因此属于本轮引入：
+
+- **现象**：一次 flush 认证了 4097 条记录，提交点（`pending` 记录）成功、关闭写入
+  失败；**不关闭端口**再调一次 `flush()`，第二次返回
+  `{ applied: 4097, duplicates: 0 }`，`evolution.lineage` 多出第二代
+  （`bridge:lineage:plugin:retry:1` + `…:2`）。逐条路径下中断的 `pending` 最多只
+  涉及一条新事件，不会出现这个窗口。
+- **原因**：`EvolutionMemory` 的桥标记窗口是滚动保留**最后 4096 条**
+  （`#markBridgeApplied` 的 `applied.slice(-4096)`），恢复安装的标记里最早那条已经
+  滑出窗口，于是它被再次应用；再次应用又推进窗口，连带后续记录级联重放。组事务
+  自己是对的（`mergeEventLedger` 正确合并了恢复的完整 ledger），缺的是“应用前先
+  问已提交 ledger”这一步。
+- **修复**：`mutate()` 把恢复后的已提交标记表交给工作函数
+  （`work(instance, store, { recovered })`），分组提交在应用每条记录前先看
+  `recovered[eventId] === mac`，命中即计为 duplicate 并跳过。这条判定用的是
+  **已提交的完整 ledger**，不是内存窗口；没有放宽冲突判定（同 id 不同 MAC 仍然在
+  `mergeEventLedger` 里抛 `E_DOMAIN_EVENT_ID_CONFLICT`），没有改变重启路径
+  （重启仍然读安装后的 aggregate，本来就不会重放）。
+- **回归**：`test/domain-storage/replay-batch-commit.test.js` 新增“组大于
+  4096 条窗口的同端口重试”用例，断言重试返回 `{ applied: 0, duplicates: 4097 }`、
+  `applied` 标记表恰好是文件顺序、桥标记窗口只保留最后 4096 条且每条一次、
+  `lineage` 只有一代。该用例在修复前的实现上实测失败
+  （`applied: 4097, duplicates: 0`），修复后通过；代价是该用例需要 4097 条事件
+  （每条一次整份 aggregate 投影），单机约 26 s。
+
 ## 4. 可复现性能
 
 ```sh
@@ -75,8 +103,11 @@ cd "$task_baseline_dir" && node scripts/benchmarks/domain-replay-batch.mjs
 
 三轮交替（第 1、3 轮基线先跑，第 2 轮候选先跑），每轮两侧独立进程、同参数、
 预热 3 次、测量 9 次；下表是三轮中位数的中位数，占比为候选相对基线。
+`domain-replay-batch.json` 每侧每场景只保留**每轮的中位数**（3 个值，即下表
+“各轮耗时差”一列），没有保留每轮的 9 个原始样本；因此“轮内 9 个样本的中位数”
+这一步只能由 `method.samples: 9` 的声明说明，无法仅凭该 JSON 复算。
 
-历史 200 条（日志 125,962 字节）：
+历史 200 条（日志 182,842 字节）：
 
 | 积压事件 | 基线耗时 | 优化耗时 | 变化 | 基线 CPU | 优化 CPU | 变化 | `fsync` 基线→优化 | 各轮耗时差 |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -86,7 +117,7 @@ cd "$task_baseline_dir" && node scripts/benchmarks/domain-replay-batch.mjs
 | 5 | 166.39 ms | 38.94 ms | **−76.6%** | 66.07 ms | 16.82 ms | −74.5% | 17 → 5 | −128.34 / −122.82 / −127.45 |
 | 10 | 328.10 ms | 46.24 ms | **−85.9%** | 146.75 ms | 28.29 ms | −80.7% | 32 → 5 | −277.02 / −279.56 / −283.47 |
 
-历史 2,000 条（日志 1,267,563 字节）：
+历史 2,000 条（日志 1,324,803 字节）：
 
 | 积压事件 | 基线耗时 | 优化耗时 | 变化 | 基线 CPU | 优化 CPU | 变化 | `fsync` 基线→优化 | 各轮耗时差 |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -137,13 +168,24 @@ rtk proxy npm run pack:check
 rtk proxy npm run release:verify
 ```
 
-新增 6 项回归（`test/domain-storage/replay-batch-commit.test.js`）。其中
-“一次事务提交整段积压”和“组事务失败整组不落盘”在改动前的实现上失败，其余四项
+新增 7 项回归（`test/domain-storage/replay-batch-commit.test.js`）。其中
+“一次事务提交整段积压”和“组事务失败整组不落盘”在改动前的实现上失败，第 3.1 节
+那条窗格用例在收口修复前也失败；其余各项
 在两侧都通过，用于钉住不得改变的性质：组内重复 id 去重与同 id 不同 MAC 拒绝、
 认证拒绝保留已验证前缀且不推进检查点、中断的组提交经 `pending` 记录恢复后每条
 只应用一次、同一批记录一次提交与逐条提交产生相同持久状态。最后一项比较提交后的
-**整份 durable global 文档**（含 aggregate）与每个归档文件摘要，不做掩码；它不会
-吞掉 `flush()`/`close()` 的异常。
+**整份 durable global 文档**（含 aggregate）与每个归档文件摘要；它不会吞掉
+`flush()`/`close()` 的异常。
+
+该等价性用例现在会先种一个**已提交的冷档案**，因此 aggregate 里也带上了归档元数据
+（路径在内）。此时唯一被归一化的字段是事务自己的暂存目录名：快照是在自己的 stage
+里拍的，`coldArchives` 的 `file` / `activeFile` / `indexFile` 记录的是
+`domain-staging/stage-<uuid>/…`，而加载时这些路径一律按实时路径重建
+（`memory.js` 的 `#reconcileArchiveIndex` 用 `#archivePath(collection)` 覆盖它们）；
+组事务分配的 stage 更少，所以两边这些标识符必然不同，其余字节必须相同。用例先断言
+归一化后逐字节相同，再断言文档里确实出现了被归一化的字段，避免“因为没写归档元数据
+所以比较通过”这种空转。因此本轮的字节等价声明范围是：**除事务暂存目录名之外**
+逐字节相同；聚合语义、标记表与归档文件字节完全相同。
 
 一次独立对抗式审核在真实官方 JSON 后端上复核了组内冲突、ledger 恢复合并、认证
 拒绝保留前缀、`pending` 恢复与检查点计数，未发现阻塞性问题；它确认的唯一缺陷是

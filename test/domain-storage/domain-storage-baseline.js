@@ -627,6 +627,44 @@ const reversals = [
    "      update: async updater => { aggregate = aggregateSchema.parse(updater(aggregate)); } };\n",
    "    const stateStore = { filePath: path.join(dir, 'state.json'), load: async () => structuredClone(aggregate),\n" +
    "      update: async updater => { aggregate = aggregateSchema.parse(updater(structuredClone(aggregate))); } };\n"],
+  // The exactly-once fix landed inside the grouped path, after the group itself: a
+  // recovered commit installs a group's markers before the next transaction reads
+  // the document, and the memory's bridge marker window keeps only the last 4096
+  // records, so a longer group must consult the recovered ledger instead of its own
+  // markers before it applies anything. Reversing these two insertions first
+  // restores the grouped shape the piece below reverses to the released per-record
+  // path; the released source has neither.
+  ["      const outcome = await mutate(async (instance, store, { recovered }) => {\n" +
+   "        let duplicated = 0;\n" +
+   "        for (const entry of entries) {\n" +
+   "          // A recovered commit installed this record's aggregate effects and its\n" +
+   "          // marker before this transaction read the document, so it is already\n" +
+   "          // durable and must not be applied again. The memory cannot decide this\n" +
+   "          // on its own: it keeps only the last 4096 bridge markers\n" +
+   "          // (`#markBridgeApplied`), so re-applying a longer group would re-apply\n" +
+   "          // its head - and that append scrolls the window, cascading through the\n" +
+   "          // rest of the group. The committed ledger is the authority.\n" +
+   "          if (recovered[entry.eventId] === entry.mac) { duplicated += 1; continue; }\n" +
+   "          const result = await instance.applyExecutionEvent(entry.event);\n" +
+   "          if (result.duplicate) duplicated += 1;\n" +
+   "        }\n" +
+   "        return { duplicates: duplicated };\n" +
+   "      }, ledger);\n",
+   "      const outcome = await mutate(async instance => {\n" +
+   "        let duplicated = 0;\n" +
+   "        for (const entry of entries) {\n" +
+   "          const result = await instance.applyExecutionEvent(entry.event);\n" +
+   "          if (result.duplicate) duplicated += 1;\n" +
+   "        }\n" +
+   "        return { duplicates: duplicated };\n" +
+   "      }, ledger);\n",],
+  ["    // `recovered` is the committed marker map *after* the recovery above, so\n" +
+   "    // `work` can tell a record that this transaction still has to apply from one\n" +
+   "    // a recovered commit already installed. It is not a cache: the memory's own\n" +
+   "    // bridge marker window keeps only the last 4096 records, which is not enough\n" +
+   "    // to recognise a long group that this port already applied.\n" +
+   "    const result = await work(current.instance, store, { recovered });\n",
+   "    const result = await work(current.instance, store);\n",],
   // The replay path now commits every record a pass authenticated in one
   // transaction instead of one per record. Each record still pays its own
   // parse, MAC verification, writer check, marker/conflict check and is applied
