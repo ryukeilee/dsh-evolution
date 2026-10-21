@@ -627,6 +627,134 @@ const reversals = [
    "      update: async updater => { aggregate = aggregateSchema.parse(updater(aggregate)); } };\n",
    "    const stateStore = { filePath: path.join(dir, 'state.json'), load: async () => structuredClone(aggregate),\n" +
    "      update: async updater => { aggregate = aggregateSchema.parse(updater(structuredClone(aggregate))); } };\n"],
+  // The replay path now commits every record a pass authenticated in one
+  // transaction instead of one per record. Each record still pays its own
+  // parse, MAC verification, writer check, marker/conflict check and is applied
+  // in file order; only the stage mirror, the two whole-document writes, their
+  // fsyncs and the reload are shared. Reversing the block restores the pinned
+  // per-record loop; the writer predicate inside it is reversed by the piece
+  // below, so this one must stay above it.
+  ["    let applied = 0, duplicates = plan.trusted ? plan.prefixRecords : 0;\n" +
+   "    let first = null, last = null;\n" +
+   "    // Records this pass authenticated but has not committed yet. A step that\n" +
+   "    // arrives after a burst of events (one operation emits two or three\n" +
+   "    // records, the autonomous observer emits them between steps, or the process\n" +
+   "    // was down while another one appended) used to pay one complete durable\n" +
+   "    // transaction per record: a stage mirror, an aggregate snapshot, two\n" +
+   "    // whole-document writes, their fsyncs and a full reload. The records are\n" +
+   "    // independent and already ordered, and each one still pays its own parse,\n" +
+   "    // MAC verification, writer check, marker/conflict check and application in\n" +
+   "    // file order, so the group is committed by one transaction that replaces\n" +
+   "    // the per-record ones. Nothing is skipped, reordered or applied twice; only\n" +
+   "    // the transport work between them is shared.\n" +
+   "    const batch = [];\n" +
+   "    // The marker map is the dedup authority for the pass, so a record this batch\n" +
+   "    // owns must stay visible to the marker check of the record after it until\n" +
+   "    // the commit publishes it.\n" +
+   "    const batchMarks = new Map();\n" +
+   "    const absorb = (line, { witnessed }) => {\n" +
+   "      const envelope = JSON.parse(line);\n" +
+   "      const verified = verifyEventBridgeEnvelope(envelope, config.eventBridgeKey);\n" +
+   "      if (!eventBridgeWriterTrusted(verified, writer)) throw new Error('E_DOMAIN_EVENT_AUTH');\n" +
+   "      const eventId = safeIdentifier(verified.event.eventId);\n" +
+   "      if (witnessed) {\n" +
+   "        const witness = { id: String(eventId), mac: envelope.mac };\n" +
+   "        first ??= witness;\n" +
+   "        last = witness;\n" +
+   "      }\n" +
+   "      // Authenticate every record the checkpoint does not cover, including\n" +
+   "      // duplicates, before consulting the marker. Already committed events need\n" +
+   "      // neither a second parse nor a full DTO.\n" +
+   "      const marker = domain.global.get().applied[eventId] || batchMarks.get(eventId);\n" +
+   "      if (marker) {\n" +
+   "        if (marker !== envelope.mac) throw new Error('E_DOMAIN_EVENT_ID_CONFLICT');\n" +
+   "        duplicates++; return;\n" +
+   "      }\n" +
+   "      batchMarks.set(eventId, envelope.mac);\n" +
+   "      batch.push({ eventId, mac: envelope.mac, event: projectExecutionEvent(verified.event) });\n" +
+   "    };\n" +
+   "    /** Commit what this pass authenticated as one transaction. */\n" +
+   "    const commit = async () => {\n" +
+   "      if (!batch.length) return;\n" +
+   "      const entries = batch.splice(0, batch.length);\n" +
+   "      batchMarks.clear();\n" +
+   "      // The whole committed map is handed to `mutate()` rather than only the\n" +
+   "      // records this group adds: the transaction merges the caller's set onto the\n" +
+   "      // markers an interrupted commit recovered from disk, and it must keep\n" +
+   "      // refusing an eventId the two sides disagree about\n" +
+   "      // (`E_DOMAIN_EVENT_ID_CONFLICT`) - a marker only this group knows is not\n" +
+   "      // enough to detect that.\n" +
+   "      const ledger = { ...domain.global.get().applied };\n" +
+   "      for (const entry of entries) ledger[entry.eventId] = entry.mac;\n" +
+   "      const outcome = await mutate(async instance => {\n" +
+   "        let duplicated = 0;\n" +
+   "        for (const entry of entries) {\n" +
+   "          const result = await instance.applyExecutionEvent(entry.event);\n" +
+   "          if (result.duplicate) duplicated += 1;\n" +
+   "        }\n" +
+   "        return { duplicates: duplicated };\n" +
+   "      }, ledger);\n" +
+   "      duplicates += outcome.duplicates;\n" +
+   "      applied += entries.length - outcome.duplicates;\n" +
+   "    };\n" +
+   "    let refusal = null;\n" +
+   "    for (const line of plan.lines) {\n" +
+   "      if (!line.trim()) continue;\n" +
+   "      try { absorb(line, { witnessed: true }); } catch (error) { refusal = error; break; }\n" +
+   "    }\n" +
+   "    // A torn trailing line is processed exactly as before but stays outside\n" +
+   "    // the checkpoint, so a later append re-processes it instead of silently\n" +
+   "    // skipping bytes that were never a complete record.\n" +
+   "    if (!refusal && plan.remainder.trim()) {\n" +
+   "      try { absorb(plan.remainder, { witnessed: false }); } catch (error) { refusal = error; }\n" +
+   "    }\n" +
+   "    // The per-record path committed every record it had authenticated before the\n" +
+   "    // one that was refused, so a refusal must not roll back what this pass has\n" +
+   "    // already verified: that progress is committed first and the refusal is then\n" +
+   "    // reported exactly as before, without advancing the checkpoint below. A\n" +
+   "    // failure inside the group's own transaction aborts the whole group instead:\n" +
+   "    // nothing of it is published, and the next pass re-applies it in file order\n" +
+   "    // with the same marker map, so no record can be skipped or applied twice. If\n" +
+   "    // that commit fails while a refusal is also pending, the commit failure is\n" +
+   "    // what the pass reports - the per-record path reached the same commit before\n" +
+   "    // it read the refused record.\n" +
+   "    await commit();\n" +
+   "    if (refusal) throw refusal;\n" +
+   "",
+"    let applied = 0, duplicates = plan.trusted ? plan.prefixRecords : 0;\n" +
+   "    let first = null, last = null;\n" +
+   "    const absorb = async (line, { witnessed }) => {\n" +
+   "      const envelope = JSON.parse(line);\n" +
+   "      const verified = verifyEventBridgeEnvelope(envelope, config.eventBridgeKey);\n" +
+   "      if (!eventBridgeWriterTrusted(verified, writer)) throw new Error('E_DOMAIN_EVENT_AUTH');\n" +
+   "      const eventId = safeIdentifier(verified.event.eventId);\n" +
+   "      if (witnessed) {\n" +
+   "        const witness = { id: String(eventId), mac: envelope.mac };\n" +
+   "        first ??= witness;\n" +
+   "        last = witness;\n" +
+   "      }\n" +
+   "      // The committed domain marker covers the complete single-event batch.\n" +
+   "      // Authenticate every record the checkpoint does not cover, including\n" +
+   "      // duplicates, before consulting it. Already committed events need\n" +
+   "      // neither a second parse nor a full DTO.\n" +
+   "      const marker = domain.global.get().applied[eventId];\n" +
+   "      if (marker) {\n" +
+   "        if (marker !== envelope.mac) throw new Error('E_DOMAIN_EVENT_ID_CONFLICT');\n" +
+   "        duplicates++; return;\n" +
+   "      }\n" +
+   "      const event = projectExecutionEvent(verified.event);\n" +
+   "      const result = await mutate(instance => instance.applyExecutionEvent(event), { ...domain.global.get().applied, [event.eventId]: envelope.mac });\n" +
+   "      if (result.duplicate) duplicates++; else applied++;\n" +
+   "    };\n" +
+   "    for (const line of plan.lines) {\n" +
+   "      if (!line.trim()) continue;\n" +
+   "      await absorb(line, { witnessed: true });\n" +
+   "    }\n" +
+   "    // A torn trailing line is processed exactly as before but stays outside\n" +
+   "    // the checkpoint, so a later append re-processes it instead of silently\n" +
+   "    // skipping bytes that were never a complete record.\n" +
+   "    if (plan.remainder.trim()) await absorb(plan.remainder, { witnessed: false });\n" +
+   ""],
   // The event-bridge authentication rule was unified after the anchor: the
   // replay path now calls the same exported predicate the doctor uses, and the
   // writer default comes from one exported constant. The rule is unchanged - a

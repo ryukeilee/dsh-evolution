@@ -1,0 +1,922 @@
+{
+  "what": "Domain event-bridge replay cost of lib/domain-storage.js per flush(), before and after committing a backlog of authenticated records as one durable transaction.",
+  "environment": {
+    "node": "v26.12.0",
+    "platform": "darwin/arm64"
+  },
+  "method": {
+    "script": "scripts/benchmarks/domain-replay-batch.mjs (identical bytes on both sides)",
+    "fixture": "real official DomainFacility + JsonStorageBackend, signed and already-committed synthetic history, page cache warm",
+    "alternation": "3 rounds; round 1 baseline-first, round 2 candidate-first, round 3 baseline-first; each round runs baseline and candidate in separate processes with the same parameters",
+    "samples": 9,
+    "warmups": 3,
+    "excluded": "fixture construction, process startup, signing of the appended records",
+    "reported": "median of 9 samples per round; the table uses the median across the 3 rounds and also keeps every round",
+    "self_check": "each sample asserts {applied, duplicates} for the pass it measured"
+  },
+  "baseline_source": "git archive HEAD (the commit this change is based on)",
+  "candidate_source_sha256": "89ed86f07a6ce2df8c0ec7cbfdd717791b6b0dc145969e832d92455a089b5d6e",
+  "baseline_source_sha256": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+  "sizes": {
+    "200": {
+      "logBytes": 182842,
+      "scenarios": [
+        {
+          "backlog": 0,
+          "baseline": {
+            "per_round": [
+              {
+                "elapsedMs": 0.17966599999999744,
+                "cpuMs": 0.224,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 2,
+                  "readFileSync": 1
+                }
+              },
+              {
+                "elapsedMs": 0.17812500000000853,
+                "cpuMs": 0.235,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 2,
+                  "readFileSync": 1
+                }
+              },
+              {
+                "elapsedMs": 0.17891699999999844,
+                "cpuMs": 0.236,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 2,
+                  "readFileSync": 1
+                }
+              }
+            ]
+          },
+          "candidate": {
+            "per_round": [
+              {
+                "elapsedMs": 0.17412500000000364,
+                "cpuMs": 0.244,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 2,
+                  "readFileSync": 1
+                }
+              },
+              {
+                "elapsedMs": 0.17733400000000188,
+                "cpuMs": 0.231,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 2,
+                  "readFileSync": 1
+                }
+              },
+              {
+                "elapsedMs": 0.1750420000000048,
+                "cpuMs": 0.226,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 2,
+                  "readFileSync": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "backlog": 1,
+          "baseline": {
+            "per_round": [
+              {
+                "elapsedMs": 31.87533400000001,
+                "cpuMs": 9.926,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 37.87045899999998,
+                "cpuMs": 11.157,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 33.68354199999999,
+                "cpuMs": 10.37,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              }
+            ]
+          },
+          "candidate": {
+            "per_round": [
+              {
+                "elapsedMs": 32.705332999999996,
+                "cpuMs": 9.977,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 32.72162499999999,
+                "cpuMs": 10.226,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 33.458375000000004,
+                "cpuMs": 10.303,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              }
+            ]
+          }
+        },
+        {
+          "backlog": 2,
+          "baseline": {
+            "per_round": [
+              {
+                "elapsedMs": 67.69774999999993,
+                "cpuMs": 29.763,
+                "syscalls": {
+                  "fsyncSync": 8,
+                  "fdatasyncSync": 0,
+                  "writeSync": 7,
+                  "writeFileSync": 6,
+                  "renameSync": 7,
+                  "readSync": 2,
+                  "readFileSync": 9
+                }
+              },
+              {
+                "elapsedMs": 69.63933299999997,
+                "cpuMs": 30.195,
+                "syscalls": {
+                  "fsyncSync": 8,
+                  "fdatasyncSync": 0,
+                  "writeSync": 7,
+                  "writeFileSync": 6,
+                  "renameSync": 7,
+                  "readSync": 2,
+                  "readFileSync": 9
+                }
+              },
+              {
+                "elapsedMs": 70.21304199999997,
+                "cpuMs": 29.477,
+                "syscalls": {
+                  "fsyncSync": 8,
+                  "fdatasyncSync": 0,
+                  "writeSync": 7,
+                  "writeFileSync": 6,
+                  "renameSync": 7,
+                  "readSync": 2,
+                  "readFileSync": 9
+                }
+              }
+            ]
+          },
+          "candidate": {
+            "per_round": [
+              {
+                "elapsedMs": 38.708124999999995,
+                "cpuMs": 15.831,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 39.172792000000015,
+                "cpuMs": 15.347,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 38.26966599999997,
+                "cpuMs": 15.677,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              }
+            ]
+          }
+        },
+        {
+          "backlog": 5,
+          "baseline": {
+            "per_round": [
+              {
+                "elapsedMs": 165.7726249999996,
+                "cpuMs": 66.144,
+                "syscalls": {
+                  "fsyncSync": 17,
+                  "fdatasyncSync": 0,
+                  "writeSync": 16,
+                  "writeFileSync": 15,
+                  "renameSync": 16,
+                  "readSync": 2,
+                  "readFileSync": 21
+                }
+              },
+              {
+                "elapsedMs": 166.38754100000006,
+                "cpuMs": 64.582,
+                "syscalls": {
+                  "fsyncSync": 17,
+                  "fdatasyncSync": 0,
+                  "writeSync": 16,
+                  "writeFileSync": 15,
+                  "renameSync": 16,
+                  "readSync": 2,
+                  "readFileSync": 21
+                }
+              },
+              {
+                "elapsedMs": 166.39325000000008,
+                "cpuMs": 66.067,
+                "syscalls": {
+                  "fsyncSync": 17,
+                  "fdatasyncSync": 0,
+                  "writeSync": 16,
+                  "writeFileSync": 15,
+                  "renameSync": 16,
+                  "readSync": 2,
+                  "readFileSync": 21
+                }
+              }
+            ]
+          },
+          "candidate": {
+            "per_round": [
+              {
+                "elapsedMs": 37.435249999999996,
+                "cpuMs": 16.542,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 43.565624999999955,
+                "cpuMs": 19.304,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 38.94237499999997,
+                "cpuMs": 16.825,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              }
+            ]
+          }
+        },
+        {
+          "backlog": 10,
+          "baseline": {
+            "per_round": [
+              {
+                "elapsedMs": 323.264083,
+                "cpuMs": 138.955,
+                "syscalls": {
+                  "fsyncSync": 32,
+                  "fdatasyncSync": 0,
+                  "writeSync": 31,
+                  "writeFileSync": 30,
+                  "renameSync": 31,
+                  "readSync": 2,
+                  "readFileSync": 41
+                }
+              },
+              {
+                "elapsedMs": 328.5797080000002,
+                "cpuMs": 146.753,
+                "syscalls": {
+                  "fsyncSync": 32,
+                  "fdatasyncSync": 0,
+                  "writeSync": 31,
+                  "writeFileSync": 30,
+                  "renameSync": 31,
+                  "readSync": 2,
+                  "readFileSync": 41
+                }
+              },
+              {
+                "elapsedMs": 328.10229200000003,
+                "cpuMs": 149.772,
+                "syscalls": {
+                  "fsyncSync": 32,
+                  "fdatasyncSync": 0,
+                  "writeSync": 31,
+                  "writeFileSync": 30,
+                  "renameSync": 31,
+                  "readSync": 2,
+                  "readFileSync": 41
+                }
+              }
+            ]
+          },
+          "candidate": {
+            "per_round": [
+              {
+                "elapsedMs": 46.24287499999991,
+                "cpuMs": 27.745,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 49.02333300000009,
+                "cpuMs": 28.294,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 44.629166999999825,
+                "cpuMs": 29.349,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 2,
+                  "readFileSync": 5
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "2000": {
+      "logBytes": 1324803,
+      "scenarios": [
+        {
+          "backlog": 0,
+          "baseline": {
+            "per_round": [
+              {
+                "elapsedMs": 1.1005419999999901,
+                "cpuMs": 1.166,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 3,
+                  "readFileSync": 1
+                }
+              },
+              {
+                "elapsedMs": 1.0845420000000132,
+                "cpuMs": 1.147,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 3,
+                  "readFileSync": 1
+                }
+              },
+              {
+                "elapsedMs": 1.110833999999997,
+                "cpuMs": 1.175,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 3,
+                  "readFileSync": 1
+                }
+              }
+            ]
+          },
+          "candidate": {
+            "per_round": [
+              {
+                "elapsedMs": 1.0887500000000045,
+                "cpuMs": 1.146,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 3,
+                  "readFileSync": 1
+                }
+              },
+              {
+                "elapsedMs": 1.1074589999999915,
+                "cpuMs": 1.159,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 3,
+                  "readFileSync": 1
+                }
+              },
+              {
+                "elapsedMs": 1.1167920000000038,
+                "cpuMs": 1.197,
+                "syscalls": {
+                  "fsyncSync": 0,
+                  "fdatasyncSync": 0,
+                  "writeSync": 0,
+                  "writeFileSync": 0,
+                  "renameSync": 0,
+                  "readSync": 3,
+                  "readFileSync": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "backlog": 1,
+          "baseline": {
+            "per_round": [
+              {
+                "elapsedMs": 40.75591700000001,
+                "cpuMs": 17.508,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 40.844791000000015,
+                "cpuMs": 16.895,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 41.50912500000001,
+                "cpuMs": 16.923,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              }
+            ]
+          },
+          "candidate": {
+            "per_round": [
+              {
+                "elapsedMs": 40.35220800000002,
+                "cpuMs": 16.629,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 40.828374999999994,
+                "cpuMs": 16.384,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 40.88349999999997,
+                "cpuMs": 17.368,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              }
+            ]
+          }
+        },
+        {
+          "backlog": 2,
+          "baseline": {
+            "per_round": [
+              {
+                "elapsedMs": 76.78487500000006,
+                "cpuMs": 33.107,
+                "syscalls": {
+                  "fsyncSync": 8,
+                  "fdatasyncSync": 0,
+                  "writeSync": 7,
+                  "writeFileSync": 6,
+                  "renameSync": 7,
+                  "readSync": 3,
+                  "readFileSync": 9
+                }
+              },
+              {
+                "elapsedMs": 77.77258400000005,
+                "cpuMs": 32.863,
+                "syscalls": {
+                  "fsyncSync": 8,
+                  "fdatasyncSync": 0,
+                  "writeSync": 7,
+                  "writeFileSync": 6,
+                  "renameSync": 7,
+                  "readSync": 3,
+                  "readFileSync": 9
+                }
+              },
+              {
+                "elapsedMs": 76.629458,
+                "cpuMs": 31.385,
+                "syscalls": {
+                  "fsyncSync": 8,
+                  "fdatasyncSync": 0,
+                  "writeSync": 7,
+                  "writeFileSync": 6,
+                  "renameSync": 7,
+                  "readSync": 3,
+                  "readFileSync": 9
+                }
+              }
+            ]
+          },
+          "candidate": {
+            "per_round": [
+              {
+                "elapsedMs": 41.732708,
+                "cpuMs": 19.908,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 41.79591700000003,
+                "cpuMs": 18.293,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 40.5819580000001,
+                "cpuMs": 18.664,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              }
+            ]
+          }
+        },
+        {
+          "backlog": 5,
+          "baseline": {
+            "per_round": [
+              {
+                "elapsedMs": 177.5286659999997,
+                "cpuMs": 76.78,
+                "syscalls": {
+                  "fsyncSync": 17,
+                  "fdatasyncSync": 0,
+                  "writeSync": 16,
+                  "writeFileSync": 15,
+                  "renameSync": 16,
+                  "readSync": 3,
+                  "readFileSync": 21
+                }
+              },
+              {
+                "elapsedMs": 183.28995799999984,
+                "cpuMs": 80.19,
+                "syscalls": {
+                  "fsyncSync": 17,
+                  "fdatasyncSync": 0,
+                  "writeSync": 16,
+                  "writeFileSync": 15,
+                  "renameSync": 16,
+                  "readSync": 3,
+                  "readFileSync": 21
+                }
+              },
+              {
+                "elapsedMs": 170.50816600000007,
+                "cpuMs": 69.91,
+                "syscalls": {
+                  "fsyncSync": 17,
+                  "fdatasyncSync": 0,
+                  "writeSync": 16,
+                  "writeFileSync": 15,
+                  "renameSync": 16,
+                  "readSync": 3,
+                  "readFileSync": 21
+                }
+              }
+            ]
+          },
+          "candidate": {
+            "per_round": [
+              {
+                "elapsedMs": 41.56745799999999,
+                "cpuMs": 19.34,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 43.586500000000115,
+                "cpuMs": 20.798,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 41.64016700000002,
+                "cpuMs": 19.561,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              }
+            ]
+          }
+        },
+        {
+          "backlog": 10,
+          "baseline": {
+            "per_round": [
+              {
+                "elapsedMs": 360.27245900000025,
+                "cpuMs": 180.384,
+                "syscalls": {
+                  "fsyncSync": 32,
+                  "fdatasyncSync": 0,
+                  "writeSync": 31,
+                  "writeFileSync": 30,
+                  "renameSync": 31,
+                  "readSync": 3,
+                  "readFileSync": 41
+                }
+              },
+              {
+                "elapsedMs": 352.32495800000015,
+                "cpuMs": 168.646,
+                "syscalls": {
+                  "fsyncSync": 32,
+                  "fdatasyncSync": 0,
+                  "writeSync": 31,
+                  "writeFileSync": 30,
+                  "renameSync": 31,
+                  "readSync": 3,
+                  "readFileSync": 41
+                }
+              },
+              {
+                "elapsedMs": 345.3348340000002,
+                "cpuMs": 169.278,
+                "syscalls": {
+                  "fsyncSync": 32,
+                  "fdatasyncSync": 0,
+                  "writeSync": 31,
+                  "writeFileSync": 30,
+                  "renameSync": 31,
+                  "readSync": 3,
+                  "readFileSync": 41
+                }
+              }
+            ]
+          },
+          "candidate": {
+            "per_round": [
+              {
+                "elapsedMs": 47.5814170000001,
+                "cpuMs": 35.278,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 50.430875000000015,
+                "cpuMs": 27.9,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              },
+              {
+                "elapsedMs": 47.0942500000001,
+                "cpuMs": 26.663,
+                "syscalls": {
+                  "fsyncSync": 5,
+                  "fdatasyncSync": 0,
+                  "writeSync": 4,
+                  "writeFileSync": 3,
+                  "renameSync": 4,
+                  "readSync": 3,
+                  "readFileSync": 5
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
