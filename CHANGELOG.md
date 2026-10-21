@@ -6,6 +6,109 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.17 — 继任复用已解析的冷档案行，事件桥积压合并为一次事务
+
+本候选在 `0.2.0-rc.16` 之上做三件事：`port.observe()` 在 live → stage → hydrate 的 Memory
+继任之间复用已解析的冷档案行（`e185525`）；一次 `flush()` 里认证过的积压事件作为**一个**
+事务提交（`5381299`），并修掉分组路径上“组大于桥标记窗口时同端口重试重复应用”的缺陷
+（`84cbe3a`）；发布门禁把“开发阶段”与“发布阶段”的固定点判定拆成两段并共用一张判定表
+（`b71fb06`、`6cb2f82`、`8bd0a73`，只动 `scripts/release/` 与随包分发的 `README.md` /
+`RELEASE.md`）。生产 delta 因此只有两个 `lib/` 文件——`lib/dockyard-domain/memory.js` 与
+`lib/domain-storage.js`——加上版本号与随包分发的文档；宿主支持范围、`peerDependencies`、
+`engines`、依赖、领域存储的持久化格式与 schema 一律未动。
+
+**未改的不变量**：`promotionGates` 的八项门禁、晋升的二次显式确认、Trial 基线的单次同步
+捕获、journal 阶段判定（`classifyPromotionJournal`）、跨进程锁、CAS、tombstone、latest-wins、
+去重与 retention 决策、事件信封与签名算法、经验检索的只读性与触发路径、脱敏边界与守卫。
+两处性能改动都是删除重复工作，没有新增持久字段、缓存失效信号或安全授权路径。
+
+### `port.observe()`：跨 Memory 继任复用解析结果与冷行身份
+
+- **改的是什么。** 公开写入的路径是 `observe → enqueue → mutate → mirrorArchives →
+  createMemory(stage).load → store.record → recordObservation → #append → installPending →
+  hydrate → createMemory(live).load`。每次写入都会新建两个 Memory 实例，实例内的
+  `archiveReadCache` 随继任丢失，来源行的 canonical key 又在 `#sourceMatches()` 里逐条重算。
+  现在 `lib/domain-storage.js` 在**同一个 port 的** live → stage → hydrate 之间传递既有的
+  解析缓存：每个实例仍拥有独立 Map 与条目包装，不共享热状态、`archiveKnown`、stale 标记、
+  事务或权限。
+- **继承的判据不是 stat，是内容。** 继任首次读取仍列举全部文件、核对 basename、有序文件
+  列表、`dev`、`ino`、`size`、`mtimeNs`，实际读取所有文件，比较该解析对应的 SHA-256，再核对
+  读取后的文件身份；缺证据、内容不同或身份变化就直接解析本次读取结果。读取错误沿原
+  scanner 报告（保留单次读取的 raw/error），带 fault 的解析不继承。append 扩展前复制 records、
+  positions、tombstones，既有冷行与其身份备忘只读共享；增量扩展没有新的完整文件指纹，标记
+  `digests: null`，下一实例不继承它。
+- **收益**（`--rows 10000 --knowledge-rows 10000`，同机交替、按侧取中位数）：公开
+  `port.observe()` 的 wall **127.033 → 47.030 ms（−62.98%）**、CPU **128.641 → 29.366 ms
+  （−77.17%）**；每次 observe 实际读取冷档案字节 **23,236,134 → 23,236,134（未变）**、解析
+  fixture 冷行 **20,000 → 0**、六维身份哈希 **10,002 → 2**。读取没有减少，收益来自省掉 JSON
+  解析、冷行规范化与身份哈希。冷 knowledge 命中 −23.59%、持续归档 −16.17%；空档案
+  wall +4.01%（约 +1.08 ms）、50 + 50 冷行 −0.57%，逐轮方向反转，**不宣称稳定收益，也不
+  承诺零开销**。
+- **代价**：留存 heap 增量中位数 **3.985 → 34.266 MiB**，缓存随冷档案大小增长，缓存每集合
+  只保留当前视图。单实例边界基准里，没有可复用身份的单次 `recordObservation()` 为
+  40.980 → 47.253 ms（+15.3%），同实例 16 次追加合计 377.507 → 100.345 ms（−73.4%）；
+  `load()` 为 7.021 → 6.895 ms，不宣称启动收益。
+- **被撤回的原型**：只按 stat 继承并跳过首次读取（会隐藏新发生的 EACCES/EIO）；实际读取但
+  只比 stat（等长原地改写后恢复 mtime，rc.16 返回 NEW 而原型错误返回 OLD）。两者都固化为
+  `test/observe-cache-read-fault.test.mjs` 的反例。
+- **等价性**：`test/observe-cache-handoff.test.mjs` 直接 import SHA 固定的 rc.16 包做差分，
+  覆盖缺键、陈旧键、存储键短路、热覆盖、容器隔离、匿名/数组顺序、tombstone、文件失效、
+  fault、提交前失败、已提交 pending 安装失败与重启恢复；`#sourceMatches()` 仍先匹配存储 key
+  再按字段重算 canonical key，只有当前位置仍由该缓存持有的冷对象才能备忘，同 id 热覆盖始终
+  重算，返回值、latest-wins、首次位置、匿名行、数组行、tombstone 与复活顺序不变。
+- 数据、归因、内存协议、被撤回的候选与边界见 `docs/performance/observe-cache-handoff.md`
+  及同目录的 `observe-cache-*.json`。
+
+### `flush()`：一次 pass 的积压事件合并为一个事务
+
+- **改的是什么。** `replay()` 现在把一次 pass 认证过的记录作为**一个**事务提交。每条记录仍
+  各自 `JSON.parse`、MAC 验证、writer 校验、标记/冲突检查、`projectExecutionEvent` 投影，并在
+  `work()` 内按文件顺序逐条 `applyExecutionEvent`（顺序、去重、`E_DOMAIN_EVENT_ID_CONFLICT`
+  全部保留）；组内重复 id 由本 pass 的 `batchMarks` 承担，交给 `mutate()` 的仍是**整份已提交
+  标记表**加本组新记录。认证失败时先提交已验证前缀再抛出；组事务自身失败则整组不落盘，下一
+  次 pass 按文件顺序重放。检查点仍只在整次 pass 成功后推进，被拒绝的 pass 不写检查点。
+- **收益**（真实官方 `DomainFacility` + `JsonStorageBackend`，历史 200 条与 2,000 条各一轮）：
+  积压 2 条 −44.4% / −45.6%，5 条 −76.6% / −76.5%，10 条 −85.9% / −86.5%（CPU 同向
+  −43%…−84%）；同一批运行里 `fsync` **3k+2 → 5**、`renameSync` 31 → 4、`readFileSync` 41 → 5，
+  因此增益不是把 I/O 挪到别处。积压 1 条与积压 0 条（稳态）落在噪声带内，**不声称收益**，
+  稳态路径本轮没有改动。
+- **收口修复（独立审核发现，`84cbe3a`）。** 分组路径上，一次 flush 认证了 4097 条记录、提交点
+  成功而关闭写入失败时，不关闭端口直接再 `flush()` 会得到 `{ applied: 4097, duplicates: 0 }`
+  并多出第二代 lineage：`EvolutionMemory` 的桥标记窗口只滚动保留最后 4096 条，恢复安装的标记
+  里最早那条已滑出窗口。修复是让 `mutate()` 把恢复后的**已提交**标记表交给工作函数，分组提交
+  在应用每条记录前先看 `recovered[eventId] === mac`，命中即计为 duplicate 并跳过。判定用的是
+  已提交的完整 ledger 而不是内存窗口，同 id 不同 MAC 仍在 `mergeEventLedger` 里抛
+  `E_DOMAIN_EVENT_ID_CONFLICT`，重启路径不变。回归用例断言重试返回
+  `{ applied: 0, duplicates: 4097 }`、标记表恰好是文件顺序、桥标记窗口每条一次、lineage 只有
+  一代；该用例在修复前的实现上实测失败，代价是它需要 4097 条事件（单机约 26 s）。
+- **等价性范围**：除事务暂存目录名之外，公开返回值、官方持久化文档与完整 `dockyard` 树逐字节
+  相同；组事务失败时该组一条都不落盘（逐条路径会保留失败点之前的记录），两者在下一次 pass
+  收敛到同一状态，这一差异由两个用例分别钉住。
+- 数据、归因、被撤回的候选与收益边界见 `docs/performance/domain-replay-batch.md` 与
+  `domain-replay-batch.json`。
+
+### 发布门禁：开发阶段与发布阶段的固定点判定分开
+
+- `npm run pack:check` 的默认行为（CI 在 `main` 与 pull request 上跑）先证明**固定点自身仍然
+  成立**（`sourceCommit` 在历史中，且它的分发内容摘要等于固定点的 `contentSha256`），再如实
+  报告工作树与固定点的关系：`pinned` 或 `ahead`（已提交后继，逐条点名不同的分发文件）。分发
+  文件有**未提交**改动、或固定点已不能描述它自己记录的 commit 仍然失败。
+- `npm run pack:check -- --release`（`release.yml` 用这一条）保持严格语义：工作树不等于固定内容
+  即失败并点名文件。`verify-provenance.mjs` 独立拒绝“tag 的工作树内容 ≠ 固定点”，因此漂移的
+  树即使去掉 `--release` 也发布不了；`test/release-pin.test.mjs` 与 `pack:check` 共用同一张判定
+  表（`scripts/release/pin-relation.mjs`），并断言 `--release` 在 `ahead` 树上**必须**失败。
+- 这条改动只影响 `scripts/release/`（不属于包内容）与随包分发的 `README.md` / `RELEASE.md`；
+  `release/` 固定产物、`release/manifest.json` 与三份宿主验收证据的语义没有变化。
+
+### 固定点与验收
+
+- 上面两个 `lib/` 文件与随包分发的文档都属于分发内容，因此本轮改动改变了 `contentSha256`；
+  `release/` 固定产物、`release/SHA256SUMS` 与三个宿主的验收证据按 `RELEASE.md` 第 2 节重新
+  生成（`npm run release:pack` → `npm run release:publish` → 针对固定 tarball 重跑三宿主验收），
+  重新固定后的内容摘要与这棵树一致。三条固定点检查就是这条约束的报错方式（`RELEASE.md`
+  第 6 节第 16 条）。`0.2.0-rc.16` 及更早的 tarball、校验和与 tag 字节保持不变，也未被覆盖；
+  rc.16 已是公开 tag 与公开 Release，其发布后资产校验见 `docs/evidence/rc16-release-audit.json`。
+
 ## 0.2.0-rc.16 — 召回窗口不再复制它从不读取的行，指标分支每行只规范化一次
 
 本候选在 `0.2.0-rc.15` 之上只做两处可证明等价的重复计算删除（召回读取与指标规范化）、把全量套件的 4 GiB 堆上限从文档要求变成 CI 的断言，并把 2026-10-20 全量测试内存事件做成一次有界定位。生产 delta 只有三个随包分发文件——`lib/dockyard-domain/memory.js`（新增 `historyView`、指标分支每行只规范化一次）、`lib/domain-storage.js`（`recall` 改用它）、`lib/dockyard-domain/PORTS.md`（记录只读视图的契约）——加上版本号与随包分发的文档；宿主支持范围、`peerDependencies`、`engines`、依赖、领域存储的持久化格式与 schema 一律未动。

@@ -93,7 +93,7 @@ patch releases were published npm resolved them. This package's own
 the include alternatives list `1.0.10`, `^4.2.0` covers `4.3.2`) and the doctor
 reports them in range. Every re-pin regenerates the committed
 `docs/evidence/dsh-<host>.json` files, so what they record moves with the pin:
-for the `0.2.0-rc.16` pin all three record `4.0.5` / `1.0.10` / `1.0.6` / `4.3.2`
+for the `0.2.0-rc.17` pin all three record `4.0.5` / `1.0.10` / `1.0.6` / `4.3.2`
 themselves, the same values the doctor reports above. A statement about what
 they record therefore only holds for the pin it names.
 
