@@ -82,6 +82,15 @@ const SOURCE_PATH = "lib/domain-storage.js";
 // other direction can also find: no piece deletes text another piece is anchored
 // on, and no piece is anchored on an empty string.
 const reversals = [
+  ["return { instance };", "return { instance, getAggregate: () => structuredClone(aggregate) };"],
+  // The port-local parsed archive handoff is independent of the older write-path
+  // changes below; remove it first to preserve the byte-exact release anchor.
+  ["async function createMemory(dir, initial, archiveWriteGuard = null, deferLoadArchiveWrites = false, archiveReadCache = memory?.archiveReadCache)",
+   "async function createMemory(dir, initial, archiveWriteGuard = null, deferLoadArchiveWrites = false)"],
+  ["archiveWriteGuard, deferLoadArchiveWrites, archiveReadCache });", "archiveWriteGuard, deferLoadArchiveWrites });"],
+  ["async function hydrate(archiveReadCache = memory?.archiveReadCache)", "async function hydrate()"],
+  ["createMemory(root, domain.global.get().aggregate, null, true, archiveReadCache)", "createMemory(root, domain.global.get().aggregate, null, true)"],
+  ["await hydrate(current.instance.archiveReadCache);", "await hydrate();"],
   // The publication compares the committed aggregate by content, so the module imports
   // `createHash` from the same module; both directions stay a single-line substitution.
   ["import { createHash, randomBytes, randomUUID } from 'node:crypto';\n",

@@ -1,0 +1,2366 @@
+{
+  "node": "v26.12.0",
+  "platform": "darwin",
+  "release": "27.0.0",
+  "arch": "arm64",
+  "cpu": "Apple M2",
+  "cpus": 8,
+  "memoryGiB": 16,
+  "loadavg": [
+    2.11,
+    2.22,
+    2.1
+  ],
+  "scope": "public EvolutionMemory paths only; readFile/readFileSync bytes attributed per file name; fixture creation, index priming and snapshots outside every timed interval; no official host transaction, fsync or multi-process work",
+  "fixture": "temporary state root; per collection 3 sealed segments + 1 active archive file; 50% knowledge-bearing observations over 64 repeated component scopes, 50% knowledge accumulator rows; ~300 byte rows",
+  "scales": [
+    10000
+  ],
+  "samples": 2,
+  "rounds": 3,
+  "warmup": 1,
+  "order": [
+    "mutation",
+    "mutation-batch",
+    "load",
+    "hash-sealed",
+    "load-noindex",
+    "key-fallback"
+  ],
+  "sides": [
+    {
+      "label": "A",
+      "file": "/tmp/dsh-observe-variants-20261022-digest/package/lib/dockyard-domain/memory.js",
+      "sourceSha256": "ac6d8ffef3529062d17c542249ae2d06be709bf3ec5feac8f9aa24be5c3878e2",
+      "sourceBytes": 216256
+    },
+    {
+      "label": "B",
+      "file": "/Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js",
+      "sourceSha256": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7",
+      "sourceBytes": 219288
+    }
+  ],
+  "results": {
+    "A@10000": {
+      "side": "A",
+      "rows": 10000,
+      "sealedRows": 15000,
+      "activeRows": 5000,
+      "sealedBytes": 5566358,
+      "activeBytes": 1856258,
+      "coldBytes": 7422616,
+      "index": {
+        "bytes": 4588,
+        "segments": 8,
+        "sealed": 6,
+        "active": 2
+      },
+      "samples": {
+        "mutation": {
+          "samples": 12,
+          "medianMs": 40.98,
+          "minMs": 39.41,
+          "maxMs": 44.338,
+          "medianReadCalls": 8,
+          "medianReadBytes": 7422616,
+          "readByFile": {
+            "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+            "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+            "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+            "state.json.knowledge-archive.jsonl": 912500,
+            "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+            "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+            "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+            "state.json.observations-archive.jsonl": 943758
+          }
+        },
+        "mutation-batch": {
+          "samples": 12,
+          "medianMs": 377.507,
+          "minMs": 368.588,
+          "maxMs": 437.565,
+          "medianReadCalls": 8,
+          "medianReadBytes": 7422616,
+          "readByFile": {
+            "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+            "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+            "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+            "state.json.knowledge-archive.jsonl": 912500,
+            "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+            "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+            "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+            "state.json.observations-archive.jsonl": 943758
+          },
+          "medianPerMutationMs": 23.594,
+          "batchSize": 16,
+          "medianHeapBeforeMiB": 75.7,
+          "medianHeapAfterMiB": 81.4,
+          "medianHeapDeltaMiB": 5.7
+        },
+        "load": {
+          "samples": 12,
+          "medianMs": 7.021,
+          "minMs": 6.882,
+          "maxMs": 7.3,
+          "medianReadCalls": 3,
+          "medianReadBytes": 1860846,
+          "readByFile": {
+            "state.json.evolution-archive-index.json": 4588,
+            "state.json.observations-archive.jsonl": 943758,
+            "state.json.knowledge-archive.jsonl": 912500
+          }
+        },
+        "hash-sealed": {
+          "samples": 12,
+          "medianMs": 3.208,
+          "minMs": 3.078,
+          "maxMs": 5.48,
+          "medianReadCalls": 6,
+          "medianReadBytes": 5566358,
+          "readByFile": {
+            "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+            "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+            "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+            "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+            "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+            "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+          },
+          "sealedFiles": 6
+        },
+        "load-noindex": {
+          "samples": 12,
+          "medianMs": 23.04,
+          "minMs": 21.758,
+          "maxMs": 26.15,
+          "medianReadCalls": 8,
+          "medianReadBytes": 7422616,
+          "readByFile": {
+            "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+            "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+            "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+            "state.json.observations-archive.jsonl": 943758,
+            "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+            "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+            "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+            "state.json.knowledge-archive.jsonl": 912500
+          }
+        },
+        "key-fallback": {
+          "samples": 12,
+          "medianMs": 19.293,
+          "minMs": 19.116,
+          "maxMs": 19.822,
+          "medianReadCalls": 0,
+          "medianReadBytes": 0,
+          "readByFile": {}
+        }
+      },
+      "raw": {
+        "mutation": [
+          {
+            "ms": 44.338,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 40.72,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 43.231,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 41.587,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 41.359,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 41.1,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 40.859,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 39.41,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 40.706,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 41.893,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 40.8,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 39.631,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          }
+        ],
+        "mutation-batch": [
+          {
+            "ms": 374.4,
+            "perMutationMs": 23.4,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 14.9,
+            "heapAfterMiB": 20.7,
+            "heapDeltaMiB": 5.8,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 376.695,
+            "perMutationMs": 23.543,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 15.8,
+            "heapAfterMiB": 21.6,
+            "heapDeltaMiB": 5.8,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 437.565,
+            "perMutationMs": 27.348,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 25,
+            "heapAfterMiB": 30.7,
+            "heapDeltaMiB": 5.7,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 420.91,
+            "perMutationMs": 26.307,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 25.8,
+            "heapAfterMiB": 31.6,
+            "heapDeltaMiB": 5.8,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 381.468,
+            "perMutationMs": 23.842,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 35.9,
+            "heapAfterMiB": 41.6,
+            "heapDeltaMiB": 5.7,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 378.32,
+            "perMutationMs": 23.645,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 36.7,
+            "heapAfterMiB": 42.4,
+            "heapDeltaMiB": 5.7,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 411.832,
+            "perMutationMs": 25.739,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 114.7,
+            "heapAfterMiB": 120.4,
+            "heapDeltaMiB": 5.7,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 403.211,
+            "perMutationMs": 25.201,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 115.5,
+            "heapAfterMiB": 121.2,
+            "heapDeltaMiB": 5.7,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 370.61,
+            "perMutationMs": 23.163,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 125.5,
+            "heapAfterMiB": 131.2,
+            "heapDeltaMiB": 5.7,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 369.407,
+            "perMutationMs": 23.088,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 126.3,
+            "heapAfterMiB": 132.1,
+            "heapDeltaMiB": 5.8,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 368.588,
+            "perMutationMs": 23.037,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 136.3,
+            "heapAfterMiB": 142,
+            "heapDeltaMiB": 5.7,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 370.747,
+            "perMutationMs": 23.172,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 137.1,
+            "heapAfterMiB": 142.9,
+            "heapDeltaMiB": 5.8,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          }
+        ],
+        "load": [
+          {
+            "ms": 7.076,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.975,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 7.134,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 7.202,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 7.3,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 7.115,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 7.02,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 7.019,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.895,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.882,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 7.021,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.951,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          }
+        ],
+        "hash-sealed": [
+          {
+            "ms": 3.25,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.18,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 5.445,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.235,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 5.48,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.24,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.078,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.139,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.131,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.159,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.145,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 4.29,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          }
+        ],
+        "load-noindex": [
+          {
+            "ms": 26.15,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 22.68,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 24.046,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 22.981,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 23.694,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 22.964,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 23.098,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 22.09,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 23.266,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 21.758,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 23.132,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 21.938,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          }
+        ],
+        "key-fallback": [
+          {
+            "ms": 19.563,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.684,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.8,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.822,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.35,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.291,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.262,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.116,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.18,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.295,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.199,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.147,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          }
+        ]
+      }
+    },
+    "B@10000": {
+      "side": "B",
+      "rows": 10000,
+      "sealedRows": 15000,
+      "activeRows": 5000,
+      "sealedBytes": 5566358,
+      "activeBytes": 1856258,
+      "coldBytes": 7422616,
+      "index": {
+        "bytes": 4588,
+        "segments": 8,
+        "sealed": 6,
+        "active": 2
+      },
+      "samples": {
+        "mutation": {
+          "samples": 12,
+          "medianMs": 47.253,
+          "minMs": 45.844,
+          "maxMs": 50.355,
+          "medianReadCalls": 8,
+          "medianReadBytes": 7422616,
+          "readByFile": {
+            "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+            "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+            "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+            "state.json.knowledge-archive.jsonl": 912500,
+            "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+            "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+            "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+            "state.json.observations-archive.jsonl": 943758
+          }
+        },
+        "mutation-batch": {
+          "samples": 12,
+          "medianMs": 100.345,
+          "minMs": 98.811,
+          "maxMs": 102.2,
+          "medianReadCalls": 8,
+          "medianReadBytes": 7422616,
+          "readByFile": {
+            "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+            "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+            "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+            "state.json.knowledge-archive.jsonl": 912500,
+            "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+            "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+            "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+            "state.json.observations-archive.jsonl": 943758
+          },
+          "medianPerMutationMs": 6.2715,
+          "batchSize": 16,
+          "medianHeapBeforeMiB": 75.4,
+          "medianHeapAfterMiB": 82.05000000000001,
+          "medianHeapDeltaMiB": 6.6
+        },
+        "load": {
+          "samples": 12,
+          "medianMs": 6.895,
+          "minMs": 6.659,
+          "maxMs": 9.923,
+          "medianReadCalls": 3,
+          "medianReadBytes": 1860846,
+          "readByFile": {
+            "state.json.evolution-archive-index.json": 4588,
+            "state.json.observations-archive.jsonl": 943758,
+            "state.json.knowledge-archive.jsonl": 912500
+          }
+        },
+        "hash-sealed": {
+          "samples": 12,
+          "medianMs": 3.149,
+          "minMs": 3.071,
+          "maxMs": 4.501,
+          "medianReadCalls": 6,
+          "medianReadBytes": 5566358,
+          "readByFile": {
+            "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+            "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+            "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+            "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+            "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+            "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+          },
+          "sealedFiles": 6
+        },
+        "load-noindex": {
+          "samples": 12,
+          "medianMs": 23.033,
+          "minMs": 21.878,
+          "maxMs": 23.944,
+          "medianReadCalls": 8,
+          "medianReadBytes": 7422616,
+          "readByFile": {
+            "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+            "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+            "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+            "state.json.observations-archive.jsonl": 943758,
+            "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+            "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+            "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+            "state.json.knowledge-archive.jsonl": 912500
+          }
+        },
+        "key-fallback": {
+          "samples": 12,
+          "medianMs": 19.421,
+          "minMs": 19.148,
+          "maxMs": 19.766,
+          "medianReadCalls": 0,
+          "medianReadBytes": 0,
+          "readByFile": {}
+        }
+      },
+      "raw": {
+        "mutation": [
+          {
+            "ms": 48.05,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 48.072,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 47.158,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 46.256,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 47.61,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 48.454,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 46.038,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 45.981,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 47.161,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 45.844,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 47.345,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 50.355,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          }
+        ],
+        "mutation-batch": [
+          {
+            "ms": 100.71,
+            "perMutationMs": 6.294,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 47.5,
+            "heapAfterMiB": 54.1,
+            "heapDeltaMiB": 6.6,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 101.002,
+            "perMutationMs": 6.313,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 48.4,
+            "heapAfterMiB": 55,
+            "heapDeltaMiB": 6.6,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 102.188,
+            "perMutationMs": 6.387,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 58.6,
+            "heapAfterMiB": 65.3,
+            "heapDeltaMiB": 6.7,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 101.826,
+            "perMutationMs": 6.364,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 59.5,
+            "heapAfterMiB": 66.1,
+            "heapDeltaMiB": 6.6,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 101.557,
+            "perMutationMs": 6.347,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 69.7,
+            "heapAfterMiB": 76.3,
+            "heapDeltaMiB": 6.6,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 102.2,
+            "perMutationMs": 6.387,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 70.5,
+            "heapAfterMiB": 77.2,
+            "heapDeltaMiB": 6.7,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 99.981,
+            "perMutationMs": 6.249,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 80.3,
+            "heapAfterMiB": 86.9,
+            "heapDeltaMiB": 6.6,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 98.811,
+            "perMutationMs": 6.176,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 81.1,
+            "heapAfterMiB": 87.7,
+            "heapDeltaMiB": 6.6,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 99.59,
+            "perMutationMs": 6.224,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 91.3,
+            "heapAfterMiB": 97.9,
+            "heapDeltaMiB": 6.6,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 99.361,
+            "perMutationMs": 6.21,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 92.1,
+            "heapAfterMiB": 98.7,
+            "heapDeltaMiB": 6.6,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 99.478,
+            "perMutationMs": 6.217,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 102.3,
+            "heapAfterMiB": 108.9,
+            "heapDeltaMiB": 6.6,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          },
+          {
+            "ms": 99.626,
+            "perMutationMs": 6.227,
+            "batchSize": 16,
+            "hotEntries": 8,
+            "heapBeforeMiB": 103.1,
+            "heapAfterMiB": 109.8,
+            "heapDeltaMiB": 6.7,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500,
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758
+            }
+          }
+        ],
+        "load": [
+          {
+            "ms": 6.85,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.803,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.94,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.97,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 7.199,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 9.923,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.659,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.721,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 7.096,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.979,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.797,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 6.849,
+            "readCalls": 3,
+            "readBytes": 1860846,
+            "readByFile": {
+              "state.json.evolution-archive-index.json": 4588,
+              "state.json.observations-archive.jsonl": 943758,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          }
+        ],
+        "hash-sealed": [
+          {
+            "ms": 3.224,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.071,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.127,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 4.501,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.176,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.207,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.13,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.107,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.168,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.116,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.137,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          },
+          {
+            "ms": 3.162,
+            "sealedFiles": 6,
+            "lastDigest": "d4c8587d9951",
+            "readCalls": 6,
+            "readBytes": 5566358,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500
+            }
+          }
+        ],
+        "load-noindex": [
+          {
+            "ms": 23.944,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 22.676,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 23.728,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 22.498,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 23.881,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 22.886,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 23.643,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 22.228,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 23.209,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 21.878,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 23.18,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          },
+          {
+            "ms": 22.123,
+            "readCalls": 8,
+            "readBytes": 7422616,
+            "readByFile": {
+              "observations-archive.jsonl/segment-000000000001.jsonl": 942534,
+              "observations-archive.jsonl/segment-000000000002.jsonl": 943759,
+              "observations-archive.jsonl/segment-000000000003.jsonl": 943675,
+              "state.json.observations-archive.jsonl": 943758,
+              "knowledge-archive.jsonl/segment-000000000001.jsonl": 911390,
+              "knowledge-archive.jsonl/segment-000000000002.jsonl": 912500,
+              "knowledge-archive.jsonl/segment-000000000003.jsonl": 912500,
+              "state.json.knowledge-archive.jsonl": 912500
+            }
+          }
+        ],
+        "key-fallback": [
+          {
+            "ms": 19.527,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.495,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.504,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.766,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.554,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.561,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.205,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.297,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.148,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.346,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.29,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          },
+          {
+            "ms": 19.196,
+            "scannedRows": 10000,
+            "matched": 0,
+            "readCalls": 0,
+            "readBytes": 0,
+            "readByFile": {}
+          }
+        ]
+      }
+    }
+  },
+  "ratios": {
+    "10000": {
+      "mutation": {
+        "aMedianMs": 40.98,
+        "bMedianMs": 47.253,
+        "bOverA": 1.153,
+        "aMedianReadBytes": 7422616,
+        "bMedianReadBytes": 7422616
+      },
+      "mutation-batch": {
+        "aMedianMs": 377.507,
+        "bMedianMs": 100.345,
+        "bOverA": 0.266,
+        "aMedianReadBytes": 7422616,
+        "bMedianReadBytes": 7422616
+      },
+      "load": {
+        "aMedianMs": 7.021,
+        "bMedianMs": 6.895,
+        "bOverA": 0.982,
+        "aMedianReadBytes": 1860846,
+        "bMedianReadBytes": 1860846
+      },
+      "hash-sealed": {
+        "aMedianMs": 3.208,
+        "bMedianMs": 3.149,
+        "bOverA": 0.982,
+        "aMedianReadBytes": 5566358,
+        "bMedianReadBytes": 5566358
+      },
+      "load-noindex": {
+        "aMedianMs": 23.04,
+        "bMedianMs": 23.033,
+        "bOverA": 1,
+        "aMedianReadBytes": 7422616,
+        "bMedianReadBytes": 7422616
+      },
+      "key-fallback": {
+        "aMedianMs": 19.293,
+        "bMedianMs": 19.421,
+        "bOverA": 1.007,
+        "aMedianReadBytes": 0,
+        "bMedianReadBytes": 0
+      }
+    }
+  }
+}

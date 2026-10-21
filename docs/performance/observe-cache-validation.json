@@ -1,0 +1,39 @@
+{
+  "node": "v26.12.0",
+  "heapLimitMiB": 4096,
+  "sources": {
+    "domain-storage.js": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+    "dockyard-domain/memory.js": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7"
+  },
+  "fullSuite": {
+    "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+    "tests": 645,
+    "pass": 643,
+    "fail": 2,
+    "failures": [
+      "the working tree still builds exactly the pinned content",
+      "every shipped file in the tree matches the artifact byte for byte"
+    ]
+  },
+  "packCheck": {
+    "exitCode": 1,
+    "passed": 13,
+    "failures": [
+      "the committed acceptance evidence matches this exact package content",
+      "release/manifest.json pins this tree content",
+      "the working tree still builds the pinned content"
+    ]
+  },
+  "releaseVerify": {
+    "exitCode": 0,
+    "artifact": "release/dsh-evolution-0.2.0-rc.16.tgz",
+    "sha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6"
+  },
+  "newFocusedTests": {
+    "tests": 13,
+    "pass": 13,
+    "fail": 0
+  },
+  "independentReviewRounds": 3,
+  "releaseScope": "version and fixed release/evidence intentionally unchanged; release-pin failures retained"
+}

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { reconstructPreObserveCache } from "./observe-cache-baseline.js";
 import { readFile } from "node:fs/promises";
 import { readReleaseManifest, readTarEntries, releaseArtifactPath } from "../../scripts/release/release-lib.mjs";
 import { reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
@@ -1131,6 +1132,7 @@ const reversals = [
 ];
 
 export function reconstructPreSharedScan(source) {
+  source = reconstructPreObserveCache(source);
   for (const [after, before] of reversals) {
     assert.equal(source.split(after).length - 1, 1,
       "shared-scan post-change shape must occur exactly once before reconstruction");

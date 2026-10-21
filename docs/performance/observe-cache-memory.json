@@ -1,0 +1,509 @@
+{
+  "scope": "fresh process per side/session; GC before fixture construction and after writes; RSS is sampled after GC, not peak; paired byte equivalence is measured separately",
+  "sources": {
+    "baseline": {
+      "domain-storage.js": "2d944bc6c33d7fa00939c8acace68c185e1405bfd3a1212a4959486d73f2dd80",
+      "dockyard-domain/memory.js": "ac6d8ffef3529062d17c542249ae2d06be709bf3ec5feac8f9aa24be5c3878e2"
+    },
+    "candidate": {
+      "domain-storage.js": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+      "dockyard-domain/memory.js": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7"
+    }
+  },
+  "order": [
+    "baseline",
+    "candidate",
+    "candidate",
+    "baseline",
+    "baseline",
+    "candidate"
+  ],
+  "runs": [
+    {
+      "side": "baseline",
+      "run": 1,
+      "measurement": {
+        "node": "v26.12.0",
+        "platform": "darwin/arm64",
+        "machine": {
+          "cpu": "Apple M2",
+          "logicalCpus": 8,
+          "totalmem": 17179869184,
+          "loadavg": [
+            2.51318359375,
+            2.30419921875,
+            2.13427734375
+          ]
+        },
+        "baseline": {
+          "version": "0.2.0-rc.16",
+          "sha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6"
+        },
+        "sources": {
+          "baseline": {
+            "domain-storage.js": "2d944bc6c33d7fa00939c8acace68c185e1405bfd3a1212a4959486d73f2dd80",
+            "dockyard-domain/memory.js": "ac6d8ffef3529062d17c542249ae2d06be709bf3ec5feac8f9aa24be5c3878e2"
+          },
+          "candidate": {
+            "domain-storage.js": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+            "dockyard-domain/memory.js": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7"
+          }
+        },
+        "op": "observe",
+        "workload": "repeat",
+        "rows": 10000,
+        "knowledgeRows": 10000,
+        "hotRows": 0,
+        "rounds": 1,
+        "warmup": 1,
+        "samples": 5,
+        "retained": true,
+        "attribution": false,
+        "variants": [],
+        "roundsDetail": [
+          {
+            "order": [
+              "baseline"
+            ],
+            "baseline": [
+              {
+                "wallMs": 131.70404200000002,
+                "cpuMs": 140.259
+              },
+              {
+                "wallMs": 131.51462500000002,
+                "cpuMs": 138.271
+              },
+              {
+                "wallMs": 136.16895899999997,
+                "cpuMs": 201.612
+              },
+              {
+                "wallMs": 128.73137499999996,
+                "cpuMs": 132.489
+              },
+              {
+                "wallMs": 127.52912500000002,
+                "cpuMs": 138.28
+              }
+            ],
+            "memory": {
+              "baseline": {
+                "heapBytes": 4182256,
+                "rssBytes": 389961408,
+                "rssDeltaBytes": 319631512
+              }
+            }
+          }
+        ],
+        "memoryScope": "one side, one session, fresh process; GC before fixture construction and after writes; sampled RSS after GC, not peak RSS",
+        "memorySide": "baseline"
+      }
+    },
+    {
+      "side": "candidate",
+      "run": 1,
+      "measurement": {
+        "node": "v26.12.0",
+        "platform": "darwin/arm64",
+        "machine": {
+          "cpu": "Apple M2",
+          "logicalCpus": 8,
+          "totalmem": 17179869184,
+          "loadavg": [
+            2.51318359375,
+            2.30419921875,
+            2.13427734375
+          ]
+        },
+        "baseline": {
+          "version": "0.2.0-rc.16",
+          "sha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6"
+        },
+        "sources": {
+          "baseline": {
+            "domain-storage.js": "2d944bc6c33d7fa00939c8acace68c185e1405bfd3a1212a4959486d73f2dd80",
+            "dockyard-domain/memory.js": "ac6d8ffef3529062d17c542249ae2d06be709bf3ec5feac8f9aa24be5c3878e2"
+          },
+          "candidate": {
+            "domain-storage.js": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+            "dockyard-domain/memory.js": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7"
+          }
+        },
+        "op": "observe",
+        "workload": "repeat",
+        "rows": 10000,
+        "knowledgeRows": 10000,
+        "hotRows": 0,
+        "rounds": 1,
+        "warmup": 1,
+        "samples": 5,
+        "retained": true,
+        "attribution": false,
+        "variants": [],
+        "roundsDetail": [
+          {
+            "order": [
+              "candidate"
+            ],
+            "candidate": [
+              {
+                "wallMs": 45.051582999999994,
+                "cpuMs": 33.685
+              },
+              {
+                "wallMs": 60.178624999999954,
+                "cpuMs": 30.882
+              },
+              {
+                "wallMs": 54.52562499999999,
+                "cpuMs": 101.119
+              },
+              {
+                "wallMs": 48.197374999999965,
+                "cpuMs": 28.679
+              },
+              {
+                "wallMs": 43.74016700000004,
+                "cpuMs": 27.506
+              }
+            ],
+            "memory": {
+              "candidate": {
+                "heapBytes": 35932224,
+                "rssBytes": 327512744,
+                "rssDeltaBytes": 257084640
+              }
+            }
+          }
+        ],
+        "memoryScope": "one side, one session, fresh process; GC before fixture construction and after writes; sampled RSS after GC, not peak RSS",
+        "memorySide": "candidate"
+      }
+    },
+    {
+      "side": "candidate",
+      "run": 2,
+      "measurement": {
+        "node": "v26.12.0",
+        "platform": "darwin/arm64",
+        "machine": {
+          "cpu": "Apple M2",
+          "logicalCpus": 8,
+          "totalmem": 17179869184,
+          "loadavg": [
+            2.4716796875,
+            2.298828125,
+            2.13330078125
+          ]
+        },
+        "baseline": {
+          "version": "0.2.0-rc.16",
+          "sha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6"
+        },
+        "sources": {
+          "baseline": {
+            "domain-storage.js": "2d944bc6c33d7fa00939c8acace68c185e1405bfd3a1212a4959486d73f2dd80",
+            "dockyard-domain/memory.js": "ac6d8ffef3529062d17c542249ae2d06be709bf3ec5feac8f9aa24be5c3878e2"
+          },
+          "candidate": {
+            "domain-storage.js": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+            "dockyard-domain/memory.js": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7"
+          }
+        },
+        "op": "observe",
+        "workload": "repeat",
+        "rows": 10000,
+        "knowledgeRows": 10000,
+        "hotRows": 0,
+        "rounds": 1,
+        "warmup": 1,
+        "samples": 5,
+        "retained": true,
+        "attribution": false,
+        "variants": [],
+        "roundsDetail": [
+          {
+            "order": [
+              "candidate"
+            ],
+            "candidate": [
+              {
+                "wallMs": 49.73308400000002,
+                "cpuMs": 33.349
+              },
+              {
+                "wallMs": 47.95795800000002,
+                "cpuMs": 30.711
+              },
+              {
+                "wallMs": 51.07641699999999,
+                "cpuMs": 100.643
+              },
+              {
+                "wallMs": 44.79504199999997,
+                "cpuMs": 28.845
+              },
+              {
+                "wallMs": 45.090124999999944,
+                "cpuMs": 26.868
+              }
+            ],
+            "memory": {
+              "candidate": {
+                "heapBytes": 35930296,
+                "rssBytes": 327578040,
+                "rssDeltaBytes": 257231952
+              }
+            }
+          }
+        ],
+        "memoryScope": "one side, one session, fresh process; GC before fixture construction and after writes; sampled RSS after GC, not peak RSS",
+        "memorySide": "candidate"
+      }
+    },
+    {
+      "side": "baseline",
+      "run": 2,
+      "measurement": {
+        "node": "v26.12.0",
+        "platform": "darwin/arm64",
+        "machine": {
+          "cpu": "Apple M2",
+          "logicalCpus": 8,
+          "totalmem": 17179869184,
+          "loadavg": [
+            2.4716796875,
+            2.298828125,
+            2.13330078125
+          ]
+        },
+        "baseline": {
+          "version": "0.2.0-rc.16",
+          "sha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6"
+        },
+        "sources": {
+          "baseline": {
+            "domain-storage.js": "2d944bc6c33d7fa00939c8acace68c185e1405bfd3a1212a4959486d73f2dd80",
+            "dockyard-domain/memory.js": "ac6d8ffef3529062d17c542249ae2d06be709bf3ec5feac8f9aa24be5c3878e2"
+          },
+          "candidate": {
+            "domain-storage.js": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+            "dockyard-domain/memory.js": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7"
+          }
+        },
+        "op": "observe",
+        "workload": "repeat",
+        "rows": 10000,
+        "knowledgeRows": 10000,
+        "hotRows": 0,
+        "rounds": 1,
+        "warmup": 1,
+        "samples": 5,
+        "retained": true,
+        "attribution": false,
+        "variants": [],
+        "roundsDetail": [
+          {
+            "order": [
+              "baseline"
+            ],
+            "baseline": [
+              {
+                "wallMs": 133.03129099999995,
+                "cpuMs": 140.517
+              },
+              {
+                "wallMs": 131.50533399999995,
+                "cpuMs": 137.164
+              },
+              {
+                "wallMs": 136.17712500000005,
+                "cpuMs": 200.004
+              },
+              {
+                "wallMs": 132.6194999999999,
+                "cpuMs": 130.143
+              },
+              {
+                "wallMs": 124.61691600000006,
+                "cpuMs": 131.794
+              }
+            ],
+            "memory": {
+              "baseline": {
+                "heapBytes": 4176520,
+                "rssBytes": 389879800,
+                "rssDeltaBytes": 319271448
+              }
+            }
+          }
+        ],
+        "memoryScope": "one side, one session, fresh process; GC before fixture construction and after writes; sampled RSS after GC, not peak RSS",
+        "memorySide": "baseline"
+      }
+    },
+    {
+      "side": "baseline",
+      "run": 3,
+      "measurement": {
+        "node": "v26.12.0",
+        "platform": "darwin/arm64",
+        "machine": {
+          "cpu": "Apple M2",
+          "logicalCpus": 8,
+          "totalmem": 17179869184,
+          "loadavg": [
+            2.4716796875,
+            2.298828125,
+            2.13330078125
+          ]
+        },
+        "baseline": {
+          "version": "0.2.0-rc.16",
+          "sha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6"
+        },
+        "sources": {
+          "baseline": {
+            "domain-storage.js": "2d944bc6c33d7fa00939c8acace68c185e1405bfd3a1212a4959486d73f2dd80",
+            "dockyard-domain/memory.js": "ac6d8ffef3529062d17c542249ae2d06be709bf3ec5feac8f9aa24be5c3878e2"
+          },
+          "candidate": {
+            "domain-storage.js": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+            "dockyard-domain/memory.js": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7"
+          }
+        },
+        "op": "observe",
+        "workload": "repeat",
+        "rows": 10000,
+        "knowledgeRows": 10000,
+        "hotRows": 0,
+        "rounds": 1,
+        "warmup": 1,
+        "samples": 5,
+        "retained": true,
+        "attribution": false,
+        "variants": [],
+        "roundsDetail": [
+          {
+            "order": [
+              "baseline"
+            ],
+            "baseline": [
+              {
+                "wallMs": 131.35866599999997,
+                "cpuMs": 142.76
+              },
+              {
+                "wallMs": 130.39154199999996,
+                "cpuMs": 137.752
+              },
+              {
+                "wallMs": 138.752292,
+                "cpuMs": 200.299
+              },
+              {
+                "wallMs": 131.93495799999994,
+                "cpuMs": 129.1
+              },
+              {
+                "wallMs": 126.033458,
+                "cpuMs": 131.533
+              }
+            ],
+            "memory": {
+              "baseline": {
+                "heapBytes": 4178800,
+                "rssBytes": 390240320,
+                "rssDeltaBytes": 319615632
+              }
+            }
+          }
+        ],
+        "memoryScope": "one side, one session, fresh process; GC before fixture construction and after writes; sampled RSS after GC, not peak RSS",
+        "memorySide": "baseline"
+      }
+    },
+    {
+      "side": "candidate",
+      "run": 3,
+      "measurement": {
+        "node": "v26.12.0",
+        "platform": "darwin/arm64",
+        "machine": {
+          "cpu": "Apple M2",
+          "logicalCpus": 8,
+          "totalmem": 17179869184,
+          "loadavg": [
+            2.4716796875,
+            2.298828125,
+            2.13330078125
+          ]
+        },
+        "baseline": {
+          "version": "0.2.0-rc.16",
+          "sha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6"
+        },
+        "sources": {
+          "baseline": {
+            "domain-storage.js": "2d944bc6c33d7fa00939c8acace68c185e1405bfd3a1212a4959486d73f2dd80",
+            "dockyard-domain/memory.js": "ac6d8ffef3529062d17c542249ae2d06be709bf3ec5feac8f9aa24be5c3878e2"
+          },
+          "candidate": {
+            "domain-storage.js": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+            "dockyard-domain/memory.js": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7"
+          }
+        },
+        "op": "observe",
+        "workload": "repeat",
+        "rows": 10000,
+        "knowledgeRows": 10000,
+        "hotRows": 0,
+        "rounds": 1,
+        "warmup": 1,
+        "samples": 5,
+        "retained": true,
+        "attribution": false,
+        "variants": [],
+        "roundsDetail": [
+          {
+            "order": [
+              "candidate"
+            ],
+            "candidate": [
+              {
+                "wallMs": 49.71879200000001,
+                "cpuMs": 33.962
+              },
+              {
+                "wallMs": 48.93149999999997,
+                "cpuMs": 30.92
+              },
+              {
+                "wallMs": 51.067792000000054,
+                "cpuMs": 101.849
+              },
+              {
+                "wallMs": 45.12266700000009,
+                "cpuMs": 28.923
+              },
+              {
+                "wallMs": 44.71345800000006,
+                "cpuMs": 27.726
+              }
+            ],
+            "memory": {
+              "candidate": {
+                "heapBytes": 35929688,
+                "rssBytes": 326921912,
+                "rssDeltaBytes": 256674032
+              }
+            }
+          }
+        ],
+        "memoryScope": "one side, one session, fresh process; GC before fixture construction and after writes; sampled RSS after GC, not peak RSS",
+        "memorySide": "candidate"
+      }
+    }
+  ]
+}

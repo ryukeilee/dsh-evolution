@@ -1,0 +1,283 @@
+{
+  "node": "v26.12.0",
+  "platform": "darwin/arm64",
+  "machine": {
+    "cpu": "Apple M2",
+    "logicalCpus": 8,
+    "totalmem": 17179869184,
+    "loadavg": [
+      1.6787109375,
+      2.20947265625,
+      2.0947265625
+    ]
+  },
+  "baseline": {
+    "version": "0.2.0-rc.16",
+    "sha256": "1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6"
+  },
+  "sources": {
+    "baseline": {
+      "domain-storage.js": "2d944bc6c33d7fa00939c8acace68c185e1405bfd3a1212a4959486d73f2dd80",
+      "dockyard-domain/memory.js": "ac6d8ffef3529062d17c542249ae2d06be709bf3ec5feac8f9aa24be5c3878e2"
+    },
+    "candidate": {
+      "domain-storage.js": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+      "dockyard-domain/memory.js": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7"
+    },
+    "variant1": {
+      "domain-storage.js": "57c429991eb01611d8a3174084c8e5385e744b625323aeba0a3669f667615053",
+      "dockyard-domain/memory.js": "4b0fd6fab1c87d0bdc8e776e36d6c26d9d456fd6a4cfae08e46ae8591d9002e7"
+    }
+  },
+  "op": "observe",
+  "workload": "repeat",
+  "rows": 10000,
+  "knowledgeRows": 10000,
+  "hotRows": 0,
+  "rounds": 3,
+  "warmup": 1,
+  "samples": 5,
+  "retained": false,
+  "attribution": false,
+  "variants": [
+    "/tmp/dsh-observe-variants-20261022-digest/parse-only/lib"
+  ],
+  "roundsDetail": [
+    {
+      "order": [
+        "baseline",
+        "candidate",
+        "variant1"
+      ],
+      "baseline": [
+        {
+          "wallMs": 138.46220799999998,
+          "cpuMs": 222.372
+        },
+        {
+          "wallMs": 136.01599999999996,
+          "cpuMs": 149.076
+        },
+        {
+          "wallMs": 139.01658299999997,
+          "cpuMs": 143.871
+        },
+        {
+          "wallMs": 146.8850839999999,
+          "cpuMs": 207.675
+        },
+        {
+          "wallMs": 137.00300000000016,
+          "cpuMs": 146.677
+        }
+      ],
+      "candidate": [
+        {
+          "wallMs": 53.87458300000003,
+          "cpuMs": 102.523
+        },
+        {
+          "wallMs": 46.01966700000003,
+          "cpuMs": 28.69
+        },
+        {
+          "wallMs": 46.821707999999944,
+          "cpuMs": 29.002
+        },
+        {
+          "wallMs": 50.014875000000075,
+          "cpuMs": 91.999
+        },
+        {
+          "wallMs": 47.02974999999992,
+          "cpuMs": 28.539
+        }
+      ],
+      "variant1": [
+        {
+          "wallMs": 95.77387500000009,
+          "cpuMs": 151.085
+        },
+        {
+          "wallMs": 81.44275000000016,
+          "cpuMs": 64.939
+        },
+        {
+          "wallMs": 82.17945899999995,
+          "cpuMs": 73.188
+        },
+        {
+          "wallMs": 89.20029199999999,
+          "cpuMs": 143.237
+        },
+        {
+          "wallMs": 79.66604199999983,
+          "cpuMs": 64.37
+        }
+      ]
+    },
+    {
+      "order": [
+        "candidate",
+        "variant1",
+        "baseline"
+      ],
+      "candidate": [
+        {
+          "wallMs": 47.61091699999997,
+          "cpuMs": 29.366
+        },
+        {
+          "wallMs": 58.94750000000022,
+          "cpuMs": 98.157
+        },
+        {
+          "wallMs": 44.989958000000115,
+          "cpuMs": 26.871
+        },
+        {
+          "wallMs": 46.96104100000002,
+          "cpuMs": 26.573
+        },
+        {
+          "wallMs": 50.027250000000095,
+          "cpuMs": 101.675
+        }
+      ],
+      "variant1": [
+        {
+          "wallMs": 81.65170800000033,
+          "cpuMs": 63.275
+        },
+        {
+          "wallMs": 92.16312500000004,
+          "cpuMs": 146.352
+        },
+        {
+          "wallMs": 79.71054200000026,
+          "cpuMs": 61.181
+        },
+        {
+          "wallMs": 80.9536250000001,
+          "cpuMs": 63.756
+        },
+        {
+          "wallMs": 91.36225000000013,
+          "cpuMs": 147.987
+        }
+      ],
+      "baseline": [
+        {
+          "wallMs": 124.13258300000007,
+          "cpuMs": 124.053
+        },
+        {
+          "wallMs": 133.3252910000001,
+          "cpuMs": 195.815
+        },
+        {
+          "wallMs": 125.47733300000073,
+          "cpuMs": 126.975
+        },
+        {
+          "wallMs": 126.57875000000058,
+          "cpuMs": 125.905
+        },
+        {
+          "wallMs": 130.72195899999952,
+          "cpuMs": 194.864
+        }
+      ]
+    },
+    {
+      "order": [
+        "variant1",
+        "baseline",
+        "candidate"
+      ],
+      "variant1": [
+        {
+          "wallMs": 82.11920800000007,
+          "cpuMs": 62.323
+        },
+        {
+          "wallMs": 86.84383400000024,
+          "cpuMs": 132.925
+        },
+        {
+          "wallMs": 80.94020900000032,
+          "cpuMs": 69.496
+        },
+        {
+          "wallMs": 78.3282079999999,
+          "cpuMs": 60.793
+        },
+        {
+          "wallMs": 86.14833400000043,
+          "cpuMs": 133.375
+        }
+      ],
+      "baseline": [
+        {
+          "wallMs": 127.0328329999993,
+          "cpuMs": 195.267
+        },
+        {
+          "wallMs": 126.1265000000003,
+          "cpuMs": 128.641
+        },
+        {
+          "wallMs": 126.2069590000001,
+          "cpuMs": 124.077
+        },
+        {
+          "wallMs": 129.13525000000027,
+          "cpuMs": 177.554
+        },
+        {
+          "wallMs": 127.36399999999958,
+          "cpuMs": 125.698
+        }
+      ],
+      "candidate": [
+        {
+          "wallMs": 50.75933299999997,
+          "cpuMs": 93.569
+        },
+        {
+          "wallMs": 46.02754199999981,
+          "cpuMs": 26.869
+        },
+        {
+          "wallMs": 45.94816600000013,
+          "cpuMs": 27.66
+        },
+        {
+          "wallMs": 48.97687500000029,
+          "cpuMs": 92.399
+        },
+        {
+          "wallMs": 45.33033299999988,
+          "cpuMs": 30.406
+        }
+      ]
+    }
+  ],
+  "baselineWallMs": 127.0328329999993,
+  "candidateWallMs": 47.02974999999992,
+  "baselineCpuMs": 128.641,
+  "candidateCpuMs": 29.366,
+  "delta": {
+    "wallPct": -62.97827192439283,
+    "cpuPct": -77.172130191774
+  },
+  "variantResults": [
+    {
+      "directory": "/tmp/dsh-observe-variants-20261022-digest/parse-only/lib",
+      "wallMs": 82.11920800000007,
+      "cpuMs": 69.496,
+      "wallPct": -35.35591857579015,
+      "cpuPct": -45.97678811576403
+    }
+  ]
+}

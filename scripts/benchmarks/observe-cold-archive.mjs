@@ -13,6 +13,8 @@
 // tree before its timings are reported.
 //
 //   node scripts/benchmarks/observe-cold-archive.mjs [--rows N] [--knowledge-rows N] [--rounds N] [--warmup N] [--samples N] [--json] [--variant <lib-dir>]...
+//   [--baseline <lib-dir>] [--workload repeat|cold-hit|evict] [--attribute]
+//   [--retained --memory-side baseline|candidate] (requires --expose-gc)
 //
 // `--variant` adds another implementation tree to the same run, compared against
 // the same pinned baseline in the same alternating schedule; every side must
@@ -25,9 +27,13 @@
 // state a long-running host is actually in: every append resolves a canonical
 // knowledge row as well as scanning the source collection.
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { cpus, loadavg, tmpdir, totalmem } from "node:os";
 import { join, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
@@ -40,6 +46,30 @@ import { readReleaseManifest, releaseArtifactPath, REPO_ROOT } from "../release/
 const FROZEN_NOW = Date.parse("2026-10-12T00:00:00.000Z");
 const NOW = new Date(FROZEN_NOW).toISOString();
 const TARGET = "plugin:edge-cache";
+let uuidSequence = 0;
+const realUUID = crypto.randomUUID;
+const originalRead = fs.readFileSync, originalAsyncRead = fsp.readFile, originalParse = JSON.parse, originalHash = crypto.hash;
+const counts = { readBytes: 0, archiveRowsParsed: 0, identityHashes: 0 };
+function accountRead(file, value) {
+  if (String(file).includes("-archive.jsonl")) counts.readBytes += Buffer.byteLength(value);
+  return value;
+}
+function startAccounting() {
+  fs.readFileSync = (...args) => accountRead(args[0], originalRead(...args));
+  fsp.readFile = async (...args) => accountRead(args[0], await originalAsyncRead(...args));
+  JSON.parse = (...args) => {
+    const value = originalParse(...args);
+    if (value && /^obs-|^key-/.test(value.id ?? "")) counts.archiveRowsParsed++;
+    return value;
+  };
+  crypto.hash = (...args) => {
+    if (typeof args[1] === "string" && args[1].startsWith('{"failureMode":')) counts.identityHashes++;
+    return originalHash(...args);
+  };
+  syncBuiltinESMExports();
+}
+crypto.randomUUID = () => `00000000-0000-4000-8000-${String(++uuidSequence).padStart(12, "0")}`;
+syncBuiltinESMExports();
 // The recall query is the production shape: the explicit proposal's own target.
 // `--op recall` seeds one row carrying the key this query resolves, at the head
 // of the archive, so an exact-key hit that sits outside the collector's 2,000
@@ -61,10 +91,12 @@ function freezeClock() {
 }
 
 function parseArgs(argv) {
-  const options = { rows: 10000, knowledgeRows: 0, hotRows: 0, rounds: 3, warmup: 1, samples: 5, json: false, variants: [], op: "observe" };
+  const options = { rows: 10000, knowledgeRows: 0, hotRows: 0, rounds: 3, warmup: 1, samples: 5, json: false, retained: false, attribute: false, variants: [], op: "observe", workload: "repeat" };
   for (let index = 0; index < argv.length; index += 1) {
     const key = argv[index];
     if (key === "--json") { options.json = true; continue; }
+    if (key === "--retained") { options.retained = true; continue; }
+    if (key === "--attribute") { options.attribute = true; continue; }
     const value = argv[index + 1];
     index += 1;
     if (key === "--rows") options.rows = Number(value);
@@ -73,6 +105,15 @@ function parseArgs(argv) {
     else if (key === "--rounds") options.rounds = Number(value);
     else if (key === "--warmup") options.warmup = Number(value);
     else if (key === "--samples") options.samples = Number(value);
+    else if (key === "--baseline") options.baseline = resolve(value);
+    else if (key === "--memory-side") {
+      if (!["baseline", "candidate"].includes(value)) throw new Error(`unknown memory side ${value}`);
+      options.memorySide = value;
+    }
+    else if (key === "--workload") {
+      if (!["repeat", "cold-hit", "evict"].includes(value)) throw new Error(`unknown workload ${value}`);
+      options.workload = value;
+    }
     else if (key === "--op") {
       if (value !== "observe" && value !== "recall") throw new Error(`unknown op ${value}`);
       options.op = value;
@@ -174,7 +215,8 @@ function exactHitRow() {
   };
 }
 
-async function session(openDomainStorage, rows, knowledgeRows = [], op = "observe", hotRows = []) {
+async function session(openDomainStorage, rows, knowledgeRows = [], op = "observe", hotRows = [], workload = "repeat") {
+  uuidSequence = 0;
   const root = await mkdtemp(join(tmpdir(), "dsh-observe-bench-"));
   const backend = new JsonStorageBackend(join(root, "official"));
   const ctx = { emit() {}, logger: { warn() {}, error() {} }, storage: { backend: { get: () => backend } }, effect() {} };
@@ -188,7 +230,7 @@ async function session(openDomainStorage, rows, knowledgeRows = [], op = "observ
   await domain.close();
   const dockyard = join(root, "dockyard");
   await mkdir(dockyard, { recursive: true });
-  await writeFile(join(dockyard, "state.json.observations-archive.jsonl"), rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
+  if (rows.length) await writeFile(join(dockyard, "state.json.observations-archive.jsonl"), rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
   if (knowledgeRows.length) {
     await writeFile(join(dockyard, "state.json.knowledge-archive.jsonl"), knowledgeRows.map((row) => JSON.stringify(row)).join("\n") + "\n");
   }
@@ -197,11 +239,25 @@ async function session(openDomainStorage, rows, knowledgeRows = [], op = "observ
   const port = await openDomainStorage(ctx, { presetDir: root, eventBridgePath: eventLog, eventBridgeKey: "b".repeat(64) });
   let count = 0;
   const tree = async () => {
-    const files = (await readdir(dockyard)).sort();
-    const contents = await Promise.all(files.map(async (file) => `${file}\n${(await readFile(join(dockyard, file), "utf8")).split(root).join("<root>")}`));
-    return contents.join("\n---\n");
+    const contents = [];
+    const walk = async (directory, prefix = "") => {
+      for (const entry of (await readdir(directory, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+        const relative = prefix + entry.name;
+        if (entry.isDirectory()) await walk(join(directory, entry.name), relative + "/");
+        else contents.push(`${relative}\n${(await readFile(join(directory, entry.name), "utf8")).split(root).join("<root>")}`);
+      }
+    };
+    await walk(dockyard);
+    if (workload === "cold-hit") {
+      const cold = (await readFile(join(dockyard, "state.json.knowledge-archive.jsonl"), "utf8")).trim().split("\n").map((line) => JSON.parse(line));
+      assert.ok(cold.some((row) => row.knowledgeKey === knowledgeRows[0].knowledgeKey && row.count > knowledgeRows[0].count), "cold-hit must update an archived accumulator");
+    }
+    // Include the real durable aggregate, not only the derived archive tree.
+    const durable = await readFile(join(root, "official", "evolution_domain.json"), "utf8");
+    return durable.split(root).join("<root>") + "\n" + contents.join("\n---\n");
   };
   let recallOutput = null;
+  const observedOutput = [];
   return {
     bytes: rows.length,
     async run() {
@@ -212,10 +268,10 @@ async function session(openDomainStorage, rows, knowledgeRows = [], op = "observ
         return;
       }
       count += 1;
-      await port.observe({ id: `incoming-${count}`, type: "tool/error", code: "HOST_OPERATION_FAILED", message: "official operation failed", target: TARGET, componentId: TARGET, severity: "error", status: "failed", recordedAt: NOW });
+      observedOutput.push(await port.observe({ code: "HOST_OPERATION_FAILED", target: workload === "evict" ? `${TARGET}-${String.fromCharCode(97 + count % 26)}-${String.fromCharCode(97 + Math.floor(count / 26))}` : TARGET }));
     },
     tree,
-    output: () => recallOutput,
+    output: () => op === "recall" ? recallOutput : JSON.stringify(observedOutput),
     async dispose() { await port.close(); await backend.close(); await rm(root, { recursive: true, force: true }); },
   };
 }
@@ -226,17 +282,25 @@ function median(values) {
 }
 
 async function timeSession(openDomainStorage, rows, options, knowledgeRows, hotRows) {
-  const current = await session(openDomainStorage, rows, knowledgeRows, options.op, hotRows);
+  if (options.retained) globalThis.gc();
+  const before = options.retained ? process.memoryUsage() : null;
+  const current = await session(openDomainStorage, rows, knowledgeRows, options.op, hotRows, options.workload);
   try {
     for (let index = 0; index < options.warmup; index += 1) await current.run();
     const samples = [];
     for (let index = 0; index < options.samples; index += 1) {
+      for (const key of Object.keys(counts)) counts[key] = 0;
       const cpu = process.cpuUsage();
       const start = performance.now();
       await current.run();
-      samples.push({ wallMs: performance.now() - start, cpuMs: (process.cpuUsage(cpu).user + process.cpuUsage(cpu).system) / 1000 });
+      const wallMs = performance.now() - start;
+      const used = process.cpuUsage(cpu);
+      samples.push({ wallMs, cpuMs: (used.user + used.system) / 1000, ...(options.attribute ? { ...counts } : {}) });
     }
-    return { samples, tree: await current.tree(), output: current.output() };
+    if (options.retained) globalThis.gc();
+    const after = options.retained ? process.memoryUsage() : null;
+    const retained = after ? { heapBytes: after.heapUsed - before.heapUsed, rssBytes: after.rss, rssDeltaBytes: after.rss - before.rss } : null;
+    return { samples, retained, tree: await current.tree(), output: current.output() };
   } finally {
     await current.dispose();
   }
@@ -244,29 +308,49 @@ async function timeSession(openDomainStorage, rows, options, knowledgeRows, hotR
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  if (options.attribute) startAccounting();
   const restoreClock = freezeClock();
-  const baseline = await loadBaseline();
+  if (options.retained && !globalThis.gc) throw new Error("--retained requires --expose-gc");
+  if (options.memorySide && (!options.retained || options.rounds !== 1 || options.variants.length)) throw new Error("--memory-side requires --retained --rounds 1 and no variants");
+  const baseline = options.baseline ? await loadVariant(options.baseline) : await loadBaseline();
   const variants = [];
   for (const directory of options.variants) variants.push(await loadVariant(directory));
   const sides = { baseline: baseline.openDomainStorage, candidate: candidateOpen };
   for (const [index, variant] of variants.entries()) sides[`variant${index + 1}`] = variant.openDomainStorage;
   const rows = Array.from({ length: options.rows }, (_, index) => observationRow(index));
   const knowledgeRows = Array.from({ length: options.knowledgeRows }, (_, index) => knowledgeRow(index));
+  if (options.workload === "cold-hit") {
+    // Same projected and normalized shape as port.observe; a cold accumulator
+    // update changes the file on every call and must invalidate inherited reads.
+    const { EvolutionObservationStore } = await import("../../lib/dockyard-domain/observation.js");
+    const { projectObservation } = await import("../../lib/domain-storage.js");
+    let normalized;
+    const store = new EvolutionObservationStore({ memory: { recordObservation: async (row) => { normalized = row; return row; }, recordKnowledgeEvent() {}, snapshot: () => ({ observations: [] }) } });
+    await store.record(projectObservation({ target: TARGET, code: "HOST_OPERATION_FAILED" }));
+    const key = canonicalKnowledgeKey(normalized);
+    knowledgeRows.unshift({ ...knowledgeRow(-1), id: key, knowledgeKey: key });
+    uuidSequence = 0;
+  }
   const hotRows = Array.from({ length: options.hotRows }, (_, index) => ({ ...knowledgeRow(options.knowledgeRows + index), id: `hot-${index}`, knowledgeKey: `knowledge:${String(index).padStart(32, "c")}` }));
   const exactRow = options.op === "recall" ? exactHitRow() : null;
   if (exactRow) knowledgeRows.unshift(exactRow);
-  const report = { node: process.version, platform: `${process.platform}/${process.arch}`, baseline: { version: baseline.pin.version, sha256: baseline.pin.sha256 }, op: options.op, rows: options.rows, knowledgeRows: options.knowledgeRows, hotRows: options.hotRows, rounds: options.rounds, warmup: options.warmup, samples: options.samples, variants: variants.map((variant) => variant.directory), roundsDetail: [] };
+  const sourceHashes = async (directory) => Object.fromEntries(await Promise.all(["domain-storage.js", "dockyard-domain/memory.js"].map(async (file) => [file, crypto.createHash("sha256").update(await readFile(join(directory, file))).digest("hex")])));
+  const sources = { baseline: await sourceHashes(baseline.pin ? join(baseline.directory, "package/lib") : options.baseline), candidate: await sourceHashes(join(REPO_ROOT, "lib")) };
+  for (const [index, variant] of variants.entries()) sources[`variant${index + 1}`] = await sourceHashes(variant.directory);
+  const report = { node: process.version, platform: `${process.platform}/${process.arch}`, machine: { cpu: cpus()[0]?.model, logicalCpus: cpus().length, totalmem: totalmem(), loadavg: loadavg() }, baseline: baseline.pin ? { version: baseline.pin.version, sha256: baseline.pin.sha256 } : { directory: options.baseline }, sources, op: options.op, workload: options.workload, rows: rows.length, knowledgeRows: knowledgeRows.length, hotRows: options.hotRows, rounds: options.rounds, warmup: options.warmup, samples: options.samples, retained: options.retained, attribution: options.attribute, variants: variants.map((variant) => variant.directory), roundsDetail: [] };
   try {
     for (let round = 0; round < options.rounds; round += 1) {
       // The baseline opens and closes every round while the other sides rotate
       // through the remaining positions, so no side keeps a fixed slot.
-      const order = ["baseline", "candidate", ...variants.map((_variant, index) => `variant${index + 1}`)];
+      const order = options.memorySide ? [options.memorySide] : ["baseline", "candidate", ...variants.map((_variant, index) => `variant${index + 1}`)];
       const rotation = round % order.length;
       const schedule = [...order.slice(rotation), ...order.slice(0, rotation)];
       const result = {};
       for (const side of schedule) result[side] = await timeSession(sides[side], rows, options, knowledgeRows, hotRows);
       for (const [side, value] of Object.entries(result)) {
+        if (options.memorySide) continue; // Isolated memory run; equivalence is checked by paired runs.
         assert.equal(value.tree, result.baseline.tree, `the ${side} implementation did not persist the same tree`);
+        assert.equal(value.output, result.baseline.output, `the ${side} implementation did not return the same records`);
         if (options.op === "recall") {
           // The recall answer itself is the equivalence proof: same records, same
           // order, same coverage/exact/score, same window and exact-key counts.
@@ -278,11 +362,17 @@ async function main() {
           }
         }
       }
-      report.roundsDetail.push({ order: schedule, ...Object.fromEntries(Object.entries(result).map(([side, value]) => [side, value.samples])) });
+      report.roundsDetail.push({ order: schedule, ...Object.fromEntries(Object.entries(result).map(([side, value]) => [side, value.samples])), ...(options.retained ? { memory: Object.fromEntries(Object.entries(result).map(([side, value]) => [side, value.retained])) } : {}) });
     }
   } finally {
     restoreClock();
-    await rm(baseline.directory, { recursive: true, force: true });
+    if (baseline.pin) await rm(baseline.directory, { recursive: true, force: true });
+  }
+  if (options.memorySide) {
+    report.memoryScope = "one side, one session, fresh process; GC before fixture construction and after writes; sampled RSS after GC, not peak RSS";
+    report.memorySide = options.memorySide;
+    console.log(JSON.stringify(report, null, 2));
+    return;
   }
   const sideMedian = (side, key) => median(report.roundsDetail.map((round) => median(round[side].map((sample) => sample[key]))));
   report.baselineWallMs = sideMedian("baseline", "wallMs");
@@ -303,7 +393,7 @@ async function main() {
   });
   if (options.json) { console.log(JSON.stringify(report, null, 2)); return; }
   const label = options.op === "recall" ? "port.recall() x2 (window + exact)" : "port.observe()";
-  console.log(`node ${report.node} ${report.platform} | baseline dsh-evolution-${report.baseline.version} | cold rows ${report.rows} (+${report.knowledgeRows} knowledge, ${report.hotRows} hot, ${((rows.map((row) => JSON.stringify(row)).join("\n").length + knowledgeRows.map((row) => JSON.stringify(row)).join("\n").length) / 1024 / 1024).toFixed(2)} MiB)`);
+  console.log(`node ${report.node} ${report.platform} | baseline ${report.baseline.version ?? report.baseline.directory} | cold rows ${report.rows} (+${report.knowledgeRows} knowledge, ${report.hotRows} hot, ${((rows.map((row) => JSON.stringify(row)).join("\n").length + knowledgeRows.map((row) => JSON.stringify(row)).join("\n").length) / 1024 / 1024).toFixed(2)} MiB)`);
   console.log(`${label} wall  ${report.baselineWallMs.toFixed(2)} -> ${report.candidateWallMs.toFixed(2)} ms (${report.delta.wallPct.toFixed(2)}%)`);
   console.log(`${label} cpu   ${report.baselineCpuMs.toFixed(2)} -> ${report.candidateCpuMs.toFixed(2)} ms (${report.delta.cpuPct.toFixed(2)}%)`);
   for (const variant of report.variantResults) {
@@ -311,4 +401,8 @@ async function main() {
   }
 }
 
-await main();
+try { await main(); } finally {
+  crypto.randomUUID = realUUID; crypto.hash = originalHash;
+  fs.readFileSync = originalRead; fsp.readFile = originalAsyncRead; JSON.parse = originalParse;
+  syncBuiltinESMExports();
+}
