@@ -1,0 +1,289 @@
+{
+  "schema": 1,
+  "record": "v0.2.0-rc.17 release audit",
+  "recordedAt": "2026-10-21",
+  "version": "0.2.0-rc.17",
+  "tag": "v0.2.0-rc.17",
+  "tagCommit": "2d44efcadbb081b8cfd99021bb7762e72eb43a35",
+  "sourceCommit": "55e05f7e4ce3d95b8ae13cecce18c6108512c610",
+  "artifacts": {
+    "filename": "dsh-evolution-0.2.0-rc.17.tgz",
+    "sha256": "d0c119f0522122619440265f80234cc27987458cb5537fb9022b627ab0c4aa90",
+    "contentSha256": "fb4e77b5593aa7111cc5bb164dd5581cce32d5d5c89bc7b41818c5380cf06f30",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.12.0",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    }
+  },
+  "release": {
+    "id": 420147672,
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.17",
+    "isDraft": false,
+    "isPrerelease": true,
+    "publishedAt": "2026-10-21T23:19:21Z",
+    "assets": [
+      "dsh-evolution-0.2.0-rc.17.tgz",
+      "manifest.json",
+      "SHA256SUMS"
+    ],
+    "overwroteExistingAssets": false,
+    "assetDigestsFromTheApi": {
+      "dsh-evolution-0.2.0-rc.17.tgz": "sha256:d0c119f0522122619440265f80234cc27987458cb5537fb9022b627ab0c4aa90",
+      "manifest.json": "sha256:deead93be9cb92621c67a43bddb6ec8b119b5083d0880cf732869f2784db1b54",
+      "SHA256SUMS": "sha256:bf9f38cda794841acb39d252ef5ccf19e0b9ce5b0ae52f0c54c039346ae9c70f"
+    },
+    "latestChannel": "unaffected: the release is marked prerelease, and GET /releases/latest still returns 404 after publishing because no stable release exists for it to move"
+  },
+  "provenance": {
+    "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.17 --require-source-commit",
+    "result": "ok",
+    "checks": [
+      "tag v0.2.0-rc.17 -> commit 2d44efc",
+      "source commit 55e05f7 is in the tagged history",
+      "source commit content fb4e77b5… equals the pin",
+      "tagged tree content fb4e77b5… equals the pin"
+    ]
+  },
+  "prePublishVerification": {
+    "packCheck": "16/16 ok at 2d44efc (development verdict: the tree is the pinned release)",
+    "packCheckRelease": "16/16 ok with --release (the working tree still builds the pinned content)",
+    "releaseVerify": "matches release/manifest.json (dsh-evolution@0.2.0-rc.17)",
+    "checkedOutContentOnly": "npm run release:verify -- dist/dsh-evolution-0.2.0-rc.17.tgz --content-only -> content fb4e77b5…, 51 entries, matches the pin",
+    "checksumFile": "(cd release && shasum -a 256 -c SHA256SUMS) -> OK (release/SHA256SUMS lists a bare filename, so the check has to run inside release/)",
+    "unitTests": {
+      "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+      "commit": "2d44efc",
+      "tests": 655,
+      "pass": 655,
+      "fail": 0,
+      "skipped": 0,
+      "heapCapRequiredBecause": "AGENTS.md section 5: the full suite runs under the same V8 heap cap as CI"
+    }
+  },
+  "draftAssetVerification": {
+    "method": "gh release download v0.2.0-rc.17 while it was still a draft, compared with release/ using cmp",
+    "result": "dsh-evolution-0.2.0-rc.17.tgz, manifest.json and SHA256SUMS byte-identical; verify-artifact on the downloaded tarball matched the pin"
+  },
+  "anonymousDownloadVerification": {
+    "method": "curl with GITHUB_TOKEN and GH_TOKEN removed from the environment, from the public download URL of the published release",
+    "files": [
+      "SHA256SUMS",
+      "dsh-evolution-0.2.0-rc.17.tgz",
+      "manifest.json"
+    ],
+    "result": "downloaded, shasum -a 256 -c SHA256SUMS OK, all three byte-identical to release/"
+  },
+  "hostAcceptanceAgainstPinnedTarball": [
+    {
+      "host": "0.2.0-rc.2",
+      "tarball": "release/dsh-evolution-0.2.0-rc.17.tgz",
+      "steps": "21/21",
+      "ok": true,
+      "finalDiagnosis": "healthy",
+      "hostModules": "cordis 4.0.5, include 1.0.10, loader 1.0.6, js-yaml 4.3.2",
+      "contentSha256": "fb4e77b5593aa7111cc5bb164dd5581cce32d5d5c89bc7b41818c5380cf06f30",
+      "tarballSha256": "d0c119f0522122619440265f80234cc27987458cb5537fb9022b627ab0c4aa90",
+      "evidence": "docs/evidence/dsh-0.2.0-rc.2.json"
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "tarball": "release/dsh-evolution-0.2.0-rc.17.tgz",
+      "steps": "21/21",
+      "ok": true,
+      "finalDiagnosis": "healthy",
+      "hostModules": "cordis 4.0.5, include 1.0.10, loader 1.0.6, js-yaml 4.3.2",
+      "contentSha256": "fb4e77b5593aa7111cc5bb164dd5581cce32d5d5c89bc7b41818c5380cf06f30",
+      "tarballSha256": "d0c119f0522122619440265f80234cc27987458cb5537fb9022b627ab0c4aa90",
+      "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json"
+    },
+    {
+      "host": "0.2.1-rc.2",
+      "tarball": "release/dsh-evolution-0.2.0-rc.17.tgz",
+      "steps": "21/21",
+      "ok": true,
+      "finalDiagnosis": "healthy",
+      "hostModules": "cordis 4.0.5, include 1.0.10, loader 1.0.6, js-yaml 4.3.2",
+      "contentSha256": "fb4e77b5593aa7111cc5bb164dd5581cce32d5d5c89bc7b41818c5380cf06f30",
+      "tarballSha256": "d0c119f0522122619440265f80234cc27987458cb5537fb9022b627ab0c4aa90",
+      "evidence": "docs/evidence/dsh-0.2.1-rc.2.json"
+    }
+  ],
+  "postPublishAcceptanceFromDownloadedBytes": {
+    "tarball": "the anonymously downloaded dsh-evolution-0.2.0-rc.17.tgz",
+    "contentSha256ObservedByEachRun": "fb4e77b5593aa7111cc5bb164dd5581cce32d5d5c89bc7b41818c5380cf06f30",
+    "runs": [
+      {
+        "host": "0.2.0-rc.2",
+        "steps": "21/21",
+        "ok": true,
+        "finalDiagnosis": "healthy",
+        "evidence": "docs/evidence/rc17-postpublish-0.2.0-rc.2.json"
+      },
+      {
+        "host": "0.2.1-alpha.1",
+        "steps": "21/21",
+        "ok": true,
+        "finalDiagnosis": "healthy",
+        "evidence": "docs/evidence/rc17-postpublish-0.2.1-alpha.1.json"
+      },
+      {
+        "host": "0.2.1-rc.2",
+        "steps": "21/21",
+        "ok": true,
+        "finalDiagnosis": "healthy",
+        "evidence": "docs/evidence/rc17-postpublish-0.2.1-rc.2.json"
+      }
+    ]
+  },
+  "performanceRegression": {
+    "question": "do the gains rc.17 ships still reproduce against the release each was measured against, and did the closeout change regress them",
+    "rawData": [
+      "docs/performance/rc17-recheck/observe-vs-rc16.json",
+      "docs/performance/rc17-recheck/recall-vs-rc15.json",
+      "docs/performance/rc17-recheck/replay-200-rc16-r1.json",
+      "docs/performance/rc17-recheck/replay-200-rc17-r1.json",
+      "docs/performance/rc17-recheck/replay-200-rc16-r2.json",
+      "docs/performance/rc17-recheck/replay-200-rc17-r2.json",
+      "docs/performance/rc17-recheck/replay-2000-rc16.json",
+      "docs/performance/rc17-recheck/replay-2000-rc17.json",
+      "docs/performance/rc17-recheck/variant-sources.json"
+    ],
+    "whatEachRunAsserts": {
+      "observeAndRecall": "observe-cold-archive.mjs compares the dockyard tree every side persisted with the baseline's tree (and, for recall, the returned records) in every round and fails the run on a mismatch; all four runs exited 0, so both equivalence assertions held",
+      "replayBatch": "domain-replay-batch.mjs self-checks { applied, duplicates } for every sample and then removes its temporary root; it does NOT compare persisted trees across versions, so this round's replay numbers rest on the syscall medians and the self-check only"
+    },
+    "observeWrite": {
+      "baseline": "lib/ extracted from release/dsh-evolution-0.2.0-rc.16.tgz",
+      "command": "node scripts/benchmarks/observe-cold-archive.mjs --baseline /tmp/rc17-variants/package/lib --rows 10000 --knowledge-rows 10000 --rounds 3 --warmup 1 --samples 5 --json",
+      "wallMs": "126.822 -> 46.921 (-63.0%)",
+      "cpuMs": "126.160 -> 29.328 (-76.8%)",
+      "protocolCheck": "observe-cache-variants.mjs asserted the documented exact reversal reproduces rc.16 memory.js; memory.js sha256 is ac6d8ffe… (rc.16) and cffd88e0… (this tree), unchanged since the round was measured",
+      "publishedClaim": "-62.98% wall / -77.17% CPU"
+    },
+    "experienceRecall": {
+      "baseline": "lib/ extracted from release/dsh-evolution-0.2.0-rc.15.tgz, the release that predates the recall change",
+      "command": "node scripts/benchmarks/observe-cold-archive.mjs --op recall --baseline /tmp/rc17-variants/rc15/package/lib --rows 0 --knowledge-rows 10000 --hot-rows 0 --rounds 3 --samples 5 --json",
+      "wallMs": "204.869 -> 30.328 (-85.2%)",
+      "cpuMs": "255.057 -> 32.120 (-87.4%)",
+      "publishedClaim": "203.88 -> 29.97 ms (-85.30% wall, -87.35% CPU)"
+    },
+    "bridgeBacklogCommit": {
+      "baseline": "the whole tree at f6da2be (the rc.16 tag) with this repository's node_modules symlinked; the tag does not contain domain-replay-batch.mjs, so the baseline tree gets the script copied in from this repository, which is the procedure docs/performance/domain-replay-batch.md section 4 documents",
+      "command": "BENCH_EVENTS=200 BENCH_SAMPLES=9, two rounds alternating which side runs first, then BENCH_EVENTS=2000 BENCH_SAMPLES=5 once per side",
+      "history200": {
+        "backlog2": "-41.1% / -39.9%",
+        "backlog5": "-76.4% / -74.9%",
+        "backlog10": "-86.2% / -86.8%",
+        "fsync": "8 -> 5, 17 -> 5, 32 -> 5",
+        "backlog0And1": "within the documented noise band; no gain claimed"
+      },
+      "history2000": {
+        "backlog2": "-47.1%",
+        "backlog5": "-76.1%",
+        "backlog10": "-86.3%",
+        "fsync": "8 -> 5, 17 -> 5, 32 -> 5"
+      },
+      "publishedClaim": "-44.4% / -76.6% / -85.9% at 200 records, -45.6% / -76.5% / -86.5% at 2000"
+    },
+    "notRemeasured": "the retained-heap cost of the observe cache (published: 3.985 -> 34.266 MiB median increment), the empty/small/cold-hit/evict observe workloads, the instance-boundary workload and the metric-branch scenarios were not re-measured in this round; the code owning them is unchanged since it was measured, and their boundaries stay recorded in RELEASE.md section 6 items 30 and 31 and in docs/performance/",
+    "conclusion": "every gain re-measured here reproduces with the same direction and the same mechanism-level syscall counts (fsync 3k+2 -> 5), and the two candidates that touch the same code path as the recall change were re-measured against rc.15 without regression; this is a re-measurement of the scenarios listed above, not a re-run of every published workload"
+  },
+  "staleClaimCorrected": {
+    "whatWasWrong": "RELEASE.md still called 0.2.0-rc.16 the local candidate and said the last public release was v0.2.0-rc.15, while v0.2.0-rc.16 had already been published",
+    "remoteFacts": "tag v0.2.0-rc.16 -> f6da2be; release id 418342252, prerelease, published 2026-10-20T11:54:40Z; the tgz asset digest sha256:1d4a40a7… equals the sha256 recorded in the release/manifest.json committed at that tag; CI 39418042752, Release artifacts 39418046917 and Code scanning 39418042725 all succeeded on f6da2be",
+    "fix": "RELEASE.md now names rc.16 as the last public release with those facts and rc.17 as the current candidate; no historical tag or asset was modified",
+    "timeBoundary": "RELEASE.md is shipped content, so it is a snapshot of the pin: at the moment 0.2.0-rc.17 was pinned and tagged, rc.16 was still the last public release. This audit is written after publishing rc.17, so the two records now differ by exactly that publication event; the shipped text is not rewritten after the fact, and nothing in it claims rc.17 was never published"
+  },
+  "workflows": [
+    {
+      "name": "CI",
+      "id": 39692545591,
+      "conclusion": "success",
+      "jobs": [
+        "unit tests (node 22.19.0)",
+        "unit tests (node 24.x)",
+        "package (clean, pinned, installable)",
+        "host acceptance (0.2.0-rc.2)",
+        "host acceptance (0.2.1-alpha.1)",
+        "host acceptance (0.2.1-rc.2)"
+      ]
+    },
+    {
+      "name": "Release artifacts",
+      "id": 39692567998,
+      "conclusion": "success",
+      "jobs": [
+        "verify and attach release artifacts"
+      ]
+    },
+    {
+      "name": "Code scanning",
+      "id": 39692545699,
+      "conclusion": "success"
+    }
+  ],
+  "commitChain": {
+    "sourceCommits": [
+      "e185525 perf: reuse verified cold archive parses across memory successors",
+      "5381299 perf: commit a bridge backlog as one durable transaction",
+      "84cbe3a fix: apply a recovered replay group from the committed ledger",
+      "b71fb06 test: separate the development and release states of the release pin",
+      "6cb2f82 test: require the pinned commit's history and ancestry for the dev verdict",
+      "8bd0a73 fix: make the pin diagnostic agree with the gate when only provenance fails",
+      "91f28e6 build: advance to 0.2.0-rc.17 and document the observe-cache and replay-batch rounds",
+      "55e05f7 docs: state the committed precondition of the development pin verdict"
+    ],
+    "releaseCommit": "2d44efc build: re-pin 0.2.0-rc.17 over the three-host acceptance",
+    "note": "manifest.sourceCommit is 55e05f7, the last commit whose shipped content equals the pin; 2d44efc adds only release/ and docs/evidence/, neither of which is shipped"
+  },
+  "independentReview": {
+    "rounds": [
+      {
+        "round": 1,
+        "reviewer": "codex gpt-6.1-sol, medium effort, fresh delegated task, read-only",
+        "verdict": "NOT BLOCKING",
+        "findings": [
+          "P3: README described every later distribution change as a development successor, but pack:check reports an uncommitted change as a failure; the committed precondition was missing"
+        ],
+        "resolution": "55e05f7 (shipped-document fix), followed by a new source commit, a full re-pack, a re-pin and a fresh three-host acceptance against the new bytes",
+        "alsoVerified": [
+          "cache inheritance reads the bytes, compares a content digest and re-checks identity before reuse; faulted and digest-less caches are not inherited; no path writes through a shared cold row",
+          "the grouped replay keeps file order, post-authentication dedup, same-id-different-MAC rejection, the authenticated-prefix commit and checkpoint advancement, and consults the recovered ledger before applying each record",
+          "focused suites at 4096 MiB heap cap: observe cache differentials and read faults 13/13, replay batch 7/7 including the 4097-event retry",
+          "rc.16 remote facts re-verified with gh and git; pin digests recomputed read-only"
+        ]
+      },
+      {
+        "round": 2,
+        "reviewer": "codex gpt-6.1-sol, medium effort, fresh delegated task, read-only",
+        "verdict": "NOT BLOCKING",
+        "findings": [
+          "P2: the audit's performance section claimed a byte-identical tree assertion for every benchmark, but domain-replay-batch.mjs only self-checks { applied, duplicates } and removes its temporary root; the new measurements also had no committed raw output and the replay reproduction omitted copying the benchmark script into the rc.16 tree",
+          "P3: the recorded checksum command had to run inside release/",
+          "P3: the shipped RELEASE.md is a pin-time snapshot, so its 'rc.16 is the last public release' line and the rc.16 asset digest needed an explicit time boundary in the audit"
+        ],
+        "resolution": "the audit now names what each benchmark does and does not assert, points at the committed raw output under docs/performance/rc17-recheck/, records the script-copy step for the replay baseline, fixes the checksum command and states the time boundary; no shipped byte changed, so no re-pin was needed",
+        "alsoVerified": [
+          "both pack:check verdicts 16/16, release:verify, the --content-only build comparison and the checksum file",
+          "release id 420147672, prerelease, three asset digests, /releases/latest 404, and the three workflow run ids at 2d44efc with 655/655 on both Node versions in the CI log",
+          "all six host evidence files 21/21 with content and byte digests equal to the pin, and the module versions matching COMPATIBILITY.md",
+          "tag refs on local and remote still resolve v0.2.0-rc.16 -> f6da2be, and the rc.16 release assets are unchanged"
+        ]
+      }
+    ],
+    "note": "Each round was a fresh delegated task with its own task id and its own context; no review round modified the repository."
+  },
+  "scope": {
+    "shippedDelta": "two lib/ files (lib/dockyard-domain/memory.js, lib/domain-storage.js), package.json, package-lock.json, and the shipped documents CHANGELOG.md, README.md, RELEASE.md and COMPATIBILITY.md",
+    "notChanged": "peerDependencies, engines, dependencies, host support range, persisted domain format and schema, promotion gates and confirmation, trial baseline capture, journal classification, cross-process lock, CAS, tombstone and retention semantics, event envelope and signature algorithm, redaction boundary and authorization",
+    "securityBoundary": "no redaction, guard, authorization or promotion-gate code changed in this candidate; the two lib/ files change the knowledge/observation archive read path and the event-bridge replay transaction boundary only"
+  },
+  "historicalAssets": "release/dsh-evolution-0.2.0-rc.16.tgz and every earlier tarball, checksum entry and tag are unchanged in this commit; no historical tag or release asset was moved or overwritten. release/SHA256SUMS lists only the current artifact.",
+  "residualDocumentation": "RELEASE.md section 6 item 26 still says the committed release/ directory was measured as '11 artifacts, 555 entries' when artifact entry types were verified; release/ now holds 14 tarballs, because every release keeps its own. The property it describes is re-checked on every run by test/release-integrity-tar-entry-types.test.mjs, which walks every committed *.tgz and fails on any non-regular entry (it passed in the 655-test run behind this release). The count is a dated observation in shipped text and is left as-is rather than edited after the pin, which would have required a new version."
+}

@@ -1,0 +1,199 @@
+{
+  "node": "v26.12.0",
+  "platform": "darwin/arm64",
+  "machine": {
+    "cpu": "Apple M2",
+    "logicalCpus": 8,
+    "totalmem": 17179869184,
+    "loadavg": [
+      2.2119140625,
+      2.4140625,
+      2.03857421875
+    ]
+  },
+  "baseline": {
+    "directory": "/tmp/rc17-variants/rc15/package/lib"
+  },
+  "sources": {
+    "baseline": {
+      "domain-storage.js": "61a52634ed70d611254d1d40ad12c600cf43731cb8be4da80b6e86c76ec4deba",
+      "dockyard-domain/memory.js": "ce4880b5e341b9e488b9b8254d79c9a19680d4c69c379181098e2273b56a1769"
+    },
+    "candidate": {
+      "domain-storage.js": "c3b160bb5230db08b44c398b2da9a745fd8b035dac0ae6a24e3c2181a0ccb906",
+      "dockyard-domain/memory.js": "cffd88e0ce9c300cb6e1f551cac4d739cd5a96afd886562aa01108a8f3036cb7"
+    }
+  },
+  "op": "recall",
+  "workload": "repeat",
+  "rows": 0,
+  "knowledgeRows": 10001,
+  "hotRows": 0,
+  "rounds": 3,
+  "warmup": 1,
+  "samples": 5,
+  "retained": false,
+  "attribution": false,
+  "variants": [],
+  "roundsDetail": [
+    {
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "baseline": [
+        {
+          "wallMs": 222.29216699999995,
+          "cpuMs": 323.226
+        },
+        {
+          "wallMs": 205.02716699999996,
+          "cpuMs": 255.327
+        },
+        {
+          "wallMs": 207.51412500000004,
+          "cpuMs": 267.169
+        },
+        {
+          "wallMs": 204.40975000000003,
+          "cpuMs": 255.396
+        },
+        {
+          "wallMs": 204.29829099999984,
+          "cpuMs": 254.714
+        }
+      ],
+      "candidate": [
+        {
+          "wallMs": 32.277250000000095,
+          "cpuMs": 35.853
+        },
+        {
+          "wallMs": 30.943250000000035,
+          "cpuMs": 38.824
+        },
+        {
+          "wallMs": 30.705083999999943,
+          "cpuMs": 41.226
+        },
+        {
+          "wallMs": 30.36720800000012,
+          "cpuMs": 36.948
+        },
+        {
+          "wallMs": 29.926958999999897,
+          "cpuMs": 37.419
+        }
+      ]
+    },
+    {
+      "order": [
+        "candidate",
+        "baseline"
+      ],
+      "candidate": [
+        {
+          "wallMs": 31.274083000000246,
+          "cpuMs": 38.943
+        },
+        {
+          "wallMs": 30.03500000000031,
+          "cpuMs": 30.798
+        },
+        {
+          "wallMs": 30.205458000000363,
+          "cpuMs": 35.861
+        },
+        {
+          "wallMs": 29.697083999999904,
+          "cpuMs": 30.568
+        },
+        {
+          "wallMs": 29.994000000000142,
+          "cpuMs": 31.638
+        }
+      ],
+      "baseline": [
+        {
+          "wallMs": 204.86924999999974,
+          "cpuMs": 248.043
+        },
+        {
+          "wallMs": 204.9216250000004,
+          "cpuMs": 255.057
+        },
+        {
+          "wallMs": 216.00062500000013,
+          "cpuMs": 324.756
+        },
+        {
+          "wallMs": 204.7175830000001,
+          "cpuMs": 246.645
+        },
+        {
+          "wallMs": 204.19308300000012,
+          "cpuMs": 255.279
+        }
+      ]
+    },
+    {
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "baseline": [
+        {
+          "wallMs": 204.39608399999997,
+          "cpuMs": 253.735
+        },
+        {
+          "wallMs": 221.21095800000057,
+          "cpuMs": 327.302
+        },
+        {
+          "wallMs": 204.61599999999999,
+          "cpuMs": 257.506
+        },
+        {
+          "wallMs": 202.24745899999925,
+          "cpuMs": 246.517
+        },
+        {
+          "wallMs": 202.5024999999996,
+          "cpuMs": 243.441
+        }
+      ],
+      "candidate": [
+        {
+          "wallMs": 31.376874999999927,
+          "cpuMs": 32.12
+        },
+        {
+          "wallMs": 29.996000000000095,
+          "cpuMs": 31.664
+        },
+        {
+          "wallMs": 30.32825000000048,
+          "cpuMs": 31.104
+        },
+        {
+          "wallMs": 30.566125000000284,
+          "cpuMs": 34.206
+        },
+        {
+          "wallMs": 30.070959000000585,
+          "cpuMs": 32.696
+        }
+      ]
+    }
+  ],
+  "baselineWallMs": 204.86924999999974,
+  "candidateWallMs": 30.32825000000048,
+  "baselineCpuMs": 255.057,
+  "candidateCpuMs": 32.12,
+  "delta": {
+    "wallPct": -85.19628982875638,
+    "cpuPct": -87.40673653340234
+  },
+  "variantResults": []
+}
