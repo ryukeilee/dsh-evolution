@@ -89,13 +89,18 @@ test('CI runs the unit tests, the package checks and both supported hosts', () =
 
   // Packaging: reproducible, clean, pinned, and the doctor must start with no host.
   const packageRuns = jobs.package.steps.map((step) => step.run).filter(Boolean).join('\n');
-  assert.match(packageRuns, /npm run pack:check/);
+  // The default mode is the development one: a tree that is a committed
+  // successor of the last pin is reported by name instead of failing CI. The
+  // local build is therefore compared against the tree (`--tree`), while the
+  // committed artifact is still verified against the pin by `release:verify`.
+  assert.match(packageRuns, /npm run pack:check\n/);
   assert.match(packageRuns, /npm run release:verify/);
   assert.match(packageRuns, /npm run release:pack/);
-  assert.match(packageRuns, /verify-artifact\.mjs .*--content-only/);
+  assert.match(packageRuns, /verify-artifact\.mjs .*--content-only --tree/);
   assert.match(packageRuns, /sha256sum --check SHA256SUMS/);
   assert.match(packageRuns, /doctor\.mjs/);
   assert.match(packageRuns, /release\/manifest\.json/, 'the published tarball must be selected by the release pin');
+  assert.equal(/pack:check -- --release/.test(packageRuns), false, 'CI checks the development state, not a release tree');
 
   // Real host acceptance for exactly the declared supported versions.
   const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
@@ -216,7 +221,10 @@ test('the release workflow verifies the tag, the commit, the pin and the checksu
   assert.match(runs, /verify-provenance\.mjs --tag "\$RELEASE_TAG"/);
   assert.equal(runs.includes('steps.tag.outputs.tag'), false);
   assert.match(JSON.stringify(release), /--require-source-commit/);
-  assert.match(runs, /npm run pack:check/);
+  // A tag may only publish a tree that builds the pinned content exactly, so
+  // the release path runs the strict package mode. Provenance independently
+  // refuses a tag whose tree content differs from the pin.
+  assert.match(runs, /npm run pack:check -- --release/);
   assert.match(runs, /npm run release:verify/);
   assert.match(runs, /sha256sum --check SHA256SUMS/);
   // The bytes GitHub ends up serving are downloaded back and re-verified.

@@ -20,6 +20,11 @@ export const RELEASE_DIR = path.join(REPO_ROOT, 'release');
 /** Files npm always includes regardless of the `files` allow-list. */
 const ALWAYS_INCLUDED = new Set(['package.json', 'README.md', 'LICENSE']);
 
+/** A full, lowercase git object name. Short names are ambiguous, so they fail. */
+export function isFullSha(value) {
+  return typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
+}
+
 export function readManifest() {
   return JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8'));
 }
@@ -170,12 +175,15 @@ export function archiveEntries(tarball) {
  * `release/manifest.json#contentSha256` proves the working tree still builds
  * the released content without having to run `npm pack` at all.
  */
-export function treeContentDigest() {
-  const entries = expectedEntries().map((relative) => {
+export function treeArchiveEntries() {
+  return expectedEntries().map((relative) => {
     const absolute = path.join(REPO_ROOT, relative);
     return { path: relative, mode: canonicalMode(absolute), bytes: fs.readFileSync(absolute) };
   });
-  return contentDigestOf(entries);
+}
+
+export function treeContentDigest() {
+  return contentDigestOf(treeArchiveEntries());
 }
 
 /** Digest the shipped files from git objects, independent of the working tree. */

@@ -1,6 +1,6 @@
 # port.observe：跨 Memory 继任复用解析与冷行身份
 
-本轮基于远端最新 main `a193205848135f81bcca58097f81a2fcad78915b`。工作开始与提交前均 fetch 核对，远端 main 未移动；rc.16 固定包的 `memory.js` 与本轮精确逆变换的结果逐字节一致。候选是取数时的未提交工作树，具体字节以各 JSON 的 `sources` SHA-256 为准，不能把 `observe-cache-sources.json.sourceCommit` 当作候选已提交源码。
+本轮基于远端最新 main `a193205848135f81bcca58097f81a2fcad78915b`。工作开始与提交前均 fetch 核对，远端 main 未移动；rc.16 固定包的 `memory.js` 与本轮精确逆变换的结果逐字节一致。候选是取数时的未提交工作树，具体字节以各 JSON 的 `sources` SHA-256 为准，不能把 `observe-cache-sources.json.sourceCommit` 当作候选已提交源码。另外，该文件里候选 `domain-storage.js` 的 SHA-256 是**只含本轮 observe 改动**的那份字节；随后的事件桥批量提交（`5381299`）与收口修复又改了同一文件，因此这个哈希不等于合并后的 `lib/domain-storage.js`——这些数字对应的是只含 observe 变更的候选，不是对合并后文件的验证。
 
 最终万级双冷档案的公开 `port.observe()`：wall **127.033 → 47.030 ms（−62.98%）**，CPU **128.641 → 29.366 ms（−77.17%）**。这是保留真实读取、内容指纹、完整加载与事务后的结果，替代分析期间更快但边界不等价的原型数字。版本、`release/`、固定验收证据、官方 DSH 均未修改。
 
@@ -85,9 +85,10 @@ main 已有活动档案 reconcile 扫描备忘、实例内解析缓存、无复�
 
 - [13 项新聚焦差分](../../test/observe-cache-handoff.test.mjs) 与读取故障测试通过，直接导入 SHA 固定的 rc.16 包；覆盖缺键、陈旧键、存储键短路、热覆盖、容器隔离、匿名/数组顺序、tombstone、文件失效、fault、提交前失败、已提交 pending 安装失败及重启恢复。stage 使用真实硬链接并断言写前私有化，失败后旧实例和实时字节不见未提交数据。
 - 精确逆变换保持原有差分基线的单次匹配守卫和固定包字节锚。第二轮既有聚焦 53 项全通过；内容指纹修复后最终完整套件 **645 项，643 通过，2 失败**。
-- 两项失败均为 `test/release-pin.test.mjs` 的“工作树必须与固定产物相同”断言；**完整套件未全绿**。最终 `pack:check` 13 项通过、3 项固定内容/验收证据门禁失败。实际变更只有两个分发源码文件，当前内容摘要为 `491c143334e71b17c53a9200027646eb1e497e4b281e610e191df425fd402097`，rc.16 固定摘要仍为 `aeae8ffe342abfc5332a6e161b6972f736c01bd4440ca9fd7f15540ada39a006`。
+- 两项失败均为 `test/release-pin.test.mjs` 的“工作树必须与固定产物相同”断言，当时完整套件未全绿，`pack:check` 13 项通过、3 项固定内容/验收证据门禁失败。本轮取数时实际变更的分发源码只有 `lib/dockyard-domain/memory.js` 与 `lib/domain-storage.js`，两轮优化提交后、收口前的树内容摘要为 `18366d00f509609d55992fb0c8ca15613a2a5fd67d692b6dad0f68788f0e824b`，rc.16 固定摘要仍为 `aeae8ffe342abfc5332a6e161b6972f736c01bd4440ca9fd7f15540ada39a006`。
+- **收口后（两轮优化合并进 `main`、发布门禁按阶段判定）**：树内容摘要为 `0b0280f91fdbf60ff58e7b720a06b429a61be79788091663c5e41cd4e4c5acfb`，与固定产物不同的分发文件是 `lib/dockyard-domain/memory.js`、`lib/domain-storage.js`、`README.md`、`RELEASE.md`。`npm run pack:check` 现在把这种状态如实报为“固定点的开发后继”并点名这四个文件（16 项全绿，结尾单独打印该状态），而 `npm run pack:check -- --release` 与 `verify-provenance.mjs` 仍然要求工作树就是固定内容，因此这些字节依然是**未发布的开发字节**：版本仍为 `0.2.0-rc.16`，`release/` 产物、`release/manifest.json` 与三份宿主验收证据一律未改。阶段判定的语义见 `RELEASE.md` 第 6 节第 16 条。
 - `release:verify` 通过：既有 tarball SHA-256 `1d4a40a73a5f3f7331ca66ebcc8dcf7a82f6e50b00238b7618b4c04dd80c0ad6`，51 entries、权限与 manifest 一致。`git diff --check` 通过。
-- 用户明确要求本轮不改版本、Release 或固定产物，所以保留发布断言与失败，不伪造新宿主验收，不执行 `release:publish`。本轮未运行完整真实宿主安装验收；这些开发字节尚未成为已验收的发布固定点。推送到独立性能分支，保留 main 的发布状态。
+- 用户明确要求本轮不改版本、Release 或固定产物，所以没有伪造新宿主验收，也没有执行 `release:publish`。本轮未运行完整真实宿主安装验收；这些开发字节尚未成为已验收的发布固定点。本轮先把改动推到独立性能分支，收口时再合并进 `main`，`main` 的发布状态（rc.16 固定点）保持不变。
 
 本轮没有改动宿主接口、晋升门禁、confirmation、journal、锁、CAS 或加载顺序；全量回归覆盖现有对应失败用例。不能将官方存储端到端收益直接解释为完整 DSH/LLM 任务延迟收益。
 

@@ -109,9 +109,11 @@ jobs:
           set -euo pipefail
           node scripts/release/verify-provenance.mjs --tag "$RELEASE_TAG" $REQUIRE_SOURCE_COMMIT
       - name: Verify the package, the pinned artifact and the checksum file
+        # `--release` demands the tagged tree: only the tree that builds the
+        # pinned content exactly may publish (RELEASE.md section 6 item 16).
         run: |
           set -euo pipefail
-          npm run pack:check
+          npm run pack:check -- --release
           npm run release:verify
           (cd release && sha256sum --check SHA256SUMS)
       - name: Attach the verified artifacts to a draft release

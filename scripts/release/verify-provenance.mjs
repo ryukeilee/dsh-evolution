@@ -30,12 +30,11 @@
  *   node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.2 --json
  */
 import { pathToFileURL } from 'node:url';
-import { REPO_ROOT, commitContentDigest, gitOutput, readManifest, readReleaseManifest, treeContentDigest } from './release-lib.mjs';
+import { REPO_ROOT, commitContentDigest, gitOutput, isFullSha, readManifest, readReleaseManifest, treeContentDigest } from './release-lib.mjs';
 
-/** A full, lowercase git object name. Short names are ambiguous, so they fail. */
-export function isFullSha(value) {
-  return typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
-}
+// `isFullSha` lives in release-lib so the pin-relation check shares one rule;
+// it is re-exported here because this module was its original public home.
+export { isFullSha };
 
 /**
  * The pure decision table. Everything the CLI would observe is passed in, so

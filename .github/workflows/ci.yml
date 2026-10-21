@@ -66,13 +66,16 @@ jobs:
           # only artifact used by the clean install and artifact upload.
           tarball="$(node -p "'release/' + require('./release/manifest.json').filename")"
           printf 'tarball=%s\n' "$tarball" >> "$GITHUB_OUTPUT"
-      - name: Build a local artifact and prove it has the pinned content
+      - name: Build a local artifact and prove it reproduces this tree
         # The local build is compressed by this runner's npm, so its bytes are
-        # allowed to differ from the published ones; its content is not.
+        # allowed to differ from the published ones; its content is not. It is
+        # compared against the tree because a development tree is legitimately
+        # ahead of the last pin; `pack:check` above names that difference, and
+        # the pinned artifact is verified against the pin by `release:verify`.
         run: |
           set -euo pipefail
           npm run release:pack
-          node scripts/release/verify-artifact.mjs dist/dsh-evolution-*.tgz --content-only
+          node scripts/release/verify-artifact.mjs dist/dsh-evolution-*.tgz --content-only --tree
       - name: Start the doctor from the published tarball with no host installed
         env:
           TARBALL: ${{ steps.pinned-artifact.outputs.tarball }}

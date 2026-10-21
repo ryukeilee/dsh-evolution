@@ -18,6 +18,21 @@
  * Checks 1 and 5 are split on purpose: byte identity is only promised inside
  * one environment, because npm's compression is npm-version-dependent, while
  * the content digest holds everywhere.
+ *
+ * Question 5 has two states, and they are never confused:
+ *
+ *   - development (the default, and what CI runs on `main` and on pull
+ *     requests): the pin must still describe immutable history and the tree
+ *     must be the pinned release *or* a committed successor of it. This is the
+ *     state a repository is in from the first changed shipped file until the
+ *     next release is cut, and it is reported by name, with the differing
+ *     files, instead of failing;
+ *   - `--release` (what a tagged release runs): the tree must build the pinned
+ *     content exactly, byte for byte, as before. A drifting tree fails here.
+ *
+ * The tolerance is not a way to ship: `verify-provenance.mjs` still refuses a
+ * tag whose tree content differs from the pin, so the publishing path is
+ * unchanged. See `pin-relation.mjs` and RELEASE.md section 6 item 16.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -27,6 +42,21 @@ import {
   assertReproducible, expectedEntries, formatBytes, readManifest, readReleaseManifest,
   readTarEntries, releaseArtifactPath, treeContentDigest,
 } from './release-lib.mjs';
+import { PIN_RELATION, collectPinRelation, formatRelation } from './pin-relation.mjs';
+
+const args = process.argv.slice(2);
+for (const arg of args) {
+  if (arg === '--help' || arg === '-h') {
+    console.log('node scripts/release/verify-package.mjs [--release]');
+    process.exit(0);
+  }
+  if (arg !== '--release') {
+    console.error(`unknown argument: ${arg}`);
+    process.exit(2);
+  }
+}
+/** `--release` demands the tagged tree; the default reports development state. */
+const releaseMode = args.includes('--release');
 
 const failures = [];
 const notes = [];
@@ -36,6 +66,15 @@ const check = (name, fn) => {
 };
 
 const manifest = readManifest();
+
+// The development verdict is decided once: it costs two git reads (the pinned
+// source commit, and HEAD only when the tree diverges) and both checks below
+// report from the same facts.
+let relation = null;
+let relationError = null;
+if (!releaseMode) {
+  try { relation = collectPinRelation(); } catch (error) { relationError = error; }
+}
 
 // ---------------------------------------------------------------------------
 // 1-3. packaging: reproducible, clean, portable
@@ -98,13 +137,13 @@ const readme = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
 const compatibility = fs.readFileSync(path.join(REPO_ROOT, 'COMPATIBILITY.md'), 'utf8');
 const changelog = fs.readFileSync(path.join(REPO_ROOT, 'CHANGELOG.md'), 'utf8');
 
-check('the committed acceptance evidence matches this exact package content', () => {
+check('the committed acceptance evidence describes the pinned package content', () => {
   // The acceptance evidence records the content digest of the tarball it was
-  // produced against, plus the byte hash of the pinned artifact. Comparing the
-  // content digest means a change to any shipped file invalidates the evidence
-  // and forces the host acceptance to be re-run, instead of a release shipping
-  // a package the recorded run never saw — and it does so on any platform.
-  const verified = packed || assertReproducible();
+  // produced against, plus the byte hash of the pinned artifact. The pin is the
+  // authority for both: evidence is written once, against the artifact that
+  // shipped, and a later development tree must neither invalidate it nor
+  // re-target it. A change to any shipped file still forces a new acceptance
+  // run, because it changes the content the next pin will record.
   const releaseManifest = readReleaseManifest();
   const problems = [];
   for (const host of hostVersions) {
@@ -115,29 +154,53 @@ check('the committed acceptance evidence matches this exact package content', ()
     if (evidence.ok !== true) problems.push(`${host}: the recorded acceptance did not pass`);
     if (evidence.hostVersion !== host) problems.push(`${host}: the evidence was recorded against host ${evidence.hostVersion}`);
     if (evidence.packageVersion !== manifest.version) problems.push(`${host}: the evidence was recorded for package ${evidence.packageVersion}, not ${manifest.version}`);
-    if (evidence.contentSha256 !== verified.contentSha256) {
-      problems.push(`${host}: the evidence covers content ${evidence.contentSha256}, but this tree builds ${verified.contentSha256}; re-run the host acceptance`);
+    if (evidence.contentSha256 !== releaseManifest.contentSha256) {
+      problems.push(`${host}: the evidence covers content ${evidence.contentSha256}, but the pin records ${releaseManifest.contentSha256}; re-run the host acceptance and re-pin`);
     }
     if (evidence.tarballSha256 !== releaseManifest.sha256) {
       problems.push(`${host}: the evidence was recorded against ${evidence.tarballSha256}, but the pinned artifact is ${releaseManifest.sha256}`);
     }
   }
   if (problems.length > 0) throw new Error(problems.join('\n        '));
+  notes.push(`        ${hostVersions.length} hosts, content ${releaseManifest.contentSha256}`);
 });
-check('release/manifest.json pins this tree content', () => {
-  const verified = packed || assertReproducible();
-  const releaseManifest = readReleaseManifest();
-  if (releaseManifest.version !== manifest.version) {
-    throw new Error(`release/manifest.json pins version ${releaseManifest.version}, package.json is ${manifest.version}`);
-  }
-  if (releaseManifest.filename !== verified.filename) {
-    throw new Error(`release/manifest.json pins ${releaseManifest.filename}, this tree builds ${verified.filename}`);
-  }
-  if (releaseManifest.contentSha256 !== verified.contentSha256) {
-    throw new Error(`release/manifest.json pins content ${releaseManifest.contentSha256}, but this tree builds ${verified.contentSha256}; re-run "npm run release:publish" after the host acceptance`);
-  }
-  notes.push(`        pins ${releaseManifest.filename} content ${releaseManifest.contentSha256}`);
-});
+if (releaseMode) {
+  check('release/manifest.json pins this tree content', () => {
+    const verified = packed || assertReproducible();
+    const releaseManifest = readReleaseManifest();
+    if (releaseManifest.version !== manifest.version) {
+      throw new Error(`release/manifest.json pins version ${releaseManifest.version}, package.json is ${manifest.version}`);
+    }
+    if (releaseManifest.filename !== verified.filename) {
+      throw new Error(`release/manifest.json pins ${releaseManifest.filename}, this tree builds ${verified.filename}`);
+    }
+    if (releaseManifest.contentSha256 !== verified.contentSha256) {
+      throw new Error(`release/manifest.json pins content ${releaseManifest.contentSha256}, but this tree builds ${verified.contentSha256}; re-run "npm run release:publish" after the host acceptance`);
+    }
+    notes.push(`        pins ${releaseManifest.filename} content ${releaseManifest.contentSha256}`);
+  });
+} else {
+  check('release/manifest.json describes the shipped content of its source commit', () => {
+    // The pin's own claim, decided without looking at this tree: the commit it
+    // records must ship exactly the content it pins. That is what lets a
+    // development tree diverge from the pin without the pin itself becoming
+    // unfalsifiable, and it is the first half of the drift verdict below.
+    if (relationError) throw relationError;
+    const releaseManifest = readReleaseManifest();
+    if (releaseManifest.version !== manifest.version) {
+      throw new Error(`release/manifest.json pins version ${releaseManifest.version}, package.json is ${manifest.version}`);
+    }
+    if (releaseManifest.filename !== `${manifest.name}-${manifest.version}.tgz`) {
+      throw new Error(`release/manifest.json pins ${releaseManifest.filename}, this package is ${manifest.name}-${manifest.version}.tgz`);
+    }
+    if (relation.sourceCommit === null) {
+      notes.push('        the pin records no source commit (legacy pin), so tree drift cannot be attributed to it');
+      return;
+    }
+    notes.push(`        ${relation.sourceCommit} ships ${relation.sourceDigest}`);
+    if (relation.attribution.length > 0) throw new Error(relation.attribution.join('\n        '));
+  });
+}
 check('the committed release artifact is exactly the pinned build', () => {
   const releaseManifest = readReleaseManifest();
   const artifact = releaseArtifactPath(releaseManifest);
@@ -169,29 +232,44 @@ check('the committed release artifact is exactly the pinned build', () => {
   }
   notes.push(`        ${path.relative(REPO_ROOT, artifact)}  sha256 ${sha}`);
 });
-check('the working tree still builds the pinned content', () => {
-  // Cheap and exact: the same canonical digest computed from the declared files
-  // on disk, so a drifted file is named by the diff rather than by a pack hash.
-  const releaseManifest = readReleaseManifest();
-  const treeDigest = treeContentDigest();
-  if (treeDigest !== releaseManifest.contentSha256) {
-    const declared = expectedEntries(manifest);
-    const pinned = new Map(readTarEntries(releaseArtifactPath(releaseManifest)).map((entry) => [entry.path, entry]));
-    const drifted = [];
-    for (const relative of declared) {
-      const absolute = path.join(REPO_ROOT, relative);
-      const current = fs.readFileSync(absolute);
-      const committed = pinned.get(relative);
-      if (!committed) drifted.push(`${relative}: not in the released artifact`);
-      else if (!committed.bytes.equals(current)) drifted.push(`${relative}: content differs from the released artifact`);
+if (releaseMode) {
+  check('the working tree still builds the pinned content', () => {
+    // Cheap and exact: the same canonical digest computed from the declared files
+    // on disk, so a drifted file is named by the diff rather than by a pack hash.
+    const releaseManifest = readReleaseManifest();
+    const treeDigest = treeContentDigest();
+    if (treeDigest !== releaseManifest.contentSha256) {
+      const declared = expectedEntries(manifest);
+      const pinned = new Map(readTarEntries(releaseArtifactPath(releaseManifest)).map((entry) => [entry.path, entry]));
+      const drifted = [];
+      for (const relative of declared) {
+        const absolute = path.join(REPO_ROOT, relative);
+        const current = fs.readFileSync(absolute);
+        const committed = pinned.get(relative);
+        if (!committed) drifted.push(`${relative}: not in the released artifact`);
+        else if (!committed.bytes.equals(current)) drifted.push(`${relative}: content differs from the released artifact`);
+      }
+      for (const relative of pinned.keys()) {
+        if (!declared.includes(relative)) drifted.push(`${relative}: in the released artifact but no longer declared`);
+      }
+      throw new Error(`the tree builds ${treeDigest}, but release/manifest.json pins ${releaseManifest.contentSha256}\n        re-run the host acceptance and "npm run release:publish" after reviewing the changes\n        ${drifted.slice(0, 20).join('\n        ')}`);
     }
-    for (const relative of pinned.keys()) {
-      if (!declared.includes(relative)) drifted.push(`${relative}: in the released artifact but no longer declared`);
-    }
-    throw new Error(`the tree builds ${treeDigest}, but release/manifest.json pins ${releaseManifest.contentSha256}\n        re-run the host acceptance and "npm run release:publish" after reviewing the changes\n        ${drifted.slice(0, 20).join('\n        ')}`);
-  }
-  notes.push(`        tree content ${treeDigest} matches the pin`);
-});
+    notes.push(`        tree content ${treeDigest} matches the pin`);
+  });
+} else {
+  check('this tree is the pinned release, or a committed successor of it', () => {
+    // Two states are legitimate, and they are named instead of collapsed:
+    //   pinned   this tree is the release (nothing has shipped since the pin);
+    //   ahead    this tree is a committed successor of the released commit, so
+    //            the divergence is reviewable commit content, not a local edit.
+    // A tree that is neither fails, and the files that differ are listed so the
+    // state can never be read as "released".
+    if (relationError) throw relationError;
+    const lines = formatRelation(relation);
+    for (const line of lines) notes.push(`        ${line}`);
+    if (relation.state === PIN_RELATION.UNVERIFIED) throw new Error(relation.problems.join('\n        '));
+  });
+}
 check('the version is a semver pre-release, never a plain release', () => {
   if (!/^\d+\.\d+\.\d+-/.test(manifest.version)) {
     throw new Error(`version ${manifest.version} is not a pre-release; a dev/RC artifact must carry a pre-release tag`);
@@ -244,7 +322,7 @@ check('the doctor entry point declared in "bin" exists', () => {
 // ---------------------------------------------------------------------------
 
 for (const note of notes) if (!note.startsWith('  ok  ')) console.log(note.trimEnd());
-console.log(`pack:check ${manifest.name}@${manifest.version}`);
+console.log(`pack:check ${manifest.name}@${manifest.version}${releaseMode ? ' (release tree)' : ' (development tree)'}`);
 for (const note of notes) if (note.startsWith('  ok  ')) console.log(note);
 if (failures.length > 0) {
   console.error('\nchecks failed:');
@@ -252,3 +330,9 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log('\nall package checks passed');
+if (relation && relation.state === PIN_RELATION.AHEAD) {
+  // Loud on purpose: this is the one passing state in which the tree is not the
+  // released package, so it must never be read as "the pin covers this tree".
+  console.log('\nthis tree is a development successor of the pinned release; the pin, its artifact and its evidence are unchanged');
+  console.log('the release gate still requires the tree to build the pin: npm run pack:check -- --release');
+}

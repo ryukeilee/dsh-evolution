@@ -85,7 +85,8 @@
 npm ci --ignore-scripts                          # 需要安装依赖时；与单测 CI 一致
 node --test test/trial-recovery-boundary.test.mjs  # 聚焦测试示例
 NODE_OPTIONS=--max-old-space-size=4096 npm test  # 仓库回归入口；堆上限是硬要求，见下条
-npm run pack:check                               # 分发内容、权限、锁文件、文档一致性、发布固定点
+npm run pack:check                               # 开发阶段：分发内容、权限、锁文件、文档一致性 + 工作树/固定点关系
+npm run pack:check -- --release                  # 发布阶段：额外要求工作树就是固定内容（漂移即失败）
 npm run release:verify                           # 固定产物：字节 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<build>.tgz --content-only   # 本机重建只比内容
 node scripts/release/verify-provenance.mjs --tag vX --require-source-commit
@@ -98,7 +99,7 @@ node scripts/release/verify-provenance.mjs --tag vX --require-source-commit
   - 单文件二分**已完成（有界）**：`docs/performance/oom-localization.md` 记录了对 95 个测试文件逐个起独立进程组的复测（`--max-old-space-size=4096`、2 GiB RSS 上限、300 s 超时），全部通过，峰值最高为 `test/dockyard-domain/continuous/continuous.test.js` 的 459 MiB，没有任何文件被上限杀掉；与此同时，事故点名的 8 MiB 病态 `\x` 输入在当前规则表上（绕过 64 KiB `REDACTION_TEXT_BOUND`）只需 27 ms、RSS 增加 9 MiB、不再抛错。结论的边界要说清楚：在本次环境（Node v26.12.0）与当前代码上，那次无界分配与事故点名的 `RangeError` 都无法复现；事故时的 Node 发行版与工作树、以及产生它的中间规则表版本都没有留存，所以这不是对历史根因的定论。「`rpages` ≈ 203 GB」那个具体数值也**未复现**，不要把它当作已被验证的上界。CI 的单元测试作业现在通过作业级 `NODE_OPTIONS` 强制执行同一个上限（`test/workflows.test.mjs` 断言），定位与复测都必须继续在带堆上限的前提下进行。
 - 改动 **trial/teardown、跨进程锁、CAS、journal、canary 或重启恢复**时，必须补对应失败路径测试。
 - 真实宿主验收：`npm run acceptance:host -- --host <version> --out <evidence-path>`。它会安装依赖并生成证据，**必须使用隔离 runtime/home**，不得触碰正式 `DSH_HOME`。
-- 修改任何**分发文件**（`package.json#files` 覆盖的内容）都会改变 `contentSha256`，从而使 `pack:check` 失败。这不是可忽略的噪音：按 `RELEASE.md` 重新构建、重跑两个宿主的验收、再更新固定点，**不手工伪造通过记录**。
+- 修改任何**分发文件**（`package.json#files` 覆盖的内容）都会改变 `contentSha256`，于是工作树不再是固定点描述的那个包。`pack:check` 默认按开发阶段判定：工作树要么就是固定点，要么是它的**已提交**后继（逐条点名差异），未提交的分发改动与“固定点不再描述自己记录的 commit”仍然失败；`pack:check -- --release`（`release.yml` 使用）保持严格语义，工作树不等于固定内容即失败。把漂移转绿的唯一途径是按 `RELEASE.md` 重新构建、重跑宿主验收、再更新固定点，**不手工伪造通过记录**。
 - `release:pack` 只生成本地产物；`release:publish` 会更新 `release/` 固定点，不属于只读检查。
 - 本机 `npm pack` 压缩字节不一定与已发布 tarball 相同；始终区分字节校验与 `--content-only` 的内容校验。
 - 性能或行为改动优先用差分测试（对照固定基线）证明等价，而不只依赖新增用例。
