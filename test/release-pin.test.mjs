@@ -64,6 +64,7 @@ test('the pin describes the shipped content of its own source commit', () => {
   // with it - and it is checked without consulting the working tree at all.
   assert.equal(relation.attribution.length, 0, relation.attribution.join('\n'));
   assert.equal(relation.sourceInHistory, true, 'the pinned source commit must exist in this repository');
+  assert.equal(relation.sourceIsAncestor, true, 'and HEAD must descend from it');
 });
 
 test('the working tree is the pinned release, or a committed successor of it', () => {
@@ -100,12 +101,35 @@ test('the pin relation accepts only committed drift the pin can be attributed fr
     'a tree that builds the pin needs no attribution',
   );
   assert.deepEqual(
-    evaluateTreeRelation({ treeDigest: treeContent, pinContentSha256: pinnedContent, headDigest: treeContent, sourceCommit: source.sourceCommit, attribution: [] }),
+    evaluateTreeRelation({
+      treeDigest: treeContent, pinContentSha256: pinnedContent, headDigest: treeContent,
+      sourceCommit: source.sourceCommit, sourceIsAncestor: true, attribution: [],
+    }),
     { state: 'ahead', problems: [] },
     'a committed successor of the released commit is a development state, not a failure',
   );
 
-  const uncommitted = evaluateTreeRelation({ treeDigest: treeContent, pinContentSha256: pinnedContent, headDigest: 'd'.repeat(64), sourceCommit: source.sourceCommit });
+  // "Successor" is an ancestry claim, not just "the pinned commit's content is
+  // readable": a tree that does not descend from it is unrelated content.
+  const unrelated = evaluateTreeRelation({
+    treeDigest: treeContent, pinContentSha256: pinnedContent, headDigest: treeContent,
+    sourceCommit: source.sourceCommit, sourceIsAncestor: false, attribution: [],
+  });
+  assert.equal(unrelated.state, 'unverified');
+  assert.match(unrelated.problems.join('\n'), /is not an ancestor of HEAD/);
+  assert.equal(/shallow/.test(unrelated.problems.join('\n')), false, 'a complete checkout must not be blamed on a shallow clone');
+  const shallow = evaluateTreeRelation({
+    treeDigest: treeContent, pinContentSha256: pinnedContent, headDigest: treeContent,
+    sourceCommit: source.sourceCommit, sourceIsAncestor: false, historyIsShallow: true, attribution: [],
+  });
+  assert.match(shallow.problems.join('\n'), /shallow checkout: fetch the full history/);
+  assert.match(
+    evaluatePinAttribution({ ...source, sourceInHistory: false, historyIsShallow: true })[0],
+    /shallow checkout: fetch the full history/,
+    'a shallow clone must be told how to answer the question',
+  );
+
+  const uncommitted = evaluateTreeRelation({ treeDigest: treeContent, pinContentSha256: pinnedContent, headDigest: 'd'.repeat(64), sourceCommit: source.sourceCommit, sourceIsAncestor: true });
   assert.equal(uncommitted.state, 'unverified');
   assert.match(uncommitted.problems.join('\n'), /uncommitted changes/);
 
@@ -121,7 +145,10 @@ test('the pin relation accepts only committed drift the pin can be attributed fr
   assert.equal(missingSource.length, 1);
   assert.match(missingSource[0], /is not in this repository's history/);
   assert.equal(
-    evaluateTreeRelation({ treeDigest: treeContent, pinContentSha256: pinnedContent, headDigest: treeContent, sourceCommit: source.sourceCommit, attribution: missingSource }).state,
+    evaluateTreeRelation({
+      treeDigest: treeContent, pinContentSha256: pinnedContent, headDigest: treeContent,
+      sourceCommit: source.sourceCommit, sourceIsAncestor: true, attribution: missingSource,
+    }).state,
     'unverified',
   );
   const misdescribed = evaluatePinAttribution({ ...source, sourceDigest: 'e'.repeat(64) });

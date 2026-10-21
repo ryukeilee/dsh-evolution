@@ -37,7 +37,11 @@ export function readManifest() {
  * shallow checkout just as well as in a full clone.
  */
 export function gitOutput(args, cwd = REPO_ROOT) {
-  return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+  // stdout is the answer; stderr is captured rather than inherited because every
+  // caller treats a failure as an expected answer ("this commit is not here")
+  // and reports it itself. Without this, probing a shallow clone prints git's own
+  // `fatal:` line beside the verdict.
+  return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
 export function packageFileName(manifest = readManifest()) {
@@ -188,7 +192,9 @@ export function treeContentDigest() {
 
 /** Digest the shipped files from git objects, independent of the working tree. */
 export function commitContentDigest(commit, cwd = REPO_ROOT) {
-  const gitBytes = (args) => execFileSync('git', args, { cwd });
+  // stderr is captured, not inherited: a caller that probes a commit which is not
+  // in this checkout treats the failure as an answer and reports it itself.
+  const gitBytes = (args) => execFileSync('git', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
   const manifest = JSON.parse(gitBytes(['show', `${commit}:package.json`]).toString('utf8'));
   const declared = (manifest.files || []).map((entry) => entry.replace(/\/+$/, ''));
   const records = gitBytes(['ls-tree', '-rz', '--full-tree', commit]).toString('utf8').split('\0').filter(Boolean);

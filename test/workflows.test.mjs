@@ -102,12 +102,33 @@ test('CI runs the unit tests, the package checks and both supported hosts', () =
   assert.match(packageRuns, /release\/manifest\.json/, 'the published tarball must be selected by the release pin');
   assert.equal(/pack:check -- --release/.test(packageRuns), false, 'CI checks the development state, not a release tree');
 
+  // The development verdict is decided from git - the pin's source commit, its
+  // shipped content and HEAD's - so the jobs that run it cannot be shallow
+  // clones. `actions/checkout` defaults to a one-commit clone, which turns the
+  // verdict into "the pinned commit is not in this repository's history".
+  for (const [jobName, job] of Object.entries(jobs)) {
+    const runs = (job.steps || []).map((step) => step.run).filter(Boolean).join('\n');
+    if (!/npm run pack:check|npm test/.test(runs)) continue;
+    const checkout = (job.steps || []).find((step) => String(step.uses).startsWith('actions/checkout@'));
+    assert.equal(checkout?.with?.['fetch-depth'], 0, `${jobName} reads the pinned commit and needs the full history`);
+  }
+
   // Real host acceptance for exactly the declared supported versions.
   const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
   const declared = manifest.peerDependencies['@deepseek-ai/dsh'].split('||').map((value) => value.trim());
   assert.deepEqual([...jobs['host-acceptance'].strategy.matrix.host].sort(), [...declared].sort());
   assert.ok(jobs['host-acceptance'].steps.some((step) => String(step.run).includes('run-host-acceptance.mjs')));
   assert.deepEqual(jobs['host-acceptance'].needs, ['package']);
+
+  // The host acceptance installs the package this tree builds, so it proves its
+  // own content (against the tree) and writes evidence for it. Comparing that
+  // evidence with the pin would make the job red for every development tree and
+  // would say nothing about whether the tree installs.
+  const acceptanceRuns = jobs['host-acceptance'].steps.map((step) => step.run).filter(Boolean).join('\n');
+  assert.match(acceptanceRuns, /verify-artifact\.mjs .*--content-only --tree/);
+  assert.match(acceptanceRuns, /treeContentDigest\(\)/);
+  assert.equal(jobs['host-acceptance'].steps.some((step) => /pin\.contentSha256/.test(String(step.run))), false,
+    'the acceptance job must not compare this tree\'s evidence with the pinned content');
 });
 
 test('CI clean install and upload select only the pinned candidate when historical tarballs coexist', () => {

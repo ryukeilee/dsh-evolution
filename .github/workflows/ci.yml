@@ -36,6 +36,11 @@ jobs:
         node: ['22.19.0', '24.x']
     steps:
       - uses: actions/checkout@v7
+        with:
+          # `test/release-pin.test.mjs` decides the tree/pin relation from git:
+          # it reads the shipped content of the commit the pin records, and of
+          # HEAD, so a one-commit clone has no history to answer from.
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
@@ -51,6 +56,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The development verdict proves the pin still describes its own source
+          # commit and that this tree is a committed successor of it, which needs
+          # the pinned commit and HEAD's shipped content - not a one-commit clone.
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: '22.19.0'
@@ -138,25 +148,37 @@ jobs:
         with:
           version: 11.26.0
       - name: Build the artifact this job installs
+        # This job installs the package *this tree* builds, which on a
+        # development tree is legitimately ahead of the last pin, so its content
+        # is proven against the tree. The published artifact is verified against
+        # the pin by the `package` job, and this job writes new evidence instead
+        # of reusing the pinned one.
         run: |
           set -euo pipefail
           npm run release:pack
-          node scripts/release/verify-artifact.mjs dist/dsh-evolution-*.tgz --content-only
+          node scripts/release/verify-artifact.mjs dist/dsh-evolution-*.tgz --content-only --tree
       - name: Real install acceptance on DSH ${{ matrix.host }}
         run: |
           node scripts/acceptance/run-host-acceptance.mjs \
             --host "${{ matrix.host }}" \
             --out "docs/evidence/dsh-${{ matrix.host }}.json"
-      - name: Prove the recorded evidence describes the pinned content
+      - name: Prove the recorded evidence describes the content this job installed
+        # The evidence must describe the artifact that was installed here, which
+        # is this tree's content. Whether that content is also the pinned release
+        # is a separate question, answered by `pack:check` in the `package` job;
+        # comparing against the pin here would make this job red for every
+        # development tree without telling anyone anything new.
         run: |
-          node -e "
-          const evidence = require('./docs/evidence/dsh-${{ matrix.host }}.json');
-          const pin = require('./release/manifest.json');
+          node --input-type=module -e "
+          import fs from 'node:fs';
+          import { treeContentDigest } from './scripts/release/release-lib.mjs';
+          const evidence = JSON.parse(fs.readFileSync('./docs/evidence/dsh-${{ matrix.host }}.json', 'utf8'));
+          const expected = treeContentDigest();
           if (evidence.ok !== true) throw new Error('the acceptance did not pass');
-          if (evidence.contentSha256 !== pin.contentSha256) {
-            throw new Error('evidence content ' + evidence.contentSha256 + ' !== pin ' + pin.contentSha256);
+          if (evidence.contentSha256 !== expected) {
+            throw new Error('evidence content ' + evidence.contentSha256 + ' !== this tree ' + expected);
           }
-          console.log('evidence matches pinned content', pin.contentSha256);
+          console.log('evidence matches the installed content', expected);
           "
       - name: Upload the acceptance evidence
         uses: actions/upload-artifact@v7

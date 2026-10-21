@@ -35,7 +35,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  REPO_ROOT, commitContentDigest, expectedEntries, isFullSha, readReleaseManifest,
+  REPO_ROOT, commitContentDigest, expectedEntries, gitOutput, isFullSha, readReleaseManifest,
   readTarEntries, releaseArtifactPath, treeContentDigest,
 } from './release-lib.mjs';
 
@@ -49,17 +49,23 @@ export const PIN_RELATION = Object.freeze({ PINNED: 'pinned', AHEAD: 'ahead', UN
  *   sourceInHistory   whether that commit exists in this repository
  *   sourceDigest      canonical shipped-content digest of that commit, or null
  *   pinContentSha256  `release/manifest.json#contentSha256`
+ *   historyIsShallow  whether this checkout is a shallow clone, which makes
+ *                     "absent" and "unreachable" indistinguishable without a
+ *                     hint that the history is missing rather than the commit
  *
  * Returns the problems, empty when the pin describes its own history. A pin
  * without a recorded source commit is a legacy pin: it cannot be attributed, so
  * it yields no problems here and the relation check refuses drift instead.
  */
-export function evaluatePinAttribution({ sourceCommit, sourceInHistory, sourceDigest, pinContentSha256 }) {
+export function evaluatePinAttribution({ sourceCommit, sourceInHistory, sourceDigest, pinContentSha256, historyIsShallow = false }) {
+  const shallowHint = historyIsShallow
+    ? ' (this is a shallow checkout: fetch the full history, e.g. actions/checkout with fetch-depth: 0)'
+    : '';
   if (sourceCommit === null || sourceCommit === undefined) return [];
   if (!isFullSha(sourceCommit)) {
     return [`release/manifest.json source commit ${JSON.stringify(sourceCommit)} is not a full 40-hex object name`];
   }
-  if (!sourceInHistory) return [`pinned source commit ${sourceCommit} is not in this repository's history`];
+  if (!sourceInHistory) return [`pinned source commit ${sourceCommit} is not in this repository's history${shallowHint}`];
   if (sourceDigest !== pinContentSha256) {
     return [`pinned source commit ${sourceCommit} ships ${sourceDigest}, but the pin records ${pinContentSha256}`];
   }
@@ -73,9 +79,15 @@ export function evaluatePinAttribution({ sourceCommit, sourceInHistory, sourceDi
  *   pinContentSha256  `release/manifest.json#contentSha256`
  *   headDigest        canonical shipped-content digest of HEAD, or null
  *   sourceCommit      `release/manifest.json#sourceCommit`, or null
+ *   sourceIsAncestor  whether that commit is an ancestor of HEAD, which is what
+ *                     makes this tree a *successor* of the released commit
+ *   historyIsShallow  see `evaluatePinAttribution()`
  *   attribution       problems from `evaluatePinAttribution()` for this pin
  */
-export function evaluateTreeRelation({ treeDigest, pinContentSha256, headDigest, sourceCommit = null, attribution = [] }) {
+export function evaluateTreeRelation({
+  treeDigest, pinContentSha256, headDigest, sourceCommit = null, sourceIsAncestor = false,
+  historyIsShallow = false, attribution = [],
+}) {
   if (treeDigest === pinContentSha256) return { state: PIN_RELATION.PINNED, problems: [] };
   const problems = [...attribution];
   if (sourceCommit === null || sourceCommit === undefined) {
@@ -83,6 +95,16 @@ export function evaluateTreeRelation({ treeDigest, pinContentSha256, headDigest,
     // content this tree is a successor of. That is not a reason to accept the
     // drift: it is the reason the drift cannot be attributed.
     problems.push('release/manifest.json records no source commit, so this divergence cannot be attributed to released history');
+  }
+  if (isFullSha(sourceCommit) && !sourceIsAncestor) {
+    // A pin that names a commit outside this history cannot be what this tree
+    // descends from, so "committed successor" would be a claim about unrelated
+    // content. The release path checks ancestry too; the development verdict must
+    // not be the weaker of the two.
+    const shallowHint = historyIsShallow
+      ? ' (this is a shallow checkout: fetch the full history, e.g. actions/checkout with fetch-depth: 0)'
+      : '';
+    problems.push(`pinned source commit ${sourceCommit} is not an ancestor of HEAD, so this tree is not its successor${shallowHint}`);
   }
   if (headDigest === null || headDigest === undefined) {
     problems.push('HEAD\'s shipped content could not be read, so this divergence cannot be attributed to a commit');
@@ -129,11 +151,22 @@ export function collectPinFacts({ cwd = REPO_ROOT, pin = readReleaseManifest() }
       return null;
     }
   };
+  let historyIsShallow = false;
+  try {
+    historyIsShallow = gitOutput(['rev-parse', '--is-shallow-repository'], cwd) === 'true';
+  } catch { historyIsShallow = false; }
   let sourceInHistory = false;
   let sourceDigest = null;
+  let sourceIsAncestor = false;
   if (isFullSha(sourceCommit)) {
     sourceDigest = digestOf(sourceCommit);
     sourceInHistory = sourceDigest !== null;
+    if (sourceInHistory) {
+      try {
+        gitOutput(['merge-base', '--is-ancestor', sourceCommit, 'HEAD'], cwd);
+        sourceIsAncestor = true;
+      } catch { sourceIsAncestor = false; }
+    }
   }
   const diverged = treeDigest !== pin.contentSha256;
   return {
@@ -142,6 +175,8 @@ export function collectPinFacts({ cwd = REPO_ROOT, pin = readReleaseManifest() }
     sourceCommit,
     sourceInHistory,
     sourceDigest,
+    sourceIsAncestor,
+    historyIsShallow,
     headDigest: diverged ? digestOf('HEAD') : null,
     differing: diverged ? differingShippedEntries(pin) : [],
   };
@@ -164,12 +199,14 @@ export function formatRelation(relation) {
   }
   if (relation.state === PIN_RELATION.AHEAD) {
     lines.push(`development tree ahead of the pin (${artifact}, content ${relation.pin.contentSha256})`);
+    lines.push(`it descends from the pinned source commit ${relation.sourceCommit}`);
     if (relation.differing === null) {
       lines.push('the pinned artifact is missing, so the differing files cannot be listed');
     } else {
       for (const entry of relation.differing) lines.push(`${entry.path}: ${entry.reason}`);
     }
-    lines.push('the pin is unchanged; the release gate still requires the tree to build it ("npm run pack:check -- --release")');
+    lines.push('the pin is consistent with itself: its artifact matches its content digest and the acceptance evidence describes it');
+    lines.push('the release gate still requires the tree to build the pin ("npm run pack:check -- --release")');
     return lines;
   }
   lines.push(`the tree is neither the pinned release nor a committed successor of it (content ${relation.treeDigest}, pin ${relation.pin.contentSha256})`);
@@ -189,6 +226,7 @@ if (invokedDirectly) {
     pinContentSha256: relation.pin.contentSha256,
     pinVersion: relation.pin.version,
     sourceCommit: relation.sourceCommit,
+    sourceIsAncestor: relation.sourceIsAncestor,
     attribution: relation.attribution,
     differing: relation.differing,
     problems: relation.problems,
