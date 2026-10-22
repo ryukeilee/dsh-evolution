@@ -1,0 +1,4040 @@
+{
+  "baseline": "adcdb2f",
+  "environment": {
+    "node": "v26.12.1",
+    "platform": "darwin/arm64",
+    "cpus": 8,
+    "loadAverageAtStart": [
+      1.8203125,
+      1.82666015625,
+      1.70654296875
+    ],
+    "loadAverageAtEnd": [
+      1.81005859375,
+      1.81787109375,
+      1.7080078125
+    ]
+  },
+  "protocol": {
+    "measurementClock": "deterministic clock advancing 1 ms per read (production condition, reproducible)",
+    "equivalenceClock": "frozen at 2026-11-02T00:00:00.000Z; durable output must be byte-identical",
+    "order": "each round alternates which side runs first",
+    "fixture": "40 seeded rows in state.json.observations-archive.jsonl; the large scenario adds sealed 1 KiB cycle segments plus their index; the warm-up drives the hot observation window past its limit so every measured write appends to the active archive, which the run asserts",
+    "instrumentedPass": "a second pass per side with wrapped fs calls; two-path calls are attributed to the tree they write into, fsyncs through the fd's path"
+  },
+  "note": "Two invocations of the same script, one per archive size, so each scenario has its own start/end load average. `scenarios[]` carries the measured rounds; `equivalence[]` is the frozen-clock byte comparison.",
+  "invocations": [
+    {
+      "command": "node scripts/benchmarks/archive-stage-io.mjs --rounds 3 --writes 15 --sealed 0",
+      "environment": {
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "cpus": 8,
+        "loadAverageAtStart": [
+          1.8203125,
+          1.82666015625,
+          1.70654296875
+        ],
+        "loadAverageAtEnd": [
+          1.81005859375,
+          1.81787109375,
+          1.7080078125
+        ]
+      }
+    },
+    {
+      "command": "node scripts/benchmarks/archive-stage-io.mjs --rounds 3 --writes 12 --sealed 216",
+      "environment": {
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "cpus": 8,
+        "loadAverageAtStart": [
+          1.7451171875,
+          1.80419921875,
+          1.70361328125
+        ],
+        "loadAverageAtEnd": [
+          2.98486328125,
+          2.2548828125,
+          1.896484375
+        ]
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "sealed": 0,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 62.86766699999998,
+              "cpuMs": 32.741,
+              "wallMsAll": [
+                64.889,
+                59.933,
+                62.969,
+                58.935,
+                58.952,
+                59.968,
+                58.132,
+                63.923,
+                62.868,
+                62.176,
+                61.974,
+                64.26,
+                64.81,
+                66.982,
+                71.272
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 3,
+                  "ms": 9.708,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.33,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.313,
+                  "bytes": 398085
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 5,
+                  "ms": 0.275,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 37,
+                  "ms": 0.274,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.113,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.044,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 4,
+                  "ms": 0.037,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.019,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.014,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.274,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.229,
+                  "bytes": 990
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.148,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.128,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 17,
+                  "ms": 0.094,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.018,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 10.96,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.751,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 59,
+                  "ms": 0.397,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 0.354,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.262,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.261,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.222,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.212,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.165,
+                  "bytes": 796170
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.105,
+                  "bytes": 4500
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 3,
+                  "ms": 0.091,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.037,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 5,
+                  "ms": 0.031,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 4,
+                  "ms": 0.031,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.007,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 2,
+                "installLinks": 0,
+                "installRewrites": 2,
+                "installFsyncs": 2,
+                "calls": 241
+              }
+            },
+            "candidate": {
+              "wallMs": 55.493499999998676,
+              "cpuMs": 32.54,
+              "wallMsAll": [
+                62.028,
+                56.087,
+                55.769,
+                55.493,
+                54.381,
+                48.948,
+                53.031,
+                55.054,
+                57.291,
+                55.055,
+                56.838,
+                51.894,
+                56.893,
+                58.086,
+                54.974
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 1,
+                  "ms": 3.272,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.812,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.679,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 37,
+                  "ms": 0.283,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.12,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 6,
+                  "ms": 0.049,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.04,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.022,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 1,
+                  "ms": 0.017,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.015,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.291,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.231,
+                  "bytes": 990
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.141,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.111,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 13,
+                  "ms": 0.063,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.016,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 9.205,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.65,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 59,
+                  "ms": 0.409,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 0.283,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.256,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.247,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.218,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.201,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.15,
+                  "bytes": 796170
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.103,
+                  "bytes": 4500
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 1,
+                  "ms": 0.071,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.032,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 5,
+                  "ms": 0.028,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 4,
+                  "ms": 0.027,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.007,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 2,
+                "installLinks": 2,
+                "installRewrites": 0,
+                "installFsyncs": 0,
+                "calls": 231
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "wallMs": 56.67491699999846,
+              "cpuMs": 32.595,
+              "wallMsAll": [
+                52.953,
+                53.057,
+                53.095,
+                58.025,
+                60.097,
+                64.823,
+                51.994,
+                54.041,
+                57.039,
+                56.675,
+                56.495,
+                53.12,
+                56.691,
+                57.073,
+                61.161
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 1,
+                  "ms": 3.582,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.825,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.685,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 37,
+                  "ms": 0.279,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.115,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 6,
+                  "ms": 0.05,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.041,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.022,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 1,
+                  "ms": 0.017,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.014,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.28,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.23,
+                  "bytes": 990
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.144,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.111,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 13,
+                  "ms": 0.063,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.017,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 9.026,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.652,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 59,
+                  "ms": 0.404,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 0.282,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.255,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.245,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.215,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.204,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.151,
+                  "bytes": 796170
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.095,
+                  "bytes": 4500
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 1,
+                  "ms": 0.069,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.032,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 5,
+                  "ms": 0.029,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 4,
+                  "ms": 0.026,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.007,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 2,
+                "installLinks": 2,
+                "installRewrites": 0,
+                "installFsyncs": 0,
+                "calls": 231
+              }
+            },
+            "baseline": {
+              "wallMs": 64.06575000000157,
+              "cpuMs": 33.102,
+              "wallMsAll": [
+                65.473,
+                64.587,
+                58.215,
+                64.066,
+                57.523,
+                62.17,
+                59.092,
+                64.086,
+                64.219,
+                65.652,
+                65.037,
+                62.094,
+                65.913,
+                61.351,
+                61.616
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 3,
+                  "ms": 9.667,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.363,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 37,
+                  "ms": 0.297,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.262,
+                  "bytes": 398085
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 5,
+                  "ms": 0.222,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.123,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.044,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 4,
+                  "ms": 0.042,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.019,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.012,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.331,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.279,
+                  "bytes": 990
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.177,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.134,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 17,
+                  "ms": 0.121,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.02,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 9.558,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.743,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 59,
+                  "ms": 0.439,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 0.331,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.29,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.245,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.233,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.22,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.168,
+                  "bytes": 796170
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.116,
+                  "bytes": 4500
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 3,
+                  "ms": 0.084,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.037,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 5,
+                  "ms": 0.03,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 4,
+                  "ms": 0.029,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.008,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.005,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 2,
+                "installLinks": 0,
+                "installRewrites": 2,
+                "installFsyncs": 2,
+                "calls": 241
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 64.8617090000007,
+              "cpuMs": 34.314,
+              "wallMsAll": [
+                58.502,
+                61.604,
+                58.268,
+                62.687,
+                60.136,
+                64.862,
+                64.119,
+                63.989,
+                65.978,
+                66.88,
+                67.405,
+                66.881,
+                67.909,
+                69.906,
+                67.342
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 3,
+                  "ms": 9.154,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.332,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 37,
+                  "ms": 0.257,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.256,
+                  "bytes": 398085
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 5,
+                  "ms": 0.223,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.108,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.045,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 4,
+                  "ms": 0.038,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.018,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.012,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.301,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.262,
+                  "bytes": 990
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.163,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.125,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 17,
+                  "ms": 0.094,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.018,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 11.357,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.772,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 59,
+                  "ms": 0.38,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 0.368,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.267,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.262,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.221,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.199,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.163,
+                  "bytes": 796170
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.103,
+                  "bytes": 4500
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 3,
+                  "ms": 0.087,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.036,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 5,
+                  "ms": 0.031,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 4,
+                  "ms": 0.029,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.007,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 2,
+                "installLinks": 0,
+                "installRewrites": 2,
+                "installFsyncs": 2,
+                "calls": 241
+              }
+            },
+            "candidate": {
+              "wallMs": 59.03333399999974,
+              "cpuMs": 32.992,
+              "wallMsAll": [
+                48.895,
+                53.056,
+                59.99,
+                57.116,
+                54.941,
+                61.039,
+                58.012,
+                56.86,
+                59.211,
+                59.033,
+                59.999,
+                61.255,
+                60.773,
+                61.002,
+                56.938
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 1,
+                  "ms": 3.343,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.832,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.694,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 37,
+                  "ms": 0.267,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.114,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 6,
+                  "ms": 0.048,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.041,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.022,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 1,
+                  "ms": 0.017,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.014,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.28,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.233,
+                  "bytes": 990
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.147,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.114,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 13,
+                  "ms": 0.063,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.016,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 9.829,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.662,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 59,
+                  "ms": 0.406,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 0.29,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.249,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.246,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.221,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.206,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.153,
+                  "bytes": 796170
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.099,
+                  "bytes": 4500
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 1,
+                  "ms": 0.073,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 1,
+                  "ms": 0.032,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 5,
+                  "ms": 0.027,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 4,
+                  "ms": 0.027,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.007,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 2,
+                "installLinks": 2,
+                "installRewrites": 0,
+                "installFsyncs": 0,
+                "calls": 231
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "perWrite": {
+          "baseline": {
+            "wallMs": 64.06575000000157,
+            "cpuMs": 33.102,
+            "wallRuns": [
+              62.868,
+              64.066,
+              64.862
+            ],
+            "stagingLeft": 0,
+            "workload": {
+              "mirrorLinks": 2,
+              "installLinks": 0,
+              "installRewrites": 2,
+              "installFsyncs": 2,
+              "calls": 241
+            }
+          },
+          "candidate": {
+            "wallMs": 56.67491699999846,
+            "cpuMs": 32.595,
+            "wallRuns": [
+              55.493,
+              56.675,
+              59.033
+            ],
+            "stagingLeft": 0,
+            "workload": {
+              "mirrorLinks": 2,
+              "installLinks": 2,
+              "installRewrites": 0,
+              "installFsyncs": 0,
+              "calls": 231
+            }
+          }
+        },
+        "attribution": {
+          "baseline": [
+            {
+              "bucket": "stage",
+              "op": "fsyncSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 10.96
+            },
+            {
+              "bucket": "live",
+              "op": "fsyncSync",
+              "callsPerWrite": 3,
+              "msPerWrite": 9.667
+            },
+            {
+              "bucket": "stage",
+              "op": "linkSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.751
+            },
+            {
+              "bucket": "stage",
+              "op": "readdirSync!error",
+              "callsPerWrite": 59,
+              "msPerWrite": 0.397
+            },
+            {
+              "bucket": "stage",
+              "op": "rmSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.354
+            },
+            {
+              "bucket": "live",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.332
+            },
+            {
+              "bucket": "other",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.301
+            },
+            {
+              "bucket": "live",
+              "op": "readdirSync!error",
+              "callsPerWrite": 37,
+              "msPerWrite": 0.274
+            },
+            {
+              "bucket": "stage",
+              "op": "openSync",
+              "callsPerWrite": 10,
+              "msPerWrite": 0.267
+            },
+            {
+              "bucket": "live",
+              "op": "writeFileSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.262
+            },
+            {
+              "bucket": "other",
+              "op": "writeFileSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.262
+            },
+            {
+              "bucket": "stage",
+              "op": "copyFileSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.261
+            },
+            {
+              "bucket": "live",
+              "op": "openSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 0.223
+            },
+            {
+              "bucket": "stage",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.221
+            },
+            {
+              "bucket": "stage",
+              "op": "statSync!error",
+              "callsPerWrite": 35,
+              "msPerWrite": 0.212
+            },
+            {
+              "bucket": "stage",
+              "op": "readFileSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 0.165
+            },
+            {
+              "bucket": "other",
+              "op": "openSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.163
+            },
+            {
+              "bucket": "other",
+              "op": "readFileSync",
+              "callsPerWrite": 4,
+              "msPerWrite": 0.128
+            },
+            {
+              "bucket": "live",
+              "op": "statSync!error",
+              "callsPerWrite": 17,
+              "msPerWrite": 0.113
+            },
+            {
+              "bucket": "stage",
+              "op": "writeFileSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.105
+            },
+            {
+              "bucket": "other",
+              "op": "closeSync",
+              "callsPerWrite": 17,
+              "msPerWrite": 0.094
+            },
+            {
+              "bucket": "stage",
+              "op": "mkdirSync",
+              "callsPerWrite": 3,
+              "msPerWrite": 0.087
+            },
+            {
+              "bucket": "live",
+              "op": "readdirSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.044
+            },
+            {
+              "bucket": "live",
+              "op": "lstatSync",
+              "callsPerWrite": 4,
+              "msPerWrite": 0.038
+            },
+            {
+              "bucket": "stage",
+              "op": "readdirSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.037
+            },
+            {
+              "bucket": "stage",
+              "op": "lstatSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 0.031
+            },
+            {
+              "bucket": "stage",
+              "op": "statSync",
+              "callsPerWrite": 4,
+              "msPerWrite": 0.029
+            },
+            {
+              "bucket": "live",
+              "op": "statSync",
+              "callsPerWrite": 3,
+              "msPerWrite": 0.019
+            },
+            {
+              "bucket": "other",
+              "op": "lstatSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.018
+            },
+            {
+              "bucket": "live",
+              "op": "existsSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.012
+            },
+            {
+              "bucket": "stage",
+              "op": "readFileSync!error",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.007
+            },
+            {
+              "bucket": "stage",
+              "op": "existsSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.006
+            }
+          ],
+          "candidate": [
+            {
+              "bucket": "stage",
+              "op": "fsyncSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 9.205
+            },
+            {
+              "bucket": "live",
+              "op": "fsyncSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 3.343
+            },
+            {
+              "bucket": "live",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.825
+            },
+            {
+              "bucket": "live",
+              "op": "linkSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.685
+            },
+            {
+              "bucket": "stage",
+              "op": "linkSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.652
+            },
+            {
+              "bucket": "stage",
+              "op": "readdirSync!error",
+              "callsPerWrite": 59,
+              "msPerWrite": 0.406
+            },
+            {
+              "bucket": "stage",
+              "op": "rmSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.283
+            },
+            {
+              "bucket": "other",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.28
+            },
+            {
+              "bucket": "live",
+              "op": "readdirSync!error",
+              "callsPerWrite": 37,
+              "msPerWrite": 0.279
+            },
+            {
+              "bucket": "stage",
+              "op": "openSync",
+              "callsPerWrite": 10,
+              "msPerWrite": 0.255
+            },
+            {
+              "bucket": "stage",
+              "op": "copyFileSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.246
+            },
+            {
+              "bucket": "other",
+              "op": "writeFileSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.231
+            },
+            {
+              "bucket": "stage",
+              "op": "statSync!error",
+              "callsPerWrite": 35,
+              "msPerWrite": 0.218
+            },
+            {
+              "bucket": "stage",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.204
+            },
+            {
+              "bucket": "stage",
+              "op": "readFileSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 0.151
+            },
+            {
+              "bucket": "other",
+              "op": "openSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.144
+            },
+            {
+              "bucket": "live",
+              "op": "statSync!error",
+              "callsPerWrite": 17,
+              "msPerWrite": 0.115
+            },
+            {
+              "bucket": "other",
+              "op": "readFileSync",
+              "callsPerWrite": 4,
+              "msPerWrite": 0.111
+            },
+            {
+              "bucket": "stage",
+              "op": "writeFileSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.099
+            },
+            {
+              "bucket": "stage",
+              "op": "mkdirSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.071
+            },
+            {
+              "bucket": "other",
+              "op": "closeSync",
+              "callsPerWrite": 13,
+              "msPerWrite": 0.063
+            },
+            {
+              "bucket": "live",
+              "op": "lstatSync",
+              "callsPerWrite": 6,
+              "msPerWrite": 0.049
+            },
+            {
+              "bucket": "live",
+              "op": "readdirSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.041
+            },
+            {
+              "bucket": "stage",
+              "op": "readdirSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.032
+            },
+            {
+              "bucket": "stage",
+              "op": "lstatSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 0.028
+            },
+            {
+              "bucket": "stage",
+              "op": "statSync",
+              "callsPerWrite": 4,
+              "msPerWrite": 0.027
+            },
+            {
+              "bucket": "live",
+              "op": "statSync",
+              "callsPerWrite": 3,
+              "msPerWrite": 0.022
+            },
+            {
+              "bucket": "live",
+              "op": "openSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.017
+            },
+            {
+              "bucket": "other",
+              "op": "lstatSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.016
+            },
+            {
+              "bucket": "live",
+              "op": "existsSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.014
+            },
+            {
+              "bucket": "stage",
+              "op": "readFileSync!error",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.007
+            },
+            {
+              "bucket": "stage",
+              "op": "existsSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.006
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sealed": 216,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 165.98866700000144,
+              "cpuMs": 134.08,
+              "wallMsAll": [
+                163.853,
+                164.665,
+                162.847,
+                162.185,
+                166.403,
+                170.545,
+                166.286,
+                166.535,
+                166.319,
+                163.352,
+                163.912,
+                165.989
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 3,
+                  "ms": 10.316,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 437,
+                  "ms": 2.429,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 5,
+                  "ms": 0.787,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.351,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.289,
+                  "bytes": 791382
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 35,
+                  "ms": 0.263,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 5,
+                  "ms": 0.231,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.119,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.019,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.014,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.306,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.208,
+                  "bytes": 792
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.131,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.116,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 17,
+                  "ms": 0.106,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.014,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 218,
+                  "ms": 66.811,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 13.962,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 9.703,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 222,
+                  "ms": 1.01,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 219,
+                  "ms": 0.939,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 220,
+                  "ms": 0.837,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 6,
+                  "ms": 0.764,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 56,
+                  "ms": 0.335,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.269,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.243,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.192,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.181,
+                  "bytes": 1582764
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.174,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.102,
+                  "bytes": 3624
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.007,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.007,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 218,
+                "installLinks": 0,
+                "installRewrites": 2,
+                "installFsyncs": 2,
+                "calls": 1543
+              }
+            },
+            "candidate": {
+              "wallMs": 162.3413330000003,
+              "cpuMs": 135.16,
+              "wallMsAll": [
+                159.01,
+                158.167,
+                162.832,
+                163.466,
+                163.835,
+                158.903,
+                158.431,
+                159.19,
+                162.341,
+                163.1,
+                160.964,
+                163.169
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 1,
+                  "ms": 3.134,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 439,
+                  "ms": 2.73,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 5,
+                  "ms": 0.84,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.792,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.667,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 35,
+                  "ms": 0.308,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.142,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.024,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 1,
+                  "ms": 0.016,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.016,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.311,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.229,
+                  "bytes": 792
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.137,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.112,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 13,
+                  "ms": 0.069,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.014,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 218,
+                  "ms": 67.043,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 13.48,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 9.385,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 222,
+                  "ms": 1.049,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 220,
+                  "ms": 1.026,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 6,
+                  "ms": 0.805,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 56,
+                  "ms": 0.362,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.27,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.252,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.197,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.187,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.169,
+                  "bytes": 1582764
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 2,
+                  "ms": 0.122,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.108,
+                  "bytes": 3624
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.008,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 218,
+                "installLinks": 2,
+                "installRewrites": 0,
+                "installFsyncs": 0,
+                "calls": 1318
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "wallMs": 161.42154100000334,
+              "cpuMs": 135.806,
+              "wallMsAll": [
+                161.1,
+                159.266,
+                160.638,
+                162.364,
+                161.422,
+                165.27,
+                157.861,
+                161.915,
+                161.342,
+                162.846,
+                158.924,
+                165.974
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 1,
+                  "ms": 3.74,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 439,
+                  "ms": 2.296,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 5,
+                  "ms": 0.848,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.809,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.672,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 35,
+                  "ms": 0.304,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.151,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.024,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 1,
+                  "ms": 0.017,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.015,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.293,
+                  "bytes": 792
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.27,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.14,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.114,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 13,
+                  "ms": 0.07,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.015,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 218,
+                  "ms": 65.449,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 14.714,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 9.494,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 222,
+                  "ms": 1.02,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 220,
+                  "ms": 0.843,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 6,
+                  "ms": 0.788,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 56,
+                  "ms": 0.334,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.28,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.244,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.202,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.168,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.168,
+                  "bytes": 1582764
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 2,
+                  "ms": 0.12,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.108,
+                  "bytes": 3624
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.007,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 218,
+                "installLinks": 2,
+                "installRewrites": 0,
+                "installFsyncs": 0,
+                "calls": 1318
+              }
+            },
+            "baseline": {
+              "wallMs": 166.66900000000896,
+              "cpuMs": 133.323,
+              "wallMsAll": [
+                163.256,
+                163.685,
+                167.08,
+                161.338,
+                166.324,
+                161.094,
+                167.052,
+                168.8,
+                170.216,
+                167.355,
+                166.669,
+                165.293
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 3,
+                  "ms": 8.737,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 437,
+                  "ms": 2.494,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 5,
+                  "ms": 0.793,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.325,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.318,
+                  "bytes": 791382
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 35,
+                  "ms": 0.272,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 5,
+                  "ms": 0.256,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.122,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.019,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.013,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.25,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.22,
+                  "bytes": 792
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.134,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.113,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 17,
+                  "ms": 0.103,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.014,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 218,
+                  "ms": 66.839,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 13.405,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 9.57,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 222,
+                  "ms": 1.007,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 219,
+                  "ms": 0.939,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 220,
+                  "ms": 0.849,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 6,
+                  "ms": 0.764,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 56,
+                  "ms": 0.329,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.274,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.243,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.19,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.172,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.162,
+                  "bytes": 1582764
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.104,
+                  "bytes": 3624
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.007,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 218,
+                "installLinks": 0,
+                "installRewrites": 2,
+                "installFsyncs": 2,
+                "calls": 1543
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 164.97375000000466,
+              "cpuMs": 134.308,
+              "wallMsAll": [
+                164.261,
+                163.931,
+                163.195,
+                164.97,
+                166.773,
+                164.974,
+                164.673,
+                164.707,
+                173.451,
+                165.936,
+                171.103,
+                169.855
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 3,
+                  "ms": 8.698,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 437,
+                  "ms": 2.575,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 5,
+                  "ms": 0.799,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.326,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.28,
+                  "bytes": 791382
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 35,
+                  "ms": 0.27,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 5,
+                  "ms": 0.215,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.126,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.019,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.013,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.288,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.208,
+                  "bytes": 792
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.132,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.115,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 17,
+                  "ms": 0.103,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.017,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 218,
+                  "ms": 67.004,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 13.379,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 10.265,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 222,
+                  "ms": 1.038,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 219,
+                  "ms": 0.967,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 220,
+                  "ms": 0.855,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 6,
+                  "ms": 0.776,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 56,
+                  "ms": 0.327,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.265,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.244,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.19,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.172,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.159,
+                  "bytes": 1582764
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.102,
+                  "bytes": 3624
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 218,
+                "installLinks": 0,
+                "installRewrites": 2,
+                "installFsyncs": 2,
+                "calls": 1543
+              }
+            },
+            "candidate": {
+              "wallMs": 161.1287919999886,
+              "cpuMs": 133.964,
+              "wallMsAll": [
+                161.129,
+                159.89,
+                158.698,
+                161.496,
+                162.082,
+                159.974,
+                159.331,
+                162.66,
+                158.273,
+                163.737,
+                158.933,
+                161.611
+              ],
+              "stagingLeft": 0,
+              "attribution": [
+                {
+                  "bucket": "live",
+                  "op": "fsyncSync",
+                  "calls": 1,
+                  "ms": 3.005,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "lstatSync",
+                  "calls": 439,
+                  "ms": 2.478,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync",
+                  "calls": 5,
+                  "ms": 0.838,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.804,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "linkSync",
+                  "calls": 2,
+                  "ms": 0.686,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "readdirSync!error",
+                  "calls": 35,
+                  "ms": 0.298,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync!error",
+                  "calls": 17,
+                  "ms": 0.145,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "statSync",
+                  "calls": 3,
+                  "ms": 0.023,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "openSync",
+                  "calls": 1,
+                  "ms": 0.018,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "live",
+                  "op": "existsSync",
+                  "calls": 2,
+                  "ms": 0.015,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.293,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "writeFileSync",
+                  "calls": 2,
+                  "ms": 0.228,
+                  "bytes": 792
+                },
+                {
+                  "bucket": "other",
+                  "op": "openSync",
+                  "calls": 2,
+                  "ms": 0.139,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "readFileSync",
+                  "calls": 4,
+                  "ms": 0.113,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "closeSync",
+                  "calls": 13,
+                  "ms": 0.067,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "other",
+                  "op": "lstatSync",
+                  "calls": 2,
+                  "ms": 0.014,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "linkSync",
+                  "calls": 218,
+                  "ms": 66.934,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "fsyncSync",
+                  "calls": 5,
+                  "ms": 14.662,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "rmSync",
+                  "calls": 1,
+                  "ms": 9.325,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "lstatSync",
+                  "calls": 222,
+                  "ms": 0.998,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync",
+                  "calls": 220,
+                  "ms": 0.836,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync",
+                  "calls": 6,
+                  "ms": 0.77,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readdirSync!error",
+                  "calls": 56,
+                  "ms": 0.321,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "openSync",
+                  "calls": 10,
+                  "ms": 0.281,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "copyFileSync",
+                  "calls": 1,
+                  "ms": 0.248,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "renameSync",
+                  "calls": 2,
+                  "ms": 0.192,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "statSync!error",
+                  "calls": 35,
+                  "ms": 0.172,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync",
+                  "calls": 5,
+                  "ms": 0.167,
+                  "bytes": 1582764
+                },
+                {
+                  "bucket": "stage",
+                  "op": "mkdirSync",
+                  "calls": 2,
+                  "ms": 0.121,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "writeFileSync",
+                  "calls": 1,
+                  "ms": 0.101,
+                  "bytes": 3624
+                },
+                {
+                  "bucket": "stage",
+                  "op": "existsSync",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                },
+                {
+                  "bucket": "stage",
+                  "op": "readFileSync!error",
+                  "calls": 1,
+                  "ms": 0.006,
+                  "bytes": 0
+                }
+              ],
+              "workload": {
+                "mirrorLinks": 218,
+                "installLinks": 2,
+                "installRewrites": 0,
+                "installFsyncs": 0,
+                "calls": 1318
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "perWrite": {
+          "baseline": {
+            "wallMs": 165.98866700000144,
+            "cpuMs": 134.08,
+            "wallRuns": [
+              165.989,
+              166.669,
+              164.974
+            ],
+            "stagingLeft": 0,
+            "workload": {
+              "mirrorLinks": 218,
+              "installLinks": 0,
+              "installRewrites": 2,
+              "installFsyncs": 2,
+              "calls": 1543
+            }
+          },
+          "candidate": {
+            "wallMs": 161.42154100000334,
+            "cpuMs": 135.16,
+            "wallRuns": [
+              162.341,
+              161.422,
+              161.129
+            ],
+            "stagingLeft": 0,
+            "workload": {
+              "mirrorLinks": 218,
+              "installLinks": 2,
+              "installRewrites": 0,
+              "installFsyncs": 0,
+              "calls": 1318
+            }
+          }
+        },
+        "attribution": {
+          "baseline": [
+            {
+              "bucket": "stage",
+              "op": "linkSync",
+              "callsPerWrite": 218,
+              "msPerWrite": 66.839
+            },
+            {
+              "bucket": "stage",
+              "op": "fsyncSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 13.405
+            },
+            {
+              "bucket": "stage",
+              "op": "rmSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 9.703
+            },
+            {
+              "bucket": "live",
+              "op": "fsyncSync",
+              "callsPerWrite": 3,
+              "msPerWrite": 8.737
+            },
+            {
+              "bucket": "live",
+              "op": "lstatSync",
+              "callsPerWrite": 437,
+              "msPerWrite": 2.494
+            },
+            {
+              "bucket": "stage",
+              "op": "lstatSync",
+              "callsPerWrite": 222,
+              "msPerWrite": 1.01
+            },
+            {
+              "bucket": "stage",
+              "op": "mkdirSync",
+              "callsPerWrite": 219,
+              "msPerWrite": 0.939
+            },
+            {
+              "bucket": "stage",
+              "op": "statSync",
+              "callsPerWrite": 220,
+              "msPerWrite": 0.849
+            },
+            {
+              "bucket": "live",
+              "op": "readdirSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 0.793
+            },
+            {
+              "bucket": "stage",
+              "op": "readdirSync",
+              "callsPerWrite": 6,
+              "msPerWrite": 0.764
+            },
+            {
+              "bucket": "stage",
+              "op": "readdirSync!error",
+              "callsPerWrite": 56,
+              "msPerWrite": 0.329
+            },
+            {
+              "bucket": "live",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.326
+            },
+            {
+              "bucket": "live",
+              "op": "writeFileSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.289
+            },
+            {
+              "bucket": "other",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.288
+            },
+            {
+              "bucket": "live",
+              "op": "readdirSync!error",
+              "callsPerWrite": 35,
+              "msPerWrite": 0.27
+            },
+            {
+              "bucket": "stage",
+              "op": "openSync",
+              "callsPerWrite": 10,
+              "msPerWrite": 0.269
+            },
+            {
+              "bucket": "stage",
+              "op": "copyFileSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.243
+            },
+            {
+              "bucket": "live",
+              "op": "openSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 0.231
+            },
+            {
+              "bucket": "other",
+              "op": "writeFileSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.208
+            },
+            {
+              "bucket": "stage",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.19
+            },
+            {
+              "bucket": "stage",
+              "op": "statSync!error",
+              "callsPerWrite": 35,
+              "msPerWrite": 0.172
+            },
+            {
+              "bucket": "stage",
+              "op": "readFileSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 0.162
+            },
+            {
+              "bucket": "other",
+              "op": "openSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.132
+            },
+            {
+              "bucket": "live",
+              "op": "statSync!error",
+              "callsPerWrite": 17,
+              "msPerWrite": 0.122
+            },
+            {
+              "bucket": "other",
+              "op": "readFileSync",
+              "callsPerWrite": 4,
+              "msPerWrite": 0.115
+            },
+            {
+              "bucket": "other",
+              "op": "closeSync",
+              "callsPerWrite": 17,
+              "msPerWrite": 0.103
+            },
+            {
+              "bucket": "stage",
+              "op": "writeFileSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.102
+            },
+            {
+              "bucket": "live",
+              "op": "statSync",
+              "callsPerWrite": 3,
+              "msPerWrite": 0.019
+            },
+            {
+              "bucket": "other",
+              "op": "lstatSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.014
+            },
+            {
+              "bucket": "live",
+              "op": "existsSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.013
+            },
+            {
+              "bucket": "stage",
+              "op": "existsSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.007
+            },
+            {
+              "bucket": "stage",
+              "op": "readFileSync!error",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.006
+            }
+          ],
+          "candidate": [
+            {
+              "bucket": "stage",
+              "op": "linkSync",
+              "callsPerWrite": 218,
+              "msPerWrite": 66.934
+            },
+            {
+              "bucket": "stage",
+              "op": "fsyncSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 14.662
+            },
+            {
+              "bucket": "stage",
+              "op": "rmSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 9.385
+            },
+            {
+              "bucket": "live",
+              "op": "fsyncSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 3.134
+            },
+            {
+              "bucket": "live",
+              "op": "lstatSync",
+              "callsPerWrite": 439,
+              "msPerWrite": 2.478
+            },
+            {
+              "bucket": "stage",
+              "op": "lstatSync",
+              "callsPerWrite": 222,
+              "msPerWrite": 1.02
+            },
+            {
+              "bucket": "stage",
+              "op": "statSync",
+              "callsPerWrite": 220,
+              "msPerWrite": 0.843
+            },
+            {
+              "bucket": "live",
+              "op": "readdirSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 0.84
+            },
+            {
+              "bucket": "live",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.804
+            },
+            {
+              "bucket": "stage",
+              "op": "readdirSync",
+              "callsPerWrite": 6,
+              "msPerWrite": 0.788
+            },
+            {
+              "bucket": "live",
+              "op": "linkSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.672
+            },
+            {
+              "bucket": "stage",
+              "op": "readdirSync!error",
+              "callsPerWrite": 56,
+              "msPerWrite": 0.334
+            },
+            {
+              "bucket": "live",
+              "op": "readdirSync!error",
+              "callsPerWrite": 35,
+              "msPerWrite": 0.304
+            },
+            {
+              "bucket": "other",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.293
+            },
+            {
+              "bucket": "stage",
+              "op": "openSync",
+              "callsPerWrite": 10,
+              "msPerWrite": 0.28
+            },
+            {
+              "bucket": "stage",
+              "op": "copyFileSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.248
+            },
+            {
+              "bucket": "other",
+              "op": "writeFileSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.229
+            },
+            {
+              "bucket": "stage",
+              "op": "renameSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.197
+            },
+            {
+              "bucket": "stage",
+              "op": "statSync!error",
+              "callsPerWrite": 35,
+              "msPerWrite": 0.172
+            },
+            {
+              "bucket": "stage",
+              "op": "readFileSync",
+              "callsPerWrite": 5,
+              "msPerWrite": 0.168
+            },
+            {
+              "bucket": "live",
+              "op": "statSync!error",
+              "callsPerWrite": 17,
+              "msPerWrite": 0.145
+            },
+            {
+              "bucket": "other",
+              "op": "openSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.139
+            },
+            {
+              "bucket": "stage",
+              "op": "mkdirSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.121
+            },
+            {
+              "bucket": "other",
+              "op": "readFileSync",
+              "callsPerWrite": 4,
+              "msPerWrite": 0.113
+            },
+            {
+              "bucket": "stage",
+              "op": "writeFileSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.108
+            },
+            {
+              "bucket": "other",
+              "op": "closeSync",
+              "callsPerWrite": 13,
+              "msPerWrite": 0.069
+            },
+            {
+              "bucket": "live",
+              "op": "statSync",
+              "callsPerWrite": 3,
+              "msPerWrite": 0.024
+            },
+            {
+              "bucket": "live",
+              "op": "openSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.017
+            },
+            {
+              "bucket": "live",
+              "op": "existsSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.015
+            },
+            {
+              "bucket": "other",
+              "op": "lstatSync",
+              "callsPerWrite": 2,
+              "msPerWrite": 0.014
+            },
+            {
+              "bucket": "stage",
+              "op": "readFileSync!error",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.006
+            },
+            {
+              "bucket": "stage",
+              "op": "existsSync",
+              "callsPerWrite": 1,
+              "msPerWrite": 0.006
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "equivalence": [
+    {
+      "sealed": 0,
+      "durableByteIdentical": true,
+      "archiveFiles": 2
+    },
+    {
+      "sealed": 216,
+      "durableByteIdentical": true,
+      "archiveFiles": 218
+    }
+  ]
+}
