@@ -375,6 +375,34 @@ test('replaced, truncated and torn logs fall back to full per-record verificatio
   await teardown(f);
 });
 
+test('a torn checkpoint left by an unfsynced rename is treated as absent and costs one cold pass', async () => {
+  // The checkpoint is published by an atomic rename but is deliberately not
+  // fsynced: it is derived state, and every way a crash can damage it has to
+  // degrade to the full per-record verification instead of being trusted. The
+  // shape a lost data block leaves behind is a file of zero bytes with the
+  // right name, so that is what this test plants over a valid checkpoint.
+  const f = await fixture();
+  let port = await openDomainStorage(f.ctx, f.config);
+  for (let index = 0; index < 3; index += 1) appendEnvelope(f.config.eventBridgePath, eventFor(`torn-${index}`), { sequence: index + 1 });
+  assert.deepEqual(await port.flush(), { applied: 3, duplicates: 0 });
+  const file = eventLogCheckpointPath(f.root);
+  const valid = readEventLogCheckpoint(file);
+  assert.equal(valid.records, 3, 'the first pass must have written a real checkpoint');
+  await port.close();
+
+  fs.writeFileSync(file, Buffer.alloc(fs.statSync(file).size));
+  assert.equal(readEventLogCheckpoint(file), null, 'a zero-filled checkpoint is absent, never a candidate');
+
+  port = await openDomainStorage(f.ctx, f.config);
+  // Nothing is applied twice: the zeroed checkpoint only re-verifies the
+  // consumed prefix, which is exactly what it exists to skip.
+  assert.deepEqual(await port.flush(), { applied: 0, duplicates: 3 });
+  assert.deepEqual(readEventLogCheckpoint(file), valid, 'the pass rewrites the same checkpoint');
+  assert.equal(f.ctx.storageDomain.get('evolution_domain').global.get().pending, null);
+  await port.close();
+  await teardown(f);
+});
+
 test('a malformed or unknown checkpoint document is treated as absent', async () => {
   const f = await fixture();
   const file = eventLogCheckpointPath(f.root);
