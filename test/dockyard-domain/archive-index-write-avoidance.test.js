@@ -101,7 +101,7 @@ test("a sealed segment whose bytes changed is still re-read, re-hashed and re-in
   const { home, store, archive, index } = await fixture();
   const clock = advancingClock();
   try {
-    const segment = `${archive}.segments/segment-000001.jsonl`;
+    const segment = `${archive}.segments/segment-000000000001.jsonl`;
     await mkdir(dirname(segment), { recursive: true });
     await writeFile(segment, `${JSON.stringify({ id: "sealed-1", recordedAt: "2026-10-09T00:00:00.000Z" })}\n`);
     await load(store, clock);
@@ -118,6 +118,40 @@ test("a sealed segment whose bytes changed is still re-read, re-hashed and re-in
     assert.equal(sealedAfter.byteSize, (await stat(segment)).size);
     assert.notEqual(sealedAfter.sha256, sealedBefore.sha256, "the sealed digest must follow the bytes");
     assert.equal(sealedAfter.physicalCount, 2);
+  } finally { await rm(home, { recursive: true, force: true }); }
+});
+
+test("a sealed entry that names only its file is normalized without re-reading the bytes", async () => {
+  const { home, store, archive, index } = await fixture();
+  const clock = advancingClock();
+  try {
+    const segment = `${archive}.segments/segment-000000000001.jsonl`;
+    await mkdir(dirname(segment), { recursive: true });
+    await writeFile(segment, `${JSON.stringify({ id: "sealed-1", recordedAt: "2026-10-09T00:00:00.000Z" })}\n`);
+    await load(store, clock);
+    const before = await indexIdentity(index);
+    const sealedBefore = (await entries(index)).find(entry => entry.sealed === true);
+    assert.ok(sealedBefore);
+
+    // An older document may name only the file. The sealed entry is accepted by
+    // size without re-reading the bytes, so its missing `collection` has to be
+    // reported by the shape check instead of by a re-hash.
+    const document = JSON.parse(await readFile(index, "utf8"));
+    const stripped = document.segments.map(entry => {
+      if (entry.sealed !== true) return entry;
+      const { collection, ...rest } = entry;
+      return rest;
+    });
+    await writeFile(`${index}.tmp`, JSON.stringify({ ...document, segments: stripped }));
+    await rename(`${index}.tmp`, index);
+
+    await load(store, clock);
+    const after = await indexIdentity(index);
+    assert.notEqual(after.ino, before.ino, "a sealed entry missing its collection must be normalized");
+    const sealedAfter = (await entries(index)).find(entry => entry.sealed === true);
+    assert.equal(sealedAfter.collection, "observations");
+    assert.equal(sealedAfter.file, "segment-000000000001.jsonl");
+    assert.equal(sealedAfter.sha256, sealedBefore.sha256, "normalizing the entry must not change its recorded digest");
   } finally { await rm(home, { recursive: true, force: true }); }
 });
 

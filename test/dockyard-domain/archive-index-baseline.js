@@ -29,6 +29,19 @@ const reversals = [
    ""],
   [   "      if (file) entries.set(file, item);",
       "      if (file) entries.set(file, { ...item, collection });"],
+  [   "        if (valid) {\n" +
+   "          // The bytes are the ones this entry describes, so nothing is re-read\n" +
+   "          // or re-hashed. The entry still has to carry the fields this\n" +
+   "          // implementation writes for them: a document from an older version may\n" +
+   "          // name only the file, and leaving that shape in place would never be\n" +
+   "          // normalized now that an unchanged load no longer rewrites the index.\n" +
+   "          const name = file.split(\"/\").at(-1);\n" +
+   "          if (current.collection === collection && current.file === name) continue;\n" +
+   "          this.archiveIndexEntries.set(file, { ...current, collection, file: name });\n" +
+   "          changed = true;\n" +
+   "          continue;\n" +
+   "        }\n",
+   "        if (valid) continue;\n"],
   [   "/**\n" +
    " * Whether a freshly scanned active-archive entry describes the same file state\n" +
    " * as the entry the loaded index already holds.\n" +

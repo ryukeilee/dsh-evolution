@@ -37,7 +37,9 @@ const option = (name, fallback) => {
   const index = args.indexOf(`--${name}`);
   return index === -1 ? fallback : args[index + 1];
 };
-const BASELINE_REV = option("baseline", "HEAD");
+// The commit this round started from: it must still carry the pre-change
+// comparison, so a reproduction after this change landed keeps working.
+const BASELINE_REV = option("baseline", "445830b");
 const ROUNDS = Number(option("rounds", 3));
 const LOADS = Number(option("loads", 15));
 const WRITES = Number(option("writes", 15));
@@ -101,7 +103,7 @@ function seedMemoryFixture(root) {
     update: async updater => { stored = updater(stored); },
     save: async value => { stored = value; },
   };
-  return { filePath, stateStore };
+  return { filePath, stateStore, stored: () => stored };
 }
 
 const median = values => [...values].sort((left, right) => left - right)[Math.floor(values.length / 2)];
@@ -109,7 +111,7 @@ const median = values => [...values].sort((left, right) => left - right)[Math.fl
 async function runLoadSide(libDirectory, mode) {
   const { EvolutionMemory } = await import(pathToFileURL(path.join(libDirectory, "lib", "dockyard-domain", "memory.js")).href);
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "archive-index-churn-loads-"));
-  const { filePath, stateStore } = seedMemoryFixture(root);
+  const { filePath, stateStore, stored } = seedMemoryFixture(root);
   const create = () => new EvolutionMemory({ stateStore, maxEntries: 20, hotEntries: 5,
     mutationAuthority: { assertMutation() {} } });
   const restoreUuid = resetUuidSequence();
@@ -130,6 +132,10 @@ async function runLoadSide(libDirectory, mode) {
       samples.push({ wallMs: performance.now() - started, cpuMs: (used.user + used.system) / 1000 });
       if (fs.statSync(indexFile).ino !== inode) replacements += 1;
     }
+    // The state store of this fixture keeps its document in memory and never
+    // writes it; write the final value so the compared tree includes the state
+    // document as well as the archive files and the index.
+    fs.writeFileSync(filePath, JSON.stringify(stored()));
     const durable = fs.readdirSync(root).sort().map(name => [name, fs.readFileSync(path.join(root, name), "utf8")]);
     return { samples, replacements, durable };
   } finally {
@@ -259,7 +265,7 @@ try {
   assert.deepEqual(equivalence.port[1].durable.archives, equivalence.port[0].durable.archives,
     "both implementations must persist the same archive bytes under a frozen clock");
   output.equivalence = { frozenClockDurableByteIdentical: true,
-    compared: ["state.json files (memory level)", "official/evolution_domain.json", "archive index document", "every archive file"] };
+    compared: ["the memory-level state document, archive files and archive index", "official/evolution_domain.json, every archive file and the archive index through the real port"] };
 
   const pick = (side, group, key) => output.rounds.map(round => round[group][side][key]);
   output.summary = {
