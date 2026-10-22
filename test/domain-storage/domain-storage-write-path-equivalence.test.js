@@ -162,6 +162,14 @@ test('the reconstruction is anchored to the pinned pre-change artifact', async (
   // store.
   assert.match(WORKING, /observations = new EvolutionObservationStore\(\{ memory \}\);\n    await observations\.load\(\{ snapshot: false \}\);/);
   assert.doesNotMatch(WORKING, /observations = new EvolutionObservationStore\(\{ memory \}\);\n    await observations\.load\(\);/);
+  // The whole-document schema keeps the strict shape and the `evolution.schema`
+  // integer but no longer re-validates every value it just projected. The
+  // pre-change artifact must still carry the recursive walk, and the working
+  // tree must not; the acceptance decisions themselves are pinned
+  // differentially in `aggregate-schema-equivalence.test.js`.
+  assert.match(baseline.source, /z\.object\(\{ evolution: z\.object\(\{ schema: z\.number\(\)\.int\(\)\.min\(4\) \}\)\.catchall\(json\)\.optional\(\) \}\)\.strict\(\)/);
+  assert.match(WORKING, /z\.object\(\{ evolution: z\.object\(\{ schema: z\.number\(\)\.int\(\)\.min\(4\) \}\)\.passthrough\(\)\.optional\(\) \}\)\.strict\(\)/);
+  assert.doesNotMatch(WORKING, /catchall\(json\)/);
 });
 
 test('a durable aggregate whose cold archive entry cannot be coerced still fails loudly', async () => {

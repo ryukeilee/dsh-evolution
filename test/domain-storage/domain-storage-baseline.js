@@ -847,7 +847,77 @@ const reversals = [
   // line is a boundary like any other. Reversing it restores the pinned source
   // instead of dropping the anchor.
   ["        // Losing the checkpoint only means the next pass re-verifies history.\n        // The warning is a log line, and a log line is a boundary: it carries\n        // the safe DTO (redacted summary, category, digest), not the raw message.\n        const detail = safeErrorDto(error, 'event-log-checkpoint');\n        ctx.logger?.warn?.(`[evolution] event log checkpoint not written: ${detail.errorSummary} (${detail.errorCategory}, ${detail.errorDigest})`);\n",
-   "        // Losing the checkpoint only means the next pass re-verifies history.\n        ctx.logger?.warn?.(`[evolution] event log checkpoint not written: ${error?.message || error}`);\n"]
+   "        // Losing the checkpoint only means the next pass re-verifies history.\n        ctx.logger?.warn?.(`[evolution] event log checkpoint not written: ${error?.message || error}`);\n"],
+  // The whole-document schema no longer validates every value against
+  // `z.json()`. `aggregateSchema` preprocesses with `toJsonProjection`, and the
+  // output of `JSON.parse(JSON.stringify(...))` can only be JSON - an in-memory
+  // `NaN`/`Infinity` became `null` inside the projection, and a value that only
+  // parses to `Infinity` (`1e999`) is normalized to `null` the same way - so the
+  // recursive walk could never reject a projected document. It only walked the
+  // aggregate again on every save of every transaction step. `passthrough()`
+  // keeps the unknown evolution fields and the strict document shape, which is
+  // the part that can still reject.
+  //
+  // The walk did transform one thing: it built its result with plain property
+  // assignment, so an own `__proto__` key (which `JSON.parse` can create)
+  // vanished instead of being kept. The projection therefore drops that key
+  // itself, which is why this piece covers the whole block and not just the
+  // schema line.
+  ["// The legacy aggregate can carry `undefined` object fields (e.g. relationRefs).\n" +
+   "// JSON is the durable medium, and the old file backend already dropped those\n" +
+   "// fields through JSON.stringify, so normalize to the exact JSON projection before\n" +
+   "// validating: this keeps strict persistence semantics without silently changing\n" +
+   "// state.\n" +
+   "//\n" +
+   "// That projection is also why no per-value JSON schema is needed below. Its\n" +
+   "// output can only be `null`, booleans, strings, arrays, plain objects and\n" +
+   "// numbers that `JSON.stringify` accepted - an in-memory `NaN` or `Infinity` is\n" +
+   "// already `null` by the time anything is validated - so a recursive `z.json()`\n" +
+   "// over every value could never reject a projected document; it only walked the\n" +
+   "// whole aggregate a second time on every transaction step, and a single\n" +
+   "// transaction step saves several times (`#append`, then `#markBridgeApplied`).\n" +
+   "// `passthrough()` keeps the unknown evolution fields instead of stripping them\n" +
+   "// (`catchall` would keep validating them), so the strict document shape, the\n" +
+   "// `evolution.schema` integer and every structural requirement still hold.\n" +
+   "const PROTO_KEY = '__proto__';\n" +
+   "/**\n" +
+   " * Drop one own `__proto__` key, which only `JSON.parse` can create: assigning\n" +
+   " * that name on an ordinary object sets the prototype instead of an own key, so\n" +
+   " * the recursive `z.record`-based walk this schema used to do dropped it as a\n" +
+   " * side effect of building its result. Dropping it here keeps the projection's\n" +
+   " * output identical to what that walk returned (`aggregate-schema-equivalence`\n" +
+   " * pins the case at every depth), and past this point no schema ever assigns it.\n" +
+   " */\n" +
+   "function stripOwnProtoKeys(value) {\n" +
+   "  if (Array.isArray(value)) { for (const item of value) stripOwnProtoKeys(item); return; }\n" +
+   "  if (!value || typeof value !== 'object') return;\n" +
+   "  if (Object.hasOwn(value, PROTO_KEY)) delete value[PROTO_KEY];\n" +
+   "  for (const key of Object.keys(value)) stripOwnProtoKeys(value[key]);\n" +
+   "}\n" +
+   "/**\n" +
+   " * The one projection every durable value goes through. The extra key is only\n" +
+   " * looked for in the serialized text: `JSON.stringify` must spell an own key of\n" +
+   " * that name literally, so a document that cannot contain one - every document\n" +
+   " * this plugin writes - pays a substring search, not a second walk. (A string\n" +
+   " * value that happens to read `__proto__` only makes the walk run and find\n" +
+   " * nothing.)\n" +
+   " */\n" +
+   "const toJsonProjection = value => {\n" +
+   "  const text = JSON.stringify(value);\n" +
+   "  const projected = JSON.parse(text);\n" +
+   "  if (text.includes(`\"${PROTO_KEY}\"`)) stripOwnProtoKeys(projected);\n" +
+   "  return projected;\n" +
+   "};\n" +
+   "const aggregateSchema = z.preprocess(toJsonProjection,\n" +
+   "  z.object({ evolution: z.object({ schema: z.number().int().min(4) }).passthrough().optional() }).strict());",
+   "const json = z.json();\n" +
+   "// The legacy aggregate can carry `undefined` object fields (e.g. relationRefs).\n" +
+   "// JSON is the durable medium, and the old file backend already dropped those\n" +
+   "// fields through JSON.stringify, so normalize to the exact JSON projection before\n" +
+   "// validating: this keeps strict JSON validation without silently changing state.\n" +
+   "const toJsonProjection = value => JSON.parse(JSON.stringify(value));\n" +
+   "const aggregateSchema = z.preprocess(toJsonProjection,\n" +
+   "  z.object({ evolution: z.object({ schema: z.number().int().min(4) }).catchall(json).optional() }).strict());"]
 ];
 
 /** Revert only the retained write-path variant; everything else stays as written. */
