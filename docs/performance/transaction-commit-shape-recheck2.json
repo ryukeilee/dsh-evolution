@@ -1,0 +1,2172 @@
+{
+  "baseline": "b943b21",
+  "rounds": 3,
+  "samples": 9,
+  "warmup": 3,
+  "history": 1000,
+  "environment": {
+    "node": "v26.12.1",
+    "platform": "darwin/arm64",
+    "cpus": 8,
+    "loadAverageAtStart": [
+      1.97412109375,
+      3.18212890625,
+      2.77685546875
+    ],
+    "loadAverageAtEnd": [
+      1.5341796875,
+      2.93798828125,
+      2.703125
+    ]
+  },
+  "protocol": {
+    "measurementClock": "deterministic clock advancing 1 ms per read (production condition, reproducible)",
+    "equivalenceClock": "frozen at 2026-11-02T00:00:00.000Z with a deterministic UUID sequence; durable output must be byte-identical",
+    "order": "each round alternates which side runs first",
+    "sides": "baseline restores lib/domain-storage.js from the recorded revision into a copy of lib/; candidate is this working tree",
+    "instrumentedPass": "one additional pass per side with wrapped fs calls; the official backend's whole-document replace is counted through fs.promises"
+  },
+  "shapeGuards": {
+    "baseline": {
+      "publishesPending": true,
+      "singleWriteCommit": false
+    },
+    "candidate": {
+      "publishesPending": true,
+      "singleWriteCommit": true
+    }
+  },
+  "sources": {
+    "baseline": {
+      "revision": "b943b21",
+      "sha256": "43536b7c4d6313f88e6c02f21e10888f48df3419e3e25c60c4dabe56b4a39e05",
+      "bytes": 49713
+    },
+    "candidate": {
+      "sha256": "f3c77db4cb0932a1fb3bc6329539d76f8b235d02b988bab9624db5ac6a616ac9",
+      "bytes": 50980
+    }
+  },
+  "scenarios": [
+    {
+      "scenario": "daily",
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 28.207583,
+              "cpuMs": 12.891,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 28.207583,
+                "cpuMs": 12.891,
+                "wallSamples": [
+                  28.376,
+                  27.818,
+                  27.97,
+                  28.208,
+                  29.58,
+                  26.092,
+                  27.143,
+                  30.675,
+                  28.878
+                ],
+                "cpuSamples": [
+                  16.799,
+                  10.849,
+                  12.958,
+                  12.002,
+                  12.393,
+                  13.443,
+                  12.42,
+                  18.353,
+                  12.891
+                ],
+                "documentBytes": 151921
+              },
+              "changedArchives": null,
+              "documentBytes": 151921,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 3,
+                  "other/readFileSync": 5,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1,
+                  "other/fsyncSync": 2,
+                  "other/lstatSync": 2,
+                  "other/renameSync": 3,
+                  "official/open.async": 4,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18,
+                  "official/statSync": 1
+                }
+              }
+            },
+            "candidate": {
+              "wallMs": 13.929666999999995,
+              "cpuMs": 7.07,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 13.929666999999995,
+                "cpuMs": 7.07,
+                "wallSamples": [
+                  14.087,
+                  13.916,
+                  13.929,
+                  13.934,
+                  12.952,
+                  14.443,
+                  13.287,
+                  13.962,
+                  13.93
+                ],
+                "cpuSamples": [
+                  7.947,
+                  6.835,
+                  8.273,
+                  7.07,
+                  7.177,
+                  6.72,
+                  6.516,
+                  7.577,
+                  6.952
+                ],
+                "documentBytes": 151921
+              },
+              "changedArchives": null,
+              "documentBytes": 151921,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 1,
+                "tokenWritesPerTransaction": 1,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 2,
+                  "other/readFileSync": 4,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18,
+                  "official/statSync": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "wallMs": 13.931291000000101,
+              "cpuMs": 6.85,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 13.931291000000101,
+                "cpuMs": 6.85,
+                "wallSamples": [
+                  14.351,
+                  13.912,
+                  13.931,
+                  12.134,
+                  14.709,
+                  13.948,
+                  11.29,
+                  16.54,
+                  11.419
+                ],
+                "cpuSamples": [
+                  6.709,
+                  6.408,
+                  6.738,
+                  6.85,
+                  7.071,
+                  7.062,
+                  6.866,
+                  6.747,
+                  7.05
+                ],
+                "documentBytes": 151921
+              },
+              "changedArchives": null,
+              "documentBytes": 151921,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 1,
+                "tokenWritesPerTransaction": 1,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 2,
+                  "other/readFileSync": 4,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18,
+                  "official/statSync": 1
+                }
+              }
+            },
+            "baseline": {
+              "wallMs": 28.21633399999996,
+              "cpuMs": 12.722,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 28.21633399999996,
+                "cpuMs": 12.722,
+                "wallSamples": [
+                  28.216,
+                  24.57,
+                  30.094,
+                  23.453,
+                  32.069,
+                  27.845,
+                  30.891,
+                  27.249,
+                  29.808
+                ],
+                "cpuSamples": [
+                  11.511,
+                  11.335,
+                  11.234,
+                  12.722,
+                  12.026,
+                  13.274,
+                  13.146,
+                  13.462,
+                  13.328
+                ],
+                "documentBytes": 151921
+              },
+              "changedArchives": null,
+              "documentBytes": 151921,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 3,
+                  "other/readFileSync": 5,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1,
+                  "other/fsyncSync": 2,
+                  "other/lstatSync": 2,
+                  "other/renameSync": 3,
+                  "official/open.async": 4,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18,
+                  "official/statSync": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 29.521374999999807,
+              "cpuMs": 12.933,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 29.521374999999807,
+                "cpuMs": 12.933,
+                "wallSamples": [
+                  30.445,
+                  29.007,
+                  28.898,
+                  26.845,
+                  27.641,
+                  30.666,
+                  29.521,
+                  33.822,
+                  30.342
+                ],
+                "cpuSamples": [
+                  12.475,
+                  11.788,
+                  12.933,
+                  12.615,
+                  13.517,
+                  13.236,
+                  12.808,
+                  13.486,
+                  13.652
+                ],
+                "documentBytes": 151921
+              },
+              "changedArchives": null,
+              "documentBytes": 151921,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 3,
+                  "other/readFileSync": 5,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1,
+                  "other/fsyncSync": 2,
+                  "other/lstatSync": 2,
+                  "other/renameSync": 3,
+                  "official/open.async": 4,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18,
+                  "official/statSync": 1
+                }
+              }
+            },
+            "candidate": {
+              "wallMs": 13.76645899999994,
+              "cpuMs": 7.088,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 13.76645899999994,
+                "cpuMs": 7.088,
+                "wallSamples": [
+                  14.342,
+                  14.947,
+                  13.795,
+                  11.947,
+                  12.936,
+                  12.824,
+                  15.68,
+                  12.382,
+                  13.766
+                ],
+                "cpuSamples": [
+                  7.147,
+                  7.511,
+                  7.055,
+                  7.088,
+                  7.073,
+                  20.154,
+                  7.494,
+                  6.882,
+                  6.766
+                ],
+                "documentBytes": 151921
+              },
+              "changedArchives": null,
+              "documentBytes": 151921,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 1,
+                "tokenWritesPerTransaction": 1,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 2,
+                  "other/readFileSync": 4,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18,
+                  "official/statSync": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "sides": {
+          "baseline": {
+            "wallMs": 28.21633399999996,
+            "cpuMs": 12.891,
+            "wallRounds": [
+              28.21,
+              28.22,
+              29.52
+            ],
+            "cpuRounds": [
+              12.89,
+              12.72,
+              12.93
+            ],
+            "transactions": 9,
+            "archiveChanging": 0,
+            "documentBytes": 151921,
+            "unchangedArchives": {
+              "transactions": 9,
+              "wallMs": 28.21633399999996,
+              "cpuMs": 12.891,
+              "wallRounds": [
+                28.21,
+                28.22,
+                29.52
+              ],
+              "cpuRounds": [
+                12.89,
+                12.72,
+                12.93
+              ]
+            },
+            "changedArchives": null,
+            "documentWritesPerTransaction": 2,
+            "tokenWritesPerTransaction": 2,
+            "calls": {
+              "live/readdirSync": 39,
+              "other/appendFileSync": 1,
+              "other/writeFileSync": 3,
+              "other/readFileSync": 5,
+              "stage/mkdirSync": 1,
+              "stage/statSync": 18,
+              "stage/readdirSync": 37,
+              "stage/writeFileSync": 1,
+              "stage/renameSync": 1,
+              "other/fsyncSync": 2,
+              "other/lstatSync": 2,
+              "other/renameSync": 3,
+              "official/open.async": 4,
+              "stage/rmSync": 1,
+              "stage/lstatSync": 1,
+              "live/statSync": 18,
+              "official/statSync": 1
+            },
+            "stagingLeft": 0
+          },
+          "candidate": {
+            "wallMs": 13.929666999999995,
+            "cpuMs": 7.07,
+            "wallRounds": [
+              13.93,
+              13.93,
+              13.77
+            ],
+            "cpuRounds": [
+              7.07,
+              6.85,
+              7.09
+            ],
+            "transactions": 9,
+            "archiveChanging": 0,
+            "documentBytes": 151921,
+            "unchangedArchives": {
+              "transactions": 9,
+              "wallMs": 13.929666999999995,
+              "cpuMs": 7.07,
+              "wallRounds": [
+                13.93,
+                13.93,
+                13.77
+              ],
+              "cpuRounds": [
+                7.07,
+                6.85,
+                7.09
+              ]
+            },
+            "changedArchives": null,
+            "documentWritesPerTransaction": 1,
+            "tokenWritesPerTransaction": 1,
+            "calls": {
+              "live/readdirSync": 39,
+              "other/appendFileSync": 1,
+              "other/writeFileSync": 2,
+              "other/readFileSync": 4,
+              "stage/mkdirSync": 1,
+              "stage/statSync": 18,
+              "stage/readdirSync": 37,
+              "stage/writeFileSync": 1,
+              "stage/renameSync": 1,
+              "other/lstatSync": 1,
+              "other/renameSync": 2,
+              "official/open.async": 2,
+              "stage/rmSync": 1,
+              "stage/lstatSync": 1,
+              "live/statSync": 18,
+              "official/statSync": 1
+            },
+            "stagingLeft": 0
+          }
+        }
+      }
+    },
+    {
+      "scenario": "bulk",
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 32.90416700000014,
+              "cpuMs": 16.051,
+              "transactions": 8,
+              "archiveChanging": 3,
+              "unchangedArchives": {
+                "transactions": 5,
+                "wallMs": 27.592917000000398,
+                "cpuMs": 14.378,
+                "wallSamples": [
+                  27.593,
+                  26.886,
+                  30.948,
+                  26.983,
+                  32.904
+                ],
+                "cpuSamples": [
+                  13.065,
+                  14.378,
+                  14.982,
+                  16.051,
+                  14.322
+                ],
+                "documentBytes": 181346
+              },
+              "changedArchives": {
+                "transactions": 3,
+                "wallMs": 47.768249999999625,
+                "cpuMs": 27.158,
+                "wallSamples": [
+                  50.971,
+                  47.373,
+                  47.768
+                ],
+                "cpuSamples": [
+                  30.698,
+                  27.158,
+                  26.261
+                ],
+                "documentBytes": 213779
+              },
+              "documentBytes": 204886,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39.38,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 3,
+                  "other/readFileSync": 5,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 89.63,
+                  "stage/readdirSync": 109,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1.25,
+                  "other/fsyncSync": 3.13,
+                  "other/lstatSync": 2,
+                  "other/renameSync": 3,
+                  "official/open.async": 4,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 2.5,
+                  "live/statSync": 18.75,
+                  "official/statSync": 1,
+                  "stage/readFileSync": 1.88,
+                  "stage/open.async": 3.63,
+                  "live/lstatSync": 3,
+                  "live/linkSync": 0.75,
+                  "live/renameSync": 0.75,
+                  "stage/linkSync": 0.5,
+                  "stage/copyFileSync": 0.25
+                }
+              }
+            },
+            "candidate": {
+              "wallMs": 16.068167000000358,
+              "cpuMs": 9.843,
+              "transactions": 8,
+              "archiveChanging": 3,
+              "unchangedArchives": {
+                "transactions": 5,
+                "wallMs": 15.844707999999628,
+                "cpuMs": 9.317,
+                "wallSamples": [
+                  15.396,
+                  16.047,
+                  13.99,
+                  16.068,
+                  15.845
+                ],
+                "cpuSamples": [
+                  7.895,
+                  8.283,
+                  9.834,
+                  9.843,
+                  9.317
+                ],
+                "documentBytes": 181346
+              },
+              "changedArchives": {
+                "transactions": 3,
+                "wallMs": 44.67020800000046,
+                "cpuMs": 24.334,
+                "wallSamples": [
+                  43.768,
+                  44.956,
+                  44.67
+                ],
+                "cpuSamples": [
+                  24.815,
+                  22.789,
+                  24.334
+                ],
+                "documentBytes": 213779
+              },
+              "documentBytes": 204886,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 1.38,
+                "tokenWritesPerTransaction": 1.38,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39.38,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 2.38,
+                  "other/readFileSync": 4.38,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 89.63,
+                  "stage/readdirSync": 109,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1.25,
+                  "other/lstatSync": 1.38,
+                  "other/renameSync": 2.38,
+                  "official/open.async": 2.75,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 2.5,
+                  "live/statSync": 18.75,
+                  "official/statSync": 1,
+                  "stage/readFileSync": 1.88,
+                  "stage/open.async": 3.63,
+                  "other/fsyncSync": 1.88,
+                  "live/lstatSync": 3,
+                  "live/linkSync": 0.75,
+                  "live/renameSync": 0.75,
+                  "stage/linkSync": 0.5,
+                  "stage/copyFileSync": 0.25
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "wallMs": 18.03087500000038,
+              "cpuMs": 10.082,
+              "transactions": 8,
+              "archiveChanging": 3,
+              "unchangedArchives": {
+                "transactions": 5,
+                "wallMs": 14.444292000000132,
+                "cpuMs": 8.858,
+                "wallSamples": [
+                  14.444,
+                  13.025,
+                  14.145,
+                  16.832,
+                  18.031
+                ],
+                "cpuSamples": [
+                  8.124,
+                  7.807,
+                  9.136,
+                  8.858,
+                  10.082
+                ],
+                "documentBytes": 181346
+              },
+              "changedArchives": {
+                "transactions": 3,
+                "wallMs": 47.089500000000044,
+                "cpuMs": 23.685,
+                "wallSamples": [
+                  45.404,
+                  47.09,
+                  47.876
+                ],
+                "cpuSamples": [
+                  21.555,
+                  23.685,
+                  23.784
+                ],
+                "documentBytes": 213779
+              },
+              "documentBytes": 204886,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 1.38,
+                "tokenWritesPerTransaction": 1.38,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39.38,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 2.38,
+                  "other/readFileSync": 4.38,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 89.63,
+                  "stage/readdirSync": 109,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1.25,
+                  "other/lstatSync": 1.38,
+                  "other/renameSync": 2.38,
+                  "official/open.async": 2.75,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 2.5,
+                  "live/statSync": 18.75,
+                  "official/statSync": 1,
+                  "stage/readFileSync": 1.88,
+                  "stage/open.async": 3.63,
+                  "other/fsyncSync": 1.88,
+                  "live/lstatSync": 3,
+                  "live/linkSync": 0.75,
+                  "live/renameSync": 0.75,
+                  "stage/linkSync": 0.5,
+                  "stage/copyFileSync": 0.25
+                }
+              }
+            },
+            "baseline": {
+              "wallMs": 31.859416999999667,
+              "cpuMs": 16.851,
+              "transactions": 8,
+              "archiveChanging": 3,
+              "unchangedArchives": {
+                "transactions": 5,
+                "wallMs": 30.352249999999913,
+                "cpuMs": 14.657,
+                "wallSamples": [
+                  28.37,
+                  29.972,
+                  30.352,
+                  30.89,
+                  31.859
+                ],
+                "cpuSamples": [
+                  12.394,
+                  14.657,
+                  15.768,
+                  14.452,
+                  16.851
+                ],
+                "documentBytes": 181346
+              },
+              "changedArchives": {
+                "transactions": 3,
+                "wallMs": 44.80741600000056,
+                "cpuMs": 25.399,
+                "wallSamples": [
+                  44.343,
+                  54.912,
+                  44.807
+                ],
+                "cpuSamples": [
+                  24.48,
+                  25.928,
+                  25.399
+                ],
+                "documentBytes": 213779
+              },
+              "documentBytes": 204886,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39.38,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 3,
+                  "other/readFileSync": 5,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 89.63,
+                  "stage/readdirSync": 109,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1.25,
+                  "other/fsyncSync": 3.13,
+                  "other/lstatSync": 2,
+                  "other/renameSync": 3,
+                  "official/open.async": 4,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 2.5,
+                  "live/statSync": 18.75,
+                  "official/statSync": 1,
+                  "stage/readFileSync": 1.88,
+                  "stage/open.async": 3.63,
+                  "live/lstatSync": 3,
+                  "live/linkSync": 0.75,
+                  "live/renameSync": 0.75,
+                  "stage/linkSync": 0.5,
+                  "stage/copyFileSync": 0.25
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 32.48016699999971,
+              "cpuMs": 15.753,
+              "transactions": 8,
+              "archiveChanging": 3,
+              "unchangedArchives": {
+                "transactions": 5,
+                "wallMs": 30.450834000000214,
+                "cpuMs": 14.421,
+                "wallSamples": [
+                  32.48,
+                  29.989,
+                  30.451,
+                  31.771,
+                  29.546
+                ],
+                "cpuSamples": [
+                  13.085,
+                  13.65,
+                  15.183,
+                  14.421,
+                  15.753
+                ],
+                "documentBytes": 181346
+              },
+              "changedArchives": {
+                "transactions": 3,
+                "wallMs": 47.87054199999966,
+                "cpuMs": 25.796,
+                "wallSamples": [
+                  48.558,
+                  47.871,
+                  46.981
+                ],
+                "cpuSamples": [
+                  25.796,
+                  25.982,
+                  24.843
+                ],
+                "documentBytes": 213779
+              },
+              "documentBytes": 204886,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39.38,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 3,
+                  "other/readFileSync": 5,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 89.63,
+                  "stage/readdirSync": 109,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1.25,
+                  "other/fsyncSync": 3.13,
+                  "other/lstatSync": 2,
+                  "other/renameSync": 3,
+                  "official/open.async": 4,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 2.5,
+                  "live/statSync": 18.75,
+                  "official/statSync": 1,
+                  "stage/readFileSync": 1.88,
+                  "stage/open.async": 3.63,
+                  "live/lstatSync": 3,
+                  "live/linkSync": 0.75,
+                  "live/renameSync": 0.75,
+                  "stage/linkSync": 0.5,
+                  "stage/copyFileSync": 0.25
+                }
+              }
+            },
+            "candidate": {
+              "wallMs": 17.0595000000003,
+              "cpuMs": 9.618,
+              "transactions": 8,
+              "archiveChanging": 3,
+              "unchangedArchives": {
+                "transactions": 5,
+                "wallMs": 15.417500000000473,
+                "cpuMs": 9.079,
+                "wallSamples": [
+                  13.312,
+                  14.969,
+                  17.06,
+                  17,
+                  15.418
+                ],
+                "cpuSamples": [
+                  7.927,
+                  8.832,
+                  9.079,
+                  9.233,
+                  9.618
+                ],
+                "documentBytes": 181346
+              },
+              "changedArchives": {
+                "transactions": 3,
+                "wallMs": 47.92783299999974,
+                "cpuMs": 22.922,
+                "wallSamples": [
+                  46.995,
+                  47.928,
+                  48.016
+                ],
+                "cpuSamples": [
+                  32.373,
+                  22.03,
+                  22.922
+                ],
+                "documentBytes": 213779
+              },
+              "documentBytes": 204886,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 1.38,
+                "tokenWritesPerTransaction": 1.38,
+                "callsPerTransaction": {
+                  "live/readdirSync": 39.38,
+                  "other/appendFileSync": 1,
+                  "other/writeFileSync": 2.38,
+                  "other/readFileSync": 4.38,
+                  "stage/mkdirSync": 1,
+                  "stage/statSync": 89.63,
+                  "stage/readdirSync": 109,
+                  "stage/writeFileSync": 1,
+                  "stage/renameSync": 1.25,
+                  "other/lstatSync": 1.38,
+                  "other/renameSync": 2.38,
+                  "official/open.async": 2.75,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 2.5,
+                  "live/statSync": 18.75,
+                  "official/statSync": 1,
+                  "stage/readFileSync": 1.88,
+                  "stage/open.async": 3.63,
+                  "other/fsyncSync": 1.88,
+                  "live/lstatSync": 3,
+                  "live/linkSync": 0.75,
+                  "live/renameSync": 0.75,
+                  "stage/linkSync": 0.5,
+                  "stage/copyFileSync": 0.25
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "sides": {
+          "baseline": {
+            "wallMs": 32.48016699999971,
+            "cpuMs": 16.051,
+            "wallRounds": [
+              32.9,
+              31.86,
+              32.48
+            ],
+            "cpuRounds": [
+              16.05,
+              16.85,
+              15.75
+            ],
+            "transactions": 8,
+            "archiveChanging": 3,
+            "documentBytes": 204886,
+            "unchangedArchives": {
+              "transactions": 5,
+              "wallMs": 30.352249999999913,
+              "cpuMs": 14.421,
+              "wallRounds": [
+                27.59,
+                30.35,
+                30.45
+              ],
+              "cpuRounds": [
+                14.38,
+                14.66,
+                14.42
+              ]
+            },
+            "changedArchives": {
+              "transactions": 3,
+              "wallMs": 47.768249999999625,
+              "cpuMs": 25.796,
+              "wallRounds": [
+                47.77,
+                44.81,
+                47.87
+              ],
+              "cpuRounds": [
+                27.16,
+                25.4,
+                25.8
+              ]
+            },
+            "documentWritesPerTransaction": 2,
+            "tokenWritesPerTransaction": 2,
+            "calls": {
+              "live/readdirSync": 39.38,
+              "other/appendFileSync": 1,
+              "other/writeFileSync": 3,
+              "other/readFileSync": 5,
+              "stage/mkdirSync": 1,
+              "stage/statSync": 89.63,
+              "stage/readdirSync": 109,
+              "stage/writeFileSync": 1,
+              "stage/renameSync": 1.25,
+              "other/fsyncSync": 3.13,
+              "other/lstatSync": 2,
+              "other/renameSync": 3,
+              "official/open.async": 4,
+              "stage/rmSync": 1,
+              "stage/lstatSync": 2.5,
+              "live/statSync": 18.75,
+              "official/statSync": 1,
+              "stage/readFileSync": 1.88,
+              "stage/open.async": 3.63,
+              "live/lstatSync": 3,
+              "live/linkSync": 0.75,
+              "live/renameSync": 0.75,
+              "stage/linkSync": 0.5,
+              "stage/copyFileSync": 0.25
+            },
+            "stagingLeft": 0
+          },
+          "candidate": {
+            "wallMs": 17.0595000000003,
+            "cpuMs": 9.843,
+            "wallRounds": [
+              16.07,
+              18.03,
+              17.06
+            ],
+            "cpuRounds": [
+              9.84,
+              10.08,
+              9.62
+            ],
+            "transactions": 8,
+            "archiveChanging": 3,
+            "documentBytes": 204886,
+            "unchangedArchives": {
+              "transactions": 5,
+              "wallMs": 15.417500000000473,
+              "cpuMs": 9.079,
+              "wallRounds": [
+                15.84,
+                14.44,
+                15.42
+              ],
+              "cpuRounds": [
+                9.32,
+                8.86,
+                9.08
+              ]
+            },
+            "changedArchives": {
+              "transactions": 3,
+              "wallMs": 47.089500000000044,
+              "cpuMs": 23.685,
+              "wallRounds": [
+                44.67,
+                47.09,
+                47.93
+              ],
+              "cpuRounds": [
+                24.33,
+                23.68,
+                22.92
+              ]
+            },
+            "documentWritesPerTransaction": 1.38,
+            "tokenWritesPerTransaction": 1.38,
+            "calls": {
+              "live/readdirSync": 39.38,
+              "other/appendFileSync": 1,
+              "other/writeFileSync": 2.38,
+              "other/readFileSync": 4.38,
+              "stage/mkdirSync": 1,
+              "stage/statSync": 89.63,
+              "stage/readdirSync": 109,
+              "stage/writeFileSync": 1,
+              "stage/renameSync": 1.25,
+              "other/lstatSync": 1.38,
+              "other/renameSync": 2.38,
+              "official/open.async": 2.75,
+              "stage/rmSync": 1,
+              "stage/lstatSync": 2.5,
+              "live/statSync": 18.75,
+              "official/statSync": 1,
+              "stage/readFileSync": 1.88,
+              "stage/open.async": 3.63,
+              "other/fsyncSync": 1.88,
+              "live/lstatSync": 3,
+              "live/linkSync": 0.75,
+              "live/renameSync": 0.75,
+              "stage/linkSync": 0.5,
+              "stage/copyFileSync": 0.25
+            },
+            "stagingLeft": 0
+          }
+        }
+      }
+    },
+    {
+      "scenario": "archive",
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 43.77220800000032,
+              "cpuMs": 20.311,
+              "transactions": 9,
+              "archiveChanging": 9,
+              "unchangedArchives": null,
+              "changedArchives": {
+                "transactions": 9,
+                "wallMs": 43.77220800000032,
+                "cpuMs": 20.311,
+                "wallSamples": [
+                  47.665,
+                  43.772,
+                  44.873,
+                  43.974,
+                  43.835,
+                  40.852,
+                  39.633,
+                  43.088,
+                  42.968
+                ],
+                "cpuSamples": [
+                  22.447,
+                  20.311,
+                  20.044,
+                  33.892,
+                  20.527,
+                  19.823,
+                  19.562,
+                  21.579,
+                  19.841
+                ],
+                "documentBytes": 304526
+              },
+              "documentBytes": 304526,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 40,
+                  "live/lstatSync": 10,
+                  "other/readFileSync": 4,
+                  "stage/mkdirSync": 1,
+                  "stage/linkSync": 2,
+                  "stage/statSync": 39,
+                  "stage/readdirSync": 60,
+                  "stage/readFileSync": 6,
+                  "stage/open.async": 1,
+                  "stage/copyFileSync": 1,
+                  "stage/renameSync": 2,
+                  "stage/lstatSync": 5,
+                  "stage/writeFileSync": 1,
+                  "other/fsyncSync": 5,
+                  "other/lstatSync": 2,
+                  "other/writeFileSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 4,
+                  "live/linkSync": 2,
+                  "live/renameSync": 2,
+                  "stage/rmSync": 1,
+                  "live/statSync": 20,
+                  "official/statSync": 1
+                }
+              }
+            },
+            "candidate": {
+              "wallMs": 45.318750000000364,
+              "cpuMs": 21.186,
+              "transactions": 9,
+              "archiveChanging": 9,
+              "unchangedArchives": null,
+              "changedArchives": {
+                "transactions": 9,
+                "wallMs": 45.318750000000364,
+                "cpuMs": 21.186,
+                "wallSamples": [
+                  44.072,
+                  45.9,
+                  45.319,
+                  46.641,
+                  48.562,
+                  45.191,
+                  44.881,
+                  41.909,
+                  45.623
+                ],
+                "cpuSamples": [
+                  22.294,
+                  20.314,
+                  20.43,
+                  20.817,
+                  27.326,
+                  20.609,
+                  21.186,
+                  23.055,
+                  39.364
+                ],
+                "documentBytes": 304526
+              },
+              "documentBytes": 304526,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 40,
+                  "live/lstatSync": 10,
+                  "other/readFileSync": 4,
+                  "stage/mkdirSync": 1,
+                  "stage/linkSync": 2,
+                  "stage/statSync": 39,
+                  "stage/readdirSync": 60,
+                  "stage/readFileSync": 6,
+                  "stage/open.async": 1,
+                  "stage/copyFileSync": 1,
+                  "stage/renameSync": 2,
+                  "stage/lstatSync": 5,
+                  "stage/writeFileSync": 1,
+                  "other/fsyncSync": 5,
+                  "other/lstatSync": 2,
+                  "other/writeFileSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 4,
+                  "live/linkSync": 2,
+                  "live/renameSync": 2,
+                  "stage/rmSync": 1,
+                  "live/statSync": 20,
+                  "official/statSync": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "wallMs": 44.931541999998444,
+              "cpuMs": 20.13,
+              "transactions": 9,
+              "archiveChanging": 9,
+              "unchangedArchives": null,
+              "changedArchives": {
+                "transactions": 9,
+                "wallMs": 44.931541999998444,
+                "cpuMs": 20.13,
+                "wallSamples": [
+                  39.73,
+                  45.97,
+                  44.882,
+                  47.093,
+                  45.599,
+                  41.885,
+                  45.034,
+                  43.771,
+                  44.932
+                ],
+                "cpuSamples": [
+                  19.267,
+                  24.754,
+                  19.501,
+                  20.357,
+                  20.357,
+                  20.092,
+                  38.809,
+                  20.13,
+                  20.031
+                ],
+                "documentBytes": 304526
+              },
+              "documentBytes": 304526,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 40,
+                  "live/lstatSync": 10,
+                  "other/readFileSync": 4,
+                  "stage/mkdirSync": 1,
+                  "stage/linkSync": 2,
+                  "stage/statSync": 39,
+                  "stage/readdirSync": 60,
+                  "stage/readFileSync": 6,
+                  "stage/open.async": 1,
+                  "stage/copyFileSync": 1,
+                  "stage/renameSync": 2,
+                  "stage/lstatSync": 5,
+                  "stage/writeFileSync": 1,
+                  "other/fsyncSync": 5,
+                  "other/lstatSync": 2,
+                  "other/writeFileSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 4,
+                  "live/linkSync": 2,
+                  "live/renameSync": 2,
+                  "stage/rmSync": 1,
+                  "live/statSync": 20,
+                  "official/statSync": 1
+                }
+              }
+            },
+            "baseline": {
+              "wallMs": 43.160790999998426,
+              "cpuMs": 19.551,
+              "transactions": 9,
+              "archiveChanging": 9,
+              "unchangedArchives": null,
+              "changedArchives": {
+                "transactions": 9,
+                "wallMs": 43.160790999998426,
+                "cpuMs": 19.551,
+                "wallSamples": [
+                  43.161,
+                  43.21,
+                  46.395,
+                  41.664,
+                  44.917,
+                  46.026,
+                  41.222,
+                  38.519,
+                  41.925
+                ],
+                "cpuSamples": [
+                  19.121,
+                  25.744,
+                  19.551,
+                  19.674,
+                  19.309,
+                  19.812,
+                  24.515,
+                  19.286,
+                  19.493
+                ],
+                "documentBytes": 304526
+              },
+              "documentBytes": 304526,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 40,
+                  "live/lstatSync": 10,
+                  "other/readFileSync": 4,
+                  "stage/mkdirSync": 1,
+                  "stage/linkSync": 2,
+                  "stage/statSync": 39,
+                  "stage/readdirSync": 60,
+                  "stage/readFileSync": 6,
+                  "stage/open.async": 1,
+                  "stage/copyFileSync": 1,
+                  "stage/renameSync": 2,
+                  "stage/lstatSync": 5,
+                  "stage/writeFileSync": 1,
+                  "other/fsyncSync": 5,
+                  "other/lstatSync": 2,
+                  "other/writeFileSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 4,
+                  "live/linkSync": 2,
+                  "live/renameSync": 2,
+                  "stage/rmSync": 1,
+                  "live/statSync": 20,
+                  "official/statSync": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 44.23991599999863,
+              "cpuMs": 19.947,
+              "transactions": 9,
+              "archiveChanging": 9,
+              "unchangedArchives": null,
+              "changedArchives": {
+                "transactions": 9,
+                "wallMs": 44.23991599999863,
+                "cpuMs": 19.947,
+                "wallSamples": [
+                  41.465,
+                  41.946,
+                  44.275,
+                  44.641,
+                  45.875,
+                  47.247,
+                  40.433,
+                  44.24,
+                  41.655
+                ],
+                "cpuSamples": [
+                  18.615,
+                  23.101,
+                  19.348,
+                  19.442,
+                  19.653,
+                  25.959,
+                  20.011,
+                  20.314,
+                  19.947
+                ],
+                "documentBytes": 304526
+              },
+              "documentBytes": 304526,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 40,
+                  "live/lstatSync": 10,
+                  "other/readFileSync": 4,
+                  "stage/mkdirSync": 1,
+                  "stage/linkSync": 2,
+                  "stage/statSync": 39,
+                  "stage/readdirSync": 60,
+                  "stage/readFileSync": 6,
+                  "stage/open.async": 1,
+                  "stage/copyFileSync": 1,
+                  "stage/renameSync": 2,
+                  "stage/lstatSync": 5,
+                  "stage/writeFileSync": 1,
+                  "other/fsyncSync": 5,
+                  "other/lstatSync": 2,
+                  "other/writeFileSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 4,
+                  "live/linkSync": 2,
+                  "live/renameSync": 2,
+                  "stage/rmSync": 1,
+                  "live/statSync": 20,
+                  "official/statSync": 1
+                }
+              }
+            },
+            "candidate": {
+              "wallMs": 44.91358300000138,
+              "cpuMs": 19.666,
+              "transactions": 9,
+              "archiveChanging": 9,
+              "unchangedArchives": null,
+              "changedArchives": {
+                "transactions": 9,
+                "wallMs": 44.91358300000138,
+                "cpuMs": 19.666,
+                "wallSamples": [
+                  44.835,
+                  45.368,
+                  44.54,
+                  44.914,
+                  45.857,
+                  41.024,
+                  39.959,
+                  45.077,
+                  45.13
+                ],
+                "cpuSamples": [
+                  19.256,
+                  20.039,
+                  24.972,
+                  19.666,
+                  25.139,
+                  19.577,
+                  16.385,
+                  21.524,
+                  18.058
+                ],
+                "documentBytes": 304526
+              },
+              "documentBytes": 304526,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 2,
+                "tokenWritesPerTransaction": 2,
+                "callsPerTransaction": {
+                  "live/readdirSync": 40,
+                  "live/lstatSync": 10,
+                  "other/readFileSync": 4,
+                  "stage/mkdirSync": 1,
+                  "stage/linkSync": 2,
+                  "stage/statSync": 39,
+                  "stage/readdirSync": 60,
+                  "stage/readFileSync": 6,
+                  "stage/open.async": 1,
+                  "stage/copyFileSync": 1,
+                  "stage/renameSync": 2,
+                  "stage/lstatSync": 5,
+                  "stage/writeFileSync": 1,
+                  "other/fsyncSync": 5,
+                  "other/lstatSync": 2,
+                  "other/writeFileSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 4,
+                  "live/linkSync": 2,
+                  "live/renameSync": 2,
+                  "stage/rmSync": 1,
+                  "live/statSync": 20,
+                  "official/statSync": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "sides": {
+          "baseline": {
+            "wallMs": 43.77220800000032,
+            "cpuMs": 19.947,
+            "wallRounds": [
+              43.77,
+              43.16,
+              44.24
+            ],
+            "cpuRounds": [
+              20.31,
+              19.55,
+              19.95
+            ],
+            "transactions": 9,
+            "archiveChanging": 9,
+            "documentBytes": 304526,
+            "unchangedArchives": null,
+            "changedArchives": {
+              "transactions": 9,
+              "wallMs": 43.77220800000032,
+              "cpuMs": 19.947,
+              "wallRounds": [
+                43.77,
+                43.16,
+                44.24
+              ],
+              "cpuRounds": [
+                20.31,
+                19.55,
+                19.95
+              ]
+            },
+            "documentWritesPerTransaction": 2,
+            "tokenWritesPerTransaction": 2,
+            "calls": {
+              "live/readdirSync": 40,
+              "live/lstatSync": 10,
+              "other/readFileSync": 4,
+              "stage/mkdirSync": 1,
+              "stage/linkSync": 2,
+              "stage/statSync": 39,
+              "stage/readdirSync": 60,
+              "stage/readFileSync": 6,
+              "stage/open.async": 1,
+              "stage/copyFileSync": 1,
+              "stage/renameSync": 2,
+              "stage/lstatSync": 5,
+              "stage/writeFileSync": 1,
+              "other/fsyncSync": 5,
+              "other/lstatSync": 2,
+              "other/writeFileSync": 2,
+              "other/renameSync": 2,
+              "official/open.async": 4,
+              "live/linkSync": 2,
+              "live/renameSync": 2,
+              "stage/rmSync": 1,
+              "live/statSync": 20,
+              "official/statSync": 1
+            },
+            "stagingLeft": 0
+          },
+          "candidate": {
+            "wallMs": 44.931541999998444,
+            "cpuMs": 20.13,
+            "wallRounds": [
+              45.32,
+              44.93,
+              44.91
+            ],
+            "cpuRounds": [
+              21.19,
+              20.13,
+              19.67
+            ],
+            "transactions": 9,
+            "archiveChanging": 9,
+            "documentBytes": 304526,
+            "unchangedArchives": null,
+            "changedArchives": {
+              "transactions": 9,
+              "wallMs": 44.931541999998444,
+              "cpuMs": 20.13,
+              "wallRounds": [
+                45.32,
+                44.93,
+                44.91
+              ],
+              "cpuRounds": [
+                21.19,
+                20.13,
+                19.67
+              ]
+            },
+            "documentWritesPerTransaction": 2,
+            "tokenWritesPerTransaction": 2,
+            "calls": {
+              "live/readdirSync": 40,
+              "live/lstatSync": 10,
+              "other/readFileSync": 4,
+              "stage/mkdirSync": 1,
+              "stage/linkSync": 2,
+              "stage/statSync": 39,
+              "stage/readdirSync": 60,
+              "stage/readFileSync": 6,
+              "stage/open.async": 1,
+              "stage/copyFileSync": 1,
+              "stage/renameSync": 2,
+              "stage/lstatSync": 5,
+              "stage/writeFileSync": 1,
+              "other/fsyncSync": 5,
+              "other/lstatSync": 2,
+              "other/writeFileSync": 2,
+              "other/renameSync": 2,
+              "official/open.async": 4,
+              "live/linkSync": 2,
+              "live/renameSync": 2,
+              "stage/rmSync": 1,
+              "live/statSync": 20,
+              "official/statSync": 1
+            },
+            "stagingLeft": 0
+          }
+        }
+      }
+    },
+    {
+      "scenario": "steady",
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 0.014333999999507796,
+              "cpuMs": 0.016,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 0.014333999999507796,
+                "cpuMs": 0.016,
+                "wallSamples": [
+                  0.021,
+                  0.016,
+                  0.015,
+                  0.014,
+                  0.014,
+                  0.014,
+                  0.014,
+                  0.014,
+                  0.014
+                ],
+                "cpuSamples": [
+                  0.024,
+                  0.016,
+                  0.016,
+                  0.015,
+                  0.016,
+                  0.016,
+                  0.015,
+                  0.015,
+                  0.015
+                ],
+                "documentBytes": 0
+              },
+              "changedArchives": null,
+              "documentBytes": 0,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 0,
+                "tokenWritesPerTransaction": 0,
+                "callsPerTransaction": {
+                  "live/readdirSync": 2,
+                  "other/readFileSync": 1
+                }
+              }
+            },
+            "candidate": {
+              "wallMs": 0.015707999998994637,
+              "cpuMs": 0.017,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 0.015707999998994637,
+                "cpuMs": 0.017,
+                "wallSamples": [
+                  0.019,
+                  0.02,
+                  0.016,
+                  0.016,
+                  0.015,
+                  0.016,
+                  0.016,
+                  0.016,
+                  0.016
+                ],
+                "cpuSamples": [
+                  0.02,
+                  0.021,
+                  0.017,
+                  0.017,
+                  0.016,
+                  0.017,
+                  0.016,
+                  0.016,
+                  0.016
+                ],
+                "documentBytes": 0
+              },
+              "changedArchives": null,
+              "documentBytes": 0,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 0,
+                "tokenWritesPerTransaction": 0,
+                "callsPerTransaction": {
+                  "live/readdirSync": 2,
+                  "other/readFileSync": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "wallMs": 0.015625,
+              "cpuMs": 0.016,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 0.015625,
+                "cpuMs": 0.016,
+                "wallSamples": [
+                  0.016,
+                  0.016,
+                  0.016,
+                  0.016,
+                  0.016,
+                  0.015,
+                  0.019,
+                  0.015,
+                  0.015
+                ],
+                "cpuSamples": [
+                  0.018,
+                  0.017,
+                  0.017,
+                  0.016,
+                  0.015,
+                  0.016,
+                  0.02,
+                  0.016,
+                  0.016
+                ],
+                "documentBytes": 0
+              },
+              "changedArchives": null,
+              "documentBytes": 0,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 0,
+                "tokenWritesPerTransaction": 0,
+                "callsPerTransaction": {
+                  "live/readdirSync": 2,
+                  "other/readFileSync": 1
+                }
+              }
+            },
+            "baseline": {
+              "wallMs": 0.015541999997367384,
+              "cpuMs": 0.017,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 0.015541999997367384,
+                "cpuMs": 0.017,
+                "wallSamples": [
+                  0.017,
+                  0.016,
+                  0.016,
+                  0.015,
+                  0.015,
+                  0.016,
+                  0.015,
+                  0.022,
+                  0.015
+                ],
+                "cpuSamples": [
+                  0.019,
+                  0.017,
+                  0.018,
+                  0.016,
+                  0.016,
+                  0.017,
+                  0.016,
+                  0.023,
+                  0.015
+                ],
+                "documentBytes": 0
+              },
+              "changedArchives": null,
+              "documentBytes": 0,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 0,
+                "tokenWritesPerTransaction": 0,
+                "callsPerTransaction": {
+                  "live/readdirSync": 2,
+                  "other/readFileSync": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "wallMs": 0.016082999998616287,
+              "cpuMs": 0.017,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 0.016082999998616287,
+                "cpuMs": 0.017,
+                "wallSamples": [
+                  0.016,
+                  0.016,
+                  0.015,
+                  0.015,
+                  0.015,
+                  0.023,
+                  0.022,
+                  0.023,
+                  0.016
+                ],
+                "cpuSamples": [
+                  0.018,
+                  0.017,
+                  0.017,
+                  0.017,
+                  0.016,
+                  0.023,
+                  0.023,
+                  0.024,
+                  0.017
+                ],
+                "documentBytes": 0
+              },
+              "changedArchives": null,
+              "documentBytes": 0,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 0,
+                "tokenWritesPerTransaction": 0,
+                "callsPerTransaction": {
+                  "live/readdirSync": 2,
+                  "other/readFileSync": 1
+                }
+              }
+            },
+            "candidate": {
+              "wallMs": 0.01599999999962165,
+              "cpuMs": 0.017,
+              "transactions": 9,
+              "archiveChanging": 0,
+              "unchangedArchives": {
+                "transactions": 9,
+                "wallMs": 0.01599999999962165,
+                "cpuMs": 0.017,
+                "wallSamples": [
+                  0.017,
+                  0.016,
+                  0.016,
+                  0.015,
+                  0.015,
+                  0.016,
+                  0.015,
+                  0.016,
+                  0.027
+                ],
+                "cpuSamples": [
+                  0.019,
+                  0.017,
+                  0.016,
+                  0.016,
+                  0.016,
+                  0.017,
+                  0.014,
+                  0.017,
+                  0.03
+                ],
+                "documentBytes": 0
+              },
+              "changedArchives": null,
+              "documentBytes": 0,
+              "stagingLeft": 0,
+              "traced": {
+                "documentWritesPerTransaction": 0,
+                "tokenWritesPerTransaction": 0,
+                "callsPerTransaction": {
+                  "live/readdirSync": 2,
+                  "other/readFileSync": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "sides": {
+          "baseline": {
+            "wallMs": 0.015541999997367384,
+            "cpuMs": 0.017,
+            "wallRounds": [
+              0.01,
+              0.02,
+              0.02
+            ],
+            "cpuRounds": [
+              0.02,
+              0.02,
+              0.02
+            ],
+            "transactions": 9,
+            "archiveChanging": 0,
+            "documentBytes": 0,
+            "unchangedArchives": {
+              "transactions": 9,
+              "wallMs": 0.015541999997367384,
+              "cpuMs": 0.017,
+              "wallRounds": [
+                0.01,
+                0.02,
+                0.02
+              ],
+              "cpuRounds": [
+                0.02,
+                0.02,
+                0.02
+              ]
+            },
+            "changedArchives": null,
+            "documentWritesPerTransaction": 0,
+            "tokenWritesPerTransaction": 0,
+            "calls": {
+              "live/readdirSync": 2,
+              "other/readFileSync": 1
+            },
+            "stagingLeft": 0
+          },
+          "candidate": {
+            "wallMs": 0.015707999998994637,
+            "cpuMs": 0.017,
+            "wallRounds": [
+              0.02,
+              0.02,
+              0.02
+            ],
+            "cpuRounds": [
+              0.02,
+              0.02,
+              0.02
+            ],
+            "transactions": 9,
+            "archiveChanging": 0,
+            "documentBytes": 0,
+            "unchangedArchives": {
+              "transactions": 9,
+              "wallMs": 0.015707999998994637,
+              "cpuMs": 0.017,
+              "wallRounds": [
+                0.02,
+                0.02,
+                0.02
+              ],
+              "cpuRounds": [
+                0.02,
+                0.02,
+                0.02
+              ]
+            },
+            "changedArchives": null,
+            "documentWritesPerTransaction": 0,
+            "tokenWritesPerTransaction": 0,
+            "calls": {
+              "live/readdirSync": 2,
+              "other/readFileSync": 1
+            },
+            "stagingLeft": 0
+          }
+        }
+      }
+    }
+  ],
+  "equivalence": [
+    {
+      "scenario": "daily",
+      "durableByteIdentical": true,
+      "archiveFiles": 0,
+      "documentBytes": 156629,
+      "archiveChanging": {
+        "baseline": 0,
+        "candidate": 0
+      },
+      "activeArchiveBytes": 0
+    },
+    {
+      "scenario": "bulk",
+      "durableByteIdentical": true,
+      "archiveFiles": 2,
+      "documentBytes": 217578,
+      "archiveChanging": {
+        "baseline": 3,
+        "candidate": 3
+      },
+      "activeArchiveBytes": 0
+    },
+    {
+      "scenario": "archive",
+      "durableByteIdentical": true,
+      "archiveFiles": 2,
+      "documentBytes": 317646,
+      "archiveChanging": {
+        "baseline": 9,
+        "candidate": 9
+      },
+      "activeArchiveBytes": 27033
+    },
+    {
+      "scenario": "steady",
+      "durableByteIdentical": true,
+      "archiveFiles": 0,
+      "documentBytes": 0,
+      "archiveChanging": {
+        "baseline": 0,
+        "candidate": 0
+      },
+      "activeArchiveBytes": 0
+    }
+  ]
+}

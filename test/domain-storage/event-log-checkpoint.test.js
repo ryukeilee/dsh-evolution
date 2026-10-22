@@ -285,6 +285,14 @@ test('a listener that rewrites the pending record cannot bypass its validation',
   ]) {
     const f = await fixture();
     const port = await openDomainStorage(f.ctx, f.config);
+    // A pending record exists only for a transaction that staged archive bytes, so
+    // the warm-up puts the experiment hot window at its limit first: the flush below
+    // then evicts one experiment into the active archive and publishes the pending
+    // record every variant of this test rewrites. The listener is registered
+    // afterwards, so it sees exactly that record.
+    const warm = Array.from({ length: 50 }, (_, index) => eventFor(`warm-${index + 1}`));
+    for (let index = 0; index < warm.length; index += 1) appendEnvelope(f.config.eventBridgePath, warm[index], { sequence: index + 1 });
+    assert.deepEqual(await port.flush(), { applied: warm.length, duplicates: 0 });
     let injected = null;
     f.ctx.on('domain/changed', change => {
       if (injected !== null || !change?.value?.pending) return;
@@ -292,7 +300,7 @@ test('a listener that rewrites the pending record cannot bypass its validation',
       mutate(change.value.pending, change.value);
     });
     try {
-      appendEnvelope(f.config.eventBridgePath, eventFor('exp-listener'), { sequence: 1 });
+      appendEnvelope(f.config.eventBridgePath, eventFor('exp-listener'), { sequence: warm.length + 1 });
       await assert.rejects(port.flush(), (error) => error?.name === 'ZodError', `${name} must fail loudly`);
       assert.equal(injected, name, `${name} must reach the pending record`);
     } finally {

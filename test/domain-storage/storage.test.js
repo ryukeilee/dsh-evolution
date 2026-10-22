@@ -86,7 +86,14 @@ test('official domain: single-event batch, durable replay, restart, bounded read
 test('pending archive commit resumes without incrementing canary generation', async () => {
   const f = await fixture();
   const port = await openDomainStorage(f.ctx, f.config);
-  f.bridge.emit('canary-passed', { id: 'crash-event', proposal: { target: 'plugin:crash' } });
+  // A pending record exists only for a transaction that staged archive bytes: its
+  // whole purpose is to sequence those bytes before the aggregate. Fifty committed
+  // promotions put the promotion hot window at its limit, so the canary transaction
+  // below evicts one promotion into the active archive and commits through the
+  // pending record the injected failure interrupts. The warm-up is committed before
+  // the injection is armed, so it cannot trip it.
+  for (let index = 0; index < 50; index += 1) f.bridge.emit('promotion-succeeded', { id: `warm-${index}`, proposal: { target: 'plugin:warm' } });
+  assert.equal((await port.replay()).applied, 50);
   const domain = f.ctx.storageDomain.get(evolutionDomainSpec.name);
   const set = domain.global.set;
   let injected = false;
@@ -94,12 +101,13 @@ test('pending archive commit resumes without incrementing canary generation', as
     if (!injected && value.pending === null && Object.keys(value.applied).length) { injected = true; throw new Error('INJECTED_FINAL_COMMIT'); }
     return set(value);
   };
+  f.bridge.emit('canary-passed', { id: 'crash-event', proposal: { target: 'plugin:crash' } });
   await assert.rejects(port.replay(), /INJECTED_FINAL_COMMIT/);
   assert.ok(domain.global.get().pending);
   await assert.rejects(port.close(), /INJECTED_FINAL_COMMIT/);
   const restarted = await openDomainStorage(f.ctx, f.config);
   assert.equal(restarted.query('lineage').count, 1);
-  assert.equal((await restarted.replay()).duplicates, 1);
+  assert.equal((await restarted.replay()).duplicates, 51);
   await restarted.close(); await f.backend.close(); fs.rmSync(f.root, { recursive: true });
 });
 test('committed duplicates still authenticate and reject conflicting signed IDs', async () => {

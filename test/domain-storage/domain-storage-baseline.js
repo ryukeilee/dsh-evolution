@@ -49,6 +49,15 @@ const SOURCE_PATH = "lib/domain-storage.js";
 // entry succeed where the released implementation refuses it. See
 // `docs/performance/domain-write-path.md` section 4.
 //
+// The commit-shape round landed last and is reversed first: a transaction whose
+// change list is empty has nothing to sequence before its aggregate (the pending
+// record exists so recovery can replay staged bytes first, and there are none), so
+// it publishes the closing document in one write and removes the stage. The pinned
+// source instead always published a pending record and cleared it with a second
+// whole-document write. Nothing about the persisted shape changes: the document at
+// rest is the one the pinned source converged to, which is what the byte comparison
+// in `domain-storage-write-path-equivalence.test.js` checks.
+//
 // A later round added a fourth reversed piece: both load calls that discard the
 // projection they used to build now ask for it not to be built (`load({ snapshot:
 // false })`). Loading is unchanged apart from the skipped clone, and the
@@ -91,6 +100,40 @@ const reversals = [
   ["async function hydrate(archiveReadCache = memory?.archiveReadCache)", "async function hydrate()"],
   ["createMemory(root, domain.global.get().aggregate, null, true, archiveReadCache)", "createMemory(root, domain.global.get().aggregate, null, true)"],
   ["await hydrate(current.instance.archiveReadCache);", "await hydrate();"],
+  // The commit-shape round is independent of the older write-path changes too, and it is
+  // reversed first for the same reason: it wraps two lines an older piece below is
+  // anchored on (`syncStage()` and the pending publication), so removing it first hands
+  // those pieces the text they were written against. Both halves are pure substitutions
+  // of the same lines - the staging decision and the alternative closing write add no
+  // state, no field and no call the pinned source did not already make.
+  ["    writeStageManifest(dir, files);\n" +
+   "    // A transaction that changed no archive file has nothing to sequence: the\n" +
+   "    // pending record exists so that recovery can replay staged bytes onto the\n" +
+   "    // committed tree before the aggregate that describes them is read, and its\n" +
+   "    // install list is empty here. Writing that record, installing nothing and\n" +
+   "    // clearing it again would replace the whole document twice and fsync a\n" +
+   "    // stage no durable record names, so this transaction commits the document\n" +
+   "    // it ends at in one write and drops the stage.\n" +
+   "    const staged = files.length > 0;\n" +
+   "    if (staged) syncStage({ directory: dir, stagingRoot: staging, files });\n",
+   "    writeStageManifest(dir, files);\n" +
+   "    syncStage({ directory: dir, stagingRoot: staging, files });\n"],
+  ["    if (staged) {\n" +
+   "      await domain.global.set(schema.parse({ schema: 1, aggregate: latest.aggregate, applied: latest.applied, pending: { stage, aggregate, applied: ledger, files } }));\n" +
+   "      await installPending();\n" +
+   "    } else {\n" +
+   "      // The document the two-write path converges to: the committed aggregate and\n" +
+   "      // ledger this transaction computed, with no pending record. `schema.parse`\n" +
+   "      // still projects and validates exactly what `installPending()` wrote, and\n" +
+   "      // the stage is removed where an install would have removed it. A crash\n" +
+   "      // before this write leaves the previous document and an unreferenced stage\n" +
+   "      // directory, which is the same state a crash before the pending record\n" +
+   "      // leaves today.\n" +
+   "      await domain.global.set(schema.parse({ schema: 1, aggregate, applied: ledger, pending: null }));\n" +
+   "      fs.rmSync(dir, { recursive: true });\n" +
+   "    }\n",
+   "    await domain.global.set(schema.parse({ schema: 1, aggregate: latest.aggregate, applied: latest.applied, pending: { stage, aggregate, applied: ledger, files } }));\n" +
+   "    await installPending();\n"],
   // The publication compares the committed aggregate by content, so the module imports
   // `createHash` from the same module; both directions stay a single-line substitution.
   ["import { createHash, randomBytes, randomUUID } from 'node:crypto';\n",

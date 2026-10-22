@@ -193,11 +193,21 @@ test('C1 control: consecutive commits, restart, staged recovery and replay still
   assert.equal((await reopened.replay()).duplicates, 1, 'an absorbed event stays absorbed');
   await reopened.observe({ code: 'WRITER_AFTER_REPLAY', target: 'tool:after' });
   assert.equal(reopened.query('observations').count, 6, 'a commit after replay succeeds');
+  // A pending record exists only for a transaction that staged archive bytes, so
+  // the observation hot window is filled to its limit first: the crashing write
+  // below then evicts one observation into the active archive and commits through
+  // the pending record the injected failure interrupts. The warm-up is committed
+  // before the injection is armed, so it cannot trip it.
+  for (let index = 0; index < 44; index++) {
+    await reopened.observe({ code: `WRITER_WARM_${index}`, target: `tool:warm-${index}` });
+  }
+  assert.equal(reopened.query('observations').count, 50, 'the warm-up fills the observation hot window exactly');
   await reopened.close();
 
   // A crash between the publication and the install leaves a committed pending
   // record; the next open installs it. The install advances the commit token
   // too, and a commit after it still compares equal to its own baseline.
+  //
   const crashCtx = f.context();
   const crashing = await openDomainStorage(crashCtx, f.config);
   const handle = crashCtx.storageDomain.get('evolution_domain').global;
@@ -212,13 +222,15 @@ test('C1 control: consecutive commits, restart, staged recovery and replay still
   };
   await assert.rejects(crashing.observe({ code: 'WRITER_CRASH', target: 'tool:crash' }), /INJECTED_FINAL_COMMIT/);
   assert.notEqual(document(f).pending, null, 'the publication is durable before the install fails');
+  assert.ok(document(f).pending.files.some(entry => entry.file.includes('observations-archive')),
+    'the interrupted commit must be the one that staged the evicted observation');
   await assert.rejects(crashing.close(), /INJECTED_FINAL_COMMIT/);
 
   const recovered = await openDomainStorage(f.context(), f.config);
   assert.equal(document(f).pending, null, 'the recovered record is installed and closed');
-  assert.equal(recovered.query('observations').count, 7, 'the interrupted commit is installed on recovery');
+  assert.equal(recovered.query('observations').count, 51, 'the interrupted commit is installed on recovery');
   await recovered.observe({ code: 'WRITER_AFTER_RECOVERY', target: 'tool:recovered' });
-  assert.equal(recovered.query('observations').count, 8, 'a commit after the recovery still succeeds');
+  assert.equal(recovered.query('observations').count, 52, 'a commit after the recovery still succeeds');
   await recovered.close();
   await teardown(f);
 });

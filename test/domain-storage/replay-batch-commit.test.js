@@ -101,9 +101,12 @@ test('a burst of records is committed by one transaction, in file order', async 
       append(f, eventFor('burst-3', 'experiment-rejected'), 4), append(f, eventFor('burst-4', 'failure-learned'), 5),
       append(f, eventFor('burst-5', 'canary-passed'), 6)];
     assert.deepEqual(await port.flush(), { applied: burst.length, duplicates: 1 });
-    // One commit point and one close for the whole burst: the stage mirror, the
-    // two whole-document writes, their fsyncs and the reload are paid once.
-    assert.deepEqual(counted, { commits: 1, closes: 1 });
+    // One durable publication for the whole burst, not one per record. This
+    // transaction staged no archive file, so the single write it publishes is the
+    // closing document: there is no staged byte to sequence before the aggregate,
+    // and the record with `pending` set - which the interrupted-commit test below
+    // still requires - has nothing to carry.
+    assert.deepEqual(counted, { commits: 0, closes: 1 });
     // Every record is still individually authenticated and recorded, in order.
     const markers = appliedMarkers(f);
     assert.equal(markers[historical.event.eventId], historical.mac);
@@ -215,13 +218,23 @@ test('a failure inside the group transaction publishes nothing and the retry app
 
 test('an interrupted group commit is recovered from its pending record exactly once', async () => {
   const f = await fixture();
-  const envelopes = [signed(eventFor('crash-0'), 1), signed(eventFor('crash-1', 'trial-completed'), 2),
-    signed(eventFor('crash-2', 'canary-passed'), 3)];
   const port = await openDomainStorage(f.ctx, f.config);
   const domain = f.ctx.storageDomain.get(evolutionDomainSpec.name);
   const set = domain.global.set;
   let closed = false;
+  const warm = Array.from({ length: 50 }, (_, index) => eventFor(`warm-${index + 1}`));
+  const warmEnvelopes = warm.map((envelope, index) => signed(envelope, index + 1));
+  const envelopes = [signed(eventFor('crash-0'), 51), signed(eventFor('crash-1', 'trial-completed'), 52),
+    signed(eventFor('crash-2', 'canary-passed'), 53)];
   try {
+    // A pending record exists only for a transaction that staged archive bytes: its
+    // whole purpose is to sequence those bytes before the aggregate. Fifty committed
+    // measurements put the experiment hot window at its limit, so the group below
+    // evicts one experiment into the active archive and has to commit through the
+    // pending record the injected failure interrupts. The warm-up is committed before
+    // the injection is armed, so it cannot trip it.
+    fs.writeFileSync(f.config.eventBridgePath, `${warmEnvelopes.map((envelope) => JSON.stringify(envelope)).join('\n')}\n`);
+    assert.deepEqual(await port.flush(), { applied: warm.length, duplicates: 0 });
     let injected = false;
     domain.global.set = async (value) => {
       // The commit point (the pending record) becomes durable; the closing write
@@ -229,10 +242,12 @@ test('an interrupted group commit is recovered from its pending record exactly o
       if (!injected && value.pending === null && Object.keys(value.applied).length) { injected = true; throw new Error('INJECTED_GROUP_FINAL_COMMIT'); }
       return set(value);
     };
-    fs.writeFileSync(f.config.eventBridgePath, `${envelopes.map((envelope) => JSON.stringify(envelope)).join('\n')}\n`);
+    fs.appendFileSync(f.config.eventBridgePath, `${envelopes.map((envelope) => JSON.stringify(envelope)).join('\n')}\n`);
     await assert.rejects(port.flush(), /INJECTED_GROUP_FINAL_COMMIT/);
     assert.equal(injected, true);
     assert.ok(domain.global.get().pending, 'the interrupted group must stay recoverable');
+    assert.ok(domain.global.get().pending.files.some((entry) => entry.file.includes('experiments-archive')),
+      'the interrupted commit must be the one that staged the evicted experiment');
     await assert.rejects(port.close(), /INJECTED_GROUP_FINAL_COMMIT/);
     closed = true;
   } finally {
@@ -244,10 +259,10 @@ test('an interrupted group commit is recovered from its pending record exactly o
   // present exactly once and the replay has nothing left to apply.
   const restarted = await openDomainStorage(f.ctx, f.config);
   try {
-    const order = envelopes.map((envelope) => envelope.event.eventId);
+    const order = [...warmEnvelopes, ...envelopes].map((envelope) => envelope.event.eventId);
     assert.deepEqual(Object.keys(appliedMarkers(f)), order);
     assert.deepEqual(bridgeApplied(f).map((entry) => entry.eventId), order);
-    assert.deepEqual(await restarted.flush(), { applied: 0, duplicates: 3 });
+    assert.deepEqual(await restarted.flush(), { applied: 0, duplicates: order.length });
   } finally { await restarted.close(); await teardown(f); }
 });
 

@@ -95,7 +95,10 @@ function freezeUuid() {
   let counter = 0;
   crypto.randomUUID = () => `00000000-0000-4000-8000-${String(++counter).padStart(12, '0')}`;
   syncBuiltinESMExports();
-  return { reset: () => { counter = 0; }, restore: () => { crypto.randomUUID = original; syncBuiltinESMExports(); } };
+  // `reset(base)` restarts the sequence at `base`; a differential test that restarts
+  // it per write passes a distinct base per write, so identifiers stay both aligned
+  // between the two implementations and distinct between writes.
+  return { reset: (base = 0) => { counter = base; }, restore: () => { crypto.randomUUID = original; syncBuiltinESMExports(); } };
 }
 
 function readTree(root) {
@@ -236,8 +239,15 @@ test('the real port commits byte-identical state before and after the change', a
         const root = path.join(home, 'fixture');
         const f = resetFixture(root, uuid);
         let port = await open(f.ctx, f.config);
+        // One identifier sequence per write, on a distinct base. The two
+        // implementations issue a different number of whole-document replace names,
+        // and the official backend draws those from the same sequence - after the
+        // record ids of the transaction. Restarting at a per-write base keeps every
+        // generated identifier a function of what that write itself generated, while
+        // identifiers stay distinct across writes.
+        uuid.reset(1_000_000);
         await port.observe({ code: 'BENCH_ERROR', target: 'tool:warm' });
-        for (let i = 0; i < writes; i += 1) await port.observe({ code: 'BENCH_ERROR', target: `tool:${i}` });
+        for (let i = 0; i < writes; i += 1) { uuid.reset(i * 1000); await port.observe({ code: 'BENCH_ERROR', target: `tool:${i}` }); }
         const queries = Object.fromEntries(QUERY_COLLECTIONS.map((collection) => [collection, port.query(collection, 50)]));
         await port.close();
         // Restart from the committed medium: recovery must produce the same view.
@@ -328,6 +338,9 @@ test('the committed value is never aliased to the live partition', async () => {
         const global = f.ctx.storageDomain.get('evolution_domain').global;
         const captured = [];
         for (let i = 0; i < 8; i += 1) {
+          // One identifier sequence per write, on a distinct base; see the
+          // byte-identical test above.
+          uuid.reset(i * 1000);
           await port.observe({ code: 'BENCH_ERROR', target: `tool:${i}` });
           // Keep the reference the medium holds together with the bytes it had
           // at that moment: a later in-place append would show up in both.
