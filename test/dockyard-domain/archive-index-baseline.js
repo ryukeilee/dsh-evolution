@@ -13,6 +13,45 @@ import { reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
 // earlier reversal has restored it, so reordering them breaks the guards even
 // though the composed result would be the same.
 const reversals = [
+  // This round stops rewriting the archive index when the only difference is the
+  // clock-derived `updatedAt` stamp, and keeps a loaded entry in the shape it was
+  // read in so a missing field is a repair like any other. Both are reversed here,
+  // before the older reversals that rewrite the same regions.
+  [   "          if (!sameIndexEntry(current, rebuilt)) changed = true;",
+      "          if (JSON.stringify(current) !== JSON.stringify(rebuilt)) changed = true;"],
+  [   "  /**\n" +
+   "   * Read the persisted index. An entry is kept in the shape it was loaded with:\n" +
+   "   * an older document may name only the file, and `#reconcileArchiveIndex()`\n" +
+   "   * then sees the missing `collection` in the same comparison that reports any\n" +
+   "   * other stale field, so the repair is decided by the entry itself rather than\n" +
+   "   * by the clock.\n" +
+   "   */\n",
+   ""],
+  [   "      if (file) entries.set(file, item);",
+      "      if (file) entries.set(file, { ...item, collection });"],
+  [   "/**\n" +
+   " * Whether a freshly scanned active-archive entry describes the same file state\n" +
+   " * as the entry the loaded index already holds.\n" +
+   " *\n" +
+   " * `updatedAt` is a clock stamp, not content: `#reconcileActiveArchive()`\n" +
+   " * re-derives it from `this.clock` on every load, so comparing it would report\n" +
+   " * \"changed\" for bytes that did not change. Each such false change rewrites the\n" +
+   " * whole index document on every load - a durable write on a read-only path, and\n" +
+   " * it makes the staged index a changed file, which the domain transaction then\n" +
+   " * fsyncs and installs, twice per write. Excluding the stamp leaves every\n" +
+   " * content field (counts, byte size, digests, first/last record timestamps)\n" +
+   " * deciding, and the fields are compared in sorted key order so an index written\n" +
+   " * by another version with a different key order is not mistaken for a change\n" +
+   " * either.\n" +
+   " */\n" +
+   "function sameIndexEntry(left, right) {\n" +
+   "  if (!left || !right) return false;\n" +
+   "  const comparable = entry => JSON.stringify(Object.keys(entry).filter(key => key !== \"updatedAt\").sort()\n" +
+   "    .map(key => [key, entry[key]]));\n" +
+   "  return comparable(left) === comparable(right);\n" +
+   "}\n" +
+   "\n",
+   ""],
   // The torn-tail completeness round, which landed last. An unterminated final
   // line that already parses as a complete record keeps its bytes and gains only
   // the separator it lacks (`#activeTailIsComplete`); a genuine fragment still

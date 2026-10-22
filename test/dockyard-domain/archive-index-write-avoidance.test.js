@@ -1,0 +1,170 @@
+// The archive index is derived data and is rewritten only when its content
+// changes. `#reconcileActiveArchive()` stamps `updatedAt` from the clock on
+// every load, so a comparison that included that stamp rewrote the whole index
+// document on every load - a durable write on a read-only path, and a changed
+// staged file that the domain transaction then fsyncs and installs.
+//
+// These cases pin both halves: unchanged bytes leave the document alone, and
+// every real repair still rewrites it.
+import assert from "node:assert/strict";
+import test from "node:test";
+import { appendFile, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+
+import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
+import { JsonStateStore } from "./support.js";
+
+const ROWS = [
+  { id: "obs-1", patternKey: "pattern-a", type: "agent/error", severity: "error", observedAt: "2026-10-10T00:00:00.000Z", message: "first" },
+  { id: "obs-2", patternKey: "pattern-b", type: "agent/error", severity: "error", observedAt: "2026-10-10T00:00:01.000Z", message: "second" },
+  { id: "obs-3", patternKey: "pattern-c", type: "agent/error", severity: "error", observedAt: "2026-10-10T00:00:02.000Z", message: "third" },
+];
+
+/** A clock that advances one millisecond per read: the production condition,
+ *  made deterministic instead of depending on millisecond resolution. */
+function advancingClock() {
+  let millis = Date.parse("2026-10-12T00:00:00.000Z");
+  return () => new Date(millis++);
+}
+
+async function fixture() {
+  const home = await mkdtemp(join(tmpdir(), "dsh-archive-index-write-avoidance-"));
+  const store = new JsonStateStore({ home });
+  const archive = `${store.filePath}.observations-archive.jsonl`;
+  await mkdir(dirname(archive), { recursive: true });
+  await writeFile(archive, `${ROWS.map(row => JSON.stringify(row)).join("\n")}\n`);
+  return { home, store, archive, index: `${store.filePath}.evolution-archive-index.json` };
+}
+
+async function load(store, clock) {
+  const memory = new EvolutionMemory({ stateStore: store, clock, hotEntries: 1 });
+  memory.setMutationAuthority({ assertMutation() {}, isActive: () => true });
+  await memory.load({ snapshot: false });
+  return memory;
+}
+
+async function entries(file) {
+  const document = JSON.parse(await readFile(file, "utf8"));
+  assert.equal(document.schemaVersion, 1);
+  return document.segments;
+}
+
+/** Identity of the index document: a rewrite replaces the file atomically, so a
+ *  changed inode is exactly "the document was written again". */
+async function indexIdentity(file) {
+  const info = await stat(file);
+  return { ino: info.ino, bytes: await readFile(file, "utf8") };
+}
+
+test("loading unchanged archive bytes does not rewrite the index document", async () => {
+  const { home, store, archive, index } = await fixture();
+  const clock = advancingClock();
+  try {
+    await load(store, clock);
+    const before = await indexIdentity(index);
+    const [entry] = await entries(index);
+    assert.equal(entry.logicalCount, ROWS.length);
+    assert.equal(entry.physicalCount, ROWS.length);
+    assert.equal(entry.byteSize, (await stat(archive)).size);
+
+    // Every load reads the clock again, so `updatedAt` differs on each pass.
+    // The bytes did not change, so the document must not be written again.
+    for (let pass = 0; pass < 3; pass++) await load(store, clock);
+    const after = await indexIdentity(index);
+    assert.equal(after.ino, before.ino, "an unchanged load must not replace the index document");
+    assert.equal(after.bytes, before.bytes, "an unchanged load must not change the index bytes");
+    assert.deepEqual(await entries(index), [entry]);
+  } finally { await rm(home, { recursive: true, force: true }); }
+});
+
+test("an append to an active archive still rewrites and extends its index entry", async () => {
+  const { home, store, archive, index } = await fixture();
+  const clock = advancingClock();
+  try {
+    await load(store, clock);
+    const before = await indexIdentity(index);
+    const [entryBefore] = await entries(index);
+    await appendFile(archive, `${JSON.stringify({ id: "obs-4", patternKey: "pattern-a", type: "agent/error", severity: "error", observedAt: "2026-10-10T00:00:03.000Z", message: "fourth" })}\n`);
+    await load(store, clock);
+    const after = await indexIdentity(index);
+    assert.notEqual(after.ino, before.ino, "a changed active archive must be re-indexed");
+    const [entryAfter] = await entries(index);
+    assert.equal(entryAfter.logicalCount, entryBefore.logicalCount + 1);
+    assert.equal(entryAfter.physicalCount, entryBefore.physicalCount + 1);
+    assert.equal(entryAfter.byteSize, (await stat(archive)).size);
+    assert.notEqual(entryAfter.updatedAt, entryBefore.updatedAt);
+  } finally { await rm(home, { recursive: true, force: true }); }
+});
+
+test("a sealed segment whose bytes changed is still re-read, re-hashed and re-indexed", async () => {
+  const { home, store, archive, index } = await fixture();
+  const clock = advancingClock();
+  try {
+    const segment = `${archive}.segments/segment-000001.jsonl`;
+    await mkdir(dirname(segment), { recursive: true });
+    await writeFile(segment, `${JSON.stringify({ id: "sealed-1", recordedAt: "2026-10-09T00:00:00.000Z" })}\n`);
+    await load(store, clock);
+    const sealedBefore = (await entries(index)).find(entry => entry.sealed === true);
+    assert.ok(sealedBefore, "the sealed segment must be indexed");
+    assert.equal(sealedBefore.checksumState, "final");
+
+    // A sealed segment is never appended to, so a different byte size is the
+    // evidence that the indexed bytes are stale and must be re-read and
+    // re-hashed. (A change that keeps the size is `verifyConsistency()`'s job.)
+    await writeFile(segment, `${JSON.stringify({ id: "sealed-1", recordedAt: "2026-10-09T00:00:00.000Z" })}\n${JSON.stringify({ id: "sealed-2", recordedAt: "2026-10-09T00:00:01.000Z" })}\n`);
+    await load(store, clock);
+    const sealedAfter = (await entries(index)).find(entry => entry.sealed === true);
+    assert.equal(sealedAfter.byteSize, (await stat(segment)).size);
+    assert.notEqual(sealedAfter.sha256, sealedBefore.sha256, "the sealed digest must follow the bytes");
+    assert.equal(sealedAfter.physicalCount, 2);
+  } finally { await rm(home, { recursive: true, force: true }); }
+});
+
+test("a corrupted index entry is still repaired on the next load", async () => {
+  const { home, store, index } = await fixture();
+  const clock = advancingClock();
+  try {
+    await load(store, clock);
+    const document = JSON.parse(await readFile(index, "utf8"));
+    document.segments[0] = { ...document.segments[0], logicalCount: 999, physicalCount: 999, byteSize: 999 };
+    await writeFile(`${index}.tmp`, JSON.stringify(document));
+    await rename(`${index}.tmp`, index);
+
+    await load(store, clock);
+    const [repaired] = await entries(index);
+    assert.equal(repaired.logicalCount, ROWS.length);
+    assert.equal(repaired.physicalCount, ROWS.length);
+    assert.notEqual(repaired.byteSize, 999);
+  } finally { await rm(home, { recursive: true, force: true }); }
+});
+
+test("an index written with a different key order is not treated as a change", async () => {
+  const { home, store, index } = await fixture();
+  const clock = advancingClock();
+  try {
+    await load(store, clock);
+    const document = JSON.parse(await readFile(index, "utf8"));
+    // Same content, different member order: the comparison must not depend on
+    // the order the document happened to be written in.
+    const reversed = document.segments.map(entry => Object.fromEntries(Object.entries(entry).reverse()));
+    await writeFile(`${index}.tmp`, JSON.stringify({ ...document, segments: reversed }));
+    await rename(`${index}.tmp`, index);
+    const before = await indexIdentity(index);
+
+    await load(store, clock);
+    const after = await indexIdentity(index);
+    assert.equal(after.ino, before.ino, "a reordered but equal entry must not trigger a rewrite");
+    assert.equal(after.bytes, before.bytes);
+  } finally { await rm(home, { recursive: true, force: true }); }
+});
+
+test("a missing index is still written on the first load", async () => {
+  const { home, store, index } = await fixture();
+  const clock = advancingClock();
+  try {
+    await assert.rejects(stat(index), /ENOENT/);
+    await load(store, clock);
+    assert.deepEqual((await entries(index)).map(entry => entry.collection), ["observations"]);
+  } finally { await rm(home, { recursive: true, force: true }); }
+});
