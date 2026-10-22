@@ -1,0 +1,4581 @@
+{
+  "baseline": "f469d57",
+  "rounds": 3,
+  "samples": 9,
+  "warmup": 3,
+  "scenarios": [
+    "history-200-new-0",
+    "history-200-new-1",
+    "history-200-new-3",
+    "history-2000-new-0",
+    "history-2000-new-1",
+    "history-2000-new-3",
+    "history-20000-new-0",
+    "history-20000-new-1",
+    "history-20000-new-3"
+  ],
+  "environment": {
+    "node": "v26.12.1",
+    "platform": "darwin/arm64",
+    "cpus": 8,
+    "loadAverageAtStart": [
+      1.4130859375,
+      1.6357421875,
+      1.943359375
+    ],
+    "loadAverageAtEnd": [
+      1.7392578125,
+      1.7099609375,
+      1.955078125
+    ]
+  },
+  "protocol": {
+    "measurementClock": "deterministic clock advancing 1 ms per read (production condition, reproducible)",
+    "equivalenceClock": "frozen at 2026-11-03T00:00:00.000Z with a deterministic UUID sequence; durable output must be byte-identical",
+    "order": "each round alternates which side runs first",
+    "sides": "baseline restores lib/domain-storage.js and lib/event-log-checkpoint.js from the recorded revision into a copy of lib/; candidate is this working tree",
+    "warmup": "the seeded history is absorbed by a cold pass, then `warmup` flushed bursts",
+    "instrumentedPass": "one additional pass per side with wrapped fs/crypto calls; counts are per flush",
+    "historyShape": "the seeded history is a committed applied marker table plus its signed log; the aggregate starts empty, because this round touches neither the aggregate nor its projection"
+  },
+  "sources": {
+    "lib/domain-storage.js": {
+      "baseline": {
+        "revision": "f469d57",
+        "sha256": "f3c77db4cb0932a1fb3bc6329539d76f8b235d02b988bab9624db5ac6a616ac9",
+        "bytes": 50980
+      },
+      "candidate": {
+        "sha256": "f3c77db4cb0932a1fb3bc6329539d76f8b235d02b988bab9624db5ac6a616ac9",
+        "bytes": 50980
+      }
+    },
+    "lib/event-log-checkpoint.js": {
+      "baseline": {
+        "revision": "f469d57",
+        "sha256": "35742f441889c59f09fbe04e5e6f84d56786ab20ddd56a698cf3a2ee3dfa24c2",
+        "bytes": 13730
+      },
+      "candidate": {
+        "sha256": "8844f0429fd68fff9f3e1cd4e0cd44fdb400727e12b17d0cddd6023472327ec9",
+        "bytes": 16473
+      }
+    }
+  },
+  "results": [
+    {
+      "scenario": "history-200-new-0",
+      "history": 200,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 0.17029200000000344,
+              "cpuMs": 0.21,
+              "wallSamples": [
+                0.207,
+                0.179,
+                0.186,
+                0.17,
+                0.167,
+                0.165,
+                0.157,
+                0.178,
+                0.156
+              ],
+              "cpuSamples": [
+                0.471,
+                0.21,
+                0.277,
+                0.173,
+                0.213,
+                0.223,
+                0.202,
+                0.179,
+                0.194
+              ],
+              "documentBytes": 26077,
+              "checkpointBytes": 521,
+              "logBytes": 125968,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 200
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 125968,
+                "digestBytesPerFlush": 150850,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 0.17224999999999113,
+              "cpuMs": 0.231,
+              "wallSamples": [
+                0.198,
+                0.181,
+                0.186,
+                0.172,
+                0.178,
+                0.166,
+                0.159,
+                0.159,
+                0.157
+              ],
+              "cpuSamples": [
+                1.58,
+                0.238,
+                0.242,
+                0.173,
+                0.231,
+                0.167,
+                0.16,
+                0.159,
+                0.29
+              ],
+              "documentBytes": 26077,
+              "checkpointBytes": 521,
+              "logBytes": 125968,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 200
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 125968,
+                "digestBytesPerFlush": 151010,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 0.16174999999998363,
+              "cpuMs": 0.162,
+              "wallSamples": [
+                0.163,
+                0.164,
+                0.16,
+                0.163,
+                0.162,
+                0.161,
+                0.162,
+                0.162,
+                0.161
+              ],
+              "cpuSamples": [
+                0.165,
+                0.165,
+                0.161,
+                0.271,
+                0.163,
+                0.162,
+                0.162,
+                0.162,
+                0.162
+              ],
+              "documentBytes": 26077,
+              "checkpointBytes": 521,
+              "logBytes": 125968,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 200
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 125968,
+                "digestBytesPerFlush": 151010,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2
+                }
+              }
+            },
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 0.15812499999998408,
+              "cpuMs": 0.158,
+              "wallSamples": [
+                0.162,
+                0.162,
+                0.158,
+                0.157,
+                0.159,
+                0.158,
+                0.158,
+                0.158,
+                0.158
+              ],
+              "cpuSamples": [
+                0.168,
+                0.163,
+                0.158,
+                0.158,
+                0.16,
+                0.158,
+                0.158,
+                0.159,
+                0.158
+              ],
+              "documentBytes": 26077,
+              "checkpointBytes": 521,
+              "logBytes": 125968,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 200
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 125968,
+                "digestBytesPerFlush": 150850,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 0.1657910000000129,
+              "cpuMs": 0.167,
+              "wallSamples": [
+                0.168,
+                0.169,
+                0.165,
+                0.166,
+                0.166,
+                0.165,
+                0.165,
+                0.166,
+                0.166
+              ],
+              "cpuSamples": [
+                0.17,
+                0.169,
+                0.166,
+                0.167,
+                0.167,
+                0.166,
+                0.165,
+                0.166,
+                0.167
+              ],
+              "documentBytes": 26077,
+              "checkpointBytes": 521,
+              "logBytes": 125968,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 200
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 125968,
+                "digestBytesPerFlush": 150850,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 0.18454200000002174,
+              "cpuMs": 0.185,
+              "wallSamples": [
+                0.197,
+                0.184,
+                0.18,
+                0.185,
+                0.184,
+                0.19,
+                0.201,
+                0.186,
+                0.179
+              ],
+              "cpuSamples": [
+                0.203,
+                0.185,
+                0.18,
+                0.185,
+                0.184,
+                0.19,
+                0.202,
+                0.187,
+                0.18
+              ],
+              "documentBytes": 26077,
+              "checkpointBytes": 521,
+              "logBytes": 125968,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 200
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 125968,
+                "digestBytesPerFlush": 151010,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "wallMs": 0.1657910000000129,
+          "cpuMs": 0.167,
+          "wallRounds": [
+            0.17,
+            0.158,
+            0.166
+          ],
+          "cpuRounds": [
+            0.21,
+            0.158,
+            0.167
+          ],
+          "documentBytes": 26077,
+          "checkpointBytes": 521,
+          "logBytes": 125968,
+          "documentWritesPerFlush": 0,
+          "handleSyncsPerFlush": 0,
+          "logBytesReadPerFlush": 125968,
+          "digestBytesPerFlush": 150850,
+          "callsPerFlush": {
+            "eventLog/openSync": 1,
+            "other/readFileSync": 1,
+            "other/readSync": 2
+          }
+        },
+        "candidate": {
+          "wallMs": 0.17224999999999113,
+          "cpuMs": 0.185,
+          "wallRounds": [
+            0.172,
+            0.162,
+            0.185
+          ],
+          "cpuRounds": [
+            0.231,
+            0.162,
+            0.185
+          ],
+          "documentBytes": 26077,
+          "checkpointBytes": 521,
+          "logBytes": 125968,
+          "documentWritesPerFlush": 0,
+          "handleSyncsPerFlush": 0,
+          "logBytesReadPerFlush": 125968,
+          "digestBytesPerFlush": 151010,
+          "callsPerFlush": {
+            "eventLog/openSync": 1,
+            "other/readFileSync": 1,
+            "other/readSync": 2
+          }
+        }
+      },
+      "delta": {
+        "wallPercent": 3.896,
+        "cpuPercent": 10.778,
+        "digestBytesPerFlush": -160
+      }
+    },
+    {
+      "scenario": "history-200-new-1",
+      "history": 200,
+      "newEvents": 1,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 11.481999999999971,
+              "cpuMs": 4.402,
+              "wallSamples": [
+                11.482,
+                8.865,
+                8.175,
+                11.68,
+                10.899,
+                9.129,
+                11.767,
+                11.892,
+                11.98
+              ],
+              "cpuSamples": [
+                4.19,
+                4.402,
+                4.83,
+                5.502,
+                4.06,
+                5.026,
+                4.39,
+                4.327,
+                5.04
+              ],
+              "documentBytes": 40909,
+              "checkpointBytes": 523,
+              "logBytes": 133552,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 212
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 131024,
+                "digestBytesPerFlush": 314130,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 10.330332999999996,
+              "cpuMs": 4.784,
+              "wallSamples": [
+                9.815,
+                11.925,
+                12.003,
+                10.33,
+                9.577,
+                9.782,
+                11.899,
+                8.333,
+                10.528
+              ],
+              "cpuSamples": [
+                4.321,
+                4.602,
+                5.266,
+                5.636,
+                4.562,
+                5.371,
+                4.644,
+                4.784,
+                5.231
+              ],
+              "documentBytes": 40909,
+              "checkpointBytes": 523,
+              "logBytes": 133552,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 212
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 131024,
+                "digestBytesPerFlush": 183994,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 11.769207999999935,
+              "cpuMs": 4.749,
+              "wallSamples": [
+                9.78,
+                9.871,
+                11.962,
+                10.073,
+                11.862,
+                9.012,
+                11.769,
+                11.901,
+                12.956
+              ],
+              "cpuSamples": [
+                4.387,
+                4.312,
+                4.763,
+                4.728,
+                4.709,
+                4.802,
+                4.749,
+                5.121,
+                5.202
+              ],
+              "documentBytes": 40909,
+              "checkpointBytes": 523,
+              "logBytes": 133552,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 212
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 131024,
+                "digestBytesPerFlush": 183994,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 11.872000000000071,
+              "cpuMs": 5.322,
+              "wallSamples": [
+                12.62,
+                11.49,
+                12.299,
+                11.872,
+                12.968,
+                9.534,
+                11.235,
+                12.863,
+                9.625
+              ],
+              "cpuSamples": [
+                5.446,
+                5.322,
+                5.188,
+                5.133,
+                5.43,
+                5.838,
+                5.175,
+                5.148,
+                5.34
+              ],
+              "documentBytes": 40909,
+              "checkpointBytes": 523,
+              "logBytes": 133552,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 212
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 131024,
+                "digestBytesPerFlush": 314130,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 10.035292000000027,
+              "cpuMs": 4.859,
+              "wallSamples": [
+                11.973,
+                8.4,
+                12.45,
+                8.098,
+                11.67,
+                10.035,
+                11.939,
+                9.875,
+                9.221
+              ],
+              "cpuSamples": [
+                4.551,
+                5.005,
+                4.541,
+                5.124,
+                4.449,
+                4.649,
+                4.859,
+                4.896,
+                4.939
+              ],
+              "documentBytes": 40909,
+              "checkpointBytes": 523,
+              "logBytes": 133552,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 212
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 131024,
+                "digestBytesPerFlush": 314130,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 12.279291999999941,
+              "cpuMs": 5.304,
+              "wallSamples": [
+                12.926,
+                9.479,
+                12.279,
+                12.921,
+                11.331,
+                10.416,
+                12.889,
+                10.226,
+                12.589
+              ],
+              "cpuSamples": [
+                5.252,
+                5.328,
+                5.304,
+                5.793,
+                5.046,
+                5.084,
+                6.005,
+                5.314,
+                5.242
+              ],
+              "documentBytes": 40909,
+              "checkpointBytes": 523,
+              "logBytes": 133552,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 212
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 131024,
+                "digestBytesPerFlush": 183994,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "wallMs": 11.481999999999971,
+          "cpuMs": 4.859,
+          "wallRounds": [
+            11.482,
+            11.872,
+            10.035
+          ],
+          "cpuRounds": [
+            4.402,
+            5.322,
+            4.859
+          ],
+          "documentBytes": 40909,
+          "checkpointBytes": 523,
+          "logBytes": 133552,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 131024,
+          "digestBytesPerFlush": 314130,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 2,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        },
+        "candidate": {
+          "wallMs": 11.769207999999935,
+          "cpuMs": 4.784,
+          "wallRounds": [
+            10.33,
+            11.769,
+            12.279
+          ],
+          "cpuRounds": [
+            4.784,
+            4.749,
+            5.304
+          ],
+          "documentBytes": 40909,
+          "checkpointBytes": 523,
+          "logBytes": 133552,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 131024,
+          "digestBytesPerFlush": 183994,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 2,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        }
+      },
+      "delta": {
+        "wallPercent": 2.501,
+        "cpuPercent": -1.544,
+        "digestBytesPerFlush": 130136
+      }
+    },
+    {
+      "scenario": "history-200-new-3",
+      "history": 200,
+      "newEvents": 3,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 13.464832999999999,
+              "cpuMs": 6.211,
+              "wallSamples": [
+                10.287,
+                13.465,
+                13.487,
+                11.751,
+                13.008,
+                13.921,
+                13.69,
+                11.892,
+                13.93
+              ],
+              "cpuSamples": [
+                5.476,
+                6.793,
+                6.093,
+                5.747,
+                6.211,
+                7.229,
+                5.957,
+                6.555,
+                6.666
+              ],
+              "documentBytes": 68989,
+              "checkpointBytes": 523,
+              "logBytes": 148720,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 236
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 141136,
+                "digestBytesPerFlush": 338982,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 12.0034169999999,
+              "cpuMs": 5.508,
+              "wallSamples": [
+                12.003,
+                11.866,
+                10.93,
+                11.899,
+                12.932,
+                12.884,
+                12.937,
+                11.297,
+                13.461
+              ],
+              "cpuSamples": [
+                4.724,
+                5.07,
+                5.146,
+                5.043,
+                6.282,
+                6.255,
+                5.508,
+                6.195,
+                6.241
+              ],
+              "documentBytes": 68989,
+              "checkpointBytes": 523,
+              "logBytes": 148720,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 236
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 141136,
+                "digestBytesPerFlush": 199998,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 11.028457999999773,
+              "cpuMs": 5.298,
+              "wallSamples": [
+                10.406,
+                9.321,
+                11.028,
+                11.279,
+                12.499,
+                10.267,
+                13.55,
+                9.724,
+                12.219
+              ],
+              "cpuSamples": [
+                4.769,
+                4.804,
+                4.942,
+                6.033,
+                5.298,
+                5.154,
+                5.549,
+                6.131,
+                7.222
+              ],
+              "documentBytes": 68989,
+              "checkpointBytes": 523,
+              "logBytes": 148720,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 236
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 141136,
+                "digestBytesPerFlush": 199998,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 12.486083000000235,
+              "cpuMs": 5.282,
+              "wallSamples": [
+                10.866,
+                12.486,
+                9.428,
+                12.574,
+                12.681,
+                11.907,
+                12.891,
+                9.476,
+                13.324
+              ],
+              "cpuSamples": [
+                5.496,
+                4.824,
+                4.991,
+                5.396,
+                5.169,
+                5.792,
+                5.232,
+                5.282,
+                6.199
+              ],
+              "documentBytes": 68989,
+              "checkpointBytes": 523,
+              "logBytes": 148720,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 236
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 141136,
+                "digestBytesPerFlush": 338982,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 11.781375000000025,
+              "cpuMs": 5.683,
+              "wallSamples": [
+                11.102,
+                10.157,
+                10.772,
+                12.828,
+                12.826,
+                10.897,
+                12.914,
+                11.781,
+                11.966
+              ],
+              "cpuSamples": [
+                5.437,
+                4.901,
+                19.417,
+                5.722,
+                5.442,
+                5.504,
+                5.683,
+                5.697,
+                6.031
+              ],
+              "documentBytes": 68989,
+              "checkpointBytes": 523,
+              "logBytes": 148720,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 236
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 141136,
+                "digestBytesPerFlush": 338982,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 11.890957999999955,
+              "cpuMs": 5.074,
+              "wallSamples": [
+                12.456,
+                11.891,
+                10.915,
+                10.335,
+                12.468,
+                12.936,
+                10.964,
+                11.056,
+                12.728
+              ],
+              "cpuSamples": [
+                4.731,
+                5.859,
+                4.709,
+                4.799,
+                4.948,
+                5.074,
+                5.33,
+                5.414,
+                17.082
+              ],
+              "documentBytes": 68989,
+              "checkpointBytes": 523,
+              "logBytes": 148720,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 236
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 141136,
+                "digestBytesPerFlush": 199998,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 2,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "wallMs": 12.486083000000235,
+          "cpuMs": 5.683,
+          "wallRounds": [
+            13.465,
+            12.486,
+            11.781
+          ],
+          "cpuRounds": [
+            6.211,
+            5.282,
+            5.683
+          ],
+          "documentBytes": 68989,
+          "checkpointBytes": 523,
+          "logBytes": 148720,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 141136,
+          "digestBytesPerFlush": 338982,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 2,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        },
+        "candidate": {
+          "wallMs": 11.890957999999955,
+          "cpuMs": 5.298,
+          "wallRounds": [
+            12.003,
+            11.028,
+            11.891
+          ],
+          "cpuRounds": [
+            5.508,
+            5.298,
+            5.074
+          ],
+          "documentBytes": 68989,
+          "checkpointBytes": 523,
+          "logBytes": 148720,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 141136,
+          "digestBytesPerFlush": 199998,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 2,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        }
+      },
+      "delta": {
+        "wallPercent": -4.766,
+        "cpuPercent": -6.775,
+        "digestBytesPerFlush": 138984
+      }
+    },
+    {
+      "scenario": "history-2000-new-0",
+      "history": 2000,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 1.1567500000001019,
+              "cpuMs": 1.158,
+              "wallSamples": [
+                1.168,
+                1.174,
+                1.161,
+                1.157,
+                1.13,
+                1.157,
+                1.13,
+                1.081,
+                1.087
+              ],
+              "cpuSamples": [
+                1.173,
+                1.252,
+                1.162,
+                1.158,
+                1.13,
+                1.158,
+                1.131,
+                1.089,
+                1.089
+              ],
+              "documentBytes": 261078,
+              "checkpointBytes": 524,
+              "logBytes": 1267572,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 1267572,
+                "digestBytesPerFlush": 1513058,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 1.0526669999999285,
+              "cpuMs": 1.054,
+              "wallSamples": [
+                1.056,
+                1.04,
+                1.052,
+                1.052,
+                1.058,
+                1.06,
+                1.059,
+                1.026,
+                1.053
+              ],
+              "cpuSamples": [
+                1.059,
+                1.041,
+                1.052,
+                1.053,
+                1.059,
+                1.061,
+                1.059,
+                1.027,
+                1.054
+              ],
+              "documentBytes": 261078,
+              "checkpointBytes": 524,
+              "logBytes": 1267572,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 1267572,
+                "digestBytesPerFlush": 1513218,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 1.0544580000005226,
+              "cpuMs": 1.055,
+              "wallSamples": [
+                1.054,
+                1.058,
+                1.055,
+                1.056,
+                1.056,
+                1.053,
+                1.028,
+                1.028,
+                1.049
+              ],
+              "cpuSamples": [
+                1.06,
+                1.059,
+                1.055,
+                1.056,
+                1.057,
+                1.053,
+                1.028,
+                1.029,
+                1.049
+              ],
+              "documentBytes": 261078,
+              "checkpointBytes": 524,
+              "logBytes": 1267572,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 1267572,
+                "digestBytesPerFlush": 1513218,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3
+                }
+              }
+            },
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 1.0478750000002037,
+              "cpuMs": 1.049,
+              "wallSamples": [
+                1.059,
+                1.046,
+                1.038,
+                1.051,
+                1.05,
+                1.048,
+                1.036,
+                1.03,
+                1.052
+              ],
+              "cpuSamples": [
+                1.064,
+                1.046,
+                1.038,
+                1.051,
+                1.049,
+                1.055,
+                1.036,
+                1.031,
+                1.052
+              ],
+              "documentBytes": 261078,
+              "checkpointBytes": 524,
+              "logBytes": 1267572,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 1267572,
+                "digestBytesPerFlush": 1513058,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 1.0488329999998314,
+              "cpuMs": 1.05,
+              "wallSamples": [
+                1.06,
+                1.054,
+                1.071,
+                1.044,
+                1.043,
+                1.049,
+                1.049,
+                1.052,
+                1.045
+              ],
+              "cpuSamples": [
+                1.067,
+                1.054,
+                1.07,
+                1.045,
+                1.045,
+                1.049,
+                1.05,
+                1.053,
+                1.046
+              ],
+              "documentBytes": 261078,
+              "checkpointBytes": 524,
+              "logBytes": 1267572,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 1267572,
+                "digestBytesPerFlush": 1513058,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 1.0530419999995502,
+              "cpuMs": 1.054,
+              "wallSamples": [
+                1.063,
+                1.051,
+                1.065,
+                1.053,
+                1.053,
+                1.046,
+                1.066,
+                1.048,
+                1.044
+              ],
+              "cpuSamples": [
+                1.072,
+                1.052,
+                1.066,
+                1.054,
+                1.055,
+                1.047,
+                1.066,
+                1.049,
+                1.044
+              ],
+              "documentBytes": 261078,
+              "checkpointBytes": 524,
+              "logBytes": 1267572,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 1267572,
+                "digestBytesPerFlush": 1513218,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "wallMs": 1.0488329999998314,
+          "cpuMs": 1.05,
+          "wallRounds": [
+            1.157,
+            1.048,
+            1.049
+          ],
+          "cpuRounds": [
+            1.158,
+            1.049,
+            1.05
+          ],
+          "documentBytes": 261078,
+          "checkpointBytes": 524,
+          "logBytes": 1267572,
+          "documentWritesPerFlush": 0,
+          "handleSyncsPerFlush": 0,
+          "logBytesReadPerFlush": 1267572,
+          "digestBytesPerFlush": 1513058,
+          "callsPerFlush": {
+            "eventLog/openSync": 1,
+            "other/readFileSync": 1,
+            "other/readSync": 3
+          }
+        },
+        "candidate": {
+          "wallMs": 1.0530419999995502,
+          "cpuMs": 1.054,
+          "wallRounds": [
+            1.053,
+            1.054,
+            1.053
+          ],
+          "cpuRounds": [
+            1.054,
+            1.055,
+            1.054
+          ],
+          "documentBytes": 261078,
+          "checkpointBytes": 524,
+          "logBytes": 1267572,
+          "documentWritesPerFlush": 0,
+          "handleSyncsPerFlush": 0,
+          "logBytesReadPerFlush": 1267572,
+          "digestBytesPerFlush": 1513218,
+          "callsPerFlush": {
+            "eventLog/openSync": 1,
+            "other/readFileSync": 1,
+            "other/readSync": 3
+          }
+        }
+      },
+      "delta": {
+        "wallPercent": 0.401,
+        "cpuPercent": 0.381,
+        "digestBytesPerFlush": -160
+      }
+    },
+    {
+      "scenario": "history-2000-new-1",
+      "history": 2000,
+      "newEvents": 1,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 14.616833000000042,
+              "cpuMs": 7.707,
+              "wallSamples": [
+                14.91,
+                14.931,
+                13.3,
+                14.617,
+                14.917,
+                13.514,
+                15.395,
+                12.256,
+                14.559
+              ],
+              "cpuSamples": [
+                7.448,
+                7.355,
+                7.665,
+                7.811,
+                7.707,
+                17.675,
+                8.235,
+                8.199,
+                7.609
+              ],
+              "documentBytes": 275994,
+              "checkpointBytes": 527,
+              "logBytes": 1275204,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1272660,
+                "digestBytesPerFlush": 3038631,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 14.590249999999287,
+              "cpuMs": 7.49,
+              "wallSamples": [
+                12.936,
+                13.992,
+                13.41,
+                14.59,
+                16.829,
+                14.869,
+                13.194,
+                15.704,
+                14.881
+              ],
+              "cpuSamples": [
+                6.958,
+                7.159,
+                7.508,
+                8.204,
+                18.041,
+                7.372,
+                7.485,
+                8.083,
+                7.49
+              ],
+              "documentBytes": 275994,
+              "checkpointBytes": 527,
+              "logBytes": 1275204,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1272660,
+                "digestBytesPerFlush": 1766863,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 13.2787500000004,
+              "cpuMs": 7.025,
+              "wallSamples": [
+                11.952,
+                13.279,
+                12.593,
+                13.324,
+                14.562,
+                12.051,
+                14.369,
+                14.503,
+                12.86
+              ],
+              "cpuSamples": [
+                6.879,
+                7.003,
+                7.025,
+                7.022,
+                6.989,
+                13.769,
+                12.155,
+                7.163,
+                7.743
+              ],
+              "documentBytes": 275994,
+              "checkpointBytes": 527,
+              "logBytes": 1275204,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1272660,
+                "digestBytesPerFlush": 1766863,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 13.922832999999628,
+              "cpuMs": 7.7,
+              "wallSamples": [
+                13.892,
+                14.975,
+                12.041,
+                13.831,
+                13.923,
+                14.988,
+                14.964,
+                16.993,
+                13.811
+              ],
+              "cpuSamples": [
+                7.502,
+                7.976,
+                7.537,
+                7.51,
+                7.605,
+                7.7,
+                7.726,
+                18.764,
+                8.402
+              ],
+              "documentBytes": 275994,
+              "checkpointBytes": 527,
+              "logBytes": 1275204,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1272660,
+                "digestBytesPerFlush": 3038631,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 14.510041999999885,
+              "cpuMs": 7.752,
+              "wallSamples": [
+                14.51,
+                14.968,
+                14.448,
+                13.556,
+                14.841,
+                14.886,
+                13.41,
+                12.781,
+                15.711
+              ],
+              "cpuSamples": [
+                7.383,
+                7.752,
+                18.377,
+                7.992,
+                7.517,
+                7.584,
+                7.641,
+                10.754,
+                19.285
+              ],
+              "documentBytes": 275994,
+              "checkpointBytes": 527,
+              "logBytes": 1275204,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1272660,
+                "digestBytesPerFlush": 3038631,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 14.947292000000743,
+              "cpuMs": 7.539,
+              "wallSamples": [
+                13.161,
+                15.62,
+                16.056,
+                13.285,
+                14.545,
+                14.947,
+                14.948,
+                13.347,
+                15.526
+              ],
+              "cpuSamples": [
+                6.838,
+                13.846,
+                12.536,
+                7.387,
+                7.199,
+                7.279,
+                7.539,
+                10.364,
+                7.564
+              ],
+              "documentBytes": 275994,
+              "checkpointBytes": 527,
+              "logBytes": 1275204,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1272660,
+                "digestBytesPerFlush": 1766863,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "wallMs": 14.510041999999885,
+          "cpuMs": 7.707,
+          "wallRounds": [
+            14.617,
+            13.923,
+            14.51
+          ],
+          "cpuRounds": [
+            7.707,
+            7.7,
+            7.752
+          ],
+          "documentBytes": 275994,
+          "checkpointBytes": 527,
+          "logBytes": 1275204,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 1272660,
+          "digestBytesPerFlush": 3038631,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 3,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        },
+        "candidate": {
+          "wallMs": 14.590249999999287,
+          "cpuMs": 7.49,
+          "wallRounds": [
+            14.59,
+            13.279,
+            14.947
+          ],
+          "cpuRounds": [
+            7.49,
+            7.025,
+            7.539
+          ],
+          "documentBytes": 275994,
+          "checkpointBytes": 527,
+          "logBytes": 1275204,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 1272660,
+          "digestBytesPerFlush": 1766863,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 3,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        }
+      },
+      "delta": {
+        "wallPercent": 0.553,
+        "cpuPercent": -2.816,
+        "digestBytesPerFlush": 1271768
+      }
+    },
+    {
+      "scenario": "history-2000-new-3",
+      "history": 2000,
+      "newEvents": 3,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 15.60345899999993,
+              "cpuMs": 8.439,
+              "wallSamples": [
+                14.211,
+                15.603,
+                16.978,
+                12.651,
+                16.138,
+                15.937,
+                13.972,
+                14.887,
+                15.925
+              ],
+              "cpuSamples": [
+                7.794,
+                7.834,
+                19.242,
+                8.421,
+                8.164,
+                8.439,
+                8.474,
+                8.614,
+                8.545
+              ],
+              "documentBytes": 304242,
+              "checkpointBytes": 527,
+              "logBytes": 1290468,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1282836,
+                "digestBytesPerFlush": 3063649,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 13.859041000001525,
+              "cpuMs": 7.844,
+              "wallSamples": [
+                14.946,
+                13.24,
+                12.838,
+                12.13,
+                12.921,
+                15.721,
+                14.843,
+                13.859,
+                14.331
+              ],
+              "cpuSamples": [
+                7.095,
+                7.57,
+                7.844,
+                7.476,
+                7.354,
+                18.824,
+                8.129,
+                7.885,
+                7.993
+              ],
+              "documentBytes": 304242,
+              "checkpointBytes": 527,
+              "logBytes": 1290468,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1282836,
+                "digestBytesPerFlush": 1782977,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 13.844708000000537,
+              "cpuMs": 7.749,
+              "wallSamples": [
+                14.809,
+                14.182,
+                12.593,
+                15.014,
+                13.43,
+                13.559,
+                12.835,
+                15.964,
+                13.845
+              ],
+              "cpuSamples": [
+                7.304,
+                7.675,
+                18.181,
+                8.098,
+                7.702,
+                7.504,
+                7.749,
+                7.863,
+                8.018
+              ],
+              "documentBytes": 304242,
+              "checkpointBytes": 527,
+              "logBytes": 1290468,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1282836,
+                "digestBytesPerFlush": 1782977,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 13.900625000000218,
+              "cpuMs": 8.206,
+              "wallSamples": [
+                15.053,
+                13.582,
+                13.485,
+                13.784,
+                13.901,
+                12.661,
+                16.191,
+                15.931,
+                15.961
+              ],
+              "cpuSamples": [
+                7.572,
+                7.725,
+                18.631,
+                8.553,
+                7.841,
+                7.989,
+                8.206,
+                8.296,
+                8.504
+              ],
+              "documentBytes": 304242,
+              "checkpointBytes": 527,
+              "logBytes": 1290468,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1282836,
+                "digestBytesPerFlush": 3063649,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 15.930041999999958,
+              "cpuMs": 8.314,
+              "wallSamples": [
+                13.337,
+                17.612,
+                15.848,
+                15.942,
+                16.008,
+                15.951,
+                15.928,
+                15.93,
+                13.966
+              ],
+              "cpuSamples": [
+                7.733,
+                18.857,
+                8.313,
+                8.156,
+                8.211,
+                8.314,
+                8.804,
+                8.621,
+                19.266
+              ],
+              "documentBytes": 304242,
+              "checkpointBytes": 527,
+              "logBytes": 1290468,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1282836,
+                "digestBytesPerFlush": 3063649,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 14.86712499999885,
+              "cpuMs": 7.948,
+              "wallSamples": [
+                14.867,
+                13.292,
+                16.669,
+                14.881,
+                15.039,
+                12.993,
+                13.803,
+                13.888,
+                15.814
+              ],
+              "cpuSamples": [
+                7.922,
+                7.494,
+                18.851,
+                7.965,
+                8.018,
+                7.705,
+                7.866,
+                7.948,
+                8.012
+              ],
+              "documentBytes": 304242,
+              "checkpointBytes": 527,
+              "logBytes": 1290468,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 2036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 1282836,
+                "digestBytesPerFlush": 1782977,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 3,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "wallMs": 15.60345899999993,
+          "cpuMs": 8.314,
+          "wallRounds": [
+            15.603,
+            13.901,
+            15.93
+          ],
+          "cpuRounds": [
+            8.439,
+            8.206,
+            8.314
+          ],
+          "documentBytes": 304242,
+          "checkpointBytes": 527,
+          "logBytes": 1290468,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 1282836,
+          "digestBytesPerFlush": 3063649,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 3,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        },
+        "candidate": {
+          "wallMs": 13.859041000001525,
+          "cpuMs": 7.844,
+          "wallRounds": [
+            13.859,
+            13.845,
+            14.867
+          ],
+          "cpuRounds": [
+            7.844,
+            7.749,
+            7.948
+          ],
+          "documentBytes": 304242,
+          "checkpointBytes": 527,
+          "logBytes": 1290468,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 1282836,
+          "digestBytesPerFlush": 1782977,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 3,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        }
+      },
+      "delta": {
+        "wallPercent": -11.18,
+        "cpuPercent": -5.653,
+        "digestBytesPerFlush": 1280672
+      }
+    },
+    {
+      "scenario": "history-20000-new-0",
+      "history": 20000,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 10.6215830000001,
+              "cpuMs": 10.623,
+              "wallSamples": [
+                10.666,
+                10.619,
+                10.668,
+                10.627,
+                10.622,
+                10.572,
+                10.622,
+                10.881,
+                10.427
+              ],
+              "cpuSamples": [
+                10.674,
+                10.619,
+                10.775,
+                10.627,
+                10.622,
+                10.573,
+                10.623,
+                10.99,
+                10.427
+              ],
+              "documentBytes": 2629079,
+              "checkpointBytes": 527,
+              "logBytes": 12755576,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 12755576,
+                "digestBytesPerFlush": 15225066,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 10.66675000000032,
+              "cpuMs": 10.674,
+              "wallSamples": [
+                10.657,
+                10.618,
+                10.667,
+                10.707,
+                10.673,
+                10.687,
+                10.585,
+                10.984,
+                10.428
+              ],
+              "cpuSamples": [
+                10.663,
+                10.619,
+                10.751,
+                10.708,
+                10.674,
+                10.688,
+                10.587,
+                11.098,
+                10.43
+              ],
+              "documentBytes": 2629079,
+              "checkpointBytes": 527,
+              "logBytes": 12755576,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 12755576,
+                "digestBytesPerFlush": 15225226,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 10.624665999999706,
+              "cpuMs": 10.627,
+              "wallSamples": [
+                10.62,
+                10.626,
+                10.471,
+                10.65,
+                10.465,
+                10.666,
+                10.625,
+                10.754,
+                10.487
+              ],
+              "cpuSamples": [
+                10.629,
+                10.627,
+                10.472,
+                10.651,
+                10.466,
+                10.667,
+                10.626,
+                10.887,
+                10.488
+              ],
+              "documentBytes": 2629079,
+              "checkpointBytes": 527,
+              "logBytes": 12755576,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 12755576,
+                "digestBytesPerFlush": 15225226,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14
+                }
+              }
+            },
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 10.645666000000347,
+              "cpuMs": 10.647,
+              "wallSamples": [
+                10.665,
+                10.667,
+                10.676,
+                10.639,
+                10.646,
+                10.635,
+                10.64,
+                10.894,
+                10.409
+              ],
+              "cpuSamples": [
+                10.673,
+                10.668,
+                10.678,
+                10.64,
+                10.647,
+                10.636,
+                10.641,
+                10.998,
+                10.409
+              ],
+              "documentBytes": 2629079,
+              "checkpointBytes": 527,
+              "logBytes": 12755576,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 12755576,
+                "digestBytesPerFlush": 15225066,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 10.696249999999054,
+              "cpuMs": 10.696,
+              "wallSamples": [
+                10.679,
+                10.717,
+                10.624,
+                10.747,
+                10.696,
+                10.671,
+                10.886,
+                10.834,
+                10.461
+              ],
+              "cpuSamples": [
+                10.687,
+                10.719,
+                10.625,
+                10.747,
+                10.696,
+                10.672,
+                10.769,
+                10.941,
+                10.463
+              ],
+              "documentBytes": 2629079,
+              "checkpointBytes": 527,
+              "logBytes": 12755576,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 12755576,
+                "digestBytesPerFlush": 15225066,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 10.650583000000552,
+              "cpuMs": 10.652,
+              "wallSamples": [
+                10.713,
+                10.663,
+                10.651,
+                10.614,
+                10.641,
+                10.682,
+                10.619,
+                10.675,
+                10.41
+              ],
+              "cpuSamples": [
+                10.721,
+                10.664,
+                10.652,
+                10.615,
+                10.641,
+                10.683,
+                10.619,
+                10.782,
+                10.411
+              ],
+              "documentBytes": 2629079,
+              "checkpointBytes": 527,
+              "logBytes": 12755576,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20000
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 0,
+                "tokenWritesPerFlush": 0,
+                "handleSyncsPerFlush": 0,
+                "logBytesReadPerFlush": 12755576,
+                "digestBytesPerFlush": 15225226,
+                "callsPerFlush": {
+                  "other/readFileSync": 1,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "wallMs": 10.645666000000347,
+          "cpuMs": 10.647,
+          "wallRounds": [
+            10.622,
+            10.646,
+            10.696
+          ],
+          "cpuRounds": [
+            10.623,
+            10.647,
+            10.696
+          ],
+          "documentBytes": 2629079,
+          "checkpointBytes": 527,
+          "logBytes": 12755576,
+          "documentWritesPerFlush": 0,
+          "handleSyncsPerFlush": 0,
+          "logBytesReadPerFlush": 12755576,
+          "digestBytesPerFlush": 15225066,
+          "callsPerFlush": {
+            "eventLog/openSync": 1,
+            "other/readFileSync": 1,
+            "other/readSync": 14
+          }
+        },
+        "candidate": {
+          "wallMs": 10.650583000000552,
+          "cpuMs": 10.652,
+          "wallRounds": [
+            10.667,
+            10.625,
+            10.651
+          ],
+          "cpuRounds": [
+            10.674,
+            10.627,
+            10.652
+          ],
+          "documentBytes": 2629079,
+          "checkpointBytes": 527,
+          "logBytes": 12755576,
+          "documentWritesPerFlush": 0,
+          "handleSyncsPerFlush": 0,
+          "logBytesReadPerFlush": 12755576,
+          "digestBytesPerFlush": 15225226,
+          "callsPerFlush": {
+            "eventLog/openSync": 1,
+            "other/readFileSync": 1,
+            "other/readSync": 14
+          }
+        }
+      },
+      "delta": {
+        "wallPercent": 0.046,
+        "cpuPercent": 0.047,
+        "digestBytesPerFlush": -160
+      }
+    },
+    {
+      "scenario": "history-20000-new-1",
+      "history": 20000,
+      "newEvents": 1,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 63.30766600000061,
+              "cpuMs": 55.175,
+              "wallSamples": [
+                65.805,
+                62.247,
+                61.629,
+                70.193,
+                63.676,
+                63.308,
+                62.549,
+                62.961,
+                63.909
+              ],
+              "cpuSamples": [
+                55.823,
+                54.69,
+                54.696,
+                55.852,
+                55.937,
+                54.924,
+                54.594,
+                55.175,
+                55.536
+              ],
+              "documentBytes": 2644079,
+              "checkpointBytes": 531,
+              "logBytes": 12763256,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12760696,
+                "digestBytesPerFlush": 30462732,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 57.565207999999984,
+              "cpuMs": 50.455,
+              "wallSamples": [
+                58.934,
+                58.168,
+                55.595,
+                58.366,
+                57.534,
+                56.28,
+                57.565,
+                57.116,
+                58.815
+              ],
+              "cpuSamples": [
+                50.728,
+                49.857,
+                49.821,
+                50.947,
+                50.62,
+                49.61,
+                49.755,
+                50.455,
+                50.847
+              ],
+              "documentBytes": 2644079,
+              "checkpointBytes": 531,
+              "logBytes": 12763256,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12760696,
+                "digestBytesPerFlush": 17702932,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 57.84345799999937,
+              "cpuMs": 50.68,
+              "wallSamples": [
+                58.072,
+                58.08,
+                57.817,
+                58.269,
+                56.843,
+                55.746,
+                57.809,
+                57.843,
+                59.072
+              ],
+              "cpuSamples": [
+                50.68,
+                49.691,
+                49.977,
+                50.919,
+                50.681,
+                49.696,
+                49.897,
+                50.828,
+                51.046
+              ],
+              "documentBytes": 2644079,
+              "checkpointBytes": 531,
+              "logBytes": 12763256,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12760696,
+                "digestBytesPerFlush": 17702932,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 62.96666600000026,
+              "cpuMs": 55.384,
+              "wallSamples": [
+                63.012,
+                60.371,
+                62.362,
+                65.942,
+                64,
+                62.967,
+                62.795,
+                62.909,
+                63.971
+              ],
+              "cpuSamples": [
+                55.405,
+                54.316,
+                54.436,
+                55.384,
+                55.871,
+                54.484,
+                54.649,
+                55.425,
+                55.763
+              ],
+              "documentBytes": 2644079,
+              "checkpointBytes": 531,
+              "logBytes": 12763256,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12760696,
+                "digestBytesPerFlush": 30462732,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 62.1184170000015,
+              "cpuMs": 55.068,
+              "wallSamples": [
+                61.879,
+                62.118,
+                61.097,
+                62.588,
+                64.047,
+                61.309,
+                60.842,
+                63.522,
+                64.057
+              ],
+              "cpuSamples": [
+                55.068,
+                54.268,
+                54.654,
+                55.294,
+                55.777,
+                54.355,
+                54.566,
+                55.138,
+                69.611
+              ],
+              "documentBytes": 2644079,
+              "checkpointBytes": 531,
+              "logBytes": 12763256,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12760696,
+                "digestBytesPerFlush": 30462732,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 57.798375000002125,
+              "cpuMs": 50.405,
+              "wallSamples": [
+                57.109,
+                57.647,
+                61.283,
+                59.667,
+                57.645,
+                59.145,
+                58.158,
+                55.576,
+                57.798
+              ],
+              "cpuSamples": [
+                50.586,
+                49.679,
+                71.156,
+                50.405,
+                50.472,
+                51.067,
+                50.306,
+                49.361,
+                50.267
+              ],
+              "documentBytes": 2644079,
+              "checkpointBytes": 531,
+              "logBytes": 12763256,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20012
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12760696,
+                "digestBytesPerFlush": 17702932,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "wallMs": 62.96666600000026,
+          "cpuMs": 55.175,
+          "wallRounds": [
+            63.308,
+            62.967,
+            62.118
+          ],
+          "cpuRounds": [
+            55.175,
+            55.384,
+            55.068
+          ],
+          "documentBytes": 2644079,
+          "checkpointBytes": 531,
+          "logBytes": 12763256,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 12760696,
+          "digestBytesPerFlush": 30462732,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 14,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        },
+        "candidate": {
+          "wallMs": 57.798375000002125,
+          "cpuMs": 50.455,
+          "wallRounds": [
+            57.565,
+            57.843,
+            57.798
+          ],
+          "cpuRounds": [
+            50.455,
+            50.68,
+            50.405
+          ],
+          "documentBytes": 2644079,
+          "checkpointBytes": 531,
+          "logBytes": 12763256,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 12760696,
+          "digestBytesPerFlush": 17702932,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 14,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        }
+      },
+      "delta": {
+        "wallPercent": -8.208,
+        "cpuPercent": -8.555,
+        "digestBytesPerFlush": 12759800
+      }
+    },
+    {
+      "scenario": "history-20000-new-3",
+      "history": 20000,
+      "newEvents": 3,
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 63.7387920000001,
+              "cpuMs": 55.693,
+              "wallSamples": [
+                62.075,
+                62.917,
+                63.712,
+                63.804,
+                66.994,
+                63.926,
+                63.739,
+                62.13,
+                64.101
+              ],
+              "cpuSamples": [
+                55.594,
+                55.073,
+                55.358,
+                56.123,
+                71.828,
+                55.66,
+                55.693,
+                55.979,
+                55.806
+              ],
+              "documentBytes": 2672495,
+              "checkpointBytes": 531,
+              "logBytes": 12778616,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12770936,
+                "digestBytesPerFlush": 30487916,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 57.96116699999766,
+              "cpuMs": 50.945,
+              "wallSamples": [
+                56.652,
+                57.961,
+                58.778,
+                57.231,
+                60.57,
+                59.024,
+                57.662,
+                56.762,
+                59.676
+              ],
+              "cpuSamples": [
+                50.761,
+                50.191,
+                50.729,
+                51.011,
+                65.446,
+                50.945,
+                50.713,
+                51.254,
+                51.151
+              ],
+              "documentBytes": 2672495,
+              "checkpointBytes": 531,
+              "logBytes": 12778616,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12770936,
+                "digestBytesPerFlush": 17719156,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 2,
+          "order": [
+            "candidate",
+            "baseline"
+          ],
+          "sides": {
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 58.714208000004874,
+              "cpuMs": 51.004,
+              "wallSamples": [
+                57.401,
+                58.579,
+                58.714,
+                58.918,
+                58.295,
+                56.744,
+                58.811,
+                58.782,
+                59.342
+              ],
+              "cpuSamples": [
+                50.91,
+                50.104,
+                50.479,
+                51.004,
+                66.025,
+                51.087,
+                50.822,
+                51.383,
+                51.049
+              ],
+              "documentBytes": 2672495,
+              "checkpointBytes": 531,
+              "logBytes": 12778616,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12770936,
+                "digestBytesPerFlush": 17719156,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 63.999415999998746,
+              "cpuMs": 55.854,
+              "wallSamples": [
+                63.999,
+                63.121,
+                63.695,
+                61.546,
+                67.495,
+                61.333,
+                64.531,
+                64.808,
+                64.129
+              ],
+              "cpuSamples": [
+                55.854,
+                54.882,
+                55.202,
+                55.579,
+                69.815,
+                55.596,
+                57.692,
+                57.33,
+                55.934
+              ],
+              "documentBytes": 2672495,
+              "checkpointBytes": 531,
+              "logBytes": 12778616,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12770936,
+                "digestBytesPerFlush": 30487916,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "candidate"
+          ],
+          "sides": {
+            "baseline": {
+              "transactions": 9,
+              "wallMs": 62.8403330000001,
+              "cpuMs": 55.768,
+              "wallSamples": [
+                62.84,
+                62.99,
+                62.116,
+                62.453,
+                67.205,
+                62.032,
+                61.94,
+                64.621,
+                63.338
+              ],
+              "cpuSamples": [
+                55.805,
+                54.934,
+                55.121,
+                55.659,
+                70.003,
+                55.768,
+                55.406,
+                56.447,
+                55.926
+              ],
+              "documentBytes": 2672495,
+              "checkpointBytes": 531,
+              "logBytes": 12778616,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12770936,
+                "digestBytesPerFlush": 30487916,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            },
+            "candidate": {
+              "transactions": 9,
+              "wallMs": 58.0046250000014,
+              "cpuMs": 51.048,
+              "wallSamples": [
+                58.557,
+                57.599,
+                58.189,
+                56.858,
+                59.436,
+                58.55,
+                57.152,
+                58.005,
+                56.973
+              ],
+              "cpuSamples": [
+                51.048,
+                50.469,
+                50.424,
+                51.381,
+                65.91,
+                50.964,
+                51.07,
+                51.666,
+                50.988
+              ],
+              "documentBytes": 2672495,
+              "checkpointBytes": 531,
+              "logBytes": 12778616,
+              "stagingLeft": 0,
+              "restartedLeaves": 0,
+              "restart": {
+                "applied": 0,
+                "duplicates": 20036
+              },
+              "restartDocumentUnchanged": true,
+              "restartCheckpointUnchanged": true,
+              "traced": {
+                "documentWritesPerFlush": 1,
+                "tokenWritesPerFlush": 1,
+                "handleSyncsPerFlush": 2,
+                "logBytesReadPerFlush": 12770936,
+                "digestBytesPerFlush": 17719156,
+                "callsPerFlush": {
+                  "eventLog/appendFileSync": 1,
+                  "eventLog/writeFileSync": 1,
+                  "other/readFileSync": 4,
+                  "eventLog/openSync": 1,
+                  "other/readSync": 14,
+                  "stage/mkdirSync": 1,
+                  "live/readdirSync": 37,
+                  "stage/statSync": 18,
+                  "stage/readdirSync": 37,
+                  "stage/writeFileSync": 1,
+                  "stage/openSync": 1,
+                  "stage/renameSync": 1,
+                  "other/lstatSync": 1,
+                  "other/writeFileSync": 1,
+                  "other/openSync": 2,
+                  "other/renameSync": 2,
+                  "official/open.async": 2,
+                  "official/sync": 2,
+                  "official/rename.async": 1,
+                  "stage/rmSync": 1,
+                  "stage/lstatSync": 1,
+                  "live/statSync": 18
+                }
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "baseline": {
+          "wallMs": 63.7387920000001,
+          "cpuMs": 55.768,
+          "wallRounds": [
+            63.739,
+            63.999,
+            62.84
+          ],
+          "cpuRounds": [
+            55.693,
+            55.854,
+            55.768
+          ],
+          "documentBytes": 2672495,
+          "checkpointBytes": 531,
+          "logBytes": 12778616,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 12770936,
+          "digestBytesPerFlush": 30487916,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 14,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        },
+        "candidate": {
+          "wallMs": 58.0046250000014,
+          "cpuMs": 51.004,
+          "wallRounds": [
+            57.961,
+            58.714,
+            58.005
+          ],
+          "cpuRounds": [
+            50.945,
+            51.004,
+            51.048
+          ],
+          "documentBytes": 2672495,
+          "checkpointBytes": 531,
+          "logBytes": 12778616,
+          "documentWritesPerFlush": 1,
+          "handleSyncsPerFlush": 2,
+          "logBytesReadPerFlush": 12770936,
+          "digestBytesPerFlush": 17719156,
+          "callsPerFlush": {
+            "eventLog/appendFileSync": 1,
+            "eventLog/openSync": 1,
+            "eventLog/writeFileSync": 1,
+            "live/readdirSync": 37,
+            "live/statSync": 18,
+            "official/open.async": 2,
+            "official/rename.async": 1,
+            "official/sync": 2,
+            "other/lstatSync": 1,
+            "other/openSync": 2,
+            "other/readFileSync": 4,
+            "other/readSync": 14,
+            "other/renameSync": 2,
+            "other/writeFileSync": 1,
+            "stage/lstatSync": 1,
+            "stage/mkdirSync": 1,
+            "stage/openSync": 1,
+            "stage/readdirSync": 37,
+            "stage/renameSync": 1,
+            "stage/rmSync": 1,
+            "stage/statSync": 18,
+            "stage/writeFileSync": 1
+          }
+        }
+      },
+      "delta": {
+        "wallPercent": -8.996,
+        "cpuPercent": -8.543,
+        "digestBytesPerFlush": 12768760
+      }
+    }
+  ],
+  "equivalence": [
+    {
+      "scenario": "history-200-new-0",
+      "durableByteIdentical": true,
+      "documentBytes": 26077,
+      "checkpointBytes": 521,
+      "archiveFiles": 2
+    },
+    {
+      "scenario": "history-200-new-1",
+      "durableByteIdentical": true,
+      "documentBytes": 34469,
+      "checkpointBytes": 523,
+      "archiveFiles": 2
+    },
+    {
+      "scenario": "history-200-new-3",
+      "durableByteIdentical": true,
+      "documentBytes": 48509,
+      "checkpointBytes": 523,
+      "archiveFiles": 2
+    },
+    {
+      "scenario": "history-2000-new-0",
+      "durableByteIdentical": true,
+      "documentBytes": 261078,
+      "checkpointBytes": 524,
+      "archiveFiles": 2
+    },
+    {
+      "scenario": "history-2000-new-1",
+      "durableByteIdentical": true,
+      "documentBytes": 269512,
+      "checkpointBytes": 527,
+      "archiveFiles": 2
+    },
+    {
+      "scenario": "history-2000-new-3",
+      "durableByteIdentical": true,
+      "documentBytes": 283636,
+      "checkpointBytes": 527,
+      "archiveFiles": 2
+    },
+    {
+      "scenario": "history-20000-new-0",
+      "durableByteIdentical": true,
+      "documentBytes": 2629079,
+      "checkpointBytes": 527,
+      "archiveFiles": 2
+    },
+    {
+      "scenario": "history-20000-new-1",
+      "durableByteIdentical": true,
+      "documentBytes": 2637555,
+      "checkpointBytes": 531,
+      "archiveFiles": 2
+    },
+    {
+      "scenario": "history-20000-new-3",
+      "durableByteIdentical": true,
+      "documentBytes": 2651763,
+      "checkpointBytes": 531,
+      "archiveFiles": 2
+    }
+  ]
+}
