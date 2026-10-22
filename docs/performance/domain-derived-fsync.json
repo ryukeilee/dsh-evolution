@@ -1,0 +1,3082 @@
+{
+ "measuredAt": "2026-10-22T16:42:00Z",
+ "node": "v26.12.1",
+ "platform": "darwin/arm64",
+ "machine": "Apple M2",
+ "logicalCpus": 8,
+ "memoryBytes": 17179869184,
+ "loadAverageAfterRuns": "{ 1.50 1.67 1.63 }",
+ "documentBytesAtEnd": 392669,
+ "history": 200,
+ "protocol": {
+  "benchmark": "scripts/benchmarks/domain-derived-fsync.mjs",
+  "samplesPerScenario": 9,
+  "warmup": "3 uncounted flush() passes at the start and 3 uncounted observe() writes before the measured observe samples; the backlog scenarios are not warmed up separately (they follow the same fixture in sequence)",
+  "rounds": 3,
+  "sideOrderPerRound": {
+   "1": [
+    "base",
+    "fsynconly",
+    "allchanges"
+   ],
+   "2": [
+    "allchanges",
+    "fsynconly",
+    "base"
+   ],
+   "3": [
+    "fsynconly",
+    "allchanges",
+    "base"
+   ]
+  },
+  "aggregation": "one process per side per round; per scenario the three per-round medians (each of 9 samples) are reduced by their median",
+  "scenarios": [
+   {
+    "operation": "observe",
+    "backlog": null
+   },
+   {
+    "operation": "flush",
+    "backlog": 0
+   },
+   {
+    "operation": "flush",
+    "backlog": 1
+   },
+   {
+    "operation": "flush",
+    "backlog": 2
+   },
+   {
+    "operation": "flush",
+    "backlog": 10
+   },
+   {
+    "operation": "flush",
+    "backlog": 25
+   },
+   {
+    "operation": "flush",
+    "backlog": 50
+   }
+  ]
+ },
+ "sides": {
+  "base": {
+   "lib": "/tmp/base/lib",
+   "sources": {
+    "domain-storage.js": "c3b160bb5230db08b44c398b2da9a745fd8b035dac0ae6a24e3c2181a0ccb906",
+    "archive-stage.js": "6cfbdb4148734d0563430c88e01ab2bc1163e4ad67084745a56bd529d96a3141",
+    "event-log-checkpoint.js": "d63e42c5be1cd118bfa38342d5fb5212c0d2a470ccd8923c94af43d3687db3f3"
+   }
+  },
+  "fsynconly": {
+   "lib": "/tmp/fsynconly/lib",
+   "sources": {
+    "domain-storage.js": "c3b160bb5230db08b44c398b2da9a745fd8b035dac0ae6a24e3c2181a0ccb906",
+    "archive-stage.js": "27a5675de6de320349dd800cf74c73702677b29ac65a964cee8959d4b1663c08",
+    "event-log-checkpoint.js": "35742f441889c59f09fbe04e5e6f84d56786ab20ddd56a698cf3a2ee3dfa24c2"
+   }
+  },
+  "allchanges": {
+   "lib": "/tmp/allchanges/lib",
+   "sources": {
+    "domain-storage.js": "0cdb0ad383cf328eee7604dc920ae53b14d1b4f480dcc745de3d7df1cc015635",
+    "archive-stage.js": "27a5675de6de320349dd800cf74c73702677b29ac65a964cee8959d4b1663c08",
+    "event-log-checkpoint.js": "35742f441889c59f09fbe04e5e6f84d56786ab20ddd56a698cf3a2ee3dfa24c2"
+   }
+  }
+ },
+ "rounds": [
+  {
+   "round": 1,
+   "order": [
+    "base",
+    "fsynconly",
+    "allchanges"
+   ],
+   "runs": {
+    "base": {
+     "observe@None": {
+      "elapsedMs": 27.645667000000003,
+      "cpuMs": 9.892,
+      "fsyncSync": 3,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 3,
+      "writeFileSync": 3,
+      "renameSync": 3,
+      "readFileSync": 4,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@0": {
+      "elapsedMs": 0.41516699999999673,
+      "cpuMs": 0.558,
+      "fsyncSync": 0,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 0,
+      "writeSync": 0,
+      "writeFileSync": 0,
+      "renameSync": 0,
+      "readFileSync": 1,
+      "linkSync": 0,
+      "mkdirSync": 0
+     },
+     "flush@1": {
+      "elapsedMs": 39.74933400000003,
+      "cpuMs": 15.067,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@2": {
+      "elapsedMs": 39.759041000000025,
+      "cpuMs": 17.189,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@10": {
+      "elapsedMs": 59.39862499999981,
+      "cpuMs": 32.973,
+      "fsyncSync": 8,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@25": {
+      "elapsedMs": 93.80237499999976,
+      "cpuMs": 70.045,
+      "fsyncSync": 8,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@50": {
+      "elapsedMs": 182.16108299999996,
+      "cpuMs": 168.594,
+      "fsyncSync": 8,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     }
+    },
+    "fsynconly": {
+     "observe@None": {
+      "elapsedMs": 23.96754199999998,
+      "cpuMs": 8.538,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 3,
+      "writeFileSync": 3,
+      "renameSync": 3,
+      "readFileSync": 4,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@0": {
+      "elapsedMs": 0.3057499999999891,
+      "cpuMs": 0.382,
+      "fsyncSync": 0,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 0,
+      "writeSync": 0,
+      "writeFileSync": 0,
+      "renameSync": 0,
+      "readFileSync": 1,
+      "linkSync": 0,
+      "mkdirSync": 0
+     },
+     "flush@1": {
+      "elapsedMs": 25.915624999999977,
+      "cpuMs": 11.435,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@2": {
+      "elapsedMs": 28.784042,
+      "cpuMs": 12.261,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@10": {
+      "elapsedMs": 50.341416999999865,
+      "cpuMs": 30.794,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@25": {
+      "elapsedMs": 81.27912500000002,
+      "cpuMs": 66.813,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@50": {
+      "elapsedMs": 170.18949999999995,
+      "cpuMs": 165.707,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     }
+    },
+    "allchanges": {
+     "observe@None": {
+      "elapsedMs": 24.241541000000012,
+      "cpuMs": 8.087,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 3,
+      "writeFileSync": 3,
+      "renameSync": 3,
+      "readFileSync": 4,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@0": {
+      "elapsedMs": 0.34970799999996416,
+      "cpuMs": 0.47,
+      "fsyncSync": 0,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 0,
+      "writeSync": 0,
+      "writeFileSync": 0,
+      "renameSync": 0,
+      "readFileSync": 1,
+      "linkSync": 0,
+      "mkdirSync": 0
+     },
+     "flush@1": {
+      "elapsedMs": 25.137291000000005,
+      "cpuMs": 11.269,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@2": {
+      "elapsedMs": 28.87099999999998,
+      "cpuMs": 11.977,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@10": {
+      "elapsedMs": 48.199583000000075,
+      "cpuMs": 27.712,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@25": {
+      "elapsedMs": 64.82095900000013,
+      "cpuMs": 45.898,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@50": {
+      "elapsedMs": 112.92612499999996,
+      "cpuMs": 103.208,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     }
+    }
+   },
+   "equivalence": {
+    "base": {
+     "durableStateDigest": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+     "checkpoint": {
+      "schema": 2,
+      "bytes": 626506,
+      "records": 992,
+      "contentDigest": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd"
+     }
+    },
+    "fsynconly": {
+     "durableStateDigest": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+     "checkpoint": {
+      "schema": 2,
+      "bytes": 626506,
+      "records": 992,
+      "contentDigest": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd"
+     }
+    },
+    "allchanges": {
+     "durableStateDigest": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+     "checkpoint": {
+      "schema": 2,
+      "bytes": 626506,
+      "records": 992,
+      "contentDigest": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd"
+     }
+    }
+   }
+  },
+  {
+   "round": 2,
+   "order": [
+    "allchanges",
+    "fsynconly",
+    "base"
+   ],
+   "runs": {
+    "base": {
+     "observe@None": {
+      "elapsedMs": 26.001582999999982,
+      "cpuMs": 8.884,
+      "fsyncSync": 3,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 3,
+      "writeFileSync": 3,
+      "renameSync": 3,
+      "readFileSync": 4,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@0": {
+      "elapsedMs": 0.3509999999999991,
+      "cpuMs": 0.48,
+      "fsyncSync": 0,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 0,
+      "writeSync": 0,
+      "writeFileSync": 0,
+      "renameSync": 0,
+      "readFileSync": 1,
+      "linkSync": 0,
+      "mkdirSync": 0
+     },
+     "flush@1": {
+      "elapsedMs": 39.82012500000002,
+      "cpuMs": 15.534,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@2": {
+      "elapsedMs": 43.614417,
+      "cpuMs": 18.556,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@10": {
+      "elapsedMs": 61.45445799999993,
+      "cpuMs": 34.972,
+      "fsyncSync": 8,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@25": {
+      "elapsedMs": 88.25983300000007,
+      "cpuMs": 68.428,
+      "fsyncSync": 8,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@50": {
+      "elapsedMs": 181.81945799999994,
+      "cpuMs": 167.949,
+      "fsyncSync": 8,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     }
+    },
+    "fsynconly": {
+     "observe@None": {
+      "elapsedMs": 23.082042,
+      "cpuMs": 8.219,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 3,
+      "writeFileSync": 3,
+      "renameSync": 3,
+      "readFileSync": 4,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@0": {
+      "elapsedMs": 0.304458000000011,
+      "cpuMs": 0.398,
+      "fsyncSync": 0,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 0,
+      "writeSync": 0,
+      "writeFileSync": 0,
+      "renameSync": 0,
+      "readFileSync": 1,
+      "linkSync": 0,
+      "mkdirSync": 0
+     },
+     "flush@1": {
+      "elapsedMs": 26.880457999999976,
+      "cpuMs": 11.541,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@2": {
+      "elapsedMs": 26.835749999999962,
+      "cpuMs": 12.293,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@10": {
+      "elapsedMs": 50.218875000000025,
+      "cpuMs": 31.886,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@25": {
+      "elapsedMs": 83.01424999999995,
+      "cpuMs": 67.387,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@50": {
+      "elapsedMs": 172.40320900000006,
+      "cpuMs": 165.303,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     }
+    },
+    "allchanges": {
+     "observe@None": {
+      "elapsedMs": 23.81983299999999,
+      "cpuMs": 7.245,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 3,
+      "writeFileSync": 3,
+      "renameSync": 3,
+      "readFileSync": 4,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@0": {
+      "elapsedMs": 0.3494999999999777,
+      "cpuMs": 0.474,
+      "fsyncSync": 0,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 0,
+      "writeSync": 0,
+      "writeFileSync": 0,
+      "renameSync": 0,
+      "readFileSync": 1,
+      "linkSync": 0,
+      "mkdirSync": 0
+     },
+     "flush@1": {
+      "elapsedMs": 27.754084000000034,
+      "cpuMs": 11.547,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@2": {
+      "elapsedMs": 27.767124999999965,
+      "cpuMs": 11.762,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@10": {
+      "elapsedMs": 44.48637499999995,
+      "cpuMs": 26.372,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@25": {
+      "elapsedMs": 62.53958299999999,
+      "cpuMs": 44.51,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@50": {
+      "elapsedMs": 109.28625000000011,
+      "cpuMs": 101.059,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     }
+    }
+   },
+   "equivalence": {
+    "base": {
+     "durableStateDigest": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+     "checkpoint": {
+      "schema": 2,
+      "bytes": 626506,
+      "records": 992,
+      "contentDigest": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd"
+     }
+    },
+    "fsynconly": {
+     "durableStateDigest": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+     "checkpoint": {
+      "schema": 2,
+      "bytes": 626506,
+      "records": 992,
+      "contentDigest": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd"
+     }
+    },
+    "allchanges": {
+     "durableStateDigest": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+     "checkpoint": {
+      "schema": 2,
+      "bytes": 626506,
+      "records": 992,
+      "contentDigest": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd"
+     }
+    }
+   }
+  },
+  {
+   "round": 3,
+   "order": [
+    "fsynconly",
+    "allchanges",
+    "base"
+   ],
+   "runs": {
+    "base": {
+     "observe@None": {
+      "elapsedMs": 27.963375000000013,
+      "cpuMs": 9.604,
+      "fsyncSync": 3,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 3,
+      "writeFileSync": 3,
+      "renameSync": 3,
+      "readFileSync": 4,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@0": {
+      "elapsedMs": 0.3367089999999848,
+      "cpuMs": 0.447,
+      "fsyncSync": 0,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 0,
+      "writeSync": 0,
+      "writeFileSync": 0,
+      "renameSync": 0,
+      "readFileSync": 1,
+      "linkSync": 0,
+      "mkdirSync": 0
+     },
+     "flush@1": {
+      "elapsedMs": 38.79150000000004,
+      "cpuMs": 15.274,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@2": {
+      "elapsedMs": 40.695334,
+      "cpuMs": 16.85,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@10": {
+      "elapsedMs": 63.656334000000015,
+      "cpuMs": 35.412,
+      "fsyncSync": 8,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@25": {
+      "elapsedMs": 92.05645799999957,
+      "cpuMs": 68.46,
+      "fsyncSync": 8,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@50": {
+      "elapsedMs": 181.4681660000001,
+      "cpuMs": 166.455,
+      "fsyncSync": 8,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     }
+    },
+    "fsynconly": {
+     "observe@None": {
+      "elapsedMs": 21.529417000000024,
+      "cpuMs": 7.787,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 3,
+      "writeFileSync": 3,
+      "renameSync": 3,
+      "readFileSync": 4,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@0": {
+      "elapsedMs": 0.26474999999999227,
+      "cpuMs": 0.347,
+      "fsyncSync": 0,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 0,
+      "writeSync": 0,
+      "writeFileSync": 0,
+      "renameSync": 0,
+      "readFileSync": 1,
+      "linkSync": 0,
+      "mkdirSync": 0
+     },
+     "flush@1": {
+      "elapsedMs": 25.19120799999996,
+      "cpuMs": 10.895,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@2": {
+      "elapsedMs": 29.666541999999936,
+      "cpuMs": 13.453,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@10": {
+      "elapsedMs": 52.83441700000003,
+      "cpuMs": 32.65,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@25": {
+      "elapsedMs": 82.19741699999986,
+      "cpuMs": 66.943,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@50": {
+      "elapsedMs": 168.41479200000003,
+      "cpuMs": 167.226,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     }
+    },
+    "allchanges": {
+     "observe@None": {
+      "elapsedMs": 22.13312499999998,
+      "cpuMs": 7.323,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 3,
+      "writeFileSync": 3,
+      "renameSync": 3,
+      "readFileSync": 4,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@0": {
+      "elapsedMs": 0.34479200000004084,
+      "cpuMs": 0.462,
+      "fsyncSync": 0,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 0,
+      "writeSync": 0,
+      "writeFileSync": 0,
+      "renameSync": 0,
+      "readFileSync": 1,
+      "linkSync": 0,
+      "mkdirSync": 0
+     },
+     "flush@1": {
+      "elapsedMs": 26.50683300000003,
+      "cpuMs": 11.17,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@2": {
+      "elapsedMs": 27.836208000000056,
+      "cpuMs": 12.738,
+      "fsyncSync": 2,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 4,
+      "readFileSync": 5,
+      "linkSync": 0,
+      "mkdirSync": 1
+     },
+     "flush@10": {
+      "elapsedMs": 46.80016699999999,
+      "cpuMs": 26.25,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@25": {
+      "elapsedMs": 63.07895899999994,
+      "cpuMs": 43.569,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     },
+     "flush@50": {
+      "elapsedMs": 112.11925000000019,
+      "cpuMs": 102.082,
+      "fsyncSync": 5,
+      "fdatasyncSync": 0,
+      "syncFileHandle": 4,
+      "writeSync": 4,
+      "writeFileSync": 3,
+      "renameSync": 7,
+      "readFileSync": 9,
+      "linkSync": 4,
+      "mkdirSync": 1
+     }
+    }
+   },
+   "equivalence": {
+    "base": {
+     "durableStateDigest": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+     "checkpoint": {
+      "schema": 2,
+      "bytes": 626506,
+      "records": 992,
+      "contentDigest": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd"
+     }
+    },
+    "fsynconly": {
+     "durableStateDigest": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+     "checkpoint": {
+      "schema": 2,
+      "bytes": 626506,
+      "records": 992,
+      "contentDigest": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd"
+     }
+    },
+    "allchanges": {
+     "durableStateDigest": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+     "checkpoint": {
+      "schema": 2,
+      "bytes": 626506,
+      "records": 992,
+      "contentDigest": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd"
+     }
+    }
+   }
+  }
+ ],
+ "equivalence": {
+  "durableStateDigest": {
+   "base": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+   "fsynconly": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+   "allchanges": "e4626a226dc2e4f3c4e633a110bef927e0192662c5cdf70040d1f885889367ac",
+   "identicalAcrossAllNineRuns": true,
+   "normalized": "only this run's own root directory (recorded as the staging path of a cold archive segment) is replaced before hashing"
+  },
+  "checkpointContentDigest": {
+   "base": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd",
+   "fsynconly": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd",
+   "allchanges": "a8ef089a6e5e9fc9b850c11963e4c2d30cdf9ad608545a206d164785c56941dd",
+   "identicalAcrossAllNineRuns": true,
+   "normalized": "file.dev/file.ino and the MAC that covers them; every other field is content"
+  },
+  "checkpointRecords": 992
+ },
+ "summary": {
+  "observe@None": {
+   "elapsedMs": {
+    "base": {
+     "median": 27.645667000000003,
+     "rounds": [
+      27.645667000000003,
+      26.001582999999982,
+      27.963375000000013
+     ]
+    },
+    "fsynconly": {
+     "median": 23.082042,
+     "rounds": [
+      23.96754199999998,
+      23.082042,
+      21.529417000000024
+     ]
+    },
+    "allchanges": {
+     "median": 23.81983299999999,
+     "rounds": [
+      24.241541000000012,
+      23.81983299999999,
+      22.13312499999998
+     ]
+    }
+   },
+   "cpuMs": {
+    "base": {
+     "median": 9.604,
+     "rounds": [
+      9.892,
+      8.884,
+      9.604
+     ]
+    },
+    "fsynconly": {
+     "median": 8.219,
+     "rounds": [
+      8.538,
+      8.219,
+      7.787
+     ]
+    },
+    "allchanges": {
+     "median": 7.323,
+     "rounds": [
+      8.087,
+      7.245,
+      7.323
+     ]
+    }
+   },
+   "fsyncSync": {
+    "base": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "fsynconly": {
+     "median": 2,
+     "rounds": [
+      2,
+      2,
+      2
+     ]
+    },
+    "allchanges": {
+     "median": 2,
+     "rounds": [
+      2,
+      2,
+      2
+     ]
+    }
+   },
+   "fdatasyncSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "syncFileHandle": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeSync": {
+    "base": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "fsynconly": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "allchanges": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    }
+   },
+   "writeFileSync": {
+    "base": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "fsynconly": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "allchanges": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    }
+   },
+   "renameSync": {
+    "base": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "fsynconly": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "allchanges": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    }
+   },
+   "readFileSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "linkSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "mkdirSync": {
+    "base": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "fsynconly": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "allchanges": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    }
+   }
+  },
+  "flush@0": {
+   "elapsedMs": {
+    "base": {
+     "median": 0.3509999999999991,
+     "rounds": [
+      0.41516699999999673,
+      0.3509999999999991,
+      0.3367089999999848
+     ]
+    },
+    "fsynconly": {
+     "median": 0.304458000000011,
+     "rounds": [
+      0.3057499999999891,
+      0.304458000000011,
+      0.26474999999999227
+     ]
+    },
+    "allchanges": {
+     "median": 0.3494999999999777,
+     "rounds": [
+      0.34970799999996416,
+      0.3494999999999777,
+      0.34479200000004084
+     ]
+    }
+   },
+   "cpuMs": {
+    "base": {
+     "median": 0.48,
+     "rounds": [
+      0.558,
+      0.48,
+      0.447
+     ]
+    },
+    "fsynconly": {
+     "median": 0.382,
+     "rounds": [
+      0.382,
+      0.398,
+      0.347
+     ]
+    },
+    "allchanges": {
+     "median": 0.47,
+     "rounds": [
+      0.47,
+      0.474,
+      0.462
+     ]
+    }
+   },
+   "fsyncSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "fdatasyncSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "syncFileHandle": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "writeSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "writeFileSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "renameSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "readFileSync": {
+    "base": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "fsynconly": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "allchanges": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   "linkSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "mkdirSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   }
+  },
+  "flush@1": {
+   "elapsedMs": {
+    "base": {
+     "median": 39.74933400000003,
+     "rounds": [
+      39.74933400000003,
+      39.82012500000002,
+      38.79150000000004
+     ]
+    },
+    "fsynconly": {
+     "median": 25.915624999999977,
+     "rounds": [
+      25.915624999999977,
+      26.880457999999976,
+      25.19120799999996
+     ]
+    },
+    "allchanges": {
+     "median": 26.50683300000003,
+     "rounds": [
+      25.137291000000005,
+      27.754084000000034,
+      26.50683300000003
+     ]
+    }
+   },
+   "cpuMs": {
+    "base": {
+     "median": 15.274,
+     "rounds": [
+      15.067,
+      15.534,
+      15.274
+     ]
+    },
+    "fsynconly": {
+     "median": 11.435,
+     "rounds": [
+      11.435,
+      11.541,
+      10.895
+     ]
+    },
+    "allchanges": {
+     "median": 11.269,
+     "rounds": [
+      11.269,
+      11.547,
+      11.17
+     ]
+    }
+   },
+   "fsyncSync": {
+    "base": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    },
+    "fsynconly": {
+     "median": 2,
+     "rounds": [
+      2,
+      2,
+      2
+     ]
+    },
+    "allchanges": {
+     "median": 2,
+     "rounds": [
+      2,
+      2,
+      2
+     ]
+    }
+   },
+   "fdatasyncSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "syncFileHandle": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeFileSync": {
+    "base": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "fsynconly": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "allchanges": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    }
+   },
+   "renameSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "readFileSync": {
+    "base": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    },
+    "fsynconly": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    },
+    "allchanges": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    }
+   },
+   "linkSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "mkdirSync": {
+    "base": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "fsynconly": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "allchanges": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    }
+   }
+  },
+  "flush@2": {
+   "elapsedMs": {
+    "base": {
+     "median": 40.695334,
+     "rounds": [
+      39.759041000000025,
+      43.614417,
+      40.695334
+     ]
+    },
+    "fsynconly": {
+     "median": 28.784042,
+     "rounds": [
+      28.784042,
+      26.835749999999962,
+      29.666541999999936
+     ]
+    },
+    "allchanges": {
+     "median": 27.836208000000056,
+     "rounds": [
+      28.87099999999998,
+      27.767124999999965,
+      27.836208000000056
+     ]
+    }
+   },
+   "cpuMs": {
+    "base": {
+     "median": 17.189,
+     "rounds": [
+      17.189,
+      18.556,
+      16.85
+     ]
+    },
+    "fsynconly": {
+     "median": 12.293,
+     "rounds": [
+      12.261,
+      12.293,
+      13.453
+     ]
+    },
+    "allchanges": {
+     "median": 11.977,
+     "rounds": [
+      11.977,
+      11.762,
+      12.738
+     ]
+    }
+   },
+   "fsyncSync": {
+    "base": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    },
+    "fsynconly": {
+     "median": 2,
+     "rounds": [
+      2,
+      2,
+      2
+     ]
+    },
+    "allchanges": {
+     "median": 2,
+     "rounds": [
+      2,
+      2,
+      2
+     ]
+    }
+   },
+   "fdatasyncSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "syncFileHandle": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeFileSync": {
+    "base": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "fsynconly": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "allchanges": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    }
+   },
+   "renameSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "readFileSync": {
+    "base": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    },
+    "fsynconly": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    },
+    "allchanges": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    }
+   },
+   "linkSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "mkdirSync": {
+    "base": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "fsynconly": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "allchanges": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    }
+   }
+  },
+  "flush@10": {
+   "elapsedMs": {
+    "base": {
+     "median": 61.45445799999993,
+     "rounds": [
+      59.39862499999981,
+      61.45445799999993,
+      63.656334000000015
+     ]
+    },
+    "fsynconly": {
+     "median": 50.341416999999865,
+     "rounds": [
+      50.341416999999865,
+      50.218875000000025,
+      52.83441700000003
+     ]
+    },
+    "allchanges": {
+     "median": 46.80016699999999,
+     "rounds": [
+      48.199583000000075,
+      44.48637499999995,
+      46.80016699999999
+     ]
+    }
+   },
+   "cpuMs": {
+    "base": {
+     "median": 34.972,
+     "rounds": [
+      32.973,
+      34.972,
+      35.412
+     ]
+    },
+    "fsynconly": {
+     "median": 31.886,
+     "rounds": [
+      30.794,
+      31.886,
+      32.65
+     ]
+    },
+    "allchanges": {
+     "median": 26.372,
+     "rounds": [
+      27.712,
+      26.372,
+      26.25
+     ]
+    }
+   },
+   "fsyncSync": {
+    "base": {
+     "median": 8,
+     "rounds": [
+      8,
+      8,
+      8
+     ]
+    },
+    "fsynconly": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    },
+    "allchanges": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    }
+   },
+   "fdatasyncSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "syncFileHandle": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeFileSync": {
+    "base": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "fsynconly": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "allchanges": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    }
+   },
+   "renameSync": {
+    "base": {
+     "median": 7,
+     "rounds": [
+      7,
+      7,
+      7
+     ]
+    },
+    "fsynconly": {
+     "median": 7,
+     "rounds": [
+      7,
+      7,
+      7
+     ]
+    },
+    "allchanges": {
+     "median": 7,
+     "rounds": [
+      7,
+      7,
+      7
+     ]
+    }
+   },
+   "readFileSync": {
+    "base": {
+     "median": 9,
+     "rounds": [
+      9,
+      9,
+      9
+     ]
+    },
+    "fsynconly": {
+     "median": 9,
+     "rounds": [
+      9,
+      9,
+      9
+     ]
+    },
+    "allchanges": {
+     "median": 9,
+     "rounds": [
+      9,
+      9,
+      9
+     ]
+    }
+   },
+   "linkSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "mkdirSync": {
+    "base": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "fsynconly": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "allchanges": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    }
+   }
+  },
+  "flush@25": {
+   "elapsedMs": {
+    "base": {
+     "median": 92.05645799999957,
+     "rounds": [
+      93.80237499999976,
+      88.25983300000007,
+      92.05645799999957
+     ]
+    },
+    "fsynconly": {
+     "median": 82.19741699999986,
+     "rounds": [
+      81.27912500000002,
+      83.01424999999995,
+      82.19741699999986
+     ]
+    },
+    "allchanges": {
+     "median": 63.07895899999994,
+     "rounds": [
+      64.82095900000013,
+      62.53958299999999,
+      63.07895899999994
+     ]
+    }
+   },
+   "cpuMs": {
+    "base": {
+     "median": 68.46,
+     "rounds": [
+      70.045,
+      68.428,
+      68.46
+     ]
+    },
+    "fsynconly": {
+     "median": 66.943,
+     "rounds": [
+      66.813,
+      67.387,
+      66.943
+     ]
+    },
+    "allchanges": {
+     "median": 44.51,
+     "rounds": [
+      45.898,
+      44.51,
+      43.569
+     ]
+    }
+   },
+   "fsyncSync": {
+    "base": {
+     "median": 8,
+     "rounds": [
+      8,
+      8,
+      8
+     ]
+    },
+    "fsynconly": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    },
+    "allchanges": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    }
+   },
+   "fdatasyncSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "syncFileHandle": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeFileSync": {
+    "base": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "fsynconly": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "allchanges": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    }
+   },
+   "renameSync": {
+    "base": {
+     "median": 7,
+     "rounds": [
+      7,
+      7,
+      7
+     ]
+    },
+    "fsynconly": {
+     "median": 7,
+     "rounds": [
+      7,
+      7,
+      7
+     ]
+    },
+    "allchanges": {
+     "median": 7,
+     "rounds": [
+      7,
+      7,
+      7
+     ]
+    }
+   },
+   "readFileSync": {
+    "base": {
+     "median": 9,
+     "rounds": [
+      9,
+      9,
+      9
+     ]
+    },
+    "fsynconly": {
+     "median": 9,
+     "rounds": [
+      9,
+      9,
+      9
+     ]
+    },
+    "allchanges": {
+     "median": 9,
+     "rounds": [
+      9,
+      9,
+      9
+     ]
+    }
+   },
+   "linkSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "mkdirSync": {
+    "base": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "fsynconly": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "allchanges": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    }
+   }
+  },
+  "flush@50": {
+   "elapsedMs": {
+    "base": {
+     "median": 181.81945799999994,
+     "rounds": [
+      182.16108299999996,
+      181.81945799999994,
+      181.4681660000001
+     ]
+    },
+    "fsynconly": {
+     "median": 170.18949999999995,
+     "rounds": [
+      170.18949999999995,
+      172.40320900000006,
+      168.41479200000003
+     ]
+    },
+    "allchanges": {
+     "median": 112.11925000000019,
+     "rounds": [
+      112.92612499999996,
+      109.28625000000011,
+      112.11925000000019
+     ]
+    }
+   },
+   "cpuMs": {
+    "base": {
+     "median": 167.949,
+     "rounds": [
+      168.594,
+      167.949,
+      166.455
+     ]
+    },
+    "fsynconly": {
+     "median": 165.707,
+     "rounds": [
+      165.707,
+      165.303,
+      167.226
+     ]
+    },
+    "allchanges": {
+     "median": 102.082,
+     "rounds": [
+      103.208,
+      101.059,
+      102.082
+     ]
+    }
+   },
+   "fsyncSync": {
+    "base": {
+     "median": 8,
+     "rounds": [
+      8,
+      8,
+      8
+     ]
+    },
+    "fsynconly": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    },
+    "allchanges": {
+     "median": 5,
+     "rounds": [
+      5,
+      5,
+      5
+     ]
+    }
+   },
+   "fdatasyncSync": {
+    "base": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "fsynconly": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    },
+    "allchanges": {
+     "median": 0,
+     "rounds": [
+      0,
+      0,
+      0
+     ]
+    }
+   },
+   "syncFileHandle": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "writeFileSync": {
+    "base": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "fsynconly": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    },
+    "allchanges": {
+     "median": 3,
+     "rounds": [
+      3,
+      3,
+      3
+     ]
+    }
+   },
+   "renameSync": {
+    "base": {
+     "median": 7,
+     "rounds": [
+      7,
+      7,
+      7
+     ]
+    },
+    "fsynconly": {
+     "median": 7,
+     "rounds": [
+      7,
+      7,
+      7
+     ]
+    },
+    "allchanges": {
+     "median": 7,
+     "rounds": [
+      7,
+      7,
+      7
+     ]
+    }
+   },
+   "readFileSync": {
+    "base": {
+     "median": 9,
+     "rounds": [
+      9,
+      9,
+      9
+     ]
+    },
+    "fsynconly": {
+     "median": 9,
+     "rounds": [
+      9,
+      9,
+      9
+     ]
+    },
+    "allchanges": {
+     "median": 9,
+     "rounds": [
+      9,
+      9,
+      9
+     ]
+    }
+   },
+   "linkSync": {
+    "base": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "fsynconly": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    },
+    "allchanges": {
+     "median": 4,
+     "rounds": [
+      4,
+      4,
+      4
+     ]
+    }
+   },
+   "mkdirSync": {
+    "base": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "fsynconly": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    },
+    "allchanges": {
+     "median": 1,
+     "rounds": [
+      1,
+      1,
+      1
+     ]
+    }
+   }
+  }
+ }
+}
