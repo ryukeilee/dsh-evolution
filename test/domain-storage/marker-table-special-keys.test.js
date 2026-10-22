@@ -143,24 +143,21 @@ async function observe(open, home, tag, scenario) {
 }
 
 const SCENARIOS = {
-  // A marker whose name resolves on `Object.prototype`, rolled back through the
-  // live handle and then re-offered by the log: the merge sees `merged[name]`
-  // from the prototype instead of an own marker, so the copy loop refuses it.
-  'prototype-named marker rolled back then replayed': async (f) => {
+  // Own markers whose names `Object.prototype` also answers. They are committed
+  // as ordinary members of the table: the merge copies `recovered` (which owns
+  // them), so the copy shadows the inherited value instead of reading it, and
+  // the durable bytes have to keep them under those names.
+  'prototype-named markers on the live table': async (f) => {
     await seed(f, { constructor: MAC(1), toString: MAC(2), hasOwnProperty: MAC(3), valueOf: MAC(4), regular: MAC(5) });
-    const domain = f.ctx.storageDomain.get(evolutionDomainSpec.name);
-    const document = domain.global.get();
-    // Rewind one prototype-named marker in place: the caller's table still has
-    // it, the recovered map does not.
-    const rewound = { toString: MAC(2), hasOwnProperty: MAC(3), valueOf: MAC(4), regular: MAC(5) };
-    await domain.global.set({ ...document, applied: rewound });
     append(f, 1);
     return null;
   },
-  // A value-less marker on the recovered side and a string on the caller side:
-  // the copy loop writes the caller's value (no conflict), so the durable map
-  // has to carry it.
-  'undefined recovered value is overwritten by the caller': async (f) => {
+  // A marker whose value is `undefined`, installed through the official handle the
+  // way an in-process writer could. `applied` is a `record<string, string>`, so
+  // the transaction-start validation refuses the document before any work - this
+  // scenario pins that refusal (and that both implementations refuse the same
+  // way); it does not reach the merge.
+  'a marker value the schema rejects is refused at transaction start': async (f) => {
     const applied = { regular: MAC(5) };
     Object.defineProperty(applied, 'evolution:measurement-completed:special-1', { value: undefined, enumerable: true, writable: true, configurable: true });
     await seed(f, applied);
@@ -255,6 +252,48 @@ test('a live accessor whose value changes per read is still read by the copy, no
         assert.deepEqual(durableTree(root), before, 'a refused pass commits no durable byte');
         const document = JSON.parse(fs.readFileSync(path.join(root, 'official', 'evolution_domain.json'), 'utf8')).global;
         assert.equal(document.pending, null, 'a refused pass publishes no pending record');
+      } finally {
+        await port.close().catch(() => {});
+        await f.backend.close();
+      }
+    } finally {
+      uuid.restore();
+      unfreezeClock();
+    }
+  });
+});
+
+test('a recovered table that lost a prototype-named marker refuses the caller table', async () => {
+  // This is the merge boundary itself: an interrupted commit left a pending
+  // record whose marker table lacks `constructor`, while the live document the
+  // caller's table is copied from owns it. Recovery installs the pending record
+  // first (that is what recovery is for), and then the merge reads
+  // `merged['constructor']` from `Object.prototype` instead of from an own
+  // marker and refuses the batch instead of re-publishing the marker under that
+  // name. The released rc.8 pin predates the merge and would simply commit, so
+  // this is asserted directly rather than differentially.
+  await withHome(async (home) => {
+    const unfreezeClock = freezeClock();
+    const uuid = freezeUuid();
+    try {
+      const root = path.join(home, 'fixture');
+      reset(root, uuid);
+      const f = fixture(root);
+      const port = await openDomainStorage(f.ctx, f.config);
+      try {
+        const stage = 'stage-00000000-0000-4000-8000-000000000000';
+        fs.mkdirSync(path.join(root, 'domain-staging', stage), { recursive: true, mode: 0o700 });
+        const domain = f.ctx.storageDomain.get(evolutionDomainSpec.name);
+        await domain.global.set({ schema: 1, aggregate: {},
+          applied: { constructor: MAC(1), regular: MAC(5) },
+          pending: { stage, aggregate: {}, applied: { regular: MAC(5) }, files: [] } });
+        append(f, 1);
+        await assert.rejects(port.flush(), /E_DOMAIN_EVENT_ID_CONFLICT/,
+          'the batch must be refused instead of publishing a marker under the prototype name');
+        const document = JSON.parse(fs.readFileSync(path.join(root, 'official', 'evolution_domain.json'), 'utf8')).global;
+        assert.equal(document.pending, null, 'the recovered record was installed before the batch was refused');
+        assert.deepEqual(Object.keys(document.applied).sort(), ['regular'], 'the pending table is what stayed durable');
+        assert.equal(Object.hasOwn(document.applied, 'constructor'), false, 'and the batch published no marker under that name');
       } finally {
         await port.close().catch(() => {});
         await f.backend.close();

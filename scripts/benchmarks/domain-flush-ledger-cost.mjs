@@ -90,6 +90,8 @@ for (const [history, newEvents] of [[2000, 1], [20000, 1]]) {
 }
 // The `experiments` hot window is full, so every new event evicts a record and
 // the transaction takes the two-write staged path instead of the single write.
+// (`hot` seeds twelve rows there instead, which keeps all of its passes at one
+// document write; the script asserts the exact count per shape.)
 for (const [history, newEvents] of [[2000, 1], [2000, 3]]) {
   SCENARIOS.push({ history, newEvents, aggregate: "evict", archives: true });
 }
@@ -312,8 +314,11 @@ const seededRow = (collection, index) => ({
 function seededEvolution(shape) {
   if (shape === "none") return {};
   const evolution = { schema: 5, eventBridge: { schema: 1, applied: [] }, observations: [] };
+  // Every collection stays under its hot limit even after the whole measured run
+  // has appended its records (`experiments` grows by `newEvents` per pass, and the
+  // limit is 50), so this shape is the single-document commit it claims to be.
   for (const collection of ["proposals", "experiments", "cycles"]) {
-    evolution[collection] = Array.from({ length: 40 }, (_, index) => seededRow(collection, index));
+    evolution[collection] = Array.from({ length: 12 }, (_, index) => seededRow(collection, index));
   }
   evolution.knowledge = Array.from({ length: 400 }, (_, index) => seededRow("knowledge", index));
   evolution.observations = Array.from({ length: 24 }, (_, index) => seededRow("observations", index));
@@ -406,12 +411,17 @@ async function runScenario(libDirectory, scenario, { clockMode, trace, samples, 
     assert.deepEqual(cold, { applied: 0, duplicates: scenario.history }, `history ${scenario.history}: the seeded history must already be committed`);
     for (let warm = 0; warm < WARMUP; warm += 1) { append(scenario.newEvents); await aligned(() => port.flush()); }
     const expected = (index) => ({ applied: scenario.newEvents, duplicates: scenario.history + scenario.newEvents * (WARMUP + index) });
-    if (counter) counter.reset();
     // Profiling starts here: the fixture build, the cold pass and its signing are
     // behind us, so the profile holds the measured `flush()` calls only.
+    const totals = counter ? { documentWrites: 0, tokenWrites: 0, logBytesRead: 0, digestBytes: 0,
+      clones: 0, cloneBytes: 0, cloneMs: 0, gcEntries: 0, gcMs: 0, calls: new Map() } : null;
     await profile?.start?.();
     for (let index = 0; index < samples; index += 1) {
       append(scenario.newEvents);
+      // The counters are opened after the append, so signing and appending the new
+      // record are outside every per-flush figure (the CPU and wall timers below
+      // already exclude them).
+      if (counter) counter.reset();
       const cpu = process.cpuUsage();
       const started = performance.now();
       const result = await aligned(() => port.flush());
@@ -419,9 +429,16 @@ async function runScenario(libDirectory, scenario, { clockMode, trace, samples, 
       const used = process.cpuUsage(cpu);
       assert.deepEqual(result, expected(index), `${label(scenario)}: the pass must report what it applied`);
       rows.push({ wallMs, cpuMs: (used.user + used.system) / 1000 });
+      if (counter) {
+        const read = counter.read();
+        for (const name of ["documentWrites", "tokenWrites", "logBytesRead", "digestBytes", "clones", "cloneBytes", "cloneMs", "gcEntries", "gcMs"]) {
+          totals[name] += read[name];
+        }
+        for (const [name, value] of Object.entries(read.calls)) totals.calls.set(name, (totals.calls.get(name) ?? 0) + value);
+      }
     }
     await profile?.stop?.();
-    const traced = counter ? counter.read() : null;
+    const traced = totals === null ? null : { ...totals, calls: Object.fromEntries(totals.calls) };
     const read = (file) => fs.readFileSync(file, "utf8").split(root).join("<root>");
     // The checkpoint's `file.dev`/`file.ino` identify the fixture's own log file and
     // its `mac` binds them, so those three fields are per-run by construction. Every
@@ -445,7 +462,7 @@ async function runScenario(libDirectory, scenario, { clockMode, trace, samples, 
     // were; the `flush()` afterwards only confirms the same thing from the port's
     // side. Asserting the `flush()` result alone would pass even if the startup pass
     // had just re-applied something.
-    const beforeRestart = { document: read(roots.document), checkpoint: read(roots.checkpoint) };
+    const beforeRestart = { document: read(roots.document), checkpoint: read(roots.checkpoint), archives: archiveTree(roots.live) };
     await port.close();
     opened = null;
     const reopened = await openPort(libDirectory, root, eventLog);
@@ -453,10 +470,11 @@ async function runScenario(libDirectory, scenario, { clockMode, trace, samples, 
     const restartedLeaves = fs.existsSync(roots.staging) ? fs.readdirSync(roots.staging).length : 0;
     await reopened.port.close();
     await reopened.backend.close();
-    const afterRestart = { document: read(roots.document), checkpoint: read(roots.checkpoint) };
+    const afterRestart = { document: read(roots.document), checkpoint: read(roots.checkpoint), archives: archiveTree(roots.live) };
     return { rows, traced, durable, stagingLeft, restartedLeaves, restart,
       restartDocumentUnchanged: beforeRestart.document === afterRestart.document,
       restartCheckpointUnchanged: beforeRestart.checkpoint === afterRestart.checkpoint,
+      restartArchivesUnchanged: JSON.stringify(beforeRestart.archives) === JSON.stringify(afterRestart.archives),
       documentBytes: durable.document === null ? 0 : Buffer.byteLength(durable.document),
       checkpointBytes: durable.checkpoint === null ? 0 : Buffer.byteLength(JSON.stringify(durable.checkpoint)),
       logBytes: fs.statSync(eventLog).size };
@@ -484,6 +502,7 @@ const summarize = (run) => ({
   restart: run.restart,
   restartDocumentUnchanged: run.restartDocumentUnchanged,
   restartCheckpointUnchanged: run.restartCheckpointUnchanged,
+  restartArchivesUnchanged: run.restartArchivesUnchanged,
   traced: run.traced ? {
     documentWritesPerFlush: round3(run.traced.documentWrites / run.rows.length),
     tokenWritesPerFlush: round3(run.traced.tokenWrites / run.rows.length),
@@ -519,9 +538,9 @@ const output = {
     order: "each round alternates which side runs first",
     sides: "baseline restores lib/domain-storage.js from the recorded revision into a copy of lib/; candidate is this working tree",
     warmup: "the seeded history is absorbed by a cold pass, then `warmup` flushed bursts",
-    instrumentedPass: "one additional pass per side with wrapped fs/crypto/structuredClone calls and a GC observer; every count is per flush",
-    historyShape: "the seeded history is a committed applied marker table plus its signed log. The `-hot`/`-evict` scenarios also seed the aggregate's hot window (and, for `-evict`, a full experimentRecords window so every applied record evicts one); the `-archive` scenarios additionally seed a non-empty dockyard archive tree.",
-    expectedDocumentWrites: "0 per steady pass (no new record), 1 per advancing flush, 2 for the `-evict` ones, which also stage an archive file",
+    instrumentedPass: "one additional pass per side with wrapped fs/crypto/structuredClone calls and a GC observer; the counters are opened after the new records are signed and appended, so every count is exactly one flush",
+    historyShape: "the seeded history is a committed applied marker table plus its signed log. The `-hot` scenarios also seed an aggregate that stays inside the memory's per-collection hot window for the whole run (so every pass writes the document once), the `-evict` scenarios seed the `experiments` window at its limit (so every applied record evicts one and every pass also stages an archive file), and the `-archive` scenarios additionally seed a non-empty dockyard archive tree.",
+    expectedDocumentWrites: "0 per steady pass (no new record), 1 per advancing flush, 2 for the `-evict` ones, which also stage an archive file; the injected run asserts the exact count per shape",
   },
   sources: baseline.sources,
   results: [],
@@ -531,12 +550,11 @@ for (const scenario of SELECTED) {
   const record = { scenario: label(scenario), history: scenario.history, newEvents: scenario.newEvents,
     aggregate: scenario.aggregate, archives: scenario.archives, rounds: [] };
   // A steady pass carries no new record, so it commits nothing. An advancing pass
-  // writes the document at least once; the `-evict` shape also stages an archive
-  // file, so most of its passes write twice (the memory's own retention decides
-  // whether a given pass archives, and the reported count is the measured one).
+  // writes the document exactly once, except in the `-evict` shape, which also
+  // stages an archive file on every pass. Both shapes are seeded so that count is
+  // stable, and the assertion is exact: a shape that drifts off its path fails the
+  // run instead of silently measuring a mixture.
   const expectedWrites = scenario.newEvents === 0 ? 0 : scenario.aggregate === "evict" ? 2 : 1;
-  const acceptsWrites = (writes) => scenario.newEvents === 0 ? writes === 0
-    : scenario.aggregate === "evict" ? writes > 1.5 : writes >= 1 && writes <= 2;
   for (let round = 1; round <= ROUNDS; round += 1) {
     const order = round % 2 === 1 ? ["baseline", "candidate"] : ["candidate", "baseline"];
     const measured = { round, order, sides: {} };
@@ -551,15 +569,17 @@ for (const scenario of SELECTED) {
       assert.equal(clean.restartedLeaves, 0, `${record.scenario} (${side}): a restart must leave no staged directory`);
       assert.equal(clean.restartDocumentUnchanged, true, `${record.scenario} (${side}): a restart must not rewrite the document`);
       assert.equal(clean.restartCheckpointUnchanged, true, `${record.scenario} (${side}): a restart must not move the checkpoint`);
+      assert.equal(clean.restartArchivesUnchanged, true, `${record.scenario} (${side}): a restart must not rewrite the archive tree`);
       clean.restart = undefined; clean.restartedLeaves = undefined;
       clean.restartDocumentUnchanged = undefined; clean.restartCheckpointUnchanged = undefined;
+      clean.restartArchivesUnchanged = undefined;
     }
     // The mechanism counters are one traced run per side per round; they are not
     // part of the timing comparison.
     for (const side of order) {
       const traced = summarize(await runScenario(SIDES[side](), scenario, { clockMode: "advance", trace: true, samples: SAMPLES }));
-      assert.ok(acceptsWrites(traced.traced.documentWritesPerFlush),
-        `${record.scenario} (${side}): the scenario must take the expected ${expectedWrites}-write path, saw ${traced.traced.documentWritesPerFlush}`);
+      assert.equal(traced.traced.documentWritesPerFlush, expectedWrites,
+        `${record.scenario} (${side}): the scenario must take the ${expectedWrites}-write path`);
       measured.sides[side].traced = traced.traced;
     }
     assert.equal(measured.sides.baseline.traced.documentWritesPerFlush,
@@ -618,6 +638,7 @@ for (const scenario of SELECTED) {
     assert.equal(runs[side].stagingLeft, 0, `${name} (${side}): a committed transaction must leave no staged directory`);
     assert.equal(runs[side].restartDocumentUnchanged, true, `${name} (${side}): a restart must not rewrite the document`);
     assert.equal(runs[side].restartCheckpointUnchanged, true, `${name} (${side}): a restart must not move the checkpoint`);
+    assert.equal(runs[side].restartArchivesUnchanged, true, `${name} (${side}): a restart must not rewrite the archive tree`);
   }
   assert.equal(runs.candidate.durable.document, runs.baseline.durable.document,
     `${name}: both implementations must persist the same domain document under a frozen clock`);

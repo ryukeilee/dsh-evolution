@@ -1,6 +1,6 @@
 {
   "script": "scripts/benchmarks/domain-flush-ledger-attribution.mjs",
-  "command": "node scripts/benchmarks/domain-flush-ledger-attribution.mjs --side <baseline|candidate> --history 20000 --new-events 1 --samples 7 --aggregate <none|hot>",
+  "command": "for side in baseline candidate; do for shape in none hot; do for run in 1 2 3; do node scripts/benchmarks/domain-flush-ledger-attribution.mjs --side $side --history 20000 --new-events 1 --samples 7 --aggregate $shape; done; done; done",
   "environment": {
     "node": "v26.12.1",
     "platform": "darwin/arm64"
@@ -8,6 +8,7 @@
   "protocol": {
     "instrumentation": "each side copies its own lib/domain-storage.js into a scratch tree and wraps the transaction call sites in performance.now() pairs by exact-substring patch; the patch fails loudly if a call site moved",
     "phases": "wall-clock per flush; phases nest, so memory.create and hydrate contain their own memory.cloneLoad",
+    "runs": "three independent runs per side and shape; the reported figure is the median of the three",
     "authority": "the A/B run in domain-flush-ledger-cost.json is the authority for the end-to-end delta; these figures only say where it lands"
   },
   "scenarios": {
@@ -17,37 +18,55 @@
       "newEvents": 1,
       "sides": {
         "baseline": {
-          "cpuMs": 50.73,
-          "wallMs": 56.617,
-          "samples": 7,
+          "cpuMs": 50.786,
+          "wallMs": 57.601,
+          "cpuRuns": [
+            50.698,
+            50.866,
+            50.786
+          ],
+          "wallRuns": [
+            57.659,
+            57.585,
+            57.601
+          ],
           "phases": {
-            "set.final": 17.394,
-            "plan": 9.853,
-            "merge": 7.821,
-            "checkpoint.write": 5.076,
+            "checkpoint.write": 5.104,
             "copy.baseline": 4.002,
-            "copy.replayLedger": 3.832,
-            "memory.create": 0.943,
-            "hydrate": 0.64,
-            "memory.cloneLoad": 0.047,
-            "snapshot": 0.027
+            "copy.replayLedger": 3.844,
+            "hydrate": 0.658,
+            "memory.cloneLoad": 0.048,
+            "memory.create": 0.915,
+            "merge": 7.647,
+            "plan": 9.805,
+            "set.final": 17.521,
+            "snapshot": 0.026
           }
         },
         "candidate": {
-          "cpuMs": 48.07,
-          "wallMs": 54.91,
-          "samples": 7,
+          "cpuMs": 48.341,
+          "wallMs": 55.734,
+          "cpuRuns": [
+            48.341,
+            48.335,
+            48.574
+          ],
+          "wallRuns": [
+            55.734,
+            54.718,
+            56.019
+          ],
           "phases": {
-            "set.final": 17.215,
-            "plan": 9.808,
-            "merge": 5.777,
-            "checkpoint.write": 5.027,
-            "copy.baseline": 3.955,
-            "copy.replayLedger": 3.902,
-            "memory.create": 0.9,
-            "hydrate": 0.618,
-            "snapshot": 0.028,
-            "memory.cloneLoad": 0.001
+            "checkpoint.write": 5.036,
+            "copy.baseline": 3.993,
+            "copy.replayLedger": 3.914,
+            "hydrate": 0.627,
+            "memory.cloneLoad": 0.001,
+            "memory.create": 0.877,
+            "merge": 5.854,
+            "plan": 9.849,
+            "set.final": 17.392,
+            "snapshot": 0.028
           }
         }
       }
@@ -58,37 +77,55 @@
       "newEvents": 1,
       "sides": {
         "baseline": {
-          "cpuMs": 61.581,
-          "wallMs": 67.643,
-          "samples": 7,
+          "cpuMs": 62.245,
+          "wallMs": 68.461,
+          "cpuRuns": [
+            62.064,
+            62.245,
+            62.718
+          ],
+          "wallRuns": [
+            67.505,
+            68.461,
+            68.732
+          ],
           "phases": {
-            "set.final": 18.574,
-            "plan": 9.834,
-            "merge": 7.6,
-            "checkpoint.write": 5.021,
-            "copy.baseline": 3.869,
-            "copy.replayLedger": 3.815,
-            "memory.create": 3.581,
-            "hydrate": 3.517,
-            "memory.cloneLoad": 2.838,
-            "snapshot": 1.411
+            "checkpoint.write": 5.092,
+            "copy.baseline": 3.902,
+            "copy.replayLedger": 3.847,
+            "hydrate": 3.511,
+            "memory.cloneLoad": 2.845,
+            "memory.create": 3.648,
+            "merge": 7.776,
+            "plan": 9.896,
+            "set.final": 19.284,
+            "snapshot": 1.427
           }
         },
         "candidate": {
-          "cpuMs": 58.515,
-          "wallMs": 63.801,
-          "samples": 7,
+          "cpuMs": 59.043,
+          "wallMs": 64.703,
+          "cpuRuns": [
+            58.71,
+            59.043,
+            59.046
+          ],
+          "wallRuns": [
+            64.346,
+            64.879,
+            64.703
+          ],
           "phases": {
-            "set.final": 18.962,
-            "plan": 9.911,
-            "merge": 5.971,
-            "checkpoint.write": 5.06,
-            "copy.replayLedger": 3.961,
-            "copy.baseline": 3.906,
-            "hydrate": 2.057,
-            "memory.create": 2.051,
-            "snapshot": 1.433,
-            "memory.cloneLoad": 0.001
+            "checkpoint.write": 5.078,
+            "copy.baseline": 3.998,
+            "copy.replayLedger": 3.994,
+            "hydrate": 2.08,
+            "memory.cloneLoad": 0.001,
+            "memory.create": 2.082,
+            "merge": 6.077,
+            "plan": 9.93,
+            "set.final": 19.94,
+            "snapshot": 1.437
           }
         }
       }
