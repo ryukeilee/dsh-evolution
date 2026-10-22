@@ -117,7 +117,22 @@ const HUNKS = [
       "    // Keeping the stringify therefore keeps the only observable effect of the\n" +
       "    // removed call - the throw - on the exact same value, and the durable\n" +
       "    // document is still validated in full by the publication's `schema.parse`.\n" +
-      "    const stateStore = { filePath: path.join(dir, 'state.json'), inlineSerialization: true, load: async () => structuredClone(aggregate),\n" +
+      "    const stateStore = { filePath: path.join(dir, 'state.json'), inlineSerialization: true, load: async () => aggregate,\n" +
+      "      // `load` hands out the aggregate this factory already cloned from\n" +
+      "      // `initial` above; it used to clone it a second time. The only reader of\n" +
+      "      // that value is the instance created below, through exactly one\n" +
+      "      // `EvolutionMemory.load()` (`loaded` guards any later call), which spreads\n" +
+      "      // it into its own state and keeps the collection arrays - it keeps neither\n" +
+      "      // the store's object nor a copy of it. The store's own later reader is the\n" +
+      "      // `update` spread base below, and that spread replaces the only field the\n" +
+      "      // aggregate carries (`evolution`, the one key `aggregateSchema` admits)\n" +
+      "      // with the payload before the result is kept, so no reader ever observes\n" +
+      "      // the second copy. This is the same shallow-view stance\n" +
+      "      // `inlineSerialization: true` already takes for the payload `update` is\n" +
+      "      // handed: neither direction keeps a snapshot of values no reader wants.\n" +
+      "      // The eager `structuredClone(initial)` above stays, because it is what\n" +
+      "      // detaches this transaction from the committed document (and refuses a\n" +
+      "      // live value the medium could not store).\n" +
       "      update: async updater => {\n" +
       "        const next = updater(aggregate);\n" +
       "        assertTransactionSave(next);\n" +

@@ -748,7 +748,22 @@ const reversals = [
       "    // Keeping the stringify therefore keeps the only observable effect of the\n" +
       "    // removed call - the throw - on the exact same value, and the durable\n" +
       "    // document is still validated in full by the publication's `schema.parse`.\n" +
-      "    const stateStore = { filePath: path.join(dir, 'state.json'), inlineSerialization: true, load: async () => structuredClone(aggregate),\n" +
+      "    const stateStore = { filePath: path.join(dir, 'state.json'), inlineSerialization: true, load: async () => aggregate,\n" +
+      "      // `load` hands out the aggregate this factory already cloned from\n" +
+      "      // `initial` above; it used to clone it a second time. The only reader of\n" +
+      "      // that value is the instance created below, through exactly one\n" +
+      "      // `EvolutionMemory.load()` (`loaded` guards any later call), which spreads\n" +
+      "      // it into its own state and keeps the collection arrays - it keeps neither\n" +
+      "      // the store's object nor a copy of it. The store's own later reader is the\n" +
+      "      // `update` spread base below, and that spread replaces the only field the\n" +
+      "      // aggregate carries (`evolution`, the one key `aggregateSchema` admits)\n" +
+      "      // with the payload before the result is kept, so no reader ever observes\n" +
+      "      // the second copy. This is the same shallow-view stance\n" +
+      "      // `inlineSerialization: true` already takes for the payload `update` is\n" +
+      "      // handed: neither direction keeps a snapshot of values no reader wants.\n" +
+      "      // The eager `structuredClone(initial)` above stays, because it is what\n" +
+      "      // detaches this transaction from the committed document (and refuses a\n" +
+      "      // live value the medium could not store).\n" +
       "      update: async updater => {\n" +
       "        const next = updater(aggregate);\n" +
       "        assertTransactionSave(next);\n" +
@@ -959,11 +974,27 @@ const reversals = [
    " * rewrite an event identity that is already committed, so neither does. This\n" +
    " * check runs on the ledger `installPending()` just installed, which is the only\n" +
    " * moment the recovered markers - and therefore the conflict - are visible.\n" +
+   " *\n" +
+   " * The caller's table is walked with `Object.keys()` and one indexed read per key\n" +
+   " * instead of `Object.entries()`, which built a `[eventId, mac]` pair array for\n" +
+   " * every marker the table holds (20,000 of them at 20,000 committed events) only\n" +
+   " * to read the same two values back out of it. Both forms visit the same own\n" +
+   " * enumerable string keys in the same order and read each value exactly once;\n" +
+   " * `Object.entries()` only interleaves the descriptor read and the value read per\n" +
+   " * key, which is not observable on the table this function is given: its sole\n" +
+   " * caller is `replay()`, which builds that table as `{ ...applied }` and then\n" +
+   " * assigns one string MAC per new record, so every own property is a data\n" +
+   " * property written by the spread or by that assignment. (A table carrying\n" +
+   " * accessors would be the one shape where an interleaved read could differ, and\n" +
+   " * no port path produces one.) Exported so a differential regression can compare\n" +
+   " * it against the `Object.entries()` form it replaces; nothing outside this\n" +
+   " * module calls it.\n" +
    " */\n" +
-   "function mergeEventLedger(recovered, applied) {\n" +
+   "export function mergeEventLedger(recovered, applied) {\n" +
    "  if (!applied) return recovered;\n" +
    "  const merged = { ...recovered };\n" +
-   "  for (const [eventId, mac] of Object.entries(applied)) {\n" +
+   "  for (const eventId of Object.keys(applied)) {\n" +
+   "    const mac = applied[eventId];\n" +
    "    const known = merged[eventId];\n" +
    "    if (known !== undefined && known !== mac) throw new Error('E_DOMAIN_EVENT_ID_CONFLICT');\n" +
    "    merged[eventId] = mac;\n" +
