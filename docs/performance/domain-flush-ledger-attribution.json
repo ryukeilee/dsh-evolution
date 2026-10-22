@@ -1,0 +1,97 @@
+{
+  "script": "scripts/benchmarks/domain-flush-ledger-attribution.mjs",
+  "command": "node scripts/benchmarks/domain-flush-ledger-attribution.mjs --side <baseline|candidate> --history 20000 --new-events 1 --samples 7 --aggregate <none|hot>",
+  "environment": {
+    "node": "v26.12.1",
+    "platform": "darwin/arm64"
+  },
+  "protocol": {
+    "instrumentation": "each side copies its own lib/domain-storage.js into a scratch tree and wraps the transaction call sites in performance.now() pairs by exact-substring patch; the patch fails loudly if a call site moved",
+    "phases": "wall-clock per flush; phases nest, so memory.create and hydrate contain their own memory.cloneLoad",
+    "authority": "the A/B run in domain-flush-ledger-cost.json is the authority for the end-to-end delta; these figures only say where it lands"
+  },
+  "scenarios": {
+    "none": {
+      "aggregate": "none",
+      "history": 20000,
+      "newEvents": 1,
+      "sides": {
+        "baseline": {
+          "cpuMs": 50.73,
+          "wallMs": 56.617,
+          "samples": 7,
+          "phases": {
+            "set.final": 17.394,
+            "plan": 9.853,
+            "merge": 7.821,
+            "checkpoint.write": 5.076,
+            "copy.baseline": 4.002,
+            "copy.replayLedger": 3.832,
+            "memory.create": 0.943,
+            "hydrate": 0.64,
+            "memory.cloneLoad": 0.047,
+            "snapshot": 0.027
+          }
+        },
+        "candidate": {
+          "cpuMs": 48.07,
+          "wallMs": 54.91,
+          "samples": 7,
+          "phases": {
+            "set.final": 17.215,
+            "plan": 9.808,
+            "merge": 5.777,
+            "checkpoint.write": 5.027,
+            "copy.baseline": 3.955,
+            "copy.replayLedger": 3.902,
+            "memory.create": 0.9,
+            "hydrate": 0.618,
+            "snapshot": 0.028,
+            "memory.cloneLoad": 0.001
+          }
+        }
+      }
+    },
+    "hot": {
+      "aggregate": "hot",
+      "history": 20000,
+      "newEvents": 1,
+      "sides": {
+        "baseline": {
+          "cpuMs": 61.581,
+          "wallMs": 67.643,
+          "samples": 7,
+          "phases": {
+            "set.final": 18.574,
+            "plan": 9.834,
+            "merge": 7.6,
+            "checkpoint.write": 5.021,
+            "copy.baseline": 3.869,
+            "copy.replayLedger": 3.815,
+            "memory.create": 3.581,
+            "hydrate": 3.517,
+            "memory.cloneLoad": 2.838,
+            "snapshot": 1.411
+          }
+        },
+        "candidate": {
+          "cpuMs": 58.515,
+          "wallMs": 63.801,
+          "samples": 7,
+          "phases": {
+            "set.final": 18.962,
+            "plan": 9.911,
+            "merge": 5.971,
+            "checkpoint.write": 5.06,
+            "copy.replayLedger": 3.961,
+            "copy.baseline": 3.906,
+            "hydrate": 2.057,
+            "memory.create": 2.051,
+            "snapshot": 1.433,
+            "memory.cloneLoad": 0.001
+          }
+        }
+      }
+    }
+  }
+}
