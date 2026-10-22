@@ -182,7 +182,7 @@ async function storeRun(memoryClass, storeClass, root, uuid) {
 
 test('the reversal returns all three files to a real pre-change source', async () => {
   const { working, reconstructed, hunks } = await loadProjectionBaseline();
-  assert.equal(hunks, 7, 'the round changes four call sites, both load signatures and the narrow read');
+  assert.equal(hunks, 9, 'the round changes four call sites, both load signatures, the narrow read, the save check and the working store');
   for (const [file, source] of reconstructed) {
     assert.notEqual(source, working.get(file), `${file} must change`);
     // The pre-change file carries no trace of the new option, and the call

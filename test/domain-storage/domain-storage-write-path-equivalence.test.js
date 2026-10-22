@@ -154,7 +154,8 @@ test('the reconstruction is anchored to the pinned pre-change artifact', async (
   assert.doesNotMatch(WORKING, /await domain\.global\.set\(schema\.parse\(\{ schema: 1, aggregate: current\.pending\.aggregate/);
   assert.doesNotMatch(WORKING, /updater\(structuredClone\(aggregate\)\)/);
   assert.match(WORKING, /inlineSerialization: true/);
-  assert.match(WORKING, /update: async updater => \{ aggregate = aggregateSchema\.parse\(updater\(aggregate\)\); \}/);
+  assert.match(WORKING, /        const next = updater\(aggregate\);\n        assertTransactionSave\(next\);\n        aggregate = next;/);
+  assert.doesNotMatch(WORKING, /aggregateSchema\.parse\(updater\(aggregate\)\)/);
   // The withdrawn fourth piece must stay: the store is still constructed and
   // still loaded, and the added option removes only the projection that load
   // built and every reader discarded. The cold-history read it must keep is

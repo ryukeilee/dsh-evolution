@@ -32,6 +32,106 @@ const HUNKS = [
   { file: "lib/dockyard-domain/observation.js",
     post: "  }\n\n  async record(input = {}, { deferStablePersistence = false } = {}) {\n    // The projection is not read here: only `this.entries` is.\n    await this.load({ snapshot: false });\n    const normalized = observationInput(input, this.clock);\n    // P1 perf: semantic dedup — a repeat of the same component signal within\n    // the hot window carries no new evidence (component/observation rows are\n",
     pre: "  }\n\n  async record(input = {}, { deferStablePersistence = false } = {}) {\n    await this.load();\n    const normalized = observationInput(input, this.clock);\n    // P1 perf: semantic dedup — a repeat of the same component signal within\n    // the hot window carries no new evidence (component/observation rows are\n" },
+  // Both pieces of the save-projection round are reversed here as well, so this
+  // baseline tree stays byte-identical to the tree it reconstructed before that
+  // round: the exported check, and the working store with its original comment.
+  { file: "lib/domain-storage.js",
+    post: "const safeIdentifier = value => typeof value === 'string' && /^[a-zA-Z0-9_:./-]{1,160}$/.test(value) ? value : null;\n" +
+      "/**\n" +
+      " * The check a transaction's working store still performs on every save.\n" +
+      " *\n" +
+      " * It used to be the preprocess of `aggregateSchema.parse(payload)`, which built\n" +
+      " * the whole projection and then dropped it (see `createMemory`). This runs the\n" +
+      " * same three steps in the same order and discards what they produce, so a save\n" +
+      " * throws exactly where it threw: `JSON.stringify`; the `JSON.parse` of its output,\n" +
+      " * which throws only when the stringify returned `undefined`; and the recursive\n" +
+      " * own-`__proto__` strip, which runs only when the serialized text carries that\n" +
+      " * literal, and would overflow on a document nested deeply enough. The parse is the\n" +
+      " * step skipped on the common path, and it is the one that builds the deep copy no\n" +
+      " * reader wants; the substring search costs what that preprocess already paid for\n" +
+      " * the same decision.\n" +
+      " *\n" +
+      " * What is no longer reproduced is the schema's *verdict* on the projection, which\n" +
+      " * is fixed for the payload this updater produces (see `createMemory`). The check is\n" +
+      " * kept as a named function because the throw is a boundary - a save whose payload\n" +
+      " * JSON cannot represent aborts the transaction before anything is published - and\n" +
+      " * because `transaction-save-validation.test.js` pins it differentially against\n" +
+      " * `aggregateSchema`.\n" +
+      " */\n" +
+      "export function assertTransactionSave(payload) {\n" +
+      "  const text = JSON.stringify(payload);\n" +
+      "  // `JSON.parse(undefined)` is the error the previous call reached through the\n" +
+      "  // same expression; every other unrepresentable value already threw above.\n" +
+      "  if (text === undefined) JSON.parse(text);\n" +
+      "  else if (text.includes(`\"${PROTO_KEY}\"`)) stripOwnProtoKeys(JSON.parse(text));\n" +
+      "}\n" +
+      "export function projectObservation(input = {}) {",
+    pre: "const safeIdentifier = value => typeof value === 'string' && /^[a-zA-Z0-9_:./-]{1,160}$/.test(value) ? value : null;\n" +
+      "export function projectObservation(input = {}) {" },
+  { file: "lib/domain-storage.js",
+    post: "    // `inlineSerialization` is honest here: `update` captures the bytes of the\n" +
+      "    // payload it is handed with the synchronous `JSON.stringify` below, before\n" +
+      "    // it returns, so the caller's live shallow view cannot change what is\n" +
+      "    // checked. It keeps no snapshot of those bytes, and no reader of this store\n" +
+      "    // wants one (see below).\n" +
+      "    //\n" +
+      "    // What that check does not do any more is keep the projection it used to\n" +
+      "    // build and store. Two things were true of `aggregateSchema.parse(payload)`\n" +
+      "    // at this call site, and only the second one is observable:\n" +
+      "    //\n" +
+      "    // - The value it returned was never read. The only commit path is\n" +
+      "    //   `mutate()`, which publishes the snapshot it takes after `work()`\n" +
+      "    //   returns; the next updater keeps only `evolution`, which it replaces\n" +
+      "    //   wholesale; and the store's own `load()` has exactly two callers -\n" +
+      "    //   `reconcile()` and `verifyConsistency()` - neither of which any port path\n" +
+      "    //   reaches (`createMemory` itself loads the instance before a record\n" +
+      "    //   exists). So the projection was built and dropped once per save, and a\n" +
+      "    //   transaction saves once per appended record plus once for the bridge\n" +
+      "    //   marker (`measurement-completed` 2, a rejected/failure pair 3,\n" +
+      "    //   `canary-passed` 5-6): a burst projected the whole document once per save\n" +
+      "    //   - 2 to 6 times per record, growing with the records the burst has\n" +
+      "    //   already appended - and kept none of those projections.\n" +
+      "    //\n" +
+      "    // - Its exception behaviour is reproduced step for step. The preprocess\n" +
+      "    //   (`toJsonProjection`) has three steps that can throw - the stringify, the\n" +
+      "    //   parse of its output, and the recursive own-`__proto__` strip - and\n" +
+      "    //   `assertTransactionSave` runs the same three in the same order, so a save\n" +
+      "    //   still throws exactly where it threw (including the `SyntaxError` of\n" +
+      "    //   parsing an `undefined` stringify and the `RangeError` of a strip that\n" +
+      "    //   overflows). Only the parse on the common path is skipped, and that is the\n" +
+      "    //   step that builds the deep copy nothing reads.\n" +
+      "    //\n" +
+      "    //   What is not reproduced is the schema's verdict on that projection, and it\n" +
+      "    //   is fixed for this payload: its only own top-level key is `evolution`\n" +
+      "    //   (every state this store holds is either the initial committed aggregate or\n" +
+      "    //   a payload of the same shape, and the durable schema admits nothing else),\n" +
+      "    //   and the only field the schema inspects inside it is an integer\n" +
+      "    //   `schema >= 4`, which the durable document this port loads guarantees\n" +
+      "    //   (`memory.js`'s `schema: Math.max(4, Number(...) || ...)` keeps it at every\n" +
+      "    //   load and reconcile; the looser values a direct `restore()` could inject\n" +
+      "    //   are outside this store's reach, because no port path calls it). Both\n" +
+      "    //   events the port feeds this store are JSON-projected before they reach it\n" +
+      "    //   (`projectExecutionEvent`, `safeRecord`, `projectObservation`), so a payload\n" +
+      "    //   the verdict could reject is not reachable from here either.\n" +
+      "    //\n" +
+      "    // Keeping the stringify therefore keeps the only observable effect of the\n" +
+      "    // removed call - the throw - on the exact same value, and the durable\n" +
+      "    // document is still validated in full by the publication's `schema.parse`.\n" +
+      "    const stateStore = { filePath: path.join(dir, 'state.json'), inlineSerialization: true, load: async () => structuredClone(aggregate),\n" +
+      "      update: async updater => {\n" +
+      "        const next = updater(aggregate);\n" +
+      "        assertTransactionSave(next);\n" +
+      "        aggregate = next;\n" +
+      "      } };\n",
+    pre: "    // `inlineSerialization` is honest here: `update` captures the bytes with\n" +
+      "    // the synchronous JSON projection inside `aggregateSchema.parse` before it\n" +
+      "    // returns, so the caller's live shallow view cannot change what is\n" +
+      "    // persisted. The projection already produces a fresh deep value, so the\n" +
+      "    // extra clone of the incoming aggregate would only copy it twice; the\n" +
+      "    // updaters handed to this store are pure (`{ ...state, [key]: payload }`)\n" +
+      "    // and never mutate the argument they receive.\n" +
+      "    const stateStore = { filePath: path.join(dir, 'state.json'), inlineSerialization: true, load: async () => structuredClone(aggregate),\n" +
+      "      update: async updater => { aggregate = aggregateSchema.parse(updater(aggregate)); } };\n" },
   { file: "lib/domain-storage.js",
     post: "    const stateStore = { filePath: path.join(dir, 'state.json'), inlineSerialization: true, load: async () => structuredClone(aggregate),\n      update: async updater => { aggregate = aggregateSchema.parse(updater(aggregate)); } };\n    const instance = new EvolutionMemory({ stateStore, transaction: { persist: stateStore.update }, mutationAuthority: authority, archiveWriteGuard, deferLoadArchiveWrites, archiveReadCache });\n    // The load's own work is required (state restore, archive index\n    // reconciliation, eviction and archival); the hot projection it would\n    // return is not: no caller of this factory reads it.\n    await instance.load({ snapshot: false });\n    return { instance };\n  }\n  async function hydrate(archiveReadCache = memory?.archiveReadCache) {\n",
     pre: "    const stateStore = { filePath: path.join(dir, 'state.json'), inlineSerialization: true, load: async () => structuredClone(aggregate),\n      update: async updater => { aggregate = aggregateSchema.parse(updater(aggregate)); } };\n    const instance = new EvolutionMemory({ stateStore, transaction: { persist: stateStore.update }, mutationAuthority: authority, archiveWriteGuard, deferLoadArchiveWrites, archiveReadCache });\n    await instance.load();\n    return { instance };\n  }\n  async function hydrate(archiveReadCache = memory?.archiveReadCache) {\n" },
