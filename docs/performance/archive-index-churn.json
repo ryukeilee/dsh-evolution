@@ -1,0 +1,168 @@
+{
+  "baseline": "445830b",
+  "rounds": [
+    {
+      "round": 1,
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "loads": {
+        "baseline": {
+          "wallMs": 1.1588749999999948,
+          "cpuMs": 1.35,
+          "syncFsyncs": null,
+          "indexReplacements": 15
+        },
+        "candidate": {
+          "wallMs": 0.6821249999999992,
+          "cpuMs": 0.931,
+          "syncFsyncs": null,
+          "indexReplacements": 0
+        }
+      },
+      "port": {
+        "baseline": {
+          "wallMs": 54.042749999999955,
+          "cpuMs": 18.592,
+          "syncFsyncs": 8,
+          "indexReplacements": 15
+        },
+        "candidate": {
+          "wallMs": 26.406750000000102,
+          "cpuMs": 9.132,
+          "syncFsyncs": 3,
+          "indexReplacements": 0
+        }
+      }
+    },
+    {
+      "round": 2,
+      "order": [
+        "candidate",
+        "baseline"
+      ],
+      "loads": {
+        "candidate": {
+          "wallMs": 0.6174579999999423,
+          "cpuMs": 0.659,
+          "syncFsyncs": null,
+          "indexReplacements": 0
+        },
+        "baseline": {
+          "wallMs": 1.1196249999998145,
+          "cpuMs": 1.208,
+          "syncFsyncs": null,
+          "indexReplacements": 15
+        }
+      },
+      "port": {
+        "candidate": {
+          "wallMs": 25.935875000000124,
+          "cpuMs": 9.112,
+          "syncFsyncs": 3,
+          "indexReplacements": 0
+        },
+        "baseline": {
+          "wallMs": 46.90558299999975,
+          "cpuMs": 10.08,
+          "syncFsyncs": 8,
+          "indexReplacements": 15
+        }
+      }
+    },
+    {
+      "round": 3,
+      "order": [
+        "baseline",
+        "candidate"
+      ],
+      "loads": {
+        "baseline": {
+          "wallMs": 1.2914160000000265,
+          "cpuMs": 1.308,
+          "syncFsyncs": null,
+          "indexReplacements": 15
+        },
+        "candidate": {
+          "wallMs": 0.7359999999998763,
+          "cpuMs": 0.785,
+          "syncFsyncs": null,
+          "indexReplacements": 0
+        }
+      },
+      "port": {
+        "baseline": {
+          "wallMs": 46.94137499999988,
+          "cpuMs": 12.222,
+          "syncFsyncs": 8,
+          "indexReplacements": 15
+        },
+        "candidate": {
+          "wallMs": 30.960833000000093,
+          "cpuMs": 11.115,
+          "syncFsyncs": 3,
+          "indexReplacements": 0
+        }
+      }
+    }
+  ],
+  "loads": 15,
+  "writes": 15,
+  "environment": {
+    "node": "v26.12.1",
+    "platform": "darwin/arm64",
+    "cpus": 8,
+    "loadAverageAtStart": [
+      1.45751953125,
+      1.87890625,
+      1.78662109375
+    ],
+    "loadAverageAtEnd": [
+      1.58056640625,
+      1.8974609375,
+      1.79345703125
+    ]
+  },
+  "protocol": {
+    "measurementClock": "deterministic clock advancing 1 ms per read (production condition, reproducible)",
+    "equivalenceClock": "frozen at 2026-10-22T00:00:00.000Z; durable output must be byte-identical",
+    "order": "each round alternates which side runs first",
+    "fixture": "40 seeded rows in state.json.observations-archive.jsonl plus the same hot rows in the state store; maxEntries 20, hotEntries 5 at the memory level, production defaults through the domain port"
+  },
+  "equivalence": {
+    "frozenClockDurableByteIdentical": true,
+    "compared": [
+      "the memory-level state document, archive files and archive index",
+      "official/evolution_domain.json, every archive file and the archive index through the real port"
+    ]
+  },
+  "summary": {
+    "perLoad": {
+      "baseline": {
+        "wallMs": 1.1588749999999948,
+        "cpuMs": 1.308,
+        "indexReplacements": 15
+      },
+      "candidate": {
+        "wallMs": 0.6821249999999992,
+        "cpuMs": 0.785,
+        "indexReplacements": 0
+      }
+    },
+    "perWrite": {
+      "baseline": {
+        "wallMs": 46.94137499999988,
+        "cpuMs": 12.222,
+        "syncFsyncs": 8,
+        "indexReplacements": 15
+      },
+      "candidate": {
+        "wallMs": 26.406750000000102,
+        "cpuMs": 9.132,
+        "syncFsyncs": 3,
+        "indexReplacements": 0
+      }
+    }
+  }
+}
