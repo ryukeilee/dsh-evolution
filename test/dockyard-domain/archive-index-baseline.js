@@ -1184,6 +1184,25 @@ const reversals = [
 ];
 
 export function reconstructPreSharedScan(source) {
+  // The archive rewrite batching change is independent of the historical
+  // shared-scan rounds below. Remove it first so the composed reconstruction
+  // still reaches the same frozen source when the working tree includes it.
+  const batchReversals = [
+    ["        let pendingLines = [];\n", ""],
+    ["            if (pendingLines.length) {\n" +
+     "              await writeFile(temporary, pendingLines.join(\"\"), { mode: 0o600 });\n" +
+     "              pendingLines = [];\n" +
+     "            }\n", ""],
+    ["          pendingLines.push(line + \"\\n\");\n", "          await appendFile(temporary, line + \"\\n\", { mode: 0o600 });\n"],
+    ["            await writeFile(temporary, pendingLines.join(\"\"), { mode: 0o600 });\n" +
+     "            pendingLines = [];\n", ""],
+    ["        if (pendingLines.length) await writeFile(temporary, pendingLines.join(\"\"), { mode: 0o600 });\n", ""],
+  ];
+  for (const [after, before] of batchReversals) {
+    assert.equal(source.split(after).length - 1, 1,
+      "archive rewrite batch shape must occur exactly once before reconstruction");
+    source = source.replace(after, before);
+  }
   source = reconstructPreObserveCache(source);
   for (const [after, before] of reversals) {
     assert.equal(source.split(after).length - 1, 1,

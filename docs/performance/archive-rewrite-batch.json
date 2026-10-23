@@ -1,0 +1,2754 @@
+{
+  "baselineCommit": "956031d36c7eb558d1b6b2c504a7d0ffac753884",
+  "baselineSourceSha256": "36353db44c00477057924ecd7241a9d5599de8f4c3c7a39704dc8004d7ea5596",
+  "candidateSourceSha256": "8f88860bbba6985ac1a76f4cc896efb1c79a408b157eafa7a3223bd9bdbd2033",
+  "benchmarkScriptSha256": "afec8d275d26f2550988ed06c374a1959ae9aa861ad1fcac9288e89c51a7aeeb",
+  "node": "v26.12.1",
+  "platform": "darwin/arm64",
+  "rounds": 5,
+  "payloadBytes": 256,
+  "archiveMaxBytes": 8388608,
+  "absoluteMaxSegmentBytes": 16777216,
+  "hotEntries": 16,
+  "hotCycles": 16,
+  "maxEntries": 10000,
+  "coldRows": [
+    384,
+    3072,
+    12288
+  ],
+  "actions": [
+    "compact",
+    "finalizeKnowledge"
+  ],
+  "results": [
+    {
+      "rowsByCollection": {
+        "observations": 144,
+        "proposals": 159,
+        "cycles": 144
+      },
+      "coldRows": 384,
+      "action": "compact",
+      "summary": {
+        "baseline": {
+          "elapsedMs": 22.23754199999999,
+          "rangeMs": [
+            21.74529199999995,
+            27.836624999999998
+          ],
+          "cpuMs": 24.269,
+          "cpuRangeMs": [
+            23.539,
+            34.986
+          ],
+          "writerCalls": {
+            "appendFile": 384,
+            "writeFile": 3
+          },
+          "writerElapsedMs": {
+            "appendFile": 12.640409000000489,
+            "writeFile": 0.20125099999995655
+          },
+          "archiveWriteBytes": {
+            "appendFile": 132204,
+            "writeFile": 0
+          },
+          "appendFileShareOfEndpoint": 57.37688544894063,
+          "writerShareOfEndpoint": 58.32835301671404
+        },
+        "batched": {
+          "elapsedMs": 9.28049999999999,
+          "rangeMs": [
+            9.243791999999985,
+            11.683875
+          ],
+          "cpuMs": 10.818,
+          "cpuRangeMs": [
+            9.683,
+            16.368
+          ],
+          "writerCalls": {
+            "appendFile": 0,
+            "writeFile": 6
+          },
+          "writerElapsedMs": {
+            "appendFile": 0,
+            "writeFile": 0.3837080000000128
+          },
+          "archiveWriteBytes": {
+            "appendFile": 0,
+            "writeFile": 132204
+          },
+          "appendFileShareOfEndpoint": 0,
+          "writerShareOfEndpoint": 4.0577986099887795
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 27.836624999999998,
+          "batchedWallMs": 11.683875,
+          "wallChangePct": -58.02696986434239,
+          "baselineCpuMs": 34.986,
+          "batchedCpuMs": 15.28,
+          "cpuChangePct": -56.32538729777625
+        },
+        {
+          "round": 2,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 21.907625000000024,
+          "batchedWallMs": 9.28049999999999,
+          "wallChangePct": -57.63803698483984,
+          "baselineCpuMs": 23.922,
+          "batchedCpuMs": 9.944,
+          "cpuChangePct": -58.43156926678371
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 22.23754199999999,
+          "batchedWallMs": 9.25287499999996,
+          "wallChangePct": -58.39074750257935,
+          "baselineCpuMs": 26.453,
+          "batchedCpuMs": 10.818,
+          "cpuChangePct": -59.10482742978112
+        },
+        {
+          "round": 4,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 22.453040999999985,
+          "batchedWallMs": 10.407917000000054,
+          "wallChangePct": -53.64584690332119,
+          "baselineCpuMs": 24.269,
+          "batchedCpuMs": 16.368,
+          "cpuChangePct": -32.55593555564712
+        },
+        {
+          "round": 5,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 21.74529199999995,
+          "batchedWallMs": 9.243791999999985,
+          "wallChangePct": -57.49060532275213,
+          "baselineCpuMs": 23.539,
+          "batchedCpuMs": 9.683,
+          "cpuChangePct": -58.86401291473724
+        }
+      ],
+      "samples": {
+        "baseline": [
+          {
+            "elapsedMs": 27.836624999999998,
+            "cpuMs": 34.986,
+            "io": {
+              "appendFile": {
+                "calls": 384,
+                "elapsedMs": 13.241954000000021,
+                "bytes": 132204
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.24200000000000443,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "d27d38b00ce5c76671ccfe6c593756b14732267ab3c4388f7894319bc003ea48",
+            "treeSha256": "d2157196e0a96a0ecfaa3891ed4cf27205e7e6e6e8e9dba01b7a62dcda8b14b3",
+            "fullStateSha256": "5dc387c6ca33046a49831a74fe51ecb4f4f7113d5ec1f530215ad57132cbf989",
+            "resultSha256": "7c17d7f8c06c26b9417d7ce8118fbbe954d0782993160ab3f5189267e8a435a1",
+            "segments": [],
+            "repeatStateSha256": "0681b5835e994412816ba54e521b900997d0fdc787be08e3852580af5c74d3b2",
+            "repeatTreeSha256": "b8974c3bbba2fba54ea33bdf990f29fdecf0f9060543456c2e9b70b1e28626aa",
+            "repeatFullStateSha256": "add3722562e173aee4c3ca80a6da8c50c9fd4275f149fe7516ae93bceaab4504",
+            "repeatResultSha256": "776a471a55c761a36315415df5c8ae3828b28094294def8b487acc9cad6c23b1",
+            "repeatArchivedRows": 369
+          },
+          {
+            "elapsedMs": 21.907625000000024,
+            "cpuMs": 23.922,
+            "io": {
+              "appendFile": {
+                "calls": 384,
+                "elapsedMs": 12.61907800000003,
+                "bytes": 132204
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.19779199999999264,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "b26dd6931086dd6895012115e7e8af8427e4c23f800fd0ce71118a1e146b1009",
+            "treeSha256": "928de2eccc64cd9fbcbbf65b98b3290509e5737ee0402eaffe1a84599b9773da",
+            "fullStateSha256": "26ae13d43921fc2e039901d6e7f71b5b28bc224e6e7f57dec33f2b9b3824105b",
+            "resultSha256": "7c17d7f8c06c26b9417d7ce8118fbbe954d0782993160ab3f5189267e8a435a1",
+            "segments": [],
+            "repeatStateSha256": "95037e3c37af0f8137b853f6bd0fe08082452aae7dfc12d9bac37d1578f2a5ee",
+            "repeatTreeSha256": "6d84b147bc207af9e0fbfd64775ccea35b159839a751cf3c7e15771cc71a72d9",
+            "repeatFullStateSha256": "2ebd453f37fd170a8a6523aaf7af807853d788bf6d07fdf1d836db9bfed4996d",
+            "repeatResultSha256": "776a471a55c761a36315415df5c8ae3828b28094294def8b487acc9cad6c23b1",
+            "repeatArchivedRows": 369
+          },
+          {
+            "elapsedMs": 22.23754199999999,
+            "cpuMs": 26.453,
+            "io": {
+              "appendFile": {
+                "calls": 384,
+                "elapsedMs": 12.759209000000055,
+                "bytes": 132204
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.2115829999999903,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "4681efad79a018610887d7bd1396d722bddc9a07e4d246e9bfd4914b83ca26a6",
+            "treeSha256": "fee3dc4422a12a4720c124fdda4578ca1734ed8f99662d8ca3400d998ce1ad49",
+            "fullStateSha256": "1c9e0f68d4372b13d8f432c68c5a7a311d91d350236cc86c37dc27bca71feed6",
+            "resultSha256": "7c17d7f8c06c26b9417d7ce8118fbbe954d0782993160ab3f5189267e8a435a1",
+            "segments": [],
+            "repeatStateSha256": "744587676c2a182ec517200b8f364add6af9df52194b3b78578bd1cedf4a5bcb",
+            "repeatTreeSha256": "43710672cb69b0b5f57a73d314983fcfc711817507b87c7a00d760b2df35518e",
+            "repeatFullStateSha256": "59afc461670b2844be21478b0fc2d25fda368a0b57e69b6ed97d3cd2b5ead1e2",
+            "repeatResultSha256": "776a471a55c761a36315415df5c8ae3828b28094294def8b487acc9cad6c23b1",
+            "repeatArchivedRows": 369
+          },
+          {
+            "elapsedMs": 22.453040999999985,
+            "cpuMs": 24.269,
+            "io": {
+              "appendFile": {
+                "calls": 384,
+                "elapsedMs": 12.640409000000489,
+                "bytes": 132204
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.19320899999996755,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "df6f3e6f87d905b54be8218b3b53611c17fef13cbc91d86d294884111fca384a",
+            "treeSha256": "605322205d25c30784c3d5ec795e3a3f964f699f38fc15da74c48c9ab0eb765b",
+            "fullStateSha256": "89d6f1adecf1105622870594ca57ef67808b6487a4fb5df0944684078d107905",
+            "resultSha256": "7c17d7f8c06c26b9417d7ce8118fbbe954d0782993160ab3f5189267e8a435a1",
+            "segments": [],
+            "repeatStateSha256": "a26badd2cc7eba50d0d3e0f139616a0b380dcf602efabafc3b68f81f5fc1c721",
+            "repeatTreeSha256": "bdd0a88a4afe27d881f9e0f8e3f552b1f9c7046e7321ef99d685c04cc902cfcd",
+            "repeatFullStateSha256": "686b396e1f9e2433e1f0e457ab700e0210eb9b02dbc4f749c9ac8e3e04c20618",
+            "repeatResultSha256": "776a471a55c761a36315415df5c8ae3828b28094294def8b487acc9cad6c23b1",
+            "repeatArchivedRows": 369
+          },
+          {
+            "elapsedMs": 21.74529199999995,
+            "cpuMs": 23.539,
+            "io": {
+              "appendFile": {
+                "calls": 384,
+                "elapsedMs": 12.629665000000102,
+                "bytes": 132204
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.20125099999995655,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "c5fa772bc6060f6a06121dc2aa165a09c9e2d381fdb522a017c0ca5f0f9e122d",
+            "treeSha256": "e569b2c959da5db3450954df267989ae1d18e09c9f47d8ed1ab9cdab3263f1ae",
+            "fullStateSha256": "276a1b9d5d184390068f69a48d2162e0e8c72320b6ca49d7701972c960707d8d",
+            "resultSha256": "7c17d7f8c06c26b9417d7ce8118fbbe954d0782993160ab3f5189267e8a435a1",
+            "segments": [],
+            "repeatStateSha256": "4a164dfdaef5a14a32147cae7e586c520a9033121744a0ae2d10b2a289bcea97",
+            "repeatTreeSha256": "615bf75fc4006ea5cae9041080ed67a4071071ebd46ffaf07ee44fabf40fb34e",
+            "repeatFullStateSha256": "ed1dfb1124d92a508d08122d7c3b77c025aa46781716578b6146b141c270f76f",
+            "repeatResultSha256": "776a471a55c761a36315415df5c8ae3828b28094294def8b487acc9cad6c23b1",
+            "repeatArchivedRows": 369
+          }
+        ],
+        "batched": [
+          {
+            "elapsedMs": 11.683875,
+            "cpuMs": 15.28,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.38541600000002063,
+                "bytes": 132204
+              }
+            },
+            "stateSha256": "d27d38b00ce5c76671ccfe6c593756b14732267ab3c4388f7894319bc003ea48",
+            "treeSha256": "d2157196e0a96a0ecfaa3891ed4cf27205e7e6e6e8e9dba01b7a62dcda8b14b3",
+            "fullStateSha256": "5dc387c6ca33046a49831a74fe51ecb4f4f7113d5ec1f530215ad57132cbf989",
+            "resultSha256": "7c17d7f8c06c26b9417d7ce8118fbbe954d0782993160ab3f5189267e8a435a1",
+            "segments": [],
+            "repeatStateSha256": "0681b5835e994412816ba54e521b900997d0fdc787be08e3852580af5c74d3b2",
+            "repeatTreeSha256": "b8974c3bbba2fba54ea33bdf990f29fdecf0f9060543456c2e9b70b1e28626aa",
+            "repeatFullStateSha256": "add3722562e173aee4c3ca80a6da8c50c9fd4275f149fe7516ae93bceaab4504",
+            "repeatResultSha256": "776a471a55c761a36315415df5c8ae3828b28094294def8b487acc9cad6c23b1",
+            "repeatArchivedRows": 369
+          },
+          {
+            "elapsedMs": 9.28049999999999,
+            "cpuMs": 9.944,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.37658400000000825,
+                "bytes": 132204
+              }
+            },
+            "stateSha256": "b26dd6931086dd6895012115e7e8af8427e4c23f800fd0ce71118a1e146b1009",
+            "treeSha256": "928de2eccc64cd9fbcbbf65b98b3290509e5737ee0402eaffe1a84599b9773da",
+            "fullStateSha256": "26ae13d43921fc2e039901d6e7f71b5b28bc224e6e7f57dec33f2b9b3824105b",
+            "resultSha256": "7c17d7f8c06c26b9417d7ce8118fbbe954d0782993160ab3f5189267e8a435a1",
+            "segments": [],
+            "repeatStateSha256": "95037e3c37af0f8137b853f6bd0fe08082452aae7dfc12d9bac37d1578f2a5ee",
+            "repeatTreeSha256": "6d84b147bc207af9e0fbfd64775ccea35b159839a751cf3c7e15771cc71a72d9",
+            "repeatFullStateSha256": "2ebd453f37fd170a8a6523aaf7af807853d788bf6d07fdf1d836db9bfed4996d",
+            "repeatResultSha256": "776a471a55c761a36315415df5c8ae3828b28094294def8b487acc9cad6c23b1",
+            "repeatArchivedRows": 369
+          },
+          {
+            "elapsedMs": 9.25287499999996,
+            "cpuMs": 10.818,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.38437499999997726,
+                "bytes": 132204
+              }
+            },
+            "stateSha256": "4681efad79a018610887d7bd1396d722bddc9a07e4d246e9bfd4914b83ca26a6",
+            "treeSha256": "fee3dc4422a12a4720c124fdda4578ca1734ed8f99662d8ca3400d998ce1ad49",
+            "fullStateSha256": "1c9e0f68d4372b13d8f432c68c5a7a311d91d350236cc86c37dc27bca71feed6",
+            "resultSha256": "7c17d7f8c06c26b9417d7ce8118fbbe954d0782993160ab3f5189267e8a435a1",
+            "segments": [],
+            "repeatStateSha256": "744587676c2a182ec517200b8f364add6af9df52194b3b78578bd1cedf4a5bcb",
+            "repeatTreeSha256": "43710672cb69b0b5f57a73d314983fcfc711817507b87c7a00d760b2df35518e",
+            "repeatFullStateSha256": "59afc461670b2844be21478b0fc2d25fda368a0b57e69b6ed97d3cd2b5ead1e2",
+            "repeatResultSha256": "776a471a55c761a36315415df5c8ae3828b28094294def8b487acc9cad6c23b1",
+            "repeatArchivedRows": 369
+          },
+          {
+            "elapsedMs": 10.407917000000054,
+            "cpuMs": 16.368,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.362583999999913,
+                "bytes": 132204
+              }
+            },
+            "stateSha256": "df6f3e6f87d905b54be8218b3b53611c17fef13cbc91d86d294884111fca384a",
+            "treeSha256": "605322205d25c30784c3d5ec795e3a3f964f699f38fc15da74c48c9ab0eb765b",
+            "fullStateSha256": "89d6f1adecf1105622870594ca57ef67808b6487a4fb5df0944684078d107905",
+            "resultSha256": "7c17d7f8c06c26b9417d7ce8118fbbe954d0782993160ab3f5189267e8a435a1",
+            "segments": [],
+            "repeatStateSha256": "a26badd2cc7eba50d0d3e0f139616a0b380dcf602efabafc3b68f81f5fc1c721",
+            "repeatTreeSha256": "bdd0a88a4afe27d881f9e0f8e3f552b1f9c7046e7321ef99d685c04cc902cfcd",
+            "repeatFullStateSha256": "686b396e1f9e2433e1f0e457ab700e0210eb9b02dbc4f749c9ac8e3e04c20618",
+            "repeatResultSha256": "776a471a55c761a36315415df5c8ae3828b28094294def8b487acc9cad6c23b1",
+            "repeatArchivedRows": 369
+          },
+          {
+            "elapsedMs": 9.243791999999985,
+            "cpuMs": 9.683,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.3837080000000128,
+                "bytes": 132204
+              }
+            },
+            "stateSha256": "c5fa772bc6060f6a06121dc2aa165a09c9e2d381fdb522a017c0ca5f0f9e122d",
+            "treeSha256": "e569b2c959da5db3450954df267989ae1d18e09c9f47d8ed1ab9cdab3263f1ae",
+            "fullStateSha256": "276a1b9d5d184390068f69a48d2162e0e8c72320b6ca49d7701972c960707d8d",
+            "resultSha256": "7c17d7f8c06c26b9417d7ce8118fbbe954d0782993160ab3f5189267e8a435a1",
+            "segments": [],
+            "repeatStateSha256": "4a164dfdaef5a14a32147cae7e586c520a9033121744a0ae2d10b2a289bcea97",
+            "repeatTreeSha256": "615bf75fc4006ea5cae9041080ed67a4071071ebd46ffaf07ee44fabf40fb34e",
+            "repeatFullStateSha256": "ed1dfb1124d92a508d08122d7c3b77c025aa46781716578b6146b141c270f76f",
+            "repeatResultSha256": "776a471a55c761a36315415df5c8ae3828b28094294def8b487acc9cad6c23b1",
+            "repeatArchivedRows": 369
+          }
+        ]
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 144,
+        "proposals": 159,
+        "cycles": 144
+      },
+      "coldRows": 384,
+      "action": "finalizeKnowledge",
+      "summary": {
+        "baseline": {
+          "elapsedMs": 22.274541999999997,
+          "rangeMs": [
+            21.131708000000003,
+            23.81016699999998
+          ],
+          "cpuMs": 24.09,
+          "cpuRangeMs": [
+            22.38,
+            25.669
+          ],
+          "writerCalls": {
+            "appendFile": 384,
+            "writeFile": 3
+          },
+          "writerElapsedMs": {
+            "appendFile": 12.620257000000606,
+            "writeFile": 0.20404199999995853
+          },
+          "archiveWriteBytes": {
+            "appendFile": 132204,
+            "writeFile": 0
+          },
+          "appendFileShareOfEndpoint": 56.95121509315163,
+          "writerShareOfEndpoint": 57.905324578137105
+        },
+        "batched": {
+          "elapsedMs": 9.149000000000001,
+          "rangeMs": [
+            8.811458000000016,
+            9.745207999999991
+          ],
+          "cpuMs": 9.603,
+          "cpuRangeMs": [
+            9.239,
+            11.719
+          ],
+          "writerCalls": {
+            "appendFile": 0,
+            "writeFile": 6
+          },
+          "writerElapsedMs": {
+            "appendFile": 0,
+            "writeFile": 0.38450200000011137
+          },
+          "archiveWriteBytes": {
+            "appendFile": 0,
+            "writeFile": 132204
+          },
+          "appendFileShareOfEndpoint": 0,
+          "writerShareOfEndpoint": 4.0978916315565295
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 23.777625,
+          "batchedWallMs": 9.745207999999991,
+          "wallChangePct": -59.015217037025394,
+          "baselineCpuMs": 25.669,
+          "batchedCpuMs": 11.719,
+          "cpuChangePct": -54.34570883166465
+        },
+        {
+          "round": 2,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 22.274541999999997,
+          "batchedWallMs": 9.149000000000001,
+          "wallChangePct": -58.9262037351879,
+          "baselineCpuMs": 24.09,
+          "batchedCpuMs": 9.603,
+          "cpuChangePct": -60.136986301369866
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 23.81016699999998,
+          "batchedWallMs": 9.071542000000022,
+          "wallChangePct": -61.90055281846604,
+          "baselineCpuMs": 24.021,
+          "batchedCpuMs": 9.317,
+          "cpuChangePct": -61.213105199617004
+        },
+        {
+          "round": 4,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 22.215374999999995,
+          "batchedWallMs": 9.517584000000056,
+          "wallChangePct": -57.15767120744053,
+          "baselineCpuMs": 24.943,
+          "batchedCpuMs": 10.592,
+          "cpuChangePct": -57.53518021088081
+        },
+        {
+          "round": 5,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 21.131708000000003,
+          "batchedWallMs": 8.811458000000016,
+          "wallChangePct": -58.302196869273345,
+          "baselineCpuMs": 22.38,
+          "batchedCpuMs": 9.239,
+          "cpuChangePct": -58.717605004468275
+        }
+      ],
+      "samples": {
+        "baseline": [
+          {
+            "elapsedMs": 23.777625,
+            "cpuMs": 25.669,
+            "io": {
+              "appendFile": {
+                "calls": 384,
+                "elapsedMs": 12.318807999999933,
+                "bytes": 132204
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.20204200000000583,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "9785310615bd315deb4206affacd120a7e582afe37a682113eea078c2d70c54c",
+            "treeSha256": "34d90e7ec8781c36bd55dbe4924acef815c778b6d232a8d19ca881e7a2d00862",
+            "fullStateSha256": "a98ce7097566fb61900b122e6bd91426caf56e1ec3ad165210b4ff878c4259b6",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "9785310615bd315deb4206affacd120a7e582afe37a682113eea078c2d70c54c",
+            "repeatTreeSha256": "34d90e7ec8781c36bd55dbe4924acef815c778b6d232a8d19ca881e7a2d00862",
+            "repeatFullStateSha256": "a98ce7097566fb61900b122e6bd91426caf56e1ec3ad165210b4ff878c4259b6",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 384
+          },
+          {
+            "elapsedMs": 22.274541999999997,
+            "cpuMs": 24.09,
+            "io": {
+              "appendFile": {
+                "calls": 384,
+                "elapsedMs": 12.620257000000606,
+                "bytes": 132204
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.20287500000006276,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "f136f2cf0f0f5172adc511ad94a7a233faf8ae21f92bf02170296407d09e31c4",
+            "treeSha256": "7d8100f0f1d017a805ff7b03c5eddb7049bf0e5c465b350149aff554e4981db9",
+            "fullStateSha256": "5732dc0b48bd6d7195ad70c264d2660f5c6d9934ff33ca47ac86a04c0b23242e",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "f136f2cf0f0f5172adc511ad94a7a233faf8ae21f92bf02170296407d09e31c4",
+            "repeatTreeSha256": "7d8100f0f1d017a805ff7b03c5eddb7049bf0e5c465b350149aff554e4981db9",
+            "repeatFullStateSha256": "5732dc0b48bd6d7195ad70c264d2660f5c6d9934ff33ca47ac86a04c0b23242e",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 384
+          },
+          {
+            "elapsedMs": 23.81016699999998,
+            "cpuMs": 24.021,
+            "io": {
+              "appendFile": {
+                "calls": 384,
+                "elapsedMs": 14.397119999999859,
+                "bytes": 132204
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.20633299999997234,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "9ddcba3e920d79ece1f25293adae3376e6e9c15b85121b9539f973b55b32d42e",
+            "treeSha256": "05f0728e4c60f3b3e5441e65ecc24787ead902901dde14286cb044f19f8038ea",
+            "fullStateSha256": "7c5732a0c9d56bc935f3942b5bc1c6d5192efb47e87bb7ef7c918fa12168c3bc",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "9ddcba3e920d79ece1f25293adae3376e6e9c15b85121b9539f973b55b32d42e",
+            "repeatTreeSha256": "05f0728e4c60f3b3e5441e65ecc24787ead902901dde14286cb044f19f8038ea",
+            "repeatFullStateSha256": "7c5732a0c9d56bc935f3942b5bc1c6d5192efb47e87bb7ef7c918fa12168c3bc",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 384
+          },
+          {
+            "elapsedMs": 22.215374999999995,
+            "cpuMs": 24.943,
+            "io": {
+              "appendFile": {
+                "calls": 384,
+                "elapsedMs": 12.65192600000023,
+                "bytes": 132204
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.2119590000000926,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "ef27245996e7724a8ea7e2060d1ccc4044324c988c4efe0d946ce9bf4110f9ec",
+            "treeSha256": "6af1710368fe3e09cf75ea88efa91418de3ca82b6a513d51c54ba71b93076a76",
+            "fullStateSha256": "c42795d94e86e60ed0b8ea9841435bdadad6451c1572f851cc20c950b145a938",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "ef27245996e7724a8ea7e2060d1ccc4044324c988c4efe0d946ce9bf4110f9ec",
+            "repeatTreeSha256": "6af1710368fe3e09cf75ea88efa91418de3ca82b6a513d51c54ba71b93076a76",
+            "repeatFullStateSha256": "c42795d94e86e60ed0b8ea9841435bdadad6451c1572f851cc20c950b145a938",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 384
+          },
+          {
+            "elapsedMs": 21.131708000000003,
+            "cpuMs": 22.38,
+            "io": {
+              "appendFile": {
+                "calls": 384,
+                "elapsedMs": 12.146259999997824,
+                "bytes": 132204
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.20404199999995853,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "c67f26a33c7b8b99fbdaa2a82517ce624a02825cfb5bf5a6edadc8ec38f3d5ce",
+            "treeSha256": "c6a6490602cb27008885ff171b5efe9655e6d1026f99fb668920a415bc8e7757",
+            "fullStateSha256": "211cdf8440078662ed5b752e142fa914e981d804d824702767dbb90a958a48fc",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "c67f26a33c7b8b99fbdaa2a82517ce624a02825cfb5bf5a6edadc8ec38f3d5ce",
+            "repeatTreeSha256": "c6a6490602cb27008885ff171b5efe9655e6d1026f99fb668920a415bc8e7757",
+            "repeatFullStateSha256": "211cdf8440078662ed5b752e142fa914e981d804d824702767dbb90a958a48fc",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 384
+          }
+        ],
+        "batched": [
+          {
+            "elapsedMs": 9.745207999999991,
+            "cpuMs": 11.719,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.40587500000009413,
+                "bytes": 132204
+              }
+            },
+            "stateSha256": "9785310615bd315deb4206affacd120a7e582afe37a682113eea078c2d70c54c",
+            "treeSha256": "34d90e7ec8781c36bd55dbe4924acef815c778b6d232a8d19ca881e7a2d00862",
+            "fullStateSha256": "a98ce7097566fb61900b122e6bd91426caf56e1ec3ad165210b4ff878c4259b6",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "9785310615bd315deb4206affacd120a7e582afe37a682113eea078c2d70c54c",
+            "repeatTreeSha256": "34d90e7ec8781c36bd55dbe4924acef815c778b6d232a8d19ca881e7a2d00862",
+            "repeatFullStateSha256": "a98ce7097566fb61900b122e6bd91426caf56e1ec3ad165210b4ff878c4259b6",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 384
+          },
+          {
+            "elapsedMs": 9.149000000000001,
+            "cpuMs": 9.603,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.3589999999998099,
+                "bytes": 132204
+              }
+            },
+            "stateSha256": "f136f2cf0f0f5172adc511ad94a7a233faf8ae21f92bf02170296407d09e31c4",
+            "treeSha256": "7d8100f0f1d017a805ff7b03c5eddb7049bf0e5c465b350149aff554e4981db9",
+            "fullStateSha256": "5732dc0b48bd6d7195ad70c264d2660f5c6d9934ff33ca47ac86a04c0b23242e",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "f136f2cf0f0f5172adc511ad94a7a233faf8ae21f92bf02170296407d09e31c4",
+            "repeatTreeSha256": "7d8100f0f1d017a805ff7b03c5eddb7049bf0e5c465b350149aff554e4981db9",
+            "repeatFullStateSha256": "5732dc0b48bd6d7195ad70c264d2660f5c6d9934ff33ca47ac86a04c0b23242e",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 384
+          },
+          {
+            "elapsedMs": 9.071542000000022,
+            "cpuMs": 9.317,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.39528999999993175,
+                "bytes": 132204
+              }
+            },
+            "stateSha256": "9ddcba3e920d79ece1f25293adae3376e6e9c15b85121b9539f973b55b32d42e",
+            "treeSha256": "05f0728e4c60f3b3e5441e65ecc24787ead902901dde14286cb044f19f8038ea",
+            "fullStateSha256": "7c5732a0c9d56bc935f3942b5bc1c6d5192efb47e87bb7ef7c918fa12168c3bc",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "9ddcba3e920d79ece1f25293adae3376e6e9c15b85121b9539f973b55b32d42e",
+            "repeatTreeSha256": "05f0728e4c60f3b3e5441e65ecc24787ead902901dde14286cb044f19f8038ea",
+            "repeatFullStateSha256": "7c5732a0c9d56bc935f3942b5bc1c6d5192efb47e87bb7ef7c918fa12168c3bc",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 384
+          },
+          {
+            "elapsedMs": 9.517584000000056,
+            "cpuMs": 10.592,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.38450200000011137,
+                "bytes": 132204
+              }
+            },
+            "stateSha256": "ef27245996e7724a8ea7e2060d1ccc4044324c988c4efe0d946ce9bf4110f9ec",
+            "treeSha256": "6af1710368fe3e09cf75ea88efa91418de3ca82b6a513d51c54ba71b93076a76",
+            "fullStateSha256": "c42795d94e86e60ed0b8ea9841435bdadad6451c1572f851cc20c950b145a938",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "ef27245996e7724a8ea7e2060d1ccc4044324c988c4efe0d946ce9bf4110f9ec",
+            "repeatTreeSha256": "6af1710368fe3e09cf75ea88efa91418de3ca82b6a513d51c54ba71b93076a76",
+            "repeatFullStateSha256": "c42795d94e86e60ed0b8ea9841435bdadad6451c1572f851cc20c950b145a938",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 384
+          },
+          {
+            "elapsedMs": 8.811458000000016,
+            "cpuMs": 9.239,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.361084000000119,
+                "bytes": 132204
+              }
+            },
+            "stateSha256": "c67f26a33c7b8b99fbdaa2a82517ce624a02825cfb5bf5a6edadc8ec38f3d5ce",
+            "treeSha256": "c6a6490602cb27008885ff171b5efe9655e6d1026f99fb668920a415bc8e7757",
+            "fullStateSha256": "211cdf8440078662ed5b752e142fa914e981d804d824702767dbb90a958a48fc",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "c67f26a33c7b8b99fbdaa2a82517ce624a02825cfb5bf5a6edadc8ec38f3d5ce",
+            "repeatTreeSha256": "c6a6490602cb27008885ff171b5efe9655e6d1026f99fb668920a415bc8e7757",
+            "repeatFullStateSha256": "211cdf8440078662ed5b752e142fa914e981d804d824702767dbb90a958a48fc",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 384
+          }
+        ]
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 1040,
+        "proposals": 1055,
+        "cycles": 1040
+      },
+      "coldRows": 3072,
+      "action": "compact",
+      "summary": {
+        "baseline": {
+          "elapsedMs": 130.6775,
+          "rangeMs": [
+            129.2757079999999,
+            136.001125
+          ],
+          "cpuMs": 147.247,
+          "cpuRangeMs": [
+            142.726,
+            168.149
+          ],
+          "writerCalls": {
+            "appendFile": 3072,
+            "writeFile": 3
+          },
+          "writerElapsedMs": {
+            "appendFile": 100.03087100000062,
+            "writeFile": 0.23420800000030795
+          },
+          "archiveWriteBytes": {
+            "appendFile": 1062396,
+            "writeFile": 0
+          },
+          "appendFileShareOfEndpoint": 76.30019623702837,
+          "writerShareOfEndpoint": 76.4752879916436
+        },
+        "batched": {
+          "elapsedMs": 30.802082999999925,
+          "rangeMs": [
+            29.9889169999999,
+            31.602666999999883
+          ],
+          "cpuMs": 41.687,
+          "cpuRangeMs": [
+            33.722,
+            45.365
+          ],
+          "writerCalls": {
+            "appendFile": 0,
+            "writeFile": 6
+          },
+          "writerElapsedMs": {
+            "appendFile": 0,
+            "writeFile": 0.7517920000000231
+          },
+          "archiveWriteBytes": {
+            "appendFile": 0,
+            "writeFile": 1062396
+          },
+          "appendFileShareOfEndpoint": 0,
+          "writerShareOfEndpoint": 2.4407180514383553
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 136.001125,
+          "batchedWallMs": 30.802082999999925,
+          "wallChangePct": -77.35159690774623,
+          "baselineCpuMs": 168.149,
+          "batchedCpuMs": 45.365,
+          "cpuChangePct": -73.02095165597179
+        },
+        {
+          "round": 2,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 130.6775,
+          "batchedWallMs": 29.9889169999999,
+          "wallChangePct": -77.05120085707188,
+          "baselineCpuMs": 147.247,
+          "batchedCpuMs": 37.941,
+          "cpuChangePct": -74.23309133632604
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 129.2757079999999,
+          "batchedWallMs": 31.602666999999883,
+          "wallChangePct": -75.55405614177731,
+          "baselineCpuMs": 142.726,
+          "batchedCpuMs": 44.193,
+          "cpuChangePct": -69.03647548449476
+        },
+        {
+          "round": 4,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 132.82174999999984,
+          "batchedWallMs": 30.048457999999982,
+          "wallChangePct": -77.37685431791101,
+          "baselineCpuMs": 153.439,
+          "batchedCpuMs": 33.722,
+          "cpuChangePct": -78.02253664322629
+        },
+        {
+          "round": 5,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 130.4310419999997,
+          "batchedWallMs": 31.136415999999826,
+          "wallChangePct": -76.12806313392797,
+          "baselineCpuMs": 143.656,
+          "batchedCpuMs": 41.687,
+          "cpuChangePct": -70.98137216684302
+        }
+      ],
+      "samples": {
+        "baseline": [
+          {
+            "elapsedMs": 136.001125,
+            "cpuMs": 168.149,
+            "io": {
+              "appendFile": {
+                "calls": 3072,
+                "elapsedMs": 103.01340799999673,
+                "bytes": 1062396
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.3358329999999796,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "8b6603c4a383115ad3dc6e391dbbe2e390921e80d767ad8a1aee0a99e7648c9b",
+            "treeSha256": "2e4906ca961a8d6439764936ec28aa4bf010fef7e9f78dc6b39d70efa95d1e0b",
+            "fullStateSha256": "27e44a0cf023a4fbf99882ce4f5546ab74a49474196583326409fe2fe0ba1d24",
+            "resultSha256": "5982c29f034fa1e5e9f9b0b4fb2fe5550d526f58cd4d47de0ef3cd4422b85eb3",
+            "segments": [],
+            "repeatStateSha256": "98dfe5b73d5fe6c0ae8b2c323c9aa06e6e7d9fcc230cf7bd3f31006d211e9801",
+            "repeatTreeSha256": "abf8bd8607c1414d2b53641e1d2e9687769cf1fa1462a39c2a512c382cb39792",
+            "repeatFullStateSha256": "480b46aa8c3130f3bb2928915ce9bb4e34e4957a9be8612cb93c2177a8e5a906",
+            "repeatResultSha256": "8006cc654e9a48b0577a14928cc2ccb6cf0791f10ce6be36afb8cb98e0d3c7b5",
+            "repeatArchivedRows": 3057
+          },
+          {
+            "elapsedMs": 130.6775,
+            "cpuMs": 147.247,
+            "io": {
+              "appendFile": {
+                "calls": 3072,
+                "elapsedMs": 100.03087100000062,
+                "bytes": 1062396
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.23420800000030795,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "6a47b219def0a820aeec15e41c528809f1922064e3cc7e8f31d01636e6024c9b",
+            "treeSha256": "32ed4236a2c3bff27b74cfa911aee100ef3579be6382eac0e6d5d90e6eb50ce3",
+            "fullStateSha256": "5d00e55a7c2f05d619223c87d57b50f13923ff29db252369abcf0270419fb31f",
+            "resultSha256": "5982c29f034fa1e5e9f9b0b4fb2fe5550d526f58cd4d47de0ef3cd4422b85eb3",
+            "segments": [],
+            "repeatStateSha256": "9757fc65d852798cf9dec9af20fe65afd73f7034e9598e2875805466c34a8593",
+            "repeatTreeSha256": "1bddb8782320196448fa3c814cf565bc1e8454ffcb3bf4e4febcce93d39fd038",
+            "repeatFullStateSha256": "a8ceab14391af20b83f5b77f93378e9149bdb6dbea36204bb7b38a93f4b32a8a",
+            "repeatResultSha256": "8006cc654e9a48b0577a14928cc2ccb6cf0791f10ce6be36afb8cb98e0d3c7b5",
+            "repeatArchivedRows": 3057
+          },
+          {
+            "elapsedMs": 129.2757079999999,
+            "cpuMs": 142.726,
+            "io": {
+              "appendFile": {
+                "calls": 3072,
+                "elapsedMs": 98.64475100001368,
+                "bytes": 1062396
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.2325829999999769,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "375964c0110b7f5eccd82f17b002e0c014bef0e2eeaa2a256b2b8922856ae63e",
+            "treeSha256": "a65122e07a31e7794106609debb8fa2df77bdc96fc0924794ad1c3b7abbdb3b1",
+            "fullStateSha256": "77ddad82dff4dbf96b60263e2282fbe38300c441982d5d8bba64488bec0df478",
+            "resultSha256": "5982c29f034fa1e5e9f9b0b4fb2fe5550d526f58cd4d47de0ef3cd4422b85eb3",
+            "segments": [],
+            "repeatStateSha256": "36b0138766a3789b526fa09f872de2a10ff0d05fb1b891c48298b453f060f7b5",
+            "repeatTreeSha256": "a84fd8fcce3492af63d0604717f89746882dd71e9c7dd1a1352eb3ef1acf1fff",
+            "repeatFullStateSha256": "76ae5294edcbd3ec6ba4ae4b93fff70dcc4877211e2c8e0a2946b50e0a24a6c0",
+            "repeatResultSha256": "8006cc654e9a48b0577a14928cc2ccb6cf0791f10ce6be36afb8cb98e0d3c7b5",
+            "repeatArchivedRows": 3057
+          },
+          {
+            "elapsedMs": 132.82174999999984,
+            "cpuMs": 153.439,
+            "io": {
+              "appendFile": {
+                "calls": 3072,
+                "elapsedMs": 100.99827199999368,
+                "bytes": 1062396
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.35300099999994927,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "eee3171d0cb55665ee6de5bdabb706586fd66e8eabff44c1026d7597ed420046",
+            "treeSha256": "4166107193b4c8ad1594c78e7448c5af2a09383893476849bca7317f9408de43",
+            "fullStateSha256": "36bbcb754d54fd43a3c7226422869761acdf9c23cca9e9b68306a6979cb24914",
+            "resultSha256": "5982c29f034fa1e5e9f9b0b4fb2fe5550d526f58cd4d47de0ef3cd4422b85eb3",
+            "segments": [],
+            "repeatStateSha256": "ebce2d052a4eb8ba9cdcf59430bbd057d09267ab0fd298674951add94e48685a",
+            "repeatTreeSha256": "78e15348bc7d10aa9c3657897df6e9023c00fb89f79e02dd4cce7c3902423068",
+            "repeatFullStateSha256": "0833444ac25ede0abb38b221f0df7c32e3c9403db821a59c359b619659141601",
+            "repeatResultSha256": "8006cc654e9a48b0577a14928cc2ccb6cf0791f10ce6be36afb8cb98e0d3c7b5",
+            "repeatArchivedRows": 3057
+          },
+          {
+            "elapsedMs": 130.4310419999997,
+            "cpuMs": 143.656,
+            "io": {
+              "appendFile": {
+                "calls": 3072,
+                "elapsedMs": 99.51914100000067,
+                "bytes": 1062396
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.22837400000071284,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "a2a3fa42ab643fd043ddedc016a9b4ad86f1c6a1613716e4b50a768ba254de04",
+            "treeSha256": "775ea8bdc25c047c4208672625a6a6fdb91c2a971b711f33f0efbeafbd49591a",
+            "fullStateSha256": "11b06c096021d74276c22c3911f19ea6ae51eac7d68650fa1002af5ca3d8cd7c",
+            "resultSha256": "5982c29f034fa1e5e9f9b0b4fb2fe5550d526f58cd4d47de0ef3cd4422b85eb3",
+            "segments": [],
+            "repeatStateSha256": "01362795be39aa07d401db95cf6390e63d70af82aeb2aa92fbfc228841293062",
+            "repeatTreeSha256": "1b64ae7fed6b70530d968629c1e4d805053f9f59ecf3760d545cff724d7224e9",
+            "repeatFullStateSha256": "c1bcf18d7dcf15a24787ea4dbcc9996d249354d8b6fe36d5abc1e5a91721762d",
+            "repeatResultSha256": "8006cc654e9a48b0577a14928cc2ccb6cf0791f10ce6be36afb8cb98e0d3c7b5",
+            "repeatArchivedRows": 3057
+          }
+        ],
+        "batched": [
+          {
+            "elapsedMs": 30.802082999999925,
+            "cpuMs": 45.365,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.7517920000000231,
+                "bytes": 1062396
+              }
+            },
+            "stateSha256": "8b6603c4a383115ad3dc6e391dbbe2e390921e80d767ad8a1aee0a99e7648c9b",
+            "treeSha256": "2e4906ca961a8d6439764936ec28aa4bf010fef7e9f78dc6b39d70efa95d1e0b",
+            "fullStateSha256": "27e44a0cf023a4fbf99882ce4f5546ab74a49474196583326409fe2fe0ba1d24",
+            "resultSha256": "5982c29f034fa1e5e9f9b0b4fb2fe5550d526f58cd4d47de0ef3cd4422b85eb3",
+            "segments": [],
+            "repeatStateSha256": "98dfe5b73d5fe6c0ae8b2c323c9aa06e6e7d9fcc230cf7bd3f31006d211e9801",
+            "repeatTreeSha256": "abf8bd8607c1414d2b53641e1d2e9687769cf1fa1462a39c2a512c382cb39792",
+            "repeatFullStateSha256": "480b46aa8c3130f3bb2928915ce9bb4e34e4957a9be8612cb93c2177a8e5a906",
+            "repeatResultSha256": "8006cc654e9a48b0577a14928cc2ccb6cf0791f10ce6be36afb8cb98e0d3c7b5",
+            "repeatArchivedRows": 3057
+          },
+          {
+            "elapsedMs": 29.9889169999999,
+            "cpuMs": 37.941,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.7088340000002518,
+                "bytes": 1062396
+              }
+            },
+            "stateSha256": "6a47b219def0a820aeec15e41c528809f1922064e3cc7e8f31d01636e6024c9b",
+            "treeSha256": "32ed4236a2c3bff27b74cfa911aee100ef3579be6382eac0e6d5d90e6eb50ce3",
+            "fullStateSha256": "5d00e55a7c2f05d619223c87d57b50f13923ff29db252369abcf0270419fb31f",
+            "resultSha256": "5982c29f034fa1e5e9f9b0b4fb2fe5550d526f58cd4d47de0ef3cd4422b85eb3",
+            "segments": [],
+            "repeatStateSha256": "9757fc65d852798cf9dec9af20fe65afd73f7034e9598e2875805466c34a8593",
+            "repeatTreeSha256": "1bddb8782320196448fa3c814cf565bc1e8454ffcb3bf4e4febcce93d39fd038",
+            "repeatFullStateSha256": "a8ceab14391af20b83f5b77f93378e9149bdb6dbea36204bb7b38a93f4b32a8a",
+            "repeatResultSha256": "8006cc654e9a48b0577a14928cc2ccb6cf0791f10ce6be36afb8cb98e0d3c7b5",
+            "repeatArchivedRows": 3057
+          },
+          {
+            "elapsedMs": 31.602666999999883,
+            "cpuMs": 44.193,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 1.627041999999392,
+                "bytes": 1062396
+              }
+            },
+            "stateSha256": "375964c0110b7f5eccd82f17b002e0c014bef0e2eeaa2a256b2b8922856ae63e",
+            "treeSha256": "a65122e07a31e7794106609debb8fa2df77bdc96fc0924794ad1c3b7abbdb3b1",
+            "fullStateSha256": "77ddad82dff4dbf96b60263e2282fbe38300c441982d5d8bba64488bec0df478",
+            "resultSha256": "5982c29f034fa1e5e9f9b0b4fb2fe5550d526f58cd4d47de0ef3cd4422b85eb3",
+            "segments": [],
+            "repeatStateSha256": "36b0138766a3789b526fa09f872de2a10ff0d05fb1b891c48298b453f060f7b5",
+            "repeatTreeSha256": "a84fd8fcce3492af63d0604717f89746882dd71e9c7dd1a1352eb3ef1acf1fff",
+            "repeatFullStateSha256": "76ae5294edcbd3ec6ba4ae4b93fff70dcc4877211e2c8e0a2946b50e0a24a6c0",
+            "repeatResultSha256": "8006cc654e9a48b0577a14928cc2ccb6cf0791f10ce6be36afb8cb98e0d3c7b5",
+            "repeatArchivedRows": 3057
+          },
+          {
+            "elapsedMs": 30.048457999999982,
+            "cpuMs": 33.722,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.6773749999999836,
+                "bytes": 1062396
+              }
+            },
+            "stateSha256": "eee3171d0cb55665ee6de5bdabb706586fd66e8eabff44c1026d7597ed420046",
+            "treeSha256": "4166107193b4c8ad1594c78e7448c5af2a09383893476849bca7317f9408de43",
+            "fullStateSha256": "36bbcb754d54fd43a3c7226422869761acdf9c23cca9e9b68306a6979cb24914",
+            "resultSha256": "5982c29f034fa1e5e9f9b0b4fb2fe5550d526f58cd4d47de0ef3cd4422b85eb3",
+            "segments": [],
+            "repeatStateSha256": "ebce2d052a4eb8ba9cdcf59430bbd057d09267ab0fd298674951add94e48685a",
+            "repeatTreeSha256": "78e15348bc7d10aa9c3657897df6e9023c00fb89f79e02dd4cce7c3902423068",
+            "repeatFullStateSha256": "0833444ac25ede0abb38b221f0df7c32e3c9403db821a59c359b619659141601",
+            "repeatResultSha256": "8006cc654e9a48b0577a14928cc2ccb6cf0791f10ce6be36afb8cb98e0d3c7b5",
+            "repeatArchivedRows": 3057
+          },
+          {
+            "elapsedMs": 31.136415999999826,
+            "cpuMs": 41.687,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 1.6529999999993379,
+                "bytes": 1062396
+              }
+            },
+            "stateSha256": "a2a3fa42ab643fd043ddedc016a9b4ad86f1c6a1613716e4b50a768ba254de04",
+            "treeSha256": "775ea8bdc25c047c4208672625a6a6fdb91c2a971b711f33f0efbeafbd49591a",
+            "fullStateSha256": "11b06c096021d74276c22c3911f19ea6ae51eac7d68650fa1002af5ca3d8cd7c",
+            "resultSha256": "5982c29f034fa1e5e9f9b0b4fb2fe5550d526f58cd4d47de0ef3cd4422b85eb3",
+            "segments": [],
+            "repeatStateSha256": "01362795be39aa07d401db95cf6390e63d70af82aeb2aa92fbfc228841293062",
+            "repeatTreeSha256": "1b64ae7fed6b70530d968629c1e4d805053f9f59ecf3760d545cff724d7224e9",
+            "repeatFullStateSha256": "c1bcf18d7dcf15a24787ea4dbcc9996d249354d8b6fe36d5abc1e5a91721762d",
+            "repeatResultSha256": "8006cc654e9a48b0577a14928cc2ccb6cf0791f10ce6be36afb8cb98e0d3c7b5",
+            "repeatArchivedRows": 3057
+          }
+        ]
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 1040,
+        "proposals": 1055,
+        "cycles": 1040
+      },
+      "coldRows": 3072,
+      "action": "finalizeKnowledge",
+      "summary": {
+        "baseline": {
+          "elapsedMs": 132.60133399999995,
+          "rangeMs": [
+            130.73975000000019,
+            135.29166699999996
+          ],
+          "cpuMs": 144.013,
+          "cpuRangeMs": [
+            142.637,
+            151.139
+          ],
+          "writerCalls": {
+            "appendFile": 3072,
+            "writeFile": 3
+          },
+          "writerElapsedMs": {
+            "appendFile": 101.74975199999744,
+            "writeFile": 0.23229099999980463
+          },
+          "archiveWriteBytes": {
+            "appendFile": 1062396,
+            "writeFile": 0
+          },
+          "appendFileShareOfEndpoint": 76.73358097588783,
+          "writerShareOfEndpoint": 76.9087609631418
+        },
+        "batched": {
+          "elapsedMs": 30.721792000000278,
+          "rangeMs": [
+            29.795208000000002,
+            31.9197079999999
+          ],
+          "cpuMs": 39.501,
+          "cpuRangeMs": [
+            31.201,
+            43.127
+          ],
+          "writerCalls": {
+            "appendFile": 0,
+            "writeFile": 6
+          },
+          "writerElapsedMs": {
+            "appendFile": 0,
+            "writeFile": 1.6854590000002645
+          },
+          "archiveWriteBytes": {
+            "appendFile": 0,
+            "writeFile": 1062396
+          },
+          "appendFileShareOfEndpoint": 0,
+          "writerShareOfEndpoint": 5.3717397274235985
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 130.73975000000019,
+          "batchedWallMs": 31.9197079999999,
+          "wallChangePct": -75.58530745240077,
+          "baselineCpuMs": 142.637,
+          "batchedCpuMs": 43.127,
+          "cpuChangePct": -69.7645071054495
+        },
+        {
+          "round": 2,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 133.58708300000035,
+          "batchedWallMs": 29.795208000000002,
+          "wallChangePct": -77.69604116589632,
+          "baselineCpuMs": 145.302,
+          "batchedCpuMs": 31.246,
+          "cpuChangePct": -78.49582249384042
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 132.40316699999994,
+          "batchedWallMs": 31.862750000000233,
+          "wallChangePct": -75.93505448400623,
+          "baselineCpuMs": 143.945,
+          "batchedCpuMs": 42.136,
+          "cpuChangePct": -70.72770849977421
+        },
+        {
+          "round": 4,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 132.60133399999995,
+          "batchedWallMs": 29.909415999999965,
+          "wallChangePct": -77.44410625612561,
+          "baselineCpuMs": 151.139,
+          "batchedCpuMs": 31.201,
+          "cpuChangePct": -79.356089427613
+        },
+        {
+          "round": 5,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 135.29166699999996,
+          "batchedWallMs": 30.721792000000278,
+          "wallChangePct": -77.29217720408435,
+          "baselineCpuMs": 144.013,
+          "batchedCpuMs": 39.501,
+          "cpuChangePct": -72.57122620874506
+        }
+      ],
+      "samples": {
+        "baseline": [
+          {
+            "elapsedMs": 130.73975000000019,
+            "cpuMs": 142.637,
+            "io": {
+              "appendFile": {
+                "calls": 3072,
+                "elapsedMs": 99.54843500001243,
+                "bytes": 1062396
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.23262400000066918,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "77e46ceb4de6989ca84b3045fba51f239c3e7b600bb396aaca3ec89b9bf5e517",
+            "treeSha256": "825a67e8f20b986bf17af1adc3a0ae9fca314ef3d0df35e79cf39dcd1fbacfff",
+            "fullStateSha256": "9db8623eb40e9e369374bc97d1e9ea9c02fc072712caeb88fe1683d5ebe66250",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "77e46ceb4de6989ca84b3045fba51f239c3e7b600bb396aaca3ec89b9bf5e517",
+            "repeatTreeSha256": "825a67e8f20b986bf17af1adc3a0ae9fca314ef3d0df35e79cf39dcd1fbacfff",
+            "repeatFullStateSha256": "9db8623eb40e9e369374bc97d1e9ea9c02fc072712caeb88fe1683d5ebe66250",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 3072
+          },
+          {
+            "elapsedMs": 133.58708300000035,
+            "cpuMs": 145.302,
+            "io": {
+              "appendFile": {
+                "calls": 3072,
+                "elapsedMs": 103.18087100000457,
+                "bytes": 1062396
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.22879100000000108,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "8f539899ef7baf97835bbf19e8d41885d0ce13e7e5fe2bf20a748f25db2624fb",
+            "treeSha256": "645a5f0fdf65fda672b3fb08cc6f51a9572f962e5f50e08154d7beea50381431",
+            "fullStateSha256": "e25bacbdf49ce24883f618e2bc59a7d44ae911c9bfabc84a4e707eb69ef63c02",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "8f539899ef7baf97835bbf19e8d41885d0ce13e7e5fe2bf20a748f25db2624fb",
+            "repeatTreeSha256": "645a5f0fdf65fda672b3fb08cc6f51a9572f962e5f50e08154d7beea50381431",
+            "repeatFullStateSha256": "e25bacbdf49ce24883f618e2bc59a7d44ae911c9bfabc84a4e707eb69ef63c02",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 3072
+          },
+          {
+            "elapsedMs": 132.40316699999994,
+            "cpuMs": 143.945,
+            "io": {
+              "appendFile": {
+                "calls": 3072,
+                "elapsedMs": 100.80170599997473,
+                "bytes": 1062396
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.23470799999995506,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "d7603740be0e06de6e60d69e2d5bd1707ea286bf342965b88de606785b14c608",
+            "treeSha256": "88108aa9f10e3b199ddd88cfe8ffdf68402837d9fc856b3fbb0f76855ca061f5",
+            "fullStateSha256": "856137e6ab7f754c3ce05d9488c42220996bdddee754f91b17d3c8763a4e3eeb",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "d7603740be0e06de6e60d69e2d5bd1707ea286bf342965b88de606785b14c608",
+            "repeatTreeSha256": "88108aa9f10e3b199ddd88cfe8ffdf68402837d9fc856b3fbb0f76855ca061f5",
+            "repeatFullStateSha256": "856137e6ab7f754c3ce05d9488c42220996bdddee754f91b17d3c8763a4e3eeb",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 3072
+          },
+          {
+            "elapsedMs": 132.60133399999995,
+            "cpuMs": 151.139,
+            "io": {
+              "appendFile": {
+                "calls": 3072,
+                "elapsedMs": 101.74975199999744,
+                "bytes": 1062396
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.23229099999980463,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "bec9a4cd6fd5db40da05fb0a8283320b9d495b2a6107ccc8fa3f9f6a62058e16",
+            "treeSha256": "d8f61ff262a7cf3d1b863e42f4d4b6e885dcc4698edc63b6ebb8a573f8955079",
+            "fullStateSha256": "993ecdf410a568a4f4caf33cbf7bfb536deb836fa0d589cb85b5e103a3e32d5d",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "bec9a4cd6fd5db40da05fb0a8283320b9d495b2a6107ccc8fa3f9f6a62058e16",
+            "repeatTreeSha256": "d8f61ff262a7cf3d1b863e42f4d4b6e885dcc4698edc63b6ebb8a573f8955079",
+            "repeatFullStateSha256": "993ecdf410a568a4f4caf33cbf7bfb536deb836fa0d589cb85b5e103a3e32d5d",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 3072
+          },
+          {
+            "elapsedMs": 135.29166699999996,
+            "cpuMs": 144.013,
+            "io": {
+              "appendFile": {
+                "calls": 3072,
+                "elapsedMs": 104.63950200000545,
+                "bytes": 1062396
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.2298329999998714,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "68da4186e99cd1b1a9b9b75cf38133cd3f3e76899005f6ee8655de34852662c9",
+            "treeSha256": "ad06e9d604166757ac9a0901cd7e357d230e54223750fd27131deae5271a9d87",
+            "fullStateSha256": "9ebd6c8b1b3a9db933dce9c0f38a47b12974f5fcec4f2493f052462702c8259a",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "68da4186e99cd1b1a9b9b75cf38133cd3f3e76899005f6ee8655de34852662c9",
+            "repeatTreeSha256": "ad06e9d604166757ac9a0901cd7e357d230e54223750fd27131deae5271a9d87",
+            "repeatFullStateSha256": "9ebd6c8b1b3a9db933dce9c0f38a47b12974f5fcec4f2493f052462702c8259a",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 3072
+          }
+        ],
+        "batched": [
+          {
+            "elapsedMs": 31.9197079999999,
+            "cpuMs": 43.127,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 2.0282909999996264,
+                "bytes": 1062396
+              }
+            },
+            "stateSha256": "77e46ceb4de6989ca84b3045fba51f239c3e7b600bb396aaca3ec89b9bf5e517",
+            "treeSha256": "825a67e8f20b986bf17af1adc3a0ae9fca314ef3d0df35e79cf39dcd1fbacfff",
+            "fullStateSha256": "9db8623eb40e9e369374bc97d1e9ea9c02fc072712caeb88fe1683d5ebe66250",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "77e46ceb4de6989ca84b3045fba51f239c3e7b600bb396aaca3ec89b9bf5e517",
+            "repeatTreeSha256": "825a67e8f20b986bf17af1adc3a0ae9fca314ef3d0df35e79cf39dcd1fbacfff",
+            "repeatFullStateSha256": "9db8623eb40e9e369374bc97d1e9ea9c02fc072712caeb88fe1683d5ebe66250",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 3072
+          },
+          {
+            "elapsedMs": 29.795208000000002,
+            "cpuMs": 31.246,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.642414999999346,
+                "bytes": 1062396
+              }
+            },
+            "stateSha256": "8f539899ef7baf97835bbf19e8d41885d0ce13e7e5fe2bf20a748f25db2624fb",
+            "treeSha256": "645a5f0fdf65fda672b3fb08cc6f51a9572f962e5f50e08154d7beea50381431",
+            "fullStateSha256": "e25bacbdf49ce24883f618e2bc59a7d44ae911c9bfabc84a4e707eb69ef63c02",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "8f539899ef7baf97835bbf19e8d41885d0ce13e7e5fe2bf20a748f25db2624fb",
+            "repeatTreeSha256": "645a5f0fdf65fda672b3fb08cc6f51a9572f962e5f50e08154d7beea50381431",
+            "repeatFullStateSha256": "e25bacbdf49ce24883f618e2bc59a7d44ae911c9bfabc84a4e707eb69ef63c02",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 3072
+          },
+          {
+            "elapsedMs": 31.862750000000233,
+            "cpuMs": 42.136,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 1.7115839999996751,
+                "bytes": 1062396
+              }
+            },
+            "stateSha256": "d7603740be0e06de6e60d69e2d5bd1707ea286bf342965b88de606785b14c608",
+            "treeSha256": "88108aa9f10e3b199ddd88cfe8ffdf68402837d9fc856b3fbb0f76855ca061f5",
+            "fullStateSha256": "856137e6ab7f754c3ce05d9488c42220996bdddee754f91b17d3c8763a4e3eeb",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "d7603740be0e06de6e60d69e2d5bd1707ea286bf342965b88de606785b14c608",
+            "repeatTreeSha256": "88108aa9f10e3b199ddd88cfe8ffdf68402837d9fc856b3fbb0f76855ca061f5",
+            "repeatFullStateSha256": "856137e6ab7f754c3ce05d9488c42220996bdddee754f91b17d3c8763a4e3eeb",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 3072
+          },
+          {
+            "elapsedMs": 29.909415999999965,
+            "cpuMs": 31.201,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 0.6674159999997755,
+                "bytes": 1062396
+              }
+            },
+            "stateSha256": "bec9a4cd6fd5db40da05fb0a8283320b9d495b2a6107ccc8fa3f9f6a62058e16",
+            "treeSha256": "d8f61ff262a7cf3d1b863e42f4d4b6e885dcc4698edc63b6ebb8a573f8955079",
+            "fullStateSha256": "993ecdf410a568a4f4caf33cbf7bfb536deb836fa0d589cb85b5e103a3e32d5d",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "bec9a4cd6fd5db40da05fb0a8283320b9d495b2a6107ccc8fa3f9f6a62058e16",
+            "repeatTreeSha256": "d8f61ff262a7cf3d1b863e42f4d4b6e885dcc4698edc63b6ebb8a573f8955079",
+            "repeatFullStateSha256": "993ecdf410a568a4f4caf33cbf7bfb536deb836fa0d589cb85b5e103a3e32d5d",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 3072
+          },
+          {
+            "elapsedMs": 30.721792000000278,
+            "cpuMs": 39.501,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 1.6854590000002645,
+                "bytes": 1062396
+              }
+            },
+            "stateSha256": "68da4186e99cd1b1a9b9b75cf38133cd3f3e76899005f6ee8655de34852662c9",
+            "treeSha256": "ad06e9d604166757ac9a0901cd7e357d230e54223750fd27131deae5271a9d87",
+            "fullStateSha256": "9ebd6c8b1b3a9db933dce9c0f38a47b12974f5fcec4f2493f052462702c8259a",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "68da4186e99cd1b1a9b9b75cf38133cd3f3e76899005f6ee8655de34852662c9",
+            "repeatTreeSha256": "ad06e9d604166757ac9a0901cd7e357d230e54223750fd27131deae5271a9d87",
+            "repeatFullStateSha256": "9ebd6c8b1b3a9db933dce9c0f38a47b12974f5fcec4f2493f052462702c8259a",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 3072
+          }
+        ]
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 4112,
+        "proposals": 4127,
+        "cycles": 4112
+      },
+      "coldRows": 12288,
+      "action": "compact",
+      "summary": {
+        "baseline": {
+          "elapsedMs": 516.5545829999992,
+          "rangeMs": [
+            510.76224999999977,
+            524.2558749999998
+          ],
+          "cpuMs": 574.359,
+          "cpuRangeMs": [
+            561.587,
+            589.112
+          ],
+          "writerCalls": {
+            "appendFile": 12288,
+            "writeFile": 3
+          },
+          "writerElapsedMs": {
+            "appendFile": 409.60187400008545,
+            "writeFile": 0.2616669999997612
+          },
+          "archiveWriteBytes": {
+            "appendFile": 4269564,
+            "writeFile": 0
+          },
+          "appendFileShareOfEndpoint": 79.51377651735727,
+          "writerShareOfEndpoint": 79.58544234622386
+        },
+        "batched": {
+          "elapsedMs": 102.57129199999963,
+          "rangeMs": [
+            99.75437499999862,
+            105.13316699999996
+          ],
+          "cpuMs": 140.698,
+          "cpuRangeMs": [
+            130.08,
+            145.903
+          ],
+          "writerCalls": {
+            "appendFile": 0,
+            "writeFile": 6
+          },
+          "writerElapsedMs": {
+            "appendFile": 0,
+            "writeFile": 3.732915999999932
+          },
+          "archiveWriteBytes": {
+            "appendFile": 0,
+            "writeFile": 4269564
+          },
+          "appendFileShareOfEndpoint": 0,
+          "writerShareOfEndpoint": 3.6586545702865174
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 510.76224999999977,
+          "batchedWallMs": 105.13316699999996,
+          "wallChangePct": -79.41641791263939,
+          "baselineCpuMs": 589.112,
+          "batchedCpuMs": 145.903,
+          "cpuChangePct": -75.23340213745435
+        },
+        {
+          "round": 2,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 517.8987079999997,
+          "batchedWallMs": 103.65208299999995,
+          "wallChangePct": -79.98603174735088,
+          "baselineCpuMs": 561.587,
+          "batchedCpuMs": 143.752,
+          "cpuChangePct": -74.4025413693693
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 516.5545829999992,
+          "batchedWallMs": 102.41791600000033,
+          "wallChangePct": -80.17287632892796,
+          "baselineCpuMs": 574.359,
+          "batchedCpuMs": 134.638,
+          "cpuChangePct": -76.55856354649269
+        },
+        {
+          "round": 4,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 524.2558749999998,
+          "batchedWallMs": 102.57129199999963,
+          "wallChangePct": -80.43487981894344,
+          "baselineCpuMs": 586.657,
+          "batchedCpuMs": 130.08,
+          "cpuChangePct": -77.82690737517835
+        },
+        {
+          "round": 5,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 511.46583400000054,
+          "batchedWallMs": 99.75437499999862,
+          "wallChangePct": -80.49637563865146,
+          "baselineCpuMs": 572.719,
+          "batchedCpuMs": 140.698,
+          "cpuChangePct": -75.43332768774914
+        }
+      ],
+      "samples": {
+        "baseline": [
+          {
+            "elapsedMs": 510.76224999999977,
+            "cpuMs": 589.112,
+            "io": {
+              "appendFile": {
+                "calls": 12288,
+                "elapsedMs": 406.12635400002546,
+                "bytes": 4269564
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.3660420000001068,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "3c33306bce9fe1384942912e4be331f26acba40067987d3e338d4b8e35cdee56",
+            "treeSha256": "d569eb7b3add13b1ac2bf1ebc0635163777a6e0960b8dfbed253778ade8bbebb",
+            "fullStateSha256": "07a9388bcf91190396f216eff17741e70f14346d3fb276e13f55cc410d14ec5e",
+            "resultSha256": "f9e074e05730ed28a350d55e1811e690a891233b7581d59e42e550cbfa94335e",
+            "segments": [],
+            "repeatStateSha256": "c4eb4241d7b9cff4a70ed3a98aa0520a5db0324883c83856702b65c70c8192a6",
+            "repeatTreeSha256": "333472d0ede5013a0032a2f2b50961e97571ef30724d7788da408dce842940b0",
+            "repeatFullStateSha256": "45721dea8c18d6bf4b9657ec43bab1d66625122b10440bb0f2de3fec03e664ec",
+            "repeatResultSha256": "42719aff32ee6efa0629e6955fbe96af57c337be6a612b48e6cf8840e34940b4",
+            "repeatArchivedRows": 12273
+          },
+          {
+            "elapsedMs": 517.8987079999997,
+            "cpuMs": 561.587,
+            "io": {
+              "appendFile": {
+                "calls": 12288,
+                "elapsedMs": 410.99852599998485,
+                "bytes": 4269564
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.2616669999997612,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "432168be61b93a560ab26b2b3c8f89396e2296fad200de2dd1b817716b0af3e9",
+            "treeSha256": "d9737949508f58379ac69b17cc9bac2bd03e6559ad92e10c459b2a3bac3198bc",
+            "fullStateSha256": "89043023f2cfcdc42ea886559d28215bf8f0b646e0c49c1823e0fbaeeb0dc11e",
+            "resultSha256": "f9e074e05730ed28a350d55e1811e690a891233b7581d59e42e550cbfa94335e",
+            "segments": [],
+            "repeatStateSha256": "19f7892f8326dea8b61e892484ce5a58543ac5f2a429724dee16e625dff6da19",
+            "repeatTreeSha256": "1c6f7e1cc695aae19be8464434ed46be1f8308879527a03c9fa8da5309a19d50",
+            "repeatFullStateSha256": "1eb9f276d7223b3083bc9d3415b9f523bc86c60715ee8fc425a297a5a614c7cb",
+            "repeatResultSha256": "42719aff32ee6efa0629e6955fbe96af57c337be6a612b48e6cf8840e34940b4",
+            "repeatArchivedRows": 12273
+          },
+          {
+            "elapsedMs": 516.5545829999992,
+            "cpuMs": 574.359,
+            "io": {
+              "appendFile": {
+                "calls": 12288,
+                "elapsedMs": 409.27902500002347,
+                "bytes": 4269564
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.3431249999994179,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "b853d35ea5990fa3d224f2624737b463c5ef0dc39f36c0c99e507896664c0ecc",
+            "treeSha256": "db4761b9ab1c7428288bb8f64612effebe8440e0e31f5b69a671923bac3bc845",
+            "fullStateSha256": "d4d96379fb9e672eff5cb9b43ba5c4d3f809c81c9b007c7b21c3796bb98f7a71",
+            "resultSha256": "f9e074e05730ed28a350d55e1811e690a891233b7581d59e42e550cbfa94335e",
+            "segments": [],
+            "repeatStateSha256": "0d4db7b3c036c31f262c59c10f7db3dad43767bb4b3c1d4187d0e6209dad0f46",
+            "repeatTreeSha256": "62aca602ce67af032906e83fc8f205e12955dd6ed993e012634c06004ab8c740",
+            "repeatFullStateSha256": "ed438cca37c2f21311bd9ed032008d72e0c875596858d74818740e5c2ff4d451",
+            "repeatResultSha256": "42719aff32ee6efa0629e6955fbe96af57c337be6a612b48e6cf8840e34940b4",
+            "repeatArchivedRows": 12273
+          },
+          {
+            "elapsedMs": 524.2558749999998,
+            "cpuMs": 586.657,
+            "io": {
+              "appendFile": {
+                "calls": 12288,
+                "elapsedMs": 418.2817720000885,
+                "bytes": 4269564
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.25866599999881146,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "eeef319553bc1bd525c4da22b49f07c510e3cbaf862d9412aedf47d8d20cdaec",
+            "treeSha256": "3d05a211dee84a94b9abc672aecb50bf1a1f775c9aa66bf829ea765593fd41ff",
+            "fullStateSha256": "8d0304be2cc78d3eb84938fc4fc781276aee64114f1ac5b55febdb3cdfa3c101",
+            "resultSha256": "f9e074e05730ed28a350d55e1811e690a891233b7581d59e42e550cbfa94335e",
+            "segments": [],
+            "repeatStateSha256": "62fe6e34cbba2b2c4f4bb5479e8944e35a0b1f36386f1f3d97e995ebc849cf91",
+            "repeatTreeSha256": "99dc4b807d7ee6f9dad5a221e4cb92d0008568c916b9a8b922c4040f564aea3a",
+            "repeatFullStateSha256": "5d34b99ea55e1ed08f5c219ec438a4ddb07f044afb76b1fa5e6b8e77ce1034e9",
+            "repeatResultSha256": "42719aff32ee6efa0629e6955fbe96af57c337be6a612b48e6cf8840e34940b4",
+            "repeatArchivedRows": 12273
+          },
+          {
+            "elapsedMs": 511.46583400000054,
+            "cpuMs": 572.719,
+            "io": {
+              "appendFile": {
+                "calls": 12288,
+                "elapsedMs": 409.60187400008545,
+                "bytes": 4269564
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.25158399999963876,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "5a4edb2045d397ad61c1f2611d5c9433c53157e14781699fc00df2f1bba50639",
+            "treeSha256": "f388463aff93d9a64bfc8e6bebe1f8638936b1acc3f71a61c4090e026c51c503",
+            "fullStateSha256": "21477d54a428a6294e22a8e029c695e82238873e89ca6ea1f6921ead0ebd931d",
+            "resultSha256": "f9e074e05730ed28a350d55e1811e690a891233b7581d59e42e550cbfa94335e",
+            "segments": [],
+            "repeatStateSha256": "7fe99ac5d37d4d6ff9c31a139ed8beb44894ba40d2f4202ccc791fd62bde3d0d",
+            "repeatTreeSha256": "3bee57ffbaf46e4f791189d1c4d34beca3a57a1d007caa4ebf3f72be527e2a64",
+            "repeatFullStateSha256": "3a8d20eece3a8f9b77be3a92d74a0b778473eb2df6b7819b9098a2f69881625c",
+            "repeatResultSha256": "42719aff32ee6efa0629e6955fbe96af57c337be6a612b48e6cf8840e34940b4",
+            "repeatArchivedRows": 12273
+          }
+        ],
+        "batched": [
+          {
+            "elapsedMs": 105.13316699999996,
+            "cpuMs": 145.903,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 3.8488329999991038,
+                "bytes": 4269564
+              }
+            },
+            "stateSha256": "3c33306bce9fe1384942912e4be331f26acba40067987d3e338d4b8e35cdee56",
+            "treeSha256": "d569eb7b3add13b1ac2bf1ebc0635163777a6e0960b8dfbed253778ade8bbebb",
+            "fullStateSha256": "07a9388bcf91190396f216eff17741e70f14346d3fb276e13f55cc410d14ec5e",
+            "resultSha256": "f9e074e05730ed28a350d55e1811e690a891233b7581d59e42e550cbfa94335e",
+            "segments": [],
+            "repeatStateSha256": "c4eb4241d7b9cff4a70ed3a98aa0520a5db0324883c83856702b65c70c8192a6",
+            "repeatTreeSha256": "333472d0ede5013a0032a2f2b50961e97571ef30724d7788da408dce842940b0",
+            "repeatFullStateSha256": "45721dea8c18d6bf4b9657ec43bab1d66625122b10440bb0f2de3fec03e664ec",
+            "repeatResultSha256": "42719aff32ee6efa0629e6955fbe96af57c337be6a612b48e6cf8840e34940b4",
+            "repeatArchivedRows": 12273
+          },
+          {
+            "elapsedMs": 103.65208299999995,
+            "cpuMs": 143.752,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 2.8397070000000895,
+                "bytes": 4269564
+              }
+            },
+            "stateSha256": "432168be61b93a560ab26b2b3c8f89396e2296fad200de2dd1b817716b0af3e9",
+            "treeSha256": "d9737949508f58379ac69b17cc9bac2bd03e6559ad92e10c459b2a3bac3198bc",
+            "fullStateSha256": "89043023f2cfcdc42ea886559d28215bf8f0b646e0c49c1823e0fbaeeb0dc11e",
+            "resultSha256": "f9e074e05730ed28a350d55e1811e690a891233b7581d59e42e550cbfa94335e",
+            "segments": [],
+            "repeatStateSha256": "19f7892f8326dea8b61e892484ce5a58543ac5f2a429724dee16e625dff6da19",
+            "repeatTreeSha256": "1c6f7e1cc695aae19be8464434ed46be1f8308879527a03c9fa8da5309a19d50",
+            "repeatFullStateSha256": "1eb9f276d7223b3083bc9d3415b9f523bc86c60715ee8fc425a297a5a614c7cb",
+            "repeatResultSha256": "42719aff32ee6efa0629e6955fbe96af57c337be6a612b48e6cf8840e34940b4",
+            "repeatArchivedRows": 12273
+          },
+          {
+            "elapsedMs": 102.41791600000033,
+            "cpuMs": 134.638,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 3.732915999999932,
+                "bytes": 4269564
+              }
+            },
+            "stateSha256": "b853d35ea5990fa3d224f2624737b463c5ef0dc39f36c0c99e507896664c0ecc",
+            "treeSha256": "db4761b9ab1c7428288bb8f64612effebe8440e0e31f5b69a671923bac3bc845",
+            "fullStateSha256": "d4d96379fb9e672eff5cb9b43ba5c4d3f809c81c9b007c7b21c3796bb98f7a71",
+            "resultSha256": "f9e074e05730ed28a350d55e1811e690a891233b7581d59e42e550cbfa94335e",
+            "segments": [],
+            "repeatStateSha256": "0d4db7b3c036c31f262c59c10f7db3dad43767bb4b3c1d4187d0e6209dad0f46",
+            "repeatTreeSha256": "62aca602ce67af032906e83fc8f205e12955dd6ed993e012634c06004ab8c740",
+            "repeatFullStateSha256": "ed438cca37c2f21311bd9ed032008d72e0c875596858d74818740e5c2ff4d451",
+            "repeatResultSha256": "42719aff32ee6efa0629e6955fbe96af57c337be6a612b48e6cf8840e34940b4",
+            "repeatArchivedRows": 12273
+          },
+          {
+            "elapsedMs": 102.57129199999963,
+            "cpuMs": 130.08,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 3.7706669999988662,
+                "bytes": 4269564
+              }
+            },
+            "stateSha256": "eeef319553bc1bd525c4da22b49f07c510e3cbaf862d9412aedf47d8d20cdaec",
+            "treeSha256": "3d05a211dee84a94b9abc672aecb50bf1a1f775c9aa66bf829ea765593fd41ff",
+            "fullStateSha256": "8d0304be2cc78d3eb84938fc4fc781276aee64114f1ac5b55febdb3cdfa3c101",
+            "resultSha256": "f9e074e05730ed28a350d55e1811e690a891233b7581d59e42e550cbfa94335e",
+            "segments": [],
+            "repeatStateSha256": "62fe6e34cbba2b2c4f4bb5479e8944e35a0b1f36386f1f3d97e995ebc849cf91",
+            "repeatTreeSha256": "99dc4b807d7ee6f9dad5a221e4cb92d0008568c916b9a8b922c4040f564aea3a",
+            "repeatFullStateSha256": "5d34b99ea55e1ed08f5c219ec438a4ddb07f044afb76b1fa5e6b8e77ce1034e9",
+            "repeatResultSha256": "42719aff32ee6efa0629e6955fbe96af57c337be6a612b48e6cf8840e34940b4",
+            "repeatArchivedRows": 12273
+          },
+          {
+            "elapsedMs": 99.75437499999862,
+            "cpuMs": 140.698,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 3.6496679999982007,
+                "bytes": 4269564
+              }
+            },
+            "stateSha256": "5a4edb2045d397ad61c1f2611d5c9433c53157e14781699fc00df2f1bba50639",
+            "treeSha256": "f388463aff93d9a64bfc8e6bebe1f8638936b1acc3f71a61c4090e026c51c503",
+            "fullStateSha256": "21477d54a428a6294e22a8e029c695e82238873e89ca6ea1f6921ead0ebd931d",
+            "resultSha256": "f9e074e05730ed28a350d55e1811e690a891233b7581d59e42e550cbfa94335e",
+            "segments": [],
+            "repeatStateSha256": "7fe99ac5d37d4d6ff9c31a139ed8beb44894ba40d2f4202ccc791fd62bde3d0d",
+            "repeatTreeSha256": "3bee57ffbaf46e4f791189d1c4d34beca3a57a1d007caa4ebf3f72be527e2a64",
+            "repeatFullStateSha256": "3a8d20eece3a8f9b77be3a92d74a0b778473eb2df6b7819b9098a2f69881625c",
+            "repeatResultSha256": "42719aff32ee6efa0629e6955fbe96af57c337be6a612b48e6cf8840e34940b4",
+            "repeatArchivedRows": 12273
+          }
+        ]
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 4112,
+        "proposals": 4127,
+        "cycles": 4112
+      },
+      "coldRows": 12288,
+      "action": "finalizeKnowledge",
+      "summary": {
+        "baseline": {
+          "elapsedMs": 526.9835419999999,
+          "rangeMs": [
+            518.1727080000001,
+            536.9747500000012
+          ],
+          "cpuMs": 609.307,
+          "cpuRangeMs": [
+            577.591,
+            651.328
+          ],
+          "writerCalls": {
+            "appendFile": 12288,
+            "writeFile": 3
+          },
+          "writerElapsedMs": {
+            "appendFile": 420.84983499994996,
+            "writeFile": 0.26208299999962037
+          },
+          "archiveWriteBytes": {
+            "appendFile": 4269564,
+            "writeFile": 0
+          },
+          "appendFileShareOfEndpoint": 79.86014770077013,
+          "writerShareOfEndpoint": 79.9098803734462
+        },
+        "batched": {
+          "elapsedMs": 102.4060419999987,
+          "rangeMs": [
+            101.97662499999933,
+            107.23737500000061
+          ],
+          "cpuMs": 132.132,
+          "cpuRangeMs": [
+            126.891,
+            171.656
+          ],
+          "writerCalls": {
+            "appendFile": 0,
+            "writeFile": 6
+          },
+          "writerElapsedMs": {
+            "appendFile": 0,
+            "writeFile": 3.2822509999987233
+          },
+          "archiveWriteBytes": {
+            "appendFile": 0,
+            "writeFile": 4269564
+          },
+          "appendFileShareOfEndpoint": 0,
+          "writerShareOfEndpoint": 3.20513412675276
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 532.85275,
+          "batchedWallMs": 104.53670799999963,
+          "wallChangePct": -80.38168931285432,
+          "baselineCpuMs": 620.121,
+          "batchedCpuMs": 132.132,
+          "cpuChangePct": -78.69254548709041
+        },
+        {
+          "round": 2,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 521.7877499999995,
+          "batchedWallMs": 102.03750000000036,
+          "wallChangePct": -80.44463481559303,
+          "baselineCpuMs": 585.397,
+          "batchedCpuMs": 171.656,
+          "cpuChangePct": -70.67699356163423
+        },
+        {
+          "round": 3,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 518.1727080000001,
+          "batchedWallMs": 107.23737500000061,
+          "wallChangePct": -79.30470413737024,
+          "baselineCpuMs": 577.591,
+          "batchedCpuMs": 126.891,
+          "cpuChangePct": -78.03099425025667
+        },
+        {
+          "round": 4,
+          "order": [
+            "batched",
+            "baseline"
+          ],
+          "baselineWallMs": 526.9835419999999,
+          "batchedWallMs": 102.4060419999987,
+          "wallChangePct": -80.56750660346074,
+          "baselineCpuMs": 609.307,
+          "batchedCpuMs": 130.759,
+          "cpuChangePct": -78.53971807315524
+        },
+        {
+          "round": 5,
+          "order": [
+            "baseline",
+            "batched"
+          ],
+          "baselineWallMs": 536.9747500000012,
+          "batchedWallMs": 101.97662499999933,
+          "wallChangePct": -81.00904651475715,
+          "baselineCpuMs": 651.328,
+          "batchedCpuMs": 166.019,
+          "cpuChangePct": -74.51069200157217
+        }
+      ],
+      "samples": {
+        "baseline": [
+          {
+            "elapsedMs": 532.85275,
+            "cpuMs": 620.121,
+            "io": {
+              "appendFile": {
+                "calls": 12288,
+                "elapsedMs": 424.05540699997437,
+                "bytes": 4269564
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.2616249999991851,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "f7ebc7674ac8c16dc4f41460c12bdaa57fbeb07df3caaf051d3f190d483558ef",
+            "treeSha256": "5b2892fac644339faf8cd929c33fc2eef1b56117c426047c96c923aa9fc1aa9d",
+            "fullStateSha256": "298b4d3ca9285f8f7472b281a26b53728b0495b064a5ca8f4d1209ec20c57c98",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "f7ebc7674ac8c16dc4f41460c12bdaa57fbeb07df3caaf051d3f190d483558ef",
+            "repeatTreeSha256": "5b2892fac644339faf8cd929c33fc2eef1b56117c426047c96c923aa9fc1aa9d",
+            "repeatFullStateSha256": "298b4d3ca9285f8f7472b281a26b53728b0495b064a5ca8f4d1209ec20c57c98",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 12288
+          },
+          {
+            "elapsedMs": 521.7877499999995,
+            "cpuMs": 585.397,
+            "io": {
+              "appendFile": {
+                "calls": 12288,
+                "elapsedMs": 416.90212100002645,
+                "bytes": 4269564
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.23691699999835691,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "07dec53cfc65457a876895fe9772c79318deb014b327deb879e15841996185fd",
+            "treeSha256": "2aa8b371bc29ce91f689c81cd9769b0e34bac6002db8419b9284d9b16e827b8a",
+            "fullStateSha256": "0abd52f9812f4f810fb5aeb327af901d6f66de9a1a85cda2d1108da1718b1012",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "07dec53cfc65457a876895fe9772c79318deb014b327deb879e15841996185fd",
+            "repeatTreeSha256": "2aa8b371bc29ce91f689c81cd9769b0e34bac6002db8419b9284d9b16e827b8a",
+            "repeatFullStateSha256": "0abd52f9812f4f810fb5aeb327af901d6f66de9a1a85cda2d1108da1718b1012",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 12288
+          },
+          {
+            "elapsedMs": 518.1727080000001,
+            "cpuMs": 577.591,
+            "io": {
+              "appendFile": {
+                "calls": 12288,
+                "elapsedMs": 412.7901909998982,
+                "bytes": 4269564
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.34366599999884784,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "bc5f8b52963906ebbaa9eb40ed561387901441edac838bc11e91558bf4dea058",
+            "treeSha256": "48d5b31bc1a40f95683994790bdd4c76225218852745a47c1ce769b64e65cd7e",
+            "fullStateSha256": "8258482927e0bbd32ebebd6ab61087763c9dfd82082ba7547be656f41214101b",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "bc5f8b52963906ebbaa9eb40ed561387901441edac838bc11e91558bf4dea058",
+            "repeatTreeSha256": "48d5b31bc1a40f95683994790bdd4c76225218852745a47c1ce769b64e65cd7e",
+            "repeatFullStateSha256": "8258482927e0bbd32ebebd6ab61087763c9dfd82082ba7547be656f41214101b",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 12288
+          },
+          {
+            "elapsedMs": 526.9835419999999,
+            "cpuMs": 609.307,
+            "io": {
+              "appendFile": {
+                "calls": 12288,
+                "elapsedMs": 420.84983499994996,
+                "bytes": 4269564
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.26208299999962037,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "916c838e6cb26a09e82250d36d1f97365ffea41fc12ee470b49fc56716093313",
+            "treeSha256": "c47a01c7f0578a2975d4f3074fe95a17443cebc4cc81f172b336f937e08ef900",
+            "fullStateSha256": "7ca7725a52de44caff87140c93acc785e8112c4a0b20215fd6ca71ab2b500f5e",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "916c838e6cb26a09e82250d36d1f97365ffea41fc12ee470b49fc56716093313",
+            "repeatTreeSha256": "c47a01c7f0578a2975d4f3074fe95a17443cebc4cc81f172b336f937e08ef900",
+            "repeatFullStateSha256": "7ca7725a52de44caff87140c93acc785e8112c4a0b20215fd6ca71ab2b500f5e",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 12288
+          },
+          {
+            "elapsedMs": 536.9747500000012,
+            "cpuMs": 651.328,
+            "io": {
+              "appendFile": {
+                "calls": 12288,
+                "elapsedMs": 433.16403800021,
+                "bytes": 4269564
+              },
+              "writeFile": {
+                "calls": 3,
+                "elapsedMs": 0.35991699999976845,
+                "bytes": 0
+              }
+            },
+            "stateSha256": "7540871b24b2ea184329d4e727baf8d93d472bc7bf89762f2bae297066a8ef9d",
+            "treeSha256": "4e2938c341c661f1b39705c644d327ff3eff600863adf147421d11fc2cbf56af",
+            "fullStateSha256": "a21af4abdeb919543f3090e3aa3957d272d02b0b15795b91d78b21a278655544",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "7540871b24b2ea184329d4e727baf8d93d472bc7bf89762f2bae297066a8ef9d",
+            "repeatTreeSha256": "4e2938c341c661f1b39705c644d327ff3eff600863adf147421d11fc2cbf56af",
+            "repeatFullStateSha256": "a21af4abdeb919543f3090e3aa3957d272d02b0b15795b91d78b21a278655544",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 12288
+          }
+        ],
+        "batched": [
+          {
+            "elapsedMs": 104.53670799999963,
+            "cpuMs": 132.132,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 3.6602079999993293,
+                "bytes": 4269564
+              }
+            },
+            "stateSha256": "f7ebc7674ac8c16dc4f41460c12bdaa57fbeb07df3caaf051d3f190d483558ef",
+            "treeSha256": "5b2892fac644339faf8cd929c33fc2eef1b56117c426047c96c923aa9fc1aa9d",
+            "fullStateSha256": "298b4d3ca9285f8f7472b281a26b53728b0495b064a5ca8f4d1209ec20c57c98",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "f7ebc7674ac8c16dc4f41460c12bdaa57fbeb07df3caaf051d3f190d483558ef",
+            "repeatTreeSha256": "5b2892fac644339faf8cd929c33fc2eef1b56117c426047c96c923aa9fc1aa9d",
+            "repeatFullStateSha256": "298b4d3ca9285f8f7472b281a26b53728b0495b064a5ca8f4d1209ec20c57c98",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 12288
+          },
+          {
+            "elapsedMs": 102.03750000000036,
+            "cpuMs": 171.656,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 3.6767090000030294,
+                "bytes": 4269564
+              }
+            },
+            "stateSha256": "07dec53cfc65457a876895fe9772c79318deb014b327deb879e15841996185fd",
+            "treeSha256": "2aa8b371bc29ce91f689c81cd9769b0e34bac6002db8419b9284d9b16e827b8a",
+            "fullStateSha256": "0abd52f9812f4f810fb5aeb327af901d6f66de9a1a85cda2d1108da1718b1012",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "07dec53cfc65457a876895fe9772c79318deb014b327deb879e15841996185fd",
+            "repeatTreeSha256": "2aa8b371bc29ce91f689c81cd9769b0e34bac6002db8419b9284d9b16e827b8a",
+            "repeatFullStateSha256": "0abd52f9812f4f810fb5aeb327af901d6f66de9a1a85cda2d1108da1718b1012",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 12288
+          },
+          {
+            "elapsedMs": 107.23737500000061,
+            "cpuMs": 126.891,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 1.5874980000007781,
+                "bytes": 4269564
+              }
+            },
+            "stateSha256": "bc5f8b52963906ebbaa9eb40ed561387901441edac838bc11e91558bf4dea058",
+            "treeSha256": "48d5b31bc1a40f95683994790bdd4c76225218852745a47c1ce769b64e65cd7e",
+            "fullStateSha256": "8258482927e0bbd32ebebd6ab61087763c9dfd82082ba7547be656f41214101b",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "bc5f8b52963906ebbaa9eb40ed561387901441edac838bc11e91558bf4dea058",
+            "repeatTreeSha256": "48d5b31bc1a40f95683994790bdd4c76225218852745a47c1ce769b64e65cd7e",
+            "repeatFullStateSha256": "8258482927e0bbd32ebebd6ab61087763c9dfd82082ba7547be656f41214101b",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 12288
+          },
+          {
+            "elapsedMs": 102.4060419999987,
+            "cpuMs": 130.759,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 3.2822509999987233,
+                "bytes": 4269564
+              }
+            },
+            "stateSha256": "916c838e6cb26a09e82250d36d1f97365ffea41fc12ee470b49fc56716093313",
+            "treeSha256": "c47a01c7f0578a2975d4f3074fe95a17443cebc4cc81f172b336f937e08ef900",
+            "fullStateSha256": "7ca7725a52de44caff87140c93acc785e8112c4a0b20215fd6ca71ab2b500f5e",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "916c838e6cb26a09e82250d36d1f97365ffea41fc12ee470b49fc56716093313",
+            "repeatTreeSha256": "c47a01c7f0578a2975d4f3074fe95a17443cebc4cc81f172b336f937e08ef900",
+            "repeatFullStateSha256": "7ca7725a52de44caff87140c93acc785e8112c4a0b20215fd6ca71ab2b500f5e",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 12288
+          },
+          {
+            "elapsedMs": 101.97662499999933,
+            "cpuMs": 166.019,
+            "io": {
+              "appendFile": {
+                "calls": 0,
+                "elapsedMs": 0,
+                "bytes": 0
+              },
+              "writeFile": {
+                "calls": 6,
+                "elapsedMs": 3.218542000000525,
+                "bytes": 4269564
+              }
+            },
+            "stateSha256": "7540871b24b2ea184329d4e727baf8d93d472bc7bf89762f2bae297066a8ef9d",
+            "treeSha256": "4e2938c341c661f1b39705c644d327ff3eff600863adf147421d11fc2cbf56af",
+            "fullStateSha256": "a21af4abdeb919543f3090e3aa3957d272d02b0b15795b91d78b21a278655544",
+            "resultSha256": "0af86e1c03bad6600cf8d639b0fb74c42a77c53c5c7aabb86ae0a05d02ccd16b",
+            "segments": [],
+            "repeatStateSha256": "7540871b24b2ea184329d4e727baf8d93d472bc7bf89762f2bae297066a8ef9d",
+            "repeatTreeSha256": "4e2938c341c661f1b39705c644d327ff3eff600863adf147421d11fc2cbf56af",
+            "repeatFullStateSha256": "a21af4abdeb919543f3090e3aa3957d272d02b0b15795b91d78b21a278655544",
+            "repeatResultSha256": "62ea891c1a6d60e7f79d751b9f6884dc0e01ea6fb0a6863ce6472fa0e0d9ab37",
+            "repeatArchivedRows": 12288
+          }
+        ]
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 144,
+        "proposals": 159,
+        "cycles": 144
+      },
+      "coldRows": 384,
+      "action": "compact",
+      "fault": "temporary-write",
+      "failure": {
+        "baseline": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "batched": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "inMemoryStateEqual": true,
+        "fullStateEqual": true,
+        "durableTreesEqual": true,
+        "temporaryProjectionEqual": true,
+        "restartStateEqual": true,
+        "restartFullStateEqual": true,
+        "durableTreeSha256": {
+          "baseline": "2678ecb8ed69bfe08d364a21f79e6d2504dde6a1f79d79f83c812fd6370f4318",
+          "batched": "2678ecb8ed69bfe08d364a21f79e6d2504dde6a1f79d79f83c812fd6370f4318"
+        },
+        "temporaryArtifacts": {
+          "baseline": [
+            {
+              "path": "state.json.observations-archive.jsonl.compact-TOKEN.tmp",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          ],
+          "batched": [
+            {
+              "path": "state.json.observations-archive.jsonl.compact-TOKEN.tmp",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          ]
+        },
+        "restartStateSha256": {
+          "baseline": "2eb7664e2b0f169e9b25935770a725fed0229c7f4fcad419277406c7dfad7f19",
+          "batched": "2eb7664e2b0f169e9b25935770a725fed0229c7f4fcad419277406c7dfad7f19"
+        },
+        "restartFullStateSha256": {
+          "baseline": "ff561aea1bc4682b3903cde1dbcf44bd6042697392d1eddd2d5b838236706d2b",
+          "batched": "ff561aea1bc4682b3903cde1dbcf44bd6042697392d1eddd2d5b838236706d2b"
+        },
+        "restartDurableTreeSha256": {
+          "baseline": "2678ecb8ed69bfe08d364a21f79e6d2504dde6a1f79d79f83c812fd6370f4318",
+          "batched": "2678ecb8ed69bfe08d364a21f79e6d2504dde6a1f79d79f83c812fd6370f4318"
+        },
+        "temporaryFilesLeft": {
+          "baseline": 1,
+          "batched": 1
+        }
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 144,
+        "proposals": 159,
+        "cycles": 144
+      },
+      "coldRows": 384,
+      "action": "compact",
+      "fault": "partial-write",
+      "failure": {
+        "baseline": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "batched": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "inMemoryStateEqual": true,
+        "fullStateEqual": true,
+        "durableTreesEqual": true,
+        "temporaryProjectionEqual": true,
+        "restartStateEqual": true,
+        "restartFullStateEqual": true,
+        "durableTreeSha256": {
+          "baseline": "6e24635e06b560dc10472482ae47f13c6df0e5ca36d7b45a83e4177aeb9053ca",
+          "batched": "6e24635e06b560dc10472482ae47f13c6df0e5ca36d7b45a83e4177aeb9053ca"
+        },
+        "temporaryArtifacts": {
+          "baseline": [
+            {
+              "path": "state.json.observations-archive.jsonl.compact-TOKEN.tmp",
+              "sha256": "30b809b59c2abc3de0f4e15b96791cdb9db3fc434cd8f0bca6703f7b5517abbc"
+            }
+          ],
+          "batched": [
+            {
+              "path": "state.json.observations-archive.jsonl.compact-TOKEN.tmp",
+              "sha256": "30b809b59c2abc3de0f4e15b96791cdb9db3fc434cd8f0bca6703f7b5517abbc"
+            }
+          ]
+        },
+        "restartStateSha256": {
+          "baseline": "22672767cacd23e5dd521b25df4e01e0295a13607523ffcf06576440124f447c",
+          "batched": "22672767cacd23e5dd521b25df4e01e0295a13607523ffcf06576440124f447c"
+        },
+        "restartFullStateSha256": {
+          "baseline": "3fae67bbf0d7bb92e66455d6b3fbbb81e3fc3b55d5b29be5c909157bcc3ea0c7",
+          "batched": "3fae67bbf0d7bb92e66455d6b3fbbb81e3fc3b55d5b29be5c909157bcc3ea0c7"
+        },
+        "restartDurableTreeSha256": {
+          "baseline": "6e24635e06b560dc10472482ae47f13c6df0e5ca36d7b45a83e4177aeb9053ca",
+          "batched": "6e24635e06b560dc10472482ae47f13c6df0e5ca36d7b45a83e4177aeb9053ca"
+        },
+        "temporaryFilesLeft": {
+          "baseline": 1,
+          "batched": 1
+        }
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 144,
+        "proposals": 159,
+        "cycles": 144
+      },
+      "coldRows": 384,
+      "action": "compact",
+      "fault": "state-save",
+      "failure": {
+        "baseline": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "batched": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "inMemoryStateEqual": true,
+        "fullStateEqual": true,
+        "durableTreesEqual": true,
+        "temporaryProjectionEqual": true,
+        "restartStateEqual": true,
+        "restartFullStateEqual": true,
+        "durableTreeSha256": {
+          "baseline": "9b2b611f9931460c39fef1677af181c620c597c84e41a183f0879ae5e015dcbd",
+          "batched": "9b2b611f9931460c39fef1677af181c620c597c84e41a183f0879ae5e015dcbd"
+        },
+        "temporaryArtifacts": {
+          "baseline": [],
+          "batched": []
+        },
+        "restartStateSha256": {
+          "baseline": "a9243383c825cbb0f341d19b16fb205842dd0aa7acca9b8c6a813953883b4638",
+          "batched": "a9243383c825cbb0f341d19b16fb205842dd0aa7acca9b8c6a813953883b4638"
+        },
+        "restartFullStateSha256": {
+          "baseline": "bfebbbce7468cfa43983267c4b809bdcd0b85431a6f2ed23d6be26d49494b213",
+          "batched": "bfebbbce7468cfa43983267c4b809bdcd0b85431a6f2ed23d6be26d49494b213"
+        },
+        "restartDurableTreeSha256": {
+          "baseline": "5a1f35c8e4744dbf19ac9c46310fb53761ec09c0cdca87b67e309ca314924e44",
+          "batched": "5a1f35c8e4744dbf19ac9c46310fb53761ec09c0cdca87b67e309ca314924e44"
+        },
+        "temporaryFilesLeft": {
+          "baseline": 0,
+          "batched": 0
+        }
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 144,
+        "proposals": 159,
+        "cycles": 144
+      },
+      "coldRows": 384,
+      "action": "finalizeKnowledge",
+      "fault": "temporary-write",
+      "failure": {
+        "baseline": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "batched": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "inMemoryStateEqual": true,
+        "fullStateEqual": true,
+        "durableTreesEqual": true,
+        "temporaryProjectionEqual": true,
+        "restartStateEqual": true,
+        "restartFullStateEqual": true,
+        "durableTreeSha256": {
+          "baseline": "d549bafec8bab4a43a5c297a995b3ad9911230dfc9d6d217624f99fd89a04c01",
+          "batched": "d549bafec8bab4a43a5c297a995b3ad9911230dfc9d6d217624f99fd89a04c01"
+        },
+        "temporaryArtifacts": {
+          "baseline": [
+            {
+              "path": "state.json.observations-archive.jsonl.compact-TOKEN.tmp",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          ],
+          "batched": [
+            {
+              "path": "state.json.observations-archive.jsonl.compact-TOKEN.tmp",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          ]
+        },
+        "restartStateSha256": {
+          "baseline": "1b6dbc35973041829b572a67173966d13327d04cbfc848f4d1f9df6281798d73",
+          "batched": "1b6dbc35973041829b572a67173966d13327d04cbfc848f4d1f9df6281798d73"
+        },
+        "restartFullStateSha256": {
+          "baseline": "7ac207486a8be337a6e73c769b8beb766f3666c3be847325c7b7767b6ac623b5",
+          "batched": "7ac207486a8be337a6e73c769b8beb766f3666c3be847325c7b7767b6ac623b5"
+        },
+        "restartDurableTreeSha256": {
+          "baseline": "d549bafec8bab4a43a5c297a995b3ad9911230dfc9d6d217624f99fd89a04c01",
+          "batched": "d549bafec8bab4a43a5c297a995b3ad9911230dfc9d6d217624f99fd89a04c01"
+        },
+        "temporaryFilesLeft": {
+          "baseline": 1,
+          "batched": 1
+        }
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 144,
+        "proposals": 159,
+        "cycles": 144
+      },
+      "coldRows": 384,
+      "action": "finalizeKnowledge",
+      "fault": "partial-write",
+      "failure": {
+        "baseline": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "batched": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "inMemoryStateEqual": true,
+        "fullStateEqual": true,
+        "durableTreesEqual": true,
+        "temporaryProjectionEqual": true,
+        "restartStateEqual": true,
+        "restartFullStateEqual": true,
+        "durableTreeSha256": {
+          "baseline": "b4b8e66e963fda9ef1151872935e307d216122dcbf4309b5a2f562cf2901734b",
+          "batched": "b4b8e66e963fda9ef1151872935e307d216122dcbf4309b5a2f562cf2901734b"
+        },
+        "temporaryArtifacts": {
+          "baseline": [
+            {
+              "path": "state.json.observations-archive.jsonl.compact-TOKEN.tmp",
+              "sha256": "30b809b59c2abc3de0f4e15b96791cdb9db3fc434cd8f0bca6703f7b5517abbc"
+            }
+          ],
+          "batched": [
+            {
+              "path": "state.json.observations-archive.jsonl.compact-TOKEN.tmp",
+              "sha256": "30b809b59c2abc3de0f4e15b96791cdb9db3fc434cd8f0bca6703f7b5517abbc"
+            }
+          ]
+        },
+        "restartStateSha256": {
+          "baseline": "b44ce3e7801f3b46209e8294dcd5850a1a2df0e70b5c550700456b6e14a5455e",
+          "batched": "b44ce3e7801f3b46209e8294dcd5850a1a2df0e70b5c550700456b6e14a5455e"
+        },
+        "restartFullStateSha256": {
+          "baseline": "72fb477a8be640a1a9fbcd3cfdbdc282ef04bd898d95bc35aea7cc1b4a3aaaf7",
+          "batched": "72fb477a8be640a1a9fbcd3cfdbdc282ef04bd898d95bc35aea7cc1b4a3aaaf7"
+        },
+        "restartDurableTreeSha256": {
+          "baseline": "b4b8e66e963fda9ef1151872935e307d216122dcbf4309b5a2f562cf2901734b",
+          "batched": "b4b8e66e963fda9ef1151872935e307d216122dcbf4309b5a2f562cf2901734b"
+        },
+        "temporaryFilesLeft": {
+          "baseline": 1,
+          "batched": 1
+        }
+      }
+    },
+    {
+      "rowsByCollection": {
+        "observations": 144,
+        "proposals": 159,
+        "cycles": 144
+      },
+      "coldRows": 384,
+      "action": "finalizeKnowledge",
+      "fault": "state-save",
+      "failure": {
+        "baseline": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "batched": {
+          "name": "Error",
+          "code": "EIO",
+          "message": "EIO: injected compact temporary-file write failure"
+        },
+        "inMemoryStateEqual": true,
+        "fullStateEqual": true,
+        "durableTreesEqual": true,
+        "temporaryProjectionEqual": true,
+        "restartStateEqual": true,
+        "restartFullStateEqual": true,
+        "durableTreeSha256": {
+          "baseline": "d92dc4ac772f36107697d0ce1b5aa1504c7afee2fea8ee684aa69ee248b19c07",
+          "batched": "d92dc4ac772f36107697d0ce1b5aa1504c7afee2fea8ee684aa69ee248b19c07"
+        },
+        "temporaryArtifacts": {
+          "baseline": [],
+          "batched": []
+        },
+        "restartStateSha256": {
+          "baseline": "0c69ed965244ea26c356670eef11d3a3870b80adf2c4e7ce64025d04912201c3",
+          "batched": "0c69ed965244ea26c356670eef11d3a3870b80adf2c4e7ce64025d04912201c3"
+        },
+        "restartFullStateSha256": {
+          "baseline": "622c95b070677eb64ae5748c151255f75c4ab8a86f9600e94b579f5a782694aa",
+          "batched": "622c95b070677eb64ae5748c151255f75c4ab8a86f9600e94b579f5a782694aa"
+        },
+        "restartDurableTreeSha256": {
+          "baseline": "3e70ce5d405260dd9b31ff0cf93c1f496db3e1e88df90c97cc4374e43ad9332d",
+          "batched": "3e70ce5d405260dd9b31ff0cf93c1f496db3e1e88df90c97cc4374e43ad9332d"
+        },
+        "temporaryFilesLeft": {
+          "baseline": 0,
+          "batched": 0
+        }
+      }
+    }
+  ]
+}
