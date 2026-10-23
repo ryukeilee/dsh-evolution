@@ -33,15 +33,17 @@ const { JsonStorageBackend } = await import('@deepseek-ai/dsh-storage-json');
  *     would have succeeded, and a non-object argument starts throwing instead of
  *     being digested.
  *
- * The cases below are the counterexamples that withdrew it. The first five are
- * written against the current single-serialization implementation and fail for any
- * cache built on reading the table twice (measured: re-adding the withdrawn cache
- * fails four of them). The port-level case pins the outcome chain that such a
- * digest protects - a marker table installed through the official handle must still
- * reach per-record verification and refuse the conflict - and is a behavioural pin
- * of the pass rather than a discriminator of the cache, because whether the cache
- * can be made to serve a stale value there depends on how many reads the official
- * write path itself performs.
+ * The cases below are the counterexamples that withdrew it, written against the
+ * single-serialization implementation that remains. Measured discrimination (two
+ * implementations re-injected into a scratch copy of `lib/`): both caches fail 6 of
+ * these 7 cases, in different sets - the content-comparison cache still passes the
+ * port-level case, and the object-identity cache still answers the extra-read case
+ * from what it remembered. The port-level case pins the outcome chain such a digest protects - a
+ * marker table installed through the official handle must still reach per-record
+ * verification and refuse the conflicting MAC - and it discriminates an
+ * identity-keyed cache but not a content-comparing one, because how many reads the
+ * official write path itself performs decides whether the latter can be made to
+ * serve a stale value there.
  */
 const KEY = 'b'.repeat(64);
 const uncached = (applied) => crypto.createHash('sha256').update(JSON.stringify(applied)).digest('hex');
@@ -71,20 +73,24 @@ test('the digest reads each own enumerable key exactly once per call', () => {
   }
 });
 
-test('every call digests the reads of that call, not a value remembered from an earlier one', () => {
-  // The exact shape that served a stale digest: correct on the first read, a
-  // different value afterwards. A call that remembered the first digest would
-  // certify content the table no longer reports.
-  let produced = 'a'.repeat(64);
+test('a one-shot read is never remembered: the digest follows every call', () => {
+  // The exact shape that served a stale digest, and the reason a snapshot is not a
+  // substitute for the serialization: the getter reports A on its first read and B
+  // on every read after that. A cache that hashes first and snapshots second stores
+  // the digest of A against a snapshot of B, so every later comparison "matches" and
+  // the digest never describes the table again.
+  let reads = 0;
   const table = {};
   Object.defineProperty(table, 'evolution:measurement-completed:flip', { enumerable: true, configurable: true,
-    get: () => produced });
-  const first = digestApplied(table);
-  assert.equal(first, uncached({ 'evolution:measurement-completed:flip': 'a'.repeat(64) }));
-  produced = 'b'.repeat(64);
+    get: () => (reads++ === 0 ? 'a'.repeat(64) : 'b'.repeat(64)) });
+  assert.equal(digestApplied(table), uncached({ 'evolution:measurement-completed:flip': 'a'.repeat(64) }),
+    'the first call must digest the value it read');
   const second = digestApplied(table);
-  assert.equal(second, uncached({ 'evolution:measurement-completed:flip': 'b'.repeat(64) }));
-  assert.notEqual(second, first);
+  assert.equal(second, uncached({ 'evolution:measurement-completed:flip': 'b'.repeat(64) }),
+    'the second call must digest the value it reads, not the one remembered');
+  const third = digestApplied(table);
+  assert.equal(third, second, 'once the read settles, every call agrees');
+  assert.equal(reads, 3, 'one read per call, no more');
 });
 
 test('a non-object argument is digested by JSON semantics instead of throwing', () => {
