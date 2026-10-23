@@ -11,8 +11,8 @@
 
 原始数据：[`domain-flush-steady-cost.json`](domain-flush-steady-cost.json)，脚本
 [`scripts/benchmarks/domain-flush-steady-cost.mjs`](../../scripts/benchmarks/domain-flush-steady-cost.mjs)。
-环境：Node `v26.12.1` / `darwin/arm64`，8 逻辑 CPU；开始/结束 load average
-`1.44/1.50/1.56` → `1.82/1.60/1.60`。
+环境：Node `v26.12.1` / `darwin/arm64`，8 逻辑 CPU；最终一轮数据采集的开始/结束 load average
+`1.27/1.59/1.79` → `1.63/1.65/1.80`。
 
 ## 1. 路径与形状
 
@@ -35,19 +35,19 @@
 
 | 阶段 | 200 条历史 | 2000 条 | 20000 条 |
 | --- | ---: | ---: | ---: |
-| `plan.readEventLog`（读日志 + 前缀 HMAC） | 0.104 | 0.639 | 5.545 |
-| `plan.digestApplied`（标记表 JSON + SHA-256） | 0.050 | 0.432 | 5.111 |
-| `plan.checkpointRead` | 0.024 | 0.022 | 0.044 |
+| `plan.readEventLog`（读日志 + 前缀 HMAC） | 0.100 | 0.620 | 5.562 |
+| `plan.digestApplied`（标记表 JSON + SHA-256） | 0.045 | 0.431 | 5.158 |
+| `plan.checkpointRead` | 0.023 | 0.024 | 0.044 |
 | `plan.tail` | 0.001 | 0.001 | 0.001 |
-| `plan.total` | 0.195 | 1.111 | 10.726 |
+| `plan.total` | 0.182 | 1.090 | 10.790 |
 
 同档的端到端稳态 flush（5 轮 × 15 样本中位数，`wall` 与 `cpu` 在这条路径上相同）：
 
 | 历史 | flush | 读日志字节 | `readSync` | 摘要字节 | 其中标记表 JSON | 文档写入 / `sync()` |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 200 | 0.17 ms | 127,168 | 2 | 152,412 | 24,493 | 0 / 0 |
-| 2000 | 1.07 ms | 1,279,572 | 3 | 1,527,220 | 246,894 | 0 / 0 |
-| 20000 | 10.65 ms | 12,875,576 | 14 | 15,365,228 | 2,488,895 | 0 / 0 |
+| 200 | 0.181 ms | 127,168 | 2 | 152,412 | 24,493 | 0 / 0 |
+| 2000 | 1.062 ms | 1,279,572 | 3 | 1,527,220 | 246,894 | 0 / 0 |
+| 20000 | 10.765 ms | 12,875,576 | 14 | 15,365,228 | 2,488,895 | 0 / 0 |
 
 读法是：稳态 flush 的一半是把日志前缀读一遍并做 HMAC（字节级认证，见 §7），另一半是
 `sha256(JSON.stringify(applied))`——**纯 JS 侧的序列化 + 哈希，不碰磁盘**，20000 条标记时
@@ -89,7 +89,7 @@ return digest;
 | 根级 `toJSON`（自有不可枚举）输出从 `first` 变为 `second` | 摘要跟着变 | 摘要冻结（`Object.keys` 看不到它） |
 | 数组形状的表，`length` 1→3（JSON 变 `["a",null,null]`） | 摘要跟着变 | 摘要冻结 |
 | getter 第二次读取抛错 | 返回摘要（只读一次） | 抛 `second read`（**多读了一次**） |
-| `digestApplied(null)` / `digestApplied('marker')` | 返回 `"null"` / `"\"marker\""` 的摘要 | 抛 `TypeError`（`WeakMap` 键必须是对象） |
+| `digestApplied(null)` / `digestApplied('marker')` | 返回 `"null"` / `"\"marker\""` 的摘要 | 抛 `TypeError`（`Object.keys(null)` / `WeakMap` 键必须是对象） |
 
 其中第一条是最危险的：`JSON.stringify` 读到的是 `A`，而快照记录的是 `B`，两者被绑在同一个
 条目上，于是后续每一次「内容比较」都通过，摘要长期偏离真实字节、直到键集或值再变一次才自愈。
@@ -125,25 +125,31 @@ node scripts/benchmarks/domain-flush-steady-cost.mjs --rounds 5 --samples 15 --w
 ```
 
 脚本在同一套 fixture、同一个真实官方后端上跑三侧：`committed`（本工作树）、`memo-content`
-（§3.1 的候选）、`memo-identity`（只按对象身份缓存，作为「更糙的同一方向」对照）。两侧的
-`lib/` 由精确子串补丁生成，补丁找不到 `digestApplied` 的唯一单行实现就失败；脚本还会断言
-本工作树里**没有** `APPLIED_DIGEST_MEMO` / `appliedContentMatches` / `appliedSnapshot` 这些
-撤回标记，避免把同一份代码比较两次。
+（§3.1 的候选）、`memo-identity`（只按对象身份缓存，作为「更糙的同一方向」对照）。三侧在
+**同一组轮次里交替先后**（每轮把起跑位往后挪一位，`results[].order` 记录每轮的实际顺序），
+所以三档数字不来自「先测完一侧再测另一侧」。两侧的 `lib/` 由精确子串补丁生成，补丁找不到
+`digestApplied` 的唯一单行实现就失败；脚本还会断言本工作树里**没有**
+`APPLIED_DIGEST_MEMO` / `appliedContentMatches` / `appliedSnapshot` 这些撤回标记，避免把同一份
+代码比较两次。`--rounds`/`--samples`/`--attribution-samples`/`--behavior-history` 都要求正整数，
+`--scenario` 过滤为空会直接失败（否则测量段会静默跳过）。
 
-稳态 `flush()`，3 轮 × 15 样本中位数：
+稳态 `flush()`，5 轮 × 15 样本中位数：
 
 | 历史 | `committed` | `memo-content` | Δ | `memo-identity` | Δ |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 200 | 0.170 ms | 0.122 ms | **-28.2%** | 0.117 ms | **-31.4%** |
-| 2000 | 1.07 ms | 0.73 ms | **-31.6%** | 0.65 ms | **-38.6%** |
-| 20000 | 10.65 ms | 7.15 ms | **-32.9%** | 5.46 ms | **-48.7%** |
+| 200 | 0.181 ms | 0.137 ms | **-24.5%** | 0.127 ms | **-30.2%** |
+| 2000 | 1.062 ms | 0.737 ms | **-30.6%** | 0.652 ms | **-38.6%** |
+| 20000 | 10.765 ms | 7.209 ms | **-33.0%** | 5.463 ms | **-49.3%** |
 
-逐轮数值（`committed` 20000 档）：`10.673 / 10.633 / 10.562 / 10.648 / 10.698`；
-`memo-content`：`7.150 / 7.131 / 7.178`；`memo-identity`：`5.458 / 5.458 / 5.449`。
-三档都分离，所以收益本身是确凿的——**被撤回的是它换来的语义，不是它的速度**。
+逐轮墙钟（20000 档）：`committed` `10.752 / 10.733 / 11.876 / 10.765 / 10.782`（第 3 轮有一次
+后台负载离群值，中位数与另四轮一致）；`memo-content` `7.209 / 7.177 / 7.225 / 7.247 / 7.207`；
+`memo-identity` `5.463 / 5.461 / 5.461 / 5.516 / 5.502`。三档的逐轮区间都不重叠
+（200 档 `0.160–0.190` 对 `0.119–0.144`、`0.119–0.138`；2000 档 `1.049–1.078` 对
+`0.710–0.741`、`0.647–0.655`），所以收益本身是确凿的——**被撤回的是它换来的语义，不是它的速度**。
 
-提交形状（20000 历史 / 1 条新事件）只用于说明本轮没有别的改动：`59.06 ms` 墙钟 /
-`50.80 ms` CPU，每 pass 1 次整份文档写入、2 次 `FileHandle.sync()`、37+37 次 `readdirSync`。
+提交形状（20000 历史 / 1 条新事件）只用于说明本轮没有别的改动：`59.74 ms` 墙钟 /
+`51.42 ms` CPU，每 pass 1 次整份文档写入、2 次 `FileHandle.sync()`、37+37 次 `readdirSync`、
+4 次 `readFileSync`。
 
 ## 6. 机制计数
 
@@ -161,8 +167,11 @@ node scripts/benchmarks/domain-flush-steady-cost.mjs --rounds 5 --samples 15 --w
 
 ## 7. 收益边界，以及剩余成本为什么保留
 
-- 可省的份额 = 「标记表序列化 + 哈希」在稳态 flush 里的占比：20000 条时约 33%，2000 条约
-  32%，200 条约 28%，随标记数与日志读取速度变化。
+- 要区分两个数：「标记表序列化 + 哈希」这一阶段在稳态 flush 里的**占比**是
+  `5.158 / 10.790 = 47.8%`（20000 条档）；而**净收益**只有 33%，因为命中路径仍要用
+  `Object.keys()` 加逐键比较把「未变」证明出来（审查另测的收窄版命中成本是 1.935 ms，
+  见 §12.3），那部分要从中扣掉。2000 条档占比 39.5%、净收益 30.6%；200 条档占比 24.7%、
+  净收益 24.5%。
 - 保留的份额是必要成本：`plan.readEventLog` 是已消费前缀的**字节级认证**（20000 条档占稳态
   的 52%）。检查点的全部意义是「这段字节仍是当初认证过的那段」，除重新读并重新哈希它以外
   没有别的证明方式；用文件 `size`/`mtime`/`ctime`/`dev`+`ino` 之类元数据替代就是把证明降级，
@@ -180,6 +189,7 @@ node scripts/benchmarks/domain-flush-steady-cost.mjs --rounds 5 --samples 15 --w
 | 候选 | 结论 | 依据 |
 | --- | --- | --- |
 | 内容比较缓存复用标记表摘要 | 已实现、已测量、**已撤回** | §3.3 五组反例；`redundant-work.md` §4.1 同类先例 |
+| 「逐键 `getOwnPropertyDescriptor` + 排除 Proxy/数组/根级 `toJSON`」的收窄缓存 | **下一轮候选，本轮不实现** | §12.3：第二轮审查在 `/tmp` 实测稳态 `10.726 → 7.579 ms`（-29.3%），并给出了等价性论证的骨架；但它是新的认证语义改动，需要独立的对抗性审查与专门回归，本轮交付窗口内不引入 |
 | 只按对象身份复用 | 不做 | §3.3 的第一条与端口回退场景直接击穿 |
 | 只比键集 / 只比长度 | 不做 | 改 MAC 值就检测不到 |
 | 用「端口 schema 只产出纯数据对象」作为安全前提 | 不做 | 那是对调用方行为的假设，`digestApplied` 是导出函数，活对象形状可被官方句柄改变 |
@@ -205,8 +215,71 @@ npm run release:verify
 
 ## 11. 本轮实际执行的检查
 
-（见文末。）
+| 检查 | 命令 | 结果 |
+| --- | --- | --- |
+| 领域存储全部单测 | `NODE_OPTIONS=--max-old-space-size=4096 node --test test/domain-storage/` | **86 项全部通过**（含新增的 7 项读形状回归） |
+| 全量回归 | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | **707 项全部通过** |
+| 分发内容 | `npm run pack:check` | 全部通过；本树仍是固定产物的开发后继 |
+| 固定产物 | `npm run release:verify` | 与 `release/manifest.json` 一致：`d0c119f0…` / content `fb4e77b5…`，51 个条目 |
+| 本树未改生产代码 | `shasum -a 256 lib/event-log-checkpoint.js lib/domain-storage.js` | `7242a96b…` / `18f13f3a…`，与 `git show 01cf14e:lib/…` 相同（JSON 的 `sources` 记录同一对值） |
+| 回归的鉴别力（注入验证） | 把 §3.1 的缓存与「仅对象身份」缓存分别注入 `lib/` 的 `/tmp` 副本后跑新回归 | `committed` 7/7 通过；两种注入各 **6/7 失败**（失败集合不同） |
+| 测量 | `node scripts/benchmarks/domain-flush-steady-cost.mjs --rounds 5 --samples 15 --warmup 3 --attribution-samples 9` | 见 §2/§5/§6 与 JSON；三侧交替轮次、5 个探针、6 个行为场景、4 个冻结时钟持久字节场景全部按断言通过 |
+
+最终一轮数据采集期间 load average `1.27/1.59/1.79` → `1.63/1.65/1.80`；全程
+`--max-old-space-size=4096`，没有用临时下载的 Node 发行版。
 
 ## 12. 独立审核记录
 
-（见文末。）
+### 12.1 第一轮 Review（阻塞，直接导致撤回）
+
+独立 Review（另一模型、medium 推理档）对**当时已实现**的缓存给出「阻塞交付」，三条 blocking：
+
+1. 未命中路径「先序列化、再取快照、再比较」不能证明快照与哈希字节一致（一次性 getter
+   反例），并给出端口级复现：基线第二趟抛 `E_DOMAIN_EVENT_ID_CONFLICT`，候选第二趟报告
+   `{applied: 0, duplicates: 3}`；
+2. 缓存覆盖面与 `JSON.stringify` 不一致：根级 `toJSON`（自有不可枚举 / 继承）与数组
+   `length` 都被 `Object.keys` 漏掉，却改变字节；
+3. 未命中路径比基线多读，可能抛错（本轮实测：`digestApplied(null)` 从返回摘要变成
+   `TypeError`）。
+
+non-blocking：文档把归因均值写成中位数、未命中枚举次数描述不准、200/3 的逐轮区间描述不准、
+候选源码哈希未绑定最终文件、行为对拍缺少独立预期断言。
+
+处置：撤回生产改动；把反例固化为 `test/domain-storage/applied-digest-read-shape.test.js`；
+重写基准为「测量 + 变体 + 探针 + 显式断言的拒绝/恢复」；文档改为「测量 + 撤回」，并把归因
+口径、区间、源码哈希与断言都改为上文的形式。
+
+### 12.2 第一轮 Test（对抗性复核）
+
+独立 Test（另一模型、high 推理档）在**已实现缓存的版本**上做了差分模糊测试（其报告列举的
+11 次运行、每次 1,494–2,104 条断言，合计约 1.96 万条，0 失败；覆盖整数样键、自有 `__proto__`、
+孤立代理项、3000 键表、`toJSON` 值、非字符串值、逐键删除/回填/改值），并独立复现了 5 处不等价（根级 `toJSON`、数组 `length`、一次性 getter
+长期偏离真值、非对象入参抛错、端口级「活对象读取不稳定时仍信任检查点」）。它同时给出两条
+对撤回决定重要的边界：
+
+- 端口自身的写入路径（`evolutionDomainSpec.global.schema.parse`）会剥掉非枚举 `toJSON` 与
+  访问器、并拒绝数组，所以这些形状只能经由直接 `global.set(恶意文档)` 或就地
+  `defineProperty` 注入；
+- 一个能控制自身序列化的伪造 `toJSON` 在**当前实现**下同样能绕过 `appliedDigest`——那是输入
+  本身撒谎的既有边界，不是缓存引入的。
+
+这两条也解释了为什么 §3.3 的第一条反例（一次性 getter）是撤回的核心依据：它不需要伪造
+序列化，只需要读取不稳定。
+
+### 12.3 第二轮 Review
+
+第二轮 Review（同一角色，对 `e6c57ad`）确认上一轮三条 blocking 都已解除、回撤彻底
+（`git diff 01cf14e HEAD -- lib` 为空，`lib` tree ID 两侧同为 `e4327ddf…`，两个源码 SHA-256
+与 JSON 一致），但就**证据口径**给出 1 条 blocking 与 4 条 non-blocking，全部已处理：
+
+| 发现 | 处置 |
+| --- | --- |
+| blocking：脚本与 JSON 的 `protocol.order` 声称轮次交替，实际按实现分组运行 | 重写为「同一组轮次里三侧按轮换顺序交替」，每轮顺序记录到 `results[].order`；重新采集全部数据（§5 的数字与 §2 的归因都来自这一轮） |
+| non-blocking：把「逐键 `getOwnPropertyDescriptor` 成本足以否定收窄方案」当成结论，但没测 | 该判断从 §4 撤回；收窄方案改为 §8/§12.3 的「下一轮候选」，并记录审查实测的 `-29.3%` 与仍需解决的 Proxy 等价性问题 |
+| non-blocking：`md` 写「3 轮」（committed 实为 5 轮）、200 档三个数值不精确、把阶段占比 47.8% 写成 33%、非对象错误统一归因于 `WeakMap` | 全部按 JSON 与实测改写（§5、§7、§3.3） |
+| non-blocking：回归说明的「前五条 / 失败四条」与实际不符；缺「首读一次固定」的用例；端口级用例的鉴别力描述不准 | 补上一次性 getter 用例（现在两条注入实现各失败 6/7、失败集合不同），并按实测改写文件头与端口级用例的定位 |
+| non-blocking：`durable` 没记录文档哈希、没有独立重算检查点里的标记摘要 | `durable` 现在记录整份文档的 sha256，并**独立重算** `sha256(JSON.stringify(文档里的 applied))` 与检查点里的 `appliedDigest` 比对断言 |
+
+第二轮 Review 还提出一处**尚未测量、本轮不做**的等价冗余：`readEventLog()` 在
+`grown === false` 时仍复制一次哈希状态（`digest.copy()`），审查实测约 0.0002–0.0003 ms/次。
+它与本轮的主要成本差两个数量级，且需要重新论证「读期间文件被追加」的竞争路径，故留待后续。

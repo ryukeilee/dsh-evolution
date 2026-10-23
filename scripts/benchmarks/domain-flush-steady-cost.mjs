@@ -44,7 +44,6 @@ const option = (name, fallback) => {
 const ROUNDS = Number(option("rounds", 5));
 const SAMPLES = Number(option("samples", 15));
 const WARMUP = Number(option("warmup", 3));
-const VARIANT_ROUNDS = Number(option("variant-rounds", 3));
 const BEHAVIOR_HISTORY = Number(option("behavior-history", 2000));
 const ATTRIBUTION_SAMPLES = Number(option("attribution-samples", 9));
 const OUT = option("out", null);
@@ -53,12 +52,17 @@ const KEY = "b".repeat(64);
 const SOURCE_FILES = ["lib/event-log-checkpoint.js", "lib/domain-storage.js"];
 
 const ONLY = option("scenario", null)?.split(",").map((name) => name.trim()).filter(Boolean) ?? null;
+for (const [name, value] of [["rounds", ROUNDS], ["samples", SAMPLES], ["warmup", WARMUP],
+  ["attribution-samples", ATTRIBUTION_SAMPLES], ["behavior-history", BEHAVIOR_HISTORY]]) {
+  assert.ok(Number.isSafeInteger(value) && value > 0, `--${name} must be a positive integer, saw ${value}`);
+}
 const label = (scenario) => `history-${scenario.history}-new-${scenario.newEvents}`;
 // The measured shapes: the three steady states this round is about, plus one
 // committing shape to show the pass that carries a new event is untouched.
 const SCENARIOS = [{ history: 200, newEvents: 0 }, { history: 2000, newEvents: 0 },
   { history: 20000, newEvents: 0 }, { history: 20000, newEvents: 1 }]
   .filter((scenario) => ONLY === null || ONLY.includes(label(scenario)));
+assert.ok(SCENARIOS.length > 0, `--scenario selected nothing: ${JSON.stringify(ONLY)}`);
 const STEADY = SCENARIOS.filter((scenario) => scenario.newEvents === 0);
 
 const BEHAVIORS = ["tampered-prefix", "checkpoint-deleted", "marker-rewound-replaced",
@@ -707,55 +711,74 @@ const summarize = (run) => ({
   } : null,
 });
 
-async function measure(libDirectory, scenario, rounds, samples) {
-  const record = { scenario: label(scenario), history: scenario.history, newEvents: scenario.newEvents, rounds: [] };
+/** Measure one scenario on every participating implementation, rotating which one
+ *  runs first in each round: neither side systematically sees the warmer page cache
+ *  or the quieter machine, and the order is recorded rather than asserted. */
+async function measureSet(participants, scenario, rounds, samples) {
+  const names = Object.keys(participants);
+  const records = Object.fromEntries(names.map((name) => [name, { scenario: label(scenario),
+    history: scenario.history, newEvents: scenario.newEvents, variant: name, rounds: [] }]));
+  const orders = [];
   for (let round = 1; round <= rounds; round += 1) {
-    const clean = summarize(await runScenario(libDirectory, scenario, { clockMode: "advance", trace: false, samples }));
-    const traced = summarize(await runScenario(libDirectory, scenario, { clockMode: "advance", trace: true, samples }));
-    assert.deepEqual(clean.restart, { applied: 0, duplicates: scenario.history + scenario.newEvents * (WARMUP + samples) },
-      `${record.scenario}: a restart must find every record already committed`);
-    assert.equal(clean.stagingLeft, 0, `${record.scenario}: a committed transaction must leave no staged directory`);
-    assert.equal(clean.restartDocumentUnchanged, true, `${record.scenario}: a restart must not rewrite the document`);
-    assert.equal(clean.restartCheckpointUnchanged, true, `${record.scenario}: a restart must not move the checkpoint`);
-    const stripped = { ...clean, traced: traced.traced };
-    for (const key of ["restart", "restartDocumentUnchanged", "restartCheckpointUnchanged", "stagingLeft"]) delete stripped[key];
-    record.rounds.push(stripped);
-  }
-  const pick = (key) => record.rounds.map((round) => round[key]);
-  const tracedOf = (key) => median(record.rounds.map((round) => round.traced[key]));
-  const calls = () => {
-    const merged = new Map();
-    for (const round of record.rounds) {
-      for (const [name, value] of Object.entries(round.traced.callsPerFlush)) merged.set(name, [...(merged.get(name) ?? []), value]);
+    const order = names.map((_, index) => names[(index + round - 1) % names.length]);
+    orders.push(order);
+    for (const name of order) {
+      const clean = summarize(await runScenario(participants[name], scenario, { clockMode: "advance", trace: false, samples }));
+      const traced = summarize(await runScenario(participants[name], scenario, { clockMode: "advance", trace: true, samples }));
+      assert.deepEqual(clean.restart, { applied: 0, duplicates: scenario.history + scenario.newEvents * (WARMUP + samples) },
+        `${record0(records, name)}: a restart must find every record already committed`);
+      assert.equal(clean.stagingLeft, 0, `${record0(records, name)}: a committed transaction must leave no staged directory`);
+      assert.equal(clean.restartDocumentUnchanged, true, `${record0(records, name)}: a restart must not rewrite the document`);
+      assert.equal(clean.restartCheckpointUnchanged, true, `${record0(records, name)}: a restart must not move the checkpoint`);
+      const stripped = { ...clean, traced: traced.traced };
+      for (const key of ["restart", "restartDocumentUnchanged", "restartCheckpointUnchanged", "stagingLeft"]) delete stripped[key];
+      records[name].rounds.push(stripped);
     }
-    return Object.fromEntries([...merged.entries()].map(([name, values]) => [name, median(values)])
-      .sort(([left], [right]) => left < right ? -1 : 1));
-  };
-  record.summary = {
-    wallMs: median(pick("wallMs")), cpuMs: median(pick("cpuMs")),
-    wallRounds: pick("wallMs").map(round3), cpuRounds: pick("cpuMs").map(round3),
-    documentBytes: pick("documentBytes")[0], checkpointBytes: pick("checkpointBytes")[0], logBytes: pick("logBytes")[0],
-    documentWritesPerFlush: tracedOf("documentWritesPerFlush"),
-    handleSyncsPerFlush: tracedOf("handleSyncsPerFlush"),
-    logBytesReadPerFlush: tracedOf("logBytesReadPerFlush"),
-    digestBytesPerFlush: tracedOf("digestBytesPerFlush"),
-    largeStringifiedBytesPerFlush: tracedOf("largeStringifiedBytesPerFlush"),
-    callsPerFlush: calls(),
-  };
-  return record;
+  }
+  for (const name of names) {
+    const record = records[name];
+    const pick = (key) => record.rounds.map((round) => round[key]);
+    const tracedOf = (key) => median(record.rounds.map((round) => round.traced[key]));
+    const calls = () => {
+      const merged = new Map();
+      for (const round of record.rounds) {
+        for (const [call, value] of Object.entries(round.traced.callsPerFlush)) merged.set(call, [...(merged.get(call) ?? []), value]);
+      }
+      return Object.fromEntries([...merged.entries()].map(([call, values]) => [call, median(values)])
+        .sort(([left], [right]) => left < right ? -1 : 1));
+    };
+    record.order = orders;
+    record.summary = {
+      wallMs: median(pick("wallMs")), cpuMs: median(pick("cpuMs")),
+      wallRounds: pick("wallMs").map(round3), cpuRounds: pick("cpuMs").map(round3),
+      documentBytes: pick("documentBytes")[0], checkpointBytes: pick("checkpointBytes")[0], logBytes: pick("logBytes")[0],
+      documentWritesPerFlush: tracedOf("documentWritesPerFlush"),
+      handleSyncsPerFlush: tracedOf("handleSyncsPerFlush"),
+      logBytesReadPerFlush: tracedOf("logBytesReadPerFlush"),
+      digestBytesPerFlush: tracedOf("digestBytesPerFlush"),
+      largeStringifiedBytesPerFlush: tracedOf("largeStringifiedBytesPerFlush"),
+      callsPerFlush: calls(),
+    };
+  }
+  return records;
 }
+const record0 = (records, name) => `${records[name].scenario} (${name})`;
 
 async function report() {
   const committedDigest = assertCommittedShapes();
+  // The withdrawn shortcut: same fixtures, same rounds, one `lib/` swap away.
+  const variants = {};
+  for (const [name] of Object.entries(VARIANTS)) variants[name] = materializeVariant(name);
+  process.on("exit", () => { for (const directory of Object.values(variants)) fs.rmSync(directory, { recursive: true, force: true }); });
   const output = {
     implementation: "unchanged working tree: digestApplied still serializes the marker map on every call",
-    rounds: ROUNDS, samples: SAMPLES, warmup: WARMUP, variantRounds: VARIANT_ROUNDS,
+    rounds: ROUNDS, samples: SAMPLES, warmup: WARMUP,
     scenarios: SCENARIOS.map(label),
     environment: { node: process.version, platform: `${process.platform}/${process.arch}`,
       cpus: os.cpus().length, loadAverageAtStart: os.loadavg() },
     protocol: {
       measurementClock: "deterministic clock advancing 1 ms per read (production condition, reproducible)",
-      order: "rounds alternate which phase runs first; medians across rounds",
+      order: "each round rotates which implementation runs first (recorded per scenario in results[].order); medians across rounds",
       sides: "`committed` is this working tree; `memo-content` and `memo-identity` are the withdrawn shortcut, patched into a scratch copy of the same lib/ by exact substring",
       warmup: "the seeded history is absorbed by a cold pass, then `warmup` flushed bursts",
       instrumentedPass: "one additional pass per config with wrapped fs/crypto/JSON calls; counts are per flush",
@@ -766,26 +789,24 @@ async function report() {
         .update(fs.readFileSync(path.join(REPO_ROOT, "lib", "domain-storage.js"))).digest("hex") },
     measured: [], withdrawn: [], attribution: [], probes: [], behaviors: [],
   };
+  const sides = { committed: REPO_ROOT, ...variants };
   for (const scenario of SCENARIOS) {
-    const record = await measure(REPO_ROOT, scenario, ROUNDS, SAMPLES);
-    record.attribution = scenario.newEvents === 0
-      ? await runAttribution(REPO_ROOT, scenario, ATTRIBUTION_SAMPLES) : null;
-    output.measured.push(record);
-  }
-  // The withdrawn shortcut: same fixtures, same sample count, one `lib/` swap away.
-  const variants = {};
-  for (const [name] of Object.entries(VARIANTS)) variants[name] = materializeVariant(name);
-  process.on("exit", () => { for (const directory of Object.values(variants)) fs.rmSync(directory, { recursive: true, force: true }); });
-  for (const scenario of STEADY) {
-    const committed = output.measured.find((record) => record.scenario === label(scenario)).summary;
-    for (const [name, directory] of Object.entries(variants)) {
-      const record = await measure(directory, scenario, VARIANT_ROUNDS, SAMPLES);
-      record.variant = name;
-      record.attribution = await runAttribution(directory, scenario, ATTRIBUTION_SAMPLES);
+    // Steady scenarios run all three implementations in one rotating set, so the
+    // committed numbers and the withdrawn ones come from interleaved rounds; a
+    // committing scenario only needs the committed side.
+    const participants = scenario.newEvents === 0 ? sides : { committed: REPO_ROOT };
+    const records = await measureSet(participants, scenario, ROUNDS, SAMPLES);
+    const committed = records.committed;
+    if (scenario.newEvents === 0) committed.attribution = await runAttribution(REPO_ROOT, scenario, ATTRIBUTION_SAMPLES);
+    output.measured.push(committed);
+    for (const [name, record] of Object.entries(records)) {
+      if (name === "committed") continue;
+      record.attribution = await runAttribution(variants[name], scenario, ATTRIBUTION_SAMPLES);
       record.deltaVersusCommitted = {
-        wallPercent: round3(100 * (record.summary.wallMs - committed.wallMs) / committed.wallMs),
-        cpuPercent: round3(100 * (record.summary.cpuMs - committed.cpuMs) / committed.cpuMs),
-        digestBytesPerFlush: committed.digestBytesPerFlush - record.summary.digestBytesPerFlush,
+        wallPercent: round3(100 * (record.summary.wallMs - committed.summary.wallMs) / committed.summary.wallMs),
+        cpuPercent: round3(100 * (record.summary.cpuMs - committed.summary.cpuMs) / committed.summary.cpuMs),
+        digestBytesPerFlush: committed.summary.digestBytesPerFlush - record.summary.digestBytesPerFlush,
+        largeStringifiedBytesPerFlush: committed.summary.largeStringifiedBytesPerFlush - record.summary.largeStringifiedBytesPerFlush,
       };
       output.withdrawn.push(record);
     }
@@ -801,7 +822,6 @@ async function report() {
   // The probes: `committed` must answer every one correctly, and each variant has to
   // fail at least the ones it was withdrawn for, or the script is not measuring what
   // it claims to.
-  const sides = { committed: REPO_ROOT, ...variants };
   for (const [name, probe] of Object.entries(PROBES)) {
     const observations = {};
     for (const [side, directory] of Object.entries(sides)) observations[side] = await probe(directory);
@@ -834,8 +854,14 @@ async function report() {
     const markers = Object.keys(JSON.parse(run.durable.document).global.applied);
     assert.equal(markers.length, scenario.history + scenario.newEvents * (WARMUP + 3),
       `${label(scenario)}: every record must be committed exactly once`);
+    const durableDocument = JSON.parse(run.durable.document);
+    const recomputed = crypto.createHash("sha256").update(JSON.stringify(durableDocument.global.applied)).digest("hex");
+    assert.equal(run.durable.checkpoint.appliedDigest, recomputed,
+      `${label(scenario)}: the stored marker digest must describe the durable marker map`);
     output.durable.push({ scenario: label(scenario), documentBytes: run.documentBytes,
-      checkpointBytes: run.checkpointBytes, checkpoint: run.durable.checkpoint, archiveFiles: run.durable.archives.length });
+      documentSha256: crypto.createHash("sha256").update(run.durable.document).digest("hex"),
+      checkpointBytes: run.checkpointBytes, checkpoint: run.durable.checkpoint,
+      appliedDigestRecomputed: recomputed, archiveFiles: run.durable.archives.length });
   }
   output.environment.loadAverageAtEnd = os.loadavg();
   if (OUT) fs.writeFileSync(OUT, `${JSON.stringify(output, null, 2)}\n`);
