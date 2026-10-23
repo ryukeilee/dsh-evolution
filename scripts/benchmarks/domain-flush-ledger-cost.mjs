@@ -242,8 +242,13 @@ function installer(roots) {
     try { state.cloneBytes += Buffer.byteLength(JSON.stringify(value)); } catch { /* unmeasurable */ }
     return result;
   };
+  // GC entries are delivered asynchronously, so they are buffered with their own
+  // start time and attributed to the measured windows at the end: counting them
+  // when the callback runs would credit a flush with a collection that happened
+  // before it (or miss one that happened inside it).
+  const gcLog = [];
   const observer = new PerformanceObserver((list) => {
-    for (const entry of list.getEntries()) { state.gcEntries += 1; state.gcMs += entry.duration; }
+    for (const entry of list.getEntries()) gcLog.push({ startTime: entry.startTime, duration: entry.duration });
   });
   try { observer.observe({ entryTypes: ["gc"] }); } catch { /* gc entries are optional */ }
   syncBuiltinESMExports();
@@ -251,9 +256,20 @@ function installer(roots) {
     reset() {
       counts.clear();
       Object.assign(state, { documentWrites: 0, tokenWrites: 0, logBytesRead: 0, digestBytes: 0,
-        clones: 0, cloneBytes: 0, cloneMs: 0, gcEntries: 0, gcMs: 0 });
+        clones: 0, cloneBytes: 0, cloneMs: 0 });
     },
     read() { return { ...state, calls: Object.fromEntries(counts.entries()) }; },
+    /** GC entries whose own start time falls inside one of the measured windows. */
+    gcInWindows(windows) {
+      let entries = 0, ms = 0;
+      for (const entry of gcLog) {
+        if (windows.some(([start, end]) => entry.startTime >= start && entry.startTime <= end)) {
+          entries += 1;
+          ms += entry.duration;
+        }
+      }
+      return { entries, ms };
+    },
     restore() {
       observer.disconnect();
       globalThis.structuredClone = originals.get("structuredClone");
@@ -311,15 +327,20 @@ const seededRow = (collection, index) => ({
  *  memory's per-collection hot limits, so `load()` archives nothing), plus - for
  *  the shapes that force the staged path - a full `experimentRecords` window, so
  *  every applied record evicts one and the transaction writes an archive file. */
-function seededEvolution(shape) {
+function seededEvolution(shape, scenario) {
   if (shape === "none") return {};
   const evolution = { schema: 5, eventBridge: { schema: 1, applied: [] }, observations: [] };
   // Every collection stays under its hot limit even after the whole measured run
-  // has appended its records (`experiments` grows by `newEvents` per pass, and the
-  // limit is 50), so this shape is the single-document commit it claims to be.
-  for (const collection of ["proposals", "experiments", "cycles"]) {
+  // has appended its records: `experiments` grows by `newEvents` per pass and its
+  // limit is 50, so the seed leaves room for `warmup + samples` passes plus two
+  // spare rows. That is what keeps this shape the single-document commit it
+  // claims to be, whatever `--samples`/`--warmup` the run uses.
+  const experimentSeed = shape === "evict" ? 50
+    : Math.max(4, 50 - (WARMUP + SAMPLES) * scenario.newEvents - 2);
+  for (const collection of ["proposals", "cycles"]) {
     evolution[collection] = Array.from({ length: 12 }, (_, index) => seededRow(collection, index));
   }
+  evolution.experiments = Array.from({ length: experimentSeed }, (_, index) => seededRow("experiments", index));
   evolution.knowledge = Array.from({ length: 400 }, (_, index) => seededRow("knowledge", index));
   evolution.observations = Array.from({ length: 24 }, (_, index) => seededRow("observations", index));
   if (shape === "evict") {
@@ -367,7 +388,7 @@ async function seedHistory(libDirectory, root, eventLog, count, scenario) {
   const ctx = { emit() {}, logger: { warn() {}, error() {} }, storage: { backend: { get: () => backend } }, effect() {} };
   ctx.storageDomain = new DomainFacility(ctx, { backend: "json" });
   const domain = await ctx.storageDomain.open(evolutionDomainSpec);
-  const aggregate = scenario.aggregate === "none" ? {} : { evolution: seededEvolution(scenario.aggregate) };
+  const aggregate = scenario.aggregate === "none" ? {} : { evolution: seededEvolution(scenario.aggregate, scenario) };
   await domain.global.set({ schema: 1, aggregate, applied, pending: null });
   await domain.close();
   await backend.close();
@@ -414,7 +435,8 @@ async function runScenario(libDirectory, scenario, { clockMode, trace, samples, 
     // Profiling starts here: the fixture build, the cold pass and its signing are
     // behind us, so the profile holds the measured `flush()` calls only.
     const totals = counter ? { documentWrites: 0, tokenWrites: 0, logBytesRead: 0, digestBytes: 0,
-      clones: 0, cloneBytes: 0, cloneMs: 0, gcEntries: 0, gcMs: 0, calls: new Map() } : null;
+      clones: 0, cloneBytes: 0, cloneMs: 0, calls: new Map() } : null;
+    const windows = [];
     await profile?.start?.();
     for (let index = 0; index < samples; index += 1) {
       append(scenario.newEvents);
@@ -425,20 +447,26 @@ async function runScenario(libDirectory, scenario, { clockMode, trace, samples, 
       const cpu = process.cpuUsage();
       const started = performance.now();
       const result = await aligned(() => port.flush());
-      const wallMs = performance.now() - started;
+      const ended = performance.now();
+      const wallMs = ended - started;
+      windows.push([started, ended]);
       const used = process.cpuUsage(cpu);
       assert.deepEqual(result, expected(index), `${label(scenario)}: the pass must report what it applied`);
       rows.push({ wallMs, cpuMs: (used.user + used.system) / 1000 });
       if (counter) {
         const read = counter.read();
-        for (const name of ["documentWrites", "tokenWrites", "logBytesRead", "digestBytes", "clones", "cloneBytes", "cloneMs", "gcEntries", "gcMs"]) {
+        for (const name of ["documentWrites", "tokenWrites", "logBytesRead", "digestBytes", "clones", "cloneBytes", "cloneMs"]) {
           totals[name] += read[name];
         }
         for (const [name, value] of Object.entries(read.calls)) totals.calls.set(name, (totals.calls.get(name) ?? 0) + value);
       }
     }
     await profile?.stop?.();
-    const traced = totals === null ? null : { ...totals, calls: Object.fromEntries(totals.calls) };
+    // Give the observer a task to deliver the entries the last flush produced, then
+    // attribute them by their own start time.
+    if (counter) await new Promise((resolve) => setTimeout(resolve, 100));
+    const gc = counter ? counter.gcInWindows(windows) : null;
+    const traced = totals === null ? null : { ...totals, gcEntries: gc.entries, gcMs: gc.ms, calls: Object.fromEntries(totals.calls) };
     const read = (file) => fs.readFileSync(file, "utf8").split(root).join("<root>");
     // The checkpoint's `file.dev`/`file.ino` identify the fixture's own log file and
     // its `mac` binds them, so those three fields are per-run by construction. Every
@@ -538,7 +566,7 @@ const output = {
     order: "each round alternates which side runs first",
     sides: "baseline restores lib/domain-storage.js from the recorded revision into a copy of lib/; candidate is this working tree",
     warmup: "the seeded history is absorbed by a cold pass, then `warmup` flushed bursts",
-    instrumentedPass: "one additional pass per side with wrapped fs/crypto/structuredClone calls and a GC observer; the counters are opened after the new records are signed and appended, so every count is exactly one flush",
+    instrumentedPass: "one additional pass per side per scenario (in the first round) with wrapped fs/crypto/structuredClone calls and a GC observer; the counters are opened after the new records are signed and appended, so every count is exactly one flush, and GC entries are attributed by their own start time",
     historyShape: "the seeded history is a committed applied marker table plus its signed log. The `-hot` scenarios also seed an aggregate that stays inside the memory's per-collection hot window for the whole run (so every pass writes the document once), the `-evict` scenarios seed the `experiments` window at its limit (so every applied record evicts one and every pass also stages an archive file), and the `-archive` scenarios additionally seed a non-empty dockyard archive tree.",
     expectedDocumentWrites: "0 per steady pass (no new record), 1 per advancing flush, 2 for the `-evict` ones, which also stage an archive file; the injected run asserts the exact count per shape",
   },
@@ -574,29 +602,26 @@ for (const scenario of SELECTED) {
       clean.restartDocumentUnchanged = undefined; clean.restartCheckpointUnchanged = undefined;
       clean.restartArchivesUnchanged = undefined;
     }
-    // The mechanism counters are one traced run per side per round; they are not
-    // part of the timing comparison.
-    for (const side of order) {
-      const traced = summarize(await runScenario(SIDES[side](), scenario, { clockMode: "advance", trace: true, samples: SAMPLES }));
-      assert.equal(traced.traced.documentWritesPerFlush, expectedWrites,
-        `${record.scenario} (${side}): the scenario must take the ${expectedWrites}-write path`);
-      measured.sides[side].traced = traced.traced;
+    // The mechanism counters are one traced run per side per scenario (the first
+    // round); they are not part of the timing comparison and do not need repeating.
+    if (round === 1) {
+      for (const side of order) {
+        const traced = summarize(await runScenario(SIDES[side](), scenario, { clockMode: "advance", trace: true, samples: SAMPLES }));
+        assert.equal(traced.traced.documentWritesPerFlush, expectedWrites,
+          `${record.scenario} (${side}): the scenario must take the ${expectedWrites}-write path`);
+        measured.sides[side].traced = traced.traced;
+      }
+      assert.equal(measured.sides.baseline.traced.documentWritesPerFlush,
+        measured.sides.candidate.traced.documentWritesPerFlush,
+        `${record.scenario}: both implementations must take the same document-write path`);
+      record.traced = { baseline: measured.sides.baseline.traced, candidate: measured.sides.candidate.traced };
     }
-    assert.equal(measured.sides.baseline.traced.documentWritesPerFlush,
-      measured.sides.candidate.traced.documentWritesPerFlush,
-      `${record.scenario}: both implementations must take the same document-write path`);
     record.rounds.push(measured);
   }
   const pick = (side, key) => record.rounds.map((round) => round.sides[side][key]);
   const medianOf = (side, key) => median(pick(side, key));
-  const tracedOf = (side, key) => median(pick(side, "traced").map((traced) => traced[key]));
-  const calls = (side) => {
-    const merged = new Map();
-    for (const round of record.rounds) {
-      for (const [name, value] of Object.entries(round.sides[side].traced.callsPerFlush)) merged.set(name, [...(merged.get(name) ?? []), value]);
-    }
-    return Object.fromEntries([...merged.entries()].map(([name, values]) => [name, median(values)]).sort(([left], [right]) => left < right ? -1 : 1));
-  };
+  const tracedOf = (side, key) => record.traced[side][key];
+  const calls = (side) => record.traced[side].callsPerFlush;
   record.summary = Object.fromEntries(Object.keys(SIDES).map((side) => [side, {
     wallMs: medianOf(side, "wallMs"), cpuMs: medianOf(side, "cpuMs"),
     wallRounds: pick(side, "wallMs").map(round3), cpuRounds: pick(side, "cpuMs").map(round3),

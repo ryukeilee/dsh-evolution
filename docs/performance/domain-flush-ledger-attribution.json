@@ -8,7 +8,7 @@
   "protocol": {
     "instrumentation": "each side copies its own lib/domain-storage.js into a scratch tree and wraps the transaction call sites in performance.now() pairs by exact-substring patch; the patch fails loudly if a call site moved",
     "phases": "wall-clock per flush; phases nest, so memory.create and hydrate contain their own memory.cloneLoad",
-    "runs": "three independent runs per side and shape; the reported figure is the median of the three",
+    "runs": "three independent runs per side and shape, each keeping its own per-phase figures; the reported figure is the median of the three",
     "authority": "the A/B run in domain-flush-ledger-cost.json is the authority for the end-to-end delta; these figures only say where it lands"
   },
   "scenarios": {
@@ -20,16 +20,6 @@
         "baseline": {
           "cpuMs": 50.786,
           "wallMs": 57.601,
-          "cpuRuns": [
-            50.698,
-            50.866,
-            50.786
-          ],
-          "wallRuns": [
-            57.659,
-            57.585,
-            57.601
-          ],
           "phases": {
             "checkpoint.write": 5.104,
             "copy.baseline": 4.002,
@@ -41,21 +31,61 @@
             "plan": 9.805,
             "set.final": 17.521,
             "snapshot": 0.026
-          }
+          },
+          "runs": [
+            {
+              "cpuMs": 50.698,
+              "wallMs": 57.659,
+              "phases": {
+                "set.final": 17.41,
+                "plan": 9.8,
+                "merge": 7.647,
+                "checkpoint.write": 5.097,
+                "copy.baseline": 4.008,
+                "copy.replayLedger": 3.855,
+                "memory.create": 0.898,
+                "hydrate": 0.658,
+                "memory.cloneLoad": 0.048,
+                "snapshot": 0.026
+              }
+            },
+            {
+              "cpuMs": 50.866,
+              "wallMs": 57.585,
+              "phases": {
+                "set.final": 17.793,
+                "plan": 9.805,
+                "merge": 7.605,
+                "checkpoint.write": 5.124,
+                "copy.baseline": 4.002,
+                "copy.replayLedger": 3.84,
+                "memory.create": 0.924,
+                "hydrate": 0.661,
+                "memory.cloneLoad": 0.048,
+                "snapshot": 0.026
+              }
+            },
+            {
+              "cpuMs": 50.786,
+              "wallMs": 57.601,
+              "phases": {
+                "set.final": 17.521,
+                "plan": 9.852,
+                "merge": 7.699,
+                "checkpoint.write": 5.104,
+                "copy.baseline": 3.992,
+                "copy.replayLedger": 3.844,
+                "memory.create": 0.915,
+                "hydrate": 0.636,
+                "memory.cloneLoad": 0.047,
+                "snapshot": 0.027
+              }
+            }
+          ]
         },
         "candidate": {
           "cpuMs": 48.341,
           "wallMs": 55.734,
-          "cpuRuns": [
-            48.341,
-            48.335,
-            48.574
-          ],
-          "wallRuns": [
-            55.734,
-            54.718,
-            56.019
-          ],
           "phases": {
             "checkpoint.write": 5.036,
             "copy.baseline": 3.993,
@@ -67,7 +97,57 @@
             "plan": 9.849,
             "set.final": 17.392,
             "snapshot": 0.028
-          }
+          },
+          "runs": [
+            {
+              "cpuMs": 48.341,
+              "wallMs": 55.734,
+              "phases": {
+                "set.final": 17.392,
+                "plan": 9.851,
+                "merge": 5.803,
+                "checkpoint.write": 5.036,
+                "copy.baseline": 3.983,
+                "copy.replayLedger": 3.975,
+                "memory.create": 0.93,
+                "hydrate": 0.629,
+                "snapshot": 0.029,
+                "memory.cloneLoad": 0.001
+              }
+            },
+            {
+              "cpuMs": 48.335,
+              "wallMs": 54.718,
+              "phases": {
+                "set.final": 17.076,
+                "plan": 9.809,
+                "merge": 5.854,
+                "checkpoint.write": 5.007,
+                "copy.baseline": 3.993,
+                "copy.replayLedger": 3.91,
+                "memory.create": 0.877,
+                "hydrate": 0.616,
+                "snapshot": 0.028,
+                "memory.cloneLoad": 0.001
+              }
+            },
+            {
+              "cpuMs": 48.574,
+              "wallMs": 56.019,
+              "phases": {
+                "set.final": 17.43,
+                "plan": 9.849,
+                "merge": 5.867,
+                "checkpoint.write": 5.079,
+                "copy.baseline": 4.013,
+                "copy.replayLedger": 3.914,
+                "memory.create": 0.863,
+                "hydrate": 0.627,
+                "snapshot": 0.027,
+                "memory.cloneLoad": 0.001
+              }
+            }
+          ]
         }
       }
     },
@@ -79,16 +159,6 @@
         "baseline": {
           "cpuMs": 62.245,
           "wallMs": 68.461,
-          "cpuRuns": [
-            62.064,
-            62.245,
-            62.718
-          ],
-          "wallRuns": [
-            67.505,
-            68.461,
-            68.732
-          ],
           "phases": {
             "checkpoint.write": 5.092,
             "copy.baseline": 3.902,
@@ -100,21 +170,61 @@
             "plan": 9.896,
             "set.final": 19.284,
             "snapshot": 1.427
-          }
+          },
+          "runs": [
+            {
+              "cpuMs": 62.064,
+              "wallMs": 67.505,
+              "phases": {
+                "set.final": 18.679,
+                "plan": 9.865,
+                "merge": 7.684,
+                "checkpoint.write": 5.119,
+                "copy.baseline": 3.882,
+                "copy.replayLedger": 3.806,
+                "memory.create": 3.618,
+                "hydrate": 3.502,
+                "memory.cloneLoad": 2.822,
+                "snapshot": 1.417
+              }
+            },
+            {
+              "cpuMs": 62.245,
+              "wallMs": 68.461,
+              "phases": {
+                "set.final": 19.284,
+                "plan": 9.9,
+                "merge": 7.776,
+                "checkpoint.write": 5.085,
+                "copy.baseline": 3.902,
+                "copy.replayLedger": 3.847,
+                "memory.create": 3.671,
+                "hydrate": 3.511,
+                "memory.cloneLoad": 2.848,
+                "snapshot": 1.435
+              }
+            },
+            {
+              "cpuMs": 62.718,
+              "wallMs": 68.732,
+              "phases": {
+                "set.final": 19.388,
+                "plan": 9.896,
+                "merge": 7.778,
+                "checkpoint.write": 5.092,
+                "copy.baseline": 3.916,
+                "copy.replayLedger": 3.849,
+                "memory.create": 3.648,
+                "hydrate": 3.522,
+                "memory.cloneLoad": 2.845,
+                "snapshot": 1.427
+              }
+            }
+          ]
         },
         "candidate": {
           "cpuMs": 59.043,
           "wallMs": 64.703,
-          "cpuRuns": [
-            58.71,
-            59.043,
-            59.046
-          ],
-          "wallRuns": [
-            64.346,
-            64.879,
-            64.703
-          ],
           "phases": {
             "checkpoint.write": 5.078,
             "copy.baseline": 3.998,
@@ -126,7 +236,57 @@
             "plan": 9.93,
             "set.final": 19.94,
             "snapshot": 1.437
-          }
+          },
+          "runs": [
+            {
+              "cpuMs": 58.71,
+              "wallMs": 64.346,
+              "phases": {
+                "set.final": 19.94,
+                "plan": 9.93,
+                "merge": 6.034,
+                "checkpoint.write": 5.037,
+                "copy.baseline": 3.97,
+                "copy.replayLedger": 3.965,
+                "hydrate": 2.08,
+                "memory.create": 2.071,
+                "snapshot": 1.434,
+                "memory.cloneLoad": 0.001
+              }
+            },
+            {
+              "cpuMs": 59.043,
+              "wallMs": 64.879,
+              "phases": {
+                "set.final": 19.971,
+                "plan": 9.934,
+                "merge": 6.089,
+                "checkpoint.write": 5.078,
+                "copy.baseline": 4.027,
+                "copy.replayLedger": 4.013,
+                "memory.create": 2.094,
+                "hydrate": 2.048,
+                "snapshot": 1.438,
+                "memory.cloneLoad": 0.001
+              }
+            },
+            {
+              "cpuMs": 59.046,
+              "wallMs": 64.703,
+              "phases": {
+                "set.final": 19.516,
+                "plan": 9.92,
+                "merge": 6.077,
+                "checkpoint.write": 5.081,
+                "copy.baseline": 3.998,
+                "copy.replayLedger": 3.994,
+                "memory.create": 2.082,
+                "hydrate": 2.081,
+                "snapshot": 1.437,
+                "memory.cloneLoad": 0.001
+              }
+            }
+          ]
         }
       }
     }
