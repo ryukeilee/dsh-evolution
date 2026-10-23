@@ -1,0 +1,3019 @@
+{
+  "implementation": "unchanged working tree: digestApplied still serializes the marker map on every call",
+  "rounds": 5,
+  "samples": 15,
+  "warmup": 3,
+  "variantRounds": 3,
+  "scenarios": [
+    "history-200-new-0",
+    "history-2000-new-0",
+    "history-20000-new-0",
+    "history-20000-new-1"
+  ],
+  "environment": {
+    "node": "v26.12.1",
+    "platform": "darwin/arm64",
+    "cpus": 8,
+    "loadAverageAtStart": [
+      1.44189453125,
+      1.5048828125,
+      1.56494140625
+    ],
+    "loadAverageAtEnd": [
+      1.82080078125,
+      1.5966796875,
+      1.59521484375
+    ]
+  },
+  "protocol": {
+    "measurementClock": "deterministic clock advancing 1 ms per read (production condition, reproducible)",
+    "order": "rounds alternate which phase runs first; medians across rounds",
+    "sides": "`committed` is this working tree; `memo-content` and `memo-identity` are the withdrawn shortcut, patched into a scratch copy of the same lib/ by exact substring",
+    "warmup": "the seeded history is absorbed by a cold pass, then `warmup` flushed bursts",
+    "instrumentedPass": "one additional pass per config with wrapped fs/crypto/JSON calls; counts are per flush",
+    "historyShape": "the seeded history is a committed applied marker table plus its signed log; the aggregate stays empty, because this round touches neither the aggregate nor its projection"
+  },
+  "sources": {
+    "committedDigestSha256": "7242a96be25f36f9256a7c77965c47ea125391ceca7a0ddcb266b9ab56bfa91c",
+    "committedDomainStorageSha256": "18f13f3a13bb3fac4233c5007ad117a8aaa434423c7eda5b5bda31e4f11e25dd"
+  },
+  "measured": [
+    {
+      "scenario": "history-200-new-0",
+      "history": 200,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "wallMs": 0.18158300000000338,
+          "cpuMs": 0.237,
+          "wallSamples": [
+            0.197,
+            0.182,
+            0.208,
+            0.192,
+            0.217,
+            0.182,
+            0.186,
+            0.163,
+            0.171,
+            0.162,
+            0.159,
+            0.147,
+            0.153,
+            0.146,
+            0.183
+          ],
+          "cpuSamples": [
+            0.284,
+            0.239,
+            0.28,
+            0.237,
+            0.302,
+            0.418,
+            0.259,
+            0.164,
+            0.246,
+            0.163,
+            0.159,
+            0.146,
+            0.154,
+            0.147,
+            0.183
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 152412,
+            "largeStringifiedBytesPerFlush": 24493,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        },
+        {
+          "wallMs": 0.16062499999999602,
+          "cpuMs": 0.162,
+          "wallSamples": [
+            0.168,
+            0.161,
+            0.16,
+            0.161,
+            0.161,
+            0.159,
+            0.166,
+            0.16,
+            0.159,
+            0.159,
+            0.17,
+            0.167,
+            0.177,
+            0.159,
+            0.158
+          ],
+          "cpuSamples": [
+            0.171,
+            0.163,
+            0.162,
+            0.162,
+            0.162,
+            0.16,
+            0.166,
+            0.161,
+            0.159,
+            0.161,
+            0.287,
+            0.251,
+            0.485,
+            0.159,
+            0.159
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 152412,
+            "largeStringifiedBytesPerFlush": 24493,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        },
+        {
+          "wallMs": 0.1629169999999931,
+          "cpuMs": 0.163,
+          "wallSamples": [
+            0.166,
+            0.173,
+            0.163,
+            0.164,
+            0.162,
+            0.173,
+            0.167,
+            0.164,
+            0.163,
+            0.155,
+            0.16,
+            0.158,
+            0.156,
+            0.16,
+            0.16
+          ],
+          "cpuSamples": [
+            0.17,
+            0.267,
+            0.163,
+            0.163,
+            0.163,
+            0.209,
+            0.168,
+            0.165,
+            0.164,
+            0.155,
+            0.16,
+            0.159,
+            0.158,
+            0.16,
+            0.218
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 152412,
+            "largeStringifiedBytesPerFlush": 24493,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        },
+        {
+          "wallMs": 0.1687080000000094,
+          "cpuMs": 0.169,
+          "wallSamples": [
+            0.17,
+            0.167,
+            0.167,
+            0.186,
+            0.172,
+            0.169,
+            0.167,
+            0.167,
+            0.174,
+            0.168,
+            0.167,
+            0.168,
+            0.176,
+            0.19,
+            0.17
+          ],
+          "cpuSamples": [
+            0.176,
+            0.169,
+            0.168,
+            0.189,
+            0.349,
+            0.169,
+            0.168,
+            0.169,
+            0.246,
+            0.168,
+            0.168,
+            0.169,
+            0.251,
+            0.191,
+            0.226
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 152412,
+            "largeStringifiedBytesPerFlush": 24493,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        },
+        {
+          "wallMs": 0.17466699999999946,
+          "cpuMs": 0.175,
+          "wallSamples": [
+            0.178,
+            0.174,
+            0.174,
+            0.175,
+            0.172,
+            0.175,
+            0.174,
+            0.175,
+            0.174,
+            0.175,
+            0.175,
+            0.175,
+            0.175,
+            0.175,
+            0.175
+          ],
+          "cpuSamples": [
+            0.18,
+            0.174,
+            0.175,
+            0.175,
+            0.173,
+            0.175,
+            0.174,
+            0.176,
+            0.175,
+            0.176,
+            0.175,
+            0.175,
+            0.175,
+            0.176,
+            0.175
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 152412,
+            "largeStringifiedBytesPerFlush": 24493,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        }
+      ],
+      "summary": {
+        "wallMs": 0.1687080000000094,
+        "cpuMs": 0.169,
+        "wallRounds": [
+          0.182,
+          0.161,
+          0.163,
+          0.169,
+          0.175
+        ],
+        "cpuRounds": [
+          0.237,
+          0.162,
+          0.163,
+          0.169,
+          0.175
+        ],
+        "documentBytes": 26277,
+        "checkpointBytes": 523,
+        "logBytes": 127168,
+        "documentWritesPerFlush": 0,
+        "handleSyncsPerFlush": 0,
+        "logBytesReadPerFlush": 127168,
+        "digestBytesPerFlush": 152412,
+        "largeStringifiedBytesPerFlush": 24493,
+        "callsPerFlush": {
+          "eventLog/openSync": 1,
+          "other/readFileSync": 1,
+          "other/readSync": 2
+        }
+      },
+      "attribution": {
+        "plan.checkpointRead": 0.024,
+        "plan.readEventLog": 0.104,
+        "plan.digestApplied": 0.05,
+        "plan.tail": 0.001,
+        "plan.total": 0.195
+      }
+    },
+    {
+      "scenario": "history-2000-new-0",
+      "history": 2000,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "wallMs": 1.0522090000000048,
+          "cpuMs": 1.053,
+          "wallSamples": [
+            1.063,
+            1.062,
+            1.044,
+            1.054,
+            1.056,
+            1.061,
+            1.064,
+            1.051,
+            1.052,
+            1.044,
+            1.041,
+            1.043,
+            1.048,
+            1.067,
+            1.041
+          ],
+          "cpuSamples": [
+            1.072,
+            1.064,
+            1.045,
+            1.054,
+            1.055,
+            1.061,
+            1.065,
+            1.051,
+            1.053,
+            1.045,
+            1.043,
+            1.044,
+            1.049,
+            1.068,
+            1.041
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1527220,
+            "largeStringifiedBytesPerFlush": 246894,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        },
+        {
+          "wallMs": 1.0345409999999902,
+          "cpuMs": 1.035,
+          "wallSamples": [
+            1.064,
+            1.046,
+            1.09,
+            1.051,
+            1.031,
+            1.045,
+            1.035,
+            1.023,
+            1.018,
+            1.028,
+            1.034,
+            1.014,
+            1.043,
+            1.027,
+            1.035
+          ],
+          "cpuSamples": [
+            1.072,
+            1.047,
+            1.244,
+            1.076,
+            1.032,
+            1.045,
+            1.035,
+            1.024,
+            1.018,
+            1.028,
+            1.034,
+            1.015,
+            1.11,
+            1.028,
+            1.036
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1527220,
+            "largeStringifiedBytesPerFlush": 246894,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        },
+        {
+          "wallMs": 1.0650419999999485,
+          "cpuMs": 1.066,
+          "wallSamples": [
+            1.071,
+            1.065,
+            1.078,
+            1.058,
+            1.065,
+            1.06,
+            1.055,
+            1.067,
+            1.058,
+            1.066,
+            1.072,
+            1.099,
+            1.063,
+            1.061,
+            1.081
+          ],
+          "cpuSamples": [
+            1.08,
+            1.065,
+            1.079,
+            1.059,
+            1.066,
+            1.061,
+            1.055,
+            1.067,
+            1.058,
+            1.067,
+            1.072,
+            1.149,
+            1.063,
+            1.062,
+            1.082
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1527220,
+            "largeStringifiedBytesPerFlush": 246894,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        },
+        {
+          "wallMs": 1.0655420000000504,
+          "cpuMs": 1.067,
+          "wallSamples": [
+            1.077,
+            1.072,
+            1.07,
+            1.053,
+            1.066,
+            1.1,
+            1.064,
+            1.064,
+            1.059,
+            1.062,
+            1.055,
+            1.074,
+            1.052,
+            1.095,
+            1.099
+          ],
+          "cpuSamples": [
+            1.081,
+            1.072,
+            1.07,
+            1.054,
+            1.067,
+            1.302,
+            1.064,
+            1.064,
+            1.06,
+            1.062,
+            1.056,
+            1.075,
+            1.052,
+            1.206,
+            1.099
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1527220,
+            "largeStringifiedBytesPerFlush": 246894,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        },
+        {
+          "wallMs": 1.0690409999999702,
+          "cpuMs": 1.069,
+          "wallSamples": [
+            1.082,
+            1.074,
+            1.092,
+            1.104,
+            1.069,
+            1.054,
+            1.075,
+            1.06,
+            1.065,
+            1.054,
+            1.063,
+            1.06,
+            1.069,
+            1.053,
+            1.077
+          ],
+          "cpuSamples": [
+            1.09,
+            1.075,
+            1.1,
+            1.269,
+            1.069,
+            1.055,
+            1.076,
+            1.061,
+            1.065,
+            1.054,
+            1.064,
+            1.061,
+            1.069,
+            1.054,
+            1.077
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1527220,
+            "largeStringifiedBytesPerFlush": 246894,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        }
+      ],
+      "summary": {
+        "wallMs": 1.0650419999999485,
+        "cpuMs": 1.066,
+        "wallRounds": [
+          1.052,
+          1.035,
+          1.065,
+          1.066,
+          1.069
+        ],
+        "cpuRounds": [
+          1.053,
+          1.035,
+          1.066,
+          1.067,
+          1.069
+        ],
+        "documentBytes": 263078,
+        "checkpointBytes": 526,
+        "logBytes": 1279572,
+        "documentWritesPerFlush": 0,
+        "handleSyncsPerFlush": 0,
+        "logBytesReadPerFlush": 1279572,
+        "digestBytesPerFlush": 1527220,
+        "largeStringifiedBytesPerFlush": 246894,
+        "callsPerFlush": {
+          "eventLog/openSync": 1,
+          "other/readFileSync": 1,
+          "other/readSync": 3
+        }
+      },
+      "attribution": {
+        "plan.checkpointRead": 0.022,
+        "plan.readEventLog": 0.639,
+        "plan.digestApplied": 0.432,
+        "plan.tail": 0.001,
+        "plan.total": 1.111
+      }
+    },
+    {
+      "scenario": "history-20000-new-0",
+      "history": 20000,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "wallMs": 10.673250000000053,
+          "cpuMs": 10.674,
+          "wallSamples": [
+            10.716,
+            10.705,
+            10.748,
+            10.694,
+            10.671,
+            10.712,
+            10.916,
+            10.531,
+            10.559,
+            10.461,
+            10.521,
+            10.489,
+            10.636,
+            10.673,
+            10.692
+          ],
+          "cpuSamples": [
+            10.724,
+            10.707,
+            10.748,
+            10.695,
+            10.671,
+            10.712,
+            11.19,
+            10.572,
+            10.56,
+            10.462,
+            10.522,
+            10.49,
+            10.637,
+            10.674,
+            10.693
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 15365228,
+            "largeStringifiedBytesPerFlush": 2488895,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        },
+        {
+          "wallMs": 10.632834000000003,
+          "cpuMs": 10.634,
+          "wallSamples": [
+            10.748,
+            10.724,
+            10.745,
+            10.633,
+            10.773,
+            10.717,
+            10.755,
+            10.839,
+            10.517,
+            10.544,
+            10.527,
+            10.572,
+            10.5,
+            10.533,
+            10.536
+          ],
+          "cpuSamples": [
+            10.754,
+            10.724,
+            10.746,
+            10.634,
+            10.773,
+            10.718,
+            10.999,
+            10.953,
+            10.518,
+            10.545,
+            10.528,
+            10.572,
+            10.5,
+            10.533,
+            10.537
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 15365228,
+            "largeStringifiedBytesPerFlush": 2488895,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        },
+        {
+          "wallMs": 10.562208000000282,
+          "cpuMs": 10.57,
+          "wallSamples": [
+            10.562,
+            10.722,
+            10.746,
+            10.819,
+            10.653,
+            10.823,
+            10.709,
+            10.752,
+            10.506,
+            10.548,
+            10.524,
+            10.505,
+            10.487,
+            10.476,
+            10.481
+          ],
+          "cpuSamples": [
+            10.57,
+            10.724,
+            10.746,
+            10.82,
+            10.654,
+            10.824,
+            10.709,
+            10.878,
+            10.507,
+            10.548,
+            10.526,
+            10.506,
+            10.489,
+            10.477,
+            10.483
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 15365228,
+            "largeStringifiedBytesPerFlush": 2488895,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        },
+        {
+          "wallMs": 10.64825000000019,
+          "cpuMs": 10.649,
+          "wallSamples": [
+            11.135,
+            10.766,
+            11.177,
+            10.715,
+            10.664,
+            10.638,
+            10.648,
+            10.777,
+            10.49,
+            10.484,
+            10.62,
+            10.501,
+            10.588,
+            10.481,
+            10.673
+          ],
+          "cpuSamples": [
+            11.143,
+            10.768,
+            11.179,
+            10.717,
+            10.664,
+            10.638,
+            10.649,
+            10.906,
+            10.491,
+            10.484,
+            10.62,
+            10.502,
+            10.589,
+            10.481,
+            10.674
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 15365228,
+            "largeStringifiedBytesPerFlush": 2488895,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        },
+        {
+          "wallMs": 10.698333000000275,
+          "cpuMs": 10.698,
+          "wallSamples": [
+            10.716,
+            10.715,
+            10.703,
+            10.714,
+            10.687,
+            10.755,
+            10.715,
+            10.936,
+            10.515,
+            10.619,
+            10.487,
+            10.698,
+            10.684,
+            10.633,
+            10.668
+          ],
+          "cpuSamples": [
+            10.723,
+            10.714,
+            10.704,
+            10.846,
+            10.687,
+            10.756,
+            10.716,
+            11.042,
+            10.515,
+            10.621,
+            10.492,
+            10.698,
+            10.685,
+            10.634,
+            10.669
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 15365228,
+            "largeStringifiedBytesPerFlush": 2488895,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        }
+      ],
+      "summary": {
+        "wallMs": 10.64825000000019,
+        "cpuMs": 10.649,
+        "wallRounds": [
+          10.673,
+          10.633,
+          10.562,
+          10.648,
+          10.698
+        ],
+        "cpuRounds": [
+          10.674,
+          10.634,
+          10.57,
+          10.649,
+          10.698
+        ],
+        "documentBytes": 2649079,
+        "checkpointBytes": 529,
+        "logBytes": 12875576,
+        "documentWritesPerFlush": 0,
+        "handleSyncsPerFlush": 0,
+        "logBytesReadPerFlush": 12875576,
+        "digestBytesPerFlush": 15365228,
+        "largeStringifiedBytesPerFlush": 2488895,
+        "callsPerFlush": {
+          "eventLog/openSync": 1,
+          "other/readFileSync": 1,
+          "other/readSync": 14
+        }
+      },
+      "attribution": {
+        "plan.checkpointRead": 0.044,
+        "plan.readEventLog": 5.545,
+        "plan.digestApplied": 5.111,
+        "plan.tail": 0.001,
+        "plan.total": 10.726
+      }
+    },
+    {
+      "scenario": "history-20000-new-1",
+      "history": 20000,
+      "newEvents": 1,
+      "rounds": [
+        {
+          "wallMs": 59.05633399999988,
+          "cpuMs": 50.973,
+          "wallSamples": [
+            57.575,
+            57.168,
+            59.822,
+            59.628,
+            59.585,
+            59.637,
+            59.694,
+            59.527,
+            56.696,
+            58.31,
+            59.677,
+            58.637,
+            58.675,
+            59.056,
+            57.382
+          ],
+          "cpuSamples": [
+            50.621,
+            50.73,
+            51.688,
+            51.307,
+            52.942,
+            51.274,
+            50.973,
+            51.316,
+            51.191,
+            50.45,
+            51.719,
+            48.974,
+            50.755,
+            50.843,
+            49.647
+          ],
+          "documentBytes": 2671363,
+          "checkpointBytes": 533,
+          "logBytes": 12887204,
+          "traced": {
+            "documentWritesPerFlush": 1,
+            "handleSyncsPerFlush": 2,
+            "logBytesReadPerFlush": 12882682,
+            "digestBytesPerFlush": 17865699,
+            "largeStringifiedBytesPerFlush": 7672819,
+            "callsPerFlush": {
+              "eventLog/appendFileSync": 1,
+              "eventLog/writeFileSync": 1,
+              "other/readFileSync": 4,
+              "eventLog/openSync": 1,
+              "other/readSync": 14,
+              "stage/mkdirSync": 1,
+              "live/readdirSync": 37,
+              "stage/statSync": 18,
+              "stage/readdirSync": 37,
+              "stage/writeFileSync": 1,
+              "stage/openSync": 1,
+              "stage/renameSync": 1,
+              "other/lstatSync": 1,
+              "other/writeFileSync": 1,
+              "other/openSync": 2,
+              "other/renameSync": 2,
+              "official/open.async": 2,
+              "official/sync": 2,
+              "official/rename.async": 1,
+              "stage/rmSync": 1,
+              "stage/lstatSync": 1,
+              "live/statSync": 18
+            }
+          }
+        },
+        {
+          "wallMs": 59.17583299999933,
+          "cpuMs": 51.391,
+          "wallSamples": [
+            59.966,
+            60.568,
+            59.06,
+            60.114,
+            65.681,
+            58.954,
+            60.795,
+            58.864,
+            60.053,
+            60.086,
+            57.852,
+            58.522,
+            59.071,
+            59.176,
+            58.177
+          ],
+          "cpuSamples": [
+            50.861,
+            51.619,
+            51.047,
+            50.631,
+            70.91,
+            51.391,
+            52.441,
+            51.759,
+            51.548,
+            52.068,
+            51.224,
+            49.694,
+            51.493,
+            51.224,
+            50.554
+          ],
+          "documentBytes": 2671363,
+          "checkpointBytes": 533,
+          "logBytes": 12887204,
+          "traced": {
+            "documentWritesPerFlush": 1,
+            "handleSyncsPerFlush": 2,
+            "logBytesReadPerFlush": 12882682,
+            "digestBytesPerFlush": 17865699,
+            "largeStringifiedBytesPerFlush": 7672819,
+            "callsPerFlush": {
+              "eventLog/appendFileSync": 1,
+              "eventLog/writeFileSync": 1,
+              "other/readFileSync": 4,
+              "eventLog/openSync": 1,
+              "other/readSync": 14,
+              "stage/mkdirSync": 1,
+              "live/readdirSync": 37,
+              "stage/statSync": 18,
+              "stage/readdirSync": 37,
+              "stage/writeFileSync": 1,
+              "stage/openSync": 1,
+              "stage/renameSync": 1,
+              "other/lstatSync": 1,
+              "other/writeFileSync": 1,
+              "other/openSync": 2,
+              "other/renameSync": 2,
+              "official/open.async": 2,
+              "official/sync": 2,
+              "official/rename.async": 1,
+              "stage/rmSync": 1,
+              "stage/lstatSync": 1,
+              "live/statSync": 18
+            }
+          }
+        },
+        {
+          "wallMs": 58.939291999999114,
+          "cpuMs": 50.805,
+          "wallSamples": [
+            59.713,
+            58.28,
+            60.756,
+            58.307,
+            58.939,
+            59.412,
+            57.288,
+            58.673,
+            59.717,
+            57.449,
+            60.935,
+            57.395,
+            58.526,
+            60.25,
+            58.961
+          ],
+          "cpuSamples": [
+            52.307,
+            52.253,
+            51.696,
+            50.402,
+            50.776,
+            50.787,
+            50.23,
+            51.458,
+            50.805,
+            49.477,
+            50.897,
+            50.964,
+            50.707,
+            50.815,
+            50.751
+          ],
+          "documentBytes": 2671363,
+          "checkpointBytes": 533,
+          "logBytes": 12887204,
+          "traced": {
+            "documentWritesPerFlush": 1,
+            "handleSyncsPerFlush": 2,
+            "logBytesReadPerFlush": 12882682,
+            "digestBytesPerFlush": 17865699,
+            "largeStringifiedBytesPerFlush": 7672819,
+            "callsPerFlush": {
+              "eventLog/appendFileSync": 1,
+              "eventLog/writeFileSync": 1,
+              "other/readFileSync": 4,
+              "eventLog/openSync": 1,
+              "other/readSync": 14,
+              "stage/mkdirSync": 1,
+              "live/readdirSync": 37,
+              "stage/statSync": 18,
+              "stage/readdirSync": 37,
+              "stage/writeFileSync": 1,
+              "stage/openSync": 1,
+              "stage/renameSync": 1,
+              "other/lstatSync": 1,
+              "other/writeFileSync": 1,
+              "other/openSync": 2,
+              "other/renameSync": 2,
+              "official/open.async": 2,
+              "official/sync": 2,
+              "official/rename.async": 1,
+              "stage/rmSync": 1,
+              "stage/lstatSync": 1,
+              "live/statSync": 18
+            }
+          }
+        },
+        {
+          "wallMs": 59.055875000000015,
+          "cpuMs": 49.631,
+          "wallSamples": [
+            57.594,
+            59.056,
+            59.665,
+            60.475,
+            58.035,
+            61.433,
+            56.759,
+            64.144,
+            59.155,
+            61.63,
+            59.325,
+            58.519,
+            57.667,
+            57.382,
+            55.352
+          ],
+          "cpuSamples": [
+            48.838,
+            49.57,
+            50.156,
+            49.056,
+            49.631,
+            50.605,
+            49.053,
+            67.757,
+            50.418,
+            51.893,
+            50.894,
+            49.233,
+            50.812,
+            49.602,
+            48.699
+          ],
+          "documentBytes": 2671363,
+          "checkpointBytes": 533,
+          "logBytes": 12887204,
+          "traced": {
+            "documentWritesPerFlush": 1,
+            "handleSyncsPerFlush": 2,
+            "logBytesReadPerFlush": 12882682,
+            "digestBytesPerFlush": 17865699,
+            "largeStringifiedBytesPerFlush": 7672819,
+            "callsPerFlush": {
+              "eventLog/appendFileSync": 1,
+              "eventLog/writeFileSync": 1,
+              "other/readFileSync": 4,
+              "eventLog/openSync": 1,
+              "other/readSync": 14,
+              "stage/mkdirSync": 1,
+              "live/readdirSync": 37,
+              "stage/statSync": 18,
+              "stage/readdirSync": 37,
+              "stage/writeFileSync": 1,
+              "stage/openSync": 1,
+              "stage/renameSync": 1,
+              "other/lstatSync": 1,
+              "other/writeFileSync": 1,
+              "other/openSync": 2,
+              "other/renameSync": 2,
+              "official/open.async": 2,
+              "official/sync": 2,
+              "official/rename.async": 1,
+              "stage/rmSync": 1,
+              "stage/lstatSync": 1,
+              "live/statSync": 18
+            }
+          }
+        },
+        {
+          "wallMs": 56.04741700000159,
+          "cpuMs": 48.626,
+          "wallSamples": [
+            54.36,
+            55.534,
+            56.953,
+            54.221,
+            56.047,
+            64.728,
+            61.643,
+            62.108,
+            55.51,
+            55.495,
+            56.283,
+            53.864,
+            57.255,
+            54.45,
+            62.583
+          ],
+          "cpuSamples": [
+            47.587,
+            48.089,
+            48.845,
+            47.595,
+            48.678,
+            49.411,
+            48.337,
+            66.753,
+            48.912,
+            48.78,
+            48.626,
+            47.672,
+            49.124,
+            48.464,
+            47.981
+          ],
+          "documentBytes": 2671363,
+          "checkpointBytes": 533,
+          "logBytes": 12887204,
+          "traced": {
+            "documentWritesPerFlush": 1,
+            "handleSyncsPerFlush": 2,
+            "logBytesReadPerFlush": 12882682,
+            "digestBytesPerFlush": 17865699,
+            "largeStringifiedBytesPerFlush": 7672819,
+            "callsPerFlush": {
+              "eventLog/appendFileSync": 1,
+              "eventLog/writeFileSync": 1,
+              "other/readFileSync": 4,
+              "eventLog/openSync": 1,
+              "other/readSync": 14,
+              "stage/mkdirSync": 1,
+              "live/readdirSync": 37,
+              "stage/statSync": 18,
+              "stage/readdirSync": 37,
+              "stage/writeFileSync": 1,
+              "stage/openSync": 1,
+              "stage/renameSync": 1,
+              "other/lstatSync": 1,
+              "other/writeFileSync": 1,
+              "other/openSync": 2,
+              "other/renameSync": 2,
+              "official/open.async": 2,
+              "official/sync": 2,
+              "official/rename.async": 1,
+              "stage/rmSync": 1,
+              "stage/lstatSync": 1,
+              "live/statSync": 18
+            }
+          }
+        }
+      ],
+      "summary": {
+        "wallMs": 59.055875000000015,
+        "cpuMs": 50.805,
+        "wallRounds": [
+          59.056,
+          59.176,
+          58.939,
+          59.056,
+          56.047
+        ],
+        "cpuRounds": [
+          50.973,
+          51.391,
+          50.805,
+          49.631,
+          48.626
+        ],
+        "documentBytes": 2671363,
+        "checkpointBytes": 533,
+        "logBytes": 12887204,
+        "documentWritesPerFlush": 1,
+        "handleSyncsPerFlush": 2,
+        "logBytesReadPerFlush": 12882682,
+        "digestBytesPerFlush": 17865699,
+        "largeStringifiedBytesPerFlush": 7672819,
+        "callsPerFlush": {
+          "eventLog/appendFileSync": 1,
+          "eventLog/openSync": 1,
+          "eventLog/writeFileSync": 1,
+          "live/readdirSync": 37,
+          "live/statSync": 18,
+          "official/open.async": 2,
+          "official/rename.async": 1,
+          "official/sync": 2,
+          "other/lstatSync": 1,
+          "other/openSync": 2,
+          "other/readFileSync": 4,
+          "other/readSync": 14,
+          "other/renameSync": 2,
+          "other/writeFileSync": 1,
+          "stage/lstatSync": 1,
+          "stage/mkdirSync": 1,
+          "stage/openSync": 1,
+          "stage/readdirSync": 37,
+          "stage/renameSync": 1,
+          "stage/rmSync": 1,
+          "stage/statSync": 18,
+          "stage/writeFileSync": 1
+        }
+      },
+      "attribution": null
+    }
+  ],
+  "withdrawn": [
+    {
+      "scenario": "history-200-new-0",
+      "history": 200,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "wallMs": 0.11270800000056624,
+          "cpuMs": 0.113,
+          "wallSamples": [
+            0.145,
+            0.145,
+            0.144,
+            0.134,
+            0.13,
+            0.119,
+            0.114,
+            0.113,
+            0.112,
+            0.112,
+            0.112,
+            0.111,
+            0.111,
+            0.111,
+            0.111
+          ],
+          "cpuSamples": [
+            0.192,
+            0.158,
+            0.384,
+            0.134,
+            0.13,
+            0.119,
+            0.114,
+            0.113,
+            0.113,
+            0.113,
+            0.113,
+            0.112,
+            0.111,
+            0.111,
+            0.112
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 127919,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        },
+        {
+          "wallMs": 0.14691700000184937,
+          "cpuMs": 0.147,
+          "wallSamples": [
+            0.132,
+            0.147,
+            0.127,
+            0.123,
+            0.126,
+            0.125,
+            0.331,
+            0.263,
+            0.141,
+            0.168,
+            0.219,
+            0.136,
+            0.172,
+            0.188,
+            0.202
+          ],
+          "cpuSamples": [
+            0.134,
+            0.147,
+            0.126,
+            0.123,
+            0.127,
+            0.127,
+            0.347,
+            0.48,
+            0.142,
+            0.891,
+            0.22,
+            0.137,
+            0.172,
+            0.188,
+            0.202
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 127919,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        },
+        {
+          "wallMs": 0.1211669999975129,
+          "cpuMs": 0.122,
+          "wallSamples": [
+            0.127,
+            0.122,
+            0.122,
+            0.122,
+            0.122,
+            0.121,
+            0.12,
+            0.121,
+            0.121,
+            0.122,
+            0.121,
+            0.121,
+            0.12,
+            0.121,
+            0.12
+          ],
+          "cpuSamples": [
+            0.131,
+            0.123,
+            0.122,
+            0.122,
+            0.122,
+            0.121,
+            0.121,
+            0.122,
+            0.121,
+            0.122,
+            0.122,
+            0.121,
+            0.12,
+            0.121,
+            0.121
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 127919,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        }
+      ],
+      "summary": {
+        "wallMs": 0.1211669999975129,
+        "cpuMs": 0.122,
+        "wallRounds": [
+          0.113,
+          0.147,
+          0.121
+        ],
+        "cpuRounds": [
+          0.113,
+          0.147,
+          0.122
+        ],
+        "documentBytes": 26277,
+        "checkpointBytes": 523,
+        "logBytes": 127168,
+        "documentWritesPerFlush": 0,
+        "handleSyncsPerFlush": 0,
+        "logBytesReadPerFlush": 127168,
+        "digestBytesPerFlush": 127919,
+        "largeStringifiedBytesPerFlush": 0,
+        "callsPerFlush": {
+          "eventLog/openSync": 1,
+          "other/readFileSync": 1,
+          "other/readSync": 2
+        }
+      },
+      "variant": "memo-content",
+      "attribution": {
+        "plan.checkpointRead": 0.023,
+        "plan.readEventLog": 0.1,
+        "plan.digestApplied": 0.009,
+        "plan.tail": 0.001,
+        "plan.total": 0.147
+      },
+      "deltaVersusCommitted": {
+        "wallPercent": -28.179,
+        "cpuPercent": -27.811,
+        "digestBytesPerFlush": 24493
+      }
+    },
+    {
+      "scenario": "history-200-new-0",
+      "history": 200,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "wallMs": 0.11170800000036252,
+          "cpuMs": 0.112,
+          "wallSamples": [
+            0.125,
+            0.126,
+            0.136,
+            0.127,
+            0.123,
+            0.116,
+            0.112,
+            0.113,
+            0.11,
+            0.11,
+            0.11,
+            0.109,
+            0.109,
+            0.112,
+            0.109
+          ],
+          "cpuSamples": [
+            0.129,
+            0.129,
+            0.245,
+            0.128,
+            0.123,
+            0.116,
+            0.112,
+            0.113,
+            0.11,
+            0.11,
+            0.111,
+            0.11,
+            0.109,
+            0.112,
+            0.109
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 127919,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        },
+        {
+          "wallMs": 0.11791700000321725,
+          "cpuMs": 0.119,
+          "wallSamples": [
+            0.135,
+            0.118,
+            0.118,
+            0.118,
+            0.117,
+            0.127,
+            0.118,
+            0.117,
+            0.117,
+            0.118,
+            0.135,
+            0.119,
+            0.123,
+            0.118,
+            0.128
+          ],
+          "cpuSamples": [
+            0.137,
+            0.119,
+            0.118,
+            0.118,
+            0.118,
+            0.127,
+            0.118,
+            0.118,
+            0.118,
+            0.119,
+            0.137,
+            0.119,
+            0.394,
+            0.119,
+            0.179
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 127919,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        },
+        {
+          "wallMs": 0.11570800000117742,
+          "cpuMs": 0.116,
+          "wallSamples": [
+            0.118,
+            0.117,
+            0.116,
+            0.116,
+            0.116,
+            0.116,
+            0.117,
+            0.116,
+            0.116,
+            0.116,
+            0.115,
+            0.115,
+            0.116,
+            0.116,
+            0.115
+          ],
+          "cpuSamples": [
+            0.121,
+            0.117,
+            0.116,
+            0.117,
+            0.117,
+            0.117,
+            0.117,
+            0.116,
+            0.117,
+            0.116,
+            0.115,
+            0.116,
+            0.115,
+            0.116,
+            0.116
+          ],
+          "documentBytes": 26277,
+          "checkpointBytes": 523,
+          "logBytes": 127168,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 127168,
+            "digestBytesPerFlush": 127919,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 2
+            }
+          }
+        }
+      ],
+      "summary": {
+        "wallMs": 0.11570800000117742,
+        "cpuMs": 0.116,
+        "wallRounds": [
+          0.112,
+          0.118,
+          0.116
+        ],
+        "cpuRounds": [
+          0.112,
+          0.119,
+          0.116
+        ],
+        "documentBytes": 26277,
+        "checkpointBytes": 523,
+        "logBytes": 127168,
+        "documentWritesPerFlush": 0,
+        "handleSyncsPerFlush": 0,
+        "logBytesReadPerFlush": 127168,
+        "digestBytesPerFlush": 127919,
+        "largeStringifiedBytesPerFlush": 0,
+        "callsPerFlush": {
+          "eventLog/openSync": 1,
+          "other/readFileSync": 1,
+          "other/readSync": 2
+        }
+      },
+      "variant": "memo-identity",
+      "attribution": {
+        "plan.checkpointRead": 0.023,
+        "plan.readEventLog": 0.099,
+        "plan.digestApplied": 0,
+        "plan.tail": 0.001,
+        "plan.total": 0.136
+      },
+      "deltaVersusCommitted": {
+        "wallPercent": -31.415,
+        "cpuPercent": -31.361,
+        "digestBytesPerFlush": 24493
+      }
+    },
+    {
+      "scenario": "history-2000-new-0",
+      "history": 2000,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "wallMs": 0.7278330000008282,
+          "cpuMs": 0.732,
+          "wallSamples": [
+            0.726,
+            0.734,
+            0.739,
+            0.737,
+            0.728,
+            0.764,
+            0.733,
+            0.738,
+            0.747,
+            0.711,
+            0.692,
+            0.709,
+            0.701,
+            0.701,
+            0.702
+          ],
+          "cpuSamples": [
+            0.732,
+            1.452,
+            0.889,
+            0.738,
+            0.729,
+            0.763,
+            0.734,
+            0.739,
+            0.747,
+            0.711,
+            0.692,
+            0.71,
+            0.702,
+            0.7,
+            0.702
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1280326,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        },
+        {
+          "wallMs": 0.7285420000007434,
+          "cpuMs": 0.728,
+          "wallSamples": [
+            0.74,
+            0.746,
+            0.728,
+            0.738,
+            0.723,
+            0.729,
+            0.745,
+            0.724,
+            0.727,
+            0.734,
+            0.736,
+            0.725,
+            0.728,
+            0.735,
+            0.724
+          ],
+          "cpuSamples": [
+            0.744,
+            0.746,
+            0.728,
+            0.738,
+            0.724,
+            0.728,
+            0.747,
+            0.725,
+            0.727,
+            0.734,
+            0.737,
+            0.725,
+            0.728,
+            0.735,
+            0.725
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1280326,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        },
+        {
+          "wallMs": 0.7533750000002328,
+          "cpuMs": 0.758,
+          "wallSamples": [
+            0.753,
+            0.753,
+            0.753,
+            0.761,
+            0.743,
+            0.755,
+            0.723,
+            0.726,
+            0.731,
+            2.672,
+            0.872,
+            0.766,
+            0.77,
+            0.765,
+            0.748
+          ],
+          "cpuSamples": [
+            0.759,
+            0.753,
+            0.755,
+            0.762,
+            0.743,
+            0.758,
+            0.724,
+            0.726,
+            0.734,
+            7.625,
+            1.037,
+            0.767,
+            0.771,
+            0.765,
+            0.749
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1280326,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        }
+      ],
+      "summary": {
+        "wallMs": 0.7285420000007434,
+        "cpuMs": 0.732,
+        "wallRounds": [
+          0.728,
+          0.729,
+          0.753
+        ],
+        "cpuRounds": [
+          0.732,
+          0.728,
+          0.758
+        ],
+        "documentBytes": 263078,
+        "checkpointBytes": 526,
+        "logBytes": 1279572,
+        "documentWritesPerFlush": 0,
+        "handleSyncsPerFlush": 0,
+        "logBytesReadPerFlush": 1279572,
+        "digestBytesPerFlush": 1280326,
+        "largeStringifiedBytesPerFlush": 0,
+        "callsPerFlush": {
+          "eventLog/openSync": 1,
+          "other/readFileSync": 1,
+          "other/readSync": 3
+        }
+      },
+      "variant": "memo-content",
+      "attribution": {
+        "plan.checkpointRead": 0.024,
+        "plan.readEventLog": 0.638,
+        "plan.digestApplied": 0.095,
+        "plan.tail": 0.001,
+        "plan.total": 0.772
+      },
+      "deltaVersusCommitted": {
+        "wallPercent": -31.595,
+        "cpuPercent": -31.332,
+        "digestBytesPerFlush": 246894
+      }
+    },
+    {
+      "scenario": "history-2000-new-0",
+      "history": 2000,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "wallMs": 0.6536249999990105,
+          "cpuMs": 0.654,
+          "wallSamples": [
+            0.626,
+            0.653,
+            0.678,
+            0.643,
+            0.654,
+            0.65,
+            0.669,
+            0.658,
+            0.657,
+            0.654,
+            0.655,
+            0.642,
+            0.642,
+            0.657,
+            0.631
+          ],
+          "cpuSamples": [
+            0.63,
+            0.654,
+            0.679,
+            0.643,
+            0.655,
+            0.651,
+            0.669,
+            0.659,
+            0.657,
+            0.654,
+            0.655,
+            0.642,
+            0.642,
+            0.659,
+            0.632
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1280326,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        },
+        {
+          "wallMs": 0.6534160000010161,
+          "cpuMs": 0.655,
+          "wallSamples": [
+            0.662,
+            0.665,
+            0.654,
+            0.651,
+            0.641,
+            0.643,
+            0.656,
+            0.649,
+            0.652,
+            0.659,
+            0.66,
+            0.641,
+            0.653,
+            0.654,
+            0.644
+          ],
+          "cpuSamples": [
+            0.666,
+            0.666,
+            0.655,
+            0.652,
+            0.641,
+            0.644,
+            0.656,
+            0.65,
+            0.652,
+            0.659,
+            0.661,
+            0.642,
+            0.655,
+            0.655,
+            0.645
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1280326,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        },
+        {
+          "wallMs": 0.6453340000007302,
+          "cpuMs": 0.646,
+          "wallSamples": [
+            0.642,
+            0.64,
+            0.645,
+            0.64,
+            0.641,
+            0.655,
+            0.663,
+            0.652,
+            0.642,
+            0.647,
+            0.66,
+            0.649,
+            0.642,
+            0.649,
+            0.637
+          ],
+          "cpuSamples": [
+            0.646,
+            0.64,
+            0.646,
+            0.641,
+            0.642,
+            0.656,
+            0.664,
+            0.652,
+            0.643,
+            0.648,
+            0.661,
+            0.65,
+            0.643,
+            0.65,
+            0.638
+          ],
+          "documentBytes": 263078,
+          "checkpointBytes": 526,
+          "logBytes": 1279572,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 1279572,
+            "digestBytesPerFlush": 1280326,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 3
+            }
+          }
+        }
+      ],
+      "summary": {
+        "wallMs": 0.6534160000010161,
+        "cpuMs": 0.654,
+        "wallRounds": [
+          0.654,
+          0.653,
+          0.645
+        ],
+        "cpuRounds": [
+          0.654,
+          0.655,
+          0.646
+        ],
+        "documentBytes": 263078,
+        "checkpointBytes": 526,
+        "logBytes": 1279572,
+        "documentWritesPerFlush": 0,
+        "handleSyncsPerFlush": 0,
+        "logBytesReadPerFlush": 1279572,
+        "digestBytesPerFlush": 1280326,
+        "largeStringifiedBytesPerFlush": 0,
+        "callsPerFlush": {
+          "eventLog/openSync": 1,
+          "other/readFileSync": 1,
+          "other/readSync": 3
+        }
+      },
+      "variant": "memo-identity",
+      "attribution": {
+        "plan.checkpointRead": 0.025,
+        "plan.readEventLog": 0.631,
+        "plan.digestApplied": 0,
+        "plan.tail": 0,
+        "plan.total": 0.67
+      },
+      "deltaVersusCommitted": {
+        "wallPercent": -38.649,
+        "cpuPercent": -38.649,
+        "digestBytesPerFlush": 246894
+      }
+    },
+    {
+      "scenario": "history-20000-new-0",
+      "history": 20000,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "wallMs": 7.149875000002794,
+          "cpuMs": 7.15,
+          "wallSamples": [
+            7.16,
+            7.15,
+            7.126,
+            7.094,
+            7.181,
+            7.14,
+            7.1,
+            7.176,
+            7.133,
+            7.154,
+            7.177,
+            7.128,
+            7.171,
+            7.168,
+            7.145
+          ],
+          "cpuSamples": [
+            7.168,
+            7.15,
+            7.127,
+            7.094,
+            7.181,
+            7.141,
+            7.101,
+            7.273,
+            7.133,
+            7.154,
+            7.176,
+            7.128,
+            7.171,
+            7.168,
+            7.146
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 12876333,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        },
+        {
+          "wallMs": 7.131417000000511,
+          "cpuMs": 7.133,
+          "wallSamples": [
+            7.112,
+            7.183,
+            7.136,
+            7.115,
+            7.134,
+            7.128,
+            7.134,
+            7.161,
+            7.126,
+            7.116,
+            7.115,
+            7.131,
+            7.147,
+            7.108,
+            7.143
+          ],
+          "cpuSamples": [
+            7.119,
+            7.184,
+            7.137,
+            7.116,
+            7.135,
+            7.129,
+            7.134,
+            7.162,
+            7.127,
+            7.117,
+            7.115,
+            7.133,
+            7.146,
+            7.108,
+            7.143
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 12876333,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        },
+        {
+          "wallMs": 7.17804199999955,
+          "cpuMs": 7.182,
+          "wallSamples": [
+            7.176,
+            7.181,
+            7.172,
+            7.191,
+            7.187,
+            7.175,
+            7.142,
+            7.225,
+            7.193,
+            7.178,
+            7.178,
+            7.194,
+            7.195,
+            7.149,
+            7.141
+          ],
+          "cpuSamples": [
+            7.183,
+            7.182,
+            7.173,
+            7.191,
+            7.187,
+            7.175,
+            7.143,
+            7.226,
+            7.193,
+            7.18,
+            7.179,
+            7.195,
+            7.195,
+            7.149,
+            7.141
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 12876333,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        }
+      ],
+      "summary": {
+        "wallMs": 7.149875000002794,
+        "cpuMs": 7.15,
+        "wallRounds": [
+          7.15,
+          7.131,
+          7.178
+        ],
+        "cpuRounds": [
+          7.15,
+          7.133,
+          7.182
+        ],
+        "documentBytes": 2649079,
+        "checkpointBytes": 529,
+        "logBytes": 12875576,
+        "documentWritesPerFlush": 0,
+        "handleSyncsPerFlush": 0,
+        "logBytesReadPerFlush": 12875576,
+        "digestBytesPerFlush": 12876333,
+        "largeStringifiedBytesPerFlush": 0,
+        "callsPerFlush": {
+          "eventLog/openSync": 1,
+          "other/readFileSync": 1,
+          "other/readSync": 14
+        }
+      },
+      "variant": "memo-content",
+      "attribution": {
+        "plan.checkpointRead": 0.036,
+        "plan.readEventLog": 5.515,
+        "plan.digestApplied": 1.638,
+        "plan.tail": 0.001,
+        "plan.total": 7.21
+      },
+      "deltaVersusCommitted": {
+        "wallPercent": -32.854,
+        "cpuPercent": -32.858,
+        "digestBytesPerFlush": 2488895
+      }
+    },
+    {
+      "scenario": "history-20000-new-0",
+      "history": 20000,
+      "newEvents": 0,
+      "rounds": [
+        {
+          "wallMs": 5.457875000000058,
+          "cpuMs": 5.463,
+          "wallSamples": [
+            5.486,
+            5.489,
+            5.458,
+            5.488,
+            5.422,
+            5.471,
+            5.443,
+            5.476,
+            5.465,
+            5.451,
+            5.442,
+            5.466,
+            5.449,
+            5.444,
+            5.451
+          ],
+          "cpuSamples": [
+            5.501,
+            5.489,
+            5.463,
+            5.492,
+            5.422,
+            5.471,
+            5.444,
+            5.577,
+            5.464,
+            5.45,
+            5.444,
+            5.466,
+            5.45,
+            5.445,
+            5.452
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 12876333,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        },
+        {
+          "wallMs": 5.458375000001979,
+          "cpuMs": 5.459,
+          "wallSamples": [
+            5.477,
+            5.497,
+            5.468,
+            5.482,
+            5.466,
+            5.479,
+            5.494,
+            5.452,
+            5.445,
+            5.446,
+            5.432,
+            5.452,
+            5.458,
+            5.419,
+            5.41
+          ],
+          "cpuSamples": [
+            5.49,
+            5.498,
+            5.47,
+            5.483,
+            5.467,
+            5.479,
+            5.494,
+            5.453,
+            5.446,
+            5.447,
+            5.434,
+            5.453,
+            5.459,
+            5.421,
+            5.41
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 12876333,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        },
+        {
+          "wallMs": 5.44879199999923,
+          "cpuMs": 5.452,
+          "wallSamples": [
+            5.449,
+            5.486,
+            5.481,
+            5.477,
+            5.494,
+            5.466,
+            5.437,
+            5.451,
+            5.458,
+            5.439,
+            5.433,
+            5.421,
+            5.42,
+            5.443,
+            5.423
+          ],
+          "cpuSamples": [
+            5.455,
+            5.486,
+            5.482,
+            5.477,
+            5.494,
+            5.467,
+            5.439,
+            5.452,
+            5.458,
+            5.439,
+            5.433,
+            5.422,
+            5.421,
+            5.443,
+            5.424
+          ],
+          "documentBytes": 2649079,
+          "checkpointBytes": 529,
+          "logBytes": 12875576,
+          "traced": {
+            "documentWritesPerFlush": 0,
+            "handleSyncsPerFlush": 0,
+            "logBytesReadPerFlush": 12875576,
+            "digestBytesPerFlush": 12876333,
+            "largeStringifiedBytesPerFlush": 0,
+            "callsPerFlush": {
+              "other/readFileSync": 1,
+              "eventLog/openSync": 1,
+              "other/readSync": 14
+            }
+          }
+        }
+      ],
+      "summary": {
+        "wallMs": 5.457875000000058,
+        "cpuMs": 5.459,
+        "wallRounds": [
+          5.458,
+          5.458,
+          5.449
+        ],
+        "cpuRounds": [
+          5.463,
+          5.459,
+          5.452
+        ],
+        "documentBytes": 2649079,
+        "checkpointBytes": 529,
+        "logBytes": 12875576,
+        "documentWritesPerFlush": 0,
+        "handleSyncsPerFlush": 0,
+        "logBytesReadPerFlush": 12875576,
+        "digestBytesPerFlush": 12876333,
+        "largeStringifiedBytesPerFlush": 0,
+        "callsPerFlush": {
+          "eventLog/openSync": 1,
+          "other/readFileSync": 1,
+          "other/readSync": 14
+        }
+      },
+      "variant": "memo-identity",
+      "attribution": {
+        "plan.checkpointRead": 0.032,
+        "plan.readEventLog": 5.453,
+        "plan.digestApplied": 0,
+        "plan.tail": 0.001,
+        "plan.total": 5.504
+      },
+      "deltaVersusCommitted": {
+        "wallPercent": -48.744,
+        "cpuPercent": -48.737,
+        "digestBytesPerFlush": 2488895
+      }
+    }
+  ],
+  "attribution": [
+    {
+      "scenario": "history-200-new-0",
+      "side": "memo-content",
+      "phases": {
+        "plan.checkpointRead": 0.023,
+        "plan.readEventLog": 0.1,
+        "plan.digestApplied": 0.009,
+        "plan.tail": 0.001,
+        "plan.total": 0.147
+      },
+      "committedPhases": {
+        "plan.checkpointRead": 0.024,
+        "plan.readEventLog": 0.104,
+        "plan.digestApplied": 0.05,
+        "plan.tail": 0.001,
+        "plan.total": 0.195
+      }
+    },
+    {
+      "scenario": "history-200-new-0",
+      "side": "memo-identity",
+      "phases": {
+        "plan.checkpointRead": 0.023,
+        "plan.readEventLog": 0.099,
+        "plan.digestApplied": 0,
+        "plan.tail": 0.001,
+        "plan.total": 0.136
+      },
+      "committedPhases": {
+        "plan.checkpointRead": 0.024,
+        "plan.readEventLog": 0.104,
+        "plan.digestApplied": 0.05,
+        "plan.tail": 0.001,
+        "plan.total": 0.195
+      }
+    },
+    {
+      "scenario": "history-2000-new-0",
+      "side": "memo-content",
+      "phases": {
+        "plan.checkpointRead": 0.024,
+        "plan.readEventLog": 0.638,
+        "plan.digestApplied": 0.095,
+        "plan.tail": 0.001,
+        "plan.total": 0.772
+      },
+      "committedPhases": {
+        "plan.checkpointRead": 0.022,
+        "plan.readEventLog": 0.639,
+        "plan.digestApplied": 0.432,
+        "plan.tail": 0.001,
+        "plan.total": 1.111
+      }
+    },
+    {
+      "scenario": "history-2000-new-0",
+      "side": "memo-identity",
+      "phases": {
+        "plan.checkpointRead": 0.025,
+        "plan.readEventLog": 0.631,
+        "plan.digestApplied": 0,
+        "plan.tail": 0,
+        "plan.total": 0.67
+      },
+      "committedPhases": {
+        "plan.checkpointRead": 0.022,
+        "plan.readEventLog": 0.639,
+        "plan.digestApplied": 0.432,
+        "plan.tail": 0.001,
+        "plan.total": 1.111
+      }
+    },
+    {
+      "scenario": "history-20000-new-0",
+      "side": "memo-content",
+      "phases": {
+        "plan.checkpointRead": 0.036,
+        "plan.readEventLog": 5.515,
+        "plan.digestApplied": 1.638,
+        "plan.tail": 0.001,
+        "plan.total": 7.21
+      },
+      "committedPhases": {
+        "plan.checkpointRead": 0.044,
+        "plan.readEventLog": 5.545,
+        "plan.digestApplied": 5.111,
+        "plan.tail": 0.001,
+        "plan.total": 10.726
+      }
+    },
+    {
+      "scenario": "history-20000-new-0",
+      "side": "memo-identity",
+      "phases": {
+        "plan.checkpointRead": 0.032,
+        "plan.readEventLog": 5.453,
+        "plan.digestApplied": 0,
+        "plan.tail": 0.001,
+        "plan.total": 5.504
+      },
+      "committedPhases": {
+        "plan.checkpointRead": 0.044,
+        "plan.readEventLog": 5.545,
+        "plan.digestApplied": 5.111,
+        "plan.tail": 0.001,
+        "plan.total": 10.726
+      }
+    }
+  ],
+  "probes": [
+    {
+      "name": "one-shot getter",
+      "observations": {
+        "committed": {
+          "firstIsFirstRead": true,
+          "secondIsSecondRead": true,
+          "movedWithTheRead": true
+        },
+        "memo-content": {
+          "firstIsFirstRead": true,
+          "secondIsSecondRead": false,
+          "movedWithTheRead": false
+        },
+        "memo-identity": {
+          "firstIsFirstRead": true,
+          "secondIsSecondRead": false,
+          "movedWithTheRead": false
+        }
+      }
+    },
+    {
+      "name": "root toJSON",
+      "observations": {
+        "committed": {
+          "movedWithTheSerialization": true,
+          "afterIsCurrent": true
+        },
+        "memo-content": {
+          "movedWithTheSerialization": false,
+          "afterIsCurrent": false
+        },
+        "memo-identity": {
+          "movedWithTheSerialization": false,
+          "afterIsCurrent": false
+        }
+      }
+    },
+    {
+      "name": "array length",
+      "observations": {
+        "committed": {
+          "movedWithTheLength": true,
+          "afterIsCurrent": true
+        },
+        "memo-content": {
+          "movedWithTheLength": false,
+          "afterIsCurrent": false
+        },
+        "memo-identity": {
+          "movedWithTheLength": false,
+          "afterIsCurrent": false
+        }
+      }
+    },
+    {
+      "name": "read that throws",
+      "observations": {
+        "committed": {
+          "settled": true,
+          "outcome": "digest",
+          "reads": 1
+        },
+        "memo-content": {
+          "settled": false,
+          "outcome": "second read",
+          "reads": 1
+        },
+        "memo-identity": {
+          "settled": true,
+          "outcome": "digest",
+          "reads": 1
+        }
+      }
+    },
+    {
+      "name": "non-object argument",
+      "observations": {
+        "committed": {
+          "null": {
+            "digestIsCurrent": true
+          },
+          "marker": {
+            "digestIsCurrent": true
+          }
+        },
+        "memo-content": {
+          "null": {
+            "threw": "Cannot convert undefined or null to object"
+          },
+          "marker": {
+            "threw": "Invalid value used as weak map key"
+          }
+        },
+        "memo-identity": {
+          "null": {
+            "threw": "Invalid value used as weak map key"
+          },
+          "marker": {
+            "threw": "Invalid value used as weak map key"
+          }
+        }
+      }
+    }
+  ],
+  "behaviors": [
+    {
+      "name": "tampered-prefix",
+      "flush": {
+        "threw": "Error: E_DOMAIN_EVENT_AUTH"
+      },
+      "durableUnchanged": true,
+      "markers": 2000,
+      "archives": 0
+    },
+    {
+      "name": "checkpoint-deleted",
+      "flush": {
+        "applied": 0,
+        "duplicates": 2000
+      },
+      "checkpointContentUnchanged": true,
+      "durableUnchanged": true,
+      "markers": 2000,
+      "archives": 0
+    },
+    {
+      "name": "marker-rewound-replaced",
+      "rewoundMarkerAbsent": true,
+      "flush": {
+        "applied": 2,
+        "duplicates": 1999
+      },
+      "rewoundMarkerRepaired": true,
+      "markers": 2001,
+      "checkpointDescribesMap": true,
+      "secondFlush": {
+        "applied": 0,
+        "duplicates": 2001
+      },
+      "restartFlush": {
+        "applied": 0,
+        "duplicates": 2001
+      },
+      "archives": 0
+    },
+    {
+      "name": "marker-rewound-in-place",
+      "rewoundMarkerAbsent": true,
+      "flush": {
+        "applied": 2,
+        "duplicates": 1999
+      },
+      "rewoundMarkerRepaired": true,
+      "markers": 2001,
+      "checkpointDescribesMap": true,
+      "secondFlush": {
+        "applied": 0,
+        "duplicates": 2001
+      },
+      "restartFlush": {
+        "applied": 0,
+        "duplicates": 2001
+      },
+      "archives": 0
+    },
+    {
+      "name": "torn-trailing-record",
+      "tornFlush": {
+        "applied": 1,
+        "duplicates": 2000
+      },
+      "checkpointStopsBeforeTornLine": true,
+      "terminatedFlush": {
+        "applied": 0,
+        "duplicates": 2001
+      },
+      "markers": 2001,
+      "archives": 0
+    },
+    {
+      "name": "restart",
+      "restartFlush": {
+        "applied": 0,
+        "duplicates": 2000
+      },
+      "durableUnchanged": true,
+      "markers": 2000,
+      "archives": 0
+    }
+  ],
+  "durable": [
+    {
+      "scenario": "history-200-new-0",
+      "documentBytes": 26277,
+      "checkpointBytes": 523,
+      "checkpoint": {
+        "schema": 2,
+        "bytes": 127168,
+        "records": 200,
+        "digest": "a28dfaddcf24e4b163c42c559c46d650bbd84dafdf68f4fc28f23b7c284d96e1",
+        "writer": "dsh-evolution-orchestrator",
+        "first": {
+          "id": "evolution:measurement-completed:steady-experiment-1",
+          "mac": "795dd825dfd1a496c302f5352a7b4de9e5eec3b57f1255e93a2905c17b6d58fc"
+        },
+        "last": {
+          "id": "evolution:measurement-completed:steady-experiment-200",
+          "mac": "bbdb2489facc0535a4b88946b64db59500c95cabdccb460240a270a12c35c574"
+        },
+        "appliedDigest": "625a4d79af85e8736112e339d09f836e51886b32bf921b0d6c9a894f6c117112"
+      },
+      "archiveFiles": 0
+    },
+    {
+      "scenario": "history-2000-new-0",
+      "documentBytes": 263078,
+      "checkpointBytes": 526,
+      "checkpoint": {
+        "schema": 2,
+        "bytes": 1279572,
+        "records": 2000,
+        "digest": "14d18c2e651d0a84d5e1ce4c8275c55a61568bb2f60435e943f97f3c700027de",
+        "writer": "dsh-evolution-orchestrator",
+        "first": {
+          "id": "evolution:measurement-completed:steady-experiment-1",
+          "mac": "795dd825dfd1a496c302f5352a7b4de9e5eec3b57f1255e93a2905c17b6d58fc"
+        },
+        "last": {
+          "id": "evolution:measurement-completed:steady-experiment-2000",
+          "mac": "202db7290283d21216e7166654132d9d659367ac7bc3e9a6e28d4bb2024a81e1"
+        },
+        "appliedDigest": "5dcad3190fdd7eb1addabbe3df8ce7baf706c85d242d3dcfc8e4938d37881974"
+      },
+      "archiveFiles": 0
+    },
+    {
+      "scenario": "history-20000-new-0",
+      "documentBytes": 2649079,
+      "checkpointBytes": 529,
+      "checkpoint": {
+        "schema": 2,
+        "bytes": 12875576,
+        "records": 20000,
+        "digest": "83ae07e47758cdb39ab0a7d963d853235a0f5cd0641551702434b2c597d5ff69",
+        "writer": "dsh-evolution-orchestrator",
+        "first": {
+          "id": "evolution:measurement-completed:steady-experiment-1",
+          "mac": "795dd825dfd1a496c302f5352a7b4de9e5eec3b57f1255e93a2905c17b6d58fc"
+        },
+        "last": {
+          "id": "evolution:measurement-completed:steady-experiment-20000",
+          "mac": "4ca9167b0916a14f433f379d2017eeb6706d13eebf2050672011c716eaa629f5"
+        },
+        "appliedDigest": "025df412c3f88a5bd92650efacdf90f6ba329fdedd1c5c55a4ae15023a5b84f7"
+      },
+      "archiveFiles": 0
+    },
+    {
+      "scenario": "history-20000-new-1",
+      "documentBytes": 2657035,
+      "checkpointBytes": 533,
+      "checkpoint": {
+        "schema": 2,
+        "bytes": 12879452,
+        "records": 20006,
+        "digest": "37ad6372bfaf667099bd12338ff243b4b39fda7e704353ca64f5c5519354cc77",
+        "writer": "dsh-evolution-orchestrator",
+        "first": {
+          "id": "evolution:measurement-completed:steady-experiment-20006",
+          "mac": "0a71aebc50193a61f8949a71d73d603a53cffcaf4a97816fe71129a12eca30ea"
+        },
+        "last": {
+          "id": "evolution:measurement-completed:steady-experiment-20006",
+          "mac": "0a71aebc50193a61f8949a71d73d603a53cffcaf4a97816fe71129a12eca30ea"
+        },
+        "appliedDigest": "32ad8bdf708b07d3d353eff1cd814bd0c09205bc60dbb4eafd9442dd44d566de"
+      },
+      "archiveFiles": 0
+    }
+  ]
+}
