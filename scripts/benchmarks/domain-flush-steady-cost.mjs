@@ -51,7 +51,12 @@ const FROZEN_NOW = Date.parse("2026-11-03T00:00:00.000Z");
 const KEY = "b".repeat(64);
 const SOURCE_FILES = ["lib/event-log-checkpoint.js", "lib/domain-storage.js"];
 
-const ONLY = option("scenario", null)?.split(",").map((name) => name.trim()).filter(Boolean) ?? null;
+const ONLY_RAW = option("scenario", null);
+// `--scenario` with no value must not quietly mean "every scenario".
+assert.ok(!args.includes("--scenario") || (typeof ONLY_RAW === "string" && ONLY_RAW.trim() !== ""),
+  "--scenario needs a comma-separated list of scenario names");
+const ONLY = ONLY_RAW === null ? null : ONLY_RAW.split(",").map((name) => name.trim()).filter(Boolean);
+assert.ok(ONLY === null || ONLY.length > 0, "--scenario needs at least one scenario name");
 for (const [name, value] of [["rounds", ROUNDS], ["samples", SAMPLES], ["warmup", WARMUP],
   ["attribution-samples", ATTRIBUTION_SAMPLES], ["behavior-history", BEHAVIOR_HISTORY]]) {
   assert.ok(Number.isSafeInteger(value) && value > 0, `--${name} must be a positive integer, saw ${value}`);
@@ -59,10 +64,13 @@ for (const [name, value] of [["rounds", ROUNDS], ["samples", SAMPLES], ["warmup"
 const label = (scenario) => `history-${scenario.history}-new-${scenario.newEvents}`;
 // The measured shapes: the three steady states this round is about, plus one
 // committing shape to show the pass that carries a new event is untouched.
-const SCENARIOS = [{ history: 200, newEvents: 0 }, { history: 2000, newEvents: 0 },
-  { history: 20000, newEvents: 0 }, { history: 20000, newEvents: 1 }]
-  .filter((scenario) => ONLY === null || ONLY.includes(label(scenario)));
-assert.ok(SCENARIOS.length > 0, `--scenario selected nothing: ${JSON.stringify(ONLY)}`);
+const ALL_SCENARIOS = [{ history: 200, newEvents: 0 }, { history: 2000, newEvents: 0 },
+  { history: 20000, newEvents: 0 }, { history: 20000, newEvents: 1 }];
+for (const name of ONLY ?? []) {
+  assert.ok(ALL_SCENARIOS.some((scenario) => label(scenario) === name),
+    `unknown --scenario ${JSON.stringify(name)}; known: ${ALL_SCENARIOS.map(label).join(", ")}`);
+}
+const SCENARIOS = ALL_SCENARIOS.filter((scenario) => ONLY === null || ONLY.includes(label(scenario)));
 const STEADY = SCENARIOS.filter((scenario) => scenario.newEvents === 0);
 
 const BEHAVIORS = ["tampered-prefix", "checkpoint-deleted", "marker-rewound-replaced",

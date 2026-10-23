@@ -31,7 +31,8 @@ const { JsonStorageBackend } = await import('@deepseek-ai/dsh-storage-json');
  *     serves a digest for content the map no longer reports;
  *   - any extra read of a live table can throw where the single serialization
  *     would have succeeded, and a non-object argument starts throwing instead of
- *     being digested.
+ *     being digested (`Object.keys(null)` in a snapshotting cache, the `WeakMap`
+ *     key in an identity cache).
  *
  * The cases below are the counterexamples that withdrew it, written against the
  * single-serialization implementation that remains. Measured discrimination (two
