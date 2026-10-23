@@ -21,7 +21,8 @@ import {
   experienceKnowledgeKey,
   finalizeExperienceRecall,
 } from '../lib/experience-recall.js';
-import { EvolutionOrchestrator, EvolutionEventBridge } from '../lib/orchestrator.js';
+import { EvolutionOrchestrator, EvolutionEventBridge, safeErrorDto } from '../lib/orchestrator.js';
+import { apply } from '../lib/registration.js';
 import { openDomainStorage } from '../lib/domain-storage.js';
 
 const TARGET = 'plugin:edge-cache';
@@ -900,8 +901,24 @@ function orchestratorFixture(overrides = {}) {
   return { core, ctx, presetDir, exec };
 }
 
-test('recall: propose attaches bounded experience without a domain store', () => {
-  const { core, presetDir, exec } = orchestratorFixture();
+/** The registered tool surface, so the `evolution_history` entry point is exercised as one. */
+function historyToolFixture(domainStorage) {
+  const tools = new Map();
+  const presetDir = scratch('evo-recall-history-');
+  const ctx = {
+    dynamicCordisRunner: {},
+    tools: { register: (definition) => { tools.set(definition.name, definition); } },
+    systemPrompt: { section: () => {} },
+    on: () => {},
+    logger: { warn() {} },
+    registry: { values: () => [] },
+    emit() {},
+  };
+  apply(ctx, { presetDir, startupDrift: false, eventBridge: { emit: () => ({}) }, domainStorage });
+  return { tools, presetDir };
+}
+
+test('recall: propose attaches bounded experience without a domain store', () => {  const { core, presetDir, exec } = orchestratorFixture();
   try {
     const proposal = core.propose({ why: 'edge cache warmup', target: TARGET, impactScope: ['runtime'], successMetrics: ['p95'] }, exec);
     assert.equal(proposal.ok, true);
@@ -952,6 +969,169 @@ test('recall: a failing domain store degrades to local memory instead of breakin
   } finally {
     fs.rmSync(presetDir, { recursive: true, force: true });
   }
+});
+
+test('recall: a source-supplied error is redacted before it reaches `unavailable`', () => {
+  // The finalizer is exported and a third-party `domainStorage.recall()` can
+  // name its own failure, so the text used to reach `unavailable` — and from
+  // there the proposal output — verbatim.
+  const SECRET = 'hunter2-review-secret';
+  const result = finalizeExperienceRecall(INPUT, [
+    { source: 'knowledge', error: `Authorization: Bearer ${SECRET}` },
+    collectFailureMemoryExperience([], INPUT, {}),
+  ], {});
+  assert.equal(result.unavailable.length, 1);
+  const reported = result.unavailable[0];
+  assert.ok(reported.startsWith('knowledge:'), reported);
+  assert.equal(reported.includes(SECRET), false, reported);
+  assert.match(reported, /\[redacted\]/);
+});
+
+test('recall: a failing domain store cannot echo a credential into the proposal result', () => {
+  const SECRET = 'hunter2-review-secret';
+  const domainStorage = {
+    recall: () => { throw new Error(`connect failed: password=${SECRET} host=db1`); },
+    query: () => null,
+    flush: () => null,
+  };
+  const { core, presetDir, exec } = orchestratorFixture({ domainStorage });
+  try {
+    const proposal = core.propose({ why: 'edge cache warmup', target: TARGET, impactScope: ['runtime'], successMetrics: ['p95'] }, exec);
+    assert.equal(proposal.ok, true, 'a failing store still degrades instead of breaking the proposal');
+    const unavailable = proposal.experienceRecall.unavailable;
+    assert.equal(unavailable.length, 1);
+    assert.ok(unavailable[0].startsWith('knowledge:'), unavailable[0]);
+    assert.equal(unavailable[0].includes(SECRET), false, unavailable[0]);
+    // Redaction must not cost the diagnostic: the failure's own text survives.
+    // The credential rule claims the whole remainder after a credential key
+    // (`host=db1` goes with the value), which is the documented trade-off.
+    assert.equal(unavailable[0], 'knowledge:connect failed: password=[redacted]');
+    // The classified fingerprint survives the redacted text, and it is the DTO of
+    // the *original* message (computed by the orchestrator inside its catch), not
+    // of the summary the finalizer was handed.
+    const expected = safeErrorDto(new Error(`connect failed: password=${SECRET} host=db1`), 'recall');
+    assert.deepEqual(proposal.experienceRecall.sourceErrors, [{ source: 'knowledge', ...expected }]);
+    assert.equal(JSON.stringify(proposal).includes(SECRET), false);
+  } finally {
+    fs.rmSync(presetDir, { recursive: true, force: true });
+  }
+});
+
+test('recall: a store that returns no source still reports `knowledge:unavailable`', () => {
+  // The regression this pins: a normal `undefined` return is NOT a failure, and
+  // it must keep contributing the `unavailable` marker instead of being dropped
+  // and read as "no history". While the store threw, the redacted reason is
+  // what is reported instead.
+  for (const recall of [() => undefined, () => null]) {
+    const domainStorage = { recall, query: () => null, flush: () => null };
+    const { core, presetDir, exec } = orchestratorFixture({ domainStorage });
+    try {
+      const proposal = core.propose({ why: 'edge cache warmup', target: TARGET, impactScope: ['runtime'], successMetrics: ['p95'] }, exec);
+      assert.deepEqual(proposal.experienceRecall.unavailable, ['knowledge:unavailable']);
+      // The marker is a failing source, so it carries a fingerprint like any
+      // other; the text itself is the fixed marker, not free text.
+      assert.equal(proposal.experienceRecall.sourceErrors.length, 1);
+      assert.equal(proposal.experienceRecall.sourceErrors[0].errorSummary, 'unavailable');
+      assert.match(proposal.experienceRecall.sourceErrors[0].errorDigest, /^sha256:[0-9a-f]{16}$/);
+    } finally {
+      fs.rmSync(presetDir, { recursive: true, force: true });
+    }
+  }
+  const throwing = { recall: () => { throw new Error('E_DOMAIN_CLOSED'); }, query: () => null, flush: () => null };
+  const { core, presetDir, exec } = orchestratorFixture({ domainStorage: throwing });
+  try {
+    const proposal = core.propose({ why: 'edge cache warmup', target: TARGET, impactScope: ['runtime'], successMetrics: ['p95'] }, exec);
+    assert.deepEqual(proposal.experienceRecall.unavailable, ['knowledge:E_DOMAIN_CLOSED']);
+    assert.equal(proposal.experienceRecall.sourceErrors.length, 1);
+  } finally {
+    fs.rmSync(presetDir, { recursive: true, force: true });
+  }
+});
+
+test('recall: an unexpected recall failure degrades to a redacted summary, not the thrown text', () => {
+  const SECRET = 'hunter2-review-secret';
+  const { core, presetDir, exec } = orchestratorFixture();
+  try {
+    // A damaged/unreadable memory handle is the realistic way the shared recall
+    // entry throws: `inspect()` only reads `diagnostics()`, so this getter is
+    // first touched by the recall's `this.memory?.data?.entries` read.
+    Object.defineProperty(core.memory, 'data', {
+      configurable: true,
+      get() { throw new Error(`memory read failed: api_key=${SECRET}`); },
+    });
+    const proposal = core.propose({ why: 'edge cache warmup', target: TARGET, impactScope: ['runtime'], successMetrics: ['p95'] }, exec);
+    assert.equal(proposal.ok, true);
+    // The shared entry contains the throw, so the degradation is reported as a
+    // failing source (with its fingerprint) rather than escaping to `propose`.
+    assert.deepEqual(proposal.experienceRecall.unavailable, ['knowledge:memory read failed: api_key=[redacted]']);
+    assert.equal(proposal.experienceRecall.unavailable[0].includes(SECRET), false);
+    assert.equal(proposal.experienceRecall.sourceErrors.length, 1);
+    assert.equal(proposal.experienceRecall.sourceErrors[0].source, 'knowledge');
+    assert.match(proposal.experienceRecall.sourceErrors[0].errorDigest, /^sha256:[0-9a-f]{16}$/);
+  } finally {
+    fs.rmSync(presetDir, { recursive: true, force: true });
+  }
+});
+
+test('recall: a source object whose `error` getter throws cannot escape `evolution_history`', async () => {
+  const SECRET = 'hunter2-review-secret';
+  // The failure the finalizer used to run outside the catch for: `recall()` hands
+  // back a source object, and reading `error` from it throws. `evolution_history`
+  // calls the shared entry with no catch of its own, so the exception — and the
+  // token in its message — reached the tool result.
+  const domainStorage = {
+    recall: () => ({
+      source: 'knowledge',
+      considered: 1,
+      scanned: 1,
+      records: [],
+      get error() { throw new Error(`domain envelope unreadable: token=${SECRET}`); },
+    }),
+    query: () => null,
+    flush: () => null,
+  };
+  const { tools, presetDir } = historyToolFixture(domainStorage);
+  try {
+    const history = tools.get('evolution_history');
+    assert.ok(history, 'evolution_history is registered with a domain store');
+    const result = await history.execute({ query: 'edge cache warmup latency', target: TARGET }, { agent: { id: 'history-owner' }, signal: new AbortController().signal });
+    assert.ok(result && typeof result === 'object');
+    assert.deepEqual(result.resolved, []);
+    assert.equal(result.unavailable.length, 1, JSON.stringify(result.unavailable));
+    assert.equal(result.unavailable[0].includes(SECRET), false, result.unavailable[0]);
+    assert.match(result.unavailable[0], /token=\[redacted\]/);
+    assert.equal(result.sourceErrors.length, 1);
+    assert.match(result.sourceErrors[0].errorDigest, /^sha256:[0-9a-f]{16}$/);
+    assert.equal(JSON.stringify(result).includes(SECRET), false, 'no field of the result carries the token');
+  } finally {
+    fs.rmSync(presetDir, { recursive: true, force: true });
+  }
+});
+
+test('recall: `sourceErrors` is computed from the source text, never from a source-supplied DTO', () => {
+  // The finalizer is exported and a third-party `domainStorage.recall()` can put
+  // anything in a source field, so a source-supplied `errorDetail` is forgeable
+  // and must not be read: it would carry an unredacted summary/digest straight
+  // into the proposal result.
+  const SECRET = 'hunter2-review-secret';
+  const result = finalizeExperienceRecall(INPUT, [{
+    source: 'knowledge',
+    error: 'Authorization: Bearer ghp_review',
+    errorDetail: {
+      errorCode: `E_${SECRET}`,
+      errorCategory: SECRET,
+      errorDigest: SECRET,
+      errorSummary: `token=${SECRET}`,
+    },
+  }], {});
+  assert.deepEqual(result.unavailable, ['knowledge:Authorization: [redacted]']);
+  assert.equal(JSON.stringify(result).includes(SECRET), false, JSON.stringify(result));
+  assert.equal(result.sourceErrors.length, 1);
+  assert.equal(result.sourceErrors[0].source, 'knowledge');
+  assert.equal(result.sourceErrors[0].errorCode, null);
+  assert.equal(result.sourceErrors[0].errorSummary, 'Authorization: [redacted]');
+  assert.match(result.sourceErrors[0].errorDigest, /^sha256:[0-9a-f]{16}$/);
+  assert.equal(typeof result.sourceErrors[0].errorCategory, 'string');
 });
 
 test('recall: it is not consulted by inspect, measurement, or autonomous observation', async () => {

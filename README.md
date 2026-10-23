@@ -105,7 +105,7 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 | 文本匹配扫描范围 | 最近 2000 条 |
 | 建议条数 / token 数 / 引用长度 | 3 / 48 / 96 |
 
-精确重放按 `knowledgeKey` 等值判断，**不受扫描窗口限制**——很久以前探索过的同一 target 仍能被识别，也不会被高分普通匹配挤出 `maxRecords`；但该上限本身仍适用于精确重放，超过 12 条精确重放时同样截断。检索只读：`finalizeExperienceRecall` 把每个来源交来的记录按已知投影字段**重建**成副本并夹到已声明上限内（六字段夹到 `maxText`、`state` / `lastOutcome` 夹到 40、计数经 `integer()`、日期经 `isoOrNull()`、`evidenceRefs` 去重并限制在 `maxEvidenceRefs` 条且每条不超过 `maxRefLength`），因此第三方 `domainStorage.recall()` 不能加宽它重建的那些字段、带出未声明字段，也不能让单个来源贡献超过 `maxRecords` 条不同事实；身份字段 `source` 与字符串 `key` 按原样带过，其大小由提供它们的来源决定，而不是由本模块限制；调用方传入的记录本身从不被改写。领域存储缺失或读取失败时降级为本地失败记忆，并在 `unavailable` 中显式报告，而不是伪装成"没有历史"。
+精确重放按 `knowledgeKey` 等值判断，**不受扫描窗口限制**——很久以前探索过的同一 target 仍能被识别，也不会被高分普通匹配挤出 `maxRecords`；但该上限本身仍适用于精确重放，超过 12 条精确重放时同样截断。检索只读：`finalizeExperienceRecall` 把每个来源交来的记录按已知投影字段**重建**成副本并夹到已声明上限内（六字段夹到 `maxText`、`state` / `lastOutcome` 夹到 40、计数经 `integer()`、日期经 `isoOrNull()`、`evidenceRefs` 去重并限制在 `maxEvidenceRefs` 条且每条不超过 `maxRefLength`），因此第三方 `domainStorage.recall()` 不能加宽它重建的那些字段、带出未声明字段，也不能让单个来源贡献超过 `maxRecords` 条不同事实；身份字段 `source` 与字符串 `key` 按原样带过，其大小由提供它们的来源决定，而不是由本模块限制；调用方传入的记录本身从不被改写。领域存储缺失或读取失败时降级为本地失败记忆，并在 `unavailable` 中显式报告，而不是伪装成"没有历史"；该报告只保留脱敏、夹到 64 字符的错误摘要，分类与指纹放在 `sourceErrors`（`errorCode` / `errorCategory` / `errorDigest` / `errorSummary`）。来源交来的错误文本一律在模块内重新过 `safeErrorDto`，来源自带的 DTO 字段不被采信；原始消息（而非脱敏摘要）的指纹只有 orchestrator 在自己的 catch 里算出的那一份，由它直接写入 `sourceErrors`。
 
 ### 2.4 无模型的健康诊断
 
