@@ -10,7 +10,13 @@ import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { EvolutionEventBridge, recoverStalePromotionLock } from '../lib/orchestrator.js';
+import { openDomainStorage } from '../lib/domain-storage.js';
 import { scratchRoot, exists } from './orchestrator-durability-fixtures.mjs';
+const { DomainFacility } = await import('@deepseek-ai/dsh-storage-domain');
+const { JsonStorageBackend } = await import('@deepseek-ai/dsh-storage-json');
+
+const EVENT_KEY = 'e'.repeat(64);
+const EVENT_WRITER = 'durability-writer';
 
 async function seedLock(lockPath, metadata) {
   await fsp.mkdir(lockPath, { recursive: true });
@@ -140,4 +146,73 @@ test('P3-19 a write that makes no progress raises instead of marking the event s
   const content = await fsp.readFile(file, 'utf8');
   assert.equal(content.split('\n').filter(Boolean).length, 1);
   assert.equal(JSON.parse(content.trim()).event.eventId, written.eventId);
+});
+
+test('an event whose complete append hits fsync EIO retries the same signed envelope and replays once', async t => {
+  const root = await scratchRoot('event-fsync-retry');
+  t.after(() => fsp.rm(root, { recursive: true, force: true }));
+  const backend = new JsonStorageBackend(path.join(root, 'official'));
+  const disposers = [];
+  const listeners = new Map();
+  const ctx = {
+    emit(name, ...args) { for (const listener of listeners.get(name) ?? []) listener(...args); },
+    on(name, listener) {
+      const registered = listeners.get(name) ?? [];
+      registered.push(listener);
+      listeners.set(name, registered);
+      return () => { const index = registered.indexOf(listener); if (index >= 0) registered.splice(index, 1); };
+    },
+    logger: { warn() {}, error() {} },
+    storage: { backend: { get: () => backend } },
+    effect(dispose) { disposers.push(dispose); },
+  };
+  ctx.storageDomain = new DomainFacility(ctx, { backend: 'json' });
+  const file = path.join(root, 'execution-events.jsonl');
+  const config = { presetDir: root, eventBridgePath: file, eventBridgeKey: EVENT_KEY, eventBridgeWriter: EVENT_WRITER };
+  const bridge = new EvolutionEventBridge({ file, key: EVENT_KEY, writer: EVENT_WRITER });
+  const record = { id: 'exp-fsync-retry', state: 'proposed', proposal: { target: 'plugin:durability' } };
+  let port;
+  let portDispose;
+
+  try {
+    port = await openDomainStorage(ctx, config);
+    portDispose = disposers.at(-1)();
+    const originalFsyncSync = fs.fsyncSync;
+    let injected = false;
+    try {
+      fs.fsyncSync = function failFirstFileSync(descriptor) {
+        if (!injected && fs.fstatSync(descriptor).isFile()) {
+          injected = true;
+          const error = new Error('injected fsync EIO');
+          error.code = 'EIO';
+          throw error;
+        }
+        return originalFsyncSync.call(this, descriptor);
+      };
+      assert.throws(() => bridge.emit('proposal-created', record), { code: 'EIO' });
+    } finally {
+      fs.fsyncSync = originalFsyncSync;
+    }
+    assert.equal(injected, true, 'the fault occurred after a complete append');
+
+    bridge.emit('proposal-created', record);
+    const lines = (await fsp.readFile(file, 'utf8')).trimEnd().split('\n');
+    assert.equal(lines.length, 1, 'retry completes the existing line instead of appending a new MAC');
+    const envelope = JSON.parse(lines[0]);
+    assert.equal(envelope.event.eventId, 'evolution:proposal-created:exp-fsync-retry');
+    assert.equal(envelope.sequence, 1);
+    assert.deepEqual(await port.flush(), { applied: 1, duplicates: 0 });
+
+    await portDispose();
+    portDispose = undefined;
+    port = await openDomainStorage(ctx, config);
+    portDispose = disposers.at(-1)();
+    assert.deepEqual(await port.flush(), { applied: 0, duplicates: 1 }, 'a fresh port replays the same event without an ID conflict');
+    const committed = JSON.parse(await fsp.readFile(path.join(root, 'official', 'evolution_domain.json'), 'utf8')).global;
+    assert.equal(committed.applied[envelope.event.eventId], envelope.mac);
+    assert.equal(committed.aggregate.evolution.eventBridge.applied.filter((entry) => entry.eventId === envelope.event.eventId).length, 1);
+  } finally {
+    if (portDispose) await portDispose();
+    await backend.close();
+  }
 });

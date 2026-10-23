@@ -87,6 +87,83 @@ test('P2-8 a non-journal write keeps its previous cost', async t => {
   assert.equal(fsyncs.length, 0, 'the per-experiment archive is not on the fsync path');
 });
 
+test('recovery preserves every target and the journal when a promotion backup digest is wrong', async t => {
+  const root = await scratchRoot('promotion-corrupt-backup');
+  t.after(() => fsp.rm(root, { recursive: true, force: true }));
+  const paths = promotionPaths(root);
+  await fsp.writeFile(paths.compositionPath, '[]\n');
+  paths.promotionRuntime = unitPromotionRuntime();
+
+  const durable = await writeDurablePromotion({
+    experiment: promotionExperiment('exp-corrupt-backup'),
+    paths,
+    packageInspection: { code: { host: HOST_CODE } },
+  });
+  const journal = await readJournal(paths);
+  journal.phase = 'committing';
+  await fsp.writeFile(durable.journalPath, `${JSON.stringify(journal, null, 2)}\n`);
+
+  const composition = journal.records.find((record) => record.target === paths.compositionPath);
+  assert.ok(composition?.backup, 'the pre-promotion composition backup is recorded');
+  const backupFile = path.join(paths.promotionStateDir, 'backups', composition.backup);
+  const targetsBefore = new Map();
+  for (const record of journal.records) {
+    if (record.type === 'file') targetsBefore.set(record.target, await fsp.readFile(record.target));
+  }
+  await fsp.writeFile(backupFile, '');
+
+  await assert.rejects(recoverInterruptedPromotion(paths), /rollback failed/);
+
+  for (const [target, bytes] of targetsBefore) {
+    assert.deepEqual(await fsp.readFile(target), bytes, `preflight leaves ${target} unchanged`);
+  }
+  assert.equal(await exists(durable.pluginPath), true, 'the promoted path remains available for manual recovery');
+  assert.equal(await exists(path.join(paths.promotionStateDir, 'stage')), true, 'the stage remains available for manual recovery');
+  assert.equal(await fsp.readFile(backupFile, 'utf8'), '', 'the damaged backup is preserved as evidence');
+  const preserved = await readJournal(paths);
+  assert.equal(preserved.phase, 'rollback-failed');
+  assert.ok(preserved.rollbackFailures.some((failure) => failure.target === paths.compositionPath));
+});
+
+test('recovery still validates a damaged backup when its target already matches beforeDigest', async t => {
+  const root = await scratchRoot('promotion-corrupt-backup-before');
+  t.after(() => fsp.rm(root, { recursive: true, force: true }));
+  const paths = promotionPaths(root);
+  await fsp.writeFile(paths.compositionPath, '[]\n');
+  paths.promotionRuntime = unitPromotionRuntime();
+
+  const durable = await writeDurablePromotion({
+    experiment: promotionExperiment('exp-corrupt-backup-before'),
+    paths,
+    packageInspection: { code: { host: HOST_CODE } },
+  });
+  const journal = await readJournal(paths);
+  journal.phase = 'committing';
+  await fsp.writeFile(durable.journalPath, `${JSON.stringify(journal, null, 2)}\n`);
+
+  const composition = journal.records.find((record) => record.target === paths.compositionPath);
+  assert.ok(composition?.backup, 'the pre-promotion composition backup is recorded');
+  const backupFile = path.join(paths.promotionStateDir, 'backups', composition.backup);
+  await fsp.writeFile(paths.compositionPath, '[]\n');
+  await fsp.writeFile(backupFile, '');
+  const targetsBefore = new Map();
+  for (const record of journal.records) {
+    if (record.type === 'file') targetsBefore.set(record.target, await fsp.readFile(record.target));
+  }
+
+  await assert.rejects(recoverInterruptedPromotion(paths), /rollback failed/);
+
+  for (const [target, bytes] of targetsBefore) {
+    assert.deepEqual(await fsp.readFile(target), bytes, `preflight leaves ${target} unchanged`);
+  }
+  assert.equal(await exists(durable.pluginPath), true, 'the promoted path remains available for manual recovery');
+  assert.equal(await exists(path.join(paths.promotionStateDir, 'stage')), true, 'the stage remains available for manual recovery');
+  assert.equal(await fsp.readFile(backupFile, 'utf8'), '', 'the damaged backup is preserved as evidence');
+  const preserved = await readJournal(paths);
+  assert.equal(preserved.phase, 'rollback-failed');
+  assert.ok(preserved.rollbackFailures.some((failure) => failure.target === paths.compositionPath));
+});
+
 test('P3-17 an external EVOLUTION.md edit during the commit is refused, not overwritten', async t => {
   const root = await scratchRoot('promotion-cas');
   t.after(() => fsp.rm(root, { recursive: true, force: true }));
