@@ -609,21 +609,59 @@ const reversals = [
    "        await domain.global.set(schema.parse({ schema: 1, aggregate: { evolution: { ...seed.evolution, eventBridge: { schema: 1, applied: [] } } }, applied: {}, pending: null }));\n",
    "        await domain.global.set(schema.parse({ schema: 1, aggregate: { evolution: { ...seed.evolution, eventBridge: { schema: 1, applied: [] } } }, applied: {}, pending: null }));\n"],
   // A failed attempt closes what it opened and releases only the lock it wrote; a
-  // successful close releases the same token.
+  // successful close releases the same token. A close that fails keeps the lock
+  // and is reported beside the initialization error instead of replacing it, so
+  // the pinned single-line `catch` still reconstructs byte for byte.
   ["  } catch (error) {\n" +
    "    // Close what this attempt opened and release only the lock it wrote, so the\n" +
    "    // failed attempt leaves nothing behind that a retry would trip over.\n" +
-   "    await domain?.close();\n" +
-   "    releaseArchiveLock(lock, lockToken);\n" +
+   "    //\n" +
+   "    // A close that fails is the one case where the lock stays, and the failure\n" +
+   "    // is reported beside the error that caused it, never instead of it. The\n" +
+   "    // release is provably safe only after the medium confirmed it drained: a\n" +
+   "    // rejected `Domain.close()` says the medium did not release the unit, and\n" +
+   "    // this port then cannot prove it stopped writing the pending record that\n" +
+   "    // recovery of this archive reads. The lock is a bare pid, so it is reclaimed\n" +
+   "    // once this process is gone; keeping it here refuses a second port for the\n" +
+   "    // rest of this process instead of admitting one beside an unproven writer.\n" +
+   "    // That costs no recovery path: the domain handle a failed close leaves open\n" +
+   "    // keeps its name in the facility, so a same-process retry is refused there\n" +
+   "    // anyway.\n" +
+   "    let closed = true;\n" +
+   "    try { await domain?.close(); } catch (closeError) {\n" +
+   "      closed = false;\n" +
+   "      // Reported through the one redacted-warning entry point, which contains a\n" +
+   "      // logger that throws and one that rejects: a diagnostic about the failed\n" +
+   "      // close must never become the error this call throws, and must never leave\n" +
+   "      // an unhandled rejection behind.\n" +
+   "      warnRedacted(ctx, 'failed initialization kept the archive lock: the storage medium did not confirm its close', closeError, 'domain-close-cleanup');\n" +
+   "    }\n" +
+   "    if (closed) {\n" +
+   "      // The release itself is cleanup too, so a throw here is reported the same\n" +
+   "      // way rather than replacing the initialization error.\n" +
+   "      try { releaseArchiveLock(lock, lockToken); } catch (releaseError) {\n" +
+   "        warnRedacted(ctx, 'failed initialization could not release the archive lock', releaseError, 'lock-release-cleanup');\n" +
+   "      }\n" +
+   "    }\n" +
    "    throw error;\n" +
    "  }\n" +
    "  const close = () => {\n" +
    "    closing = true;\n" +
+   "    // The close runs before the release, never in a `finally`: a rejected\n" +
+   "    // `Domain.close()` leaves the medium unproven, so the lock is kept for the\n" +
+   "    // reason the failed initialization above keeps it - no second port may open\n" +
+   "    // this archive while this process cannot prove it stopped writing it. The\n" +
+   "    // lock is a bare pid, so a later process reclaims it once this one is gone.\n" +
    "    return disposal ??= (async () => { await chain; await domain.close(); releaseArchiveLock(lock, lockToken); if (failure) throw failure; })();\n",
    "  } catch (error) { await domain.close(); fs.unlinkSync(lock); throw error; }\n" +
    "  const close = () => {\n" +
    "    closing = true;\n" +
    "    return disposal ??= (async () => { await chain; await domain.close(); fs.unlinkSync(lock); if (failure) throw failure; })();\n"],
+  // The redacted-warning entry point moved to `registration.js` after the anchor
+  // so the init and flush cleanup paths share it. The port imports it instead of
+  // calling the logger itself, which is an addition after the pin and touches no
+  // line the pin wrote, so removing the import restores the pinned source.
+  ["import { warnRedacted } from './registration.js';\n", ""],
   ["import { EvolutionMemory, EvolutionObservationStore, EvolutionEvaluator } from './dockyard-domain/index.js';\n" +
    "import { collectKnowledgeExperience } from './experience-recall.js';\n",
    "import { EvolutionMemory, EvolutionObservationStore, EvolutionEvaluator } from './dockyard-domain/index.js';\n"],
