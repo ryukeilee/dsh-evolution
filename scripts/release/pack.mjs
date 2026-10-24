@@ -260,10 +260,6 @@ function readOutputFile(file) {
   }
 }
 
-function sha256OfFile(file) {
-  return crypto.createHash('sha256').update(readOutputFile(file)).digest('hex');
-}
-
 /** The byte hash of bytes that were read once. */
 function sha256Of(bytes) {
   return crypto.createHash('sha256').update(bytes).digest('hex');
@@ -434,12 +430,11 @@ function inspectExistingOutput(distDir, filename, packageName) {
   // a matching sha256 says nothing about a stale or forged contentSha256, and a
   // matching content digest says nothing about the compressed bytes. Accepting
   // either one would let a half-written manifest stand in for a build output.
-  // One read of the tarball was already verified here to be the point: the byte
-  // hash and the content digest below are computed from the same buffer, so a
-  // file replaced between two reads cannot satisfy one check with one file and
-  // the other with another. Reading twice is what made "a matching sha256 says
-  // nothing about a stale contentSha256" unfalsifiable: the sha256 came from a
-  // second open of a path, not from the bytes the content digest described.
+  //
+  // Both identities come from one read, which is what makes that comparison
+  // mean anything: read twice, a replaced file is two files, so each check can
+  // be satisfied by a different file and the comparison never sees the
+  // disagreement it exists to catch.
   const describedBytes = readOutputFile(described);
   const describedEntries = readEntriesOrNull(describedBytes);
   const actualSha = sha256Of(describedBytes);
