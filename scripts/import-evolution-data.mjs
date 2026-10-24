@@ -4,6 +4,25 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+/**
+ * Release the migration lock only while the path still holds the file this
+ * import created.
+ *
+ * The lock is a cooperative marker (`wx`), not a lease: two cooperating
+ * importers never replace each other's entry, so an entry at this path that is
+ * not the file `open` returned belongs to whoever wrote it and is left where it
+ * is. The identity of the opened file object is what pins "this run's lock"; the
+ * content cannot, because the lock carries no owner record. Returns what
+ * happened so the caller can report a replacement instead of hiding it.
+ */
+async function releaseOwnLock(lockPath, identity) {
+  let current;
+  try { current = await fs.lstat(lockPath, { bigint: true }); }
+  catch (error) { if (error?.code === 'ENOENT') return 'missing'; throw error; }
+  if (!current.isFile() || String(current.dev) !== identity.dev || String(current.ino) !== identity.ino) return 'replaced';
+  await fs.unlink(lockPath);
+  return 'released';
+}
 
 export async function importEvolutionData({ presetSnapshot, dockyardSnapshot, destination }) {
   presetSnapshot = path.resolve(presetSnapshot);
@@ -45,37 +64,74 @@ export async function importEvolutionData({ presetSnapshot, dockyardSnapshot, de
   const manifestFiles = [...files.entries()].map(([target, value]) => ({ target, sha256: value.sha256, bytes: value.bytes.length })).sort((a, b) => a.target.localeCompare(b.target));
   const importId = hash(JSON.stringify(manifestFiles));
   const manifestPath = path.join(destination, 'migration-manifest.json');
-  try {
-    const existing = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
-    if (existing.importId !== importId) throw new Error('Destination was imported from different source content; refusing to merge or overwrite');
-    // The active memory may legitimately evolve. Verify immutable source copies,
-    // but do not overwrite current runtime data on an idempotent repeat.
-    for (const file of existing.files.filter(file => file.target.startsWith('legacy-source/'))) {
-      if (hash(await fs.readFile(path.join(destination, file.target))) !== file.sha256) throw new Error(`Immutable import evidence changed: ${file.target}`);
-    }
-    return { status: 'already-imported', importId, files: existing.files.length };
-  } catch (error) { if (error.code !== 'ENOENT') throw error; }
-  try { await fs.lstat(destination); throw new Error('Destination already exists without a matching completed import; refusing overwrite'); }
-  catch (error) { if (error.code !== 'ENOENT') throw error; }
-  await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
-  const stage = `${destination}.migration-${crypto.randomUUID()}`;
-  await fs.mkdir(stage, { mode: 0o700 });
-  for (const [target, value] of files) {
-    const output = path.join(stage, target);
-    await fs.mkdir(path.dirname(output), { recursive: true, mode: 0o700 });
-    await fs.writeFile(output, value.bytes, { flag: 'wx', mode: 0o600 });
-    if (hash(await fs.readFile(output)) !== value.sha256 || hash(await fs.readFile(value.source)) !== value.sha256) throw new Error(`Import changed or failed verification: ${target}; staging preserved at ${stage}`);
+  // The completion state of the destination, read as one decision: a matching
+  // manifest is `already-imported` evidence, while an existing destination
+  // without one is a refusal. `null` means nothing has been published yet.
+  async function readCompletion() {
+    try {
+      const existing = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+      if (existing.importId !== importId) throw new Error('Destination was imported from different source content; refusing to merge or overwrite');
+      // The active memory may legitimately evolve. Verify immutable source copies,
+      // but do not overwrite current runtime data on an idempotent repeat.
+      for (const file of existing.files.filter(file => file.target.startsWith('legacy-source/'))) {
+        if (hash(await fs.readFile(path.join(destination, file.target))) !== file.sha256) throw new Error(`Immutable import evidence changed: ${file.target}`);
+      }
+      return { status: 'already-imported', importId, files: existing.files.length };
+    } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    try { await fs.lstat(destination); throw new Error('Destination already exists without a matching completed import; refusing overwrite'); }
+    catch (error) { if (error.code !== 'ENOENT') throw error; }
+    return null;
   }
-  await fs.writeFile(path.join(stage, 'migration-manifest.json'), JSON.stringify({ schema: 1, importId, importedAt: new Date().toISOString(), files: manifestFiles,
-    boundaries: ['No legacy journal/ownership activation', 'No legacy promoted code execution', 'No old environment writes', 'Dockyard data preserved, engine integration pending'] }, null, 2), { flag: 'wx', mode: 0o600 });
-  // Serialize publication; a competing importer cannot replace a completed root.
+  const completed = await readCompletion();
+  if (completed) return completed;
+  await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
+  // Serialize publication, and take the lock before anything is staged: a
+  // competing importer that already holds it must fail here with no second copy
+  // of the import left beside the destination. `wx` neither replaces nor inspects
+  // the entry it finds, so an interrupted import's lock stays where the operator
+  // can see it.
   const lockPath = `${destination}.migration.lock`;
-  const lock = await fs.open(lockPath, 'wx', 0o600);
+  let lock;
+  try { lock = await fs.open(lockPath, 'wx', 0o600); }
+  catch (error) {
+    if (error?.code === 'EEXIST') throw new Error(`A migration lock already exists at ${lockPath}; another import owns it or an earlier import was interrupted, so this run staged nothing`);
+    throw error;
+  }
+  // Pin the entry this run created by the file object `open` returned. The entry
+  // is opened exclusively, so this identity is available before anything can
+  // replace it, and the release below compares the path against it.
+  const opened = await lock.stat({ bigint: true });
+  const lockIdentity = { dev: String(opened.dev), ino: String(opened.ino) };
+  const stage = `${destination}.migration-${crypto.randomUUID()}`;
+  let failure = null;
   try {
+    // The pre-lock read cannot see an import that finished between it and this
+    // acquire: the winning importer's release is what made the path free. Re-read
+    // the completion state before staging anything, so this run returns
+    // `already-imported` instead of staging a copy the publication must refuse.
+    const completedAfterLock = await readCompletion();
+    if (completedAfterLock) return completedAfterLock;
+    await fs.mkdir(stage, { mode: 0o700 });
+    for (const [target, value] of files) {
+      const output = path.join(stage, target);
+      await fs.mkdir(path.dirname(output), { recursive: true, mode: 0o700 });
+      await fs.writeFile(output, value.bytes, { flag: 'wx', mode: 0o600 });
+      if (hash(await fs.readFile(output)) !== value.sha256 || hash(await fs.readFile(value.source)) !== value.sha256) throw new Error(`Import changed or failed verification: ${target}; staging preserved at ${stage}`);
+    }
+    await fs.writeFile(path.join(stage, 'migration-manifest.json'), JSON.stringify({ schema: 1, importId, importedAt: new Date().toISOString(), files: manifestFiles,
+      boundaries: ['No legacy journal/ownership activation', 'No legacy promoted code execution', 'No old environment writes', 'Dockyard data preserved, engine integration pending'] }, null, 2), { flag: 'wx', mode: 0o600 });
     try { await fs.lstat(destination); throw new Error('Destination appeared during import; staged evidence preserved'); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
     await fs.rename(stage, destination);
-  } finally { await lock.close(); await fs.unlink(lockPath); }
+  } catch (error) { failure = error; throw error; }
+  finally {
+    await lock.close();
+    const release = await releaseOwnLock(lockPath, lockIdentity);
+    // A replacement is reported, never removed and never hidden. When this run
+    // already failed, its own error is the one the caller needs, so the
+    // replacement is surfaced only for a run that otherwise succeeded.
+    if (release === 'replaced' && !failure) throw new Error(`The migration lock at ${lockPath} was replaced by another process while this import ran; it was left in place (the import itself completed)`);
+  }
   return { status: 'imported', importId, files: manifestFiles.length, memoryEntries: memory.entries.length };
 }
 

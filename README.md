@@ -279,7 +279,7 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 | event bridge 未闭合尾行 | 只丢弃不构成记录的尾部字节：执行前重读快照并重建计划条件，准备期间文件变化则跳过且不写任何字节；整份文件没有完整行可保留时不提供该 repair。写入方不持锁，最后一次重读与 `rename` 之间的追加仍可能被丢弃，建议在宿主停止时执行 |
 | 活动档案文件不以换行结尾（追加被中断） | 下一次追加前把残片**逐字节**追加进同目录的 `state.json.<collection>quarantine-archive.jsonl`，再原子重写活动档案、只保留完整行。隔离文件是 append-only 现场保留，插件不会删除它；残片通常不是完整 JSON，因此 `state.archives` 会把它报为含不可解析行的 `degraded` 项（`recoverable: false`），处置由人完成 |
 | 冷档案出现不可解析的行（中段或 sealed 段） | `state.archives` 报 `degraded` 并保留原字节。运行时的 `EvolutionMemory.archiveIntegrity()` 能读到分类后的故障；`verifyConsistency()` 把它判为 `valid:false`（reason `archive_bytes_unreadable`），因此该数据根上的 `reconcile()` 会以 verifier 失败抛出并回滚自己刚做的改动。这是 fail-closed，需要人工处置档案 |
-| domain 孤儿 staging | 仅在无活进程持有 archive 锁时清理；有活进程时报告并拒绝 |
+| domain 孤儿 staging | 仅在 domain 聚合通过完整校验、且无活进程持有 archive 锁时清理；聚合无法校验、pending 记录无法解读或锁不可取时报告并拒绝 |
 | domain archive 锁无主（空内容或死 pid） | 运行时自动回收；`--repair` 可显式清理；有活主的锁永不抢占 |
 | 损坏的 failure memory | 不删除：报 `degraded` 并说明下次启动会隔离（quarantine）保留原字节 |
 | 损坏的 domain 聚合 / 事件 MAC / 不可变迁移证据 | 报 `blocked`，不重写、不猜测、不合并 |
@@ -309,7 +309,7 @@ node scripts/import-evolution-data.mjs \
   <dockyard-evolution-snapshot-dir>
 ```
 
-- 先暂存、逐文件 SHA256 校验、再原子改名发布；`migration-manifest.json` 记录 `importId` 与不可变来源副本。
+- 先暂存、逐文件 SHA256 校验、再原子改名发布；`migration-manifest.json` 记录 `importId` 与不可变来源副本。迁移锁在任何暂存写入之前取得，并在锁内重读完成态：另一导入仍持锁时本进程直接失败，若对方已完成则返回 `already-imported`，两种情况下都不会留下第二份暂存副本。已存在的 `*.migration.lock` 不会被替换；释放时只删除本次导入自己创建的那把锁，被其他进程替换的锁保留并报告。
 - 重复执行返回 `already-imported`，不重复追加、不覆盖运行后数据。
 - 来源内容与已导入根不一致时拒绝，防止静默合并；源文件在导入期间变化会被检出。
 - 导入含未完成的旧 promotion journal 时拒绝，要求先显式恢复。

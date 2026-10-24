@@ -349,10 +349,31 @@ resolution path.
   condition before acting, then re-reads once more before the rename and skips
   without writing anything when the bytes changed while the replacement was
   prepared (an expired plan is `skipped` and writes nothing, and the repair is
-  not offered at all when the file holds no complete line to keep). That is not
-  concurrency safety: the bridge file's writers hold no lock, so an append that
-  lands between the last re-read and the rename can still be dropped — run the
-  repair while the host is stopped. All of them are proven no-ops on a second
+  not offered at all when the file holds no complete line to keep). Orphan
+  staging removal takes the same archive lock the port takes, through that
+  module, and re-reads and re-validates the aggregate inside it, so a writer that
+  staged a transaction after the plan was read cannot have its stage deleted. A
+  staging directory is removed only while the aggregate passes every check the
+  diagnostic reports, including the runtime global schema, so an aggregate that
+  parses as JSON but does not validate — or one whose validator cannot be loaded
+  — offers no repair and removes nothing. The lock handling is that protocol,
+  not a second one: a live owner is `skipped`, and so is a lock path this
+  protocol cannot interpret as its own lock file (a directory, a symlink or
+  another object type), which is reported and left in place; an ownerless
+  *regular file* that has not changed for the protocol's 1s settle window is
+  reclaimed exactly as startup reclaims it, which is the same condition the
+  report also offers `domain-stale-lock` for. `scripts/import-evolution-data.mjs`
+  takes its migration lock before it stages anything and re-reads the completion
+  state after taking it, so a competing importer either fails with no second copy
+  of the import beside the destination or, when it won the race and the winner
+  already finished, returns `already-imported` without staging; a later run never
+  replaces or removes an existing migration lock, and a run releases only the
+  entry it created — a lock replaced while it ran is left where its owner put it
+  and reported. All of these are cooperative protocols, not a security sandbox:
+  a process that replaces a lock path without honouring them is out of scope.
+  They are also not concurrency safety: the bridge file's writers hold no lock, so
+  an append that lands between the last re-read and the rename can still be
+  dropped — run the repair while the host is stopped. All of them are proven no-ops on a second
   run (`test/diagnostics.test.mjs`). Committed-journal
   cleanup is asserted on its first run only: the test checks that it removes the
   promotion state directory while the composition row and the promoted module
@@ -361,7 +382,8 @@ resolution path.
   journals (including unsupported record shapes such as `symlink`), unverifiable
   event MACs, event envelopes that name a writer other than the trusted one,
   conflicting event ids, missing pending
-  archives and altered immutable migration evidence are reported `blocked`, and
+  archives, a domain aggregate that does not validate, and altered immutable
+  migration evidence are reported `blocked`, and
   the doctor offers no repair for any of them and never mutates them; a
   `recoverable` flag in the same report can then only come from a safe repair
   for a different problem.

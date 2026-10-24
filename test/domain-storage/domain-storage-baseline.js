@@ -91,6 +91,29 @@ const SOURCE_PATH = "lib/domain-storage.js";
 // other direction can also find: no piece deletes text another piece is anchored
 // on, and no piece is anchored on an empty string.
 const reversals = [
+  // The doctor's offline staging repair now takes the same archive lock a port
+  // takes, through one exported helper. The helper is an addition after the pin
+  // and touches no line the pin wrote, so removing it restores the pinned source
+  // byte for byte; every other piece below keeps the anchors it was written
+  // against.
+  ["\n" +
+   "/**\n" +
+   " * Run one bounded maintenance step under the archive lock a port takes.\n" +
+   " *\n" +
+   " * The doctor's offline repairs are the only caller. A staging directory may only\n" +
+   " * be removed while no port can sit between staging and publication, and a plan\n" +
+   " * read before this lock existed cannot answer that, so the callback re-reads and\n" +
+   " * acts under the lock. The callback is not a publication of the shared document\n" +
+   " * and proves no ownership of its own. The lock is released only while it is\n" +
+   " * still the entry this call wrote; a path this protocol cannot interpret is\n" +
+   " * never reclaimed or removed, it is reported as an error to the caller.\n" +
+   " */\n" +
+   "export async function withArchiveLock(lockPath, operation) {\n" +
+   "  const token = await acquireArchiveLock(lockPath);\n" +
+   "  try { return await operation(); }\n" +
+   "  finally { releaseArchiveLock(lockPath, token); }\n" +
+   "}\n",
+   ""],
   ["return { instance };", "return { instance, getAggregate: () => structuredClone(aggregate) };"],
   // The port-local parsed archive handoff is independent of the older write-path
   // changes below; remove it first to preserve the byte-exact release anchor.

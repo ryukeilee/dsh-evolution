@@ -8,7 +8,7 @@
 // every real repair still rewrites it.
 import assert from "node:assert/strict";
 import test from "node:test";
-import { appendFile, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { appendFile, link, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -51,10 +51,21 @@ async function entries(file) {
 }
 
 /** Identity of the index document: a rewrite replaces the file atomically, so a
- *  changed inode is exactly "the document was written again". */
+ *  changed inode is exactly "the document was written again" - as long as the
+ *  recorded inode is still allocated. The identity is taken before a load that
+ *  may repair the document, and the repair replaces it through a rename, so the
+ *  number recorded here is freed before the replacement is created; the
+ *  filesystem may then hand that same number to the replacement and the
+ *  comparison reports "same document" for a document that was written again.
+ *  (CI run 40048818467 hit exactly that on ext4, after the test below replaced
+ *  the index itself and freed the number it had recorded.) A hard link keeps
+ *  the recorded inode allocated for as long as the identity is held, so a
+ *  replacement has to show a different number. */
 async function indexIdentity(file) {
-  const info = await stat(file);
-  return { ino: info.ino, bytes: await readFile(file, "utf8") };
+  const guard = `${file}.identity`;
+  await rm(guard, { force: true });
+  await link(file, guard);
+  return { ino: (await stat(guard)).ino, bytes: await readFile(file, "utf8") };
 }
 
 test("loading unchanged archive bytes does not rewrite the index document", async () => {
@@ -152,6 +163,28 @@ test("a sealed entry that names only its file is normalized without re-reading t
     assert.equal(sealedAfter.collection, "observations");
     assert.equal(sealedAfter.file, "segment-000000000001.jsonl");
     assert.equal(sealedAfter.sha256, sealedBefore.sha256, "normalizing the entry must not change its recorded digest");
+  } finally { await rm(home, { recursive: true, force: true }); }
+});
+
+test("an index identity survives a replacement that frees the inode it recorded", async () => {
+  const { home, store, index } = await fixture();
+  const clock = advancingClock();
+  try {
+    await load(store, clock);
+    const before = await indexIdentity(index);
+    // The sealed-entry case above replaces the document twice: first in the
+    // fixture, then in the repair. This test checks the prerequisite for a
+    // reliable identity across those replacements: the first rename must not
+    // free the recorded inode for reuse by the second.
+    assert.equal((await stat(index)).ino, before.ino);
+    assert.equal((await stat(index)).nlink, 2, "an identity must keep the inode it recorded allocated");
+    await writeFile(`${index}.replacement`, JSON.stringify({ schemaVersion: 1, updatedAt: "replacement", segments: [] }));
+    await rename(`${index}.replacement`, index);
+    assert.notEqual((await stat(index)).ino, before.ino, "a replacement must be reported as a different document");
+
+    const after = await indexIdentity(index);
+    assert.notEqual(after.ino, before.ino);
+    assert.equal(after.bytes, await readFile(index, "utf8"));
   } finally { await rm(home, { recursive: true, force: true }); }
 });
 

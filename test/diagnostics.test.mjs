@@ -507,6 +507,104 @@ test('orphan staging recovery is idempotent and refuses while a writer holds the
   assert.equal(fs.existsSync(stageDir), true, 'a live writer must keep its staging directory');
 });
 
+test('orphan staging repair acts under the shared archive lock and never removes unknown state', async () => {
+  // The removal must already hold the archive lock: a second writer probing the
+  // same path while the repair lists the stage directories must be refused.
+  const held = freshHome('orphan-lock-held');
+  writeDomain(held.paths, domainGlobal());
+  const heldStage = path.join(held.paths.domainStagingDir, 'stage-cccccccc-1111-2222-3333-444444444444');
+  fs.mkdirSync(heldStage, { recursive: true });
+  const realReaddirSync = fs.readdirSync;
+  let probe = null;
+  fs.readdirSync = function probeReaddir(target, ...rest) {
+    if (probe === null && String(target) === held.paths.domainStagingDir) {
+      try { fs.writeFileSync(held.paths.domainArchiveLockPath, String(process.pid), { flag: 'wx', mode: 0o600 }); probe = 'took-the-lock'; }
+      catch (error) { probe = error.code; }
+    }
+    return realReaddirSync.call(fs, target, ...rest);
+  };
+  let heldResult;
+  try { heldResult = await applyRepairs([{ id: 'domain-orphan-staging', safe: true }], { paths: held.paths }); }
+  finally { fs.readdirSync = realReaddirSync; }
+  assert.equal(probe, 'EEXIST', 'the staging listing must already run under the archive lock the repair took');
+  assert.deepEqual(heldResult.map((entry) => entry.status), ['applied']);
+  assert.equal(fs.existsSync(heldStage), false);
+  assert.equal(fs.existsSync(held.paths.domainArchiveLockPath), false, 'the repair releases only the lock it created');
+
+  // A lock path this protocol never writes is not evidence that no writer exists.
+  const unknown = freshHome('orphan-unknown-lock');
+  writeDomain(unknown.paths, domainGlobal());
+  const unknownStage = path.join(unknown.paths.domainStagingDir, 'stage-dddddddd-1111-2222-3333-444444444444');
+  fs.mkdirSync(unknownStage, { recursive: true });
+  fs.mkdirSync(unknown.paths.domainArchiveLockPath);
+  const unknownResult = await applyRepairs([{ id: 'domain-orphan-staging', safe: true }], { paths: unknown.paths });
+  assert.deepEqual(unknownResult.map((entry) => entry.status), ['skipped']);
+  assert.equal(fs.existsSync(unknownStage), true, 'staging beside an entry this protocol cannot read is left untouched');
+  assert.equal(fs.lstatSync(unknown.paths.domainArchiveLockPath).isDirectory(), true, 'the foreign entry is never removed');
+
+  // Without a readable aggregate the pending record is unknown, so no staging
+  // directory can be proven unreferenced.
+  const unreadable = freshHome('orphan-unreadable');
+  fs.writeFileSync(unreadable.paths.domainGlobalPath, '{"unit":');
+  const unreadableStage = path.join(unreadable.paths.domainStagingDir, 'stage-eeeeeeee-1111-2222-3333-444444444444');
+  fs.mkdirSync(unreadableStage, { recursive: true });
+  const unreadableResult = await applyRepairs([{ id: 'domain-orphan-staging', safe: true }], { paths: unreadable.paths });
+  assert.deepEqual(unreadableResult.map((entry) => entry.status), ['skipped']);
+  assert.equal(fs.existsSync(unreadableStage), true);
+  assert.equal(fs.readFileSync(unreadable.paths.domainGlobalPath, 'utf8'), '{"unit":', 'the unreadable aggregate is never rewritten');
+
+  // An abandoned lock is reclaimed through the same protocol: the stage the
+  // aggregate still references survives, the orphan goes, and the lock entry the
+  // repair took is released again.
+  const stale = freshHome('orphan-stale-lock');
+  const pendingStage = 'stage-ffffffff-1111-2222-3333-444444444444';
+  writeDomain(stale.paths, domainGlobal({ pending: { stage: pendingStage, aggregate: { evolution: { schema: 4 } }, applied: {} } }));
+  const pendingDir = path.join(stale.paths.domainStagingDir, pendingStage);
+  const orphanDir = path.join(stale.paths.domainStagingDir, 'stage-99999999-1111-2222-3333-444444444444');
+  fs.mkdirSync(pendingDir, { recursive: true });
+  fs.mkdirSync(orphanDir, { recursive: true });
+  fs.writeFileSync(stale.paths.domainArchiveLockPath, '');
+  const past = new Date(Date.now() - 5000);
+  fs.utimesSync(stale.paths.domainArchiveLockPath, past, past);
+  const staleResult = await applyRepairs([{ id: 'domain-orphan-staging', safe: true }], { paths: stale.paths });
+  assert.deepEqual(staleResult.map((entry) => entry.status), ['applied']);
+  assert.equal(fs.existsSync(orphanDir), false);
+  assert.equal(fs.existsSync(pendingDir), true, 'the stage the pending record names is kept');
+  assert.equal(fs.existsSync(stale.paths.domainArchiveLockPath), false, 'the reclaimed lock is released again');
+});
+
+test('orphan staging repair refuses an aggregate this build cannot verify', async () => {
+  // Parsing as JSON is not validation: an aggregate that parses but does not
+  // match the domain schema still cannot prove any staging directory
+  // unreferenced, so neither the offer nor the execution may remove one. Each
+  // body below parses; only the last two would slip past a plain pending lookup.
+  const bodies = {
+    garbage: JSON.stringify({ garbage: true }),
+    'missing-aggregate': JSON.stringify({ unit: { name: 'evolution_domain', version: 1 }, global: { schema: 1, applied: {}, pending: null }, tables: {} }),
+    'unknown-global-field': JSON.stringify({ unit: { name: 'evolution_domain', version: 1 }, global: { schema: 1, aggregate: { evolution: { schema: 4 } }, applied: {}, pending: null, garbage: true }, tables: {} }),
+    'damaged-pending': JSON.stringify({ unit: { name: 'evolution_domain', version: 1 }, global: { schema: 1, aggregate: { evolution: { schema: 4 } }, applied: {}, pending: { stage: 'not-a-stage-name' } }, tables: {} }),
+  };
+  for (const [name, body] of Object.entries(bodies)) {
+    const { home, paths } = freshHome(`orphan-unverified-${name}`);
+    fs.mkdirSync(path.dirname(paths.domainGlobalPath), { recursive: true });
+    fs.writeFileSync(paths.domainGlobalPath, body);
+    const stageDir = path.join(paths.domainStagingDir, 'stage-77777777-1111-2222-3333-444444444444');
+    fs.mkdirSync(stageDir, { recursive: true });
+
+    const report = await collectDiagnostics(baseOptions(home));
+    assert.equal(levelOf(report, 'state.domain'), 'blocked', `${name}: the damaged aggregate is reported as blocking`);
+    assert.equal(checkOf(report, 'state.domain').evidence.aggregateVerified, false, `${name}: the check must say the aggregate is unverified`);
+    assert.deepEqual(report.repairs.filter((repair) => repair.id === 'domain-orphan-staging'), [],
+      `${name}: no staging repair may be offered for an aggregate this build cannot verify`);
+
+    const applied = await applyRepairs([{ id: 'domain-orphan-staging', safe: true }], { paths });
+    assert.deepEqual(applied.map((entry) => entry.status), ['skipped'], `${name}: the execution refuses the unverified aggregate`);
+    assert.equal(fs.existsSync(stageDir), true, `${name}: staging is never removed on an unverifiable aggregate`);
+    assert.equal(fs.readFileSync(paths.domainGlobalPath, 'utf8'), body, `${name}: the aggregate is never rewritten`);
+    assert.equal(fs.existsSync(paths.domainArchiveLockPath), false, `${name}: the lock this repair took is released again`);
+  }
+});
+
 test('event bridge: verified ok, bad MAC blocked, conflicting event id blocked, partial tail repairable', async () => {
   const ok = freshHome('bridge-ok');
   const repeated = JSON.stringify(signEventBridgeEnvelope({ eventId: 'evt-1', eventType: 'measurement-completed' }, { key: KEY, sequence: 1 }));
