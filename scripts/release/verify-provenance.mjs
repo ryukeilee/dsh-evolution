@@ -29,7 +29,9 @@
  *   node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.2 --require-source-commit
  *   node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.2 --json
  */
-import { pathToFileURL } from 'node:url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { REPO_ROOT, commitContentDigest, gitOutput, isFullSha, readManifest, readReleaseManifest, treeContentDigest } from './release-lib.mjs';
 
 // `isFullSha` lives in release-lib so the pin-relation check shares one rule;
@@ -168,7 +170,10 @@ export function parseArgs(argv) {
     } else if (arg === '--require-source-commit') options.requireSourceCommit = true;
     else if (arg === '--json') options.json = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
-    else throw new Error(`unknown argument: ${arg}`);
+    // The argument itself is not printed: an unrecognised token is caller data,
+    // and this line reaches a terminal and a pasted issue. The category and the
+    // usage are the whole report; a recognised option is still handled by value.
+    else throw new Error('unknown argument; usage: node scripts/release/verify-provenance.mjs [--tag <tag>] [--require-source-commit] [--json]');
   }
   return options;
 }
@@ -198,7 +203,23 @@ export function run(argv, io = { log: console.log, error: console.error }) {
   return problems.length === 0 ? 0 : 1;
 }
 
-const invokedDirectly = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+// Compared by real path, not by URL spelling, exactly as `pack.mjs` and
+// `publish-artifact.mjs` do. Node resolves this module to its real path, so a
+// caller's alias — a symbolic link to this script, or a temp root like `/var` →
+// `/private/var` on macOS — keeps the entry URL distinct from `import.meta.url`.
+// The URL comparison then said "not invoked directly", and this entry point
+// verified nothing and exited 0: silent success on a gate the release workflow
+// runs with `--tag "$RELEASE_TAG"`.
+const invokedDirectly = (() => {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  const self = fileURLToPath(import.meta.url);
+  try {
+    return fs.realpathSync(entry) === fs.realpathSync(self);
+  } catch {
+    return path.resolve(entry) === path.resolve(self);
+  }
+})();
 if (invokedDirectly) {
   try {
     process.exit(run(process.argv.slice(2)));

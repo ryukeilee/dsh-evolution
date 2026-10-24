@@ -33,10 +33,10 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import {
-  REPO_ROOT, commitContentDigest, expectedEntries, gitOutput, isFullSha, readReleaseManifest,
-  readTarEntries, releaseArtifactPath, treeContentDigest,
+  REPO_ROOT, commitContentDigest, expectedEntries, gitOutput, isFullSha, pinnedArtifactStatus,
+  readReleaseManifest, readTarEntries, releaseArtifactPath, treeContentDigest,
 } from './release-lib.mjs';
 
 /** The three states the tree/pin relation can be in. */
@@ -117,9 +117,13 @@ export function evaluateTreeRelation({
 
 /** Every shipped entry that differs between the tree and the pinned artifact. */
 export function differingShippedEntries(pin = readReleaseManifest()) {
-  const artifact = releaseArtifactPath(pin);
-  if (!fs.existsSync(artifact)) return null;
-  const pinned = new Map(readTarEntries(artifact).map((entry) => [entry.path, entry]));
+  // The archive is opened because the pin named it, so it is read through the
+  // pin's own gate: `lstat`, not `existsSync`. A link — dangling or not — and
+  // anything else that is not a regular file is refused instead of followed.
+  const artifact = pinnedArtifactStatus(pin);
+  if (artifact.missing) return null;
+  if (!artifact.ok) throw new Error(`the pinned artifact ${artifact.message}, so the differing files cannot be listed`);
+  const pinned = new Map(readTarEntries(artifact.file).map((entry) => [entry.path, entry]));
   const declared = expectedEntries();
   const differing = [];
   for (const relative of declared) {
@@ -221,7 +225,23 @@ export function formatRelation(relation) {
 
 // `node scripts/release/pin-relation.mjs [--json]` prints the current state; it
 // is a debugging aid for the same decision `pack:check` and the pin tests make.
-const invokedDirectly = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+//
+// Compared by real path, not by URL spelling, exactly as `pack.mjs` and
+// `publish-artifact.mjs` do. Node resolves this module to its real path, so a
+// caller's alias — a symbolic link to this script, or a temp root like `/var` →
+// `/private/var` on macOS — keeps the entry URL distinct from `import.meta.url`.
+// The URL comparison then said "not invoked directly", and this diagnostic
+// printed nothing and exited 0: indistinguishable from a tree that is pinned.
+const invokedDirectly = (() => {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  const self = fileURLToPath(import.meta.url);
+  try {
+    return fs.realpathSync(entry) === fs.realpathSync(self);
+  } catch {
+    return path.resolve(entry) === path.resolve(self);
+  }
+})();
 if (invokedDirectly) {
   const relation = collectPinRelation();
   const report = {

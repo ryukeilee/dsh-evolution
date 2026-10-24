@@ -9,7 +9,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { commitContentDigest } from '../scripts/release/release-lib.mjs';
+import { spawnSync } from 'node:child_process';
+import { REPO_ROOT, commitContentDigest, contentDigestOf } from '../scripts/release/release-lib.mjs';
 import { evaluateProvenance, isFullSha, parseArgs } from '../scripts/release/verify-provenance.mjs';
 
 const HEAD = 'a'.repeat(40);
@@ -124,4 +125,91 @@ test('the CLI arguments are parsed strictly', () => {
   });
   assert.throws(() => parseArgs(['--tag']), /requires a value/);
   assert.throws(() => parseArgs(['--bogus']), /unknown argument/);
+  // A recognised option still carries its value through unchanged; only the
+  // unrecognised token is dropped from the report.
+  assert.equal(parseArgs(['--tag', 'sk-review-sentinel']).tag, 'sk-review-sentinel');
+});
+
+test('an unknown CLI argument is refused without being echoed', () => {
+  // The reviewer's counterexample: the token reached stderr verbatim as
+  // `unknown argument: sk-review-sentinel`. It is caller data on a line that
+  // ends up in a terminal and a pasted issue, so only the category is reported.
+  const sentinel = 'sk-review-sentinel';
+  const run = spawnSync(
+    process.execPath,
+    [path.join(REPO_ROOT, 'scripts', 'release', 'verify-provenance.mjs'), sentinel],
+    { encoding: 'utf8' },
+  );
+  const surface = `${run.stdout}\n${run.stderr}`;
+  assert.equal(run.status, 2, 'an unparseable command line is a usage error');
+  assert.equal(surface.includes(sentinel), false, 'the argument value must not be printed');
+  assert.match(surface, /unknown argument/);
+  assert.equal(/^\s+at /m.test(surface), false, 'and the refusal is one line, not a stack trace');
+});
+
+/**
+ * A throwaway git repository holding the shipped files of a package, so the real
+ * `commitContentDigest()` reads a real commit. `package.json` is written by the
+ * caller: that text is the document under test.
+ */
+function digestRepo(packageText) {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'evolution-source-manifest-'));
+  const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+  git('init', '-q');
+  fs.mkdirSync(path.join(cwd, 'lib'));
+  fs.writeFileSync(path.join(cwd, 'package.json'), packageText);
+  fs.writeFileSync(path.join(cwd, 'README.md'), 'source fixture');
+  fs.writeFileSync(path.join(cwd, 'LICENSE'), 'MIT');
+  fs.writeFileSync(path.join(cwd, 'lib', 'index.js'), 'export const value = 1;');
+  git('add', '.');
+  git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture');
+  return { cwd, commit: git('rev-parse', 'HEAD') };
+}
+
+test('the source digest refuses a commit whose package.json repeats the files key', (t) => {
+  const FILE_SENTINEL = 'sk-review-files';
+  // Valid JSON, and `JSON.parse` keeps the second `files` list — so the digest
+  // used to cover a package nobody committed. The first key is spelled with an
+  // escape, which a text comparison of key names would not catch either.
+  const text = [
+    '{',
+    '  "name": "source-fixture",',
+    '  "version": "1.0.0",',
+    `  "files": [${JSON.stringify(FILE_SENTINEL)}],`,
+    '  "\\u0066iles": ["lib"]',
+    '}',
+    '',
+  ].join('\n');
+  // Premise: the document is valid JSON and a plain parse resolves it silently.
+  assert.equal(text.includes('"\\u0066iles"'), true);
+  assert.deepEqual(JSON.parse(text).files, ['lib']);
+
+  const { cwd, commit } = digestRepo(text);
+  t.after(() => fs.rmSync(cwd, { recursive: true, force: true }));
+
+  assert.throws(() => commitContentDigest(commit, cwd), (error) => {
+    assert.match(error.message, /the committed package\.json repeats an object key, so which value applies is ambiguous/);
+    assert.equal(error.message.includes(FILE_SENTINEL), false, 'the dropped value must not be echoed');
+    assert.equal(error.message.includes('\\u0066'), false, 'nor the ambiguous key');
+    assert.equal(error.message.includes(cwd), false, 'nor the repository path');
+    return true;
+  });
+});
+
+test('the source digest of an unambiguous commit is the digest of exactly its shipped files', (t) => {
+  const text = `${JSON.stringify({ name: 'source-fixture', version: '1.0.0', files: ['lib'] }, null, 2)}\n`;
+  const { cwd, commit } = digestRepo(text);
+  t.after(() => fs.rmSync(cwd, { recursive: true, force: true }));
+
+  // Computed independently, from the bytes on disk and the modes git records.
+  const entries = ['LICENSE', 'README.md', 'lib/index.js', 'package.json'].map((relative) => ({
+    path: relative,
+    mode: 0o644,
+    bytes: fs.readFileSync(path.join(cwd, relative)),
+  }));
+  const expected = contentDigestOf(entries);
+  assert.equal(commitContentDigest(commit, cwd), expected);
+  // Deterministic, and stable against a working tree that keeps changing.
+  fs.writeFileSync(path.join(cwd, 'lib', 'index.js'), 'export const value = 2;');
+  assert.equal(commitContentDigest(commit, cwd), expected);
 });

@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 
 export async function importEvolutionData({ presetSnapshot, dockyardSnapshot, destination }) {
@@ -78,7 +79,23 @@ export async function importEvolutionData({ presetSnapshot, dockyardSnapshot, de
   return { status: 'imported', importId, files: manifestFiles.length, memoryEntries: memory.entries.length };
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+// Compared by real path, not by URL spelling, exactly as the release CLIs do.
+// Node resolves this module to its real path, so a caller's alias — a symbolic
+// link to this script — kept the entry URL distinct from `import.meta.url`. The
+// URL comparison then said "not invoked directly", and this importer skipped the
+// Usage check as well as the import and exited 0: indistinguishable from a
+// completed migration.
+const invokedDirectly = (() => {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  const self = fileURLToPath(import.meta.url);
+  try {
+    return realpathSync(entry) === realpathSync(self);
+  } catch {
+    return path.resolve(entry) === path.resolve(self);
+  }
+})();
+if (invokedDirectly) {
   const [presetSnapshot, destination, dockyardSnapshot] = process.argv.slice(2);
   if (!presetSnapshot || !destination) throw new Error('Usage: node import-evolution-data.mjs <preset-snapshot> <destination> [dockyard-snapshot]');
   console.log(JSON.stringify(await importEvolutionData({ presetSnapshot, destination, dockyardSnapshot })));

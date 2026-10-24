@@ -38,9 +38,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  REPO_ROOT, archiveContentDigest, archiveEntries, assertCleanContent, assertCleanEntries,
-  assertReproducible, expectedEntries, formatBytes, readManifest, readReleaseManifest,
-  readTarEntries, releaseArtifactPath, treeContentDigest,
+  DuplicateJsonKeyError, REPO_ROOT, assertCleanContent, assertCleanEntries,
+  assertReproducible, contentDigestOf, expectedEntries, formatBytes, parseJsonText, pinnedArtifactFile,
+  pinnedArtifactStatus, readManifest, readReleaseManifest, readTarEntries, releaseRootFileStatus, treeContentDigest,
 } from './release-lib.mjs';
 import { PIN_RELATION, collectPinRelation, formatRelation } from './pin-relation.mjs';
 
@@ -51,7 +51,9 @@ for (const arg of args) {
     process.exit(0);
   }
   if (arg !== '--release') {
-    console.error(`unknown argument: ${arg}`);
+    // Fixed categories only: an unrecognised token is caller data, so it is not
+    // echoed beside the usage this line already prints.
+    console.error('unknown argument; usage: node scripts/release/verify-package.mjs [--release]');
     process.exit(2);
   }
 }
@@ -65,7 +67,19 @@ const check = (name, fn) => {
   catch (error) { failures.push(`  FAIL  ${name}\n        ${String(error.message).split('\n').join('\n        ')}`); }
 };
 
-const manifest = readManifest();
+/**
+ * Package metadata, read the same duplicate-safe way `release:pack` and
+ * `release:publish` read it. A refusal here happens before anything is packed or
+ * written, so it is reported once, by its fixed label, without the stack trace
+ * an uncaught throw would print beside it.
+ */
+let manifest;
+try {
+  manifest = readManifest();
+} catch (error) {
+  console.error(`pack:check failed: ${error instanceof Error ? error.message : 'an unknown error'}`);
+  process.exit(1);
+}
 
 // The development verdict is decided once: it costs two git reads (the pinned
 // source commit, and HEAD only when the tree diverges) and both checks below
@@ -112,7 +126,27 @@ check('the shipped text carries no home path or credential material', () => {
 // 4. lockfile consistency (a fresh `npm ci` must not be able to fail on drift)
 // ---------------------------------------------------------------------------
 
-const lock = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package-lock.json'), 'utf8'));
+// `package-lock.json` is package metadata like `package.json`, and the "a fresh
+// `npm ci` cannot fail on drift" check compares against what it holds there. A
+// repeated key would decide which version and dependency set that comparison
+// uses, so it is read duplicate-safe and refused by one fixed label: no path
+// fragment, no key, no value, no parser message.
+let lockText;
+try {
+  lockText = fs.readFileSync(path.join(REPO_ROOT, 'package-lock.json'), 'utf8');
+} catch (error) {
+  console.error(`pack:check failed: package-lock.json cannot be read (${error.code || 'unknown error'})`);
+  process.exit(1);
+}
+let lock;
+try {
+  lock = parseJsonText(lockText);
+} catch (error) {
+  console.error(`pack:check failed: package-lock.json ${error instanceof DuplicateJsonKeyError
+    ? 'repeats an object key, so which value applies is ambiguous'
+    : 'is not readable: invalid JSON'}`);
+  process.exit(1);
+}
 const lockedRoot = lock.packages?.[''];
 check('package-lock.json matches package.json', () => {
   if (!lockedRoot) throw new Error('package-lock.json has no root package entry');
@@ -150,7 +184,19 @@ check('the committed acceptance evidence describes the pinned package content', 
     const file = path.join(REPO_ROOT, 'docs', 'evidence', `dsh-${host}.json`);
     if (!fs.existsSync(file)) { problems.push(`missing docs/evidence/dsh-${host}.json`); continue; }
     let evidence;
-    try { evidence = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (error) { problems.push(`docs/evidence/dsh-${host}.json is not valid JSON: ${error.message}`); continue; }
+    // Duplicate-safe, before any field is looked at. `JSON.parse` keeps the last
+    // value for a repeated key, so a record that spelled `"ok": false` and then
+    // `"\u006fk": true` parsed to `{ ok: true }` and counted as a passed
+    // acceptance — a failed run recorded as a passed one. The refusal names the
+    // file and one fixed category; the record's own text is never echoed.
+    try {
+      evidence = parseJsonText(fs.readFileSync(file, 'utf8'));
+    } catch (error) {
+      problems.push(`docs/evidence/dsh-${host}.json ${error instanceof DuplicateJsonKeyError
+        ? 'repeats an object key, so which value applies is ambiguous'
+        : 'is not readable: invalid JSON'}`);
+      continue;
+    }
     if (evidence.ok !== true) problems.push(`${host}: the recorded acceptance did not pass`);
     if (evidence.hostVersion !== host) problems.push(`${host}: the evidence was recorded against host ${evidence.hostVersion}`);
     if (evidence.packageVersion !== manifest.version) problems.push(`${host}: the evidence was recorded for package ${evidence.packageVersion}, not ${manifest.version}`);
@@ -203,19 +249,32 @@ if (releaseMode) {
 }
 check('the committed release artifact is exactly the pinned build', () => {
   const releaseManifest = readReleaseManifest();
-  const artifact = releaseArtifactPath(releaseManifest);
-  if (!fs.existsSync(artifact)) {
-    throw new Error(`missing ${path.relative(REPO_ROOT, artifact)}; run "npm run release:publish"`);
+  // The pin names this file, so it is held to the pin's read contract: the name
+  // must be the pin's own tarball inside a real `release/`, and the file itself
+  // must be a regular committed file. `existsSync` followed links, so a symlinked
+  // or foreign tarball with the pinned bytes counted as the released artifact.
+  const status = pinnedArtifactStatus(releaseManifest);
+  if (!status.ok) {
+    throw new Error(status.missing
+      ? `missing ${path.relative(REPO_ROOT, status.file)}; run "npm run release:publish"`
+      : `the committed artifact ${status.message}; the pin must name a regular file in release/`);
   }
-  const sha = crypto.createHash('sha256').update(fs.readFileSync(artifact)).digest('hex');
+  const artifact = status.file;
+  // One read, for the reason the release publisher states the same rule: the
+  // byte hash, the content digest and the entry/mode checks have to describe the
+  // same bytes. Opened three times, a replaced file is three files — each check
+  // passes against a different one, and the comparisons that exist to catch the
+  // replacement never see the disagreement.
+  const artifactBytes = fs.readFileSync(artifact);
+  const sha = crypto.createHash('sha256').update(artifactBytes).digest('hex');
   if (sha !== releaseManifest.sha256) {
     throw new Error(`the committed artifact hashes to ${sha}, but release/manifest.json pins ${releaseManifest.sha256}`);
   }
-  const digest = archiveContentDigest(artifact);
+  const entries = readTarEntries(artifactBytes);
+  const digest = contentDigestOf(entries);
   if (digest !== releaseManifest.contentSha256) {
     throw new Error(`the committed artifact contains ${digest}, but release/manifest.json pins ${releaseManifest.contentSha256}`);
   }
-  const entries = archiveEntries(artifact);
   if (entries.length !== releaseManifest.entries) {
     throw new Error(`the committed artifact has ${entries.length} entries, release/manifest.json pins ${releaseManifest.entries}`);
   }
@@ -224,9 +283,12 @@ check('the committed release artifact is exactly the pinned build', () => {
     throw new Error(`the committed artifact has modes ${JSON.stringify(modes)}, release/manifest.json pins ${JSON.stringify(releaseManifest.modes)}`);
   }
   assertCleanEntries(entries.map((entry) => entry.path), expectedEntries(manifest));
-  const sums = path.join(REPO_ROOT, 'release', 'SHA256SUMS');
-  if (!fs.existsSync(sums)) throw new Error('release/SHA256SUMS is missing');
-  const recorded = fs.readFileSync(sums, 'utf8').trim();
+  // The checksum file is the third file of the release set and is read at a
+  // fixed name inside `release/`, so it is held to the same rule as the pin:
+  // `lstat` first, a regular committed file only, never a link to somewhere else.
+  const sumsStatus = releaseRootFileStatus('SHA256SUMS');
+  if (!sumsStatus.ok) throw new Error(sumsStatus.message);
+  const recorded = fs.readFileSync(sumsStatus.file, 'utf8').trim();
   if (recorded !== `${releaseManifest.sha256}  ${releaseManifest.filename}`) {
     throw new Error(`release/SHA256SUMS records:\n          ${recorded}\n        expected:\n          ${releaseManifest.sha256}  ${releaseManifest.filename}`);
   }
@@ -240,7 +302,7 @@ if (releaseMode) {
     const treeDigest = treeContentDigest();
     if (treeDigest !== releaseManifest.contentSha256) {
       const declared = expectedEntries(manifest);
-      const pinned = new Map(readTarEntries(releaseArtifactPath(releaseManifest)).map((entry) => [entry.path, entry]));
+      const pinned = new Map(readTarEntries(pinnedArtifactFile(releaseManifest)).map((entry) => [entry.path, entry]));
       const drifted = [];
       for (const relative of declared) {
         const absolute = path.join(REPO_ROOT, relative);

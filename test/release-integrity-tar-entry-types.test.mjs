@@ -49,7 +49,7 @@ function headerBlock({ name, mode = 0o644, size = 0, type = '0', linkname = '' }
   block.write(octal(0, 8), 108, 8, 'utf8'); // uid
   block.write(octal(0, 8), 116, 8, 'utf8'); // gid
   block.write(octal(size, 12), 124, 12, 'utf8');
-  block.write(octal(0, 12), 136, 12, 'utf8'); // mtime
+  block.write(octal(499162500, 12), 136, 12, 'utf8'); // mtime: node-tar's `portable` timestamp
   block.fill(0x20, 148, 156); // checksum field is spaces while summing
   block.write(type, 156, 1, 'utf8');
   block.write(linkname, 157, 100, 'utf8');
@@ -132,14 +132,16 @@ test('an archive whose only difference is a symbolic link is not collapsed onto 
   assert.throws(
     () => archiveContentDigest(symlinkFile),
     (error) => {
-      assert.match(error.message, /index\.js\.link/, 'the failure must name the entry it cannot model');
+      // The rejection reports the entry's position and type, never its path: an
+      // entry name is archive content, so it is not printed back.
+      assert.match(error.message, /tar entry \d+ at byte \d+: unsupported entry type/);
       assert.match(error.message, /symbolic link/);
-      assert.match(error.message, /tar type "2"/);
+      assert.equal(error.message.includes('index.js'), false, 'the rejected entry path must not be echoed');
       return true;
     },
   );
-  assert.throws(() => readTarEntries(symlinkFile), /index\.js\.link/);
-  assert.throws(() => archiveEntries(symlinkFile), /index\.js\.link/);
+  assert.throws(() => readTarEntries(symlinkFile), /unsupported entry type/);
+  assert.throws(() => archiveEntries(symlinkFile), /unsupported entry type/);
   assert.equal(regularDigest, archiveContentDigest(regularFile));
 });
 
@@ -150,8 +152,9 @@ test('a hard link entry is rejected rather than skipped', () => {
     { name: 'package/index.js.hard', type: '1', linkname: 'package/README.md' },
   ]));
   assert.throws(() => archiveContentDigest(file), (error) => {
-    assert.match(error.message, /index\.js\.hard/);
+    assert.match(error.message, /unsupported entry type/);
     assert.match(error.message, /hard link/);
+    assert.equal(error.message.includes('index.js.hard'), false, 'the rejected entry path must not be echoed');
     return true;
   });
 });
@@ -166,8 +169,9 @@ test('a directory entry is rejected rather than skipped', () => {
     { name: 'package/lib/', type: '5' },
   ]));
   assert.throws(() => archiveContentDigest(file), (error) => {
-    assert.match(error.message, /lib\//);
+    assert.match(error.message, /unsupported entry type/);
     assert.match(error.message, /directory/);
+    assert.equal(error.message.includes('lib/'), false, 'the rejected entry path must not be echoed');
     return true;
   });
 });
