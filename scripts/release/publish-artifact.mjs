@@ -92,7 +92,10 @@ function committedFileStatus(absolute) {
  *     filename, byte hash, content digest, entry count and modes;
  *   - the tarball the pin names exists, hashes to the pinned bytes, unpacks
  *     under the fail-closed reader, and yields the pinned content digest,
- *     entry count and modes;
+ *     entry count and modes. It is read into memory exactly once: the byte
+ *     hash and the unpacked entries describe one snapshot, so no swap between
+ *     two reads can satisfy `sha256` from one revision of the file and
+ *     `contentSha256`/`entries`/`modes` from another;
  *   - `release/SHA256SUMS` records exactly the pinned artifact.
  *
  * Optional metadata (`sourceCommit`, `builtWith`, acceptance evidence) is not
@@ -205,13 +208,18 @@ export function inspectPinnedRelease({
       : `the pinned artifact ${artifactStatus.message}; the pin must name a committed regular file`);
     return { pin, problems };
   }
-  const sha256 = crypto.createHash('sha256').update(fs.readFileSync(artifact)).digest('hex');
+  // One read, two derivations. Hashing the path and then re-opening it for the
+  // entries let a file swapped between the two calls record the bytes of one
+  // revision and the content of another — a release set no single artifact ever
+  // had. The buffer below is the only thing either check looks at.
+  const artifactBytes = fs.readFileSync(artifact);
+  const sha256 = crypto.createHash('sha256').update(artifactBytes).digest('hex');
   if (sha256 !== pin.sha256) {
     problems.push('the pinned artifact hashes to different bytes than release/manifest.json records');
   }
   let entries;
   try {
-    entries = readTarEntries(artifact);
+    entries = readTarEntries(artifactBytes);
   } catch (error) {
     problems.push(`the pinned artifact is not a readable gzipped npm archive: ${error.message}`);
     return { pin, problems };
