@@ -45,7 +45,7 @@ const HUNKS = [
       " * same three steps in the same order and discards what they produce, so a save\n" +
       " * throws exactly where it threw: `JSON.stringify`; the `JSON.parse` of its output,\n" +
       " * which throws only when the stringify returned `undefined`; and the recursive\n" +
-      " * own-`__proto__` strip, which runs only when the serialized text carries that\n" +
+      " * own-`__proto__` copy, which runs only when the serialized text carries that\n" +
       " * literal, and would overflow on a document nested deeply enough. The parse is the\n" +
       " * step skipped on the common path, and it is the one that builds the deep copy no\n" +
       " * reader wants; the substring search costs what that preprocess already paid for\n" +
@@ -63,7 +63,7 @@ const HUNKS = [
       "  // `JSON.parse(undefined)` is the error the previous call reached through the\n" +
       "  // same expression; every other unrepresentable value already threw above.\n" +
       "  if (text === undefined) JSON.parse(text);\n" +
-      "  else if (text.includes(`\"${PROTO_KEY}\"`)) stripOwnProtoKeys(JSON.parse(text));\n" +
+      "  else if (text.includes(`\"${PROTO_KEY}\"`)) withoutOwnProtoKeys(JSON.parse(text));\n" +
       "}\n" +
       "export function projectObservation(input = {}) {",
     pre: "const safeIdentifier = value => typeof value === 'string' && /^[a-zA-Z0-9_:./-]{1,160}$/.test(value) ? value : null;\n" +
@@ -94,10 +94,10 @@ const HUNKS = [
       "    //\n" +
       "    // - Its exception behaviour is reproduced step for step. The preprocess\n" +
       "    //   (`toJsonProjection`) has three steps that can throw - the stringify, the\n" +
-      "    //   parse of its output, and the recursive own-`__proto__` strip - and\n" +
+      "    //   parse of its output, and the recursive own-`__proto__` copy - and\n" +
       "    //   `assertTransactionSave` runs the same three in the same order, so a save\n" +
       "    //   still throws exactly where it threw (including the `SyntaxError` of\n" +
-      "    //   parsing an `undefined` stringify and the `RangeError` of a strip that\n" +
+      "    //   parsing an `undefined` stringify and the `RangeError` of a copy that\n" +
       "    //   overflows). Only the parse on the common path is skipped, and that is the\n" +
       "    //   step that builds the deep copy nothing reads.\n" +
       "    //\n" +

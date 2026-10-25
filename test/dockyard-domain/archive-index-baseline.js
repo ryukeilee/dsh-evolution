@@ -13,6 +13,29 @@ import { reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
 // earlier reversal has restored it, so reordering them breaks the guards even
 // though the composed result would be the same.
 const reversals = [
+  // A data-derived own `__proto__` key must not be lost on the way through
+  // `redact()`: assigning that name on an ordinary object reaches the prototype
+  // setter, so the pairs are collected and defined with `Object.fromEntries()`.
+  // Reversing it restores the assignment this pin predates.
+  ["  if (Array.isArray(value)) return value.map((entry) => redact(entry, \"\", seen)).filter((entry) => entry !== undefined);\n" +
+   "  // The pairs are collected and defined with `Object.fromEntries()`: an own key\n" +
+   "  // named `__proto__` (which `JSON.parse` really creates) must become an own\n" +
+   "  // data property, while `output[entryKey] = normalized` would reach\n" +
+   "  // `Object.prototype`'s `__proto__` setter, silently drop the key and make the\n" +
+   "  // payload the output's prototype.\n" +
+   "  const entries = [];\n" +
+   "  for (const [entryKey, entry] of Object.entries(value)) {\n" +
+   "    const normalized = redact(entry, entryKey, seen);\n" +
+   "    if (normalized !== undefined) entries.push([entryKey, normalized]);\n" +
+   "  }\n" +
+   "  return Object.fromEntries(entries);",
+   "  if (Array.isArray(value)) return value.map((entry) => redact(entry, \"\", seen)).filter((entry) => entry !== undefined);\n" +
+   "  const output = {};\n" +
+   "  for (const [entryKey, entry] of Object.entries(value)) {\n" +
+   "    const normalized = redact(entry, entryKey, seen);\n" +
+   "    if (normalized !== undefined) output[entryKey] = normalized;\n" +
+   "  }\n" +
+   "  return output;"],
   // This round stops rewriting the archive index when the only difference is the
   // clock-derived `updatedAt` stamp, and keeps a loaded entry in the shape it was
   // read in so a missing field is a repair like any other. Both are reversed here,

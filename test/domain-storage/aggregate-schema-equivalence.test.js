@@ -16,6 +16,18 @@
 // reject decision, and a byte-identical JSON projection of the result. The
 // corpus covers the shapes that can actually reach a validation - not just
 // well-formed aggregates - including the values the deep walk existed for.
+//
+// One deliberate difference is pinned separately below. Both the retired deep
+// walk and the plain `z.record` assignment it used dropped an own `__proto__` key
+// while building the result, so the projection used to hand back - and the port
+// used to persist - a document whose key was gone. That key is part of a
+// record's identity (`compactValue()` in the domain), so dropping it made the
+// identity of an in-memory row differ from the identity of the same row after a
+// reload. The working tree therefore validates the key-free copy and returns the
+// JSON projection with the key. For a document without such a key the two
+// implementations still agree byte for byte, which is what the first test
+// requires; for one with it, the first test requires each side to produce
+// exactly its own documented output instead.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
@@ -63,6 +75,24 @@ const documents = {
   'aggregate that is a number': 4,
 };
 
+/**
+ * `true` when `value` owns `__proto__` anywhere. Rebuilt here instead of
+ * imported, so the assertion does not run the implementation's own walk.
+ */
+function hasOwnProto(value) {
+  if (Array.isArray(value)) return value.some(hasOwnProto);
+  if (!value || typeof value !== 'object') return false;
+  if (Object.hasOwn(value, '__proto__')) return true;
+  return Object.values(value).some(hasOwnProto);
+}
+
+/** The key-free copy, derived independently of the implementation's copy. */
+function stripOwnProtoKeys(value) {
+  if (Array.isArray(value)) return value.map(stripOwnProtoKeys);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== '__proto__').map(([key, entry]) => [key, stripOwnProtoKeys(entry)]));
+}
+
 /** `{ ok: true, value }` or `{ ok: false, code, path }`, whatever the path. */
 function verdict(schema, document) {
   try {
@@ -78,32 +108,85 @@ test('the projected aggregate schema accepts and rejects exactly what the deep J
     const before = verdict(preChangeAggregateSchema, document);
     const after = verdict(currentAggregateSchema, document);
     assert.equal(after.ok, before.ok, `${label}: accept/reject decision must match (before ${JSON.stringify(before)}, after ${JSON.stringify(after)})`);
-    if (before.ok) assert.equal(after.value, before.value, `${label}: the validated projection must be byte-identical`);
-    else assert.deepEqual({ code: after.code }, { code: before.code }, `${label}: refusal shape must match`);
+    if (!before.ok) {
+      assert.deepEqual({ code: after.code }, { code: before.code }, `${label}: refusal shape must match`);
+      continue;
+    }
+    const projected = JSON.stringify(JSON.parse(JSON.stringify(document)));
+    if (hasOwnProto(JSON.parse(projected))) {
+      // The deliberate change: the working tree returns the JSON projection with
+      // the key, the retired walk returned its key-free copy.
+      assert.equal(after.value, projected, `${label}: the returned document must be the JSON projection, own __proto__ included`);
+      assert.equal(before.value, JSON.stringify(stripOwnProtoKeys(JSON.parse(projected))), `${label}: the reference result must be the key-free projection`);
+    } else {
+      assert.equal(after.value, before.value, `${label}: the validated projection must be byte-identical`);
+    }
   }
 });
 
-test('the projection drops an own __proto__ key at every depth, as the deep walk did', () => {
+test('the validated copy drops an own __proto__ key while the returned document keeps it', () => {
   // `JSON.parse` can create an own `__proto__` property; assigning that name on
   // an ordinary object instead sets the prototype, so the recursive
-  // `z.record`-based walk dropped it while building its result. The projection
-  // has to drop it too, or a nested one would reach the persisted document.
-  for (const document of Object.values(documents)) {
+  // `z.record`-based walk dropped it while building its result. That is still
+  // the verdict the structural schema has to judge - it judges the key-free copy
+  // - but it is no longer what the projection returns: the document is the JSON
+  // projection, so a nested key reaches the persisted document.
+  for (const [label, document] of Object.entries(documents)) {
+    const projected = JSON.parse(JSON.stringify(document));
+    const before = verdict(preChangeAggregateSchema, document);
     let parsed;
-    try { parsed = currentAggregateSchema.parse(document); } catch { continue; }
-    const hasOwnProto = (value) => {
-      if (Array.isArray(value)) return value.some(hasOwnProto);
-      if (!value || typeof value !== 'object') return false;
-      if (Object.hasOwn(value, '__proto__')) return true;
-      return Object.values(value).some(hasOwnProto);
-    };
-    assert.equal(hasOwnProto(parsed), false, `no validated document may carry an own __proto__ key: ${JSON.stringify(parsed)}`);
+    try { parsed = currentAggregateSchema.parse(document); } catch {
+      // A refusal stays a refusal on both sides; the first test pins the verdict.
+      assert.equal(before.ok, false, `${label}: a document this schema refuses must be refused by the reference too`);
+      continue;
+    }
+    assert.equal(before.ok, true, `${label}: a document this schema accepts must be accepted by the reference too`);
+    assert.equal(JSON.stringify(parsed), JSON.stringify(projected), `${label}: the returned document must be the JSON projection`);
+    assert.equal(hasOwnProto(parsed), hasOwnProto(projected), `${label}: the key must survive exactly where the projection has it`);
+    // The reference walk is what dropped it, at every depth, and it still does.
+    assert.equal(hasOwnProto(JSON.parse(before.value)), false, `${label}: the retired walk's result must stay key-free`);
+    // The key-free copy the schema validated really differs from the returned
+    // document whenever the projection carries the key - otherwise the two
+    // assertions above would be vacuous.
+    if (hasOwnProto(projected)) {
+      assert.notEqual(JSON.stringify(parsed), JSON.stringify(stripOwnProtoKeys(projected)), `${label}: the validated copy must differ from the returned document`);
+    }
   }
-  // And the removal is exactly the old behavior, not a widening: the other
-  // `constructor` / `prototype` names stay as ordinary own keys.
+  // Depth by depth, on the shapes the corpus carries.
+  const keysOf = (value) => Object.keys(value);
+  assert.deepEqual(keysOf(currentAggregateSchema.parse(documents['keys the JSON projection keeps verbatim']).evolution), ['schema', '__proto__', 'constructor']);
+  assert.deepEqual(keysOf(currentAggregateSchema.parse(documents['an own __proto__ key below the top level']).evolution.data), ['__proto__', 'constructor']);
+  assert.deepEqual(keysOf(currentAggregateSchema.parse(documents['an own __proto__ key in an array element']).evolution.rows[0]), ['__proto__', 'id']);
+  assert.deepEqual(keysOf(currentAggregateSchema.parse(documents['an own __proto__ key from a metric map']).evolution.experiments[0].measurement), ['__proto__', 'latency']);
+  assert.deepEqual(keysOf(currentAggregateSchema.parse(documents['an own __proto__ key in nested arrays']).evolution.m[0][0]), ['__proto__']);
+  const exercised = currentAggregateSchema.parse(documents['an own __proto__ key from a metric map']);
+  assert.equal(Object.getOwnPropertyDescriptor(exercised.evolution.experiments[0].measurement, '__proto__').value, 5, 'the key must be an own data property with its value');
+  assert.equal(Object.getPrototypeOf(exercised.evolution.experiments[0].measurement), Object.prototype);
+  // And keeping the key is not a widening: the other `constructor` / `prototype`
+  // names stay as ordinary own keys, as before.
   const kept = currentAggregateSchema.parse({ evolution: { schema: 4, constructor: 2, prototype: 3 } });
   assert.equal(kept.evolution.constructor, 2);
   assert.equal(kept.evolution.prototype, 3);
+});
+
+test('a refusal keeps the reference issue code, path and message', () => {
+  // The working tree produces the structural verdict from the key-free copy and
+  // re-reports its issues from the same place, so a caller must see the issue
+  // list the reference schema produced - not one path deeper. The transaction
+  // entry check matches on `code` and `path`
+  // (`domain-hotpath-20261024-entry-validation.test.js`), which is why this is
+  // pinned rather than assumed.
+  let compared = 0;
+  for (const [label, document] of Object.entries(documents)) {
+    let reference;
+    try { preChangeAggregateSchema.parse(document); continue; } catch (error) { reference = error; }
+    let current;
+    try { currentAggregateSchema.parse(document); } catch (error) { current = error; }
+    assert.ok(current, `${label}: the working tree must refuse what the reference refuses`);
+    assert.deepEqual(current.issues, reference.issues, `${label}: the refusal must keep the reference issue code, path and message`);
+    compared += 1;
+  }
+  assert.ok(compared >= 8, `only ${compared} refusals were compared; the differential must not be vacuous`);
 });
 
 test('the projection alone makes every value JSON, which is why the per-value walk is redundant', () => {

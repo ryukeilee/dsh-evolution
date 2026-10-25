@@ -32,17 +32,22 @@
  * rewritten - it keeps the bytes it has, and the next event with such a payload
  * gets its own new key. The last test pins that too.
  *
- * Where that is reachable, precisely - and no wider: the ordinary
- * `recordObservation()` ingest path strips an own `__proto__` key before any
- * identity is computed (`safeRecord()` / `redact()` in
- * `lib/dockyard-domain/memory.js` and `lib/dockyard-domain/observation.js`), and
- * the domain aggregate projection strips it again (`stripOwnProtoKeys` in
- * `lib/domain-storage.js`). The collapse is reachable through
- * `recordKnowledgeEvent()` (which bypasses `safeRecord`), through an injected
- * `stateStore` that returns such rows, and through cold-archive JSONL parsed
- * with `JSON.parse`. These are host/library entry points, not a public export:
- * the package export map does not expose `lib/dockyard-domain/*`, so this is a
- * defect in the internal identity layer rather than an exposed API contract.
+ * Where the collapsed identity used to be reachable, and what that means now:
+ * the two paths that dropped the key before any identity was computed were the
+ * `redact()` behind `safeRecord()` (`lib/dockyard-domain/memory.js` and
+ * `lib/dockyard-domain/observation.js`) and the domain aggregate projection
+ * (`stripOwnProtoKeys`, now `withoutOwnProtoKeys`, in `lib/domain-storage.js`). Both keep it now - `redact()`
+ * defines its entries with `Object.fromEntries()`, and the projection validates a
+ * key-free copy while returning the document as JSON - so the ordinary
+ * `recordObservation()` ingest path and `recordKnowledgeEvent()` agree on one
+ * payload's identity, and `test/dockyard-domain/special-key-ingest-integrity.test.js`
+ * pins that agreement. What remains of the old behavior is data, not a defect: a
+ * row an older build stored with the collapsed bytes keeps them (this module does
+ * not migrate, guess or rewrite stored records), and a caller that names a body
+ * explicitly is folded into that body. These are host/library entry points, not a
+ * public export: the package export map does not expose `lib/dockyard-domain/*`,
+ * so this is a defect in the internal identity layer rather than an exposed API
+ * contract.
  *
  * Which test proves what: the tests that state the defect and the identities it
  * merged fail when the old serializer is put back. The three differentials
@@ -430,6 +435,25 @@ test("a persisted __proto__ source row is its own subject, not the collapsed one
   // Only the appended event creates a canonical row here, and it is the plain
   // subject's - not the `__proto__` row's.
   assert.deepEqual(instance.knowledgeSnapshot().map((entry) => entry.knowledgeKey), [knowledgeKeyOf(INCOMING_PLAIN)]);
+
+  // The same payload through the same ingest path, now that `redact()` keeps an
+  // own `__proto__` key: this observation *is* the legacy row's subject, so it
+  // folds into the body the row bytes spell instead of forming a second subject
+  // beside it. (`withoutOwnProtoKeys` no longer removes the key from the domain
+  // projection either, so a reload of that row keeps the same identity.)
+  const incomingProto = JSON.parse(JSON.stringify(LEGACY_ROW));
+  incomingProto.id = "incoming-proto";
+  incomingProto.recordedAt = NOW;
+  assert.ok(Object.hasOwn(incomingProto.strategy, "__proto__"), "the incoming payload must own the key");
+  const folded = await instance.recordObservation(incomingProto);
+  // The returned value here is the retained representative itself, which carries
+  // no stored `knowledgeKey` (it was seeded as a source row), so the subject is
+  // read off it rather than from a field.
+  assert.equal(knowledgeKeyOf(folded), knowledgeKeyOf(LEGACY_ROW), "the same payload must be the same subject");
+  assert.equal(folded.id, LEGACY_ROW.id, "the existing representative is kept, not a second one");
+  assert.deepEqual(instance.knowledgeSnapshot().map((entry) => entry.knowledgeKey).sort(),
+    [knowledgeKeyOf(INCOMING_PLAIN), knowledgeKeyOf(LEGACY_ROW)].sort());
+  assert.deepEqual(instance.history("observations").map((entry) => entry.id).sort(), ["incoming-plain", "legacy-proto"]);
 });
 
 test("retention and finalization keep one representative for each payload", async (t) => {

@@ -823,7 +823,7 @@ const reversals = [
       " * same three steps in the same order and discards what they produce, so a save\n" +
       " * throws exactly where it threw: `JSON.stringify`; the `JSON.parse` of its output,\n" +
       " * which throws only when the stringify returned `undefined`; and the recursive\n" +
-      " * own-`__proto__` strip, which runs only when the serialized text carries that\n" +
+      " * own-`__proto__` copy, which runs only when the serialized text carries that\n" +
       " * literal, and would overflow on a document nested deeply enough. The parse is the\n" +
       " * step skipped on the common path, and it is the one that builds the deep copy no\n" +
       " * reader wants; the substring search costs what that preprocess already paid for\n" +
@@ -841,7 +841,7 @@ const reversals = [
       "  // `JSON.parse(undefined)` is the error the previous call reached through the\n" +
       "  // same expression; every other unrepresentable value already threw above.\n" +
       "  if (text === undefined) JSON.parse(text);\n" +
-      "  else if (text.includes(`\"${PROTO_KEY}\"`)) stripOwnProtoKeys(JSON.parse(text));\n" +
+      "  else if (text.includes(`\"${PROTO_KEY}\"`)) withoutOwnProtoKeys(JSON.parse(text));\n" +
       "}\n" +
       "export function projectObservation(input = {}) {",
    "const safeIdentifier = value => typeof value === 'string' && /^[a-zA-Z0-9_:./-]{1,160}$/.test(value) ? value : null;\n" +
@@ -878,10 +878,10 @@ const reversals = [
       "    //\n" +
       "    // - Its exception behaviour is reproduced step for step. The preprocess\n" +
       "    //   (`toJsonProjection`) has three steps that can throw - the stringify, the\n" +
-      "    //   parse of its output, and the recursive own-`__proto__` strip - and\n" +
+      "    //   parse of its output, and the recursive own-`__proto__` copy - and\n" +
       "    //   `assertTransactionSave` runs the same three in the same order, so a save\n" +
       "    //   still throws exactly where it threw (including the `SyntaxError` of\n" +
-      "    //   parsing an `undefined` stringify and the `RangeError` of a strip that\n" +
+      "    //   parsing an `undefined` stringify and the `RangeError` of a copy that\n" +
       "    //   overflows). Only the parse on the common path is skipped, and that is the\n" +
       "    //   step that builds the deep copy nothing reads.\n" +
       "    //\n" +
@@ -1179,9 +1179,10 @@ const reversals = [
   //
   // The walk did transform one thing: it built its result with plain property
   // assignment, so an own `__proto__` key (which `JSON.parse` can create)
-  // vanished instead of being kept. The projection therefore drops that key
-  // itself, which is why this piece covers the whole block and not just the
-  // schema line.
+  // vanished instead of being kept. The working tree still drops that key from
+  // the copy the structural schema judges (that is what keeps the verdict the
+  // retired walk made), while the document it returns keeps it, so this piece
+  // covers the whole block and not just the schema line.
   ["// The legacy aggregate can carry `undefined` object fields (e.g. relationRefs).\n" +
    "// JSON is the durable medium, and the old file backend already dropped those\n" +
    "// fields through JSON.stringify, so normalize to the exact JSON projection before\n" +
@@ -1195,40 +1196,76 @@ const reversals = [
    "// over every value could never reject a projected document; it only walked the\n" +
    "// whole aggregate a second time on every transaction step, and a single\n" +
    "// transaction step saves several times (`#append`, then `#markBridgeApplied`).\n" +
-   "// `passthrough()` keeps the unknown evolution fields instead of stripping them\n" +
-   "// (`catchall` would keep validating them), so the strict document shape, the\n" +
-   "// `evolution.schema` integer and every structural requirement still hold.\n" +
+   "// What is left is the strict structural schema below.\n" +
    "const PROTO_KEY = '__proto__';\n" +
    "/**\n" +
-   " * Drop one own `__proto__` key, which only `JSON.parse` can create: assigning\n" +
-   " * that name on an ordinary object sets the prototype instead of an own key, so\n" +
-   " * the recursive `z.record`-based walk this schema used to do dropped it as a\n" +
-   " * side effect of building its result. Dropping it here keeps the projection's\n" +
-   " * output identical to what that walk returned (`aggregate-schema-equivalence`\n" +
-   " * pins the case at every depth), and past this point no schema ever assigns it.\n" +
+   " * A copy of `value` with every own `__proto__` key removed, at every depth.\n" +
+   " *\n" +
+   " * Only `JSON.parse` (or an explicit define) can create that key: assigning the\n" +
+   " * name on an ordinary object sets the prototype instead of an own key, which is\n" +
+   " * why the recursive `z.record`-based walk this schema used to do dropped it as a\n" +
+   " * side effect of building its result. The copy is what the structural schema\n" +
+   " * validates, so the accept/reject decision is the one that walk made\n" +
+   " * (`aggregate-schema-equivalence` pins it at every depth); the document that is\n" +
+   " * returned and persisted keeps the key, because it is part of a record's\n" +
+   " * identity and deleting it would make the in-memory identity drift from the\n" +
+   " * reloaded one. Past the validation copy nothing ever assigns that name.\n" +
    " */\n" +
-   "function stripOwnProtoKeys(value) {\n" +
-   "  if (Array.isArray(value)) { for (const item of value) stripOwnProtoKeys(item); return; }\n" +
-   "  if (!value || typeof value !== 'object') return;\n" +
-   "  if (Object.hasOwn(value, PROTO_KEY)) delete value[PROTO_KEY];\n" +
-   "  for (const key of Object.keys(value)) stripOwnProtoKeys(value[key]);\n" +
+   "function withoutOwnProtoKeys(value) {\n" +
+   "  if (Array.isArray(value)) return value.map(withoutOwnProtoKeys);\n" +
+   "  if (!value || typeof value !== 'object') return value;\n" +
+   "  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== PROTO_KEY).map(([key, item]) => [key, withoutOwnProtoKeys(item)]));\n" +
    "}\n" +
    "/**\n" +
-   " * The one projection every durable value goes through. The extra key is only\n" +
-   " * looked for in the serialized text: `JSON.stringify` must spell an own key of\n" +
-   " * that name literally, so a document that cannot contain one - every document\n" +
-   " * this plugin writes - pays a substring search, not a second walk. (A string\n" +
-   " * value that happens to read `__proto__` only makes the walk run and find\n" +
-   " * nothing.)\n" +
+   " * The one projection every durable value goes through. It returns the JSON\n" +
+   " * document and, when the serialized text carries the own-`__proto__` literal, a\n" +
+   " * key-free copy of it for the structural check to judge.\n" +
+   " *\n" +
+   " * The literal is only looked for in the text: `JSON.stringify` must spell an own\n" +
+   " * key of that name literally, so a document that cannot contain one - every\n" +
+   " * document a plugin that never records such a payload writes - pays a substring\n" +
+   " * search and shares one object, not a second walk. It is also the gate the\n" +
+   " * retired deep walk effectively had, so the depth at which a document overflows\n" +
+   " * a recursive walk is the same depth it overflowed before. (A string value that\n" +
+   " * happens to read `__proto__` only makes the walk run and find nothing.)\n" +
    " */\n" +
    "const toJsonProjection = value => {\n" +
    "  const text = JSON.stringify(value);\n" +
-   "  const projected = JSON.parse(text);\n" +
-   "  if (text.includes(`\"${PROTO_KEY}\"`)) stripOwnProtoKeys(projected);\n" +
-   "  return projected;\n" +
+   "  const document = JSON.parse(text);\n" +
+   "  const validation = text.includes(`\"${PROTO_KEY}\"`) ? withoutOwnProtoKeys(document) : document;\n" +
+   "  return { document, validation };\n" +
    "};\n" +
+   "/**\n" +
+   " * The structural requirements of one aggregate document: the only top-level\n" +
+   " * member it may carry, that member being an optional object, and the integer\n" +
+   " * `schema >= 4` inside it. `passthrough()` keeps the unknown evolution fields\n" +
+   " * instead of stripping them (`catchall` would keep validating them). It judges\n" +
+   " * the key-free copy this projection hands it, which is the same document the\n" +
+   " * retired deep walk judged.\n" +
+   " */\n" +
+   "const aggregateStructure = z.object({ evolution: z.object({ schema: z.number().int().min(4) }).passthrough().optional() }).strict();\n" +
+   "/**\n" +
+   " * The document schema every durable aggregate goes through.\n" +
+   " *\n" +
+   " * The two halves of the old single schema are split here, and only in how the\n" +
+   " * verdict is produced: the structural requirements moved into\n" +
+   " * `aggregateStructure`, which judges the key-free copy, and this wrapper\n" +
+   " * re-reports its issues from the same place - with their own paths - so a\n" +
+   " * refusal keeps the exact issue code and path it had when this schema judged the\n" +
+   " * document directly (`domain-hotpath-20261024-entry-validation` pins one of\n" +
+   " * them). What changed deliberately is the *value*: this returns the JSON\n" +
+   " * projection with an own `__proto__` key, because that key is part of a record's\n" +
+   " * identity and dropping it made the in-memory identity differ from the reloaded\n" +
+   " * one.\n" +
+   " */\n" +
    "const aggregateSchema = z.preprocess(toJsonProjection,\n" +
-   "  z.object({ evolution: z.object({ schema: z.number().int().min(4) }).passthrough().optional() }).strict());",
+   "  z.object({ document: z.unknown(), validation: z.unknown() }).strict()\n" +
+   "    .superRefine(({ validation }, ctx) => {\n" +
+   "      const result = aggregateStructure.safeParse(validation);\n" +
+   "      if (result.success) return;\n" +
+   "      for (const issue of result.error.issues) ctx.addIssue({ ...issue, path: issue.path });\n" +
+   "    })\n" +
+   "    .transform(({ document }) => document));",
    "const json = z.json();\n" +
    "// The legacy aggregate can carry `undefined` object fields (e.g. relationRefs).\n" +
    "// JSON is the durable medium, and the old file backend already dropped those\n" +
