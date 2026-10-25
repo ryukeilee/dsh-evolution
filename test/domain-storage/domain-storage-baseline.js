@@ -1004,7 +1004,7 @@ const reversals = [
   // record is replayable only when its MAC verifies and it names the trusted
   // writer - so reversing these three lines restores the pinned source instead
   // of dropping the anchor.
-  ["import { EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, safeErrorDto, verifyEventBridgeEnvelope } from './orchestrator.js';\n",
+  ["import { EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, verifyEventBridgeEnvelope } from './orchestrator.js';\n",
    "import { verifyEventBridgeEnvelope } from './orchestrator.js';\n"],
   ["    const writer = config.eventBridgeWriter || EVENT_BRIDGE_DEFAULT_WRITER;\n",
    "    const writer = config.eventBridgeWriter || 'dsh-evolution-orchestrator';\n"],
@@ -1065,9 +1065,15 @@ const reversals = [
    "const safeIdentifier = value => typeof value === 'string'",
    "const safeIdentifier = value => typeof value === 'string'"],
   // Round 4 routed the checkpoint warning through `safeErrorDto`, because a log
-  // line is a boundary like any other. Reversing it restores the pinned source
-  // instead of dropping the anchor.
-  ["        // Losing the checkpoint only means the next pass re-verifies history.\n        // The warning is a log line, and a log line is a boundary: it carries\n        // the safe DTO (redacted summary, category, digest), not the raw message.\n        const detail = safeErrorDto(error, 'event-log-checkpoint');\n        ctx.logger?.warn?.(`[evolution] event log checkpoint not written: ${detail.errorSummary} (${detail.errorCategory}, ${detail.errorDigest})`);\n",
+  // line is a boundary like any other. The containment round then routed the same
+  // warning through the shared `warnRedacted()` entry point, so a logger that
+  // throws or rejects (the real Cordis logger does when a real exporter throws)
+  // can no longer fail a pass that committed every record it read; that round also
+  // dropped the now-direct `safeErrorDto` import above. Reversing this one piece
+  // restores the pinned source instead of dropping the anchor: both directions of
+  // the `catch` body are exact single occurrences, and the pinned shape is the
+  // raw-message warning it shipped.
+  ["        // Losing the checkpoint only means the next pass re-verifies history.\n        // The warning is a log line, and a log line is a boundary: it carries\n        // the safe DTO (redacted summary, category, digest), not the raw message.\n        // It goes through the one redacted-warning entry point so the warning\n        // cannot become the outcome of the pass: a logger that throws, or one\n        // that rejects, stays a diagnostic instead of a failed flush.\n        warnRedacted(ctx, 'event log checkpoint not written', error, 'event-log-checkpoint');\n",
    "        // Losing the checkpoint only means the next pass re-verifies history.\n        ctx.logger?.warn?.(`[evolution] event log checkpoint not written: ${error?.message || error}`);\n"],
   // The whole-document schema no longer validates every value against
   // `z.json()`. `aggregateSchema` preprocesses with `toJsonProjection`, and the
