@@ -315,6 +315,20 @@
       "name": "Code scanning",
       "event": "push main",
       "conclusion": "success"
+    },
+    "ciLatest": {
+      "id": 40241485973,
+      "name": "CI",
+      "event": "push main",
+      "head": "ea2827e",
+      "conclusion": "success"
+    },
+    "codeScanningLatest": {
+      "id": 40241485982,
+      "name": "Code scanning",
+      "event": "push main",
+      "head": "ea2827e",
+      "conclusion": "success"
     }
   },
   "commitChain": [
@@ -388,5 +402,43 @@
     "item26Count": "RELEASE.md section 6 item 26 keeps a dated observation (11 artifacts / 555 entries at the rc.14 pin) because the count changes with every candidate while the fail-closed reader behaviour is what the item describes",
     "untrackedPerformanceFiles": "the pre-existing untracked files under docs/performance/ and scripts/benchmarks/ were preserved unchanged and are not referenced by any shipped document; scripts/benchmarks/domain-hotpath-20261024.mjs is referenced only from a committed test comment, so a fresh clone lacks that benchmark script while the regression test itself is committed",
     "postpublishTarballPath": "the post-publish evidence records the downloaded tarball under a temporary directory path, exactly as the rc.17 records did; it is not a repository path"
+  },
+  "codeScanning": {
+    "openAlerts": 0,
+    "alert3": {
+      "number": 3,
+      "rule": "js/identity-replacement",
+      "severity": "medium",
+      "path": "scripts/benchmarks/archive-observe-attribution.mjs",
+      "line": 92,
+      "createdAt": "2026-10-25T14:43:03Z",
+      "introducedBy": "76a47cb (inside the v0.2.0-rc.17..v0.2.0-rc.18 delta)",
+      "state": "fixed",
+      "fixedAt": "2026-10-25T22:44:06Z",
+      "fixedBy": "ea2827e",
+      "shippedImpact": "scripts/benchmarks is not inside package.json#files, so the released bytes 4c7073b1... are unchanged; the fix deletes a no-op String#replace whose removal leaves the benchmark output identical",
+      "whyFixedNotDismissed": "the repository fixes CodeQL findings rather than dismissing them (the same rule the two earlier findings were handled by)"
+    },
+    "earlierFindings": "js/polynomial-redos and js/insecure-randomness remain fixed; no other alert is open"
+  },
+  "postReleaseCommits": [
+    {
+      "commit": "72f3a385433725c875bab9bf6475d17800e1481b",
+      "subject": "docs: record the v0.2.0-rc.18 release, its anonymous download and the post-publish acceptance",
+      "role": "post-publication evidence only; no shipped content"
+    },
+    {
+      "commit": "ea2827e",
+      "subject": "fix: drop a no-op self replacement CodeQL reports as identity-replacement",
+      "role": "non-shipped benchmark script; closes CodeQL alert 3"
+    }
+  ],
+  "postReleaseIntegrity": {
+    "shippedContentUnchanged": true,
+    "checks": [
+      "npm run pack:check -- --release at ea2827e: all 16 checks pass, so the tree still builds the pinned content exactly",
+      "verify-provenance --tag v0.2.0-rc.18 --require-source-commit in a clean detached worktree at the tag: tag -> 4addb10, source commit c31da4b in history, source content and tagged tree content both equal the pin",
+      "the published assets still hash to 4c7073b1... (tgz), 1b00c61d... (manifest.json) and b216ec7a... (SHA256SUMS), so the post-release commits did not touch what users download"
+    ]
   }
 }
