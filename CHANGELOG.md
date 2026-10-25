@@ -6,6 +6,68 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## Unreleased — 事件桥尾记录、晋升 journal 计划与守卫证明的根因修复
+
+本轮修复来自四路独立只读审查：修复 2 项 P1、4 项 P2 与 6 项 P3，每一项都是根因修复，
+没有新增持久字段、事件信封字段、公开工具参数或授权路径；另有 1 项 P2 与 2 项 P3 经复核
+不成立或不应改动（见文末）。未改版本号、`peerDependencies`、
+`engines`、依赖、发布固定点与官方 DSH 源码。
+
+### 事件桥：不完整尾记录不再与下一条记录粘连
+
+`EvolutionEventBridge.persistPending()` 追加前检查文件尾字节：尾部是不带换行的**完整且已签名**
+记录时，先补分隔符再追加（重放接受这种 remainder，直接追加会把两条记录拼成一行非法 JSON，
+下一次启动在 `openDomainStorage()` 拒绝整个日志）；尾部是残缺记录时拒绝追加并保留现场，
+让 doctor 的 `event-bridge-trim-partial-tail` 仍能识别唯一一条未闭合尾行。正常追加与
+pending 续写路径不变。整个“验证尾部 + 多段写入”现在由日志旁带 owner token 的目录锁串行化（同一进程与跨进程
+一致）：`O_APPEND` 只保证单次写入的位置，两个 writer 交错续写会让同一条记录被拆到另一条
+记录两边。活着的 writer 在 500 ms 内释放；崩溃留下的锁在 2 s 后通过原子 rename 隔离并复核
+mtime 才删除，释放也只删除 token 仍属于本次调用的锁——按路径判断后直接删除会让回收者误删
+刚建立的新锁，或让慢 writer 删掉接管者的锁。
+
+### 晋升 journal：计划必须就是本事务写过的目标
+
+`checkJournalBoundary()` 不再只判断“目标在某个 root 之内”。`records` 必须是 writer 写出的
+**完整计划**：composition、EVOLUTION.md 与本实验的 `archive/<id>.md` 三条 file 记录，加一条由
+experiment ID 推导的 promoted plugin 目录；同一目标不能出现两次，file 记录必须有
+`existed` / `beforeDigest` / `expectedAfter` 的一致关系。`experimentId` 必须是可作文件名的形状。
+此前空计划会被当作“成功回滚”并删除 journal，部分计划只会恢复一半目标后删除唯一证据，
+而指向 `presetDir` / `dockyard` / `knowledge` 或另一个实验目录的 `path` 记录会让恢复删除
+超出本事务的现场——它们都需要一份正常代码从不写出的 journal，但都属于“不得猜测并删除现场”
+的边界缺失；doctor 对这类 journal 报 `blocked` 且不提供 repair。
+
+### 晋升事务：同一份捕获、持久备份、可回收锁
+
+计划、CAS 基线与备份改为来自同一次读取（此前计划用旧字节生成、基线却哈希之后读到的字节，
+中间的外部编辑会被静默覆盖）；备份用 durable 原子写替代 `copyFile`，journal 提交前备份字节与
+目录项已 fsync；lock 元数据写入失败时删除本次创建的锁，清理失败后同一进程的残留锁可按
+“本进程未持有的 token”回收，不再被误判为活跃持有者。
+
+### 成功路径的资源释放与跨进程唯一 ID
+
+`promotion-succeeded` / `canary-passed` 以及 canary 回滚事件改为安全发射，`releaseTargets()`
+与 `releaseOperation()` 在状态已提交后保证执行：事件桥或归档写入失败不再让一个已 `stable`
+的实验永久占用 target，也不再让记录一直 “busy with promote”。实验 ID 追加 8 位随机后缀，
+同一毫秒内两个进程不再生成同一 ID（claim 按 ID 采纳、归档按 ID 命名）。
+
+### canary 所有者校验、守卫证明与解析错误脱敏
+
+`startupTransition` 不再是工具参数：启动屏障通过模块私有 symbol 调用，工具调用无法伪造；
+guard 的 managed-transaction 证明只接受宿主注入的 `operationContext`，tool arguments 里的同名
+对象被忽略；`write`/`edit`、bash 重定向与 `run_code` 的文件写入目标都按真实路径解析：已存在的目标用
+`realpath`，尚不存在的目标按文件系统的顺序逐分量解析（先跟随符号链接，再处理其后的 `..`，
+父目录缺失时继续向下），因此 `alias/..` 这类词法折叠无法再把写入藏到 trust-root 里。`JSON.parse` 的原生报错会引用被解析字节的截断片段（用户数据，V8 形如
+`"sk-live-TO"... is not valid JSON`），晋升 journal、内存隔离警告与 doctor evidence 统一经
+`redactJsonParseMessage()`（`lib/orchestrator.js` 导出的边界投影）处理后才会输出。
+迁移脚本的源/目标隔离改为文件系统身份比较（仍保留词法快路径），符号链接源根不再能把
+导入写回源快照。
+
+### 未改动
+
+`dsh-evolution/core` 的 `writeDurablePromotion()` 仍是宿主级集成原语（已补文档说明它不承担
+确认与门禁）；Cordis peer 范围与验收矩阵的关系维持现状；`maintenance()` 仍无生产调用者，
+因为冷档案的 retention 与 segment 封存已在 `finalizeKnowledge` 写入路径上执行。
+
 ## 0.2.0-rc.17 — 继任复用已解析的冷档案行，事件桥积压合并为一次事务
 
 本候选在 `0.2.0-rc.16` 之上做三件事：`port.observe()` 在 live → stage → hydrate 的 Memory

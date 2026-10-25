@@ -10,6 +10,7 @@ import os from 'node:os';
 
 import { EvolutionOrchestrator, persistEvidenceSnapshot } from '../lib/orchestrator.js';
 import { context } from './fixtures/runtime-inspect.mjs';
+import { promotionPlan, derivedPluginName, derivedPluginPath } from './promotion-plan-fixture.mjs';
 
 const EXPERIMENT_ID = 'exp-canary-owner';
 const OWNER = 'original-owner';
@@ -55,8 +56,9 @@ function ownerProposal() {
 }
 
 function durableIdentity(root) {
+  const pluginRoot = path.join(root, 'promoted');
   return {
-    pluginName: 'dsh-evolution-promoted-owner', pluginPath: path.join(root, 'promoted', 'dsh-evolution-promoted-owner'),
+    pluginName: derivedPluginName(EXPERIMENT_ID), pluginPath: derivedPluginPath({ pluginRoot }, EXPERIMENT_ID),
     rowId: 'evolution-promoted-owner', archivePath: path.join(root, 'archive', `${EXPERIMENT_ID}.md`),
     presetId: 'evolution', promotionTimestamp: '2026-01-01T00:00:00.000Z',
   };
@@ -142,7 +144,7 @@ test('cross-session canary keeps the durable owner and refuses another Agent', a
     targets: [],
     stateDir: p.promotionStateDir,
     stageDir: path.join(p.promotionStateDir, 'stage'),
-    records: [],
+    records: promotionPlan(p, EXPERIMENT_ID),
     durable: durableIdentity(root),
     canary: { promotionTimestamp: '2026-01-01T00:00:00.000Z', healthObservationWindow: 1, startupVerified: false, observations: [] },
   };

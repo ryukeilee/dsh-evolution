@@ -17,6 +17,7 @@ import {
   parseComposedProfile, composedEventBridgeWriter, EVOLUTION_TOOL_NAMES, SUPPORTED_DSH_VERSIONS,
 } from '../lib/diagnostics.js';
 import { EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, signEventBridgeEnvelope, verifyEventBridgeEnvelope } from '../lib/orchestrator.js';
+import { promotionPlan, derivedPluginPath } from './promotion-plan-fixture.mjs';
 import { evolutionDomainSpec } from '../lib/domain-storage.js';
 import { EVOLUTION_TOOLS } from '../lib/registration.js';
 
@@ -110,7 +111,7 @@ function orchestratorDump(bodyLines) {
   return ['# == dsh-evolution', '- id: evolution-orchestrator', '  name: dsh-evolution', ...bodyLines, '- id: evolution-trust-root-guard', '  name: dsh-evolution/guard', ''].join('\n');
 }
 
-function writeJournal(paths, { phase, records = [], experimentId = 'exp-test-1', canary = null, stateDir = paths.promotionStateDir, stageDir = null }) {
+function writeJournal(paths, { phase, experimentId = 'exp-test-1', records = promotionPlan(paths, experimentId), canary = null, stateDir = paths.promotionStateDir, stageDir = null }) {
   fs.mkdirSync(path.join(stateDir, 'backups'), { recursive: true, mode: 0o700 });
   const journal = {
     version: 1,
@@ -134,7 +135,7 @@ function writeJournal(paths, { phase, records = [], experimentId = 'exp-test-1',
 function fileChangeJournal(paths, { phase, experimentId = 'exp-test-1' } = {}) {
   fs.mkdirSync(path.join(paths.promotionStateDir, 'backups'), { recursive: true, mode: 0o700 });
   const archivePath = path.join(paths.archiveDir, `${experimentId}.md`);
-  const pluginPath = path.join(paths.pluginRoot, 'dsh-evolution-promoted-aaaaaaaaaaaa');
+  const pluginPath = derivedPluginPath(paths, experimentId);
   const planned = [
     {
       target: paths.compositionPath,
@@ -155,20 +156,17 @@ function fileChangeJournal(paths, { phase, experimentId = 'exp-test-1' } = {}) {
       after: `# Evolution experiment ${experimentId}\n\n- state: canary-observing\n`,
     },
   ];
-  const records = [];
+  const records = promotionPlan(paths, experimentId, Object.fromEntries(planned.map((entry) => [entry.target, {
+    existed: entry.existed, before: entry.before ?? '', after: entry.after,
+  }])));
   for (const [index, entry] of planned.entries()) {
-    const backup = `${String(index).repeat(16)}.bak`;
-    if (entry.before !== null) fs.writeFileSync(path.join(paths.promotionStateDir, 'backups', backup), entry.before);
+    const record = records.find((candidate) => candidate.target === entry.target);
+    if (entry.before !== null) fs.writeFileSync(path.join(paths.promotionStateDir, 'backups', record.backup), entry.before);
     fs.mkdirSync(path.dirname(entry.target), { recursive: true });
     fs.writeFileSync(entry.target, entry.after);
-    records.push({
-      type: 'file', target: entry.target, existed: entry.existed, backup,
-      beforeDigest: entry.before === null ? null : sha256(entry.before),
-      expectedAfter: sha256(entry.after), before: entry.before,
-    });
+    assert.equal(record.expectedAfter, sha256(entry.after), `the plan describes target ${index}`);
   }
   fs.mkdirSync(pluginPath, { recursive: true });
-  records.push({ type: 'path', target: pluginPath, existed: false });
   const journal = writeJournal(paths, { phase, records, experimentId });
   return { journal, targets: planned, records };
 }
@@ -824,8 +822,9 @@ test('promotion journal states are classified: none, incomplete, canary, committ
 
 test('interrupted promotion rolls back from the journal and the repair is idempotent', async () => {
   const { home, paths } = freshHome('promotion-recover');
-  const { records } = fileChangeJournal(paths, { phase: 'committing' });
+  const { records, targets } = fileChangeJournal(paths, { phase: 'committing' });
   const fileRecords = records.filter((record) => record.type === 'file');
+  const beforeOf = (record) => targets.find((entry) => entry.target === record.target).before;
   const report = await collectDiagnostics(baseOptions(home));
   assert.equal(levelOf(report, 'promotion.journal'), 'degraded');
   assert.equal(checkOf(report, 'promotion.journal').evidence.phase, 'committing');
@@ -834,7 +833,7 @@ test('interrupted promotion rolls back from the journal and the repair is idempo
   const repaired = await runDiagnostics({ ...baseOptions(home), repair: true });
   assert.deepEqual(repaired.repairsApplied.map((entry) => entry.status), ['applied']);
   for (const record of fileRecords) {
-    if (record.existed) assert.equal(fs.readFileSync(record.target, 'utf8'), record.before, `rollback must restore ${record.target}`);
+    if (record.existed) assert.equal(fs.readFileSync(record.target, 'utf8'), beforeOf(record), `rollback must restore ${record.target}`);
     else assert.equal(fs.existsSync(record.target), false, `rollback must remove the new ${record.target}`);
   }
   assert.equal(fs.existsSync(records[records.length - 1].target), false, 'the half-created plugin directory is removed');
@@ -844,7 +843,7 @@ test('interrupted promotion rolls back from the journal and the repair is idempo
   const again = await runDiagnostics({ ...baseOptions(home), repair: true });
   assert.deepEqual(again.repairsApplied, []);
   for (const record of fileRecords) {
-    if (record.existed) assert.equal(fs.readFileSync(record.target, 'utf8'), record.before);
+    if (record.existed) assert.equal(fs.readFileSync(record.target, 'utf8'), beforeOf(record));
     else assert.equal(fs.existsSync(record.target), false);
   }
 });
@@ -887,7 +886,7 @@ test('a journal that escapes its configured roots is blocked and never applied',
   assert.match(checkJournalBoundary({ stateDir: outside, records: [] }, paths), /outside the configured promotion state directory/);
   assert.match(checkJournalBoundary({ stateDir: paths.promotionStateDir, records: [{ type: 'path', target: outside }] }, paths), /outside the configured roots/);
   assert.match(checkJournalBoundary({ stateDir: paths.promotionStateDir, records: [{ type: 'file', target: paths.evolutionPath, backup: '../escape.bak' }] }, paths), /bare file name/);
-  assert.equal(checkJournalBoundary({ stateDir: paths.promotionStateDir, records: [{ type: 'path', target: path.join(paths.pluginRoot, 'x') }] }, paths), null);
+  assert.equal(checkJournalBoundary({ experimentId: 'exp-test-1', stateDir: paths.promotionStateDir, records: promotionPlan(paths, 'exp-test-1') }, paths), null);
 });
 
 test('out-of-boundary composition rows and dangling rows are blocked; orphan directories degrade', async () => {

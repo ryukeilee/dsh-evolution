@@ -16,17 +16,18 @@ import {
   scratchRoot, promotionPaths, unitPromotionRuntime, promotionExperiment, HOST_CODE,
   orchestratorContext, execFor, writeJournal, readJournal, exists,
 } from './orchestrator-durability-fixtures.mjs';
+import { promotionPlan, derivedPluginName } from './promotion-plan-fixture.mjs';
 
 const DISPOSE_DELAY_MS = 400;
 
 const sha256 = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
 /** A promoted plugin whose disposal is slow and observable. */
-async function slowDisposerPlugin(root, markerKey) {
-  const pluginDir = path.join(root, 'promoted', 'dsh-evolution-promoted-aaaaaaaaaaaa');
+async function slowDisposerPlugin(root, markerKey, pluginName = 'dsh-evolution-promoted-aaaaaaaaaaaa') {
+  const pluginDir = path.join(root, 'promoted', pluginName);
   await fs.mkdir(path.join(pluginDir, 'lib'), { recursive: true });
   await fs.writeFile(path.join(pluginDir, 'package.json'), JSON.stringify({
-    name: 'dsh-evolution-promoted-aaaaaaaaaaaa', version: '0.1.0', main: 'lib/index.js', type: 'module',
+    name: pluginName, version: '0.1.0', main: 'lib/index.js', type: 'module',
   }));
   await fs.writeFile(path.join(pluginDir, 'lib', 'index.js'), [
     'export const name = "durability-slow-disposer";',
@@ -79,7 +80,8 @@ test('P2-2 a canary rollback deletes the journal only after the removed entry is
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const paths = promotionPaths(root);
   const markerKey = `__evoDurabilityRollback${process.pid}_${Date.now()}`;
-  const { moduleUrl, pluginDir } = await slowDisposerPlugin(root, markerKey);
+  const pluginName = derivedPluginName('exp-rollback-dispose');
+  const { moduleUrl, pluginDir } = await slowDisposerPlugin(root, markerKey, pluginName);
   const rowId = 'evolution-promoted-aaaaaaaaaaaa';
   const row = `- id: ${rowId}\n  name: ${JSON.stringify(moduleUrl)}\n`;
   await fs.writeFile(paths.compositionPath, row);
@@ -90,7 +92,10 @@ test('P2-2 a canary rollback deletes the journal only after the removed entry is
 
   // The authoritative change plan a promotion would have written.
   await fs.mkdir(path.join(paths.promotionStateDir, 'backups'), { recursive: true });
-  await fs.writeFile(path.join(paths.promotionStateDir, 'backups', 'composition.bak'), '[]\n');
+  const records = promotionPlan(paths, 'exp-rollback-dispose', {
+    [paths.compositionPath]: { existed: true, before: '[]\n', after: row },
+  });
+  await fs.writeFile(path.join(paths.promotionStateDir, 'backups', records[0].backup), '[]\n');
   const journal = {
     version: 1,
     phase: 'canary-observing',
@@ -99,15 +104,9 @@ test('P2-2 a canary rollback deletes the journal only after the removed entry is
     proposal: { owner: 'durability-owner', why: 'canary rollback', target: 'plugin:durability', impactScope: ['test'], successMetrics: ['durability'], createdAt: '2026-01-01T00:00:00.000Z' },
     stateDir: paths.promotionStateDir,
     stageDir: path.join(paths.promotionStateDir, 'stage'),
-    records: [
-      {
-        type: 'file', target: paths.compositionPath, existed: true, backup: 'composition.bak',
-        beforeDigest: sha256('[]\n'), expectedAfter: sha256(row),
-      },
-      { type: 'path', target: pluginDir, existed: false },
-    ],
+    records,
     canary: { promotionTimestamp: '2026-02-02T00:00:00.000Z', healthObservationWindow: 2, startupVerified: false, observations: [] },
-    durable: { pluginName: 'dsh-evolution-promoted-aaaaaaaaaaaa', pluginPath: pluginDir, rowId, moduleUrl },
+    durable: { pluginName, pluginPath: pluginDir, rowId, moduleUrl },
   };
   await writeJournal(paths, journal);
 
@@ -157,7 +156,10 @@ test('P2-2 an unconfirmable disposal keeps the journal instead of declaring a co
   // the official Include can surface for a disposal it could not settle.
   paths.promotionRuntime = { ...unitPromotionRuntime(), refresh: async () => { throw new Error('synthetic disposal did not settle'); } };
   await fs.mkdir(path.join(paths.promotionStateDir, 'backups'), { recursive: true });
-  await fs.writeFile(path.join(paths.promotionStateDir, 'backups', 'composition.bak'), '[]\n');
+  const records = promotionPlan(paths, 'exp-unconfirmed', {
+    [paths.compositionPath]: { existed: true, before: '[]\n', after: '[{"id":"r","name":"u"}]' },
+  });
+  await fs.writeFile(path.join(paths.promotionStateDir, 'backups', records[0].backup), '[]\n');
   const journal = {
     version: 1,
     phase: 'canary-observing',
@@ -165,7 +167,7 @@ test('P2-2 an unconfirmable disposal keeps the journal instead of declaring a co
     ownerId: 'durability-owner',
     proposal: { owner: 'durability-owner', why: 'unconfirmed', target: 'plugin:durability', impactScope: ['test'], successMetrics: ['durability'], createdAt: '2026-01-01T00:00:00.000Z' },
     stateDir: paths.promotionStateDir,
-    records: [{ type: 'file', target: paths.compositionPath, existed: true, backup: 'composition.bak', beforeDigest: sha256('[]\n'), expectedAfter: sha256('[{"id":"r","name":"u"}]') }],
+    records,
     canary: { promotionTimestamp: null, healthObservationWindow: 2, startupVerified: false, observations: [] },
   };
   await writeJournal(paths, journal);

@@ -24,9 +24,38 @@ async function releaseOwnLock(lockPath, identity) {
   return 'released';
 }
 
+/**
+ * Resolve the deepest existing ancestor and re-append the components that do not
+ * exist yet, so a destination that is created later still gets a canonical
+ * location. Returns the lexical path when nothing can be resolved.
+ */
+function canonicalPathSync(target) {
+  const absolute = path.resolve(target);
+  const missing = [];
+  let current = absolute;
+  for (;;) {
+    try { return path.join(realpathSync(current), ...missing.slice().reverse()); }
+    catch (error) {
+      if (error?.code !== 'ENOENT') return absolute;
+      const parent = path.dirname(current);
+      if (parent === current) return absolute;
+      missing.push(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
 export async function importEvolutionData({ presetSnapshot, dockyardSnapshot, destination }) {
   presetSnapshot = path.resolve(presetSnapshot);
   destination = path.resolve(destination);
+  // This is a filesystem-identity guard, not a string guard. The source root can
+  // be reached through a symlink (macOS /tmp -> /private/tmp), and the destination
+  // is created later, so both sides are compared at their real location as well
+  // as lexically; otherwise an alias let the import write into the snapshot it
+  // is only supposed to read.
+  const sourceRoot = canonicalPathSync(presetSnapshot);
+  const destinationRoot = canonicalPathSync(destination);
+  if (destinationRoot === sourceRoot || destinationRoot.startsWith(`${sourceRoot}${path.sep}`)) throw new Error('Destination must be outside the source snapshot');
   if (destination === presetSnapshot || destination.startsWith(`${presetSnapshot}${path.sep}`)) throw new Error('Destination must be outside the source snapshot');
   const files = new Map();
   async function add(source, target) {

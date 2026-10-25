@@ -22,6 +22,7 @@ import os from 'node:os';
 
 import { checkJournalBoundary as recoveryBoundary, recoverInterruptedPromotion } from '../lib/orchestrator.js';
 import { checkJournalBoundary as diagnosticBoundary, collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
+import { promotionPlan, derivedPluginPath } from './promotion-plan-fixture.mjs';
 
 async function scratch(t, name) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), `evo-journal-boundary-${name}-`));
@@ -50,6 +51,15 @@ async function fixture(t, name) {
   return { dataRoot, presetDir, paths };
 }
 
+/** Replace the plan's plugin directory record with `target` (used to prove the
+ * derived-name check; the record count and the other targets stay complete). */
+function replacePlugin(records, target) {
+  const index = records.findIndex((record) => record.type === 'path');
+  const replaced = records.slice();
+  replaced[index] = { type: 'path', target, existed: false };
+  return replaced;
+}
+
 const baseJournal = (paths, overrides = {}) => ({
   version: 1,
   phase: 'committing',
@@ -70,7 +80,7 @@ const cases = [
   {
     name: 'a legal journal',
     reason: null,
-    journal: (paths) => baseJournal(paths, { records: [{ type: 'path', target: path.join(paths.pluginRoot, 'promoted-plugin') }] }),
+    journal: (paths) => baseJournal(paths, { records: promotionPlan(paths, 'exp-boundary-1') }),
   },
   {
     name: 'a symlink record, which recovery never accepted',
@@ -127,6 +137,63 @@ const cases = [
     reason: /no change plan/,
     journal: (paths) => baseJournal(paths, { records: {} }),
   },
+  {
+    name: 'an empty change plan',
+    reason: /empty change plan/,
+    journal: (paths) => baseJournal(paths),
+  },
+  {
+    name: 'a path record naming the plugin root itself',
+    reason: /not this transaction's promoted plugin directory/,
+    journal: (paths) => baseJournal(paths, { records: replacePlugin(promotionPlan(paths, 'exp-boundary-1'), paths.pluginRoot) }),
+  },
+  {
+    name: 'a path record naming the preset root',
+    reason: /not this transaction's promoted plugin directory/,
+    journal: (paths) => baseJournal(paths, { records: replacePlugin(promotionPlan(paths, 'exp-boundary-1'), paths.presetDir) }),
+  },
+  {
+    name: 'a path record naming the domain aggregate',
+    reason: /not this transaction's promoted plugin directory/,
+    journal: (paths) => baseJournal(paths, { records: replacePlugin(promotionPlan(paths, 'exp-boundary-1'), path.join(paths.presetDir, 'dockyard')) }),
+  },
+  {
+    name: 'a path record naming another experiment plugin directory',
+    reason: /not this transaction's promoted plugin directory/,
+    journal: (paths) => baseJournal(paths, { records: replacePlugin(promotionPlan(paths, 'exp-boundary-1'), derivedPluginPath(paths, 'exp-boundary-2')) }),
+  },
+  {
+    name: 'a file record outside the transaction plan',
+    reason: /not one of this transaction's planned files/,
+    journal: (paths) => {
+      const records = promotionPlan(paths, 'exp-boundary-1');
+      records[0] = { ...records[0], target: path.join(paths.pluginRoot, 'unrelated.txt') };
+      return baseJournal(paths, { records });
+    },
+  },
+  {
+    name: 'a plan that names one target twice',
+    reason: /more than once/,
+    journal: (paths) => {
+      const records = promotionPlan(paths, 'exp-boundary-1');
+      records[1] = { ...records[0] };
+      return baseJournal(paths, { records });
+    },
+  },
+  {
+    name: 'a plan missing part of the transaction',
+    reason: /missing part of this transaction/,
+    journal: (paths) => baseJournal(paths, { records: promotionPlan(paths, 'exp-boundary-1').slice(0, 2) }),
+  },
+  {
+    name: 'a file record without a rollback baseline',
+    reason: /invalid rollback baseline/,
+    journal: (paths) => {
+      const records = promotionPlan(paths, 'exp-boundary-1');
+      records[0] = { ...records[0], existed: true, beforeDigest: null };
+      return baseJournal(paths, { records });
+    },
+  },
 ];
 
 for (const [index, entry] of cases.entries()) {
@@ -164,6 +231,35 @@ for (const [index, entry] of cases.entries()) {
     assert.equal(await fs.access(file).then(() => true, () => false), true, 'a refusal must preserve the journal for inspection');
   });
 }
+
+test('a root path record cannot delete the durable knowledge it points at', async (t) => {
+  const { paths } = await fixture(t, 'root-delete');
+  const aggregate = path.join(paths.presetDir, 'dockyard');
+  await fs.mkdir(aggregate, { recursive: true });
+  const marker = path.join(aggregate, 'domain.json');
+  await fs.writeFile(marker, '{"canonical":["real knowledge"]}\n');
+  const journalFile = await writeJournal(paths, baseJournal(paths, { records: replacePlugin(promotionPlan(paths, 'exp-boundary-1'), aggregate) }));
+
+  // Pre-fix this record was inside `presetDir`, so the boundary accepted it,
+  // recovery recursively removed the directory, deleted the journal and
+  // reported `rolled-back` - silent total loss of the domain aggregate.
+  await assert.rejects(recoverInterruptedPromotion(paths), /not this transaction's promoted plugin directory/);
+  assert.equal(await fs.readFile(marker, 'utf8'), '{"canonical":["real knowledge"]}\n');
+  assert.equal(await fs.access(journalFile).then(() => true, () => false), true, 'the journal is preserved for inspection');
+});
+
+test('an empty change plan is refused instead of reported as a successful rollback', async (t) => {
+  const { paths } = await fixture(t, 'empty-plan');
+  const target = path.join(paths.presetDir, 'knowledge', 'EVOLUTION.md');
+  await fs.mkdir(path.dirname(target), { recursive: true });
+  await fs.writeFile(target, 'after-commit\n');
+  const journalFile = await writeJournal(paths, baseJournal(paths));
+
+  // Pre-fix the rollback restored nothing and still deleted the only evidence.
+  await assert.rejects(recoverInterruptedPromotion(paths), /empty change plan/);
+  assert.equal(await fs.readFile(target, 'utf8'), 'after-commit\n');
+  assert.equal(await fs.access(journalFile).then(() => true, () => false), true);
+});
 
 test('a journal without the complete configured roots is refused by both, not crashed on', async (t) => {
   const { paths } = await fixture(t, 'missing-roots');

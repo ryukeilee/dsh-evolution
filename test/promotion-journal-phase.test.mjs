@@ -21,6 +21,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 import { EvolutionOrchestrator, classifyPromotionJournal, recoverInterruptedPromotion, persistEvidenceSnapshot } from '../lib/orchestrator.js';
+import { promotionPlan } from './promotion-plan-fixture.mjs';
 import { collectDiagnostics, runDiagnostics, applyRepairs, resolveEvolutionPaths } from '../lib/diagnostics.js';
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
@@ -44,9 +45,10 @@ async function writeRaw(paths, journal) {
   return file;
 }
 
-/** A boundary-legal journal for `phase`, written to disk. `records: []` keeps
- * every phase in this matrix outside the boundary rule so the test isolates
- * the phase classification. */
+/** A boundary-legal journal for `phase`, written to disk. The plan names only
+ * the plugin directory this transaction would create, which keeps every phase in
+ * this matrix inside the boundary rule while the test isolates the phase
+ * classification. */
 async function writePhaseJournal(paths, phase, index) {
   return writeRaw(paths, {
     version: 1,
@@ -54,7 +56,7 @@ async function writePhaseJournal(paths, phase, index) {
     experimentId: `exp-phase-${index}`,
     stateDir: paths.promotionStateDir,
     stageDir: path.join(paths.promotionStateDir, 'stage'),
-    records: [],
+    records: promotionPlan(paths, `exp-phase-${index}`),
   });
 }
 
@@ -63,14 +65,16 @@ async function writePhaseJournal(paths, phase, index) {
  * rollback would visibly destroy the scene if it ran. */
 async function unknownPhaseScene(t, name, { phase = 'something-new', deletePhase = false } = {}) {
   const { home, paths } = await fixture(t, name);
-  const target = path.join(paths.pluginRoot, 'promoted-plugin.txt');
-  await fs.mkdir(path.dirname(target), { recursive: true });
+  // The scene is one of the transaction's own planned files, so the journal is
+  // boundary-legal and the phase is the only thing that can refuse it.
+  const target = paths.evolutionPath;
   const before = 'before-bytes\n';
   const after = 'after-bytes\n';
+  await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, after);
-  const backup = `${'a'.repeat(16)}.bak`;
   await fs.mkdir(path.join(paths.promotionStateDir, 'backups'), { recursive: true, mode: 0o700 });
-  const backupFile = path.join(paths.promotionStateDir, 'backups', backup);
+  const records = promotionPlan(paths, 'exp-unknown-phase', { [target]: { existed: true, before, after } });
+  const backupFile = path.join(paths.promotionStateDir, 'backups', records.find((record) => record.target === target).backup);
   await fs.writeFile(backupFile, before);
   const stageDir = path.join(paths.promotionStateDir, 'stage');
   await fs.mkdir(stageDir, { recursive: true });
@@ -79,7 +83,7 @@ async function unknownPhaseScene(t, name, { phase = 'something-new', deletePhase
     experimentId: 'exp-unknown-phase',
     stateDir: paths.promotionStateDir,
     stageDir,
-    records: [{ type: 'file', target, existed: true, backup, beforeDigest: sha256(before), expectedAfter: sha256(after) }],
+    records,
   };
   if (!deletePhase) journal.phase = phase;
   const journalFile = await writeRaw(paths, journal);
@@ -254,14 +258,14 @@ async function canaryScene(t, name, { phase = 'something-new', deletePhase = fal
   const experimentId = 'exp-canary-blocked';
   const owner = 'canary-owner';
 
-  const target = path.join(paths.pluginRoot, 'promoted-plugin.txt');
-  await fs.mkdir(path.dirname(target), { recursive: true });
+  const target = paths.evolutionPath;
   const before = 'before-bytes\n';
   const after = 'after-bytes\n';
+  await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, after);
-  const backup = `${'a'.repeat(16)}.bak`;
   await fs.mkdir(path.join(paths.promotionStateDir, 'backups'), { recursive: true, mode: 0o700 });
-  const backupFile = path.join(paths.promotionStateDir, 'backups', backup);
+  const records = promotionPlan(paths, experimentId, { [target]: { existed: true, before, after } });
+  const backupFile = path.join(paths.promotionStateDir, 'backups', records.find((record) => record.target === target).backup);
   await fs.writeFile(backupFile, before);
   const stageDir = path.join(paths.promotionStateDir, 'stage');
   await fs.mkdir(stageDir, { recursive: true });
@@ -271,7 +275,7 @@ async function canaryScene(t, name, { phase = 'something-new', deletePhase = fal
     ownerId: owner,
     stateDir: paths.promotionStateDir,
     stageDir,
-    records: [{ type: 'file', target, existed: true, backup, beforeDigest: sha256(before), expectedAfter: sha256(after) }],
+    records,
   };
   if (!deletePhase) journal.phase = phase;
   const journalFile = path.join(paths.promotionStateDir, 'journal.json');
