@@ -1,0 +1,392 @@
+{
+  "schema": 1,
+  "record": "v0.2.0-rc.18 release audit",
+  "version": "0.2.0-rc.18",
+  "recordedAt": "2026-10-25",
+  "tag": "v0.2.0-rc.18",
+  "tagObject": "658eecae074d187a36ec10589dfaa6aab345b5d7",
+  "tagCommit": "4addb1052b3758614fc4271730c3eb0e5177266c",
+  "sourceCommit": "c31da4b2e5baa588f6355ea42cb21cb9e14693b5",
+  "pin": {
+    "tie": "source commit, tag commit and the working tree at the tag all ship content 0940a781bb1d6434a97e80b85b0372b634389808d90184319d446ed463eb6b77; the published bytes are 4c7073b1ed10c1c962161936403aefe7bd554005730f8fc6ced2464a9ee15360, built with node v22.23.4 / npm 10.9.9 on darwin-arm64",
+    "manifest": {
+      "name": "dsh-evolution",
+      "version": "0.2.0-rc.18",
+      "filename": "dsh-evolution-0.2.0-rc.18.tgz",
+      "sha256": "4c7073b1ed10c1c962161936403aefe7bd554005730f8fc6ced2464a9ee15360",
+      "contentSha256": "0940a781bb1d6434a97e80b85b0372b634389808d90184319d446ed463eb6b77",
+      "entries": 51,
+      "modes": [
+        "0o644",
+        "0o755"
+      ],
+      "builtWith": {
+        "node": "v22.23.4",
+        "npm": "10.9.9",
+        "platform": "darwin-arm64"
+      },
+      "sourceCommit": "c31da4b2e5baa588f6355ea42cb21cb9e14693b5",
+      "verifiedHosts": [
+        "0.2.0-rc.2",
+        "0.2.1-alpha.1",
+        "0.2.1-rc.2"
+      ],
+      "evidence": [
+        "docs/evidence/dsh-0.2.0-rc.2.json",
+        "docs/evidence/dsh-0.2.1-alpha.1.json",
+        "docs/evidence/dsh-0.2.1-rc.2.json"
+      ]
+    }
+  },
+  "release": {
+    "id": 423702527,
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.18",
+    "createdAt": "2026-10-25T22:32:31Z",
+    "publishedAt": "2026-10-25T22:33:55Z",
+    "isDraft": false,
+    "isPrerelease": true,
+    "targetCommitish": "main",
+    "assets": [
+      {
+        "name": "dsh-evolution-0.2.0-rc.18.tgz",
+        "size": 453507,
+        "digest": "sha256:4c7073b1ed10c1c962161936403aefe7bd554005730f8fc6ced2464a9ee15360",
+        "state": "uploaded"
+      },
+      {
+        "name": "manifest.json",
+        "size": 720,
+        "digest": "sha256:1b00c61d863169b8094609f7747f43dfb7ad0630a75ff0400d6a3617cee1eddd",
+        "state": "uploaded"
+      },
+      {
+        "name": "SHA256SUMS",
+        "size": 96,
+        "digest": "sha256:b216ec7a2e1fab020e6c9c7428e9f0c0073fc013a9442433a4539def0c92ad0b",
+        "state": "uploaded"
+      }
+    ],
+    "overwroteExistingAssets": false,
+    "latestChannel": "unaffected: GET /releases/latest still returns 404 because the repository has no stable release for it to move"
+  },
+  "provenance": {
+    "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.18 --require-source-commit --json",
+    "ok": true,
+    "problems": [],
+    "notes": [
+      "tag v0.2.0-rc.18 -> commit 4addb1052b3758614fc4271730c3eb0e5177266c",
+      "source commit c31da4b2e5baa588f6355ea42cb21cb9e14693b5 is in the tagged history",
+      "source commit content 0940a781bb1d6434a97e80b85b0372b634389808d90184319d446ed463eb6b77 matches the pin",
+      "tagged tree content 0940a781bb1d6434a97e80b85b0372b634389808d90184319d446ed463eb6b77 matches the pin"
+    ]
+  },
+  "prePublishVerification": {
+    "fullSuite": [
+      {
+        "node": "v22.23.4",
+        "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+        "tests": 1080,
+        "pass": 1080,
+        "fail": 0
+      },
+      {
+        "node": "v24.22.1",
+        "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+        "tests": 1080,
+        "pass": 1080,
+        "fail": 0
+      }
+    ],
+    "note": "the runs before the pin are not green and are recorded as such: before the version bump one test failed because the committed pin still described rc.17, and after the bump but before the pin fifteen archive-header tests could not read release/<current version>.tgz. Both counts disappear once the pin exists, which is why the recorded green runs are the ones taken after release:publish",
+    "packCheckRelease": "npm run pack:check -- --release: all 16 checks passed on the tagged tree, including both pin checks and the evidence check",
+    "releaseVerify": "npm run release:verify: sha256 4c7073b1..., contentSha256 0940a781..., 51 entries and modes 0o644/0o755 all match release/manifest.json",
+    "checksums": "shasum -a 256 -c release/SHA256SUMS -> dsh-evolution-0.2.0-rc.18.tgz: OK",
+    "contentOnlyRebuild": "node scripts/release/verify-artifact.mjs dist/dsh-evolution-0.2.0-rc.18.tgz --content-only: same content digest, entry count and mode set as the pin",
+    "hostAcceptanceCommand": "node scripts/acceptance/run-host-acceptance.mjs --host <host> --tarball release/dsh-evolution-0.2.0-rc.18.tgz (isolated runtime and $DSH_HOME per run)",
+    "hostAcceptanceAgainstPinnedTarball": [
+      {
+        "evidence": "docs/evidence/dsh-0.2.0-rc.2.json",
+        "host": "0.2.0-rc.2",
+        "packageVersion": "0.2.0-rc.18",
+        "tarballSha256": "4c7073b1ed10c1c962161936403aefe7bd554005730f8fc6ced2464a9ee15360",
+        "contentSha256": "0940a781bb1d6434a97e80b85b0372b634389808d90184319d446ed463eb6b77",
+        "steps": 21,
+        "stepsOk": 21,
+        "allStepsOk": true,
+        "finalDoctor": {
+          "exitCode": 0,
+          "status": "healthy"
+        },
+        "topLevelDoctorStatus": "degraded",
+        "topLevelDoctorDegraded": [
+          "data.root",
+          "data.key"
+        ],
+        "hostModules": {
+          "cordis": "4.0.5",
+          "include": "1.0.10",
+          "loader": "1.0.6",
+          "jsYaml": "4.3.2"
+        },
+        "node": "v22.23.4",
+        "platform": "darwin-arm64",
+        "startedAt": "2026-10-25T22:28:44.565Z",
+        "finishedAt": "2026-10-25T22:29:16.860Z"
+      },
+      {
+        "evidence": "docs/evidence/dsh-0.2.1-alpha.1.json",
+        "host": "0.2.1-alpha.1",
+        "packageVersion": "0.2.0-rc.18",
+        "tarballSha256": "4c7073b1ed10c1c962161936403aefe7bd554005730f8fc6ced2464a9ee15360",
+        "contentSha256": "0940a781bb1d6434a97e80b85b0372b634389808d90184319d446ed463eb6b77",
+        "steps": 21,
+        "stepsOk": 21,
+        "allStepsOk": true,
+        "finalDoctor": {
+          "exitCode": 0,
+          "status": "healthy"
+        },
+        "topLevelDoctorStatus": "degraded",
+        "topLevelDoctorDegraded": [
+          "data.root",
+          "data.key"
+        ],
+        "hostModules": {
+          "cordis": "4.0.5",
+          "include": "1.0.10",
+          "loader": "1.0.6",
+          "jsYaml": "4.3.2"
+        },
+        "node": "v22.23.4",
+        "platform": "darwin-arm64",
+        "startedAt": "2026-10-25T22:28:44.564Z",
+        "finishedAt": "2026-10-25T22:29:17.218Z"
+      },
+      {
+        "evidence": "docs/evidence/dsh-0.2.1-rc.2.json",
+        "host": "0.2.1-rc.2",
+        "packageVersion": "0.2.0-rc.18",
+        "tarballSha256": "4c7073b1ed10c1c962161936403aefe7bd554005730f8fc6ced2464a9ee15360",
+        "contentSha256": "0940a781bb1d6434a97e80b85b0372b634389808d90184319d446ed463eb6b77",
+        "steps": 21,
+        "stepsOk": 21,
+        "allStepsOk": true,
+        "finalDoctor": {
+          "exitCode": 0,
+          "status": "healthy"
+        },
+        "topLevelDoctorStatus": "degraded",
+        "topLevelDoctorDegraded": [
+          "data.root",
+          "data.key"
+        ],
+        "hostModules": {
+          "cordis": "4.0.5",
+          "include": "1.0.10",
+          "loader": "1.0.6",
+          "jsYaml": "4.3.2"
+        },
+        "node": "v22.23.4",
+        "platform": "darwin-arm64",
+        "startedAt": "2026-10-25T22:28:44.564Z",
+        "finishedAt": "2026-10-25T22:29:19.776Z"
+      }
+    ]
+  },
+  "draftAssetVerification": {
+    "workflowRun": 40240691795,
+    "method": "release.yml step \"Verify the assets now attached to the release\" downloads the three assets GitHub served and re-runs verify-artifact.mjs plus diff against release/SHA256SUMS and release/manifest.json",
+    "result": "verify-artifact reported sha256 4c7073b1..., contentSha256 0940a781..., 51 entries and \"matches release/manifest.json (dsh-evolution@0.2.0-rc.18)\"; both diffs were empty",
+    "apiDigests": "the release API reported the same three digests as the committed files before publication"
+  },
+  "anonymousDownloadVerification": {
+    "method": "curl with GITHUB_TOKEN, GH_TOKEN and GITHUB_ENTERPRISE_TOKEN removed from the environment, using the public download URLs of the published release",
+    "files": [
+      "SHA256SUMS",
+      "dsh-evolution-0.2.0-rc.18.tgz",
+      "manifest.json"
+    ],
+    "result": "all three downloaded; shasum -a 256 -c SHA256SUMS OK; cmp against release/SHA256SUMS, release/manifest.json and release/dsh-evolution-0.2.0-rc.18.tgz identical; verify-artifact on the downloaded bytes matches the pin"
+  },
+  "postPublishAcceptanceFromDownloadedBytes": [
+    {
+      "evidence": "docs/evidence/rc18-postpublish-dsh-0.2.0-rc.2.json",
+      "host": "0.2.0-rc.2",
+      "packageVersion": "0.2.0-rc.18",
+      "tarballSha256": "4c7073b1ed10c1c962161936403aefe7bd554005730f8fc6ced2464a9ee15360",
+      "contentSha256": "0940a781bb1d6434a97e80b85b0372b634389808d90184319d446ed463eb6b77",
+      "steps": 21,
+      "stepsOk": 21,
+      "allStepsOk": true,
+      "finalDoctor": {
+        "exitCode": 0,
+        "status": "healthy"
+      },
+      "topLevelDoctorStatus": "degraded",
+      "topLevelDoctorDegraded": [
+        "data.root",
+        "data.key"
+      ],
+      "hostModules": {
+        "cordis": "4.0.5",
+        "include": "1.0.10",
+        "loader": "1.0.6",
+        "jsYaml": "4.3.2"
+      },
+      "node": "v22.23.4",
+      "platform": "darwin-arm64",
+      "startedAt": "2026-10-25T22:34:25.507Z",
+      "finishedAt": "2026-10-25T22:34:57.977Z"
+    },
+    {
+      "evidence": "docs/evidence/rc18-postpublish-dsh-0.2.1-alpha.1.json",
+      "host": "0.2.1-alpha.1",
+      "packageVersion": "0.2.0-rc.18",
+      "tarballSha256": "4c7073b1ed10c1c962161936403aefe7bd554005730f8fc6ced2464a9ee15360",
+      "contentSha256": "0940a781bb1d6434a97e80b85b0372b634389808d90184319d446ed463eb6b77",
+      "steps": 21,
+      "stepsOk": 21,
+      "allStepsOk": true,
+      "finalDoctor": {
+        "exitCode": 0,
+        "status": "healthy"
+      },
+      "topLevelDoctorStatus": "degraded",
+      "topLevelDoctorDegraded": [
+        "data.root",
+        "data.key"
+      ],
+      "hostModules": {
+        "cordis": "4.0.5",
+        "include": "1.0.10",
+        "loader": "1.0.6",
+        "jsYaml": "4.3.2"
+      },
+      "node": "v22.23.4",
+      "platform": "darwin-arm64",
+      "startedAt": "2026-10-25T22:34:25.509Z",
+      "finishedAt": "2026-10-25T22:34:58.634Z"
+    },
+    {
+      "evidence": "docs/evidence/rc18-postpublish-dsh-0.2.1-rc.2.json",
+      "host": "0.2.1-rc.2",
+      "packageVersion": "0.2.0-rc.18",
+      "tarballSha256": "4c7073b1ed10c1c962161936403aefe7bd554005730f8fc6ced2464a9ee15360",
+      "contentSha256": "0940a781bb1d6434a97e80b85b0372b634389808d90184319d446ed463eb6b77",
+      "steps": 21,
+      "stepsOk": 21,
+      "allStepsOk": true,
+      "finalDoctor": {
+        "exitCode": 0,
+        "status": "healthy"
+      },
+      "topLevelDoctorStatus": "degraded",
+      "topLevelDoctorDegraded": [
+        "data.root",
+        "data.key"
+      ],
+      "hostModules": {
+        "cordis": "4.0.5",
+        "include": "1.0.10",
+        "loader": "1.0.6",
+        "jsYaml": "4.3.2"
+      },
+      "node": "v22.23.4",
+      "platform": "darwin-arm64",
+      "startedAt": "2026-10-25T22:34:25.507Z",
+      "finishedAt": "2026-10-25T22:35:00.963Z"
+    }
+  ],
+  "workflows": {
+    "release": {
+      "id": 40240691795,
+      "name": "Release artifacts",
+      "event": "push tag v0.2.0-rc.18",
+      "conclusion": "success"
+    },
+    "ci": {
+      "id": 40240688444,
+      "name": "CI",
+      "event": "push main",
+      "conclusion": "success"
+    },
+    "codeScanning": {
+      "id": 40240688442,
+      "name": "Code scanning",
+      "event": "push main",
+      "conclusion": "success"
+    }
+  },
+  "commitChain": [
+    {
+      "commit": "c31da4b2e5baa588f6355ea42cb21cb9e14693b5",
+      "subject": "build: cut 0.2.0-rc.18 with its CHANGELOG, RELEASE and README coverage",
+      "role": "source commit: version bump, shipped documents, and two comment-only lib/ updates that cite AGENTS.md sections"
+    },
+    {
+      "commit": "4addb1052b3758614fc4271730c3eb0e5177266c",
+      "subject": "build: pin 0.2.0-rc.18 over the three-host acceptance",
+      "role": "release commit: release/ tarball, manifest, SHA256SUMS and the three rewritten evidence files; no shipped content changed"
+    }
+  ],
+  "independentReview": {
+    "rounds": [
+      {
+        "round": 1,
+        "reviewer": "codex gpt-6-luna xhigh, fresh delegated read-only task",
+        "scope": "the v0.2.0-rc.17..HEAD delta (48 commits)",
+        "verdict": "input to the CHANGELOG and RELEASE rewrite",
+        "findings": [
+          "the existing Unreleased section misstated the append-lock protocol: 500 ms is the acquisition wait, not a hold guarantee, and reclaim uses a sibling wx marker plus a re-read, not a 2 s rename",
+          "it claimed dependencies were unchanged and version and pin untouched, which the delta contradicts",
+          "it omitted the redactJsonParseMessage linear-scan fix, the recall sourceErrors field and the 26 to 27 doctor check count",
+          "it carried review counts (2 P1 / 4 P2 / 6 P3) with no committed evidence"
+        ],
+        "resolution": "rewritten; the unsupported counts were dropped"
+      },
+      {
+        "round": 2,
+        "reviewer": "deepseek-v4.1-flash at max thinking, fresh delegated read-only task",
+        "scope": "the uncommitted README rewrite and AGENTS.md",
+        "verdict": "5 findings",
+        "findings": [
+          "blocker: the top-level doctor was described as degraded because of runtime.* not-evaluated items, while the only degraded item was data.root",
+          "should-fix: the canary/revert/promote sentence said operation claims serialize concurrent observation without saying the claim map is in-process",
+          "should-fix: AGENTS.md attributed redact() to knowledge.js, which has none",
+          "nit: the identity bound keeps 222 code points plus a 16-hex digest, it is not \"cut to 240 then append\"",
+          "nit: <profile> was undefined and the .bin/dsh-evolution-doctor path is not the one the acceptance script runs"
+        ],
+        "resolution": "all five corrected in the source commit; the first-doctor wording now names both data.root and data.key"
+      },
+      {
+        "round": 3,
+        "reviewer": "deepseek-v4.1-flash at max thinking, fresh delegated read-only task",
+        "scope": "the rc.18 CHANGELOG section, the RELEASE candidate sections and risk register, and the round-2 corrections",
+        "verdict": "6 should-fix, 2 nit, 2 accepted as pre-existing",
+        "findings": [
+          "item 26's \"11 artifacts, 555 entries\" was a rc.14-era observation, not a rc.18 statement",
+          "the README and RELEASE first-doctor wording predated data.key being emitted on every run",
+          "the README claimed the acceptance asserts event-bridge.key still exists; the script does not",
+          "the CHANGELOG missed the data.key verdict move, the archive-lock classifier and repair fence, and three dependency upgrades (undici, fast-uri, @modelcontextprotocol/core)",
+          "\"48 commits\" and \"four rounds\" were not anchored to a commit"
+        ],
+        "resolution": "all corrected before the pin was built; those document changes forced a rebuild and a second release:publish --force, so the shipped bytes are the reviewed text"
+      }
+    ],
+    "notFound": "no reviewer found a defect in the shipped runtime code of the delta; the reviews changed only shipped documents and comments"
+  },
+  "scope": {
+    "shippedDelta": "from v0.2.0-rc.17: lib/archive-stage.js, lib/domain-storage.js, lib/event-log-checkpoint.js, lib/dockyard-domain/memory.js, lib/dockyard-domain/knowledge.js, lib/dockyard-domain/observation.js, lib/dockyard-domain/evaluator.js, lib/experience-recall.js, lib/orchestrator.js, lib/registration.js, lib/guard.js, scripts/import-evolution-data.mjs, package.json, package-lock.json and the shipped documents CHANGELOG.md, README.md, RELEASE.md and COMPATIBILITY.md; the source commit adds only comments that cite AGENTS.md sections on top of that",
+    "notChanged": "peerDependencies, engines and the supported host list; the eight promotionGates and the explicit confirmation; trial baseline capture; journal phase classification; the cross-process archive lock, CAS, tombstones, latest-wins and retention; the event envelope and signature algorithm; the experience-recall trigger paths and read-only contract; the redaction boundary rules and the guard authorization sources; the domain schema and persisted format",
+    "dependencies": "zod 4.6.5 -> 4.6.6, undici 8.11.2 -> 8.12.2, fast-uri 3.1.8 -> 3.1.9, @modelcontextprotocol/client override 2.2.0 -> 2.3.0 with @modelcontextprotocol/core 2.2.0 -> 2.3.0; npm audit 8 -> 0 findings, all inside the existing declared ranges"
+  },
+  "historicalAssets": {
+    "method": "gh api on the older release before and after publishing, compared with docs/evidence/rc17-release-audit.json",
+    "result": "v0.2.0-rc.17 is still public, still a prerelease with id 420147672 and the same three assets (tgz sha256 d0c119f0..., manifest deead93b..., SHA256SUMS bf9f38cd...); no tag was moved, deleted or re-pointed, and this release uploaded without --clobber"
+  },
+  "residualDocumentation": {
+    "item26Count": "RELEASE.md section 6 item 26 keeps a dated observation (11 artifacts / 555 entries at the rc.14 pin) because the count changes with every candidate while the fail-closed reader behaviour is what the item describes",
+    "untrackedPerformanceFiles": "the pre-existing untracked files under docs/performance/ and scripts/benchmarks/ were preserved unchanged and are not referenced by any shipped document; scripts/benchmarks/domain-hotpath-20261024.mjs is referenced only from a committed test comment, so a fresh clone lacks that benchmark script while the regression test itself is committed",
+    "postpublishTarballPath": "the post-publish evidence records the downloaded tarball under a temporary directory path, exactly as the rc.17 records did; it is not a repository path"
+  }
+}
