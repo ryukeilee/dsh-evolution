@@ -90,4 +90,14 @@ npm run release:verify
 
 提交前 Node 22.23.4（npm 10.9.9）与 Node 24.22.1（npm 11.19.1）全量均为 926/927 通过，0 跳过，唯一失败为 `release-pin.test.mjs:70` 拒绝未提交分发改动；未出现功能测试失败。运行前后 243 个源码、测试和配置文件的 SHA 清单一致。提交后须重新执行全量与开发阶段打包门禁，不能将此结果记为全绿。
 
+实现提交 `800cf4221014a4304830b18444bffdab8181b7e3` 后，重新执行以下检查：
+
+```sh
+PATH=/opt/homebrew/opt/node@22/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 npm test
+PATH=/opt/homebrew/opt/node@24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 npm test
+PATH=/opt/homebrew/opt/node@24/bin:$PATH NODE_OPTIONS=--max-old-space-size=4096 npm run pack:check
+```
+
+Node **22.23.4：927/927**、Node **24.22.1：927/927**，均退出 0，0 失败、0 跳过。运行前后没有已跟踪改动；日志分别为 `/tmp/dsh-evolution-final-node22-24.huOEM0/node22.log` 和 `node24.log`（临时本机证据，不承诺长期保存）。Node 24 有一个子进程三次 RSS 采样约 115→131→144 MiB，执行停止检查时套件已正常结束；没有据此展开内存调查或重试。开发阶段 `pack:check` 全部 16 项通过，内容摘要仍为上述 `6279015b…`；没有执行要求工作树等于固定发布内容的 release gate，也没有更新固定点。
+
 本次交付是可靠性修复，没有性能候选或 A/B 耗时收益声明。检查点仍须重新验证完整日志前缀，真实存储、认证与恢复失败仍会拒绝；日志设施本身故障时该条诊断可能不可达。不承诺处理官方 logger 内部丢弃的异步 exporter Promise。
