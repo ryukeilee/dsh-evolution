@@ -89,7 +89,7 @@ function callerOf() {
     if (!match) continue;
     const file = match[1].replace(/^file:\/\//, '');
     if (!local(file)) continue;
-    return `${path.relative(REPO_ROOT, file).replace(/^lib\//, 'lib/')}:${match[2]}`;
+    return `${path.relative(REPO_ROOT, file)}:${match[2]}`;
   }
   return '(unknown)';
 }
