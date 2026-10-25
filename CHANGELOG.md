@@ -6,67 +6,51 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
-## Unreleased — 事件桥尾记录、晋升 journal 计划与守卫证明的根因修复
+## 0.2.0-rc.18 — 冷档案写入收敛、恢复边界与特殊键保真
 
-本轮修复来自四路独立只读审查：修复 2 项 P1、4 项 P2 与 6 项 P3，每一项都是根因修复，
-没有新增持久字段、事件信封字段、公开工具参数或授权路径；另有 1 项 P2 与 2 项 P3 经复核
-不成立或不应改动（见文末）。未改版本号、`peerDependencies`、
-`engines`、依赖、发布固定点与官方 DSH 源码。
+本候选在 `0.2.0-rc.17` 之上覆盖 `v0.2.0-rc.17..b894745` 的 48 个提交；本次版本号与随包文档的改动是紧随其后的提交，rc.17 发布证据提交不带 shipped change。其余变更涉及冷档案索引与 staging 发布、领域事务和派生文件写入、恢复与发布边界、doctor 残件诊断、知识键保真，以及事件桥尾部、晋升 journal 和 guard 证明。已修改依赖版本；`peerDependencies`、`engines` 与支持宿主范围不变。没有新增公开工具参数、授权来源、持久 schema 字段或版本、晋升门禁。包版本已升至 `0.2.0-rc.18`；这些分发文件改动改变了 `contentSha256`，因此 `release/` 固定产物、`release/SHA256SUMS` 与三份宿主验收证据按 `RELEASE.md` 第 4.1 节重新生成，重新固定后的内容摘要与这棵树一致。
 
-### 事件桥：不完整尾记录不再与下一条记录粘连
+### 冷档案索引与 staging 发布（2026-10-22）
 
-`EvolutionEventBridge.persistPending()` 追加前检查文件尾字节：尾部是不带换行的**完整且已签名**
-记录时，先补分隔符再追加（重放接受这种 remainder，直接追加会把两条记录拼成一行非法 JSON，
-下一次启动在 `openDomainStorage()` 拒绝整个日志）；尾部是残缺记录时拒绝追加并保留现场，
-让 doctor 的 `event-bridge-trim-partial-tail` 仍能识别唯一一条未闭合尾行。正常追加与
-pending 续写路径不变。整个“验证尾部 + 多段写入”现在由日志旁带 owner token 的目录锁串行化（同一进程与跨进程
-一致）：`O_APPEND` 只保证单次写入的位置，两个 writer 交错续写会让同一条记录被拆到另一条
-记录两边。活着的 writer 在 500 ms 内释放；崩溃留下的锁在 2 s 后通过原子 rename 隔离并复核
-mtime 才删除，释放也只删除 token 仍属于本次调用的锁——按路径判断后直接删除会让回收者误删
-刚建立的新锁，或让慢 writer 删掉接管者的锁。
+索引只有在派生内容实际变化时才重写，丢失派生字段的 sealed index entry 会被归一化。已提交 archive stage 现在按 staging 文件 inode 发布；不支持 hard link 时使用 write+sync fallback。inode 发布会采用 staging 文件的 metadata（包括 mtime、owner 与 xattrs）；不改变 archive 格式。性能数据：每次 observe 的 index 重写 `2 → 0`、fsync `8 → 3`，`load()` `1.159 → 0.682 ms`、`port.observe()` `46.941 → 26.407 ms`，见 [`docs/performance/archive-index-churn.md`](docs/performance/archive-index-churn.md)；两文件发布 `64.07 → 56.67 ms`、216 个 sealed segments `165.99 → 161.42 ms`，见 [`docs/performance/archive-stage-io.md`](docs/performance/archive-stage-io.md)。
 
-### 晋升 journal：计划必须就是本事务写过的目标
+### 派生文件 fsync、重复校验与事务提交形状（2026-10-23）
 
-`checkJournalBoundary()` 不再只判断“目标在某个 root 之内”。`records` 必须是 writer 写出的
-**完整计划**：composition、EVOLUTION.md 与本实验的 `archive/<id>.md` 三条 file 记录，加一条由
-experiment ID 推导的 promoted plugin 目录；同一目标不能出现两次，file 记录必须有
-`existed` / `beforeDigest` / `expectedAfter` 的一致关系。`experimentId` 必须是可作文件名的形状。
-此前空计划会被当作“成功回滚”并删除 journal，部分计划只会恢复一半目标后删除唯一证据，
-而指向 `presetDir` / `dockyard` / `knowledge` 或另一个实验目录的 `path` 记录会让恢复删除
-超出本事务的现场——它们都需要一份正常代码从不写出的 journal，但都属于“不得猜测并删除现场”
-的边界缺失；doctor 对这类 journal 报 `blocked` 且不提供 repair。
+移除了 replay checkpoint 文件内容与 stage manifest 文件内容的 fsync：checkpoint 仍原子替换，manifest 仍同步其目录。**这是有界的 durability downgrade，不是存储变得更耐久。** checkpoint 丢失或损坏时会重新验证已消费的 event-log 前缀；staging 恢复依据 `pending.files`，不依赖 manifest。其余修复避免重复 aggregate 校验与 projection 保存；未改 archive 文件的 transaction 不再创建 staging 或写 pending。no-archive-change commit `26.1–28.5 → 13.9 ms`（[`docs/performance/transaction-commit-shape.md`](docs/performance/transaction-commit-shape.md)）；`observe()` `27.65 → 23.82 ms`（−13.8%）与 backlog `1/10/25/50` 的合并变化 `−33.3/−23.8/−31.5/−38.3%` 是 fsync 撤回与提交形状合并后的数值（[`docs/performance/domain-derived-fsync.md`](docs/performance/domain-derived-fsync.md) 的 `both` 列）。20k rows 时 HMAC 输入 `29.05 → 16.88 MiB`、flush `62.97 → 57.80 ms`，见 [`docs/performance/domain-flush-history-cost.md`](docs/performance/domain-flush-history-cost.md)。相关 fsync 边界与复现数据见 [`docs/performance/domain-derived-fsync.md`](docs/performance/domain-derived-fsync.md)；被撤回的 transaction-save-projection 候选见 [`docs/performance/domain-transaction-save-projection.md`](docs/performance/domain-transaction-save-projection.md)，不作为最终行为或收益。
 
-### 晋升事务：同一份捕获、持久备份、可回收锁
+### 冷档案重写批处理（2026-10-23）
 
-计划、CAS 基线与备份改为来自同一次读取（此前计划用旧字节生成、基线却哈希之后读到的字节，
-中间的外部编辑会被静默覆盖）；备份用 durable 原子写替代 `copyFile`，journal 提交前备份字节与
-目录项已 fsync；lock 元数据写入失败时删除本次创建的锁，清理失败后同一进程的残留锁可按
-“本进程未持有的 token”回收，不再被误判为活跃持有者。
+归档冷行重写改为批量写入。384 / 3,072 / 12,288 行的 compact 耗时分别为 `22.24/130.68/516.55 → 9.28/30.80/102.57 ms`；对应 file-API 调用数 `387/3,075/12,291 → 6`（是 file API 调用，不是 syscall），详见 [`docs/performance/archive-rewrite-batch.md`](docs/performance/archive-rewrite-batch.md)。
 
-### 成功路径的资源释放与跨进程唯一 ID
+### 恢复可靠性、发布输入边界与依赖（2026-10-24–25）
 
-`promotion-succeeded` / `canary-passed` 以及 canary 回滚事件改为安全发射，`releaseTargets()`
-与 `releaseOperation()` 在状态已提交后保证执行：事件桥或归档写入失败不再让一个已 `stable`
-的实验永久占用 target，也不再让记录一直 “busy with promote”。实验 ID 追加 8 位随机后缀，
-同一毫秒内两个进程不再生成同一 ID（claim 按 ID 采纳、归档按 ID 命名）。
+经验召回和工具观测的来源失败现在被隔离并脱敏；召回响应新增 `sourceErrors`，报告来源失败而不丢失其余结果。event-bridge pending 续写复用已签名 envelope，并复查文件 `dev` / `ino` 与已写前缀；晋升 rollback 在改写前逐一核对 target CAS 与 backup digest，并持久写入。release 输入校验与 partial-install 诊断加固，固定 archive digest 与 entries 来自同一次 snapshot；migration staging 在共享 archive lock 下复核，并以文件系统身份比较 source/target。cleanup 失败不会覆盖 primary failure；durable replay 之后的 checkpoint 诊断失败被隔离。第一次写入未成功时，只有当前调用能证明它创建且从未写入的 artifact 才会删除；完整写入后仅 close 失败的条目保留现场。
 
-### canary 所有者校验、守卫证明与解析错误脱敏
+依赖升级为 `zod` `4.6.5 → 4.6.6`、`undici` `8.11.2 → 8.12.2`、`fast-uri` `3.1.8 → 3.1.9`，以及 `@modelcontextprotocol/client`（override，`2.2.0 → 2.3.0`）与随之对齐的 `@modelcontextprotocol/core`；审计记录为 `8 → 0`，详见 [`docs/evidence/dependency-security-20261024.md`](docs/evidence/dependency-security-20261024.md)。`peerDependencies`、`engines` 与支持宿主范围不变。
 
-`startupTransition` 不再是工具参数：启动屏障通过模块私有 symbol 调用，工具调用无法伪造；
-guard 的 managed-transaction 证明只接受宿主注入的 `operationContext`，tool arguments 里的同名
-对象被忽略；`write`/`edit`、bash 重定向与 `run_code` 的文件写入目标都按真实路径解析：已存在的目标用
-`realpath`，尚不存在的目标按文件系统的顺序逐分量解析（先跟随符号链接，再处理其后的 `..`，
-父目录缺失时继续向下），因此 `alias/..` 这类词法折叠无法再把写入藏到 trust-root 里。`JSON.parse` 的原生报错会引用被解析字节的截断片段（用户数据，V8 形如
-`"sk-live-TO"... is not valid JSON`），晋升 journal、内存隔离警告与 doctor evidence 统一经
-`redactJsonParseMessage()`（`lib/orchestrator.js` 导出的边界投影）处理后才会输出。
-迁移脚本的源/目标隔离改为文件系统身份比较（仍保留词法快路径），符号链接源根不再能把
-导入写回源快照。
+### doctor 的 target claim 残件诊断（2026-10-25）
 
-### 未改动
+doctor 新增 check id `state.ownership`，check id 总数从 `26` 增至 `27`；repair id 仍为 `6`，degradedCapability id 仍为 `5`（check 与 capability 定义见 `lib/diagnostics.js`，新增 check 由 `test/diagnostics-performance.test.mjs` 锁定）。doctor 与运行时按相同顺序调用共享的 `parseTargetClaim` 和 `classifyTargetClaim`，但只报告 claims，不采纳或删除。只有运行时原有的两种回收规则可删除残件；无法证明陈旧的 claim 只报告，不回收。`data.key` 不是新增 check id，但它在健康安装上现在也会产出（此前只在密钥不可用时出现），密钥判定与相关建议从 `data.root` 移出，`data.root` 不再携带 `key` 证据；`data.root` / `state.domain` 的 archive lock 证据改由运行时同一分类器（`lib/domain-storage.js` 的 `inspectArchiveLock`）给出，`domain-stale-lock` repair 只在同一判定成立时提供。三宿主的 21 步开发验收见 [`production-quality-20261025` evidence：DSH 0.2.0-rc.2](docs/evidence/production-quality-20261025-dsh-0.2.0-rc.2.json)、[DSH 0.2.1-alpha.1](docs/evidence/production-quality-20261025-dsh-0.2.1-alpha.1.json)、[DSH 0.2.1-rc.2](docs/evidence/production-quality-20261025-dsh-0.2.1-rc.2.json)；它们是各轮中间候选的记录，不替代固定点证据（rc.18 的固定点证据是三份 `docs/evidence/dsh-<host>.json`）。
 
-`dsh-evolution/core` 的 `writeDurablePromotion()` 仍是宿主级集成原语（已补文档说明它不承担
-确认与门禁）；Cordis peer 范围与验收矩阵的关系维持现状；`maintenance()` 仍无生产调用者，
-因为冷档案的 retention 与 segment 封存已在 `finalizeKnowledge` 写入路径上执行。
+### own `__proto__` 数据键身份保真（2026-10-25–26）
+
+own `__proto__` 作为普通自有数据属性，现从 knowledge identity、摄取、聚合、持久化、冷档案、工具输出、evidence projection 到 metric view 均保持不折叠；写入使用能保留自有属性的投影方式。此前已折叠的旧记录不迁移、不推测恢复。没有 own `__proto__` 的输入仍须与旧实现字节等价；`constructor`、`toString` 等其他原型名仍是普通自有键，不能与 `__proto__` 混为一谈。三宿主的 special-key integrity 与 projection 验收见 [`special-key-integrity` 记录](docs/evidence/special-key-integrity-dsh-0.2.0-rc.2.json)及 [`special-key-projection` 记录](docs/evidence/special-key-projection-dsh-0.2.0-rc.2.json)和同目录的另外两个受支持宿主记录；它们是开发验收，不替代固定点证据。
+
+### 事件桥尾部、晋升 journal 与 guard 证明（2026-10-26）
+
+事件桥追加锁是目录 `<log>.append.lock`，owner 包含 token、pid、hostname、acquiredAt。同主机存活 pid 不回收，`ESRCH` 立即回收；无主或外地主机 owner 只有超过 `EVENT_BRIDGE_LOCK_STALE_MS`（2,000 ms）才进入回收。回收者先以 `open(..., 'wx')` 取得同级 `<lock>.reclaim`，之后重读 owner 和 age；marker 超过 `EVENT_BRIDGE_RECLAIM_STALE_MS`（10,000 ms）才可清理。释放只删除 token 仍匹配的锁。500 ms 是等待活跃 writer 的 acquisition wait，不是 writer 持锁时长保证。
+
+追加前检查尾部：文件没有 `\n` 时，末行必须是完整且验签通过的 envelope 才补分隔符；否则拒绝追加并保留现场。pending 恢复按 `dev` + `ino` 重验文件身份，并逐字节比较已写前缀；tail 扫描上限为 `EVENT_BRIDGE_TAIL_SCAN`（1 MiB）。晋升 journal 计划必须非空、目标不重复，含 composition、`EVOLUTION.md`、`archive/experiments/<experimentId>.md` 三条 file 记录，以及恰好一个 `<pluginRoot>/dsh-evolution-promoted-<sha256(experimentId) 前 12 位>` path；`experimentId` 必须匹配 `^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`，file record 的 `existed`、`beforeDigest` 与 `expectedAfter` 必须相互一致。计划、CAS baseline 和 backup 来自同一次捕获，backup 使用 durable write，不用 `copyFile`。未知或越界 journal 仍由 doctor 报 `blocked`，不提供 repair；事件桥与 journal 边界实现见 `lib/orchestrator.js`。
+
+guard 的授权只来自宿主注入的 `exec.operationContext` 或 `exec.context`（`verified`、`transactionType`、`actor`、`ownership`、`operation`），从不读取 `exec.arguments` 作为授权证明；arguments 中的目标路径和命令仅作为待检查输入。路径按文件系统语义逐组件跟随符号链接，再处理其后的 `..`；managed exemption 要求目标出现在命令体中，guard 实现见 `lib/guard.js`。`redactJsonParseMessage()` 改为单次前向扫描：取最后一个 `is not valid JSON` 后缀和第一个引号；若引号在后缀前，就丢弃引号至后缀之间的片段（含其前置逗号与空白）再拼回后缀，不用可能回溯的 regex。`REDACTION_TEXT_BOUND` 仍为 64 KiB，超限输入继续用 withheld marker 替代；实现见 `lib/orchestrator.js`。
+
+### 不变的部分
+
+这轮没有改公开工具参数、授权来源、持久 schema 字段或 schema 版本、production promotion gates、Cordis 信任根或支持宿主范围；没有把领域 evaluator 提升为生产门禁，也没有开放 autonomous promotion。审查中没有证据支持的计数不作为变更事实记录。依赖升级与 `0.2.0-rc.18` 版本变更以外，`peerDependencies`、`engines` 与 host ranges 保持不变。
+
+### 固定点与验收
+
+`CHANGELOG.md` 与 `RELEASE.md` 都属于分发内容，本轮改动因此改变了 `contentSha256`；`release/` 固定产物、`release/SHA256SUMS` 与三个宿主的验收证据按 `RELEASE.md` 第 4.1 节重新生成（`npm run release:pack` → `npm run release:publish -- --force` → 针对固定 tarball 重跑三宿主验收），重新固定后的内容摘要与这棵树一致。`0.2.0-rc.17` 及更早的 tarball、校验和与 tag 字节保持不变，也未被覆盖；rc.17 已是公开 tag 与公开 Release，其发布后资产校验见 `docs/evidence/rc17-release-audit.json`。性能与安全边界只引用本节列出的已提交证据文档。
 
 ## 0.2.0-rc.17 — 继任复用已解析的冷档案行，事件桥积压合并为一次事务
 

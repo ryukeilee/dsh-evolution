@@ -1,409 +1,335 @@
 # dsh-evolution
 
-**给 DSH 装上可验证、可回滚的自我进化能力。**
+**在 DSH 中以证据驱动的方式试验、回滚和晋升 Cordis Plugin。**
 
-`dsh-evolution` 是一个独立的 DSH bundle：它让 Agent 能够在真实运行中的 Cordis Runtime 上做受控实验——提出改进、临时激活、测量收益、然后要么回滚、要么带着证据晋升为持久插件，并在升级出问题时自动退回上一个已知良好状态。
+`dsh-evolution` 是独立的 DSH bundle：它让 Agent 在真实 Cordis Runtime 上提出改进、启动临时 Trial、测量结果，并在回滚或满足晋升条件后保存为插件。它通过官方 bundle / profile 机制接入，不是 DSH fork。
 
-它不是 DSH 的 fork，也不是"自动改代码"的黑箱。DSH 主体保持官方原样，本插件通过官方 bundle / profile 机制加载，不修改官方源码、不向官方 `node_modules` 复制文件、不 patch 官方仓库。
-
-- 包版本：**`0.2.0-rc.17`**（发布候选）
-- 支持的 DSH 宿主：**`0.2.0-rc.2`**、**`0.2.1-alpha.1`** 与 **`0.2.1-rc.2`**（精确列表，逐个通过真实安装验收）
-- Node：`^22.19.0 || >=24.0.0`
-- 分发形态：GitHub Release 上的 tarball，不发布 npm 包
-
----
-
-## 1. 为什么需要它
-
-让 Agent 改自己的运行时，通常会掉进三个坑：
-
-1. **改了就回不去。** 一次实验性变更留在 composition 里，没人知道它是哪来的、为什么留下。
-2. **没有证据就下结论。** "看起来更快了"被当成"确实更快了"，回归在下一个 session 才爆发。
-3. **每次从零开始。** 同一个问题被反复提出、反复失败，历史经验从不参与决策。
-
-`dsh-evolution` 把这三点变成机制：
-
-| 问题 | 机制 |
+| 关键事实 | 当前值 |
 | --- | --- |
-| 变更无法撤销 | 实验先走 Trial：由官方 runner 动态激活临时 Cordis Package，回滚时 dispose 并**证明** Runtime 签名回到基线 |
-| 结论没有证据 | 晋升必须同时满足 8 项门禁（真实收益、可测量证据、可重复、回归通过、可回滚、清理证据、无孤儿资源、运行时已恢复），缺一项即拒绝 |
-| 无人把关就上生产 | `evolution_promote` 默认只返回"等待所有者确认"，必须显式传 `confirmation: true` 才会写入生产 |
-| 晋升后突然崩 | 晋升后进入 canary 观察，跨重启验证启动、健康与依赖屏障；屏障上报告指标回归会触发自动回滚，且只回滚新候选 |
-| 经验不留存 | 失败与观测在**无模型**参与下折叠为有界知识；提交 proposal 时可检索历史结论，避免重复踩坑 |
-| 宿主 API 漂移 | 诊断逐项探测真实运行状态，缺什么报什么，绝不假装健康 |
+| 版本 | `0.2.0-rc.18`（发布候选） |
+| 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2` |
+| Node | `^22.19.0 || >=24.0.0` |
+| 分发 | GitHub Release tarball；不发布 npm 包 |
+| 许可证 | MIT |
 
-## 2. 能力总览
+## 30 秒了解
 
-### 2.1 受控进化生命周期
+- 通过官方 Cordis runner 做隔离实验，保留首次修改运行时前捕获的基线。
+- Trial 可以回滚；回滚路径比较运行时签名，恢复失败时拒绝继续晋升。
+- 晋升需通过 8 项证据门禁，并由所有者显式传入 `confirmation: true`。
+- 晋升后进入 canary；启动健康、依赖或屏障上报告的指标回归会按规则提交或回滚候选。
+- 失败与观测可在无模型参与下保存；经验只在提交 proposal 或带查询的 history 时读取。
+- CLI 和会话内 doctor 不依赖模型；CLI 无法观测的运行时项目会明确标为 `not-evaluated`。
 
-九个工具构成一条闭环，顺序由系统提示词强制：
+## 它解决什么问题
 
-```
-evolution_runtime_inspect   读取真实 Cordis 运行时（组件/服务/工具/依赖/事件/动态 Plugin）
-        ↓
-evolution_propose           记录 why / target / impactScope / successMetrics / risk
-        ↓                    返回附带的 experienceRecall（历史经验，见 2.3）
-evolution_trial             通过 dynamicCordisRunner 定义并激活临时 Cordis Package
-        ↓                    （Host half 必需；Client half 只在 Trial 中允许）
-evolution_measure           记录观测（问题是否解决、副作用、性能、错误、可重复性、
-        ↓                    回归、可回滚性、清理证据），并评估晋升门禁
-evolution_revert            通过 Cordis dispose，验证 Runtime 签名回到基线
-  或
-evolution_promote           二次确认后写入持久 Plugin + archive 指针，进入 canary 观察期
-        ↓
-evolution_canary_observe    调用方在确定性屏障上报告启动/健康/依赖/指标结果并推进
-        ↓                    canary；报告指标回归即自动回滚
-（跨重启）启动屏障将候选提交为 stable，或回滚到上一个已知良好状态
-
-evolution_history           读取有界领域历史；传 query 时返回同一套经验检索结果
-evolution_doctor            无模型健康报告，分级给出结论与证据
-```
-
-设计约束：
-
-- **不建第二套运行时。** 插件不创建自己的 registry、resolver、生命周期管理器或 effect tracker；Component / Service / Fiber / Effect / 事件监听 / Tool / Dispose 全部由 Cordis 拥有。
-- **Trial 基线只捕获一次。** 恢复基线在 Trial 首次修改运行时**之前**同步捕获，且不在后续 inspect、measure 或清理时重建。因此 Trial 期间真实发生的并发漂移会让恢复校验失败：此时实验判为 `revert-failed`、目标锁保留、不会继续晋升。Trial 的 `define` / `run` 失败路径没有激活任何东西，因此**无论失败学习/归档写入本身成不成功**，都会释放目标锁并丢弃该实验记录（归档或事件写入失败只记一条 warning，不会把清理卡住）。
-- **晋升写的是下一 session 的状态。** 提交先落 journal，再有备份、原子写入、reload/mount 校验；中断的事务在下次启动时按边界规则恢复或清理。
-
-### 2.2 默认不会自己上生产
-
-进化能力的真正闸门是**所有者确认**，不是模式开关：
-
-- 生产晋升在任何模式下都要求 `evolution_promote` 的 `confirmation: true`；缺省或 `false` 只返回一次"等待所有者确认"的只读结果，不写任何生产状态。
-- 自主观察者即使已经走完 propose → trial → measure，也**不会**把自己的观测变成生产批准：它返回的仍是 `candidate-awaiting-confirmation`，`automatic: false`。
-- 自主观察者只在同时满足三条时才启动一次**隔离** Trial：配置了匹配的 `autonomousStrategies` 条目、同一失败模式的观测数达到 `patternThreshold`（默认 3）、且风险等级为 `low` 并保持 `autonomousPolicy.low === "experiment"`。风险分级在代码里是硬约束：`high` 一律阻止（`blocked-high-risk`）、`medium` 一律判定为等待确认，都与 `autonomousPolicy` 取值无关；自定义风险字符串只会得到"等待确认"或"策略阻止"，不会启动实验。所以默认值 `{ low: "experiment", medium: "confirm", high: "deny" }` 描述的是实际行为，而不是可通过配置放宽的旋钮。
-- `mode` 默认 `advisory`（`mode: "autonomous"` 或历史写法 `autonomous: true` 会把 `evolution_runtime_inspect` 报告的策略标为 autonomous）；`unattended` 默认 `false`。这两个值会被记录在策略报告里，但**不是自主观察者的前置开关**——是否启动实验由策略表、`patternThreshold` 与风险等级决定。把它们读作"开关"会高估默认配置提供的保护；真正阻止自动上生产的是上面那条所有者确认。
-- 每次实验都落在隔离路径里：Trial 由官方 runner 拥有生命周期，失败即 `revert` 并记录失败学习，不会直接改写生产 composition。
-- 经验检索默认开启但只读，只由 `evolution_propose` / `evolution_history` 触发，`experienceRecall: false` 可整体关闭。
-
-### 2.3 无模型的经验积累与按需检索
-
-**日常积累不引入模型，也不轮询。** 插件通过官方事件把失败与观测折叠进 `EvolutionMemory` 和有界的 canonical knowledge（`state` / `lastOutcome` / `effectStats` / `trend` / evidence）：
-
-- `agent/error` 与 `tools/result` 事件记录失败，并带上其适用的 target（scope），使同一 target 的失败可以跨会话检索。
-- 事件桥写入带 MAC 的签名 JSONL；同 id 冲突 MAC、重复事件、截断尾行都会被诊断识别。
-- **原始错误文本不落盘，也不出现在工具输出。** 失败学习、实验档案、事件桥与 `evolution_runtime_inspect` 里只有错误码（`errorCode`）、类别（`errorCategory`）、不可逆摘要（`errorDigest`，`sha256:` 前缀加 16 位十六进制）与脱敏后的短摘要（`errorSummary`，最多 240 字符，另附原始长度）；重放与去重靠摘要而不是原文。领域 schema 在模块加载时按官方规则 fail-loud 校验。
-
-**检索只由提交 proposal 的动作触发。** `evolution_propose` 在返回中附带 `experienceRecall`；`evolution_history` 传 `query` 时返回同一结果。`evolution_runtime_inspect`、measurement 与 canary 不触发检索，**任何定时器、轮询或后台模型回合也不会**。注意自主观察者新建提案时同样走 `evolution_propose`，因此那条路径也会检索——它不产生额外的、独立于提案的检索路径（单测直接断言检索调用次数）。
-
-检索结果是三组有界事实：
-
-| 组 | 含义 |
+| 常见问题 | 对应机制 |
 | --- | --- |
-| `resolved` | 已解决的问题，优先复用其结论 |
-| `failures` | 已失败的做法，换假设前不要重复 |
-| `candidates` | 已测量成功且带策略的复用候选 |
+| 临时改动留下后无法确认如何撤销 | 先用官方 runner 激活 Trial；回滚时 dispose 并验证 Runtime 签名恢复到基线 |
+| “看起来更好”被当成“确实有效” | 晋升要求 8 项证据全部成立；领域 evaluator 不能代替生产门禁 |
+| 同一失败反复尝试 | 无模型地记录失败与结果；新 proposal 可读取已有结论 |
+| 晋升后突然崩 | 晋升后进入 canary 观察，跨重启校验启动、健康与依赖；屏障报告指标回归即自动回滚 |
+| 宿主 API 漂移而无从判断 | doctor 逐项探测真实运行状态，缺什么报什么，并给出 `blocked` / `degraded` 分级 |
 
-此外 `duplicate` 报告同一 target 的精确历史重放及其结果，`advice` 只复述记录中已有的事实。三组结果按**同一个**相关性-证据评分排序：该评分由匹配覆盖度、记录成功率、实测 fitness 与证据量级四项加权得出（最高值为四项权重之和 **0.95**，不是 1），是「记录 + 它自己的匹配覆盖度」的纯函数——不读时钟、不读其它记录；单来源 `maxRecords` 保留与最终排序用的是同一个值，所以一个来源留下的就是它自己按同一比较器排出的前 `maxRecords` 条，与来源顺序无关。仅当评分相同时才按 `lastSeen` 降序、再按与 locale 无关的完整排序键排序——该键按固定顺序逐字段长度前缀地编码**除 `score` 与 `exact` 外的全部报告字段**（六字段描述、`key`、`coverage`、`source`、`state`、`lastOutcome`、`successCount`、`failureCount`、`successRate`、`fitnessMean`、`regressionCount`、`occurrences`、`firstSeen`、`lastSeen` 与有界的 `evidenceRefs`），`score` 与 `exact` 除外是因为 `compareCandidates` 在读到该键之前就已用它们分出先后，两者不会以平局身份到达该键，因此输出不同的两条记录绝不相等，排序不可能退回来源合并顺序。精确 `knowledgeKey` 重放排在普通文本匹配之前，因此在 `maxRecords` 内优先占位，但该上限仍适用于它：超过 `maxRecords` 条的精确重放同样会被截断。只有描述（`problem` / `scope` / `strategy` / `failureMode` / `rootCause` / `prevention` 归一化后）与**整组已记录的结果/测量**（`lastOutcome`、`occurrences`、`regressionCount`、`successCount`、`failureCount`、`successRate`、`fitnessMean`）都相同的事实才会合并成一条：任何结果或计数不同都是另一条观测，绝不被合并丢掉。来源内合并数记在每个 `sources[].duplicates`，来源内加跨来源的合计记在 `counts.duplicates`，`counts.matched` 是去重后进入最终阶段的候选数。`duplicate.occurrences` 是同一 `knowledgeKey` 各快照中的**最高**记录次数，不是求和（每条精确记录都是同一 key 的快照，求和会把同一批事件重复计数），`firstSeen` 取最早、`lastSeen` / `state` / `outcome` 取最新快照。`truncated` 同时覆盖两种情况：返回的三组小于去重后的集合，以及任一来源在进入最终阶段前丢掉过候选——后者记在每个 `sources[].dropped`（来源自身 `maxRecords` 保留所致）。全部上限硬编码在 `lib/experience-recall.js`，调用方只能收紧不能放宽：
+## 它是什么 / 不是什么
+
+它是一个通过 DSH profile 加载的独立插件，所有组件、服务、Fiber、Effect、事件监听、工具和 dispose 生命周期仍由 Cordis 管理。
+
+它不是 DSH fork，不修改官方源码，不向宿主 `node_modules` 复制实现，也不创建第二套 registry、resolver 或生命周期管理器。晋升代码经合作式执行 gate 加载；这不是安全沙箱，生产晋升需要可信审批。
+
+`dsh-evolution/guard` 只拒绝直接修改 Cordis trust root、或绕过 Cordis 生命周期的明确不可逆操作；普通 composition、promoted plugin、guard 与 orchestrator 本身的演进不受影响。
+
+## 工作原理
+
+九个工具按系统提示词规定的生命周期顺序工作：
+
+```text
+evolution_runtime_inspect
+        ↓
+evolution_propose
+        ↓
+evolution_trial
+        ↓
+evolution_measure
+        ↓
+evolution_revert ───────────── 放弃：dispose 并校验恢复
+        或
+evolution_promote ──────────── 采纳：持久写入后进入 canary
+        ↓
+evolution_canary_observe ───── 报告屏障结果、推进 canary
+        ↓
+跨重启启动屏障 ────────────── 提交 stable 或回滚候选
+
+evolution_history ──────────── 读取有界历史；传 query 时检索经验
+evolution_doctor ──────────── 无模型诊断
+```
+
+Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 inspect、measure 和清理不会重建基线。Trial 期间仍存在的外部漂移会使恢复校验失败，并保留目标锁；define / run 失败没有激活任何内容，会释放目标锁并丢弃实验记录（与失败学习写入是否成功无关）。
+
+晋升的 8 项门禁缺一不可：
+
+1. 真实收益（`realBenefit`）
+2. 可测量证据（`measuredEvidence`）
+3. 可重复（`repeatable`）
+4. 回归测试通过（`regressionTest`）
+5. 可回滚（`reversible`）
+6. 清理证据（`cleanupEvidence`）
+7. 无孤儿资源（`noOrphans`）
+8. Runtime 已恢复（`runtimeRecovered`）
+
+领域 evaluator 只提供 advisory 判断，并在识别到 regression 时否决；`promotionGates` 才是生产晋升权威。
+
+晋升先一次性捕获三份计划文件与回滚基线，把备份持久写入，再以 `prepared` / `committing` 落 journal，然后原子写入并做 Include 校验。成功后持久 Plugin 行与 archive 指针供下一 session 加载。canary 必须由调用方在确定性屏障上报告结果；指标回归由调用方报告，插件不会自行比较指标数值。达到观察条件后提交 stable；启动健康或依赖不成立、或屏障报告指标回归时会自动回滚，而且只回滚新候选。已 stable 并清理 journal 的晋升不能从 evidence sidecar 或 archive 重新打开为 canary。
+
+启动时先恢复中断的晋升事务，再让 Include 加载子项。启动 canary 屏障检查插件健康与依赖，并固定报告 `metricRegression: false`；canary 完成要求启动验证和所需观察屏障都满足。跨 session 推进要求存在活动 canary journal，所有者从持久状态读取；调用者自己的 Agent id 不是 fallback。同一进程内的并发 canary 观察会与 revert / promote 共用操作 claim 串行化，重复并发请求会被拒绝；该 claim 是进程内 Map，不是跨进程锁（跨进程的晋升提交由 `promotion.lock` 保护）。
+
+## 默认安全姿态
+
+- **所有者确认是生产晋升的显式批准条件。** 除 `confirmation: true` 外，`evolution_promote` 只返回等待确认，不写生产状态；自主观察者也只会停在 `candidate-awaiting-confirmation`。
+- **自主 Trial 有硬约束。** 只有存在匹配的 `autonomousStrategies` 条目、同一失败模式达到 `patternThreshold`、且风险为 `low` 并配置为 `autonomousPolicy.low === "experiment"` 时，观察者才会启动隔离 Trial。`medium` 等待确认，`high` 阻止；修改策略不能放宽这两级，自定义风险字符串也不会启动实验。
+- `mode`（默认 `advisory`；可用 `manual` / `advisory` / `autonomous`）和 `unattended`（默认 `false`）会记录在策略报告中，但**不是自主观察者的前置开关**。
+- 任何模式都不能绕过晋升门禁或所有者确认；Trial 不直接改写生产 composition。
+
+## 无模型的经验积累与按需检索
+
+失败和观测由事件进入失败记忆与 canonical knowledge，不需要模型或轮询。`agent/error` 与 `tools/result` 事件可关联到 target；事件桥以带 MAC 的签名 JSONL 保存事实，诊断可识别同 id 冲突 MAC、重复事件和截断尾行。
+
+原始错误文本不会写入领域存储或工具输出。失败记录、实验档案、事件桥与运行时报告使用 `errorCode`、`errorCategory`、`errorDigest`（`sha256:` 加 16 位十六进制）和脱敏短摘要 `errorSummary`（最多 240 字符，并记录原始长度）。
+
+经验检索只由 `evolution_propose` 和带 `query` 的 `evolution_history` 触发；自主观察者提交 proposal 时走同一入口。inspect、measurement、canary、定时器、轮询和后台模型回合都不会单独触发检索。检索只读：结果由已知字段重建为副本并夹在上限内，不修改来源记录；读取失败会在 `unavailable` 中显式报告，不伪装成没有历史。
+
+结果包含三类事实：
+
+| 组 | 内容 |
+| --- | --- |
+| `resolved` | 已解决的问题与既有结论 |
+| `failures` | 已失败的做法 |
+| `candidates` | 已测量成功且带策略的候选 |
+| 附加信息 | `duplicate` 报告同 target 的精确历史重放；`advice` 只复述记录事实 |
+
+只有归一化描述和完整结果 / 测量集合相同的记录才合并；任何结果或计数不同仍是不同事实。精确 `knowledgeKey` 重放优先于普通文本匹配，且不受文本扫描窗口限制，但仍计入每来源条数上限。`duplicate.occurrences` 取同 key 快照的最高记录次数，不累加；`firstSeen` 取最早时间，`lastSeen` / `state` / `outcome` 取最新快照。来源内重复计入 `sources[].duplicates`，总重复数计入 `counts.duplicates`；`counts.matched` 是去重后进入最终阶段的候选数。排序按匹配覆盖度、成功率、实测 fitness 与证据量级加权评分（最高 0.95），评分是单条记录与匹配覆盖度的纯函数，不读时钟或其它记录；每来源保留与最终排序使用同一比较器，因此结果不受来源顺序影响。同分时按 `lastSeen` 降序，再按与 locale 无关的完整排序键排序。`truncated` 表示返回组未覆盖全部不同候选，或来源在最终合并前丢弃过候选（`sources[].dropped`）。
+
+上限集中由 `lib/experience-recall.js` 管理；调用方只能收紧，不能放宽。
 
 | 上限 | 值 |
-| --- | --- |
+| --- | ---: |
 | 每组返回条数 | 3 |
-| 每个来源贡献条数 | 12（精确重放优先占位，仍受同一上限约束） |
-| 单字段长度 | 160 字符 |
+| 每个来源贡献条数 | 12 |
+| 单个内容字段长度 | 160 字符 |
 | 证据引用数 | 2 |
-| 文本匹配扫描范围 | 最近 2000 条 |
+| 普通文本匹配扫描范围 | 最近 2000 条 |
 | 建议条数 / token 数 / 引用长度 | 3 / 48 / 96 |
 
-精确重放按 `knowledgeKey` 等值判断，**不受扫描窗口限制**——很久以前探索过的同一 target 仍能被识别，也不会被高分普通匹配挤出 `maxRecords`；但该上限本身仍适用于精确重放，超过 12 条精确重放时同样截断。检索只读：`finalizeExperienceRecall` 把每个来源交来的记录按已知投影字段**重建**成副本并夹到已声明上限内（六字段夹到 `maxText`、`state` / `lastOutcome` 夹到 40、计数经 `integer()`、日期经 `isoOrNull()`、`evidenceRefs` 去重并限制在 `maxEvidenceRefs` 条且每条不超过 `maxRefLength`），因此第三方 `domainStorage.recall()` 不能加宽它重建的那些字段、带出未声明字段，也不能让单个来源贡献超过 `maxRecords` 条不同事实；身份字段 `source` 与字符串 `key` 按原样带过，其大小由提供它们的来源决定，而不是由本模块限制；调用方传入的记录本身从不被改写。领域存储缺失或读取失败时降级为本地失败记忆，并在 `unavailable` 中显式报告，而不是伪装成"没有历史"；该报告只保留脱敏、夹到 64 字符的错误摘要，分类与指纹放在 `sourceErrors`（`errorCode` / `errorCategory` / `errorDigest` / `errorSummary`）。来源交来的错误文本一律在模块内重新过 `safeErrorDto`，来源自带的 DTO 字段不被采信；原始消息（而非脱敏摘要）的指纹只有 orchestrator 在自己的 catch 里算出的那一份，由它直接写入 `sourceErrors`。
+来源标识 `source` 和字符串 `key` 按原值带过，其长度由来源决定；其他投影字段会被重建和限制。来源错误的摘要最多 64 字符，另以 `sourceErrors` 报告分类与指纹。
 
-### 2.4 无模型的健康诊断
+## 无模型诊断
 
-`evolution_doctor` 工具与 `dsh-evolution-doctor` CLI 使用同一套检查项与分级规则，不依赖模型推理、不联网、不上传任何 Evolution 数据。两者覆盖面不同：CLI 没有实时 context，`runtime.capabilities` / `runtime.registration` / `runtime.internal-api` 会报 `not-evaluated`；要判断具体哪个内部接口探针失效，必须用**会话内**的 `evolution_doctor`。所有结论都来自真实运行状态并附可定位的 `evidence`，不是"配置项是否存在"。
+`evolution_doctor` 会话工具与 `dsh-evolution-doctor` / `doctor.mjs` CLI 使用同一套检查和分级，不依赖模型推理、不联网、不上传 Evolution 数据。CLI 没有实时 Cordis context，`runtime.capabilities`、`runtime.registration` 和 `runtime.internal-api` 会标为 `not-evaluated`；具体接口探针须在会话内检查。
 
-覆盖面：
-
-| 分类 | 检查项 |
+| 覆盖组 | 检查内容 |
 | --- | --- |
-| 宿主 | `host.cli` / `host.version` / `host.modules`（按 `peerDependencies` 逐模块校验，DSH 版本必须落在经过真实验收的列表中）/ `host.install` / `host.composition`（调用官方 `--dump-config` 校验 bundle 层与两个 loader 入口） |
-| 运行时 | `runtime.capabilities`、`runtime.registration`（逐个用官方注册表解析全部 9 个工具）、`runtime.internal-api`（逐探针报告内部 API 可用性） |
-| 数据与状态 | `data.root`、`data.key`（event-bridge 密钥的唯一判定者：缺失 / 0 字节 / 损坏 / 有效，并列出磁盘上仍需旧密钥验证的产物）、`state.ownership`（`ownership/` 里的 target claim 逐个分类，只报告）、`state.memory`、`state.memory-quarantine`、`state.archives`、`state.event-bridge`（逐行 MAC 验证）、`state.domain`（schema 校验、pending 事务、孤儿 staging、用运行时同一分类器解释的 archive 锁）、`state.dockyard-legacy` |
-| 迁移 | `migration.manifest`（`importId` 自洽性、不可变来源是否被改、目标缺失、残留 staging） |
-| 晋升 | `promotion.journal`（区分 `not-executed` / `incomplete` / `canary-observing` / `committed-pending-cleanup` / `rollback-failed` / `state-unknown`）、`promotion.composition`、`promotion.pointer` |
-| 包与已知限制 | `plugin.home`、`plugin.package`、`plugin.patch`、`plugin.support-matrix`、`compat.legacy-adapters`、`capabilities.known-limits` |
+| 宿主 | CLI、版本与模块、安装、官方 composition |
+| 运行时 | 能力、9 个工具的注册、Cordis / Include 接口探针 |
+| 数据与状态 | 数据根、key、target claim、memory、档案、事件桥 MAC、domain 聚合 / staging / 锁、旧 Dockyard 状态 |
+| 迁移与晋升 | migration manifest；journal、composition、pointer |
+| 插件与能力 | 插件目录、包、patch、支持矩阵、legacy adapter、已知限制 |
 
-上表是分组概览，不是完整清单：报告始终以 `coverage` 与各检查项的 `id` 为准。
-
-分级语义：
+分级含义：
 
 | level | 含义 |
 | --- | --- |
 | `ok` | 已验证健康 |
-| `degraded` | 仍可用，但存在有界、被命名的限制，或存在可安全恢复的状态 |
-| `blocked` | 关键保证无法满足，不要在该状态下执行破坏性流程 |
-| `not-evaluated` | 当前模式无法观测该事实（例如 CLI 模式下无法观测实时注册），报告会显式列出，绝不静默略过 |
+| `degraded` | 仍可用，但有已命名的有界限制或可安全恢复状态 |
+| `blocked` | 关键保证无法满足；不要继续破坏性流程 |
+| `not-evaluated` | 当前模式无法观测；会列入 coverage，不会静默跳过 |
 
-`coverage` 分别列出已评估/未评估项；`degradedCapabilities` 单独列出已知的非阻塞能力限制。
+表格是覆盖组概览；以报告 `coverage` 和每项检查的 `id` 为准。
 
-### 2.5 安全边界
+CLI 退出码：`0` 健康、`1` 存在降级项、`2` 存在阻塞项、`3` 参数解析或诊断执行本身出错。报告写入 stdout；本地绝对路径只出现在本地报告中。
 
-- **Host-only。** 晋升的持久化代码只接受 Host half；Package 带 `client` 时直接拒绝。
-- **合作式执行 gate，不是沙箱。** 持久化源码通过 `Function(hostCode)()` 加载，只接受同步、独立返回 Cordis Plugin 的函数体；任何 `harness` token 保守拒绝。这是兼容性 gate，不是安全隔离——晋升执行需要可信审批。
-- **trust-root 守卫。** `dsh-evolution/guard` 拒绝直接修改 Cordis trust root 与绕过 Cordis 生命周期的明确不可逆操作；普通 composition、promoted plugin、guard 与 orchestrator 本身的演进不受影响。
-- **迁移与恢复不猜。** 未知或损坏的持久状态绝不静默合并、重写或删除现场；能修的项修复是幂等的，不能修的项报 `blocked` 并保留原字节。晋升 journal 的阶段判定只有一份（`classifyPromotionJournal`）：未知或缺失阶段在 doctor 里是 `blocked` / `state-unknown` 且不提供 repair，启动恢复与 canary 读取也以同一判定拒绝，journal、备份、目标文件与 staging 一律保留——见 6.1 的恢复表。
+## 快速开始
 
-## 3. 典型使用场景
-
-**场景 A — "这个功能让 Agent 变慢了，能不能换个实现？"**
-
-Agent 用 `evolution_runtime_inspect` 读出让时延变高的组件，`evolution_propose` 记录目标与成功指标，`evolution_trial` 临时换上替代实现，`evolution_measure` 记录前后指标。收益成立且回归通过 → `evolution_promote`（带确认）进入 canary；屏障上报告指标回归 → 自动回滚，Runtime 回到基线。
-
-**场景 B — "同一类失败反复出现。"**
-
-失败在无模型参与下已被折进失败记忆与 canonical knowledge。下一次 `evolution_propose` 时会附带 `experienceRecall`：`failures` 直接列出"这条路径已经失败过"，`resolved` 给出可复用的既有结论。如果确实要重试，需要新的假设和新的证据。
-
-**场景 C — "升级 DSH 之后插件突然不工作了。"**
-
-先跑只读诊断：
+从 GitHub Release 下载 tarball 和校验文件：
 
 ```sh
-# 不需要模型，也不需要应用正在运行
-dsh-evolution-doctor --home "$DSH_HOME"
-```
-
-`host.cli` / `host.version` / `host.modules` / `host.install` / `host.composition` 会指出是宿主版本越界、某个宿主模块越界，还是安装与 compose 有问题。诊断只报告，不改动现场；只有 `--repair` 会处理报告标记为 `recoverable=true` 且幂等的项。
-
-CLI 没有实时 context，因此 `runtime.*` 三项在 CLI 模式下报 `not-evaluated`。要知道具体哪个内部接口探针失效，在会话里调 `evolution_doctor`。
-
-**场景 D — "晋升之后重启，谁来保证它还能起来？"**
-
-晋升写入的是**下一个 session** 的持久 Plugin 行与 archive 指针，随后停留在 canary 观察期。重启时启动屏障会校验插件健康与依赖，并把结果作为一次 `startup` 屏障提交给 canary（这条路径固定传入 `metricRegression: false`）。健康或依赖不成立则回滚到上一个已知良好状态，且只回滚新候选。指标回归需要由调用方在显式屏障上报告——canary 不会自己去比较指标数值。
-
-跨会话调用 `evolution_canary_observe` 的前提是**存在活的 canary journal**。journal 不存在（例如晋升已 stable 提交并清理了 journal）时，调用会被拒绝：它不会从 durable 证据（evidence sidecar / archive / 事件桥）物化出一条记录再继续推进，因此已 stable 的晋升不能被重新打开为 `canary-observing`。晋升的所有者只从 durable 状态读取（journal → evidence sidecar → 本 session 的记录），调用方自己的 agent id 永远不是 fallback；不匹配时直接报“owned by another Agent”。同一 experiment 的并发观察用与 revert/promote 同一套 in-process claim 串行化：第二个调用收到 `experiment <id> is busy with canary`，而不是两个调用读到同一批 barrier、后写者静默覆盖先写者。
-
-## 4. 安装
-
-### 4.1 安装 DSH
-
-用官方推荐方式安装 DSH（任一即可）：
-
-```sh
-npx @deepseek-ai/dsh web            # 官方推荐
-# 或源码：pnpm install && pnpm run build
-```
-
-### 4.2 安装插件
-
-从 GitHub Release 下载产物与校验文件：
-
-```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.17
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.17.tgz" -o dsh-evolution-0.2.0-rc.17.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.18
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.18.tgz" -o dsh-evolution-0.2.0-rc.18.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
-curl -fL "$RELEASE_URL/manifest.json" -o manifest.json
-
-# 也可使用 GitHub CLI（公开仓库无需先 gh auth login）
-gh release download v0.2.0-rc.17 --repo ryukeilee/dsh-evolution \
-  --pattern 'dsh-evolution-*.tgz' --pattern 'SHA256SUMS' --pattern 'manifest.json'
-
-# 校验：必须与本次下载的 SHA256SUMS 一致
-sha256sum --check SHA256SUMS          # macOS：shasum -a 256 -c SHA256SUMS
+sha256sum --check SHA256SUMS
 ```
 
-用官方 CLI 安装（同一条命令也用于升级）：
+macOS 可用 `shasum -a 256 -c SHA256SUMS` 校验。也可用 GitHub CLI 下载同一 Release 的 tarball、`SHA256SUMS` 与 `manifest.json`。校验通过后，用官方 CLI 安装：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.17.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.18.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
-安装后官方 profile 的 `package.json` 会把 `dsh-evolution` 列入 `dsh.profile.bundles`，插件随 profile 加载，**无需每个 session 手工挂载 preset**。
-
-从源码构建（贡献者）：
+安装后 bundle 会登记在官方 profile 的 `dsh.profile.bundles`，随 profile 加载，无需每个 session 手工挂载 preset。下面用 `$DSH_HOME/profiles/web` 指代 `web` profile 的安装目录。首次诊断：
 
 ```sh
-npm ci
-npm run release:pack     # 生成 dist/
-npm run pack:check       # 校验分发内容与兼容声明，并报告工作树与发布固定点的关系
+node "$DSH_HOME/profiles/web/node_modules/dsh-evolution/scripts/doctor.mjs" --home "$DSH_HOME" --profile web
 ```
 
-> 本机构建的压缩字节与发布产物**允许不同**：`npm pack` 走 Node 自带 zlib，npm 10 与 npm 11 对完全相同的内容会产生不同的压缩字节。跨环境可比的是内容摘要——用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.17.tgz --content-only` 核对。
+最短会话闭环：
 
-## 5. 配置
+```text
+evolution_runtime_inspect → evolution_propose → evolution_trial
+→ evolution_measure → evolution_revert（放弃）
+                     或 → evolution_promote → evolution_canary_observe（采纳）
+```
 
-配置通过 profile patch 传入，全部可选。
+## 配置
+
+配置通过 profile patch 传入，均可选。默认值与约束如下：
 
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
 | `dataRoot` | `$DSH_HOME/storages/evolution` | Evolution 数据根 |
-| `mode` | `"advisory"` | `manual` / `advisory` / `autonomous`；历史写法 `autonomous: true` 等价于 `"autonomous"`。它记录在策略报告中，不是自主观察者的前置开关 |
-| `unattended` | `false` | 与 `mode` 一起记录在策略报告中；不构成自主观察者的前置开关 |
-| `autonomousPolicy` | `{ low: "experiment", medium: "confirm", high: "deny" }` | 按风险等级的策略。`high` 与 `medium` 是硬约束，改配置不会放宽它们；只有 `low` 能走到隔离实验，自定义风险字符串永远不会启动实验 |
-| `experienceRecall` | `true` | 设为 `false` 整体关闭按需经验检索 |
-| `domainSeed` | `false` | 显式授权把已迁移的 `dockyard/state.json` 种子载入领域聚合 |
-| `canaryWindow` | `2` | canary 观察需要的屏障数 |
-| `patternThreshold` | `3` | 同一失败模式达到多少次观测才成为候选 |
-| `promotionLockTtlMs` | 15 分钟 | 跨进程晋升锁 TTL |
-| `autonomousStrategies` | 未配置 | 按失败模式提供 `target` / `composition` / `measure` / `risk` 的显式策略表；没有匹配条目时观察者只停留在 `candidate` |
-| `memoryMaxEntries` / `memoryMaxText` / `memoryMaxItems` | `200` / `1200` / `8` | 有界失败记忆的容量上限 |
+| `mode` | `"advisory"` | `manual` / `advisory` / `autonomous`；旧写法 `autonomous: true` 等价于 `autonomous`；只记录在策略报告 |
+| `unattended` | `false` | 记录在策略报告，不是自主观察者的前置开关 |
+| `autonomousPolicy` | `{ low: "experiment", medium: "confirm", high: "deny" }` | `medium` / `high` 为硬约束，不能经配置放宽 |
+| `experienceRecall` | `true` | 仅 `false` 会整体关闭按需检索 |
+| `domainSeed` | `false` | 显式授权载入已迁移的 `dockyard/state.json` 种子 |
+| `canaryWindow` | `2` | canary 需要的屏障数 |
+| `patternThreshold` | `3` | 相同失败模式成为候选的观测次数，下限 2 |
+| `promotionLockTtlMs` | 15 分钟 | 晋升跨进程锁 TTL，下限 1000ms |
+| `autonomousStrategies` | 未配置 | 显式策略表；提供失败模式对应的 `target` / `composition` / `measure` / `risk` |
+| `memoryMaxEntries` / `memoryMaxText` / `memoryMaxItems` | `200` / `1200` / `8` | 有界失败记忆容量 |
 
-### 5.1 数据边界
+## 使用
 
-- 数据根默认 `$DSH_HOME/storages/evolution`。
-- 事件签名密钥 `event-bridge.key` 只在该目录首次创建（`0600`），**禁用与卸载都不会删除它**。
-- 官方 `ctx.storageDomain`（`backend: json`，root `$DSH_HOME/storages`）承载领域聚合元数据；领域名 `evolution_domain`（官方 `UNIT_NAME_RE` 不允许连字符）。
-- 冷档案与轮转文件仍由插件文件后端写入 `<dataRoot>/dockyard`。
-- 原始错误内容不落盘、也不进工具输出：进入领域存储与 `evolution_runtime_inspect` 的是错误码、类别、不可逆摘要与脱敏短摘要（见 2.3）。
-
-## 6. 使用方式
-
-### 6.1 命令行诊断
-
-安装到 profile 后提供 `dsh-evolution-doctor`：
+### CLI 诊断
 
 ```sh
-# 只读诊断；默认自动识别"在 dsh.profile.bundles 中列出 dsh-evolution"的 profile
-<profile>/node_modules/.bin/dsh-evolution-doctor \
-  --home "$DSH_HOME" [--profile web] [--dsh-cli <.../@deepseek-ai/dsh/lib/bin.js>] [--json]
+# 只读诊断
+node "$DSH_HOME/profiles/web/node_modules/dsh-evolution/scripts/doctor.mjs" --home "$DSH_HOME" --profile web
 
-# 等价写法
-node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" [--json]
-
-# 只应用报告判定为"安全且幂等"的修复，然后重新验证
-<profile>/node_modules/.bin/dsh-evolution-doctor --home "$DSH_HOME" --repair [--json]
+# 只应用报告标记为可恢复且幂等的修复，再重新验证
+node "$DSH_HOME/profiles/web/node_modules/dsh-evolution/scripts/doctor.mjs" --home "$DSH_HOME" --profile web --repair
 ```
 
-参数：`--home`、`--profile`、`--data-root`、`--dsh-cli`、`--json`、`--repair`、`--no-composition`、`--quiet`、`--help` / `-h`。
+官方 CLI 安装的包也会在 profile 的 `node_modules/.bin/` 下生成 `dsh-evolution-doctor`，它与 `scripts/doctor.mjs` 是同一个入口；上表路径是验收脚本实际执行的那一条。
 
-退出码：`0` 健康、`1` 存在可降级问题、`2` 存在阻塞问题；参数解析或诊断执行自身抛错时以 `3` 退出。报告写入 stdout，本地绝对路径只出现在本地输出中，不会被上传。
+可选参数：`--home`、`--profile`、`--data-root`、`--dsh-cli`、`--json`、`--repair`、`--no-composition`、`--quiet`、`--help` / `-h`。`--repair` 只处理 `recoverable=true` 且有 repair 定义的项目；`recoverable=false` 项目不会自动修改。
 
-`--repair` 只处理报告中 `recoverable=true` 且带 repair 的项；`recoverable=false` 的状态永远不会被自动改动。全部恢复操作都是幂等的。
+所有 repair 都是幂等操作；损坏或未知状态不会通过 repair 猜测、合并或删除现场。
 
-| 状态 | 处理 |
-| --- | --- |
-| 边界校验通过的 journal `prepared` / `committing` | 从 journal 备份回滚（CAS 保护，不覆盖并发修改）；`--repair` 或下次启动自动完成 |
-| 边界校验通过的 journal `stable-committed` / `committed` | 只清理 journal 目录，不动 composition 与已提交插件 |
-| journal `rollback-failed` / 无法解析 / 边界拒绝 | **不自动处理**：报 `blocked`、`recoverable=false`，保留现场 |
-| 晋升提交检测到 `EVOLUTION.md` / 归档被外部并发修改而拒绝覆盖（journal 保留为 `rollback-failed`） | 本实验的 `exp-*.md` **不会被改写**，失败证据写到同目录的 `<experimentId>.failure.json`（含 `promotionJournal`、脱敏后的失败摘要与 digest），供人工处置 |
-| journal 阶段未知或缺失（边界校验通过） | doctor 报 `blocked` / `state-unknown`、`recoverable=false`、**不提供 repair**；启动恢复与 canary 读取用同一判定拒绝，journal、备份、目标文件与 staging 保持不变，必须人工检查现场 |
-| event bridge 未闭合尾行 | 只丢弃不构成记录的尾部字节：执行前重读快照并重建计划条件，准备期间文件变化则跳过且不写任何字节；整份文件没有完整行可保留时不提供该 repair。写入方不持锁，最后一次重读与 `rename` 之间的追加仍可能被丢弃，建议在宿主停止时执行 |
-| 活动档案文件不以换行结尾（追加被中断） | 下一次追加前把残片**逐字节**追加进同目录的 `state.json.<collection>quarantine-archive.jsonl`，再原子重写活动档案、只保留完整行。隔离文件是 append-only 现场保留，插件不会删除它；残片通常不是完整 JSON，因此 `state.archives` 会把它报为含不可解析行的 `degraded` 项（`recoverable: false`），处置由人完成 |
-| 冷档案出现不可解析的行（中段或 sealed 段） | `state.archives` 报 `degraded` 并保留原字节。运行时的 `EvolutionMemory.archiveIntegrity()` 能读到分类后的故障；`verifyConsistency()` 把它判为 `valid:false`（reason `archive_bytes_unreadable`），因此该数据根上的 `reconcile()` 会以 verifier 失败抛出并回滚自己刚做的改动。这是 fail-closed，需要人工处置档案 |
-| domain 孤儿 staging | 仅在 domain 聚合通过完整校验、且无活进程持有 archive 锁时清理；聚合无法校验、pending 记录无法解读或锁不可取时报告并拒绝 |
-| domain archive 锁无主（内容不可读且已过 settle 窗口，或指向已死的 pid） | 运行时自动回收；`--repair` 用运行时同一套协议（设备号 + inode + 字节围栏、rename 隔离、不替换路径上的新持有者）走一遍 acquire/release，不再按路径 `unlink`；有活主的锁永不被抢占；符号链接、目录等非普通条目无法解释，只报告且不提供 repair |
-| `ownership/` 里的 target claim（0 字节、半截 JSON、外地主机、缺 hostname/pid） | **只报告，永不删除或改写**。claim 没有像 archive 锁那样的“创建时捕获身份、使用前再证明”协议，因此一个 0 字节条目无法与“已取得独占句柄、尚未写入的进程”区分；删掉它会让两个实验同时持有同一 target。`state.ownership` 点名每个文件、给出分类与人工处置条件，不提供 repair id |
-| `event-bridge.key` 缺失、0 字节或不是 64 位小写十六进制 | **doctor 只报告：不创建、不替换、不移开、不删除**（路径不存在时由下次启动的 `storageConfig()` 自己创建；已存在的非法密钥永远拒绝启动而不被替换）。密钥在取 archive 锁之前初始化，运行中的进程会在内存里长期持有它，文件系统上无法证明不存在这样的进程，因此即使磁盘上没有 MAC 也不能由工具替换。`data.key` 区分“磁盘上已无需要旧密钥验证的产物”（可把空/坏文件移开，由下次启动创建）与“仍有 MAC 产物或无法证明”（必须从备份恢复原密钥），并逐项列出 `execution-events.jsonl`、domain 的 `applied` / `pending.applied`、checkpoint 及其临时文件；只有 `ENOENT`、0 字节普通文件或通过完整校验且 marker 为 0 的聚合才算“已证明没有 MAC” |
-| 损坏的 failure memory | 不删除：报 `degraded` 并说明下次启动会隔离（quarantine）保留原字节 |
-| 损坏的 domain 聚合 / 事件 MAC / 不可变迁移证据 | 报 `blocked`，不重写、不猜测、不合并 |
+### 会话内
 
-### 6.2 会话内
+按上面的生命周期顺序调用工具；随时可调用 `evolution_doctor`。系统提示词要求不得在没有根因实验时把一次错误观测变成永久规则。
 
-在 Agent 会话里按生命周期顺序调用工具即可；系统提示词已经写入了顺序与纪律要求（"不得在没有根因实验的情况下把一次观测到的错误变成永久规则"）。
+### 旧数据迁移
 
-推荐的最短闭环：
-
-```
-evolution_runtime_inspect → evolution_propose → evolution_trial
-→ evolution_measure → evolution_revert        （放弃）
-                     → evolution_promote → evolution_canary_observe   （采纳）
-```
-
-任何时刻都可以用 `evolution_doctor` 查看真实状态。
-
-### 6.3 旧数据迁移
-
-用 `scripts/import-evolution-data.mjs` 把旧 preset 与 Dockyard 快照导入新数据根：
+把旧 preset 和 Dockyard 快照导入新的数据根：
 
 ```sh
 node scripts/import-evolution-data.mjs \
   <old-preset-root> \
-  $NEW_HOME/storages/evolution \
+  "$NEW_HOME/storages/evolution" \
   <dockyard-evolution-snapshot-dir>
 ```
 
-- 先暂存、逐文件 SHA256 校验、再原子改名发布；`migration-manifest.json` 记录 `importId` 与不可变来源副本。迁移锁在任何暂存写入之前取得，并在锁内重读完成态：另一导入仍持锁时本进程直接失败，若对方已完成则返回 `already-imported`，两种情况下都不会留下第二份暂存副本。已存在的 `*.migration.lock` 不会被替换；释放时只删除本次导入自己创建的那把锁，被其他进程替换的锁保留并报告。
-- 重复执行返回 `already-imported`，不重复追加、不覆盖运行后数据。
-- 来源内容与已导入根不一致时拒绝，防止静默合并；源文件在导入期间变化会被检出。
-- 导入含未完成的旧 promotion journal 时拒绝，要求先显式恢复。
+迁移会先取得锁，再暂存和逐文件 SHA256 校验，最后原子发布；manifest 保存 `importId` 与不可变来源副本。锁内会重读完成态：另一导入仍持锁时直接失败；对方已完成时返回 `already-imported`，不会留下第二份 staging。重复执行不追加或覆盖运行后的数据；来源不一致或迁移期间发生变化会拒绝。含未完成 promotion journal 的来源必须先显式恢复。
 
-### 6.4 升级、回滚与卸载
+已有 `*.migration.lock` 不会被替换；释放时只删除本次导入创建的锁，若锁被其他进程替换则保留并报告。
+
+### 升级、回滚与卸载
 
 ```sh
 # 升级到新版本 tarball
 DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-<new>.tgz
 
-# 回滚到旧版本
+# 回滚到旧版本 tarball
 DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-<old>.tgz
 
-# 卸载（先停止应用）
+# 卸载前停止应用
 dsh plugin --profile web remove dsh-evolution
 ```
 
-升级只替换插件包；数据根、`promoted.cordis.yml`、promoted 子插件源码、archive 与 evidence 全部保留。
+升级只替换插件包；Evolution 数据、`promoted.cordis.yml`、promoted 子插件源码、archive 和 evidence 保留。回滚旧插件包不会自动撤销已 stable 提交的 promotion。残留的 `prepared` / `committing` journal 会按边界校验回滚；`stable-committed` / `committed` 只清理 journal。stable commit 后若要移除 composition 引用，需人工处理后重启。卸载不删除用户数据；官方 pluginManager 禁用 / 启用可热切换或要求重启，dispose promoted 子 Fiber 时 composition、源码和档案仍保留。
 
-回滚旧插件包**不会自动回滚**已稳定提交的 promotion composition。残留 journal 在边界校验通过后按阶段处理：`prepared` / `committing` 回滚，`stable-committed` / `committed` 只清理 journal。若 composition 引用了新版本独有的实现，需按 promotion 边界人工移除对应条目后重启——stable commit 之后没有 journal 的自动回滚不受支持。
+## 数据根与状态处置
 
-卸载**不删除用户数据**。官方 `pluginManager.setBundleEnabled` 支持热禁用（实测 `applied`，插件工具与服务立即下线）或 `restart-required`；禁用或卸载父 bundle 会 dispose promoted 子 Fiber，而 composition、源码与档案保留。
+默认数据根为 `$DSH_HOME/storages/evolution`。主要文件包括 `event-bridge.key`、`execution-events.jsonl`、`evolution-memory.json`、`promoted.cordis.yml`、`EVOLUTION.md`、`promoted/`、`archive/experiments/`、`promotion/`、`promotion.lock`、`ownership/`、`dockyard/`、`domain-staging/`、`domain-archive.lock`、`migration-manifest.json` 和 `official-runtime-baseline.json`。领域聚合名为 `evolution_domain`，位于 `$DSH_HOME/storages/evolution_domain.json`。
 
-若 `<dataRoot>` 下的 `promotion/` 目录存在、而里面没有可读的 `journal.json`，**启动会被阻断**（fail-closed）：启动恢复与 canary 读取都把这种现场当作未知状态，拒绝猜测，也不会在下一次晋升准备时把它删掉。处置方向只有一个：人工确认现场——先拷走该目录，确认 composition 与 promoted 目录的真实状态后自行决定保留或移走，本插件不会替你删除。
+`event-bridge.key` 仅当路径不存在时由运行时以 `wx` 创建（`0600`）；创建失败时只清理由本次创建且未写成的条目。已有非法密钥会拒绝启动，永不替换。禁用、卸载和 doctor 都不会删除或改写密钥。Doctor 只报告状态，不会修复 claim 或 key。
 
-## 7. 已知限制
+| 状态 | 处置 |
+| --- | --- |
+| journal `prepared` / `committing`，边界校验通过 | 从 journal 备份回滚，采用 CAS，不覆盖并发修改；doctor `--repair` 或下次启动处理 |
+| journal `canary-observing` | doctor 报 `degraded`、`recoverable=false`，不提供 repair；保持观察状态，重启后继续推进屏障，或显式回滚 |
+| journal `stable-committed` / `committed` | 只清理 journal，不改 composition 或已提交插件 |
+| journal `rollback-failed`、无法解析或边界拒绝 | `blocked`，不自动处理，保留现场 |
+| journal 阶段未知或缺失，边界校验通过 | `blocked` / `state-unknown`，不提供 repair；启动恢复和 canary 读取同样拒绝，保留 journal、备份、目标文件和 staging |
+| 晋升因外部并发修改 EVOLUTION.md / 归档而拒绝覆盖 | 保留 journal；本实验 `exp-*.md` 不改写，脱敏失败证据写入同目录 `<experimentId>.failure.json` |
+| promotion 目录存在但没有可读 `journal.json` | 启动被阻断；人工检查 composition 与 promoted 目录后决定保留或移走，插件不会删除目录 |
+| event bridge 有未闭合尾行 | repair 只丢弃不构成记录的尾部字节；执行前重读并校验计划条件，准备期间变化则跳过。完整行都没有时不提供 repair；最后一次重读与 rename 之间的追加仍可能被丢弃，建议宿主停止时执行 |
+| 活动档案文件末尾没有换行 | 下次追加前逐字节复制残片到同目录 `state.json.<collection>quarantine-archive.jsonl`，再原子重写活动档案，只留完整行。隔离文件 append-only、不由插件删除；其不可解析行会使 `state.archives` 报 `degraded`，由人处置 |
+| 冷档案中段或 sealed 段有不可解析行 | `state.archives` 报 `degraded`，保留原字节；`archiveIntegrity()` 分类故障，`verifyConsistency()` 返回 `archive_bytes_unreadable`，`reconcile()` verifier 失败并回滚自身改动，需人工处置 |
+| domain 孤儿 staging | 仅在聚合完整校验通过且无进程持有 archive 锁时清理；聚合、pending 记录或锁无法验证时拒绝 |
+| domain archive 锁无主（不可读且超过 settle 窗口，或指向已死 pid） | 运行时按同一协议回收；repair 也使用设备号、inode、字节围栏和 rename 隔离。有活主不抢占；符号链接、目录等非普通条目只报告、不 repair |
+| target claim | 同一 `experimentId` 的 claim 在分类前直接采纳；其余 0 字节、半截 JSON、外地主机或缺 hostname / pid 的 claim 只报告，不删除、不改写、不提供 repair。没有“创建时捕获身份、使用前再证明”协议，0 字节文件可能仍对应已取得独占句柄的进程；删除会造成两个实验同时持有同一 target |
+| `event-bridge.key` 缺失、0 字节或不是 64 位小写十六进制 | doctor 只报告；路径缺失时下次启动创建，已有非法密钥永不替换。`data.key` 列出 `execution-events.jsonl`、domain `applied` / `pending.applied`、checkpoint 与临时文件；只有 ENOENT、0 字节普通文件或完整校验且 marker 为 0 的聚合可证明没有 MAC 产物。能证明没有 MAC 时由操作者按诊断指引处置空 / 坏文件；仍有 MAC 或无法证明时从备份恢复原密钥 |
+| failure memory 损坏 | 不删除；报告 `degraded`，下次启动隔离并保留原字节 |
+| domain 聚合、事件 MAC 或不可变迁移证据损坏 | 报 `blocked`，不重写、不猜测、不合并 |
+
+未知或损坏的持久状态不会被猜测、静默合并或删除。journal 阶段的判定由启动恢复、canary 读取和 doctor 共用；见上表。
+
+## 已知限制
 
 以下边界是显式记录在产品行为里的，不通过隐藏 patch 绕过。完整清单与剩余发布风险见 `COMPATIBILITY.md` 与 `RELEASE.md`。
 
-1. **领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威；领域 evaluator 提供记录在案的决策与"识别到 regression 即否决"的硬性 veto，但本插件尚未接入宿主提供的独立生产 baseline/test 指标。因此只有自定义指标时 evaluator 会返回 `reject`（不阻塞），真实独立指标接入待补。
+1. **领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威；领域 evaluator 提供记录在案的决策与“识别到 regression 即否决”的硬性 veto，但本插件尚未接入宿主提供的独立生产 baseline/test 指标。因此只有自定义指标时 evaluator 会返回 `reject`（不阻塞），真实独立指标接入待补。
 2. **`continuous/` 与 `governance/` 领域模块已提取并单测通过，但未接入 orchestrator 实时循环。** 它们是纯领域实现，当前不启动第二套 Engine 或 scheduler；旧 `dockyard` 数据以文件形式完整保留，可用 `domainSeed` 载入。
 3. **晋升是 Host-only，且不是安全沙箱。** 只有持久化晋升拒绝带 `client` 的 Package（`evolution_trial` 允许 Client half）；持久化源码走合作式 `Function(hostCode)()` gate，始终需要可信审批。
-4. **依赖内部/未文档化宿主接口。** introspection 使用 `ctx.registry.values()`、`ctx.reflect.props/_getImpl()`、`ctx.events._hooks`、Fiber effect 元数据；Include adapter 使用公开但未文档化的 `root.data` / `store` / `Entry.fiber` / `Fiber.state` / `ctx.get()`。这些不是稳定跨版本公共契约，升级 DSH 前必须重新验收；`runtime.internal-api` 会逐探针报告可用性，缺失时降级为 `degraded` 而不是假装健康。
+4. **依赖内部 / 未文档化宿主接口。** introspection 使用 `ctx.registry.values()`、`ctx.reflect.props/_getImpl()`、`ctx.events._hooks`、Fiber effect 元数据；Include adapter 使用公开但未文档化的 `root.data` / `store` / `Entry.fiber` / `Fiber.state` / `ctx.get()`。这些不是稳定跨版本公共契约，升级 DSH 前必须重新验收；`runtime.internal-api` 会逐探针报告可用性，缺失时降级为 `degraded`。
 5. **手工 dispose 底层 bundle Fiber 的路径无法自我断言。** `disposeTrial` 走官方 runner 的 stop/undefine；直接 dispose bundle Fiber 会让探针自身注入的 `tools` 失活，因此不作为用户关闭流程。
-6. **Trial 期间持续存在的外部漂移会拒绝恢复。** 恢复签名是前后可观察清单的比较，不重建基线，因此不能记录已自行恢复的瞬态漂移，也不能证明任意合作式代码或 disposer 的全部外部效果。
-7. **事件签名密钥没有轮换/吊销流程。** `event-bridge.key` 只在该数据根首次创建，禁用与卸载都不会删除。
-8. **file 后端的失败记忆是 last-writer-wins，`save()` 不做 fsync。** 同一数据根下两个 host 实例同时归档时后写者会覆盖整份快照；断电时最后一次 `record()` 可能丢失。跨进程锁保护的是领域归档事务，不是这个文件。它是有界、advisory 的失败记忆（`promotionGates` 仍是生产权威），单实例使用不触发。
-9. **指标 ID 不是授权凭证。** 兜底 ID 使用 `crypto.randomUUID()`，同一记录只生成一次；调用方仍可提供 ID，不能把可猜测/不可猜测的 ID 当作权限控制。
+6. **Trial 期间持续存在的外部漂移会拒绝恢复。** 恢复签名比较前后可观察清单，不重建基线，因此不能记录已自行恢复的瞬态漂移，也不能证明任意合作式代码或 disposer 的全部外部效果。
+7. **事件签名密钥没有轮换 / 吊销流程。** `event-bridge.key` 只在该数据根首次创建，禁用与卸载都不会删除。
+8. **file 后端的失败记忆是 last-writer-wins，`save()` 不做 fsync。** 同一数据根下两个 host 实例同时归档时，后写者会覆盖整份快照；断电时最后一次 `record()` 可能丢失。跨进程锁保护领域归档事务，不保护这个文件。它是有界、advisory 的失败记忆（`promotionGates` 仍是生产权威），单实例使用不触发。
+9. **指标 ID 不是授权凭证。** 兜底 ID 使用 `crypto.randomUUID()`，同一记录只生成一次；调用方仍可提供 ID，不能把可猜测或不可猜测的 ID 当作权限控制。
 10. **不提供供应链签名。** 未做 npm 发布、代码签名 / provenance（SLSA）或 SBOM；已启用 GitHub Code Scanning。
-11. **宿主版本只在验收后扩展。** 列表之外的宿主由 `host.version` 报 `blocked`，不用宽松范围绕过诊断的阻断。
-12. **`0.2.1-alpha.1` 与 `0.2.1-rc.2` 的 npm dist-tag 会移动。** 验收记录的是精确版本号。这里的日期取自一次**历史**验收运行写下的 `startedAt`（2026-10-17，当时该证据记录的候选是 `0.2.0-rc.13`）；`docs/evidence/dsh-0.2.1-rc.2.json` 在每次重新固定时都会被重跑重写，当前记录的 `startedAt` 已不是该日期。该日期查询 npm registry 得到 `alpha` 指向 `0.2.1-alpha.5`、`latest` 指向 `0.2.0-rc.2`、`next` 指向 `0.2.1-rc.2`。**这些 tag 取值不在验收证据中**（验收脚本不查询 dist-tag），只是该日期对 registry 的只读观测快照；这些 tag 后续都会移动，本仓库声明的仍是那三个精确版本号。
-13. **冷档案读取缓存依赖文件系统的纳秒 mtime，并占用内存。** 解析结果按“设备 + inode + 字节数 + 纳秒 mtime”缓存，因此在一个 mtime 精度只有秒级的文件系统上，**同尺寸的原地重写**可能读不到新内容（插件自己追加一定会改变字节数，所以不受影响）。常驻成本约 **0.7 MiB heap / MiB 冷档案**（例如 28 MiB 冷档案约 20 MiB），`compact()` 后丢弃重建；数字、假设与复现脚本见 `RELEASE.md` 第 6 节第 20 条与 `docs/performance/archive-read-cost.md`。
-14. **只带显式 `knowledgeKey`、没有任何身份维度的知识事件会塌缩到同一个身份。** 已知、本轮未修：六个维度全空时身份落在一个常量桶（`knowledge:a615…`），不同的显式 key 会合并成一行。本插件所有生产写入路径都会同时给出维度，所以普通使用遇不到；只有外部代码直接调用 `EvolutionMemory.recordKnowledgeEvent()` 且只给 `knowledgeKey` 时才会触发。修它会改变持久化身份语义（需要迁移决策）并改动冻结身份基线。
-15. **UTF-16 长度超过 240 的身份维度会得到新身份。** 旧实现按 UTF-16 code unit 只保留前 239 个单位（还会切在代理对中间），于是差别落在其后的事实被合并成一条。现在保留前缀按 code point 切，并附上完整文本的 16 位摘要，这类事实因此能被区分；代价是这些维度会带上新的身份，旧行保留到 retention 到期。归一化后 **UTF-16 长度** ≤ 240 的维度值逐字节不变（因此身份不变）；UTF-16 长度 > 240 的维度值会改变：code point 数 ≤ 240 时整段保留（旧实现会截断，还可能切断代理对），> 240 时截断到 240 code point 并附 16 位摘要。因此既有记录的身份、命中与保留结果只在后一类维度上变化。
+11. **宿主版本只在验收后扩展。** 列表之外的宿主由 `host.version` 报 `blocked`，不使用宽松范围绕过诊断阻断。
+12. **`0.2.1-alpha.1` 与 `0.2.1-rc.2` 的 npm dist-tag 会移动。** 验收记录精确版本号。这里的日期取自一次历史验收运行写下的 `startedAt`（2026-10-17，当时该证据记录的候选是 `0.2.0-rc.13`）；`docs/evidence/dsh-0.2.1-rc.2.json` 每次重新固定都会重跑重写，当前 `startedAt` 已不是该日期。该日期查询 npm registry 得到 `alpha` 指向 `0.2.1-alpha.5`、`latest` 指向 `0.2.0-rc.2`、`next` 指向 `0.2.1-rc.2`。这些 tag 值不在验收证据中，是该日期对 registry 的只读快照；tag 后续会移动，仓库声明的仍是三个精确版本号。
+13. **冷档案读取缓存依赖文件系统的纳秒 mtime，并占用内存。** 解析结果按“设备 + inode + 字节数 + 纳秒 mtime”缓存；在 mtime 精度只有秒级的文件系统上，同尺寸原地重写可能读不到新内容（插件自己追加会改变字节数，不受影响）。常驻成本约 **0.7 MiB heap / MiB 冷档案**（例如 28 MiB 冷档案约 20 MiB）；`compact()` 后丢弃重建。数字、假设和复现脚本见 `RELEASE.md` 第 6 节第 20 条与 `docs/performance/archive-read-cost.md`。
+14. **只带显式 `knowledgeKey`、没有任何身份维度的知识事件会塌缩到同一个身份。** 已知、本轮未修：六个维度全空时身份落在常量桶（`knowledge:a615…`），不同显式 key 会合并成一行。本插件所有生产写入路径都会同时给出维度，所以普通使用遇不到；只有外部代码直接调用 `EvolutionMemory.recordKnowledgeEvent()` 且只给 `knowledgeKey` 时会触发。修复会改变持久化身份语义（需要迁移决策）并改动冻结身份基线。
+15. **UTF-16 长度超过 240 的身份维度会得到新身份。** 旧实现按 UTF-16 code unit 只保留前 239 个单位（还会切在代理对中间），因此后缀不同的事实会被合并。现在前缀按 code point 切，并附完整文本的 16 位摘要；这类事实会被区分，旧行保留到 retention 到期。归一化后 UTF-16 长度 ≤ 240 的维度逐字节不变、身份不变；长度 > 240 时身份改变：code point 数 ≤ 240 时整段保留，> 240 时保留前 222 个 code point 并附 `…#` 与 16 位十六进制摘要，结果总长 240 个 code point。因此既有记录的身份、命中与保留结果只在后一类维度上变化。
 
-## 8. 验证与证据
+## 验证与证据
 
-本仓库的验收**由本仓库的脚本执行，证据随仓库分发**：
+仓库验证入口：
 
 ```sh
-npm ci                       # 严格按 package-lock.json 安装
-NODE_OPTIONS=--max-old-space-size=4096 npm test   # 仓库回归入口（Node 原生测试；堆上限是必需的）
-npm run pack:check           # 分发内容、权限、锁文件、文档一致性 + 工作树/固定点关系（发布阶段：`pack:check -- --release`）
-npm run release:verify       # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
+NODE_OPTIONS=--max-old-space-size=4096 npm test
+npm run pack:check
+npm run release:verify
 
-# 真实隔离宿主验收（自包含：自己安装官方 DSH，使用独立 DSH_HOME）
+# 在隔离 runtime / DSH_HOME 中执行真实宿主验收
 npm run acceptance:host -- --host 0.2.0-rc.2 --out <evidence-path>
 npm run acceptance:host -- --host 0.2.1-alpha.1 --out <evidence-path>
 npm run acceptance:host -- --host 0.2.1-rc.2 --out <evidence-path>
 ```
 
-宿主验收脚本在临时目录里安装指定版本的官方 `@deepseek-ai/dsh`，在全新 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步，覆盖：
+`scripts/acceptance/run-host-acceptance.mjs` 按实际记录路径生成 21 个步骤：每个宿主包含官方安装、CLI doctor、核心 Trial / revert、pluginManager 禁用 / 启用、卸载与重装、升级 / 回滚，以及真实 promotion、跨重启 canary 和最终 doctor。固定证据中的每个宿主均为 21/21 步通过，最终诊断为 `healthy`。
 
-1. 官方 CLI 只读诊断（`host.version` 必须 `verified: true`、状态不得为 `blocked`）
-2. 核心流程 `inspect → propose → trial → measure → revert`（要求 `runtimeRecovered: true` 与 9 个工具全部注册）
-3. 官方 `pluginManager` 禁用/启用语义，且 `evolution-memory.json` 逐字节不变（同时确认 `event-bridge.key` 仍存在）
-4. 官方 CLI 卸载、插件缺席时宿主仍能启动、再重新安装
-5. 重装后核心流程再次通过且原有 memory 条目全部保留
-6. 升级与回滚流程，两步之后宿主仍注册 9 个工具且 memory 哈希不变
-7. 真实晋升到 canary 观察期，监听器可被真实触发并跨进程重启存活
-8. 重启后 startup canary 提交为 `stable`；新候选注入 `metricRegression` 触发 canary 回滚，且只回滚新候选
-9. 再次重启后已提交候选仍存活、被回滚候选未复活，最终诊断 `healthy`
+覆盖分为 9 组：官方 CLI 只读诊断；核心 `inspect → propose → trial → measure → revert`（要求 Runtime 恢复并注册 9 个工具）；pluginManager 禁用 / 启用并验证 memory 字节不变；卸载、无插件启动、重新安装；重装后核心流程和已有 memory 保留；升级与回滚并验证工具和 memory 哈希；真实晋升进入 canary 且监听器跨进程重启存活；startup 提交 stable 并验证指标回归只回滚新候选；再次重启验证候选状态并以最终 doctor 收尾。
 
-已验证结论：
+| DSH 宿主 | Cordis | Include | Loader | 验收 | 最终诊断 |
+| --- | --- | --- | --- | --- | --- |
+| `0.2.0-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | 21/21 | `healthy` |
+| `0.2.1-alpha.1` | `4.0.5` | `1.0.10` | `1.0.6` | 21/21 | `healthy` |
+| `0.2.1-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | 21/21 | `healthy` |
 
-| 宿主 | 宿主模块 | 结果 |
-| --- | --- | --- |
-| `0.2.0-rc.2` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过，最终诊断 `healthy` |
-| `0.2.1-alpha.1` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过，最终诊断 `healthy` |
-| `0.2.1-rc.2` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过，最终诊断 `healthy` |
+对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json` 与 `docs/evidence/dsh-0.2.1-rc.2.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节），验收和固定点检查核对的是 `release/` 固定产物，不会因后续工作树修改而改写历史证据。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
 
-上表是三个宿主在**固定产物**上重跑时解析到的模块版本（取自 `docs/evidence/dsh-<host>.json` 的 `startedAt` 与 `hostModules`）：三个宿主都落在稳定补丁级别，`js-yaml` 均为 `4.3.2`。宿主自身用 `~` 范围声明这些依赖（`0.2.0-rc.2` 为 `~4.0.4` / `~1.0.9` / `~1.0.5`），因此同 patch 行的稳定版一发布就会被解析到；这三份证据记录的就是这次重跑，与 `release/` 固定点一一对应。
+`npm run pack:check` 两种模式都执行 16 项检查。开发模式允许工作树是固定点的**已提交**后继（脚本会逐条点名与固定产物不同的文件），但分发文件存在**未提交**改动时一律失败；`--release` 则把“固定点描述自己的提交 / 工作树是固定点或已提交后继”换成更严格的“固定点固定本树内容 / 工作树构建出固定内容”。
 
-证据文件 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json` 与 `docs/evidence/dsh-0.2.1-rc.2.json` 同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 都拿它们核对**发布固定点**，而不是工作树：已发布的验收证据与固定产物不会因为之后的分发文件改动而失效或被改写。`0.2.0-rc.17` 已按 `RELEASE.md` 第 2 节重新构建、重跑三宿主验收并重新固定，当时工作树就是固定内容，因此 `npm run pack:check` 的 16 项检查全绿（`0.2.0-rc.16` 与 `0.2.0-rc.15` 同样 16 项全绿）。此后任何**已提交**的分发文件改动都会让工作树成为固定点的**开发后继**：`npm run pack:check` 会如实报告这个状态并逐条点名与固定产物不同的文件（16 项仍全绿，结尾单独打印“这棵树是固定点的开发后继”）；分发文件存在**未提交**改动时它仍然失败。发布阶段仍然严格——`npm run pack:check -- --release` 要求工作树就是固定内容，`verify-provenance.mjs` 也会拒绝工作树内容不等于固定点的 tag，因此漂移的树发布不了。处置流程见 `RELEASE.md` 第 6 节第 16 条。
+源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.18.tgz --content-only`。
 
-验收断言的"数据保留"范围需要说清楚：生命周期、升级与回滚步骤比较的是 `evolution-memory.json` 的 SHA256 并确认 `event-bridge.key` 仍存在，**不是对整个数据根逐文件比较**。
+## 相关文档
 
-发布产物、复现步骤与**尚未消除的发布风险**见 `RELEASE.md`；发布固定点见 `release/manifest.json`；CI 见 `.github/workflows/ci.yml`（单测矩阵、可复现打包与内容白名单、三个宿主的真实安装验收）。
-
-## 9. 相关文档
-
-- `COMPATIBILITY.md` — 宿主接口审计与分级、兼容矩阵、阻塞依赖
-- `RELEASE.md` — 产物、校验命令、复现步骤、剩余风险
+- `COMPATIBILITY.md` — 宿主接口审计、兼容矩阵与阻塞依赖
+- `RELEASE.md` — 固定产物、验证命令、复现步骤与发布风险
 - `CHANGELOG.md` — 版本变更记录
-- `AGENTS.md` — 本仓库的开发约定与验证要求
+- `AGENTS.md` — 仓库开发约定与验证要求
