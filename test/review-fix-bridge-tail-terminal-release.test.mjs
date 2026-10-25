@@ -549,11 +549,35 @@ test('a reclaim marker left by a crashed reclaimer does not wedge the lock', asy
   t.after(() => fsp.rm(root, { recursive: true, force: true }));
   const file = path.join(root, 'events.jsonl');
   const lockPath = `${file}.append.lock`;
-  await fsp.mkdir(path.join(lockPath, '.reclaim'), { recursive: true, mode: 0o700 });
+  const markerPath = `${lockPath}.reclaim`;
+  await fsp.mkdir(lockPath, { mode: 0o700 });
+  await fsp.writeFile(markerPath, '');
   const old = new Date(Date.now() - 60_000);
   await fsp.utimes(lockPath, old, old);
+  await fsp.utimes(markerPath, old, old);
   const bridge = new EvolutionEventBridge({ file, key: 'e'.repeat(64), writer: 'harness' });
   bridge.emit('proposal-created', { id: 'exp-marker', proposal: { target: 'a' } }, { experimentId: 'exp-marker' });
   assert.equal(await exists(lockPath), false, 'the wedged entry is removed');
+  assert.equal(await exists(markerPath), false, 'the crashed marker is removed');
   assert.equal((await fsp.readFile(file, 'utf8')).split('\n').filter((line) => line.trim() !== '').length, 1);
+});
+
+test('a reclaim marker held by another reclaimer excludes a second one', async (t) => {
+  const root = await scratchRoot('bridge-lock-marker-held');
+  t.after(() => fsp.rm(root, { recursive: true, force: true }));
+  const file = path.join(root, 'events.jsonl');
+  const lockPath = `${file}.append.lock`;
+  const markerPath = `${lockPath}.reclaim`;
+  await fsp.mkdir(lockPath, { mode: 0o700 });
+  await fsp.writeFile(path.join(lockPath, 'owner'), lockOwner(999999));
+  await fsp.writeFile(markerPath, '');
+  const bridge = new EvolutionEventBridge({ file, key: 'e'.repeat(64), writer: 'harness' });
+  assert.throws(
+    () => bridge.emit('proposal-created', { id: 'exp-excluded', proposal: { target: 'a' } }, { experimentId: 'exp-excluded' }),
+    /append lock is held/,
+  );
+  assert.equal(await exists(lockPath), true, 'a second reclaimer may not act while the marker is held');
+  await fsp.unlink(markerPath);
+  bridge.emit('proposal-created', { id: 'exp-after-marker', proposal: { target: 'b' } }, { experimentId: 'exp-after-marker' });
+  assert.equal(await exists(lockPath), false);
 });
