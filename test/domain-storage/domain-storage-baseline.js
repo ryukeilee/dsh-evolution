@@ -443,10 +443,53 @@ const reversals = [
   // reclaims only the entry its decision was made about.
   ["  const raw = String(process.pid);\n" +
    "  for (;;) {\n" +
+   "    // A lock whose bytes never arrived names no owner this process wrote, but\n" +
+   "    // `readLockOwner` can only fall back to \"no named owner\" for content that\n" +
+   "    // does not parse as a pid: a truncated pid (`\"1\"` of `\"1234\"`) reads as a\n" +
+   "    // different, possibly live, pid and would refuse the archive for good. A\n" +
+   "    // failed acquisition also returns no token, so no lock anyone holds can be\n" +
+   "    // lost by dropping the entry this attempt created. `EEXIST` proves nothing\n" +
+   "    // was created and never reaches the cleanup below.\n" +
+   "    //\n" +
+   "    // The removal is identity-fenced rather than by path: an empty lock is\n" +
+   "    // reclaimable after `LOCK_SETTLE_MS`, so a port that stalled between the\n" +
+   "    // exclusive open and the failed write can find another port's lock at this\n" +
+   "    // path by the time it cleans up. `fstat` pins the inode this call created\n" +
+   "    // before the write begins, and `removeLockIfUnchanged` puts back an entry\n" +
+   "    // that is not it. Removal is best effort: a cleanup failure must not replace\n" +
+   "    // the storage error the caller has to act on.\n" +
+   "    let identity = null;\n" +
    "    try {\n" +
-   "      fs.writeFileSync(lock, raw, { flag: 'wx', mode: 0o600 });\n" +
-   "      return { raw, identity: lockIdentity(lock) };\n" +
+   "      const descriptor = fs.openSync(lock, 'wx', 0o600);\n" +
+   "      try {\n" +
+   "        const stat = fs.fstatSync(descriptor, { bigint: true });\n" +
+   "        identity = { dev: String(stat.dev), ino: String(stat.ino) };\n" +
+   "      } catch (error) {\n" +
+   "        try { fs.closeSync(descriptor); } catch {}\n" +
+   "        throw error;\n" +
+   "      }\n" +
+   "      try {\n" +
+   "        fs.writeFileSync(descriptor, raw);\n" +
+   "      } catch (error) {\n" +
+   "        // The failed write is why the lock is unusable, so it stays the error\n" +
+   "        // the caller sees even if closing the descriptor also fails.\n" +
+   "        try { fs.closeSync(descriptor); } catch {}\n" +
+   "        throw error;\n" +
+   "      }\n" +
+   "      fs.closeSync(descriptor);\n" +
+   "      // The token carries the inode `fstat` read from this call's own descriptor,\n" +
+   "      // not the one the path names now. An empty lock is reclaimable after\n" +
+   "      // `LOCK_SETTLE_MS`, so a port that stalls between the open and the write\n" +
+   "      // writes its pid into an entry another port has already renamed out of the\n" +
+   "      // way: the bytes land on a detached inode that no path reaches, and an\n" +
+   "      // identity read from the path would hand that port the new owner's inode as\n" +
+   "      // its own token - two ports, identical pid bytes, both passing the\n" +
+   "      // ownership fence. With this identity the stalled port cannot prove it owns\n" +
+   "      // the path and refuses the write (`E_DOMAIN_ARCHIVE_LOCK`) instead of\n" +
+   "      // overwriting a live owner.\n" +
+   "      return { raw, identity };\n" +
    "    } catch (error) {\n" +
+   "      if (identity) { try { removeLockIfUnchanged(lock, identity, null); } catch {} }\n" +
    "      if (error?.code !== 'EEXIST') throw error;\n" +
    "      const owner = readLockOwner(lock);\n" +
    "      if (!owner) continue;\n" +
@@ -461,7 +504,7 @@ const reversals = [
    "        continue;\n" +
    "      }\n" +
    "      if (owner.pid === process.pid || ownerAlive(owner.pid)) throw new Error('E_DOMAIN_ARCHIVE_LOCK');\n" +
-   "      reclaimArchiveLock(lock, owner);\n",
+   "      reclaimArchiveLock(lock, owner);\n" ,
    "  for (;;) {\n" +
    "    try {\n" +
    "      fs.writeFileSync(lock, String(process.pid), { flag: 'wx', mode: 0o600 });\n" +
