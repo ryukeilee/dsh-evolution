@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import crypto from 'node:crypto';
 
 import {
@@ -435,7 +436,9 @@ test('an append removes its short-lived lock', async (t) => {
   assert.equal(await exists(`${file}.append.lock`), false);
 });
 
-test('a fresh foreign append lock is waited on and then refused without writing', async (t) => {
+const lockOwner = (pid) => JSON.stringify({ token: 'other-writer', pid, hostname: os.hostname(), acquiredAt: Date.now() });
+
+test('a live append lock is waited on and then refused without writing', async (t) => {
   const root = await scratchRoot('bridge-lock-held');
   t.after(() => fsp.rm(root, { recursive: true, force: true }));
   const file = path.join(root, 'events.jsonl');
@@ -444,7 +447,7 @@ test('a fresh foreign append lock is waited on and then refused without writing'
   const before = await fsp.readFile(file, 'utf8');
   const lockPath = `${file}.append.lock`;
   await fsp.mkdir(lockPath, { mode: 0o700 });
-  await fsp.writeFile(path.join(lockPath, 'owner'), 'other-writer');
+  await fsp.writeFile(path.join(lockPath, 'owner'), lockOwner(process.pid));
   const startedAt = Date.now();
   assert.throws(
     () => bridge.emit('proposal-created', { id: 'exp-second', proposal: { target: 'b' } }, { experimentId: 'exp-second' }),
@@ -452,22 +455,59 @@ test('a fresh foreign append lock is waited on and then refused without writing'
   );
   assert.ok(Date.now() - startedAt >= 400, 'the writer retried instead of failing on the first look');
   assert.equal(await fsp.readFile(file, 'utf8'), before, 'a refused append writes nothing');
+  assert.equal(await exists(lockPath), true, 'a live owner lock is preserved');
 });
 
-test('a stale append lock from a crashed writer is reclaimed', async (t) => {
-  const root = await scratchRoot('bridge-lock-stale');
+test('a live writer is not reclaimed however old its marker is', async (t) => {
+  const root = await scratchRoot('bridge-lock-slow');
   t.after(() => fsp.rm(root, { recursive: true, force: true }));
   const file = path.join(root, 'events.jsonl');
   const lockPath = `${file}.append.lock`;
   await fsp.mkdir(lockPath, { mode: 0o700 });
-  await fsp.writeFile(path.join(lockPath, 'owner'), 'crashed-writer');
+  await fsp.writeFile(path.join(lockPath, 'owner'), lockOwner(process.pid));
   const old = new Date(Date.now() - 60_000);
   await fsp.utimes(lockPath, old, old);
   const bridge = new EvolutionEventBridge({ file, key: 'e'.repeat(64), writer: 'harness' });
-  bridge.emit('proposal-created', { id: 'exp-stale', proposal: { target: 'a' } }, { experimentId: 'exp-stale' });
+  // A slow fsync must not let a second writer in: the owner's pid is alive.
+  assert.throws(
+    () => bridge.emit('proposal-created', { id: 'exp-slow', proposal: { target: 'a' } }, { experimentId: 'exp-slow' }),
+    /append lock is held/,
+  );
+  assert.equal(await exists(lockPath), true);
+  assert.equal(JSON.parse(await fsp.readFile(path.join(lockPath, 'owner'), 'utf8')).token, 'other-writer');
+  assert.equal(await exists(file), false, 'nothing was appended behind the live lock');
+});
+
+test('a lock whose owner pid is gone is reclaimed immediately', async (t) => {
+  const root = await scratchRoot('bridge-lock-dead');
+  t.after(() => fsp.rm(root, { recursive: true, force: true }));
+  const file = path.join(root, 'events.jsonl');
+  const lockPath = `${file}.append.lock`;
+  await fsp.mkdir(lockPath, { mode: 0o700 });
+  await fsp.writeFile(path.join(lockPath, 'owner'), lockOwner(999999));
+  const bridge = new EvolutionEventBridge({ file, key: 'e'.repeat(64), writer: 'harness' });
+  bridge.emit('proposal-created', { id: 'exp-dead', proposal: { target: 'a' } }, { experimentId: 'exp-dead' });
   const lines = (await fsp.readFile(file, 'utf8')).split('\n').filter((line) => line.trim() !== '');
   assert.equal(lines.length, 1);
-  assert.equal(await exists(lockPath), false, 'the reclaimed marker is not left behind');
+  assert.equal(await exists(lockPath), false, 'the reclaimed lock is removed');
+});
+
+test('an unowned lock is reclaimed only after the stale window', async (t) => {
+  const root = await scratchRoot('bridge-lock-unowned');
+  t.after(() => fsp.rm(root, { recursive: true, force: true }));
+  const file = path.join(root, 'events.jsonl');
+  const lockPath = `${file}.append.lock`;
+  await fsp.mkdir(lockPath, { mode: 0o700 });
+  const bridge = new EvolutionEventBridge({ file, key: 'e'.repeat(64), writer: 'harness' });
+  assert.throws(
+    () => bridge.emit('proposal-created', { id: 'exp-fresh-unowned', proposal: { target: 'a' } }, { experimentId: 'exp-fresh-unowned' }),
+    /append lock is held/,
+  );
+  assert.equal(await exists(lockPath), true, 'a fresh unowned marker is not stolen');
+  const old = new Date(Date.now() - 60_000);
+  await fsp.utimes(lockPath, old, old);
+  bridge.emit('proposal-created', { id: 'exp-stale-unowned', proposal: { target: 'b' } }, { experimentId: 'exp-stale-unowned' });
+  assert.equal(await exists(lockPath), false);
 });
 
 test('two processes appending concurrently produce only parseable records', async (t) => {
@@ -503,42 +543,17 @@ test('two processes appending concurrently produce only parseable records', asyn
 });
 
 
-test('a reclaimer that moves a fresh lock instead of the stale one puts it back', async (t) => {
-  const root = await scratchRoot('bridge-lock-reclaim-race');
+
+test('a reclaim marker left by a crashed reclaimer does not wedge the lock', async (t) => {
+  const root = await scratchRoot('bridge-lock-marker');
   t.after(() => fsp.rm(root, { recursive: true, force: true }));
   const file = path.join(root, 'events.jsonl');
   const lockPath = `${file}.append.lock`;
-  await fsp.mkdir(lockPath, { mode: 0o700 });
-  await fsp.writeFile(path.join(lockPath, 'owner'), 'crashed-writer');
+  await fsp.mkdir(path.join(lockPath, '.reclaim'), { recursive: true, mode: 0o700 });
   const old = new Date(Date.now() - 60_000);
   await fsp.utimes(lockPath, old, old);
-
-  // Swap the stale marker for a fresh one in the instant between the stale
-  // decision and the atomic move. Pre-fix (delete by path) the new owner's lock
-  // was removed; the rename-and-verify path must put it back.
-  const fsSync = (await import('node:fs')).default;
-  const originalRename = fsSync.renameSync;
-  let replaced = false;
-  fsSync.renameSync = function observedRename(from, to) {
-    if (!replaced && String(from) === lockPath && String(to).endsWith('.stale')) {
-      replaced = true;
-      fsSync.rmSync(lockPath, { recursive: true, force: true });
-      fsSync.mkdirSync(lockPath, { mode: 0o700 });
-      fsSync.writeFileSync(path.join(lockPath, 'owner'), 'fresh-owner');
-    }
-    return originalRename.call(this, from, to);
-  };
-  try {
-    const bridge = new EvolutionEventBridge({ file, key: 'e'.repeat(64), writer: 'harness' });
-    assert.throws(
-      () => bridge.emit('proposal-created', { id: 'exp-race', proposal: { target: 'a' } }, { experimentId: 'exp-race' }),
-      /append lock is held/,
-    );
-  } finally {
-    fsSync.renameSync = originalRename;
-  }
-  assert.equal(replaced, true, 'the replacement happened inside the reclaim path');
-  assert.equal(await exists(lockPath), true, 'the fresh owner lock is not deleted');
-  assert.equal(await fsp.readFile(path.join(lockPath, 'owner'), 'utf8'), 'fresh-owner');
-  assert.equal(await exists(`${lockPath}.${process.pid}-`), false);
+  const bridge = new EvolutionEventBridge({ file, key: 'e'.repeat(64), writer: 'harness' });
+  bridge.emit('proposal-created', { id: 'exp-marker', proposal: { target: 'a' } }, { experimentId: 'exp-marker' });
+  assert.equal(await exists(lockPath), false, 'the wedged entry is removed');
+  assert.equal((await fsp.readFile(file, 'utf8')).split('\n').filter((line) => line.trim() !== '').length, 1);
 });

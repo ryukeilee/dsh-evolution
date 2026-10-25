@@ -130,3 +130,17 @@ test('ordinary paths with missing parents stay allowed', async (t) => {
   assert.equal(guard({ name: 'write', arguments: { file_path: path.join(root, 'a', 'b', 'notes.txt'), content: 'x' } }), undefined);
   assert.equal(guard({ name: 'bash', arguments: { command: `printf x > ${path.join(root, 'a', 'b', 'notes.txt')}` } }), undefined);
 });
+
+test('a relative symlink target keeps the order of its own segments', async (t) => {
+  const root = await scratch(t, 'relative-target');
+  const packageDir = path.join(root, 'node_modules', '@deepseek-ai', 'cordis');
+  await fsp.mkdir(path.join(packageDir, 'child'), { recursive: true });
+  await fsp.mkdir(path.join(packageDir, 'lib'), { recursive: true });
+  // `hop` points inside the package; the alias target walks through it and then
+  // back up, so the `..` only reaches the package after `hop` is followed.
+  await fsp.symlink(path.join(packageDir, 'child'), path.join(root, 'hop'), 'dir');
+  const alias = path.join(root, 'alias');
+  await fsp.symlink(['hop', '..', 'lib', 'new', 'deep.js'].join('/'), alias);
+  const guard = captureGuard();
+  assert.match(guard({ name: 'write', arguments: { file_path: alias, content: 'x' } }), /已被拒绝/);
+});
