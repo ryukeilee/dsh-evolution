@@ -76,6 +76,8 @@
 8. **脱敏边界。** 原始错误文本在进入领域存储前必须经脱敏 DTO；不得把凭据、密钥或用户数据写入日志、证据或产物。
 9. **晋升是 Host-only，且不是安全沙箱。** `evolution_promote` 只接受 Host half，带 `client` 的 Package 直接拒绝（`evolution_trial` 允许 client）。合作式 `Function(hostCode)()` gate **不是**安全沙箱，晋升执行需要可信审批。
 10. **发布字节固定。** 发布附件永远是 `release/` 中固定的那个 tarball；发布 workflow 不重新构建，只验证并上传它。普通 CI 会重新打包，但那是为了验证内容一致性与跑验收，不会成为发布字节。
+11. **崩溃残件的处理边界。** 运行时只自动回收两类残件：`domain-archive.lock`（按 `acquireArchiveLock` 的既有规则：命名且可证明已死的 owner，或过了 `LOCK_SETTLE_MS` 的无主条目，删除前必须有设备号 + inode + 字节围栏），以及 `ownership/<sha256>.json` 中**同主机、整数 pid、`process.kill` 返回 `ESRCH`** 的 claim（既有规则，每次获取只在首次尝试回收一次）。除此之外 claim 只有两条合法的删除路径：按 `experimentId` 采纳（**在分类之前**，所以同 experimentId 的 claim 无论 hostname/pid 如何都会被采纳而不会被探测或回收），以及所有者 `releaseTargets()` 释放 `experimentId` 与自己匹配的 claim。其余形状（不可读、外地 hostname、缺可用 hostname/pid）**只报告、不作为陈旧 claim 回收**：claim 没有“创建时捕获身份、使用前再证明”的协议，0 字节条目无法与“已取得独占句柄、尚未写入的进程”区分，回收会让两个实验同时持有同一 target。`event-bridge.key` 从不被 **doctor** 写入、读取后也不被任何运行时路径替换：仅在路径**不存在**时由 `storageConfig()` 以 `wx` 创建（并只删除自己本次未写成的条目），已存在的非法密钥永远拒绝启动而非替换。磁盘上无法证明“没有进程正拿旧密钥签名”，所以即使没有 MAC 也只能由操作者按 `data.key` 的指令处置。doctor 自身从不删除或改写 claim 与密钥；`domain-stale-lock` 是唯一与残件相关的 repair，且只走运行时同一套 `withArchiveLock`。（上面两条 reclaim 规则与整个跨进程协议一样，前提是同一个数据根、同一个 hostname 与 PID namespace；跨命名空间共享数据根不在支持范围内。）
+12. **知识身份带 `__proto__` 的键不能折叠。** `knowledge.js` 的 `compactValue()` 必须用 `Object.fromEntries()` 之类定义自有属性；赋值到 `{}` 会把 JSON 自有的 `__proto__` 写进原型并静默丢键，使两个不同事实共享一个 `knowledgeKey`。不含自有 `__proto__` 的载荷必须逐字节保持旧身份（`test/dockyard-domain/knowledge-identity-equivalence.test.js` 的固定产物 pin 与 `knowledge-proto-key-identity.test.js` 的差分），已折叠的旧记录不迁移、不猜测。普通 observation 摄取路径在算身份前就由 `safeRecord()` 剥掉该键，所以能到达这里的是 `recordKnowledgeEvent()`、注入的 `stateStore` 与冷档案 JSONL。
 
 ## 5. 验证要求
 

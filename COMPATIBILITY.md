@@ -269,9 +269,25 @@ silently turn introspection into partial facts. Private surfaces without a
 replacement are listed in the check evidence with the recorded reason, so an
 upgrade review can see what actually needs re-verification.
 
-The doctor also reads the cross-process `domain-archive.lock`; an ownerless lock
-(empty file or dead pid) is reclaimed by the runtime and reported with a
-`--repair` action, while a lock held by a live process is never taken.
+The doctor also reads the cross-process `domain-archive.lock`, but never with a
+second interpretation of it: the classification (device + inode + bytes, the 1s
+settle window, the refusal to interpret a non-regular entry) comes from the same
+module that acquires the lock. An ownerless lock (empty file or dead pid) is
+reclaimed by the runtime and reported with a `--repair` action that acquires and
+releases through that same fenced protocol instead of unlinking the path, while a
+lock held by a live process is never taken and an entry the protocol cannot
+interpret is reported and left in place.
+
+Target claims under `ownership/` are reported and never touched by the doctor.
+The runtime's only automatic reclaim is its pre-existing rule: a claim on this
+host whose integer pid it can prove gone (`ESRCH`), retried once per
+acquisition; an owner also removes its own claim when it releases the target. A
+claim carries no identity its creator re-proves before use, so an entry whose
+bytes never arrived cannot be told apart from an acquisition suspended between
+its exclusive open and its write; removing it would let a second experiment take
+the same target while the first still believes it owns it. The doctor names each
+claim, classifies it, and states what an operator must establish before removing
+one by hand.
 
 Evidence and the exact official references used during migration are kept in
 the private migration workspace; they are not part of this package. See the

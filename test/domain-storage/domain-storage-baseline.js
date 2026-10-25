@@ -91,6 +91,55 @@ const SOURCE_PATH = "lib/domain-storage.js";
 // other direction can also find: no piece deletes text another piece is anchored
 // on, and no piece is anchored on an empty string.
 const reversals = [
+  // The archive-lock classifier is a second addition after the pin: the doctor reads the
+  // runtime's own rules instead of a new interpretation of the same path. It adds no line to
+  // any pinned function, so removing it restores the pinned source byte for byte, and it is
+  // reversed first so the lock-fencing piece below again finds the two lock helpers adjacent.
+  ["/**\n" +
+   " * Read-only classification of the archive lock entry, from the rules the\n" +
+   " * acquiring port itself applies (the same `lockIdentity`, `readLockOwner` and\n" +
+   " * `LOCK_SETTLE_MS` above), for the doctor.\n" +
+   " *\n" +
+   " * The doctor must not carry a second interpretation of this path. `inspectLock()`\n" +
+   " * in lib/diagnostics.js reads the *promotion* directory lock, a different\n" +
+   " * protocol; reading the archive lock through it disagreed with the runtime about\n" +
+   " * non-regular entries and about the settle window. Nothing here mutates.\n" +
+   " *\n" +
+   " * `reclaimable` means the acquire would remove this entry: a named owner that is\n" +
+   " * gone, or ownerless/unreadable bytes that are older than `LOCK_SETTLE_MS`. A\n" +
+   " * non-regular entry (a link, a directory, a device) is never `reclaimable`,\n" +
+   " * because `lockIdentity` refuses it and the acquiring port raises\n" +
+   " * `E_DOMAIN_ARCHIVE_LOCK` instead of interpreting it.\n" +
+   " */\n" +
+   "export function inspectArchiveLock(lockPath) {\n" +
+   "  const absent = { present: false, kind: 'absent', pid: null, ownerAlive: false, malformed: false, settling: false, reclaimable: false, ageMs: 0, raw: null };\n" +
+   "  let stat;\n" +
+   "  try { stat = fs.lstatSync(lockPath); }\n" +
+   "  catch (error) {\n" +
+   "    if (error?.code === 'ENOENT') return absent;\n" +
+   "    // A failed lstat is not proof of absence, and it is not a lock that can be\n" +
+   "    // interpreted either.\n" +
+   "    return { present: true, kind: 'unknown', pid: null, ownerAlive: false, malformed: true, settling: false, reclaimable: false, ageMs: 0, raw: null, readError: error?.code || 'READ_FAILED' };\n" +
+   "  }\n" +
+   "  const ageMs = Math.max(0, Date.now() - stat.mtimeMs);\n" +
+   "  if (stat.isSymbolicLink() || !stat.isFile()) {\n" +
+   "    const kind = stat.isSymbolicLink() ? 'symlink' : stat.isDirectory() ? 'directory' : 'other';\n" +
+   "    return { present: true, kind, pid: null, ownerAlive: false, malformed: true, settling: false, reclaimable: false, ageMs, raw: null };\n" +
+   "  }\n" +
+   "  let owner;\n" +
+   "  try { owner = readLockOwner(lockPath); }\n" +
+   "  catch (error) {\n" +
+   "    return { present: true, kind: 'unknown', pid: null, ownerAlive: false, malformed: true, settling: false, reclaimable: false, ageMs, raw: null, readError: error?.code || 'READ_FAILED' };\n" +
+   "  }\n" +
+   "  if (!owner) return absent;\n" +
+   "  const alive = owner.pid === null ? false : ownerAlive(owner.pid);\n" +
+   "  const malformed = owner.pid === null;\n" +
+   "  // The runtime reclaims an ownerless entry only after the settle window; a named\n" +
+   "  // owner it can prove gone is reclaimed immediately.\n" +
+   "  const settling = malformed && ageMs < LOCK_SETTLE_MS;\n" +
+   "  return { present: true, kind: 'file', pid: owner.pid, ownerAlive: alive, malformed, settling, reclaimable: !alive && !settling, ageMs, raw: owner.raw };\n" +
+   "}\n",
+   ""],
   // The doctor's offline staging repair now takes the same archive lock a port
   // takes, through one exported helper. The helper is an addition after the pin
   // and touches no line the pin wrote, so removing it restores the pinned source

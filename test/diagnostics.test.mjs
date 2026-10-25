@@ -499,7 +499,7 @@ test('orphan staging recovery is idempotent and refuses while a writer holds the
   fs.writeFileSync(locked.paths.domainArchiveLockPath, String(process.pid));
   const guarded = await collectDiagnostics(baseOptions(locked.home));
   assert.equal(levelOf(guarded, 'state.domain'), 'degraded');
-  assert.equal(checkOf(guarded, 'state.domain').evidence.archiveLock.active, true);
+  assert.equal(checkOf(guarded, 'state.domain').evidence.archiveLock.ownerAlive, true);
   assert.deepEqual(guarded.repairs.filter((repair) => repair.id === 'domain-orphan-staging'), [],
     'no repair may be offered while a live writer holds the archive lock');
   const applied = await applyRepairs([{ id: 'domain-orphan-staging', safe: true }], { paths: locked.paths });
@@ -1454,7 +1454,7 @@ test('a stale domain archive lock is reported and repaired idempotently, never s
 
   fs.writeFileSync(paths.domainArchiveLockPath, String(process.pid));
   const live = await collectDiagnostics(baseOptions(home));
-  assert.equal(checkOf(live, 'state.domain').evidence.archiveLock.active, true);
+  assert.equal(checkOf(live, 'state.domain').evidence.archiveLock.ownerAlive, true);
   assert.deepEqual(live.repairs.filter((repair) => repair.id === 'domain-stale-lock'), []);
   assert.equal(fs.readFileSync(paths.domainArchiveLockPath, 'utf8'), String(process.pid));
 });

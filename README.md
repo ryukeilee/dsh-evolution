@@ -117,7 +117,7 @@ evolution_doctor            无模型健康报告，分级给出结论与证据
 | --- | --- |
 | 宿主 | `host.cli` / `host.version` / `host.modules`（按 `peerDependencies` 逐模块校验，DSH 版本必须落在经过真实验收的列表中）/ `host.install` / `host.composition`（调用官方 `--dump-config` 校验 bundle 层与两个 loader 入口） |
 | 运行时 | `runtime.capabilities`、`runtime.registration`（逐个用官方注册表解析全部 9 个工具）、`runtime.internal-api`（逐探针报告内部 API 可用性） |
-| 数据与状态 | `data.root`、`data.key`、`state.memory`、`state.memory-quarantine`、`state.archives`、`state.event-bridge`（逐行 MAC 验证）、`state.domain`（schema 校验、pending 事务、孤儿 staging、损坏锁）、`state.dockyard-legacy` |
+| 数据与状态 | `data.root`、`data.key`（event-bridge 密钥的唯一判定者：缺失 / 0 字节 / 损坏 / 有效，并列出磁盘上仍需旧密钥验证的产物）、`state.ownership`（`ownership/` 里的 target claim 逐个分类，只报告）、`state.memory`、`state.memory-quarantine`、`state.archives`、`state.event-bridge`（逐行 MAC 验证）、`state.domain`（schema 校验、pending 事务、孤儿 staging、用运行时同一分类器解释的 archive 锁）、`state.dockyard-legacy` |
 | 迁移 | `migration.manifest`（`importId` 自洽性、不可变来源是否被改、目标缺失、残留 staging） |
 | 晋升 | `promotion.journal`（区分 `not-executed` / `incomplete` / `canary-observing` / `committed-pending-cleanup` / `rollback-failed` / `state-unknown`）、`promotion.composition`、`promotion.pointer` |
 | 包与已知限制 | `plugin.home`、`plugin.package`、`plugin.patch`、`plugin.support-matrix`、`compat.legacy-adapters`、`capabilities.known-limits` |
@@ -280,7 +280,9 @@ node <profile>/node_modules/dsh-evolution/scripts/doctor.mjs --home "$DSH_HOME" 
 | 活动档案文件不以换行结尾（追加被中断） | 下一次追加前把残片**逐字节**追加进同目录的 `state.json.<collection>quarantine-archive.jsonl`，再原子重写活动档案、只保留完整行。隔离文件是 append-only 现场保留，插件不会删除它；残片通常不是完整 JSON，因此 `state.archives` 会把它报为含不可解析行的 `degraded` 项（`recoverable: false`），处置由人完成 |
 | 冷档案出现不可解析的行（中段或 sealed 段） | `state.archives` 报 `degraded` 并保留原字节。运行时的 `EvolutionMemory.archiveIntegrity()` 能读到分类后的故障；`verifyConsistency()` 把它判为 `valid:false`（reason `archive_bytes_unreadable`），因此该数据根上的 `reconcile()` 会以 verifier 失败抛出并回滚自己刚做的改动。这是 fail-closed，需要人工处置档案 |
 | domain 孤儿 staging | 仅在 domain 聚合通过完整校验、且无活进程持有 archive 锁时清理；聚合无法校验、pending 记录无法解读或锁不可取时报告并拒绝 |
-| domain archive 锁无主（空内容或死 pid） | 运行时自动回收；`--repair` 可显式清理；有活主的锁永不抢占 |
+| domain archive 锁无主（内容不可读且已过 settle 窗口，或指向已死的 pid） | 运行时自动回收；`--repair` 用运行时同一套协议（设备号 + inode + 字节围栏、rename 隔离、不替换路径上的新持有者）走一遍 acquire/release，不再按路径 `unlink`；有活主的锁永不被抢占；符号链接、目录等非普通条目无法解释，只报告且不提供 repair |
+| `ownership/` 里的 target claim（0 字节、半截 JSON、外地主机、缺 hostname/pid） | **只报告，永不删除或改写**。claim 没有像 archive 锁那样的“创建时捕获身份、使用前再证明”协议，因此一个 0 字节条目无法与“已取得独占句柄、尚未写入的进程”区分；删掉它会让两个实验同时持有同一 target。`state.ownership` 点名每个文件、给出分类与人工处置条件，不提供 repair id |
+| `event-bridge.key` 缺失、0 字节或不是 64 位小写十六进制 | **doctor 只报告：不创建、不替换、不移开、不删除**（路径不存在时由下次启动的 `storageConfig()` 自己创建；已存在的非法密钥永远拒绝启动而不被替换）。密钥在取 archive 锁之前初始化，运行中的进程会在内存里长期持有它，文件系统上无法证明不存在这样的进程，因此即使磁盘上没有 MAC 也不能由工具替换。`data.key` 区分“磁盘上已无需要旧密钥验证的产物”（可把空/坏文件移开，由下次启动创建）与“仍有 MAC 产物或无法证明”（必须从备份恢复原密钥），并逐项列出 `execution-events.jsonl`、domain 的 `applied` / `pending.applied`、checkpoint 及其临时文件；只有 `ENOENT`、0 字节普通文件或通过完整校验且 marker 为 0 的聚合才算“已证明没有 MAC” |
 | 损坏的 failure memory | 不删除：报 `degraded` 并说明下次启动会隔离（quarantine）保留原字节 |
 | 损坏的 domain 聚合 / 事件 MAC / 不可变迁移证据 | 报 `blocked`，不重写、不猜测、不合并 |
 
