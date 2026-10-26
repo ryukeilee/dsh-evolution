@@ -10,7 +10,7 @@
 
 `0.2.0-rc.14` 的内容（`knowledge.js` 冷档案身份路径上五处可证明等价的冗余计算 A–E）与 `0.2.0-rc.13` 的内容（宿主支持扩到官方 DSH `0.2.1-rc.2` 与六处“doctor / 运行时 / 磁盘事实不一致”修复）都原样保留：rc.16 只动了 `lib/dockyard-domain/memory.js`、`lib/domain-storage.js` 与 `lib/dockyard-domain/PORTS.md` 三个分发文件，rc.17 在它之上只动 `lib/dockyard-domain/memory.js` 与 `lib/domain-storage.js` 两个，两者都未回退更早的 `lib/` 改动，也未改动宿主支持范围。这些版本的历史 tarball、校验和与 tag 字节保持不变，未被覆盖。
 
-源码、固定产物和三个官方宿主验收必须对应同一内容及字节。rc.18 的代码、版本与文档改动都会改变 `contentSha256`，因此 `release/` 固定产物、`release/SHA256SUMS` 与三份宿主验收证据按第 2 节重新生成（`npm run release:pack` → `npm run release:publish -- --force` → 针对固定 `release/dsh-evolution-0.2.0-rc.18.tgz` 重跑三宿主验收；替换上一个候选的固定点必须显式 `--force`，脚本拒绝静默替换），重新固定后的内容摘要与这棵树一致，具体见第 4.1 节。发布固定点与历史证据见 `release/manifest.json` 和 `docs/evidence/`。rc.18 发布之前，最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，Release id 420147672，2026-10-21T23:19:21Z 发布为 prerelease），其发布审计与发布后资产校验见 `docs/evidence/rc17-release-audit.json`、`docs/evidence/rc17-postpublish-0.2.0-rc.2.json`、`docs/evidence/rc17-postpublish-0.2.1-alpha.1.json` 与 `docs/evidence/rc17-postpublish-0.2.1-rc.2.json`；rc.17 及更早的历史 tag 与附件不覆盖。
+源码、固定产物和三个官方宿主验收必须对应同一内容及字节。固定点通过 `npm run release:pack`、`npm run release:publish -- --force` 和针对固定 tarball 的三宿主验收生成；具体摘要和证据路径见 `release/manifest.json`。rc.18 的 tag、Release 和历史 tarball 保留。
 
 **漂移按同一流程逐轮关闭：rc.15、rc.16 与 rc.17 各自完成了当时候选的重新固定。** `0.2.0-rc.14` 之后积压的未发布改动曾使工作树内容不等于任何固定点，`npm run pack:check` 因此如实报出三条固定点失败；rc.15 按第 2 节重新构建、重跑三宿主验收并重新固定后，这三条检查转绿（`pack:check` 共 16 项，全绿）。`7cd5453` 之后同样：三个分发文件再次离开固定点、`pack:check` 再次报出三条固定点失败，rc.16 按同一节重新固定后回到 16 项全绿。rc.16 发布之后的两轮性能优化（`e185525`、`5381299`）与一轮重放修复（`84cbe3a`）再次把工作树推离固定点，rc.17 同样按第 2 节重新构建、重跑三宿主验收并重新固定。rc.18 同样按第 2 节重新构建、重跑三宿主验收并重新固定，`pack:check` 回到 16 项全绿。处置流程与判据保留在第 6 节第 16 条。
 
@@ -48,7 +48,7 @@ npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：�
 node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.19 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.18，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0-rc.19，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -96,21 +96,11 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 - `docs/evidence/dsh-0.2.1-alpha.1.json`
 - `docs/evidence/dsh-0.2.1-rc.2.json`
 
-证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节），`pack:check` 与 `test/release-pin.test.mjs` 都拿它们核对**发布固定点**，而不是工作树。rc.18 的这三份记录是在固定 `release/dsh-evolution-0.2.0-rc.18.tgz` 上重跑并写回的。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容，因此必须重跑三个宿主的验收再重新固定才能转绿；开发阶段的判定差别见第 6 节第 16 条。
+证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节），`pack:check` 与 `test/release-pin.test.mjs` 都拿它们核对**发布固定点**，而不是工作树。当前固定点对应的记录应针对 `release/dsh-evolution-0.2.0-rc.19.tgz` 写回。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容，因此必须重跑三个宿主的验收再重新固定才能转绿；开发阶段的判定差别见第 6 节第 16 条。
 
 ### 4.1 已执行的验收记录
 
-下表是内容冻结后针对 `release/` 固定产物重跑的结果：`npm run release:publish -- --force` 写入 `release/` 的 tarball、`manifest.json` 与 `SHA256SUMS`，随后脚本按第 4 节用 `--tarball release/dsh-evolution-0.2.0-rc.18.tgz` 依次重跑三个宿主，并把证据写回 `docs/evidence/dsh-<host>.json`；`npm run pack:check` 与 `test/release-pin.test.mjs` 核对这三份证据记录的 `contentSha256` / `tarballSha256` 与固定点一致。表中宿主模块版本是这三份证据记录的版本，支持矩阵见 `COMPATIBILITY.md`。
-
-| 宿主 | 宿主模块 | 结果 |
-| --- | --- | --- |
-| `0.2.0-rc.2` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过；最终诊断 `healthy` |
-| `0.2.1-alpha.1` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过；最终诊断 `healthy` |
-| `0.2.1-rc.2` | cordis `4.0.5`、include `1.0.10`、loader `1.0.6` | 21/21 步通过；最终诊断 `healthy` |
-
-首次 CLI 诊断为 `degraded` 属于预期：此时数据根尚未初始化（`data.root`），`event-bridge.key` 也未由运行时创建（`data.key` 在密钥缺失且磁盘上没有 MAC 派生数据时报该状态）；两者在首次运行时被创建，最终诊断恢复 `healthy`。
-
-`docs/evidence/dsh-<host>.json` 是**固定点证据**：`pack:check` 与 `test/release-pin.test.mjs` 只核对这三个文件记录的 `contentSha256` / `tarballSha256` 是否等于当前固定内容与固定字节。`docs/evidence/` 下另有一些按轮次命名的验收记录（`cold-archive-write-path-*`、`retention-plan-*`、`write-path-reconcile-identity-*`、`production-quality-20261025-*`、`special-key-projection-*`）；它们是各轮开发中对**中间候选**运行的真实验收，其 `packageVersion` 和摘要只描述各自运行的字节，不替代当前固定点证据。`0.2.0-rc.18` 的权威验收只有上面三个文件；它们由本轮重新固定时的重跑写回，写回后与 `release/` 固定点一一对应。
+固定点的宿主验收记录保存在上列三个 `docs/evidence/dsh-<host>.json` 文件中。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
 
 ## 5. CI 与发布链
 
