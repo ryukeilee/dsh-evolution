@@ -2,7 +2,7 @@
 
 本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前本地候选版本：`0.2.0-rc.18`，基于 rc.17，汇总其后的冷档案与事务写路径收敛、恢复与发布边界修复以及后续审查收口。冷档案索引每次 observe 的重写 `2 → 0`、fsync `8 → 3`，`load()` `1.159 → 0.682 ms`、`port.observe()` `46.941 → 26.407 ms`（[`docs/performance/archive-index-churn.md`](docs/performance/archive-index-churn.md)）；两文件 staging 发布 `64.07 → 56.67 ms`，216 个 sealed segments `165.99 → 161.42 ms`（[`docs/performance/archive-stage-io.md`](docs/performance/archive-stage-io.md)）。未改 archive 的 transaction commit `26.1–28.5 → 13.9 ms`（[`docs/performance/transaction-commit-shape.md`](docs/performance/transaction-commit-shape.md)）；`observe()` `27.65 → 23.82 ms` 与 backlog `1/10/25/50` 的合并变化 `−33.3/−23.8/−31.5/−38.3%` 是 fsync 撤回与提交形状合并后的数值（[`docs/performance/domain-derived-fsync.md`](docs/performance/domain-derived-fsync.md) 的 `both` 列）；20k rows 的 HMAC 输入 `29.05 → 16.88 MiB`、flush `62.97 → 57.80 ms`（[`docs/performance/domain-flush-history-cost.md`](docs/performance/domain-flush-history-cost.md)）。派生 checkpoint 与 stage manifest 的 file-content fsync 被有界撤回，恢复路径及耐久性代价见 [`docs/performance/domain-derived-fsync.md`](docs/performance/domain-derived-fsync.md)。冷档案 384/3,072/12,288 行重写为 `22.24/130.68/516.55 → 9.28/30.80/102.57 ms`，file-API 调用数降为 6（不是 syscall 数，见 [`docs/performance/archive-rewrite-batch.md`](docs/performance/archive-rewrite-batch.md)）。运行时收口还包括 recall `sourceErrors`、doctor `state.ownership`、own `__proto__` 身份保真，以及 event-bridge tail、promotion journal 与 guard proof。依赖审计记录从 8 项降至 0 项；`zod` 与 `@modelcontextprotocol/client` 升级，`peerDependencies`、`engines` 和支持宿主范围不变（[`docs/evidence/dependency-security-20261024.md`](docs/evidence/dependency-security-20261024.md)）。详见 [`CHANGELOG.md`](CHANGELOG.md) 的 `0.2.0-rc.18` 一节。
+当前候选版本：`0.2.0-rc.19`，包含截至 `a876321` 的容量回收与恢复可靠性修复，详见 `CHANGELOG.md`。三个官方宿主兼容范围不变。执行 retention 回收后不可降级到旧版插件：旧版严格 schema 会拒绝新增的 `retention` 字段。
 
 `0.2.0-rc.16` 的内容是：`port.recall()` 不再经 `history()` 复制它从不读取的 knowledge 行（`EvolutionMemory.historyView(collection)` 是同一个合并的无副本只读视图，`history()` 仍是 detached 契约）；`#shouldRetainSource()` 的观测指标分支对每个匹配行每次调用只规范化一次；全量套件的 4 GiB 堆上限从文档要求变成 CI 的作业级 `NODE_OPTIONS`（由 `test/workflows.test.mjs` 断言）；2026-10-20 全量测试内存事件做了有界定位（方法与边界见 `docs/performance/oom-localization.md`）。逐条说明见 `CHANGELOG.md` 的 `0.2.0-rc.16` 一节，性能数字见 `docs/performance/recall-view.md`。
 
@@ -10,7 +10,7 @@
 
 `0.2.0-rc.14` 的内容（`knowledge.js` 冷档案身份路径上五处可证明等价的冗余计算 A–E）与 `0.2.0-rc.13` 的内容（宿主支持扩到官方 DSH `0.2.1-rc.2` 与六处“doctor / 运行时 / 磁盘事实不一致”修复）都原样保留：rc.16 只动了 `lib/dockyard-domain/memory.js`、`lib/domain-storage.js` 与 `lib/dockyard-domain/PORTS.md` 三个分发文件，rc.17 在它之上只动 `lib/dockyard-domain/memory.js` 与 `lib/domain-storage.js` 两个，两者都未回退更早的 `lib/` 改动，也未改动宿主支持范围。这些版本的历史 tarball、校验和与 tag 字节保持不变，未被覆盖。
 
-源码、固定产物和三个官方宿主验收必须对应同一内容及字节。rc.18 的代码、版本与文档改动都会改变 `contentSha256`，因此 `release/` 固定产物、`release/SHA256SUMS` 与三份宿主验收证据按第 2 节重新生成（`npm run release:pack` → `npm run release:publish -- --force` → 针对固定 `release/dsh-evolution-0.2.0-rc.18.tgz` 重跑三宿主验收；替换上一个候选的固定点必须显式 `--force`，脚本拒绝静默替换），重新固定后的内容摘要与这棵树一致，具体见第 4.1 节。发布固定点与历史证据见 `release/manifest.json` 和 `docs/evidence/`。本候选尚无公开发布入口；最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，Release id 420147672，2026-10-21T23:19:21Z 发布为 prerelease），其发布审计与发布后资产校验见 `docs/evidence/rc17-release-audit.json`、`docs/evidence/rc17-postpublish-0.2.0-rc.2.json`、`docs/evidence/rc17-postpublish-0.2.1-alpha.1.json` 与 `docs/evidence/rc17-postpublish-0.2.1-rc.2.json`；rc.17 及更早的历史 tag 与附件不覆盖。
+源码、固定产物和三个官方宿主验收必须对应同一内容及字节。rc.18 的代码、版本与文档改动都会改变 `contentSha256`，因此 `release/` 固定产物、`release/SHA256SUMS` 与三份宿主验收证据按第 2 节重新生成（`npm run release:pack` → `npm run release:publish -- --force` → 针对固定 `release/dsh-evolution-0.2.0-rc.18.tgz` 重跑三宿主验收；替换上一个候选的固定点必须显式 `--force`，脚本拒绝静默替换），重新固定后的内容摘要与这棵树一致，具体见第 4.1 节。发布固定点与历史证据见 `release/manifest.json` 和 `docs/evidence/`。rc.18 发布之前，最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，Release id 420147672，2026-10-21T23:19:21Z 发布为 prerelease），其发布审计与发布后资产校验见 `docs/evidence/rc17-release-audit.json`、`docs/evidence/rc17-postpublish-0.2.0-rc.2.json`、`docs/evidence/rc17-postpublish-0.2.1-alpha.1.json` 与 `docs/evidence/rc17-postpublish-0.2.1-rc.2.json`；rc.17 及更早的历史 tag 与附件不覆盖。
 
 **漂移按同一流程逐轮关闭：rc.15、rc.16 与 rc.17 各自完成了当时候选的重新固定。** `0.2.0-rc.14` 之后积压的未发布改动曾使工作树内容不等于任何固定点，`npm run pack:check` 因此如实报出三条固定点失败；rc.15 按第 2 节重新构建、重跑三宿主验收并重新固定后，这三条检查转绿（`pack:check` 共 16 项，全绿）。`7cd5453` 之后同样：三个分发文件再次离开固定点、`pack:check` 再次报出三条固定点失败，rc.16 按同一节重新固定后回到 16 项全绿。rc.16 发布之后的两轮性能优化（`e185525`、`5381299`）与一轮重放修复（`84cbe3a`）再次把工作树推离固定点，rc.17 同样按第 2 节重新构建、重跑三宿主验收并重新固定。rc.18 同样按第 2 节重新构建、重跑三宿主验收并重新固定，`pack:check` 回到 16 项全绿。处置流程与判据保留在第 6 节第 16 条。
 
@@ -18,12 +18,12 @@
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.18.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0-rc.19.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-本候选尚无公开发布入口。最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，Release id 420147672，2026-10-21T23:19:21Z 发布为 prerelease；draft 上逐字节校验后才公开），其审计与发布后资产校验见 `docs/evidence/rc17-release-audit.json` 与同目录的 `rc17-postpublish-*.json`。更早版本的对应记录见同目录的 `rc*-release-audit.json`；`v0.2.0-rc.15` 的记录见 `rc15-release-audit.json` 与 `rc15-postpublish-*.json`，`v0.2.0-rc.10` 的入口、资产与发布后验收记录见 `rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`。发布流程仍是在 draft 上验证附件，再公开并重新匿名下载校验。
+rc.18 发布之前，最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，Release id 420147672，2026-10-21T23:19:21Z 发布为 prerelease；draft 上逐字节校验后才公开），其审计与发布后资产校验见 `docs/evidence/rc17-release-audit.json` 与同目录的 `rc17-postpublish-*.json`。更早版本的对应记录见同目录的 `rc*-release-audit.json`；`v0.2.0-rc.15` 的记录见 `rc15-release-audit.json` 与 `rc15-postpublish-*.json`，`v0.2.0-rc.10` 的入口、资产与发布后验收记录见 `rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`。发布流程仍是在 draft 上验证附件，再公开并重新匿名下载校验。
 
 `release/manifest.json` 只固定当前版本。历史 tarball 可以共存，发布流程仅选择 manifest 指定的文件；历史固定点也保留在对应 tag / commit 与各自 Release 附件中。
 
@@ -39,13 +39,13 @@
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.18，仓库内容）
+# 当前本地候选（0.2.0-rc.19，仓库内容）
 npm run pack:check                              # 开发阶段：打包稳定性、白名单、权限、锁文件、文档一致性 + 工作树/固定点关系
 npm run pack:check -- --release                 # 发布阶段：另外要求工作树就是固定内容（release.yml 用这一条）
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
 # 发布后：验证 tag -> commit -> 固定点 -> 工作树（发布前在同一 commit 上也能跑）
-node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.18 --require-source-commit
+node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.19 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
 # 本仓库的 release/ 已改为固定 0.2.0-rc.18，不再覆盖旧版本）
