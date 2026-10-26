@@ -1203,7 +1203,14 @@ const reversals = [
    "      return this.snapshot();\n" +
    "    })();\n" +
    "    try { return await this.loading; } finally { this.loading = null; }\n" +
-   "  }\n"]
+   "  }\n"],
+  // Listing the archive files de-duplicated with a scanning `indexOf`, which is
+  // quadratic in the number of segments; an order-preserving `Set` returns the
+  // same array. Reversing it restores the scan this pin predates.
+  ["    // Preserve the first occurrence and exact order with an identical result;\n" +
+   "    // indexOf made listing many segments quadratic in the number of files.\n" +
+   "    return [...new Set([...names.map((name) => join(directory, name)), path])];",
+   "    return [...names.map((name) => join(directory, name)), path].filter((file, index, files) => index === files.indexOf(file));"]
 ];
 
 export function reconstructPreSharedScan(source) {

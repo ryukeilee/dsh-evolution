@@ -313,8 +313,16 @@ test('a data root that cannot be listed makes the checkpoint provisional, never 
   fs.writeFileSync(paths.eventBridgePath, '');
   const realReadFileSync = fs.readFileSync;
   const realReaddirSync = fs.readdirSync;
+  const realOpenSync = fs.openSync;
   let bridgeRead = false;
   let injected = 0;
+  // The bridge may be read either by a whole-file read or by the chunked scan
+  // that opens it; both are the same read for this ordering assertion, so the
+  // trigger must not depend on which implementation the doctor uses.
+  fs.openSync = function countedOpen(target, ...rest) {
+    if (String(target) === paths.eventBridgePath) bridgeRead = true;
+    return realOpenSync.call(fs, target, ...rest);
+  };
   fs.readFileSync = function countedRead(target, ...rest) {
     if (String(target) === paths.eventBridgePath) bridgeRead = true;
     return realReadFileSync.call(fs, target, ...rest);
@@ -328,7 +336,7 @@ test('a data root that cannot be listed makes the checkpoint provisional, never 
   };
   let report;
   try { report = await collectDiagnostics(baseOptions(home)); }
-  finally { fs.readFileSync = realReadFileSync; fs.readdirSync = realReaddirSync; }
+  finally { fs.readFileSync = realReadFileSync; fs.readdirSync = realReaddirSync; fs.openSync = realOpenSync; }
 
   assert.equal(injected, 1, 'the checkpoint listing is the only data-root listing after the bridge read');
   const checkpoint = checkOf(report, 'data.key').evidence.keyDerivedArtifacts.artifacts['event-log.checkpoint.json'];
