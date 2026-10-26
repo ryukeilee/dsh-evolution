@@ -173,7 +173,7 @@ test("legacy index entries infer collections and ignore unknown collections on e
   }
 });
 
-test("stale index checksums are reconciled while missing segment expectations stay durable", async () => {
+test("an invalid 72-character digest stays in the recovery boundary while missing expectations stay durable", async () => {
   const home = await mkdtemp(join(tmpdir(), "dsh-archive-index-stale-live-"));
   try {
     const memory = await newMemory(home, { archiveMaxBytes: 512 });
@@ -254,6 +254,45 @@ test("stale index checksums are reconciled while missing segment expectations st
     assert.ok(again);
     const after = JSON.parse(await readFile(indexPath, "utf8"));
     assert.deepEqual(strip(after), strip(before), "repeated reconciliation is idempotent");
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+test("a valid-shaped wrong digest on a lengthened sealed segment remains the durable expectation", async () => {
+  const home = await mkdtemp(join(tmpdir(), "dsh-archive-index-valid-wrong-digest-"));
+  try {
+    const memory = await newMemory(home, { archiveMaxBytes: 256 });
+    for (let index = 1; index <= 8; index += 1) {
+      await memory.recordCycle({ id: `cycle-${index}`, status: "observed", problem: `problem-${index}` });
+    }
+    const root = join(home, ".dockyard-dsh");
+    const indexPath = join(root, "state.json.evolution-archive-index.json");
+    const directory = join(root, `${archiveName("cycles")}.segments`);
+    const segmentName = (await readdir(directory)).filter((name) => /^segment-[0-9]+\.jsonl$/.test(name)).sort()[0];
+    const segmentPath = join(directory, segmentName);
+    const originalBytes = await readFile(segmentPath);
+    const document = JSON.parse(await readFile(indexPath, "utf8"));
+    const expected = document.segments.find((entry) => entry.collection === "cycles" && entry.file === segmentName);
+    assert.ok(expected?.sealed);
+    const wrongButValidDigest = "a".repeat(64);
+    assert.notEqual(wrongButValidDigest, createHash("sha256").update(originalBytes).digest("hex"));
+    expected.sha256 = wrongButValidDigest;
+    await writeFile(indexPath, JSON.stringify(document));
+
+    const changedBytes = Buffer.concat([originalBytes, Buffer.from(`${JSON.stringify({ id: "tampered-cycle", status: "observed" })}\n`)]);
+    await writeFile(segmentPath, changedBytes);
+    const reloaded = await newMemory(home, { archiveMaxBytes: 256 });
+
+    const persisted = JSON.parse(await readFile(indexPath, "utf8"));
+    const after = persisted.segments.find((entry) => entry.collection === "cycles" && entry.file === segmentName);
+    assert.equal(after.sha256, wrongButValidDigest, "a well-shaped expectation is not replaced by a hash of changed bytes");
+    assert.equal(after.byteSize, expected.byteSize);
+    assert.deepEqual(await readFile(segmentPath), changedBytes);
+    const verification = await reloaded.verifyConsistency();
+    assert.equal(verification.valid, false);
+    assert.ok(verification.archive.mismatched.some((entry) => entry.file === segmentPath && entry.reason === "byte_size"));
+    assert.ok(verification.archive.mismatched.some((entry) => entry.file === segmentPath && entry.reason === "checksum"));
   } finally {
     await rm(home, { recursive: true, force: true });
   }

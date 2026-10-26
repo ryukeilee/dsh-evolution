@@ -72,6 +72,35 @@ function observationArchive(stateFile) { return `${stateFile}.observations-archi
 function segmentDirectory(stateFile) { return `${observationArchive(stateFile)}.segments`; }
 function archiveIndex(stateFile) { return `${stateFile}.evolution-archive-index.json`; }
 
+async function archiveTreeBytes(stateFile) {
+  const root = path.dirname(stateFile);
+  const base = path.basename(stateFile);
+  const files = {};
+  for (const entry of await fs.readdir(root, { withFileTypes: true })) {
+    if (entry.name === `${base}.evolution-archive-index.json`
+      || (entry.isFile() && entry.name.startsWith(`${base}.`) && entry.name.endsWith('-archive.jsonl'))) {
+      files[entry.name] = await fs.readFile(path.join(root, entry.name));
+      continue;
+    }
+    if (!entry.isDirectory() || !entry.name.startsWith(`${base}.`) || !entry.name.endsWith('-archive.jsonl.segments')) continue;
+    const directory = path.join(root, entry.name);
+    for (const name of (await fs.readdir(directory)).sort()) {
+      const target = path.join(directory, name);
+      if ((await fs.stat(target)).isFile()) files[`${entry.name}/${name}`] = await fs.readFile(target);
+    }
+  }
+  return Object.fromEntries(Object.entries(files).sort(([left], [right]) => left.localeCompare(right)));
+}
+
+async function appendValidLineToSealedObservation(segmentPath) {
+  const originalBytes = await fs.readFile(segmentPath);
+  const changedBytes = Buffer.concat([originalBytes, Buffer.from(`${JSON.stringify({
+    id: 'tampered-valid-line', type: 'component/observation', recordedAt: '2026-10-26T01:00:00.000Z', payload: 'new legal line',
+  })}\n`)]);
+  await fs.writeFile(segmentPath, changedBytes);
+  return { originalBytes, changedBytes };
+}
+
 test('missing segment evidence survives restart, append, and filename reuse until original bytes return', async (t) => {
   const { home, stateStore, openMemory } = await officialHome(t);
   const fixedClock = () => new Date('2026-10-26T00:00:00.000Z');
@@ -138,6 +167,12 @@ test('missing segment evidence survives restart, append, and filename reuse unti
   const recoveredIndex = JSON.parse(await fs.readFile(archiveIndex(stateStore.filePath), 'utf8'));
   assert.equal(recoveredIndex.integrityFaults, undefined, 'proven restoration clears the durable fault');
   assert.ok(recoveredIndex.segments.some((entry) => entry.collection === 'observations' && entry.file === missingName));
+  const recoveredVerification = await recovered.verifyConsistency();
+  assert.equal(recoveredVerification.archive.valid, true, 'restored bytes remove the live missing-target findings');
+  assert.ok(!recoveredVerification.archive.findings.some((finding) => ['archive-index-target-missing', 'archive-loss-evidence'].includes(finding.code)));
+  await recovered.compact();
+  assert.equal((await recovered.verifyConsistency()).archive.valid, true,
+    'a proven restored segment no longer blocks compaction');
 });
 
 test('missing-segment evidence survives more than the generic write-fault limit', async (t) => {
@@ -275,6 +310,157 @@ test('compact refuses a corrupt sealed segment and preserves its bytes exactly',
   const restarted = await openMemory();
   restarted.history('observations');
   assert.ok(restarted.archiveIntegrity().observations?.some((entry) => entry.kind === 'invalid-line'));
+});
+
+test('compact rejects a lengthened sealed digest conflict without rewriting either source, then succeeds after trusted restoration', async (t) => {
+  const { stateStore, openMemory } = await officialHome(t);
+  const fixedClock = () => new Date('2026-10-26T00:00:00.000Z');
+  const memory = await openMemory({ clock: fixedClock });
+  await appendObservations(memory, 12, 'sealed-digest-conflict');
+  const names = (await fs.readdir(segmentDirectory(stateStore.filePath))).filter((name) => /^segment-[0-9]+\.jsonl$/.test(name)).sort();
+  assert.ok(names.length > 0, 'the fixture must contain a sealed segment');
+  const segmentName = names[0];
+  const segmentPath = path.join(segmentDirectory(stateStore.filePath), segmentName);
+  const indexFile = archiveIndex(stateStore.filePath);
+  const originalIndexBytes = await fs.readFile(indexFile);
+  const originalEntry = JSON.parse(originalIndexBytes.toString('utf8')).segments
+    .find((entry) => entry.collection === 'observations' && entry.file === segmentName);
+  const { originalBytes, changedBytes } = await appendValidLineToSealedObservation(segmentPath);
+  assert.ok(changedBytes.length > originalBytes.length);
+  const beforeRefusal = await archiveTreeBytes(stateStore.filePath);
+  const preRefusalVerification = await memory.verifyConsistency();
+  const preRefusalByReason = Object.fromEntries(preRefusalVerification.archive.mismatched.map((entry) => [entry.reason, entry]));
+  assert.equal(preRefusalByReason.byte_size.expected, originalEntry.byteSize);
+  assert.equal(preRefusalByReason.byte_size.actual, changedBytes.length);
+  assert.equal(preRefusalByReason.checksum.expected, originalEntry.sha256);
+  assert.equal(preRefusalByReason.checksum.actual, sha256(changedBytes));
+
+  await assert.rejects(memory.compact(), (error) => error?.code === 'E_ARCHIVE_REWRITE_UNSAFE'
+    && error.message.includes('archive-sealed-size-mismatch')
+    && error.message.includes('archive-sealed-digest-mismatch')
+    && error.message.includes(`observations/${segmentName}`));
+  assert.deepEqual(await archiveTreeBytes(stateStore.filePath), beforeRefusal,
+    'the refusal leaves all archive files and the index byte-identical');
+
+  const firstRestart = await openMemory({ clock: fixedClock });
+  const secondRestart = await openMemory({ clock: fixedClock });
+  assert.equal((await firstRestart.verifyConsistency()).valid, false, 'the first restart retains the integrity finding');
+  assert.deepEqual(await archiveTreeBytes(stateStore.filePath), beforeRefusal,
+    'repeated loads do not reach the full index writer or replace the expected digest');
+  const persisted = JSON.parse(await fs.readFile(indexFile, 'utf8'));
+  const persistedEntry = persisted.segments.find((entry) => entry.collection === 'observations' && entry.file === segmentName);
+  assert.equal(persistedEntry.sha256, originalEntry.sha256);
+  assert.equal(persistedEntry.byteSize, originalEntry.byteSize);
+  assert.deepEqual(await fs.readFile(segmentPath), changedBytes);
+
+  const verification = await secondRestart.verifyConsistency();
+  assert.equal(verification.valid, false);
+  const byReason = Object.fromEntries(verification.archive.mismatched.map((entry) => [entry.reason, entry]));
+  assert.equal(byReason.byte_size.expected, originalEntry.byteSize);
+  assert.equal(byReason.byte_size.actual, changedBytes.length);
+  assert.equal(byReason.checksum.expected, originalEntry.sha256);
+  assert.equal(byReason.checksum.actual, sha256(changedBytes));
+
+  await fs.writeFile(segmentPath, originalBytes);
+  const restored = await secondRestart.verifyConsistency();
+  assert.equal(restored.valid, true, 'the same instance sees trusted restored bytes');
+  await secondRestart.compact();
+  assert.equal((await secondRestart.verifyConsistency()).valid, true, 'the same instance can compact after restoration');
+});
+
+test('compact rejects an equal-length sealed digest conflict without rewriting its bytes or index', async (t) => {
+  const { stateStore, openMemory } = await officialHome(t);
+  const fixedClock = () => new Date('2026-10-26T00:00:00.000Z');
+  const memory = await openMemory({ clock: fixedClock });
+  await appendObservations(memory, 12, 'equal-length-digest');
+  const names = (await fs.readdir(segmentDirectory(stateStore.filePath))).filter((name) => /^segment-[0-9]+\.jsonl$/.test(name)).sort();
+  assert.ok(names.length > 0, 'the fixture must contain a sealed segment');
+  const segmentPath = path.join(segmentDirectory(stateStore.filePath), names[0]);
+  const indexFile = archiveIndex(stateStore.filePath);
+  const originalBytes = await fs.readFile(segmentPath);
+  const originalText = originalBytes.toString('utf8');
+  const idMatch = originalText.match(/"id":"(equal-length-digest-\d+)"/);
+  assert.ok(idMatch, 'the selected segment contains a known record id');
+  const oldId = idMatch[1];
+  const lastDigit = Number(oldId.at(-1));
+  const newId = `${oldId.slice(0, -1)}${(lastDigit + 1) % 10}`;
+  const changedBytes = Buffer.from(originalText.replace(idMatch[0], `"id":"${newId}"`));
+  assert.equal(changedBytes.length, originalBytes.length, 'the edit preserves the sealed segment byte size');
+  for (const line of changedBytes.toString('utf8').trimEnd().split('\n')) assert.doesNotThrow(() => JSON.parse(line));
+  await fs.writeFile(segmentPath, changedBytes);
+  const indexBytesBefore = await fs.readFile(indexFile);
+  const beforeRefusal = await archiveTreeBytes(stateStore.filePath);
+
+  await assert.rejects(memory.compact(), (error) => error?.code === 'E_ARCHIVE_REWRITE_UNSAFE'
+    && error.message.includes('archive-sealed-digest-mismatch'));
+  assert.deepEqual(await fs.readFile(segmentPath), changedBytes, 'refusal leaves the equal-length tampered segment untouched');
+  assert.deepEqual(await fs.readFile(indexFile), indexBytesBefore, 'refusal leaves the expected index bytes untouched');
+  assert.deepEqual(await archiveTreeBytes(stateStore.filePath), beforeRefusal, 'refusal leaves the entire archive tree unchanged');
+});
+
+test('compact preserves an index that becomes unreadable after load', async (t) => {
+  const { stateStore, openMemory } = await officialHome(t);
+  const memory = await openMemory();
+  await appendObservations(memory, 12, 'index-invalid-after-load');
+  const indexFile = archiveIndex(stateStore.filePath);
+  const corrupt = Buffer.from('{"schemaVersion":1,"segments":');
+  await fs.writeFile(indexFile, corrupt);
+  const beforeRefusal = await archiveTreeBytes(stateStore.filePath);
+
+  await assert.rejects(memory.compact(), (error) => error?.code === 'E_ARCHIVE_INDEX_STATE_UNKNOWN');
+  assert.deepEqual(await archiveTreeBytes(stateStore.filePath), beforeRefusal,
+    'compaction does not change archive segments or the unreadable index');
+  assert.deepEqual(await fs.readFile(indexFile), corrupt, 'the unreadable index bytes remain in place');
+
+  await assert.rejects(openMemory(), (error) => error?.code === 'E_ARCHIVE_INDEX_STATE_UNKNOWN');
+  assert.deepEqual(await archiveTreeBytes(stateStore.filePath), beforeRefusal,
+    'a later startup still sees the same unreadable index and archive bytes');
+});
+
+test('finalizeKnowledge rejects a sealed digest conflict without rewriting archive history', async (t) => {
+  const { stateStore, openMemory } = await officialHome(t);
+  const fixedClock = () => new Date('2026-10-26T00:00:00.000Z');
+  const memory = await openMemory({ clock: fixedClock });
+  await appendObservations(memory, 12, 'finalize-digest-conflict');
+  const names = (await fs.readdir(segmentDirectory(stateStore.filePath))).filter((name) => /^segment-[0-9]+\.jsonl$/.test(name)).sort();
+  const segmentName = names[0];
+  const segmentPath = path.join(segmentDirectory(stateStore.filePath), segmentName);
+  await appendValidLineToSealedObservation(segmentPath);
+  const beforeRefusal = await archiveTreeBytes(stateStore.filePath);
+
+  await assert.rejects(memory.finalizeKnowledge({
+    winner: { id: 'trusted-winner', capabilityId: 'archive-defect-test', candidateFingerprint: 'winner-fingerprint' },
+    before: {}, after: { qualityScore: 1 }, validation: { validationRuns: 1 }, outcome: 'SUCCESS',
+  }), (error) => error?.code === 'E_ARCHIVE_REWRITE_UNSAFE'
+    && error.message.includes('archive-sealed-size-mismatch')
+    && error.message.includes('archive-sealed-digest-mismatch'));
+  assert.deepEqual(await archiveTreeBytes(stateStore.filePath), beforeRefusal,
+    'knowledge finalization cannot replace the archive or its expected digest after a conflict');
+});
+
+test('compact refuses a missing sealed target and preserves its loss evidence', async (t) => {
+  const { stateStore, openMemory } = await officialHome(t);
+  const memory = await openMemory();
+  await appendObservations(memory, 12, 'missing-sealed-target');
+  const names = (await fs.readdir(segmentDirectory(stateStore.filePath))).filter((name) => /^segment-[0-9]+\.jsonl$/.test(name)).sort();
+  const missingName = names[0];
+  const missingPath = path.join(segmentDirectory(stateStore.filePath), missingName);
+  const originalBytes = await fs.readFile(missingPath);
+  await fs.rm(missingPath);
+  const beforeRefusal = await archiveTreeBytes(stateStore.filePath);
+
+  await assert.rejects(memory.compact(), (error) => error?.code === 'E_ARCHIVE_REWRITE_UNSAFE'
+    && (error.message.includes('archive-index-target-missing') || error.message.includes('archive-loss-evidence')));
+  assert.deepEqual(await archiveTreeBytes(stateStore.filePath), beforeRefusal,
+    'compaction leaves the index expectation and every remaining archive byte untouched');
+  assert.equal(await fs.stat(missingPath).then(() => true, () => false), false);
+
+  await fs.writeFile(missingPath, originalBytes);
+  const restored = await memory.verifyConsistency();
+  assert.equal(restored.archive.valid, true);
+  assert.ok(!restored.archive.findings.some((finding) => ['archive-index-target-missing', 'archive-loss-evidence'].includes(finding.code)));
+  await memory.compact();
+  assert.equal((await memory.verifyConsistency()).archive.valid, true, 'correct bytes clear the refusal and compaction succeeds');
 });
 
 test('an unreadable archive index is preserved instead of rebuilt over unknown state', async (t) => {

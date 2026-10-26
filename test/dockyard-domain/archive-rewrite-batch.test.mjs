@@ -58,6 +58,19 @@ async function fileDigests(root) {
   return Object.fromEntries(Object.entries(output).sort(([a], [b]) => a.localeCompare(b)));
 }
 
+async function archiveBytes(root) {
+  const output = {};
+  async function visit(directory) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) await visit(path);
+      else if (/-archive\.jsonl(?:$|\.segments\/)/.test(relative(root, path))) output[relative(root, path)] = await readFile(path);
+    }
+  }
+  await visit(root);
+  return Object.fromEntries(Object.entries(output).sort(([a], [b]) => a.localeCompare(b)));
+}
+
 async function withArchiveWriteProbe(run, { partialFailure = null } = {}) {
   const originalAppendFile = fsp.appendFile;
   const originalWriteFile = fsp.writeFile;
@@ -160,23 +173,145 @@ test("a partial temporary write propagates the same error and leaves only its un
   assert.equal(stateStore.filePath, join(home, ".dockyard-dsh", "state.json"));
 });
 
+test("an index document failure restores archive bytes and the in-memory index before later writes", async (t) => {
+  const home = await mkdtemp(join(tmpdir(), "dsh-archive-rewrite-index-write-failure-"));
+  t.after(() => rm(home, { recursive: true, force: true }));
+  const { memory, stateStore } = await openMemory(home, { counts: 24 });
+  const indexPath = `${stateStore.filePath}.evolution-archive-index.json`;
+  const archivesBefore = await archiveBytes(home);
+  const originalIndexBytes = await readFile(indexPath);
+  // A larger segment target makes this rewrite pack the cold rows into a
+  // different segment layout than the one on disk. Without that difference the
+  // failed rewrite's in-memory layout happens to equal the restored one, and a
+  // projection that was never restored would still describe the right bytes.
+  memory.archiveMaxBytes = 4096;
+  const injected = Object.assign(new Error("injected archive index document failure"), { code: "EIO" });
+  const originalWriteFile = fsp.writeFile;
+  let indexWriteAttempted = false;
+  fsp.writeFile = async function (...args) {
+    const target = String(args[0]);
+    if (!indexWriteAttempted && target.startsWith(`${indexPath}.`) && target.endsWith(".tmp") && !target.endsWith(".rollback.tmp")) {
+      indexWriteAttempted = true;
+      throw injected;
+    }
+    return originalWriteFile.apply(this, args);
+  };
+  syncBuiltinESMExports();
+  try {
+    await assert.rejects(memory.compact(), (error) => error === injected);
+  } finally {
+    fsp.writeFile = originalWriteFile;
+    syncBuiltinESMExports();
+  }
+
+  assert.equal(indexWriteAttempted, true, "the injected failure reached the archive index document write");
+  assert.deepEqual(await archiveBytes(home), archivesBefore, "the failed rewrite restores every archive byte");
+  assert.deepEqual(await readFile(indexPath), originalIndexBytes, "the index document bytes are restored too");
+
+  await memory.recordCycle({ id: "cycle-after-index-rollback", recordedAt: NOW, payload: "append after rollback" });
+  const document = JSON.parse(await readFile(indexPath, "utf8"));
+  const sealedEntries = document.segments.filter((entry) => entry.sealed === true);
+  const indexed = new Set(sealedEntries.map((entry) => `${entry.collection}/${entry.file}`));
+  for (const collection of SEGMENTED_COLLECTIONS) {
+    const directory = `${stateStore.filePath}.${collection}-archive.jsonl.segments`;
+    const names = await readdir(directory).catch(() => []);
+    for (const name of names.filter((candidate) => /^segment-[0-9]+\.jsonl$/.test(candidate))) {
+      assert.ok(indexed.has(`${collection}/${name}`),
+        `${collection}/${name} keeps its restored index entry instead of the discarded staged layout`);
+    }
+  }
+  assert.ok(sealedEntries.length > 0, "the later incremental write persisted sealed index entries");
+  for (const entry of sealedEntries) {
+    const archive = entry.collection === "cycles"
+      ? `${stateStore.filePath}.cycles-archive.jsonl`
+      : `${stateStore.filePath}.${entry.collection}-archive.jsonl`;
+    const bytes = await readFile(join(`${archive}.segments`, entry.file));
+    assert.equal(entry.byteSize, bytes.length, `${entry.collection}/${entry.file} records the restored byte size`);
+    assert.equal(entry.sha256, createHash("sha256").update(bytes).digest("hex"),
+      `${entry.collection}/${entry.file} records the restored bytes, not a failed staged rewrite`);
+  }
+});
+
 test("state-save rollback restores archive bytes and removes transaction temporaries", async (t) => {
   const home = await mkdtemp(join(tmpdir(), "dsh-archive-rewrite-rollback-"));
   t.after(() => rm(home, { recursive: true, force: true }));
   const store = new JsonStateStore({ home });
   const { memory } = await openMemory(home, { counts: 24, store });
+  const indexPath = `${store.filePath}.evolution-archive-index.json`;
+  const indexDocument = JSON.parse(await readFile(indexPath, "utf8"));
+  indexDocument.auditMarker = "pre-compaction-index-bytes";
+  await writeFile(indexPath, JSON.stringify(indexDocument));
   const before = await fileDigests(home);
   const injected = Object.assign(new Error("injected state save failure"), { code: "EIO" });
   store.update = async () => { throw injected; };
   await assert.rejects(memory.compact(), (error) => error === injected);
 
   const after = await fileDigests(home);
-  const withoutIndex = (tree) => Object.fromEntries(Object.entries(tree).filter(([path]) => !path.endsWith("state.json.evolution-archive-index.json")));
-  assert.deepEqual(withoutIndex(after), withoutIndex(before), "rollback restores the prior durable state and archive files");
+  assert.deepEqual(after, before, "rollback restores the prior durable state, archive files, and index bytes");
   assert.equal(Object.keys(after).some((path) => path.includes(".compact-")), false, "rollback removes staged and backup files");
 
   const reopened = await openMemory(home, { store: new JsonStateStore({ home }), seed: false });
   for (const collection of COLLECTIONS) {
     assert.deepEqual(reopened.memory.history(collection).map((entry) => entry.id), rowsFor(collection, 24).map((entry) => entry.id));
   }
+  const verification = await reopened.memory.verifyConsistency();
+  assert.equal(verification.archive.valid, true, "the restored index describes the restored archive tree after restart");
+  assert.ok(!verification.reasons.includes("archive_index_inconsistent"), "restart reports no archive conflict");
+});
+
+test("state-save rollback removes an index created by a transaction when none existed before", async (t) => {
+  const home = await mkdtemp(join(tmpdir(), "dsh-archive-rewrite-no-index-rollback-"));
+  t.after(() => rm(home, { recursive: true, force: true }));
+  const store = new JsonStateStore({ home });
+  const { memory } = await openMemory(home, { counts: 24, store });
+  const indexPath = `${store.filePath}.evolution-archive-index.json`;
+  await rm(indexPath);
+  const before = await fileDigests(home);
+  const injected = Object.assign(new Error("injected state save failure without an original index"), { code: "EIO" });
+  store.update = async () => { throw injected; };
+  await assert.rejects(memory.compact(), (error) => error === injected);
+
+  const after = await fileDigests(home);
+  assert.deepEqual(after, before, "rollback restores every original archive byte and removes its newly written index");
+  assert.equal(await stat(indexPath).then(() => true, () => false), false, "an originally absent index stays absent");
+});
+
+test("an index-restore failure is attached without replacing the primary state-save error", async (t) => {
+  const home = await mkdtemp(join(tmpdir(), "dsh-archive-rewrite-double-failure-"));
+  t.after(() => rm(home, { recursive: true, force: true }));
+  const store = new JsonStateStore({ home });
+  const { memory } = await openMemory(home, { counts: 24, store });
+  const indexPath = `${store.filePath}.evolution-archive-index.json`;
+  const archivesBefore = await archiveBytes(home);
+  const indexBefore = await readFile(indexPath);
+  const primary = Object.assign(new Error("primary state save failed"), { code: "EIO" });
+  const rollbackFailure = Object.assign(new Error("injected index restore write failure"), { code: "EACCES" });
+  store.update = async () => { throw primary; };
+
+  const originalWriteFile = fsp.writeFile;
+  let restoreAttempted = false;
+  fsp.writeFile = async function (...args) {
+    if (String(args[0]).endsWith(".rollback.tmp")) {
+      restoreAttempted = true;
+      throw rollbackFailure;
+    }
+    return originalWriteFile.apply(this, args);
+  };
+  syncBuiltinESMExports();
+  try {
+    await assert.rejects(memory.compact(), (error) => error === primary
+      && error.code === "EIO"
+      && error.message === "primary state save failed"
+      && error.rollbackError === rollbackFailure);
+  } finally {
+    fsp.writeFile = originalWriteFile;
+    syncBuiltinESMExports();
+  }
+
+  assert.equal(restoreAttempted, true, "rollback reached the injected index restore failure");
+  const after = await fileDigests(home);
+  assert.deepEqual(Object.keys(after).filter((name) => name.endsWith(".rollback.tmp")), [],
+    "the failed temporary index write is cleaned up before its error is attached");
+  assert.deepEqual(await archiveBytes(home), archivesBefore, "the failed index restore still leaves archive bytes restored");
+  assert.notDeepEqual(await readFile(indexPath), indexBefore, "the failed index restore leaves only the index document changed");
 });

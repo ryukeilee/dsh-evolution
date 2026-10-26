@@ -8,6 +8,7 @@
 // every real repair still rewrites it.
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createHash } from "node:crypto";
 import { appendFile, link, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -108,7 +109,41 @@ test("an append to an active archive still rewrites and extends its index entry"
   } finally { await rm(home, { recursive: true, force: true }); }
 });
 
-test("a sealed segment whose bytes changed is still re-read, re-hashed and re-indexed", async () => {
+test("a changed sealed segment keeps its original expectation through repeated loads", async () => {
+  const { home, store, archive, index } = await fixture();
+  const clock = advancingClock();
+  try {
+    const segment = `${archive}.segments/segment-000000000001.jsonl`;
+    await mkdir(dirname(segment), { recursive: true });
+    await writeFile(segment, `${JSON.stringify({ id: "sealed-1", recordedAt: "2026-10-09T00:00:00.000Z" })}\n`);
+    const firstMemory = await load(store, clock);
+    const sealedBefore = (await entries(index)).find(entry => entry.sealed === true);
+    assert.ok(sealedBefore, "the sealed segment must be indexed");
+    assert.equal(sealedBefore.checksumState, "final");
+    const indexBefore = await readFile(index);
+
+    const changedBytes = Buffer.from(`${JSON.stringify({ id: "sealed-1", recordedAt: "2026-10-09T00:00:00.000Z" })}\n${JSON.stringify({ id: "sealed-2", recordedAt: "2026-10-09T00:00:01.000Z" })}\n`);
+    await writeFile(segment, changedBytes);
+    await firstMemory.load({ snapshot: false });
+    const secondMemory = await load(store, clock);
+    const thirdMemory = await load(store, clock);
+
+    for (const memory of [secondMemory, thirdMemory]) {
+      const sealedAfter = (await entries(index)).find(entry => entry.sealed === true);
+      assert.equal(sealedAfter.byteSize, sealedBefore.byteSize, "the original expected size remains durable");
+      assert.equal(sealedAfter.sha256, sealedBefore.sha256, "the original expected digest remains durable");
+      assert.equal(sealedAfter.physicalCount, sealedBefore.physicalCount, "indexed counts do not follow untrusted bytes");
+      const verification = await memory.verifyConsistency();
+      assert.equal(verification.valid, false);
+      assert.ok(verification.archive.mismatched.some((entry) => entry.reason === "byte_size"));
+      assert.ok(verification.archive.mismatched.some((entry) => entry.reason === "checksum"));
+      assert.deepEqual(await readFile(segment), changedBytes, "loading never rewrites the changed archive bytes");
+    }
+    assert.deepEqual(await readFile(index), indexBefore, "the index document retains the original expected digest and size");
+  } finally { await rm(home, { recursive: true, force: true }); }
+});
+
+test("an unparseable lengthened sealed segment keeps its original expectation", async () => {
   const { home, store, archive, index } = await fixture();
   const clock = advancingClock();
   try {
@@ -117,19 +152,47 @@ test("a sealed segment whose bytes changed is still re-read, re-hashed and re-in
     await writeFile(segment, `${JSON.stringify({ id: "sealed-1", recordedAt: "2026-10-09T00:00:00.000Z" })}\n`);
     await load(store, clock);
     const sealedBefore = (await entries(index)).find(entry => entry.sealed === true);
-    assert.ok(sealedBefore, "the sealed segment must be indexed");
-    assert.equal(sealedBefore.checksumState, "final");
+    const changedBytes = Buffer.concat([await readFile(segment), Buffer.from('{"id":"unparseable","payload":\n')]);
+    await writeFile(segment, changedBytes);
 
-    // A sealed segment is never appended to, so a different byte size is the
-    // evidence that the indexed bytes are stale and must be re-read and
-    // re-hashed. (A change that keeps the size is `verifyConsistency()`'s job.)
-    await writeFile(segment, `${JSON.stringify({ id: "sealed-1", recordedAt: "2026-10-09T00:00:00.000Z" })}\n${JSON.stringify({ id: "sealed-2", recordedAt: "2026-10-09T00:00:01.000Z" })}\n`);
     await load(store, clock);
     const sealedAfter = (await entries(index)).find(entry => entry.sealed === true);
-    assert.equal(sealedAfter.byteSize, (await stat(segment)).size);
-    assert.notEqual(sealedAfter.sha256, sealedBefore.sha256, "the sealed digest must follow the bytes");
-    assert.equal(sealedAfter.physicalCount, 2);
+    assert.equal(sealedAfter.sha256, sealedBefore.sha256);
+    assert.equal(sealedAfter.byteSize, sealedBefore.byteSize);
+    assert.deepEqual(await readFile(segment), changedBytes);
   } finally { await rm(home, { recursive: true, force: true }); }
+});
+
+test("sealed files without a usable expectation retain the established hash-recovery path", async () => {
+  const variants = ["missing-entry", "non-final-checksum", "invalid-digest", "unsafe-byte-size"];
+  for (const variant of variants) {
+    const { home, store, archive, index } = await fixture();
+    const clock = advancingClock();
+    try {
+      const segment = `${archive}.segments/segment-000000000001.jsonl`;
+      await mkdir(dirname(segment), { recursive: true });
+      await writeFile(segment, `${JSON.stringify({ id: "sealed-1", recordedAt: "2026-10-09T00:00:00.000Z" })}\n`);
+      await load(store, clock);
+      const originalEntry = (await entries(index)).find(entry => entry.sealed === true);
+      if (variant === "missing-entry") assert.ok(originalEntry, "the test began from a valid expectation before removing its entry");
+      const changedBytes = Buffer.from(`${await readFile(segment, "utf8")}${JSON.stringify({ id: "sealed-2", recordedAt: "2026-10-09T00:00:01.000Z" })}\n`);
+      await writeFile(segment, changedBytes);
+      const document = JSON.parse(await readFile(index, "utf8"));
+      const target = document.segments.find(entry => entry.sealed === true);
+      if (variant === "missing-entry") document.segments = document.segments.filter(entry => entry !== target);
+      if (variant === "non-final-checksum") target.checksumState = "provisional";
+      if (variant === "invalid-digest") target.sha256 = `${target.sha256}deadbeef`;
+      if (variant === "unsafe-byte-size") target.byteSize = Number.MAX_SAFE_INTEGER + 1;
+      await writeFile(index, JSON.stringify(document));
+
+      await load(store, clock);
+      const recovered = (await entries(index)).find(entry => entry.sealed === true);
+      assert.equal(recovered.sha256, createHash("sha256").update(changedBytes).digest("hex"), `${variant}: recovery hashes current bytes`);
+      assert.equal(recovered.byteSize, changedBytes.length, `${variant}: recovery records current size`);
+      assert.equal(recovered.physicalCount, 2, `${variant}: recovery indexes current line count`);
+      assert.deepEqual(await readFile(segment), changedBytes);
+    } finally { await rm(home, { recursive: true, force: true }); }
+  }
 });
 
 test("a sealed entry that names only its file is normalized without re-reading the bytes", async () => {
