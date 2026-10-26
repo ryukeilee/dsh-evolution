@@ -152,9 +152,9 @@ retired 比例由 retention 规则决定；且 §4.2 表明这条路径今天无
 - **裁剪 `applied` 标记。** 与 checkpoint 的 `appliedDigest` 结构性冲突（§4.3）。
 - **截断 `execution-events.jsonl`。** 丢失老 promotion 取数来源（§4.4），且当前没有能让日志换 inode、marker 裁剪、replay 下限三者保持原子的协议。
 - **给 `archiveReadCache` 加容量上限。** 这是内存容量、不是磁盘回收，且它的成本已作为已知限制记录在 `README.md` 第 13 条（约 0.7 MiB heap / MiB 冷档案）。
-  `#rememberArchiveRead()` 的注释声称"`compactionTriggerBytes` 已经约束了它"，但那条约束只有在 `maintenance()` 被调用时才成立，而
-  `maintenance()` 在 `lib/` 内没有生产调用者。因此**该注释与实际不符**，这里显式更正：缓存当前无界，与冷层字节线性增长。加界需要淘汰策略、
-  重读代价的 A/B 与可能的语义差异（缓存值被调用方共享可变对象），本轮没有证据支持一个更优的界，所以不做。
+  `#rememberArchiveRead()` 的注释曾声称"`compactionTriggerBytes` 已经约束了它"，但那条约束只有在 `maintenance()` 被调用时才成立，而
+  `maintenance()` 在 `lib/` 内没有生产调用者。该注释已在同一轮的最后一个提交里改为如实描述（缓存当前无界，随冷层字节线性增长）。加界需要
+  淘汰策略、重读代价的 A/B 与可能的语义差异（缓存值被调用方共享可变对象），本轮没有证据支持一个更优的界，所以不做。
 - **跳过启动 `syncTree()` 的全树 fsync、降低首次吸收时每次 save 的整份 payload 校验。** 理由同上一轮，见 [capacity-20261026.md](capacity-20261026.md) §4.3。
 
 ## 6. 复现
