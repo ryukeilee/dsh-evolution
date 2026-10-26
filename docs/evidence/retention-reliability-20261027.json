@@ -1,0 +1,48 @@
+{
+  "sourceCommit": "ebd6c06b625e409cb923236c84556e36e3f127cc",
+  "baseCommit": "758b04dedaead773b4a19480183b56fcbc007dd5",
+  "heapLimitMiB": 4096,
+  "unitTests": [
+    {
+      "node": "v22.23.4",
+      "tests": 1163,
+      "passed": 1163,
+      "failed": 0,
+      "durationMs": 75498.845708
+    },
+    {
+      "node": "v24.22.1",
+      "tests": 1163,
+      "passed": 1163,
+      "failed": 0,
+      "durationMs": 74360.037334
+    }
+  ],
+  "hosts": [
+    {
+      "host": "0.2.0-rc.2",
+      "ok": true,
+      "steps": 21,
+      "contentSha256": "716d7122d0b7f1cfdaf87a04a4623ff7ab45235faf932704a220b89bb53cfbd2",
+      "evidence": "docs/evidence/retention-reliability-dsh-0.2.0-rc.2.json"
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "ok": true,
+      "steps": 21,
+      "contentSha256": "716d7122d0b7f1cfdaf87a04a4623ff7ab45235faf932704a220b89bb53cfbd2",
+      "evidence": "docs/evidence/retention-reliability-dsh-0.2.1-alpha.1.json"
+    },
+    {
+      "host": "0.2.1-rc.2",
+      "ok": true,
+      "steps": 21,
+      "contentSha256": "716d7122d0b7f1cfdaf87a04a4623ff7ab45235faf932704a220b89bb53cfbd2",
+      "evidence": "docs/evidence/retention-reliability-dsh-0.2.1-rc.2.json"
+    }
+  ],
+  "packageChecks": {
+    "pack:check": "passed (development successor)",
+    "release:verify": "passed (unchanged pinned bytes)"
+  }
+}
