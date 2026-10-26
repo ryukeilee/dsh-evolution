@@ -71,6 +71,7 @@ export const EVOLUTION_TOOL_NAMES = Object.freeze([
   'evolution_promote',
   'evolution_canary_observe',
   'evolution_history',
+  'evolution_maintain',
   'evolution_doctor',
 ]);
 

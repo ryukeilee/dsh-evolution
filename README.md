@@ -41,7 +41,7 @@
 
 ## 工作原理
 
-九个工具按系统提示词规定的生命周期顺序工作：
+十个工具按系统提示词规定的生命周期顺序工作：
 
 ```text
 evolution_runtime_inspect
@@ -61,6 +61,7 @@ evolution_canary_observe ───── 报告屏障结果、推进 canary
 跨重启启动屏障 ────────────── 提交 stable 或回滚候选
 
 evolution_history ──────────── 读取有界历史；传 query 时检索经验
+evolution_maintain ─────────── 容量回收：dryRun 先看收益，确认后才删除
 evolution_doctor ──────────── 无模型诊断
 ```
 
@@ -295,7 +296,9 @@ dsh plugin --profile web remove dsh-evolution
 13. **冷档案读取缓存依赖文件系统的纳秒 mtime，并占用内存。** 解析结果按“设备 + inode + 字节数 + 纳秒 mtime”缓存；在 mtime 精度只有秒级的文件系统上，同尺寸原地重写可能读不到新内容（插件自己追加会改变字节数，不受影响）。常驻成本约 **0.7 MiB heap / MiB 冷档案**（例如 28 MiB 冷档案约 20 MiB）；`compact()` 后丢弃重建。数字、假设和复现脚本见 `RELEASE.md` 第 6 节第 20 条与 `docs/performance/archive-read-cost.md`。
 14. **只带显式 `knowledgeKey`、没有任何身份维度的知识事件会塌缩到同一个身份。** 已知、本轮未修：六个维度全空时身份落在常量桶（`knowledge:a615…`），不同显式 key 会合并成一行。本插件所有生产写入路径都会同时给出维度，所以普通使用遇不到；只有外部代码直接调用 `EvolutionMemory.recordKnowledgeEvent()` 且只给 `knowledgeKey` 时会触发。修复会改变持久化身份语义（需要迁移决策）并改动冻结身份基线。
 15. **UTF-16 长度超过 240 的身份维度会得到新身份。** 旧实现按 UTF-16 code unit 只保留前 239 个单位（还会切在代理对中间），因此后缀不同的事实会被合并。现在前缀按 code point 切，并附完整文本的 16 位摘要；这类事实会被区分，旧行保留到 retention 到期。归一化后 UTF-16 长度 ≤ 240 的维度逐字节不变、身份不变；长度 > 240 时身份改变：code point 数 ≤ 240 时整段保留，> 240 时保留前 222 个 code point 并附 `…#` 与 16 位十六进制摘要，结果总长 240 个 code point。因此既有记录的身份、命中与保留结果只在后一类维度上变化。
-16. **执行事件日志与领域标记表随历史单调增长，插件不会自动回收。** `execution-events.jsonl` 每个执行事件一行（含 measurement / promotion / canary 事实），领域文档的 `applied` 每个去重身份一个 64 位十六进制 MAC（上限 9 类事件 × experiment 数）。代价是：启动时按日志字节线性读取并逐条验签，`flush()` 每个 pass 读取并 HMAC 整份已提交前缀、并对整张标记表重算摘要，领域文档随标记数增长。不做自动回收的原因：标记表是重放去重权威，删标记会让仍在日志里的老事件被再执行一次；完整事件行又是老 promotion 仅存的取数来源；而且当前没有能在 marker 裁剪、日志换 inode、replay 下限三者之间保持原子的协议。因此本版本**不提供自动或向导式截断与删除**，只提供诊断：`state.event-bridge` 报告 `bytes`、`lines`、`verifiedEvents`、`absorbedRecords`、`unabsorbedRecords`、`oldestRecordAt`、`newestRecordAt`，让操作者看到增长与“已吸收 / 未吸收”的分布（后四个只在 `state.domain` 完整校验通过时出现；拿不到权威标记集合时它们整体缺席，而不是给一个更小的数）。实测数字、撤回的反例与容量边界见 `docs/performance/capacity-20261026.md`；其后的复核把三个阻塞（暂存事务不能表达段删除、裁剪一个标记就让 replay checkpoint 失去可信前缀、截断日志丢失老 promotion 的取数来源）与收益上限重新实测，见 `docs/performance/capacity-reclaim-evaluation.md`。
+16. **执行事件日志与领域标记表随历史单调增长；回收是显式 owner 操作，不自动运行。** `execution-events.jsonl` 每个执行事件一行（含 measurement / promotion / canary 事实），领域文档的 `applied` 每个去重身份一个 64 位十六进制 MAC（上限 9 类事件 × experiment 数）。代价是：启动时按日志字节线性读取并逐条验签，`flush()` 每个 pass 读取并 HMAC 整份已提交前缀并对整张标记表重算摘要，领域文档随标记数增长。`evolution_maintain` 是唯一的回收入口：`dryRun` 只报告字节与记录数，`confirmation: true` 才执行。归档侧沿用既有语义压缩（终态记录折叠为聚合行），被替换的 sealed 段以 `pending.files` 的 `removed` 条目在同一事务里发布，**只有新文件全部安装成功之后才删除**；日志侧先把被丢弃记录携带的 promotion / measurement 事实写进 evidence sidecar（`*.evidence.json`，hydration 链中优先级高于事件桥），再提交裁剪后的 marker 与 `retention` floor（被裁 marker 的 keyed 链、累计的裁剪数与被丢弃字节/记录数、原文件摘要 `prior`、保留尾部摘要 `tail`），最后才截断那些已证明被吸收的字节。顺序是安全论证的一部分：**先提交 floor、后截断**。floor 记录计划时整份日志的摘要（`prior`）与截断后保留前缀的摘要（`tail`），所以“floor 已提交、截断未发生或被打断”是一个可以由下一次 replay 幂等完成的已提交事务（先核对 `prior` 再重写，再核对 `tail`），不会变成永久拒绝；反过来（先截断、后提交）会让 floor 描述已经不存在的字节，第二次回收崩溃后无法恢复。replay 只信任 floor 描述的字节：日志必须要么以保留尾部开头（`continuation`），要么**恰好**是 floor 记录的 `prior` 文件（此时先幂等完成那次已提交的截断）。两者都不是时以 `E_DOMAIN_EVENT_LOG_FLOOR_MISMATCH` 拒绝吸收，而不是重放可能已裁剪 marker 的记录——空文件也一样：空日志不能证明保留字节没有丢，而接受它会让下一次追加造出永远对不上 floor 的头部，所以这里直接失败、把现场留给操作者（恢复那段保留字节，或换一个数据根）。
+
+回收后的已知边界：领域文档带 `retention` 键，旧版本插件的严格 schema 会拒绝它，所以**回收后不要降级到旧版本**（先回滚再回收，或回收后不要回滚）；被裁 marker 的 eventId 不再参与重放冲突检测：同一身份重新发出时领域 ledger 以新 MAC 重新吸收，而内存 marker 窗口仍按 id 把它当重复，记录效果不会重复应用（不再抛冲突）；段目录里 `.tmp` 形状的 seal 残件会被保留、不进事务；doctor 目前没有针对 floor 的检查。没有任何定时器或后台任务调用回收；诊断仍由 `state.event-bridge` 报告 `bytes`、`lines`、`verifiedEvents`、`absorbedRecords`、`unabsorbedRecords`、`oldestRecordAt`、`newestRecordAt` 让操作者先看增长与“已吸收 / 未吸收”的分布。实测数字、修复前三个阻塞的复核与收益边界分别见 `docs/performance/capacity-reclaim-20261027.md`、`docs/performance/retention-reclaim-blockers.md` 与 `docs/performance/capacity-reclaim-evaluation.md`。
 
 ## 验证与证据
 

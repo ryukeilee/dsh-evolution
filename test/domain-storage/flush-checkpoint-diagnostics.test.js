@@ -184,10 +184,14 @@ async function registeredCalls(ctx, config, port, mode, observed) {
   }
   assert.deepEqual([...tools.keys()].sort(), [...EVOLUTION_TOOLS].sort());
   const names = mode === 'primary-error' ? ['evolution_trial'] : EVOLUTION_TOOLS;
+  // `evolution_maintain` is the one destructive tool: its read-only mode is the
+  // argument that makes a blanket "call every tool" sweep safe, and it is still a
+  // real call through the tool boundary.
+  const argumentsFor = name => (name === 'evolution_maintain' ? { dryRun: true } : { collection: 'cycles' });
   observed.tools = [];
   for (const name of names) {
     const [result] = await Promise.allSettled([
-      tools.get(name).execute({ collection: 'cycles' }, { agent: { id: 'synthetic-agent' } }),
+      tools.get(name).execute(argumentsFor(name), { agent: { id: 'synthetic-agent' } }),
     ]);
     if (mode === 'primary-error') assert.equal(result.reason, primary, 'keep the primary error object');
     observed.tools.push({ name, ...settle(result) });

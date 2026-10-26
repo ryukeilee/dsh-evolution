@@ -35,6 +35,10 @@ import { createPrivateNpmEnv } from './npm-cache-env.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROBES = path.join(HERE, 'probes');
+/** The tool surface the bundle registers (lib/registration.js#EVOLUTION_TOOLS).
+ *  It is pinned here as a number so the harness does not have to load the host
+ *  module; `scripts/acceptance/probes/*.mjs` wait for the same count live. */
+const EXPECTED_TOOL_COUNT = 10;
 
 function parseArgs(argv) {
   const options = { keep: false, timeoutMs: 180000 };
@@ -327,7 +331,7 @@ async function main() {
   const coreFile = path.join(PROBES, 'core-probe.mjs');
   const firstCore = await bootProbe('core-1', coreFile, { EVOLUTION_ACCEPTANCE_CWD: work });
   const firstCoreOk = Boolean(firstCore.result)
-    && firstCore.result.toolCount === 9
+    && firstCore.result.toolCount === EXPECTED_TOOL_COUNT
     && firstCore.result.reverted === true
     && firstCore.result.memoryPersisted === true;
   record('core-flow', {
@@ -381,7 +385,7 @@ async function main() {
   // 7. core flow again: the original data must come back unchanged
   const secondCore = await bootProbe('core-2', coreFile, { EVOLUTION_ACCEPTANCE_CWD: work });
   const secondCoreOk = Boolean(secondCore.result)
-    && secondCore.result.toolCount === 9
+    && secondCore.result.toolCount === EXPECTED_TOOL_COUNT
     && secondCore.result.existingMemoryRetained === true;
   record('core-flow-after-reinstall', {
     ok: secondCoreOk,
@@ -434,7 +438,7 @@ async function main() {
   if (installedBundleVersion() !== upgradeVersion) throw new Error(`upgrade left version ${installedBundleVersion()}`);
   const upgradedLifecycle = await bootProbe('lifecycle-after-upgrade', path.join(PROBES, 'lifecycle-probe.mjs'), { EVOLUTION_LIFECYCLE_ACTION: 'verify' });
   record('host-after-upgrade', {
-    ok: Boolean(upgradedLifecycle.result) && upgradedLifecycle.result.toolCount === 9 && upgradedLifecycle.result.memoryUnchanged === true,
+    ok: Boolean(upgradedLifecycle.result) && upgradedLifecycle.result.toolCount === EXPECTED_TOOL_COUNT && upgradedLifecycle.result.memoryUnchanged === true,
     result: upgradedLifecycle.result,
     error: upgradedLifecycle.error,
   });
@@ -452,7 +456,7 @@ async function main() {
   if (installedBundleVersion() !== manifest.version) throw new Error(`rollback left version ${installedBundleVersion()}`);
   const rolledBackLifecycle = await bootProbe('lifecycle-after-rollback', path.join(PROBES, 'lifecycle-probe.mjs'), { EVOLUTION_LIFECYCLE_ACTION: 'verify' });
   record('host-after-rollback', {
-    ok: Boolean(rolledBackLifecycle.result) && rolledBackLifecycle.result.toolCount === 9 && rolledBackLifecycle.result.memoryUnchanged === true,
+    ok: Boolean(rolledBackLifecycle.result) && rolledBackLifecycle.result.toolCount === EXPECTED_TOOL_COUNT && rolledBackLifecycle.result.memoryUnchanged === true,
     result: rolledBackLifecycle.result,
     error: rolledBackLifecycle.error,
   });

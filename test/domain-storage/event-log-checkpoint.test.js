@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { evolutionDomainSpec, openDomainStorage } from '../../lib/domain-storage.js';
 import { EvolutionEventBridge, signEventBridgeEnvelope } from '../../lib/orchestrator.js';
-import { digestApplied, digestEventLogPrefix, eventLogCheckpointPath, planEventLogReplay,
+import { digestApplied, digestEventLogPrefix, EVENT_LOG_CHECKPOINT_SCHEMA, eventLogCheckpointPath, planEventLogReplay,
   readEventLogCheckpoint, writeEventLogCheckpoint } from '../../lib/event-log-checkpoint.js';
 // The official storage packages are dev dependencies of this repo, so the
 // domain integration is exercised against the real official implementation.
@@ -418,7 +418,7 @@ test('a malformed or unknown checkpoint document is treated as absent', async ()
   assert.equal(readEventLogCheckpoint(file), null);
   fs.writeFileSync(file, JSON.stringify({ schema: 99, bytes: 1, records: 1, digest: 'a'.repeat(64), writer: 'w', file: { dev: '1', ino: '2' } }));
   assert.equal(readEventLogCheckpoint(file), null);
-  const valid = { schema: 2, appliedDigest: 'a'.repeat(64), mac: 'b'.repeat(64), bytes: 2, records: 1, digest: crypto.createHash('sha256').update('x').digest('hex'),
+  const valid = { schema: EVENT_LOG_CHECKPOINT_SCHEMA, appliedDigest: 'a'.repeat(64), mac: 'b'.repeat(64), bytes: 2, records: 1, digest: crypto.createHash('sha256').update('x').digest('hex'),
     writer: 'w', file: { dev: '1', ino: '2' }, first: { id: 'a', mac: 'b' }, last: null };
   writeEventLogCheckpoint(file, valid);
   assert.deepEqual(readEventLogCheckpoint(file), valid);

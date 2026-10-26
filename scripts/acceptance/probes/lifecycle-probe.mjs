@@ -10,6 +10,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+/** The tool surface the bundle registers (lib/registration.js#EVOLUTION_TOOLS). */
+const EVOLUTION_TOOL_COUNT = 10;
+
 export const inject = ['pluginManager', 'tools'];
 
 export function apply(ctx) {
@@ -38,11 +41,11 @@ export function apply(ctx) {
 
     const deadline = Date.now() + 30000;
     while (Date.now() < deadline) {
-      if (Boolean(ctx.get('evolution')) === expectMountedBefore && names().length === (expectMountedBefore ? 9 : 0)) break;
+      if (Boolean(ctx.get('evolution')) === expectMountedBefore && names().length === (expectMountedBefore ? EVOLUTION_TOOL_COUNT : 0)) break;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     const mountedBefore = Boolean(ctx.get('evolution'));
-    if (mountedBefore !== expectMountedBefore || names().length !== (expectMountedBefore ? 9 : 0)) {
+    if (mountedBefore !== expectMountedBefore || names().length !== (expectMountedBefore ? EVOLUTION_TOOL_COUNT : 0)) {
       throw new Error(`${action}: startup state wrong (mounted=${mountedBefore}, tools=${names().length})`);
     }
 
@@ -58,7 +61,7 @@ export function apply(ctx) {
     if (selected !== expectSelectedAfter) throw new Error(`${action}: saved selection is ${selected}, expected ${expectSelectedAfter}`);
 
     const expectLive = result.application === 'applied' ? expectSelectedAfter : expectMountedBefore;
-    if (Boolean(ctx.get('evolution')) !== expectLive || names().length !== (expectLive ? 9 : 0)) {
+    if (Boolean(ctx.get('evolution')) !== expectLive || names().length !== (expectLive ? EVOLUTION_TOOL_COUNT : 0)) {
       throw new Error(`${action}: application=${result.application} but live state violates restart semantics`);
     }
     const after = await memorySha();

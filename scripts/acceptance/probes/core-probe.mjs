@@ -6,7 +6,7 @@
  * runner turns into evidence.
  *
  * Steps: inspect -> propose -> trial -> measure -> revert, plus memory
- * persistence and a complete 9-tool registration count.
+ * persistence and a complete 10-tool registration count.
  *
  * The probe never throws a whole runtime dump at the runner: on failure it
  * returns the collected steps plus a compact signature diff, so a failed
@@ -62,7 +62,7 @@ export function apply(ctx) {
 
   async function run() {
     const names = () => ctx.tools.schemas().filter((tool) => tool.name.startsWith('evolution_')).map((tool) => tool.name).sort();
-    await waitFor(() => Boolean(ctx.get('evolution')) && names().length === 9, 'the evolution service and all 9 tools');
+    await waitFor(() => Boolean(ctx.get('evolution')) && names().length === 10, 'the evolution service and all 10 tools');
     const tools = names();
 
     const handle = await ctx.agents.create({

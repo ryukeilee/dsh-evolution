@@ -16,7 +16,7 @@
 | 文件 | 职责 |
 | --- | --- |
 | `lib/index.js` | bundle 入口：解析路径、初始化 `event-bridge.key`、打开领域存储、在 Include 加载任何子项**之前**恢复中断的晋升事务、挂载官方 Include adapter、构造诊断函数 |
-| `lib/registration.js` | 工具注册与系统提示词；`EVOLUTION_TOOLS` 列出工具面，`lib/diagnostics.js` 的 `EVOLUTION_TOOL_NAMES` 用它对照实时注册表，两份列表由测试断言一致 |
+| `lib/registration.js` | 工具注册与系统提示词；`EVOLUTION_TOOLS` 列出工具面（10 个，含唯一的回收入口 `evolution_maintain`），`lib/diagnostics.js` 的 `EVOLUTION_TOOL_NAMES` 用它对照实时注册表，两份列表由测试断言一致 |
 | `lib/orchestrator.js` | 实验 / trial / measurement / promotion 生命周期、journal 原子提交、CAS、跨进程锁、target claim、canary、失败学习、`promotionGates` |
 | `lib/promotion-include.js` | 官方 `@deepseek-ai/cordis-plugin-include` 适配：不合成 loader entry、不写 profile `node_modules`，提交/回滚走公开 `refresh()` / `EntryTree.resolve` / `Entry.fiber` |
 | `cordis.patch.yml` | bundle patch：向 profile 的 loader 树 `insert` 两个条目（`evolution-orchestrator` → `dsh-evolution`、`evolution-trust-root-guard` → `dsh-evolution/guard`）。这是插件进入 composition 的唯一入口 |
@@ -27,7 +27,7 @@
 
 | 文件 | 职责 |
 | --- | --- |
-| `lib/domain-storage.js` | 领域存储 adapter：`AsyncLocalStorage` 作用域、事件桥重放、pending 协议、领域 schema 校验、显式 `domainSeed` |
+| `lib/domain-storage.js` | 领域存储 adapter：`AsyncLocalStorage` 作用域、事件桥重放、pending 协议、领域 schema 校验、显式 `domainSeed`，以及端口上的显式 `reclaim()`（容量回收；见不变量 16） |
 | `lib/dockyard-domain/memory.js` | hot 聚合 + 冷档案：`*.COLLECTION-archive.jsonl`、`.segments/segment-N.jsonl`、`*.evolution-archive-index.json`、retention、`history()` / `historyView()`、执行事件去重 |
 | `lib/dockyard-domain/knowledge.js` | canonical knowledge：`knowledgeKey` 身份、`compactValue()`、聚合与去重（键名脱敏的结构化判定也由它导出） |
 | `lib/dockyard-domain/observation.js` | 观测存储：健康信息 dedup、error 样本、`forceRecord`、>5% perf 转变阈值；只接收 DTO，不采集进程 perf、不订阅运行时事件 |
@@ -37,8 +37,8 @@
 | `lib/dockyard-domain/PORTS.md` | 端口合同（`stateStore` / `transaction` / `mutationAuthority`）与非安全承诺：导入与构造不写文件而显式 `load()` **会**写盘、`inlineSerialization: true` 的标记条件、`historyView()` 的结果不可写回 |
 | `lib/dockyard-domain/continuous/` | 纯领域模块：`discovery-metrics`（指标归一）、`lineage`、`strategy`、`supervisor`、`trial-supervisor`、`reporting`、`ports`、`shared`，`facade` / `index` 保留历史导入路径。**未接入** orchestrator 实时循环，doctor 的 `continuous-and-governance-not-wired` 把它记为已知限制 |
 | `lib/dockyard-domain/governance/` | 纯领域模块：`authority`（四级授权）、`capability-registry`（生命周期）、`fitness`（加权评分）、`generation-policy`、`retirement`（移除前置条件）、`canary`（流量与屏障）、`store`（分区校验）、`trust-root`（只把 Cordis 本身视为不可改写）、`mutation-authority`、`helpers`（钳制/克隆/时间戳）。同样**未接入**实时循环 |
-| `lib/archive-stage.js` | 冷档案树与进行中事务的隔离：staging、按变更集复制、逐字节校验、原子安装 |
-| `lib/event-log-checkpoint.js` | 事件桥日志的持久重放检查点：已消费字节长度、记录数、keyed digest 与 MAC |
+| `lib/archive-stage.js` | 冷档案树与进行中事务的隔离：staging、按变更集复制、逐字节校验、原子安装；变更清单可表达 `removed` 条目，但只限 `<stateFile>.<collection>-archive.jsonl.segments/segment-N.jsonl`，且删除在新文件全部安装成功之后执行 |
+| `lib/event-log-checkpoint.js` | 事件桥日志的持久重放检查点（已消费字节长度、记录数、keyed digest 与 MAC；schema 3 的 `appliedDigest` 同时绑定 `retention` floor）**以及回收 floor 的纯逻辑**：裁掉哪个已吸收前缀（`planLogPrune`）、已提交截断的幂等补完（`completeEventLogTruncation`）、floor 尾部校验（`verifyLogFloorTail`）、被裁 marker 的 keyed 链与 floor 合并（`advanceRetention`）、保留字节的 checkpoint 覆盖（`planRetainedCoverage`） |
 | `lib/experience-recall.js` | 只读、有界的按需经验检索；`EXPERIENCE_RECALL_LIMITS` 是全部上限的唯一来源 |
 
 ### 兼容与安全
@@ -94,6 +94,7 @@
 13. **事件桥追加是跨进程互斥的，且不猜尾字节。** 锁是 `<log>.append.lock` 目录，内含 `{token,pid,hostname,acquiredAt}`：同主机且 pid 存活的所有者**永不**回收（一次慢 fsync 不能放进第二个写者）；`process.kill` 返回 `ESRCH` 的条目立刻回收；无主或外地主机条目才按 `EVENT_BRIDGE_LOCK_STALE_MS`（2000 ms）判定。回收必须先取得**同级** `<lock>.reclaim` 标记（`open(..., "wx")`），并在持有标记**之后**才读取 owner 与 age——标记不能放在锁目录内，否则创建标记会刷新用于判定陈旧的 mtime，且第二次回收者能用缓存的 age 删掉第一个回收者刚建好的新锁；崩溃留下的标记超过 `EVENT_BRIDGE_RECLAIM_STALE_MS`（10 s）可删。释放只删 token 仍匹配的锁。锁自身的簿记使用模块加载时捕获的 `fs.writeSync`，宿主或测试替换它不会卡住锁。追加前必须确认尾字节：若文件不以 `\n` 结尾，最后一行必须能被验签为完整信封才补分隔符，否则**拒绝追加**（绝不把两条记录粘成一行）；pending 追加只在按 `dev`+`ino` 复核身份、并逐字节比对已落盘前缀之后才继续，尾部扫描上限 `EVENT_BRIDGE_TAIL_SCAN`（1 MiB）。
 14. **晋升 journal 的变更计划必须自证是本次事务写的。** `checkJournalBoundary` 在包含性之外还要求：计划非空、无重复目标、每个 file 记录命中三份计划文件之一（composition、`EVOLUTION.md`、`archive/experiments/<experimentId>.md`）、path 记录**恰好**是 `<pluginRoot>/dsh-evolution-promoted-<sha256(experimentId) 前 12 位>`、`experimentId` 匹配 `^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`。只有包含性时，`records: []` 会删掉唯一证据后报 `rolled-back`，命名 `presetDir` / `dockyard` / `knowledge` 的记录会让恢复删掉全部持久知识。计划、CAS 基线与备份必须来自**同一次捕获**（旧顺序先建计划再读字节，中间的编辑会被静默覆盖），备份走持久写入而不是未 fsync 的 `copyFile`。
 15. **脱敏投影必须是有界的线性扫描。** `redactJsonParseMessage()` 用一次前向游标代替正则：取**最后**一个 `is not valid JSON` 后缀、取**第一个**引号，若引号在后缀之前则保留引号前的内容、丢掉引号到后缀之间的片段（包括 V8 在片段前放的分隔符：逗号与空白）再拼回后缀；超长输入因此不会回溯也不会携带原字节。任何新增的"从错误文本里抠片段"的逻辑都不得引入在被控数据上回溯的正则。`REDACTION_TEXT_BOUND`（64 KiB）仍是唯一的有界输入开关：超过它的文本以 `withheldTextMarker` 代替而不是被截断。
+16. **容量回收只走显式 `reclaim()`，顺序即安全论证。** 端口只有 `reclaim({ confirmation: true })` 会删除已知可回收的字节（`dryRun` 只读、无确认直接拒绝）。归档侧复用 `compact()` 的语义与完整性门禁（`#rewriteArchives` 的 9 类 finding 拒绝），被替换的 sealed 段以 `pending.files` 的 `removed` 条目发布：只允许段文件形状，条目携带提交时读到的 `bytes`+`sha256`，安装时先验证全部替换与全部删除再发布，删除排在新文件安装之后，重复重放是 no-op。日志侧顺序不可交换：先把被丢弃记录携带的 promotion/measurement 事实写进 evidence sidecar（写失败即中止），然后提交裁剪后的 `applied` 与 `retention` floor（`prior` = 计划时整份日志的 keyed digest 与字节数，`tail` = 截断后保留前缀的 keyed digest，`markers.chain` = 被裁 marker 的 keyed 链），**提交之后**才在 append lock 下原子截断。“floor 已提交、截断未发生或被打断”是下一次 replay 幂等完成的已提交事务（`completeEventLogTruncation`：先核对文件仍以 `prior` 开头，再重写并核对 `tail`），所以这个崩溃窗口不会变成永久拒绝；反过来（先截断、后提交）会让 floor 描述已经不存在的字节，而下一轮的保留尾部与上一轮 floor 的 `tail` 没有可证明的关系，第二次回收崩溃后即不可恢复。replay 在没有可信 checkpoint 时要求日志要么以 floor 尾部开头，要么**恰好**是 floor 记录的 `prior` 文件（后者由 `completeEventLogTruncation` 幂等补完那次已提交的截断）；两者都不是就以 `E_DOMAIN_EVENT_LOG_FLOOR_MISMATCH` 拒绝吸收，空文件也不例外（空日志不能证明保留字节没丢，接受它会让下一次追加造出永远对不上 floor 的头部）——裁剪 marker 之后无法再把一条老记录与它的去重身份对上，宁可不吸收也不能重放；这个拒绝没有”猜测式修复“，操作者只能恢复那段被保留的字节或换一个数据根。没有可信外部化器时拒绝截断；证据身份不是安全文件名成分时整体拒绝（`E_DOMAIN_EVIDENCE_ID_UNSAFE`）；没有 floor 时 `digestApplied` 与 checkpoint 字节保持不变。已知边界（不修，写在这里以免误读）：(a) 回收后的领域文档带 `retention` 键，旧版本插件的 strict global schema 会拒绝它，所以**回收后不可降级**；(b) 被裁 marker 的 eventId 不再参与 `E_DOMAIN_EVENT_ID_CONFLICT`：同一身份重新发出时，领域 ledger 会以新 MAC 重新吸收它，而 memory 自己的 4096 条 marker 窗口仍按 id 认得它、于是把记录效果当重复跳过（`applied: 0, duplicates: n`）；两者都不再抛冲突，`test/retention-log-floor.test.mjs` 钉住了这个边界；(c) 段目录里 `.tmp` 形状的 seal 残件既不进变更清单也不被删除，回收照常进行，doctor 不报告它；(d) doctor 没有针对 floor 的 check，`E_DOMAIN_EVENT_LOG_FLOOR_MISMATCH` 的现场只能靠日志与 `retention` 字段人工判读；(e) 有 floor 且需要补完已提交截断时，如果另一个写者持有 append lock，`open`/`flush` 以 `E_DOMAIN_EVENT_LOG_BUSY` 失败（可重试，下一次 pass 会补完），不会静默跳过这一轮；(f) 如果第一次回收的截断仍是 deferred（日志尚未重写），此时再发起一次日志回收，`planLogPrune` 看到的是**未截断**的文件：若该文件头部恰好是空行，空行无需 marker 即可推进边界，于是这一轮可能提交一个“几乎没丢字节”的新 floor 并让被裁身份重新写入 ledger。后果只是报告里的回收量失真与 marker 回流（记录效果仍按 id upsert，不重复），前置条件需要外部改过日志（插入空行）+ 首次回收撞锁 + 期间再次 owner 回收；未做守卫，宁可少报也不在收尾阶段改动截断协议。回收没有定时器或后台调用者。
 
 ## 5. 验证要求
 

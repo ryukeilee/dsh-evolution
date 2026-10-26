@@ -53,7 +53,8 @@ The unit suite is not run per host: `ci.yml` runs it in a separate job on Node
 `0.2.0-rc.2` host), not against the versions a host resolves today.
 
 The whole acceptance is re-run per host against a fresh `$DSH_HOME`: official
-`dsh plugin add` of the packed tarball, first boot, all 9 tool registrations,
+`dsh plugin add` of the packed tarball, first boot, every tool registration
+(the harness asserts the count `lib/registration.js` declares today),
 core `inspect→propose→trial→measure→revert` with proven runtime recovery,
 read-only CLI doctor over the official composition, restart recovery, real
 promotion to `canary-observing` through a second confirmation gate, stable
@@ -61,8 +62,10 @@ commit at the startup barrier across a restart, canary rollback that removes
 only the new candidate, disable/enable, uninstall/reinstall with data
 retention, and a final doctor.
 
-The committed `docs/evidence/` files are produced by the harness and cover
-install, boot, all 9 tools, CLI doctor, the core flow, the official
+The committed `docs/evidence/` files describe the **pinned** build (the harness
+covered its 9-tool surface); the harness now also asserts the 10-tool surface
+this tree registers, and re-running it rewrites those files only as part of a
+pin. They cover install, boot, the live tool surface, CLI doctor, the core flow, the official
 pluginManager lifecycle, CLI uninstall/reinstall with data retention, the
 README upgrade and rollback flows, real promotion, startup-canary commit across
 a restart, canary rollback, and the final doctor. The unit suite covers
