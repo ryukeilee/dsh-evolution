@@ -65,8 +65,8 @@ const PRE_FIX_BLOCK = [
   "        const detail = safeErrorDto(error, 'event-log-checkpoint');",
   '        ctx.logger?.warn?.(`[evolution] event log checkpoint not written: ${detail.errorSummary} (${detail.errorCategory}, ${detail.errorDigest})`);',
 ].join('\n');
-const IMPORT_WITHOUT_SAFE_DTO = "import { EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, verifyEventBridgeEnvelope } from './orchestrator.js';";
-const IMPORT_WITH_SAFE_DTO = "import { EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, safeErrorDto, verifyEventBridgeEnvelope } from './orchestrator.js';";
+const IMPORT_WITHOUT_SAFE_DTO = "import { EVENT_BRIDGE_APPEND_LOCK_BUSY, EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, verifyEventBridgeEnvelope } from './orchestrator.js';";
+const IMPORT_WITH_SAFE_DTO = "import { EVENT_BRIDGE_APPEND_LOCK_BUSY, EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, safeErrorDto, verifyEventBridgeEnvelope } from './orchestrator.js';";
 
 /** The source as it was before this fix, derived from whatever the tree holds now. */
 function derivePreFix(source) {

@@ -82,3 +82,93 @@ test('shared classifier rejects contradictory prior and tail digests', (t) => {
   assert.equal(inspectEventLogFloor({ file, key, floor: bad }).status, 'unknown');
   assert.deepEqual(fs.readFileSync(file), prior);
 });
+
+// The floor is not keyed, so the shape the doctor can check is the document's own
+// continuity: the pruned-marker chain is the only evidence that the markers a
+// reclaim removed ever existed, and the cumulative counters may only grow. A
+// document that violates one of those was not written by this version. It used to
+// be reported as `already-truncated`/ok whenever the retained bytes still matched
+// its digest, which is the one conclusion the doctor must not draw from a floor it
+// cannot trust.
+const chain = 'b'.repeat(64);
+for (const [name, inconsistent] of Object.entries({
+  'pruned markers with the empty chain': { ...retention, markers: { pruned: 5, chain: '0'.repeat(64) } },
+  'a chain with no pruned markers': { ...retention, markers: { pruned: 0, chain } },
+  'cumulative bytes below the last discard': { ...retention, log: { ...retention.log, bytes: 1 } },
+  'one digest for the discarded file and the retained tail': {
+    ...retention,
+    log: { ...retention.log, tail: { bytes: retention.log.tail.bytes, digest: retention.log.prior.digest } },
+  },
+})) test(`doctor reports an inconsistent floor: ${name}`, async (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'doctor-floor-continuity-'));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  const paths = resolveEvolutionPaths({ dshHome: home });
+  fs.mkdirSync(paths.dataRoot, { recursive: true });
+  fs.writeFileSync(paths.keyPath, key, { mode: 0o600 });
+  fs.writeFileSync(paths.domainGlobalPath, JSON.stringify({ unit: { name: 'evolution_domain', version: 1 }, global: {
+    schema: 1, aggregate: { evolution: { schema: 4, observations: [], proposals: [] } }, applied: {}, pending: null, retention: inconsistent,
+  }, tables: {} }));
+  fs.writeFileSync(paths.eventBridgePath, tail);
+  const report = await collectDiagnostics({ dshHome: home, composition: false, probe: false });
+  const check = report.checks.find((entry) => entry.id === 'state.retention-floor');
+  assert.equal(check.evidence.status, 'floor-inconsistent');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.recoverable, false);
+  assert.equal(check.repair, undefined);
+  assert.ok(check.evidence.floorProblems.length > 0);
+  assert.equal(check.evidence.floor.source, 'committed');
+  assert.deepEqual(fs.readFileSync(paths.eventBridgePath), tail, 'the doctor preserves the log it judged');
+});
+
+test('doctor judges the pending floor against the committed one it would replace', async (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'doctor-floor-pending-regression-'));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  const paths = resolveEvolutionPaths({ dshHome: home });
+  fs.mkdirSync(paths.dataRoot, { recursive: true });
+  fs.writeFileSync(paths.keyPath, key, { mode: 0o600 });
+  // A completed reclaim pruned 12 markers; the pending record would install a
+  // floor that claims only 4, so `installPending()` would un-prove eight of them.
+  const committed = { ...retention, markers: { pruned: 12, chain }, log: { ...retention.log, bytes: 24, records: 4 } };
+  const pending = { ...committed, markers: { pruned: 4, chain: 'c'.repeat(64) } };
+  const stage = 'stage-12345678-1234-1234-1234-123456789abc';
+  fs.mkdirSync(path.join(paths.domainStagingDir, stage), { recursive: true });
+  fs.writeFileSync(paths.domainGlobalPath, JSON.stringify({ unit: { name: 'evolution_domain', version: 1 }, global: {
+    schema: 1, aggregate: { evolution: { schema: 4, observations: [], proposals: [] } }, applied: {},
+    pending: { stage, aggregate: { evolution: { schema: 4 } }, applied: {}, files: [], retention: pending },
+    retention: committed,
+  }, tables: {} }));
+  fs.writeFileSync(paths.eventBridgePath, tail);
+  const report = await collectDiagnostics({ dshHome: home, composition: false, probe: false });
+  const check = report.checks.find((entry) => entry.id === 'state.retention-floor');
+  assert.equal(check.evidence.status, 'floor-inconsistent');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.evidence.floorSource, 'pending');
+  assert.deepEqual(check.evidence.floorProblems.map((problem) => problem.code), ['floor-regression-markers']);
+  assert.equal(fs.existsSync(path.join(paths.domainStagingDir, stage)), true, 'the doctor never installs or removes a stage');
+});
+
+test('doctor reports the floor counters and any reclaim temporary without changing either', async (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'doctor-floor-counters-'));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  const paths = resolveEvolutionPaths({ dshHome: home });
+  fs.mkdirSync(paths.dataRoot, { recursive: true });
+  fs.writeFileSync(paths.keyPath, key, { mode: 0o600 });
+  fs.writeFileSync(paths.domainGlobalPath, JSON.stringify({ unit: { name: 'evolution_domain', version: 1 }, global: {
+    schema: 1, aggregate: { evolution: { schema: 4, observations: [], proposals: [] } }, applied: {}, pending: null, retention,
+  }, tables: {} }));
+  fs.writeFileSync(paths.eventBridgePath, tail);
+  const temporary = `${paths.eventBridgePath}.0123456789abcdef.reclaim.tmp`;
+  fs.writeFileSync(temporary, 'B');
+  const report = await collectDiagnostics({ dshHome: home, composition: false, probe: false });
+  const check = report.checks.find((entry) => entry.id === 'state.retention-floor');
+  // A temporary is residue of a rewrite the next completion removes; listing it
+  // must not turn a consistent floor into a failure.
+  assert.equal(check.evidence.status, 'already-truncated');
+  assert.equal(check.level, 'ok');
+  assert.deepEqual(check.evidence.reclaimTemporaries, [path.basename(temporary)]);
+  assert.equal(check.evidence.floorSource, 'committed');
+  assert.deepEqual(check.evidence.floor.log, { bytes: 2, records: 0, prior: prior.length, tail: tail.length });
+  assert.equal(check.repair, undefined);
+  assert.equal(fs.readFileSync(temporary, 'utf8'), 'B');
+  assert.deepEqual(fs.readFileSync(paths.eventBridgePath), tail);
+});
