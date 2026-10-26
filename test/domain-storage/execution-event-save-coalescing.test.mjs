@@ -215,12 +215,12 @@ test('a __proto__ experiment id still aborts the coalesced replay before publica
       } finally {
         JSON.stringify = originalStringify;
       }
-      // The literal only ever reached the payload through this event's id, so at
-      // least one checked payload carried it and that payload is what overflowed.
+      // Only the observable contract is asserted. Which save overflows depends on
+      // the engine's call-stack limit and on how far the recursive own-`__proto__`
+      // strip gets before it runs out, and the wrapper above only records the
+      // payloads whose stringify *returned*, so it cannot identify the thrower.
       assert.ok(aggregatePayloads.length >= 1, 'the replay must check at least one aggregate payload');
-      assert.ok(aggregatePayloads.at(-1).includes('"__proto__"'),
-        `Node ${process.versions.node}: the failing payload must be the one carrying the id, at depth ${depth}`);
-      assert.equal(caught?.name, 'RangeError');
+      assert.equal(caught?.name, 'RangeError', `Node ${process.versions.node} at depth ${depth}`);
       assert.equal(caught.message, 'Maximum call stack size exceeded');
 
       assert.deepEqual(fs.readFileSync(committedPath), committedBefore, 'failed replay must not publish the aggregate or event ledger');
