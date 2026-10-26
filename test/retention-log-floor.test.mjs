@@ -489,3 +489,54 @@ test('a floor without its log is refused rather than treated as an empty one', a
     assert.deepEqual(await port.flush(), { applied: 0, duplicates: 2 });
   } finally { await port.close().catch(() => {}); }
 });
+
+test('a second reclaim cannot replace a deferred floor through a leading blank line', async (t) => {
+  const f = await fixture(t);
+  const port = await openPort(f);
+  const lockPath = `${f.config.eventBridgePath}.append.lock`;
+  try {
+    writeMeasurements(f.config, 8);
+    await port.flush();
+    // Blank lines are valid historical bytes, but cannot authorize replacing an
+    // unfinished floor after the markers behind them have already been pruned.
+    fs.writeFileSync(f.config.eventBridgePath, Buffer.concat([Buffer.from('\n'), logBytes(f.config.eventBridgePath)]));
+    fs.mkdirSync(lockPath);
+    fs.writeFileSync(path.join(lockPath, 'owner'), JSON.stringify({ token: 'held', pid: process.pid, hostname: os.hostname(), acquiredAt: Date.now() }));
+    const first = await port.reclaim({ confirmation: true, archives: false, retainRecords: 2 });
+    assert.equal(first.log.truncated, 'deferred');
+    const floor = structuredClone(ledger(f).retention);
+    const prior = logBytes(f.config.eventBridgePath);
+    const dry = await port.reclaim({ dryRun: true, archives: false, retainRecords: 2 });
+    assert.equal(dry.log.status, 'pending-truncation');
+    assert.deepEqual(logBytes(f.config.eventBridgePath), prior);
+    await assert.rejects(port.reclaim({ confirmation: true, archives: false, retainRecords: 2 }), /E_DOMAIN_EVENT_LOG_BUSY/);
+    assert.deepEqual(ledger(f).retention, floor);
+    assert.deepEqual(logBytes(f.config.eventBridgePath), prior);
+    fs.rmSync(lockPath, { recursive: true });
+    const second = await port.reclaim({ confirmation: true, archives: false, retainRecords: 2 });
+    assert.equal(second.log.status, 'nothing-absorbed');
+    assert.deepEqual(ledger(f).retention, floor);
+    assert.equal(Object.keys(ledger(f).applied).length, 2);
+    assert.deepEqual(await port.flush(), { applied: 0, duplicates: 2 });
+  } finally {
+    fs.rmSync(lockPath, { recursive: true, force: true });
+    await port.close().catch(() => {});
+  }
+});
+
+test('reclaim refuses floor corruption before replacing the committed proof', async (t) => {
+  const f = await fixture(t);
+  const port = await openPort(f);
+  try {
+    writeMeasurements(f.config, 6);
+    await port.flush();
+    await port.reclaim({ confirmation: true, archives: false, retainRecords: 2 });
+    const document = structuredClone(ledger(f));
+    fs.writeFileSync(f.config.eventBridgePath, '\n' + logBytes(f.config.eventBridgePath).toString());
+    const damaged = logBytes(f.config.eventBridgePath);
+    await assert.rejects(port.reclaim({ dryRun: true, archives: false }), /E_DOMAIN_EVENT_LOG_FLOOR_MISMATCH/);
+    await assert.rejects(port.reclaim({ confirmation: true, archives: false }), /E_DOMAIN_EVENT_LOG_FLOOR_MISMATCH/);
+    assert.deepEqual(ledger(f), document);
+    assert.deepEqual(logBytes(f.config.eventBridgePath), damaged);
+  } finally { await port.close().catch(() => {}); }
+});

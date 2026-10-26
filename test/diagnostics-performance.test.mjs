@@ -16,7 +16,7 @@ const normalize = (report) => { delete report.generatedAt; return report; };
  * fixture is an addition this baseline cannot list - it is named here so any
  * *unnamed* new check still fails the comparison.
  */
-const ADDED_CHECK_IDS = new Set(['state.ownership']);
+const ADDED_CHECK_IDS = new Set(['state.ownership', 'state.retention-floor']);
 const ADDITIONAL_CHECK_IDS = new Set(['data.key']);
 
 /**
@@ -41,7 +41,7 @@ const withoutDeliberateReportChanges = (check) => {
     // The shared archive classifier changes the remediation contract: the new
     // advice preserves originals and blocks index-only rebuilding when bytes or
     // a transition are unproven. The assertion below checks that advice directly.
-    const { archiveIntegrity, ...dockyard } = check.evidence.dockyard;
+    const { archiveIntegrity, sealTemporaries, ...dockyard } = check.evidence.dockyard;
     const { remediation, ...report } = check;
     return { ...report, evidence: { ...check.evidence, dockyard } };
   }
@@ -105,6 +105,7 @@ function assertMatchesBaseline(currentReport, frozenReport) {
   const domain = current.checks.find((check) => check.id === 'state.domain');
   assert.deepEqual(domain.evidence.lockProblems, [], 'the absent-aggregate lock verdict is reported');
   const archives = current.checks.find((check) => check.id === 'state.archives');
+  assert.deepEqual(archives.evidence.dockyard.sealTemporaries, [], 'no seal remnants in the baseline fixtures');
   assert.equal(archives.evidence.dockyard.archiveIntegrity.valid, true, 'the shared read-only archive classifier is reported');
   if (archives.level === 'degraded') assert.match(archives.remediation, /Resolve any pending install or compaction transition first/);
   assert.ok(current.checks.some((check) => check.id === 'state.ownership'), 'the new ownership check is present');
