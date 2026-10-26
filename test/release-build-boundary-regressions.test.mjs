@@ -55,6 +55,7 @@ import {
 } from '../scripts/release/release-lib.mjs';
 import { inspectBuildManifest, inspectCandidateBuild, inspectPinnedRelease } from '../scripts/release/publish-artifact.mjs';
 import { assertUsableDist, targetPath } from '../scripts/release/pack.mjs';
+import { createPrivateNpmEnv } from '../scripts/acceptance/npm-cache-env.mjs';
 
 const packageManifest = readManifest();
 const pinned = readReleaseManifest();
@@ -337,8 +338,8 @@ test('a rootless archive is refused even though it produces the pinned content d
     cwd: installDir,
     encoding: 'utf8',
     timeout: 120000,
-    // A private cache: the probe never writes the user's npm cache.
-    env: { ...process.env, npm_config_cache: path.join(installDir, '.npm-cache') },
+    // A private cache and log directory: the probe never writes user npm state.
+    env: createPrivateNpmEnv(installDir),
   });
   if (installed.error) t.diagnostic(`no usable npm to prove the install failure: ${installed.error.message}`);
   else {
@@ -442,7 +443,11 @@ test('every committed artifact and a real npm pack output still pass the root ru
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'package.json'), `${JSON.stringify({ name: 'dsh-root-probe', version: '0.0.0', files: ['index.js'] }, null, 2)}\n`);
   fs.writeFileSync(path.join(dir, 'index.js'), 'export default 1;\n');
-  const packed = spawnSync('npm', ['pack', '--json', '--pack-destination', dir, '--ignore-scripts'], { cwd: dir, encoding: 'utf8' });
+  const packed = spawnSync('npm', ['pack', '--json', '--pack-destination', dir, '--ignore-scripts'], {
+    cwd: dir,
+    encoding: 'utf8',
+    env: createPrivateNpmEnv(dir),
+  });
   if (packed.status !== 0) {
     t.diagnostic(`no usable npm to produce a fresh pack: ${packed.stderr}`);
     return;
@@ -487,7 +492,12 @@ test('a credential-shaped pre-release suffix is not a toolchain version', () => 
 
   // The values that must keep working: this machine's real toolchain, the
   // committed pin's record, and the public pre-release tags Node/npm publish.
-  const npmVersion = spawnSync('npm', ['--version'], { encoding: 'utf8' });
+  const npmVersionFixture = freshDir();
+  const npmVersion = spawnSync('npm', ['--version'], {
+    cwd: npmVersionFixture,
+    encoding: 'utf8',
+    env: createPrivateNpmEnv(npmVersionFixture),
+  });
   if (npmVersion.status === 0) {
     const version = npmVersion.stdout.trim();
     assert.deepEqual(
@@ -580,7 +590,11 @@ test('a sentinel in a toolchain version is refused by the manifest check and by 
 
 test('release:pack refuses an output whose manifest carries an unknown top-level field and preserves it', () => {
   const seed = path.join(scratch, 'pack-seed');
-  const seeded = spawnSync(process.execPath, [PACK, '--dist', seed], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const seeded = spawnSync(process.execPath, [PACK, '--dist', seed], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    env: createPrivateNpmEnv(scratch),
+  });
   assert.equal(seeded.status, 0, `packing the seed output failed:\n${seeded.stderr}`);
 
   // What the writer emits, exactly: the schema is not a minimum.
@@ -595,7 +609,11 @@ test('release:pack refuses an output whose manifest carries an unknown top-level
   fs.writeFileSync(manifestFile, `${JSON.stringify(withNote, null, 2)}\n`);
   const before = snapshot(dir);
 
-  const result = spawnSync(process.execPath, [PACK, '--dist', dir], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [PACK, '--dist', dir], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    env: createPrivateNpmEnv(scratch),
+  });
   assert.notEqual(result.status, 0, 'an output with an unknown manifest field must not be overwritten');
   const surface = `${result.stdout}\n${result.stderr}`;
   assert.match(surface, /not a release:pack build manifest/);
@@ -796,7 +814,11 @@ test('pack and its guards never echo a caller-supplied output path', () => {
   // A foreign file under the tarball name: the refusal names the output part that
   // collided, never the `--dist` path.
   fs.writeFileSync(path.join(outside, FILENAME), 'not a build\n');
-  const result = spawnSync(process.execPath, [PACK, '--dist', outside], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [PACK, '--dist', outside], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    env: createPrivateNpmEnv(scratch),
+  });
   assert.notEqual(result.status, 0);
   const surface = `${result.stdout}\n${result.stderr}`;
   assert.match(surface, /refusing to overwrite an incomplete output/);

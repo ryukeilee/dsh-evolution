@@ -30,6 +30,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
+import { createPrivateNpmEnv } from '../scripts/acceptance/npm-cache-env.mjs';
 import {
   REPO_ROOT, builtWithProblems, readManifest, readReleaseManifest,
 } from '../scripts/release/release-lib.mjs';
@@ -162,7 +163,11 @@ test('release:pack refuses a package.json that repeats a key, and writes no outp
     const pack = path.join(root, 'scripts', 'release', 'pack.mjs');
     // A fresh --dist: the refusal happens before the directory would be created.
     const absent = path.join(freshDir(), 'out');
-    const first = spawnSync(process.execPath, [pack, '--dist', absent], { cwd: root, encoding: 'utf8' });
+    const first = spawnSync(process.execPath, [pack, '--dist', absent], {
+      cwd: root,
+      encoding: 'utf8',
+      env: createPrivateNpmEnv(scratch),
+    });
     assert.equal(first.status, 1, `${name}: release:pack must fail`);
     assertFixedLabel(`${first.stdout}\n${first.stderr}`, PACK_LABEL, root);
     assert.equal(fs.existsSync(absent), false, `${name}: no output directory may be created`);
@@ -173,7 +178,11 @@ test('release:pack refuses a package.json that repeats a key, and writes no outp
     fs.writeFileSync(path.join(existing, 'manifest.json'), 'caller data that is not a build manifest\n');
     fs.writeFileSync(path.join(existing, 'keep.txt'), 'unrelated file\n');
     const before = snapshot(existing);
-    const second = spawnSync(process.execPath, [pack, '--dist', existing], { cwd: root, encoding: 'utf8' });
+    const second = spawnSync(process.execPath, [pack, '--dist', existing], {
+      cwd: root,
+      encoding: 'utf8',
+      env: createPrivateNpmEnv(scratch),
+    });
     assert.equal(second.status, 1, `${name}: a second run must fail the same way`);
     assertFixedLabel(`${second.stdout}\n${second.stderr}`, PACK_LABEL, root);
     assert.deepEqual(snapshot(existing), before, `${name}: the existing output must be byte-identical`);
@@ -225,7 +234,11 @@ test('a valid package.json is still accepted end to end by the same entry point'
   fs.writeFileSync(path.join(root, 'README.md'), '# probe\n');
   fs.writeFileSync(path.join(root, 'LICENSE'), 'probe\n');
   const dist = path.join(freshDir(), 'out');
-  const run = spawnSync(process.execPath, [path.join(root, 'scripts', 'release', 'pack.mjs'), '--dist', dist], { cwd: root, encoding: 'utf8' });
+  const run = spawnSync(process.execPath, [path.join(root, 'scripts', 'release', 'pack.mjs'), '--dist', dist], {
+    cwd: root,
+    encoding: 'utf8',
+    env: createPrivateNpmEnv(scratch),
+  });
   assert.equal(run.status, 0, `the valid fixture must build:\n${run.stdout}\n${run.stderr}`);
   assert.deepEqual(fs.readdirSync(dist).sort(), [
     'SHA256SUMS',

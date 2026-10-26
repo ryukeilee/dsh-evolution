@@ -33,6 +33,7 @@ import {
   REPO_ROOT, builtWithProblems, contentDigestOf, readManifest, readReleaseManifest, readTarEntries, releaseArtifactPath,
 } from '../scripts/release/release-lib.mjs';
 import { inspectBuildManifest, inspectCandidateBuild } from '../scripts/release/publish-artifact.mjs';
+import { createPrivateNpmEnv } from '../scripts/acceptance/npm-cache-env.mjs';
 
 const packageManifest = readManifest();
 const pinned = readReleaseManifest();
@@ -334,7 +335,11 @@ test('the committed artifact and a real npm pack output are both still accepted'
     `${JSON.stringify({ name: 'dsh-release-reader-probe', version: '0.0.0', files: ['index.js'] }, null, 2)}\n`,
   );
   fs.writeFileSync(path.join(dir, 'index.js'), 'export default 1;\n');
-  const packed = spawnSync('npm', ['pack', '--json', '--pack-destination', dir, '--ignore-scripts'], { cwd: dir, encoding: 'utf8' });
+  const packed = spawnSync('npm', ['pack', '--json', '--pack-destination', dir, '--ignore-scripts'], {
+    cwd: dir,
+    encoding: 'utf8',
+    env: createPrivateNpmEnv(dir),
+  });
   assert.equal(packed.status, 0, `the fixture needs a working npm: ${packed.stderr}`);
   const info = JSON.parse(packed.stdout)[0];
   const file = path.join(dir, info.filename);
@@ -697,7 +702,11 @@ test('no rejection surface echoes a candidate sentinel from metadata or an entry
   }, null, 2)}\n`);
   fs.writeFileSync(path.join(packDir, 'SHA256SUMS'), `${'a'.repeat(64)}  ${sentinel}-${packageManifest.version}.tgz\n`);
   const beforePack = snapshot(packDir);
-  const packRun = spawnSync(process.execPath, [PACK, '--dist', packDir], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const packRun = spawnSync(process.execPath, [PACK, '--dist', packDir], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    env: createPrivateNpmEnv(scratch),
+  });
   assert.notEqual(packRun.status, 0, 'pack must refuse a manifest that names another package');
   const packSurface = `${packRun.stdout}\n${packRun.stderr}`;
   assert.match(packSurface, /describes a different package/);

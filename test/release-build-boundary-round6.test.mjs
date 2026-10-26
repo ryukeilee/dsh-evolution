@@ -42,6 +42,7 @@ import {
   readReleaseManifest,
 } from '../scripts/release/release-lib.mjs';
 import { inspectPinWriteTargets, inspectPinnedRelease } from '../scripts/release/publish-artifact.mjs';
+import { createPrivateNpmEnv } from '../scripts/acceptance/npm-cache-env.mjs';
 
 const packageManifest = readManifest();
 const pinned = readReleaseManifest();
@@ -52,6 +53,14 @@ const BUILD_MANIFEST = 'manifest.json';
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'evo-build-boundary-round6-'));
 test.after(() => fs.rmSync(scratch, { recursive: true, force: true }));
+
+function runPack(dist) {
+  return spawnSync(process.execPath, [PACK, '--dist', dist], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    env: createPrivateNpmEnv(scratch),
+  });
+}
 
 let fixtureCount = 0;
 function freshDir() {
@@ -95,7 +104,7 @@ let seedDir = null;
 function seedBuild() {
   if (seedDir !== null) return seedDir;
   const dir = path.join(scratch, 'pack-seed');
-  const run = spawnSync(process.execPath, [PACK, '--dist', dir], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const run = runPack(dir);
   assert.equal(run.status, 0, `building the seed output failed:\n${run.stdout}\n${run.stderr}`);
   seedDir = dir;
   return dir;
@@ -184,7 +193,7 @@ test('release:pack refuses a build manifest that repeats builtWith, and leaves e
   assert.equal(JSON.stringify(parsed).includes(DUPLICATE_SENTINEL), false, 'but not in the parsed value');
 
   const before = snapshot(dir);
-  const result = spawnSync(process.execPath, [PACK, '--dist', dir], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const result = runPack(dir);
   assert.notEqual(result.status, 0, 'a manifest with a repeated key must not be overwritten');
   const surface = `${result.stdout}\n${result.stderr}`;
   assert.match(surface, /refusing to overwrite manifest\.json: it repeats an object key/);
@@ -224,7 +233,7 @@ test('a nested repeated key inside builtWith is refused by both entry points', (
   assert.equal(JSON.stringify(JSON.parse(duplicated)).includes(DUPLICATE_SENTINEL), false, 'but not in the parsed value');
   const before = snapshot(dir);
 
-  const result = spawnSync(process.execPath, [PACK, '--dist', dir], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const result = runPack(dir);
   assert.notEqual(result.status, 0);
   assert.match(`${result.stdout}\n${result.stderr}`, /repeats an object key/);
   assert.equal(`${result.stdout}\n${result.stderr}`.includes(DUPLICATE_SENTINEL), false);
@@ -267,7 +276,7 @@ test('a filesystem exception below --dist is reported by errno category, and not
   fs.writeFileSync(blocker, 'this is a regular file, so it cannot hold an output directory\n');
   const target = path.join(blocker, 'output');
 
-  const run = spawnSync(process.execPath, [PACK, '--dist', target], { cwd: REPO_ROOT, encoding: 'utf8' });
+  const run = runPack(target);
   assert.notEqual(run.status, 0, 'lstat below a regular file cannot be treated as an absent output');
   const surface = `${run.stdout}\n${run.stderr}`;
   assert.match(surface, /release:pack failed: refusing to inspect an output entry: the filesystem reported ENOTDIR/);

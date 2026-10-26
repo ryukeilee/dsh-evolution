@@ -31,6 +31,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { REPO_ROOT, DIST_DIR, archiveContentDigest, packageFileName, readManifest } from '../release/release-lib.mjs';
+import { createPrivateNpmEnv } from './npm-cache-env.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROBES = path.join(HERE, 'probes');
@@ -205,7 +206,11 @@ function installedBundleVersion() {
 /** Pack an already-extracted package directory (used for the upgrade artifact). */
 function packDirectory(dir, destDir) {
   fs.mkdirSync(destDir, { recursive: true });
-  const result = spawnSync('npm', ['pack', '--json', '--pack-destination', destDir, '--ignore-scripts'], { cwd: dir, encoding: 'utf8' });
+  const result = spawnSync('npm', ['pack', '--json', '--pack-destination', destDir, '--ignore-scripts'], {
+    cwd: dir,
+    encoding: 'utf8',
+    env: createPrivateNpmEnv(work),
+  });
   if (result.status !== 0) throw new Error(`npm pack failed in ${dir}: ${(result.stderr || '').split('\n').slice(-5).join('\n')}`);
   const parsed = JSON.parse(result.stdout);
   const info = Array.isArray(parsed) ? parsed[0] : parsed;

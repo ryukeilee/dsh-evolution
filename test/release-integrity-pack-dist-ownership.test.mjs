@@ -38,7 +38,9 @@ import {
   readManifest,
   readTarEntries,
   treeContentDigest,
-} from '../scripts/release/release-lib.mjs';import { assertUsableDist, installFile, installOutputSet, targetPath } from '../scripts/release/pack.mjs';
+} from '../scripts/release/release-lib.mjs';
+import { assertUsableDist, installFile, installOutputSet, targetPath } from '../scripts/release/pack.mjs';
+import { createPrivateNpmEnv } from '../scripts/acceptance/npm-cache-env.mjs';
 
 const PACK = path.join(REPO_ROOT, 'scripts', 'release', 'pack.mjs');
 const manifest = readManifest();
@@ -56,7 +58,7 @@ function runPack(dist, env = {}) {
   return spawnSync(process.execPath, [PACK, '--dist', dist], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: { ...process.env, ...env },
+    env: createPrivateNpmEnv(scratch, { ...process.env, ...env }),
   });
 }
 
