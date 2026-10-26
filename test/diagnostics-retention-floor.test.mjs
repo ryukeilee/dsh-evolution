@@ -116,7 +116,7 @@ for (const [name, inconsistent] of Object.entries({
   assert.equal(check.recoverable, false);
   assert.equal(check.repair, undefined);
   assert.ok(check.evidence.floorProblems.length > 0);
-  assert.equal(check.evidence.floor.source, 'committed');
+  assert.equal(check.evidence.floorSource, 'committed');
   assert.deepEqual(fs.readFileSync(paths.eventBridgePath), tail, 'the doctor preserves the log it judged');
 });
 
@@ -145,6 +145,37 @@ test('doctor judges the pending floor against the committed one it would replace
   assert.equal(check.evidence.floorSource, 'pending');
   assert.deepEqual(check.evidence.floorProblems.map((problem) => problem.code), ['floor-regression-markers']);
   assert.equal(fs.existsSync(path.join(paths.domainStagingDir, stage)), true, 'the doctor never installs or removes a stage');
+});
+
+for (const [name, mutatePending, code] of [
+  ['cumulative log bytes', (committed) => ({ ...committed, log: { ...committed.log, bytes: 3 } }), 'floor-regression-log-bytes'],
+  ['the log claim itself', (committed) => ({ ...committed, log: null }), 'floor-regression-log-claim'],
+]) test(`doctor reports a pending floor behind the committed one: ${name}`, async (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'doctor-floor-pending-log-'));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  const paths = resolveEvolutionPaths({ dshHome: home });
+  fs.mkdirSync(paths.dataRoot, { recursive: true });
+  fs.writeFileSync(paths.keyPath, key, { mode: 0o600 });
+  // The committed floor stands on its own (`bytes` 24 covers its last discard of
+  // 2); only the rebuild *behind* it is wrong, so exactly one rule may fire.
+  const committed = { ...retention, markers: { pruned: 12, chain }, log: { ...retention.log, bytes: 24, records: 4 } };
+  const pending = mutatePending(committed);
+  const stage = 'stage-12345678-1234-1234-1234-123456789abc';
+  fs.mkdirSync(path.join(paths.domainStagingDir, stage), { recursive: true });
+  fs.writeFileSync(paths.domainGlobalPath, JSON.stringify({ unit: { name: 'evolution_domain', version: 1 }, global: {
+    schema: 1, aggregate: { evolution: { schema: 4, observations: [], proposals: [] } }, applied: {},
+    pending: { stage, aggregate: { evolution: { schema: 4 } }, applied: {}, files: [], retention: pending },
+    retention: committed,
+  }, tables: {} }));
+  fs.writeFileSync(paths.eventBridgePath, tail);
+  const report = await collectDiagnostics({ dshHome: home, composition: false, probe: false });
+  const check = report.checks.find((entry) => entry.id === 'state.retention-floor');
+  assert.equal(check.evidence.status, 'floor-inconsistent');
+  assert.equal(check.level, 'blocked');
+  assert.deepEqual(check.evidence.floorProblems, [{
+    scope: 'pending', code,
+    message: check.evidence.floorProblems[0].message,
+  }]);
 });
 
 test('doctor reports the floor counters and any reclaim temporary without changing either', async (t) => {

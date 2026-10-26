@@ -180,10 +180,10 @@ test('a truncation that fails on its own keeps its own code instead of a retry h
     const floor = structuredClone(ledger(f).retention);
     const prior = logBytes(f.config.eventBridgePath);
 
-    // The lock is free, so the rewrite is attempted and fails for its own reason:
-    // its temporary cannot be created here. That is permanent, and reporting it as
-    // `E_DOMAIN_EVENT_LOG_BUSY` would invite an operator to retry a pass that can
-    // only fail the same way.
+    // The lock is free, so completion is attempted and the append-lock helper
+    // fails for its own reason: it cannot create the lock directory here. That is
+    // not contention, and reporting it as `E_DOMAIN_EVENT_LOG_BUSY` would invite an
+    // operator to retry a pass that can only fail the same way.
     fs.chmodSync(f.root, 0o500);
     await assert.rejects(port.flush(), (error) => {
       assert.equal(error.code, 'EACCES');
@@ -200,6 +200,29 @@ test('a truncation that fails on its own keeps its own code instead of a retry h
     release();
     await port.close().catch(() => {});
   }
+});
+
+test('a rewrite that refuses its own bound keeps a named error, not a retry hint', async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'retention-bounded-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const file = path.join(root, 'execution-events.jsonl');
+  const prior = Buffer.from('AB');
+  const tail = Buffer.from('B');
+  const floor = { schema: 1, markers: { pruned: 1, chain: crypto.createHash('sha256').update('chain').digest('hex') },
+    log: { bytes: 1, records: 1,
+      prior: { bytes: prior.length, digest: digestLogBytes(KEY, prior) },
+      tail: { bytes: tail.length, digest: digestLogBytes(KEY, tail) } } };
+  // The log is the prior file plus bytes appended after the commit. Its head is
+  // `A`, not the claimed tail `B`, so the deferred branch runs, and the region it
+  // would keep is above the ceiling this call is given.
+  fs.writeFileSync(file, Buffer.concat([prior, Buffer.from(' CDEF')]));
+  const completion = () => completeEventLogTruncation({ file, key: KEY, floor, withAppendLock: withEventBridgeAppendLock, retainCeiling: 4 });
+  assert.throws(completion, (error) => {
+    assert.equal(error.code, 'E_DOMAIN_EVENT_LOG_RETAIN_UNBOUNDED');
+    return true;
+  });
+  // Nothing was written: the bound refuses the rewrite before its temporary exists.
+  assert.equal(fs.readFileSync(file, 'utf8'), 'AB CDEF');
 });
 
 test('a missing log is proved without touching the only copy of its retained bytes', async (t) => {
