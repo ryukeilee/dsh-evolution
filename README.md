@@ -6,7 +6,7 @@
 
 | 关键事实 | 当前值 |
 | --- | --- |
-| 版本 | `0.2.0-rc.18`（发布候选） |
+| 版本 | `0.2.0-rc.19`（发布候选） |
 | 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2` |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
@@ -130,7 +130,7 @@ Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 i
 | 覆盖组 | 检查内容 |
 | --- | --- |
 | 宿主 | CLI、版本与模块、安装、官方 composition |
-| 运行时 | 能力、9 个工具的注册、Cordis / Include 接口探针 |
+| 运行时 | 能力、10 个工具的注册、Cordis / Include 接口探针 |
 | 数据与状态 | 数据根、key、target claim、memory、档案、事件桥 MAC、domain 聚合 / staging / 锁、旧 Dockyard 状态 |
 | 迁移与晋升 | migration manifest；journal、composition、pointer |
 | 插件与能力 | 插件目录、包、patch、支持矩阵、legacy adapter、已知限制 |
@@ -153,8 +153,8 @@ CLI 退出码：`0` 健康、`1` 存在降级项、`2` 存在阻塞项、`3` 参
 从 GitHub Release 下载 tarball 和校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.18
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.18.tgz" -o dsh-evolution-0.2.0-rc.18.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.19
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.0-rc.19.tgz" -o dsh-evolution-0.2.0-rc.19.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
@@ -162,7 +162,7 @@ sha256sum --check SHA256SUMS
 macOS 可用 `shasum -a 256 -c SHA256SUMS` 校验。也可用 GitHub CLI 下载同一 Release 的 tarball、`SHA256SUMS` 与 `manifest.json`。校验通过后，用官方 CLI 安装：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.18.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0-rc.19.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
@@ -317,7 +317,7 @@ npm run acceptance:host -- --host 0.2.1-rc.2 --out <evidence-path>
 
 `scripts/acceptance/run-host-acceptance.mjs` 按实际记录路径生成 21 个步骤：每个宿主包含官方安装、CLI doctor、核心 Trial / revert、pluginManager 禁用 / 启用、卸载与重装、升级 / 回滚，以及真实 promotion、跨重启 canary 和最终 doctor。固定证据中的每个宿主均为 21/21 步通过，最终诊断为 `healthy`。
 
-覆盖分为 9 组：官方 CLI 只读诊断；核心 `inspect → propose → trial → measure → revert`（要求 Runtime 恢复并注册 9 个工具）；pluginManager 禁用 / 启用并验证 memory 字节不变；卸载、无插件启动、重新安装；重装后核心流程和已有 memory 保留；升级与回滚并验证工具和 memory 哈希；真实晋升进入 canary 且监听器跨进程重启存活；startup 提交 stable 并验证指标回归只回滚新候选；再次重启验证候选状态并以最终 doctor 收尾。
+覆盖分为 9 组：官方 CLI 只读诊断；核心 `inspect → propose → trial → measure → revert`（要求 Runtime 恢复并注册 10 个工具）；pluginManager 禁用 / 启用并验证 memory 字节不变；卸载、无插件启动、重新安装；重装后核心流程和已有 memory 保留；升级与回滚并验证工具和 memory 哈希；真实晋升进入 canary 且监听器跨进程重启存活；startup 提交 stable 并验证指标回归只回滚新候选；再次重启验证候选状态并以最终 doctor 收尾。
 
 | DSH 宿主 | Cordis | Include | Loader | 验收 | 最终诊断 |
 | --- | --- | --- | --- | --- | --- |
@@ -329,7 +329,7 @@ npm run acceptance:host -- --host 0.2.1-rc.2 --out <evidence-path>
 
 `npm run pack:check` 两种模式都执行 16 项检查。开发模式允许工作树是固定点的**已提交**后继（脚本会逐条点名与固定产物不同的文件），但分发文件存在**未提交**改动时一律失败；`--release` 则把“固定点描述自己的提交 / 工作树是固定点或已提交后继”换成更严格的“固定点固定本树内容 / 工作树构建出固定内容”。
 
-源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.18.tgz --content-only`。
+源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.0-rc.19.tgz --content-only`。
 
 ## 相关文档
 

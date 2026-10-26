@@ -6,6 +6,17 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.19 — 容量回收与恢复可靠性
+
+本候选包含截至 `a876321` 的全部生产修复，保留三个既有官方宿主与 Node 兼容范围。
+
+- 增加显式确认的容量回收：先外化证据、提交 retention floor，再截断事件日志；中断后可幂等完成，无法证明保留字节时拒绝重放。doctor 只读报告 floor 状态。
+- 修复重复回收、锁竞争和截断失败的恢复与错误分类；保留损坏现场，防止丢失 sealed 档案的证据被静默忽略。
+- 降低大量事件历史的启动与诊断内存占用，修复 CodeQL 报告的恒等替换。
+- **兼容性边界：执行 retention 回收后，领域文档带有 `retention` 字段，旧版本严格 schema 会拒绝该字段，因此不可降级到旧版插件。** 回收是显式操作，dry run 不删除数据。
+
+发布验证与固定产物以 `RELEASE.md` 和 `release/manifest.json` 为准；历史 rc.18 资产保留。
+
 ## 0.2.0-rc.18 — 冷档案写入收敛、恢复边界与特殊键保真
 
 本候选在 `0.2.0-rc.17` 之上覆盖 `v0.2.0-rc.17..b894745` 的 48 个提交；本次版本号与随包文档的改动是紧随其后的提交，rc.17 发布证据提交不带 shipped change。其余变更涉及冷档案索引与 staging 发布、领域事务和派生文件写入、恢复与发布边界、doctor 残件诊断、知识键保真，以及事件桥尾部、晋升 journal 和 guard 证明。已修改依赖版本；`peerDependencies`、`engines` 与支持宿主范围不变。没有新增公开工具参数、授权来源、持久 schema 字段或版本、晋升门禁。包版本已升至 `0.2.0-rc.18`；这些分发文件改动改变了 `contentSha256`，因此 `release/` 固定产物、`release/SHA256SUMS` 与三份宿主验收证据按 `RELEASE.md` 第 4.1 节重新生成，重新固定后的内容摘要与这棵树一致。
