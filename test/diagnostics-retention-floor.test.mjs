@@ -120,6 +120,31 @@ for (const [name, inconsistent] of Object.entries({
   assert.deepEqual(fs.readFileSync(paths.eventBridgePath), tail, 'the doctor preserves the log it judged');
 });
 
+test('a pending floor with no committed floor is judged once, as pending', async (t) => {
+  // The first-ever reclaim writes a pending record on a root that has no committed
+  // floor yet. That document must be judged under its own scope only: reading it
+  // into the committed slot reports every finding twice.
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'doctor-floor-pending-only-'));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  const paths = resolveEvolutionPaths({ dshHome: home });
+  fs.mkdirSync(paths.dataRoot, { recursive: true });
+  fs.writeFileSync(paths.keyPath, key, { mode: 0o600 });
+  const pending = { ...retention, markers: { pruned: 0, chain } };
+  const stage = 'stage-12345678-1234-1234-1234-123456789abc';
+  fs.mkdirSync(path.join(paths.domainStagingDir, stage), { recursive: true });
+  fs.writeFileSync(paths.domainGlobalPath, JSON.stringify({ unit: { name: 'evolution_domain', version: 1 }, global: {
+    schema: 1, aggregate: { evolution: { schema: 4, observations: [], proposals: [] } }, applied: {},
+    pending: { stage, aggregate: { evolution: { schema: 4 } }, applied: {}, files: [], retention: pending },
+  }, tables: {} }));
+  fs.writeFileSync(paths.eventBridgePath, tail);
+  const report = await collectDiagnostics({ dshHome: home, composition: false, probe: false });
+  const check = report.checks.find((entry) => entry.id === 'state.retention-floor');
+  assert.equal(check.evidence.status, 'floor-inconsistent');
+  assert.equal(check.evidence.floorSource, 'pending');
+  assert.deepEqual(check.evidence.floorProblems.map((problem) => problem.scope), ['pending']);
+  assert.deepEqual(check.evidence.floorProblems.map((problem) => problem.code), ['marker-chain-without-pruned-markers']);
+});
+
 test('doctor judges the pending floor against the committed one it would replace', async (t) => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'doctor-floor-pending-regression-'));
   t.after(() => fs.rmSync(home, { recursive: true, force: true }));
