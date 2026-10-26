@@ -81,11 +81,11 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 脚本是自包含的：它在一个临时目录里用 pnpm 安装指定版本的官方 `@deepseek-ai/dsh`，在全新的 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步：
 
 1. 官方 CLI 只读诊断（`host.version` 必须是 `verified: true`，状态不得为 `blocked`）
-2. 核心流程：`runtime_inspect → propose → trial → measure → revert`，要求 `runtimeRecovered: true`，以及 9 个工具全部注册
+2. 核心流程：`runtime_inspect → propose → trial → measure → revert`，要求 `runtimeRecovered: true`，以及 10 个工具全部注册
 3. 官方 `pluginManager` 禁用 / 启用，断言 `applied` / `restart-required` 的实时与选中语义，且用户数据逐字节不变
 4. 官方 CLI 卸载，官方宿主在插件缺席时仍能启动，再重新安装
 5. 重装后核心流程再次通过，且原有 memory 条目全部保留
-6. README 的升级与回滚流程：把同一棵树重打包成更高版本用官方 CLI 升级，再用当前 tarball 回滚；两步之后宿主仍注册 9 个工具且用户数据不变
+6. README 的升级与回滚流程：把同一棵树重打包成更高版本用官方 CLI 升级，再用当前 tarball 回滚；两步之后宿主仍注册 10 个工具且用户数据不变
 7. 真实 promotion：`propose → trial → measure → 二次确认门 → promote → canary 观察`，监听器可被真实触发并跨进程重启存活
 8. 重启后 startup canary 提交为 `stable`；新候选注入 `metricRegression` 触发 canary 回滚，且只回滚新候选、保留已提交候选
 9. 再次重启后已提交候选仍存活、被回滚候选未复活，最终诊断 `healthy`
@@ -100,7 +100,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 
 ### 4.1 已执行的验收记录
 
-固定点的宿主验收记录保存在上列三个 `docs/evidence/dsh-<host>.json` 文件中。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
+三个官方宿主针对 rc.19 固定产物各完成 21/21 项验收，最终 doctor 均为 `healthy`、退出码为 0。固定点的宿主验收记录保存在上列三个 `docs/evidence/dsh-<host>.json` 文件中。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
 
 ## 5. CI 与发布链
 
@@ -172,7 +172,7 @@ rc.18 没有改变 CI job 集、宿主矩阵或 publish 顺序。随候选新增
 
 34. **own `__proto__` 键现在保留身份，但已经折叠的旧行不迁移。** 新数据从摄取、聚合、持久化、冷档案到工具与 evidence 投影都保留该自有属性；不含 own `__proto__` 的载荷保持旧身份字节。过去已把不同载荷折叠成一行的记录无法从现存字节推断其原始差异，本候选不迁移、不猜测恢复；相关边界见 `CHANGELOG.md` 与 knowledge identity 差分测试。
 
-35. **doctor 的 `state.ownership` 只报告 claim，不回收无法证明陈旧的条目。** check id 从 26 增至 27；repair id 仍为 6，degradedCapability id 仍为 5。doctor 与运行时共用 `parseTargetClaim` / `classifyTargetClaim` 并保持相同处理顺序，但 doctor 从不采纳或删除 claim；同 experimentId 的采纳及同主机整数 pid 确认 `ESRCH` 的回收仍只属于运行时既有路径。外地主机、不可读或缺少可用身份的 claim 只报告。`data.key` 不是新增 check id；实现和数量见 `lib/diagnostics.js`、`lib/orchestrator.js`。
+35. **doctor 的 `state.ownership` 只报告 claim，不回收无法证明陈旧的条目。** rc.18 中 check id 从 26 增至 27；rc.19 新增 `state.retention-floor`，总数为 28，repair id 为 6，degradedCapability id 为 5。doctor 与运行时共用 `parseTargetClaim` / `classifyTargetClaim` 并保持相同处理顺序，但 doctor 从不采纳或删除 claim；同 experimentId 的采纳及同主机整数 pid 确认 `ESRCH` 的回收仍只属于运行时既有路径。外地主机、不可读或缺少可用身份的 claim 只报告。`data.key` 不是新增 check id；实现和数量见 `lib/diagnostics.js`、`lib/orchestrator.js`。
 
 36. **依赖升级没有扩大宿主或 Node 兼容范围。** `zod` 从 `4.6.5` 升至 `4.6.6`，`@modelcontextprotocol/client` override 从 `2.2.0` 升至 `2.3.0`；依赖安全审计记录 `8 → 0`，见 `docs/evidence/dependency-security-20261024.md`。`peerDependencies`、`engines` 与支持宿主版本列表保持不变。
 
