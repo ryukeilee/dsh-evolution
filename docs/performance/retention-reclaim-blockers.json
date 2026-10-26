@@ -1,0 +1,614 @@
+{
+  "schema": 1,
+  "environment": {
+    "node": "v22.23.4",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "measurementRequested": true,
+  "fixtures": "all under os.tmpdir(); removed before process exit",
+  "r1": {
+    "purpose": "mirror live archives, compact in a staged EvolutionMemory, publish the aggregate, and install only changedArchiveFiles()",
+    "input": {
+      "sourceObservationRows": 320,
+      "liveHistoryRowsBefore": 320,
+      "initialSealedSegments": 317
+    },
+    "compaction": {
+      "beforeSealedSegments": 317,
+      "afterSealedSegments": 2,
+      "segmentCountReduced": true,
+      "stageRemovedSegmentNames": {
+        "count": 315,
+        "first": [
+          "segment-000000000003.jsonl",
+          "segment-000000000004.jsonl",
+          "segment-000000000005.jsonl"
+        ],
+        "last": [
+          "segment-000000000315.jsonl",
+          "segment-000000000316.jsonl",
+          "segment-000000000317.jsonl"
+        ]
+      },
+      "retired": 0,
+      "consolidated": 636,
+      "aggregatedObservations": 4,
+      "beforeRows": 320,
+      "afterRows": 4
+    },
+    "changedArchiveFiles": {
+      "count": 4,
+      "entries": [
+        {
+          "file": "state.json.evolution-archive-index.json",
+          "bytes": 1687
+        },
+        {
+          "file": "state.json.observations-archive.jsonl",
+          "bytes": 0
+        },
+        {
+          "file": "state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "bytes": 1119
+        },
+        {
+          "file": "state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "bytes": 1119
+        }
+      ],
+      "containsDeletionEntries": false,
+      "stageDeletedSegmentNamesRepresented": {
+        "count": 0,
+        "first": [],
+        "last": []
+      }
+    },
+    "afterInstallBeforeRestart": {
+      "liveSegmentNames": {
+        "count": 317,
+        "first": [
+          "segment-000000000001.jsonl",
+          "segment-000000000002.jsonl",
+          "segment-000000000003.jsonl"
+        ],
+        "last": [
+          "segment-000000000315.jsonl",
+          "segment-000000000316.jsonl",
+          "segment-000000000317.jsonl"
+        ]
+      },
+      "unindexedLiveSegmentNames": {
+        "count": 315,
+        "first": [
+          "segment-000000000003.jsonl",
+          "segment-000000000004.jsonl",
+          "segment-000000000005.jsonl"
+        ],
+        "last": [
+          "segment-000000000315.jsonl",
+          "segment-000000000316.jsonl",
+          "segment-000000000317.jsonl"
+        ]
+      },
+      "staleStageDeletedNamesStillLive": {
+        "count": 315,
+        "first": [
+          "segment-000000000003.jsonl",
+          "segment-000000000004.jsonl",
+          "segment-000000000005.jsonl"
+        ],
+        "last": [
+          "segment-000000000315.jsonl",
+          "segment-000000000316.jsonl",
+          "segment-000000000317.jsonl"
+        ]
+      }
+    },
+    "afterRestart": {
+      "historyRows": 319,
+      "originalSourceIdsReadable": 315,
+      "aggregateRowsReadable": 4,
+      "originalAndAggregateBothReadable": true,
+      "duplicateIds": 0,
+      "duplicateIdExamples": [],
+      "verifyConsistency": {
+        "valid": false,
+        "reasons": [
+          "live_durable_memory_projection_mismatch"
+        ],
+        "archiveValid": true
+      }
+    },
+    "result": "成立：已安装清单没有表达段删除，旧源记录与聚合记录在重启后同时可读。"
+  },
+  "r2": {
+    "records": 200,
+    "appliedMarkersBefore": 200,
+    "appliedMarkersAfterRemovingOne": 199,
+    "checkpoint": {
+      "written": true,
+      "bytes": 73660,
+      "records": 200
+    },
+    "trusted": {
+      "trusted": true,
+      "prefixRecords": 200,
+      "recordsToProcess": 0,
+      "linesReturned": 0
+    },
+    "oneMarkerRemoved": {
+      "trusted": false,
+      "prefixRecords": 0,
+      "recordsToProcess": 200,
+      "linesReturned": 200,
+      "skippedRecords": 0
+    },
+    "cost": {
+      "trustedRecordsPerRecordWork": 0,
+      "untrustedRecordsPerRecordWork": 200,
+      "extraRecordsPerRecordWork": 200,
+      "trustedCanSkipConsumedPrefix": 200,
+      "afterMarkerRemovalCanSkipConsumedPrefix": 0
+    },
+    "result": "成立：裁剪一个 marker 后 appliedDigest 不再匹配，0 条可跳过前缀退回到逐条处理 200 条。"
+  },
+  "r3": {
+    "logRowsBefore": 3,
+    "removedLine": {
+      "eventType": "promotion-succeeded",
+      "removed": true
+    },
+    "before": {
+      "capturedAt": "2026-10-26T00:00:03.000Z",
+      "promotionTimestamp": "2026-10-26T00:00:02.000Z",
+      "latestObservation": {
+        "latencyMs": 14,
+        "observed": 1
+      },
+      "gateEvidence": {
+        "runtimeRecovered": true,
+        "testsPassed": true,
+        "goalPassed": true
+      },
+      "recoveryProof": {
+        "status": "recovered",
+        "source": "event-bridge:promotion-succeeded",
+        "verificationSource": "event-bridge:gates.runtimeRecovered",
+        "capturedAt": "2026-10-26T00:00:02.000Z",
+        "runtimeRecovered": true,
+        "gateEvidence": {
+          "runtimeRecovered": true,
+          "testsPassed": true,
+          "goalPassed": true
+        }
+      },
+      "runtimeRecovered": true,
+      "durable": {
+        "pluginName": "fixture-plugin",
+        "pluginPath": "/tmp/fixture-plugin",
+        "linkPath": "/tmp/fixture-link",
+        "rowId": "row-fixture-1",
+        "archivePath": "/tmp/fixture-archive",
+        "presetId": "preset-fixture",
+        "promotionTimestamp": "2026-10-26T00:00:02.000Z",
+        "healthObservationWindow": 2
+      },
+      "canary": {
+        "promotionTimestamp": "2026-10-26T00:00:02.000Z",
+        "healthObservationWindow": 2,
+        "startupVerified": true,
+        "observations": [
+          {
+            "healthy": true,
+            "at": "2026-10-26T00:00:03.000Z"
+          }
+        ]
+      },
+      "cleanupProof": null,
+      "observationCount": 2
+    },
+    "after": {
+      "capturedAt": "2026-10-26T00:00:03.000Z",
+      "promotionTimestamp": null,
+      "latestObservation": {
+        "latencyMs": 14,
+        "observed": 1
+      },
+      "gateEvidence": null,
+      "recoveryProof": {
+        "status": "unknown",
+        "source": "event-bridge:promotion-succeeded",
+        "verificationSource": "event-bridge:gates.runtimeRecovered",
+        "capturedAt": "2026-10-26T00:00:03.000Z",
+        "runtimeRecovered": false,
+        "gateEvidence": null
+      },
+      "runtimeRecovered": false,
+      "durable": null,
+      "canary": {
+        "promotionTimestamp": null,
+        "healthObservationWindow": 2,
+        "startupVerified": true,
+        "observations": [
+          {
+            "healthy": true,
+            "at": "2026-10-26T00:00:03.000Z"
+          }
+        ]
+      },
+      "cleanupProof": null,
+      "observationCount": 2
+    },
+    "changedEvidenceFields": [
+      {
+        "path": "$.canary.promotionTimestamp",
+        "before": "2026-10-26T00:00:02.000Z",
+        "after": null
+      },
+      {
+        "path": "$.durable",
+        "before": {
+          "pluginName": "fixture-plugin",
+          "pluginPath": "/tmp/fixture-plugin",
+          "linkPath": "/tmp/fixture-link",
+          "rowId": "row-fixture-1",
+          "archivePath": "/tmp/fixture-archive",
+          "presetId": "preset-fixture",
+          "promotionTimestamp": "2026-10-26T00:00:02.000Z",
+          "healthObservationWindow": 2
+        },
+        "after": null
+      },
+      {
+        "path": "$.gateEvidence",
+        "before": {
+          "runtimeRecovered": true,
+          "testsPassed": true,
+          "goalPassed": true
+        },
+        "after": null
+      },
+      {
+        "path": "$.promotionTimestamp",
+        "before": "2026-10-26T00:00:02.000Z",
+        "after": null
+      },
+      {
+        "path": "$.recoveryProof.capturedAt",
+        "before": "2026-10-26T00:00:02.000Z",
+        "after": "2026-10-26T00:00:03.000Z"
+      },
+      {
+        "path": "$.recoveryProof.gateEvidence",
+        "before": {
+          "runtimeRecovered": true,
+          "testsPassed": true,
+          "goalPassed": true
+        },
+        "after": null
+      },
+      {
+        "path": "$.recoveryProof.runtimeRecovered",
+        "before": true,
+        "after": false
+      },
+      {
+        "path": "$.recoveryProof.status",
+        "before": "recovered",
+        "after": "unknown"
+      },
+      {
+        "path": "$.runtimeRecovered",
+        "before": true,
+        "after": false
+      }
+    ],
+    "bridgeNeverCarries": {
+      "cleanupProof": "always null; it is not represented by these event rows"
+    },
+    "result": "成立：删除 promotion-succeeded 行后晋升门禁与 durable 元数据消失；measurement 与 canary 行仍可提供其各自字段。"
+  },
+  "r4": {
+    "corpus": {
+      "requestedExperiments": 20000,
+      "historyRowsBeforeCompact": 20000,
+      "coldExperimentLines": 19968,
+      "realWriteApi": "EvolutionMemory#recordExperiment()",
+      "setupMs": 25613.211125,
+      "coldArchiveBefore": {
+        "totalBytes": 9961788,
+        "totalLines": 19968,
+        "archiveFiles": 20,
+        "segments": 19,
+        "collections": {
+          "experiments": {
+            "bytes": 9961788,
+            "lines": 19968,
+            "files": 20,
+            "segments": 19
+          }
+        }
+      },
+      "filesClonedFromRealWriteOutput": true,
+      "statement": "Each timing run starts from a byte-for-byte copy of this real-write output; JSONL fixture rows were not hand-authored."
+    },
+    "measurement": {
+      "definition": "A and B are independent fresh copies of the same fixture, both calling real EvolutionMemory#compact(); lane order alternates AB / BA / AB.",
+      "rounds": [
+        {
+          "round": 1,
+          "order": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "round": 2,
+          "order": [
+            "B",
+            "A"
+          ]
+        },
+        {
+          "round": 3,
+          "order": [
+            "A",
+            "B"
+          ]
+        }
+      ],
+      "samples": [
+        {
+          "round": 1,
+          "lane": "A",
+          "orderPosition": 1,
+          "before": {
+            "totalBytes": 9961788,
+            "totalLines": 19968,
+            "archiveFiles": 20,
+            "segments": 19,
+            "collections": {
+              "experiments": {
+                "bytes": 9961788,
+                "lines": 19968,
+                "files": 20,
+                "segments": 19
+              }
+            }
+          },
+          "after": {
+            "totalBytes": 0,
+            "totalLines": 0,
+            "archiveFiles": 1,
+            "segments": 0,
+            "collections": {
+              "experiments": {
+                "bytes": 0,
+                "lines": 0,
+                "files": 1,
+                "segments": 0
+              }
+            }
+          },
+          "deltaBytes": -9961788,
+          "reclaimedBytes": 9961788,
+          "retired": 20000,
+          "consolidated": 0,
+          "aggregatedObservations": 0,
+          "compactMs": 572.093208000002
+        },
+        {
+          "round": 1,
+          "lane": "B",
+          "orderPosition": 2,
+          "before": {
+            "totalBytes": 9961788,
+            "totalLines": 19968,
+            "archiveFiles": 20,
+            "segments": 19,
+            "collections": {
+              "experiments": {
+                "bytes": 9961788,
+                "lines": 19968,
+                "files": 20,
+                "segments": 19
+              }
+            }
+          },
+          "after": {
+            "totalBytes": 0,
+            "totalLines": 0,
+            "archiveFiles": 1,
+            "segments": 0,
+            "collections": {
+              "experiments": {
+                "bytes": 0,
+                "lines": 0,
+                "files": 1,
+                "segments": 0
+              }
+            }
+          },
+          "deltaBytes": -9961788,
+          "reclaimedBytes": 9961788,
+          "retired": 20000,
+          "consolidated": 0,
+          "aggregatedObservations": 0,
+          "compactMs": 553.7355839999982
+        },
+        {
+          "round": 2,
+          "lane": "B",
+          "orderPosition": 1,
+          "before": {
+            "totalBytes": 9961788,
+            "totalLines": 19968,
+            "archiveFiles": 20,
+            "segments": 19,
+            "collections": {
+              "experiments": {
+                "bytes": 9961788,
+                "lines": 19968,
+                "files": 20,
+                "segments": 19
+              }
+            }
+          },
+          "after": {
+            "totalBytes": 0,
+            "totalLines": 0,
+            "archiveFiles": 1,
+            "segments": 0,
+            "collections": {
+              "experiments": {
+                "bytes": 0,
+                "lines": 0,
+                "files": 1,
+                "segments": 0
+              }
+            }
+          },
+          "deltaBytes": -9961788,
+          "reclaimedBytes": 9961788,
+          "retired": 20000,
+          "consolidated": 0,
+          "aggregatedObservations": 0,
+          "compactMs": 563.6764170000024
+        },
+        {
+          "round": 2,
+          "lane": "A",
+          "orderPosition": 2,
+          "before": {
+            "totalBytes": 9961788,
+            "totalLines": 19968,
+            "archiveFiles": 20,
+            "segments": 19,
+            "collections": {
+              "experiments": {
+                "bytes": 9961788,
+                "lines": 19968,
+                "files": 20,
+                "segments": 19
+              }
+            }
+          },
+          "after": {
+            "totalBytes": 0,
+            "totalLines": 0,
+            "archiveFiles": 1,
+            "segments": 0,
+            "collections": {
+              "experiments": {
+                "bytes": 0,
+                "lines": 0,
+                "files": 1,
+                "segments": 0
+              }
+            }
+          },
+          "deltaBytes": -9961788,
+          "reclaimedBytes": 9961788,
+          "retired": 20000,
+          "consolidated": 0,
+          "aggregatedObservations": 0,
+          "compactMs": 546.8725830000003
+        },
+        {
+          "round": 3,
+          "lane": "A",
+          "orderPosition": 1,
+          "before": {
+            "totalBytes": 9961788,
+            "totalLines": 19968,
+            "archiveFiles": 20,
+            "segments": 19,
+            "collections": {
+              "experiments": {
+                "bytes": 9961788,
+                "lines": 19968,
+                "files": 20,
+                "segments": 19
+              }
+            }
+          },
+          "after": {
+            "totalBytes": 0,
+            "totalLines": 0,
+            "archiveFiles": 1,
+            "segments": 0,
+            "collections": {
+              "experiments": {
+                "bytes": 0,
+                "lines": 0,
+                "files": 1,
+                "segments": 0
+              }
+            }
+          },
+          "deltaBytes": -9961788,
+          "reclaimedBytes": 9961788,
+          "retired": 20000,
+          "consolidated": 0,
+          "aggregatedObservations": 0,
+          "compactMs": 543.5439579999984
+        },
+        {
+          "round": 3,
+          "lane": "B",
+          "orderPosition": 2,
+          "before": {
+            "totalBytes": 9961788,
+            "totalLines": 19968,
+            "archiveFiles": 20,
+            "segments": 19,
+            "collections": {
+              "experiments": {
+                "bytes": 9961788,
+                "lines": 19968,
+                "files": 20,
+                "segments": 19
+              }
+            }
+          },
+          "after": {
+            "totalBytes": 0,
+            "totalLines": 0,
+            "archiveFiles": 1,
+            "segments": 0,
+            "collections": {
+              "experiments": {
+                "bytes": 0,
+                "lines": 0,
+                "files": 1,
+                "segments": 0
+              }
+            }
+          },
+          "deltaBytes": -9961788,
+          "reclaimedBytes": 9961788,
+          "retired": 20000,
+          "consolidated": 0,
+          "aggregatedObservations": 0,
+          "compactMs": 543.8986250000016
+        }
+      ],
+      "medians": {
+        "before.totalBytes": 9961788,
+        "before.segments": 19,
+        "before.totalLines": 19968,
+        "after.totalBytes": 0,
+        "after.segments": 0,
+        "after.totalLines": 0,
+        "deltaBytes": -9961788,
+        "reclaimedBytes": 9961788,
+        "retired": 20000,
+        "consolidated": 0,
+        "compactMs": 550.3040834999993
+      },
+      "interpretation": "Measured compact delta is the observed net archive size change. It is only an upper-bound scenario for reclaim that could be safely delivered; it is not delivered reclaim behavior."
+    },
+    "result": "成立：20,000 条真实写入的失败实验经 compact 后，冷档案净减少的中位数为 9961788 bytes（如为负数则为净增长）；这只是测得的可回收上限场景。"
+  }
+}
