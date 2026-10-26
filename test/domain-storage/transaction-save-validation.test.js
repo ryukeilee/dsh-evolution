@@ -139,7 +139,6 @@ test('the only divergence is a verdict the port cannot hand this store', async (
     }
   }
 });
-
 /**
  * Count the `JSON.stringify` calls whose argument is an aggregate payload - the
  * `{ evolution: ... }` value a save hands its store, and the same shape the
@@ -147,6 +146,15 @@ test('the only divergence is a verdict the port cannot hand this store', async (
  * plus the fixed document parses; only the per-save part scales with the
  * backlog, which is what makes this a behavioural pin on the kept check rather
  * than on an absolute number.
+ *
+ * It also pins the save COUNT. A completed measurement used to save twice - the
+ * record, then the bridge marker - and the staged replay working copy now
+ * coalesces only the second of those two persists into the outcome the single
+ * publication already validates. The expectation below is therefore one save
+ * per absorbed record, not two: six extra saves became three. Pinning the exact
+ * per-record count rather than a fixed constant keeps this a statement about the
+ * path, so neither a store that stopped calling the check nor one that silently
+ * re-acquired a redundant save can satisfy it.
  */
 async function countPayloadStringifies(records) {
   const { signEventBridgeEnvelope } = await import('../../lib/orchestrator.js');
@@ -193,13 +201,12 @@ async function countPayloadStringifies(records) {
   } finally { await port.close(); await backend.close(); fs.rmSync(root, { recursive: true, force: true }); }
 }
 
-test('each save still stringifies its payload once, which is what the store checks', async () => {
-  // A completed measurement saves twice (the record, then the bridge marker), so
-  // the two backlogs differ by six saves. The fixed document parses every flush
-  // pays cancel out in the difference, and a store that stopped calling the check
-  // (or called it a fixed number of times) cannot produce it.
+test('each absorbed measurement still stringifies its payload exactly once', async () => {
+  // One persisted save per absorbed measurement record now, so three extra
+  // records add exactly three payload stringifies. The fixed document parses
+  // every flush pays cancel out in the difference.
   const small = await countPayloadStringifies(2);
   const large = await countPayloadStringifies(5);
-  assert.ok(small >= 4, `a two-record flush must stringify at least its four saves, saw ${small}`);
-  assert.equal(large - small, 6, `six extra saves must add six payload stringifies, saw ${small} -> ${large}`);
+  assert.ok(small >= 2, `a two-record flush must stringify at least its two saves, saw ${small}`);
+  assert.equal(large - small, 3, `three extra records must add three payload stringifies, saw ${small} -> ${large}`);
 });

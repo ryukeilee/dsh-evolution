@@ -1,0 +1,2614 @@
+{
+  "schema": 1,
+  "title": "First-startup history absorption attribution raw measurements",
+  "capturedAt": "2026-10-26",
+  "environment": {
+    "node": "v26.12.1",
+    "platform": "darwin/arm64",
+    "heapLimitMiB": 4096,
+    "headCommit": "b13fe4cd797ff4f3d9be289b09e20e00469180ea",
+    "sourceHashAlgorithm": "SHA-256 over package.json, package-lock.json and sorted lib/** bytes with relative paths and NUL separators.",
+    "comparisonSourceHashes": {
+      "a": {
+        "root": "/Users/ryukeili/GitHub/dsh-evolution",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      },
+      "b": {
+        "root": "/tmp/dsh-base-abs",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      }
+    },
+    "benchmarkSha256": "734f041f60215303c14950292fe16b823b1c53138353afbd23ad6b488db15561",
+    "packageDryRun": {
+      "files": 51,
+      "containsScriptsBenchmarks": false,
+      "command": "npm pack --dry-run --json"
+    }
+  },
+  "protocol": {
+    "path": "real openDomainStorage() + official DomainFacility + JsonStorageBackend; fresh worker process and fresh tmp fixture copy for every sample; no valid checkpoint in cold fixture; real randomly generated synthetic key and signed EvolutionEventBridge envelopes.",
+    "fixturePolicy": "Fixtures and keys were created under os.tmpdir(); key bytes were never included in this report.",
+    "wallAndCpu": "Worker times only openDomainStorage(); process.cpuUsage brackets that call.",
+    "peakRss": "process.resourceUsage().maxRSS is a whole-process high-water mark, not an operation-local value.",
+    "instrumentation": "JSON.stringify is wrapped to classify the {evolution:{schema>=4}} payload shape and count UTF-8 output bytes. The wrapper, argument-shape check, Buffer.byteLength, and phase probes add overhead; stringifyWallMs measures only the original JSON.stringify call."
+  },
+  "primaryABRun": {
+    "schema": 1,
+    "runId": "e8067a12-afdb-4af9-94b8-2398eb783292",
+    "completedAt": "2026-10-26T01:51:58.305Z",
+    "node": "v26.12.1",
+    "benchmarkSha256": "734f041f60215303c14950292fe16b823b1c53138353afbd23ad6b488db15561",
+    "platform": "darwin/arm64",
+    "sourceRoots": {
+      "a": {
+        "root": "/Users/ryukeili/GitHub/dsh-evolution",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      },
+      "b": {
+        "root": "/tmp/dsh-base-abs",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      }
+    },
+    "fixtureIdentity": {
+      "2000": "f971421ed3437e50eb13ae142473835f3a0deb5fff15388d095240e3e10dbf71",
+      "4000": "f1dc060487f8ac7404dbf48f34167e4aaf6cdd1a609b50bb7a6dbb51093fd249",
+      "8000": "5b37612f517da0dd1ee5d11f936d3137643a6f20c7f0c466e0bbd8943a5d13d5",
+      "12000": "da80c6573ff67327b24b66c2e99988b2900674b5b8578e58f250addd358b7c7a"
+    },
+    "settings": {
+      "records": [
+        2000,
+        4000,
+        8000,
+        12000
+      ],
+      "rounds": 2,
+      "samples": 1,
+      "aa": false,
+      "census": false
+    },
+    "fixtureDirectory": "/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/dsh-abs-fixtures-LxKzEf",
+    "samples": [
+      {
+        "sampleId": "ab-2000-r1-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2590.139875,
+        "cpuMs": 2677.168,
+        "maxRssKiB": 172304,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "f971421ed3437e50eb13ae142473835f3a0deb5fff15388d095240e3e10dbf71",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.435625,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.1555,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-2000-r1-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2595.299334,
+        "cpuMs": 2673.792,
+        "maxRssKiB": 172176,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "f971421ed3437e50eb13ae142473835f3a0deb5fff15388d095240e3e10dbf71",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.3925,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.155042,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      },
+      {
+        "sampleId": "ab-2000-r2-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2596.8785,
+        "cpuMs": 2668.859,
+        "maxRssKiB": 152688,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "f971421ed3437e50eb13ae142473835f3a0deb5fff15388d095240e3e10dbf71",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.400916,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.115959,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-2000-r2-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2616.826083,
+        "cpuMs": 2696.815,
+        "maxRssKiB": 157040,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "f971421ed3437e50eb13ae142473835f3a0deb5fff15388d095240e3e10dbf71",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.440583,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.134,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      },
+      {
+        "sampleId": "ab-4000-r1-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 4000,
+        "wallMs": 7463.620834,
+        "cpuMs": 7635.319,
+        "maxRssKiB": 200976,
+        "appliedCount": 4000,
+        "eventLogBytes": 7319971,
+        "fixtureIdentity": "f1dc060487f8ac7404dbf48f34167e4aaf6cdd1a609b50bb7a6dbb51093fd249",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 243971,
+          "payloadStringifyCalls": 8002,
+          "payloadStringifyUtf8Bytes": 3081524909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 7959,
+          "parseInputChars": 11011129,
+          "eventParseCalls": 4000,
+          "eventParseInputChars": 7315971,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 7319971,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 7319971,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.865834,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.250584,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-4000-r1-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 4000,
+        "wallMs": 7803.14525,
+        "cpuMs": 7988.27,
+        "maxRssKiB": 208656,
+        "appliedCount": 4000,
+        "eventLogBytes": 7319971,
+        "fixtureIdentity": "f1dc060487f8ac7404dbf48f34167e4aaf6cdd1a609b50bb7a6dbb51093fd249",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 243971,
+          "payloadStringifyCalls": 8002,
+          "payloadStringifyUtf8Bytes": 3081524909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 7959,
+          "parseInputChars": 11011129,
+          "eventParseCalls": 4000,
+          "eventParseInputChars": 7315971,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 7319971,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 7319971,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.823458,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.308667,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      },
+      {
+        "sampleId": "ab-4000-r2-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 4000,
+        "wallMs": 7580.110875,
+        "cpuMs": 7761.535,
+        "maxRssKiB": 197024,
+        "appliedCount": 4000,
+        "eventLogBytes": 7319971,
+        "fixtureIdentity": "f1dc060487f8ac7404dbf48f34167e4aaf6cdd1a609b50bb7a6dbb51093fd249",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 243971,
+          "payloadStringifyCalls": 8002,
+          "payloadStringifyUtf8Bytes": 3081524909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 7959,
+          "parseInputChars": 11011129,
+          "eventParseCalls": 4000,
+          "eventParseInputChars": 7315971,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 7319971,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 7319971,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.791542,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.236667,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-4000-r2-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 4000,
+        "wallMs": 7519.008,
+        "cpuMs": 7691.508,
+        "maxRssKiB": 205968,
+        "appliedCount": 4000,
+        "eventLogBytes": 7319971,
+        "fixtureIdentity": "f1dc060487f8ac7404dbf48f34167e4aaf6cdd1a609b50bb7a6dbb51093fd249",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 243971,
+          "payloadStringifyCalls": 8002,
+          "payloadStringifyUtf8Bytes": 3081524909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 7959,
+          "parseInputChars": 11011129,
+          "eventParseCalls": 4000,
+          "eventParseInputChars": 7315971,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 7319971,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 7319971,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.848292,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.271667,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      },
+      {
+        "sampleId": "ab-8000-r1-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 8000,
+        "wallMs": 20006.942833,
+        "cpuMs": 20454.33,
+        "maxRssKiB": 222176,
+        "appliedCount": 8000,
+        "eventLogBytes": 14642195,
+        "fixtureIdentity": "5b37612f517da0dd1ee5d11f936d3137643a6f20c7f0c466e0bbd8943a5d13d5",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 487971,
+          "payloadStringifyCalls": 16002,
+          "payloadStringifyUtf8Bytes": 9146110637,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 15959,
+          "parseInputChars": 20603529,
+          "eventParseCalls": 8000,
+          "eventParseInputChars": 14634195,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 14642195,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 14642195,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 1.730458,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.482709,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-8000-r1-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 8000,
+        "wallMs": 19769.964709,
+        "cpuMs": 20213.237,
+        "maxRssKiB": 219792,
+        "appliedCount": 8000,
+        "eventLogBytes": 14642195,
+        "fixtureIdentity": "5b37612f517da0dd1ee5d11f936d3137643a6f20c7f0c466e0bbd8943a5d13d5",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 487971,
+          "payloadStringifyCalls": 16002,
+          "payloadStringifyUtf8Bytes": 9146110637,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 15959,
+          "parseInputChars": 20603529,
+          "eventParseCalls": 8000,
+          "eventParseInputChars": 14634195,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 14642195,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 14642195,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 1.570875,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.50075,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      },
+      {
+        "sampleId": "ab-8000-r2-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 8000,
+        "wallMs": 19537.38875,
+        "cpuMs": 20011.566,
+        "maxRssKiB": 218768,
+        "appliedCount": 8000,
+        "eventLogBytes": 14642195,
+        "fixtureIdentity": "5b37612f517da0dd1ee5d11f936d3137643a6f20c7f0c466e0bbd8943a5d13d5",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 487971,
+          "payloadStringifyCalls": 16002,
+          "payloadStringifyUtf8Bytes": 9146110637,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 15959,
+          "parseInputChars": 20603529,
+          "eventParseCalls": 8000,
+          "eventParseInputChars": 14634195,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 14642195,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 14642195,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 1.74325,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.653833,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-8000-r2-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 8000,
+        "wallMs": 19677.90825,
+        "cpuMs": 20138.88,
+        "maxRssKiB": 221536,
+        "appliedCount": 8000,
+        "eventLogBytes": 14642195,
+        "fixtureIdentity": "5b37612f517da0dd1ee5d11f936d3137643a6f20c7f0c466e0bbd8943a5d13d5",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 487971,
+          "payloadStringifyCalls": 16002,
+          "payloadStringifyUtf8Bytes": 9146110637,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 15959,
+          "parseInputChars": 20603529,
+          "eventParseCalls": 8000,
+          "eventParseInputChars": 14634195,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 14642195,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 14642195,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 1.527666,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.626792,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      },
+      {
+        "sampleId": "ab-12000-r1-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 12000,
+        "wallMs": 34013.605541,
+        "cpuMs": 34329.875,
+        "maxRssKiB": 243280,
+        "appliedCount": 12000,
+        "eventLogBytes": 21968420,
+        "fixtureIdentity": "da80c6573ff67327b24b66c2e99988b2900674b5b8578e58f250addd358b7c7a",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 731971,
+          "payloadStringifyCalls": 24002,
+          "payloadStringifyUtf8Bytes": 15212306541,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 23959,
+          "parseInputChars": 30165758,
+          "eventParseCalls": 12000,
+          "eventParseInputChars": 21956420,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 21968420,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 21968420,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 2.429209,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.976042,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-12000-r1-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 12000,
+        "wallMs": 33306.691541,
+        "cpuMs": 33933.18,
+        "maxRssKiB": 237792,
+        "appliedCount": 12000,
+        "eventLogBytes": 21968420,
+        "fixtureIdentity": "da80c6573ff67327b24b66c2e99988b2900674b5b8578e58f250addd358b7c7a",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 731971,
+          "payloadStringifyCalls": 24002,
+          "payloadStringifyUtf8Bytes": 15212306541,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 23959,
+          "parseInputChars": 30165758,
+          "eventParseCalls": 12000,
+          "eventParseInputChars": 21956420,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 21968420,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 21968420,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 2.5975,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 1.0825,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      },
+      {
+        "sampleId": "ab-12000-r2-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 12000,
+        "wallMs": 32149.8075,
+        "cpuMs": 33032.874,
+        "maxRssKiB": 238240,
+        "appliedCount": 12000,
+        "eventLogBytes": 21968420,
+        "fixtureIdentity": "da80c6573ff67327b24b66c2e99988b2900674b5b8578e58f250addd358b7c7a",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 731971,
+          "payloadStringifyCalls": 24002,
+          "payloadStringifyUtf8Bytes": 15212306541,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 23959,
+          "parseInputChars": 30165758,
+          "eventParseCalls": 12000,
+          "eventParseInputChars": 21956420,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 21968420,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 21968420,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 2.343459,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.779333,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-12000-r2-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 12000,
+        "wallMs": 32232.113458,
+        "cpuMs": 32974.709,
+        "maxRssKiB": 254640,
+        "appliedCount": 12000,
+        "eventLogBytes": 21968420,
+        "fixtureIdentity": "da80c6573ff67327b24b66c2e99988b2900674b5b8578e58f250addd358b7c7a",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 731971,
+          "payloadStringifyCalls": 24002,
+          "payloadStringifyUtf8Bytes": 15212306541,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 23959,
+          "parseInputChars": 30165758,
+          "eventParseCalls": 12000,
+          "eventParseInputChars": 21956420,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 21968420,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 21968420,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 2.456708,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 2.025833,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      }
+    ],
+    "summaries": [
+      {
+        "control": false,
+        "records": 2000,
+        "a": {
+          "n": 2,
+          "wallMs": 2616.826083,
+          "cpuMs": 2696.815,
+          "maxRssKiB": 172304,
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyWallMs": 0
+        },
+        "b": {
+          "n": 2,
+          "wallMs": 2596.8785,
+          "cpuMs": 2673.792,
+          "maxRssKiB": 172176,
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyWallMs": 0
+        }
+      },
+      {
+        "control": false,
+        "records": 4000,
+        "a": {
+          "n": 2,
+          "wallMs": 7519.008,
+          "cpuMs": 7691.508,
+          "maxRssKiB": 205968,
+          "stringifyCalls": 243971,
+          "payloadStringifyCalls": 8002,
+          "payloadStringifyUtf8Bytes": 3081524909,
+          "payloadStringifyWallMs": 0
+        },
+        "b": {
+          "n": 2,
+          "wallMs": 7803.14525,
+          "cpuMs": 7988.27,
+          "maxRssKiB": 208656,
+          "stringifyCalls": 243971,
+          "payloadStringifyCalls": 8002,
+          "payloadStringifyUtf8Bytes": 3081524909,
+          "payloadStringifyWallMs": 0
+        }
+      },
+      {
+        "control": false,
+        "records": 8000,
+        "a": {
+          "n": 2,
+          "wallMs": 20006.942833,
+          "cpuMs": 20454.33,
+          "maxRssKiB": 222176,
+          "stringifyCalls": 487971,
+          "payloadStringifyCalls": 16002,
+          "payloadStringifyUtf8Bytes": 9146110637,
+          "payloadStringifyWallMs": 0
+        },
+        "b": {
+          "n": 2,
+          "wallMs": 19769.964709,
+          "cpuMs": 20213.237,
+          "maxRssKiB": 219792,
+          "stringifyCalls": 487971,
+          "payloadStringifyCalls": 16002,
+          "payloadStringifyUtf8Bytes": 9146110637,
+          "payloadStringifyWallMs": 0
+        }
+      },
+      {
+        "control": false,
+        "records": 12000,
+        "a": {
+          "n": 2,
+          "wallMs": 34013.605541,
+          "cpuMs": 34329.875,
+          "maxRssKiB": 254640,
+          "stringifyCalls": 731971,
+          "payloadStringifyCalls": 24002,
+          "payloadStringifyUtf8Bytes": 15212306541,
+          "payloadStringifyWallMs": 0
+        },
+        "b": {
+          "n": 2,
+          "wallMs": 33306.691541,
+          "cpuMs": 33933.18,
+          "maxRssKiB": 238240,
+          "stringifyCalls": 731971,
+          "payloadStringifyCalls": 24002,
+          "payloadStringifyUtf8Bytes": 15212306541,
+          "payloadStringifyWallMs": 0
+        }
+      }
+    ],
+    "ledger": "/tmp/first-absorption-ab-r2-final.jsonl",
+    "peakRssNote": "process.resourceUsage().maxRSS is a whole-process high-water mark, not a phase-local delta."
+  },
+  "sameCodeAAControl": {
+    "schema": 1,
+    "runId": "9c517dc8-5799-4d0a-b4cc-f5db3ba29129",
+    "completedAt": "2026-10-26T01:40:21.186Z",
+    "node": "v26.12.1",
+    "benchmarkSha256": "734f041f60215303c14950292fe16b823b1c53138353afbd23ad6b488db15561",
+    "platform": "darwin/arm64",
+    "sourceRoots": {
+      "a": {
+        "root": "/Users/ryukeili/GitHub/dsh-evolution",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      },
+      "b": {
+        "root": "/tmp/dsh-base-abs",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      }
+    },
+    "fixtureIdentity": {
+      "2000": "c0f3540ace56c5f5c132de82924dae7304df10a5cc927bb0b98869e275df85a5"
+    },
+    "settings": {
+      "records": [
+        2000
+      ],
+      "rounds": 2,
+      "samples": 1,
+      "aa": true,
+      "census": false
+    },
+    "fixtureDirectory": "/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/dsh-abs-fixtures-BzONyx",
+    "samples": [
+      {
+        "sampleId": "ab-2000-r1-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2640.979875,
+        "cpuMs": 2715.467,
+        "maxRssKiB": 172128,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "c0f3540ace56c5f5c132de82924dae7304df10a5cc927bb0b98869e275df85a5",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.473125,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.158833,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-2000-r1-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2604.913584,
+        "cpuMs": 2684.419,
+        "maxRssKiB": 172176,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "c0f3540ace56c5f5c132de82924dae7304df10a5cc927bb0b98869e275df85a5",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.410167,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.159042,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      },
+      {
+        "sampleId": "ab-2000-r2-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2601.418791,
+        "cpuMs": 2680.631,
+        "maxRssKiB": 157232,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "c0f3540ace56c5f5c132de82924dae7304df10a5cc927bb0b98869e275df85a5",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.418625,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.12475,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-2000-r2-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2655.9115,
+        "cpuMs": 2724.452,
+        "maxRssKiB": 173024,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "c0f3540ace56c5f5c132de82924dae7304df10a5cc927bb0b98869e275df85a5",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.431208,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.158875,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      },
+      {
+        "sampleId": "aa-2000-r1-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2624.454667,
+        "cpuMs": 2708.275,
+        "maxRssKiB": 171968,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "c0f3540ace56c5f5c132de82924dae7304df10a5cc927bb0b98869e275df85a5",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.411416,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.1595,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": true,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "aa-2000-r1-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2631.358458,
+        "cpuMs": 2710.56,
+        "maxRssKiB": 159024,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "c0f3540ace56c5f5c132de82924dae7304df10a5cc927bb0b98869e275df85a5",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.471875,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.126792,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": true,
+        "orderIndex": 2
+      },
+      {
+        "sampleId": "aa-2000-r2-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2617.686667,
+        "cpuMs": 2699.905,
+        "maxRssKiB": 170720,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "c0f3540ace56c5f5c132de82924dae7304df10a5cc927bb0b98869e275df85a5",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.442333,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.159625,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": true,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "aa-2000-r2-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 2000,
+        "wallMs": 2626.189791,
+        "cpuMs": 2708.27,
+        "maxRssKiB": 172016,
+        "appliedCount": 2000,
+        "eventLogBytes": 3658871,
+        "fixtureIdentity": "c0f3540ace56c5f5c132de82924dae7304df10a5cc927bb0b98869e275df85a5",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 3959,
+          "parseInputChars": 5520029,
+          "eventParseCalls": 2000,
+          "eventParseInputChars": 3656871,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 3658871,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 3658871,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 0.426458,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 0.156625,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 2,
+        "sample": 1,
+        "control": true,
+        "orderIndex": 2
+      }
+    ],
+    "summaries": [
+      {
+        "control": false,
+        "records": 2000,
+        "a": {
+          "n": 2,
+          "wallMs": 2655.9115,
+          "cpuMs": 2724.452,
+          "maxRssKiB": 173024,
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyWallMs": 0
+        },
+        "b": {
+          "n": 2,
+          "wallMs": 2604.913584,
+          "cpuMs": 2684.419,
+          "maxRssKiB": 172176,
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyWallMs": 0
+        }
+      },
+      {
+        "control": true,
+        "records": 2000,
+        "a": {
+          "n": 2,
+          "wallMs": 2626.189791,
+          "cpuMs": 2708.275,
+          "maxRssKiB": 172016,
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyWallMs": 0
+        },
+        "b": {
+          "n": 2,
+          "wallMs": 2631.358458,
+          "cpuMs": 2710.56,
+          "maxRssKiB": 170720,
+          "stringifyCalls": 121971,
+          "payloadStringifyCalls": 4002,
+          "payloadStringifyUtf8Bytes": 828068909,
+          "payloadStringifyWallMs": 0
+        }
+      }
+    ],
+    "ledger": "/tmp/first-absorption-aa-final.jsonl",
+    "peakRssNote": "process.resourceUsage().maxRSS is a whole-process high-water mark, not a phase-local delta."
+  },
+  "largerPoint20k": {
+    "schema": 1,
+    "runId": "ce166672-1f31-4fa6-a95e-7dbf38a38210",
+    "completedAt": "2026-10-26T01:42:22.180Z",
+    "node": "v26.12.1",
+    "benchmarkSha256": "734f041f60215303c14950292fe16b823b1c53138353afbd23ad6b488db15561",
+    "platform": "darwin/arm64",
+    "sourceRoots": {
+      "a": {
+        "root": "/Users/ryukeili/GitHub/dsh-evolution",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      },
+      "b": {
+        "root": "/tmp/dsh-base-abs",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      }
+    },
+    "fixtureIdentity": {
+      "20000": "11603342a848a6968a7a4d6b27acda5995a5100b869d509bc53e47d1d188f8a6"
+    },
+    "settings": {
+      "records": [
+        20000
+      ],
+      "rounds": 1,
+      "samples": 1,
+      "aa": false,
+      "census": false
+    },
+    "fixtureDirectory": "/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/dsh-abs-fixtures-faNKLW",
+    "samples": [
+      {
+        "sampleId": "ab-20000-r1-s1-a",
+        "side": "a",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 20000,
+        "wallMs": 56137.438125,
+        "cpuMs": 57597.69,
+        "maxRssKiB": 365056,
+        "appliedCount": 20000,
+        "eventLogBytes": 36628868,
+        "fixtureIdentity": "11603342a848a6968a7a4d6b27acda5995a5100b869d509bc53e47d1d188f8a6",
+        "source": {
+          "root": "/Users/ryukeili/GitHub/dsh-evolution",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 1219971,
+          "payloadStringifyCalls": 40002,
+          "payloadStringifyUtf8Bytes": 27346856111,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 39959,
+          "parseInputChars": 49299219,
+          "eventParseCalls": 20000,
+          "eventParseInputChars": 36608868,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 36628868,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 36628868,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 4.80025,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 4.491334,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 1
+      },
+      {
+        "sampleId": "ab-20000-r1-s1-b",
+        "side": "b",
+        "node": "v26.12.1",
+        "platform": "darwin/arm64",
+        "records": 20000,
+        "wallMs": 56823.777875,
+        "cpuMs": 58446.761,
+        "maxRssKiB": 316128,
+        "appliedCount": 20000,
+        "eventLogBytes": 36628868,
+        "fixtureIdentity": "11603342a848a6968a7a4d6b27acda5995a5100b869d509bc53e47d1d188f8a6",
+        "source": {
+          "root": "/tmp/dsh-base-abs",
+          "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+        },
+        "stringify": {
+          "stringifyCalls": 1219971,
+          "payloadStringifyCalls": 40002,
+          "payloadStringifyUtf8Bytes": 27346856111,
+          "payloadStringifyCpuUserUs": 0,
+          "payloadStringifyCpuSystemUs": 0,
+          "parseCalls": 39959,
+          "parseInputChars": 49299219,
+          "eventParseCalls": 20000,
+          "eventParseInputChars": 36608868,
+          "eventParseCpuUserUs": 0,
+          "eventParseCpuSystemUs": 0,
+          "eventLogReadCalls": 1,
+          "eventLogReadBytes": 36628868,
+          "eventLogSplitCalls": 1,
+          "eventLogSplitChars": 36628868,
+          "eventLogReadCpuUserUs": 0,
+          "eventLogReadCpuSystemUs": 0,
+          "eventLogSplitCpuUserUs": 0,
+          "eventLogSplitCpuSystemUs": 0,
+          "stringifyWallMs": 0,
+          "payloadStringifyWallMs": 0,
+          "payloadStringifyCpuMs": 0,
+          "parseWallMs": 0,
+          "eventParseWallMs": 0,
+          "eventParseCpuMs": 0,
+          "eventLogReadWallMs": 3.894833,
+          "eventLogReadCpuMs": 0,
+          "eventLogSplitWallMs": 2.129958,
+          "eventLogSplitCpuMs": 0,
+          "sites": {}
+        },
+        "phases": null,
+        "round": 1,
+        "sample": 1,
+        "control": false,
+        "orderIndex": 2
+      }
+    ],
+    "summaries": [
+      {
+        "control": false,
+        "records": 20000,
+        "a": {
+          "n": 1,
+          "wallMs": 56137.438125,
+          "cpuMs": 57597.69,
+          "maxRssKiB": 365056,
+          "stringifyCalls": 1219971,
+          "payloadStringifyCalls": 40002,
+          "payloadStringifyUtf8Bytes": 27346856111,
+          "payloadStringifyWallMs": 0
+        },
+        "b": {
+          "n": 1,
+          "wallMs": 56823.777875,
+          "cpuMs": 58446.761,
+          "maxRssKiB": 316128,
+          "stringifyCalls": 1219971,
+          "payloadStringifyCalls": 40002,
+          "payloadStringifyUtf8Bytes": 27346856111,
+          "payloadStringifyWallMs": 0
+        }
+      }
+    ],
+    "ledger": "/tmp/first-absorption-20k-final.jsonl",
+    "peakRssNote": "process.resourceUsage().maxRSS is a whole-process high-water mark, not a phase-local delta."
+  },
+  "phaseTraces": {
+    "2000": {
+      "sampleId": "phase-2000-cpu",
+      "side": "instrumented",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "records": 2000,
+      "wallMs": 2630.816417,
+      "cpuMs": 2717.799,
+      "maxRssKiB": 175856,
+      "appliedCount": 2000,
+      "eventLogBytes": 3658871,
+      "fixtureIdentity": "122967e3b6b821b53d7c9f70af3e66ed510be860171cae065bf9e6b6a19c1614",
+      "source": {
+        "root": "/tmp/dsh-abs-instrumented",
+        "sha256": "1db12898e6e908240db3bc281280a67af30c911450426b842636bc1bc60112e3"
+      },
+      "stringify": {
+        "stringifyCalls": 121971,
+        "payloadStringifyCalls": 4002,
+        "payloadStringifyUtf8Bytes": 828068909,
+        "payloadStringifyCpuUserUs": 935475,
+        "payloadStringifyCpuSystemUs": 57080,
+        "parseCalls": 3959,
+        "parseInputChars": 5520029,
+        "eventParseCalls": 2000,
+        "eventParseInputChars": 3656871,
+        "eventParseCpuUserUs": 8588,
+        "eventParseCpuSystemUs": 481,
+        "eventLogReadCalls": 1,
+        "eventLogReadBytes": 3658871,
+        "eventLogSplitCalls": 1,
+        "eventLogSplitChars": 3658871,
+        "eventLogReadCpuUserUs": 15,
+        "eventLogReadCpuSystemUs": 371,
+        "eventLogSplitCpuUserUs": 195,
+        "eventLogSplitCpuSystemUs": 82,
+        "stringifyWallMs": 994.474369,
+        "payloadStringifyWallMs": 979.646127,
+        "payloadStringifyCpuMs": 992.555,
+        "parseWallMs": 11.014601,
+        "eventParseWallMs": 8.467713,
+        "eventParseCpuMs": 9.069,
+        "eventLogReadWallMs": 0.384875,
+        "eventLogReadCpuMs": 0.386,
+        "eventLogSplitWallMs": 0.192875,
+        "eventLogSplitCpuMs": 0.277,
+        "sites": {}
+      },
+      "phases": {
+        "verifyEventBridgeEnvelope": {
+          "calls": 2000,
+          "wallMs": 36.278029,
+          "cpuMs": 49.384
+        },
+        "projectExecutionEvent": {
+          "calls": 2000,
+          "wallMs": 5.150032,
+          "cpuMs": 5.882
+        },
+        "mirrorArchives": {
+          "calls": 1,
+          "wallMs": 0.225709,
+          "cpuMs": 0.225
+        },
+        "memory.#bridgeApplied": {
+          "calls": 2000,
+          "wallMs": 17.61088,
+          "cpuMs": 17.982
+        },
+        "memory.#performHousekeeping": {
+          "calls": 4000,
+          "wallMs": 3.594275,
+          "cpuMs": 3.88
+        },
+        "state.evolution-spread": {
+          "calls": 4000,
+          "wallMs": 2.001978,
+          "cpuMs": 2.07
+        },
+        "assertTransactionSave": {
+          "calls": 4000,
+          "wallMs": 1331.230378,
+          "cpuMs": 1349.538
+        },
+        "memory.#save": {
+          "calls": 4000,
+          "wallMs": 1346.341859,
+          "cpuMs": 1364.932
+        },
+        "memory.#append": {
+          "calls": 2000,
+          "wallMs": 1805.672607,
+          "cpuMs": 1889.334
+        },
+        "memory.#markBridgeApplied": {
+          "calls": 2000,
+          "wallMs": 665.178375,
+          "cpuMs": 672.078
+        },
+        "memory.#readArchiveSync": {
+          "calls": 1,
+          "wallMs": 0.154333,
+          "cpuMs": 0.155
+        },
+        "memory.#archiveEntries": {
+          "calls": 1950,
+          "wallMs": 1071.651249,
+          "cpuMs": 1142.38
+        },
+        "instance.snapshot": {
+          "calls": 1,
+          "wallMs": 1.0105,
+          "cpuMs": 1.011
+        },
+        "changedArchiveFiles": {
+          "calls": 1,
+          "wallMs": 0.825708,
+          "cpuMs": 0.826
+        },
+        "writeStageManifest": {
+          "calls": 1,
+          "wallMs": 0.247792,
+          "cpuMs": 0.248
+        },
+        "syncStage": {
+          "calls": 1,
+          "wallMs": 10.474625,
+          "cpuMs": 0.25
+        },
+        "domain.global.set": {
+          "calls": 2,
+          "wallMs": 19.934375,
+          "cpuMs": 5.427
+        }
+      }
+    },
+    "12000": {
+      "sampleId": "phase-12000-cpu",
+      "side": "instrumented",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "records": 12000,
+      "wallMs": 31856.1475,
+      "cpuMs": 32665.992,
+      "maxRssKiB": 243136,
+      "appliedCount": 12000,
+      "eventLogBytes": 21968420,
+      "fixtureIdentity": "85c07b1415ec6cb81127c219d7a321ef1a3fef41ae0c706df7a75201cca6baf0",
+      "source": {
+        "root": "/tmp/dsh-abs-instrumented",
+        "sha256": "1db12898e6e908240db3bc281280a67af30c911450426b842636bc1bc60112e3"
+      },
+      "stringify": {
+        "stringifyCalls": 731971,
+        "payloadStringifyCalls": 24002,
+        "payloadStringifyUtf8Bytes": 15212306541,
+        "payloadStringifyCpuUserUs": 16571673,
+        "payloadStringifyCpuSystemUs": 560287,
+        "parseCalls": 23959,
+        "parseInputChars": 30165758,
+        "eventParseCalls": 12000,
+        "eventParseInputChars": 21956420,
+        "eventParseCpuUserUs": 48984,
+        "eventParseCpuSystemUs": 2627,
+        "eventLogReadCalls": 1,
+        "eventLogReadBytes": 21968420,
+        "eventLogSplitCalls": 1,
+        "eventLogSplitChars": 21968420,
+        "eventLogReadCpuUserUs": 21,
+        "eventLogReadCpuSystemUs": 2378,
+        "eventLogSplitCpuUserUs": 712,
+        "eventLogSplitCpuSystemUs": 55,
+        "stringifyWallMs": 17022.644252,
+        "payloadStringifyWallMs": 16948.678831,
+        "payloadStringifyCpuMs": 17131.96,
+        "parseWallMs": 59.670012,
+        "eventParseWallMs": 48.19698,
+        "eventParseCpuMs": 51.611,
+        "eventLogReadWallMs": 2.3975,
+        "eventLogReadCpuMs": 2.399,
+        "eventLogSplitWallMs": 0.766167,
+        "eventLogSplitCpuMs": 0.767,
+        "sites": {}
+      },
+      "phases": {
+        "verifyEventBridgeEnvelope": {
+          "calls": 12000,
+          "wallMs": 162.964313,
+          "cpuMs": 187.905
+        },
+        "projectExecutionEvent": {
+          "calls": 12000,
+          "wallMs": 21.314525,
+          "cpuMs": 22.946
+        },
+        "mirrorArchives": {
+          "calls": 1,
+          "wallMs": 0.226917,
+          "cpuMs": 0.227
+        },
+        "memory.#bridgeApplied": {
+          "calls": 12000,
+          "wallMs": 391.975785,
+          "cpuMs": 396.548
+        },
+        "memory.#performHousekeeping": {
+          "calls": 24000,
+          "wallMs": 33.511673,
+          "cpuMs": 33.845
+        },
+        "state.evolution-spread": {
+          "calls": 24000,
+          "wallMs": 11.438183,
+          "cpuMs": 11.574
+        },
+        "assertTransactionSave": {
+          "calls": 24000,
+          "wallMs": 23297.547859,
+          "cpuMs": 23520.494
+        },
+        "memory.#save": {
+          "calls": 24000,
+          "wallMs": 23417.937795,
+          "cpuMs": 23643.081
+        },
+        "memory.#append": {
+          "calls": 12000,
+          "wallMs": 19351.441463,
+          "cpuMs": 20061.868
+        },
+        "memory.#markBridgeApplied": {
+          "calls": 12000,
+          "wallMs": 11594.001067,
+          "cpuMs": 11672.591
+        },
+        "memory.#readArchiveSync": {
+          "calls": 1,
+          "wallMs": 0.15925,
+          "cpuMs": 0.16
+        },
+        "memory.#archiveEntries": {
+          "calls": 11950,
+          "wallMs": 7203.920841,
+          "cpuMs": 7764.05
+        },
+        "instance.snapshot": {
+          "calls": 1,
+          "wallMs": 2.000208,
+          "cpuMs": 2.001
+        },
+        "changedArchiveFiles": {
+          "calls": 1,
+          "wallMs": 3.824834,
+          "cpuMs": 3.825
+        },
+        "writeStageManifest": {
+          "calls": 1,
+          "wallMs": 0.3755,
+          "cpuMs": 0.375
+        },
+        "syncStage": {
+          "calls": 1,
+          "wallMs": 9.028333,
+          "cpuMs": 0.22
+        },
+        "domain.global.set": {
+          "calls": 2,
+          "wallMs": 28.526626,
+          "cpuMs": 14.841
+        }
+      }
+    }
+  },
+  "stringifyCallsiteCensus": {
+    "2000": {
+      "sampleId": "census-2000",
+      "side": "census",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "records": 2000,
+      "wallMs": 3559.199083,
+      "cpuMs": 3662.953,
+      "maxRssKiB": 186512,
+      "appliedCount": 2000,
+      "eventLogBytes": 3658871,
+      "fixtureIdentity": "122967e3b6b821b53d7c9f70af3e66ed510be860171cae065bf9e6b6a19c1614",
+      "source": {
+        "root": "/Users/ryukeili/GitHub/dsh-evolution",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      },
+      "stringify": {
+        "stringifyCalls": 121971,
+        "payloadStringifyCalls": 4002,
+        "payloadStringifyUtf8Bytes": 828068909,
+        "parseCalls": 3959,
+        "parseInputChars": 5520029,
+        "eventParseCalls": 2000,
+        "eventParseInputChars": 3656871,
+        "eventLogReadCalls": 1,
+        "eventLogReadBytes": 3658871,
+        "eventLogSplitCalls": 1,
+        "eventLogSplitChars": 3658871,
+        "stringifyWallMs": 0,
+        "payloadStringifyWallMs": 0,
+        "parseWallMs": 0,
+        "eventParseWallMs": 0,
+        "eventLogReadWallMs": 0.424167,
+        "eventLogSplitWallMs": 0.158167,
+        "sites": {
+          "at Module.esc (file:///Users/ryukeili/GitHub/dsh-evolution/node_modules/zod/v4/core/util.js:204:17)": {
+            "calls": 15,
+            "bytes": 133,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at Object.toJsonProjection [as transform] (file:///Users/ryukeili/GitHub/dsh-evolution/lib/domain-storage.js:62:21)": {
+            "calls": 7,
+            "bytes": 770382,
+            "payloadCalls": 2,
+            "payloadBytes": 770372
+          },
+          "at bridgeJsonKey (file:///Users/ryukeili/GitHub/dsh-evolution/lib/orchestrator.js:46:24)": {
+            "calls": 41,
+            "bytes": 488,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at canonicalBridgeJson (file:///Users/ryukeili/GitHub/dsh-evolution/lib/orchestrator.js:73:15)": {
+            "calls": 114000,
+            "bytes": 1472871,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at assertTransactionSave (file:///Users/ryukeili/GitHub/dsh-evolution/lib/domain-storage.js:1015:21)": {
+            "calls": 4000,
+            "bytes": 827298537,
+            "payloadCalls": 4000,
+            "payloadBytes": 827298537
+          },
+          "at boundedArchiveEntry (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:704:20)": {
+            "calls": 1950,
+            "bytes": 1092000,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at #writeArchiveIndexDocument (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:1532:27)": {
+            "calls": 1950,
+            "bytes": 1156058,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at writeStageManifest (file:///Users/ryukeili/GitHub/dsh-evolution/lib/archive-stage.js:165:36)": {
+            "calls": 1,
+            "bytes": 301,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at serialize (file:///Users/ryukeili/GitHub/dsh-evolution/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js:83:17)": {
+            "calls": 2,
+            "bytes": 1704329,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at comparable (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:4277:36)": {
+            "calls": 2,
+            "bytes": 1040,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at digestApplied (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:314:50)": {
+            "calls": 1,
+            "bytes": 242001,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at checkpointMac (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:307:18)": {
+            "calls": 1,
+            "bytes": 567,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at writeEventLogCheckpoint (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:108:38)": {
+            "calls": 1,
+            "bytes": 640,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          }
+        }
+      },
+      "phases": null
+    },
+    "4000": {
+      "sampleId": "census-4000",
+      "side": "census",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "records": 4000,
+      "wallMs": 9238.755666,
+      "cpuMs": 9409.23,
+      "maxRssKiB": 230320,
+      "appliedCount": 4000,
+      "eventLogBytes": 7319971,
+      "fixtureIdentity": "5daf1bd1a7027390b84bb95c67239fa823195058d404a2f7a28ee08a74fc7f43",
+      "source": {
+        "root": "/Users/ryukeili/GitHub/dsh-evolution",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      },
+      "stringify": {
+        "stringifyCalls": 243971,
+        "payloadStringifyCalls": 8002,
+        "payloadStringifyUtf8Bytes": 3081524909,
+        "payloadStringifyCpuUserUs": 0,
+        "payloadStringifyCpuSystemUs": 0,
+        "parseCalls": 7959,
+        "parseInputChars": 11011129,
+        "eventParseCalls": 4000,
+        "eventParseInputChars": 7315971,
+        "eventParseCpuUserUs": 0,
+        "eventParseCpuSystemUs": 0,
+        "eventLogReadCalls": 1,
+        "eventLogReadBytes": 7319971,
+        "eventLogSplitCalls": 1,
+        "eventLogSplitChars": 7319971,
+        "eventLogReadCpuUserUs": 0,
+        "eventLogReadCpuSystemUs": 0,
+        "eventLogSplitCpuUserUs": 0,
+        "eventLogSplitCpuSystemUs": 0,
+        "stringifyWallMs": 0,
+        "payloadStringifyWallMs": 0,
+        "payloadStringifyCpuMs": 0,
+        "parseWallMs": 0,
+        "eventParseWallMs": 0,
+        "eventParseCpuMs": 0,
+        "eventLogReadWallMs": 0.808625,
+        "eventLogReadCpuMs": 0,
+        "eventLogSplitWallMs": 0.313542,
+        "eventLogSplitCpuMs": 0,
+        "sites": {
+          "at Module.esc (file:///Users/ryukeili/GitHub/dsh-evolution/node_modules/zod/v4/core/util.js:204:17)": {
+            "calls": 15,
+            "bytes": 133,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at Object.toJsonProjection [as transform] (file:///Users/ryukeili/GitHub/dsh-evolution/lib/domain-storage.js:62:21)": {
+            "calls": 7,
+            "bytes": 1482382,
+            "payloadCalls": 2,
+            "payloadBytes": 1482372
+          },
+          "at bridgeJsonKey (file:///Users/ryukeili/GitHub/dsh-evolution/lib/orchestrator.js:46:24)": {
+            "calls": 41,
+            "bytes": 488,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at canonicalBridgeJson (file:///Users/ryukeili/GitHub/dsh-evolution/lib/orchestrator.js:73:15)": {
+            "calls": 228000,
+            "bytes": 2947971,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at assertTransactionSave (file:///Users/ryukeili/GitHub/dsh-evolution/lib/domain-storage.js:1015:21)": {
+            "calls": 8000,
+            "bytes": 3080042537,
+            "payloadCalls": 8000,
+            "payloadBytes": 3080042537
+          },
+          "at boundedArchiveEntry (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:704:20)": {
+            "calls": 3950,
+            "bytes": 2212000,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at #writeArchiveIndexDocument (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:1532:27)": {
+            "calls": 3950,
+            "bytes": 2346058,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at writeStageManifest (file:///Users/ryukeili/GitHub/dsh-evolution/lib/archive-stage.js:165:36)": {
+            "calls": 1,
+            "bytes": 301,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at serialize (file:///Users/ryukeili/GitHub/dsh-evolution/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js:83:17)": {
+            "calls": 2,
+            "bytes": 3320329,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at comparable (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:4277:36)": {
+            "calls": 2,
+            "bytes": 1040,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at digestApplied (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:314:50)": {
+            "calls": 1,
+            "bytes": 484001,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at checkpointMac (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:307:18)": {
+            "calls": 1,
+            "bytes": 567,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at writeEventLogCheckpoint (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:108:38)": {
+            "calls": 1,
+            "bytes": 640,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          }
+        }
+      },
+      "phases": null
+    },
+    "8000": {
+      "sampleId": "census-8000",
+      "side": "census",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "records": 8000,
+      "wallMs": 23361.02375,
+      "cpuMs": 23861.517,
+      "maxRssKiB": 220288,
+      "appliedCount": 8000,
+      "eventLogBytes": 14642195,
+      "fixtureIdentity": "1a759166f48c1fb97ed49710b6c2a40eac8fd59d93ad501d794812eeb15af487",
+      "source": {
+        "root": "/Users/ryukeili/GitHub/dsh-evolution",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      },
+      "stringify": {
+        "stringifyCalls": 487971,
+        "payloadStringifyCalls": 16002,
+        "payloadStringifyUtf8Bytes": 9146110637,
+        "payloadStringifyCpuUserUs": 0,
+        "payloadStringifyCpuSystemUs": 0,
+        "parseCalls": 15959,
+        "parseInputChars": 20603529,
+        "eventParseCalls": 8000,
+        "eventParseInputChars": 14634195,
+        "eventParseCpuUserUs": 0,
+        "eventParseCpuSystemUs": 0,
+        "eventLogReadCalls": 1,
+        "eventLogReadBytes": 14642195,
+        "eventLogSplitCalls": 1,
+        "eventLogSplitChars": 14642195,
+        "eventLogReadCpuUserUs": 0,
+        "eventLogReadCpuSystemUs": 0,
+        "eventLogSplitCpuUserUs": 0,
+        "eventLogSplitCpuSystemUs": 0,
+        "stringifyWallMs": 0,
+        "payloadStringifyWallMs": 0,
+        "payloadStringifyCpuMs": 0,
+        "parseWallMs": 0,
+        "eventParseWallMs": 0,
+        "eventParseCpuMs": 0,
+        "eventLogReadWallMs": 1.568042,
+        "eventLogReadCpuMs": 0,
+        "eventLogSplitWallMs": 0.52775,
+        "eventLogSplitCpuMs": 0,
+        "sites": {
+          "at Module.esc (file:///Users/ryukeili/GitHub/dsh-evolution/node_modules/zod/v4/core/util.js:204:17)": {
+            "calls": 15,
+            "bytes": 133,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at Object.toJsonProjection [as transform] (file:///Users/ryukeili/GitHub/dsh-evolution/lib/domain-storage.js:62:21)": {
+            "calls": 7,
+            "bytes": 1516558,
+            "payloadCalls": 2,
+            "payloadBytes": 1516548
+          },
+          "at bridgeJsonKey (file:///Users/ryukeili/GitHub/dsh-evolution/lib/orchestrator.js:46:24)": {
+            "calls": 41,
+            "bytes": 488,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at canonicalBridgeJson (file:///Users/ryukeili/GitHub/dsh-evolution/lib/orchestrator.js:73:15)": {
+            "calls": 456000,
+            "bytes": 5898195,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at assertTransactionSave (file:///Users/ryukeili/GitHub/dsh-evolution/lib/domain-storage.js:1015:21)": {
+            "calls": 16000,
+            "bytes": 9144594089,
+            "payloadCalls": 16000,
+            "payloadBytes": 9144594089
+          },
+          "at boundedArchiveEntry (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:704:20)": {
+            "calls": 7950,
+            "bytes": 4452000,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at #writeArchiveIndexDocument (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:1532:27)": {
+            "calls": 7950,
+            "bytes": 4726058,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at writeStageManifest (file:///Users/ryukeili/GitHub/dsh-evolution/lib/archive-stage.js:165:36)": {
+            "calls": 1,
+            "bytes": 301,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at serialize (file:///Users/ryukeili/GitHub/dsh-evolution/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js:83:17)": {
+            "calls": 2,
+            "bytes": 4412937,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at comparable (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:4277:36)": {
+            "calls": 2,
+            "bytes": 1040,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at digestApplied (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:314:50)": {
+            "calls": 1,
+            "bytes": 968001,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at checkpointMac (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:307:18)": {
+            "calls": 1,
+            "bytes": 568,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at writeEventLogCheckpoint (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:108:38)": {
+            "calls": 1,
+            "bytes": 641,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          }
+        }
+      },
+      "phases": null
+    },
+    "12000": {
+      "sampleId": "census-12000",
+      "side": "census",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "records": 12000,
+      "wallMs": 36970.773917,
+      "cpuMs": 37797.232,
+      "maxRssKiB": 244144,
+      "appliedCount": 12000,
+      "eventLogBytes": 21968420,
+      "fixtureIdentity": "85c07b1415ec6cb81127c219d7a321ef1a3fef41ae0c706df7a75201cca6baf0",
+      "source": {
+        "root": "/Users/ryukeili/GitHub/dsh-evolution",
+        "sha256": "d8accf9f2186f12734d44a85889801707c7718abd29e90dd003e22e312884751"
+      },
+      "stringify": {
+        "stringifyCalls": 731971,
+        "payloadStringifyCalls": 24002,
+        "payloadStringifyUtf8Bytes": 15212306541,
+        "parseCalls": 23959,
+        "parseInputChars": 30165758,
+        "eventParseCalls": 12000,
+        "eventParseInputChars": 21956420,
+        "eventLogReadCalls": 1,
+        "eventLogReadBytes": 21968420,
+        "eventLogSplitCalls": 1,
+        "eventLogSplitChars": 21968420,
+        "stringifyWallMs": 0,
+        "payloadStringifyWallMs": 0,
+        "parseWallMs": 0,
+        "eventParseWallMs": 0,
+        "eventLogReadWallMs": 2.247833,
+        "eventLogSplitWallMs": 0.969708,
+        "sites": {
+          "at Module.esc (file:///Users/ryukeili/GitHub/dsh-evolution/node_modules/zod/v4/core/util.js:204:17)": {
+            "calls": 15,
+            "bytes": 133,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at Object.toJsonProjection [as transform] (file:///Users/ryukeili/GitHub/dsh-evolution/lib/domain-storage.js:62:21)": {
+            "calls": 7,
+            "bytes": 1516560,
+            "payloadCalls": 2,
+            "payloadBytes": 1516550
+          },
+          "at bridgeJsonKey (file:///Users/ryukeili/GitHub/dsh-evolution/lib/orchestrator.js:46:24)": {
+            "calls": 41,
+            "bytes": 488,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at canonicalBridgeJson (file:///Users/ryukeili/GitHub/dsh-evolution/lib/orchestrator.js:73:15)": {
+            "calls": 684000,
+            "bytes": 8852420,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at assertTransactionSave (file:///Users/ryukeili/GitHub/dsh-evolution/lib/domain-storage.js:1015:21)": {
+            "calls": 24000,
+            "bytes": 15210789991,
+            "payloadCalls": 24000,
+            "payloadBytes": 15210789991
+          },
+          "at boundedArchiveEntry (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:704:20)": {
+            "calls": 11950,
+            "bytes": 6692000,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at #writeArchiveIndexDocument (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:1532:27)": {
+            "calls": 11950,
+            "bytes": 7109960,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at writeStageManifest (file:///Users/ryukeili/GitHub/dsh-evolution/lib/archive-stage.js:165:36)": {
+            "calls": 1,
+            "bytes": 301,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at serialize (file:///Users/ryukeili/GitHub/dsh-evolution/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js:83:17)": {
+            "calls": 2,
+            "bytes": 5452939,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at comparable (file:///Users/ryukeili/GitHub/dsh-evolution/lib/dockyard-domain/memory.js:4277:36)": {
+            "calls": 2,
+            "bytes": 1044,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at digestApplied (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:314:50)": {
+            "calls": 1,
+            "bytes": 1452001,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at checkpointMac (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:307:18)": {
+            "calls": 1,
+            "bytes": 569,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          },
+          "at writeEventLogCheckpoint (file:///Users/ryukeili/GitHub/dsh-evolution/lib/event-log-checkpoint.js:108:38)": {
+            "calls": 1,
+            "bytes": 642,
+            "payloadCalls": 0,
+            "payloadBytes": 0
+          }
+        }
+      },
+      "phases": null
+    }
+  },
+  "assertTransactionSaveByteFit": {
+    "points": [
+      {
+        "records": 2000,
+        "assertCalls": 4000,
+        "assertStringifiedUtf8Bytes": 827298537,
+        "payloadShapeCalls": 4002,
+        "payloadShapeUtf8Bytes": 828068909,
+        "allStringifyCalls": 121971
+      },
+      {
+        "records": 4000,
+        "assertCalls": 8000,
+        "assertStringifiedUtf8Bytes": 3080042537,
+        "payloadShapeCalls": 8002,
+        "payloadShapeUtf8Bytes": 3081524909,
+        "allStringifyCalls": 243971
+      },
+      {
+        "records": 8000,
+        "assertCalls": 16000,
+        "assertStringifiedUtf8Bytes": 9144594089,
+        "payloadShapeCalls": 16002,
+        "payloadShapeUtf8Bytes": 9146110637,
+        "allStringifyCalls": 487971
+      },
+      {
+        "records": 12000,
+        "assertCalls": 24000,
+        "assertStringifiedUtf8Bytes": 15210789991,
+        "payloadShapeCalls": 24002,
+        "payloadShapeUtf8Bytes": 15212306541,
+        "allStringifyCalls": 731971
+      }
+    ],
+    "byteRatios": [
+      3.723012188766871,
+      2.9689830510934923,
+      1.66336415186509
+    ],
+    "bytesPerRecord": [
+      413649.2685,
+      770010.63425,
+      1143074.261125,
+      1267565.8325833334
+    ],
+    "models": {
+      "linear_intercept_plus_N": {
+        "coefficients": [
+          -2403748560.864405,
+          1456835.361441
+        ],
+        "predictedBytes": [
+          509922162.017,
+          3423592884.898,
+          9250934330.661,
+          15078275776.424
+        ],
+        "rSquared": 0.9980263968997498
+      },
+      "quadratic_intercept_plus_N2": {
+        "coefficients": [
+          1335447367.321112,
+          100.53042
+        ],
+        "predictedBytes": [
+          1737569046.0,
+          2943934082.038,
+          7769394226.189,
+          15811827799.773
+        ],
+        "rSquared": 0.9752960627322818
+      },
+      "full_intercept_plus_N_plus_N2": {
+        "coefficients": [
+          -1761650970.718681,
+          1194561.247356,
+          18.643582
+        ],
+        "predictedBytes": [
+          702045850.407,
+          3314891324.362,
+          8988028230.759,
+          15257759748.472
+        ],
+        "rSquared": 0.9992224178800821
+      }
+    },
+    "interpretation": "The full-range polynomial fits are descriptive only: a linear fit is already high-R2 and the callsite has a 4096-marker cap, so the measured shape is piecewise rather than one global quadratic."
+  },
+  "historicalBaselineFromCapacity20261026": {
+    "recordsAndOpenSeconds": [
+      [
+        3000,
+        3.57
+      ],
+      [
+        6000,
+        10.25
+      ],
+      [
+        12000,
+        24.84
+      ],
+      [
+        73525,
+        298.05
+      ]
+    ],
+    "validCheckpointRestart12kMs": 31,
+    "reportedStringifyShareAt12k": [
+      0.5,
+      0.6
+    ],
+    "notRerunInThisTask": true
+  },
+  "verification": {
+    "nodeCheck": "passed",
+    "fullTests": "not run",
+    "hostAcceptance": "not run",
+    "releaseContentCheck": "npm pack --dry-run --json; scripts/benchmarks absent from 51 packaged files"
+  }
+}

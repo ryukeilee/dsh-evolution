@@ -696,6 +696,55 @@ test('damaged cold archives are degraded and never rewritten', async () => {
   assert.equal(fs.readFileSync(path.join(paths.archiveDir, 'exp-2.md'), 'utf8'), 'no header here\n');
 });
 
+test('state.archives reads sealed segments and raw index expectations without repairing them', async () => {
+  const { home, paths } = freshHome('archive-segments');
+  fs.mkdirSync(paths.dockyardDir, { recursive: true });
+  const segmentDirectory = path.join(paths.dockyardDir, 'state.json.observations-archive.jsonl.segments');
+  fs.mkdirSync(segmentDirectory, { recursive: true });
+  const segmentPath = path.join(segmentDirectory, 'segment-000000000001.jsonl');
+  const original = '{"id":"readable"}\nnot-json\n';
+  fs.writeFileSync(segmentPath, original, { mode: 0o600 });
+  const unusableSegment = path.join(segmentDirectory, 'segment-000000000003.jsonl');
+  fs.writeFileSync(unusableSegment, '1\n', { mode: 0o600 });
+  fs.writeFileSync(path.join(paths.dockyardDir, 'state.json.observations-archive.jsonl'), '{"id":"complete-without-lf"}');
+  fs.writeFileSync(path.join(paths.dockyardDir, 'state.json.diagnoses-archive.jsonl'), '{"partial":');
+  fs.mkdirSync(path.join(paths.dockyardDir, 'state.json.proposals-archive.jsonl'), { recursive: true });
+  fs.writeFileSync(path.join(paths.dockyardDir, 'state.json.observationsquarantine-archive.jsonl'), 'unparsed fragment\n');
+  const indexPath = path.join(paths.dockyardDir, 'state.json.evolution-archive-index.json');
+  const index = {
+    schemaVersion: 1,
+    segments: [
+      { collection: 'observations', file: 'segment-000000000001.jsonl', sealed: true, checksumState: 'final', byteSize: Buffer.byteLength(original), sha256: 'a'.repeat(64) },
+      { collection: 'observations', file: 'segment-000000000002.jsonl', sealed: true, checksumState: 'final', byteSize: 40, sha256: 'b'.repeat(64) },
+    ],
+  };
+  fs.writeFileSync(indexPath, JSON.stringify(index), { mode: 0o600 });
+
+  const report = await runDiagnostics({ dshHome: home, probe: false });
+  const check = checkOf(report, 'state.archives');
+  const findings = check.evidence.dockyard.archiveIntegrity.findings.map((finding) => finding.code);
+  assert.equal(check.level, 'degraded');
+  assert.ok(findings.includes('archive-invalid-line'));
+  assert.ok(findings.includes('archive-unusable-line'));
+  assert.ok(findings.includes('archive-missing-trailing-newline'));
+  assert.ok(findings.includes('archive-torn-tail'));
+  assert.ok(findings.includes('archive-file-unreadable'));
+  assert.ok(findings.includes('archive-sealed-digest-mismatch'));
+  assert.ok(findings.includes('archive-index-target-missing'));
+  assert.deepEqual(check.evidence.dockyard.archiveIntegrity.quarantineFiles.map((entry) => entry.state), ['preserved-fragments']);
+  assert.equal(report.checks.filter((entry) => entry.id === 'state.archives').length, 1, 'the existing check id remains the sole archive verdict');
+  assert.equal(fs.readFileSync(segmentPath, 'utf8'), original, 'doctor leaves corrupt bytes unchanged');
+  assert.equal(fs.readFileSync(indexPath, 'utf8'), JSON.stringify(index), 'doctor reads raw index expectations without reconciling them');
+  assert.equal(check.recoverable, false);
+
+  writeDomain(paths, domainGlobal({ pending: { stage: 'stage-00000000-0000-0000-0000-000000000000', aggregate: {}, applied: {} } }));
+  const pendingReport = await runDiagnostics({ dshHome: home, probe: false });
+  const pendingArchive = checkOf(pendingReport, 'state.archives').evidence.dockyard.archiveIntegrity;
+  assert.equal(pendingArchive.transitions.pendingInstall, true);
+  assert.ok(pendingArchive.findings.some((finding) => finding.code === 'archive-target-undetermined'));
+  assert.ok(!pendingArchive.findings.some((finding) => finding.code === 'archive-index-target-missing'), 'pending-install bytes are not labelled permanent loss');
+});
+
 test('inspectJsonLines distinguishes a complete record from a partial tail', () => {
   const complete = inspectJsonLines('{"a":1}\n{"b":2}\n');
   assert.equal(complete.complete, true);

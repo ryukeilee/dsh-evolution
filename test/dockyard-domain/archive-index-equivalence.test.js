@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
 import { JsonStateStore } from "./support.js";
-import { archiveIndexBaseline, baselineFromSources, reconstructPreSharedScan } from "./archive-index-baseline.js";
+import { archiveIndexBaseline, baselineFromSources, reconstructPreArchiveIntegrity, reconstructPreSharedScan } from "./archive-index-baseline.js";
 
 const NOW = "2026-10-12T00:00:00.000Z";
 const FIRST = "2026-10-10T00:00:00.000Z";
@@ -351,6 +351,11 @@ test("the derived baseline matches the pre-change pin, and survives a shared-sca
   const repinned = baselineFromSources(working, working);
   assert.equal(repinned.pinPredatesScan, false);
   assert.equal(repinned.source, baseline.source, "a shared-scan re-pin must retain the full old baseline");
+  assert.throws(() => reconstructPreArchiveIntegrity(working.replace(
+    "const integrityFaults = this.#durableArchiveIntegrityFaults();",
+    "const integrityFaults = null;",
+  )), /archive-integrity post-change shape must occur exactly once/,
+  "archive-integrity shape drift must never silently no-op");
   assert.throws(() => reconstructPreSharedScan(working.replace("#scanArchiveRaw(raw) {", "#scanArchiveRaw(raw) {/* drift */")),
     /post-change shape must occur exactly once/, "shape drift must never silently no-op");
   t.diagnostic(baseline.pinPredatesScan

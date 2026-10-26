@@ -173,7 +173,7 @@ test("legacy index entries infer collections and ignore unknown collections on e
   }
 });
 
-test("stale index referencing rotated-away segments and wrong checksums is reconciled on load", async () => {
+test("stale index checksums are reconciled while missing segment expectations stay durable", async () => {
   const home = await mkdtemp(join(tmpdir(), "dsh-archive-index-stale-live-"));
   try {
     const memory = await newMemory(home, { archiveMaxBytes: 512 });
@@ -224,7 +224,8 @@ test("stale index referencing rotated-away segments and wrong checksums is recon
       }
     }
     await writeFile(indexPath, JSON.stringify({ schemaVersion: 1, updatedAt: "2026-08-27T04:10:23.407Z", segments: staleSegments }));
-    // Reload: reconcile must prune phantoms, correct checksums, keep history.
+    // Reload: reconcile corrects extant derived checksums, while a missing
+    // target stays as durable evidence instead of being laundered from the index.
     const reloaded = await newMemory(home, { archiveMaxBytes: 512 });
     assert.ok(reloaded);
     const index = await assertIndexMatches(home);
@@ -234,9 +235,14 @@ test("stale index referencing rotated-away segments and wrong checksums is recon
     assert.equal(lineage.length, 2, "lineage entries preserved");
     assert.ok(lineage.some((entry) => String(entry.id ?? "").includes("generation-1")
       || String(entry.version ?? "").includes("generation-1")), "generation-1 anchor preserved");
-    for (const entry of index.segments) {
-      assert.ok(!entry.file.includes("99") && !entry.file.includes("100"), `phantom pruned: ${entry.file}`);
-    }
+    for (const entry of index.segments) assert.ok(!entry.file.includes("99") && !entry.file.includes("100"), `missing target omitted from live entries: ${entry.file}`);
+    assert.deepEqual(index.integrityFaults.map(({ collection, file, expected }) => ({ collection, file, expected })), [
+      ...["cycles", "observations"].flatMap((collection) => [99, 100].map((number) => ({
+        collection,
+        file: `segment-${String(number).padStart(12, "0")}.jsonl`,
+        expected: { byteSize: 123, sha256: null },
+      }))),
+    ]);
     // Reload again: the reconciled index is stable (modulo the clock stamp).
     const before = JSON.parse(await readFile(indexPath, "utf8"));
     const strip = (document) => {

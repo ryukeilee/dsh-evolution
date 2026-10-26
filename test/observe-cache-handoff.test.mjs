@@ -252,9 +252,30 @@ test('successors invalidate changed size, mtime, inode and segment file lists', 
     const segment = path.join(directory, 'segment-000000000001.jsonl');
     fs.writeFileSync(segment, lines([{ id: 'sealed' }]));
     await successor(['sealed', 'd', 'b']);
+    // The ordinary handoff differential includes the derived index bytes too.
+    // Loss evidence is checked below after the segment is deliberately removed.
+    const files = tree(root);
     fs.unlinkSync(segment);
     await successor(['d', 'b']);
-    return { observed, files: tree(root) };
+    if (optimized) {
+      const indexPath = path.join(root, 'state.json.evolution-archive-index.json');
+      const indexBytes = fs.readFileSync(indexPath, 'utf8');
+      const index = JSON.parse(indexBytes);
+      assert.ok(index.integrityFaults?.some(fault => fault.collection === 'observations'
+        && fault.file === 'segment-000000000001.jsonl' && fault.kind === 'missing-segment'),
+      'a deleted indexed segment remains durable integrity evidence');
+      assert.ok(!index.segments.some(entry => entry.file === 'segment-000000000001.jsonl'),
+        'the live segment list contains only physical targets');
+      const previous = current;
+      const cached = previous.archiveReadCache.get('observations');
+      current = await memory(impl, root, { archiveReadCache: previous.archiveReadCache });
+      assert.deepEqual(current.history('observations').map(row => row.id), ['d', 'b']);
+      if (optimized) assert.notEqual(current.archiveReadCache.get('observations'), cached,
+        'the restart after segment loss still scans the changed file list');
+      assert.equal(fs.readFileSync(indexPath, 'utf8'), indexBytes,
+        'the same archive bytes and deterministic clock keep the derived index byte-identical after restart');
+    }
+    return { observed, files };
   });
 });
 

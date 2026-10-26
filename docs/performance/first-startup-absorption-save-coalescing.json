@@ -1,0 +1,627 @@
+{
+  "schema": 1,
+  "method": {
+    "baselineCommit": "b13fe4cd797ff4f3d9be289b09e20e00469180ea",
+    "candidateCommit": "b13fe4cd797ff4f3d9be289b09e20e00469180ea plus uncommitted worktree changes",
+    "node": "v26.12.1",
+    "platform": "darwin/arm64",
+    "rounds": 3,
+    "samplesPerVariantPerRound": 1,
+    "ordering": "alternating; odd rounds baseline first, even rounds candidate first",
+    "aaNoiseControl": "same candidate code twice per round at the smallest record count",
+    "fixtureSha256ByRecords": {
+      "2000": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496",
+      "12000": "3d2fa760e11699abf74cbab84b531898b95f19a09d9fc742abd6afc03bce5c7d",
+      "20000": "fc7f9064d6f688054671d9c59aba365a99e9695b990135f863c2fe5a97409f90"
+    },
+    "fixtureWasCreatedOnceAndReused": true,
+    "freshTemporaryHomePerSample": true,
+    "officialDomainFacilityAndJsonStorageBackend": true,
+    "checkpointPresentBeforeOpen": false,
+    "rssField": "process.resourceUsage().maxRSS raw value; whole-process high-water mark",
+    "assertTransactionSaveInstrumentation": "The worker loads an adjacent temporary copy of domain-storage.js with counters inserted at the assertTransactionSave entry and immediately after JSON.stringify; the production source is not instrumented."
+  },
+  "points": [
+    {
+      "records": 2000,
+      "variants": {
+        "baseline": {
+          "wallMs": 2481.351834,
+          "cpuMs": 2557.562,
+          "peakRssMaxRSS": 148048,
+          "assertTransactionSaveCalls": 4000,
+          "payloadBytesStringified": 779170053,
+          "saveCallsPerRecord": 2
+        },
+        "candidate": {
+          "wallMs": 1881.0487079999998,
+          "cpuMs": 1955.195,
+          "peakRssMaxRSS": 151968,
+          "assertTransactionSaveCalls": 2000,
+          "payloadBytesStringified": 389416134,
+          "saveCallsPerRecord": 1
+        }
+      },
+      "pairedDeltas": [
+        {
+          "round": 1,
+          "wallDeltaMs": -616.02025,
+          "cpuDeltaMs": -619.1070000000002
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -612.0987090000001,
+          "cpuDeltaMs": -609.9739999999999
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -561.5217090000001,
+          "cpuDeltaMs": -556.287
+        }
+      ],
+      "aaNoise": {
+        "records": 2000,
+        "pairs": [
+          {
+            "round": 1,
+            "wallAbsDeltaMs": 0.012291000000004715,
+            "cpuAbsDeltaMs": 0.40200000000004366,
+            "rssAbsDeltaMaxRSS": 16
+          },
+          {
+            "round": 2,
+            "wallAbsDeltaMs": 23.794083,
+            "cpuAbsDeltaMs": 20.503999999999905,
+            "rssAbsDeltaMaxRSS": 10096
+          },
+          {
+            "round": 3,
+            "wallAbsDeltaMs": 7.932958000000099,
+            "cpuAbsDeltaMs": 8.70699999999988,
+            "rssAbsDeltaMaxRSS": 800
+          }
+        ],
+        "maxWallAbsDeltaMs": 23.794083,
+        "maxCpuAbsDeltaMs": 20.503999999999905,
+        "maxRssAbsDeltaMaxRSS": 10096
+      }
+    },
+    {
+      "records": 12000,
+      "variants": {
+        "baseline": {
+          "wallMs": 30174.353584,
+          "cpuMs": 31077.619,
+          "peakRssMaxRSS": 206992,
+          "assertTransactionSaveCalls": 24000,
+          "payloadBytesStringified": 14495177883,
+          "saveCallsPerRecord": 2
+        },
+        "candidate": {
+          "wallMs": 19914.845833,
+          "cpuMs": 20567.762,
+          "peakRssMaxRSS": 240544,
+          "assertTransactionSaveCalls": 12000,
+          "payloadBytesStringified": 7247238781,
+          "saveCallsPerRecord": 1
+        }
+      },
+      "pairedDeltas": [
+        {
+          "round": 1,
+          "wallDeltaMs": -11020.075249999998,
+          "cpuDeltaMs": -11230.863999999998
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -10259.507751000001,
+          "cpuDeltaMs": -10509.857
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -9634.436125,
+          "cpuDeltaMs": -9806.922000000002
+        }
+      ],
+      "aaNoise": null
+    },
+    {
+      "records": 20000,
+      "variants": {
+        "baseline": {
+          "wallMs": 53704.274625000005,
+          "cpuMs": 55142.795,
+          "peakRssMaxRSS": 331520,
+          "assertTransactionSaveCalls": 40000,
+          "payloadBytesStringified": 26194588789,
+          "saveCallsPerRecord": 2
+        },
+        "candidate": {
+          "wallMs": 35667.357166999995,
+          "cpuMs": 36782.339,
+          "peakRssMaxRSS": 312224,
+          "assertTransactionSaveCalls": 20000,
+          "payloadBytesStringified": 13096942139,
+          "saveCallsPerRecord": 1
+        }
+      },
+      "pairedDeltas": [
+        {
+          "round": 1,
+          "wallDeltaMs": -17665.692792,
+          "cpuDeltaMs": -18185.367999999995
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -19673.721167000003,
+          "cpuDeltaMs": -20361.746000000006
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -18036.91745800001,
+          "cpuDeltaMs": -18360.456
+        }
+      ],
+      "aaNoise": null
+    }
+  ],
+  "rawLedger": "docs/performance/first-startup-absorption-save-coalescing.jsonl",
+  "samples": [
+    {
+      "phase": "ab",
+      "variant": "baseline",
+      "round": 1,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 2497.068958,
+        "cpuMs": 2574.302,
+        "peakRssMaxRSS": 168688,
+        "assertTransactionSaveCalls": 4000,
+        "payloadBytesStringified": 779170053,
+        "saveCallsPerRecord": 2,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "candidate",
+      "round": 1,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 1881.0487079999998,
+        "cpuMs": 1955.195,
+        "peakRssMaxRSS": 151760,
+        "assertTransactionSaveCalls": 2000,
+        "payloadBytesStringified": 389416134,
+        "saveCallsPerRecord": 1,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "candidate",
+      "round": 2,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 1869.253125,
+        "cpuMs": 1947.588,
+        "peakRssMaxRSS": 151968,
+        "assertTransactionSaveCalls": 2000,
+        "payloadBytesStringified": 389416134,
+        "saveCallsPerRecord": 1,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "baseline",
+      "round": 2,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 2481.351834,
+        "cpuMs": 2557.562,
+        "peakRssMaxRSS": 147792,
+        "assertTransactionSaveCalls": 4000,
+        "payloadBytesStringified": 779170053,
+        "saveCallsPerRecord": 2,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "baseline",
+      "round": 3,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 2463.4375840000002,
+        "cpuMs": 2537.181,
+        "peakRssMaxRSS": 148048,
+        "assertTransactionSaveCalls": 4000,
+        "payloadBytesStringified": 779170053,
+        "saveCallsPerRecord": 2,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "candidate",
+      "round": 3,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 1901.9158750000001,
+        "cpuMs": 1980.894,
+        "peakRssMaxRSS": 161696,
+        "assertTransactionSaveCalls": 2000,
+        "payloadBytesStringified": 389416134,
+        "saveCallsPerRecord": 1,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "baseline",
+      "round": 1,
+      "sampleIndex": 1,
+      "records": 12000,
+      "sample": {
+        "wallMs": 30252.741209,
+        "cpuMs": 31121.727,
+        "peakRssMaxRSS": 205728,
+        "assertTransactionSaveCalls": 24000,
+        "payloadBytesStringified": 14495177883,
+        "saveCallsPerRecord": 2,
+        "records": 12000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 7444874,
+        "fixtureSha256": "3d2fa760e11699abf74cbab84b531898b95f19a09d9fc742abd6afc03bce5c7d"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "candidate",
+      "round": 1,
+      "sampleIndex": 1,
+      "records": 12000,
+      "sample": {
+        "wallMs": 19232.665959,
+        "cpuMs": 19890.863,
+        "peakRssMaxRSS": 240544,
+        "assertTransactionSaveCalls": 12000,
+        "payloadBytesStringified": 7247238781,
+        "saveCallsPerRecord": 1,
+        "records": 12000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 7444874,
+        "fixtureSha256": "3d2fa760e11699abf74cbab84b531898b95f19a09d9fc742abd6afc03bce5c7d"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "candidate",
+      "round": 2,
+      "sampleIndex": 1,
+      "records": 12000,
+      "sample": {
+        "wallMs": 19914.845833,
+        "cpuMs": 20567.762,
+        "peakRssMaxRSS": 234800,
+        "assertTransactionSaveCalls": 12000,
+        "payloadBytesStringified": 7247238781,
+        "saveCallsPerRecord": 1,
+        "records": 12000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 7444874,
+        "fixtureSha256": "3d2fa760e11699abf74cbab84b531898b95f19a09d9fc742abd6afc03bce5c7d"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "baseline",
+      "round": 2,
+      "sampleIndex": 1,
+      "records": 12000,
+      "sample": {
+        "wallMs": 30174.353584,
+        "cpuMs": 31077.619,
+        "peakRssMaxRSS": 206992,
+        "assertTransactionSaveCalls": 24000,
+        "payloadBytesStringified": 14495177883,
+        "saveCallsPerRecord": 2,
+        "records": 12000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 7444874,
+        "fixtureSha256": "3d2fa760e11699abf74cbab84b531898b95f19a09d9fc742abd6afc03bce5c7d"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "baseline",
+      "round": 3,
+      "sampleIndex": 1,
+      "records": 12000,
+      "sample": {
+        "wallMs": 29585.162125,
+        "cpuMs": 30409.649,
+        "peakRssMaxRSS": 252224,
+        "assertTransactionSaveCalls": 24000,
+        "payloadBytesStringified": 14495177883,
+        "saveCallsPerRecord": 2,
+        "records": 12000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 7444874,
+        "fixtureSha256": "3d2fa760e11699abf74cbab84b531898b95f19a09d9fc742abd6afc03bce5c7d"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "candidate",
+      "round": 3,
+      "sampleIndex": 1,
+      "records": 12000,
+      "sample": {
+        "wallMs": 19950.726,
+        "cpuMs": 20602.727,
+        "peakRssMaxRSS": 246544,
+        "assertTransactionSaveCalls": 12000,
+        "payloadBytesStringified": 7247238781,
+        "saveCallsPerRecord": 1,
+        "records": 12000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 7444874,
+        "fixtureSha256": "3d2fa760e11699abf74cbab84b531898b95f19a09d9fc742abd6afc03bce5c7d"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "baseline",
+      "round": 1,
+      "sampleIndex": 1,
+      "records": 20000,
+      "sample": {
+        "wallMs": 53557.777917,
+        "cpuMs": 55006.863,
+        "peakRssMaxRSS": 373680,
+        "assertTransactionSaveCalls": 40000,
+        "payloadBytesStringified": 26194588789,
+        "saveCallsPerRecord": 2,
+        "records": 20000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 12437754,
+        "fixtureSha256": "fc7f9064d6f688054671d9c59aba365a99e9695b990135f863c2fe5a97409f90"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "candidate",
+      "round": 1,
+      "sampleIndex": 1,
+      "records": 20000,
+      "sample": {
+        "wallMs": 35892.085125,
+        "cpuMs": 36821.495,
+        "peakRssMaxRSS": 356368,
+        "assertTransactionSaveCalls": 20000,
+        "payloadBytesStringified": 13096942139,
+        "saveCallsPerRecord": 1,
+        "records": 20000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 12437754,
+        "fixtureSha256": "fc7f9064d6f688054671d9c59aba365a99e9695b990135f863c2fe5a97409f90"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "candidate",
+      "round": 2,
+      "sampleIndex": 1,
+      "records": 20000,
+      "sample": {
+        "wallMs": 34590.278666,
+        "cpuMs": 35567.429,
+        "peakRssMaxRSS": 309248,
+        "assertTransactionSaveCalls": 20000,
+        "payloadBytesStringified": 13096942139,
+        "saveCallsPerRecord": 1,
+        "records": 20000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 12437754,
+        "fixtureSha256": "fc7f9064d6f688054671d9c59aba365a99e9695b990135f863c2fe5a97409f90"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "baseline",
+      "round": 2,
+      "sampleIndex": 1,
+      "records": 20000,
+      "sample": {
+        "wallMs": 54263.999833,
+        "cpuMs": 55929.175,
+        "peakRssMaxRSS": 288576,
+        "assertTransactionSaveCalls": 40000,
+        "payloadBytesStringified": 26194588789,
+        "saveCallsPerRecord": 2,
+        "records": 20000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 12437754,
+        "fixtureSha256": "fc7f9064d6f688054671d9c59aba365a99e9695b990135f863c2fe5a97409f90"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "baseline",
+      "round": 3,
+      "sampleIndex": 1,
+      "records": 20000,
+      "sample": {
+        "wallMs": 53704.274625000005,
+        "cpuMs": 55142.795,
+        "peakRssMaxRSS": 331520,
+        "assertTransactionSaveCalls": 40000,
+        "payloadBytesStringified": 26194588789,
+        "saveCallsPerRecord": 2,
+        "records": 20000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 12437754,
+        "fixtureSha256": "fc7f9064d6f688054671d9c59aba365a99e9695b990135f863c2fe5a97409f90"
+      }
+    },
+    {
+      "phase": "ab",
+      "variant": "candidate",
+      "round": 3,
+      "sampleIndex": 1,
+      "records": 20000,
+      "sample": {
+        "wallMs": 35667.357166999995,
+        "cpuMs": 36782.339,
+        "peakRssMaxRSS": 312224,
+        "assertTransactionSaveCalls": 20000,
+        "payloadBytesStringified": 13096942139,
+        "saveCallsPerRecord": 1,
+        "records": 20000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 12437754,
+        "fixtureSha256": "fc7f9064d6f688054671d9c59aba365a99e9695b990135f863c2fe5a97409f90"
+      }
+    },
+    {
+      "phase": "aa",
+      "variant": "same-a",
+      "round": 1,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 1838.269542,
+        "cpuMs": 1910.751,
+        "peakRssMaxRSS": 151824,
+        "assertTransactionSaveCalls": 2000,
+        "payloadBytesStringified": 389416134,
+        "saveCallsPerRecord": 1,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "aa",
+      "variant": "same-b",
+      "round": 1,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 1838.281833,
+        "cpuMs": 1910.349,
+        "peakRssMaxRSS": 151808,
+        "assertTransactionSaveCalls": 2000,
+        "payloadBytesStringified": 389416134,
+        "saveCallsPerRecord": 1,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "aa",
+      "variant": "same-b",
+      "round": 2,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 1906.77825,
+        "cpuMs": 1981.276,
+        "peakRssMaxRSS": 161760,
+        "assertTransactionSaveCalls": 2000,
+        "payloadBytesStringified": 389416134,
+        "saveCallsPerRecord": 1,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "aa",
+      "variant": "same-a",
+      "round": 2,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 1930.572333,
+        "cpuMs": 2001.78,
+        "peakRssMaxRSS": 151664,
+        "assertTransactionSaveCalls": 2000,
+        "payloadBytesStringified": 389416134,
+        "saveCallsPerRecord": 1,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "aa",
+      "variant": "same-a",
+      "round": 3,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 1849.1355,
+        "cpuMs": 1924.301,
+        "peakRssMaxRSS": 152592,
+        "assertTransactionSaveCalls": 2000,
+        "payloadBytesStringified": 389416134,
+        "saveCallsPerRecord": 1,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    },
+    {
+      "phase": "aa",
+      "variant": "same-b",
+      "round": 3,
+      "sampleIndex": 1,
+      "records": 2000,
+      "sample": {
+        "wallMs": 1841.202542,
+        "cpuMs": 1915.594,
+        "peakRssMaxRSS": 151792,
+        "assertTransactionSaveCalls": 2000,
+        "payloadBytesStringified": 389416134,
+        "saveCallsPerRecord": 1,
+        "records": 2000,
+        "checkpointPresentBeforeOpen": false,
+        "fixtureBytes": 1235781,
+        "fixtureSha256": "e702f7b569a4c15246cf6310bd1a89700c6351035ada69abb3b9f4d29a58e496"
+      }
+    }
+  ]
+}

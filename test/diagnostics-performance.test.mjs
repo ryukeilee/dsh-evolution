@@ -37,6 +37,14 @@ const withoutDeliberateReportChanges = (check) => {
     const { archiveLock, staleLock, lockProblems, lockAdvisory, ...evidence } = check.evidence ?? {};
     return { ...check, evidence };
   }
+  if (check.id === 'state.archives' && check.evidence?.dockyard) {
+    // The shared archive classifier changes the remediation contract: the new
+    // advice preserves originals and blocks index-only rebuilding when bytes or
+    // a transition are unproven. The assertion below checks that advice directly.
+    const { archiveIntegrity, ...dockyard } = check.evidence.dockyard;
+    const { remediation, ...report } = check;
+    return { ...report, evidence: { ...check.evidence, dockyard } };
+  }
   return check;
 };
 
@@ -96,6 +104,9 @@ function assertMatchesBaseline(currentReport, frozenReport) {
   assert.equal(Object.hasOwn(root.evidence, 'key'), false, 'data.root does not speak about the key');
   const domain = current.checks.find((check) => check.id === 'state.domain');
   assert.deepEqual(domain.evidence.lockProblems, [], 'the absent-aggregate lock verdict is reported');
+  const archives = current.checks.find((check) => check.id === 'state.archives');
+  assert.equal(archives.evidence.dockyard.archiveIntegrity.valid, true, 'the shared read-only archive classifier is reported');
+  if (archives.level === 'degraded') assert.match(archives.remediation, /Resolve any pending install or compaction transition first/);
   assert.ok(current.checks.some((check) => check.id === 'state.ownership'), 'the new ownership check is present');
 }
 

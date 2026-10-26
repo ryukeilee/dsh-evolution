@@ -168,7 +168,7 @@ const reversals = [
   // changes below; remove it first to preserve the byte-exact release anchor.
   ["async function createMemory(dir, initial, archiveWriteGuard = null, deferLoadArchiveWrites = false, archiveReadCache = memory?.archiveReadCache)",
    "async function createMemory(dir, initial, archiveWriteGuard = null, deferLoadArchiveWrites = false)"],
-  ["archiveWriteGuard, deferLoadArchiveWrites, archiveReadCache });", "archiveWriteGuard, deferLoadArchiveWrites });"],
+  ["archiveWriteGuard, deferLoadArchiveWrites, archiveReadCache, coalesceMeasurementMarkerPersist: archiveWriteGuard !== null });", "archiveWriteGuard, deferLoadArchiveWrites });"],
   ["async function hydrate(archiveReadCache = memory?.archiveReadCache)", "async function hydrate()"],
   ["createMemory(root, domain.global.get().aggregate, null, true, archiveReadCache)", "createMemory(root, domain.global.get().aggregate, null, true)"],
   ["await hydrate(current.instance.archiveReadCache);", "await hydrate();"],
