@@ -108,6 +108,10 @@
    是修正后重测的。
 3. 单文件布局（`--layout single`）曾只写最后 25% 的行。已修正（该布局只用于对照观察，不参与 §3 的数据）。
 
+第二轮审核在修正后的 diff 上确认三条全部 resolved（热投影的原始顺序与重复项、`tombstones`、`historyScan` 的精确键
+命中与 `total` 均与基线一致，14 组差分通过；端到端两侧都实测加载并断言 10000 + 10000 条记录），verdict 为
+APPROVE，没有新的阻塞项。
+
 ## 5. 语义边界
 
 - 读回的每一行都与一次完整扫描逐字段相同：行窗口内的行被共享，窗口外的行从自己的行读回，`latest-wins`、首次位置、
@@ -169,6 +173,10 @@ node scripts/benchmarks/observe-cold-archive.mjs --rows 10000 --knowledge-rows 1
 | 真实宿主验收 `0.2.0-rc.2` | `npm run acceptance:host -- --host 0.2.0-rc.2 --tarball /tmp/dsh-dist/dsh-evolution-0.2.0-rc.19.tgz --out docs/evidence/archive-row-window-dsh-0.2.0-rc.2.json` | 21/21 步骤 ok |
 | 真实宿主验收 `0.2.1-alpha.1` | 同上 | 21/21 步骤 ok |
 | 真实宿主验收 `0.2.1-rc.2` | 同上 | 21/21 步骤 ok |
+
+三次验收都在最终提交（`90ff2d6`，含审核修正）上重跑，用的是该树重新打包的
+`dsh-evolution-0.2.0-rc.19.tgz`（sha256 `6ea01d8df7e3415a8f98a8e9529efc2d5c5fa6ec0ab25e5cac824744257e0fdf`，`npm run release:pack -- --dist /tmp/dsh-dist`）。
+这个包只是验收输入，不是发布固定点：仓库里的 `release/` 未改动。
 
 验收使用脚本自己的隔离 work/runtime 目录（`$TMPDIR/dsh-evolution-accept-<host>-*`），没有触碰正式 `DSH_HOME`；
 证据写在 `docs/evidence/archive-row-window-dsh-<host>.json`，没有写入 `release/`，也没有改动固定产物。版本仍为
