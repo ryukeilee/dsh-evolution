@@ -162,6 +162,30 @@ append 一行）。下一个 replay pass 整体重试。第四个用例用一个
 - **索引文档本身的大小与排序**没有变：`#writeArchiveIndexDocument()` 的集合枚举、`statSync`
   过滤与 `actual` 顺序原样保留，所以持久化字节与发布格式都不变。
 
+## 验证
+
+全部在已提交的树上执行（最终 HEAD）。
+
+| 检查 | 结果 |
+| --- | --- |
+| `NODE_OPTIONS=--max-old-space-size=4096 npm test`，Node 22.23.4 | 1184 tests / 1184 pass / 0 fail，exit 0 |
+| 同上，Node 24.22.1 | 1184 / 1184 / 0，exit 0 |
+| 同上，Node 26.12.1 | 1184 / 1184 / 0，exit 0 |
+| `npm run pack:check`（开发语义） | 16/16，并判定本树是固定点的已提交后继，逐条只点名 `lib/dockyard-domain/memory.js` 与 `lib/domain-storage.js` |
+| `npm run release:pack` + `verify-artifact --content-only --tree` | 51 entries，contentSha256 `b85542f0…a286e`，与本树声明一致 |
+| 真实宿主验收 0.2.0-rc.2 / 0.2.1-alpha.1 / 0.2.1-rc.2 | 各自 21/21 步通过，证据的 `contentSha256` 同为 `b85542f0…a286e` |
+
+`release/` 固定产物、`package.json` 版本、`peerDependencies`、三个宿主的兼容范围都没有改；本树是
+固定点的开发后继，发布字节保持不变，所以没有重新固定，也没有写入 `release/`。
+
+独立审核（sol-loop，`pi` / `opencode-go/deepseek-v4.1-flash` / `thinking: max`，1 轮）：
+VERDICT APPROVE，无 blocker、无 should，6 个 nit。已按其中 5 个修正：flush 注释里"会被当成
+committed 索引被删掉"的错误说法、测试里 deferred/eager 比对应为此较字节、补上端口层的 abort
+用例、本文读者表把 `compact()` 改正为 `reconcile()` / `#writeArchiveIndex()`、以及基准脚本被压
+成一行的一处。第 6 个（本轮之前报告过的那次全套件 `1 fail` 是提交前工作树的旧结果）已在
+上表按提交后的实测重报；那一项是 `release-pin.test.mjs` 对未提交分发改动的拒绝，本提交不留
+下这个状态。
+
 ## 复现
 
 ```sh
