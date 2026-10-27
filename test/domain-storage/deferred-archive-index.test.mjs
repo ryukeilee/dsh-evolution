@@ -128,9 +128,11 @@ test('the owed document is the one per-append writes would have produced', () =>
       await eager.applyExecutionEvent(event);
     }
     await deferred.flushDeferredArchiveIndex();
-    // The eager memory writes at its last append, which is the same state.
-    assert.deepEqual(JSON.parse(readIndex(deferredRoot)), JSON.parse(readIndex(eagerRoot)),
-      'the deferred document must be the document the last per-append write produced');
+    // The eager memory writes at its last append, which is the same state. Under
+    // one fixed clock the documents are the same bytes, so the published bytes
+    // are compared directly rather than as parsed values.
+    assert.equal(readIndex(deferredRoot), readIndex(eagerRoot),
+      'the deferred document must be the bytes the last per-append write produced');
     assert.deepEqual(fs.readFileSync(path.join(deferredRoot, 'state.json.experiments-archive.jsonl')),
       fs.readFileSync(path.join(eagerRoot, 'state.json.experiments-archive.jsonl')),
       'deferring the index document must not change the archive bytes it describes');
@@ -239,3 +241,54 @@ test('the replay opens through the official spec with the deferral in place', as
     try { assert.equal(domain.global.get().pending, null); } finally { await domain.close(); await backend.close(); }
   });
 });
+
+test('a flush that cannot publish aborts the transaction before anything is staged', () =>
+  withFixedTime(() => withRoot('deferred-index-port-abort-', async (root) => {
+    const file = path.join(root, 'execution-events.jsonl');
+    fs.writeFileSync(file, `${events().map((event, index) => JSON.stringify(signEventBridgeEnvelope(event, { key: KEY, sequence: index + 1 }))).join('\n')}\n`);
+    const backend = new JsonStorageBackend(path.join(root, 'official'));
+    const ctx = { emit() {}, on() { return () => {}; }, logger: { warn() {}, error() {} },
+      storage: { backend: { get: () => backend } }, effect() {} };
+    ctx.storageDomain = new DomainFacility(ctx, { backend: 'json' });
+    const config = { presetDir: root, eventBridgePath: file, eventBridgeKey: KEY };
+    const live = path.join(root, 'dockyard');
+    const liveIndex = path.join(live, indexName);
+    const liveArchive = path.join(live, 'state.json.experiments-archive.jsonl');
+
+    const originalFlush = EvolutionMemory.prototype.flushDeferredArchiveIndex;
+    EvolutionMemory.prototype.flushDeferredArchiveIndex = async () => {
+      const error = new Error('INJECTED_DEFERRED_INDEX_WRITE');
+      error.code = 'INJECTED_DEFERRED_INDEX_WRITE';
+      throw error;
+    };
+    let port;
+    try {
+      // The flush runs after `work()` and before the change listing, so a write
+      // it cannot perform rejects the open instead of publishing a tree whose
+      // archived bytes have no index. This is the one behaviour the deferral
+      // changes on purpose; per-append writes used to be swallowed here.
+      await assert.rejects(openDomainStorage(ctx, config), /INJECTED_DEFERRED_INDEX_WRITE/);
+      assert.equal(fs.existsSync(liveIndex), false, 'an aborted transaction must not publish an index');
+      assert.equal(fs.existsSync(liveArchive), false, 'an aborted transaction must not publish archive bytes');
+      // Nothing was published at all: no document, so no pending record and no
+      // marker either.
+      assert.equal(fs.existsSync(durablePath(root)), false,
+        'an aborted first transaction must publish no domain document');
+      const staging = path.join(root, 'domain-staging');
+      const stages = fs.existsSync(staging) ? fs.readdirSync(staging) : [];
+      assert.ok(stages.every((name) => !fs.existsSync(path.join(staging, name, 'stage-manifest.json'))),
+        'the aborted transaction must not write a stage manifest');
+
+      // With the flush restored the same fixture opens, so nothing about the
+      // fixture — only the injected write — was the refusal.
+      EvolutionMemory.prototype.flushDeferredArchiveIndex = originalFlush;
+      port = await openDomainStorage(ctx, config);
+      const committed = JSON.parse(fs.readFileSync(durablePath(root), 'utf8')).global;
+      assert.equal(Object.keys(committed.applied).length, RECORDS);
+      assert.ok(fs.existsSync(liveIndex), 'the retried transaction must publish its index');
+    } finally {
+      EvolutionMemory.prototype.flushDeferredArchiveIndex = originalFlush;
+      if (port) await port.close();
+      await backend.close();
+    }
+  })));

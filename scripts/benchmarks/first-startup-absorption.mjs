@@ -180,7 +180,8 @@ function noise(rows, records) {
   };
 }
 
-function runChild({ script, cwd, fixture, records }) {  const result = spawnSync(process.execPath, [script, '--worker', fixture, String(records)], {
+function runChild({ script, cwd, fixture, records }) {
+  const result = spawnSync(process.execPath, [script, '--worker', fixture, String(records)], {
     cwd,
     encoding: 'utf8',
     env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=4096' },

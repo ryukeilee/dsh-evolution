@@ -220,8 +220,12 @@ const reversals = [
   ["    const result = await work(current.instance, store, { recovered });\n"
    + "    // The appends this work did owe the staged archive index one document instead\n"
    + "    // of one per archived record. Pay it here, before anything below reads the\n"
-   + "    // stage: `changedArchiveFiles()` publishes the difference by content, and a\n"
-   + "    // document still owed would look like a deletion of the committed index.\n"
+   + "    // stage. The flush is load-bearing for publication, not for validation: the\n"
+   + "    // index is a hard-linked archive name, so a document this instance never wrote\n"
+   + "    // is byte-identical to the committed one and `changedArchiveFiles()` would\n"
+   + "    // simply not list it - the transaction would install the archive files without\n"
+   + "    // the index, and `hydrate()` would rewrite it after the commit, leaving a\n"
+   + "    // window in which the committed tree has archived bytes and no index at all.\n"
    + "    await current.instance.flushDeferredArchiveIndex();\n",
    "    const result = await work(current.instance, store, { recovered });\n"],
   ["async function hydrate(archiveReadCache = memory?.archiveReadCache)", "async function hydrate()"],

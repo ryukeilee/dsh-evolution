@@ -44,8 +44,8 @@ payload 字节完全不变，持久化内容不变，没有改发布格式、事
 | 12,000 | 19,135.8 → 14,563.2（−4,572.6，−23.9%） | 19,806.9 → 15,047.7（−4,759.2，−24.0%） | 243,664 → 237,408（−6,256） | 7,247,238,781 → 7,247,238,781 |
 | 20,000 | 34,152.5 → 26,473.1（−7,679.4，−22.5%） | 35,181.1 → 27,244.9（−7,936.1，−22.6%） | 321,552 → 327,056（+5,504） | 13,096,942,139 → 13,096,942,139 |
 
-2,000 条 A/A 三组墙钟绝对差 `47.9 / 10.5 / 3.3 ms`，CPU 绝对差 `51.1 / 2.6 / 2.0 ms`，
-`maxRSS` 绝对差 `480 / 160 / 160`。三个点的每轮配对墙钟差全部为负且远大于该噪声上界：
+2,000 条 A/A 三组墙钟绝对差 `47.9 / 7.1 / 2.2 ms`，CPU 绝对差 `51.1 / 2.3 / 2.7 ms`，
+`maxRSS` 绝对差 `16 / 480 / 256`。三个点的每轮配对墙钟差全部为负且远大于该噪声上界：
 2,000 条 `−823.0 / −797.3 / −802.6 ms`，12,000 条 `−4,565.7 / −4,546.5 / −4,637.2 ms`，
 20,000 条 `−6,199.7 / −7,518.7 / −7,733.1 ms`。CPU 配对差同样全负。
 
@@ -91,25 +91,34 @@ idle，越界实验（临时把 `#writeArchiveIndexIncremental()` 改成直接�
 
 | 读者 | 何时 |
 | --- | --- |
-| `#reconcileArchiveIndex()` | `load()` / `compact()` |
-| `#loadArchiveIndex()` | `load()` / 回滚 |
+| `#reconcileArchiveIndex()` | `load()`；`reconcile()` → `#adoptDurableProjection()` |
+| `#loadArchiveIndex()` | `load()`；`#rewriteArchives()` 的回滚 |
 | `archiveIntegrity()` 与 `#archiveConsistencyReport()` | 诊断、`verifyConsistency()` |
-| `compact()` | `maintain()` / 诊断 |
+| `#writeArchiveIndex()`（整份重建） | `compact()` |
 | `#rewriteArchives()` | `reclaim()` / retention |
 
 `mutate()` 的 replay 分支在 `work()` 里只调 `applyExecutionEvent()`。`createMemory()` 自己那次
-`load()` 发生在批次之前。因此批次期间没有读者能看到陈旧文档。
+`load()` 发生在批次之前，`reconcile()` 在 `lib/` 里没有调用者。因此批次期间没有读者能看到陈旧
+文档。
 
 `flushDeferredArchiveIndex()` 在 `mutate()` 里排在 `work()` 之后、`const aggregate = ...` /
-`assertLiveTreeUnchanged()` / `changedArchiveFiles()` 之前：事务列变更清单时索引已在 staged 树
-里，所以它会被当作本次改动发布，而不是被当成"committed 索引被删掉"。发布出来的字节是
-`#writeArchiveIndexDocument()` 在同一次捕获上生成的那一份，与"最后一次逐条写"相比只有
-`updatedAt` 不同（该字段本来就每次取 `timestamp(this.clock)`）。
+`assertLiveTreeUnchanged()` / `changedArchiveFiles()` 之前。这一步**对发布是必需的，而不只是
+为了校验**：索引是 `ARCHIVE_NAME_RE` 里的归档名之一，`mirrorArchives` 会把它硬链接进 stage，
+因此一份本实例没写过的索引与已提交的 inode 逐字节相同，`changedArchiveFiles()` 只是不会列出
+它。越界探针（把 flush 改成 no-op）实测到的结果就是这个：事务照常发布，只安装归档文件、不安装
+索引，随后 `hydrate()` 的 load-time `#reconcileArchiveIndex()` 在提交之后重新生成索引；两者之间
+那段窗口里，已提交的树有归档字节却没有索引。付账之后，索引与归档文件一起进入
+`pending.files`。
+
+发布出来的字节是 `#writeArchiveIndexDocument()` 在同一次捕获上生成的那一份，与"最后一次逐条
+写"相比只有 `updatedAt` 不同（该字段本来就每次取 `timestamp(this.clock)`）。
 
 测试直接钉住这一点：同一个 clock、同一批事件、同样的文件名，把 deferred 与 eager 两个
-staged 实例的索引文档与归档文件逐字节比较（第二个用例）。第一个用例则断言 deferred 实例在
+staged 实例的索引文档**与归档文件**逐字节比较（第二个用例）。第一个用例则断言 deferred 实例在
 60 条归档记录之间**一份索引都没写**（每次读到的都是 `null`），`flushDeferredArchiveIndex()`
-第一次返回 `true`、之后返回 `false`，且发布的文档确实描述本次写入的字节数与行数。
+第一次返回 `true`、之后返回 `false`，且发布的文档确实描述本次写入的字节数与行数。第四个用例
+把索引路径占成目录让 `rename` 失败；第五个用例在端口上把 flush 替换成抛出，断言整个
+`openDomainStorage()` 拒绝、`dockyard/` 里没有多出索引、durable 文档仍是 `pending === null`。
 
 ### 刻意改变的一处：索引写失败的处理
 
