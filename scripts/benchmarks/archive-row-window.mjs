@@ -149,8 +149,9 @@ async function fixture(options) {
     sizes[collection] = bytes;
     if (!lines.length) continue;
     const path = join(root, `state.json.${collection}-archive.jsonl`);
-    const sealed = options.layout === "single" ? [] : lines.slice(0, Math.floor(lines.length * 0.75));
-    const active = lines.slice(Math.floor(lines.length * 0.75));
+    const split = options.layout === "single" ? 0 : Math.floor(lines.length * 0.75);
+    const sealed = lines.slice(0, split);
+    const active = lines.slice(split);
     if (sealed.length) {
       const directory = `${path}.segments`;
       await mkdir(directory, { recursive: true, mode: 0o700 });
@@ -245,7 +246,13 @@ async function portMode(options, libs) {
   await mkdir(dockyard, { recursive: true });
   for (const name of ["observations", "knowledge"]) {
     const from = join(root, `state.json.${name}-archive.jsonl`);
-    if (fs.existsSync(from)) fs.renameSync(from, join(dockyard, `state.json.${name}-archive.jsonl`));
+    if (!fs.existsSync(from)) continue;
+    const target = join(dockyard, `state.json.${name}-archive.jsonl`);
+    fs.renameSync(from, target);
+    // The sealed segments hold most of the history; loading only the active
+    // file would measure a much smaller archive than the one the documentation
+    // claims.
+    if (fs.existsSync(`${from}.segments`)) fs.renameSync(`${from}.segments`, `${target}.segments`);
   }
   const eventLog = join(root, "events.jsonl");
   await writeFile(eventLog, "");
@@ -259,6 +266,11 @@ async function portMode(options, libs) {
   let port = null;
   try {
     port = await libs.storage.openDomainStorage(ctx, { presetDir: root, eventBridgePath: eventLog, eventBridgeKey: "b".repeat(64) });
+    // Both archives must be complete before anything is timed: the port sees the
+    // same record count the fixture wrote, segments included.
+    const loaded = { observations: port.query("observations", 1).count, knowledge: port.query("knowledge", 1).count };
+    assert.equal(loaded.observations, options.rows, "every seeded observation must be loaded");
+    assert.equal(loaded.knowledge, options.knowledgeRows, "every seeded knowledge row must be loaded");
     for (let index = 0; index < options.warmup; index += 1) {
       await port.observe({ code: "HOST_OPERATION_FAILED", target: options.workload === "evict" ? `${TARGET}-warm-${index}` : TARGET });
     }
@@ -286,7 +298,7 @@ async function portMode(options, libs) {
     const output = {
       side: options.side, lib: options.lib, mode: "port", node: process.version,
       platform: `${process.platform}/${process.arch}`, cpus: cpus().length, loadAverage: Number(loadavg()[0]?.toFixed(2)) || undefined,
-      rows: options.rows, knowledgeRows: options.knowledgeRows, workload: options.workload, fixtureBytes: sizes,
+      rows: options.rows, knowledgeRows: options.knowledgeRows, workload: options.workload, fixtureBytes: sizes, loaded,
       samples,
       medianWallMs: round(median(samples.map((sample) => sample.wallMs))),
       medianCpuMs: round(median(samples.map((sample) => sample.cpuMs))),

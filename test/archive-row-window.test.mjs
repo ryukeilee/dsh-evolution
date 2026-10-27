@@ -265,6 +265,55 @@ test('a privatized archive keeps the table only while its prefix digest still pr
   });
 });
 
+test('a hot window with no visible archived row keeps its own order and duplicates', async () => {
+  // `#mergeArchived()` returns the hot projection unchanged when the archive
+  // contributes nothing: two rows of one id stay two rows, and an older
+  // anonymous row does not move behind a newer named one.
+  const rows = [
+    { id: 'same', knowledgeKey: 'knowledge:dup', semanticFact: 'first duplicate', scope: 'plugin:dup' },
+    { semanticFact: 'older anonymous', scope: 'plugin:anon' },
+    { id: 'same', knowledgeKey: 'knowledge:dup', semanticFact: 'second duplicate', scope: 'plugin:dup' },
+    { id: 'newest', knowledgeKey: 'knowledge:newest', semanticFact: 'newest row', scope: 'plugin:newest' },
+  ];
+  const state = { evolution: { schema: 4, knowledge: rows } };
+  const open = async (impl, root = null) => {
+    const instance = new impl.EvolutionMemory({
+      stateStore: root
+        ? new JsonStateStore({ filePath: join(root, 'state.json') })
+        : { async load() { return JSON.parse(json(state)); }, async update() {} },
+      clock: () => new Date(NOW), mutationAuthority: { assertMutation() {} },
+    });
+    await instance.load({ snapshot: false });
+    return instance;
+  };
+  const current = await open(candidate);
+  const reference = await open(baseline);
+  for (const limit of [1, 2, 3, 4, 50]) {
+    assert.deepEqual(current.historyWindow('knowledge', limit), reference.historyWindow('knowledge', limit),
+      `the trailing window at limit ${limit} must match the released implementation`);
+  }
+  assert.equal(current.historyWindow('knowledge', 1).entries[0].id, 'newest',
+    'the newest hot row is the window, not an older anonymous one');
+  const options = { maxConsidered: 1 };
+  const input = { why: 'newest row', target: 'plugin:newest' };
+  assert.deepEqual(
+    json(collectKnowledgeExperience(current.historyScan('knowledge', { window: 1 }), input, options)),
+    json(collectKnowledgeExperience(reference.historyView('knowledge'), input, options)),
+  );
+  // The same shortcut applies when the file exists but every cold row in it is a
+  // tombstone, so the archive contributes no visible row either.
+  await withHome(async (root) => {
+    fs.writeFileSync(archive(root, 'knowledge'), json({ id: 'retired', __evolutionTombstone: 1 }) + '\n');
+    fs.writeFileSync(join(root, 'state.json'), json(state));
+    const live = await open(candidate, root);
+    const empty = memory(baseline, root);
+    await empty.load({ snapshot: false });
+    for (const limit of [1, 2, 50]) {
+      assert.deepEqual(live.historyWindow('knowledge', limit), empty.historyWindow('knowledge', limit));
+    }
+  });
+});
+
 test('the recall scan view answers exactly what the complete view answered', async () => {
   await withHome(async (root) => {
     const key = candidate.knowledgeKeyOf({ problem: 'recall exact key', target: 'plugin:recall', componentId: 'plugin:recall' });
