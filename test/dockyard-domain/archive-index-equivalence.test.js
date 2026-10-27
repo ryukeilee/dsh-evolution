@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
 import { JsonStateStore } from "./support.js";
-import { archiveIndexBaseline, baselineFromSources, reconstructPreArchiveIntegrity, reconstructPreSharedScan } from "./archive-index-baseline.js";
+import { archiveIndexBaseline, baselineFromSources, readBaselineSource, reconstructPreArchiveIntegrity, reconstructPreSharedScan } from "./archive-index-baseline.js";
 
 const NOW = "2026-10-12T00:00:00.000Z";
 const FIRST = "2026-10-10T00:00:00.000Z";
@@ -347,7 +347,7 @@ test("the pre-change baseline and the working tree agree byte for byte across ev
 test("the derived baseline matches the pre-change pin, and survives a shared-scan re-pin", async (t) => {
   assert.equal(baseline.source, baseline.reconstructed,
     "the authoritative source and guarded reconstruction must be byte-identical");
-  const working = await readFile(WORKING_MEMORY, "utf8");
+  const working = await readBaselineSource();
   const repinned = baselineFromSources(working, working);
   assert.equal(repinned.pinPredatesScan, false);
   assert.equal(repinned.source, baseline.source, "a shared-scan re-pin must retain the full old baseline");

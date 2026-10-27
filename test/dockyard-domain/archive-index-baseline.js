@@ -1404,11 +1404,29 @@ export function reconstructPreDeferredArchiveIndex(source) {
 }
 
 export async function archiveIndexBaseline() {
-  const working = await readFile(new URL("../../lib/dockyard-domain/memory.js", import.meta.url), "utf8");
+  // The round that replaced the parsed-row read cache with an ordered key table
+  // and a bounded row window rewrote this file structurally: the earlier guarded
+  // reversals are written against the source they changed, and a rewrite is not
+  // reversible by hunk. The differential is therefore anchored to the frozen
+  // pre-rewrite source instead of the working tree, and every older reversal runs
+  // against that frozen source exactly as it ran against the working tree before.
+  const working = await readBaselineSource();
   const archived = readTarEntries(releaseArtifactPath(readReleaseManifest()))
     .find((entry) => entry.path === "lib/dockyard-domain/memory.js");
   assert.ok(archived, "the pinned artifact must ship the full memory implementation");
   return baselineFromSources(working, archived.bytes.toString("utf8"));
+}
+
+/**
+ * The source the guarded reversals reconstruct from.
+ *
+ * `test/fixtures/memory-pre-archive-row-window.js` is `lib/dockyard-domain/memory.js`
+ * as it stood immediately before the archive row-window rewrite, so the older
+ * reversals keep matching a real implementation and the differential keeps
+ * comparing the working tree against the behaviour that was shipped.
+ */
+export function readBaselineSource() {
+  return readFile(new URL("../fixtures/memory-pre-archive-row-window.js", import.meta.url), "utf8");
 }
 
 // A shared-scan pin no longer contains historical source; guarded reversal

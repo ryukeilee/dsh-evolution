@@ -39,9 +39,16 @@ const json = value => JSON.stringify(value);
 const lines = rows => rows.map(json).join('\n') + '\n';
 const archive = (root, collection = 'observations') => path.join(root, `state.json.${collection}-archive.jsonl`);
 const authority = { assertMutation() {} };
+// What a successor shares with the instance it was handed: the ordered key
+// table and the retained row window. `locators.files` is the one field a
+// successor rebases onto its own paths, so the byte ranges it is compared
+// through stay shared.
 function assertSharedParse(actual, expected, message) {
-  for (const key of ['records', 'positions', 'tombstones', 'knowledgeKeys']) {
+  for (const key of ['positions', 'keys', 'storedKeys', 'derivedKeys', 'tombstones', 'digests', 'window']) {
     assert.equal(actual[key], expected[key], `${message}: ${key}`);
+  }
+  for (const key of ['ordinal', 'start', 'length']) {
+    assert.equal(actual.locators[key], expected.locators[key], `${message}: locators.${key}`);
   }
 }
 const signal = (component, extra = {}) => ({
@@ -181,16 +188,26 @@ test('successors reuse missing/stale/direct-key cold rows without changing reten
         const row = await current.recordObservation(signal(component, { id: `incoming-${component}-${round}` }));
         assert.equal(row.id, `cold-${component}`, `${component}: a cold source representative must be retained`);
         if (optimized && round === 0 && component === 'direct') {
-          assert.equal(first.knowledgeKeys.has(first.records[2]), false, 'a stored-key match short circuits recomputation');
+          assert.equal(first.storedKeys[first.positions.get('id:cold-direct')], directKey,
+            'the stored key stays the first half of the match');
         }
         returned.push(row.id);
       }
     }
     if (optimized) {
-      assert.equal(first.knowledgeKeys.get(first.records[0]), baselineKnowledge.knowledgeKeyOf(signal('missing')));
-      assert.equal(first.knowledgeKeys.get(first.records[1]), baselineKnowledge.knowledgeKeyOf(signal('stale')));
-      assert.equal(first.knowledgeKeys.get(first.records[2]), baselineKnowledge.knowledgeKeyOf(signal('elsewhere')),
-        'fallback memoization must not replace the separate stored-key match');
+      // The table carries the canonical key each cold row derives, so a
+      // knowledge-bearing append decides a match without re-hashing the row.
+      assert.equal(first.derivedKeys[first.positions.get('id:cold-missing')],
+        baselineKnowledge.knowledgeKeyOf(signal('missing')));
+      assert.equal(first.derivedKeys[first.positions.get('id:cold-stale')],
+        baselineKnowledge.knowledgeKeyOf(signal('stale', { knowledgeKey: `knowledge:${'9'.repeat(32)}` })));
+      // This row stores the key of `signal('direct')` while its own dimensions
+      // hash to another one, so both halves of the comparison have to be kept.
+      assert.equal(first.storedKeys[first.positions.get('id:cold-direct')], directKey,
+        'the stored key is kept as its own half of the match');
+      assert.equal(first.derivedKeys[first.positions.get('id:cold-direct')],
+        baselineKnowledge.knowledgeKeyOf(signal('elsewhere')),
+        'a stored key that disagrees with its dimensions never replaces the derived one');
     }
     assert.equal(current.snapshot().observations.length, 0);
     assert.deepEqual(current.knowledgeSnapshot().map(row => row.count), [3, 3, 3]);
@@ -215,9 +232,9 @@ test('a same-id hot override is identified from its current fields on every hand
       assert.equal(result.id, 'shared-id', 'the hot row overrides the identically named cold row');
       assert.equal(current.snapshot().observations.length, 1, 'the probe must not append a second source');
       if (optimized) {
-        const hotRow = current.historyView('observations').find(row => row.id === 'shared-id');
-        assert.equal(current.archiveReadCache.get('observations').knowledgeKeys.has(hotRow), false,
-          'a hot override is never memoized as an immutable cold row');
+        const cached = current.archiveReadCache.get('observations');
+        assert.notEqual(cached.storedKeys[cached.positions.get('id:shared-id')], 'knowledge:stale-hot-key',
+          'a hot override is never recorded as the archived row');
       }
       returned.push(result);
     }
@@ -345,26 +362,33 @@ test('faulted and torn-tail parses are re-observed at the successor absolute pat
   });
 });
 
-test('append extension owns records, positions and tombstones instead of changing its predecessor cache', async () => {
+test('append extension owns the key table, window and tombstones instead of changing its predecessor cache', async () => {
   await differential(async (impl, root, optimized) => {
     fs.writeFileSync(archive(root, 'cycles'), lines([{ id: 'cold', status: 'observed', recordedAt: NOW }]));
     const first = await memory(impl, root);
     first.history('cycles');
     const prior = first.archiveReadCache.get('cycles');
-    const original = { records: json(prior.records), positions: [...prior.positions], tombstones: [...prior.tombstones] };
+    const shape = (entry) => ({ keys: json(entry.keys), positions: [...entry.positions], tombstones: [...entry.tombstones],
+      storedKeys: json(entry.storedKeys), derivedKeys: json(entry.derivedKeys), window: json(entry.window) });
+    const original = shape(prior);
     const next = await memory(impl, root, { archiveReadCache: first.archiveReadCache });
     await next.recordCycle({ id: 'new-one', status: 'observed', recordedAt: NOW });
     await next.recordCycle({ id: 'new-two', status: 'observed', recordedAt: NOW });
     await next.recordCycle({ id: 'cold', __evolutionTombstone: 1, status: 'observed', recordedAt: NOW });
-    assert.deepEqual({ records: json(prior.records), positions: [...prior.positions], tombstones: [...prior.tombstones] }, original,
+    assert.deepEqual(shape(prior), original,
       'the predecessor parse is immutable across successor appends and tombstones');
     if (optimized) {
       const cached = next.archiveReadCache.get('cycles');
-      assert.notEqual(cached.records, prior.records);
+      assert.notEqual(cached.keys, prior.keys);
       assert.notEqual(cached.positions, prior.positions);
       assert.notEqual(cached.tombstones, prior.tombstones);
+      assert.notEqual(cached.locators, prior.locators);
       assert.equal(cached.positions.has('id:new-one'), true);
       assert.equal(cached.tombstones.has('id:cold'), true);
+      // The append continues the predecessor's own digest state, so the extended
+      // parse still carries a content proof of the bytes it now covers.
+      assert.equal(typeof cached.digests.get('state.json.cycles-archive.jsonl'), 'string');
+      assert.equal(cached.liveDigest.name, 'state.json.cycles-archive.jsonl');
     }
     return { full: json(next.fullSnapshot()), files: tree(root) };
   });

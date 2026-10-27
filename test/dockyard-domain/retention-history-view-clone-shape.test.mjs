@@ -60,8 +60,10 @@ test("replacing a live archive cache row changes view shape while history remain
   await instance.load();
   instance.history("outcomes");
   const cached = instance.archiveReadCache.get("outcomes");
-  assert.ok(cached, "history() must have populated the archive parse cache");
-  cached.records = [errorOutcome()];
+  assert.ok(cached, "history() must have populated the archive table");
+  // The retained row window is what a view hands out without copying, so
+  // replacing it is how this test makes the cold row an Error instance.
+  cached.window = [errorOutcome()];
 
   assert.equal(instance.historyView("outcomes")[0].id, "error-row");
   assert.equal(instance.history("outcomes")[0].id, undefined);

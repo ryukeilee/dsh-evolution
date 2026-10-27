@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
 import { JsonStateStore } from "./support.js";
 import { housekeepingBaseline, housekeepingBlock, reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
-import { reconstructPreArchiveIntegrity, reconstructPreDeferredArchiveIndex, reconstructPreMeasurementMarkerSaveCoalescing, reconstructPreSharedScan } from "./archive-index-baseline.js";
+import { readBaselineSource, reconstructPreArchiveIntegrity, reconstructPreDeferredArchiveIndex, reconstructPreMeasurementMarkerSaveCoalescing, reconstructPreSharedScan } from "./archive-index-baseline.js";
 
 const NOW = "2026-10-12T00:00:00.000Z";
 const FIRST = "2026-10-10T00:00:00.000Z";
@@ -348,7 +348,7 @@ test("deterministic writes, repeated housekeeping and same-state.json restart pr
 });
 
 test("the baseline block is anchored to the frozen pre-change artifact", async (t) => {
-  const working = await readFile(WORKING_MEMORY, "utf8");
+  const working = await readBaselineSource();
   assert.equal(baseline.pinPredatesIndex, true, "the anchor artifact must predate this change");
   assert.equal(baseline.anchor.artifact, "dsh-evolution-0.2.0-rc.7.tgz");
   assert.ok(baseline.anchor.blockBytes > 0);

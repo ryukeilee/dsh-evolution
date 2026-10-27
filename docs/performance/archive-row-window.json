@@ -1,0 +1,1895 @@
+{
+  "protocol": {
+    "rounds": 3,
+    "order": "the two sides swap order every round (A/B then B/A)",
+    "sides": {
+      "baseline": "/tmp/dsh-main/lib (git worktree of 5b94ac6, the pre-round implementation)",
+      "candidate": "the working tree's lib"
+    },
+    "process": "one side per process; NODE_OPTIONS=--max-old-space-size=4096; candidate cache mode uses --expose-gc",
+    "cacheMode": "real EvolutionMemory over a seeded archive tree (75% sealed segments, 25% active file); one knowledge-bearing recordObservation populates both collections; global gc twice before each reading; one entry dropped at a time for the attribution",
+    "portMode": "real openDomainStorage over the official DomainFacility + JsonStorageBackend in a temporary root; 51 warmup observes fill the hot window, then 5 timed samples; --reads also times 5 port.recall() and 5 port.query('observations', 20)",
+    "workloads": {
+      "repeat": "the same observe target every time, so the archive does not change",
+      "evict": "a new target per observe, so the hot window evicts and the transaction appends to the observation archive"
+    },
+    "scale": "10000 observations + 10000 knowledge rows (23.2 MB of cold archive), and 40000 + 40000 (92.8 MB) for the retention mode",
+    "sources": {
+      "baseline": {
+        "lib/dockyard-domain/memory.js": "920d5ab86a04d8f11575a4ef4a57752a6d38e13f25ca17009c17d2a59ffc426d",
+        "lib/domain-storage.js": "99facd6b410c45adb5cf8e8fe79e11f5b9c420b7a29934785d760535dc56137a",
+        "lib/experience-recall.js": "12f711b8b8fe3dc1463eafb61765f1bbe4370bb692f08d00210ca317c06a5db3"
+      },
+      "candidate": {
+        "lib/dockyard-domain/memory.js": "4169fcf040cba02114aba659d8f20070b3723e58c44a0c577c7a21ec6f187b5d",
+        "lib/domain-storage.js": "dc75a95662bc2277ba249df8c931afb54bab9bc730da30b8db445b959f13698b",
+        "lib/experience-recall.js": "67ab3be7ebf7adff5b870b0837ba3a0c6206ec3332ce1a3fc659afa2952d6ff1"
+      }
+    },
+    "node": "v26.12.1",
+    "platform": "darwin/arm64",
+    "cpus": 8,
+    "fixtureBytes": {
+      "10000": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      }
+    }
+  },
+  "runs": [
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 4.39,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 31.673,
+        "withoutCacheMiB": 1.329,
+        "baselineMiB": 13.449
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 22.816
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 7.529
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 43.216,
+      "peakRssMiB": 232.203
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 4.39,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 10.187,
+        "withoutCacheMiB": 1.34,
+        "baselineMiB": 11.554
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 5.735
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 3.112
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 41.048,
+      "peakRssMiB": 225.172
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 4.39,
+      "rows": 40000,
+      "knowledgeRows": 40000,
+      "fixtureBytes": {
+        "observations": 19013340,
+        "knowledge": 74497794
+      },
+      "retained": {
+        "withCacheMiB": 126.647,
+        "withoutCacheMiB": 4.563,
+        "baselineMiB": 14.864
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 91.807
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 30.276
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "records",
+          "entries": 40000,
+          "windowFrom": null,
+          "retainedRows": 40000,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "records",
+          "entries": 40000,
+          "windowFrom": null,
+          "retainedRows": 40000,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 40001,
+      "heapMiB": 126.732,
+      "peakRssMiB": 539.141
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 4.39,
+      "rows": 40000,
+      "knowledgeRows": 40000,
+      "fixtureBytes": {
+        "observations": 19013340,
+        "knowledge": 74497794
+      },
+      "retained": {
+        "withCacheMiB": 23.668,
+        "withoutCacheMiB": 4.59,
+        "baselineMiB": 12.951
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 10.029
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 9.049
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "table",
+          "entries": 40000,
+          "windowFrom": 37952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "table",
+          "entries": 40000,
+          "windowFrom": 37952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 40001,
+      "heapMiB": 120.822,
+      "peakRssMiB": 532.953
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 4.04,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "repeat",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 19.016,
+          "cpuMs": 30.068,
+          "archiveRowsParsed": 10000,
+          "archiveBytesRead": 302315208,
+          "operations": null
+        },
+        {
+          "wallMs": 17.83,
+          "cpuMs": 10.768,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 17.152,
+          "cpuMs": 23.895,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 16.734,
+          "cpuMs": 9.87,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 17.149,
+          "cpuMs": 9.916,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 17.152,
+      "medianCpuMs": 10.768,
+      "reads": {
+        "recallMedianMs": 11.697,
+        "queryMedianMs": 0.283,
+        "recallSamples": [
+          17.929,
+          12.867,
+          11.565,
+          11.697,
+          11.296
+        ],
+        "querySamples": [
+          1.279,
+          0.294,
+          0.274,
+          0.283,
+          0.281
+        ]
+      },
+      "heapMiB": 53.914,
+      "rssMiB": 235.861,
+      "peakRssMiB": 261.484,
+      "gcCount": 31,
+      "gcMs": 31.311
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 4.04,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "repeat",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 18.168,
+          "cpuMs": 23.782,
+          "archiveRowsParsed": 10000,
+          "archiveBytesRead": 302315208,
+          "operations": null
+        },
+        {
+          "wallMs": 16.872,
+          "cpuMs": 9.868,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 16.1,
+          "cpuMs": 22.293,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 14.903,
+          "cpuMs": 9.406,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 16.143,
+          "cpuMs": 22.518,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 16.143,
+      "medianCpuMs": 22.293,
+      "reads": {
+        "recallMedianMs": 12.707,
+        "queryMedianMs": 0.215,
+        "recallSamples": [
+          18.734,
+          13.508,
+          12.115,
+          12.707,
+          11.62
+        ],
+        "querySamples": [
+          1.294,
+          0.297,
+          0.198,
+          0.215,
+          0.194
+        ]
+      },
+      "heapMiB": 42.863,
+      "rssMiB": 215.328,
+      "peakRssMiB": 242.016,
+      "gcCount": 27,
+      "gcMs": 24.769
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 4.04,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "evict",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 64.943,
+          "cpuMs": 45.683,
+          "archiveRowsParsed": 17500,
+          "archiveBytesRead": 307033335,
+          "operations": null
+        },
+        {
+          "wallMs": 56.963,
+          "cpuMs": 56.991,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8178042,
+          "operations": null
+        },
+        {
+          "wallMs": 60.685,
+          "cpuMs": 54.501,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8181525,
+          "operations": null
+        },
+        {
+          "wallMs": 58.323,
+          "cpuMs": 42.906,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8185008,
+          "operations": null
+        },
+        {
+          "wallMs": 60.585,
+          "cpuMs": 51.944,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8188491,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 60.585,
+      "medianCpuMs": 51.944,
+      "reads": {
+        "recallMedianMs": 12.609,
+        "queryMedianMs": 0.344,
+        "recallSamples": [
+          19.625,
+          14.195,
+          11.983,
+          12.609,
+          11.862
+        ],
+        "querySamples": [
+          3.485,
+          0.378,
+          0.344,
+          0.327,
+          0.312
+        ]
+      },
+      "heapMiB": 56.876,
+      "rssMiB": 224.065,
+      "peakRssMiB": 249.313,
+      "gcCount": 32,
+      "gcMs": 23.844
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.88,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "evict",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 44.15,
+          "cpuMs": 32.466,
+          "archiveRowsParsed": 15000,
+          "archiveBytesRead": 309391818,
+          "operations": null
+        },
+        {
+          "wallMs": 47.408,
+          "cpuMs": 29.255,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9359025,
+          "operations": null
+        },
+        {
+          "wallMs": 56.118,
+          "cpuMs": 42.741,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9363669,
+          "operations": null
+        },
+        {
+          "wallMs": 48.084,
+          "cpuMs": 26.867,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9368313,
+          "operations": null
+        },
+        {
+          "wallMs": 48.853,
+          "cpuMs": 43.86,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9372957,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 48.084,
+      "medianCpuMs": 32.466,
+      "reads": {
+        "recallMedianMs": 13.111,
+        "queryMedianMs": 0.218,
+        "recallSamples": [
+          20.096,
+          14.374,
+          13.111,
+          12.625,
+          12.416
+        ],
+        "querySamples": [
+          1.368,
+          0.348,
+          0.218,
+          0.21,
+          0.195
+        ]
+      },
+      "heapMiB": 26.755,
+      "rssMiB": 224.284,
+      "peakRssMiB": 251.391,
+      "gcCount": 29,
+      "gcMs": 25.309
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.88,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 31.657,
+        "withoutCacheMiB": 1.312,
+        "baselineMiB": 13.465
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 22.816
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 7.529
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 43.216,
+      "peakRssMiB": 232.484
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.88,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 10.2,
+        "withoutCacheMiB": 1.34,
+        "baselineMiB": 11.554
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 5.747
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 3.112
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 41.048,
+      "peakRssMiB": 225.031
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.88,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 10.205,
+        "withoutCacheMiB": 1.352,
+        "baselineMiB": 11.542
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 5.741
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 3.112
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 41.048,
+      "peakRssMiB": 224.938
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.88,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 31.673,
+        "withoutCacheMiB": 1.312,
+        "baselineMiB": 13.465
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 22.831
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 7.529
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 43.216,
+      "peakRssMiB": 232.203
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.88,
+      "rows": 40000,
+      "knowledgeRows": 40000,
+      "fixtureBytes": {
+        "observations": 19013340,
+        "knowledge": 74497794
+      },
+      "retained": {
+        "withCacheMiB": 23.668,
+        "withoutCacheMiB": 4.59,
+        "baselineMiB": 12.951
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 10.026
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 9.053
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "table",
+          "entries": 40000,
+          "windowFrom": 37952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "table",
+          "entries": 40000,
+          "windowFrom": 37952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 40001,
+      "heapMiB": 120.701,
+      "peakRssMiB": 533.141
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.65,
+      "rows": 40000,
+      "knowledgeRows": 40000,
+      "fixtureBytes": {
+        "observations": 19013340,
+        "knowledge": 74497794
+      },
+      "retained": {
+        "withCacheMiB": 126.644,
+        "withoutCacheMiB": 4.563,
+        "baselineMiB": 14.864
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 91.807
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 30.274
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "records",
+          "entries": 40000,
+          "windowFrom": null,
+          "retainedRows": 40000,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "records",
+          "entries": 40000,
+          "windowFrom": null,
+          "retainedRows": 40000,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 40001,
+      "heapMiB": 126.84,
+      "peakRssMiB": 539.078
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.65,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "repeat",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 17.358,
+          "cpuMs": 29.279,
+          "archiveRowsParsed": 10000,
+          "archiveBytesRead": 302315208,
+          "operations": null
+        },
+        {
+          "wallMs": 17.471,
+          "cpuMs": 10.044,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 14.971,
+          "cpuMs": 22.032,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 16.854,
+          "cpuMs": 9.683,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 15.153,
+          "cpuMs": 9.388,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 16.854,
+      "medianCpuMs": 10.044,
+      "reads": {
+        "recallMedianMs": 12.192,
+        "queryMedianMs": 0.199,
+        "recallSamples": [
+          18.586,
+          13.772,
+          12.192,
+          12.107,
+          11.631
+        ],
+        "querySamples": [
+          1.313,
+          0.313,
+          0.199,
+          0.19,
+          0.192
+        ]
+      },
+      "heapMiB": 46.985,
+      "rssMiB": 221.001,
+      "peakRssMiB": 246.969,
+      "gcCount": 29,
+      "gcMs": 26.398
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.65,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "repeat",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 17.014,
+          "cpuMs": 28.147,
+          "archiveRowsParsed": 10000,
+          "archiveBytesRead": 302315208,
+          "operations": null
+        },
+        {
+          "wallMs": 17.758,
+          "cpuMs": 11.043,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 17.067,
+          "cpuMs": 24.154,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 16.188,
+          "cpuMs": 10.057,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 16.938,
+          "cpuMs": 25.284,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 17.014,
+      "medianCpuMs": 24.154,
+      "reads": {
+        "recallMedianMs": 12.046,
+        "queryMedianMs": 0.314,
+        "recallSamples": [
+          18.25,
+          13.337,
+          11.55,
+          12.046,
+          11.373
+        ],
+        "querySamples": [
+          1.293,
+          0.331,
+          0.314,
+          0.289,
+          0.289
+        ]
+      },
+      "heapMiB": 48.602,
+      "rssMiB": 235.752,
+      "peakRssMiB": 261.016,
+      "gcCount": 31,
+      "gcMs": 24.035
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.36,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "evict",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 52.858,
+          "cpuMs": 32.158,
+          "archiveRowsParsed": 15000,
+          "archiveBytesRead": 309391818,
+          "operations": null
+        },
+        {
+          "wallMs": 50.963,
+          "cpuMs": 29.68,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9359025,
+          "operations": null
+        },
+        {
+          "wallMs": 52.232,
+          "cpuMs": 45.693,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9363669,
+          "operations": null
+        },
+        {
+          "wallMs": 48.738,
+          "cpuMs": 43.458,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9368313,
+          "operations": null
+        },
+        {
+          "wallMs": 47.443,
+          "cpuMs": 28.663,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9372957,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 50.963,
+      "medianCpuMs": 32.158,
+      "reads": {
+        "recallMedianMs": 13.866,
+        "queryMedianMs": 0.219,
+        "recallSamples": [
+          21.331,
+          13.963,
+          13.866,
+          12.346,
+          12.709
+        ],
+        "querySamples": [
+          1.344,
+          0.322,
+          0.219,
+          0.189,
+          0.208
+        ]
+      },
+      "heapMiB": 39.652,
+      "rssMiB": 226.689,
+      "peakRssMiB": 259.109,
+      "gcCount": 30,
+      "gcMs": 24.626
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.36,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "evict",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 59.477,
+          "cpuMs": 45.349,
+          "archiveRowsParsed": 17500,
+          "archiveBytesRead": 307033335,
+          "operations": null
+        },
+        {
+          "wallMs": 64.806,
+          "cpuMs": 42.663,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8178042,
+          "operations": null
+        },
+        {
+          "wallMs": 60.041,
+          "cpuMs": 54.022,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8181525,
+          "operations": null
+        },
+        {
+          "wallMs": 57.453,
+          "cpuMs": 38.807,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8185008,
+          "operations": null
+        },
+        {
+          "wallMs": 62.391,
+          "cpuMs": 41.199,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8188491,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 60.041,
+      "medianCpuMs": 42.663,
+      "reads": {
+        "recallMedianMs": 12.628,
+        "queryMedianMs": 0.383,
+        "recallSamples": [
+          18.909,
+          13.994,
+          12.628,
+          12.173,
+          12.419
+        ],
+        "querySamples": [
+          3.476,
+          0.383,
+          0.395,
+          0.335,
+          0.326
+        ]
+      },
+      "heapMiB": 36.562,
+      "rssMiB": 230.909,
+      "peakRssMiB": 261.078,
+      "gcCount": 30,
+      "gcMs": 27.865
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.36,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 10.194,
+        "withoutCacheMiB": 1.34,
+        "baselineMiB": 11.554
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 5.741
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 3.112
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 41.048,
+      "peakRssMiB": 225.063
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.36,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 31.658,
+        "withoutCacheMiB": 1.312,
+        "baselineMiB": 13.465
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 22.816
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 7.529
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 43.216,
+      "peakRssMiB": 232.359
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.36,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 31.657,
+        "withoutCacheMiB": 1.312,
+        "baselineMiB": 13.465
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 22.816
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 7.529
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 43.216,
+      "peakRssMiB": 232.266
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.36,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 10.194,
+        "withoutCacheMiB": 1.34,
+        "baselineMiB": 11.554
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 5.741
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 3.112
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 41.048,
+      "peakRssMiB": 225.297
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.17,
+      "rows": 40000,
+      "knowledgeRows": 40000,
+      "fixtureBytes": {
+        "observations": 19013340,
+        "knowledge": 74497794
+      },
+      "retained": {
+        "withCacheMiB": 126.641,
+        "withoutCacheMiB": 4.563,
+        "baselineMiB": 14.864
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 91.807
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 30.27
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "records",
+          "entries": 40000,
+          "windowFrom": null,
+          "retainedRows": 40000,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "records",
+          "entries": 40000,
+          "windowFrom": null,
+          "retainedRows": 40000,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 40001,
+      "heapMiB": 126.754,
+      "peakRssMiB": 538.984
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.17,
+      "rows": 40000,
+      "knowledgeRows": 40000,
+      "fixtureBytes": {
+        "observations": 19013340,
+        "knowledge": 74497794
+      },
+      "retained": {
+        "withCacheMiB": 23.668,
+        "withoutCacheMiB": 4.59,
+        "baselineMiB": 12.951
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 10.021
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 9.057
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "table",
+          "entries": 40000,
+          "windowFrom": 37952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "table",
+          "entries": 40000,
+          "windowFrom": 37952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 40001,
+      "heapMiB": 120.646,
+      "peakRssMiB": 532.906
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.17,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "repeat",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 16.235,
+          "cpuMs": 13.522,
+          "archiveRowsParsed": 10000,
+          "archiveBytesRead": 302315208,
+          "operations": null
+        },
+        {
+          "wallMs": 15.34,
+          "cpuMs": 25.095,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 17.247,
+          "cpuMs": 10.45,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 16.166,
+          "cpuMs": 9.817,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 17.842,
+          "cpuMs": 10.023,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 16.235,
+      "medianCpuMs": 10.45,
+      "reads": {
+        "recallMedianMs": 12.304,
+        "queryMedianMs": 0.297,
+        "recallSamples": [
+          18.055,
+          13.106,
+          12.304,
+          11.79,
+          11.838
+        ],
+        "querySamples": [
+          1.267,
+          0.315,
+          0.291,
+          0.262,
+          0.297
+        ]
+      },
+      "heapMiB": 24.946,
+      "rssMiB": 235.955,
+      "peakRssMiB": 261.188,
+      "gcCount": 29,
+      "gcMs": 31.482
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.31,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "repeat",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 15.495,
+          "cpuMs": 26.876,
+          "archiveRowsParsed": 10000,
+          "archiveBytesRead": 302315208,
+          "operations": null
+        },
+        {
+          "wallMs": 17.117,
+          "cpuMs": 10.116,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 15.486,
+          "cpuMs": 9.489,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 15.742,
+          "cpuMs": 9.575,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        },
+        {
+          "wallMs": 16.856,
+          "cpuMs": 9.295,
+          "archiveRowsParsed": 0,
+          "archiveBytesRead": 5813754,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 15.742,
+      "medianCpuMs": 9.575,
+      "reads": {
+        "recallMedianMs": 12.393,
+        "queryMedianMs": 0.209,
+        "recallSamples": [
+          18.914,
+          13.581,
+          12.393,
+          11.988,
+          11.74
+        ],
+        "querySamples": [
+          1.349,
+          0.306,
+          0.207,
+          0.209,
+          0.208
+        ]
+      },
+      "heapMiB": 50.787,
+      "rssMiB": 227.657,
+      "peakRssMiB": 253.594,
+      "gcCount": 27,
+      "gcMs": 26.639
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.31,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "evict",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 62.801,
+          "cpuMs": 64.243,
+          "archiveRowsParsed": 17500,
+          "archiveBytesRead": 307033335,
+          "operations": null
+        },
+        {
+          "wallMs": 60.443,
+          "cpuMs": 41.084,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8178042,
+          "operations": null
+        },
+        {
+          "wallMs": 57.953,
+          "cpuMs": 41.001,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8181525,
+          "operations": null
+        },
+        {
+          "wallMs": 59.041,
+          "cpuMs": 51.812,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8185008,
+          "operations": null
+        },
+        {
+          "wallMs": 58.247,
+          "cpuMs": 41.259,
+          "archiveRowsParsed": 5000,
+          "archiveBytesRead": 8188491,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 59.041,
+      "medianCpuMs": 41.259,
+      "reads": {
+        "recallMedianMs": 12.713,
+        "queryMedianMs": 0.361,
+        "recallSamples": [
+          18.905,
+          13.899,
+          12.713,
+          11.99,
+          12.354
+        ],
+        "querySamples": [
+          3.481,
+          0.403,
+          0.361,
+          0.317,
+          0.34
+        ]
+      },
+      "heapMiB": 36.644,
+      "rssMiB": 234.128,
+      "peakRssMiB": 261.188,
+      "gcCount": 30,
+      "gcMs": 22.424
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "port",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.31,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "workload": "evict",
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "samples": [
+        {
+          "wallMs": 50.293,
+          "cpuMs": 32.485,
+          "archiveRowsParsed": 15000,
+          "archiveBytesRead": 309391818,
+          "operations": null
+        },
+        {
+          "wallMs": 55.925,
+          "cpuMs": 46.901,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9359025,
+          "operations": null
+        },
+        {
+          "wallMs": 51.268,
+          "cpuMs": 43.654,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9363669,
+          "operations": null
+        },
+        {
+          "wallMs": 59.938,
+          "cpuMs": 41.313,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9368313,
+          "operations": null
+        },
+        {
+          "wallMs": 52.494,
+          "cpuMs": 46.675,
+          "archiveRowsParsed": 2500,
+          "archiveBytesRead": 9372957,
+          "operations": null
+        }
+      ],
+      "medianWallMs": 52.494,
+      "medianCpuMs": 43.654,
+      "reads": {
+        "recallMedianMs": 12.789,
+        "queryMedianMs": 0.22,
+        "recallSamples": [
+          19.967,
+          14.335,
+          12.789,
+          12.339,
+          12.077
+        ],
+        "querySamples": [
+          1.333,
+          0.335,
+          0.195,
+          0.22,
+          0.194
+        ]
+      },
+      "heapMiB": 57.125,
+      "rssMiB": 232.721,
+      "peakRssMiB": 257.828,
+      "gcCount": 29,
+      "gcMs": 24.238
+    },
+    {
+      "side": "baseline",
+      "lib": "/tmp/dsh-main/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.31,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 31.657,
+        "withoutCacheMiB": 1.312,
+        "baselineMiB": 13.467
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 22.816
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 7.529
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "records",
+          "entries": 10000,
+          "windowFrom": null,
+          "retainedRows": 10000,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 43.219,
+      "peakRssMiB": 235.359
+    },
+    {
+      "side": "candidate",
+      "lib": "/Users/ryukeili/GitHub/dsh-evolution/lib",
+      "mode": "cache",
+      "node": "v26.12.1",
+      "platform": "darwin/arm64",
+      "cpus": 8,
+      "loadAverage": 3.31,
+      "rows": 10000,
+      "knowledgeRows": 10000,
+      "fixtureBytes": {
+        "observations": 4703340,
+        "knowledge": 18532794
+      },
+      "retained": {
+        "withCacheMiB": 10.199,
+        "withoutCacheMiB": 1.34,
+        "baselineMiB": 11.554
+      },
+      "attribution": [
+        {
+          "collection": "knowledge",
+          "retainedMiB": 5.747
+        },
+        {
+          "collection": "observations",
+          "retainedMiB": 3.112
+        }
+      ],
+      "inventory": [
+        {
+          "collection": "knowledge",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        },
+        {
+          "collection": "observations",
+          "format": "table",
+          "entries": 10000,
+          "windowFrom": 7952,
+          "retainedRows": 2048,
+          "tombstones": 0
+        }
+      ],
+      "rowsAfter": 10001,
+      "heapMiB": 41.048,
+      "peakRssMiB": 225.203
+    }
+  ]
+}
