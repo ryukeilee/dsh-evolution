@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
 import { JsonStateStore } from "./support.js";
 import { housekeepingBaseline, housekeepingBlock, reconstructPreHousekeepingIndex } from "./housekeeping-baseline.js";
-import { reconstructPreArchiveIntegrity, reconstructPreMeasurementMarkerSaveCoalescing, reconstructPreSharedScan } from "./archive-index-baseline.js";
+import { reconstructPreArchiveIntegrity, reconstructPreDeferredArchiveIndex, reconstructPreMeasurementMarkerSaveCoalescing, reconstructPreSharedScan } from "./archive-index-baseline.js";
 
 const NOW = "2026-10-12T00:00:00.000Z";
 const FIRST = "2026-10-10T00:00:00.000Z";
@@ -356,7 +356,7 @@ test("the baseline block is anchored to the frozen pre-change artifact", async (
   // baseline; this pins the whole file it came from, so neither reversing this
   // change nor the earlier shared-scan one can drift unnoticed.
   const reconstructed = reconstructPreHousekeepingIndex(reconstructPreSharedScan(
-    reconstructPreMeasurementMarkerSaveCoalescing(reconstructPreArchiveIntegrity(working)),
+    reconstructPreMeasurementMarkerSaveCoalescing(reconstructPreArchiveIntegrity(reconstructPreDeferredArchiveIndex(working))),
   ));
   assert.equal(reconstructed, baseline.anchor.pinnedSource,
     "reversing this change and the earlier shared-scan refactor must reproduce the artifact byte for byte");

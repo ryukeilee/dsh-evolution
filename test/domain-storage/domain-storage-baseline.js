@@ -212,7 +212,18 @@ const reversals = [
   // changes below; remove it first to preserve the byte-exact release anchor.
   ["async function createMemory(dir, initial, archiveWriteGuard = null, deferLoadArchiveWrites = false, archiveReadCache = memory?.archiveReadCache)",
    "async function createMemory(dir, initial, archiveWriteGuard = null, deferLoadArchiveWrites = false)"],
-  ["archiveWriteGuard, deferLoadArchiveWrites, archiveReadCache, coalesceMeasurementMarkerPersist: archiveWriteGuard !== null });", "archiveWriteGuard, deferLoadArchiveWrites });"],
+  // The deferred archive index document is the newest change to this file, so it is
+  // reversed before the older tables below, which were written against the source as
+  // it stood before it.
+  ["archiveWriteGuard, deferLoadArchiveWrites, archiveReadCache, coalesceMeasurementMarkerPersist: archiveWriteGuard !== null, deferArchiveIndexWrites: archiveWriteGuard !== null });",
+   "archiveWriteGuard, deferLoadArchiveWrites });"],
+  ["    const result = await work(current.instance, store, { recovered });\n"
+   + "    // The appends this work did owe the staged archive index one document instead\n"
+   + "    // of one per archived record. Pay it here, before anything below reads the\n"
+   + "    // stage: `changedArchiveFiles()` publishes the difference by content, and a\n"
+   + "    // document still owed would look like a deletion of the committed index.\n"
+   + "    await current.instance.flushDeferredArchiveIndex();\n",
+   "    const result = await work(current.instance, store, { recovered });\n"],
   ["async function hydrate(archiveReadCache = memory?.archiveReadCache)", "async function hydrate()"],
   ["createMemory(root, domain.global.get().aggregate, null, true, archiveReadCache)", "createMemory(root, domain.global.get().aggregate, null, true)"],
   ["await hydrate(current.instance.archiveReadCache);", "await hydrate();"],

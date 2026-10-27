@@ -1359,6 +1359,50 @@ export function reconstructPreMeasurementMarkerSaveCoalescing(source) {
   return source;
 }
 
+// Reversal layer for the deferred archive index document.
+//
+// Applied before every older table, because it is the newest change to the
+// working tree and the older fragments were written against the source as it
+// stood before it. Each post-change fragment is an exact single-occurrence
+// guard, so source drift fails here instead of silently reverting nothing.
+export function reconstructPreDeferredArchiveIndex(source) {
+  const reversals = [
+    ["coalesceMeasurementMarkerPersist = false, deferArchiveIndexWrites = false } = {}) {",
+      "coalesceMeasurementMarkerPersist = false } = {}) {"],
+    ["    // Only domain-storage's staged replay working copy opts into marker coalescing.\n"
+      + "    this.coalesceMeasurementMarkerPersist = coalesceMeasurementMarkerPersist === true;\n"
+      + "    // Only the same working copy opts into deferring its archive index document.\n"
+      + "    // See `flushDeferredArchiveIndex()` for why that is safe there and only there.\n"
+      + "    this.deferArchiveIndexWrites = deferArchiveIndexWrites === true;\n",
+      "    // Only domain-storage's staged replay working copy opts into marker coalescing.\n"
+      + "    this.coalesceMeasurementMarkerPersist = coalesceMeasurementMarkerPersist === true;\n"],
+    ["    this.archiveIndexWriting = Promise.resolve();\n"
+      + "    // Set when a deferred append owes the index document a write.\n"
+      + "    this.archiveIndexDue = false;\n"
+      + "    this.archiveIndexReady = false;",
+      "    this.archiveIndexWriting = Promise.resolve();\n"
+      + "    this.archiveIndexReady = false;"],
+    ["    if (!this.archiveIndexFile) return;\n"
+      + "    // A deferred instance does not publish: it is domain-storage's staged replay\n"
+      + "    // working copy, and the only readers of the index document it holds are the\n"
+      + "    // load, compaction, retention-rewrite and consistency paths, none of which a\n"
+      + "    // replay batch reaches. Every appending path therefore only records that the\n"
+      + "    // document is owed, and `mutate()` collects that debt once before it turns\n"
+      + "    // the stage into files. See `flushDeferredArchiveIndex()`.\n"
+      + "    if (this.deferArchiveIndexWrites) { this.archiveIndexDue = true; return; }\n",
+      "    if (!this.archiveIndexFile) return;\n"],
+    ["  /**\n   * Write the archive index document the deferred appends owe, at most once.\n   *\n   * `deferArchiveIndexWrites` exists for one instance only: the staged replay\n   * working copy `domain-storage` builds inside a domain transaction. That copy\n   * never publishes - the transaction reads its archive tree by content after\n   * `work()` returns - so the intermediate index documents it used to rewrite\n   * after every archived record were read by nothing and then replaced. Each of\n   * them cost a directory listing per collection, a stat per archive file, a\n   * serialisation of the whole document, a temporary write and a rename, and a\n   * replay archives one record per event.\n   *\n   * Deferring changes nothing the transaction publishes: the write this method\n   * performs produces the same document the last per-record write produced,\n   * apart from `updatedAt`, which `#writeArchiveIndexDocument()` always stamps\n   * from the clock. The file it replaces is created through the same temporary\n   * plus rename, and `changedArchiveFiles()` still sees it because the flush runs\n   * before the transaction lists its changes.\n   *\n   * One behaviour does differ, deliberately: a failing index write used to be\n   * caught by `#archiveEntries()`, which kept that record in the hot window and\n   * recorded a `deferred-write` fault. The debt is now paid once, so its failure\n   * rejects the transaction instead, before anything is staged for publication.\n   * That is the stricter of the two outcomes - an index this process could not\n   * write is not published as if it had been - and the next replay pass retries\n   * it as a whole.\n   */\n  async flushDeferredArchiveIndex() {\n    if (!this.deferArchiveIndexWrites || !this.archiveIndexDue) return false;\n    this.archiveIndexDue = false;\n    const write = async () => this.#writeArchiveIndexDocument();\n    const queued = this.archiveIndexWriting.then(write, write);\n    this.archiveIndexWriting = queued.catch(() => {});\n    await queued;\n    return true;\n  }\n\n", ""],
+  ];
+  for (const [after, before] of reversals) {
+    assert.equal(source.split(after).length - 1, 1,
+      "deferred archive index shape must occur exactly once before reconstruction");
+    source = source.replace(after, before);
+  }
+  assert.doesNotMatch(source, /deferArchiveIndexWrites|archiveIndexDue|flushDeferredArchiveIndex/,
+    "the reconstructed source must not retain the deferred archive index document");
+  return source;
+}
+
 export async function archiveIndexBaseline() {
   const working = await readFile(new URL("../../lib/dockyard-domain/memory.js", import.meta.url), "utf8");
   const archived = readTarEntries(releaseArtifactPath(readReleaseManifest()))
@@ -1375,7 +1419,7 @@ export async function archiveIndexBaseline() {
 // the working tree: the pin predates every change after it, so the byte
 // identity check reverses them all, in the order the table lists them.
 export function baselineFromSources(working, pinned) {
-  const reconstructed = reconstructPreHousekeepingIndex(reconstructPreSharedScan(reconstructPreMeasurementMarkerSaveCoalescing(reconstructPreArchiveIntegrity(working))));
+  const reconstructed = reconstructPreHousekeepingIndex(reconstructPreSharedScan(reconstructPreMeasurementMarkerSaveCoalescing(reconstructPreArchiveIntegrity(reconstructPreDeferredArchiveIndex(working)))));
   const pinPredatesScan = !pinned.includes("#scanArchiveRaw");
   if (pinPredatesScan) {
     assert.equal(reconstructed, pinned,

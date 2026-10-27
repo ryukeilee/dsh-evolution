@@ -121,6 +121,24 @@ async function worker(fixtureFile, expectedRecords) {
   }
 }
 
+/**
+ * The revision a measured tree is at, read from that tree rather than written
+ * into this file: the baseline root is usually a worktree of the same HEAD, and a
+ * hardcoded hash would quietly stop describing what was measured.
+ */
+function treeRevision(root) {
+  const result = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
+  return result.status === 0 ? result.stdout.trim() : null;
+}
+
+/** Shipped files this candidate tree has not committed, as `git status` names them. */
+function worktreeChanges(root) {
+  const result = spawnSync('git', ['status', '--porcelain', '--', 'lib', 'test', 'scripts'], { cwd: root, encoding: 'utf8' });
+  if (result.status !== 0) return null;
+  return [...new Set(result.stdout.split('\n').map((line) => line.trim()).filter(Boolean)
+    .map((line) => line.replace(/^[^ ]+ +/u, '')))].sort();
+}
+
 function median(values) {
   const sorted = [...values].sort((left, right) => left - right);
   return sorted[Math.floor(sorted.length / 2)];
@@ -162,8 +180,7 @@ function noise(rows, records) {
   };
 }
 
-function runChild({ script, cwd, fixture, records }) {
-  const result = spawnSync(process.execPath, [script, '--worker', fixture, String(records)], {
+function runChild({ script, cwd, fixture, records }) {  const result = spawnSync(process.execPath, [script, '--worker', fixture, String(records)], {
     cwd,
     encoding: 'utf8',
     env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=4096' },
@@ -226,8 +243,9 @@ async function runner(options) {
     const summary = {
       schema: 1,
       method: {
-        baselineCommit: 'b13fe4cd797ff4f3d9be289b09e20e00469180ea',
-        candidateCommit: 'b13fe4cd797ff4f3d9be289b09e20e00469180ea plus uncommitted worktree changes',
+        baselineCommit: treeRevision(baselineRoot),
+        candidateCommit: treeRevision(REPO),
+        candidateWorktreeChanges: worktreeChanges(REPO),
         node: process.version,
         platform: `${process.platform}/${process.arch}`,
         rounds,

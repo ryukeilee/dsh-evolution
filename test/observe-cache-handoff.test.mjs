@@ -110,6 +110,47 @@ function tree(root) {
   return out;
 }
 
+/**
+ * Drop the archive index document of a staging directory no transaction installs.
+ *
+ * The staged working copy writes that document once, immediately before its
+ * transaction lists the files it will publish, and every staged archive byte it
+ * describes is still compared here. A transaction abandoned earlier never gets
+ * to that point, so its directory keeps whatever its own load wrote. The file is
+ * inert in that state: the install path publishes `pending.files`, which is
+ * produced after the write, and the only other reader of an abandoned stage is
+ * the doctor's orphan-staging repair, which removes the directory without
+ * interpreting it. Deferring the document is what makes this difference
+ * visible, so the residue is compared without it rather than with a per-record
+ * copy no reader ever asked for.
+ */
+function withoutAbandonedStageIndex(files) {
+  const prefix = 'domain-staging/';
+  const suffix = 'state.json.evolution-archive-index.json';
+  return Object.fromEntries(Object.entries(files)
+    .filter(([name]) => !(name.startsWith(prefix) && name.endsWith(suffix))));
+}
+
+const HARNESS_SERIAL = /00000000-0000-4000-8000-(\d{12})/g;
+
+/**
+ * Compare the two implementations without the harness's own serial offsets.
+ *
+ * `deterministic()` numbers every `crypto.randomUUID()` call, so the recorded
+ * identifiers are opaque tokens whose *values* depend on how many names were
+ * drawn before them - and a temporary file name no run ever compares is one of
+ * those draws. Rewriting each token to the rank of its first appearance keeps
+ * every relation the comparison is about (which identifiers are equal, which
+ * differ, in what order they appear) and drops only the absolute offset.
+ */
+function rebaseSerials(value) {
+  const seen = new Map();
+  return JSON.parse(JSON.stringify(value).replace(HARNESS_SERIAL, (_match, digits) => {
+    if (!seen.has(digits)) seen.set(digits, String(seen.size + 1).padStart(12, '0'));
+    return `00000000-0000-4000-8000-${seen.get(digits)}`;
+  }));
+}
+
 test('rc.16 is a real pre-handoff package, not a reconstructed candidate', () => {
   const source = fs.readFileSync(path.join(baselineRoot, 'package/lib/domain-storage.js'), 'utf8');
   assert.doesNotMatch(source, /archiveReadCache/);
@@ -422,7 +463,7 @@ for (const phase of ['before-commit', 'pending-install']) {
           assert.ok(document.pending.files.some(entry => entry.file === 'state.json.observations-archive.jsonl'));
           assert.equal(installationFailed, true);
         }
-        const failedTree = tree(root);
+        const failedTree = withoutAbandonedStageIndex(tree(root));
         await assert.rejects(port.close(), failure);
         ports.pop();
         const restarted = await impl.openDomainStorage(f.context(), f.config);
@@ -449,7 +490,7 @@ for (const phase of ['before-commit', 'pending-install']) {
         const projection = restarted.query('observations', 50);
         await restarted.close();
         ports.pop();
-        return { failedTree, recovered: json(recovered), projection, finalTree: tree(root) };
+        return rebaseSerials({ failedTree, recovered: json(recovered), projection, finalTree: withoutAbandonedStageIndex(tree(root)) });
       } finally {
         restoreHook();
         for (const port of ports) await port.close().catch(() => {});
