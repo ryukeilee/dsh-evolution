@@ -242,3 +242,27 @@ test('a file whose read fails part-way leaves no rows behind, exactly as a faile
   assert.deepEqual(actual.history.map((row) => row.id).sort(), expected.history.map((row) => row.id).sort());
   assert.deepEqual(actual.history.map((row) => row.id), ['readable-0']);
 });
+
+test('a window row the scan trimmed is read back from its own bytes, including bytes that are not valid UTF-8', async (t) => {
+  const { filePath } = await home(t);
+  // 2049 tombstones fill the scan's retained ring and push the two visible rows
+  // out of it, while the window still wants them - the window skips tombstones,
+  // so it walks back past all of them. The first row holds a byte that is not
+  // valid UTF-8, whose decoded length is longer than the bytes it was parsed
+  // from; a locator built from the decoded length would read a different range.
+  const rows = [
+    Buffer.concat([Buffer.from('{"id":"bad","label":"'), Buffer.from([0x80]), Buffer.from('"}\n')]),
+    Buffer.from(line({ id: 'good', label: 'fine', recordedAt: NOW })),
+  ];
+  for (let index = 0; index < 2049; index += 1) rows.push(Buffer.from(line({ id: `t-${index}`, __evolutionTombstone: 1 })));
+  await writeArchive(filePath, 'outcomes', { active: Buffer.concat(rows) });
+
+  const expected = await scan(BaselineMemory, filePath);
+  const actual = await scan(EvolutionMemory, filePath);
+  assert.deepEqual(actual.observed, expected.observed, 'the streamed scan answers what the whole-file scan answered');
+  assert.deepEqual(actual.observed.window.entries.map((row) => row.id), ['bad', 'good'],
+    'a trimmed window row is filled from its line instead of becoming a hole');
+  assert.equal(actual.observed.window.entries[0].label, '\uFFFD', 'the invalid byte keeps its decoded text');
+  assert.equal(actual.cache.windowFrom, 0, 'the window still reaches the first visible position');
+  assert.equal(actual.cache.entries, 2051);
+});

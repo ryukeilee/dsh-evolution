@@ -48,8 +48,13 @@
 
 `#scanArchiveRead()` 只保留一次扫描的**结果**：有序键表、故障、摘要、行定位符，加上最新位置的有界行环
 （沿用上一轮的 2048 行 / 4 MiB 上限）。行环在扫描过程中就按同样两个上限裁剪，所以保留量有界；最终窗口仍然由
-`#archiveRowWindow()` 从整张表算出，窗口内扫描没有留住的位置（字节上限导致的前移，或尾部有 tombstone）由
-`#fillArchiveWindow()` 用定位符补读——读不出就留一个洞，由读者自己的恢复路径处理，绝不在这里拼两次读的结果。
+`#archiveRowWindow()` 从整张表算出，窗口内扫描没有留住的位置（字节上限导致的前移，或尾部 tombstone 挤掉可见行）
+由 `#fillArchiveWindow()` 用定位符补读——读不出就留一个洞，由读者自己的恢复路径处理，绝不在这里拼两次读的结果。
+
+定位符记录的是**文件自己的字节区间**，不是解码后文本的长度：一行若含非法 UTF-8 字节，解码后的文本比原字节长
+（一个替换字符三字节），按解码长度记录会读到另一段字节。行环裁剪会把窗口需要的行挤出保留区，所以这一点从
+"只影响窗口外的行"变成了窗口内也会走到；本轮按原始字节记录（`#walkArchiveLines` 把每行的原始字节长度一并交出）
+并补了回归用例（见 §4 第 4 条）。窗口的字节上限也用同一个原始长度，即按归档实际占用的字节计。
 
 完整历史读（`history`、`fullSnapshot`、restore、retentionPlan、compact 回读）仍走 `#archiveRowsFrom()`：窗口内的行
 共享，窗口外的行按定位符从自己的行读回。恢复分支（表格无法从自己的行重现某一行时）改为一次带 `collectRows` 的
@@ -144,6 +149,10 @@ GC 9.3%、摘要 `update` 8.4%、知识键归一化 `normalizeText` / `identityS
      `physicalCount`、定位符偏移与故障完全相同；封存段摘要仍等于"解码后文本"的 SHA-256。
   3. **中途读失败**：两块封存段，第一块读到第二块时注入 `EIO`；断言失败文件的行**一条都没留下**、故障文件/路径/
      错误码与整文件读失败一致、另一块封存段的记录仍在，且与整文件实现逐字段相同。
+  4. **窗口内被行环挤掉的可见行**（审核 S1 的回归）：一条含 `0x80` 的行 + 一条正常行，后面跟 2049 条墓碑把两条
+     可见行挤出保留区，而窗口因为跳过墓碑仍需要它们；断言 `historyWindow` 仍返回这两行（含非法字节那行的解码文本）、
+     窗口起点仍为 0，并与整文件实现逐字段相同。该用例在修复前失败（`ValidationError: Cold archive no longer holds a
+     cached row`），修复后通过。
 - 既有差分继续通过：`archive-index-equivalence.test.js`（索引文档逐字节、活动键集合、每行解析一次）、
   `archive-row-window.test.mjs`（行窗口、摘要、缓存继承与失效）、`observe-cache-handoff.test.mjs`（rc.16 差分）、
   `memory-perf-archive-read-cache.test.mjs`、`review-fix-storage-archive-cache.test.mjs`（等长原地改写不被携带）、
@@ -154,7 +163,18 @@ GC 9.3%、摘要 `update` 8.4%、知识键归一化 `normalizeText` / `identityS
 
 ## 5. 审核后修正
 
-（本轮独立审核的结论与逐条处置记录在 `docs/evidence/cold-archive-streaming-scan-review.json`；下面的条目在审核完成后补齐。）
+独立审核（GPT-6.1 Sol，xhigh；请求、返回值与运行证据见
+[`docs/evidence/cold-archive-streaming-scan-review.json`](../evidence/cold-archive-streaming-scan-review.json)）。
+
+**S1 [should] 窗口补读破坏非法 UTF-8 的既有语义。** 审核给出可复现场景：含 `0x80` 的 JSON 行、正常行，后面接 2049
+条墓碑，行环淘汰两条可见行而最终窗口仍需要它们；定位符用解码长度记录，补读失败留洞，`historyWindow("outcomes", 10)`
+在旧实现返回两行、在本轮改动后抛 `ValidationError`。已按最小改动修复：**定位符改为记录文件自己的字节区间**
+（`#walkArchiveLines` 把每行的原始字节长度一并交出，扫描按它累加偏移与长度；故障记录里的 `bytes` 仍是解码长度，
+不变），并新增上述第 4 条差分回归用例（修复前失败、修复后通过）。没有新增"补读失败再流式扫描"的兜底：把定位符
+记录成它唯一能读回的那段字节，比在读者路径上加第二条取行协议更小、更接近根因。
+
+修复后重跑：聚焦 12 个测试文件 114 项全过；80k 端到端复测峰值 RSS 286–306 MB（基线 725 MB）、knowledge 扫描
+532–541 ms（基线 575–577 ms），与修复前的候选一致（原始字节长度不改变成本）。
 
 ## 6. 已知边界与剩余风险
 

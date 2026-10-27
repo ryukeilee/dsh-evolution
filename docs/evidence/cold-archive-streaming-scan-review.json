@@ -1,0 +1,64 @@
+{
+ "schema": 1,
+ "round": "1 of 3 (sol-loop)",
+ "reviewer": {
+  "request": {
+   "providerInstanceId": "codex",
+   "model": "gpt-6.1-sol",
+   "options": {
+    "reasoningEffort": "xhigh"
+   },
+   "role": "review",
+   "isolation": "shared"
+  },
+  "returned": {
+   "providerInstanceId": "codex",
+   "model": "gpt-6.1-sol",
+   "options": [
+    {
+     "id": "reasoningEffort",
+     "value": "xhigh"
+    }
+   ],
+   "taskId": "node:delegated-task:command%3Amcp%3A40c8eb2f-223e-4db0-9c91-69bf2d16eee2%3Adelegate-task%3Acold-scan-review-r1"
+  }
+ },
+ "scope": {
+  "base": "162855e4cd5145cdeb681c6088a607f508551577",
+  "change": "commit b4fc1de (+ the S1 fix commit)",
+  "paths": [
+   "lib/dockyard-domain/memory.js",
+   "test/",
+   "scripts/benchmarks/",
+   "docs/performance/"
+  ]
+ },
+ "checksBeforeReview": {
+  "node": [
+   "22.23.4",
+   "24.22.1",
+   "26.12.1"
+  ],
+  "fullSuite": "1194/1195 per version; the only failure was the pre-commit release-pin check, which passes after the commit (10/10)",
+  "packCheck": "16/16",
+  "hostAcceptance": [
+   "0.2.0-rc.2 ok",
+   "0.2.1-alpha.1 ok",
+   "0.2.1-rc.2 ok"
+  ]
+ },
+ "findings": [
+  {
+   "id": "S1",
+   "severity": "should",
+   "file": "lib/dockyard-domain/memory.js:1822",
+   "claim": "The window fill reads a trimmed visible row through a locator recorded in decoded-text bytes, so a row holding bytes that are not valid UTF-8 cannot be read back; the hole makes historyWindow throw where the whole-file implementation returned the rows.",
+   "reproduced": "yes - 0x80 line + normal line + 2049 tombstones: historyWindow('outcomes', 10) threw ValidationError, baseline returned both rows",
+   "outcome": "fixed",
+   "fix": "Locators record the file's own byte range: #walkArchiveLines hands out each line's raw byte length, and the scan accumulates offsets and lengths from it (fault bytes stay the decoded length). Regression test added in test/cold-archive-streaming-scan.test.mjs (fails before the fix, passes after). Rejected the suggested streaming fallback: recording the bytes the locator can read back is smaller and removes the root cause instead of adding a second row-reading protocol.",
+   "verification": "test/cold-archive-streaming-scan.test.mjs 4/4 (the new case fails on the unfixed tree); 12 focused files 114/114; 80k end-to-end peak RSS 286-306 MB and knowledge scan 532-541 ms, unchanged from the pre-fix candidate"
+  }
+ ],
+ "verdict": "CHANGES (round 1)",
+ "round2": "pending at the time this file was written"
+}
