@@ -127,7 +127,7 @@ function knowledgeRow(index) {
  * The stack attribution keeps this to the archive-index scan helpers; the
  * retention and merge paths legitimately parse other lines.
  */
-const ARCHIVE_INDEX_PARSE = /#(?:scanArchiveRaw|indexEntryFromRaw|activeKeysFromRaw)\b/;
+const ARCHIVE_INDEX_PARSE = /#(?:scanArchiveRaw|indexEntryFromRaw|activeKeysFromRaw|foldArchiveFacts|archiveFactsFromFile|archiveFactsFromText|indexEntryFromFacts)\b/;
 async function countScanParses(lines, run) {
   const original = JSON.parse;
   const counts = new Map(lines.map((line) => [line, 0]));

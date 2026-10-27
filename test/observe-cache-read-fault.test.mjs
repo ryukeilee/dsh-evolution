@@ -38,21 +38,32 @@ for (const code of ["EACCES", "EIO"]) {
     const predecessor = memory(EvolutionMemory, join(live, "state.json"));
     assert.equal(predecessor.history("observations").length, 2);
     const read = fs.readFileSync;
+    const open = fs.openSync;
     const run = (Type, cache) => {
       let attempts = 0;
-      fs.readFileSync = (file, ...args) => {
-        if (String(file) === join(stage, filename)) {
-          attempts++;
-          // One-shot failure catches accidental retry on the fallback path.
-          if (attempts === 1) throw Object.assign(new Error("injected read fault"), { code });
-        }
-        return read(file, ...args);
+      // The fault is injected at the entry points the archive read uses: the
+      // whole-file read the released implementation performs, and the byte-level
+      // open the scan performs now. A one-shot counter over both keeps the
+      // injection the same event for either implementation - one failed attempt
+      // to read this file - so what the test compares stays the observable
+      // outcome, not which API produced it.
+      const inject = (file) => {
+        if (String(file) !== join(stage, filename)) return;
+        attempts++;
+        // One-shot failure catches accidental retry on the fallback path.
+        if (attempts === 1) throw Object.assign(new Error("injected read fault"), { code });
       };
+      fs.readFileSync = (file, ...args) => { inject(file); return read(file, ...args); };
+      fs.openSync = (file, ...args) => { inject(file); return open(file, ...args); };
       syncBuiltinESMExports();
       try {
         const successor = memory(Type, join(stage, "state.json"), cache);
         return { rows: successor.history("observations"), faults: successor.archiveIntegrity(), attempts };
-      } finally { fs.readFileSync = read; syncBuiltinESMExports(); }
+      } finally {
+        fs.readFileSync = read;
+        fs.openSync = open;
+        syncBuiltinESMExports();
+      }
     };
     const expected = run(Baseline);
     const actual = run(EvolutionMemory, predecessor.archiveReadCache);
@@ -72,15 +83,24 @@ test("a rewrite during an inherited read is parsed instead of answering the old 
   const predecessor = memory(EvolutionMemory, filePath);
   predecessor.history("observations");
   const read = fs.readFileSync;
-  fs.readFileSync = (file, ...args) => {
+  const open = fs.openSync;
+  // The rewrite lands between the identity check and the read, whichever read the
+  // implementation performs: the whole-file read the released one does, or the
+  // byte-level open the scan performs now.
+  const rewrite = (file) => {
     if (String(file) === archive) fs.writeFileSync(archive, '{"id":"cold","message":"NEWER"}\n');
-    return read(file, ...args);
   };
+  fs.readFileSync = (file, ...args) => { rewrite(file); return read(file, ...args); };
+  fs.openSync = (file, ...args) => { rewrite(file); return open(file, ...args); };
   syncBuiltinESMExports();
   try {
     const successor = memory(EvolutionMemory, filePath, predecessor.archiveReadCache);
     assert.equal(successor.history("observations")[0].message, "NEWER");
-  } finally { fs.readFileSync = read; syncBuiltinESMExports(); }
+  } finally {
+    fs.readFileSync = read;
+    fs.openSync = open;
+    syncBuiltinESMExports();
+  }
 });
 
 test("a successor observes changed bytes even when the full file identity is restored", async (t) => {

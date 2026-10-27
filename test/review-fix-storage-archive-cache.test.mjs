@@ -29,11 +29,15 @@ const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 
 // ------------------------------------------------------------------ accounting
-// Archive bytes are counted instead of timed. The patch is installed before the
-// module under test is instantiated, so the bytes counted are the bytes this
-// code asked the filesystem for.
+// Archive bytes are counted instead of timed. The patches are installed before
+// the module under test is instantiated, so the bytes counted are the bytes this
+// code asked the filesystem for. Both the whole-file read and the byte-level
+// open/read pair are counted: the cold-archive scan reads bytes, not whole files.
 const reads = { calls: 0, bytes: 0 };
 const plainReadFileSync = fs.readFileSync;
+const plainOpenSync = fs.openSync;
+const plainCloseSync = fs.closeSync;
+const plainReadSync = fs.readSync;
 const plainWriteFile = fsp.writeFile;
 const plainRm = fsp.rm;
 fs.readFileSync = function accounted(...args) {
@@ -43,6 +47,18 @@ fs.readFileSync = function accounted(...args) {
     reads.bytes += typeof result === "string" ? Buffer.byteLength(result) : (result?.byteLength ?? 0);
   }
   return result;
+};
+const openArchives = new Map();
+fs.openSync = function accounted(...args) {
+  const fd = plainOpenSync.apply(this, args);
+  if (String(args[0]).includes("-archive.jsonl")) openArchives.set(fd, String(args[0]));
+  return fd;
+};
+fs.closeSync = function accounted(fd) { openArchives.delete(fd); return plainCloseSync.call(this, fd); };
+fs.readSync = function accounted(fd, ...args) {
+  const read = plainReadSync.call(this, fd, ...args);
+  if (openArchives.has(fd) && read > 0) { reads.calls += 1; reads.bytes += read; }
+  return read;
 };
 const resetReads = () => { reads.calls = 0; reads.bytes = 0; };
 

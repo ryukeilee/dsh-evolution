@@ -106,9 +106,11 @@ function expectedActive(archive) {
  *
  * The old `load()` parsed every active line once in `#indexEntryFromRaw` and
  * again in `#activeKeysFromRaw`; the change shares one `#scanArchiveRaw`, so
- * each line is parsed exactly once.
+ * each line is parsed exactly once. The streamed scan folds a line into the
+ * index facts in `#foldArchiveFacts`, so the frames of both implementations are
+ * counted and the same invariant holds for either.
  */
-const ARCHIVE_INDEX_PARSE = /#(?:scanArchiveRaw|indexEntryFromRaw|activeKeysFromRaw)\b/;
+const ARCHIVE_INDEX_PARSE = /#(?:scanArchiveRaw|indexEntryFromRaw|activeKeysFromRaw|foldArchiveFacts|archiveFactsFromFile|archiveFactsFromText|indexEntryFromFacts)\b/;
 
 async function countArchiveLineParses(lines, run) {
   const original = JSON.parse;

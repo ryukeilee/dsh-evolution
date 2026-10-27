@@ -16,10 +16,12 @@
  * runtime index document is already persisted by each append rather than only
  * by that rebuild.
  *
- * Read volume is measured, not timed: `readFile` and `readFileSync` are patched
- * on the CommonJS exports of node:fs / node:fs/promises before the module that
- * imports them is instantiated, so the bytes counted are the bytes this code
- * actually asked the filesystem for. Nothing here asserts a duration.
+ * Read volume is measured, not timed: `readFile`/`readFileSync` and the byte-level
+ * `openSync`/`readSync` pair are patched on the CommonJS exports of node:fs /
+ * node:fs/promises before the module that imports them is instantiated, so the
+ * bytes counted are the bytes this code actually asked the filesystem for. Both
+ * forms are counted because the cold-archive scan reads bytes rather than whole
+ * files. Nothing here asserts a duration.
  */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -35,6 +37,9 @@ const fsp = require("node:fs/promises");
 const reads = { calls: 0, bytes: 0, files: [] };
 const plainReadFileSync = fs.readFileSync;
 const plainReadFile = fsp.readFile;
+const plainOpenSync = fs.openSync;
+const plainCloseSync = fs.closeSync;
+const plainReadSync = fs.readSync;
 const plainWriteFile = fsp.writeFile;
 const plainMkdir = fsp.mkdir;
 const plainRm = fsp.rm;
@@ -53,6 +58,21 @@ const account = (result, path) => {
 };
 fs.readFileSync = function accounted(...args) { return account(plainReadFileSync.apply(this, args), args[0]); };
 fsp.readFile = async function accounted(...args) { return account(await plainReadFile.apply(this, args), args[0]); };
+// A byte-level read counts the bytes it returned, for the files this process
+// opened through the patched entry point.
+const openArchives = new Map();
+fs.openSync = function accounted(...args) {
+  const fd = plainOpenSync.apply(this, args);
+  if (String(args[0]).includes("-archive.jsonl")) openArchives.set(fd, String(args[0]));
+  return fd;
+};
+fs.closeSync = function accounted(fd) { openArchives.delete(fd); return plainCloseSync.call(this, fd); };
+fs.readSync = function accounted(fd, ...args) {
+  const read = plainReadSync.call(this, fd, ...args);
+  const path = openArchives.get(fd);
+  if (path !== undefined && read > 0) { reads.calls += 1; reads.bytes += read; reads.files.push(path.split("/").at(-1)); }
+  return read;
+};
 const resetReads = () => { reads.calls = 0; reads.bytes = 0; reads.files = []; };
 
 const { EvolutionMemory } = await import("../lib/dockyard-domain/memory.js");

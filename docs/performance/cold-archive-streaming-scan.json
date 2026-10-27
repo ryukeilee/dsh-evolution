@@ -1,0 +1,1697 @@
+{
+ "schema": 1,
+ "note": "Raw samples for docs/performance/cold-archive-streaming-scan.md. One side per process; rounds alternate sides; every value is one process.",
+ "environment": {
+  "node": "v26.12.1",
+  "platform": "darwin/arm64",
+  "cpus": 8,
+  "host": "Apple M2, 16 GiB",
+  "benchmark": "scripts/benchmarks/cold-archive-scan.mjs"
+ },
+ "baseline": "/tmp/dsh-scan-base/lib (162855e)",
+ "candidate": "lib (this round)",
+ "fixtures": {
+  "20k": {
+   "rows": 20000,
+   "knowledgeRows": 20000,
+   "archiveBytes": 46661132,
+   "layout": "75% sealed in 3 segments, newest 25% active"
+  },
+  "80k": {
+   "rows": 80000,
+   "knowledgeRows": 80000,
+   "archiveBytes": 187211132,
+   "layout": "75% sealed in 3 segments, newest 25% active"
+  },
+  "200k": {
+   "rows": 200000,
+   "knowledgeRows": 200000,
+   "archiveBytes": 470011132,
+   "layout": "75% sealed in 3 segments, newest 25% active"
+  }
+ },
+ "rounds": {
+  "20k": {
+   "full": {
+    "base": {
+     "peakRssMiB": {
+      "median": 279.391,
+      "values": [
+       279.391,
+       278.391,
+       279.594,
+       279.672,
+       277.906
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 130.965,
+      "values": [
+       131.45,
+       129.356,
+       131.372,
+       130.965,
+       129.497
+      ]
+     },
+     "retainedMiB": {
+      "median": 15.891,
+      "values": [
+       15.89,
+       15.891,
+       15.891,
+       15.89,
+       15.892
+      ]
+     },
+     "openWallMs": {
+      "median": 195.871,
+      "values": [
+       191.667,
+       199.395,
+       195.548,
+       195.871,
+       202.027
+      ]
+     },
+     "openCpuMs": {
+      "median": 190.109,
+      "values": [
+       188.206,
+       205.099,
+       190.109,
+       188.875,
+       207.36
+      ]
+     },
+     "openRowsParsed": {
+      "median": 40000,
+      "values": [
+       40000,
+       40000,
+       40000,
+       40000,
+       40000
+      ]
+     },
+     "openBytesRead": {
+      "median": 46661132,
+      "values": [
+       46661132,
+       46661132,
+       46661132,
+       46661132,
+       46661132
+      ]
+     },
+     "scanObservationsWallMs": {
+      "median": 120.616,
+      "values": [
+       119.644,
+       120.486,
+       120.616,
+       121.915,
+       122.146
+      ]
+     },
+     "scanObservationsCpuMs": {
+      "median": 151.529,
+      "values": [
+       148.359,
+       150.216,
+       152.89,
+       151.529,
+       153.242
+      ]
+     },
+     "scanObservationsRowsParsed": {
+      "median": 20000,
+      "values": [
+       20000,
+       20000,
+       20000,
+       20000,
+       20000
+      ]
+     },
+     "scanKnowledgeWallMs": {
+      "median": 123.414,
+      "values": [
+       120.013,
+       123.414,
+       124.858,
+       123.158,
+       124.588
+      ]
+     },
+     "scanKnowledgeCpuMs": {
+      "median": 150.612,
+      "values": [
+       148.057,
+       149.733,
+       150.873,
+       151.749,
+       150.612
+      ]
+     },
+     "scanKnowledgeRowsParsed": {
+      "median": 20000,
+      "values": [
+       20000,
+       20000,
+       20000,
+       20000,
+       20000
+      ]
+     },
+     "gcCount": {
+      "median": 14,
+      "values": [
+       14,
+       14,
+       13,
+       14,
+       13
+      ]
+     },
+     "gcMs": {
+      "median": 8.615,
+      "values": [
+       8.226,
+       8.82,
+       7.946,
+       8.761,
+       8.615
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 89.531,
+      "values": [
+       89.281,
+       89.531,
+       89.531,
+       89.531,
+       89.281
+      ]
+     },
+     "loadAverage": {
+      "median": 1.33,
+      "values": [
+       1.33,
+       1.33,
+       1.33,
+       1.38,
+       1.38
+      ]
+     }
+    },
+    "cand": {
+     "peakRssMiB": {
+      "median": 228,
+      "values": [
+       228,
+       228.5,
+       233.375,
+       221.125,
+       227.672
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 146.526,
+      "values": [
+       146.26,
+       146.526,
+       149.026,
+       137.963,
+       147.135
+      ]
+     },
+     "retainedMiB": {
+      "median": 16.013,
+      "values": [
+       16.011,
+       16.013,
+       16.042,
+       15.92,
+       16.014
+      ]
+     },
+     "openWallMs": {
+      "median": 196.371,
+      "values": [
+       195.403,
+       196.993,
+       197.805,
+       195.211,
+       196.371
+      ]
+     },
+     "openCpuMs": {
+      "median": 207.984,
+      "values": [
+       204.121,
+       214.658,
+       207.984,
+       214.236,
+       206.713
+      ]
+     },
+     "openRowsParsed": {
+      "median": 40000,
+      "values": [
+       40000,
+       40000,
+       40000,
+       40000,
+       40000
+      ]
+     },
+     "openBytesRead": {
+      "median": 46661132,
+      "values": [
+       46661132,
+       46661132,
+       46661132,
+       46661132,
+       46661132
+      ]
+     },
+     "scanObservationsWallMs": {
+      "median": 120.394,
+      "values": [
+       119.497,
+       120.394,
+       120.257,
+       122.361,
+       125.909
+      ]
+     },
+     "scanObservationsCpuMs": {
+      "median": 149.977,
+      "values": [
+       149.869,
+       149.67,
+       149.977,
+       152.63,
+       155.609
+      ]
+     },
+     "scanObservationsRowsParsed": {
+      "median": 20000,
+      "values": [
+       20000,
+       20000,
+       20000,
+       20000,
+       20000
+      ]
+     },
+     "scanKnowledgeWallMs": {
+      "median": 122.891,
+      "values": [
+       121.463,
+       122.66,
+       123.046,
+       122.891,
+       126.404
+      ]
+     },
+     "scanKnowledgeCpuMs": {
+      "median": 151.653,
+      "values": [
+       150.162,
+       151.653,
+       152.096,
+       147.691,
+       164.199
+      ]
+     },
+     "scanKnowledgeRowsParsed": {
+      "median": 20000,
+      "values": [
+       20000,
+       20000,
+       20000,
+       20000,
+       20000
+      ]
+     },
+     "gcCount": {
+      "median": 11,
+      "values": [
+       10,
+       12,
+       10,
+       13,
+       11
+      ]
+     },
+     "gcMs": {
+      "median": 8.061,
+      "values": [
+       7.967,
+       8.455,
+       7.736,
+       8.77,
+       8.061
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 82.734,
+      "values": [
+       82.984,
+       82.734,
+       82.734,
+       81.484,
+       79.484
+      ]
+     },
+     "loadAverage": {
+      "median": 1.38,
+      "values": [
+       1.33,
+       1.33,
+       1.38,
+       1.38,
+       1.38
+      ]
+     }
+    }
+   },
+   "openOnly": {
+    "base": {
+     "peakRssMiB": {
+      "median": 194.609,
+      "values": [
+       194.609,
+       194.25,
+       194.672
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 129.591,
+      "values": [
+       129.793,
+       129.528,
+       129.591
+      ]
+     },
+     "retainedMiB": {
+      "median": 1.354,
+      "values": [
+       1.354,
+       1.355,
+       1.344
+      ]
+     },
+     "openWallMs": {
+      "median": 200.205,
+      "values": [
+       200.205,
+       200.828,
+       198.933
+      ]
+     },
+     "openCpuMs": {
+      "median": 205.359,
+      "values": [
+       204.049,
+       205.82,
+       205.359
+      ]
+     },
+     "openRowsParsed": {
+      "median": 40000,
+      "values": [
+       40000,
+       40000,
+       40000
+      ]
+     },
+     "openBytesRead": {
+      "median": 46661132,
+      "values": [
+       46661132,
+       46661132,
+       46661132
+      ]
+     },
+     "gcCount": {
+      "median": 13,
+      "values": [
+       13,
+       13,
+       11
+      ]
+     },
+     "gcMs": {
+      "median": 8.634,
+      "values": [
+       8.743,
+       8.634,
+       7.537
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 42.344,
+      "values": [
+       42.344,
+       42.344,
+       42.344
+      ]
+     },
+     "loadAverage": {
+      "median": 1.38,
+      "values": [
+       1.38,
+       1.38,
+       1.38
+      ]
+     }
+    },
+    "cand": {
+     "peakRssMiB": {
+      "median": 179.875,
+      "values": [
+       181.047,
+       179.875,
+       177.766
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 146.948,
+      "values": [
+       148.182,
+       146.854,
+       146.948
+      ]
+     },
+     "retainedMiB": {
+      "median": 1.298,
+      "values": [
+       1.298,
+       1.298,
+       1.298
+      ]
+     },
+     "openWallMs": {
+      "median": 194.633,
+      "values": [
+       192.61,
+       194.633,
+       194.669
+      ]
+     },
+     "openCpuMs": {
+      "median": 206.267,
+      "values": [
+       207.671,
+       206.267,
+       206.089
+      ]
+     },
+     "openRowsParsed": {
+      "median": 40000,
+      "values": [
+       40000,
+       40000,
+       40000
+      ]
+     },
+     "openBytesRead": {
+      "median": 46661132,
+      "values": [
+       46661132,
+       46661132,
+       46661132
+      ]
+     },
+     "gcCount": {
+      "median": 10,
+      "values": [
+       10,
+       10,
+       10
+      ]
+     },
+     "gcMs": {
+      "median": 8.285,
+      "values": [
+       8.285,
+       8.361,
+       7.796
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 42.797,
+      "values": [
+       43.047,
+       42.547,
+       42.797
+      ]
+     },
+     "loadAverage": {
+      "median": 1.38,
+      "values": [
+       1.38,
+       1.38,
+       1.43
+      ]
+     }
+    }
+   }
+  },
+  "80k": {
+   "full": {
+    "base": {
+     "peakRssMiB": {
+      "median": 724.688,
+      "values": [
+       724.688,
+       724.469,
+       725.281,
+       724.516,
+       725.047
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 300.608,
+      "values": [
+       300.608,
+       300.624,
+       300.17,
+       300.17,
+       300.702
+      ]
+     },
+     "retainedMiB": {
+      "median": 44.948,
+      "values": [
+       45.106,
+       44.948,
+       44.947,
+       44.948,
+       45.105
+      ]
+     },
+     "openWallMs": {
+      "median": 683.825,
+      "values": [
+       680.428,
+       683.148,
+       683.825,
+       685.121,
+       687.666
+      ]
+     },
+     "openCpuMs": {
+      "median": 832.157,
+      "values": [
+       824.969,
+       832.157,
+       831.585,
+       834.863,
+       840.281
+      ]
+     },
+     "openRowsParsed": {
+      "median": 160000,
+      "values": [
+       160000,
+       160000,
+       160000,
+       160000,
+       160000
+      ]
+     },
+     "openBytesRead": {
+      "median": 187211132,
+      "values": [
+       187211132,
+       187211132,
+       187211132,
+       187211132,
+       187211132
+      ]
+     },
+     "scanObservationsWallMs": {
+      "median": 471.568,
+      "values": [
+       470.441,
+       471.568,
+       473.336,
+       470.414,
+       476.662
+      ]
+     },
+     "scanObservationsCpuMs": {
+      "median": 568.623,
+      "values": [
+       559.204,
+       568.623,
+       564.906,
+       573.194,
+       575.566
+      ]
+     },
+     "scanObservationsRowsParsed": {
+      "median": 80000,
+      "values": [
+       80000,
+       80000,
+       80000,
+       80000,
+       80000
+      ]
+     },
+     "scanKnowledgeWallMs": {
+      "median": 564.605,
+      "values": [
+       561.569,
+       565.596,
+       569.995,
+       563.121,
+       564.605
+      ]
+     },
+     "scanKnowledgeCpuMs": {
+      "median": 853.092,
+      "values": [
+       836.363,
+       860.391,
+       827.565,
+       855.135,
+       853.092
+      ]
+     },
+     "scanKnowledgeRowsParsed": {
+      "median": 80000,
+      "values": [
+       80000,
+       80000,
+       80000,
+       80000,
+       80000
+      ]
+     },
+     "gcCount": {
+      "median": 35,
+      "values": [
+       35,
+       34,
+       34,
+       35,
+       35
+      ]
+     },
+     "gcMs": {
+      "median": 57.179,
+      "values": [
+       58.306,
+       57.179,
+       56.539,
+       57.336,
+       55.722
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 119.281,
+      "values": [
+       119.531,
+       119.531,
+       119.031,
+       119.031,
+       119.281
+      ]
+     },
+     "loadAverage": {
+      "median": 1.35,
+      "values": [
+       1.35,
+       1.25,
+       1.31,
+       1.36,
+       1.36
+      ]
+     }
+    },
+    "cand": {
+     "peakRssMiB": {
+      "median": 305.734,
+      "values": [
+       294.891,
+       292.875,
+       314.172,
+       325.266,
+       305.734
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 202.919,
+      "values": [
+       191.809,
+       193.216,
+       218.155,
+       230.031,
+       202.919
+      ]
+     },
+     "retainedMiB": {
+      "median": 44.91,
+      "values": [
+       44.896,
+       44.91,
+       44.949,
+       44.752,
+       44.922
+      ]
+     },
+     "openWallMs": {
+      "median": 629.582,
+      "values": [
+       618.235,
+       630.06,
+       624.744,
+       630.325,
+       629.582
+      ]
+     },
+     "openCpuMs": {
+      "median": 750.691,
+      "values": [
+       750.691,
+       762.135,
+       743.402,
+       748.029,
+       756.9
+      ]
+     },
+     "openRowsParsed": {
+      "median": 160000,
+      "values": [
+       160000,
+       160000,
+       160000,
+       160000,
+       160000
+      ]
+     },
+     "openBytesRead": {
+      "median": 187211132,
+      "values": [
+       187211132,
+       187211132,
+       187211132,
+       187211132,
+       187211132
+      ]
+     },
+     "scanObservationsWallMs": {
+      "median": 469.586,
+      "values": [
+       465.964,
+       474.883,
+       469.423,
+       470.708,
+       469.586
+      ]
+     },
+     "scanObservationsCpuMs": {
+      "median": 539.149,
+      "values": [
+       529.808,
+       539.149,
+       538.561,
+       561.565,
+       542.147
+      ]
+     },
+     "scanObservationsRowsParsed": {
+      "median": 80000,
+      "values": [
+       80000,
+       80000,
+       80000,
+       80000,
+       80000
+      ]
+     },
+     "scanKnowledgeWallMs": {
+      "median": 529.71,
+      "values": [
+       518.245,
+       529.71,
+       526.296,
+       541.633,
+       531.195
+      ]
+     },
+     "scanKnowledgeCpuMs": {
+      "median": 717.976,
+      "values": [
+       709.992,
+       714.443,
+       723.792,
+       719.26,
+       717.976
+      ]
+     },
+     "scanKnowledgeRowsParsed": {
+      "median": 80000,
+      "values": [
+       80000,
+       80000,
+       80000,
+       80000,
+       80000
+      ]
+     },
+     "gcCount": {
+      "median": 28,
+      "values": [
+       32,
+       29,
+       26,
+       27,
+       28
+      ]
+     },
+     "gcMs": {
+      "median": 23.807,
+      "values": [
+       24.411,
+       23.807,
+       22.964,
+       22.177,
+       24.31
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 104.484,
+      "values": [
+       104.484,
+       104.484,
+       104.484,
+       104.484,
+       104.734
+      ]
+     },
+     "loadAverage": {
+      "median": 1.31,
+      "values": [
+       1.35,
+       1.25,
+       1.31,
+       1.31,
+       1.33
+      ]
+     }
+    }
+   },
+   "openOnly": {
+    "base": {
+     "peakRssMiB": {
+      "median": 490.109,
+      "values": [
+       490.109,
+       489.766,
+       619.281
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 301.108,
+      "values": [
+       301.108,
+       300.921,
+       356.224
+      ]
+     },
+     "retainedMiB": {
+      "median": 4.148,
+      "values": [
+       4.148,
+       4.148,
+       4.148
+      ]
+     },
+     "openWallMs": {
+      "median": 686.953,
+      "values": [
+       682.873,
+       686.953,
+       690.131
+      ]
+     },
+     "openCpuMs": {
+      "median": 834.725,
+      "values": [
+       834.415,
+       834.725,
+       844.486
+      ]
+     },
+     "openRowsParsed": {
+      "median": 160000,
+      "values": [
+       160000,
+       160000,
+       160000
+      ]
+     },
+     "openBytesRead": {
+      "median": 187211132,
+      "values": [
+       187211132,
+       187211132,
+       187211132
+      ]
+     },
+     "gcCount": {
+      "median": 34,
+      "values": [
+       34,
+       35,
+       32
+      ]
+     },
+     "gcMs": {
+      "median": 55.974,
+      "values": [
+       55.974,
+       57.572,
+       55.391
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 82.469,
+      "values": [
+       82.469,
+       82.969,
+       75.219
+      ]
+     },
+     "loadAverage": {
+      "median": 1.38,
+      "values": [
+       1.33,
+       1.38,
+       1.38
+      ]
+     }
+    },
+    "cand": {
+     "peakRssMiB": {
+      "median": 231.922,
+      "values": [
+       231.922,
+       222.766,
+       253.219
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 202.998,
+      "values": [
+       202.998,
+       194.42,
+       226.031
+      ]
+     },
+     "retainedMiB": {
+      "median": 2.984,
+      "values": [
+       2.984,
+       2.984,
+       2.985
+      ]
+     },
+     "openWallMs": {
+      "median": 615.322,
+      "values": [
+       615.322,
+       587.354,
+       631.297
+      ]
+     },
+     "openCpuMs": {
+      "median": 733.548,
+      "values": [
+       733.548,
+       731.17,
+       735.251
+      ]
+     },
+     "openRowsParsed": {
+      "median": 160000,
+      "values": [
+       160000,
+       160000,
+       160000
+      ]
+     },
+     "openBytesRead": {
+      "median": 187211132,
+      "values": [
+       187211132,
+       187211132,
+       187211132
+      ]
+     },
+     "gcCount": {
+      "median": 26,
+      "values": [
+       26,
+       26,
+       24
+      ]
+     },
+     "gcMs": {
+      "median": 21.773,
+      "values": [
+       21.815,
+       21.628,
+       21.773
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 68.922,
+      "values": [
+       67.422,
+       68.922,
+       71.172
+      ]
+     },
+     "loadAverage": {
+      "median": 1.33,
+      "values": [
+       1.33,
+       1.33,
+       1.38
+      ]
+     }
+    }
+   }
+  },
+  "200k": {
+   "full": {
+    "base": {
+     "peakRssMiB": {
+      "median": 1833.25,
+      "values": [
+       1841.797,
+       1832.75,
+       1833.25
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 845.388,
+      "values": [
+       715.893,
+       845.388,
+       845.388
+      ]
+     },
+     "retainedMiB": {
+      "median": 98.005,
+      "values": [
+       97.959,
+       98.005,
+       98.015
+      ]
+     },
+     "openWallMs": {
+      "median": 1653.589,
+      "values": [
+       1653.589,
+       1665.824,
+       1643.466
+      ]
+     },
+     "openCpuMs": {
+      "median": 2113.945,
+      "values": [
+       2086.492,
+       2113.945,
+       2121.881
+      ]
+     },
+     "openRowsParsed": {
+      "median": 400000,
+      "values": [
+       400000,
+       400000,
+       400000
+      ]
+     },
+     "openBytesRead": {
+      "median": 470011132,
+      "values": [
+       470011132,
+       470011132,
+       470011132
+      ]
+     },
+     "scanObservationsWallMs": {
+      "median": 1156.247,
+      "values": [
+       1157.063,
+       1156.247,
+       1151.733
+      ]
+     },
+     "scanObservationsCpuMs": {
+      "median": 1327.963,
+      "values": [
+       1327.853,
+       1329.901,
+       1327.963
+      ]
+     },
+     "scanObservationsRowsParsed": {
+      "median": 200000,
+      "values": [
+       200000,
+       200000,
+       200000
+      ]
+     },
+     "scanKnowledgeWallMs": {
+      "median": 1427.8,
+      "values": [
+       1429.504,
+       1399.913,
+       1427.8
+      ]
+     },
+     "scanKnowledgeCpuMs": {
+      "median": 2368.882,
+      "values": [
+       2444.908,
+       2366.637,
+       2368.882
+      ]
+     },
+     "scanKnowledgeRowsParsed": {
+      "median": 200000,
+      "values": [
+       200000,
+       200000,
+       200000
+      ]
+     },
+     "gcCount": {
+      "median": 59,
+      "values": [
+       67,
+       59,
+       57
+      ]
+     },
+     "gcMs": {
+      "median": 143.27,
+      "values": [
+       147.303,
+       143.27,
+       135.484
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 175.594,
+      "values": [
+       181.344,
+       174.844,
+       175.594
+      ]
+     },
+     "loadAverage": {
+      "median": 1.55,
+      "values": [
+       1.55,
+       1.58,
+       1.53
+      ]
+     }
+    },
+    "cand": {
+     "peakRssMiB": {
+      "median": 418.047,
+      "values": [
+       418.047,
+       406.188,
+       418.906
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 214.39,
+      "values": [
+       214.39,
+       216.015,
+       210.64
+      ]
+     },
+     "retainedMiB": {
+      "median": 98.47,
+      "values": [
+       98.47,
+       98.302,
+       98.509
+      ]
+     },
+     "openWallMs": {
+      "median": 1475.534,
+      "values": [
+       1475.534,
+       1454.152,
+       1480.165
+      ]
+     },
+     "openCpuMs": {
+      "median": 1779.178,
+      "values": [
+       1779.178,
+       1754.829,
+       1785.21
+      ]
+     },
+     "openRowsParsed": {
+      "median": 400000,
+      "values": [
+       400000,
+       400000,
+       400000
+      ]
+     },
+     "openBytesRead": {
+      "median": 470011132,
+      "values": [
+       470011132,
+       470011132,
+       470011132
+      ]
+     },
+     "scanObservationsWallMs": {
+      "median": 1174.939,
+      "values": [
+       1174.939,
+       1167.506,
+       1178.343
+      ]
+     },
+     "scanObservationsCpuMs": {
+      "median": 1377.246,
+      "values": [
+       1377.246,
+       1345.241,
+       1379.928
+      ]
+     },
+     "scanObservationsRowsParsed": {
+      "median": 200000,
+      "values": [
+       200000,
+       200000,
+       200000
+      ]
+     },
+     "scanKnowledgeWallMs": {
+      "median": 1415.664,
+      "values": [
+       1415.664,
+       1409.433,
+       1419.09
+      ]
+     },
+     "scanKnowledgeCpuMs": {
+      "median": 2098.495,
+      "values": [
+       2098.495,
+       2081.759,
+       2112.588
+      ]
+     },
+     "scanKnowledgeRowsParsed": {
+      "median": 200000,
+      "values": [
+       200000,
+       200000,
+       200000
+      ]
+     },
+     "gcCount": {
+      "median": 68,
+      "values": [
+       74,
+       60,
+       68
+      ]
+     },
+     "gcMs": {
+      "median": 61.359,
+      "values": [
+       61.359,
+       60.593,
+       64.613
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 165.797,
+      "values": [
+       165.797,
+       165.797,
+       167.047
+      ]
+     },
+     "loadAverage": {
+      "median": 1.57,
+      "values": [
+       1.59,
+       1.54,
+       1.57
+      ]
+     }
+    }
+   },
+   "openOnly": {
+    "base": {
+     "peakRssMiB": {
+      "median": 1175.703,
+      "values": [
+       1480.313,
+       1175.297,
+       1175.703
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 716.143,
+      "values": [
+       846.014,
+       715.642,
+       716.143
+      ]
+     },
+     "retainedMiB": {
+      "median": 9.929,
+      "values": [
+       10.979,
+       9.929,
+       9.929
+      ]
+     },
+     "openWallMs": {
+      "median": 1674.039,
+      "values": [
+       1674.039,
+       1678.962,
+       1673.843
+      ]
+     },
+     "openCpuMs": {
+      "median": 2100.706,
+      "values": [
+       2121.106,
+       2093.818,
+       2100.706
+      ]
+     },
+     "openRowsParsed": {
+      "median": 400000,
+      "values": [
+       400000,
+       400000,
+       400000
+      ]
+     },
+     "openBytesRead": {
+      "median": 470011132,
+      "values": [
+       470011132,
+       470011132,
+       470011132
+      ]
+     },
+     "gcCount": {
+      "median": 63,
+      "values": [
+       58,
+       63,
+       65
+      ]
+     },
+     "gcMs": {
+      "median": 148.554,
+      "values": [
+       145.487,
+       149.914,
+       148.554
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 89.719,
+      "values": [
+       89.719,
+       89.969,
+       89.469
+      ]
+     },
+     "loadAverage": {
+      "median": 1.6,
+      "values": [
+       1.57,
+       1.6,
+       1.63
+      ]
+     }
+    },
+    "cand": {
+     "peakRssMiB": {
+      "median": 231.453,
+      "values": [
+       182.469,
+       246.766,
+       231.453
+      ]
+     },
+     "rssAfterOpenMiB": {
+      "median": 202.811,
+      "values": [
+       152.184,
+       218.608,
+       202.811
+      ]
+     },
+     "retainedMiB": {
+      "median": 9.807,
+      "values": [
+       9.805,
+       9.827,
+       9.807
+      ]
+     },
+     "openWallMs": {
+      "median": 1481.385,
+      "values": [
+       1485.343,
+       1481.385,
+       1480.187
+      ]
+     },
+     "openCpuMs": {
+      "median": 1798.199,
+      "values": [
+       1870.805,
+       1741.286,
+       1798.199
+      ]
+     },
+     "openRowsParsed": {
+      "median": 400000,
+      "values": [
+       400000,
+       400000,
+       400000
+      ]
+     },
+     "openBytesRead": {
+      "median": 470011132,
+      "values": [
+       470011132,
+       470011132,
+       470011132
+      ]
+     },
+     "gcCount": {
+      "median": 76,
+      "values": [
+       94,
+       60,
+       76
+      ]
+     },
+     "gcMs": {
+      "median": 64.734,
+      "values": [
+       77.162,
+       54.101,
+       64.734
+      ]
+     },
+     "heapTotalMiB": {
+      "median": 73.172,
+      "values": [
+       59.922,
+       77.672,
+       73.172
+      ]
+     },
+     "loadAverage": {
+      "median": 1.6,
+      "values": [
+       1.6,
+       1.6,
+       1.63
+      ]
+     }
+    }
+   }
+  }
+ },
+ "heapCapFloor": {
+  "note": "node --max-old-space-size=<cap>; OK means the port opened and both cold scans completed",
+  "80k": {
+   "base": {
+    "fails": [
+     16,
+     24,
+     32,
+     48,
+     56,
+     64,
+     80,
+     96,
+     128,
+     144,
+     192,
+     224
+    ],
+    "passes": [
+     240,
+     256,
+     288,
+     320,
+     384
+    ]
+   },
+   "cand": {
+    "fails": [
+     16,
+     24,
+     32,
+     48,
+     56
+    ],
+    "passes": [
+     64,
+     80,
+     96,
+     128,
+     144,
+     192,
+     224,
+     240
+    ]
+   }
+  },
+  "200k": {
+   "base": {
+    "fails": [
+     128,
+     192,
+     224,
+     256,
+     384,
+     512
+    ],
+    "passes": [
+     768,
+     1024,
+     1536
+    ]
+   },
+   "cand": {
+    "fails": [],
+    "passes": [
+     128,
+     192,
+     224,
+     256,
+     384,
+     512,
+     768,
+     1024,
+     1536
+    ]
+   }
+  }
+ },
+ "scanPhaseCpuProfile": {
+  "note": "V8 CPU profile of the two port.query() cold scans only (candidate, 80k+80k, --max-old-space-size=4096)",
+  "totalSamples": 712,
+  "selfTime": [
+   {
+    "frame": "JSON.parse cold-archive-scan.mjs:60",
+    "percent": 39.3
+   },
+   {
+    "frame": "(garbage collector) :-1",
+    "percent": 9.3
+   },
+   {
+    "frame": "update :-1",
+    "percent": 8.4
+   },
+   {
+    "frame": "normalizeText knowledge.js:160",
+    "percent": 8.3
+   },
+   {
+    "frame": "(anon) memory.js:1727",
+    "percent": 5.6
+   },
+   {
+    "frame": "identitySerialization knowledge.js:335",
+    "percent": 3.2
+   },
+   {
+    "frame": "read :-1",
+    "percent": 2.4
+   },
+   {
+    "frame": "RegExp: \\b[0-9a-fA-F]{8,}\\b :-1",
+    "percent": 2.2
+   },
+   {
+    "frame": "RegExp: \\b[0-9a-fA-F]{4,}-[0-9a-fA-F-]{4,}\\b :-1",
+    "percent": 2.2
+   },
+   {
+    "frame": "knowledgeIdentity knowledge.js:352",
+    "percent": 2.1
+   },
+   {
+    "frame": "#walkArchiveLines memory.js:1625",
+    "percent": 2.1
+   },
+   {
+    "frame": "oneShotDigest :-1",
+    "percent": 1.7
+   },
+   {
+    "frame": "first knowledge.js:141",
+    "percent": 1.0
+   },
+   {
+    "frame": "RegExp: \\b(?:rate limit|too many requests)\\b :-1",
+    "percent": 1.0
+   }
+  ]
+ }
+}

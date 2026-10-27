@@ -74,7 +74,7 @@ async function indexEntries(file) {
  * helpers while `run` executes, attributed by stack frame so the retention and
  * merge paths (which legitimately parse other lines) stay out of the count.
  */
-const ARCHIVE_INDEX_PARSE = /#(?:scanArchiveRaw|indexEntryFromRaw|activeKeysFromRaw)\b/;
+const ARCHIVE_INDEX_PARSE = /#(?:scanArchiveRaw|indexEntryFromRaw|activeKeysFromRaw|foldArchiveFacts|archiveFactsFromFile|archiveFactsFromText|indexEntryFromFacts)\b/;
 async function countArchiveLineParses(lines, run) {
   const original = JSON.parse;
   const counts = new Map(lines.map((line) => [line, 0]));
