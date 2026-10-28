@@ -69,6 +69,9 @@ fs.openSync = function accounted(...args) {
 fs.closeSync = function accounted(fd) { openArchives.delete(fd); return plainCloseSync.call(this, fd); };
 fs.readSync = function accounted(fd, ...args) {
   const read = plainReadSync.call(this, fd, ...args);
+  // The one-byte tail probe used to be asynchronous and was never a parse rescan.
+  // Keep it outside this parse-cache accounting after moving it to readSync.
+  if (args[0]?.byteLength === 1 && args[2] === 1) return read;
   const path = openArchives.get(fd);
   if (path !== undefined && read > 0) { reads.calls += 1; reads.bytes += read; reads.files.push(path.split("/").at(-1)); }
   return read;
