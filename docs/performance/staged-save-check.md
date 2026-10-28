@@ -222,8 +222,8 @@ S1 的顺序在公开面不可观察，用例钉的是该路径必须产出的�
 | S3 窗口数组自身的 `toJSON` 被替换忽略 | 接受 | 窗口必须是 `Array.prototype` 的普通数组且无自有 `toJSON` |
 | S4 spread 与回退会多读一次 getter，可能改变结论 | 接受 | 三个成员必须是「普通对象 + 自有可枚举数据属性」；有状态 accessor 用例覆盖兄弟字段 |
 
-**真实宿主验收**（本地构建的同一 tarball：`release:pack --dist /tmp/diag/dist-staged-save`，
-`contentSha256` 三份证据同为 `c55ecda7…`，每份 21/21 步通过）：
+**真实宿主验收**（本地构建的同一 tarball：`release:pack --dist /tmp/diag/dist-staged-save2`，
+`contentSha256` 三份证据同为 `6f162181…`，每份 21/21 步通过）：
 
 | 宿主 | 证据 |
 | --- | --- |
