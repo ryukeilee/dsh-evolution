@@ -7,8 +7,8 @@
 // loudly instead of silently reconstructing something else.
 //
 // It is the whole insertion: everything between the end of `assertTransactionSave()`
-// and the start of `projectObservation()`. Each line is JSON-quoted, so the
-// backticks and `${}` the source uses need no special handling here.
+// and the start of `projectObservation()`. It contains no backtick-quoted lines, so
+// the array form below is the source text verbatim.
 export const STAGED_SAVE_CHECK_TEXT = [
   "/** True when `key` is an own enumerable data property of `value`. */",
   "function ownEnumerableDataProperty(value, key) {",
@@ -124,7 +124,10 @@ export const STAGED_SAVE_CHECK_TEXT = [
   "  // Everything but the window, serialized exactly as the whole payload is.",
   "  const text = JSON.stringify({ ...payload, evolution: { ...state, eventBridge: { ...bridge, applied: EMPTY_WINDOW } } });",
   "  if (text === undefined) return whole();",
-  "  let literal = text.includes(`\"${PROTO_KEY}\"`);",
+  "  // A document that already carries the literal needs the whole-document check:",
+  "  // the recursive copy it triggers is what can overflow, and it has to see the",
+  "  // whole document. Nothing the window adds can change that verdict.",
+  "  if (text.includes(`\"${PROTO_KEY}\"`)) return whole();",
   "  for (const marker of window) {",
   "    let verdict = verdicts.get(marker);",
   "    if (verdict === undefined) {",
@@ -138,8 +141,7 @@ export const STAGED_SAVE_CHECK_TEXT = [
   "      verdict = markerText.includes(`\"${PROTO_KEY}\"`);",
   "      verdicts.set(marker, verdict);",
   "    }",
-  "    if (verdict) { literal = true; break; }",
+  "    if (verdict) return whole();",
   "  }",
-  "  if (literal) return whole();",
   "}",
 ].join('\n') + '\n';

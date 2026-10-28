@@ -47,15 +47,6 @@ const document = (window, { bridge = {}, state = {} } = {}) => ({
   evolution: { schema: 4, experiments: [], eventBridge: { schema: 1, applied: window, ...bridge }, ...state },
 });
 
-/** A document nested `depth` levels deep, with `leaf` at the bottom. */
-function deepDocument(leaf, depth) {
-  const state = { schema: 4, eventBridge: { schema: 1, applied: [] } };
-  let node = state;
-  for (let index = 0; index < depth; index += 1) { node.child = { note: 'x' }; node = node.child; }
-  Object.assign(node, leaf);
-  return { evolution: state };
-}
-
 const sharedMarker = marker('shared', { note: '__proto__' });
 const circular = document([marker(1)]);
 circular.evolution.experiments.push(circular.evolution);
@@ -173,17 +164,6 @@ const cases = [
     payload.toJSON = () => ({ evolution: { schema: 4 } });
     return payload;
   })(), false, false],
-  // The deep cases only compare the two verdicts: whether this environment
-  // overflows the recursive copy at all depends on the stack it is running in,
-  // and the differential is the claim that matters here. The dedicated case
-  // below pins the literal path itself, at a depth it finds at that moment.
-  ['a deeply nested document', deepDocument({}, 4000), false, null],
-  ['a deeply nested document carrying the literal', deepDocument({ leak: '__proto__' }, 4000), false, null],
-  ['a deeply nested document with the literal and a window', (() => {
-    const payload = deepDocument({ leak: '__proto__' }, 4000);
-    payload.evolution.eventBridge.applied = [marker(1)];
-    return payload;
-  })(), false, null],
   ['undefined', undefined, false, true],
   ['null', null, false, false],
   ['a string payload', 'payload', false, false],
@@ -197,9 +177,7 @@ test('the staged save check reaches the same verdict as the whole-document check
     // has; the memo-reuse case below is the other half.
     const staged = outcome(() => assertStagedTransactionSave(payload, verdicts));
     assert.deepEqual(staged, whole, `${name}: the staged check must agree with assertTransactionSave()`);
-    if (shouldThrow !== null) {
-      assert.equal(staged.threw, shouldThrow, `${name}: the documented outcome must be the one both checks reach`);
-    }
+    assert.equal(staged.threw, shouldThrow, `${name}: the documented outcome must be the one both checks reach`);
     // A verdict may only ever be remembered for a value this check can judge
     // once: a frozen flat marker. Everything else has to keep taking the
     // whole-document check, which is what makes the two verdicts the same by
@@ -345,6 +323,33 @@ test('a marker that carries its own toJSON is never memoized', () => {
   const other = new WeakMap();
   assert.equal(outcome(() => assertStagedTransactionSave(document([plainMarker]), other)).threw, false);
   assert.equal(other.get(plainMarker), false, 'a frozen flat marker is judged once');
+});
+
+test('a document carrying the literal runs the whole-document check', () => {
+  // The recursive own-`__proto__` copy the literal triggers is what can overflow
+  // a deep document, so this check must not judge only part of the document. Its
+  // consequence is a stack overflow, which depends on the environment; the part
+  // that does not is the memo, and both places the literal can be found leave
+  // their own mark on it.
+  const inTheBody = marker(1);
+  const bodyVerdicts = new WeakMap();
+  const bodyPayload = document([inTheBody], { state: { note: '__proto__' } });
+  assert.equal(outcome(() => assertStagedTransactionSave(bodyPayload, bodyVerdicts)).threw, false);
+  assert.equal(bodyVerdicts.has(inTheBody), false, 'the body literal must send the whole document through the check');
+
+  // A literal that only the window carries is found while judging it: the marker
+  // itself is judged (its verdict is the literal), and the markers behind it are
+  // not judged at all because the document goes through the whole-document check
+  // instead.
+  const before = marker(2);
+  const inTheWindow = marker(3, { note: '__proto__' });
+  const behind = marker(4);
+  const windowVerdicts = new WeakMap();
+  const windowPayload = document([before, inTheWindow, behind]);
+  assert.equal(outcome(() => assertStagedTransactionSave(windowPayload, windowVerdicts)).threw, false);
+  assert.equal(windowVerdicts.get(before), false, 'a marker before the literal is judged once');
+  assert.equal(windowVerdicts.get(inTheWindow), true, 'the literal marker is judged once, as the literal');
+  assert.equal(windowVerdicts.has(behind), false, 'nothing behind the literal marker is judged');
 });
 
 test('a payload the staged check cannot reason about keeps the whole-document error', () => {
