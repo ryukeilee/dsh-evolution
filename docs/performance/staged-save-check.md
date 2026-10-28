@@ -220,6 +220,19 @@ S1 的顺序在公开面不可观察，用例钉的是该路径必须产出的�
 | S3 窗口数组自身的 `toJSON` 被替换忽略 | 接受 | 窗口必须是 `Array.prototype` 的普通数组且无自有 `toJSON` |
 | S4 spread 与回退会多读一次 getter，可能改变结论 | 接受 | 三个成员必须是「普通对象 + 自有可枚举数据属性」；有状态 accessor 用例覆盖兄弟字段 |
 
+**真实宿主验收**（本地构建的同一 tarball：`release:pack --dist /tmp/diag/dist-staged-save`，
+`contentSha256` 三份证据同为 `c55ecda7…`，每份 21/21 步通过）：
+
+| 宿主 | 证据 |
+| --- | --- |
+| 0.2.0-rc.2 | [`docs/evidence/staged-save-check-dsh-0.2.0-rc.2.json`](../evidence/staged-save-check-dsh-0.2.0-rc.2.json) |
+| 0.2.1-alpha.1 | [`docs/evidence/staged-save-check-dsh-0.2.1-alpha.1.json`](../evidence/staged-save-check-dsh-0.2.1-alpha.1.json) |
+| 0.2.1-rc.2 | [`docs/evidence/staged-save-check-dsh-0.2.1-rc.2.json`](../evidence/staged-save-check-dsh-0.2.1-rc.2.json) |
+
+`npm run pack:check`（开发语义）16/16，并判定本树是固定点的**已提交后继**；`release/` 固定产物、
+`package.json` 版本、`peerDependencies` 与宿主兼容范围都没有改，因此没有重新固定，也没有执行
+`release:publish`。
+
 ## 6. 边界与未覆盖
 
 - **只有 Node 26 的正式性能数据。** Node 22/24 只跑了功能套件，没有重跑基准；不把 26 的百分比外推到
