@@ -197,7 +197,8 @@ marker 冻结与键表就地化一起反转）。它们要求：重建结果与 
 | --- | --- |
 | `NODE_OPTIONS=--max-old-space-size=4096 npm test`（Node 26.12.1） | 1,208 / 1,209 通过；唯一失败是 `release-pin` 对**未提交**分发改动的拒绝（提交后 1,209 / 1,209） |
 | 同上，Node 22.23.4 / 24.22.1 | 同为 1,208 / 1,209，唯一失败项相同 |
-| CI（GitHub Actions，Node 22.19.0 / 24.x + package + 三宿主验收） | 见提交后的运行记录 |
+| CI（GitHub Actions run `40720572624`，提交 `13cdd8f`）：unit tests 22.19.0 / 24.x、package、三宿主验收 | 6 个作业全部 success |
+| Code scanning（CodeQL run `40720572898`，同一提交） | success |
 | `test/domain-storage/staged-save-check.test.js` | 7 / 7 |
 | `test/domain-storage/domain-storage-write-path-equivalence.test.js` | 5 / 5（含 pinned rc.8 逐字节重建） |
 | `test/domain-storage/load-projection-equivalence.test.js` | 8 / 8 |
