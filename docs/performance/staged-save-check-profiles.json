@@ -1,0 +1,326 @@
+{
+  "schema": 1,
+  "method": "V8 CPU profile (--cpu-prof --cpu-prof-interval=400 microseconds) of one cold 20,000-record absorption through the real openDomainStorage()/DomainFacility/JsonStorageBackend, each side in its own fresh process, driven by scripts/benchmarks/event-log-replay-memory.mjs --worker (which installs memory-sample probes in a temporary copy of lib/domain-storage.js). Frames are aggregated by call site, self and inclusive; `ms` is estimated from the sample count. The two runs are single samples, so read them as a distribution, not as a measurement of the A/B table.",
+  "node": "v26.12.1",
+  "platform": "darwin/arm64",
+  "profiles": [
+    {
+      "label": "baseline 47331df",
+      "durationMs": 27585,
+      "totalSamples": 47168,
+      "topSelf": [
+        {
+          "site": "assertTransactionSave .domain-storage-replay-memory-46423-5a54a7b5-1b24-4ee7-88f6-25e58d1997f8.mjs:1389",
+          "ms": 20118,
+          "share": 0.7293
+        },
+        {
+          "site": "(idle) (native):0",
+          "ms": 4286,
+          "share": 0.1554
+        },
+        {
+          "site": "run memory.js:2600",
+          "ms": 848,
+          "share": 0.0307
+        },
+        {
+          "site": "(garbage collector) (native):0",
+          "ms": 591,
+          "share": 0.0214
+        },
+        {
+          "site": "(anonymous) memory.js:3983",
+          "ms": 212,
+          "share": 0.0077
+        },
+        {
+          "site": "(program) (native):0",
+          "ms": 156,
+          "share": 0.0057
+        },
+        {
+          "site": "stat (native):0",
+          "ms": 122,
+          "share": 0.0044
+        },
+        {
+          "site": "#bridgeApplied memory.js:3982",
+          "ms": 122,
+          "share": 0.0044
+        },
+        {
+          "site": "normalizeString node:path:92",
+          "ms": 85,
+          "share": 0.0031
+        },
+        {
+          "site": "#markBridgeApplied memory.js:3986",
+          "ms": 71,
+          "share": 0.0026
+        },
+        {
+          "site": "structuredClone js_transferable:101",
+          "ms": 67,
+          "share": 0.0024
+        },
+        {
+          "site": "isSensitiveKey memory.js:76",
+          "ms": 49,
+          "share": 0.0018
+        },
+        {
+          "site": "update hash:179",
+          "ms": 43,
+          "share": 0.0016
+        },
+        {
+          "site": "stat promises:1898",
+          "ms": 40,
+          "share": 0.0015
+        },
+        {
+          "site": "readdir (native):0",
+          "ms": 37,
+          "share": 0.0014
+        }
+      ],
+      "topInclusive": [
+        {
+          "site": "(root) (native):0",
+          "ms": 27585,
+          "share": 1
+        },
+        {
+          "site": "(anonymous) memory.js:3834",
+          "ms": 20306,
+          "share": 0.7361
+        },
+        {
+          "site": "#save memory.js:3353",
+          "ms": 20129,
+          "share": 0.7297
+        },
+        {
+          "site": "update .domain-storage-replay-memory-46423-5a54a7b5-1b24-4ee7-88f6-25e58d1997f8.mjs:643",
+          "ms": 20119,
+          "share": 0.7293
+        },
+        {
+          "site": "assertTransactionSave .domain-storage-replay-memory-46423-5a54a7b5-1b24-4ee7-88f6-25e58d1997f8.mjs:1389",
+          "ms": 20118,
+          "share": 0.7293
+        },
+        {
+          "site": "(idle) (native):0",
+          "ms": 4286,
+          "share": 0.1554
+        },
+        {
+          "site": "run memory.js:2600",
+          "ms": 1214,
+          "share": 0.044
+        },
+        {
+          "site": "(garbage collector) (native):0",
+          "ms": 591,
+          "share": 0.0214
+        },
+        {
+          "site": "applyExecutionEvent memory.js:4065",
+          "ms": 495,
+          "share": 0.0179
+        },
+        {
+          "site": "#bridgeApplied memory.js:3982",
+          "ms": 330,
+          "share": 0.012
+        },
+        {
+          "site": "(anonymous) memory.js:3983",
+          "ms": 212,
+          "share": 0.0077
+        },
+        {
+          "site": "flush memory.js:2687",
+          "ms": 210,
+          "share": 0.0076
+        },
+        {
+          "site": "replay .domain-storage-replay-memory-46423-5a54a7b5-1b24-4ee7-88f6-25e58d1997f8.mjs:813",
+          "ms": 171,
+          "share": 0.0062
+        },
+        {
+          "site": "(program) (native):0",
+          "ms": 156,
+          "share": 0.0057
+        },
+        {
+          "site": "(anonymous) .domain-storage-replay-memory-46423-5a54a7b5-1b24-4ee7-88f6-25e58d1997f8.mjs:1216",
+          "ms": 155,
+          "share": 0.0056
+        }
+      ]
+    },
+    {
+      "label": "candidate (this change)",
+      "durationMs": 6068,
+      "totalSamples": 10523,
+      "topSelf": [
+        {
+          "site": "(idle) (native):0",
+          "ms": 2233,
+          "share": 0.368
+        },
+        {
+          "site": "stat (native):0",
+          "ms": 1286,
+          "share": 0.212
+        },
+        {
+          "site": "assertStagedTransactionSave .domain-storage-replay-memory-46422-80f5ea48-9271-4022-aa55-5ab55bb82bd9.mjs:1490",
+          "ms": 637,
+          "share": 0.1049
+        },
+        {
+          "site": "(program) (native):0",
+          "ms": 172,
+          "share": 0.0284
+        },
+        {
+          "site": "(anonymous) memory.js:4033",
+          "ms": 121,
+          "share": 0.0199
+        },
+        {
+          "site": "stat promises:1898",
+          "ms": 90,
+          "share": 0.0148
+        },
+        {
+          "site": "(garbage collector) (native):0",
+          "ms": 77,
+          "share": 0.0127
+        },
+        {
+          "site": "#bridgeApplied memory.js:4032",
+          "ms": 76,
+          "share": 0.0125
+        },
+        {
+          "site": "run memory.js:2625",
+          "ms": 74,
+          "share": 0.0123
+        },
+        {
+          "site": "isSensitiveKey memory.js:76",
+          "ms": 73,
+          "share": 0.0121
+        },
+        {
+          "site": "readdir (native):0",
+          "ms": 67,
+          "share": 0.0111
+        },
+        {
+          "site": "read (native):0",
+          "ms": 48,
+          "share": 0.0079
+        },
+        {
+          "site": "normalizeString node:path:92",
+          "ms": 48,
+          "share": 0.0079
+        },
+        {
+          "site": "boundedArchiveEntry memory.js:720",
+          "ms": 44,
+          "share": 0.0073
+        },
+        {
+          "site": "update hash:179",
+          "ms": 42,
+          "share": 0.0068
+        }
+      ],
+      "topInclusive": [
+        {
+          "site": "(root) (native):0",
+          "ms": 6068,
+          "share": 1
+        },
+        {
+          "site": "(idle) (native):0",
+          "ms": 2233,
+          "share": 0.368
+        },
+        {
+          "site": "run memory.js:2625",
+          "ms": 1701,
+          "share": 0.2803
+        },
+        {
+          "site": "stat promises:1898",
+          "ms": 1353,
+          "share": 0.2229
+        },
+        {
+          "site": "stat (native):0",
+          "ms": 1286,
+          "share": 0.212
+        },
+        {
+          "site": "(anonymous) memory.js:3884",
+          "ms": 883,
+          "share": 0.1456
+        },
+        {
+          "site": "#save memory.js:3403",
+          "ms": 654,
+          "share": 0.1079
+        },
+        {
+          "site": "update .domain-storage-replay-memory-46422-80f5ea48-9271-4022-aa55-5ab55bb82bd9.mjs:646",
+          "ms": 649,
+          "share": 0.107
+        },
+        {
+          "site": "assertStagedTransactionSave .domain-storage-replay-memory-46422-80f5ea48-9271-4022-aa55-5ab55bb82bd9.mjs:1490",
+          "ms": 643,
+          "share": 0.106
+        },
+        {
+          "site": "applyExecutionEvent memory.js:4122",
+          "ms": 269,
+          "share": 0.0443
+        },
+        {
+          "site": "flush memory.js:2725",
+          "ms": 248,
+          "share": 0.0409
+        },
+        {
+          "site": "#activeTailIsTorn memory.js:2544",
+          "ms": 207,
+          "share": 0.0341
+        },
+        {
+          "site": "#bridgeApplied memory.js:4032",
+          "ms": 195,
+          "share": 0.0321
+        },
+        {
+          "site": "(program) (native):0",
+          "ms": 172,
+          "share": 0.0284
+        },
+        {
+          "site": "replay .domain-storage-replay-memory-46422-80f5ea48-9271-4022-aa55-5ab55bb82bd9.mjs:816",
+          "ms": 172,
+          "share": 0.0284
+        }
+      ]
+    }
+  ]
+}

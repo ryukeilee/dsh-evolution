@@ -4,6 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { RELEASE_DIR, readTarEntries } from "../../scripts/release/release-lib.mjs";
+import { STAGED_SAVE_CHECK_TEXT } from "./staged-save-check-text.js";
 
 const WORKING_SOURCE = fileURLToPath(new URL("../../lib/domain-storage.js", import.meta.url));
 
@@ -91,6 +92,18 @@ const SOURCE_PATH = "lib/domain-storage.js";
 // other direction can also find: no piece deletes text another piece is anchored
 // on, and no piece is anchored on an empty string.
 const reversals = [
+  // The staged save check is the newest change to this file: it judges the
+  // bridge marker window once per marker instead of re-serializing the whole
+  // document on every save (see `assertStagedTransactionSave` in
+  // `lib/domain-storage.js`). It adds one function block, one per-store memo and
+  // the call that uses them, and reverses to the pinned rc.8 source exactly:
+  // removing the block restores the old adjacency between
+  // `assertTransactionSave()` and `projectObservation()`. The pinned text lives
+  // in `staged-save-check-text.js`.
+  [STAGED_SAVE_CHECK_TEXT, ""],
+  ["        assertStagedTransactionSave(next, markerVerdicts);", "        assertTransactionSave(next);"],
+  ["    let aggregate = structuredClone(initial);\n    // The bridge markers this transaction's saves reuse verdicts for; it lives\n    // exactly as long as this working store (see `assertStagedTransactionSave`).\n    const markerVerdicts = new WeakMap();\n",
+   "    let aggregate = structuredClone(initial);\n"],
   // Undo the retention reliability closure this round added: the append-lock
   // failure carries its own code so only a lock race is retried, a completed
   // truncation is proved without the lock, and the doctor reports a floor that

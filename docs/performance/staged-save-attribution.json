@@ -1,0 +1,351 @@
+{
+  "schema": 1,
+  "method": {
+    "mode": "cold",
+    "records": 20000,
+    "growth": 0,
+    "samples": 3,
+    "node": "v26.12.1",
+    "platform": "darwin/arm64",
+    "sources": {
+      "baseline": {
+        "commit": "47331df4883d9b06c098a29c21d3687ed45716ec",
+        "domainStorage": "dc75a95662bc2277ba249df8c931afb54bab9bc730da30b8db445b959f13698b",
+        "memory": "2d8f049ed7902aa73316479214503530815d279a5af61f570f9ca8253845c248"
+      },
+      "candidate": {
+        "commit": "47331df4883d9b06c098a29c21d3687ed45716ec",
+        "domainStorage": "655e3bbe8838e864b63dfe2d0354e3d9bbf5fdd22bb039f09768c9ead8edba53",
+        "memory": "1204d1c2c198dcf9bc5f3bb84a49507939295173b5cf58d29aca05b8ee256d80"
+      }
+    },
+    "fixtureSha256": "51af1b91b3f2a66cf83e50c8e6b61945d420db40a4643c4872af891ccac3d843",
+    "fixtureBytes": 12917754,
+    "freshHomePerSample": true,
+    "officialDomainFacilityAndJsonStorageBackend": true,
+    "coldPassHasNoCheckpoint": true,
+    "counters": "a temporary instrumented copy of each tree’s own lib/domain-storage.js and lib/dockyard-domain/memory.js; wholeCheck* counts assertTransactionSave(), shadow* counts the staged check’s document-without-window serialization, marker* counts one-off marker judgments, keyTable* counts archive key-table setup per archive append"
+  },
+  "summary": {
+    "baseline": {
+      "wallMs": 25879.631542,
+      "cpuMs": 26682.686,
+      "maxRSS": 342992,
+      "heapUsed": 51932912,
+      "counters": {
+        "wholeCheckCalls": 20000,
+        "wholeCheckBytes": 13268295143,
+        "wholeCheckMs": 14740.193503000077,
+        "stagedCalls": 0,
+        "shadowCalls": 0,
+        "shadowBytes": 0,
+        "shadowMs": 0,
+        "markerCalls": 0,
+        "keyTableCalls": 19950,
+        "keyTableMs": 1939.9043849999969
+      },
+      "probes": [
+        "wholeCheck",
+        "keyTablesBefore"
+      ],
+      "growth": null
+    },
+    "candidate": {
+      "wallMs": 5782.5239169999995,
+      "cpuMs": 6207.168,
+      "maxRSS": 272512,
+      "heapUsed": 86884872,
+      "counters": {
+        "wholeCheckCalls": 1,
+        "wholeCheckBytes": 978,
+        "wholeCheckMs": 0.014084,
+        "stagedCalls": 19999,
+        "shadowCalls": 19999,
+        "shadowBytes": 565188660,
+        "shadowMs": 690.6021840000092,
+        "markerCalls": 19999,
+        "keyTableCalls": 19950,
+        "keyTableMs": 2.2483090000002828
+      },
+      "probes": [
+        "wholeCheck",
+        "stagedCheck",
+        "shadow",
+        "marker",
+        "keyTables"
+      ],
+      "growth": null
+    }
+  },
+  "paired": [
+    {
+      "round": 1,
+      "wallDeltaMs": -20097.107625,
+      "cpuDeltaMs": -20514.014000000003,
+      "maxRSSDelta": -40608,
+      "growthWallDeltaMs": null,
+      "growthCpuDeltaMs": null
+    },
+    {
+      "round": 2,
+      "wallDeltaMs": -21529.16325,
+      "cpuDeltaMs": -21770.345999999998,
+      "maxRSSDelta": -117472,
+      "growthWallDeltaMs": null,
+      "growthCpuDeltaMs": null
+    },
+    {
+      "round": 3,
+      "wallDeltaMs": -20013.564709,
+      "cpuDeltaMs": -20346.572,
+      "maxRSSDelta": -70480,
+      "growthWallDeltaMs": null,
+      "growthCpuDeltaMs": null
+    }
+  ],
+  "samples": [
+    {
+      "side": "baseline",
+      "round": 1,
+      "sample": {
+        "mode": "cold",
+        "records": 20000,
+        "growth": 0,
+        "probes": [
+          "wholeCheck",
+          "keyTablesBefore"
+        ],
+        "counters": {
+          "wholeCheckCalls": 20000,
+          "wholeCheckBytes": 13268295143,
+          "wholeCheckMs": 14727.067578999999,
+          "stagedCalls": 0,
+          "shadowCalls": 0,
+          "shadowBytes": 0,
+          "shadowMs": 0,
+          "markerCalls": 0,
+          "keyTableCalls": 19950,
+          "keyTableMs": 1957.0043169999967
+        },
+        "cold": {
+          "wallMs": 25879.631542,
+          "cpuMs": 26682.686,
+          "maxRSS": 313184,
+          "memory": {
+            "rss": 243828600,
+            "heapUsed": 51864736,
+            "external": 27071762,
+            "arrayBuffers": 9386276,
+            "maxRSS": 313184
+          }
+        },
+        "growthResult": null,
+        "fixtureBytes": 12917754
+      }
+    },
+    {
+      "side": "candidate",
+      "round": 1,
+      "sample": {
+        "mode": "cold",
+        "records": 20000,
+        "growth": 0,
+        "probes": [
+          "wholeCheck",
+          "stagedCheck",
+          "shadow",
+          "marker",
+          "keyTables"
+        ],
+        "counters": {
+          "wholeCheckCalls": 1,
+          "wholeCheckBytes": 978,
+          "wholeCheckMs": 0.014084,
+          "stagedCalls": 19999,
+          "shadowCalls": 19999,
+          "shadowBytes": 565188660,
+          "shadowMs": 690.6021840000092,
+          "markerCalls": 19999,
+          "keyTableCalls": 19950,
+          "keyTableMs": 2.3486930000003494
+        },
+        "cold": {
+          "wallMs": 5782.5239169999995,
+          "cpuMs": 6168.672,
+          "maxRSS": 272576,
+          "memory": {
+            "rss": 253923344,
+            "heapUsed": 86897728,
+            "external": 51163505,
+            "arrayBuffers": 33474159,
+            "maxRSS": 272592
+          }
+        },
+        "growthResult": null,
+        "fixtureBytes": 12917754
+      }
+    },
+    {
+      "side": "candidate",
+      "round": 2,
+      "sample": {
+        "mode": "cold",
+        "records": 20000,
+        "growth": 0,
+        "probes": [
+          "wholeCheck",
+          "stagedCheck",
+          "shadow",
+          "marker",
+          "keyTables"
+        ],
+        "counters": {
+          "wholeCheckCalls": 1,
+          "wholeCheckBytes": 978,
+          "wholeCheckMs": 0.012167,
+          "stagedCalls": 19999,
+          "shadowCalls": 19999,
+          "shadowBytes": 565188660,
+          "shadowMs": 695.6922460000073,
+          "markerCalls": 19999,
+          "keyTableCalls": 19950,
+          "keyTableMs": 2.153111000000292
+        },
+        "cold": {
+          "wallMs": 5742.845,
+          "cpuMs": 6207.168,
+          "maxRSS": 235808,
+          "memory": {
+            "rss": 212666320,
+            "heapUsed": 52509408,
+            "external": 27071762,
+            "arrayBuffers": 9386276,
+            "maxRSS": 235808
+          }
+        },
+        "growthResult": null,
+        "fixtureBytes": 12917754
+      }
+    },
+    {
+      "side": "baseline",
+      "round": 2,
+      "sample": {
+        "mode": "cold",
+        "records": 20000,
+        "growth": 0,
+        "probes": [
+          "wholeCheck",
+          "keyTablesBefore"
+        ],
+        "counters": {
+          "wholeCheckCalls": 20000,
+          "wholeCheckBytes": 13268295143,
+          "wholeCheckMs": 16163.038827999892,
+          "stagedCalls": 0,
+          "shadowCalls": 0,
+          "shadowBytes": 0,
+          "shadowMs": 0,
+          "markerCalls": 0,
+          "keyTableCalls": 19950,
+          "keyTableMs": 1899.5865319999964
+        },
+        "cold": {
+          "wallMs": 27272.008250000003,
+          "cpuMs": 27977.514,
+          "maxRSS": 353280,
+          "memory": {
+            "rss": 234244080,
+            "heapUsed": 51932912,
+            "external": 27071762,
+            "arrayBuffers": 9386276,
+            "maxRSS": 353280
+          }
+        },
+        "growthResult": null,
+        "fixtureBytes": 12917754
+      }
+    },
+    {
+      "side": "baseline",
+      "round": 3,
+      "sample": {
+        "mode": "cold",
+        "records": 20000,
+        "growth": 0,
+        "probes": [
+          "wholeCheck",
+          "keyTablesBefore"
+        ],
+        "counters": {
+          "wholeCheckCalls": 20000,
+          "wholeCheckBytes": 13268295143,
+          "wholeCheckMs": 14740.193503000077,
+          "stagedCalls": 0,
+          "shadowCalls": 0,
+          "shadowBytes": 0,
+          "shadowMs": 0,
+          "markerCalls": 0,
+          "keyTableCalls": 19950,
+          "keyTableMs": 1939.9043849999969
+        },
+        "cold": {
+          "wallMs": 25850.094125,
+          "cpuMs": 26576.519,
+          "maxRSS": 342992,
+          "memory": {
+            "rss": 258410648,
+            "heapUsed": 68032944,
+            "external": 27203250,
+            "arrayBuffers": 9517764,
+            "maxRSS": 342992
+          }
+        },
+        "growthResult": null,
+        "fixtureBytes": 12917754
+      }
+    },
+    {
+      "side": "candidate",
+      "round": 3,
+      "sample": {
+        "mode": "cold",
+        "records": 20000,
+        "growth": 0,
+        "probes": [
+          "wholeCheck",
+          "stagedCheck",
+          "shadow",
+          "marker",
+          "keyTables"
+        ],
+        "counters": {
+          "wholeCheckCalls": 1,
+          "wholeCheckBytes": 978,
+          "wholeCheckMs": 0.01425,
+          "stagedCalls": 19999,
+          "shadowCalls": 19999,
+          "shadowBytes": 565188660,
+          "shadowMs": 683.1235319999977,
+          "markerCalls": 19999,
+          "keyTableCalls": 19950,
+          "keyTableMs": 2.2483090000002828
+        },
+        "cold": {
+          "wallMs": 5836.529416,
+          "cpuMs": 6229.947,
+          "maxRSS": 272512,
+          "memory": {
+            "rss": 253660960,
+            "heapUsed": 86884872,
+            "external": 51163505,
+            "arrayBuffers": 33474159,
+            "maxRSS": 272528
+          }
+        },
+        "growthResult": null,
+        "fixtureBytes": 12917754
+      }
+    }
+  ]
+}

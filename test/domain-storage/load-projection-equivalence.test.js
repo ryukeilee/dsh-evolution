@@ -182,7 +182,7 @@ async function storeRun(memoryClass, storeClass, root, uuid) {
 
 test('the reversal returns all three files to a real pre-change source', async () => {
   const { working, reconstructed, hunks } = await loadProjectionBaseline();
-  assert.equal(hunks, 9, 'the round changes four call sites, both load signatures, the narrow read, the save check and the working store');
+  assert.equal(hunks, 14, 'the round changes four call sites, both load signatures, the narrow read, the save check and the working store, and the newer staged-save/archive-key-table round adds five hunks to `memory.js`');
   for (const [file, source] of reconstructed) {
     assert.notEqual(source, working.get(file), `${file} must change`);
     // The pre-change file carries no trace of the new option, and the call
@@ -195,6 +195,14 @@ test('the reversal returns all three files to a real pre-change source', async (
   assert.match(reconstructed.get('lib/dockyard-domain/observation.js'), /await this\.load\(\);/);
   assert.match(working.get('lib/domain-storage.js'), /await instance\.load\(\{ snapshot: false \}\);/);
   assert.match(working.get('lib/domain-storage.js'), /await observations\.load\(\{ snapshot: false \}\);/);
+  // The newer round's pieces are gone from the reconstructed tree as well: the
+  // pre-change `#archiveEntries()` copies both key tables (and restores copies),
+  // and nothing freezes a bridge marker.
+  assert.match(reconstructed.get('lib/dockyard-domain/memory.js'), /const originalKnown = new Set\(known\);/);
+  assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /addedKnown/);
+  assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /Object\.freeze\(\{\n      eventId/);
+  assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /#freezeBridgeMarkers/);
+  assert.match(working.get('lib/dockyard-domain/memory.js'), /applied\.push\(Object\.freeze\(\{/);
 });
 
 test('the whole pre-change tree and the working tree commit byte-identical state', async () => {
