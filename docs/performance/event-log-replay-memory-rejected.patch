@@ -1,0 +1,148 @@
+diff --git a/lib/domain-storage.js b/lib/domain-storage.js
+index bd9634c..de95de4 100644
+--- a/lib/domain-storage.js
++++ b/lib/domain-storage.js
+@@ -928,7 +928,9 @@ export async function openDomainStorage(ctx, config) {
+       applied += entries.length - outcome.duplicates;
+     };
+     let refusal = null;
+-    for (const line of plan.lines) {
++    // `plan.lines()` decodes one record at a time from the bytes the plan
++    // retained, instead of handing back the complete decoded log.
++    for (const line of plan.lines()) {
+       if (!line.trim()) continue;
+       try { absorb(line, { witnessed: true }); } catch (error) { refusal = error; break; }
+     }
+diff --git a/lib/event-log-checkpoint.js b/lib/event-log-checkpoint.js
+index 3bb7aa7..01fdf17 100644
+--- a/lib/event-log-checkpoint.js
++++ b/lib/event-log-checkpoint.js
+@@ -133,8 +133,19 @@ export function writeEventLogCheckpoint(file, checkpoint) {
+  * first-ever pass.
+  *
+  * Returns null when the log does not exist. Otherwise the caller processes
+- * `lines` and then `remainder` exactly as it would process the full file, and
++ * `lines()` and then `remainder` exactly as it would process the full file, and
+  * persists `checkpointDocument()` only after that processing succeeded.
++ *
++ * The retained bytes are handed back, not a decoded copy of them: `lines()`
++ * decodes one record at a time. A line feed is never a UTF-8 continuation byte,
++ * so splitting at line feeds and decoding the segments is the same split as
++ * decoding the whole log and splitting the string - an invalid sequence is
++ * terminated by the line feed either way, and the decoder's replacement rules
++ * apply to the same maximal subparts. `checkpoint-line-split-equivalence.test.js`
++ * pins that against the whole-string form over crafted and random invalid
++ * sequences. Only `countEventLogRecords()` decodes a line up front, because the
++ * record count must be known before the pass runs and `trim()` is a string
++ * predicate.
+  */
+ export function planEventLogReplay({ file, key, writer, checkpoint = null, applied = {}, retention = null }) {
+   const candidate = candidateLength(checkpoint);
+@@ -156,17 +167,13 @@ export function planEventLogReplay({ file, key, writer, checkpoint = null, appli
+   }
+   const trusted = candidate > 0 && read.bytes >= candidate;
+   const tail = read.tail;
+-  const text = tail.toString('utf8');
+-  const lines = text.split('\n');
+-  const remainder = lines.pop();
+-  let completeRecords = 0;
+-  for (const line of lines) if (line.trim() !== '') completeRecords += 1;
++  const { completeRecords, remainder } = countEventLogRecords(tail);
+   return {
+     trusted,
+     identity: read.identity,
+     bytes: read.bytes,
+     prefixRecords: trusted ? checkpoint.records : 0,
+-    lines,
++    lines: () => eventLogLines(tail),
+     remainder,
+     completeRecords,
+     // Digest and record count for a checkpoint covering exactly [0, bytes).
+@@ -184,6 +191,37 @@ export function planEventLogReplay({ file, key, writer, checkpoint = null, appli
+   };
+ }
+ 
++/**
++ * Count the records the plan hands back and take the torn trailing line, without
++ * materializing the whole log as a decoded string.
++ *
++ * `line.trim() !== ''` is a string predicate, so each complete segment is decoded
++ * once here and discarded. That copy is bounded by one line and the pass that
++ * follows decodes each line again only when it processes it; the released
++ * implementation decoded the complete log and kept it, plus one string object per
++ * line, for the whole pass.
++ */
++function countEventLogRecords(buffer) {
++  let completeRecords = 0;
++  let start = 0;
++  for (let index = 0; index < buffer.length; index += 1) {
++    if (buffer[index] !== LINE_FEED) continue;
++    if (buffer.toString('utf8', start, index).trim() !== '') completeRecords += 1;
++    start = index + 1;
++  }
++  return { completeRecords, remainder: buffer.toString('utf8', start) };
++}
++
++/** The complete records of the retained bytes, decoded one at a time. */
++function* eventLogLines(buffer) {
++  let start = 0;
++  for (let index = 0; index < buffer.length; index += 1) {
++    if (buffer[index] !== LINE_FEED) continue;
++    yield buffer.toString('utf8', start, index);
++    start = index + 1;
++  }
++}
++
+ /** Build the checkpoint document for a completed pass over `plan`. */
+ export function eventLogCheckpointDocument({ plan, writer, key, applied, retention = null, witnesses = null }) {
+   const document = { schema: EVENT_LOG_CHECKPOINT_SCHEMA, bytes: plan.next.bytes, records: plan.next.records,
+diff --git a/test/domain-storage/checkpoint-keyed-digest.test.js b/test/domain-storage/checkpoint-keyed-digest.test.js
+index 84c0899..a827201 100644
+--- a/test/domain-storage/checkpoint-keyed-digest.test.js
++++ b/test/domain-storage/checkpoint-keyed-digest.test.js
+@@ -154,7 +154,7 @@ test('a checkpoint whose digest does not match the log bytes is still rejected',
+       applied: f.ctx.storageDomain.get('evolution_domain').global.get().applied });
+     assert.equal(plan.trusted, false, 'a changed byte inside the consumed prefix must not be trusted');
+     assert.equal(plan.prefixRecords, 0, 'an untrusted checkpoint covers no records');
+-    assert.equal(plan.lines.length, 2, 'the whole log is handed back for per-record verification');
++    assert.equal([...plan.lines()].length, 2, 'the whole log is handed back for per-record verification');
+   } finally { await port.close(); await teardown(f); }
+ });
+ 
+@@ -191,7 +191,7 @@ test('a record that lands while the pass is reading does not advance the checkpo
+     assert.equal(plan.trusted, true, 'the authenticated prefix is still the prefix');
+     assert.equal(plan.advance, false, 'a checkpoint must not cover bytes that arrived mid-read');
+     assert.equal(plan.next.digest, null);
+-    assert.equal(plan.lines.length, 1, 'the record that arrived mid-read is verified per record');
++    assert.equal([...plan.lines()].length, 1, 'the record that arrived mid-read is verified per record');
+     // The record is still applied exactly once by the next real pass.
+     assert.deepEqual(await port.flush(), { applied: 1, duplicates: 2 });
+     assert.deepEqual(await port.flush(), { applied: 0, duplicates: 3 });
+diff --git a/test/domain-storage/domain-storage-baseline.js b/test/domain-storage/domain-storage-baseline.js
+index 76a1fb5..80517ea 100644
+--- a/test/domain-storage/domain-storage-baseline.js
++++ b/test/domain-storage/domain-storage-baseline.js
+@@ -1098,7 +1098,9 @@ const reversals = [
+    "      applied += entries.length - outcome.duplicates;\n" +
+    "    };\n" +
+    "    let refusal = null;\n" +
+-   "    for (const line of plan.lines) {\n" +
++   "    // `plan.lines()` decodes one record at a time from the bytes the plan\n" +
++   "    // retained, instead of handing back the complete decoded log.\n" +
++   "    for (const line of plan.lines()) {\n" +
+    "      if (!line.trim()) continue;\n" +
+    "      try { absorb(line, { witnessed: true }); } catch (error) { refusal = error; break; }\n" +
+    "    }\n" +
+diff --git a/test/domain-storage/event-log-checkpoint.test.js b/test/domain-storage/event-log-checkpoint.test.js
+index 41ec1a7..5246d68 100644
+--- a/test/domain-storage/event-log-checkpoint.test.js
++++ b/test/domain-storage/event-log-checkpoint.test.js
+@@ -107,7 +107,7 @@ test('an authenticated prefix is reused and only new records need per-record wor
+     checkpoint: readEventLogCheckpoint(checkpointFile), applied: { [first.last.id]: first.last.mac } });
+   assert.equal(steady.trusted, true);
+   assert.equal(steady.prefixRecords, 1);
+-  assert.deepEqual(steady.lines, []);
++  assert.deepEqual([...steady.lines()], []);
+   assert.equal(steady.advance, false);
+   assert.deepEqual(await port.flush(), { applied: 0, duplicates: 1 });
+   assert.deepEqual(readEventLogCheckpoint(checkpointFile), first, 'a steady pass must not rewrite the checkpoint');
