@@ -113,3 +113,15 @@ node --max-old-space-size=4096 scripts/benchmarks/archive-append-roundtrips.mjs 
 ```
 
 本记录只报告上述实际执行的基准、数据对比和等价性验证；未重跑仓库全量测试或真实宿主验收。脚本为最终版本执行了 Node 语法检查及 `--help` 检查。所有执行均带 4096 MiB V8 堆上限。
+
+## 交付前验证与独立审核
+
+实现提交 `48118ac` 上实际执行：
+
+- Node v22.23.4 / v24.22.1 / v26.12.1 全量测试，各 1218 项通过；统一使用 `NODE_OPTIONS=--max-old-space-size=4096`。
+- `npm run pack:check`：16 项通过；这是固定发布产物的已提交开发后继，不是重新固定发布产物。
+- 本地 `release:pack -- --dist /tmp/dsh-archive-append-candidate-build` 两次打包字节一致，候选 contentSha256 为 `b1c1dcf2564a9c01f839dc709e455103566885f2b290f0b6f29ac79053629473`，没有修改 `release/`。
+- 三个官方宿主 `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2` 分别在隔离 runtime/home 验收，各 21 步通过；证据见 `docs/evidence/archive-append-<host>.json`，均对应上述候选内容。
+- sol-loop 第 1 轮：GPT-6.1 Sol 返回 APPROVE，无 blocker/should/nit；额外实际执行 62 项聚焦测试通过。审核范围为基线 `6b48609` 至实现提交与本轮新增测试、基准及数据。请求 `codex / gpt-6.1-sol / reasoningEffort=xhigh`，工具返回同样配置，审核者运行时上下文声明同样设置；没有独立 effective-options 或用量返回，不宣称独立验证 Xhigh 生效。审核前后行为差异不变，无需修复或复审。
+
+早期 Node 22/24 回归在未提交候选上曾失败：固定点测试拒绝未提交分发修改，另两个解析缓存计数测试将新同步单字节 tail probe 误计为重扫。计数器已排除原先异步时从未计入的单字节探测，尾部操作由新增故障注入独立约束；提交后最终三版本全量通过。首次宿主命令因默认 dist 缺少本版本包而未运行，默认 dist 又包含其他构建，打包器拒绝覆盖；随后使用新的临时 dist 构建并完成上述验收，未删除原构建。
