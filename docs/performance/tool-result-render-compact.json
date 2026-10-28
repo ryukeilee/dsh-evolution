@@ -1,0 +1,606 @@
+{
+  "environment": {
+    "node": "v26.12.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpus": 8,
+    "samplesPerRender": 200,
+    "rounds": 3
+  },
+  "identity": {
+    "a": {
+      "source": "5a728dd",
+      "registration": "22a87b4e9300a7c664978def66f40b85401c21aba1ee13ca907b2c8b5da1de1f"
+    },
+    "b": {
+      "source": "working tree",
+      "registration": "01f0ada9ad0388649c665426966850a169ad6ae36802d90a77d1bc0f94429a6a"
+    }
+  },
+  "sourcePin": {
+    "a": {
+      "source": "5a728dd",
+      "registration": "22a87b4e9300a7c664978def66f40b85401c21aba1ee13ca907b2c8b5da1de1f"
+    },
+    "b": {
+      "source": "working tree",
+      "registration": "01f0ada9ad0388649c665426966850a169ad6ae36802d90a77d1bc0f94429a6a"
+    }
+  },
+  "onlyDiff": {
+    "baselineRender": "JSON.stringify(value, null, 2)",
+    "candidateRender": "JSON.stringify(value)",
+    "baselineProbeBytes": 137,
+    "candidateProbeBytes": 74,
+    "probedRegistrationsPerSide": [
+      8,
+      8
+    ],
+    "probedParseEquivalent": true
+  },
+  "method": "Each side is its own process and its own tree; both run the same scenario against the real registered tool surface. Equivalence is checked in process on the value each tool returned. Cross-process bytes differ only by fixed-length random ids and timestamps, so the byte delta is stable while digests are not. Tokens are estimated as bytes/3.6 and are not tokenizer or billing measurements.",
+  "rounds": [
+    {
+      "round": 0,
+      "toolCountA": 10,
+      "toolCountB": 10,
+      "samples": [
+        {
+          "name": "inspect-candidates-0",
+          "indentedBytes": 1089,
+          "compactBytes": 751,
+          "savedBytes": 338,
+          "reductionPercent": 31.04,
+          "indentedRenderMedianNs": 1750,
+          "compactRenderMedianNs": 791,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "inspect-candidates-10",
+          "indentedBytes": 8813,
+          "compactBytes": 4739,
+          "savedBytes": 4074,
+          "reductionPercent": 46.23,
+          "indentedRenderMedianNs": 11875,
+          "compactRenderMedianNs": 4042,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "inspect-candidates-100",
+          "indentedBytes": 36803,
+          "compactBytes": 22019,
+          "savedBytes": 14784,
+          "reductionPercent": 40.17,
+          "indentedRenderMedianNs": 44916,
+          "compactRenderMedianNs": 16500,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-empty-default",
+          "indentedBytes": 129,
+          "compactBytes": 112,
+          "savedBytes": 17,
+          "reductionPercent": 13.18,
+          "indentedRenderMedianNs": 250,
+          "compactRenderMedianNs": 167,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-default-seeded",
+          "indentedBytes": 129,
+          "compactBytes": 112,
+          "savedBytes": 17,
+          "reductionPercent": 13.18,
+          "indentedRenderMedianNs": 292,
+          "compactRenderMedianNs": 167,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-observations-10",
+          "indentedBytes": 1978,
+          "compactBytes": 1538,
+          "savedBytes": 440,
+          "reductionPercent": 22.24,
+          "indentedRenderMedianNs": 2833,
+          "compactRenderMedianNs": 916,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-query",
+          "indentedBytes": 3788,
+          "compactBytes": 2885,
+          "savedBytes": 903,
+          "reductionPercent": 23.84,
+          "indentedRenderMedianNs": 5834,
+          "compactRenderMedianNs": 5708,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "doctor-empty-home",
+          "indentedBytes": 23181,
+          "compactBytes": 16694,
+          "savedBytes": 6487,
+          "reductionPercent": 27.98,
+          "indentedRenderMedianNs": 32000,
+          "compactRenderMedianNs": 25792,
+          "equivalent": true,
+          "sameKeyStructure": false
+        },
+        {
+          "name": "propose",
+          "indentedBytes": 4816,
+          "compactBytes": 3431,
+          "savedBytes": 1385,
+          "reductionPercent": 28.76,
+          "indentedRenderMedianNs": 6500,
+          "compactRenderMedianNs": 6417,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "measure",
+          "indentedBytes": 1427,
+          "compactBytes": 1052,
+          "savedBytes": 375,
+          "reductionPercent": 26.28,
+          "indentedRenderMedianNs": 2083,
+          "compactRenderMedianNs": 708,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "measure-json-string-evidence",
+          "indentedBytes": 1942,
+          "compactBytes": 1567,
+          "savedBytes": 375,
+          "reductionPercent": 19.31,
+          "indentedRenderMedianNs": 2708,
+          "compactRenderMedianNs": 1583,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "revert",
+          "indentedBytes": 850,
+          "compactBytes": 635,
+          "savedBytes": 215,
+          "reductionPercent": 25.29,
+          "indentedRenderMedianNs": 1209,
+          "compactRenderMedianNs": 1500,
+          "equivalent": true,
+          "sameKeyStructure": true
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "toolCountA": 10,
+      "toolCountB": 10,
+      "samples": [
+        {
+          "name": "inspect-candidates-0",
+          "indentedBytes": 1089,
+          "compactBytes": 751,
+          "savedBytes": 338,
+          "reductionPercent": 31.04,
+          "indentedRenderMedianNs": 1708,
+          "compactRenderMedianNs": 750,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "inspect-candidates-10",
+          "indentedBytes": 8813,
+          "compactBytes": 4739,
+          "savedBytes": 4074,
+          "reductionPercent": 46.23,
+          "indentedRenderMedianNs": 12000,
+          "compactRenderMedianNs": 3875,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "inspect-candidates-100",
+          "indentedBytes": 36803,
+          "compactBytes": 22019,
+          "savedBytes": 14784,
+          "reductionPercent": 40.17,
+          "indentedRenderMedianNs": 47125,
+          "compactRenderMedianNs": 16417,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-empty-default",
+          "indentedBytes": 129,
+          "compactBytes": 112,
+          "savedBytes": 17,
+          "reductionPercent": 13.18,
+          "indentedRenderMedianNs": 250,
+          "compactRenderMedianNs": 167,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-default-seeded",
+          "indentedBytes": 129,
+          "compactBytes": 112,
+          "savedBytes": 17,
+          "reductionPercent": 13.18,
+          "indentedRenderMedianNs": 292,
+          "compactRenderMedianNs": 167,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-observations-10",
+          "indentedBytes": 1978,
+          "compactBytes": 1538,
+          "savedBytes": 440,
+          "reductionPercent": 22.24,
+          "indentedRenderMedianNs": 2834,
+          "compactRenderMedianNs": 916,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-query",
+          "indentedBytes": 3788,
+          "compactBytes": 2885,
+          "savedBytes": 903,
+          "reductionPercent": 23.84,
+          "indentedRenderMedianNs": 5917,
+          "compactRenderMedianNs": 5583,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "doctor-empty-home",
+          "indentedBytes": 23181,
+          "compactBytes": 16694,
+          "savedBytes": 6487,
+          "reductionPercent": 27.98,
+          "indentedRenderMedianNs": 30917,
+          "compactRenderMedianNs": 25708,
+          "equivalent": true,
+          "sameKeyStructure": false
+        },
+        {
+          "name": "propose",
+          "indentedBytes": 4816,
+          "compactBytes": 3431,
+          "savedBytes": 1385,
+          "reductionPercent": 28.76,
+          "indentedRenderMedianNs": 6583,
+          "compactRenderMedianNs": 6292,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "measure",
+          "indentedBytes": 1427,
+          "compactBytes": 1052,
+          "savedBytes": 375,
+          "reductionPercent": 26.28,
+          "indentedRenderMedianNs": 2083,
+          "compactRenderMedianNs": 709,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "measure-json-string-evidence",
+          "indentedBytes": 1942,
+          "compactBytes": 1567,
+          "savedBytes": 375,
+          "reductionPercent": 19.31,
+          "indentedRenderMedianNs": 2625,
+          "compactRenderMedianNs": 1666,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "revert",
+          "indentedBytes": 850,
+          "compactBytes": 635,
+          "savedBytes": 215,
+          "reductionPercent": 25.29,
+          "indentedRenderMedianNs": 1209,
+          "compactRenderMedianNs": 500,
+          "equivalent": true,
+          "sameKeyStructure": true
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "toolCountA": 10,
+      "toolCountB": 10,
+      "samples": [
+        {
+          "name": "inspect-candidates-0",
+          "indentedBytes": 1089,
+          "compactBytes": 751,
+          "savedBytes": 338,
+          "reductionPercent": 31.04,
+          "indentedRenderMedianNs": 1709,
+          "compactRenderMedianNs": 750,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "inspect-candidates-10",
+          "indentedBytes": 8813,
+          "compactBytes": 4739,
+          "savedBytes": 4074,
+          "reductionPercent": 46.23,
+          "indentedRenderMedianNs": 11750,
+          "compactRenderMedianNs": 3834,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "inspect-candidates-100",
+          "indentedBytes": 36803,
+          "compactBytes": 22019,
+          "savedBytes": 14784,
+          "reductionPercent": 40.17,
+          "indentedRenderMedianNs": 45333,
+          "compactRenderMedianNs": 16459,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-empty-default",
+          "indentedBytes": 129,
+          "compactBytes": 112,
+          "savedBytes": 17,
+          "reductionPercent": 13.18,
+          "indentedRenderMedianNs": 250,
+          "compactRenderMedianNs": 167,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-default-seeded",
+          "indentedBytes": 129,
+          "compactBytes": 112,
+          "savedBytes": 17,
+          "reductionPercent": 13.18,
+          "indentedRenderMedianNs": 292,
+          "compactRenderMedianNs": 167,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-observations-10",
+          "indentedBytes": 1978,
+          "compactBytes": 1538,
+          "savedBytes": 440,
+          "reductionPercent": 22.24,
+          "indentedRenderMedianNs": 2834,
+          "compactRenderMedianNs": 958,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "history-query",
+          "indentedBytes": 3788,
+          "compactBytes": 2885,
+          "savedBytes": 903,
+          "reductionPercent": 23.84,
+          "indentedRenderMedianNs": 5834,
+          "compactRenderMedianNs": 5542,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "doctor-empty-home",
+          "indentedBytes": 23181,
+          "compactBytes": 16694,
+          "savedBytes": 6487,
+          "reductionPercent": 27.98,
+          "indentedRenderMedianNs": 30709,
+          "compactRenderMedianNs": 27458,
+          "equivalent": true,
+          "sameKeyStructure": false
+        },
+        {
+          "name": "propose",
+          "indentedBytes": 4816,
+          "compactBytes": 3431,
+          "savedBytes": 1385,
+          "reductionPercent": 28.76,
+          "indentedRenderMedianNs": 6500,
+          "compactRenderMedianNs": 6375,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "measure",
+          "indentedBytes": 1427,
+          "compactBytes": 1052,
+          "savedBytes": 375,
+          "reductionPercent": 26.28,
+          "indentedRenderMedianNs": 2083,
+          "compactRenderMedianNs": 708,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "measure-json-string-evidence",
+          "indentedBytes": 1942,
+          "compactBytes": 1567,
+          "savedBytes": 375,
+          "reductionPercent": 19.31,
+          "indentedRenderMedianNs": 2666,
+          "compactRenderMedianNs": 1583,
+          "equivalent": true,
+          "sameKeyStructure": true
+        },
+        {
+          "name": "revert",
+          "indentedBytes": 850,
+          "compactBytes": 635,
+          "savedBytes": 215,
+          "reductionPercent": 25.29,
+          "indentedRenderMedianNs": 1250,
+          "compactRenderMedianNs": 1500,
+          "equivalent": true,
+          "sameKeyStructure": true
+        }
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "name": "inspect-candidates-0",
+      "indentedBytes": 1089,
+      "compactBytes": 751,
+      "savedBytes": 338,
+      "reductionPercent": 31.04,
+      "reductionPercentMedian": 31.04,
+      "indentedRenderMedianNs": 1709,
+      "compactRenderMedianNs": 750
+    },
+    {
+      "name": "inspect-candidates-10",
+      "indentedBytes": 8813,
+      "compactBytes": 4739,
+      "savedBytes": 4074,
+      "reductionPercent": 46.23,
+      "reductionPercentMedian": 46.23,
+      "indentedRenderMedianNs": 11875,
+      "compactRenderMedianNs": 3875
+    },
+    {
+      "name": "inspect-candidates-100",
+      "indentedBytes": 36803,
+      "compactBytes": 22019,
+      "savedBytes": 14784,
+      "reductionPercent": 40.17,
+      "reductionPercentMedian": 40.17,
+      "indentedRenderMedianNs": 45333,
+      "compactRenderMedianNs": 16459
+    },
+    {
+      "name": "history-empty-default",
+      "indentedBytes": 129,
+      "compactBytes": 112,
+      "savedBytes": 17,
+      "reductionPercent": 13.18,
+      "reductionPercentMedian": 13.18,
+      "indentedRenderMedianNs": 250,
+      "compactRenderMedianNs": 167
+    },
+    {
+      "name": "history-default-seeded",
+      "indentedBytes": 129,
+      "compactBytes": 112,
+      "savedBytes": 17,
+      "reductionPercent": 13.18,
+      "reductionPercentMedian": 13.18,
+      "indentedRenderMedianNs": 292,
+      "compactRenderMedianNs": 167
+    },
+    {
+      "name": "history-observations-10",
+      "indentedBytes": 1978,
+      "compactBytes": 1538,
+      "savedBytes": 440,
+      "reductionPercent": 22.24,
+      "reductionPercentMedian": 22.24,
+      "indentedRenderMedianNs": 2834,
+      "compactRenderMedianNs": 916
+    },
+    {
+      "name": "history-query",
+      "indentedBytes": 3788,
+      "compactBytes": 2885,
+      "savedBytes": 903,
+      "reductionPercent": 23.84,
+      "reductionPercentMedian": 23.84,
+      "indentedRenderMedianNs": 5834,
+      "compactRenderMedianNs": 5583
+    },
+    {
+      "name": "doctor-empty-home",
+      "indentedBytes": 23181,
+      "compactBytes": 16694,
+      "savedBytes": 6487,
+      "reductionPercent": 27.98,
+      "reductionPercentMedian": 27.98,
+      "indentedRenderMedianNs": 30917,
+      "compactRenderMedianNs": 25792
+    },
+    {
+      "name": "propose",
+      "indentedBytes": 4816,
+      "compactBytes": 3431,
+      "savedBytes": 1385,
+      "reductionPercent": 28.76,
+      "reductionPercentMedian": 28.76,
+      "indentedRenderMedianNs": 6500,
+      "compactRenderMedianNs": 6375
+    },
+    {
+      "name": "measure",
+      "indentedBytes": 1427,
+      "compactBytes": 1052,
+      "savedBytes": 375,
+      "reductionPercent": 26.28,
+      "reductionPercentMedian": 26.28,
+      "indentedRenderMedianNs": 2083,
+      "compactRenderMedianNs": 708
+    },
+    {
+      "name": "measure-json-string-evidence",
+      "indentedBytes": 1942,
+      "compactBytes": 1567,
+      "savedBytes": 375,
+      "reductionPercent": 19.31,
+      "reductionPercentMedian": 19.31,
+      "indentedRenderMedianNs": 2666,
+      "compactRenderMedianNs": 1583
+    },
+    {
+      "name": "revert",
+      "indentedBytes": 850,
+      "compactBytes": 635,
+      "savedBytes": 215,
+      "reductionPercent": 25.29,
+      "reductionPercentMedian": 25.29,
+      "indentedRenderMedianNs": 1209,
+      "compactRenderMedianNs": 1500
+    }
+  ],
+  "contextModel": [
+    {
+      "scenario": "inspect-candidates-10 retained for 50 more requests",
+      "savedBytes": 203700,
+      "savedTokensEstimated": 56583
+    },
+    {
+      "scenario": "inspect-candidates-100 retained for 50 more requests",
+      "savedBytes": 739200,
+      "savedTokensEstimated": 205333
+    },
+    {
+      "scenario": "inspect-candidates-10 + propose + measure retained for 50 more requests",
+      "savedBytes": 291700,
+      "savedTokensEstimated": 81028
+    },
+    {
+      "scenario": "inspect-candidates-10 + propose + measure retained for 200 more requests",
+      "savedBytes": 1166800,
+      "savedTokensEstimated": 324111
+    }
+  ],
+  "contextModelNote": "Model only: assumes every listed result stays in context and is re-sent on every later request. Real context trimming, provider caching and request counts are not measured."
+}
