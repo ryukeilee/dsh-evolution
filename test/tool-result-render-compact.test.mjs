@@ -91,16 +91,22 @@ test('the compact projection is strictly smaller for every structured payload', 
   for (const [name, value] of CASES) {
     const compact = Buffer.byteLength(definitions[0].output.render({}, value)[0].text, 'utf8');
     const indented = Buffer.byteLength(pretty(value), 'utf8');
-    assert.ok(compact <= indented, `${name}: compact ${compact} <= indented ${indented}`);
+    assert.ok(compact < indented, `${name}: compact ${compact} < indented ${indented}`);
   }
 });
 
-test('the tool surface the renderer serves is unchanged', () => {
+test('the tool surface the renderer serves is the declared one', () => {
   const { definitions } = registered();
-  const names = definitions.map((definition) => definition.name).sort();
-  const expected = EVOLUTION_TOOLS.filter((name) => names.includes(name)).sort();
-  assert.deepEqual(names, expected);
-  // `evolution_history` and `evolution_maintain` are registered only with a
-  // domain store; they are declared by the bundle surface all the same.
-  assert.equal(EVOLUTION_TOOLS.length, 10);
+  // A fixed expectation, not one derived from what happened to register: a
+  // dropped or renamed tool must fail here rather than shrink its own oracle.
+  assert.deepEqual([...EVOLUTION_TOOLS], [
+    'evolution_runtime_inspect', 'evolution_propose', 'evolution_trial', 'evolution_measure',
+    'evolution_revert', 'evolution_promote', 'evolution_canary_observe', 'evolution_history',
+    'evolution_maintain', 'evolution_doctor',
+  ]);
+  // `evolution_history` and `evolution_maintain` are domain-only tools: without a
+  // domain store they are not registered, and their renderer is the shared one.
+  const domainOnly = ['evolution_history', 'evolution_maintain'];
+  const expected = EVOLUTION_TOOLS.filter((name) => !domainOnly.includes(name)).sort();
+  assert.deepEqual(definitions.map((definition) => definition.name).sort(), expected);
 });

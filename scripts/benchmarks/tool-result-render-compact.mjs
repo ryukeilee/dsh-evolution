@@ -92,7 +92,10 @@ async function child(options) {
     const record = (name, tool, value) => {
       const definition = ctx.definitions.get(tool);
       const rendered = definition.output.render({}, value)[0].text;
+      // Both projections are taken from this one value, in this one process, so
+      // the byte delta is a controlled comparison and never mixes two payloads.
       const indented = JSON.stringify(value, null, 2);
+      const compact = JSON.stringify(value);
       // Equivalence, in process, on the real value this tool returned.
       const equivalent = JSON.stringify(JSON.parse(rendered)) === JSON.stringify(JSON.parse(indented));
       // Render cost of the projection itself, median of `--samples` calls.
@@ -106,6 +109,7 @@ async function child(options) {
       samples.push({ name, tool, equivalent,
         renderedBytes: Buffer.byteLength(rendered, 'utf8'),
         indentedBytes: Buffer.byteLength(indented, 'utf8'),
+        compactBytes: Buffer.byteLength(compact, 'utf8'),
         renderMedianNs: timings[Math.floor(timings.length / 2)],
         keyPaths: keyPaths(value),
         renderedDigest: sha256(rendered) });
@@ -173,10 +177,13 @@ async function child(options) {
 function prepareTrees(options) {
   const baseline = options.baseline
     || spawnSync('git', ['rev-parse', 'HEAD~1'], { cwd: REPO, encoding: 'utf8' }).stdout.trim();
-  const work = options.work || fs.mkdtempSync(path.join(os.tmpdir(), 'render-compact-trees-'));
+  const created = options.work ? null : fs.mkdtempSync(path.join(os.tmpdir(), 'render-compact-trees-'));
+  const work = options.work || created;
   const side = (name, source) => {
     const dir = path.join(work, name);
-    fs.rmSync(dir, { recursive: true, force: true });
+    // Never delete a directory this run did not create: `--work` may point at
+    // something the caller already has.
+    if (fs.existsSync(dir)) throw new Error(`${dir} already exists; pass an empty --work directory`);
     fs.mkdirSync(dir, { recursive: true });
     const archivePath = path.join(dir, 'tree.tar');
     const archived = spawnSync('git', ['archive', '--format=tar', '-o', archivePath, source, 'lib', 'package.json'], { cwd: REPO, encoding: 'utf8' });
@@ -187,12 +194,13 @@ function prepareTrees(options) {
     fs.symlinkSync(path.join(REPO, 'node_modules'), path.join(dir, 'node_modules'));
     return { dir: path.join(dir, 'lib'), source };
   };
-  return { work, a: side('a', baseline), b: { dir: path.join(REPO, 'lib'), source: 'working tree' } };
+  return { work, created, a: side('a', baseline), b: { dir: path.join(REPO, 'lib'), source: 'working tree' } };
 }
 
 function runChild(tree, options) {
   const run = spawnSync(process.execPath, ['--max-old-space-size=4096', fileURLToPath(import.meta.url),
-    '--child', 'x', '--lib', tree.dir, '--samples', String(options.samples)], { cwd: REPO, encoding: 'utf8' });
+    '--child', 'x', '--lib', tree.dir, '--samples', String(options.samples)],
+    { cwd: REPO, encoding: 'utf8', timeout: 300000 });
   if (run.status !== 0) throw new Error(`child failed (${tree.dir}): ${run.stderr || run.stdout}`);
   return JSON.parse(run.stdout);
 }
@@ -250,14 +258,23 @@ if (options.child) {
       const left = a[name];
       const right = b[name];
       if (!left.equivalent || !right.equivalent) throw new Error(`${name}: the projection is not parse-equivalent in process`);
+      // Each side must render exactly the projection it claims, on every real
+      // DTO it produced - not just on the probe.
+      if (left.renderedBytes !== left.indentedBytes) throw new Error(`${name}: the baseline did not render indented JSON`);
+      if (right.renderedBytes !== right.compactBytes) throw new Error(`${name}: the candidate did not render compact JSON`);
       // A report whose content depends on the environment (doctor) can list a
-      // different set of checks in two temp homes; the structure comparison is
-      // therefore reported, not asserted. The source diff below is what proves
-      // the two sides differ in nothing but the projection.
+      // different set of checks in two temp homes, so its two payloads are not
+      // the same document. The saving for every sample is therefore taken from
+      // one side's own value (below); this flag only says whether the *other*
+      // side happened to produce the same structure and can be cross-checked.
       const sameKeyStructure = left.keyPaths.join('\u0000') === right.keyPaths.join('\u0000');
-      return { name, indentedBytes: left.indentedBytes, compactBytes: right.renderedBytes,
-        savedBytes: left.indentedBytes - right.renderedBytes,
-        reductionPercent: Number(((left.indentedBytes - right.renderedBytes) / left.indentedBytes * 100).toFixed(2)),
+      const savedB = right.indentedBytes - right.compactBytes;
+      return { name, indentedBytes: right.indentedBytes, compactBytes: right.compactBytes,
+        savedBytes: savedB,
+        reductionPercent: Number((savedB / right.indentedBytes * 100).toFixed(2)),
+        baselineIndentedBytes: left.indentedBytes, baselineCompactBytes: left.compactBytes,
+        baselineSavedBytes: left.indentedBytes - left.compactBytes,
+        crossSideSavingsAgree: (left.indentedBytes - left.compactBytes) === savedB,
         indentedRenderMedianNs: left.renderMedianNs, compactRenderMedianNs: right.renderMedianNs,
         equivalent: true, sameKeyStructure };
     });
@@ -269,6 +286,8 @@ if (options.child) {
     const median = (values) => [...values].sort((x, y) => x - y)[Math.floor(values.length / 2)];
     return { name, indentedBytes: rows[0].indentedBytes, compactBytes: rows[0].compactBytes,
       savedBytes: rows[0].savedBytes, reductionPercent: rows[0].reductionPercent,
+      sameKeyStructure: rows[0].sameKeyStructure,
+      crossSideSavingsAgree: rows.every((row) => row.crossSideSavingsAgree),
       reductionPercentMedian: Number(median(rows.map((row) => row.reductionPercent)).toFixed(2)),
       indentedRenderMedianNs: median(rows.map((row) => row.indentedRenderMedianNs)),
       compactRenderMedianNs: median(rows.map((row) => row.compactRenderMedianNs)) };
@@ -298,14 +317,16 @@ if (options.child) {
       cpus: os.cpus().length, samplesPerRender: options.samples, rounds: options.rounds },
     identity, sourcePin: identity, onlyDiff,
     method: 'Each side is its own process and its own tree; both run the same scenario against the real registered tool surface. '
-      + 'Equivalence is checked in process on the value each tool returned. Cross-process bytes differ only by fixed-length '
-      + 'random ids and timestamps, so the byte delta is stable while digests are not. Tokens are estimated as bytes/3.6 and are '
-      + 'not tokenizer or billing measurements.',
+      + 'For every sample both projections are taken from that side\'s own returned value, in that process, so the reported byte '
+      + 'delta never compares two different payloads; each side also has to render exactly the projection it claims on every real '
+      + 'DTO. crossSideSavingsAgree only says the other side\'s payload happened to have the same structure. Tokens are estimated as '
+      + 'bytes/3.6 and are not tokenizer or billing measurements.',
     rounds, summary,
     contextModel,
     contextModelNote: 'Model only: assumes every listed result stays in context and is re-sent on every later request. '
       + 'Real context trimming, provider caching and request counts are not measured.' };
   const text = `${JSON.stringify(report, null, 2)}\n`;
   if (options.out) fs.writeFileSync(options.out, text);
+  if (trees.created) fs.rmSync(trees.created, { recursive: true, force: true });
   process.stdout.write(text);
 }
