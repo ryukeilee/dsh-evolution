@@ -1,0 +1,73 @@
+{
+  "node": "v26.12.1",
+  "fullTest": {
+    "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+    "exitCode": 1,
+    "tests": 1248,
+    "pass": 1247,
+    "fail": 1,
+    "durationMs": 35721.223166,
+    "onlyFailure": "test/release-pin.test.mjs: the working tree is the pinned release, or a committed successor of it",
+    "reason": "Uncommitted shipped-source changes are forbidden by the release pin; the assigned task prohibits commits."
+  },
+  "focused": {
+    "command": "node --max-old-space-size=4096 --test test/domain-storage/staged-window-incremental.test.js test/domain-storage/staged-save-check.test.js test/domain-storage/domain-storage-write-path-equivalence.test.js test/domain-storage/load-projection-equivalence.test.js",
+    "exitCode": 0,
+    "tests": 25,
+    "pass": 25,
+    "fail": 0
+  },
+  "packCheck": {
+    "command": "npm run pack:check",
+    "exitCode": 1,
+    "passed": 15,
+    "failed": 1,
+    "onlyFailure": "Uncommitted shipped-source changes make this tree neither the pin nor its committed successor."
+  },
+  "build": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.19",
+    "filename": "dsh-evolution-0.2.0-rc.19.tgz",
+    "sha256": "7029ad803fd80db5c5d4819f4ccfc50ce4831dc25ee9e1ca0808a0118f4ffd83",
+    "contentSha256": "bf2a18c50a118aaaefecdcd9aed106e988d26305cfca777386765fe1d7a859e7",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.12.1",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    }
+  },
+  "productionSources": {
+    "lib/domain-storage.js": "99cdc71fa1dffc705a6e6520bf963071e23eae8c3b5bfaf03b707361337e11c8",
+    "lib/dockyard-domain/memory.js": "33b0d2d940088655c53cabed067e1fa535d58fab371453bea04b33bf550f8e39",
+    "lib/dockyard-domain/PORTS.md": "a34401adce9766b972b63ac121a43e149e96cf3f52d033a2f53c71c0fa5447c4"
+  },
+  "releaseUnchanged": true,
+  "hosts": [
+    {
+      "host": "0.2.0-rc.2",
+      "file": "docs/evidence/marker-window-incremental-dsh-0.2.0-rc.2.json",
+      "steps": 21,
+      "passed": 21,
+      "contentSha256": "bf2a18c50a118aaaefecdcd9aed106e988d26305cfca777386765fe1d7a859e7"
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "file": "docs/evidence/marker-window-incremental-dsh-0.2.1-alpha.1.json",
+      "steps": 21,
+      "passed": 21,
+      "contentSha256": "bf2a18c50a118aaaefecdcd9aed106e988d26305cfca777386765fe1d7a859e7"
+    },
+    {
+      "host": "0.2.1-rc.2",
+      "file": "docs/evidence/marker-window-incremental-dsh-0.2.1-rc.2.json",
+      "steps": 21,
+      "passed": 21,
+      "contentSha256": "bf2a18c50a118aaaefecdcd9aed106e988d26305cfca777386765fe1d7a859e7"
+    }
+  ]
+}

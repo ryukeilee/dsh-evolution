@@ -157,7 +157,7 @@ test('the reconstruction is anchored to the pinned pre-change artifact', async (
   assert.doesNotMatch(WORKING, /await domain\.global\.set\(schema\.parse\(\{ schema: 1, aggregate: current\.pending\.aggregate/);
   assert.doesNotMatch(WORKING, /updater\(structuredClone\(aggregate\)\)/);
   assert.match(WORKING, /inlineSerialization: true/);
-  assert.match(WORKING, /        const next = updater\(aggregate\);\n        assertStagedTransactionSave\(next, markerVerdicts\);\n        aggregate = next;/);
+  assert.match(WORKING, /        const next = updater\(aggregate\);\n        assertStagedTransactionSave\(next, markerVerdicts, windowChecks\?\.windows\);\n        aggregate = next;/);
   assert.doesNotMatch(WORKING, /aggregateSchema\.parse\(updater\(aggregate\)\)/);
   // The withdrawn fourth piece must stay: the store is still constructed and
   // still loaded, and the added option removes only the projection that load

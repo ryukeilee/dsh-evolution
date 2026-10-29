@@ -1,0 +1,779 @@
+{
+  "baselineRef": null,
+  "aa": true,
+  "baselineSha": "d9de6b2671f185bb4ec7d538e842e8c1a070fb8e",
+  "candidateSha": "d9de6b2671f185bb4ec7d538e842e8c1a070fb8e",
+  "candidateSources": {
+    "lib/domain-storage.js": "99cdc71fa1dffc705a6e6520bf963071e23eae8c3b5bfaf03b707361337e11c8",
+    "lib/dockyard-domain/memory.js": "33b0d2d940088655c53cabed067e1fa535d58fab371453bea04b33bf550f8e39",
+    "scripts/benchmarks/archive-append-window.mjs": "cb646978895da9c0158aa636f7a80873938168a4eacd25e82f254c5484589f32"
+  },
+  "baseline": "same-tree(control)",
+  "working": "/private/tmp/dsh-cold-apply-d9de6b2",
+  "records": [
+    20000
+  ],
+  "rounds": 3,
+  "observes": 12,
+  "flushes": 12,
+  "node": "v26.12.1",
+  "platform": "darwin/arm64",
+  "runs": [
+    {
+      "round": 0,
+      "label": "baseline",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 3398.3647920000003,
+        "cpuMs": 3639.056
+      },
+      "observeRows": [
+        {
+          "wallMs": 51.21054200000026,
+          "cpuMs": 57.934
+        },
+        {
+          "wallMs": 48.90929199999982,
+          "cpuMs": 41.375
+        },
+        {
+          "wallMs": 51.403749999999945,
+          "cpuMs": 45.057
+        },
+        {
+          "wallMs": 49.90424999999959,
+          "cpuMs": 46.073
+        },
+        {
+          "wallMs": 49.62470899999971,
+          "cpuMs": 40.924
+        },
+        {
+          "wallMs": 51.028999999999996,
+          "cpuMs": 45.353
+        },
+        {
+          "wallMs": 51.04795899999999,
+          "cpuMs": 45.936
+        },
+        {
+          "wallMs": 52.94087499999978,
+          "cpuMs": 46.195
+        },
+        {
+          "wallMs": 51.993499999999585,
+          "cpuMs": 49.029
+        },
+        {
+          "wallMs": 49.876124999999774,
+          "cpuMs": 40.797
+        },
+        {
+          "wallMs": 49.52204200000051,
+          "cpuMs": 44.912
+        },
+        {
+          "wallMs": 51.602334000000155,
+          "cpuMs": 44.908
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.196165999999721,
+          "cpuMs": 11.295
+        },
+        {
+          "wallMs": 10.941417000000001,
+          "cpuMs": 10.938
+        },
+        {
+          "wallMs": 10.615250000000742,
+          "cpuMs": 10.607
+        },
+        {
+          "wallMs": 10.668125000000146,
+          "cpuMs": 10.665
+        },
+        {
+          "wallMs": 10.79937500000051,
+          "cpuMs": 10.797
+        },
+        {
+          "wallMs": 10.768874999999753,
+          "cpuMs": 10.909
+        },
+        {
+          "wallMs": 10.798541000000114,
+          "cpuMs": 10.794
+        },
+        {
+          "wallMs": 11.050374999999804,
+          "cpuMs": 11.031
+        },
+        {
+          "wallMs": 10.839750000000095,
+          "cpuMs": 10.836
+        },
+        {
+          "wallMs": 10.899790999999823,
+          "cpuMs": 10.894
+        },
+        {
+          "wallMs": 12.12170800000058,
+          "cpuMs": 13.342
+        },
+        {
+          "wallMs": 10.657624999999825,
+          "cpuMs": 10.651
+        }
+      ],
+      "maxRss": 435437568,
+      "rss": 402995440,
+      "retained": 46190872,
+      "documentBytes": 3857578,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 0,
+      "label": "working",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 3417.39875,
+        "cpuMs": 3654.281
+      },
+      "observeRows": [
+        {
+          "wallMs": 51.01899999999978,
+          "cpuMs": 56.858
+        },
+        {
+          "wallMs": 49.966499999999996,
+          "cpuMs": 42.083
+        },
+        {
+          "wallMs": 52.89583400000038,
+          "cpuMs": 45.288
+        },
+        {
+          "wallMs": 55.09825000000001,
+          "cpuMs": 46.066
+        },
+        {
+          "wallMs": 50.020624999999654,
+          "cpuMs": 40.911
+        },
+        {
+          "wallMs": 51.9213749999999,
+          "cpuMs": 44.904
+        },
+        {
+          "wallMs": 52.07729199999994,
+          "cpuMs": 45.62
+        },
+        {
+          "wallMs": 48.32066700000041,
+          "cpuMs": 41.596
+        },
+        {
+          "wallMs": 52.619832999999744,
+          "cpuMs": 45.057
+        },
+        {
+          "wallMs": 50.73083300000053,
+          "cpuMs": 45.825
+        },
+        {
+          "wallMs": 51.3657919999996,
+          "cpuMs": 42.785
+        },
+        {
+          "wallMs": 51.897791999999754,
+          "cpuMs": 44.249
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.142291000000114,
+          "cpuMs": 11.247
+        },
+        {
+          "wallMs": 10.82300000000032,
+          "cpuMs": 11.369
+        },
+        {
+          "wallMs": 10.679291999999805,
+          "cpuMs": 10.676
+        },
+        {
+          "wallMs": 10.646334000000024,
+          "cpuMs": 10.644
+        },
+        {
+          "wallMs": 10.76495800000066,
+          "cpuMs": 10.763
+        },
+        {
+          "wallMs": 10.9277919999995,
+          "cpuMs": 11.059
+        },
+        {
+          "wallMs": 10.773667000000387,
+          "cpuMs": 10.769
+        },
+        {
+          "wallMs": 11.739833999999973,
+          "cpuMs": 13.606
+        },
+        {
+          "wallMs": 10.693041000000449,
+          "cpuMs": 10.688
+        },
+        {
+          "wallMs": 10.546624999999949,
+          "cpuMs": 10.542
+        },
+        {
+          "wallMs": 10.492957999999817,
+          "cpuMs": 10.489
+        },
+        {
+          "wallMs": 10.531707999999526,
+          "cpuMs": 10.527
+        }
+      ],
+      "maxRss": 423051264,
+      "rss": 397900472,
+      "retained": 49474697,
+      "documentBytes": 3857574,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 1,
+      "label": "working",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 3387.317542,
+        "cpuMs": 3621.733
+      },
+      "observeRows": [
+        {
+          "wallMs": 51.40241700000024,
+          "cpuMs": 58.211
+        },
+        {
+          "wallMs": 47.818874999999935,
+          "cpuMs": 40.98
+        },
+        {
+          "wallMs": 51.922791999999845,
+          "cpuMs": 45.827
+        },
+        {
+          "wallMs": 50.63237500000014,
+          "cpuMs": 46.145
+        },
+        {
+          "wallMs": 48.9575420000001,
+          "cpuMs": 41.205
+        },
+        {
+          "wallMs": 49.23500000000013,
+          "cpuMs": 44.995
+        },
+        {
+          "wallMs": 50.8715000000002,
+          "cpuMs": 45.089
+        },
+        {
+          "wallMs": 49.83525000000009,
+          "cpuMs": 46.332
+        },
+        {
+          "wallMs": 52.58487500000001,
+          "cpuMs": 45.497
+        },
+        {
+          "wallMs": 52.404625000000124,
+          "cpuMs": 48.877
+        },
+        {
+          "wallMs": 49.67558300000019,
+          "cpuMs": 41.542
+        },
+        {
+          "wallMs": 49.717374999999265,
+          "cpuMs": 44.088
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.198459000000184,
+          "cpuMs": 11.303
+        },
+        {
+          "wallMs": 10.811082999999599,
+          "cpuMs": 10.803
+        },
+        {
+          "wallMs": 10.956624999999804,
+          "cpuMs": 10.952
+        },
+        {
+          "wallMs": 10.926791999999296,
+          "cpuMs": 10.923
+        },
+        {
+          "wallMs": 11.03637499999968,
+          "cpuMs": 11.036
+        },
+        {
+          "wallMs": 10.935042000000067,
+          "cpuMs": 11.068
+        },
+        {
+          "wallMs": 10.888624999999593,
+          "cpuMs": 10.884
+        },
+        {
+          "wallMs": 11.939000000000306,
+          "cpuMs": 13.932
+        },
+        {
+          "wallMs": 10.818833000000268,
+          "cpuMs": 10.813
+        },
+        {
+          "wallMs": 10.589082999999846,
+          "cpuMs": 10.584
+        },
+        {
+          "wallMs": 10.617417000000387,
+          "cpuMs": 10.613
+        },
+        {
+          "wallMs": 10.552583999999115,
+          "cpuMs": 10.55
+        }
+      ],
+      "maxRss": 429817856,
+      "rss": 401946960,
+      "retained": 49482545,
+      "documentBytes": 3857574,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 1,
+      "label": "baseline",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 3373.1695,
+        "cpuMs": 3617.398
+      },
+      "observeRows": [
+        {
+          "wallMs": 49.95074999999997,
+          "cpuMs": 59.816
+        },
+        {
+          "wallMs": 49.963374999999814,
+          "cpuMs": 45.269
+        },
+        {
+          "wallMs": 51.11175000000003,
+          "cpuMs": 44.693
+        },
+        {
+          "wallMs": 49.83158300000014,
+          "cpuMs": 44.602
+        },
+        {
+          "wallMs": 51.00220799999988,
+          "cpuMs": 45.166
+        },
+        {
+          "wallMs": 51.16949999999997,
+          "cpuMs": 41.433
+        },
+        {
+          "wallMs": 50.32245799999964,
+          "cpuMs": 43.924
+        },
+        {
+          "wallMs": 50.54754200000025,
+          "cpuMs": 45.621
+        },
+        {
+          "wallMs": 50.99479100000008,
+          "cpuMs": 41.161
+        },
+        {
+          "wallMs": 52.098999999999705,
+          "cpuMs": 44.49
+        },
+        {
+          "wallMs": 49.2001250000003,
+          "cpuMs": 46.464
+        },
+        {
+          "wallMs": 50.7432089999993,
+          "cpuMs": 40.255
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.227625000000444,
+          "cpuMs": 11.325
+        },
+        {
+          "wallMs": 11.039208000000144,
+          "cpuMs": 11.03
+        },
+        {
+          "wallMs": 11.029999999999745,
+          "cpuMs": 11.026
+        },
+        {
+          "wallMs": 11.028708000000734,
+          "cpuMs": 11.025
+        },
+        {
+          "wallMs": 12.181500000000597,
+          "cpuMs": 14.225
+        },
+        {
+          "wallMs": 10.863000000000284,
+          "cpuMs": 10.996
+        },
+        {
+          "wallMs": 10.813124999999673,
+          "cpuMs": 10.809
+        },
+        {
+          "wallMs": 10.809166000000005,
+          "cpuMs": 10.805
+        },
+        {
+          "wallMs": 11.000082999999904,
+          "cpuMs": 10.996
+        },
+        {
+          "wallMs": 10.8940419999999,
+          "cpuMs": 10.89
+        },
+        {
+          "wallMs": 10.94445799999994,
+          "cpuMs": 10.94
+        },
+        {
+          "wallMs": 10.9193750000004,
+          "cpuMs": 10.915
+        }
+      ],
+      "maxRss": 429686784,
+      "rss": 408304168,
+      "retained": 52631001,
+      "documentBytes": 3857578,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 2,
+      "label": "baseline",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 3361.698791,
+        "cpuMs": 3592.414
+      },
+      "observeRows": [
+        {
+          "wallMs": 53.05820799999992,
+          "cpuMs": 58.29
+        },
+        {
+          "wallMs": 47.88383299999987,
+          "cpuMs": 40.933
+        },
+        {
+          "wallMs": 50.92887500000006,
+          "cpuMs": 46.473
+        },
+        {
+          "wallMs": 59.216207999999824,
+          "cpuMs": 46.334
+        },
+        {
+          "wallMs": 51.97695900000008,
+          "cpuMs": 49.119
+        },
+        {
+          "wallMs": 48.95941700000003,
+          "cpuMs": 40.64
+        },
+        {
+          "wallMs": 50.961917000000085,
+          "cpuMs": 44.203
+        },
+        {
+          "wallMs": 52.01554099999976,
+          "cpuMs": 45.894
+        },
+        {
+          "wallMs": 48.943665999999666,
+          "cpuMs": 41.066
+        },
+        {
+          "wallMs": 51.056332999999995,
+          "cpuMs": 44.315
+        },
+        {
+          "wallMs": 52.09058400000049,
+          "cpuMs": 46.698
+        },
+        {
+          "wallMs": 49.882166999999754,
+          "cpuMs": 40.227
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.340124999999716,
+          "cpuMs": 11.437
+        },
+        {
+          "wallMs": 11.178084000000126,
+          "cpuMs": 11.174
+        },
+        {
+          "wallMs": 11.145000000000437,
+          "cpuMs": 11.141
+        },
+        {
+          "wallMs": 11.064875000000029,
+          "cpuMs": 11.061
+        },
+        {
+          "wallMs": 11.97820800000045,
+          "cpuMs": 13.952
+        },
+        {
+          "wallMs": 10.740332999999737,
+          "cpuMs": 10.896
+        },
+        {
+          "wallMs": 10.683125000000473,
+          "cpuMs": 10.679
+        },
+        {
+          "wallMs": 10.75012499999957,
+          "cpuMs": 10.747
+        },
+        {
+          "wallMs": 10.979583000000275,
+          "cpuMs": 10.975
+        },
+        {
+          "wallMs": 10.89691700000003,
+          "cpuMs": 10.892
+        },
+        {
+          "wallMs": 11.061958000000232,
+          "cpuMs": 11.057
+        },
+        {
+          "wallMs": 11.073624999999993,
+          "cpuMs": 11.068
+        }
+      ],
+      "maxRss": 411860992,
+      "rss": 389757288,
+      "retained": 52630177,
+      "documentBytes": 3857578,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 2,
+      "label": "working",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 3357.2787080000003,
+        "cpuMs": 3602.965
+      },
+      "observeRows": [
+        {
+          "wallMs": 51.12070800000038,
+          "cpuMs": 56.522
+        },
+        {
+          "wallMs": 49.95749999999998,
+          "cpuMs": 47.758
+        },
+        {
+          "wallMs": 50.84870799999999,
+          "cpuMs": 45.317
+        },
+        {
+          "wallMs": 48.35029099999974,
+          "cpuMs": 40.799
+        },
+        {
+          "wallMs": 50.78237500000023,
+          "cpuMs": 44.572
+        },
+        {
+          "wallMs": 51.04466699999966,
+          "cpuMs": 45.137
+        },
+        {
+          "wallMs": 49.588874999999916,
+          "cpuMs": 40.525
+        },
+        {
+          "wallMs": 50.374709000000166,
+          "cpuMs": 45.375
+        },
+        {
+          "wallMs": 51.98308300000008,
+          "cpuMs": 45.891
+        },
+        {
+          "wallMs": 50.07983400000012,
+          "cpuMs": 40.665
+        },
+        {
+          "wallMs": 51.976292000000285,
+          "cpuMs": 45.798
+        },
+        {
+          "wallMs": 50.28258399999959,
+          "cpuMs": 45.114
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.251000000000204,
+          "cpuMs": 11.354
+        },
+        {
+          "wallMs": 11.172207999999955,
+          "cpuMs": 11.168
+        },
+        {
+          "wallMs": 11.010125000000698,
+          "cpuMs": 11.007
+        },
+        {
+          "wallMs": 10.96991700000035,
+          "cpuMs": 10.966
+        },
+        {
+          "wallMs": 11.102708000000348,
+          "cpuMs": 11.102
+        },
+        {
+          "wallMs": 11.236707999999453,
+          "cpuMs": 11.371
+        },
+        {
+          "wallMs": 11.032874999999876,
+          "cpuMs": 11.03
+        },
+        {
+          "wallMs": 11.116500000000087,
+          "cpuMs": 11.113
+        },
+        {
+          "wallMs": 11.127875000000131,
+          "cpuMs": 11.124
+        },
+        {
+          "wallMs": 11.483500000000276,
+          "cpuMs": 11.469
+        },
+        {
+          "wallMs": 11.703334000000723,
+          "cpuMs": 13.005
+        },
+        {
+          "wallMs": 10.73083299999962,
+          "cpuMs": 10.727
+        }
+      ],
+      "maxRss": 432488448,
+      "rss": 401487656,
+      "retained": 46337641,
+      "documentBytes": 3857574,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    }
+  ],
+  "equivalence": [],
+  "summary": [
+    {
+      "records": 20000,
+      "baseline": {
+        "absorptionWallMs": 3373.1695,
+        "absorptionCpuMs": 3617.398,
+        "observeWallMs": 51.00912500000004,
+        "observeCpuMs": 45.1045,
+        "flushWallMs": 10.972270499999922,
+        "flushCpuMs": 10.996,
+        "maxRssMiB": 409.78125,
+        "retainedMiB": 50.19204807281494,
+        "documentBytes": 3857578,
+        "perRoundAbsorptionMs": [
+          3398.4,
+          3373.2,
+          3361.7
+        ],
+        "perRoundAbsorptionCpuMs": [
+          3639.1,
+          3617.4,
+          3592.4
+        ],
+        "tracePerRecord": null
+      },
+      "working": {
+        "absorptionWallMs": 3387.317542,
+        "absorptionCpuMs": 3621.733,
+        "observeWallMs": 50.5785420000002,
+        "observeCpuMs": 45.227000000000004,
+        "flushWallMs": 10.907708499999444,
+        "flushCpuMs": 10.903500000000001,
+        "maxRssMiB": 409.90625,
+        "retainedMiB": 47.18274784088135,
+        "documentBytes": 3857574,
+        "perRoundAbsorptionMs": [
+          3417.4,
+          3387.3,
+          3357.3
+        ],
+        "perRoundAbsorptionCpuMs": [
+          3654.3,
+          3621.7,
+          3603
+        ],
+        "tracePerRecord": null
+      },
+      "absorptionChange": 0.004194287301601596,
+      "absorptionCpuChange": 0.0011983751856997865,
+      "observeChange": -0.00844129359207479,
+      "flushChange": -0.005884105755547929
+    }
+  ]
+}

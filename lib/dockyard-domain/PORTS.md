@@ -20,6 +20,7 @@ const observations = new EvolutionObservationStore({ memory });
 - 可选 `filePath`：所有冷档案名称从此派生；没有 filePath 时保留旧 maxEntries 内存裁剪合同，**不等价于历史持久化迁移**。
 - `*.cycles-archive.jsonl`、其他 `*.COLLECTION-archive.jsonl`、`.segments/segment-N.jsonl` 和 `*.evolution-archive-index.json` 同处新根；必须一同搬运。冷档案由 Memory 内置成熟文件后端管理，不能仅转换热 snapshot 到 JSON 后忽略档案。
 - 可选 `inlineSerialization === true` 只有 transaction 在调用时同步捕获所有 payload 字节才能启用；否则不得标记 true。
+- 私有 staged adapter 可选的 `transaction.bridgeWindowChanged(previous, next, marker)` 是窗口写者的内部通知：仅对 adapter 独占、由 Memory 创建并冻结成员关系的原生密集数组调用；load 报 seed，后续报一次 append/trim。它只传递谱系，不执行保存校验；正文与新增 marker 仍在 save 时同步校验。普通 adapter 不提供此 hook，保留原来的可变窗口与逐项判定。
 - transaction 显式注入，无旧 getRuntimeTransaction/global state-store 自动发现。persist 选项 `includeSnapshot:false, generateSnapshot:false, metadata:{partition:key}` 保留旧合同，不要求 adapter 实现旧 runtime snapshot。
 - adapter 必须提供串行更新、错误传播及独占数据根；多实例/多进程写同一个 archive 根没有额外锁保证。宿主负责 drain 写队列、关闭 domain handle 和跨 archive/desiredState 的 journal/补偿，不能把这个模块当跨媒介原子事务实现。
 

@@ -1,0 +1,4227 @@
+{
+  "benchmarkHashes": {
+    "archive-append-window.mjs": "5cab9c9315f0f60933a627bda335d96a804b46277bdc2ffa260d38d69d415ff3",
+    "archive-apply-cost-audit.mjs": "f2b936f5abf048e52f6bb5dbe582f2caf7c1e09284d5af93a47b67795302f274",
+    "archive-apply-cost-hooks.mjs": "f6ee614890e0bf525fb434aa63d6ee1c1c7d5d9c3c1577d551213575efc0b238"
+  },
+  "ref": "d9de6b2",
+  "sha": "d9de6b2671f185bb4ec7d538e842e8c1a070fb8e",
+  "node": "v26.12.1",
+  "platform": "darwin/arm64",
+  "records": 20000,
+  "rounds": 3,
+  "modes": [
+    "control",
+    "saveonly"
+  ],
+  "method": "Alternating control/detail ordering; cold-only profiling; extracted source probes; 4096 MiB heap; synthetic temporary roots",
+  "sourceHashes": {
+    "lib/domain-storage.js": "94df08fd2a9efc9c07dc1f498507f1d48024b172be9fac9f8ec006db9c6afaff",
+    "lib/dockyard-domain/memory.js": "79cd38f55e662567814379498c3016c3aedbfad4f16d4b10207ae2d32ef5240f"
+  },
+  "runs": [
+    {
+      "round": 0,
+      "mode": "control",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 4182.701458,
+        "cpuMs": 4419.216
+      },
+      "observeRows": [],
+      "flushRows": [],
+      "audit": {
+        "mode": "control",
+        "rows": {
+          "phase.open": {
+            "calls": 1,
+            "wallMs": 4182.786,
+            "bytes": 0,
+            "startTime": 190.513625,
+            "endTime": 4373.318209,
+            "cpuMs": 4419.291,
+            "memory": {
+              "rss": 285448872,
+              "heapTotal": 168148992,
+              "heapUsed": 100668632,
+              "external": 46589655,
+              "arrayBuffers": 30090012
+            }
+          }
+        },
+        "windowStart": 190.513625,
+        "windowEnd": 4373.279834,
+        "initialMemory": {
+          "rss": 161644696,
+          "heapTotal": 119357440,
+          "heapUsed": 84939208,
+          "external": 15789142,
+          "arrayBuffers": 13096435
+        },
+        "finalMemory": {
+          "rss": 285448872,
+          "heapTotal": 168148992,
+          "heapUsed": 100669312,
+          "external": 46589655,
+          "arrayBuffers": 30090012
+        },
+        "gc": [
+          {
+            "startTime": 223.816917,
+            "duration": 1.0467499941587448,
+            "kind": 1
+          },
+          {
+            "startTime": 242.341625,
+            "duration": 0.9025840014219284,
+            "kind": 1
+          },
+          {
+            "startTime": 261.653834,
+            "duration": 0.6312499940395355,
+            "kind": 1
+          },
+          {
+            "startTime": 281.028292,
+            "duration": 0.7018750011920929,
+            "kind": 1
+          },
+          {
+            "startTime": 300.079834,
+            "duration": 0.6731249988079071,
+            "kind": 1
+          },
+          {
+            "startTime": 319.324125,
+            "duration": 0.614084005355835,
+            "kind": 1
+          },
+          {
+            "startTime": 339.03625,
+            "duration": 0.6458339989185333,
+            "kind": 1
+          },
+          {
+            "startTime": 364.53725,
+            "duration": 0.8576249927282333,
+            "kind": 1
+          },
+          {
+            "startTime": 365.796125,
+            "duration": 0.09679199755191803,
+            "kind": 8
+          },
+          {
+            "startTime": 370.130084,
+            "duration": 1.6778749972581863,
+            "kind": 4
+          },
+          {
+            "startTime": 415.194334,
+            "duration": 0.22258299589157104,
+            "kind": 1
+          },
+          {
+            "startTime": 456.032917,
+            "duration": 0.24558299779891968,
+            "kind": 1
+          },
+          {
+            "startTime": 496.803417,
+            "duration": 0.20354199409484863,
+            "kind": 1
+          },
+          {
+            "startTime": 537.054417,
+            "duration": 0.1932079941034317,
+            "kind": 1
+          },
+          {
+            "startTime": 578.672667,
+            "duration": 0.1627499908208847,
+            "kind": 1
+          },
+          {
+            "startTime": 618.644584,
+            "duration": 0.16487500071525574,
+            "kind": 1
+          },
+          {
+            "startTime": 657.482542,
+            "duration": 0.15291699767112732,
+            "kind": 1
+          },
+          {
+            "startTime": 694.494292,
+            "duration": 0.1410830020904541,
+            "kind": 1
+          },
+          {
+            "startTime": 731.006834,
+            "duration": 0.1653749942779541,
+            "kind": 1
+          },
+          {
+            "startTime": 767.547042,
+            "duration": 0.15662500262260437,
+            "kind": 1
+          },
+          {
+            "startTime": 803.099459,
+            "duration": 0.14499999582767487,
+            "kind": 1
+          },
+          {
+            "startTime": 837.093667,
+            "duration": 0.1419999897480011,
+            "kind": 1
+          },
+          {
+            "startTime": 871.310584,
+            "duration": 0.12258300185203552,
+            "kind": 1
+          },
+          {
+            "startTime": 906.4685,
+            "duration": 0.17091700434684753,
+            "kind": 1
+          },
+          {
+            "startTime": 940.15425,
+            "duration": 0.15683400630950928,
+            "kind": 1
+          },
+          {
+            "startTime": 973.645209,
+            "duration": 0.12224999070167542,
+            "kind": 1
+          },
+          {
+            "startTime": 1007.462417,
+            "duration": 0.10912500321865082,
+            "kind": 1
+          },
+          {
+            "startTime": 1040.785334,
+            "duration": 0.12200000882148743,
+            "kind": 1
+          },
+          {
+            "startTime": 1074.340875,
+            "duration": 0.13083399832248688,
+            "kind": 1
+          },
+          {
+            "startTime": 1107.803084,
+            "duration": 0.11541599035263062,
+            "kind": 1
+          },
+          {
+            "startTime": 1141.99975,
+            "duration": 0.14487500488758087,
+            "kind": 1
+          },
+          {
+            "startTime": 1176.456875,
+            "duration": 0.11049999296665192,
+            "kind": 1
+          },
+          {
+            "startTime": 1211.395792,
+            "duration": 0.11395800113677979,
+            "kind": 1
+          },
+          {
+            "startTime": 1246.927167,
+            "duration": 0.09808298945426941,
+            "kind": 1
+          },
+          {
+            "startTime": 1283.429709,
+            "duration": 0.12074999511241913,
+            "kind": 1
+          },
+          {
+            "startTime": 1319.317834,
+            "duration": 0.10120800137519836,
+            "kind": 1
+          },
+          {
+            "startTime": 1352.507709,
+            "duration": 0.10612499713897705,
+            "kind": 1
+          },
+          {
+            "startTime": 1385.2205,
+            "duration": 0.11333400011062622,
+            "kind": 1
+          },
+          {
+            "startTime": 1417.720625,
+            "duration": 0.1305840015411377,
+            "kind": 1
+          },
+          {
+            "startTime": 1449.674917,
+            "duration": 0.09891699254512787,
+            "kind": 1
+          },
+          {
+            "startTime": 1482.345292,
+            "duration": 0.11370798945426941,
+            "kind": 1
+          },
+          {
+            "startTime": 1515.060834,
+            "duration": 0.1028750091791153,
+            "kind": 1
+          },
+          {
+            "startTime": 1547.305917,
+            "duration": 0.11133299767971039,
+            "kind": 1
+          },
+          {
+            "startTime": 1579.529084,
+            "duration": 0.11958299577236176,
+            "kind": 1
+          },
+          {
+            "startTime": 1612.334709,
+            "duration": 0.09354101121425629,
+            "kind": 1
+          },
+          {
+            "startTime": 1646.6045,
+            "duration": 0.12208400666713715,
+            "kind": 1
+          },
+          {
+            "startTime": 1679.826584,
+            "duration": 0.10795800387859344,
+            "kind": 1
+          },
+          {
+            "startTime": 1714.209709,
+            "duration": 0.1251250058412552,
+            "kind": 1
+          },
+          {
+            "startTime": 1747.488542,
+            "duration": 0.10779200494289398,
+            "kind": 1
+          },
+          {
+            "startTime": 1782.121125,
+            "duration": 0.12924998998641968,
+            "kind": 1
+          },
+          {
+            "startTime": 1816.796917,
+            "duration": 0.10591700673103333,
+            "kind": 1
+          },
+          {
+            "startTime": 1852.760625,
+            "duration": 0.15291699767112732,
+            "kind": 1
+          },
+          {
+            "startTime": 1888.783334,
+            "duration": 0.11929099261760712,
+            "kind": 1
+          },
+          {
+            "startTime": 1924.605125,
+            "duration": 0.11624999344348907,
+            "kind": 1
+          },
+          {
+            "startTime": 1960.138875,
+            "duration": 0.09620900452136993,
+            "kind": 1
+          },
+          {
+            "startTime": 1995.237917,
+            "duration": 0.11295799911022186,
+            "kind": 1
+          },
+          {
+            "startTime": 2031.002125,
+            "duration": 0.11512500047683716,
+            "kind": 1
+          },
+          {
+            "startTime": 2066.679459,
+            "duration": 0.11312501132488251,
+            "kind": 1
+          },
+          {
+            "startTime": 2103.48125,
+            "duration": 0.0892920047044754,
+            "kind": 1
+          },
+          {
+            "startTime": 2139.969875,
+            "duration": 0.11854200065135956,
+            "kind": 1
+          },
+          {
+            "startTime": 2177.051417,
+            "duration": 0.09962500631809235,
+            "kind": 1
+          },
+          {
+            "startTime": 2214.3115,
+            "duration": 0.10387499630451202,
+            "kind": 1
+          },
+          {
+            "startTime": 2250.745959,
+            "duration": 0.12462499737739563,
+            "kind": 1
+          },
+          {
+            "startTime": 2289.641292,
+            "duration": 0.11025001108646393,
+            "kind": 1
+          },
+          {
+            "startTime": 2328.224375,
+            "duration": 0.11212499439716339,
+            "kind": 1
+          },
+          {
+            "startTime": 2367.262209,
+            "duration": 0.09879100322723389,
+            "kind": 1
+          },
+          {
+            "startTime": 2403.706042,
+            "duration": 0.10591700673103333,
+            "kind": 1
+          },
+          {
+            "startTime": 2437.082584,
+            "duration": 0.10304100811481476,
+            "kind": 1
+          },
+          {
+            "startTime": 2469.407,
+            "duration": 0.09995900094509125,
+            "kind": 1
+          },
+          {
+            "startTime": 2502.516417,
+            "duration": 0.10079200565814972,
+            "kind": 1
+          },
+          {
+            "startTime": 2535.579125,
+            "duration": 0.11212499439716339,
+            "kind": 1
+          },
+          {
+            "startTime": 2568.816709,
+            "duration": 0.09183299541473389,
+            "kind": 1
+          },
+          {
+            "startTime": 2601.348959,
+            "duration": 0.09674999117851257,
+            "kind": 1
+          },
+          {
+            "startTime": 2634.832959,
+            "duration": 0.11133299767971039,
+            "kind": 1
+          },
+          {
+            "startTime": 2668.058459,
+            "duration": 0.10249999165534973,
+            "kind": 1
+          },
+          {
+            "startTime": 2701.399334,
+            "duration": 0.1020829975605011,
+            "kind": 1
+          },
+          {
+            "startTime": 2735.759917,
+            "duration": 0.10833300650119781,
+            "kind": 1
+          },
+          {
+            "startTime": 2769.122209,
+            "duration": 0.10558299720287323,
+            "kind": 1
+          },
+          {
+            "startTime": 2802.674334,
+            "duration": 0.10454100370407104,
+            "kind": 1
+          },
+          {
+            "startTime": 2837.393834,
+            "duration": 0.10975000262260437,
+            "kind": 1
+          },
+          {
+            "startTime": 2871.080875,
+            "duration": 0.08995899558067322,
+            "kind": 1
+          },
+          {
+            "startTime": 2905.285875,
+            "duration": 0.12845900654792786,
+            "kind": 1
+          },
+          {
+            "startTime": 2939.160209,
+            "duration": 0.10345800220966339,
+            "kind": 1
+          },
+          {
+            "startTime": 2974.663459,
+            "duration": 0.09316600859165192,
+            "kind": 1
+          },
+          {
+            "startTime": 3009.076,
+            "duration": 0.10554200410842896,
+            "kind": 1
+          },
+          {
+            "startTime": 3043.371334,
+            "duration": 0.11441598832607269,
+            "kind": 1
+          },
+          {
+            "startTime": 3078.872417,
+            "duration": 0.09662500023841858,
+            "kind": 1
+          },
+          {
+            "startTime": 3114.853584,
+            "duration": 0.09883300960063934,
+            "kind": 1
+          },
+          {
+            "startTime": 3150.18925,
+            "duration": 0.09395900368690491,
+            "kind": 1
+          },
+          {
+            "startTime": 3185.800167,
+            "duration": 0.10216699540615082,
+            "kind": 1
+          },
+          {
+            "startTime": 3220.4465,
+            "duration": 0.14100000262260437,
+            "kind": 1
+          },
+          {
+            "startTime": 3256.259875,
+            "duration": 0.10545898973941803,
+            "kind": 1
+          },
+          {
+            "startTime": 3292.182334,
+            "duration": 0.11887499690055847,
+            "kind": 1
+          },
+          {
+            "startTime": 3327.576334,
+            "duration": 0.11516599357128143,
+            "kind": 1
+          },
+          {
+            "startTime": 3362.696792,
+            "duration": 0.0976250022649765,
+            "kind": 1
+          },
+          {
+            "startTime": 3398.407625,
+            "duration": 0.12012501060962677,
+            "kind": 1
+          },
+          {
+            "startTime": 3434.785584,
+            "duration": 0.11770801246166229,
+            "kind": 1
+          },
+          {
+            "startTime": 3473.160125,
+            "duration": 0.10862499475479126,
+            "kind": 1
+          },
+          {
+            "startTime": 3510.970584,
+            "duration": 0.140500009059906,
+            "kind": 1
+          },
+          {
+            "startTime": 3548.780917,
+            "duration": 0.11916700005531311,
+            "kind": 1
+          },
+          {
+            "startTime": 3598.755834,
+            "duration": 0.1738329976797104,
+            "kind": 1
+          },
+          {
+            "startTime": 3637.029167,
+            "duration": 0.10625000298023224,
+            "kind": 1
+          },
+          {
+            "startTime": 3674.284792,
+            "duration": 0.09525001049041748,
+            "kind": 1
+          },
+          {
+            "startTime": 3711.392209,
+            "duration": 0.09358300268650055,
+            "kind": 1
+          },
+          {
+            "startTime": 3748.098917,
+            "duration": 0.13041700422763824,
+            "kind": 1
+          },
+          {
+            "startTime": 3784.253875,
+            "duration": 0.08091698586940765,
+            "kind": 1
+          },
+          {
+            "startTime": 3820.502209,
+            "duration": 0.076541006565094,
+            "kind": 1
+          },
+          {
+            "startTime": 3857.144459,
+            "duration": 0.07941600680351257,
+            "kind": 1
+          },
+          {
+            "startTime": 3894.176,
+            "duration": 0.08137500286102295,
+            "kind": 1
+          },
+          {
+            "startTime": 3931.418709,
+            "duration": 0.08829100430011749,
+            "kind": 1
+          },
+          {
+            "startTime": 3968.268459,
+            "duration": 0.08249999582767487,
+            "kind": 1
+          },
+          {
+            "startTime": 4006.145084,
+            "duration": 0.08175000548362732,
+            "kind": 1
+          },
+          {
+            "startTime": 4043.262709,
+            "duration": 0.07066600024700165,
+            "kind": 1
+          },
+          {
+            "startTime": 4080.859667,
+            "duration": 0.07874999940395355,
+            "kind": 1
+          },
+          {
+            "startTime": 4117.984084,
+            "duration": 0.07366600632667542,
+            "kind": 1
+          },
+          {
+            "startTime": 4155.57525,
+            "duration": 0.09125000238418579,
+            "kind": 1
+          },
+          {
+            "startTime": 4192.921875,
+            "duration": 0.07750000059604645,
+            "kind": 1
+          },
+          {
+            "startTime": 4231.557792,
+            "duration": 0.07874999940395355,
+            "kind": 1
+          },
+          {
+            "startTime": 4311.644417,
+            "duration": 0.564750000834465,
+            "kind": 1
+          }
+        ],
+        "note": "Nested rows are inclusive and must not be added. Allocation profiles sample bytes, not exact allocation counts."
+      },
+      "maxRss": 325779456,
+      "rss": 302391128,
+      "retained": 49434502,
+      "documentBytes": 3797174,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 0,
+      "mode": "saveonly",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 4200.18975,
+        "cpuMs": 4440.775
+      },
+      "observeRows": [],
+      "flushRows": [],
+      "audit": {
+        "mode": "saveonly",
+        "rows": {
+          "phase.open": {
+            "calls": 1,
+            "wallMs": 17.643459000000007,
+            "bytes": 0,
+            "startTime": 193.642708,
+            "endTime": 211.304125,
+            "cpuMs": 6.144,
+            "memory": {
+              "rss": 161972472,
+              "heapTotal": 120143872,
+              "heapUsed": 85504888,
+              "external": 15789198,
+              "arrayBuffers": 13096451
+            }
+          },
+          "phase.plan": {
+            "calls": 1,
+            "wallMs": 9.554207999999988,
+            "bytes": 0,
+            "startTime": 211.313667,
+            "endTime": 220.8725,
+            "cpuMs": 9.835,
+            "memory": {
+              "rss": 189366784,
+              "heapTotal": 121618432,
+              "heapUsed": 87139736,
+              "external": 41300350,
+              "arrayBuffers": 25852027
+            }
+          },
+          "phase.authenticate": {
+            "calls": 1,
+            "wallMs": 138.455167,
+            "bytes": 0,
+            "startTime": 220.891875,
+            "endTime": 359.352458,
+            "cpuMs": 167.754,
+            "memory": {
+              "rss": 221581928,
+              "heapTotal": 150028288,
+              "heapUsed": 79784648,
+              "external": 15916750,
+              "arrayBuffers": 468427
+            }
+          },
+          "phase.transaction-prepare": {
+            "calls": 1,
+            "wallMs": 2.2823340000000485,
+            "bytes": 0,
+            "startTime": 359.372083,
+            "endTime": 361.658542,
+            "cpuMs": 2.924,
+            "memory": {
+              "rss": 221893248,
+              "heapTotal": 150028288,
+              "heapUsed": 80274440,
+              "external": 15918798,
+              "arrayBuffers": 468427
+            }
+          },
+          "save.check": {
+            "calls": 20000,
+            "wallMs": 2064.7490479999624,
+            "bytes": 0
+          },
+          "phase.apply": {
+            "calls": 1,
+            "wallMs": 3923.5961660000003,
+            "bytes": 0,
+            "startTime": 361.668667,
+            "endTime": 4285.27775,
+            "cpuMs": 4177.757,
+            "memory": {
+              "rss": 244685288,
+              "heapTotal": 132923392,
+              "heapUsed": 92264472,
+              "external": 24450627,
+              "arrayBuffers": 9000256
+            }
+          },
+          "phase.publish": {
+            "calls": 1,
+            "wallMs": 102.29233299999942,
+            "bytes": 0,
+            "startTime": 4285.29675,
+            "endTime": 4387.594792,
+            "cpuMs": 68.455,
+            "memory": {
+              "rss": 276437864,
+              "heapTotal": 166625280,
+              "heapUsed": 101087240,
+              "external": 46655246,
+              "arrayBuffers": 30155603
+            }
+          },
+          "phase.checkpoint": {
+            "calls": 1,
+            "wallMs": 6.2882079999999405,
+            "bytes": 0,
+            "startTime": 4387.611667,
+            "endTime": 4393.904458,
+            "cpuMs": 7.777,
+            "memory": {
+              "rss": 285399936,
+              "heapTotal": 170180608,
+              "heapUsed": 103907328,
+              "external": 46655254,
+              "arrayBuffers": 30155611
+            }
+          }
+        },
+        "windowStart": 193.642708,
+        "windowEnd": 4393.895083,
+        "initialMemory": {
+          "rss": 160874600,
+          "heapTotal": 119095296,
+          "heapUsed": 84724880,
+          "external": 15789142,
+          "arrayBuffers": 13096435
+        },
+        "finalMemory": {
+          "rss": 285399936,
+          "heapTotal": 170180608,
+          "heapUsed": 103907752,
+          "external": 46655254,
+          "arrayBuffers": 30155611
+        },
+        "gc": [
+          {
+            "startTime": 226.215708,
+            "duration": 1.0512499958276749,
+            "kind": 1
+          },
+          {
+            "startTime": 245.099708,
+            "duration": 0.7980419993400574,
+            "kind": 1
+          },
+          {
+            "startTime": 264.768792,
+            "duration": 0.6410830020904541,
+            "kind": 1
+          },
+          {
+            "startTime": 284.472875,
+            "duration": 0.6737080067396164,
+            "kind": 1
+          },
+          {
+            "startTime": 303.967125,
+            "duration": 0.7449580132961273,
+            "kind": 1
+          },
+          {
+            "startTime": 323.558625,
+            "duration": 0.6813749969005585,
+            "kind": 1
+          },
+          {
+            "startTime": 343.985292,
+            "duration": 0.647707998752594,
+            "kind": 1
+          },
+          {
+            "startTime": 370.069833,
+            "duration": 0.8351669907569885,
+            "kind": 1
+          },
+          {
+            "startTime": 371.205833,
+            "duration": 0.10866700112819672,
+            "kind": 8
+          },
+          {
+            "startTime": 375.431708,
+            "duration": 1.7522089928388596,
+            "kind": 4
+          },
+          {
+            "startTime": 421.087542,
+            "duration": 0.20283299684524536,
+            "kind": 1
+          },
+          {
+            "startTime": 463.236208,
+            "duration": 0.19358399510383606,
+            "kind": 1
+          },
+          {
+            "startTime": 504.939833,
+            "duration": 0.1811250001192093,
+            "kind": 1
+          },
+          {
+            "startTime": 545.4285,
+            "duration": 0.210999995470047,
+            "kind": 1
+          },
+          {
+            "startTime": 585.329625,
+            "duration": 0.1839579939842224,
+            "kind": 1
+          },
+          {
+            "startTime": 624.15525,
+            "duration": 0.16645799577236176,
+            "kind": 1
+          },
+          {
+            "startTime": 661.854042,
+            "duration": 0.13170799612998962,
+            "kind": 1
+          },
+          {
+            "startTime": 698.710625,
+            "duration": 0.14983299374580383,
+            "kind": 1
+          },
+          {
+            "startTime": 735.038917,
+            "duration": 0.12829099595546722,
+            "kind": 1
+          },
+          {
+            "startTime": 772.011333,
+            "duration": 0.13224999606609344,
+            "kind": 1
+          },
+          {
+            "startTime": 807.670042,
+            "duration": 0.14912499487400055,
+            "kind": 1
+          },
+          {
+            "startTime": 842.732167,
+            "duration": 0.12891599535942078,
+            "kind": 1
+          },
+          {
+            "startTime": 877.319,
+            "duration": 0.13062499463558197,
+            "kind": 1
+          },
+          {
+            "startTime": 911.535875,
+            "duration": 0.10875000059604645,
+            "kind": 1
+          },
+          {
+            "startTime": 944.57425,
+            "duration": 0.11716699600219727,
+            "kind": 1
+          },
+          {
+            "startTime": 977.837333,
+            "duration": 0.12049999833106995,
+            "kind": 1
+          },
+          {
+            "startTime": 1011.250083,
+            "duration": 0.11833401024341583,
+            "kind": 1
+          },
+          {
+            "startTime": 1043.9685,
+            "duration": 0.12320800125598907,
+            "kind": 1
+          },
+          {
+            "startTime": 1077.266583,
+            "duration": 0.16612499952316284,
+            "kind": 1
+          },
+          {
+            "startTime": 1110.297667,
+            "duration": 0.12462499737739563,
+            "kind": 1
+          },
+          {
+            "startTime": 1144.336125,
+            "duration": 0.10941700637340546,
+            "kind": 1
+          },
+          {
+            "startTime": 1178.875417,
+            "duration": 0.12445800006389618,
+            "kind": 1
+          },
+          {
+            "startTime": 1213.124667,
+            "duration": 0.10733300447463989,
+            "kind": 1
+          },
+          {
+            "startTime": 1247.989542,
+            "duration": 0.11879099905490875,
+            "kind": 1
+          },
+          {
+            "startTime": 1283.632583,
+            "duration": 0.09620900452136993,
+            "kind": 1
+          },
+          {
+            "startTime": 1319.059208,
+            "duration": 0.11124999821186066,
+            "kind": 1
+          },
+          {
+            "startTime": 1352.249583,
+            "duration": 0.1447090059518814,
+            "kind": 1
+          },
+          {
+            "startTime": 1385.090542,
+            "duration": 0.11270800232887268,
+            "kind": 1
+          },
+          {
+            "startTime": 1416.881375,
+            "duration": 0.11204200983047485,
+            "kind": 1
+          },
+          {
+            "startTime": 1448.980333,
+            "duration": 0.10550001263618469,
+            "kind": 1
+          },
+          {
+            "startTime": 1481.334958,
+            "duration": 0.10991699993610382,
+            "kind": 1
+          },
+          {
+            "startTime": 1514.248625,
+            "duration": 0.1192919909954071,
+            "kind": 1
+          },
+          {
+            "startTime": 1547.90375,
+            "duration": 0.11179199814796448,
+            "kind": 1
+          },
+          {
+            "startTime": 1581.763292,
+            "duration": 0.13566601276397705,
+            "kind": 1
+          },
+          {
+            "startTime": 1615.142417,
+            "duration": 0.09933300316333771,
+            "kind": 1
+          },
+          {
+            "startTime": 1649.343958,
+            "duration": 0.12150000035762787,
+            "kind": 1
+          },
+          {
+            "startTime": 1682.502792,
+            "duration": 0.11445800960063934,
+            "kind": 1
+          },
+          {
+            "startTime": 1716.99425,
+            "duration": 0.1080000102519989,
+            "kind": 1
+          },
+          {
+            "startTime": 1751.727792,
+            "duration": 0.10883300006389618,
+            "kind": 1
+          },
+          {
+            "startTime": 1786.095458,
+            "duration": 0.11762499809265137,
+            "kind": 1
+          },
+          {
+            "startTime": 1821.4075,
+            "duration": 0.09870800375938416,
+            "kind": 1
+          },
+          {
+            "startTime": 1856.522583,
+            "duration": 0.10291700065135956,
+            "kind": 1
+          },
+          {
+            "startTime": 1892.321292,
+            "duration": 0.12187498807907104,
+            "kind": 1
+          },
+          {
+            "startTime": 1928.884833,
+            "duration": 0.11800000071525574,
+            "kind": 1
+          },
+          {
+            "startTime": 1965.672042,
+            "duration": 0.09874999523162842,
+            "kind": 1
+          },
+          {
+            "startTime": 2002.229792,
+            "duration": 0.11208300292491913,
+            "kind": 1
+          },
+          {
+            "startTime": 2038.428708,
+            "duration": 0.09425000846385956,
+            "kind": 1
+          },
+          {
+            "startTime": 2075.356208,
+            "duration": 0.09620898962020874,
+            "kind": 1
+          },
+          {
+            "startTime": 2111.63625,
+            "duration": 0.1154170036315918,
+            "kind": 1
+          },
+          {
+            "startTime": 2148.511208,
+            "duration": 0.11262498795986176,
+            "kind": 1
+          },
+          {
+            "startTime": 2186.224542,
+            "duration": 0.09279100596904755,
+            "kind": 1
+          },
+          {
+            "startTime": 2224.463,
+            "duration": 0.12720800936222076,
+            "kind": 1
+          },
+          {
+            "startTime": 2262.707,
+            "duration": 0.08425000309944153,
+            "kind": 1
+          },
+          {
+            "startTime": 2301.1495,
+            "duration": 0.1089169979095459,
+            "kind": 1
+          },
+          {
+            "startTime": 2339.965875,
+            "duration": 0.10633300244808197,
+            "kind": 1
+          },
+          {
+            "startTime": 2378.965542,
+            "duration": 0.10462500154972076,
+            "kind": 1
+          },
+          {
+            "startTime": 2416.876375,
+            "duration": 0.08883300423622131,
+            "kind": 1
+          },
+          {
+            "startTime": 2450.390708,
+            "duration": 0.09850001335144043,
+            "kind": 1
+          },
+          {
+            "startTime": 2483.693958,
+            "duration": 0.12245900928974152,
+            "kind": 1
+          },
+          {
+            "startTime": 2516.975333,
+            "duration": 0.0898749977350235,
+            "kind": 1
+          },
+          {
+            "startTime": 2550.270625,
+            "duration": 0.11295799911022186,
+            "kind": 1
+          },
+          {
+            "startTime": 2584.089333,
+            "duration": 0.13279199600219727,
+            "kind": 1
+          },
+          {
+            "startTime": 2617.021375,
+            "duration": 0.09691700339317322,
+            "kind": 1
+          },
+          {
+            "startTime": 2650.83225,
+            "duration": 0.10945799946784973,
+            "kind": 1
+          },
+          {
+            "startTime": 2684.588,
+            "duration": 0.10608300566673279,
+            "kind": 1
+          },
+          {
+            "startTime": 2718.328375,
+            "duration": 0.11412499845027924,
+            "kind": 1
+          },
+          {
+            "startTime": 2751.867375,
+            "duration": 0.10500000417232513,
+            "kind": 1
+          },
+          {
+            "startTime": 2786.523417,
+            "duration": 0.10837499797344208,
+            "kind": 1
+          },
+          {
+            "startTime": 2821.226875,
+            "duration": 0.1072079986333847,
+            "kind": 1
+          },
+          {
+            "startTime": 2854.54225,
+            "duration": 0.09233300387859344,
+            "kind": 1
+          },
+          {
+            "startTime": 2888.857375,
+            "duration": 0.11066699028015137,
+            "kind": 1
+          },
+          {
+            "startTime": 2923.474042,
+            "duration": 0.12179100513458252,
+            "kind": 1
+          },
+          {
+            "startTime": 2957.987958,
+            "duration": 0.09987500309944153,
+            "kind": 1
+          },
+          {
+            "startTime": 2992.430333,
+            "duration": 0.0867920070886612,
+            "kind": 1
+          },
+          {
+            "startTime": 3026.783583,
+            "duration": 0.10283400118350983,
+            "kind": 1
+          },
+          {
+            "startTime": 3062.079417,
+            "duration": 0.0999159961938858,
+            "kind": 1
+          },
+          {
+            "startTime": 3097.559833,
+            "duration": 0.10154199600219727,
+            "kind": 1
+          },
+          {
+            "startTime": 3132.453417,
+            "duration": 0.11500000953674316,
+            "kind": 1
+          },
+          {
+            "startTime": 3167.408208,
+            "duration": 0.13645899295806885,
+            "kind": 1
+          },
+          {
+            "startTime": 3203.363875,
+            "duration": 0.11133299767971039,
+            "kind": 1
+          },
+          {
+            "startTime": 3238.559458,
+            "duration": 0.10408399999141693,
+            "kind": 1
+          },
+          {
+            "startTime": 3274.646375,
+            "duration": 0.1098330020904541,
+            "kind": 1
+          },
+          {
+            "startTime": 3310.482708,
+            "duration": 0.13858400285243988,
+            "kind": 1
+          },
+          {
+            "startTime": 3346.731333,
+            "duration": 0.148375004529953,
+            "kind": 1
+          },
+          {
+            "startTime": 3382.365458,
+            "duration": 0.1106249988079071,
+            "kind": 1
+          },
+          {
+            "startTime": 3418.365292,
+            "duration": 0.10437498986721039,
+            "kind": 1
+          },
+          {
+            "startTime": 3454.995,
+            "duration": 0.13487499952316284,
+            "kind": 1
+          },
+          {
+            "startTime": 3492.371083,
+            "duration": 0.14300000667572021,
+            "kind": 1
+          },
+          {
+            "startTime": 3530.20975,
+            "duration": 0.12954199314117432,
+            "kind": 1
+          },
+          {
+            "startTime": 3567.506958,
+            "duration": 0.14287500083446503,
+            "kind": 1
+          },
+          {
+            "startTime": 3617.763917,
+            "duration": 0.15595801174640656,
+            "kind": 1
+          },
+          {
+            "startTime": 3655.873375,
+            "duration": 0.1058330088853836,
+            "kind": 1
+          },
+          {
+            "startTime": 3693.01925,
+            "duration": 0.09387500584125519,
+            "kind": 1
+          },
+          {
+            "startTime": 3729.456458,
+            "duration": 0.0897500067949295,
+            "kind": 1
+          },
+          {
+            "startTime": 3766.386583,
+            "duration": 0.11895900964736938,
+            "kind": 1
+          },
+          {
+            "startTime": 3802.558042,
+            "duration": 0.07945799827575684,
+            "kind": 1
+          },
+          {
+            "startTime": 3838.685583,
+            "duration": 0.07858400046825409,
+            "kind": 1
+          },
+          {
+            "startTime": 3875.401208,
+            "duration": 0.07887500524520874,
+            "kind": 1
+          },
+          {
+            "startTime": 3912.45775,
+            "duration": 0.08295799791812897,
+            "kind": 1
+          },
+          {
+            "startTime": 3949.747292,
+            "duration": 0.07212498784065247,
+            "kind": 1
+          },
+          {
+            "startTime": 3986.632208,
+            "duration": 0.09074999392032623,
+            "kind": 1
+          },
+          {
+            "startTime": 4024.413667,
+            "duration": 0.08366599678993225,
+            "kind": 1
+          },
+          {
+            "startTime": 4061.840125,
+            "duration": 0.07774999737739563,
+            "kind": 1
+          },
+          {
+            "startTime": 4098.763042,
+            "duration": 0.0842909961938858,
+            "kind": 1
+          },
+          {
+            "startTime": 4135.564875,
+            "duration": 0.08579200506210327,
+            "kind": 1
+          },
+          {
+            "startTime": 4172.152458,
+            "duration": 0.07537499070167542,
+            "kind": 1
+          },
+          {
+            "startTime": 4209.549542,
+            "duration": 0.08254098892211914,
+            "kind": 1
+          },
+          {
+            "startTime": 4247.732958,
+            "duration": 0.08354200422763824,
+            "kind": 1
+          },
+          {
+            "startTime": 4324.370917,
+            "duration": 0.5711250007152557,
+            "kind": 1
+          }
+        ],
+        "note": "Nested rows are inclusive and must not be added. Allocation profiles sample bytes, not exact allocation counts."
+      },
+      "maxRss": 322502656,
+      "rss": 296984264,
+      "retained": 49518997,
+      "documentBytes": 3797174,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 1,
+      "mode": "saveonly",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 4187.827042,
+        "cpuMs": 4434.029
+      },
+      "observeRows": [],
+      "flushRows": [],
+      "audit": {
+        "mode": "saveonly",
+        "rows": {
+          "phase.open": {
+            "calls": 1,
+            "wallMs": 16.843707999999992,
+            "bytes": 0,
+            "startTime": 194.516334,
+            "endTime": 211.377959,
+            "cpuMs": 6.142,
+            "memory": {
+              "rss": 160399632,
+              "heapTotal": 118833152,
+              "heapUsed": 84306600,
+              "external": 15789198,
+              "arrayBuffers": 13096451
+            }
+          },
+          "phase.plan": {
+            "calls": 1,
+            "wallMs": 9.44758299999998,
+            "bytes": 0,
+            "startTime": 211.387209,
+            "endTime": 220.839584,
+            "cpuMs": 9.914,
+            "memory": {
+              "rss": 187826712,
+              "heapTotal": 120307712,
+              "heapUsed": 85941448,
+              "external": 41300350,
+              "arrayBuffers": 25852027
+            }
+          },
+          "phase.authenticate": {
+            "calls": 1,
+            "wallMs": 139.10429100000002,
+            "bytes": 0,
+            "startTime": 220.860584,
+            "endTime": 359.970209,
+            "cpuMs": 168.717,
+            "memory": {
+              "rss": 221254176,
+              "heapTotal": 150028288,
+              "heapUsed": 78110136,
+              "external": 15911598,
+              "arrayBuffers": 463275
+            }
+          },
+          "phase.transaction-prepare": {
+            "calls": 1,
+            "wallMs": 2.3231660000000147,
+            "bytes": 0,
+            "startTime": 359.986584,
+            "endTime": 362.314709,
+            "cpuMs": 2.947,
+            "memory": {
+              "rss": 221516320,
+              "heapTotal": 150028288,
+              "heapUsed": 78599752,
+              "external": 15913646,
+              "arrayBuffers": 463275
+            }
+          },
+          "save.check": {
+            "calls": 20000,
+            "wallMs": 2056.4751829999996,
+            "bytes": 0
+          },
+          "phase.apply": {
+            "calls": 1,
+            "wallMs": 3913.91875,
+            "bytes": 0,
+            "startTime": 362.327292,
+            "endTime": 4276.257875,
+            "cpuMs": 4170.267,
+            "memory": {
+              "rss": 244832624,
+              "heapTotal": 132661248,
+              "heapUsed": 90984312,
+              "external": 24385020,
+              "arrayBuffers": 8934649
+            }
+          },
+          "phase.publish": {
+            "calls": 1,
+            "wallMs": 99.74387500000012,
+            "bytes": 0,
+            "startTime": 4276.273292,
+            "endTime": 4376.022542,
+            "cpuMs": 68.126,
+            "memory": {
+              "rss": 276634352,
+              "heapTotal": 165560320,
+              "heapUsed": 99151632,
+              "external": 46655247,
+              "arrayBuffers": 30155604
+            }
+          },
+          "phase.checkpoint": {
+            "calls": 1,
+            "wallMs": 6.37304099999983,
+            "bytes": 0,
+            "startTime": 4376.036959,
+            "endTime": 4382.413584,
+            "cpuMs": 7.793,
+            "memory": {
+              "rss": 285760288,
+              "heapTotal": 169115648,
+              "heapUsed": 101971216,
+              "external": 46655255,
+              "arrayBuffers": 30155612
+            }
+          }
+        },
+        "windowStart": 194.516334,
+        "windowEnd": 4382.408167,
+        "initialMemory": {
+          "rss": 159285352,
+          "heapTotal": 117784576,
+          "heapUsed": 83526592,
+          "external": 15789142,
+          "arrayBuffers": 13096435
+        },
+        "finalMemory": {
+          "rss": 285760288,
+          "heapTotal": 169115648,
+          "heapUsed": 101971640,
+          "external": 46655255,
+          "arrayBuffers": 30155612
+        },
+        "gc": [
+          {
+            "startTime": 227.2875,
+            "duration": 1.3070420026779175,
+            "kind": 1
+          },
+          {
+            "startTime": 246.333042,
+            "duration": 0.7767920047044754,
+            "kind": 1
+          },
+          {
+            "startTime": 265.919209,
+            "duration": 0.6394999921321869,
+            "kind": 1
+          },
+          {
+            "startTime": 285.765625,
+            "duration": 0.6486669927835464,
+            "kind": 1
+          },
+          {
+            "startTime": 305.388667,
+            "duration": 0.6018749922513962,
+            "kind": 1
+          },
+          {
+            "startTime": 324.933709,
+            "duration": 0.685249999165535,
+            "kind": 1
+          },
+          {
+            "startTime": 345.473667,
+            "duration": 0.6604170054197311,
+            "kind": 1
+          },
+          {
+            "startTime": 374.468292,
+            "duration": 0.8494170010089874,
+            "kind": 1
+          },
+          {
+            "startTime": 375.554209,
+            "duration": 0.12745800614356995,
+            "kind": 8
+          },
+          {
+            "startTime": 380.135334,
+            "duration": 1.7390829920768738,
+            "kind": 4
+          },
+          {
+            "startTime": 424.110209,
+            "duration": 0.17749999463558197,
+            "kind": 1
+          },
+          {
+            "startTime": 465.850209,
+            "duration": 0.19016599655151367,
+            "kind": 1
+          },
+          {
+            "startTime": 507.399084,
+            "duration": 0.21041598916053772,
+            "kind": 1
+          },
+          {
+            "startTime": 547.719292,
+            "duration": 0.1743749976158142,
+            "kind": 1
+          },
+          {
+            "startTime": 587.451667,
+            "duration": 0.1715420037508011,
+            "kind": 1
+          },
+          {
+            "startTime": 625.792459,
+            "duration": 0.1807910054922104,
+            "kind": 1
+          },
+          {
+            "startTime": 663.4525,
+            "duration": 0.14499999582767487,
+            "kind": 1
+          },
+          {
+            "startTime": 700.490625,
+            "duration": 0.14525000751018524,
+            "kind": 1
+          },
+          {
+            "startTime": 736.184959,
+            "duration": 0.12270800769329071,
+            "kind": 1
+          },
+          {
+            "startTime": 773.189375,
+            "duration": 0.14645899832248688,
+            "kind": 1
+          },
+          {
+            "startTime": 808.677375,
+            "duration": 0.16920898854732513,
+            "kind": 1
+          },
+          {
+            "startTime": 842.666625,
+            "duration": 0.1402920037508011,
+            "kind": 1
+          },
+          {
+            "startTime": 876.482084,
+            "duration": 0.11904101073741913,
+            "kind": 1
+          },
+          {
+            "startTime": 910.504292,
+            "duration": 0.12987500429153442,
+            "kind": 1
+          },
+          {
+            "startTime": 943.818459,
+            "duration": 0.10387499630451202,
+            "kind": 1
+          },
+          {
+            "startTime": 976.6385,
+            "duration": 0.11770901083946228,
+            "kind": 1
+          },
+          {
+            "startTime": 1009.775834,
+            "duration": 0.1440410017967224,
+            "kind": 1
+          },
+          {
+            "startTime": 1042.816417,
+            "duration": 0.11312499642372131,
+            "kind": 1
+          },
+          {
+            "startTime": 1076.109417,
+            "duration": 0.1158750057220459,
+            "kind": 1
+          },
+          {
+            "startTime": 1108.976667,
+            "duration": 0.14008300006389618,
+            "kind": 1
+          },
+          {
+            "startTime": 1142.740917,
+            "duration": 0.11212499439716339,
+            "kind": 1
+          },
+          {
+            "startTime": 1176.956084,
+            "duration": 0.11920799314975739,
+            "kind": 1
+          },
+          {
+            "startTime": 1211.48725,
+            "duration": 0.12045899033546448,
+            "kind": 1
+          },
+          {
+            "startTime": 1246.843959,
+            "duration": 0.13316600024700165,
+            "kind": 1
+          },
+          {
+            "startTime": 1283.233917,
+            "duration": 0.1344580054283142,
+            "kind": 1
+          },
+          {
+            "startTime": 1318.511375,
+            "duration": 0.1087920069694519,
+            "kind": 1
+          },
+          {
+            "startTime": 1351.245584,
+            "duration": 0.09670799970626831,
+            "kind": 1
+          },
+          {
+            "startTime": 1383.031459,
+            "duration": 0.09116598963737488,
+            "kind": 1
+          },
+          {
+            "startTime": 1415.445375,
+            "duration": 0.11679200828075409,
+            "kind": 1
+          },
+          {
+            "startTime": 1447.825292,
+            "duration": 0.10750000178813934,
+            "kind": 1
+          },
+          {
+            "startTime": 1480.022709,
+            "duration": 0.09454099833965302,
+            "kind": 1
+          },
+          {
+            "startTime": 1511.904709,
+            "duration": 0.1033329963684082,
+            "kind": 1
+          },
+          {
+            "startTime": 1544.417709,
+            "duration": 0.11595800518989563,
+            "kind": 1
+          },
+          {
+            "startTime": 1576.893,
+            "duration": 0.09479200839996338,
+            "kind": 1
+          },
+          {
+            "startTime": 1609.613375,
+            "duration": 0.09162500500679016,
+            "kind": 1
+          },
+          {
+            "startTime": 1644.089209,
+            "duration": 0.10733300447463989,
+            "kind": 1
+          },
+          {
+            "startTime": 1678.129917,
+            "duration": 0.1166670024394989,
+            "kind": 1
+          },
+          {
+            "startTime": 1712.655125,
+            "duration": 0.10554200410842896,
+            "kind": 1
+          },
+          {
+            "startTime": 1747.217209,
+            "duration": 0.10945799946784973,
+            "kind": 1
+          },
+          {
+            "startTime": 1781.706417,
+            "duration": 0.09508299827575684,
+            "kind": 1
+          },
+          {
+            "startTime": 1816.877459,
+            "duration": 0.13633300364017487,
+            "kind": 1
+          },
+          {
+            "startTime": 1852.632125,
+            "duration": 0.12075001001358032,
+            "kind": 1
+          },
+          {
+            "startTime": 1888.241875,
+            "duration": 0.1106249988079071,
+            "kind": 1
+          },
+          {
+            "startTime": 1924.278292,
+            "duration": 0.12537500262260437,
+            "kind": 1
+          },
+          {
+            "startTime": 1959.474834,
+            "duration": 0.09629100561141968,
+            "kind": 1
+          },
+          {
+            "startTime": 1996.119667,
+            "duration": 0.11337500810623169,
+            "kind": 1
+          },
+          {
+            "startTime": 2032.815209,
+            "duration": 0.09266600012779236,
+            "kind": 1
+          },
+          {
+            "startTime": 2069.706209,
+            "duration": 0.09966599941253662,
+            "kind": 1
+          },
+          {
+            "startTime": 2106.163584,
+            "duration": 0.08950001001358032,
+            "kind": 1
+          },
+          {
+            "startTime": 2143.478,
+            "duration": 0.09583400189876556,
+            "kind": 1
+          },
+          {
+            "startTime": 2180.138292,
+            "duration": 0.11295799911022186,
+            "kind": 1
+          },
+          {
+            "startTime": 2218.307084,
+            "duration": 0.10633300244808197,
+            "kind": 1
+          },
+          {
+            "startTime": 2256.454959,
+            "duration": 0.08625000715255737,
+            "kind": 1
+          },
+          {
+            "startTime": 2294.594209,
+            "duration": 0.09570799767971039,
+            "kind": 1
+          },
+          {
+            "startTime": 2332.905667,
+            "duration": 0.1294580101966858,
+            "kind": 1
+          },
+          {
+            "startTime": 2370.665167,
+            "duration": 0.09149999916553497,
+            "kind": 1
+          },
+          {
+            "startTime": 2408.411209,
+            "duration": 0.10883300006389618,
+            "kind": 1
+          },
+          {
+            "startTime": 2441.342584,
+            "duration": 0.11362500488758087,
+            "kind": 1
+          },
+          {
+            "startTime": 2474.879167,
+            "duration": 0.09350000321865082,
+            "kind": 1
+          },
+          {
+            "startTime": 2508.549417,
+            "duration": 0.11008299887180328,
+            "kind": 1
+          },
+          {
+            "startTime": 2541.084625,
+            "duration": 0.10091701149940491,
+            "kind": 1
+          },
+          {
+            "startTime": 2574.888375,
+            "duration": 0.08208400011062622,
+            "kind": 1
+          },
+          {
+            "startTime": 2607.755584,
+            "duration": 0.11091598868370056,
+            "kind": 1
+          },
+          {
+            "startTime": 2640.587709,
+            "duration": 0.10354100167751312,
+            "kind": 1
+          },
+          {
+            "startTime": 2675.013834,
+            "duration": 0.09362499415874481,
+            "kind": 1
+          },
+          {
+            "startTime": 2709.424667,
+            "duration": 0.11241699755191803,
+            "kind": 1
+          },
+          {
+            "startTime": 2743.926625,
+            "duration": 0.09962499141693115,
+            "kind": 1
+          },
+          {
+            "startTime": 2777.320417,
+            "duration": 0.11004199087619781,
+            "kind": 1
+          },
+          {
+            "startTime": 2811.534375,
+            "duration": 0.11212499439716339,
+            "kind": 1
+          },
+          {
+            "startTime": 2845.524292,
+            "duration": 0.11320801079273224,
+            "kind": 1
+          },
+          {
+            "startTime": 2880.55275,
+            "duration": 0.09033399820327759,
+            "kind": 1
+          },
+          {
+            "startTime": 2915.21325,
+            "duration": 0.12641699612140656,
+            "kind": 1
+          },
+          {
+            "startTime": 2949.956125,
+            "duration": 0.11500000953674316,
+            "kind": 1
+          },
+          {
+            "startTime": 2984.475625,
+            "duration": 0.10079200565814972,
+            "kind": 1
+          },
+          {
+            "startTime": 3019.333167,
+            "duration": 0.09070800244808197,
+            "kind": 1
+          },
+          {
+            "startTime": 3053.6395,
+            "duration": 0.11775000393390656,
+            "kind": 1
+          },
+          {
+            "startTime": 3088.553834,
+            "duration": 0.13658300042152405,
+            "kind": 1
+          },
+          {
+            "startTime": 3124.460375,
+            "duration": 0.13166700303554535,
+            "kind": 1
+          },
+          {
+            "startTime": 3160.417959,
+            "duration": 0.10158300399780273,
+            "kind": 1
+          },
+          {
+            "startTime": 3195.716459,
+            "duration": 0.13108301162719727,
+            "kind": 1
+          },
+          {
+            "startTime": 3231.853459,
+            "duration": 0.10458299517631531,
+            "kind": 1
+          },
+          {
+            "startTime": 3267.991875,
+            "duration": 0.11433400213718414,
+            "kind": 1
+          },
+          {
+            "startTime": 3303.839625,
+            "duration": 0.11308398842811584,
+            "kind": 1
+          },
+          {
+            "startTime": 3340.409542,
+            "duration": 0.14270800352096558,
+            "kind": 1
+          },
+          {
+            "startTime": 3376.997834,
+            "duration": 0.11762499809265137,
+            "kind": 1
+          },
+          {
+            "startTime": 3412.872959,
+            "duration": 0.1189579963684082,
+            "kind": 1
+          },
+          {
+            "startTime": 3449.985084,
+            "duration": 0.12058299779891968,
+            "kind": 1
+          },
+          {
+            "startTime": 3487.403542,
+            "duration": 0.1389169991016388,
+            "kind": 1
+          },
+          {
+            "startTime": 3525.039667,
+            "duration": 0.13820800185203552,
+            "kind": 1
+          },
+          {
+            "startTime": 3561.454792,
+            "duration": 0.1632080078125,
+            "kind": 1
+          },
+          {
+            "startTime": 3610.899875,
+            "duration": 0.17920899391174316,
+            "kind": 1
+          },
+          {
+            "startTime": 3648.775042,
+            "duration": 0.11320799589157104,
+            "kind": 1
+          },
+          {
+            "startTime": 3686.5575,
+            "duration": 0.13441701233386993,
+            "kind": 1
+          },
+          {
+            "startTime": 3723.96075,
+            "duration": 0.10245899856090546,
+            "kind": 1
+          },
+          {
+            "startTime": 3760.730209,
+            "duration": 0.08912500739097595,
+            "kind": 1
+          },
+          {
+            "startTime": 3797.101375,
+            "duration": 0.09229199588298798,
+            "kind": 1
+          },
+          {
+            "startTime": 3833.027167,
+            "duration": 0.0885000079870224,
+            "kind": 1
+          },
+          {
+            "startTime": 3869.664667,
+            "duration": 0.08491699397563934,
+            "kind": 1
+          },
+          {
+            "startTime": 3905.788792,
+            "duration": 0.0827919989824295,
+            "kind": 1
+          },
+          {
+            "startTime": 3942.324709,
+            "duration": 0.09120799601078033,
+            "kind": 1
+          },
+          {
+            "startTime": 3979.855292,
+            "duration": 0.07787500321865082,
+            "kind": 1
+          },
+          {
+            "startTime": 4016.779917,
+            "duration": 0.08195799589157104,
+            "kind": 1
+          },
+          {
+            "startTime": 4053.193417,
+            "duration": 0.0728749930858612,
+            "kind": 1
+          },
+          {
+            "startTime": 4090.108917,
+            "duration": 0.09179200232028961,
+            "kind": 1
+          },
+          {
+            "startTime": 4126.612084,
+            "duration": 0.08795799314975739,
+            "kind": 1
+          },
+          {
+            "startTime": 4164.365167,
+            "duration": 0.0957920104265213,
+            "kind": 1
+          },
+          {
+            "startTime": 4202.153625,
+            "duration": 0.08595900237560272,
+            "kind": 1
+          },
+          {
+            "startTime": 4240.109917,
+            "duration": 0.11883299052715302,
+            "kind": 1
+          },
+          {
+            "startTime": 4312.014209,
+            "duration": 0.7112499922513962,
+            "kind": 1
+          }
+        ],
+        "note": "Nested rows are inclusive and must not be added. Allocation profiles sample bytes, not exact allocation counts."
+      },
+      "maxRss": 324026368,
+      "rss": 298278624,
+      "retained": 49517742,
+      "documentBytes": 3797174,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 1,
+      "mode": "control",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 4169.496417,
+        "cpuMs": 4414.265
+      },
+      "observeRows": [],
+      "flushRows": [],
+      "audit": {
+        "mode": "control",
+        "rows": {
+          "phase.open": {
+            "calls": 1,
+            "wallMs": 4169.581,
+            "bytes": 0,
+            "startTime": 194.853292,
+            "endTime": 4364.4535,
+            "cpuMs": 4414.343,
+            "memory": {
+              "rss": 285547392,
+              "heapTotal": 167886848,
+              "heapUsed": 100716736,
+              "external": 46589657,
+              "arrayBuffers": 30090014
+            }
+          }
+        },
+        "windowStart": 194.853292,
+        "windowEnd": 4364.41475,
+        "initialMemory": {
+          "rss": 159482056,
+          "heapTotal": 118046720,
+          "heapUsed": 83523480,
+          "external": 15789142,
+          "arrayBuffers": 13096435
+        },
+        "finalMemory": {
+          "rss": 285547392,
+          "heapTotal": 167886848,
+          "heapUsed": 100717416,
+          "external": 46589657,
+          "arrayBuffers": 30090014
+        },
+        "gc": [
+          {
+            "startTime": 227.674625,
+            "duration": 1.3367919921875,
+            "kind": 1
+          },
+          {
+            "startTime": 246.836583,
+            "duration": 0.7487500011920929,
+            "kind": 1
+          },
+          {
+            "startTime": 266.590417,
+            "duration": 0.6578750014305115,
+            "kind": 1
+          },
+          {
+            "startTime": 286.468875,
+            "duration": 0.6503330022096634,
+            "kind": 1
+          },
+          {
+            "startTime": 306.182208,
+            "duration": 0.6309999972581863,
+            "kind": 1
+          },
+          {
+            "startTime": 325.975375,
+            "duration": 0.6791669875383377,
+            "kind": 1
+          },
+          {
+            "startTime": 346.811375,
+            "duration": 0.6813749969005585,
+            "kind": 1
+          },
+          {
+            "startTime": 375.623125,
+            "duration": 0.8082500100135803,
+            "kind": 1
+          },
+          {
+            "startTime": 376.676958,
+            "duration": 0.10912498831748962,
+            "kind": 8
+          },
+          {
+            "startTime": 381.062625,
+            "duration": 1.626000002026558,
+            "kind": 4
+          },
+          {
+            "startTime": 425.142833,
+            "duration": 0.19141699373722076,
+            "kind": 1
+          },
+          {
+            "startTime": 467.123667,
+            "duration": 0.2083750069141388,
+            "kind": 1
+          },
+          {
+            "startTime": 509.191875,
+            "duration": 0.22049999237060547,
+            "kind": 1
+          },
+          {
+            "startTime": 549.459833,
+            "duration": 0.1772499978542328,
+            "kind": 1
+          },
+          {
+            "startTime": 589.509917,
+            "duration": 0.17741599678993225,
+            "kind": 1
+          },
+          {
+            "startTime": 627.983792,
+            "duration": 0.1592079997062683,
+            "kind": 1
+          },
+          {
+            "startTime": 666.153917,
+            "duration": 0.1497500091791153,
+            "kind": 1
+          },
+          {
+            "startTime": 703.530042,
+            "duration": 0.16512499749660492,
+            "kind": 1
+          },
+          {
+            "startTime": 740.232542,
+            "duration": 0.14183299243450165,
+            "kind": 1
+          },
+          {
+            "startTime": 776.99175,
+            "duration": 0.13574999570846558,
+            "kind": 1
+          },
+          {
+            "startTime": 812.753208,
+            "duration": 0.1429169923067093,
+            "kind": 1
+          },
+          {
+            "startTime": 846.421125,
+            "duration": 0.13666699826717377,
+            "kind": 1
+          },
+          {
+            "startTime": 880.693625,
+            "duration": 0.12541700899600983,
+            "kind": 1
+          },
+          {
+            "startTime": 914.945167,
+            "duration": 0.1339160054922104,
+            "kind": 1
+          },
+          {
+            "startTime": 948.1525,
+            "duration": 0.13770800828933716,
+            "kind": 1
+          },
+          {
+            "startTime": 982.532083,
+            "duration": 0.13295899331569672,
+            "kind": 1
+          },
+          {
+            "startTime": 1015.317208,
+            "duration": 0.10495899617671967,
+            "kind": 1
+          },
+          {
+            "startTime": 1048.583,
+            "duration": 0.14466699957847595,
+            "kind": 1
+          },
+          {
+            "startTime": 1082.087083,
+            "duration": 0.12012499570846558,
+            "kind": 1
+          },
+          {
+            "startTime": 1116.004333,
+            "duration": 0.1237500011920929,
+            "kind": 1
+          },
+          {
+            "startTime": 1150.203375,
+            "duration": 0.14899998903274536,
+            "kind": 1
+          },
+          {
+            "startTime": 1184.968917,
+            "duration": 0.1404159963130951,
+            "kind": 1
+          },
+          {
+            "startTime": 1219.766792,
+            "duration": 0.14387500286102295,
+            "kind": 1
+          },
+          {
+            "startTime": 1255.043542,
+            "duration": 0.08858300745487213,
+            "kind": 1
+          },
+          {
+            "startTime": 1290.962125,
+            "duration": 0.12004199624061584,
+            "kind": 1
+          },
+          {
+            "startTime": 1325.986917,
+            "duration": 0.12091599404811859,
+            "kind": 1
+          },
+          {
+            "startTime": 1359.314,
+            "duration": 0.12120799720287323,
+            "kind": 1
+          },
+          {
+            "startTime": 1391.879,
+            "duration": 0.12116700410842896,
+            "kind": 1
+          },
+          {
+            "startTime": 1423.880917,
+            "duration": 0.11158300936222076,
+            "kind": 1
+          },
+          {
+            "startTime": 1455.994625,
+            "duration": 0.09612500667572021,
+            "kind": 1
+          },
+          {
+            "startTime": 1488.924042,
+            "duration": 0.11949999630451202,
+            "kind": 1
+          },
+          {
+            "startTime": 1521.6295,
+            "duration": 0.08216699957847595,
+            "kind": 1
+          },
+          {
+            "startTime": 1554.212708,
+            "duration": 0.10670898854732513,
+            "kind": 1
+          },
+          {
+            "startTime": 1587.076833,
+            "duration": 0.10741700232028961,
+            "kind": 1
+          },
+          {
+            "startTime": 1620.476542,
+            "duration": 0.0870409905910492,
+            "kind": 1
+          },
+          {
+            "startTime": 1654.668542,
+            "duration": 0.10670800507068634,
+            "kind": 1
+          },
+          {
+            "startTime": 1687.934333,
+            "duration": 0.10595899820327759,
+            "kind": 1
+          },
+          {
+            "startTime": 1721.386958,
+            "duration": 0.1028750091791153,
+            "kind": 1
+          },
+          {
+            "startTime": 1755.337417,
+            "duration": 0.10045799612998962,
+            "kind": 1
+          },
+          {
+            "startTime": 1789.708625,
+            "duration": 0.10275000333786011,
+            "kind": 1
+          },
+          {
+            "startTime": 1824.769667,
+            "duration": 0.09350000321865082,
+            "kind": 1
+          },
+          {
+            "startTime": 1860.437333,
+            "duration": 0.11287499964237213,
+            "kind": 1
+          },
+          {
+            "startTime": 1896.10225,
+            "duration": 0.13329198956489563,
+            "kind": 1
+          },
+          {
+            "startTime": 1931.446292,
+            "duration": 0.12566600739955902,
+            "kind": 1
+          },
+          {
+            "startTime": 1967.180042,
+            "duration": 0.11929100751876831,
+            "kind": 1
+          },
+          {
+            "startTime": 2002.190167,
+            "duration": 0.11562499403953552,
+            "kind": 1
+          },
+          {
+            "startTime": 2037.752542,
+            "duration": 0.09883299469947815,
+            "kind": 1
+          },
+          {
+            "startTime": 2074.196667,
+            "duration": 0.11333300173282623,
+            "kind": 1
+          },
+          {
+            "startTime": 2110.897583,
+            "duration": 0.11174999177455902,
+            "kind": 1
+          },
+          {
+            "startTime": 2148.184208,
+            "duration": 0.09987500309944153,
+            "kind": 1
+          },
+          {
+            "startTime": 2185.141833,
+            "duration": 0.07991699874401093,
+            "kind": 1
+          },
+          {
+            "startTime": 2222.394542,
+            "duration": 0.12058299779891968,
+            "kind": 1
+          },
+          {
+            "startTime": 2260.726917,
+            "duration": 0.14870800077915192,
+            "kind": 1
+          },
+          {
+            "startTime": 2298.787167,
+            "duration": 0.11637501418590546,
+            "kind": 1
+          },
+          {
+            "startTime": 2336.705958,
+            "duration": 0.10933399200439453,
+            "kind": 1
+          },
+          {
+            "startTime": 2374.715208,
+            "duration": 0.10737499594688416,
+            "kind": 1
+          },
+          {
+            "startTime": 2411.067958,
+            "duration": 0.10204198956489563,
+            "kind": 1
+          },
+          {
+            "startTime": 2443.438958,
+            "duration": 0.09000000357627869,
+            "kind": 1
+          },
+          {
+            "startTime": 2476.504792,
+            "duration": 0.08866600692272186,
+            "kind": 1
+          },
+          {
+            "startTime": 2510.282958,
+            "duration": 0.08583401143550873,
+            "kind": 1
+          },
+          {
+            "startTime": 2543.989125,
+            "duration": 0.10616700351238251,
+            "kind": 1
+          },
+          {
+            "startTime": 2577.049958,
+            "duration": 0.13545900583267212,
+            "kind": 1
+          },
+          {
+            "startTime": 2610.887042,
+            "duration": 0.09470801055431366,
+            "kind": 1
+          },
+          {
+            "startTime": 2644.626958,
+            "duration": 0.10416701436042786,
+            "kind": 1
+          },
+          {
+            "startTime": 2678.401083,
+            "duration": 0.0989999920129776,
+            "kind": 1
+          },
+          {
+            "startTime": 2711.440583,
+            "duration": 0.0988750010728836,
+            "kind": 1
+          },
+          {
+            "startTime": 2744.424042,
+            "duration": 0.14616599678993225,
+            "kind": 1
+          },
+          {
+            "startTime": 2777.6695,
+            "duration": 0.11424998939037323,
+            "kind": 1
+          },
+          {
+            "startTime": 2810.760833,
+            "duration": 0.10545898973941803,
+            "kind": 1
+          },
+          {
+            "startTime": 2843.822542,
+            "duration": 0.1264999955892563,
+            "kind": 1
+          },
+          {
+            "startTime": 2877.350375,
+            "duration": 0.11670799553394318,
+            "kind": 1
+          },
+          {
+            "startTime": 2911.141583,
+            "duration": 0.1434589922428131,
+            "kind": 1
+          },
+          {
+            "startTime": 2945.658792,
+            "duration": 0.13854099810123444,
+            "kind": 1
+          },
+          {
+            "startTime": 2979.103125,
+            "duration": 0.10466699302196503,
+            "kind": 1
+          },
+          {
+            "startTime": 3013.468042,
+            "duration": 0.09312500059604645,
+            "kind": 1
+          },
+          {
+            "startTime": 3047.739125,
+            "duration": 0.12983301281929016,
+            "kind": 1
+          },
+          {
+            "startTime": 3082.118333,
+            "duration": 0.12487499415874481,
+            "kind": 1
+          },
+          {
+            "startTime": 3117.004958,
+            "duration": 0.10645900666713715,
+            "kind": 1
+          },
+          {
+            "startTime": 3151.705,
+            "duration": 0.13270801305770874,
+            "kind": 1
+          },
+          {
+            "startTime": 3186.78725,
+            "duration": 0.12849999964237213,
+            "kind": 1
+          },
+          {
+            "startTime": 3222.516458,
+            "duration": 0.10637499392032623,
+            "kind": 1
+          },
+          {
+            "startTime": 3257.846458,
+            "duration": 0.13220900297164917,
+            "kind": 1
+          },
+          {
+            "startTime": 3293.313125,
+            "duration": 0.1041250079870224,
+            "kind": 1
+          },
+          {
+            "startTime": 3329.041,
+            "duration": 0.11054199934005737,
+            "kind": 1
+          },
+          {
+            "startTime": 3364.61525,
+            "duration": 0.10474999248981476,
+            "kind": 1
+          },
+          {
+            "startTime": 3400.565208,
+            "duration": 0.125,
+            "kind": 1
+          },
+          {
+            "startTime": 3437.313542,
+            "duration": 0.12754099071025848,
+            "kind": 1
+          },
+          {
+            "startTime": 3474.1035,
+            "duration": 0.1110830008983612,
+            "kind": 1
+          },
+          {
+            "startTime": 3511.81175,
+            "duration": 0.13124999403953552,
+            "kind": 1
+          },
+          {
+            "startTime": 3548.845958,
+            "duration": 0.14383399486541748,
+            "kind": 1
+          },
+          {
+            "startTime": 3599.158792,
+            "duration": 0.1529580056667328,
+            "kind": 1
+          },
+          {
+            "startTime": 3636.562708,
+            "duration": 0.10220900177955627,
+            "kind": 1
+          },
+          {
+            "startTime": 3672.735417,
+            "duration": 0.08824999630451202,
+            "kind": 1
+          },
+          {
+            "startTime": 3711.345125,
+            "duration": 0.09070800244808197,
+            "kind": 1
+          },
+          {
+            "startTime": 3749.096083,
+            "duration": 0.12970900535583496,
+            "kind": 1
+          },
+          {
+            "startTime": 3785.903083,
+            "duration": 0.08116699755191803,
+            "kind": 1
+          },
+          {
+            "startTime": 3822.090833,
+            "duration": 0.08874998986721039,
+            "kind": 1
+          },
+          {
+            "startTime": 3858.461167,
+            "duration": 0.07583299279212952,
+            "kind": 1
+          },
+          {
+            "startTime": 3895.380667,
+            "duration": 0.08341600000858307,
+            "kind": 1
+          },
+          {
+            "startTime": 3932.801042,
+            "duration": 0.07566599547863007,
+            "kind": 1
+          },
+          {
+            "startTime": 3969.721542,
+            "duration": 0.08916600048542023,
+            "kind": 1
+          },
+          {
+            "startTime": 4006.222083,
+            "duration": 0.08508400619029999,
+            "kind": 1
+          },
+          {
+            "startTime": 4043.326333,
+            "duration": 0.0927090048789978,
+            "kind": 1
+          },
+          {
+            "startTime": 4080.554667,
+            "duration": 0.0898749977350235,
+            "kind": 1
+          },
+          {
+            "startTime": 4118.260458,
+            "duration": 0.08287499845027924,
+            "kind": 1
+          },
+          {
+            "startTime": 4155.774458,
+            "duration": 0.085875004529953,
+            "kind": 1
+          },
+          {
+            "startTime": 4194.184208,
+            "duration": 0.08516700565814972,
+            "kind": 1
+          },
+          {
+            "startTime": 4231.824542,
+            "duration": 0.07037501037120819,
+            "kind": 1
+          },
+          {
+            "startTime": 4303.478917,
+            "duration": 0.5479580014944077,
+            "kind": 1
+          }
+        ],
+        "note": "Nested rows are inclusive and must not be added. Allocation profiles sample bytes, not exact allocation counts."
+      },
+      "maxRss": 325713920,
+      "rss": 302522512,
+      "retained": 49421000,
+      "documentBytes": 3797174,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 2,
+      "mode": "control",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 4183.637792,
+        "cpuMs": 4429.216
+      },
+      "observeRows": [],
+      "flushRows": [],
+      "audit": {
+        "mode": "control",
+        "rows": {
+          "phase.open": {
+            "calls": 1,
+            "wallMs": 4183.72825,
+            "bytes": 0,
+            "startTime": 193.849416,
+            "endTime": 4377.596541,
+            "cpuMs": 4429.296,
+            "memory": {
+              "rss": 285055488,
+              "heapTotal": 167624704,
+              "heapUsed": 100559008,
+              "external": 46589651,
+              "arrayBuffers": 30090008
+            }
+          }
+        },
+        "windowStart": 193.849416,
+        "windowEnd": 4377.554,
+        "initialMemory": {
+          "rss": 159563664,
+          "heapTotal": 118046720,
+          "heapUsed": 83719472,
+          "external": 15789142,
+          "arrayBuffers": 13096435
+        },
+        "finalMemory": {
+          "rss": 285055488,
+          "heapTotal": 167624704,
+          "heapUsed": 100559688,
+          "external": 46589651,
+          "arrayBuffers": 30090008
+        },
+        "gc": [
+          {
+            "startTime": 225.324458,
+            "duration": 1.032917007803917,
+            "kind": 1
+          },
+          {
+            "startTime": 244.280416,
+            "duration": 0.9080419987440109,
+            "kind": 1
+          },
+          {
+            "startTime": 264.406333,
+            "duration": 0.6720000058412552,
+            "kind": 1
+          },
+          {
+            "startTime": 284.507541,
+            "duration": 0.6255419999361038,
+            "kind": 1
+          },
+          {
+            "startTime": 304.6205,
+            "duration": 0.6623750030994415,
+            "kind": 1
+          },
+          {
+            "startTime": 324.251333,
+            "duration": 0.6196670085191727,
+            "kind": 1
+          },
+          {
+            "startTime": 344.528833,
+            "duration": 0.6624580025672913,
+            "kind": 1
+          },
+          {
+            "startTime": 372.912833,
+            "duration": 0.848458006978035,
+            "kind": 1
+          },
+          {
+            "startTime": 374.009583,
+            "duration": 0.12020799517631531,
+            "kind": 8
+          },
+          {
+            "startTime": 378.054333,
+            "duration": 1.723582997918129,
+            "kind": 4
+          },
+          {
+            "startTime": 422.690833,
+            "duration": 0.171083003282547,
+            "kind": 1
+          },
+          {
+            "startTime": 465.155875,
+            "duration": 0.19954098761081696,
+            "kind": 1
+          },
+          {
+            "startTime": 507.410625,
+            "duration": 0.20283299684524536,
+            "kind": 1
+          },
+          {
+            "startTime": 548.098708,
+            "duration": 0.18449999392032623,
+            "kind": 1
+          },
+          {
+            "startTime": 588.180916,
+            "duration": 0.1492919921875,
+            "kind": 1
+          },
+          {
+            "startTime": 626.394625,
+            "duration": 0.15654098987579346,
+            "kind": 1
+          },
+          {
+            "startTime": 664.37175,
+            "duration": 0.13395799696445465,
+            "kind": 1
+          },
+          {
+            "startTime": 701.187541,
+            "duration": 0.12679199874401093,
+            "kind": 1
+          },
+          {
+            "startTime": 737.463583,
+            "duration": 0.12433299422264099,
+            "kind": 1
+          },
+          {
+            "startTime": 774.678333,
+            "duration": 0.11533300578594208,
+            "kind": 1
+          },
+          {
+            "startTime": 810.243625,
+            "duration": 0.11929100751876831,
+            "kind": 1
+          },
+          {
+            "startTime": 844.333541,
+            "duration": 0.16008399426937103,
+            "kind": 1
+          },
+          {
+            "startTime": 877.913291,
+            "duration": 0.1347920000553131,
+            "kind": 1
+          },
+          {
+            "startTime": 912.297,
+            "duration": 0.13029100000858307,
+            "kind": 1
+          },
+          {
+            "startTime": 945.65575,
+            "duration": 0.12337499856948853,
+            "kind": 1
+          },
+          {
+            "startTime": 979.279,
+            "duration": 0.11612500250339508,
+            "kind": 1
+          },
+          {
+            "startTime": 1012.469625,
+            "duration": 0.12699998915195465,
+            "kind": 1
+          },
+          {
+            "startTime": 1046.001791,
+            "duration": 0.12304200232028961,
+            "kind": 1
+          },
+          {
+            "startTime": 1079.459208,
+            "duration": 0.12858299911022186,
+            "kind": 1
+          },
+          {
+            "startTime": 1112.851708,
+            "duration": 0.09791699051856995,
+            "kind": 1
+          },
+          {
+            "startTime": 1146.234166,
+            "duration": 0.15137499570846558,
+            "kind": 1
+          },
+          {
+            "startTime": 1180.879583,
+            "duration": 0.10487499833106995,
+            "kind": 1
+          },
+          {
+            "startTime": 1216.024125,
+            "duration": 0.09829099476337433,
+            "kind": 1
+          },
+          {
+            "startTime": 1251.55525,
+            "duration": 0.1059579998254776,
+            "kind": 1
+          },
+          {
+            "startTime": 1288.303958,
+            "duration": 0.1288750022649765,
+            "kind": 1
+          },
+          {
+            "startTime": 1323.434125,
+            "duration": 0.11254100501537323,
+            "kind": 1
+          },
+          {
+            "startTime": 1356.948916,
+            "duration": 0.14366699755191803,
+            "kind": 1
+          },
+          {
+            "startTime": 1389.139333,
+            "duration": 0.09104199707508087,
+            "kind": 1
+          },
+          {
+            "startTime": 1421.246833,
+            "duration": 0.13191699981689453,
+            "kind": 1
+          },
+          {
+            "startTime": 1453.847791,
+            "duration": 0.09666700661182404,
+            "kind": 1
+          },
+          {
+            "startTime": 1486.649958,
+            "duration": 0.1110830008983612,
+            "kind": 1
+          },
+          {
+            "startTime": 1519.624916,
+            "duration": 0.09475000202655792,
+            "kind": 1
+          },
+          {
+            "startTime": 1552.440791,
+            "duration": 0.1058339923620224,
+            "kind": 1
+          },
+          {
+            "startTime": 1585.371,
+            "duration": 0.1145000010728836,
+            "kind": 1
+          },
+          {
+            "startTime": 1617.950625,
+            "duration": 0.09254100918769836,
+            "kind": 1
+          },
+          {
+            "startTime": 1652.279291,
+            "duration": 0.11395899951457977,
+            "kind": 1
+          },
+          {
+            "startTime": 1686.184625,
+            "duration": 0.11912500858306885,
+            "kind": 1
+          },
+          {
+            "startTime": 1719.984333,
+            "duration": 0.12445800006389618,
+            "kind": 1
+          },
+          {
+            "startTime": 1754.010041,
+            "duration": 0.12633401155471802,
+            "kind": 1
+          },
+          {
+            "startTime": 1788.066166,
+            "duration": 0.10387501120567322,
+            "kind": 1
+          },
+          {
+            "startTime": 1822.466708,
+            "duration": 0.10316699743270874,
+            "kind": 1
+          },
+          {
+            "startTime": 1857.683583,
+            "duration": 0.14704199135303497,
+            "kind": 1
+          },
+          {
+            "startTime": 1893.456958,
+            "duration": 0.16666699945926666,
+            "kind": 1
+          },
+          {
+            "startTime": 1928.666041,
+            "duration": 0.15562500059604645,
+            "kind": 1
+          },
+          {
+            "startTime": 1964.493375,
+            "duration": 0.12304100394248962,
+            "kind": 1
+          },
+          {
+            "startTime": 1999.763458,
+            "duration": 0.1214580088853836,
+            "kind": 1
+          },
+          {
+            "startTime": 2035.710083,
+            "duration": 0.1333329975605011,
+            "kind": 1
+          },
+          {
+            "startTime": 2072.4875,
+            "duration": 0.10141599178314209,
+            "kind": 1
+          },
+          {
+            "startTime": 2109.171291,
+            "duration": 0.09524999558925629,
+            "kind": 1
+          },
+          {
+            "startTime": 2145.371083,
+            "duration": 0.1150829941034317,
+            "kind": 1
+          },
+          {
+            "startTime": 2182.02225,
+            "duration": 0.10237500071525574,
+            "kind": 1
+          },
+          {
+            "startTime": 2218.950833,
+            "duration": 0.10016699135303497,
+            "kind": 1
+          },
+          {
+            "startTime": 2256.862291,
+            "duration": 0.11304199695587158,
+            "kind": 1
+          },
+          {
+            "startTime": 2295.832791,
+            "duration": 0.10712499916553497,
+            "kind": 1
+          },
+          {
+            "startTime": 2333.648291,
+            "duration": 0.10300000011920929,
+            "kind": 1
+          },
+          {
+            "startTime": 2371.949875,
+            "duration": 0.10604099929332733,
+            "kind": 1
+          },
+          {
+            "startTime": 2408.421875,
+            "duration": 0.09320800006389618,
+            "kind": 1
+          },
+          {
+            "startTime": 2441.108,
+            "duration": 0.11399999260902405,
+            "kind": 1
+          },
+          {
+            "startTime": 2473.351958,
+            "duration": 0.14166699349880219,
+            "kind": 1
+          },
+          {
+            "startTime": 2506.832375,
+            "duration": 0.09495800733566284,
+            "kind": 1
+          },
+          {
+            "startTime": 2540.281541,
+            "duration": 0.1120000034570694,
+            "kind": 1
+          },
+          {
+            "startTime": 2573.2525,
+            "duration": 0.12233300507068634,
+            "kind": 1
+          },
+          {
+            "startTime": 2605.898916,
+            "duration": 0.09958399832248688,
+            "kind": 1
+          },
+          {
+            "startTime": 2638.588458,
+            "duration": 0.09645800292491913,
+            "kind": 1
+          },
+          {
+            "startTime": 2672.294208,
+            "duration": 0.12020799517631531,
+            "kind": 1
+          },
+          {
+            "startTime": 2706.532625,
+            "duration": 0.10891599953174591,
+            "kind": 1
+          },
+          {
+            "startTime": 2739.983916,
+            "duration": 0.13129200041294098,
+            "kind": 1
+          },
+          {
+            "startTime": 2773.877833,
+            "duration": 0.0985419899225235,
+            "kind": 1
+          },
+          {
+            "startTime": 2806.922333,
+            "duration": 0.10341700911521912,
+            "kind": 1
+          },
+          {
+            "startTime": 2841.437333,
+            "duration": 0.11520799994468689,
+            "kind": 1
+          },
+          {
+            "startTime": 2875.610583,
+            "duration": 0.11766700446605682,
+            "kind": 1
+          },
+          {
+            "startTime": 2910.052916,
+            "duration": 0.08991700410842896,
+            "kind": 1
+          },
+          {
+            "startTime": 2944.719,
+            "duration": 0.12199999392032623,
+            "kind": 1
+          },
+          {
+            "startTime": 2979.077583,
+            "duration": 0.13375000655651093,
+            "kind": 1
+          },
+          {
+            "startTime": 3014.848416,
+            "duration": 0.14691700041294098,
+            "kind": 1
+          },
+          {
+            "startTime": 3050.329166,
+            "duration": 0.11624999344348907,
+            "kind": 1
+          },
+          {
+            "startTime": 3085.287666,
+            "duration": 0.10020899772644043,
+            "kind": 1
+          },
+          {
+            "startTime": 3120.600041,
+            "duration": 0.13370899856090546,
+            "kind": 1
+          },
+          {
+            "startTime": 3156.236,
+            "duration": 0.11641600728034973,
+            "kind": 1
+          },
+          {
+            "startTime": 3191.51375,
+            "duration": 0.11137500405311584,
+            "kind": 1
+          },
+          {
+            "startTime": 3227.015,
+            "duration": 0.10591600835323334,
+            "kind": 1
+          },
+          {
+            "startTime": 3262.562083,
+            "duration": 0.12908299267292023,
+            "kind": 1
+          },
+          {
+            "startTime": 3298.482333,
+            "duration": 0.12529200315475464,
+            "kind": 1
+          },
+          {
+            "startTime": 3334.809375,
+            "duration": 0.11204099655151367,
+            "kind": 1
+          },
+          {
+            "startTime": 3371.485375,
+            "duration": 0.12912499904632568,
+            "kind": 1
+          },
+          {
+            "startTime": 3408.317458,
+            "duration": 0.14787499606609344,
+            "kind": 1
+          },
+          {
+            "startTime": 3445.651083,
+            "duration": 0.12475000321865082,
+            "kind": 1
+          },
+          {
+            "startTime": 3483.270666,
+            "duration": 0.1435839980840683,
+            "kind": 1
+          },
+          {
+            "startTime": 3521.163708,
+            "duration": 0.16112500429153442,
+            "kind": 1
+          },
+          {
+            "startTime": 3559.101708,
+            "duration": 0.1469999998807907,
+            "kind": 1
+          },
+          {
+            "startTime": 3609.587625,
+            "duration": 0.17579099535942078,
+            "kind": 1
+          },
+          {
+            "startTime": 3647.644041,
+            "duration": 0.12087500095367432,
+            "kind": 1
+          },
+          {
+            "startTime": 3684.174833,
+            "duration": 0.09245800971984863,
+            "kind": 1
+          },
+          {
+            "startTime": 3721.020708,
+            "duration": 0.09987498819828033,
+            "kind": 1
+          },
+          {
+            "startTime": 3757.355541,
+            "duration": 0.11175000667572021,
+            "kind": 1
+          },
+          {
+            "startTime": 3793.428458,
+            "duration": 0.08829200267791748,
+            "kind": 1
+          },
+          {
+            "startTime": 3829.23275,
+            "duration": 0.07558301091194153,
+            "kind": 1
+          },
+          {
+            "startTime": 3865.05375,
+            "duration": 0.07420799136161804,
+            "kind": 1
+          },
+          {
+            "startTime": 3902.255,
+            "duration": 0.07645799219608307,
+            "kind": 1
+          },
+          {
+            "startTime": 3939.266583,
+            "duration": 0.07837499678134918,
+            "kind": 1
+          },
+          {
+            "startTime": 3976.094333,
+            "duration": 0.08370800316333771,
+            "kind": 1
+          },
+          {
+            "startTime": 4013.86875,
+            "duration": 0.07491600513458252,
+            "kind": 1
+          },
+          {
+            "startTime": 4051.347208,
+            "duration": 0.092958003282547,
+            "kind": 1
+          },
+          {
+            "startTime": 4088.8425,
+            "duration": 0.08004100620746613,
+            "kind": 1
+          },
+          {
+            "startTime": 4126.494583,
+            "duration": 0.0886249989271164,
+            "kind": 1
+          },
+          {
+            "startTime": 4164.456,
+            "duration": 0.08699999749660492,
+            "kind": 1
+          },
+          {
+            "startTime": 4203.022958,
+            "duration": 0.08287499845027924,
+            "kind": 1
+          },
+          {
+            "startTime": 4241.258375,
+            "duration": 0.07645800709724426,
+            "kind": 1
+          },
+          {
+            "startTime": 4318.812458,
+            "duration": 0.7176249921321869,
+            "kind": 1
+          }
+        ],
+        "note": "Nested rows are inclusive and must not be added. Allocation profiles sample bytes, not exact allocation counts."
+      },
+      "maxRss": 325550080,
+      "rss": 302046872,
+      "retained": 49435466,
+      "documentBytes": 3797174,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 2,
+      "mode": "saveonly",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 4188.850082999999,
+        "cpuMs": 4435.973
+      },
+      "observeRows": [],
+      "flushRows": [],
+      "audit": {
+        "mode": "saveonly",
+        "rows": {
+          "phase.open": {
+            "calls": 1,
+            "wallMs": 16.361625000000004,
+            "bytes": 0,
+            "startTime": 198.584333,
+            "endTime": 214.964125,
+            "cpuMs": 7.332,
+            "memory": {
+              "rss": 165774136,
+              "heapTotal": 98025472,
+              "heapUsed": 38490280,
+              "external": 15789198,
+              "arrayBuffers": 209675
+            }
+          },
+          "phase.plan": {
+            "calls": 1,
+            "wallMs": 9.38466600000001,
+            "bytes": 0,
+            "startTime": 214.976917,
+            "endTime": 224.36625,
+            "cpuMs": 9.657,
+            "memory": {
+              "rss": 178570064,
+              "heapTotal": 110788608,
+              "heapUsed": 40125800,
+              "external": 28413574,
+              "arrayBuffers": 12965251
+            }
+          },
+          "phase.authenticate": {
+            "calls": 1,
+            "wallMs": 138.783625,
+            "bytes": 0,
+            "startTime": 224.375167,
+            "endTime": 363.16375,
+            "cpuMs": 168.241,
+            "memory": {
+              "rss": 208900520,
+              "heapTotal": 150077440,
+              "heapUsed": 88657232,
+              "external": 16009390,
+              "arrayBuffers": 561067
+            }
+          },
+          "phase.transaction-prepare": {
+            "calls": 1,
+            "wallMs": 3.7835000000000036,
+            "bytes": 0,
+            "startTime": 363.180167,
+            "endTime": 366.96875,
+            "cpuMs": 9.232,
+            "memory": {
+              "rss": 210703024,
+              "heapTotal": 151027712,
+              "heapUsed": 58520952,
+              "external": 15660046,
+              "arrayBuffers": 209675
+            }
+          },
+          "save.check": {
+            "calls": 20000,
+            "wallMs": 2053.746872000002,
+            "bytes": 0
+          },
+          "phase.apply": {
+            "calls": 1,
+            "wallMs": 3910.5735419999996,
+            "bytes": 0,
+            "startTime": 366.981333,
+            "endTime": 4277.564167,
+            "cpuMs": 4164.967,
+            "memory": {
+              "rss": 232331752,
+              "heapTotal": 133185536,
+              "heapUsed": 90743968,
+              "external": 24385004,
+              "arrayBuffers": 8934633
+            }
+          },
+          "phase.publish": {
+            "calls": 1,
+            "wallMs": 103.40220799999952,
+            "bytes": 0,
+            "startTime": 4277.58175,
+            "endTime": 4380.989833,
+            "cpuMs": 68.28,
+            "memory": {
+              "rss": 264051512,
+              "heapTotal": 166346752,
+              "heapUsed": 99357272,
+              "external": 46655236,
+              "arrayBuffers": 30155593
+            }
+          },
+          "phase.checkpoint": {
+            "calls": 1,
+            "wallMs": 6.489999999999782,
+            "bytes": 0,
+            "startTime": 4381.00875,
+            "endTime": 4387.502167,
+            "cpuMs": 7.943,
+            "memory": {
+              "rss": 275635048,
+              "heapTotal": 169902080,
+              "heapUsed": 102178424,
+              "external": 46655244,
+              "arrayBuffers": 30155601
+            }
+          }
+        },
+        "windowStart": 198.584333,
+        "windowEnd": 4387.496792,
+        "initialMemory": {
+          "rss": 162545936,
+          "heapTotal": 120668160,
+          "heapUsed": 86210992,
+          "external": 15789142,
+          "arrayBuffers": 13096435
+        },
+        "finalMemory": {
+          "rss": 275635048,
+          "heapTotal": 169902080,
+          "heapUsed": 102178848,
+          "external": 46655244,
+          "arrayBuffers": 30155601
+        },
+        "gc": [
+          {
+            "startTime": 199.345542,
+            "duration": 0.990666002035141,
+            "kind": 1
+          },
+          {
+            "startTime": 242.197917,
+            "duration": 0.90625,
+            "kind": 1
+          },
+          {
+            "startTime": 262.009042,
+            "duration": 0.9317080080509186,
+            "kind": 1
+          },
+          {
+            "startTime": 282.199875,
+            "duration": 0.6735420078039169,
+            "kind": 1
+          },
+          {
+            "startTime": 302.316875,
+            "duration": 0.6536249965429306,
+            "kind": 1
+          },
+          {
+            "startTime": 321.722125,
+            "duration": 0.6777919977903366,
+            "kind": 1
+          },
+          {
+            "startTime": 342.293292,
+            "duration": 0.6660410016775131,
+            "kind": 1
+          },
+          {
+            "startTime": 364.785292,
+            "duration": 1.0270829945802689,
+            "kind": 1
+          },
+          {
+            "startTime": 365.962083,
+            "duration": 0.1075419932603836,
+            "kind": 8
+          },
+          {
+            "startTime": 374.721958,
+            "duration": 1.6010839939117432,
+            "kind": 4
+          },
+          {
+            "startTime": 420.539208,
+            "duration": 0.2333340048789978,
+            "kind": 1
+          },
+          {
+            "startTime": 464.125417,
+            "duration": 0.27183300256729126,
+            "kind": 1
+          },
+          {
+            "startTime": 506.779333,
+            "duration": 0.24883399903774261,
+            "kind": 1
+          },
+          {
+            "startTime": 547.453833,
+            "duration": 0.1743749976158142,
+            "kind": 1
+          },
+          {
+            "startTime": 587.703417,
+            "duration": 0.15308299660682678,
+            "kind": 1
+          },
+          {
+            "startTime": 625.566333,
+            "duration": 0.14408400654792786,
+            "kind": 1
+          },
+          {
+            "startTime": 663.104708,
+            "duration": 0.1508750021457672,
+            "kind": 1
+          },
+          {
+            "startTime": 700.504417,
+            "duration": 0.1666249930858612,
+            "kind": 1
+          },
+          {
+            "startTime": 736.273542,
+            "duration": 0.14241600036621094,
+            "kind": 1
+          },
+          {
+            "startTime": 773.602833,
+            "duration": 0.12054198980331421,
+            "kind": 1
+          },
+          {
+            "startTime": 808.669417,
+            "duration": 0.13954100012779236,
+            "kind": 1
+          },
+          {
+            "startTime": 842.038875,
+            "duration": 0.15754200518131256,
+            "kind": 1
+          },
+          {
+            "startTime": 874.8585,
+            "duration": 0.11691699922084808,
+            "kind": 1
+          },
+          {
+            "startTime": 908.053875,
+            "duration": 0.10400000214576721,
+            "kind": 1
+          },
+          {
+            "startTime": 940.424625,
+            "duration": 0.10479199886322021,
+            "kind": 1
+          },
+          {
+            "startTime": 973.516958,
+            "duration": 0.14729200303554535,
+            "kind": 1
+          },
+          {
+            "startTime": 1006.771417,
+            "duration": 0.13508300483226776,
+            "kind": 1
+          },
+          {
+            "startTime": 1040.161458,
+            "duration": 0.13599999248981476,
+            "kind": 1
+          },
+          {
+            "startTime": 1073.785333,
+            "duration": 0.1223750114440918,
+            "kind": 1
+          },
+          {
+            "startTime": 1107.162042,
+            "duration": 0.12091600894927979,
+            "kind": 1
+          },
+          {
+            "startTime": 1140.973667,
+            "duration": 0.09254100918769836,
+            "kind": 1
+          },
+          {
+            "startTime": 1175.067958,
+            "duration": 0.12483400106430054,
+            "kind": 1
+          },
+          {
+            "startTime": 1209.724708,
+            "duration": 0.11408400535583496,
+            "kind": 1
+          },
+          {
+            "startTime": 1244.82675,
+            "duration": 0.1089169979095459,
+            "kind": 1
+          },
+          {
+            "startTime": 1281.354042,
+            "duration": 0.10479100048542023,
+            "kind": 1
+          },
+          {
+            "startTime": 1316.292125,
+            "duration": 0.11058299243450165,
+            "kind": 1
+          },
+          {
+            "startTime": 1349.229542,
+            "duration": 0.11958299577236176,
+            "kind": 1
+          },
+          {
+            "startTime": 1381.980417,
+            "duration": 0.125,
+            "kind": 1
+          },
+          {
+            "startTime": 1414.137625,
+            "duration": 0.11854200065135956,
+            "kind": 1
+          },
+          {
+            "startTime": 1446.182667,
+            "duration": 0.09470799565315247,
+            "kind": 1
+          },
+          {
+            "startTime": 1478.71025,
+            "duration": 0.09216700494289398,
+            "kind": 1
+          },
+          {
+            "startTime": 1511.510125,
+            "duration": 0.11604200303554535,
+            "kind": 1
+          },
+          {
+            "startTime": 1543.70375,
+            "duration": 0.0955829918384552,
+            "kind": 1
+          },
+          {
+            "startTime": 1576.934292,
+            "duration": 0.12287499010562897,
+            "kind": 1
+          },
+          {
+            "startTime": 1610.719333,
+            "duration": 0.12245900928974152,
+            "kind": 1
+          },
+          {
+            "startTime": 1645.299417,
+            "duration": 0.10337498784065247,
+            "kind": 1
+          },
+          {
+            "startTime": 1678.111417,
+            "duration": 0.12754100561141968,
+            "kind": 1
+          },
+          {
+            "startTime": 1712.492917,
+            "duration": 0.09716600179672241,
+            "kind": 1
+          },
+          {
+            "startTime": 1746.772042,
+            "duration": 0.09883300960063934,
+            "kind": 1
+          },
+          {
+            "startTime": 1780.935125,
+            "duration": 0.1020829975605011,
+            "kind": 1
+          },
+          {
+            "startTime": 1815.390042,
+            "duration": 0.10570800304412842,
+            "kind": 1
+          },
+          {
+            "startTime": 1850.773625,
+            "duration": 0.0925000011920929,
+            "kind": 1
+          },
+          {
+            "startTime": 1886.038167,
+            "duration": 0.1110830008983612,
+            "kind": 1
+          },
+          {
+            "startTime": 1921.039208,
+            "duration": 0.12562499940395355,
+            "kind": 1
+          },
+          {
+            "startTime": 1956.534792,
+            "duration": 0.11466600000858307,
+            "kind": 1
+          },
+          {
+            "startTime": 1992.197375,
+            "duration": 0.0997920036315918,
+            "kind": 1
+          },
+          {
+            "startTime": 2027.433625,
+            "duration": 0.10950000584125519,
+            "kind": 1
+          },
+          {
+            "startTime": 2064.412708,
+            "duration": 0.12587499618530273,
+            "kind": 1
+          },
+          {
+            "startTime": 2100.61875,
+            "duration": 0.0919170081615448,
+            "kind": 1
+          },
+          {
+            "startTime": 2137.474042,
+            "duration": 0.09783299267292023,
+            "kind": 1
+          },
+          {
+            "startTime": 2173.802083,
+            "duration": 0.12604199349880219,
+            "kind": 1
+          },
+          {
+            "startTime": 2210.684833,
+            "duration": 0.09229199588298798,
+            "kind": 1
+          },
+          {
+            "startTime": 2247.289125,
+            "duration": 0.09291699528694153,
+            "kind": 1
+          },
+          {
+            "startTime": 2284.21875,
+            "duration": 0.10762499272823334,
+            "kind": 1
+          },
+          {
+            "startTime": 2322.4105,
+            "duration": 0.09279198944568634,
+            "kind": 1
+          },
+          {
+            "startTime": 2360.716708,
+            "duration": 0.12137499451637268,
+            "kind": 1
+          },
+          {
+            "startTime": 2397.938417,
+            "duration": 0.11445799469947815,
+            "kind": 1
+          },
+          {
+            "startTime": 2431.400167,
+            "duration": 0.1211249977350235,
+            "kind": 1
+          },
+          {
+            "startTime": 2464.183333,
+            "duration": 0.10258400440216064,
+            "kind": 1
+          },
+          {
+            "startTime": 2496.874375,
+            "duration": 0.1452919989824295,
+            "kind": 1
+          },
+          {
+            "startTime": 2530.214958,
+            "duration": 0.10475000739097595,
+            "kind": 1
+          },
+          {
+            "startTime": 2562.774417,
+            "duration": 0.11900000274181366,
+            "kind": 1
+          },
+          {
+            "startTime": 2596.581208,
+            "duration": 0.13908401131629944,
+            "kind": 1
+          },
+          {
+            "startTime": 2630.431583,
+            "duration": 0.11066699028015137,
+            "kind": 1
+          },
+          {
+            "startTime": 2663.978833,
+            "duration": 0.08954198658466339,
+            "kind": 1
+          },
+          {
+            "startTime": 2697.838667,
+            "duration": 0.10770800709724426,
+            "kind": 1
+          },
+          {
+            "startTime": 2731.909417,
+            "duration": 0.11762499809265137,
+            "kind": 1
+          },
+          {
+            "startTime": 2765.850875,
+            "duration": 0.1036670058965683,
+            "kind": 1
+          },
+          {
+            "startTime": 2800.008458,
+            "duration": 0.10704199969768524,
+            "kind": 1
+          },
+          {
+            "startTime": 2834.59175,
+            "duration": 0.10916699469089508,
+            "kind": 1
+          },
+          {
+            "startTime": 2869.16625,
+            "duration": 0.10625000298023224,
+            "kind": 1
+          },
+          {
+            "startTime": 2904.313292,
+            "duration": 0.1194159984588623,
+            "kind": 1
+          },
+          {
+            "startTime": 2938.232292,
+            "duration": 0.14300000667572021,
+            "kind": 1
+          },
+          {
+            "startTime": 2972.704125,
+            "duration": 0.10604199767112732,
+            "kind": 1
+          },
+          {
+            "startTime": 3006.854292,
+            "duration": 0.10441601276397705,
+            "kind": 1
+          },
+          {
+            "startTime": 3041.952875,
+            "duration": 0.11012499034404755,
+            "kind": 1
+          },
+          {
+            "startTime": 3077.102042,
+            "duration": 0.10095798969268799,
+            "kind": 1
+          },
+          {
+            "startTime": 3112.691625,
+            "duration": 0.10541699826717377,
+            "kind": 1
+          },
+          {
+            "startTime": 3147.887458,
+            "duration": 0.0988750010728836,
+            "kind": 1
+          },
+          {
+            "startTime": 3183.680875,
+            "duration": 0.10495799779891968,
+            "kind": 1
+          },
+          {
+            "startTime": 3219.840417,
+            "duration": 0.11912499368190765,
+            "kind": 1
+          },
+          {
+            "startTime": 3255.818083,
+            "duration": 0.10049998760223389,
+            "kind": 1
+          },
+          {
+            "startTime": 3291.91725,
+            "duration": 0.13520801067352295,
+            "kind": 1
+          },
+          {
+            "startTime": 3327.75,
+            "duration": 0.12345799803733826,
+            "kind": 1
+          },
+          {
+            "startTime": 3364.394,
+            "duration": 0.11733300983905792,
+            "kind": 1
+          },
+          {
+            "startTime": 3401.241417,
+            "duration": 0.12554100155830383,
+            "kind": 1
+          },
+          {
+            "startTime": 3438.959083,
+            "duration": 0.1253340095281601,
+            "kind": 1
+          },
+          {
+            "startTime": 3475.939708,
+            "duration": 0.12179200351238251,
+            "kind": 1
+          },
+          {
+            "startTime": 3514.554625,
+            "duration": 0.14524999260902405,
+            "kind": 1
+          },
+          {
+            "startTime": 3552.095083,
+            "duration": 0.17295899987220764,
+            "kind": 1
+          },
+          {
+            "startTime": 3602.249917,
+            "duration": 0.16433300077915192,
+            "kind": 1
+          },
+          {
+            "startTime": 3640.318,
+            "duration": 0.12062498927116394,
+            "kind": 1
+          },
+          {
+            "startTime": 3678.294542,
+            "duration": 0.09954099357128143,
+            "kind": 1
+          },
+          {
+            "startTime": 3715.314792,
+            "duration": 0.10500000417232513,
+            "kind": 1
+          },
+          {
+            "startTime": 3752.528708,
+            "duration": 0.1049170047044754,
+            "kind": 1
+          },
+          {
+            "startTime": 3789.098083,
+            "duration": 0.08970899879932404,
+            "kind": 1
+          },
+          {
+            "startTime": 3826.11225,
+            "duration": 0.09424999356269836,
+            "kind": 1
+          },
+          {
+            "startTime": 3863.125,
+            "duration": 0.08608299493789673,
+            "kind": 1
+          },
+          {
+            "startTime": 3900.053333,
+            "duration": 0.08904199302196503,
+            "kind": 1
+          },
+          {
+            "startTime": 3938.235042,
+            "duration": 0.09675000607967377,
+            "kind": 1
+          },
+          {
+            "startTime": 3976.199667,
+            "duration": 0.08304101228713989,
+            "kind": 1
+          },
+          {
+            "startTime": 4014.347333,
+            "duration": 0.08258399367332458,
+            "kind": 1
+          },
+          {
+            "startTime": 4052.331333,
+            "duration": 0.0827919989824295,
+            "kind": 1
+          },
+          {
+            "startTime": 4090.721417,
+            "duration": 0.08091600239276886,
+            "kind": 1
+          },
+          {
+            "startTime": 4128.794333,
+            "duration": 0.08062499761581421,
+            "kind": 1
+          },
+          {
+            "startTime": 4166.619958,
+            "duration": 0.07658399641513824,
+            "kind": 1
+          },
+          {
+            "startTime": 4204.732458,
+            "duration": 0.0807500034570694,
+            "kind": 1
+          },
+          {
+            "startTime": 4242.332958,
+            "duration": 0.08187499642372131,
+            "kind": 1
+          },
+          {
+            "startTime": 4317.135042,
+            "duration": 0.6744579970836639,
+            "kind": 1
+          }
+        ],
+        "note": "Nested rows are inclusive and must not be added. Allocation profiles sample bytes, not exact allocation counts."
+      },
+      "maxRss": 313786368,
+      "rss": 287956680,
+      "retained": 49518427,
+      "documentBytes": 3797174,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    }
+  ]
+}
