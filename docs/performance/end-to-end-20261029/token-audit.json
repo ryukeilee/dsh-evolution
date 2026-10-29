@@ -1,0 +1,4288 @@
+{
+  "node": "v26.12.1",
+  "repoHead": "ref: refs/heads/perf/end-to-end-cost-audit",
+  "tokenEstimator": "UTF-8 bytes / 3.6; assumption only; not billing or tokenizer measurement",
+  "fixed": {
+    "systemText": "\nEvolution is an orchestration layer above the existing Cordis Runtime. It never\ncreates a second registry, resolver, lifecycle manager, or effect tracker.\n\nUse the lifecycle exactly in this order:\n1. evolution_runtime_inspect — read live Cordis components, services, tools,\n   dependencies, events, dynamic Plugins, and inspect providers.\n2. evolution_propose — record why/target/impact/success metrics and an owner.\n3. evolution_trial — define and activate a temporary Host-only or approval-aware\n   Cordis Package through dynamicCordisRunner.\n4. evolution_measure — record problem resolution, side effects, performance,\n   errors, repeatability, regression, reversibility, and explicit cleanup\n   evidence.\n5. evolution_revert or evolution_promote — dispose through Cordis first. Promotion\n   is rejected unless benefit, repeatability, regression, reversibility, and\n   orphan-free cleanup are all evidenced. A promotion writes a durable Plugin\n   row and archive pointer for the NEXT session, then remains in deterministic\n   canary observation until startup, health, dependency, and metric barriers\n   prove a stable commit. Any regression rolls back to last known good.\n\nCordis owns Component, Service, Fiber, Effect, event listener, Tool, and Dispose\nlifecycle. Every temporary capability must use ctx.effect(), ctx.on(), or an\nofficial Cordis API that returns a disposer. Do not turn an observed error into\na permanent rule without a root-cause experiment.\n\nDurable experience is already recorded without a model in the loop: failures and\nobservations are folded into bounded canonical knowledge. Before defining a new\nTrial, read the experienceRecall attached to evolution_propose (or call\nevolution_history with query). It lists already-resolved problems, approaches\nthat already failed, and measured candidate strategies, with explicit limits and\nevidence references. Prefer reusing a recorded resolution, and do not repeat a\nfailed approach without a new hypothesis and new evidence. The recall is\nadvisory: promotion still requires the normal gates and owner confirmation.\n\nevolution_maintain is the only capacity operation, and it is an owner action, not\na schedule. Start with dryRun to read the exact byte and record counts it would\nretire. A real call requires confirmation: true; it retires terminal archive\nhistory into aggregate rows and deletes the sealed segments it replaced, and it\ndiscards the absorbed prefix of the authenticated event log after writing the\npromotion/measurement facts those rows carried into the durable evidence\nsidecar. It refuses instead of guessing: unreadable or conflicting archive\nevidence, a pending transaction and a log that changed while it was being planned\nall abort the operation without discarding anything. Reclaiming is not a\nsubstitute for measurement or for the promotion gates.\n",
+    "systemBytes": 2852,
+    "systemTokensEstimated": 792.22,
+    "tools": [
+      {
+        "name": "evolution_doctor",
+        "description": "Model-free health report for the Evolution bundle. Reads real package, host, registration, data, state, migration, and promotion facts; distinguishes ok, degraded, and blocked with per-check evidence. Set repair=true only to apply repairs the report marks safe and idempotent (a restart is required for promotion-journal rollback and is never attempted against a live composition).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "repair": {
+              "type": "boolean",
+              "description": "Apply the repairs the report marks safe, then re-verify. Defaults to false (read-only)."
+            },
+            "composition": {
+              "type": "boolean",
+              "description": "Also dump the composed profile through the official CLI (default true)."
+            }
+          }
+        },
+        "nameBytes": 16,
+        "descriptionBytes": 381,
+        "parametersJsonBytes": 285,
+        "descriptionTokensEstimated": 105.83,
+        "parametersTokensEstimated": 79.17
+      },
+      {
+        "name": "evolution_history",
+        "description": "Read bounded non-sensitive domain history metadata, counts, and independent metric integration status. Pass query to get bounded on-demand experience recall (already-resolved problems, approaches that already failed, measured candidate strategies) instead of raw rows.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "number"
+            },
+            "query": {
+              "type": "string",
+              "description": "Optional problem/target text to recall directly relevant bounded experience for."
+            },
+            "target": {
+              "type": "string",
+              "description": "Optional evolution target used with query to detect an exact replay of prior work."
+            },
+            "impactScope": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Optional proposal impact scope used with query."
+            }
+          }
+        },
+        "nameBytes": 17,
+        "descriptionBytes": 268,
+        "parametersJsonBytes": 459,
+        "descriptionTokensEstimated": 74.44,
+        "parametersTokensEstimated": 127.5
+      },
+      {
+        "name": "evolution_maintain",
+        "description": "Reclaim disk space from history that is already absorbed: retire terminal archive records into aggregate rows (deleting the sealed segments they replaced) and discard the consumed prefix of the authenticated event log, pruning its markers behind a durable retention floor. Promotion and measurement evidence is externalized before the log prefix is discarded. Everything is verified: unreadable or conflicting archive evidence, a pending transaction, an unreadable log, or a log that changed during planning aborts the whole call without discarding anything. dryRun reports the exact counts and bytes without modifying anything; a real call requires confirmation: true.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "dryRun": {
+              "type": "boolean",
+              "description": "Report the archive and log reclaim a real call would perform, without changing anything."
+            },
+            "confirmation": {
+              "type": "boolean",
+              "description": "Required for a real reclaim; the operation deletes committed archive segments and authenticated log bytes."
+            },
+            "archives": {
+              "type": "boolean",
+              "description": "Reclaim retired archive history (default true)."
+            },
+            "log": {
+              "type": "boolean",
+              "description": "Discard the absorbed event log prefix and prune its markers (default true)."
+            },
+            "retainRecords": {
+              "type": "number",
+              "description": "How many of the newest absorbed log records to keep in the log (default 1024, minimum 1)."
+            }
+          }
+        },
+        "nameBytes": 18,
+        "descriptionBytes": 669,
+        "parametersJsonBytes": 673,
+        "descriptionTokensEstimated": 185.83,
+        "parametersTokensEstimated": 186.94
+      },
+      {
+        "name": "evolution_runtime_inspect",
+        "description": "Inspect the live Cordis Runtime. Returns facts from Cordis registries and scoped services; it does not use a static Evolution inventory.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        },
+        "nameBytes": 25,
+        "descriptionBytes": 136,
+        "parametersJsonBytes": 33,
+        "descriptionTokensEstimated": 37.78,
+        "parametersTokensEstimated": 9.17
+      },
+      {
+        "name": "evolution_propose",
+        "description": "Create an owned Evolution Proposal before changing the Cordis composition.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "why": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "impactScope": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "successMetrics": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "risk": {
+              "type": "string",
+              "description": "low, medium, or high; autonomous execution only accepts low."
+            },
+            "targets": {
+              "type": "object",
+              "properties": {
+                "components": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "plugins": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "configurations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": [
+            "why",
+            "target",
+            "impactScope",
+            "successMetrics"
+          ]
+        },
+        "nameBytes": 17,
+        "descriptionBytes": 74,
+        "parametersJsonBytes": 573,
+        "descriptionTokensEstimated": 20.56,
+        "parametersTokensEstimated": 159.17
+      },
+      {
+        "name": "evolution_trial",
+        "description": "Define and activate a temporary Cordis Package for an existing Evolution Proposal. The Host Runner owns its Fiber and lifecycle.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "experimentId": {
+              "type": "string"
+            },
+            "idPrefix": {
+              "type": "string",
+              "description": "Optional 3–6 lowercase semantic prefix for the Host-minted dynamic Plugin ID."
+            },
+            "composition": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "purpose": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "object",
+                  "properties": {
+                    "host": {
+                      "type": "string"
+                    },
+                    "client": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "host"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "purpose",
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "experimentId",
+            "composition"
+          ]
+        },
+        "nameBytes": 15,
+        "descriptionBytes": 128,
+        "parametersJsonBytes": 481,
+        "descriptionTokensEstimated": 35.56,
+        "parametersTokensEstimated": 133.61
+      },
+      {
+        "name": "evolution_measure",
+        "description": "Record an Observation for a running Evolution Trial and evaluate the Promotion gates.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "experimentId": {
+              "type": "string"
+            },
+            "observation": {
+              "type": "object",
+              "properties": {
+                "solvesProblem": {
+                  "type": "boolean"
+                },
+                "sideEffects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "orphanResources": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "performanceChange": {},
+                "errorChange": {},
+                "metrics": {
+                  "type": "object"
+                },
+                "beforeMetrics": {
+                  "type": "object",
+                  "description": "Baseline metrics captured before the Trial."
+                },
+                "afterMetrics": {
+                  "type": "object",
+                  "description": "Metrics captured after the Trial observation window."
+                },
+                "observationWindow": {},
+                "sampleCount": {
+                  "type": "number",
+                  "description": "Positive number of samples represented by afterMetrics."
+                },
+                "benefitEvidence": {
+                  "type": "string"
+                },
+                "repeatable": {
+                  "type": "boolean"
+                },
+                "regressionPassed": {
+                  "type": "boolean"
+                },
+                "reversible": {
+                  "type": "boolean"
+                },
+                "cleanupEvidence": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "solvesProblem"
+              ]
+            }
+          },
+          "required": [
+            "experimentId",
+            "observation"
+          ]
+        },
+        "nameBytes": 17,
+        "descriptionBytes": 85,
+        "parametersJsonBytes": 901,
+        "descriptionTokensEstimated": 23.61,
+        "parametersTokensEstimated": 250.28
+      },
+      {
+        "name": "evolution_revert",
+        "description": "Stop and undefine a temporary Evolution Plugin through Cordis, then prove the Runtime signature returned to its baseline.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "experimentId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "experimentId"
+          ]
+        },
+        "nameBytes": 16,
+        "descriptionBytes": 121,
+        "parametersJsonBytes": 93,
+        "descriptionTokensEstimated": 33.61,
+        "parametersTokensEstimated": 25.83
+      },
+      {
+        "name": "evolution_promote",
+        "description": "Prepare, apply, and verify a measured Trial as a durable Cordis Plugin, then enter canary observation. Stable commit requires deterministic startup/health/dependency/metric barriers. Set confirmation=true only after reviewing the measured evidence and rollback proof; false or omitted returns an owner-confirmation result without mutating production.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "experimentId": {
+              "type": "string"
+            },
+            "confirmation": {
+              "type": "boolean",
+              "description": "Explicit owner confirmation for production promotion. Only true authorizes the promotion; false or omitted is a read-only confirmation request."
+            }
+          },
+          "required": [
+            "experimentId"
+          ]
+        },
+        "nameBytes": 17,
+        "descriptionBytes": 350,
+        "parametersJsonBytes": 287,
+        "descriptionTokensEstimated": 97.22,
+        "parametersTokensEstimated": 79.72
+      },
+      {
+        "name": "evolution_canary_observe",
+        "description": "Advance a pending promotion canary at a deterministic barrier. Startup, component health, dependencies, and metrics must remain healthy; regression automatically rolls back.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "experimentId": {
+              "type": "string"
+            },
+            "startupVerified": {
+              "type": "boolean"
+            },
+            "componentHealth": {
+              "type": "string"
+            },
+            "dependenciesPresent": {
+              "type": "boolean"
+            },
+            "metricRegression": {
+              "type": "boolean"
+            },
+            "metrics": {
+              "type": "object"
+            },
+            "evidence": {
+              "type": "object"
+            },
+            "barrier": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "reached": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "reached"
+              ]
+            }
+          },
+          "required": [
+            "experimentId",
+            "startupVerified",
+            "componentHealth",
+            "dependenciesPresent",
+            "metricRegression",
+            "barrier"
+          ]
+        },
+        "nameBytes": 24,
+        "descriptionBytes": 173,
+        "parametersJsonBytes": 512,
+        "descriptionTokensEstimated": 48.06,
+        "parametersTokensEstimated": 142.22
+      }
+    ],
+    "payloadBytes": 9716,
+    "normalizedToolsArrayBytes": 7295,
+    "normalizedBytes": 10147,
+    "normalizedTokensEstimated": 2818.61,
+    "note": "UTF-8 measured; tokens estimated as bytes/3.6, not tokenizer counts. Normalized compact array is a declared accounting envelope, not captured provider wire format.",
+    "sessions": [
+      {
+        "requests": 50,
+        "bytes": 507350,
+        "tokensEstimated": 140930.56
+      },
+      {
+        "requests": 200,
+        "bytes": 2029400,
+        "tokensEstimated": 563722.22
+      }
+    ]
+  },
+  "exactDescriptionOverlaps": [
+    {
+      "tool": "evolution_history",
+      "text": "already-resolved problems, approaches",
+      "bytes": 37,
+      "systemLines": [
+        106,
+        106
+      ],
+      "descriptionLines": [
+        286,
+        286
+      ]
+    },
+    {
+      "tool": "evolution_history",
+      "text": " measured candidate strategies",
+      "bytes": 30,
+      "systemLines": [
+        107,
+        107
+      ],
+      "descriptionLines": [
+        286,
+        286
+      ]
+    },
+    {
+      "tool": "evolution_maintain",
+      "text": " real call requires confirmation: true",
+      "bytes": 38,
+      "systemLines": [
+        114,
+        114
+      ],
+      "descriptionLines": [
+        299,
+        299
+      ]
+    },
+    {
+      "tool": "evolution_maintain",
+      "text": "ed prefix of the authenticated event log",
+      "bytes": 40,
+      "systemLines": [
+        116,
+        116
+      ],
+      "descriptionLines": [
+        299,
+        299
+      ]
+    },
+    {
+      "tool": "evolution_maintain",
+      "text": ": unreadable or conflicting archive",
+      "bytes": 35,
+      "systemLines": [
+        118,
+        118
+      ],
+      "descriptionLines": [
+        299,
+        299
+      ]
+    },
+    {
+      "tool": "evolution_maintain",
+      "text": "evidence, a pending transaction",
+      "bytes": 31,
+      "systemLines": [
+        119,
+        119
+      ],
+      "descriptionLines": [
+        299,
+        299
+      ]
+    },
+    {
+      "tool": "evolution_maintain",
+      "text": " without discarding anything. ",
+      "bytes": 30,
+      "systemLines": [
+        120,
+        120
+      ],
+      "descriptionLines": [
+        299,
+        299
+      ]
+    },
+    {
+      "tool": "evolution_trial",
+      "text": "efine and activate a temporary ",
+      "bytes": 31,
+      "systemLines": [
+        86,
+        86
+      ],
+      "descriptionLines": [
+        353,
+        353
+      ]
+    }
+  ],
+  "semanticSystemBlocks": [
+    {
+      "topic": "lifecycle",
+      "systemLines": [
+        82,
+        96
+      ],
+      "systemBytes": 1028,
+      "text": "Use the lifecycle exactly in this order:\n1. evolution_runtime_inspect — read live Cordis components, services, tools,\n   dependencies, events, dynamic Plugins, and inspect providers.\n2. evolution_propose — record why/target/impact/success metrics and an owner.\n3. evolution_trial — define and activate a temporary Host-only or approval-aware\n   Cordis Package through dynamicCordisRunner.\n4. evolution_measure — record problem resolution, side effects, performance,\n   errors, repeatability, regression, reversibility, and explicit cleanup\n   evidence.\n5. evolution_revert or evolution_promote — dispose through Cordis first. Promotion\n   is rejected unless benefit, repeatability, regression, reversibility, and\n   orphan-free cleanup are all evidenced. A promotion writes a durable Plugin\n   row and archive pointer for the NEXT session, then remains in deterministic\n   canary observation until startup, health, dependency, and metric barriers\n   prove a stable commit. Any regression rolls back to last known good."
+    },
+    {
+      "topic": "recall",
+      "systemLines": [
+        103,
+        110
+      ],
+      "systemBytes": 619,
+      "text": "Durable experience is already recorded without a model in the loop: failures and\nobservations are folded into bounded canonical knowledge. Before defining a new\nTrial, read the experienceRecall attached to evolution_propose (or call\nevolution_history with query). It lists already-resolved problems, approaches\nthat already failed, and measured candidate strategies, with explicit limits and\nevidence references. Prefer reusing a recorded resolution, and do not repeat a\nfailed approach without a new hypothesis and new evidence. The recall is\nadvisory: promotion still requires the normal gates and owner confirmation."
+    },
+    {
+      "topic": "maintain",
+      "systemLines": [
+        112,
+        121
+      ],
+      "systemBytes": 754,
+      "text": "evolution_maintain is the only capacity operation, and it is an owner action, not\na schedule. Start with dryRun to read the exact byte and record counts it would\nretire. A real call requires confirmation: true; it retires terminal archive\nhistory into aggregate rows and deletes the sealed segments it replaced, and it\ndiscards the absorbed prefix of the authenticated event log after writing the\npromotion/measurement facts those rows carried into the durable evidence\nsidecar. It refuses instead of guessing: unreadable or conflicting archive\nevidence, a pending transaction and a log that changed while it was being planned\nall abort the operation without discarding anything. Reclaiming is not a\nsubstitute for measurement or for the promotion gates."
+    }
+  ],
+  "samples": [
+    {
+      "name": "inspect-candidates-0",
+      "provenance": "test/runtime-inspect.test.mjs + test/fixtures/runtime-inspect.mjs; real registered execute, synthetic registries",
+      "prettyBytes": 1089,
+      "compactBytes": 751,
+      "savedBytes": 338,
+      "reductionPercent": 31.04,
+      "prettyTokensEstimated": 302.5,
+      "compactTokensEstimated": 208.61,
+      "equivalentParsedJson": true,
+      "objectKeys": 41,
+      "objects": 10,
+      "arrays": 20,
+      "maxDepth": 6,
+      "stringsWithNewlines": 0,
+      "jsonStrings": 0,
+      "value": {
+        "runtime": "cordis",
+        "components": [],
+        "services": [],
+        "tools": [
+          {
+            "name": "fixture",
+            "description": null,
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "capabilities": {
+          "services": [],
+          "tools": [
+            "fixture"
+          ],
+          "dynamicPlugins": [],
+          "inspectProviders": []
+        },
+        "dependencies": [],
+        "events": [],
+        "inspectProviders": [],
+        "dynamicPlugins": [],
+        "recoveryProof": {
+          "modules": [],
+          "services": [],
+          "tools": [
+            {
+              "name": "fixture",
+              "owner": "unknown"
+            }
+          ],
+          "eventListeners": [],
+          "effects": [],
+          "dynamicPlugins": [],
+          "unknown": []
+        },
+        "evolutionPolicy": {
+          "mode": "advisory",
+          "unattended": false,
+          "autonomous": false,
+          "evolvableByDefault": true,
+          "trustRoot": "Cordis",
+          "productionPromotion": "explicit-user-confirmation"
+        },
+        "evolutionMemory": {
+          "entries": 0
+        },
+        "evolutionObservations": [],
+        "evolutionCandidates": []
+      }
+    },
+    {
+      "name": "inspect-candidates-10",
+      "provenance": "test/runtime-inspect.test.mjs + test/fixtures/runtime-inspect.mjs; real registered execute, synthetic registries",
+      "prettyBytes": 8813,
+      "compactBytes": 4739,
+      "savedBytes": 4074,
+      "reductionPercent": 46.23,
+      "prettyTokensEstimated": 2448.06,
+      "compactTokensEstimated": 1316.39,
+      "equivalentParsedJson": true,
+      "objectKeys": 261,
+      "objects": 90,
+      "arrays": 50,
+      "maxDepth": 6,
+      "stringsWithNewlines": 0,
+      "jsonStrings": 0,
+      "value": {
+        "runtime": "cordis",
+        "components": [],
+        "services": [],
+        "tools": [
+          {
+            "name": "fixture",
+            "description": null,
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "capabilities": {
+          "services": [],
+          "tools": [
+            "fixture"
+          ],
+          "dynamicPlugins": [],
+          "inspectProviders": []
+        },
+        "dependencies": [],
+        "events": [],
+        "inspectProviders": [],
+        "dynamicPlugins": [],
+        "recoveryProof": {
+          "modules": [],
+          "services": [],
+          "tools": [
+            {
+              "name": "fixture",
+              "owner": "unknown"
+            }
+          ],
+          "eventListeners": [],
+          "effects": [],
+          "dynamicPlugins": [],
+          "unknown": []
+        },
+        "evolutionPolicy": {
+          "mode": "advisory",
+          "unattended": false,
+          "autonomous": false,
+          "evolvableByDefault": true,
+          "trustRoot": "Cordis",
+          "productionPromotion": "explicit-user-confirmation"
+        },
+        "evolutionMemory": {
+          "entries": 0
+        },
+        "evolutionObservations": [
+          {
+            "observationId": "obs-0",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 0,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-1",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 1,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-2",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 2,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-3",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 3,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-4",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 4,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-5",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 5,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-6",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 6,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-7",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 7,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-8",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 8,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-9",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 9,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-10",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 10,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-11",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 11,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-12",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 12,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-13",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 13,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-14",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 14,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-15",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 15,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-16",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 16,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-17",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 17,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-18",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 18,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-19",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 19,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          }
+        ],
+        "evolutionCandidates": [
+          {
+            "candidateId": "candidate-0",
+            "patternKey": "pattern-0",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-0",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-1",
+            "patternKey": "pattern-1",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-1",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-2",
+            "patternKey": "pattern-2",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-2",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-3",
+            "patternKey": "pattern-3",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-3",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-4",
+            "patternKey": "pattern-4",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-4",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-5",
+            "patternKey": "pattern-5",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-5",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-6",
+            "patternKey": "pattern-6",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-6",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-7",
+            "patternKey": "pattern-7",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-7",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-8",
+            "patternKey": "pattern-8",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-8",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-9",
+            "patternKey": "pattern-9",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-9",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          }
+        ]
+      }
+    },
+    {
+      "name": "inspect-candidates-100",
+      "provenance": "test/runtime-inspect.test.mjs + test/fixtures/runtime-inspect.mjs; real registered execute, synthetic registries",
+      "prettyBytes": 36803,
+      "compactBytes": 22019,
+      "savedBytes": 14784,
+      "reductionPercent": 40.17,
+      "prettyTokensEstimated": 10223.06,
+      "compactTokensEstimated": 6116.39,
+      "equivalentParsedJson": true,
+      "objectKeys": 981,
+      "objects": 270,
+      "arrays": 140,
+      "maxDepth": 6,
+      "stringsWithNewlines": 0,
+      "jsonStrings": 0,
+      "value": {
+        "runtime": "cordis",
+        "components": [],
+        "services": [],
+        "tools": [
+          {
+            "name": "fixture",
+            "description": null,
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "capabilities": {
+          "services": [],
+          "tools": [
+            "fixture"
+          ],
+          "dynamicPlugins": [],
+          "inspectProviders": []
+        },
+        "dependencies": [],
+        "events": [],
+        "inspectProviders": [],
+        "dynamicPlugins": [],
+        "recoveryProof": {
+          "modules": [],
+          "services": [],
+          "tools": [
+            {
+              "name": "fixture",
+              "owner": "unknown"
+            }
+          ],
+          "eventListeners": [],
+          "effects": [],
+          "dynamicPlugins": [],
+          "unknown": []
+        },
+        "evolutionPolicy": {
+          "mode": "advisory",
+          "unattended": false,
+          "autonomous": false,
+          "evolvableByDefault": true,
+          "trustRoot": "Cordis",
+          "productionPromotion": "explicit-user-confirmation"
+        },
+        "evolutionMemory": {
+          "entries": 0
+        },
+        "evolutionObservations": [
+          {
+            "observationId": "obs-0",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 0,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-1",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 1,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-2",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 2,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-3",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 3,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-4",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 4,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-5",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 5,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-6",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 6,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-7",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 7,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-8",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 8,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-9",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 9,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-10",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 10,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-11",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 11,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-12",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 12,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-13",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 13,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-14",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 14,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-15",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 15,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-16",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 16,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-17",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 17,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-18",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 18,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "observationId": "obs-19",
+            "input": {
+              "code": "FIXTURE",
+              "metrics": {
+                "cpu": 19,
+                "memory": 1000
+              },
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
+          }
+        ],
+        "evolutionCandidates": [
+          {
+            "candidateId": "candidate-0",
+            "patternKey": "pattern-0",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-0",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-1",
+            "patternKey": "pattern-1",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-1",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-2",
+            "patternKey": "pattern-2",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-2",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-3",
+            "patternKey": "pattern-3",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-3",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-4",
+            "patternKey": "pattern-4",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-4",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-5",
+            "patternKey": "pattern-5",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-5",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-6",
+            "patternKey": "pattern-6",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-6",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-7",
+            "patternKey": "pattern-7",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-7",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-8",
+            "patternKey": "pattern-8",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-8",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-9",
+            "patternKey": "pattern-9",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-9",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-10",
+            "patternKey": "pattern-10",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-10",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-11",
+            "patternKey": "pattern-11",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-11",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-12",
+            "patternKey": "pattern-12",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-12",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-13",
+            "patternKey": "pattern-13",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-13",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-14",
+            "patternKey": "pattern-14",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-14",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-15",
+            "patternKey": "pattern-15",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-15",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-16",
+            "patternKey": "pattern-16",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-16",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-17",
+            "patternKey": "pattern-17",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-17",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-18",
+            "patternKey": "pattern-18",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-18",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-19",
+            "patternKey": "pattern-19",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-19",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-20",
+            "patternKey": "pattern-20",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-20",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-21",
+            "patternKey": "pattern-21",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-21",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-22",
+            "patternKey": "pattern-22",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-22",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-23",
+            "patternKey": "pattern-23",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-23",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-24",
+            "patternKey": "pattern-24",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-24",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-25",
+            "patternKey": "pattern-25",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-25",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-26",
+            "patternKey": "pattern-26",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-26",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-27",
+            "patternKey": "pattern-27",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-27",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-28",
+            "patternKey": "pattern-28",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-28",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-29",
+            "patternKey": "pattern-29",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-29",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-30",
+            "patternKey": "pattern-30",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-30",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-31",
+            "patternKey": "pattern-31",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-31",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-32",
+            "patternKey": "pattern-32",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-32",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-33",
+            "patternKey": "pattern-33",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-33",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-34",
+            "patternKey": "pattern-34",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-34",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-35",
+            "patternKey": "pattern-35",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-35",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-36",
+            "patternKey": "pattern-36",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-36",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-37",
+            "patternKey": "pattern-37",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-37",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-38",
+            "patternKey": "pattern-38",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-38",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-39",
+            "patternKey": "pattern-39",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-39",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-40",
+            "patternKey": "pattern-40",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-40",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-41",
+            "patternKey": "pattern-41",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-41",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-42",
+            "patternKey": "pattern-42",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-42",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-43",
+            "patternKey": "pattern-43",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-43",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-44",
+            "patternKey": "pattern-44",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-44",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-45",
+            "patternKey": "pattern-45",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-45",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-46",
+            "patternKey": "pattern-46",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-46",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-47",
+            "patternKey": "pattern-47",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-47",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-48",
+            "patternKey": "pattern-48",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-48",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-49",
+            "patternKey": "pattern-49",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-49",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-50",
+            "patternKey": "pattern-50",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-50",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-51",
+            "patternKey": "pattern-51",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-51",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-52",
+            "patternKey": "pattern-52",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-52",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-53",
+            "patternKey": "pattern-53",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-53",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-54",
+            "patternKey": "pattern-54",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-54",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-55",
+            "patternKey": "pattern-55",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-55",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-56",
+            "patternKey": "pattern-56",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-56",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-57",
+            "patternKey": "pattern-57",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-57",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-58",
+            "patternKey": "pattern-58",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-58",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-59",
+            "patternKey": "pattern-59",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-59",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-60",
+            "patternKey": "pattern-60",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-60",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-61",
+            "patternKey": "pattern-61",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-61",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-62",
+            "patternKey": "pattern-62",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-62",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-63",
+            "patternKey": "pattern-63",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-63",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-64",
+            "patternKey": "pattern-64",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-64",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-65",
+            "patternKey": "pattern-65",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-65",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-66",
+            "patternKey": "pattern-66",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-66",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-67",
+            "patternKey": "pattern-67",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-67",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-68",
+            "patternKey": "pattern-68",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-68",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-69",
+            "patternKey": "pattern-69",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-69",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-70",
+            "patternKey": "pattern-70",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-70",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-71",
+            "patternKey": "pattern-71",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-71",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-72",
+            "patternKey": "pattern-72",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-72",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-73",
+            "patternKey": "pattern-73",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-73",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-74",
+            "patternKey": "pattern-74",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-74",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-75",
+            "patternKey": "pattern-75",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-75",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-76",
+            "patternKey": "pattern-76",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-76",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-77",
+            "patternKey": "pattern-77",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-77",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-78",
+            "patternKey": "pattern-78",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-78",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-79",
+            "patternKey": "pattern-79",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-79",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-80",
+            "patternKey": "pattern-80",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-80",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-81",
+            "patternKey": "pattern-81",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-81",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-82",
+            "patternKey": "pattern-82",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-82",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-83",
+            "patternKey": "pattern-83",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-83",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-84",
+            "patternKey": "pattern-84",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-84",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-85",
+            "patternKey": "pattern-85",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-85",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-86",
+            "patternKey": "pattern-86",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-86",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-87",
+            "patternKey": "pattern-87",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-87",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-88",
+            "patternKey": "pattern-88",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-88",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-89",
+            "patternKey": "pattern-89",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-89",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-90",
+            "patternKey": "pattern-90",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-90",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-91",
+            "patternKey": "pattern-91",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-91",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-92",
+            "patternKey": "pattern-92",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-92",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-93",
+            "patternKey": "pattern-93",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-93",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-94",
+            "patternKey": "pattern-94",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-94",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-95",
+            "patternKey": "pattern-95",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-95",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-96",
+            "patternKey": "pattern-96",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-96",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-97",
+            "patternKey": "pattern-97",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-97",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-98",
+            "patternKey": "pattern-98",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-98",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          },
+          {
+            "candidateId": "candidate-99",
+            "patternKey": "pattern-99",
+            "risk": "low",
+            "observationIds": [
+              "obs-1",
+              "obs-2",
+              "obs-3"
+            ],
+            "strategy": {
+              "target": "component-99",
+              "idPrefix": "fix"
+            },
+            "createdAt": "2026-01-01"
+          }
+        ]
+      }
+    },
+    {
+      "name": "history-empty-default",
+      "provenance": "real official DomainFacility/JSON backend via test/retention-boundary-worker.mjs",
+      "prettyBytes": 129,
+      "compactBytes": 112,
+      "savedBytes": 17,
+      "reductionPercent": 13.18,
+      "prettyTokensEstimated": 35.83,
+      "compactTokensEstimated": 31.11,
+      "equivalentParsedJson": true,
+      "objectKeys": 4,
+      "objects": 1,
+      "arrays": 1,
+      "maxDepth": 1,
+      "stringsWithNewlines": 0,
+      "jsonStrings": 0,
+      "value": {
+        "collection": "cycles",
+        "count": 0,
+        "entries": [],
+        "promotionMetrics": "not-integrated-independent-evidence-required"
+      }
+    },
+    {
+      "name": "history-default-seeded",
+      "provenance": "12 signed synthetic measurement-completed events replayed into real domain port",
+      "prettyBytes": 129,
+      "compactBytes": 112,
+      "savedBytes": 17,
+      "reductionPercent": 13.18,
+      "prettyTokensEstimated": 35.83,
+      "compactTokensEstimated": 31.11,
+      "equivalentParsedJson": true,
+      "objectKeys": 4,
+      "objects": 1,
+      "arrays": 1,
+      "maxDepth": 1,
+      "stringsWithNewlines": 0,
+      "jsonStrings": 0,
+      "value": {
+        "collection": "cycles",
+        "count": 0,
+        "entries": [],
+        "promotionMetrics": "not-integrated-independent-evidence-required"
+      }
+    },
+    {
+      "name": "history-observations-10",
+      "provenance": "same real domain port, metadata-only observation query",
+      "prettyBytes": 1978,
+      "compactBytes": 1538,
+      "savedBytes": 440,
+      "reductionPercent": 22.24,
+      "prettyTokensEstimated": 549.44,
+      "compactTokensEstimated": 427.22,
+      "equivalentParsedJson": true,
+      "objectKeys": 44,
+      "objects": 11,
+      "arrays": 1,
+      "maxDepth": 3,
+      "stringsWithNewlines": 0,
+      "jsonStrings": 0,
+      "value": {
+        "collection": "observations",
+        "count": 12,
+        "entries": [
+          {
+            "id": "observation:mvswg8uw:ea6b2f75-1a79-455f-886d-94c3f58128ba",
+            "status": "failed",
+            "eventType": null,
+            "recordedAt": "2026-10-29T02:03:41.144Z"
+          },
+          {
+            "id": "observation:mvswg8v6:2490882d-9ad2-4879-a1a5-d8cbb53a3a34",
+            "status": "failed",
+            "eventType": null,
+            "recordedAt": "2026-10-29T02:03:41.154Z"
+          },
+          {
+            "id": "observation:mvswg8vg:6c2a1e93-8da3-4d6f-941a-7373c0767a08",
+            "status": "failed",
+            "eventType": null,
+            "recordedAt": "2026-10-29T02:03:41.164Z"
+          },
+          {
+            "id": "observation:mvswg8vt:1469ad08-24b9-4297-8bb4-f9f6909fc86a",
+            "status": "failed",
+            "eventType": null,
+            "recordedAt": "2026-10-29T02:03:41.177Z"
+          },
+          {
+            "id": "observation:mvswg8w5:45b9b189-e35f-48a2-87c3-1f46cb1a1bdb",
+            "status": "failed",
+            "eventType": null,
+            "recordedAt": "2026-10-29T02:03:41.189Z"
+          },
+          {
+            "id": "observation:mvswg8wh:a44d8d63-2b15-4bee-a205-05e689404adc",
+            "status": "failed",
+            "eventType": null,
+            "recordedAt": "2026-10-29T02:03:41.201Z"
+          },
+          {
+            "id": "observation:mvswg8ws:228c9eda-d2c7-4549-b6c7-cb89f02271c9",
+            "status": "failed",
+            "eventType": null,
+            "recordedAt": "2026-10-29T02:03:41.212Z"
+          },
+          {
+            "id": "observation:mvswg8x3:635876f5-269e-4d6a-8e12-0ffd6c7722b4",
+            "status": "failed",
+            "eventType": null,
+            "recordedAt": "2026-10-29T02:03:41.223Z"
+          },
+          {
+            "id": "observation:mvswg8xe:39363821-f908-490c-a7bd-0ee85d744477",
+            "status": "failed",
+            "eventType": null,
+            "recordedAt": "2026-10-29T02:03:41.234Z"
+          },
+          {
+            "id": "observation:mvswg8xr:a13494ac-0c44-4534-920b-b105716dbc71",
+            "status": "failed",
+            "eventType": null,
+            "recordedAt": "2026-10-29T02:03:41.247Z"
+          }
+        ],
+        "promotionMetrics": "not-integrated-independent-evidence-required"
+      }
+    },
+    {
+      "name": "history-query",
+      "provenance": "real bounded recall over knowledge generated by 12 synthetic tool/error observations",
+      "prettyBytes": 3766,
+      "compactBytes": 2863,
+      "savedBytes": 903,
+      "reductionPercent": 23.98,
+      "prettyTokensEstimated": 1046.11,
+      "compactTokensEstimated": 795.28,
+      "equivalentParsedJson": true,
+      "objectKeys": 103,
+      "objects": 9,
+      "arrays": 10,
+      "maxDepth": 4,
+      "stringsWithNewlines": 0,
+      "jsonStrings": 0,
+      "value": {
+        "query": {
+          "problem": "synthetic latency regression",
+          "target": "plugin:axis-latency",
+          "tokens": 5
+        },
+        "resolved": [],
+        "failures": [
+          {
+            "source": "knowledge",
+            "key": "knowledge:0768cc1e325b6e69bc23ba4ec9f93574",
+            "problem": "official operation failure axis failure l",
+            "scope": "plugin axis-latency",
+            "strategy": "",
+            "failureMode": "tool tool failure axis failure l",
+            "rootCause": "",
+            "state": "LEARNING",
+            "lastOutcome": "failure",
+            "successCount": 0,
+            "failureCount": 1,
+            "successRate": 0,
+            "fitnessMean": null,
+            "regressionCount": 0,
+            "occurrences": 1,
+            "firstSeen": "2026-10-29T02:03:41.247Z",
+            "lastSeen": "2026-10-29T02:03:41.247Z",
+            "evidenceRefs": [
+              "observations:observation:mvswg8xr:a13494ac-0c44-4534-920b-b105716dbc71",
+              "observations:observation:mvswg8xr:a13494ac-0c44-4534-920b-b105716dbc71@2026-10-29T02:03:41.247Z"
+            ],
+            "prevention": "",
+            "coverage": 0.9,
+            "exact": false,
+            "score": 0.4933
+          },
+          {
+            "source": "knowledge",
+            "key": "knowledge:fbc10aa7621c0b0b3e914ee70d842253",
+            "problem": "official operation failure axis failure k",
+            "scope": "plugin axis-latency",
+            "strategy": "",
+            "failureMode": "tool tool failure axis failure k",
+            "rootCause": "",
+            "state": "LEARNING",
+            "lastOutcome": "failure",
+            "successCount": 0,
+            "failureCount": 1,
+            "successRate": 0,
+            "fitnessMean": null,
+            "regressionCount": 0,
+            "occurrences": 1,
+            "firstSeen": "2026-10-29T02:03:41.234Z",
+            "lastSeen": "2026-10-29T02:03:41.234Z",
+            "evidenceRefs": [
+              "observations:observation:mvswg8xe:39363821-f908-490c-a7bd-0ee85d744477",
+              "observations:observation:mvswg8xe:39363821-f908-490c-a7bd-0ee85d744477@2026-10-29T02:03:41.234Z"
+            ],
+            "prevention": "",
+            "coverage": 0.9,
+            "exact": false,
+            "score": 0.4933
+          },
+          {
+            "source": "knowledge",
+            "key": "knowledge:ccbb2a9ced973fc64e8cdb4e83ec9b52",
+            "problem": "official operation failure axis failure j",
+            "scope": "plugin axis-latency",
+            "strategy": "",
+            "failureMode": "tool tool failure axis failure j",
+            "rootCause": "",
+            "state": "LEARNING",
+            "lastOutcome": "failure",
+            "successCount": 0,
+            "failureCount": 1,
+            "successRate": 0,
+            "fitnessMean": null,
+            "regressionCount": 0,
+            "occurrences": 1,
+            "firstSeen": "2026-10-29T02:03:41.223Z",
+            "lastSeen": "2026-10-29T02:03:41.223Z",
+            "evidenceRefs": [
+              "observations:observation:mvswg8x3:635876f5-269e-4d6a-8e12-0ffd6c7722b4",
+              "observations:observation:mvswg8x3:635876f5-269e-4d6a-8e12-0ffd6c7722b4@2026-10-29T02:03:41.223Z"
+            ],
+            "prevention": "",
+            "coverage": 0.9,
+            "exact": false,
+            "score": 0.4933
+          }
+        ],
+        "candidates": [],
+        "duplicate": null,
+        "advice": [
+          "failed: prior attempts did not succeed (tool tool failure axis failure l); require a new hypothesis with new evidence before repeating."
+        ],
+        "counts": {
+          "matched": 12,
+          "returned": 3,
+          "duplicates": 0
+        },
+        "sources": [
+          {
+            "source": "failure-memory",
+            "considered": 0,
+            "scanned": 0,
+            "matched": 0,
+            "duplicates": 0,
+            "dropped": 0,
+            "available": true
+          },
+          {
+            "source": "knowledge",
+            "considered": 12,
+            "scanned": 12,
+            "matched": 12,
+            "duplicates": 0,
+            "dropped": 0,
+            "available": true
+          }
+        ],
+        "unavailable": [],
+        "sourceErrors": [],
+        "truncated": true,
+        "limits": {
+          "maxEntries": 3,
+          "maxRecords": 12,
+          "maxText": 160,
+          "maxEvidenceRefs": 2,
+          "maxConsidered": 2000
+        }
+      }
+    },
+    {
+      "name": "doctor-empty-home",
+      "provenance": "real collectDiagnostics; empty /tmp home; no host installation/CLI invocation, repair=false",
+      "prettyBytes": 21726,
+      "compactBytes": 15734,
+      "savedBytes": 5992,
+      "reductionPercent": 27.58,
+      "prettyTokensEstimated": 6035,
+      "compactTokensEstimated": 4370.56,
+      "equivalentParsedJson": true,
+      "objectKeys": 442,
+      "objects": 93,
+      "arrays": 55,
+      "maxDepth": 7,
+      "stringsWithNewlines": 0,
+      "jsonStrings": 0,
+      "value": {
+        "schema": 1,
+        "generatedAt": "2026-10-29T02:03:41.259Z",
+        "mode": "cli",
+        "plugin": {
+          "name": "dsh-evolution",
+          "version": "0.2.0-rc.19",
+          "packageRoot": "/Users/ryukeili/GitHub/dsh-evolution"
+        },
+        "status": "degraded",
+        "partial": true,
+        "summary": {
+          "ok": 19,
+          "degraded": 1,
+          "blocked": 0,
+          "notEvaluated": 6
+        },
+        "checks": [
+          {
+            "id": "plugin.home",
+            "category": "plugin",
+            "level": "ok",
+            "summary": "Diagnosing DSH home /tmp/axis-token-HZlNda/home.",
+            "evidence": {
+              "dshHome": "/tmp/axis-token-HZlNda/home",
+              "dataRoot": "/tmp/axis-token-HZlNda/home/storages/evolution",
+              "profile": null
+            }
+          },
+          {
+            "id": "plugin.package",
+            "category": "plugin",
+            "level": "ok",
+            "summary": "Bundle package dsh-evolution@0.2.0-rc.19 is complete.",
+            "evidence": {
+              "packageRoot": "/Users/ryukeili/GitHub/dsh-evolution",
+              "version": "0.2.0-rc.19",
+              "files": 11,
+              "engines": {
+                "node": "^22.19.0 || >=24.0.0"
+              }
+            }
+          },
+          {
+            "id": "plugin.patch",
+            "category": "plugin",
+            "level": "ok",
+            "summary": "The bundle patch declares both loader entries.",
+            "evidence": {
+              "patchPath": "/Users/ryukeili/GitHub/dsh-evolution/cordis.patch.yml",
+              "entries": [
+                "evolution-orchestrator",
+                "evolution-trust-root-guard"
+              ]
+            }
+          },
+          {
+            "id": "plugin.support-matrix",
+            "category": "plugin",
+            "level": "ok",
+            "summary": "Bundle 0.2.0-rc.19 supports @deepseek-ai/dsh 0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2 and Node \"^22.19.0 || >=24.0.0\".",
+            "evidence": {
+              "bundleVersion": "0.2.0-rc.19",
+              "supportedDsh": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2",
+              "verifiedHosts": [
+                "0.2.0-rc.2",
+                "0.2.1-alpha.1",
+                "0.2.1-rc.2"
+              ],
+              "peers": {
+                "@deepseek-ai/dsh": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2",
+                "@deepseek-ai/cordis-plugin-include": "1.0.9 || 1.0.10-alpha.1 || 1.0.10-alpha.2 || 1.0.10",
+                "js-yaml": "^4.2.0",
+                "@deepseek-ai/cordis": "^4.0.1 || 4.0.5-alpha.1 || 4.0.5-alpha.2",
+                "@deepseek-ai/dsh-cordis-host-runner": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2",
+                "@deepseek-ai/dsh-tools": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2"
+              },
+              "node": "v26.12.1",
+              "platform": "darwin/arm64",
+              "dataRoot": "/tmp/axis-token-HZlNda/home/storages/evolution",
+              "developmentHost": {
+                "version": "0.2.0-rc.2",
+                "resolved": "/Users/ryukeili/GitHub/dsh-evolution/node_modules/@deepseek-ai/dsh/package.json"
+              }
+            }
+          },
+          {
+            "id": "host.install",
+            "category": "host",
+            "level": "not-evaluated",
+            "summary": "No DSH profile directory was found, so the installed bundle state is unknown.",
+            "evidence": {
+              "reason": "no profile under $DSH_HOME/profiles"
+            },
+            "remediation": "Pass --home <DSH_HOME> or --profile <name> so the doctor can read the installed profile.",
+            "recoverable": false
+          },
+          {
+            "id": "host.cli",
+            "category": "host",
+            "level": "ok",
+            "summary": "Resolved DSH CLI (plugin-node-modules) with @deepseek-ai/dsh@0.2.0-rc.2.",
+            "evidence": {
+              "source": "plugin-node-modules",
+              "cli": "/Users/ryukeili/GitHub/dsh-evolution/node_modules/.bin/dsh",
+              "realPath": "/Users/ryukeili/GitHub/dsh-evolution/node_modules/@deepseek-ai/dsh/lib/bin.js",
+              "packageRoot": "/Users/ryukeili/GitHub/dsh-evolution/node_modules/@deepseek-ai/dsh",
+              "candidates": [
+                {
+                  "path": "/Users/ryukeili/GitHub/dsh-evolution/node_modules/.bin/dsh",
+                  "source": "plugin-node-modules",
+                  "isDsh": true,
+                  "version": "0.2.0-rc.2"
+                }
+              ],
+              "conflictingHosts": []
+            }
+          },
+          {
+            "id": "host.version",
+            "category": "host",
+            "level": "ok",
+            "summary": "Host version 0.2.0-rc.2 satisfies the supported range 0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2, and is one of the host versions verified by a real install acceptance run (0.2.0-rc.2, 0.2.1-alpha.1, 0.2.1-rc.2).",
+            "evidence": {
+              "found": "0.2.0-rc.2",
+              "supported": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2",
+              "verified": true,
+              "verifiedHosts": [
+                "0.2.0-rc.2",
+                "0.2.1-alpha.1",
+                "0.2.1-rc.2"
+              ],
+              "cli": "/Users/ryukeili/GitHub/dsh-evolution/node_modules/.bin/dsh"
+            },
+            "recoverable": false
+          },
+          {
+            "id": "host.modules",
+            "category": "host",
+            "level": "ok",
+            "summary": "Every required and optional host module resolved inside the supported range.",
+            "evidence": {
+              "modules": [
+                {
+                  "name": "@deepseek-ai/dsh",
+                  "kind": "host",
+                  "blocking": true,
+                  "version": "0.2.0-rc.2",
+                  "resolved": true,
+                  "error": null,
+                  "supported": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2",
+                  "satisfies": true
+                },
+                {
+                  "name": "@deepseek-ai/cordis",
+                  "kind": "import",
+                  "blocking": true,
+                  "version": "4.0.4",
+                  "resolved": true,
+                  "error": null,
+                  "supported": "^4.0.1 || 4.0.5-alpha.1 || 4.0.5-alpha.2",
+                  "satisfies": true
+                },
+                {
+                  "name": "@deepseek-ai/cordis-plugin-include",
+                  "kind": "import",
+                  "blocking": true,
+                  "version": "1.0.9",
+                  "resolved": true,
+                  "error": null,
+                  "supported": "1.0.9 || 1.0.10-alpha.1 || 1.0.10-alpha.2 || 1.0.10",
+                  "satisfies": true
+                },
+                {
+                  "name": "js-yaml",
+                  "kind": "import",
+                  "blocking": true,
+                  "version": "4.3.2",
+                  "resolved": true,
+                  "error": null,
+                  "supported": "^4.2.0",
+                  "satisfies": true
+                },
+                {
+                  "name": "@deepseek-ai/dsh-tools",
+                  "kind": "service",
+                  "blocking": true,
+                  "version": "0.2.0-rc.2",
+                  "resolved": true,
+                  "error": null,
+                  "supported": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2",
+                  "satisfies": true
+                },
+                {
+                  "name": "@deepseek-ai/dsh-cordis-host-runner",
+                  "kind": "service",
+                  "blocking": true,
+                  "version": "0.2.0-rc.2",
+                  "resolved": true,
+                  "error": null,
+                  "supported": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2",
+                  "satisfies": true
+                },
+                {
+                  "name": "@deepseek-ai/dsh-storage-domain",
+                  "kind": "service",
+                  "blocking": true,
+                  "version": "0.2.0-rc.2",
+                  "resolved": true,
+                  "error": null,
+                  "supported": null,
+                  "satisfies": null
+                },
+                {
+                  "name": "@deepseek-ai/dsh-storage-json",
+                  "kind": "service",
+                  "blocking": false,
+                  "version": "0.2.0-rc.2",
+                  "resolved": true,
+                  "error": null,
+                  "supported": null,
+                  "satisfies": null
+                }
+              ],
+              "blockingProblems": [],
+              "advisoryProblems": []
+            },
+            "recoverable": false
+          },
+          {
+            "id": "host.composition",
+            "category": "host",
+            "level": "not-evaluated",
+            "summary": "The composed loader tree was not dumped because the composition probe was disabled.",
+            "evidence": {
+              "reason": "composition probe disabled (--no-composition)"
+            },
+            "remediation": "Re-run without --no-composition to verify the loader entries against the official CLI."
+          },
+          {
+            "id": "runtime.capabilities",
+            "category": "runtime",
+            "level": "not-evaluated",
+            "summary": "Live Cordis capabilities are not observable outside a running host session.",
+            "evidence": {
+              "reason": "cli mode without a live context"
+            },
+            "remediation": "Run the evolution_doctor tool inside a session for live capability and registration verification."
+          },
+          {
+            "id": "runtime.registration",
+            "category": "runtime",
+            "level": "not-evaluated",
+            "summary": "Live tool registration is not observable outside a running host session.",
+            "evidence": {
+              "reason": "cli mode without a live context",
+              "expected": [
+                "evolution_runtime_inspect",
+                "evolution_propose",
+                "evolution_trial",
+                "evolution_measure",
+                "evolution_revert",
+                "evolution_promote",
+                "evolution_canary_observe",
+                "evolution_history",
+                "evolution_maintain",
+                "evolution_doctor"
+              ]
+            },
+            "remediation": "Run the evolution_doctor tool inside a session, or check host.composition for the loader entries."
+          },
+          {
+            "id": "runtime.internal-api",
+            "category": "runtime",
+            "level": "not-evaluated",
+            "summary": "Introspection probes were not exercised outside a running host session.",
+            "evidence": {
+              "reason": "cli mode without a live context"
+            }
+          },
+          {
+            "id": "compat.legacy-adapters",
+            "category": "compat",
+            "level": "ok",
+            "summary": "Legacy adapters are isolated and disabled in the bundle path (startupDrift=false).",
+            "evidence": {
+              "startupDrift": false,
+              "legacyAdapter": "lib/compat/legacy-startup-drift.js",
+              "legacyDefaults": "overridden by storageConfig/resolveEvolutionPaths; only reachable from a standalone caller without configuration",
+              "dataMigrationScript": "scripts/import-evolution-data.mjs (explicit source arguments only)"
+            }
+          },
+          {
+            "id": "capabilities.known-limits",
+            "category": "capabilities",
+            "level": "ok",
+            "summary": "5 documented, non-blocking capability limit(s) apply to this build.",
+            "evidence": {
+              "degradedCapabilities": [
+                "evaluator-advisory",
+                "continuous-and-governance-not-wired",
+                "host-only-promotion",
+                "legacy-compat-adapters",
+                "internal-api-dependency"
+              ]
+            }
+          },
+          {
+            "id": "data.root",
+            "category": "data",
+            "level": "ok",
+            "summary": "Evolution data root is present and writable (755).",
+            "evidence": {
+              "dataRoot": "/tmp/axis-token-HZlNda/home/storages/evolution",
+              "exists": true,
+              "mode": "755",
+              "symlink": false,
+              "writable": true,
+              "entries": 0,
+              "archiveLock": {
+                "present": false,
+                "kind": "absent",
+                "pid": null,
+                "ownerAlive": false,
+                "malformed": false,
+                "settling": false,
+                "reclaimable": false,
+                "ageMs": 0,
+                "raw": null
+              },
+              "problems": [],
+              "blockingProblems": [],
+              "advisoryProblems": []
+            },
+            "recoverable": false
+          },
+          {
+            "id": "state.memory",
+            "category": "state",
+            "level": "ok",
+            "summary": "No failure memory file yet (fresh install).",
+            "evidence": {
+              "memoryPath": "/tmp/axis-token-HZlNda/home/storages/evolution/evolution-memory.json",
+              "present": false,
+              "quarantines": []
+            }
+          },
+          {
+            "id": "state.archives",
+            "category": "state",
+            "level": "ok",
+            "summary": "Cold archive and rotation files are readable (0 experiment file(s)).",
+            "evidence": {
+              "dir": null,
+              "archives": 0,
+              "unreadable": [],
+              "malformed": [],
+              "dockyard": {
+                "files": [],
+                "sealTemporaries": [],
+                "state": {
+                  "present": false
+                },
+                "jsonl": [],
+                "archiveIntegrity": {
+                  "valid": true,
+                  "status": "verified",
+                  "files": [],
+                  "missing": [],
+                  "mismatched": [],
+                  "stale": [],
+                  "indexFile": "/tmp/axis-token-HZlNda/home/storages/evolution/dockyard/state.json.evolution-archive-index.json",
+                  "index": {
+                    "state": "absent",
+                    "path": "/tmp/axis-token-HZlNda/home/storages/evolution/dockyard/state.json.evolution-archive-index.json"
+                  },
+                  "findings": [],
+                  "missingIndexTargets": [],
+                  "persistedFaults": [],
+                  "quarantineFiles": [],
+                  "transitions": {
+                    "pendingInstall": false,
+                    "compaction": [],
+                    "kind": null
+                  }
+                }
+              },
+              "problems": []
+            },
+            "recoverable": false
+          },
+          {
+            "id": "state.event-bridge",
+            "category": "state",
+            "level": "ok",
+            "summary": "No execution event bridge yet (fresh install).",
+            "evidence": {
+              "eventBridgePath": "/tmp/axis-token-HZlNda/home/storages/evolution/execution-events.jsonl",
+              "present": false
+            }
+          },
+          {
+            "id": "migration.manifest",
+            "category": "migration",
+            "level": "ok",
+            "summary": "No legacy data import recorded; the data root started empty.",
+            "evidence": {
+              "dataRoot": "/tmp/axis-token-HZlNda/home/storages/evolution",
+              "manifest": null,
+              "staging": []
+            }
+          },
+          {
+            "id": "state.domain",
+            "category": "state",
+            "level": "ok",
+            "summary": "No domain aggregate yet; the host creates it from the empty initial state.",
+            "evidence": {
+              "domainGlobalPath": "/tmp/axis-token-HZlNda/home/storages/evolution_domain.json",
+              "present": false,
+              "staging": [],
+              "archiveLock": {
+                "present": false,
+                "kind": "absent",
+                "pid": null,
+                "ownerAlive": false,
+                "malformed": false,
+                "settling": false,
+                "reclaimable": false,
+                "ageMs": 0,
+                "raw": null
+              },
+              "staleLock": false,
+              "lockProblems": [],
+              "lockAdvisory": []
+            }
+          },
+          {
+            "id": "state.retention-floor",
+            "category": "state",
+            "level": "not-evaluated",
+            "summary": "Event log retention continuity: domain-unverified.",
+            "evidence": {
+              "status": "domain-unverified",
+              "floorSource": "none",
+              "eventBridgePath": "/tmp/axis-token-HZlNda/home/storages/evolution/execution-events.jsonl",
+              "floor": null,
+              "floorProblems": [],
+              "reclaimTemporaries": []
+            },
+            "recoverable": false
+          },
+          {
+            "id": "state.ownership",
+            "category": "state",
+            "level": "ok",
+            "summary": "No target ownership directory exists yet; no experiment is holding a target.",
+            "evidence": {
+              "ownershipDir": "/tmp/axis-token-HZlNda/home/storages/evolution/ownership",
+              "kind": "absent",
+              "directoryPresent": false,
+              "claims": [],
+              "states": {},
+              "inProgressClaims": [],
+              "reclaimableClaims": [],
+              "liveClaims": [],
+              "blockingClaims": [],
+              "repairPolicy": "none: the doctor never removes or rewrites a target claim"
+            }
+          },
+          {
+            "id": "data.key",
+            "category": "data",
+            "level": "degraded",
+            "summary": "The event bridge key is absent; no key-derived MAC is on disk (every artifact is absent or empty), so the next start creates the key, exactly as the runtime does whenever the path is free.",
+            "evidence": {
+              "keyPath": "/tmp/axis-token-HZlNda/home/storages/evolution/event-bridge.key",
+              "state": "absent",
+              "present": false,
+              "bytes": 0,
+              "mode": null,
+              "regularFile": false,
+              "keyDerivedArtifacts": {
+                "artifacts": {
+                  "execution-events.jsonl": {
+                    "path": "/tmp/axis-token-HZlNda/home/storages/evolution/execution-events.jsonl",
+                    "state": "absent",
+                    "bytes": 0,
+                    "records": 0
+                  },
+                  "evolution_domain.json": {
+                    "path": "/tmp/axis-token-HZlNda/home/storages/evolution_domain.json",
+                    "state": "absent",
+                    "bytes": 0,
+                    "applied": 0,
+                    "pendingApplied": 0
+                  },
+                  "event-log.checkpoint.json": {
+                    "path": "/tmp/axis-token-HZlNda/home/storages/evolution/event-log.checkpoint.json",
+                    "state": "absent",
+                    "bytes": 0,
+                    "temporaries": []
+                  }
+                },
+                "macBearing": [],
+                "unknown": [],
+                "establishedWithoutMac": [
+                  "execution-events.jsonl",
+                  "evolution_domain.json",
+                  "event-log.checkpoint.json"
+                ]
+              },
+              "macBearingArtifacts": [],
+              "unknownArtifacts": [],
+              "repairPolicy": "none: the doctor never creates, replaces or deletes the event-bridge key"
+            },
+            "remediation": "Start the plugin once; storageConfig() creates a fresh key. Nothing has to be repaired by hand.",
+            "recoverable": true
+          },
+          {
+            "id": "promotion.journal",
+            "category": "promotion",
+            "level": "ok",
+            "summary": "No promotion journal: no promotion is in progress.",
+            "evidence": {
+              "promotionStateDir": "/tmp/axis-token-HZlNda/home/storages/evolution/promotion",
+              "state": "not-executed",
+              "lock": {
+                "present": false
+              }
+            },
+            "recoverable": false
+          },
+          {
+            "id": "promotion.composition",
+            "category": "promotion",
+            "level": "ok",
+            "summary": "No promoted composition: no durable capability is mounted.",
+            "evidence": {
+              "compositionPath": "/tmp/axis-token-HZlNda/home/storages/evolution/promoted.cordis.yml",
+              "present": false,
+              "rows": [],
+              "orphanDirs": [],
+              "problems": [],
+              "journalState": "not-executed"
+            },
+            "recoverable": false
+          },
+          {
+            "id": "promotion.pointer",
+            "category": "promotion",
+            "level": "ok",
+            "summary": "No EVOLUTION.md pointer yet.",
+            "evidence": {
+              "evolutionPath": "/tmp/axis-token-HZlNda/home/storages/evolution/EVOLUTION.md",
+              "present": false
+            }
+          }
+        ],
+        "degradedCapabilities": [
+          {
+            "id": "evaluator-advisory",
+            "impact": "The domain evaluator records a decision and hard-vetoes a detected regression, but promotionGates remains the production authority; independent host baseline/test metrics are not wired in.",
+            "resolution": "Provide a DSH host surface that supplies independent baseline/test metrics for an experiment."
+          },
+          {
+            "id": "continuous-and-governance-not-wired",
+            "impact": "lib/dockyard-domain/continuous and lib/dockyard-domain/governance are pure domain modules covered by unit tests and are not started by the orchestrator live loop.",
+            "resolution": "Wire them into the live loop behind an explicit opt-in once the loop is designed."
+          },
+          {
+            "id": "host-only-promotion",
+            "impact": "Client halves are rejected; promoted host code runs through a cooperative Function(hostCode)() gate that is not a security sandbox.",
+            "resolution": "Requires an approval-aware durable composition contract from the host."
+          },
+          {
+            "id": "legacy-compat-adapters",
+            "impact": "lib/compat/legacy-startup-drift.js and the legacy preset/default-path handling stay present but disabled by default.",
+            "resolution": "Remove once no supported DSH layout publishes the legacy drift engine or preset layout."
+          },
+          {
+            "id": "internal-api-dependency",
+            "impact": "Two introspection surfaces are private to Cordis by its own rule: ctx.events._hooks (no public listener enumeration exists) and the ctx.reflect._getImpl() fallback (used only when the documented ctx.reflect.store + Context.isolate path is absent). FiberState.ACTIVE is not importable (const enum, erased at runtime), so ACTIVE is decided from documented lifecycle fields. The official loader/Include members used for the mounted promoted row (EntryTree.resolve/root, Entry.fiber/options/disabled) are public but undocumented.",
+            "resolution": "Replace ctx.events._hooks once the host publishes a public listener enumeration; every other surface already goes through a documented or explicitly classified path recorded in lib/cordis-compat.js."
+          }
+        ],
+        "coverage": {
+          "evaluated": [
+            "plugin.home",
+            "plugin.package",
+            "plugin.patch",
+            "plugin.support-matrix",
+            "host.cli",
+            "host.version",
+            "host.modules",
+            "compat.legacy-adapters",
+            "capabilities.known-limits",
+            "data.root",
+            "state.memory",
+            "state.archives",
+            "state.event-bridge",
+            "migration.manifest",
+            "state.domain",
+            "state.ownership",
+            "data.key",
+            "promotion.journal",
+            "promotion.composition",
+            "promotion.pointer"
+          ],
+          "notEvaluated": [
+            {
+              "id": "host.install",
+              "reason": "no profile under $DSH_HOME/profiles"
+            },
+            {
+              "id": "host.composition",
+              "reason": "composition probe disabled (--no-composition)"
+            },
+            {
+              "id": "runtime.capabilities",
+              "reason": "cli mode without a live context"
+            },
+            {
+              "id": "runtime.registration",
+              "reason": "cli mode without a live context"
+            },
+            {
+              "id": "runtime.internal-api",
+              "reason": "cli mode without a live context"
+            },
+            {
+              "id": "state.retention-floor",
+              "reason": "not observable in this mode"
+            }
+          ]
+        },
+        "repairs": [],
+        "repairsApplied": []
+      }
+    },
+    {
+      "name": "propose",
+      "provenance": "real registered propose with bounded recall and runtime signature",
+      "prettyBytes": 4790,
+      "compactBytes": 3405,
+      "savedBytes": 1385,
+      "reductionPercent": 28.91,
+      "prettyTokensEstimated": 1330.56,
+      "compactTokensEstimated": 945.83,
+      "equivalentParsedJson": true,
+      "objectKeys": 129,
+      "objects": 13,
+      "arrays": 24,
+      "maxDepth": 5,
+      "stringsWithNewlines": 0,
+      "jsonStrings": 0,
+      "value": {
+        "ok": true,
+        "experimentId": "exp-mvswg8yh-1-67dd378f",
+        "phase": "proposed",
+        "proposal": {
+          "why": "Reduce measured runtime latency",
+          "target": "plugin:axis-latency",
+          "impactScope": [
+            "runtime"
+          ],
+          "successMetrics": [
+            "p95 latency"
+          ],
+          "risk": "low",
+          "owner": "axis-token-owner",
+          "createdAt": "2026-10-29T02:03:41.273Z"
+        },
+        "baseline": {
+          "components": [],
+          "services": [],
+          "tools": [
+            "fixture"
+          ],
+          "events": [],
+          "dynamicPlugins": [],
+          "recoveryProof": {
+            "modules": [],
+            "services": [],
+            "tools": [
+              "fixture"
+            ],
+            "eventListeners": [],
+            "effects": [],
+            "dynamicPlugins": [],
+            "unknown": []
+          }
+        },
+        "experienceRecall": {
+          "query": {
+            "problem": "Reduce measured runtime latency",
+            "target": "plugin:axis-latency",
+            "tokens": 7
+          },
+          "resolved": [],
+          "failures": [
+            {
+              "source": "knowledge",
+              "key": "knowledge:0768cc1e325b6e69bc23ba4ec9f93574",
+              "problem": "official operation failure axis failure l",
+              "scope": "plugin axis-latency",
+              "strategy": "",
+              "failureMode": "tool tool failure axis failure l",
+              "rootCause": "",
+              "state": "LEARNING",
+              "lastOutcome": "failure",
+              "successCount": 0,
+              "failureCount": 1,
+              "successRate": 0,
+              "fitnessMean": null,
+              "regressionCount": 0,
+              "occurrences": 1,
+              "firstSeen": "2026-10-29T02:03:41.247Z",
+              "lastSeen": "2026-10-29T02:03:41.247Z",
+              "evidenceRefs": [
+                "observations:observation:mvswg8xr:a13494ac-0c44-4534-920b-b105716dbc71",
+                "observations:observation:mvswg8xr:a13494ac-0c44-4534-920b-b105716dbc71@2026-10-29T02:03:41.247Z"
+              ],
+              "prevention": "",
+              "coverage": 0.9,
+              "exact": false,
+              "score": 0.4933
+            },
+            {
+              "source": "knowledge",
+              "key": "knowledge:fbc10aa7621c0b0b3e914ee70d842253",
+              "problem": "official operation failure axis failure k",
+              "scope": "plugin axis-latency",
+              "strategy": "",
+              "failureMode": "tool tool failure axis failure k",
+              "rootCause": "",
+              "state": "LEARNING",
+              "lastOutcome": "failure",
+              "successCount": 0,
+              "failureCount": 1,
+              "successRate": 0,
+              "fitnessMean": null,
+              "regressionCount": 0,
+              "occurrences": 1,
+              "firstSeen": "2026-10-29T02:03:41.234Z",
+              "lastSeen": "2026-10-29T02:03:41.234Z",
+              "evidenceRefs": [
+                "observations:observation:mvswg8xe:39363821-f908-490c-a7bd-0ee85d744477",
+                "observations:observation:mvswg8xe:39363821-f908-490c-a7bd-0ee85d744477@2026-10-29T02:03:41.234Z"
+              ],
+              "prevention": "",
+              "coverage": 0.9,
+              "exact": false,
+              "score": 0.4933
+            },
+            {
+              "source": "knowledge",
+              "key": "knowledge:ccbb2a9ced973fc64e8cdb4e83ec9b52",
+              "problem": "official operation failure axis failure j",
+              "scope": "plugin axis-latency",
+              "strategy": "",
+              "failureMode": "tool tool failure axis failure j",
+              "rootCause": "",
+              "state": "LEARNING",
+              "lastOutcome": "failure",
+              "successCount": 0,
+              "failureCount": 1,
+              "successRate": 0,
+              "fitnessMean": null,
+              "regressionCount": 0,
+              "occurrences": 1,
+              "firstSeen": "2026-10-29T02:03:41.223Z",
+              "lastSeen": "2026-10-29T02:03:41.223Z",
+              "evidenceRefs": [
+                "observations:observation:mvswg8x3:635876f5-269e-4d6a-8e12-0ffd6c7722b4",
+                "observations:observation:mvswg8x3:635876f5-269e-4d6a-8e12-0ffd6c7722b4@2026-10-29T02:03:41.223Z"
+              ],
+              "prevention": "",
+              "coverage": 0.9,
+              "exact": false,
+              "score": 0.4933
+            }
+          ],
+          "candidates": [],
+          "duplicate": null,
+          "advice": [
+            "failed: prior attempts did not succeed (tool tool failure axis failure l); require a new hypothesis with new evidence before repeating."
+          ],
+          "counts": {
+            "matched": 12,
+            "returned": 3,
+            "duplicates": 0
+          },
+          "sources": [
+            {
+              "source": "failure-memory",
+              "considered": 0,
+              "scanned": 0,
+              "matched": 0,
+              "duplicates": 0,
+              "dropped": 0,
+              "available": true
+            },
+            {
+              "source": "knowledge",
+              "considered": 12,
+              "scanned": 12,
+              "matched": 12,
+              "duplicates": 0,
+              "dropped": 0,
+              "available": true
+            }
+          ],
+          "unavailable": [],
+          "sourceErrors": [],
+          "truncated": true,
+          "limits": {
+            "maxEntries": 3,
+            "maxRecords": 12,
+            "maxText": 160,
+            "maxEvidenceRefs": 2,
+            "maxConsidered": 2000
+          }
+        }
+      }
+    },
+    {
+      "name": "measure",
+      "provenance": "real propose -> trial (fake runner) -> measure; no production promotion",
+      "prettyBytes": 1427,
+      "compactBytes": 1052,
+      "savedBytes": 375,
+      "reductionPercent": 26.28,
+      "prettyTokensEstimated": 396.39,
+      "compactTokensEstimated": 292.22,
+      "equivalentParsedJson": true,
+      "objectKeys": 49,
+      "objects": 10,
+      "arrays": 14,
+      "maxDepth": 4,
+      "stringsWithNewlines": 0,
+      "jsonStrings": 0,
+      "value": {
+        "ok": true,
+        "experimentId": "exp-mvswg8yh-1-67dd378f",
+        "phase": "measured",
+        "observation": {
+          "at": "2026-10-29T02:03:41.276Z",
+          "solvesProblem": true,
+          "sideEffects": [],
+          "orphanResources": [],
+          "performanceChange": {
+            "latencyMs": {
+              "before": 100,
+              "after": 80
+            }
+          },
+          "errorChange": "unchanged",
+          "metrics": {},
+          "beforeMetrics": {
+            "latencyMs": 100
+          },
+          "afterMetrics": {
+            "latencyMs": 80
+          },
+          "observationWindow": "2026-10-29T00:00:00Z/2026-10-29T00:05:00Z",
+          "sampleCount": 30,
+          "benefitEvidence": "30 synthetic samples: p95 latency 100ms -> 80ms",
+          "repeatable": true,
+          "regressionPassed": true,
+          "reversible": true,
+          "cleanupEvidence": "Disposal proof will be collected after the observation window."
+        },
+        "gates": {
+          "realBenefit": true,
+          "measuredEvidence": true,
+          "repeatable": true,
+          "regressionTest": true,
+          "reversible": true,
+          "cleanupEvidence": true,
+          "noOrphans": true,
+          "runtimeRecovered": false,
+          "eligible": true
+        },
+        "runtime": {
+          "components": [],
+          "services": [],
+          "tools": [
+            "fixture"
+          ],
+          "events": [],
+          "dynamicPlugins": [],
+          "recoveryProof": {
+            "modules": [],
+            "services": [],
+            "tools": [
+              "fixture"
+            ],
+            "eventListeners": [],
+            "effects": [],
+            "dynamicPlugins": [],
+            "unknown": []
+          }
+        }
+      }
+    },
+    {
+      "name": "measure-json-string-evidence",
+      "provenance": "real measure with pretty-JSON string benefitEvidence and newline cleanupEvidence; projected under existing bounds",
+      "prettyBytes": 1942,
+      "compactBytes": 1567,
+      "savedBytes": 375,
+      "reductionPercent": 19.31,
+      "prettyTokensEstimated": 539.44,
+      "compactTokensEstimated": 435.28,
+      "equivalentParsedJson": true,
+      "objectKeys": 49,
+      "objects": 10,
+      "arrays": 14,
+      "maxDepth": 4,
+      "stringsWithNewlines": 2,
+      "jsonStrings": 1,
+      "value": {
+        "ok": true,
+        "experimentId": "exp-mvswg8yl-2-77418ed3",
+        "phase": "measured",
+        "observation": {
+          "at": "2026-10-29T02:03:41.279Z",
+          "solvesProblem": true,
+          "sideEffects": [],
+          "orphanResources": [],
+          "performanceChange": {
+            "latencyMs": {
+              "before": 100,
+              "after": 80
+            }
+          },
+          "errorChange": "unchanged",
+          "metrics": {},
+          "beforeMetrics": {
+            "latencyMs": 100
+          },
+          "afterMetrics": {
+            "latencyMs": 80
+          },
+          "observationWindow": "2026-10-29T00:00:00Z/2026-10-29T00:05:00Z",
+          "sampleCount": 30,
+          "benefitEvidence": "{\n  \"samples\": [\n    {\n      \"index\": 0,\n      \"before\": 100,\n      \"after\": 80\n    },\n    {\n      \"index\": 1,\n      \"before\": 100,\n      \"after\": 80\n    },\n    {\n      \"index\": 2,\n      \"before\": 100,\n      \"after\": 80\n    },\n    {\n      \"index\": 3,\n      \"before\": 100,\n      \"after\": 80\n    },\n    {\n      \"index\": 4,\n      \"before\": 100,\n      \"after\": 80\n    },\n    {\n      \"index\": 5,\n      \"before\": 100,\n      \"after\": 80\n    }\n  ],\n  \"note\": \"line one\\nline two\"\n}",
+          "repeatable": true,
+          "regressionPassed": true,
+          "reversible": true,
+          "cleanupEvidence": "line one\nline two\nNo actual cleanup assertion in this synthetic fixture."
+        },
+        "gates": {
+          "realBenefit": true,
+          "measuredEvidence": true,
+          "repeatable": true,
+          "regressionTest": true,
+          "reversible": true,
+          "cleanupEvidence": true,
+          "noOrphans": true,
+          "runtimeRecovered": false,
+          "eligible": true
+        },
+        "runtime": {
+          "components": [],
+          "services": [],
+          "tools": [
+            "fixture"
+          ],
+          "events": [],
+          "dynamicPlugins": [],
+          "recoveryProof": {
+            "modules": [],
+            "services": [],
+            "tools": [
+              "fixture"
+            ],
+            "eventListeners": [],
+            "effects": [],
+            "dynamicPlugins": [],
+            "unknown": []
+          }
+        }
+      }
+    }
+  ]
+}

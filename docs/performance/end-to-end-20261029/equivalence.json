@@ -1,0 +1,3111 @@
+{
+  "schema": 1,
+  "node": "v26.12.1",
+  "source": {
+    "A": "16d913debf10c147b39b89cf0af7e09969ea0270fdda6c82676ff157d7ee731b",
+    "B": "c6bfd703bc28b98f4a0d647e942e7bfcdc647d8d6ec843e0b20680391f086a1e"
+  },
+  "roots": {
+    "A": "/tmp/dsh-e2e-a2323eb",
+    "B": "/Users/ryukeili/GitHub/dsh-evolution"
+  },
+  "counts": [
+    2000,
+    12000
+  ],
+  "method": "Same deterministic signed fixture with fixed zero-argument new Date audit clock; Date.now remains real. All state keys retained; only coldArchives file/activeFile/indexFile/segments root prefixes canonicalized. Index only top-level and segment updatedAt clocks canonicalized; all other fields retained. JSONL bytes compared via SHA256 and size. Each side checks flush followed by two close/reopens and flushes.",
+  "samples": [
+    {
+      "side": "A",
+      "scenario": "cold",
+      "records": 2000,
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 440.739541,
+        "cpuMs": 472.772,
+        "rssBefore": 52435208,
+        "rssAfter": 79193256,
+        "maxRssBytes": 112017408,
+        "fs": {
+          "openSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.5170410000000203
+          },
+          "fstatSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.015833999999998127
+          },
+          "writeFileSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.3898330000000385
+          },
+          "closeSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.10270800000004954
+          },
+          "promises.mkdir:other": {
+            "calls": 2,
+            "elapsedMs": 0.2627910000000071
+          },
+          "promises.readFile:other": {
+            "calls": 1,
+            "elapsedMs": 0.2135420000000039
+          },
+          "mkdirSync:other": {
+            "calls": 1953,
+            "elapsedMs": 9.540878999999691
+          },
+          "existsSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.033000999999984515
+          },
+          "statSync:archive-data": {
+            "calls": 5923,
+            "elapsedMs": 15.651769000000783
+          },
+          "readdirSync:archive-data": {
+            "calls": 2079,
+            "elapsedMs": 14.36911400000102
+          },
+          "lstatSync:archive-index": {
+            "calls": 6,
+            "elapsedMs": 0.05175000000004104
+          },
+          "lstatSync:archive-data": {
+            "calls": 165,
+            "elapsedMs": 0.9268330000000446
+          },
+          "readdirSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.21162499999998374
+          },
+          "lstatSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.051332999999928575
+          },
+          "promises.readFile:archive-index": {
+            "calls": 3,
+            "elapsedMs": 1.0150000000000006
+          },
+          "promises.stat:archive-data": {
+            "calls": 55,
+            "elapsedMs": 1.0886299999999949
+          },
+          "fsyncSync:other": {
+            "calls": 5,
+            "elapsedMs": 12.819499999999962
+          },
+          "readFileSync:other": {
+            "calls": 5,
+            "elapsedMs": 0.09562399999995819
+          },
+          "openSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.016791999999995255
+          },
+          "fstatSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.012416999999999234
+          },
+          "readFileSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.1748750000000001
+          },
+          "readSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.16825000000000045
+          },
+          "closeSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.002290999999999599
+          },
+          "openSync:archive-data": {
+            "calls": 1954,
+            "elapsedMs": 28.39985600000189
+          },
+          "promises.appendFile:archive-data": {
+            "calls": 1950,
+            "elapsedMs": 69.12420600000002
+          },
+          "readSync:archive-data": {
+            "calls": 1953,
+            "elapsedMs": 3.0003710000012234
+          },
+          "closeSync:archive-data": {
+            "calls": 1953,
+            "elapsedMs": 1.6610999999995357
+          },
+          "promises.writeFile:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.148666999999989
+          },
+          "promises.rename:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.13220899999998892
+          },
+          "readFileSync:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.10858400000000756
+          },
+          "openSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.09000000000003183
+          },
+          "readSync:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.011415999999996984
+          },
+          "closeSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.010335000000054606
+          },
+          "readFileSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.24629199999998264
+          },
+          "writeSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.09333300000008649
+          },
+          "renameSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.451458999999943
+          },
+          "fsyncSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 3.8158750000000055
+          },
+          "fsyncSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.004333999999971638
+          },
+          "promises.open:other": {
+            "calls": 4,
+            "elapsedMs": 0.6833760000000098
+          },
+          "handle.writeFile:other": {
+            "calls": 2,
+            "elapsedMs": 0.6530430000000251
+          },
+          "handle.sync:other": {
+            "calls": 4,
+            "elapsedMs": 11.05716799999999
+          },
+          "handle.close:other": {
+            "calls": 4,
+            "elapsedMs": 0.08470800000003464
+          },
+          "promises.rename:other": {
+            "calls": 2,
+            "elapsedMs": 0.25391600000006065
+          },
+          "existsSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.004166999999995369
+          },
+          "linkSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.36958400000003166
+          },
+          "renameSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.34275000000002365
+          },
+          "linkSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.31370800000001964
+          },
+          "renameSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.3194169999999872
+          },
+          "rmSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.2587090000000103
+          },
+          "statSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 0.012249999999994543
+          }
+        },
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "ee4ab1d02fe6adc8b4cc9cb85adb02ad9790ad800bd7f65ec722e93ff447593f",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "ba4b6caf966b1281fa3d1a68fe3db1eb1c0e441f34cb330cca34c55ee6e517c7"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "87c8d1c7edc5d9964fec716ae1e76cad4232c74839b4a994ff244c7b0a09f4e9"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "d24c9496446913291a50930933cd742be94623a7a0a1fffc15cb6c3337a65752"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "eaac09aefa0eb1b04c64a3d589008e1f680f294267c7501d3674e55ca724b2e2"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "e20a9184befd29169b96a691aa88ca1f9dbae166a8ffd904b72991f5b8abb72c"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "06898571e6d55f3107350c5c344a3441ae9f017fb595c5c148b9bdea1d22daf3",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "ba4b6caf966b1281fa3d1a68fe3db1eb1c0e441f34cb330cca34c55ee6e517c7"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null,
+        "validation": {
+          "flush": [
+            {
+              "applied": 0,
+              "duplicates": 2000
+            },
+            {
+              "applied": 0,
+              "duplicates": 2000
+            },
+            {
+              "applied": 0,
+              "duplicates": 2000
+            }
+          ],
+          "stages": [
+            {
+              "stateSha256": "dbb8cc4845607b40ff1055917a51daae6885394de2099688d2c0979744c2bf51",
+              "ledgerSha256": "006a294b7f8026ffd31417a5070ff3b54b8ff3894f58d99aa45c0903d605f53a",
+              "markerSha256": "b0a0f60e82ea56ccd91595c0e3b8bf0f5f855a2b9aaefaf6728cd03f00a79d7f",
+              "markerCount": 2000,
+              "querySha256": "5df45612fa50481e68e28fc89547ad5fd0e3408f32113eac5516f11b8e5da1c3",
+              "indexNormalizedSha256": "03fe81bc579e9778cd75dcf244b822299a0bc4915a47c8f721ead09c69463395",
+              "jsonlSha256": "50ad4f4d0e7bcd8df51f6dfff9eaa01229c0a14b9d1f400ebcf6e63df7ee54ad",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 1029809,
+                  "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+                }
+              ]
+            },
+            {
+              "stateSha256": "dbb8cc4845607b40ff1055917a51daae6885394de2099688d2c0979744c2bf51",
+              "ledgerSha256": "006a294b7f8026ffd31417a5070ff3b54b8ff3894f58d99aa45c0903d605f53a",
+              "markerSha256": "b0a0f60e82ea56ccd91595c0e3b8bf0f5f855a2b9aaefaf6728cd03f00a79d7f",
+              "markerCount": 2000,
+              "querySha256": "5df45612fa50481e68e28fc89547ad5fd0e3408f32113eac5516f11b8e5da1c3",
+              "indexNormalizedSha256": "03fe81bc579e9778cd75dcf244b822299a0bc4915a47c8f721ead09c69463395",
+              "jsonlSha256": "50ad4f4d0e7bcd8df51f6dfff9eaa01229c0a14b9d1f400ebcf6e63df7ee54ad",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 1029809,
+                  "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+                }
+              ]
+            },
+            {
+              "stateSha256": "dbb8cc4845607b40ff1055917a51daae6885394de2099688d2c0979744c2bf51",
+              "ledgerSha256": "006a294b7f8026ffd31417a5070ff3b54b8ff3894f58d99aa45c0903d605f53a",
+              "markerSha256": "b0a0f60e82ea56ccd91595c0e3b8bf0f5f855a2b9aaefaf6728cd03f00a79d7f",
+              "markerCount": 2000,
+              "querySha256": "5df45612fa50481e68e28fc89547ad5fd0e3408f32113eac5516f11b8e5da1c3",
+              "indexNormalizedSha256": "03fe81bc579e9778cd75dcf244b822299a0bc4915a47c8f721ead09c69463395",
+              "jsonlSha256": "50ad4f4d0e7bcd8df51f6dfff9eaa01229c0a14b9d1f400ebcf6e63df7ee54ad",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 1029809,
+                  "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+                }
+              ]
+            },
+            {
+              "stateSha256": "dbb8cc4845607b40ff1055917a51daae6885394de2099688d2c0979744c2bf51",
+              "ledgerSha256": "006a294b7f8026ffd31417a5070ff3b54b8ff3894f58d99aa45c0903d605f53a",
+              "markerSha256": "b0a0f60e82ea56ccd91595c0e3b8bf0f5f855a2b9aaefaf6728cd03f00a79d7f",
+              "markerCount": 2000,
+              "querySha256": "5df45612fa50481e68e28fc89547ad5fd0e3408f32113eac5516f11b8e5da1c3",
+              "indexNormalizedSha256": "03fe81bc579e9778cd75dcf244b822299a0bc4915a47c8f721ead09c69463395",
+              "jsonlSha256": "50ad4f4d0e7bcd8df51f6dfff9eaa01229c0a14b9d1f400ebcf6e63df7ee54ad",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 1029809,
+                  "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "side": "B",
+      "scenario": "cold",
+      "records": 2000,
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 435.99775,
+        "cpuMs": 462.438,
+        "rssBefore": 52304112,
+        "rssAfter": 64461760,
+        "maxRssBytes": 98844672,
+        "fs": {
+          "openSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.4794180000000381
+          },
+          "fstatSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.01737500000000125
+          },
+          "writeFileSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.3662080000000145
+          },
+          "closeSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.11504299999997158
+          },
+          "promises.mkdir:other": {
+            "calls": 2,
+            "elapsedMs": 0.28495699999999147
+          },
+          "promises.readFile:other": {
+            "calls": 1,
+            "elapsedMs": 0.23979199999999423
+          },
+          "mkdirSync:other": {
+            "calls": 1953,
+            "elapsedMs": 9.509688999998858
+          },
+          "existsSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.028833999999989146
+          },
+          "statSync:archive-data": {
+            "calls": 5923,
+            "elapsedMs": 15.273610000003117
+          },
+          "readdirSync:archive-data": {
+            "calls": 2079,
+            "elapsedMs": 22.181469999998228
+          },
+          "lstatSync:archive-index": {
+            "calls": 6,
+            "elapsedMs": 0.04999899999997126
+          },
+          "lstatSync:archive-data": {
+            "calls": 165,
+            "elapsedMs": 0.9598320000002047
+          },
+          "readdirSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.22345800000002214
+          },
+          "lstatSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.04791699999996979
+          },
+          "promises.readFile:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.9675009999999702
+          },
+          "promises.stat:archive-data": {
+            "calls": 55,
+            "elapsedMs": 1.0581310000000315
+          },
+          "fsyncSync:other": {
+            "calls": 5,
+            "elapsedMs": 10.435916000000006
+          },
+          "readFileSync:other": {
+            "calls": 5,
+            "elapsedMs": 0.09483399999996323
+          },
+          "openSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.01958299999999724
+          },
+          "fstatSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.012458000000009406
+          },
+          "readFileSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.1767499999999984
+          },
+          "readSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.16787500000000932
+          },
+          "closeSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.002083999999996422
+          },
+          "openSync:archive-data": {
+            "calls": 3904,
+            "elapsedMs": 53.23828799999977
+          },
+          "appendFileSync:archive-data": {
+            "calls": 1950,
+            "elapsedMs": 55.97144899999964
+          },
+          "writeFileSync:archive-data": {
+            "calls": 1950,
+            "elapsedMs": 54.831858000000736
+          },
+          "writeSync:archive-data": {
+            "calls": 1950,
+            "elapsedMs": 9.815038999999317
+          },
+          "closeSync:archive-data": {
+            "calls": 3903,
+            "elapsedMs": 18.1593930000014
+          },
+          "readSync:archive-data": {
+            "calls": 1953,
+            "elapsedMs": 3.49232299999872
+          },
+          "promises.writeFile:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.2616249999999809
+          },
+          "promises.rename:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.12850000000003092
+          },
+          "readFileSync:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.10729200000002947
+          },
+          "openSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.08916599999997743
+          },
+          "readSync:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.009500000000116415
+          },
+          "closeSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.010207999999920503
+          },
+          "readFileSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.31679100000002336
+          },
+          "writeSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.08754199999998491
+          },
+          "renameSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.4157510000000002
+          },
+          "fsyncSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 3.448500000000024
+          },
+          "fsyncSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.003375000000005457
+          },
+          "promises.open:other": {
+            "calls": 4,
+            "elapsedMs": 0.5123739999999657
+          },
+          "handle.writeFile:other": {
+            "calls": 2,
+            "elapsedMs": 0.6571669999999585
+          },
+          "handle.sync:other": {
+            "calls": 4,
+            "elapsedMs": 14.087042000000054
+          },
+          "handle.close:other": {
+            "calls": 4,
+            "elapsedMs": 0.08016599999996288
+          },
+          "promises.rename:other": {
+            "calls": 2,
+            "elapsedMs": 0.24974999999994907
+          },
+          "existsSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.004292000000020835
+          },
+          "linkSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.36324999999999363
+          },
+          "renameSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.34345899999999574
+          },
+          "linkSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.3257080000000201
+          },
+          "renameSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.32129199999997127
+          },
+          "rmSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.26695799999998826
+          },
+          "statSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 0.013042000000041298
+          }
+        },
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "3ab1bdee04bff38d9d1de7731c060d40949d6414455899dae401ca62f1433c62",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "ba4b6caf966b1281fa3d1a68fe3db1eb1c0e441f34cb330cca34c55ee6e517c7"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "b72f0f3e107e0056e8517a9e80992732c3fc23aeca2c3b27eb3483b6ec1537d8"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "7d72e77dc854cb149591c0f2244970a7852c1b2ae76add44caa5e3cd2e3187cb"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "906c64604a50567ceb8acbd62eede502fe710bf020c6d34ee0a3f6607b0dd400"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "37ea38f655282d2d33bf5ea5a6acbe829ff90a7b614095bf373db5cfdd407e96"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "06898571e6d55f3107350c5c344a3441ae9f017fb595c5c148b9bdea1d22daf3",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "ba4b6caf966b1281fa3d1a68fe3db1eb1c0e441f34cb330cca34c55ee6e517c7"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null,
+        "validation": {
+          "flush": [
+            {
+              "applied": 0,
+              "duplicates": 2000
+            },
+            {
+              "applied": 0,
+              "duplicates": 2000
+            },
+            {
+              "applied": 0,
+              "duplicates": 2000
+            }
+          ],
+          "stages": [
+            {
+              "stateSha256": "dbb8cc4845607b40ff1055917a51daae6885394de2099688d2c0979744c2bf51",
+              "ledgerSha256": "006a294b7f8026ffd31417a5070ff3b54b8ff3894f58d99aa45c0903d605f53a",
+              "markerSha256": "b0a0f60e82ea56ccd91595c0e3b8bf0f5f855a2b9aaefaf6728cd03f00a79d7f",
+              "markerCount": 2000,
+              "querySha256": "5df45612fa50481e68e28fc89547ad5fd0e3408f32113eac5516f11b8e5da1c3",
+              "indexNormalizedSha256": "03fe81bc579e9778cd75dcf244b822299a0bc4915a47c8f721ead09c69463395",
+              "jsonlSha256": "50ad4f4d0e7bcd8df51f6dfff9eaa01229c0a14b9d1f400ebcf6e63df7ee54ad",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 1029809,
+                  "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+                }
+              ]
+            },
+            {
+              "stateSha256": "dbb8cc4845607b40ff1055917a51daae6885394de2099688d2c0979744c2bf51",
+              "ledgerSha256": "006a294b7f8026ffd31417a5070ff3b54b8ff3894f58d99aa45c0903d605f53a",
+              "markerSha256": "b0a0f60e82ea56ccd91595c0e3b8bf0f5f855a2b9aaefaf6728cd03f00a79d7f",
+              "markerCount": 2000,
+              "querySha256": "5df45612fa50481e68e28fc89547ad5fd0e3408f32113eac5516f11b8e5da1c3",
+              "indexNormalizedSha256": "03fe81bc579e9778cd75dcf244b822299a0bc4915a47c8f721ead09c69463395",
+              "jsonlSha256": "50ad4f4d0e7bcd8df51f6dfff9eaa01229c0a14b9d1f400ebcf6e63df7ee54ad",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 1029809,
+                  "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+                }
+              ]
+            },
+            {
+              "stateSha256": "dbb8cc4845607b40ff1055917a51daae6885394de2099688d2c0979744c2bf51",
+              "ledgerSha256": "006a294b7f8026ffd31417a5070ff3b54b8ff3894f58d99aa45c0903d605f53a",
+              "markerSha256": "b0a0f60e82ea56ccd91595c0e3b8bf0f5f855a2b9aaefaf6728cd03f00a79d7f",
+              "markerCount": 2000,
+              "querySha256": "5df45612fa50481e68e28fc89547ad5fd0e3408f32113eac5516f11b8e5da1c3",
+              "indexNormalizedSha256": "03fe81bc579e9778cd75dcf244b822299a0bc4915a47c8f721ead09c69463395",
+              "jsonlSha256": "50ad4f4d0e7bcd8df51f6dfff9eaa01229c0a14b9d1f400ebcf6e63df7ee54ad",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 1029809,
+                  "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+                }
+              ]
+            },
+            {
+              "stateSha256": "dbb8cc4845607b40ff1055917a51daae6885394de2099688d2c0979744c2bf51",
+              "ledgerSha256": "006a294b7f8026ffd31417a5070ff3b54b8ff3894f58d99aa45c0903d605f53a",
+              "markerSha256": "b0a0f60e82ea56ccd91595c0e3b8bf0f5f855a2b9aaefaf6728cd03f00a79d7f",
+              "markerCount": 2000,
+              "querySha256": "5df45612fa50481e68e28fc89547ad5fd0e3408f32113eac5516f11b8e5da1c3",
+              "indexNormalizedSha256": "03fe81bc579e9778cd75dcf244b822299a0bc4915a47c8f721ead09c69463395",
+              "jsonlSha256": "50ad4f4d0e7bcd8df51f6dfff9eaa01229c0a14b9d1f400ebcf6e63df7ee54ad",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 1029809,
+                  "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "side": "A",
+      "scenario": "cold",
+      "records": 12000,
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 3040.182416,
+        "cpuMs": 3176.696,
+        "rssBefore": 104032408,
+        "rssAfter": 202196728,
+        "maxRssBytes": 229031936,
+        "fs": {
+          "openSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.6014999999996604
+          },
+          "fstatSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.019666999999998325
+          },
+          "writeFileSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.4639169999994692
+          },
+          "closeSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.1431259999994836
+          },
+          "promises.mkdir:other": {
+            "calls": 2,
+            "elapsedMs": 0.7490419999998039
+          },
+          "promises.readFile:other": {
+            "calls": 1,
+            "elapsedMs": 0.2050830000000019
+          },
+          "mkdirSync:other": {
+            "calls": 11953,
+            "elapsedMs": 56.07447600003397
+          },
+          "existsSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.03975099999985332
+          },
+          "statSync:archive-data": {
+            "calls": 35923,
+            "elapsedMs": 85.75319099997807
+          },
+          "readdirSync:archive-data": {
+            "calls": 12079,
+            "elapsedMs": 93.93181599998243
+          },
+          "lstatSync:archive-index": {
+            "calls": 6,
+            "elapsedMs": 0.05816599999982941
+          },
+          "lstatSync:archive-data": {
+            "calls": 165,
+            "elapsedMs": 0.9143770000011955
+          },
+          "readdirSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.24441500000008887
+          },
+          "lstatSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.056664999999696875
+          },
+          "promises.readFile:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.9848760000003267
+          },
+          "promises.stat:archive-data": {
+            "calls": 55,
+            "elapsedMs": 1.7954130000005364
+          },
+          "fsyncSync:other": {
+            "calls": 5,
+            "elapsedMs": 10.212709000000217
+          },
+          "readFileSync:other": {
+            "calls": 5,
+            "elapsedMs": 0.13153999999991584
+          },
+          "openSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.016416999999989912
+          },
+          "fstatSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.011957999999992808
+          },
+          "readFileSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.9827909999999918
+          },
+          "readSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.9757089999999948
+          },
+          "closeSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.003290999999990163
+          },
+          "openSync:archive-data": {
+            "calls": 11954,
+            "elapsedMs": 170.47342400000852
+          },
+          "promises.appendFile:archive-data": {
+            "calls": 11950,
+            "elapsedMs": 393.7368400000072
+          },
+          "readSync:archive-data": {
+            "calls": 11959,
+            "elapsedMs": 17.381961999988988
+          },
+          "closeSync:archive-data": {
+            "calls": 11953,
+            "elapsedMs": 9.487998999991277
+          },
+          "promises.writeFile:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.16908299999977316
+          },
+          "promises.rename:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.1319999999996071
+          },
+          "readFileSync:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.11483399999951871
+          },
+          "openSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.09316699999953926
+          },
+          "readSync:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.008750999999847409
+          },
+          "closeSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.011873999999352236
+          },
+          "readFileSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 1.7522500000000036
+          },
+          "writeSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.13075000000026193
+          },
+          "renameSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.4794569999999112
+          },
+          "fsyncSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 4.153124999999818
+          },
+          "fsyncSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.0037910000000920263
+          },
+          "promises.open:other": {
+            "calls": 4,
+            "elapsedMs": 0.41208400000004985
+          },
+          "handle.writeFile:other": {
+            "calls": 2,
+            "elapsedMs": 1.968626000000313
+          },
+          "handle.sync:other": {
+            "calls": 4,
+            "elapsedMs": 16.369333999999526
+          },
+          "handle.close:other": {
+            "calls": 4,
+            "elapsedMs": 0.09512500000028012
+          },
+          "promises.rename:other": {
+            "calls": 2,
+            "elapsedMs": 0.43491600000061226
+          },
+          "existsSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.00829199999998309
+          },
+          "linkSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.40104199999996126
+          },
+          "renameSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.36008300000003146
+          },
+          "linkSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.3481669999996484
+          },
+          "renameSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.3253340000001117
+          },
+          "rmSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.31512500000008004
+          },
+          "statSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 0.01408300000048257
+          }
+        },
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "9790754b34ed88f02cc867097c415da3d76f0b17c2a6c889652e4418ea2b09b9",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "1ea8f51decf0b6625a520b111af38e7daf355d8e180f15f23c42a84f3b70abf0"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "d1c49914206cf90ff6b3e2460143d16b0fa12213fbf613e3563ab835c4e9d5c2"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "2472cc05c0939cc99a6fce903407668f8450c1c4f2af6843b9e9960ae4083b7d"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "2578f19374a671fc7d8e9e5c9c0bdc03043d12a9e58e9c45087b19200544d836"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "315aad0c5ff0a67ddc712e86475878d8ef07b61aedd1809a4ac45b6c116bf5e3"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "f141b38ab2bd727639b071f021565059a6341b8f9c625383bfc9c87d43873431",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "1ea8f51decf0b6625a520b111af38e7daf355d8e180f15f23c42a84f3b70abf0"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null,
+        "validation": {
+          "flush": [
+            {
+              "applied": 0,
+              "duplicates": 12000
+            },
+            {
+              "applied": 0,
+              "duplicates": 12000
+            },
+            {
+              "applied": 0,
+              "duplicates": 12000
+            }
+          ],
+          "stages": [
+            {
+              "stateSha256": "a2173cc57134a7a0065b38a3727ed912e193a2ec698a8bab018ddf3f0be5234e",
+              "ledgerSha256": "87d64b0e0edba7a8e75b06bde5b2edab93d1d6bf4f07b9a582b74e98a323b932",
+              "markerSha256": "5a70eab9d980de9740a57b8d76cce887c7120a07e00d71828b1377999393565c",
+              "markerCount": 4096,
+              "querySha256": "24356d6a21cf427b820863ae7d76ad322418c113ee3232260e344164e3b7ff4f",
+              "indexNormalizedSha256": "d937a34c37aa0e7a587a3aaedb03ce544545525e11c35cbc7f4eeeac93ffe9c9",
+              "jsonlSha256": "04b57fb2609862b7577e814e594397963c2a7b41d193d697ed26047daaf96253",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 6310898,
+                  "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+                }
+              ]
+            },
+            {
+              "stateSha256": "a2173cc57134a7a0065b38a3727ed912e193a2ec698a8bab018ddf3f0be5234e",
+              "ledgerSha256": "87d64b0e0edba7a8e75b06bde5b2edab93d1d6bf4f07b9a582b74e98a323b932",
+              "markerSha256": "5a70eab9d980de9740a57b8d76cce887c7120a07e00d71828b1377999393565c",
+              "markerCount": 4096,
+              "querySha256": "24356d6a21cf427b820863ae7d76ad322418c113ee3232260e344164e3b7ff4f",
+              "indexNormalizedSha256": "d937a34c37aa0e7a587a3aaedb03ce544545525e11c35cbc7f4eeeac93ffe9c9",
+              "jsonlSha256": "04b57fb2609862b7577e814e594397963c2a7b41d193d697ed26047daaf96253",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 6310898,
+                  "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+                }
+              ]
+            },
+            {
+              "stateSha256": "a2173cc57134a7a0065b38a3727ed912e193a2ec698a8bab018ddf3f0be5234e",
+              "ledgerSha256": "87d64b0e0edba7a8e75b06bde5b2edab93d1d6bf4f07b9a582b74e98a323b932",
+              "markerSha256": "5a70eab9d980de9740a57b8d76cce887c7120a07e00d71828b1377999393565c",
+              "markerCount": 4096,
+              "querySha256": "24356d6a21cf427b820863ae7d76ad322418c113ee3232260e344164e3b7ff4f",
+              "indexNormalizedSha256": "d937a34c37aa0e7a587a3aaedb03ce544545525e11c35cbc7f4eeeac93ffe9c9",
+              "jsonlSha256": "04b57fb2609862b7577e814e594397963c2a7b41d193d697ed26047daaf96253",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 6310898,
+                  "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+                }
+              ]
+            },
+            {
+              "stateSha256": "a2173cc57134a7a0065b38a3727ed912e193a2ec698a8bab018ddf3f0be5234e",
+              "ledgerSha256": "87d64b0e0edba7a8e75b06bde5b2edab93d1d6bf4f07b9a582b74e98a323b932",
+              "markerSha256": "5a70eab9d980de9740a57b8d76cce887c7120a07e00d71828b1377999393565c",
+              "markerCount": 4096,
+              "querySha256": "24356d6a21cf427b820863ae7d76ad322418c113ee3232260e344164e3b7ff4f",
+              "indexNormalizedSha256": "d937a34c37aa0e7a587a3aaedb03ce544545525e11c35cbc7f4eeeac93ffe9c9",
+              "jsonlSha256": "04b57fb2609862b7577e814e594397963c2a7b41d193d697ed26047daaf96253",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 6310898,
+                  "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "side": "B",
+      "scenario": "cold",
+      "records": 12000,
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2984.281708,
+        "cpuMs": 3068.447,
+        "rssBefore": 104229040,
+        "rssAfter": 209226664,
+        "maxRssBytes": 235257856,
+        "fs": {
+          "openSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.5953320000005817
+          },
+          "fstatSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.02591699999999264
+          },
+          "writeFileSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.4777920000002922
+          },
+          "closeSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.14753999999972223
+          },
+          "promises.mkdir:other": {
+            "calls": 2,
+            "elapsedMs": 0.7694170000001606
+          },
+          "promises.readFile:other": {
+            "calls": 1,
+            "elapsedMs": 0.20241700000001117
+          },
+          "mkdirSync:other": {
+            "calls": 11953,
+            "elapsedMs": 55.54774300001377
+          },
+          "existsSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.03883300000003942
+          },
+          "statSync:archive-data": {
+            "calls": 35923,
+            "elapsedMs": 85.20851199998484
+          },
+          "readdirSync:archive-data": {
+            "calls": 12079,
+            "elapsedMs": 101.25059799996995
+          },
+          "lstatSync:archive-index": {
+            "calls": 6,
+            "elapsedMs": 0.06295900000051802
+          },
+          "lstatSync:archive-data": {
+            "calls": 165,
+            "elapsedMs": 0.9215410000005022
+          },
+          "readdirSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.24812499999967486
+          },
+          "lstatSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.06258299999993255
+          },
+          "promises.readFile:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.2577910000003101
+          },
+          "promises.stat:archive-data": {
+            "calls": 55,
+            "elapsedMs": 1.603250999999915
+          },
+          "fsyncSync:other": {
+            "calls": 5,
+            "elapsedMs": 10.979417000000154
+          },
+          "readFileSync:other": {
+            "calls": 5,
+            "elapsedMs": 0.12895700000035504
+          },
+          "openSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.015041999999994005
+          },
+          "fstatSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.011917000000011058
+          },
+          "readFileSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 1.0291249999999934
+          },
+          "readSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 1.0222090000000037
+          },
+          "closeSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.003459000000020751
+          },
+          "openSync:archive-data": {
+            "calls": 23904,
+            "elapsedMs": 318.54130500000076
+          },
+          "appendFileSync:archive-data": {
+            "calls": 11950,
+            "elapsedMs": 352.1948459999862
+          },
+          "writeFileSync:archive-data": {
+            "calls": 11950,
+            "elapsedMs": 346.86213499999667
+          },
+          "writeSync:archive-data": {
+            "calls": 11950,
+            "elapsedMs": 93.46061999999145
+          },
+          "closeSync:archive-data": {
+            "calls": 23903,
+            "elapsedMs": 95.41141599999065
+          },
+          "readSync:archive-data": {
+            "calls": 11959,
+            "elapsedMs": 17.705547999979615
+          },
+          "promises.writeFile:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.23766699999987395
+          },
+          "promises.rename:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.12049999999999272
+          },
+          "readFileSync:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.12508400000024267
+          },
+          "openSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.09828999999990629
+          },
+          "readSync:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.015376000000287604
+          },
+          "closeSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.006374000000050728
+          },
+          "readFileSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 1.8143339999996897
+          },
+          "writeSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.13412500000049477
+          },
+          "renameSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.4768340000000535
+          },
+          "fsyncSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 5.090167000000292
+          },
+          "fsyncSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.0033750000002328306
+          },
+          "promises.open:other": {
+            "calls": 4,
+            "elapsedMs": 1.5061659999996664
+          },
+          "handle.writeFile:other": {
+            "calls": 2,
+            "elapsedMs": 2.2137910000001284
+          },
+          "handle.sync:other": {
+            "calls": 4,
+            "elapsedMs": 15.818958000000293
+          },
+          "handle.close:other": {
+            "calls": 4,
+            "elapsedMs": 0.11483400000088295
+          },
+          "promises.rename:other": {
+            "calls": 2,
+            "elapsedMs": 1.4975000000004002
+          },
+          "existsSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.005124999999679858
+          },
+          "linkSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.41962499999999636
+          },
+          "renameSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.3594159999997828
+          },
+          "linkSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.3358749999997599
+          },
+          "renameSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 0.35220799999979135
+          },
+          "rmSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.27441700000008495
+          },
+          "statSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 0.020124000000123488
+          }
+        },
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "431be8d1581f16e93aa849e61ab638fb380c37bcf5cf4abb6af1596260ed8fcd",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "1ea8f51decf0b6625a520b111af38e7daf355d8e180f15f23c42a84f3b70abf0"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "a8f0e24f42b136316ff965c9b8439aedb744b4e285ec9e32eafaab36114847ed"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "d9bf33f7747d161f1bd5fbeb18ac18986f40ed8030227673fef27bdd9aa5a445"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "f5092f0621d5aaa80c4381660536160ba7bc4ec6d5bfa991989e068a1d2e3094"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "5ae7a02acd87f28ab4f0533dde611efb42ac46989af3ec7a431b8b8a6fd14504"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "f141b38ab2bd727639b071f021565059a6341b8f9c625383bfc9c87d43873431",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "1ea8f51decf0b6625a520b111af38e7daf355d8e180f15f23c42a84f3b70abf0"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null,
+        "validation": {
+          "flush": [
+            {
+              "applied": 0,
+              "duplicates": 12000
+            },
+            {
+              "applied": 0,
+              "duplicates": 12000
+            },
+            {
+              "applied": 0,
+              "duplicates": 12000
+            }
+          ],
+          "stages": [
+            {
+              "stateSha256": "a2173cc57134a7a0065b38a3727ed912e193a2ec698a8bab018ddf3f0be5234e",
+              "ledgerSha256": "87d64b0e0edba7a8e75b06bde5b2edab93d1d6bf4f07b9a582b74e98a323b932",
+              "markerSha256": "5a70eab9d980de9740a57b8d76cce887c7120a07e00d71828b1377999393565c",
+              "markerCount": 4096,
+              "querySha256": "24356d6a21cf427b820863ae7d76ad322418c113ee3232260e344164e3b7ff4f",
+              "indexNormalizedSha256": "d937a34c37aa0e7a587a3aaedb03ce544545525e11c35cbc7f4eeeac93ffe9c9",
+              "jsonlSha256": "04b57fb2609862b7577e814e594397963c2a7b41d193d697ed26047daaf96253",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 6310898,
+                  "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+                }
+              ]
+            },
+            {
+              "stateSha256": "a2173cc57134a7a0065b38a3727ed912e193a2ec698a8bab018ddf3f0be5234e",
+              "ledgerSha256": "87d64b0e0edba7a8e75b06bde5b2edab93d1d6bf4f07b9a582b74e98a323b932",
+              "markerSha256": "5a70eab9d980de9740a57b8d76cce887c7120a07e00d71828b1377999393565c",
+              "markerCount": 4096,
+              "querySha256": "24356d6a21cf427b820863ae7d76ad322418c113ee3232260e344164e3b7ff4f",
+              "indexNormalizedSha256": "d937a34c37aa0e7a587a3aaedb03ce544545525e11c35cbc7f4eeeac93ffe9c9",
+              "jsonlSha256": "04b57fb2609862b7577e814e594397963c2a7b41d193d697ed26047daaf96253",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 6310898,
+                  "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+                }
+              ]
+            },
+            {
+              "stateSha256": "a2173cc57134a7a0065b38a3727ed912e193a2ec698a8bab018ddf3f0be5234e",
+              "ledgerSha256": "87d64b0e0edba7a8e75b06bde5b2edab93d1d6bf4f07b9a582b74e98a323b932",
+              "markerSha256": "5a70eab9d980de9740a57b8d76cce887c7120a07e00d71828b1377999393565c",
+              "markerCount": 4096,
+              "querySha256": "24356d6a21cf427b820863ae7d76ad322418c113ee3232260e344164e3b7ff4f",
+              "indexNormalizedSha256": "d937a34c37aa0e7a587a3aaedb03ce544545525e11c35cbc7f4eeeac93ffe9c9",
+              "jsonlSha256": "04b57fb2609862b7577e814e594397963c2a7b41d193d697ed26047daaf96253",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 6310898,
+                  "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+                }
+              ]
+            },
+            {
+              "stateSha256": "a2173cc57134a7a0065b38a3727ed912e193a2ec698a8bab018ddf3f0be5234e",
+              "ledgerSha256": "87d64b0e0edba7a8e75b06bde5b2edab93d1d6bf4f07b9a582b74e98a323b932",
+              "markerSha256": "5a70eab9d980de9740a57b8d76cce887c7120a07e00d71828b1377999393565c",
+              "markerCount": 4096,
+              "querySha256": "24356d6a21cf427b820863ae7d76ad322418c113ee3232260e344164e3b7ff4f",
+              "indexNormalizedSha256": "d937a34c37aa0e7a587a3aaedb03ce544545525e11c35cbc7f4eeeac93ffe9c9",
+              "jsonlSha256": "04b57fb2609862b7577e814e594397963c2a7b41d193d697ed26047daaf96253",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 6310898,
+                  "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "side": "A",
+      "scenario": "incremental",
+      "records": 2000,
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1555.76075,
+        "cpuMs": 1614.837,
+        "rssBefore": 89138536,
+        "rssAfter": 158383944,
+        "maxRssBytes": 188137472,
+        "fs": {
+          "openSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.5066239999991922
+          },
+          "fstatSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.005958999999961634
+          },
+          "writeFileSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.43616700000018227
+          },
+          "closeSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.078251000000364
+          },
+          "promises.mkdir:other": {
+            "calls": 2,
+            "elapsedMs": 0.43233299999997143
+          },
+          "promises.readFile:other": {
+            "calls": 1,
+            "elapsedMs": 0.37104199999998855
+          },
+          "mkdirSync:other": {
+            "calls": 2003,
+            "elapsedMs": 9.414169999997853
+          },
+          "existsSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.036126000000194836
+          },
+          "statSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.029917000000068583
+          },
+          "statSync:archive-data": {
+            "calls": 8074,
+            "elapsedMs": 22.474796000009633
+          },
+          "readdirSync:archive-data": {
+            "calls": 2130,
+            "elapsedMs": 13.10751899999866
+          },
+          "lstatSync:archive-index": {
+            "calls": 9,
+            "elapsedMs": 0.08312499999976808
+          },
+          "readFileSync:archive-index": {
+            "calls": 5,
+            "elapsedMs": 0.2109170000001086
+          },
+          "openSync:archive-index": {
+            "calls": 7,
+            "elapsedMs": 0.1838759999999411
+          },
+          "readSync:archive-index": {
+            "calls": 5,
+            "elapsedMs": 0.01716699999951743
+          },
+          "closeSync:archive-index": {
+            "calls": 7,
+            "elapsedMs": 0.01745900000025813
+          },
+          "lstatSync:archive-data": {
+            "calls": 168,
+            "elapsedMs": 0.8893729999996367
+          },
+          "readdirSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.18024999999977354
+          },
+          "lstatSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.046082999999953245
+          },
+          "promises.readFile:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.183292000000165
+          },
+          "promises.stat:archive-data": {
+            "calls": 57,
+            "elapsedMs": 1.6749149999972133
+          },
+          "fsyncSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 6.553959000000191
+          },
+          "openSync:archive-data": {
+            "calls": 2007,
+            "elapsedMs": 29.501036999999656
+          },
+          "fsyncSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 3.009209000000169
+          },
+          "closeSync:archive-data": {
+            "calls": 2007,
+            "elapsedMs": 1.6301469999918936
+          },
+          "fsyncSync:other": {
+            "calls": 5,
+            "elapsedMs": 5.27699999999993
+          },
+          "readFileSync:other": {
+            "calls": 5,
+            "elapsedMs": 0.1253750000000764
+          },
+          "openSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.01291599999990467
+          },
+          "fstatSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.002292000000011285
+          },
+          "readSync:event-log": {
+            "calls": 4,
+            "elapsedMs": 0.19679199999984576
+          },
+          "closeSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.0012500000000272848
+          },
+          "linkSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 0.7540000000000191
+          },
+          "linkSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.6366670000001022
+          },
+          "readSync:archive-data": {
+            "calls": 2009,
+            "elapsedMs": 3.77766900000438
+          },
+          "copyFileSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 1.0142080000000533
+          },
+          "renameSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.5975419999998621
+          },
+          "promises.appendFile:archive-data": {
+            "calls": 2000,
+            "elapsedMs": 99.45870999999738
+          },
+          "promises.writeFile:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.4956250000000182
+          },
+          "promises.rename:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.15816600000016479
+          },
+          "readFileSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.666374999999789
+          },
+          "writeSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.1272089999997661
+          },
+          "renameSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.6680829999997968
+          },
+          "promises.open:other": {
+            "calls": 4,
+            "elapsedMs": 0.37195899999937865
+          },
+          "handle.writeFile:other": {
+            "calls": 2,
+            "elapsedMs": 1.383665999999721
+          },
+          "handle.sync:other": {
+            "calls": 4,
+            "elapsedMs": 13.694624999999178
+          },
+          "handle.close:other": {
+            "calls": 4,
+            "elapsedMs": 0.07295700000031502
+          },
+          "promises.rename:other": {
+            "calls": 2,
+            "elapsedMs": 0.45858300000008967
+          },
+          "existsSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.00437499999998181
+          },
+          "renameSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.44574999999986176
+          },
+          "rmSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.274167000000034
+          }
+        },
+        "fixture": {
+          "sha256": "18e72845152ceda5d86f9bf45a34172986bf7fa107822f2edd0992b1687dc6fd",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "ba4b6caf966b1281fa3d1a68fe3db1eb1c0e441f34cb330cca34c55ee6e517c7"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "3ddb3281f470c1bfc35571f25c7895b1747446ef7221b5cb8e464c1fcb9845e6"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "88f508cb04522dd0315a3e57baf86d0504fc9456066070d3ce9941a217e2d94c"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "5fbb0d05ac8a53d8ff3b95ee3c5ca89b2cdd2f21c0ffbdb80204cd0d5a4e3bea"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "97e54168c26220d8a6a58bc1eea75c3ffd3f67307e7fd0022a5a4c5837309d5f",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "dfbc71571b6c19eceb103fafe7ead0e395b4cf1803c7f9162f1f273a1b09fdb7"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "b8d87d95ee6188bc23c02eaf2e6ebf6e96c79425266bcb74892d8f1c7a2faf61"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "51b31a313b73eb8beffadff0ba9999fd933702e6577cc2b6ad5a69c7d58810b1"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "0fd2bca30a583dead6c244e97f832b5760c43bee2d795c68d58f2130fcf49027"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "293480b9da5943d293e0b243fedb09daabc4230e9457168ff6a76378b156a4db"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "e0e27fc79f47b26d14e1b3345d3350cf3c5909b26c956193c2ba46372fb893c0",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "dfbc71571b6c19eceb103fafe7ead0e395b4cf1803c7f9162f1f273a1b09fdb7"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null,
+        "validation": {
+          "flush": [
+            {
+              "applied": 0,
+              "duplicates": 4000
+            },
+            {
+              "applied": 0,
+              "duplicates": 4000
+            },
+            {
+              "applied": 0,
+              "duplicates": 4000
+            }
+          ],
+          "stages": [
+            {
+              "stateSha256": "fa6d715ba17739a61fd598836cc8a22ab29b0d1d47d7242682d959c55c978bcb",
+              "ledgerSha256": "5e9a7981f2416d5a11391edbf5a63c518ca3881d155214bb6183394514c45ce0",
+              "markerSha256": "1c8aab07ee4682856caa472a588a0a4a0834aa934f3e09601cc65f3f18b152f3",
+              "markerCount": 4000,
+              "querySha256": "eb6faf12573c8f7c2802f3b4193ac575f09ef6fa31e05cc5ad10d6282054af12",
+              "indexNormalizedSha256": "9e50a437fd68bb6c90f680d2afe2b0e80ce30ff08e5bdae9d89b275766def6a6",
+              "jsonlSha256": "26b0ca9b7b969c27d406ae068357da46be7e017a062d184847ef23ca7ec81450",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 2086029,
+                  "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+                }
+              ]
+            },
+            {
+              "stateSha256": "fa6d715ba17739a61fd598836cc8a22ab29b0d1d47d7242682d959c55c978bcb",
+              "ledgerSha256": "5e9a7981f2416d5a11391edbf5a63c518ca3881d155214bb6183394514c45ce0",
+              "markerSha256": "1c8aab07ee4682856caa472a588a0a4a0834aa934f3e09601cc65f3f18b152f3",
+              "markerCount": 4000,
+              "querySha256": "eb6faf12573c8f7c2802f3b4193ac575f09ef6fa31e05cc5ad10d6282054af12",
+              "indexNormalizedSha256": "9e50a437fd68bb6c90f680d2afe2b0e80ce30ff08e5bdae9d89b275766def6a6",
+              "jsonlSha256": "26b0ca9b7b969c27d406ae068357da46be7e017a062d184847ef23ca7ec81450",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 2086029,
+                  "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+                }
+              ]
+            },
+            {
+              "stateSha256": "fa6d715ba17739a61fd598836cc8a22ab29b0d1d47d7242682d959c55c978bcb",
+              "ledgerSha256": "5e9a7981f2416d5a11391edbf5a63c518ca3881d155214bb6183394514c45ce0",
+              "markerSha256": "1c8aab07ee4682856caa472a588a0a4a0834aa934f3e09601cc65f3f18b152f3",
+              "markerCount": 4000,
+              "querySha256": "eb6faf12573c8f7c2802f3b4193ac575f09ef6fa31e05cc5ad10d6282054af12",
+              "indexNormalizedSha256": "9e50a437fd68bb6c90f680d2afe2b0e80ce30ff08e5bdae9d89b275766def6a6",
+              "jsonlSha256": "26b0ca9b7b969c27d406ae068357da46be7e017a062d184847ef23ca7ec81450",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 2086029,
+                  "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+                }
+              ]
+            },
+            {
+              "stateSha256": "fa6d715ba17739a61fd598836cc8a22ab29b0d1d47d7242682d959c55c978bcb",
+              "ledgerSha256": "5e9a7981f2416d5a11391edbf5a63c518ca3881d155214bb6183394514c45ce0",
+              "markerSha256": "1c8aab07ee4682856caa472a588a0a4a0834aa934f3e09601cc65f3f18b152f3",
+              "markerCount": 4000,
+              "querySha256": "eb6faf12573c8f7c2802f3b4193ac575f09ef6fa31e05cc5ad10d6282054af12",
+              "indexNormalizedSha256": "9e50a437fd68bb6c90f680d2afe2b0e80ce30ff08e5bdae9d89b275766def6a6",
+              "jsonlSha256": "26b0ca9b7b969c27d406ae068357da46be7e017a062d184847ef23ca7ec81450",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 2086029,
+                  "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "side": "B",
+      "scenario": "incremental",
+      "records": 2000,
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1510.8985830000001,
+        "cpuMs": 1569.717,
+        "rssBefore": 78291392,
+        "rssAfter": 154387376,
+        "maxRssBytes": 188252160,
+        "fs": {
+          "openSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.5197090000004891
+          },
+          "fstatSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.008790999999973792
+          },
+          "writeFileSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.4200410000003103
+          },
+          "closeSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.09183299999983774
+          },
+          "promises.mkdir:other": {
+            "calls": 2,
+            "elapsedMs": 0.27616700000004357
+          },
+          "promises.readFile:other": {
+            "calls": 1,
+            "elapsedMs": 0.34462500000000773
+          },
+          "mkdirSync:other": {
+            "calls": 2003,
+            "elapsedMs": 9.267499999998563
+          },
+          "existsSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.03350100000005796
+          },
+          "statSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.032375999999828764
+          },
+          "statSync:archive-data": {
+            "calls": 8074,
+            "elapsedMs": 21.22940100000858
+          },
+          "readdirSync:archive-data": {
+            "calls": 2130,
+            "elapsedMs": 12.708826000000272
+          },
+          "lstatSync:archive-index": {
+            "calls": 9,
+            "elapsedMs": 0.09208200000000488
+          },
+          "readFileSync:archive-index": {
+            "calls": 5,
+            "elapsedMs": 0.21879199999989396
+          },
+          "openSync:archive-index": {
+            "calls": 7,
+            "elapsedMs": 0.1873340000001349
+          },
+          "readSync:archive-index": {
+            "calls": 5,
+            "elapsedMs": 0.021833999999955722
+          },
+          "closeSync:archive-index": {
+            "calls": 7,
+            "elapsedMs": 0.01999999999998181
+          },
+          "lstatSync:archive-data": {
+            "calls": 168,
+            "elapsedMs": 0.8750360000006481
+          },
+          "readdirSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.20662500000020145
+          },
+          "lstatSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.050374999999576175
+          },
+          "promises.readFile:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.17933399999986932
+          },
+          "promises.stat:archive-data": {
+            "calls": 57,
+            "elapsedMs": 1.2534940000001598
+          },
+          "fsyncSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 6.17654199999987
+          },
+          "openSync:archive-data": {
+            "calls": 4007,
+            "elapsedMs": 52.97527900000489
+          },
+          "fsyncSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 2.9230409999998983
+          },
+          "closeSync:archive-data": {
+            "calls": 4007,
+            "elapsedMs": 18.808348999992575
+          },
+          "fsyncSync:other": {
+            "calls": 5,
+            "elapsedMs": 6.741958000000352
+          },
+          "readFileSync:other": {
+            "calls": 5,
+            "elapsedMs": 0.12337400000029675
+          },
+          "openSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.013334000000043034
+          },
+          "fstatSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.002207999999995991
+          },
+          "readSync:event-log": {
+            "calls": 4,
+            "elapsedMs": 0.22387400000002344
+          },
+          "closeSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.0012920000000349319
+          },
+          "linkSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 0.7406670000000304
+          },
+          "linkSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.6348330000001852
+          },
+          "readSync:archive-data": {
+            "calls": 2009,
+            "elapsedMs": 3.578613000001951
+          },
+          "copyFileSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 1.0391670000000204
+          },
+          "renameSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.5804170000000113
+          },
+          "appendFileSync:archive-data": {
+            "calls": 2000,
+            "elapsedMs": 61.69049799999914
+          },
+          "writeFileSync:archive-data": {
+            "calls": 2000,
+            "elapsedMs": 60.61006599999939
+          },
+          "writeSync:archive-data": {
+            "calls": 2000,
+            "elapsedMs": 14.742585000001782
+          },
+          "promises.writeFile:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.4157500000001164
+          },
+          "promises.rename:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.3544170000000122
+          },
+          "readFileSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.6060840000002372
+          },
+          "writeSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.10775000000035106
+          },
+          "renameSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.5914580000001024
+          },
+          "promises.open:other": {
+            "calls": 4,
+            "elapsedMs": 1.4340830000001006
+          },
+          "handle.writeFile:other": {
+            "calls": 2,
+            "elapsedMs": 1.719333000000006
+          },
+          "handle.sync:other": {
+            "calls": 4,
+            "elapsedMs": 15.28400099999999
+          },
+          "handle.close:other": {
+            "calls": 4,
+            "elapsedMs": 0.08933400000023539
+          },
+          "promises.rename:other": {
+            "calls": 2,
+            "elapsedMs": 0.6796669999998812
+          },
+          "existsSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.0051249999999072315
+          },
+          "renameSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.44087500000000546
+          },
+          "rmSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.3217090000000553
+          }
+        },
+        "fixture": {
+          "sha256": "ca41f7f3692a5d100f293749bf8d983088930102c4932e6eea77a3de48ea7fe2",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "ba4b6caf966b1281fa3d1a68fe3db1eb1c0e441f34cb330cca34c55ee6e517c7"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "2e724590b784aa5efe07aad69d32342bba46d198589d836aac79e69dad7f8740"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "a53ef8d552c39c6c181a55e494bd03992521ea93adcad5cf0e7e3d7f8b4d39d7"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "c73f08b618422e2763ea49a961c1fc8dd5490a993790278936dd56bd949d49f8"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "922021af505831f0c72b155c964e43e28345f9fc650025f77b482c7d6e42485f",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "dfbc71571b6c19eceb103fafe7ead0e395b4cf1803c7f9162f1f273a1b09fdb7"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "9d2a80fb9d914878e509855dce169d74fd71f8369585a8a6e986810bf24d2833"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "439595f460dfd2665510f6aa4b18f6b2c95dcab3e16d36093ea60b261c1d2fc8"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "51d78f7c5bf3b47c0ee24eed844aee86daa6bbd629b799126ab66330ddf27d9b"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "50ddce4d39dab26bb2ab1fd3dc067485114177949482aa62f7a8f5b8aaecdab3"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "e0e27fc79f47b26d14e1b3345d3350cf3c5909b26c956193c2ba46372fb893c0",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "dfbc71571b6c19eceb103fafe7ead0e395b4cf1803c7f9162f1f273a1b09fdb7"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null,
+        "validation": {
+          "flush": [
+            {
+              "applied": 0,
+              "duplicates": 4000
+            },
+            {
+              "applied": 0,
+              "duplicates": 4000
+            },
+            {
+              "applied": 0,
+              "duplicates": 4000
+            }
+          ],
+          "stages": [
+            {
+              "stateSha256": "fa6d715ba17739a61fd598836cc8a22ab29b0d1d47d7242682d959c55c978bcb",
+              "ledgerSha256": "5e9a7981f2416d5a11391edbf5a63c518ca3881d155214bb6183394514c45ce0",
+              "markerSha256": "1c8aab07ee4682856caa472a588a0a4a0834aa934f3e09601cc65f3f18b152f3",
+              "markerCount": 4000,
+              "querySha256": "eb6faf12573c8f7c2802f3b4193ac575f09ef6fa31e05cc5ad10d6282054af12",
+              "indexNormalizedSha256": "9e50a437fd68bb6c90f680d2afe2b0e80ce30ff08e5bdae9d89b275766def6a6",
+              "jsonlSha256": "26b0ca9b7b969c27d406ae068357da46be7e017a062d184847ef23ca7ec81450",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 2086029,
+                  "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+                }
+              ]
+            },
+            {
+              "stateSha256": "fa6d715ba17739a61fd598836cc8a22ab29b0d1d47d7242682d959c55c978bcb",
+              "ledgerSha256": "5e9a7981f2416d5a11391edbf5a63c518ca3881d155214bb6183394514c45ce0",
+              "markerSha256": "1c8aab07ee4682856caa472a588a0a4a0834aa934f3e09601cc65f3f18b152f3",
+              "markerCount": 4000,
+              "querySha256": "eb6faf12573c8f7c2802f3b4193ac575f09ef6fa31e05cc5ad10d6282054af12",
+              "indexNormalizedSha256": "9e50a437fd68bb6c90f680d2afe2b0e80ce30ff08e5bdae9d89b275766def6a6",
+              "jsonlSha256": "26b0ca9b7b969c27d406ae068357da46be7e017a062d184847ef23ca7ec81450",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 2086029,
+                  "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+                }
+              ]
+            },
+            {
+              "stateSha256": "fa6d715ba17739a61fd598836cc8a22ab29b0d1d47d7242682d959c55c978bcb",
+              "ledgerSha256": "5e9a7981f2416d5a11391edbf5a63c518ca3881d155214bb6183394514c45ce0",
+              "markerSha256": "1c8aab07ee4682856caa472a588a0a4a0834aa934f3e09601cc65f3f18b152f3",
+              "markerCount": 4000,
+              "querySha256": "eb6faf12573c8f7c2802f3b4193ac575f09ef6fa31e05cc5ad10d6282054af12",
+              "indexNormalizedSha256": "9e50a437fd68bb6c90f680d2afe2b0e80ce30ff08e5bdae9d89b275766def6a6",
+              "jsonlSha256": "26b0ca9b7b969c27d406ae068357da46be7e017a062d184847ef23ca7ec81450",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 2086029,
+                  "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+                }
+              ]
+            },
+            {
+              "stateSha256": "fa6d715ba17739a61fd598836cc8a22ab29b0d1d47d7242682d959c55c978bcb",
+              "ledgerSha256": "5e9a7981f2416d5a11391edbf5a63c518ca3881d155214bb6183394514c45ce0",
+              "markerSha256": "1c8aab07ee4682856caa472a588a0a4a0834aa934f3e09601cc65f3f18b152f3",
+              "markerCount": 4000,
+              "querySha256": "eb6faf12573c8f7c2802f3b4193ac575f09ef6fa31e05cc5ad10d6282054af12",
+              "indexNormalizedSha256": "9e50a437fd68bb6c90f680d2afe2b0e80ce30ff08e5bdae9d89b275766def6a6",
+              "jsonlSha256": "26b0ca9b7b969c27d406ae068357da46be7e017a062d184847ef23ca7ec81450",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 2086029,
+                  "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "side": "A",
+      "scenario": "incremental",
+      "records": 12000,
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4721.637667000001,
+        "cpuMs": 4890.803,
+        "rssBefore": 215041928,
+        "rssAfter": 342482880,
+        "maxRssBytes": 383811584,
+        "fs": {
+          "openSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.6110819999985324
+          },
+          "fstatSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.005791999999928521
+          },
+          "writeFileSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.4801660000002812
+          },
+          "closeSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.1087510000002112
+          },
+          "promises.mkdir:other": {
+            "calls": 2,
+            "elapsedMs": 0.06912399999964691
+          },
+          "promises.readFile:other": {
+            "calls": 1,
+            "elapsedMs": 0.6782909999997173
+          },
+          "mkdirSync:other": {
+            "calls": 2003,
+            "elapsedMs": 9.815171000007012
+          },
+          "existsSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.043666999999004474
+          },
+          "statSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.03258299999970404
+          },
+          "statSync:archive-data": {
+            "calls": 8074,
+            "elapsedMs": 21.971438000025955
+          },
+          "readdirSync:archive-data": {
+            "calls": 2130,
+            "elapsedMs": 14.44253899998239
+          },
+          "lstatSync:archive-index": {
+            "calls": 9,
+            "elapsedMs": 0.09699899999986883
+          },
+          "readFileSync:archive-index": {
+            "calls": 5,
+            "elapsedMs": 0.24083599999949
+          },
+          "openSync:archive-index": {
+            "calls": 7,
+            "elapsedMs": 0.19895900000028632
+          },
+          "readSync:archive-index": {
+            "calls": 5,
+            "elapsedMs": 0.017957999999453023
+          },
+          "closeSync:archive-index": {
+            "calls": 7,
+            "elapsedMs": 0.025541000000885106
+          },
+          "lstatSync:archive-data": {
+            "calls": 168,
+            "elapsedMs": 0.882713999999396
+          },
+          "readdirSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.23808400000052643
+          },
+          "lstatSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.05491600000004837
+          },
+          "promises.readFile:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.23462499999959618
+          },
+          "promises.stat:archive-data": {
+            "calls": 57,
+            "elapsedMs": 1.096955000003618
+          },
+          "fsyncSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 6.997291999999561
+          },
+          "openSync:archive-data": {
+            "calls": 2008,
+            "elapsedMs": 32.66990200000373
+          },
+          "fsyncSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 6.003125000000182
+          },
+          "closeSync:archive-data": {
+            "calls": 2008,
+            "elapsedMs": 1.877219999988938
+          },
+          "fsyncSync:other": {
+            "calls": 5,
+            "elapsedMs": 17.261584000000312
+          },
+          "readFileSync:other": {
+            "calls": 5,
+            "elapsedMs": 0.19591599999967002
+          },
+          "openSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.017459000000144442
+          },
+          "fstatSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.0027079999999841675
+          },
+          "readSync:event-log": {
+            "calls": 10,
+            "elapsedMs": 0.6373750000002474
+          },
+          "closeSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.002458000000387983
+          },
+          "linkSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 0.7813340000002427
+          },
+          "linkSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.6700829999999769
+          },
+          "readSync:archive-data": {
+            "calls": 2028,
+            "elapsedMs": 8.216215999997075
+          },
+          "readFileSync:archive-data": {
+            "calls": 3,
+            "elapsedMs": 3.2681659999993826
+          },
+          "copyFileSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 10.208291999999801
+          },
+          "renameSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.9552079999998568
+          },
+          "promises.appendFile:archive-data": {
+            "calls": 2000,
+            "elapsedMs": 180.81164500000978
+          },
+          "promises.writeFile:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.17750000000069122
+          },
+          "promises.rename:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.17749999999978172
+          },
+          "writeSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.13700100000005477
+          },
+          "renameSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.6484600000012506
+          },
+          "promises.open:other": {
+            "calls": 4,
+            "elapsedMs": 1.5084160000005795
+          },
+          "handle.writeFile:other": {
+            "calls": 2,
+            "elapsedMs": 2.859207999999853
+          },
+          "handle.sync:other": {
+            "calls": 4,
+            "elapsedMs": 25.51670699999977
+          },
+          "handle.close:other": {
+            "calls": 4,
+            "elapsedMs": 0.06954300000052172
+          },
+          "promises.rename:other": {
+            "calls": 2,
+            "elapsedMs": 0.8359590000000026
+          },
+          "existsSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.00574999999935244
+          },
+          "renameSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.46733299999959854
+          },
+          "rmSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.29416700000001583
+          }
+        },
+        "fixture": {
+          "sha256": "14b76c0d129b5d4db0c5b77e4a184d5af22b479306c1069277d37686fab203eb",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "1ea8f51decf0b6625a520b111af38e7daf355d8e180f15f23c42a84f3b70abf0"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "8b9f6e3011b822dfeb47cbd23688fbe8af567d744dd1f5e4a1024358aab81107"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "7bc23921e3f489ebe70dce79497ff90c732c93610a6227bd0b4383e8844ec335"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "b5a688619b7f74a9a90347fe5d12c0042e17869a295c84bf496a16d6780c70d6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "eddc2ba3f0226035de327ee389e3518c9770fa570c95f175e46c22a73f0d67cd",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "0dea76bd9d963da6685caab3d152c6e5b124097ef77971b52d0cd8ee21dd0357"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "19ba53dd74e4931dabc0a63400fb3f7f2f466f0833cdbffadd167a8f81646229"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "78ef460e018dda6b7ab6d999da60451771efdc89489346c01e1cf1a33b2f2055"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "0de0eff14eb6a701f13991886bf7f49bdfe1a73e59fa43759e369bcbbe54c211"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "4c019ee6ba66d5fcb7139cc8f8c42451ab82b4ebec68decaa200dde38c27590e"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "fae2e534089c362c759906f02df03fdcc9f918372a4dc532505c1740a65cb412",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "0dea76bd9d963da6685caab3d152c6e5b124097ef77971b52d0cd8ee21dd0357"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null,
+        "validation": {
+          "flush": [
+            {
+              "applied": 0,
+              "duplicates": 14000
+            },
+            {
+              "applied": 0,
+              "duplicates": 14000
+            },
+            {
+              "applied": 0,
+              "duplicates": 14000
+            }
+          ],
+          "stages": [
+            {
+              "stateSha256": "2f3d342feffd1d0709fe63dd3070ac902a35478b7b1f26f5b9b8a8fa0b4d382a",
+              "ledgerSha256": "bf9da4ec3ce652fde54c2fd0ed98e743191789d53b91fa4dd6506c2cd810c5c2",
+              "markerSha256": "0ac8d5675cf7917b1addb43ae401a7931ae472b09b9d18201e81c241f9375a8b",
+              "markerCount": 4096,
+              "querySha256": "1aca7d1bca371cb31eea88c4a2a1e2eaa41a8f91857f9a7f02553fe5e2482b49",
+              "indexNormalizedSha256": "57270dbd080dbc46d0e4bbb96f5fe0407b7560e8ed4c7a7e1b98db6986443b39",
+              "jsonlSha256": "29011369d084e31098571f955d52632cc4900b9d3bc25c9aa475dbdf5e59c061",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 7367118,
+                  "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+                }
+              ]
+            },
+            {
+              "stateSha256": "2f3d342feffd1d0709fe63dd3070ac902a35478b7b1f26f5b9b8a8fa0b4d382a",
+              "ledgerSha256": "bf9da4ec3ce652fde54c2fd0ed98e743191789d53b91fa4dd6506c2cd810c5c2",
+              "markerSha256": "0ac8d5675cf7917b1addb43ae401a7931ae472b09b9d18201e81c241f9375a8b",
+              "markerCount": 4096,
+              "querySha256": "1aca7d1bca371cb31eea88c4a2a1e2eaa41a8f91857f9a7f02553fe5e2482b49",
+              "indexNormalizedSha256": "57270dbd080dbc46d0e4bbb96f5fe0407b7560e8ed4c7a7e1b98db6986443b39",
+              "jsonlSha256": "29011369d084e31098571f955d52632cc4900b9d3bc25c9aa475dbdf5e59c061",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 7367118,
+                  "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+                }
+              ]
+            },
+            {
+              "stateSha256": "2f3d342feffd1d0709fe63dd3070ac902a35478b7b1f26f5b9b8a8fa0b4d382a",
+              "ledgerSha256": "bf9da4ec3ce652fde54c2fd0ed98e743191789d53b91fa4dd6506c2cd810c5c2",
+              "markerSha256": "0ac8d5675cf7917b1addb43ae401a7931ae472b09b9d18201e81c241f9375a8b",
+              "markerCount": 4096,
+              "querySha256": "1aca7d1bca371cb31eea88c4a2a1e2eaa41a8f91857f9a7f02553fe5e2482b49",
+              "indexNormalizedSha256": "57270dbd080dbc46d0e4bbb96f5fe0407b7560e8ed4c7a7e1b98db6986443b39",
+              "jsonlSha256": "29011369d084e31098571f955d52632cc4900b9d3bc25c9aa475dbdf5e59c061",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 7367118,
+                  "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+                }
+              ]
+            },
+            {
+              "stateSha256": "2f3d342feffd1d0709fe63dd3070ac902a35478b7b1f26f5b9b8a8fa0b4d382a",
+              "ledgerSha256": "bf9da4ec3ce652fde54c2fd0ed98e743191789d53b91fa4dd6506c2cd810c5c2",
+              "markerSha256": "0ac8d5675cf7917b1addb43ae401a7931ae472b09b9d18201e81c241f9375a8b",
+              "markerCount": 4096,
+              "querySha256": "1aca7d1bca371cb31eea88c4a2a1e2eaa41a8f91857f9a7f02553fe5e2482b49",
+              "indexNormalizedSha256": "57270dbd080dbc46d0e4bbb96f5fe0407b7560e8ed4c7a7e1b98db6986443b39",
+              "jsonlSha256": "29011369d084e31098571f955d52632cc4900b9d3bc25c9aa475dbdf5e59c061",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 7367118,
+                  "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "side": "B",
+      "scenario": "incremental",
+      "records": 12000,
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4715.9560839999995,
+        "cpuMs": 4894.052,
+        "rssBefore": 188597336,
+        "rssAfter": 270650312,
+        "maxRssBytes": 392937472,
+        "fs": {
+          "openSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.5765810000016245
+          },
+          "fstatSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.007374999999683496
+          },
+          "writeFileSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.46304200000122364
+          },
+          "closeSync:other": {
+            "calls": 10,
+            "elapsedMs": 0.12379099999952814
+          },
+          "promises.mkdir:other": {
+            "calls": 2,
+            "elapsedMs": 0.9107079999998859
+          },
+          "promises.readFile:other": {
+            "calls": 1,
+            "elapsedMs": 0.6852080000003298
+          },
+          "mkdirSync:other": {
+            "calls": 2003,
+            "elapsedMs": 9.845391000024847
+          },
+          "existsSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.04529199999979028
+          },
+          "statSync:archive-index": {
+            "calls": 4,
+            "elapsedMs": 0.03712599999971644
+          },
+          "statSync:archive-data": {
+            "calls": 8074,
+            "elapsedMs": 22.219426999991356
+          },
+          "readdirSync:archive-data": {
+            "calls": 2130,
+            "elapsedMs": 13.783821999989868
+          },
+          "lstatSync:archive-index": {
+            "calls": 9,
+            "elapsedMs": 0.10445899999922403
+          },
+          "readFileSync:archive-index": {
+            "calls": 5,
+            "elapsedMs": 0.23029100000076141
+          },
+          "openSync:archive-index": {
+            "calls": 7,
+            "elapsedMs": 0.19245800000044255
+          },
+          "readSync:archive-index": {
+            "calls": 5,
+            "elapsedMs": 0.02325100000052771
+          },
+          "closeSync:archive-index": {
+            "calls": 7,
+            "elapsedMs": 0.032789999999295105
+          },
+          "lstatSync:archive-data": {
+            "calls": 168,
+            "elapsedMs": 0.8797940000004019
+          },
+          "readdirSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.24404199999889897
+          },
+          "lstatSync:other": {
+            "calls": 6,
+            "elapsedMs": 0.05370700000003126
+          },
+          "promises.readFile:archive-index": {
+            "calls": 3,
+            "elapsedMs": 0.19633299999986775
+          },
+          "promises.stat:archive-data": {
+            "calls": 57,
+            "elapsedMs": 1.117338999999447
+          },
+          "fsyncSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 7.120833999999832
+          },
+          "openSync:archive-data": {
+            "calls": 4008,
+            "elapsedMs": 61.31590700002698
+          },
+          "fsyncSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 2.869833000000199
+          },
+          "closeSync:archive-data": {
+            "calls": 4008,
+            "elapsedMs": 22.432411999965097
+          },
+          "fsyncSync:other": {
+            "calls": 5,
+            "elapsedMs": 10.807209000001421
+          },
+          "readFileSync:other": {
+            "calls": 5,
+            "elapsedMs": 0.1961240000005091
+          },
+          "openSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.017917000000124972
+          },
+          "fstatSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.0037090000000716827
+          },
+          "readSync:event-log": {
+            "calls": 10,
+            "elapsedMs": 0.593081999998958
+          },
+          "closeSync:event-log": {
+            "calls": 1,
+            "elapsedMs": 0.00204200000007404
+          },
+          "linkSync:archive-index": {
+            "calls": 2,
+            "elapsedMs": 0.7215420000002268
+          },
+          "linkSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.6250829999999041
+          },
+          "readSync:archive-data": {
+            "calls": 2028,
+            "elapsedMs": 8.235690000008162
+          },
+          "readFileSync:archive-data": {
+            "calls": 3,
+            "elapsedMs": 3.041874999999436
+          },
+          "copyFileSync:archive-data": {
+            "calls": 1,
+            "elapsedMs": 4.822084000000359
+          },
+          "renameSync:archive-data": {
+            "calls": 2,
+            "elapsedMs": 0.8186669999995502
+          },
+          "appendFileSync:archive-data": {
+            "calls": 2000,
+            "elapsedMs": 73.88510299998825
+          },
+          "writeFileSync:archive-data": {
+            "calls": 2000,
+            "elapsedMs": 72.82097399999975
+          },
+          "writeSync:archive-data": {
+            "calls": 2000,
+            "elapsedMs": 19.95262499999535
+          },
+          "promises.writeFile:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.43966700000055425
+          },
+          "promises.rename:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.326958999999988
+          },
+          "writeSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.11062500000025466
+          },
+          "renameSync:other": {
+            "calls": 4,
+            "elapsedMs": 0.6489579999997659
+          },
+          "promises.open:other": {
+            "calls": 4,
+            "elapsedMs": 4.621667000000343
+          },
+          "handle.writeFile:other": {
+            "calls": 2,
+            "elapsedMs": 3.085416000000805
+          },
+          "handle.sync:other": {
+            "calls": 4,
+            "elapsedMs": 20.437374000001
+          },
+          "handle.close:other": {
+            "calls": 4,
+            "elapsedMs": 0.07366799999999785
+          },
+          "promises.rename:other": {
+            "calls": 2,
+            "elapsedMs": 0.5688749999999345
+          },
+          "existsSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.006457999999838648
+          },
+          "renameSync:archive-index": {
+            "calls": 1,
+            "elapsedMs": 0.4338340000003882
+          },
+          "rmSync:other": {
+            "calls": 1,
+            "elapsedMs": 0.31479100000069593
+          }
+        },
+        "fixture": {
+          "sha256": "34e41d9ea25d43d81e0e925cc2a9084f99e5cf17f246f2e9371c160a3d13b262",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "1ea8f51decf0b6625a520b111af38e7daf355d8e180f15f23c42a84f3b70abf0"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "6d614fd8e98af448e1b74c66dcb0fce500e12ea660bc8794633c4385333607ea"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "b04bb57a31bad3f310ca4c6716f32474029819d0dda8c6989e1c3bfb0eea3d28"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "f43ef6b6888bd977ac03a3066221e99d8cb0f3b0892f6f87b604a01ec3680c5b"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "3627de3419450216c2d44ce44faca326f2ddf5091333ae9e7c16c3b45bed7d91",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "0dea76bd9d963da6685caab3d152c6e5b124097ef77971b52d0cd8ee21dd0357"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "e457e7dafeaf8d60f9644078583c1fd3b1e5e4c7846b23a411dd512b6d9beeff"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "ed6c788d6a874e6c4ca9cd3bbe7b099fed205b756c0bdca2f655ac184c7e99f2"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "7c473ae2f1a60e4a919c7dad7a22bdd0e0f20dfa6d9463eed5247d783b52475d"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "96aeae6c13fe30934f850463d24743134189098ebf062d83300cc293c78b70f8"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "fae2e534089c362c759906f02df03fdcc9f918372a4dc532505c1740a65cb412",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "0dea76bd9d963da6685caab3d152c6e5b124097ef77971b52d0cd8ee21dd0357"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null,
+        "validation": {
+          "flush": [
+            {
+              "applied": 0,
+              "duplicates": 14000
+            },
+            {
+              "applied": 0,
+              "duplicates": 14000
+            },
+            {
+              "applied": 0,
+              "duplicates": 14000
+            }
+          ],
+          "stages": [
+            {
+              "stateSha256": "2f3d342feffd1d0709fe63dd3070ac902a35478b7b1f26f5b9b8a8fa0b4d382a",
+              "ledgerSha256": "bf9da4ec3ce652fde54c2fd0ed98e743191789d53b91fa4dd6506c2cd810c5c2",
+              "markerSha256": "0ac8d5675cf7917b1addb43ae401a7931ae472b09b9d18201e81c241f9375a8b",
+              "markerCount": 4096,
+              "querySha256": "1aca7d1bca371cb31eea88c4a2a1e2eaa41a8f91857f9a7f02553fe5e2482b49",
+              "indexNormalizedSha256": "57270dbd080dbc46d0e4bbb96f5fe0407b7560e8ed4c7a7e1b98db6986443b39",
+              "jsonlSha256": "29011369d084e31098571f955d52632cc4900b9d3bc25c9aa475dbdf5e59c061",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 7367118,
+                  "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+                }
+              ]
+            },
+            {
+              "stateSha256": "2f3d342feffd1d0709fe63dd3070ac902a35478b7b1f26f5b9b8a8fa0b4d382a",
+              "ledgerSha256": "bf9da4ec3ce652fde54c2fd0ed98e743191789d53b91fa4dd6506c2cd810c5c2",
+              "markerSha256": "0ac8d5675cf7917b1addb43ae401a7931ae472b09b9d18201e81c241f9375a8b",
+              "markerCount": 4096,
+              "querySha256": "1aca7d1bca371cb31eea88c4a2a1e2eaa41a8f91857f9a7f02553fe5e2482b49",
+              "indexNormalizedSha256": "57270dbd080dbc46d0e4bbb96f5fe0407b7560e8ed4c7a7e1b98db6986443b39",
+              "jsonlSha256": "29011369d084e31098571f955d52632cc4900b9d3bc25c9aa475dbdf5e59c061",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 7367118,
+                  "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+                }
+              ]
+            },
+            {
+              "stateSha256": "2f3d342feffd1d0709fe63dd3070ac902a35478b7b1f26f5b9b8a8fa0b4d382a",
+              "ledgerSha256": "bf9da4ec3ce652fde54c2fd0ed98e743191789d53b91fa4dd6506c2cd810c5c2",
+              "markerSha256": "0ac8d5675cf7917b1addb43ae401a7931ae472b09b9d18201e81c241f9375a8b",
+              "markerCount": 4096,
+              "querySha256": "1aca7d1bca371cb31eea88c4a2a1e2eaa41a8f91857f9a7f02553fe5e2482b49",
+              "indexNormalizedSha256": "57270dbd080dbc46d0e4bbb96f5fe0407b7560e8ed4c7a7e1b98db6986443b39",
+              "jsonlSha256": "29011369d084e31098571f955d52632cc4900b9d3bc25c9aa475dbdf5e59c061",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 7367118,
+                  "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+                }
+              ]
+            },
+            {
+              "stateSha256": "2f3d342feffd1d0709fe63dd3070ac902a35478b7b1f26f5b9b8a8fa0b4d382a",
+              "ledgerSha256": "bf9da4ec3ce652fde54c2fd0ed98e743191789d53b91fa4dd6506c2cd810c5c2",
+              "markerSha256": "0ac8d5675cf7917b1addb43ae401a7931ae472b09b9d18201e81c241f9375a8b",
+              "markerCount": 4096,
+              "querySha256": "1aca7d1bca371cb31eea88c4a2a1e2eaa41a8f91857f9a7f02553fe5e2482b49",
+              "indexNormalizedSha256": "57270dbd080dbc46d0e4bbb96f5fe0407b7560e8ed4c7a7e1b98db6986443b39",
+              "jsonlSha256": "29011369d084e31098571f955d52632cc4900b9d3bc25c9aa475dbdf5e59c061",
+              "archiveFiles": [
+                {
+                  "path": "state.json.experiments-archive.jsonl",
+                  "bytes": 7367118,
+                  "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

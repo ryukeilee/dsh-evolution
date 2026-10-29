@@ -1,0 +1,23 @@
+diff --git a/lib/dockyard-domain/memory.js b/lib/dockyard-domain/memory.js
+index 25b26eb..b07c0d4 100644
+--- a/lib/dockyard-domain/memory.js
++++ b/lib/dockyard-domain/memory.js
+@@ -1,7 +1,7 @@
+ // Extracted domain algorithms; no legacy runtime imports. See domain-extraction-report.md.
+ import { createHash, randomUUID } from "node:crypto";
+ import { appendFile, copyFile, mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+-import { closeSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, statSync } from "node:fs";
++import { appendFileSync, closeSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, statSync } from "node:fs";
+ import { dirname, join } from "node:path";
+ import { ValidationError } from "./errors.js";
+ import { normalizeComponentDefinition } from "./manifest.js";
+@@ -2729,7 +2729,8 @@ export class EvolutionMemory {
+           // The identity of the bytes the cached parse describes, taken before
+           // the append that adds to them. See `#extendArchiveReadCache`.
+           const before = this.#archiveAppendIdentity(path);
+-          await appendFile(path, payload, { mode: 0o600 });
++          if (this.archiveWriteGuard !== null) appendFileSync(path, payload, { mode: 0o600 });
++          else await appendFile(path, payload, { mode: 0o600 });
+           activeBytes += Buffer.byteLength(payload);
+           this.#recordActiveArchiveWrite(collection, chunkRecords, before);
+           chunk = [];

@@ -1,0 +1,53 @@
+{
+  "baseline": "a2323eb1909bc62de40450cb27873bc387a45c5e",
+  "node": "v26.12.1",
+  "productionDiffEmpty": true,
+  "unit": {
+    "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+    "pass": 1223,
+    "fail": 0,
+    "skipped": 0
+  },
+  "packageChecks": 16,
+  "releaseVerify": true,
+  "localBuild": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.19",
+    "filename": "dsh-evolution-0.2.0-rc.19.tgz",
+    "sha256": "0419b2b6c06f9a8b0656a6a3794f6d20d5437a03faee93b62d878c812219ed01",
+    "contentSha256": "3754a8a1e87bfd9957a2274992bafa81f0e748f32154248dd615807c345cca7e",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.12.1",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    }
+  },
+  "hosts": [
+    {
+      "host": "0.2.0-rc.2",
+      "evidence": "docs/evidence/end-to-end-20261029-dsh-0.2.0-rc.2.json",
+      "sha256": "8f5a89464d8076083e5dc551eb24e357214260a404baaead73d573426d27e2c0",
+      "ok": true,
+      "steps": 21
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "evidence": "docs/evidence/end-to-end-20261029-dsh-0.2.1-alpha.1.json",
+      "sha256": "644dadc35ad3715493bbaef22e463a44b35ae85b404c8bb38089dba93dac71c5",
+      "ok": true,
+      "steps": 21
+    },
+    {
+      "host": "0.2.1-rc.2",
+      "evidence": "docs/evidence/end-to-end-20261029-dsh-0.2.1-rc.2.json",
+      "sha256": "10365d80bcb50b87d7ba1351e32ba1b90fdbfae25b3fa8dd812e1e07e4849d53",
+      "ok": true,
+      "steps": 21
+    }
+  ]
+}
