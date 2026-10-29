@@ -182,7 +182,7 @@ async function storeRun(memoryClass, storeClass, root, uuid) {
 
 test('the reversal returns all three files to a real pre-change source', async () => {
   const { working, reconstructed, hunks } = await loadProjectionBaseline();
-  assert.equal(hunks, 14, 'the round changes four call sites, both load signatures, the narrow read, the save check and the working store, and the newer staged-save/archive-key-table round adds five hunks to `memory.js`');
+  assert.equal(hunks, 32, 'the load round changes four call sites, both load signatures, the narrow read, the save check and the working store; the staged-save/archive-key-table round adds five hunks to `memory.js`; and the archive-append-window round adds eighteen, which revert the bridge window index, the archive directory memo and the single identity `stat`');
   for (const [file, source] of reconstructed) {
     assert.notEqual(source, working.get(file), `${file} must change`);
     // The pre-change file carries no trace of the new option, and the call
@@ -203,6 +203,13 @@ test('the reversal returns all three files to a real pre-change source', async (
   assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /Object\.freeze\(\{\n      eventId/);
   assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /#freezeBridgeMarkers/);
   assert.match(working.get('lib/dockyard-domain/memory.js'), /applied\.push\(Object\.freeze\(\{/);
+  // The archive-append-window round is gone from the reconstructed tree too: no
+  // window index, no directory memo and no identity-`stat` fold, and the torn
+  // tail probe still takes its own size.
+  assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /bridgeWindowId/);
+  assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /archiveDirectoriesReady/);
+  assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /#appendArchiveBytes/);
+  assert.match(reconstructed.get('lib/dockyard-domain/memory.js'), /#activeTailIsTorn\(path\) \{/);
 });
 
 test('the whole pre-change tree and the working tree commit byte-identical state', async () => {

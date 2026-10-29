@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -18,6 +19,65 @@ import { STAGED_SAVE_CHECK_TEXT } from "./staged-save-check-text.js";
 const LIB = fileURLToPath(new URL("../../lib", import.meta.url));
 const FILES = ["lib/dockyard-domain/memory.js", "lib/dockyard-domain/observation.js", "lib/domain-storage.js"];
 const HUNKS = [
+  // The archive-append-window round is reversed first, so every hunk below it
+  // still matches the tree it was written against: that round added the bridge
+  // window index, the archive directory memo and the single identity `stat`, and
+  // moved the torn-tail probe's size from its own `stat` to the caller's. Each
+  // pair is `[post-change text, pre-change text]` as an exact substring.
+  { file: "lib/dockyard-domain/memory.js",
+    post: "/**\n * The id a bridge marker window entry is compared by, or `null` when that id is\n * not decided by the entry's own data.\n *\n * `#bridgeApplied()` compares `String(entry?.eventId ?? entry)`. For a plain\n * object with an own data property `eventId` holding a string that expression is\n * the property itself, so the whole window can be indexed once instead of\n * re-deriving the answer per lookup. (Enumerable or not, an own data property is\n * what the expression reads; only an accessor or an absent property changes it.) Everything else can run code or\n * answer from outside the entry, and each of those would make an index answer\n * something the expression has not been asked yet:\n *\n *   - a bare string is not its own id in that expression: `entry.eventId` reads\n *     `String.prototype.eventId`, so a `String.prototype.eventId` defined after\n *     the index was built would change the answer;\n *   - an accessor, an inherited or `undefined` `eventId`, an array, a nested\n *     value or a non-plain prototype either runs code or falls back to\n *     `String(entry)`.\n *\n * Those windows keep the untouched linear scan.\n */\nfunction bridgeWindowId(entry) {\n  if (entry === null || typeof entry !== \"object\" || Array.isArray(entry)) return null;\n  const prototype = Object.getPrototypeOf(entry);\n  if (prototype !== Object.prototype && prototype !== null) return null;\n  const descriptor = Object.getOwnPropertyDescriptor(entry, \"eventId\");\n  if (descriptor === undefined || descriptor.get !== undefined || descriptor.set !== undefined) return null;\n  return typeof descriptor.value === \"string\" ? descriptor.value : null;\n}\n\n/** Durable, redacted memory for proposals, experiments, failures, and promotions. */",
+    pre: "/** Durable, redacted memory for proposals, experiments, failures, and promotions. */" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "  // Cache for `#bridgeApplied()`: the window array it describes and the marker\n  // ids in it (`null` when this window cannot be indexed). See `#bridgeApplied`.\n  #bridgeWindow;\n",
+    pre: "" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "    // Directories this instance has already created. `mkdirSync(recursive)` on\n    // an existing directory is a syscall that answers a question this instance\n    // has already answered; it is re-asked after any write it was needed for\n    // fails. See `#archiveEntries`.\n    this.archiveDirectoriesReady = new Set();\n    // Faults this process observed on cold archive bytes and cold archive",
+    pre: "    // Faults this process observed on cold archive bytes and cold archive" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "   *\n   * `size` is the byte count the caller already read from the file's identity.\n   */",
+    pre: "   */" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "  #activeTailIsTorn(path, size) {\n    if (!(size > 0)) return false;\n    const handle = openSync(path, \"r\");",
+    pre: "  #activeTailIsTorn(path) {\n    let size = 0;\n    try { size = statSync(path).size; } catch { return false; }\n    if (size === 0) return false;\n    const handle = openSync(path, \"r\");" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "  /**\n   * Append bytes to an archive file, creating its directory when this instance has\n   * not created it yet.\n   *\n   * `mkdirSync(recursive)` on a directory that already exists is still a syscall\n   * that answers a question this instance has already answered, and a cold\n   * absorption asks it once per archived record. The memo is only a skip: a\n   * directory that disappeared anyway (`ENOENT` from the append) is re-created and\n   * the append retried once, which is exactly what the unconditional `mkdir`\n   * before every append did.\n   */\n  async #appendArchiveBytes(directory, path, payload) {\n    if (!this.archiveDirectoriesReady.has(directory)) {\n      mkdirSync(directory, { recursive: true, mode: 0o700 });\n      this.archiveDirectoriesReady.add(directory);\n    }\n    try { await appendFile(path, payload, { mode: 0o600 }); }\n    catch (error) {\n      if (error?.code !== 'ENOENT' || !this.archiveDirectoriesReady.delete(directory)) throw error;\n      mkdirSync(directory, { recursive: true, mode: 0o700 });\n      this.archiveDirectoriesReady.add(directory);\n      await appendFile(path, payload, { mode: 0o600 });\n    }\n  }\n\n  async #archiveEntries(collection, entries, { replaceExisting = false } = {}) {",
+    pre: "  async #archiveEntries(collection, entries, { replaceExisting = false } = {}) {" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "      const directory = dirname(path);\n      // The key table is what decides which entries the archive already owns and",
+    pre: "      // The key table is what decides which entries the archive already owns and" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "        // One `stat` answers what two separate stats asked before: how large the\n        // active file is, and how large the byte the torn-tail probe reads is.\n        const identity = this.#archiveAppendIdentity(path);\n        // Chunk before writing. The old migration path serialized the whole",
+    pre: "        mkdirSync(dirname(path), { recursive: true, mode: 0o700 });\n        // Chunk before writing. The old migration path serialized the whole" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "        let activeBytes = identity === null ? 0 : Number(identity.size);\n        // A torn active tail is repaired before anything is appended: the",
+    pre: "        let activeBytes = 0;\n        try { activeBytes = statSync(path).size; } catch { activeBytes = 0; }\n        // A torn active tail is repaired before anything is appended: the" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "        if (activeBytes > 0 && this.#activeTailIsTorn(path, activeBytes)) {\n          if (await this.#activeTailIsComplete(path)) {",
+    pre: "        if (activeBytes > 0 && this.#activeTailIsTorn(path)) {\n          if (await this.#activeTailIsComplete(path)) {" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "            await this.#appendArchiveBytes(directory, path, \"\\n\");\n            activeBytes += 1;",
+    pre: "            await appendFile(path, \"\\n\", { mode: 0o600 });\n            activeBytes += 1;" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "          await this.#appendArchiveBytes(directory, path, payload);\n          activeBytes += Buffer.byteLength(payload);",
+    pre: "          await appendFile(path, payload, { mode: 0o600 });\n          activeBytes += Buffer.byteLength(payload);" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "            await this.#appendArchiveBytes(directory, path, line + \"\\n\");\n            activeBytes += lineBytes;",
+    pre: "            await appendFile(path, line + \"\\n\", { mode: 0o600 });\n            activeBytes += lineBytes;" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "        // A retry re-creates the directory instead of trusting the answer this\n        // attempt took from it.\n        this.archiveDirectoriesReady.delete(directory);\n        this.archiveKnown.set(collection, known);",
+    pre: "        this.archiveKnown.set(collection, known);" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "  /**\n   * Whether this memory has already applied `eventId`, answered from the bridge\n   * marker window (`eventBridge.applied`, the last 4096 records).\n   *\n   * The window is bounded but the answer is a set-membership question, and the\n   * window answers it the same way until it changes: `#markBridgeApplied()` is\n   * the only writer, it appends one marker and drops the window's head, and no\n   * other path writes into a marker. The ids of a window whose entries all carry\n   * their id as data (`bridgeWindowId`) are therefore derived once and kept\n   * current by that one writer, and a lookup costs one `Map` probe instead of a\n   * scan over 4096 entries per applied record - which is 82 million comparisons\n   * over a 20,000-record absorption. Any other window shape, and any window this\n   * instance did not build, keeps the untouched linear scan, so the answer and\n   * the reads it performs are exactly the released ones.\n   */\n  #bridgeApplied(eventId) {",
+    pre: "  #bridgeApplied(eventId) {" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "    const applied = this.#data.eventBridge?.applied ?? [];\n    if (!Array.isArray(applied)) return applied.some((entry) => String(entry?.eventId ?? entry) === eventId);\n    const state = this.#bridgeWindowFor(applied);\n    if (state.ids === null) return applied.some((entry) => String(entry?.eventId ?? entry) === eventId);\n    return state.ids.has(eventId);\n  }\n\n  /** The cached index for exactly this window array, rebuilt when it is another one. */\n  #bridgeWindowFor(applied) {\n    const cached = this.#bridgeWindow;\n    if (cached !== undefined && cached.applied === applied) return cached;\n    let ids = new Map();\n    for (const entry of applied) {\n      const id = bridgeWindowId(entry);\n      if (id === null) { ids = null; break; }\n      ids.set(id, (ids.get(id) ?? 0) + 1);\n    }\n    const state = { applied, ids };\n    this.#bridgeWindow = state;\n    return state;\n  }\n\n  /**\n   * Carry the window's index across the one append-and-trim this instance does.\n   * The map is mutated in place: no reader keeps it past the lookup that reads\n   * it, and re-creating it would cost the scan this exists to avoid.\n   */\n  #bridgeWindowShifted(previous, pushed, trimmed) {\n    const dropped = pushed.length - trimmed.length;\n    const ids = previous.ids;\n    if (ids === null || previous.applied !== pushed) { this.#bridgeWindow = { applied: trimmed, ids: null }; return; }\n    for (let index = 0; index < dropped; index += 1) {\n      const id = bridgeWindowId(pushed[index]);\n      if (id === null) { this.#bridgeWindow = { applied: trimmed, ids: null }; return; }\n      const remaining = (ids.get(id) ?? 0) - 1;\n      if (remaining > 0) ids.set(id, remaining);\n      else ids.delete(id);\n    }\n    const added = bridgeWindowId(trimmed[trimmed.length - 1]);\n    if (added === null) { this.#bridgeWindow = { applied: trimmed, ids: null }; return; }\n    ids.set(added, (ids.get(added) ?? 0) + 1);\n    this.#bridgeWindow = { applied: trimmed, ids };\n  }",
+    pre: "    return (this.#data.eventBridge?.applied ?? []).some((entry) => String(entry?.eventId ?? entry) === eventId);\n  }" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "    // The index this append has to update describes the window before it. A\n    // window this instance did not build is indexed first, once, rather than\n    // left unindexed for every later lookup.\n    const previous = this.#bridgeWindowFor(applied);\n    // A marker is written once and never edited afterwards: the window only",
+    pre: "    // A marker is written once and never edited afterwards: the window only" },
+  { file: "lib/dockyard-domain/memory.js",
+    post: "    this.#bridgeWindowShifted(previous, applied, this.#data.eventBridge.applied);\n    // In the staged domain transaction, a measurement's first save has already",
+    pre: "    // In the staged domain transaction, a measurement's first save has already" },
 { file: "lib/dockyard-domain/memory.js",
     post: "    if (typeof this.archiveWriteGuard === \"function\") await this.archiveWriteGuard(file);\n  }\n\n  /**\n   * Load the durable state and, unless the caller asks otherwise, return the\n   * hot projection of it.\n   *\n   * The projection is the *returned* value, never a side effect of loading:\n   * every reader in this package either consumes it or discards it, and both\n   * call sites that discard it (the domain port's `createMemory()` and the\n   * observation store's observation-window read) pay for a deep clone of every\n   * collection only to drop it. `{ snapshot: false }` still performs the whole\n   * load - state-store read, archive index reconciliation, eviction and\n   * archival - and skips only the closing `snapshot()`, which clones state that\n   * loading has already finished mutating and cannot mutate again.\n   */\n  async load({ snapshot = true } = {}) {\n    if (this.loaded) return snapshot ? this.snapshot() : undefined;\n    if (this.loading) {\n      // A concurrent load shares the one loading run; the first caller's\n      // projection is handed on, which is what `return this.loading` gave back.\n      const shared = await this.loading;\n      return snapshot ? (shared ?? this.snapshot()) : undefined;\n    }\n    this.loading = (async () => {\n      if (typeof this.stateStore?.load === \"function\") {\n        const state = await this.stateStore.load({ resolveSnapshot: false });\n",
     pre: "    if (typeof this.archiveWriteGuard === \"function\") await this.archiveWriteGuard(file);\n  }\n\n  async load() {\n    if (this.loaded) return this.snapshot();\n    if (this.loading) return this.loading;\n    this.loading = (async () => {\n      if (typeof this.stateStore?.load === \"function\") {\n        const state = await this.stateStore.load({ resolveSnapshot: false });\n" },
@@ -181,6 +241,24 @@ const HUNKS = [
     pre: "      } catch (error) {\n        this.archiveKnown.set(collection, originalKnown);\n        this.archiveTombstones.set(collection, originalTombstones);\n        this.#noteArchiveFault(collection, { file: path, line: null, kind: \"deferred-write\", code: error?.code ?? null, reason: error?.message ?? String(error) });\n        return false;\n      }\n" },
 ];
 
+/**
+ * The SHA-256 of the tree this reconstruction is pinned to.
+ *
+ * The reversal table only proves that every hunk still finds its own post-change
+ * shape; it does not prove that the shapes it leaves behind are the pre-change
+ * source. A hunk that stops covering part of a later round reconstructs a
+ * *third* tree that merely looks plausible, and both sides of the differential
+ * then run the same new code - which is the one failure this anchor exists to
+ * prevent. Pinning the digest makes that drift loud instead of silent. Updating
+ * a number here means re-deriving every hunk of every round since, not editing
+ * the expectation.
+ */
+const PRE_CHANGE_TREE = {
+  "lib/dockyard-domain/memory.js": "2c1039ee225ef14817031e70fb9a9683ca1bc8ded0aef93ba0aa949c95859c6a",
+  "lib/dockyard-domain/observation.js": "d505692dccd0c6afe13d73dad639e5b0b5320ef26e6fdae9453a5f5dcd638ee1",
+  "lib/domain-storage.js": "886aad88060393910ed83f52e91e3efdc31dd3684cbaf093e8cb95d011a3af5c",
+};
+
 /** The working sources and the same three files with every hunk reversed. */
 export async function loadProjectionBaseline() {
   const working = new Map();
@@ -195,6 +273,8 @@ export async function loadProjectionBaseline() {
   }
   for (const [file, source] of reconstructed) {
     assert.notEqual(source, working.get(file), `${file}: the reconstruction must actually change the source`);
+    assert.equal(createHash("sha256").update(source).digest("hex"), PRE_CHANGE_TREE[file],
+      `${file}: the reversed tree must be the pre-change source, not a partially reversed one`);
   }
   return { working, reconstructed, hunks: HUNKS.length };
 }
