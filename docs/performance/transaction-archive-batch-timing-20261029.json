@@ -1,0 +1,964 @@
+{
+  "schema": 1,
+  "node": "v26.12.1",
+  "platform": "darwin/arm64",
+  "roots": {
+    "A": "/tmp/dsh-archive-batch-6b4dee9",
+    "B": "/tmp/dsh-archive-batch-candidate-1"
+  },
+  "source": {
+    "A": "27f432b099dae105db3e37c18e1ecabed5a005a07f767465784a199fd5615ef8",
+    "B": "9061a3d50f3ccf773f45673e54dcf826308415f39f6da7cb3e0788f5c44c5680"
+  },
+  "rounds": 3,
+  "counts": [
+    2000,
+    12000,
+    20000
+  ],
+  "phases": [
+    "aa",
+    "ab"
+  ],
+  "scenarios": [
+    "cold",
+    "incremental"
+  ],
+  "steady": false,
+  "configuration": {
+    "operations": 20,
+    "batches": 20,
+    "batchSize": 100
+  },
+  "method": "Fresh process/temp home per sample; official DomainFacility + JsonStorageBackend + real openDomainStorage. Cold replay from no checkpoint; incremental reopens after seeding N real events then appending delta. With --steady, independent workers seed one live port, then measure ordinary observe calls, repeated no-new-event flushes, or batches of producer append plus flush. Observation warmup and signed batch generation are outside timing; per-operation CPU/resource/memory sampling is inside the steady aggregate timing. fs wrappers only during the measured workload. JS fs API calls, not kernel syscalls; nested API elapsed times must not be summed. Async open FileHandle stat/read/close/sync/write/writeFile are included. RSS before/after is instantaneous; maxRSS is process lifetime high-water including seed. resourceUsageDelta excludes maxRSS; fsRead/fsWrite count OS blocks, not bytes or guaranteed physical disk I/O. Memory is sampled at operation boundaries, not a phase-local peak. Final byte digests before close; dynamic timestamp/path metadata can differ. A/A = identical root with alternating labels; overhead = unwrapped A vs wrapped B; A/B = roots selected explicitly.",
+  "instrument": "no",
+  "summary": [
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 2000,
+      "sides": {
+        "A": {
+          "wallMs": 376.826333,
+          "cpuMs": 407.892,
+          "rssBefore": 52467904,
+          "rssAfter": 79176752,
+          "maxRssBytes": 112066560,
+          "resourceUsageDelta": {
+            "userCPUTime": 293005,
+            "systemCPUTime": 114300,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 1579,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 26,
+            "involuntaryContextSwitches": 6538
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 377.002834,
+          "cpuMs": 410.401,
+          "rssBefore": 52468048,
+          "rssAfter": 79307920,
+          "maxRssBytes": 112214016,
+          "resourceUsageDelta": {
+            "userCPUTime": 294965,
+            "systemCPUTime": 115484,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 1595,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 26,
+            "involuntaryContextSwitches": 6540
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": 0.17650100000003022,
+          "cpuDeltaMs": 3.1610000000000014,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -9.899583000000007,
+          "cpuDeltaMs": -5.118999999999971,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": 5.058042999999998,
+          "cpuDeltaMs": 2.6070000000000277,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 12000,
+      "sides": {
+        "A": {
+          "wallMs": 2078.645584,
+          "cpuMs": 2209.677,
+          "rssBefore": 104032288,
+          "rssAfter": 199837600,
+          "maxRssBytes": 226574336,
+          "resourceUsageDelta": {
+            "userCPUTime": 1557643,
+            "systemCPUTime": 652107,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 6524,
+            "majorPageFault": 6,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 30,
+            "involuntaryContextSwitches": 37001
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 2066.246458,
+          "cpuMs": 2197.062,
+          "rssBefore": 103901264,
+          "rssAfter": 199214720,
+          "maxRssBytes": 226148352,
+          "resourceUsageDelta": {
+            "userCPUTime": 1546692,
+            "systemCPUTime": 650430,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 6492,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 30,
+            "involuntaryContextSwitches": 37006
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -60.09558399999992,
+          "cpuDeltaMs": -45.06899999999996,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": 1.5935410000001866,
+          "cpuDeltaMs": 2.1529999999997926,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -21.06179199999997,
+          "cpuDeltaMs": -15.416000000000167,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 20000,
+      "sides": {
+        "A": {
+          "wallMs": 3423.8236660000002,
+          "cpuMs": 3764.744,
+          "rssBefore": 131033792,
+          "rssAfter": 250597920,
+          "maxRssBytes": 278577152,
+          "resourceUsageDelta": {
+            "userCPUTime": 2687261,
+            "systemCPUTime": 1083643,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 9735,
+            "majorPageFault": 6,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 38,
+            "involuntaryContextSwitches": 61760
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 3529.601708,
+          "cpuMs": 3804.499,
+          "rssBefore": 131033864,
+          "rssAfter": 250876640,
+          "maxRssBytes": 278462464,
+          "resourceUsageDelta": {
+            "userCPUTime": 2707687,
+            "systemCPUTime": 1096864,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 9720,
+            "majorPageFault": 6,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 52,
+            "involuntaryContextSwitches": 61850
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": 111.67804200000046,
+          "cpuDeltaMs": 29.93399999999974,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": 2022.6886249999998,
+          "cpuDeltaMs": 581.4869999999996,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": 0.6678759999999784,
+          "cpuDeltaMs": 19.38299999999981,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 2000,
+      "sides": {
+        "A": {
+          "wallMs": 1415.833709,
+          "cpuMs": 1471.328,
+          "rssBefore": 91138032,
+          "rssAfter": 155205688,
+          "maxRssBytes": 184696832,
+          "resourceUsageDelta": {
+            "userCPUTime": 1312450,
+            "systemCPUTime": 161854,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 3827,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 32,
+            "involuntaryContextSwitches": 7334
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 1418.990667,
+          "cpuMs": 1471.835,
+          "rssBefore": 90678992,
+          "rssAfter": 154205808,
+          "maxRssBytes": 184025088,
+          "resourceUsageDelta": {
+            "userCPUTime": 1309113,
+            "systemCPUTime": 161334,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 3774,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 32,
+            "involuntaryContextSwitches": 7329
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": 3.1569580000000315,
+          "cpuDeltaMs": 4.625,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": 12.75508300000024,
+          "cpuDeltaMs": 5.758999999999787,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -2.242582999999968,
+          "cpuDeltaMs": -3.578999999999951,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 12000,
+      "sides": {
+        "A": {
+          "wallMs": 4458.578667,
+          "cpuMs": 4631.429,
+          "rssBefore": 207243072,
+          "rssAfter": 349086208,
+          "maxRssBytes": 381091840,
+          "resourceUsageDelta": {
+            "userCPUTime": 4380720,
+            "systemCPUTime": 250360,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 29041,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 33,
+            "involuntaryContextSwitches": 9308
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 4477.842167,
+          "cpuMs": 4649.219,
+          "rssBefore": 203834816,
+          "rssAfter": 333225824,
+          "maxRssBytes": 381321216,
+          "resourceUsageDelta": {
+            "userCPUTime": 4397132,
+            "systemCPUTime": 248401,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 29265,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 37,
+            "involuntaryContextSwitches": 9357
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": 53.257290999999896,
+          "cpuDeltaMs": 41.353000000000065,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": 14.323833999999806,
+          "cpuDeltaMs": 4.3400000000001455,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": 15.150458000000071,
+          "cpuDeltaMs": 17.789999999999964,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 20000,
+      "sides": {
+        "A": {
+          "wallMs": 7229.072791,
+          "cpuMs": 7496.292,
+          "rssBefore": 246682552,
+          "rssAfter": 351789400,
+          "maxRssBytes": 432799744,
+          "resourceUsageDelta": {
+            "userCPUTime": 7062326,
+            "systemCPUTime": 434220,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 150551,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 42,
+            "involuntaryContextSwitches": 9850
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 7211.585708,
+          "cpuMs": 7480.234,
+          "rssBefore": 246322296,
+          "rssAfter": 361948032,
+          "maxRssBytes": 431489024,
+          "resourceUsageDelta": {
+            "userCPUTime": 7047398,
+            "systemCPUTime": 432929,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 149420,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 36,
+            "involuntaryContextSwitches": 9739
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -32.048249999998006,
+          "cpuDeltaMs": -38.19599999999991,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -17.487082999999984,
+          "cpuDeltaMs": -18.355000000000473,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -20.461084000001392,
+          "cpuDeltaMs": -11.678999999999178,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 2000,
+      "sides": {
+        "A": {
+          "wallMs": 374.73408399999994,
+          "cpuMs": 409.855,
+          "rssBefore": 52402512,
+          "rssAfter": 79291560,
+          "maxRssBytes": 112082944,
+          "resourceUsageDelta": {
+            "userCPUTime": 292135,
+            "systemCPUTime": 117305,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 1592,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 26,
+            "involuntaryContextSwitches": 6541
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 236.96141699999998,
+          "cpuMs": 250.611,
+          "rssBefore": 52304232,
+          "rssAfter": 66133072,
+          "maxRssBytes": 100352000,
+          "resourceUsageDelta": {
+            "userCPUTime": 238642,
+            "systemCPUTime": 11905,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 884,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 26,
+            "involuntaryContextSwitches": 619
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -141.129542,
+          "cpuDeltaMs": -159.30200000000002,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -138.98658300000005,
+          "cpuDeltaMs": -157.08400000000003,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -136.6362929999999,
+          "cpuDeltaMs": -155.928,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 12000,
+      "sides": {
+        "A": {
+          "wallMs": 2082.508875,
+          "cpuMs": 2213.737,
+          "rssBefore": 103983016,
+          "rssAfter": 198936360,
+          "maxRssBytes": 225771520,
+          "resourceUsageDelta": {
+            "userCPUTime": 1567730,
+            "systemCPUTime": 646162,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 6461,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 30,
+            "involuntaryContextSwitches": 36987
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 1260.702417,
+          "cpuMs": 1344.428,
+          "rssBefore": 104179888,
+          "rssAfter": 206359200,
+          "maxRssBytes": 232521728,
+          "resourceUsageDelta": {
+            "userCPUTime": 1311429,
+            "systemCPUTime": 33117,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 6882,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 30,
+            "involuntaryContextSwitches": 1054
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -831.7610830000001,
+          "cpuDeltaMs": -871.2,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -822.9020840000001,
+          "cpuDeltaMs": -869.309,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -767.006333,
+          "cpuDeltaMs": -813.656,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 20000,
+      "sides": {
+        "A": {
+          "wallMs": 3421.33625,
+          "cpuMs": 3743.693,
+          "rssBefore": 130886504,
+          "rssAfter": 251384280,
+          "maxRssBytes": 278708224,
+          "resourceUsageDelta": {
+            "userCPUTime": 2670381,
+            "systemCPUTime": 1073370,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 9794,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 38,
+            "involuntaryContextSwitches": 61684
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 2099.934541,
+          "cpuMs": 2303.82,
+          "rssBefore": 130837328,
+          "rssAfter": 249894056,
+          "maxRssBytes": 281804800,
+          "resourceUsageDelta": {
+            "userCPUTime": 2249334,
+            "systemCPUTime": 54540,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 10118,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 38,
+            "involuntaryContextSwitches": 1682
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -1384.2777500000002,
+          "cpuDeltaMs": -1583.525,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -1324.4212499999999,
+          "cpuDeltaMs": -1439.873,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -1260.6388339999999,
+          "cpuDeltaMs": -1369.6820000000002,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 2000,
+      "sides": {
+        "A": {
+          "wallMs": 1423.300458,
+          "cpuMs": 1468.822,
+          "rssBefore": 90580640,
+          "rssAfter": 158728080,
+          "maxRssBytes": 188334080,
+          "resourceUsageDelta": {
+            "userCPUTime": 1308399,
+            "systemCPUTime": 160482,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 4049,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 32,
+            "involuntaryContextSwitches": 7298
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 307.619916,
+          "cpuMs": 333.516,
+          "rssBefore": 82174688,
+          "rssAfter": 167511944,
+          "maxRssBytes": 195772416,
+          "resourceUsageDelta": {
+            "userCPUTime": 313868,
+            "systemCPUTime": 20032,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 5151,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 32,
+            "involuntaryContextSwitches": 522
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -1118.8186260000002,
+          "cpuDeltaMs": -1136.854,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -1118.6132499999999,
+          "cpuDeltaMs": -1135.3059999999998,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -1104.0508329999998,
+          "cpuDeltaMs": -1125.5049999999999,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 12000,
+      "sides": {
+        "A": {
+          "wallMs": 4459.8225840000005,
+          "cpuMs": 4646.806,
+          "rssBefore": 204211672,
+          "rssAfter": 333995536,
+          "maxRssBytes": 381681664,
+          "resourceUsageDelta": {
+            "userCPUTime": 4397919,
+            "systemCPUTime": 247300,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 29125,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 33,
+            "involuntaryContextSwitches": 9336
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 442.8405829999999,
+          "cpuMs": 472.556,
+          "rssBefore": 224136608,
+          "rssAfter": 311746656,
+          "maxRssBytes": 335659008,
+          "resourceUsageDelta": {
+            "userCPUTime": 443466,
+            "systemCPUTime": 29419,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 5156,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 33,
+            "involuntaryContextSwitches": 546
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -4019.4799590000002,
+          "cpuDeltaMs": -4174.540999999999,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -4027.352167,
+          "cpuDeltaMs": -4174.25,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -4015.54375,
+          "cpuDeltaMs": -4160.593,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 20000,
+      "sides": {
+        "A": {
+          "wallMs": 7193.962833000001,
+          "cpuMs": 7475.115,
+          "rssBefore": 246584200,
+          "rssAfter": 367535408,
+          "maxRssBytes": 432455680,
+          "resourceUsageDelta": {
+            "userCPUTime": 7046629,
+            "systemCPUTime": 428777,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 143468,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 36,
+            "involuntaryContextSwitches": 9778
+          },
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 513.1011659999999,
+          "cpuMs": 555.118,
+          "rssBefore": 245699752,
+          "rssAfter": 343483784,
+          "maxRssBytes": 366460928,
+          "resourceUsageDelta": {
+            "userCPUTime": 527541,
+            "systemCPUTime": 28044,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 5770,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 36,
+            "involuntaryContextSwitches": 616
+          },
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -6680.861667000001,
+          "cpuDeltaMs": -6920.8820000000005,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -6690.525583000001,
+          "cpuDeltaMs": -6914.5779999999995,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -6678.255958000002,
+          "cpuDeltaMs": -6935.043,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    }
+  ],
+  "sampleCount": 72,
+  "samplesFile": "transaction-archive-batch-timing-20261029.samples.jsonl",
+  "samplesSha256": "669a6dfc700ad84398185317bef6a4d08afbf29fef6a146b3adb3c94de51fad3"
+}

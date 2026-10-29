@@ -1,0 +1,2937 @@
+{
+  "schema": 1,
+  "node": "v26.12.1",
+  "platform": "darwin/arm64",
+  "roots": {
+    "A": "/tmp/dsh-archive-batch-6b4dee9",
+    "B": "/tmp/dsh-archive-batch-candidate-2"
+  },
+  "source": {
+    "A": "27f432b099dae105db3e37c18e1ecabed5a005a07f767465784a199fd5615ef8",
+    "B": "00157507dd4995dee4b365a1565a46ba1d3d439bd5028ff61d334c9b2bde6ccf"
+  },
+  "rounds": 3,
+  "counts": [
+    2000,
+    12000,
+    20000
+  ],
+  "phases": [
+    "ab"
+  ],
+  "scenarios": [
+    "cold",
+    "incremental"
+  ],
+  "steady": false,
+  "configuration": {
+    "operations": 20,
+    "batches": 20,
+    "batchSize": 100
+  },
+  "method": "Fresh process/temp home per sample; official DomainFacility + JsonStorageBackend + real openDomainStorage. Cold replay from no checkpoint; incremental reopens after seeding N real events then appending delta. With --steady, independent workers seed one live port, then measure ordinary observe calls, repeated no-new-event flushes, or batches of producer append plus flush. Observation warmup and signed batch generation are outside timing; per-operation CPU/resource/memory sampling is inside the steady aggregate timing. fs wrappers only during the measured workload. JS fs API calls, not kernel syscalls; nested API elapsed times must not be summed. Async open FileHandle stat/read/close/sync/write/writeFile are included. RSS before/after is instantaneous; maxRSS is process lifetime high-water including seed. resourceUsageDelta excludes maxRSS; fsRead/fsWrite count OS blocks, not bytes or guaranteed physical disk I/O. Memory is sampled at operation boundaries, not a phase-local peak. Final byte digests before close; dynamic timestamp/path metadata can differ. A/A = identical root with alternating labels; overhead = unwrapped A vs wrapped B; A/B = roots selected explicitly.",
+  "instrument": "yes",
+  "summary": [
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 2000,
+      "sides": {
+        "A": {
+          "wallMs": 390.0385,
+          "cpuMs": 419.511,
+          "rssBefore": 52435328,
+          "rssAfter": 79782984,
+          "maxRssBytes": 112656384,
+          "resourceUsageDelta": {
+            "userCPUTime": 300952,
+            "systemCPUTime": 118738,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 1635,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 26,
+            "involuntaryContextSwitches": 6563
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.5120419999999513
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.019790999999997894
+            },
+            "writeFileSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.41104199999995217
+            },
+            "closeSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.09987400000009927
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.2554999999999694
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.20454200000000355
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.24604100000000528
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.030541000000042118
+            },
+            "statSync:archive-data": {
+              "calls": 4028,
+              "elapsedMs": 13.919222999999533
+            },
+            "lstatSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.06483399999996209
+            },
+            "lstatSync:archive-data": {
+              "calls": 166,
+              "elapsedMs": 0.9551629999999278
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.26320899999998915
+            },
+            "lstatSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.06012600000005364
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.9792079999999999
+            },
+            "promises.stat:archive-data": {
+              "calls": 54,
+              "elapsedMs": 1.1027950000000146
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 11.29345899999997
+            },
+            "readFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.10325099999992915
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.019666999999998325
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.012332999999998151
+            },
+            "readFileSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.17391699999998878
+            },
+            "readSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.16729200000000333
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.002125000000006594
+            },
+            "openSync:archive-data": {
+              "calls": 1954,
+              "elapsedMs": 29.269454999998658
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 1950,
+              "elapsedMs": 70.68376100000009
+            },
+            "readSync:archive-data": {
+              "calls": 1953,
+              "elapsedMs": 3.022286000001145
+            },
+            "closeSync:archive-data": {
+              "calls": 1953,
+              "elapsedMs": 1.6474150000022263
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.13425000000000864
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.1279999999999859
+            },
+            "readFileSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.10550000000000637
+            },
+            "openSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.08999900000003436
+            },
+            "readSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.0067910000001347726
+            },
+            "closeSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.010958000000016455
+            },
+            "readFileSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.24604199999998855
+            },
+            "writeSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.09237500000000409
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.3783339999999953
+            },
+            "fsyncSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 3.7746250000000146
+            },
+            "fsyncSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.003959000000008928
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.3236259999999902
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 0.6917500000000132
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 13.327793000000042
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.09283300000004147
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.2378340000000776
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.004291999999963991
+            },
+            "linkSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.3893340000000194
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.3494999999999777
+            },
+            "linkSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.3338330000000269
+            },
+            "renameSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.33054200000003675
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.25320799999997234
+            },
+            "statSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.014791999999999916
+            }
+          }
+        },
+        "B": {
+          "wallMs": 239.09608400000002,
+          "cpuMs": 255.943,
+          "rssBefore": 52549944,
+          "rssAfter": 66460704,
+          "maxRssBytes": 100712448,
+          "resourceUsageDelta": {
+            "userCPUTime": 243506,
+            "systemCPUTime": 12410,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 879,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 26,
+            "involuntaryContextSwitches": 635
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.5060010000000261
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.017958000000007246
+            },
+            "writeFileSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.40579199999997684
+            },
+            "closeSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.10741700000006915
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.27495799999999804
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.21762499999999818
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.24116599999999266
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.03012499999996976
+            },
+            "statSync:archive-data": {
+              "calls": 144,
+              "elapsedMs": 1.2064510000002429
+            },
+            "lstatSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.06329199999996149
+            },
+            "lstatSync:archive-data": {
+              "calls": 166,
+              "elapsedMs": 0.9544109999998227
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.26458399999998505
+            },
+            "lstatSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.059207999999912886
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 1.1775829999999985
+            },
+            "promises.stat:archive-data": {
+              "calls": 54,
+              "elapsedMs": 1.213208000000023
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 9.955043000000003
+            },
+            "readFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.1037510000000168
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.017583999999999378
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.012124999999997499
+            },
+            "readFileSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.16729200000000333
+            },
+            "readSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.16125000000000966
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.002083999999996422
+            },
+            "openSync:archive-data": {
+              "calls": 12,
+              "elapsedMs": 0.3334559999999982
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 8,
+              "elapsedMs": 1.5835419999999942
+            },
+            "readSync:archive-data": {
+              "calls": 11,
+              "elapsedMs": 0.36816699999997127
+            },
+            "closeSync:archive-data": {
+              "calls": 11,
+              "elapsedMs": 0.027667000000036523
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.16404200000005176
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.14583399999997937
+            },
+            "readFileSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.10720800000001418
+            },
+            "openSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.09408199999995759
+            },
+            "readSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.008082999999999174
+            },
+            "closeSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.012916000000018357
+            },
+            "readFileSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.24308300000006966
+            },
+            "writeSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.12208399999997255
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.4287489999999252
+            },
+            "fsyncSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 3.668875000000014
+            },
+            "fsyncSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.0036249999999995453
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.3435419999999567
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 0.7246250000000032
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 15.08141699999993
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.09716599999995879
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.2510839999999348
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.004166999999995369
+            },
+            "linkSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.3889159999999947
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.3502500000000168
+            },
+            "linkSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.3245420000000081
+            },
+            "renameSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.329291000000012
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.2447920000000181
+            },
+            "statSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.015124000000014348
+            }
+          }
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -147.90725,
+          "cpuDeltaMs": -163.568,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -156.866001,
+          "cpuDeltaMs": -167.75899999999996,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -144.233291,
+          "cpuDeltaMs": -164.493,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 12000,
+      "sides": {
+        "A": {
+          "wallMs": 2122.892459,
+          "cpuMs": 2262.181,
+          "rssBefore": 104064864,
+          "rssAfter": 199788160,
+          "maxRssBytes": 226672640,
+          "resourceUsageDelta": {
+            "userCPUTime": 1588904,
+            "systemCPUTime": 671437,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 6539,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 30,
+            "involuntaryContextSwitches": 37075
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.6022059999996543
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.021540999999984933
+            },
+            "writeFileSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.4470830000001058
+            },
+            "closeSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.124707999999913
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.7485000000001207
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.20804199999997763
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.2807080000000326
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.03687599999983604
+            },
+            "statSync:archive-data": {
+              "calls": 24028,
+              "elapsedMs": 74.76732700001685
+            },
+            "lstatSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.07558199999982662
+            },
+            "lstatSync:archive-data": {
+              "calls": 166,
+              "elapsedMs": 0.9140829999969355
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.2998760000002392
+            },
+            "lstatSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.07483299999975657
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.264292000000097
+            },
+            "promises.stat:archive-data": {
+              "calls": 54,
+              "elapsedMs": 1.7937470000000815
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 9.674165999999644
+            },
+            "readFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.1582099999996558
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.018749999999982947
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.013042000000012877
+            },
+            "readFileSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.935417000000001
+            },
+            "readSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.9284580000000062
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.0037499999999965894
+            },
+            "openSync:archive-data": {
+              "calls": 11954,
+              "elapsedMs": 174.15378899999985
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 11950,
+              "elapsedMs": 417.41775600000443
+            },
+            "readSync:archive-data": {
+              "calls": 11959,
+              "elapsedMs": 17.680678999996275
+            },
+            "closeSync:archive-data": {
+              "calls": 11953,
+              "elapsedMs": 9.501050000005506
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.16066700000010314
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.12962500000003274
+            },
+            "readFileSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.11620799999991505
+            },
+            "openSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.09324999999989814
+            },
+            "readSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.008499999999457941
+            },
+            "closeSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.012581999999838445
+            },
+            "readFileSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 1.8109180000005836
+            },
+            "writeSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.13508299999966766
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.48287500000014916
+            },
+            "fsyncSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 3.188709000000017
+            },
+            "fsyncSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.004166999999597465
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.4270420000007107
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 1.924250000000029
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 14.638206999999966
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.10208400000010442
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.3673749999998108
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.005249999999705324
+            },
+            "linkSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.39404100000001563
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.3655829999997877
+            },
+            "linkSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.3247910000000047
+            },
+            "renameSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.32533299999977316
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.25691699999970297
+            },
+            "statSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.018751000000065687
+            }
+          }
+        },
+        "B": {
+          "wallMs": 1280.14175,
+          "cpuMs": 1367.669,
+          "rssBefore": 104229040,
+          "rssAfter": 206703384,
+          "maxRssBytes": 232751104,
+          "resourceUsageDelta": {
+            "userCPUTime": 1331672,
+            "systemCPUTime": 36503,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 6898,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 30,
+            "involuntaryContextSwitches": 1098
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.5955849999993745
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.01979199999999537
+            },
+            "writeFileSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.4791680000000582
+            },
+            "closeSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.142085999999793
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.7161670000000129
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.18679199999999696
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.2778750000000798
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.03404100000005883
+            },
+            "statSync:archive-data": {
+              "calls": 222,
+              "elapsedMs": 1.9332929999990824
+            },
+            "lstatSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.07358399999961307
+            },
+            "lstatSync:archive-data": {
+              "calls": 166,
+              "elapsedMs": 0.9192599999996958
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.2938350000000014
+            },
+            "lstatSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.06891600000005838
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.24512499999997317
+            },
+            "promises.stat:archive-data": {
+              "calls": 54,
+              "elapsedMs": 1.7286689999999396
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 10.526041000000077
+            },
+            "readFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.14383300000019972
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.01933400000001484
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.012082999999989852
+            },
+            "readFileSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 1.004792000000009
+            },
+            "readSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.998250000000013
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.003290999999990163
+            },
+            "openSync:archive-data": {
+              "calls": 51,
+              "elapsedMs": 1.4364559999996231
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 47,
+              "elapsedMs": 11.685084000000302
+            },
+            "readSync:archive-data": {
+              "calls": 56,
+              "elapsedMs": 2.7463750000000005
+            },
+            "closeSync:archive-data": {
+              "calls": 50,
+              "elapsedMs": 0.1331689999998389
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.15945799999985866
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.13987500000007458
+            },
+            "readFileSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.12624899999991612
+            },
+            "openSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.1052500000002965
+            },
+            "readSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.012041000000181157
+            },
+            "closeSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.012375000000247383
+            },
+            "readFileSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 1.7906659999998737
+            },
+            "writeSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.13070999999990818
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.4808729999999741
+            },
+            "fsyncSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 3.9798329999998714
+            },
+            "fsyncSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.0038750000001073204
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.971541000000343
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 1.8901250000001255
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 13.604668000000174
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.1081259999998565
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.4230000000000018
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.005249999999932697
+            },
+            "linkSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.42633299999988594
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.3712920000000395
+            },
+            "linkSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.3277499999999236
+            },
+            "renameSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.3350829999999405
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.2627079999999751
+            },
+            "statSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.01862499999992906
+            }
+          }
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -805.6607090000002,
+          "cpuDeltaMs": -844.4120000000003,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -843.6564590000003,
+          "cpuDeltaMs": -901.0959999999998,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -846.9638750000001,
+          "cpuDeltaMs": -894.512,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 20000,
+      "sides": {
+        "A": {
+          "wallMs": 3503.1093330000003,
+          "cpuMs": 3835.696,
+          "rssBefore": 131115760,
+          "rssAfter": 251892184,
+          "maxRssBytes": 279330816,
+          "resourceUsageDelta": {
+            "userCPUTime": 2742237,
+            "systemCPUTime": 1095784,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 9803,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 38,
+            "involuntaryContextSwitches": 61738
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.592959000000576
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.018791999999990594
+            },
+            "writeFileSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.4863740000000121
+            },
+            "closeSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.11083199999973203
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.23854200000010906
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.173041000000012
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.26774999999997817
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.031834000000088736
+            },
+            "statSync:archive-data": {
+              "calls": 44100,
+              "elapsedMs": 134.93664399998022
+            },
+            "lstatSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.0647080000001381
+            },
+            "lstatSync:archive-data": {
+              "calls": 176,
+              "elapsedMs": 1.027666000000238
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.3048339999998291
+            },
+            "lstatSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.09433400000000347
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 1.0775419999996245
+            },
+            "promises.stat:archive-data": {
+              "calls": 55,
+              "elapsedMs": 1.1897490000015694
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 12.41499899999971
+            },
+            "readFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.1652499999995598
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.019708000000008496
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.012458000000009406
+            },
+            "readFileSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 1.306999999999988
+            },
+            "readSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 1.2970420000000047
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.0047919999999805896
+            },
+            "openSync:archive-data": {
+              "calls": 19959,
+              "elapsedMs": 289.20795399996604
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 19950,
+              "elapsedMs": 646.4043090000239
+            },
+            "readSync:archive-data": {
+              "calls": 19957,
+              "elapsedMs": 27.684496000025433
+            },
+            "closeSync:archive-data": {
+              "calls": 19958,
+              "elapsedMs": 15.390415999998254
+            },
+            "promises.mkdir:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.11545900000010079
+            },
+            "promises.readdir:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.07787499999994907
+            },
+            "promises.readFile:archive-data": {
+              "calls": 1,
+              "elapsedMs": 1.8955000000000837
+            },
+            "promises.writeFile:archive-data": {
+              "calls": 2,
+              "elapsedMs": 10.252916999999798
+            },
+            "promises.rename:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.3635420000000522
+            },
+            "readdirSync:archive-data": {
+              "calls": 4,
+              "elapsedMs": 0.15975099999968734
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.1428339999997661
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.11933399999998073
+            },
+            "readFileSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.11979100000007747
+            },
+            "openSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.09933299999966039
+            },
+            "readSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.008834000000206288
+            },
+            "closeSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.01262499999938882
+            },
+            "readFileSync:archive-data": {
+              "calls": 4,
+              "elapsedMs": 2.9596259999998438
+            },
+            "writeSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.13337400000000343
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.46441799999956856
+            },
+            "fsyncSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 5.871624999999767
+            },
+            "fsyncSync:archive-data": {
+              "calls": 4,
+              "elapsedMs": 9.086623999999574
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.5613750000006803
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 9.867083999999977
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 14.03525099999979
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.09966699999995399
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.5532090000001517
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.006124999999883585
+            },
+            "linkSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.41587499999968713
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.40083299999969313
+            },
+            "linkSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6618749999997817
+            },
+            "renameSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6719170000001213
+            },
+            "mkdirSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.06925000000001091
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.49283399999967514
+            },
+            "statSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.017875000000003638
+            }
+          }
+        },
+        "B": {
+          "wallMs": 2125.138416,
+          "cpuMs": 2339.062,
+          "rssBefore": 130902864,
+          "rssAfter": 250368592,
+          "maxRssBytes": 278003712,
+          "resourceUsageDelta": {
+            "userCPUTime": 2277566,
+            "systemCPUTime": 60237,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 9881,
+            "majorPageFault": 5,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 38,
+            "involuntaryContextSwitches": 1710
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.6190829999999039
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.017707999999998947
+            },
+            "writeFileSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.500750000000096
+            },
+            "closeSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.1399999999996453
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.2243339999999705
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.1791249999999991
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.2672919999999408
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.03250000000016939
+            },
+            "statSync:archive-data": {
+              "calls": 307,
+              "elapsedMs": 2.759910000001213
+            },
+            "lstatSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.06654099999988716
+            },
+            "lstatSync:archive-data": {
+              "calls": 176,
+              "elapsedMs": 1.0469620000002067
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.29558199999991075
+            },
+            "lstatSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.12787500000021623
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 1.1080840000003889
+            },
+            "promises.stat:archive-data": {
+              "calls": 55,
+              "elapsedMs": 1.185789999999912
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 7.788125999999465
+            },
+            "readFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.17562500000025238
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.017416999999994687
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.012375000000020009
+            },
+            "readFileSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 1.2892920000000174
+            },
+            "readSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 1.2771250000000123
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.004208000000005541
+            },
+            "openSync:archive-data": {
+              "calls": 87,
+              "elapsedMs": 2.4467480000000137
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 79,
+              "elapsedMs": 13.479543000000945
+            },
+            "readSync:archive-data": {
+              "calls": 85,
+              "elapsedMs": 3.56682999999947
+            },
+            "closeSync:archive-data": {
+              "calls": 86,
+              "elapsedMs": 0.21449899999987565
+            },
+            "promises.mkdir:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.1273750000000291
+            },
+            "promises.readdir:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.09295799999995324
+            },
+            "promises.readFile:archive-data": {
+              "calls": 1,
+              "elapsedMs": 2.0408330000000205
+            },
+            "promises.writeFile:archive-data": {
+              "calls": 2,
+              "elapsedMs": 8.51933299999996
+            },
+            "promises.rename:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.34312500000010004
+            },
+            "readdirSync:archive-data": {
+              "calls": 4,
+              "elapsedMs": 0.15824899999961417
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.16899999999986903
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.13262500000018917
+            },
+            "readFileSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.1410849999997481
+            },
+            "openSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.11437500000010914
+            },
+            "readSync:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.01562599999942904
+            },
+            "closeSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.01699899999994159
+            },
+            "readFileSync:archive-data": {
+              "calls": 4,
+              "elapsedMs": 2.9641670000000886
+            },
+            "writeSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.15958199999977296
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.45487399999956324
+            },
+            "fsyncSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 4.880417000000307
+            },
+            "fsyncSync:archive-data": {
+              "calls": 4,
+              "elapsedMs": 9.030623999999534
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.6192080000005262
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 9.488541999999597
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 17.285875999999462
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.10874999999941792
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.5755840000001626
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.005959000000075321
+            },
+            "linkSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.4159999999997126
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.37449999999989814
+            },
+            "linkSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6473759999998947
+            },
+            "renameSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.668833000000177
+            },
+            "mkdirSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.06166599999960454
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.4408330000001115
+            },
+            "statSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.01833399999941321
+            }
+          }
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -1386.8257090000002,
+          "cpuDeltaMs": -1529.3539999999998,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -1377.9709170000006,
+          "cpuDeltaMs": -1496.634,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -1306.6905830000005,
+          "cpuDeltaMs": -1438.5209999999997,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 2000,
+      "sides": {
+        "A": {
+          "wallMs": 1427.797417,
+          "cpuMs": 1486.799,
+          "rssBefore": 90892152,
+          "rssAfter": 156352400,
+          "maxRssBytes": 185991168,
+          "resourceUsageDelta": {
+            "userCPUTime": 1322732,
+            "systemCPUTime": 164394,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 3896,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 29,
+            "involuntaryContextSwitches": 7364
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.5122090000000981
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.006832999999971889
+            },
+            "writeFileSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.42320699999993394
+            },
+            "closeSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.08266500000001997
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.05854099999999107
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.2891670000000204
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.13449900000000525
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.03608400000001666
+            },
+            "statSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.03595800000022109
+            },
+            "statSync:archive-data": {
+              "calls": 6128,
+              "elapsedMs": 20.888939000003234
+            },
+            "lstatSync:archive-index": {
+              "calls": 10,
+              "elapsedMs": 0.0811249999999859
+            },
+            "readFileSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.196124999999995
+            },
+            "openSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.17599899999987656
+            },
+            "readSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.012499999999818101
+            },
+            "closeSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.018627000000037697
+            },
+            "lstatSync:archive-data": {
+              "calls": 169,
+              "elapsedMs": 0.9066679999989447
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.2506679999999619
+            },
+            "lstatSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.060333000000071024
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.6389169999999922
+            },
+            "promises.stat:archive-data": {
+              "calls": 54,
+              "elapsedMs": 0.8902450000002773
+            },
+            "fsyncSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 7.583416999999827
+            },
+            "openSync:archive-data": {
+              "calls": 2007,
+              "elapsedMs": 30.203333000000555
+            },
+            "fsyncSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.01412500000003547
+            },
+            "closeSync:archive-data": {
+              "calls": 2007,
+              "elapsedMs": 1.6007349999980534
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 6.375999000000093
+            },
+            "readFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.13533399999994344
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.014165999999988799
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.002957999999978256
+            },
+            "readSync:event-log": {
+              "calls": 4,
+              "elapsedMs": 0.2249590000000694
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.001334000000042579
+            },
+            "linkSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.7402499999997758
+            },
+            "linkSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6532919999999649
+            },
+            "readSync:archive-data": {
+              "calls": 2009,
+              "elapsedMs": 3.754248999996719
+            },
+            "copyFileSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 1.0774579999999787
+            },
+            "renameSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.9720000000000937
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 2000,
+              "elapsedMs": 98.7997540000058
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.1371670000000904
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.16183299999988776
+            },
+            "readFileSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6432079999999587
+            },
+            "writeSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.1096660000000611
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.6651659999997719
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.7415430000000924
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 1.3962920000001304
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 13.358374999999796
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.06512499999985266
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.5401249999997617
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.005125000000134605
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.43174999999996544
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.2713340000000244
+            }
+          }
+        },
+        "B": {
+          "wallMs": 307.106708,
+          "cpuMs": 339.369,
+          "rssBefore": 82338624,
+          "rssAfter": 167676120,
+          "maxRssBytes": 195706880,
+          "resourceUsageDelta": {
+            "userCPUTime": 318567,
+            "systemCPUTime": 21004,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 5136,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 32,
+            "involuntaryContextSwitches": 543
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.5241669999998635
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.008042000000045846
+            },
+            "writeFileSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.4294179999999983
+            },
+            "closeSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.106706999999858
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.05874999999997499
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.3097500000000082
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.12433400000003303
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.03458299999999781
+            },
+            "statSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.03370700000010629
+            },
+            "statSync:archive-data": {
+              "calls": 152,
+              "elapsedMs": 1.0619160000004513
+            },
+            "lstatSync:archive-index": {
+              "calls": 10,
+              "elapsedMs": 0.08462500000018736
+            },
+            "readFileSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.20775100000008706
+            },
+            "openSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.17379200000016226
+            },
+            "readSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.020082000000002154
+            },
+            "closeSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.01958300000012514
+            },
+            "lstatSync:archive-data": {
+              "calls": 169,
+              "elapsedMs": 0.9030030000001261
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.24979100000007293
+            },
+            "lstatSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.06912599999992608
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 1.0004999999999882
+            },
+            "promises.stat:archive-data": {
+              "calls": 54,
+              "elapsedMs": 1.2183750000002078
+            },
+            "fsyncSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 6.909041999999943
+            },
+            "openSync:archive-data": {
+              "calls": 15,
+              "elapsedMs": 0.4922069999998371
+            },
+            "fsyncSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.01637399999998479
+            },
+            "closeSync:archive-data": {
+              "calls": 15,
+              "elapsedMs": 0.03445400000003929
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 10.308623999999895
+            },
+            "readFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.14762600000000248
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.014542000000005828
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.0028340000000071086
+            },
+            "readSync:event-log": {
+              "calls": 4,
+              "elapsedMs": 0.19925000000000637
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.0015419999999721767
+            },
+            "linkSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.7244160000000193
+            },
+            "linkSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6275829999999587
+            },
+            "readSync:archive-data": {
+              "calls": 18,
+              "elapsedMs": 1.1384599999998386
+            },
+            "copyFileSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 1.0470000000000255
+            },
+            "renameSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.5957079999999451
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 8,
+              "elapsedMs": 4.384247999999957
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.1697079999999005
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.17275000000006457
+            },
+            "readFileSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6282919999999876
+            },
+            "writeSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.1295420000001286
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.5906659999998283
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.3651670000001559
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 1.4143750000000637
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 13.882416999999919
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.06275100000004841
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.43587500000001
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.004624999999919055
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.4279579999999896
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.2459160000000793
+            }
+          }
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -1117.203875,
+          "cpuDeltaMs": -1149.693,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -1125.471959,
+          "cpuDeltaMs": -1142.068,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -1122.693542,
+          "cpuDeltaMs": -1148.658,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 12000,
+      "sides": {
+        "A": {
+          "wallMs": 4485.1788750000005,
+          "cpuMs": 4660.672,
+          "rssBefore": 204195168,
+          "rssAfter": 339681216,
+          "maxRssBytes": 381419520,
+          "resourceUsageDelta": {
+            "userCPUTime": 4398943,
+            "systemCPUTime": 260155,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 29073,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 33,
+            "involuntaryContextSwitches": 9346
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.5632910000003903
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.007124999999632564
+            },
+            "writeFileSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.4694169999997939
+            },
+            "closeSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.11366699999962293
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.07291600000007747
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.6291249999999309
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.13383399999975154
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.04341800000020157
+            },
+            "statSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.0401240000001053
+            },
+            "statSync:archive-data": {
+              "calls": 6128,
+              "elapsedMs": 21.748067000004085
+            },
+            "lstatSync:archive-index": {
+              "calls": 10,
+              "elapsedMs": 0.08666599999924074
+            },
+            "readFileSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.22854099999995015
+            },
+            "openSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.19604100000060498
+            },
+            "readSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.01612499999873762
+            },
+            "closeSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.01929099999870232
+            },
+            "lstatSync:archive-data": {
+              "calls": 169,
+              "elapsedMs": 2.6887839999963035
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.28837300000031973
+            },
+            "lstatSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.07408399999894755
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.2135839999991731
+            },
+            "promises.stat:archive-data": {
+              "calls": 54,
+              "elapsedMs": 1.616537999999764
+            },
+            "fsyncSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 8.412582999999813
+            },
+            "openSync:archive-data": {
+              "calls": 2008,
+              "elapsedMs": 33.516954999994596
+            },
+            "fsyncSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.016541000000415806
+            },
+            "closeSync:archive-data": {
+              "calls": 2008,
+              "elapsedMs": 1.869083000003684
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 6.844667999999729
+            },
+            "readFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.17274999999926877
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.014959000000089873
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.003125000000181899
+            },
+            "readSync:event-log": {
+              "calls": 10,
+              "elapsedMs": 0.578251000000364
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.002124999999978172
+            },
+            "linkSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.7761659999996482
+            },
+            "linkSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6370000000006257
+            },
+            "readSync:archive-data": {
+              "calls": 2028,
+              "elapsedMs": 8.018619999974817
+            },
+            "readFileSync:archive-data": {
+              "calls": 3,
+              "elapsedMs": 3.0974580000006426
+            },
+            "copyFileSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 4.632583000000068
+            },
+            "renameSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 2.1226250000004256
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 2000,
+              "elapsedMs": 170.48380400000588
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.15137500000037107
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.16641699999945558
+            },
+            "writeSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.145832999999584
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.632541000000856
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.4640399999998408
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 2.821499999999105
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 16.72320900000068
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.06945899999936955
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.7222929999998087
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.006957999999940512
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.47087499999997817
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.9379170000001977
+            }
+          }
+        },
+        "B": {
+          "wallMs": 442.60508400000003,
+          "cpuMs": 485.256,
+          "rssBefore": 223874032,
+          "rssAfter": 316874680,
+          "maxRssBytes": 340869120,
+          "resourceUsageDelta": {
+            "userCPUTime": 453344,
+            "systemCPUTime": 31454,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 5478,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 33,
+            "involuntaryContextSwitches": 543
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.5934160000001611
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.007249999999885404
+            },
+            "writeFileSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.5283740000002126
+            },
+            "closeSync:other": {
+              "calls": 10,
+              "elapsedMs": 0.13399800000024698
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.0762920000001941
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.5879170000000613
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.14033400000016627
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.046875
+            },
+            "statSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.04237499999976535
+            },
+            "statSync:archive-data": {
+              "calls": 152,
+              "elapsedMs": 1.1237110000013217
+            },
+            "lstatSync:archive-index": {
+              "calls": 10,
+              "elapsedMs": 0.09149999999976899
+            },
+            "readFileSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.26012600000012753
+            },
+            "openSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.21516700000006495
+            },
+            "readSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.022833000000218817
+            },
+            "closeSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.025751000000354907
+            },
+            "lstatSync:archive-data": {
+              "calls": 169,
+              "elapsedMs": 0.9238750000006348
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.2663760000000366
+            },
+            "lstatSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.06533400000057554
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.21624999999994543
+            },
+            "promises.stat:archive-data": {
+              "calls": 54,
+              "elapsedMs": 1.3340829999995094
+            },
+            "fsyncSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 8.765251000000035
+            },
+            "openSync:archive-data": {
+              "calls": 16,
+              "elapsedMs": 0.5997909999996409
+            },
+            "fsyncSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.013457999999900494
+            },
+            "closeSync:archive-data": {
+              "calls": 16,
+              "elapsedMs": 0.04954200000042874
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 6.155456999999842
+            },
+            "readFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.17075099999988197
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.015249999999923602
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.0028750000001309672
+            },
+            "readSync:event-log": {
+              "calls": 10,
+              "elapsedMs": 0.5934569999994892
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.0025840000000698637
+            },
+            "linkSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.7554580000000897
+            },
+            "linkSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6253340000000662
+            },
+            "readSync:archive-data": {
+              "calls": 36,
+              "elapsedMs": 5.121332999999595
+            },
+            "readFileSync:archive-data": {
+              "calls": 3,
+              "elapsedMs": 3.044167000000016
+            },
+            "copyFileSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 4.757916000000023
+            },
+            "renameSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.9645419999999376
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 8,
+              "elapsedMs": 3.060833999999886
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.1810410000000502
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.15550000000007458
+            },
+            "writeSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.15333200000031866
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.6831669999996848
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.4377900000001773
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 2.8159579999999096
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 16.57241699999986
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.07395799999994779
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.5700419999998303
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.005666999999903055
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.47787500000004
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.27908400000001166
+            }
+          }
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -4030.2493330000007,
+          "cpuDeltaMs": -4178.567999999999,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -4055.637957000001,
+          "cpuDeltaMs": -4207.014,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -4043.3116250000003,
+          "cpuDeltaMs": -4170.771,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 20000,
+      "sides": {
+        "A": {
+          "wallMs": 7225.211000000001,
+          "cpuMs": 7521.478,
+          "rssBefore": 246977344,
+          "rssAfter": 346119504,
+          "maxRssBytes": 428474368,
+          "resourceUsageDelta": {
+            "userCPUTime": 7072233,
+            "systemCPUTime": 449508,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 141279,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 36,
+            "involuntaryContextSwitches": 9838
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 11,
+              "elapsedMs": 0.6161249999977372
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.005916999999953987
+            },
+            "writeFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.6851669999991827
+            },
+            "closeSync:other": {
+              "calls": 11,
+              "elapsedMs": 0.129374000001917
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.09229099999947721
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.5244579999998678
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.16879200000039418
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.04229199999872435
+            },
+            "statSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.05083200000171928
+            },
+            "statSync:archive-data": {
+              "calls": 8140,
+              "elapsedMs": 36.12141599992174
+            },
+            "readdirSync:archive-data": {
+              "calls": 8,
+              "elapsedMs": 0.26554200000191486
+            },
+            "lstatSync:archive-index": {
+              "calls": 10,
+              "elapsedMs": 0.08304300000372677
+            },
+            "readFileSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.21654200000057244
+            },
+            "openSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.18520900000021356
+            },
+            "readSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.019833999998354557
+            },
+            "closeSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.02020900000070469
+            },
+            "lstatSync:archive-data": {
+              "calls": 181,
+              "elapsedMs": 0.9639999999917563
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.2769579999994676
+            },
+            "lstatSync:other": {
+              "calls": 8,
+              "elapsedMs": 0.08112499999879219
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.2488749999997708
+            },
+            "promises.stat:archive-data": {
+              "calls": 54,
+              "elapsedMs": 0.9967870000054972
+            },
+            "fsyncSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 7.116791999999805
+            },
+            "openSync:archive-data": {
+              "calls": 2012,
+              "elapsedMs": 40.641839000010805
+            },
+            "fsyncSync:archive-data": {
+              "calls": 4,
+              "elapsedMs": 0.011875000000600267
+            },
+            "closeSync:archive-data": {
+              "calls": 2012,
+              "elapsedMs": 2.4474050000112584
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 7.067665999997644
+            },
+            "readFileSync:other": {
+              "calls": 6,
+              "elapsedMs": 0.22533299999849987
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.015166000000135682
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.0034160000000156288
+            },
+            "readSync:event-log": {
+              "calls": 15,
+              "elapsedMs": 0.8871670000007725
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.004167000000052212
+            },
+            "linkSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.7790420000001177
+            },
+            "linkSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6427510000007715
+            },
+            "writeSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.21254200000112178
+            },
+            "readSync:archive-data": {
+              "calls": 2026,
+              "elapsedMs": 8.617345999962254
+            },
+            "readFileSync:archive-data": {
+              "calls": 4,
+              "elapsedMs": 2.605083000000832
+            },
+            "copyFileSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 1.8410420000000158
+            },
+            "renameSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.7529159999999138
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 2000,
+              "elapsedMs": 273.45512700001746
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.17225000000144064
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.17270800000005693
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.6367490000011458
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.5110830000012356
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 3.7642500000001746
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 16.2673330000016
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.14020699999855424
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.6781250000003638
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.02862499999901047
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.4607080000005226
+            },
+            "unlinkSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.090291000000434
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.49545799999941664
+            }
+          }
+        },
+        "B": {
+          "wallMs": 510.223125,
+          "cpuMs": 559.796,
+          "rssBefore": 246518856,
+          "rssAfter": 346006872,
+          "maxRssBytes": 369000448,
+          "resourceUsageDelta": {
+            "userCPUTime": 530451,
+            "systemCPUTime": 29466,
+            "sharedMemorySize": 0,
+            "unsharedDataSize": 0,
+            "unsharedStackSize": 0,
+            "minorPageFault": 5897,
+            "majorPageFault": 0,
+            "swappedOut": 0,
+            "fsRead": 0,
+            "fsWrite": 0,
+            "ipcSent": 0,
+            "ipcReceived": 0,
+            "signalsCount": 0,
+            "voluntaryContextSwitches": 36,
+            "involuntaryContextSwitches": 613
+          },
+          "fs": {
+            "openSync:other": {
+              "calls": 11,
+              "elapsedMs": 0.6278349999993225
+            },
+            "fstatSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.006375000000389264
+            },
+            "writeFileSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.6539589999997588
+            },
+            "closeSync:other": {
+              "calls": 11,
+              "elapsedMs": 0.16120700000010402
+            },
+            "promises.mkdir:other": {
+              "calls": 2,
+              "elapsedMs": 0.08149900000034904
+            },
+            "promises.readFile:other": {
+              "calls": 1,
+              "elapsedMs": 0.5161670000002232
+            },
+            "mkdirSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.15174999999999272
+            },
+            "existsSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.04695900000024267
+            },
+            "statSync:archive-index": {
+              "calls": 4,
+              "elapsedMs": 0.05608299999994415
+            },
+            "statSync:archive-data": {
+              "calls": 172,
+              "elapsedMs": 1.3087840000016513
+            },
+            "readdirSync:archive-data": {
+              "calls": 8,
+              "elapsedMs": 0.27645899999970425
+            },
+            "lstatSync:archive-index": {
+              "calls": 10,
+              "elapsedMs": 0.10020700000040961
+            },
+            "readFileSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.23241600000028484
+            },
+            "openSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.19112499999982901
+            },
+            "readSync:archive-index": {
+              "calls": 5,
+              "elapsedMs": 0.03270699999984572
+            },
+            "closeSync:archive-index": {
+              "calls": 7,
+              "elapsedMs": 0.02162499999940337
+            },
+            "lstatSync:archive-data": {
+              "calls": 181,
+              "elapsedMs": 0.9828779999998005
+            },
+            "readdirSync:other": {
+              "calls": 7,
+              "elapsedMs": 0.25658300000031886
+            },
+            "lstatSync:other": {
+              "calls": 8,
+              "elapsedMs": 0.0731250000012551
+            },
+            "promises.readFile:archive-index": {
+              "calls": 3,
+              "elapsedMs": 0.21308300000009694
+            },
+            "promises.stat:archive-data": {
+              "calls": 54,
+              "elapsedMs": 0.9800049999989824
+            },
+            "fsyncSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 7.511917000000267
+            },
+            "openSync:archive-data": {
+              "calls": 20,
+              "elapsedMs": 0.7464129999998477
+            },
+            "fsyncSync:archive-data": {
+              "calls": 4,
+              "elapsedMs": 0.010956999999962136
+            },
+            "closeSync:archive-data": {
+              "calls": 20,
+              "elapsedMs": 0.05704100000002654
+            },
+            "fsyncSync:other": {
+              "calls": 5,
+              "elapsedMs": 6.963623999999527
+            },
+            "readFileSync:other": {
+              "calls": 6,
+              "elapsedMs": 0.2218330000005153
+            },
+            "openSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.014791999999943073
+            },
+            "fstatSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.0033330000001114968
+            },
+            "readSync:event-log": {
+              "calls": 15,
+              "elapsedMs": 0.8721679999998742
+            },
+            "closeSync:event-log": {
+              "calls": 1,
+              "elapsedMs": 0.002375000000029104
+            },
+            "linkSync:archive-index": {
+              "calls": 2,
+              "elapsedMs": 0.7649570000003223
+            },
+            "linkSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.6307090000000244
+            },
+            "writeSync:other": {
+              "calls": 5,
+              "elapsedMs": 0.18999999999959982
+            },
+            "readSync:archive-data": {
+              "calls": 34,
+              "elapsedMs": 4.456666000000496
+            },
+            "readFileSync:archive-data": {
+              "calls": 4,
+              "elapsedMs": 2.5874159999998483
+            },
+            "copyFileSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 1.848540999999841
+            },
+            "renameSync:archive-data": {
+              "calls": 2,
+              "elapsedMs": 0.705000999999811
+            },
+            "promises.appendFile:archive-data": {
+              "calls": 8,
+              "elapsedMs": 3.469833999999537
+            },
+            "promises.writeFile:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.18462500000032378
+            },
+            "promises.rename:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.1713329999997768
+            },
+            "renameSync:other": {
+              "calls": 4,
+              "elapsedMs": 0.7089990000004036
+            },
+            "promises.open:other": {
+              "calls": 4,
+              "elapsedMs": 0.5159979999998541
+            },
+            "handle.writeFile:other": {
+              "calls": 2,
+              "elapsedMs": 3.7718329999997877
+            },
+            "handle.sync:other": {
+              "calls": 4,
+              "elapsedMs": 16.853167000000212
+            },
+            "handle.close:other": {
+              "calls": 4,
+              "elapsedMs": 0.07654100000036124
+            },
+            "promises.rename:other": {
+              "calls": 2,
+              "elapsedMs": 0.7286669999994047
+            },
+            "existsSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.008708000000297034
+            },
+            "renameSync:archive-index": {
+              "calls": 1,
+              "elapsedMs": 0.4609169999998812
+            },
+            "unlinkSync:archive-data": {
+              "calls": 1,
+              "elapsedMs": 0.07345799999984592
+            },
+            "rmSync:other": {
+              "calls": 1,
+              "elapsedMs": 0.44929099999990285
+            }
+          }
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -6718.3255420000005,
+          "cpuDeltaMs": -6963.557,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -6886.6057089999995,
+          "cpuDeltaMs": -7122.661999999999,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -6615.031125000001,
+          "cpuDeltaMs": -6870.459,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    }
+  ],
+  "sampleCount": 36,
+  "samplesFile": "transaction-archive-batch-final-io-20261029.samples.jsonl",
+  "samplesSha256": "238d4d3c9c4801677550e57c3ed9acc7b095deee4a78ed2ea79f3e346cc908c9"
+}
