@@ -119,6 +119,9 @@ function installTrace(root) {
 
 /** One measurement process: `--child` runs the workload, the parent parses it. */
 if (flag('child')) {
+  // Optional cold-only diagnostic hook. The normal A/B workload stays identical.
+  const audit = process.env.BENCH_AUDIT_MODULE
+    ? await import(process.env.BENCH_AUDIT_MODULE).then(module => module.install()) : null;
   const root = process.env.BENCH_ROOT;
   const recordCount = Number(process.env.BENCH_RECORDS);
   const observeSamples = Number(process.env.BENCH_OBSERVES);
@@ -173,12 +176,14 @@ if (flag('child')) {
     const trace = process.env.BENCH_TRACE === '1' ? installTrace(root) : null;
     // The absorption itself: no checkpoint exists yet, so this call authenticates
     // and applies every record, then closes the replay checkpoint.
+    await audit?.start();
     const cpu = process.cpuUsage();
     const started = performance.now();
     port = await openDomainStorage(ctx, { presetDir: root, eventBridgePath: eventLog, eventBridgeKey: KEY });
     const absorptionMs = performance.now() - started;
     const used = process.cpuUsage(cpu);
     const absorption = { wallMs: absorptionMs, cpuMs: (used.user + used.system) / 1000 };
+    const auditResult = await audit?.stop();
     const traced = trace === null ? null : trace.restore();
     const steady = await port.flush();
     assert.deepEqual(steady, { applied: 0, duplicates: recordCount },
@@ -259,6 +264,7 @@ if (flag('child')) {
     const collected = process.memoryUsage();
     console.log(JSON.stringify({
       records: recordCount, absorption, observeRows, flushRows,
+      ...(audit ? { audit: auditResult } : {}),
       // Peak RSS is the whole child's high-water mark, including the fixture and
       // the runtime; `retained` is the collected heap plus everything held
       // outside it. Neither is an attribution of the absorption phase alone.
@@ -324,7 +330,7 @@ const report = {
   // actually check, and the candidate's own sources are pinned beside it.
   baselineSha: aa ? resolveRef('HEAD') : resolveRef(baselineRef),
   candidateSha: resolveRef('HEAD'),
-  candidateSources: Object.fromEntries(['lib/dockyard-domain/memory.js', 'scripts/benchmarks/archive-append-window.mjs']
+  candidateSources: Object.fromEntries(['lib/domain-storage.js', 'lib/dockyard-domain/memory.js', 'scripts/benchmarks/archive-append-window.mjs']
     .map(file => [file, crypto.createHash('sha256').update(fs.readFileSync(path.join(REPO, file))).digest('hex')])),
   baseline: baseline ? path.basename(baseline) : 'same-tree(control)', working,
   records, rounds, observes, flushes,

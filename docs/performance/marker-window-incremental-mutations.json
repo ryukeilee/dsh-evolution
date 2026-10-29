@@ -1,0 +1,62 @@
+{
+  "node": "v26.12.1",
+  "sources": {
+    "lib/domain-storage.js": "99cdc71fa1dffc705a6e6520bf963071e23eae8c3b5bfaf03b707361337e11c8",
+    "lib/dockyard-domain/memory.js": "33b0d2d940088655c53cabed067e1fa535d58fab371453bea04b33bf550f8e39"
+  },
+  "results": [
+    {
+      "name": "skip-added-marker",
+      "file": "lib/domain-storage.js",
+      "before": "const markers = windowCheck?.inherited === true ? [windowCheck.marker] : window;",
+      "after": "const markers = windowCheck?.inherited === true ? [] : window;",
+      "exitCode": 1,
+      "failingTests": [
+        "\u2716 an immutable successor checks only its added marker, and the old window stays immutable (3.91075ms)",
+        "\u2716 a successor does not serialize its added marker before the save, and a failed save is not certified (0.340791ms)",
+        "\u2716 a cached window never bypasses body serialization, literals or mutable nested marker values (6.897292ms)",
+        "\u2716 the private memory reports immutable bounded successors; ordinary stores retain mutable windows (12.061458ms)",
+        "\u2716 failing tests:",
+        "\u2716 an immutable successor checks only its added marker, and the old window stays immutable (3.91075ms)"
+      ]
+    },
+    {
+      "name": "skip-body-on-cache-hit",
+      "file": "lib/domain-storage.js",
+      "before": "  // Everything but the window, serialized exactly as the whole payload is.",
+      "after": "  if (windows?.get(window)?.verified === true) return;\n  // Everything but the window, serialized exactly as the whole payload is.",
+      "exitCode": 1,
+      "failingTests": [
+        "\u2716 a cached window never bypasses body serialization, literals or mutable nested marker values (0.6765ms)",
+        "\u2716 failing tests:",
+        "\u2716 a cached window never bypasses body serialization, literals or mutable nested marker values (0.6765ms)"
+      ]
+    },
+    {
+      "name": "certify-before-check",
+      "file": "lib/domain-storage.js",
+      "before": "  for (const marker of markers) {",
+      "after": "  if (windowCheck) windowCheck.verified = true;\n  for (const marker of markers) {",
+      "exitCode": 1,
+      "failingTests": [
+        "\u2716 a successor does not serialize its added marker before the save, and a failed save is not certified (0.492917ms)",
+        "\u2716 a cached window never bypasses body serialization, literals or mutable nested marker values (6.905709ms)",
+        "\u2716 failing tests:",
+        "\u2716 a successor does not serialize its added marker before the save, and a failed save is not certified (0.492917ms)",
+        "\u2716 a cached window never bypasses body serialization, literals or mutable nested marker values (6.905709ms)"
+      ]
+    },
+    {
+      "name": "mutable-successor",
+      "file": "lib/dockyard-domain/memory.js",
+      "before": "      Object.freeze(next);",
+      "after": "      // mutation: leave membership mutable",
+      "exitCode": 1,
+      "failingTests": [
+        "\u2716 the private memory reports immutable bounded successors; ordinary stores retain mutable windows (12.63625ms)",
+        "\u2716 failing tests:",
+        "\u2716 the private memory reports immutable bounded successors; ordinary stores retain mutable windows (12.63625ms)"
+      ]
+    }
+  ]
+}

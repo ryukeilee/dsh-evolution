@@ -1,0 +1,2021 @@
+{
+  "source": "cold-apply-cost-d9de6b2-20261029.json",
+  "note": "Nested timers overlap. CPU sample phase alignment uses the locally recorded Profiler.start call time, with startup-boundary uncertainty. Heap sampling includes collected objects and estimates allocation traffic; it is not retained memory.",
+  "modes": {
+    "control": {
+      "wallMs": 4179.33,
+      "cpuMs": 4420.409,
+      "wallRange": [
+        4154.435,
+        4189.168
+      ],
+      "gcDurationMs": 21.287
+    },
+    "detail": {
+      "wallMs": 4378.614,
+      "cpuMs": 4641.125,
+      "wallRange": [
+        4304.744,
+        4407.483
+      ],
+      "gcDurationMs": 22.311
+    },
+    "cpu": {
+      "wallMs": 4269.007,
+      "cpuMs": 4564.407,
+      "wallRange": [
+        4196.582,
+        4270.147
+      ],
+      "gcDurationMs": 22.557
+    },
+    "allocation": {
+      "wallMs": 4282.346,
+      "cpuMs": 4520.513,
+      "wallRange": [
+        4244.691,
+        4297.283
+      ],
+      "gcDurationMs": 23.732
+    }
+  },
+  "detail": {
+    "json.open.stringify": {
+      "calls": 9,
+      "wallMs": 0.01,
+      "bytes": 83
+    },
+    "clone.open": {
+      "calls": 1,
+      "wallMs": 0.015,
+      "bytes": 0
+    },
+    "io.open.statSync": {
+      "calls": 36,
+      "wallMs": 0.267,
+      "bytes": 0
+    },
+    "io.open.lstatSync": {
+      "calls": 55,
+      "wallMs": 0.286,
+      "bytes": 0
+    },
+    "io.open.readFile": {
+      "calls": 1,
+      "wallMs": 0.031,
+      "bytes": 0
+    },
+    "io.open.stat": {
+      "calls": 18,
+      "wallMs": 0.55,
+      "bytes": 0
+    },
+    "phase.open": {
+      "calls": 1,
+      "wallMs": 16.729,
+      "bytes": 0,
+      "cpuMs": 6.386
+    },
+    "phase.plan": {
+      "calls": 1,
+      "wallMs": 9.356,
+      "bytes": 0,
+      "cpuMs": 9.814
+    },
+    "json.authenticate.stringify": {
+      "calls": 340022,
+      "wallMs": 18.337,
+      "bytes": 6095778
+    },
+    "phase.authenticate": {
+      "calls": 1,
+      "wallMs": 169.031,
+      "bytes": 0,
+      "cpuMs": 201.206
+    },
+    "clone.transaction-prepare": {
+      "calls": 1,
+      "wallMs": 0.01,
+      "bytes": 0
+    },
+    "io.transaction-prepare.statSync": {
+      "calls": 36,
+      "wallMs": 0.28,
+      "bytes": 0
+    },
+    "io.transaction-prepare.lstatSync": {
+      "calls": 55,
+      "wallMs": 0.297,
+      "bytes": 0
+    },
+    "io.transaction-prepare.readFile": {
+      "calls": 1,
+      "wallMs": 0.25,
+      "bytes": 0
+    },
+    "io.transaction-prepare.stat": {
+      "calls": 18,
+      "wallMs": 0.377,
+      "bytes": 0
+    },
+    "phase.transaction-prepare": {
+      "calls": 1,
+      "wallMs": 2.569,
+      "bytes": 0,
+      "cpuMs": 3.277
+    },
+    "memory.housekeeping": {
+      "calls": 40000,
+      "wallMs": 13.886,
+      "bytes": 0
+    },
+    "json.apply.stringify": {
+      "calls": 59949,
+      "wallMs": 685.985,
+      "bytes": 534803230
+    },
+    "save.check": {
+      "calls": 20000,
+      "wallMs": 2072.966,
+      "bytes": 0
+    },
+    "memory.save": {
+      "calls": 40000,
+      "wallMs": 2095.232,
+      "bytes": 0
+    },
+    "clone.apply": {
+      "calls": 40000,
+      "wallMs": 77.516,
+      "bytes": 0
+    },
+    "memory.markBridge": {
+      "calls": 20000,
+      "wallMs": 93.259,
+      "bytes": 0
+    },
+    "save.remainder.stringify": {
+      "calls": 19999,
+      "wallMs": 666.439,
+      "bytes": 521234115
+    },
+    "save.marker.visits": {
+      "calls": 73529344,
+      "wallMs": 0,
+      "bytes": 0
+    },
+    "save.marker.stringify": {
+      "calls": 19999,
+      "wallMs": 7.635,
+      "bytes": 3637605
+    },
+    "save.marker.loop": {
+      "calls": 19999,
+      "wallMs": 1185.077,
+      "bytes": 0
+    },
+    "io.apply.statSync": {
+      "calls": 43020,
+      "wallMs": 132.092,
+      "bytes": 0
+    },
+    "io.apply.openSync": {
+      "calls": 19950,
+      "wallMs": 301.664,
+      "bytes": 0
+    },
+    "io.apply.appendFile": {
+      "calls": 19950,
+      "wallMs": 656.216,
+      "bytes": 9950526
+    },
+    "memory.archive": {
+      "calls": 19950,
+      "wallMs": 1428.387,
+      "bytes": 0
+    },
+    "io.apply.readSync": {
+      "calls": 19949,
+      "wallMs": 24.804,
+      "bytes": 0
+    },
+    "io.apply.closeSync": {
+      "calls": 19949,
+      "wallMs": 13.473,
+      "bytes": 0
+    },
+    "io.apply.stat": {
+      "calls": 1,
+      "wallMs": 0.046,
+      "bytes": 0
+    },
+    "io.apply.mkdir": {
+      "calls": 1,
+      "wallMs": 0.108,
+      "bytes": 0
+    },
+    "io.apply.readdir": {
+      "calls": 1,
+      "wallMs": 0.076,
+      "bytes": 0
+    },
+    "io.apply.readFile": {
+      "calls": 1,
+      "wallMs": 2.025,
+      "bytes": 0
+    },
+    "io.apply.writeFile": {
+      "calls": 2,
+      "wallMs": 5.528,
+      "bytes": 0
+    },
+    "io.apply.rename": {
+      "calls": 1,
+      "wallMs": 0.15,
+      "bytes": 0
+    },
+    "io.apply.readdirSync": {
+      "calls": 1,
+      "wallMs": 0.067,
+      "bytes": 0
+    },
+    "phase.apply": {
+      "calls": 1,
+      "wallMs": 4065.696,
+      "bytes": 0,
+      "cpuMs": 4343.265
+    },
+    "io.publish.statSync": {
+      "calls": 62,
+      "wallMs": 0.414,
+      "bytes": 0
+    },
+    "json.publish.stringify": {
+      "calls": 19,
+      "wallMs": 15.083,
+      "bytes": 9239128
+    },
+    "io.publish.writeFile": {
+      "calls": 1,
+      "wallMs": 0.143,
+      "bytes": 0
+    },
+    "io.publish.rename": {
+      "calls": 1,
+      "wallMs": 0.127,
+      "bytes": 0
+    },
+    "clone.publish": {
+      "calls": 3,
+      "wallMs": 4.127,
+      "bytes": 0
+    },
+    "io.publish.lstatSync": {
+      "calls": 73,
+      "wallMs": 0.413,
+      "bytes": 0
+    },
+    "io.publish.openSync": {
+      "calls": 13,
+      "wallMs": 0.283,
+      "bytes": 0
+    },
+    "io.publish.readSync": {
+      "calls": 10,
+      "wallMs": 2.932,
+      "bytes": 0
+    },
+    "io.publish.closeSync": {
+      "calls": 13,
+      "wallMs": 0.026,
+      "bytes": 0
+    },
+    "io.publish.readFileSync": {
+      "calls": 7,
+      "wallMs": 2.915,
+      "bytes": 0
+    },
+    "io.publish.readdirSync": {
+      "calls": 3,
+      "wallMs": 0.09,
+      "bytes": 0
+    },
+    "io.publish.renameSync": {
+      "calls": 3,
+      "wallMs": 1.071,
+      "bytes": 0
+    },
+    "io.publish.mkdirSync": {
+      "calls": 1,
+      "wallMs": 0.073,
+      "bytes": 0
+    },
+    "io.publish.readFile": {
+      "calls": 1,
+      "wallMs": 0.056,
+      "bytes": 0
+    },
+    "io.publish.stat": {
+      "calls": 18,
+      "wallMs": 0.354,
+      "bytes": 0
+    },
+    "phase.publish": {
+      "calls": 1,
+      "wallMs": 105.195,
+      "bytes": 0,
+      "cpuMs": 69.493
+    },
+    "json.checkpoint.stringify": {
+      "calls": 3,
+      "wallMs": 4.791,
+      "bytes": 2470110
+    },
+    "phase.checkpoint": {
+      "calls": 1,
+      "wallMs": 6.325,
+      "bytes": 0,
+      "cpuMs": 7.738
+    }
+  },
+  "cpu": [
+    {
+      "round": 0,
+      "inclusiveMs": {
+        "apply.assertStagedTransactionSave": 1228.776,
+        "apply.#save": 1249.068,
+        "apply.#markBridgeApplied": 71.492,
+        "apply.#archiveEntries": 2.259
+      },
+      "phases": {
+        "open": {
+          "totalMs": 9.981,
+          "self": [
+            {
+              "frame": "fsync (:0)",
+              "ms": 4.215
+            },
+            {
+              "frame": "(idle) (:0)",
+              "ms": 1.267
+            },
+            {
+              "frame": "load (memory.js:1050)",
+              "ms": 0.757
+            },
+            {
+              "frame": "basename (node:path:1469)",
+              "ms": 0.755
+            },
+            {
+              "frame": "<anonymous> (observation.js:256)",
+              "ms": 0.752
+            },
+            {
+              "frame": "#reconcileArchiveIndex (memory.js:2354)",
+              "ms": 0.742
+            },
+            {
+              "frame": "inst._zod.run (schemas.js:97)",
+              "ms": 0.741
+            },
+            {
+              "frame": "inst._zod.parse (schemas.js:1199)",
+              "ms": 0.622
+            },
+            {
+              "frame": "normalizeEncoding (util:258)",
+              "ms": 0.13
+            }
+          ]
+        },
+        "plan": {
+          "totalMs": 9.971,
+          "self": [
+            {
+              "frame": "update (:0)",
+              "ms": 4.981
+            },
+            {
+              "frame": "read (:0)",
+              "ms": 1.8
+            },
+            {
+              "frame": "planEventLogReplay (event-log-checkpoint.js:139)",
+              "ms": 1.364
+            },
+            {
+              "frame": "replay (domain-storage.js:822)",
+              "ms": 1.063
+            },
+            {
+              "frame": "utf8Slice (:0)",
+              "ms": 0.763
+            }
+          ]
+        },
+        "authenticate": {
+          "totalMs": 148.987,
+          "self": [
+            {
+              "frame": "canonicalBridgeJson (orchestrator.js:51)",
+              "ms": 45.293
+            },
+            {
+              "frame": "absorb (domain-storage.js:888)",
+              "ms": 25.38
+            },
+            {
+              "frame": "init (:0)",
+              "ms": 13.608
+            },
+            {
+              "frame": "update (:0)",
+              "ms": 12.683
+            },
+            {
+              "frame": "RegExp: ^[a-zA-Z0-9_:./-]{1,160}$ (:0)",
+              "ms": 6.791
+            },
+            {
+              "frame": "(garbage collector) (:0)",
+              "ms": 6.134
+            },
+            {
+              "frame": "digest (:0)",
+              "ms": 6.042
+            },
+            {
+              "frame": "projectExecutionEvent (domain-storage.js:1541)",
+              "ms": 5.308
+            },
+            {
+              "frame": "verifyEventBridgeEnvelope (orchestrator.js:87)",
+              "ms": 4.529
+            },
+            {
+              "frame": "digest (hash:227)",
+              "ms": 3.777
+            },
+            {
+              "frame": "Hmac (hash:208)",
+              "ms": 2.268
+            },
+            {
+              "frame": "safeIdentifier (domain-storage.js:1372)",
+              "ms": 2.265
+            },
+            {
+              "frame": "<anonymous> (:0)",
+              "ms": 2.262
+            },
+            {
+              "frame": "commit (domain-storage.js:910)",
+              "ms": 1.917
+            },
+            {
+              "frame": "numeric (domain-storage.js:1543)",
+              "ms": 1.516
+            },
+            {
+              "frame": "hexWrite (:0)",
+              "ms": 1.507
+            },
+            {
+              "frame": "fromString (node:buffer:585)",
+              "ms": 0.904
+            },
+            {
+              "frame": "(program) (:0)",
+              "ms": 0.76
+            },
+            {
+              "frame": "fromStringFast (node:buffer:552)",
+              "ms": 0.757
+            },
+            {
+              "frame": "<anonymous> (domain-storage.js:1543)",
+              "ms": 0.757
+            },
+            {
+              "frame": "FastBuffer (buffer:962)",
+              "ms": 0.757
+            },
+            {
+              "frame": "bridgeJsonKey (orchestrator.js:43)",
+              "ms": 0.756
+            },
+            {
+              "frame": "<anonymous> (domain-storage.js:1221)",
+              "ms": 0.755
+            },
+            {
+              "frame": "utf8Write (buffer:990)",
+              "ms": 0.755
+            },
+            {
+              "frame": "RegExp: ^[a-zA-Z][a-zA-Z0-9_]{0,40}$ (:0)",
+              "ms": 0.755
+            }
+          ]
+        },
+        "transaction-prepare": {
+          "totalMs": 3.027,
+          "self": [
+            {
+              "frame": "<anonymous> (promises:2306)",
+              "ms": 0.762
+            },
+            {
+              "frame": "(idle) (:0)",
+              "ms": 0.757
+            },
+            {
+              "frame": "randomFillSync (random:166)",
+              "ms": 0.756
+            },
+            {
+              "frame": "<anonymous> (memory.js:1058)",
+              "ms": 0.752
+            }
+          ]
+        },
+        "apply": {
+          "totalMs": 3914.902,
+          "self": [
+            {
+              "frame": "(idle) (:0)",
+              "ms": 1737.407
+            },
+            {
+              "frame": "assertStagedTransactionSave (domain-storage.js:1492)",
+              "ms": 1212.189
+            },
+            {
+              "frame": "open (:0)",
+              "ms": 212.274
+            },
+            {
+              "frame": "stat (:0)",
+              "ms": 79.76
+            },
+            {
+              "frame": "isSensitiveKey (memory.js:76)",
+              "ms": 69.918
+            },
+            {
+              "frame": "structuredClone (js_transferable:101)",
+              "ms": 46.644
+            },
+            {
+              "frame": "#markBridgeApplied (memory.js:4235)",
+              "ms": 45.903
+            },
+            {
+              "frame": "<anonymous> (memory.js:78)",
+              "ms": 32.315
+            },
+            {
+              "frame": "(program) (:0)",
+              "ms": 32.232
+            },
+            {
+              "frame": "redact (memory.js:81)",
+              "ms": 27.047
+            },
+            {
+              "frame": "<anonymous> (memory.js:4027)",
+              "ms": 26.096
+            },
+            {
+              "frame": "timestamp (memory.js:63)",
+              "ms": 21.026
+            },
+            {
+              "frame": "normalizeString (node:path:92)",
+              "ms": 20.302
+            },
+            {
+              "frame": "applyExecutionEvent (memory.js:4326)",
+              "ms": 20.296
+            },
+            {
+              "frame": "#foldArchiveFacts (memory.js:2097)",
+              "ms": 16.074
+            },
+            {
+              "frame": "run (:0)",
+              "ms": 15.826
+            },
+            {
+              "frame": "relative (node:path:1353)",
+              "ms": 15.018
+            },
+            {
+              "frame": "boundedArchiveEntry (memory.js:720)",
+              "ms": 15.014
+            },
+            {
+              "frame": "#recordActiveArchiveWrite (memory.js:2528)",
+              "ms": 14.327
+            },
+            {
+              "frame": "stats (memory.js:5567)",
+              "ms": 13.53
+            },
+            {
+              "frame": "ownEnumerableDataProperty (domain-storage.js:1402)",
+              "ms": 12.067
+            },
+            {
+              "frame": "read (:0)",
+              "ms": 12.059
+            },
+            {
+              "frame": "(garbage collector) (:0)",
+              "ms": 11.608
+            },
+            {
+              "frame": "#archiveAppendIdentity (memory.js:1446)",
+              "ms": 11.276
+            },
+            {
+              "frame": "update (domain-storage.js:646)",
+              "ms": 9.023
+            }
+          ]
+        },
+        "publish": {
+          "totalMs": 102.888,
+          "self": [
+            {
+              "frame": "(idle) (:0)",
+              "ms": 22.068
+            },
+            {
+              "frame": "fsync (:0)",
+              "ms": 20.884
+            },
+            {
+              "frame": "serialize (index.js:72)",
+              "ms": 13.421
+            },
+            {
+              "frame": "inst._zod.parse (schemas.js:1723)",
+              "ms": 9.625
+            },
+            {
+              "frame": "update (:0)",
+              "ms": 6.448
+            },
+            {
+              "frame": "read (:0)",
+              "ms": 3.782
+            },
+            {
+              "frame": "structuredClone (js_transferable:101)",
+              "ms": 3.428
+            },
+            {
+              "frame": "mergeEventLedger (domain-storage.js:1361)",
+              "ms": 3.04
+            },
+            {
+              "frame": "#foldArchiveFacts (memory.js:2097)",
+              "ms": 3.015
+            },
+            {
+              "frame": "toJsonProjection (domain-storage.js:67)",
+              "ms": 2.985
+            },
+            {
+              "frame": "link (:0)",
+              "ms": 2.448
+            },
+            {
+              "frame": "<anonymous> (:0)",
+              "ms": 1.875
+            },
+            {
+              "frame": "open (:0)",
+              "ms": 1.068
+            },
+            {
+              "frame": "statSync (node:fs:2176)",
+              "ms": 0.905
+            },
+            {
+              "frame": "rmSync (:0)",
+              "ms": 0.763
+            },
+            {
+              "frame": "handleCatchall (schemas.js:951)",
+              "ms": 0.76
+            },
+            {
+              "frame": "allowedArchive (archive-stage.js:101)",
+              "ms": 0.755
+            },
+            {
+              "frame": "openFileHandle (:0)",
+              "ms": 0.754
+            },
+            {
+              "frame": "RegExp: ^-?\\d+(?:\\.\\d+)?$ (:0)",
+              "ms": 0.751
+            },
+            {
+              "frame": "#archiveFactsFromFile (memory.js:2129)",
+              "ms": 0.741
+            },
+            {
+              "frame": "rename (:0)",
+              "ms": 0.558
+            },
+            {
+              "frame": "#reconcileArchiveIndex (memory.js:2354)",
+              "ms": 0.394
+            },
+            {
+              "frame": "readFileState (archive-stage.js:749)",
+              "ms": 0.39
+            },
+            {
+              "frame": "timestamp (memory.js:63)",
+              "ms": 0.361
+            },
+            {
+              "frame": "getEncodingOps (node:buffer:860)",
+              "ms": 0.355
+            }
+          ]
+        },
+        "checkpoint": {
+          "totalMs": 6.784,
+          "self": [
+            {
+              "frame": "digestApplied (event-log-checkpoint.js:335)",
+              "ms": 5.277
+            },
+            {
+              "frame": "update (:0)",
+              "ms": 1.507
+            }
+          ]
+        }
+      }
+    },
+    {
+      "round": 1,
+      "inclusiveMs": {
+        "apply.#save": 1231.369,
+        "apply.#markBridgeApplied": 62.918,
+        "apply.assertStagedTransactionSave": 1202.768
+      },
+      "phases": {
+        "open": {
+          "totalMs": 11.467,
+          "self": [
+            {
+              "frame": "fsync (:0)",
+              "ms": 5.151
+            },
+            {
+              "frame": "openDomainStorage (domain-storage.js:519)",
+              "ms": 0.91
+            },
+            {
+              "frame": "open (:0)",
+              "ms": 0.765
+            },
+            {
+              "frame": "readdir (:0)",
+              "ms": 0.76
+            },
+            {
+              "frame": "hydrate (domain-storage.js:658)",
+              "ms": 0.757
+            },
+            {
+              "frame": "wrapped (memoizer.js:209)",
+              "ms": 0.752
+            },
+            {
+              "frame": "<anonymous> (memory.js:1058)",
+              "ms": 0.747
+            },
+            {
+              "frame": "job.ondone (promises:2308)",
+              "ms": 0.745
+            },
+            {
+              "frame": "normalizeEncoding (util:258)",
+              "ms": 0.501
+            },
+            {
+              "frame": "(program) (:0)",
+              "ms": 0.248
+            },
+            {
+              "frame": "<anonymous> (domain-storage.js:1221)",
+              "ms": 0.131
+            }
+          ]
+        },
+        "plan": {
+          "totalMs": 9.736,
+          "self": [
+            {
+              "frame": "update (:0)",
+              "ms": 4.86
+            },
+            {
+              "frame": "planEventLogReplay (event-log-checkpoint.js:139)",
+              "ms": 2.193
+            },
+            {
+              "frame": "read (:0)",
+              "ms": 1.927
+            },
+            {
+              "frame": "utf8Slice (:0)",
+              "ms": 0.756
+            }
+          ]
+        },
+        "authenticate": {
+          "totalMs": 151.801,
+          "self": [
+            {
+              "frame": "absorb (domain-storage.js:888)",
+              "ms": 37.198
+            },
+            {
+              "frame": "canonicalBridgeJson (orchestrator.js:51)",
+              "ms": 31.491
+            },
+            {
+              "frame": "update (:0)",
+              "ms": 12.837
+            },
+            {
+              "frame": "RegExp: ^[a-zA-Z0-9_:./-]{1,160}$ (:0)",
+              "ms": 11.99
+            },
+            {
+              "frame": "digest (:0)",
+              "ms": 9.824
+            },
+            {
+              "frame": "init (:0)",
+              "ms": 9.06
+            },
+            {
+              "frame": "(garbage collector) (:0)",
+              "ms": 6.841
+            },
+            {
+              "frame": "digest (hash:227)",
+              "ms": 6.043
+            },
+            {
+              "frame": "verifyEventBridgeEnvelope (orchestrator.js:87)",
+              "ms": 3.027
+            },
+            {
+              "frame": "safeIdentifier (domain-storage.js:1372)",
+              "ms": 2.955
+            },
+            {
+              "frame": "Hmac (hash:208)",
+              "ms": 2.264
+            },
+            {
+              "frame": "(program) (:0)",
+              "ms": 2.263
+            },
+            {
+              "frame": "numeric (domain-storage.js:1543)",
+              "ms": 2.25
+            },
+            {
+              "frame": "commit (domain-storage.js:910)",
+              "ms": 2.052
+            },
+            {
+              "frame": "RegExp: ^[a-zA-Z][a-zA-Z0-9_]{0,40}$ (:0)",
+              "ms": 1.514
+            },
+            {
+              "frame": "<anonymous> (:0)",
+              "ms": 1.512
+            },
+            {
+              "frame": "fromString (node:buffer:585)",
+              "ms": 0.964
+            },
+            {
+              "frame": "replay (domain-storage.js:822)",
+              "ms": 0.91
+            },
+            {
+              "frame": "alignPool (node:buffer:212)",
+              "ms": 0.762
+            },
+            {
+              "frame": "hexWrite (:0)",
+              "ms": 0.758
+            },
+            {
+              "frame": "createHmac (node:crypto:174)",
+              "ms": 0.757
+            },
+            {
+              "frame": "get (node:480)",
+              "ms": 0.756
+            },
+            {
+              "frame": "fromStringFast (node:buffer:552)",
+              "ms": 0.756
+            },
+            {
+              "frame": "projectExecutionEvent (domain-storage.js:1541)",
+              "ms": 0.756
+            },
+            {
+              "frame": "Hmac (:0)",
+              "ms": 0.756
+            }
+          ]
+        },
+        "transaction-prepare": {
+          "totalMs": 3.002,
+          "self": [
+            {
+              "frame": "stat (:0)",
+              "ms": 0.758
+            },
+            {
+              "frame": "randomFillSync (:0)",
+              "ms": 0.755
+            },
+            {
+              "frame": "observerCallback (observe:547)",
+              "ms": 0.746
+            },
+            {
+              "frame": "unhandledRejection (promises:189)",
+              "ms": 0.743
+            }
+          ]
+        },
+        "apply": {
+          "totalMs": 3983.57,
+          "self": [
+            {
+              "frame": "(idle) (:0)",
+              "ms": 1893.211
+            },
+            {
+              "frame": "assertStagedTransactionSave (domain-storage.js:1492)",
+              "ms": 1196.013
+            },
+            {
+              "frame": "open (:0)",
+              "ms": 176.041
+            },
+            {
+              "frame": "stat (:0)",
+              "ms": 73.215
+            },
+            {
+              "frame": "isSensitiveKey (memory.js:76)",
+              "ms": 66.164
+            },
+            {
+              "frame": "#markBridgeApplied (memory.js:4235)",
+              "ms": 39.101
+            },
+            {
+              "frame": "(program) (:0)",
+              "ms": 34.672
+            },
+            {
+              "frame": "redact (memory.js:81)",
+              "ms": 32.053
+            },
+            {
+              "frame": "<anonymous> (memory.js:78)",
+              "ms": 31.601
+            },
+            {
+              "frame": "structuredClone (js_transferable:101)",
+              "ms": 31.584
+            },
+            {
+              "frame": "#recordActiveArchiveWrite (memory.js:2528)",
+              "ms": 24.176
+            },
+            {
+              "frame": "timestamp (memory.js:63)",
+              "ms": 23.087
+            },
+            {
+              "frame": "<anonymous> (memory.js:4027)",
+              "ms": 21.826
+            },
+            {
+              "frame": "normalizeString (node:path:92)",
+              "ms": 21.05
+            },
+            {
+              "frame": "relative (node:path:1353)",
+              "ms": 17.276
+            },
+            {
+              "frame": "(garbage collector) (:0)",
+              "ms": 16.681
+            },
+            {
+              "frame": "stats (memory.js:5567)",
+              "ms": 16.547
+            },
+            {
+              "frame": "run (memory.js:2763)",
+              "ms": 15.888
+            },
+            {
+              "frame": "#foldArchiveFacts (memory.js:2097)",
+              "ms": 15.872
+            },
+            {
+              "frame": "update (domain-storage.js:646)",
+              "ms": 14.3
+            },
+            {
+              "frame": "run (:0)",
+              "ms": 13.541
+            },
+            {
+              "frame": "read (:0)",
+              "ms": 11.272
+            },
+            {
+              "frame": "applyExecutionEvent (memory.js:4326)",
+              "ms": 10.531
+            },
+            {
+              "frame": "close (:0)",
+              "ms": 9.777
+            },
+            {
+              "frame": "knowledgeIdentity (knowledge.js:353)",
+              "ms": 9.776
+            }
+          ]
+        },
+        "publish": {
+          "totalMs": 102.97,
+          "self": [
+            {
+              "frame": "fsync (:0)",
+              "ms": 21.428
+            },
+            {
+              "frame": "(idle) (:0)",
+              "ms": 20.18
+            },
+            {
+              "frame": "serialize (index.js:72)",
+              "ms": 14.589
+            },
+            {
+              "frame": "inst._zod.parse (schemas.js:1723)",
+              "ms": 10.198
+            },
+            {
+              "frame": "update (:0)",
+              "ms": 7.03
+            },
+            {
+              "frame": "structuredClone (js_transferable:101)",
+              "ms": 4.453
+            },
+            {
+              "frame": "read (:0)",
+              "ms": 3.959
+            },
+            {
+              "frame": "#foldArchiveFacts (memory.js:2097)",
+              "ms": 3.016
+            },
+            {
+              "frame": "toJsonProjection (domain-storage.js:67)",
+              "ms": 3.008
+            },
+            {
+              "frame": "mergeEventLedger (domain-storage.js:1361)",
+              "ms": 2.265
+            },
+            {
+              "frame": "<anonymous> (:0)",
+              "ms": 1.472
+            },
+            {
+              "frame": "link (:0)",
+              "ms": 1.11
+            },
+            {
+              "frame": "mkdir (:0)",
+              "ms": 1.087
+            },
+            {
+              "frame": "mutate (domain-storage.js:682)",
+              "ms": 0.758
+            },
+            {
+              "frame": "writeFile (promises:277)",
+              "ms": 0.758
+            },
+            {
+              "frame": "getStatsFromBinding (utils:763)",
+              "ms": 0.753
+            },
+            {
+              "frame": "<anonymous> (:3)",
+              "ms": 0.749
+            },
+            {
+              "frame": "#freezeBridgeMarkers (memory.js:1162)",
+              "ms": 0.745
+            },
+            {
+              "frame": "<anonymous> (memory.js:2133)",
+              "ms": 0.743
+            },
+            {
+              "frame": "rename (:0)",
+              "ms": 0.719
+            },
+            {
+              "frame": "timestamp (memory.js:63)",
+              "ms": 0.693
+            },
+            {
+              "frame": "compile (doc.js:32)",
+              "ms": 0.688
+            },
+            {
+              "frame": "#archivePath (memory.js:1177)",
+              "ms": 0.624
+            },
+            {
+              "frame": "archiveDirectories (archive-stage.js:509)",
+              "ms": 0.4
+            },
+            {
+              "frame": "#archiveFiles (memory.js:1215)",
+              "ms": 0.396
+            }
+          ]
+        },
+        "checkpoint": {
+          "totalMs": 6.816,
+          "self": [
+            {
+              "frame": "digestApplied (event-log-checkpoint.js:335)",
+              "ms": 4.538
+            },
+            {
+              "frame": "update (:0)",
+              "ms": 1.514
+            },
+            {
+              "frame": "rename (:0)",
+              "ms": 0.764
+            }
+          ]
+        }
+      }
+    },
+    {
+      "round": 2,
+      "inclusiveMs": {
+        "apply.assertStagedTransactionSave": 1202.117,
+        "apply.#save": 1220.94,
+        "apply.#markBridgeApplied": 55.687
+      },
+      "phases": {
+        "open": {
+          "totalMs": 11.536,
+          "self": [
+            {
+              "frame": "fsync (:0)",
+              "ms": 5.37
+            },
+            {
+              "frame": "lstat (:0)",
+              "ms": 1.506
+            },
+            {
+              "frame": "openDomainStorage (domain-storage.js:519)",
+              "ms": 0.913
+            },
+            {
+              "frame": "hydrate (domain-storage.js:658)",
+              "ms": 0.755
+            },
+            {
+              "frame": "wrapped (memoizer.js:231)",
+              "ms": 0.752
+            },
+            {
+              "frame": "#archiveFiles (memory.js:1215)",
+              "ms": 0.749
+            },
+            {
+              "frame": "inst._zod.parse (schemas.js:1199)",
+              "ms": 0.741
+            },
+            {
+              "frame": "normalizeEncoding (util:258)",
+              "ms": 0.537
+            },
+            {
+              "frame": "open (index.js:355)",
+              "ms": 0.213
+            }
+          ]
+        },
+        "plan": {
+          "totalMs": 9.782,
+          "self": [
+            {
+              "frame": "update (:0)",
+              "ms": 4.75
+            },
+            {
+              "frame": "planEventLogReplay (event-log-checkpoint.js:139)",
+              "ms": 2.295
+            },
+            {
+              "frame": "read (:0)",
+              "ms": 1.975
+            },
+            {
+              "frame": "utf8Slice (:0)",
+              "ms": 0.762
+            }
+          ]
+        },
+        "authenticate": {
+          "totalMs": 154.789,
+          "self": [
+            {
+              "frame": "absorb (domain-storage.js:888)",
+              "ms": 41.578
+            },
+            {
+              "frame": "canonicalBridgeJson (orchestrator.js:51)",
+              "ms": 40.698
+            },
+            {
+              "frame": "update (:0)",
+              "ms": 11.303
+            },
+            {
+              "frame": "init (:0)",
+              "ms": 8.311
+            },
+            {
+              "frame": "digest (:0)",
+              "ms": 7.548
+            },
+            {
+              "frame": "RegExp: ^[a-zA-Z0-9_:./-]{1,160}$ (:0)",
+              "ms": 6.795
+            },
+            {
+              "frame": "(garbage collector) (:0)",
+              "ms": 6.139
+            },
+            {
+              "frame": "Hmac (hash:208)",
+              "ms": 4.539
+            },
+            {
+              "frame": "digest (hash:227)",
+              "ms": 3.787
+            },
+            {
+              "frame": "safeIdentifier (domain-storage.js:1372)",
+              "ms": 2.277
+            },
+            {
+              "frame": "verifyEventBridgeEnvelope (orchestrator.js:87)",
+              "ms": 2.264
+            },
+            {
+              "frame": "projectExecutionEvent (domain-storage.js:1541)",
+              "ms": 2.258
+            },
+            {
+              "frame": "Hmac (:0)",
+              "ms": 2.245
+            },
+            {
+              "frame": "<anonymous> (:0)",
+              "ms": 2.228
+            },
+            {
+              "frame": "commit (domain-storage.js:910)",
+              "ms": 2.22
+            },
+            {
+              "frame": "replay (domain-storage.js:822)",
+              "ms": 2.021
+            },
+            {
+              "frame": "<anonymous> (domain-storage.js:1221)",
+              "ms": 1.514
+            },
+            {
+              "frame": "(program) (:0)",
+              "ms": 1.509
+            },
+            {
+              "frame": "numeric (domain-storage.js:1543)",
+              "ms": 1.508
+            },
+            {
+              "frame": "RegExp: ^[a-zA-Z][a-zA-Z0-9_]{0,40}$ (:0)",
+              "ms": 0.756
+            },
+            {
+              "frame": "FastBuffer (buffer:962)",
+              "ms": 0.756
+            },
+            {
+              "frame": "<anonymous> (domain-storage.js:1543)",
+              "ms": 0.753
+            },
+            {
+              "frame": "hexWrite (:0)",
+              "ms": 0.753
+            },
+            {
+              "frame": "createHmac (node:crypto:174)",
+              "ms": 0.751
+            },
+            {
+              "frame": "fromString (node:buffer:585)",
+              "ms": 0.278
+            }
+          ]
+        },
+        "transaction-prepare": {
+          "totalMs": 2.259,
+          "self": [
+            {
+              "frame": "serializeUUID (random:424)",
+              "ms": 0.757
+            },
+            {
+              "frame": "lstatSync (node:fs:2136)",
+              "ms": 0.752
+            },
+            {
+              "frame": "<anonymous> (archive-apply-cost-hooks.mjs:100)",
+              "ms": 0.75
+            }
+          ]
+        },
+        "apply": {
+          "totalMs": 3975.65,
+          "self": [
+            {
+              "frame": "(idle) (:0)",
+              "ms": 1887.584
+            },
+            {
+              "frame": "assertStagedTransactionSave (domain-storage.js:1492)",
+              "ms": 1184.012
+            },
+            {
+              "frame": "open (:0)",
+              "ms": 191.099
+            },
+            {
+              "frame": "stat (:0)",
+              "ms": 79.143
+            },
+            {
+              "frame": "isSensitiveKey (memory.js:76)",
+              "ms": 71.434
+            },
+            {
+              "frame": "(program) (:0)",
+              "ms": 43.601
+            },
+            {
+              "frame": "#markBridgeApplied (memory.js:4235)",
+              "ms": 39.087
+            },
+            {
+              "frame": "structuredClone (js_transferable:101)",
+              "ms": 36.063
+            },
+            {
+              "frame": "<anonymous> (memory.js:78)",
+              "ms": 30.064
+            },
+            {
+              "frame": "redact (memory.js:81)",
+              "ms": 29.748
+            },
+            {
+              "frame": "#recordActiveArchiveWrite (memory.js:2528)",
+              "ms": 27.034
+            },
+            {
+              "frame": "<anonymous> (memory.js:4027)",
+              "ms": 24.091
+            },
+            {
+              "frame": "timestamp (memory.js:63)",
+              "ms": 24.055
+            },
+            {
+              "frame": "#foldArchiveFacts (memory.js:2097)",
+              "ms": 15.441
+            },
+            {
+              "frame": "normalizeString (node:path:92)",
+              "ms": 15.051
+            },
+            {
+              "frame": "#archiveAppendIdentity (memory.js:1446)",
+              "ms": 15.015
+            },
+            {
+              "frame": "run (memory.js:2763)",
+              "ms": 13.895
+            },
+            {
+              "frame": "applyExecutionEvent (memory.js:4326)",
+              "ms": 13.554
+            },
+            {
+              "frame": "ownEnumerableDataProperty (domain-storage.js:1402)",
+              "ms": 12.847
+            },
+            {
+              "frame": "update (domain-storage.js:646)",
+              "ms": 12.789
+            },
+            {
+              "frame": "stats (memory.js:5567)",
+              "ms": 12.754
+            },
+            {
+              "frame": "run (:0)",
+              "ms": 12.07
+            },
+            {
+              "frame": "read (:0)",
+              "ms": 12.019
+            },
+            {
+              "frame": "(garbage collector) (:0)",
+              "ms": 10.739
+            },
+            {
+              "frame": "knowledgeIdentity (knowledge.js:353)",
+              "ms": 9.035
+            }
+          ]
+        },
+        "publish": {
+          "totalMs": 109.598,
+          "self": [
+            {
+              "frame": "(idle) (:0)",
+              "ms": 24.93
+            },
+            {
+              "frame": "fsync (:0)",
+              "ms": 22.794
+            },
+            {
+              "frame": "serialize (index.js:72)",
+              "ms": 14.318
+            },
+            {
+              "frame": "inst._zod.parse (schemas.js:1723)",
+              "ms": 9.754
+            },
+            {
+              "frame": "update (:0)",
+              "ms": 6.228
+            },
+            {
+              "frame": "structuredClone (js_transferable:101)",
+              "ms": 4.097
+            },
+            {
+              "frame": "read (:0)",
+              "ms": 4.047
+            },
+            {
+              "frame": "mergeEventLedger (domain-storage.js:1361)",
+              "ms": 3.016
+            },
+            {
+              "frame": "toJsonProjection (domain-storage.js:67)",
+              "ms": 3.008
+            },
+            {
+              "frame": "#foldArchiveFacts (memory.js:2097)",
+              "ms": 3.006
+            },
+            {
+              "frame": "link (:0)",
+              "ms": 1.821
+            },
+            {
+              "frame": "<anonymous> (:3)",
+              "ms": 1.515
+            },
+            {
+              "frame": "mutate (domain-storage.js:682)",
+              "ms": 1.511
+            },
+            {
+              "frame": "(program) (:0)",
+              "ms": 1.366
+            },
+            {
+              "frame": "openFileHandle (:0)",
+              "ms": 0.761
+            },
+            {
+              "frame": "createUnsafeBuffer (buffer:1108)",
+              "ms": 0.759
+            },
+            {
+              "frame": "(garbage collector) (:0)",
+              "ms": 0.752
+            },
+            {
+              "frame": "rmSync (:0)",
+              "ms": 0.745
+            },
+            {
+              "frame": "<anonymous> (memory.js:2133)",
+              "ms": 0.704
+            },
+            {
+              "frame": "compile (doc.js:32)",
+              "ms": 0.594
+            },
+            {
+              "frame": "<anonymous> (memory.js:1058)",
+              "ms": 0.534
+            },
+            {
+              "frame": "<anonymous> (:0)",
+              "ms": 0.502
+            },
+            {
+              "frame": "#archiveFiles (memory.js:1215)",
+              "ms": 0.477
+            },
+            {
+              "frame": "mkdir (:0)",
+              "ms": 0.457
+            },
+            {
+              "frame": "isCustomIterable (promises:2247)",
+              "ms": 0.323
+            }
+          ]
+        },
+        "checkpoint": {
+          "totalMs": 6.807,
+          "self": [
+            {
+              "frame": "digestApplied (event-log-checkpoint.js:335)",
+              "ms": 5.284
+            },
+            {
+              "frame": "close (:0)",
+              "ms": 0.767
+            },
+            {
+              "frame": "update (:0)",
+              "ms": 0.756
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "allocation": [
+    {
+      "round": 0,
+      "estimatedMiB": 3061.111,
+      "groupedMiB": {
+        "other": 875.099,
+        "authenticateCanonicalJSON": 140.13,
+        "saveCheck": 585.264,
+        "markBridge": 1460.618
+      },
+      "self": [
+        {
+          "frame": "push (:0)",
+          "estimatedMiB": 703.596
+        },
+        {
+          "frame": "slice (:0)",
+          "estimatedMiB": 569.183
+        },
+        {
+          "frame": "assertStagedTransactionSave (domain-storage.js:1492)",
+          "estimatedMiB": 508.365
+        },
+        {
+          "frame": "#markBridgeApplied (memory.js:4235)",
+          "estimatedMiB": 148.158
+        },
+        {
+          "frame": "redact (memory.js:81)",
+          "estimatedMiB": 90.958
+        },
+        {
+          "frame": "sort (:0)",
+          "estimatedMiB": 66.302
+        },
+        {
+          "frame": "canonicalBridgeJson (orchestrator.js:51)",
+          "estimatedMiB": 65.377
+        },
+        {
+          "frame": "getOwnPropertyDescriptor (:0)",
+          "estimatedMiB": 64.048
+        },
+        {
+          "frame": "structuredClone (js_transferable:101)",
+          "estimatedMiB": 42.101
+        },
+        {
+          "frame": "run (memory.js:2763)",
+          "estimatedMiB": 41.762
+        },
+        {
+          "frame": "getStatsFromBinding (utils:763)",
+          "estimatedMiB": 32.725
+        },
+        {
+          "frame": "stats (memory.js:5567)",
+          "estimatedMiB": 32.656
+        },
+        {
+          "frame": "entries (:0)",
+          "estimatedMiB": 32.583
+        },
+        {
+          "frame": "normalizeString (node:path:92)",
+          "estimatedMiB": 28.278
+        },
+        {
+          "frame": "#performHousekeeping (memory.js:3593)",
+          "estimatedMiB": 27.822
+        },
+        {
+          "frame": "applyExecutionEvent (memory.js:4326)",
+          "estimatedMiB": 27.358
+        },
+        {
+          "frame": "#save (memory.js:3546)",
+          "estimatedMiB": 26.342
+        },
+        {
+          "frame": "<anonymous> (memory.js:4027)",
+          "estimatedMiB": 23.096
+        },
+        {
+          "frame": "split (:0)",
+          "estimatedMiB": 22.082
+        },
+        {
+          "frame": "next (:0)",
+          "estimatedMiB": 20.951
+        },
+        {
+          "frame": "Set (:0)",
+          "estimatedMiB": 17.496
+        },
+        {
+          "frame": "keys (:0)",
+          "estimatedMiB": 17.088
+        },
+        {
+          "frame": "replay (domain-storage.js:822)",
+          "estimatedMiB": 16.303
+        },
+        {
+          "frame": "projectExecutionEvent (domain-storage.js:1541)",
+          "estimatedMiB": 15.841
+        },
+        {
+          "frame": "createFromString (node:buffer:579)",
+          "estimatedMiB": 15.321
+        },
+        {
+          "frame": "fromEntries (:0)",
+          "estimatedMiB": 12.482
+        },
+        {
+          "frame": "knowledgeIdentity (knowledge.js:353)",
+          "estimatedMiB": 12.078
+        },
+        {
+          "frame": "flush (memory.js:2865)",
+          "estimatedMiB": 11.716
+        },
+        {
+          "frame": "writeFile (promises:2171)",
+          "estimatedMiB": 11.673
+        },
+        {
+          "frame": "update (hash:179)",
+          "estimatedMiB": 11.066
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "estimatedMiB": 3067.242,
+      "groupedMiB": {
+        "other": 878.277,
+        "authenticateCanonicalJSON": 140.446,
+        "saveCheck": 587.236,
+        "markBridge": 1461.284
+      },
+      "self": [
+        {
+          "frame": "push (:0)",
+          "estimatedMiB": 700.172
+        },
+        {
+          "frame": "slice (:0)",
+          "estimatedMiB": 572.859
+        },
+        {
+          "frame": "assertStagedTransactionSave (domain-storage.js:1492)",
+          "estimatedMiB": 507.681
+        },
+        {
+          "frame": "#markBridgeApplied (memory.js:4235)",
+          "estimatedMiB": 148.565
+        },
+        {
+          "frame": "redact (memory.js:81)",
+          "estimatedMiB": 91.491
+        },
+        {
+          "frame": "getOwnPropertyDescriptor (:0)",
+          "estimatedMiB": 67.301
+        },
+        {
+          "frame": "canonicalBridgeJson (orchestrator.js:51)",
+          "estimatedMiB": 65.628
+        },
+        {
+          "frame": "sort (:0)",
+          "estimatedMiB": 65.554
+        },
+        {
+          "frame": "structuredClone (js_transferable:101)",
+          "estimatedMiB": 43.466
+        },
+        {
+          "frame": "run (memory.js:2763)",
+          "estimatedMiB": 41.218
+        },
+        {
+          "frame": "stats (memory.js:5567)",
+          "estimatedMiB": 37.071
+        },
+        {
+          "frame": "entries (:0)",
+          "estimatedMiB": 33.897
+        },
+        {
+          "frame": "getStatsFromBinding (utils:763)",
+          "estimatedMiB": 31.633
+        },
+        {
+          "frame": "#performHousekeeping (memory.js:3593)",
+          "estimatedMiB": 28.229
+        },
+        {
+          "frame": "#save (memory.js:3546)",
+          "estimatedMiB": 26.816
+        },
+        {
+          "frame": "normalizeString (node:path:92)",
+          "estimatedMiB": 26.275
+        },
+        {
+          "frame": "applyExecutionEvent (memory.js:4326)",
+          "estimatedMiB": 26.039
+        },
+        {
+          "frame": "split (:0)",
+          "estimatedMiB": 24.077
+        },
+        {
+          "frame": "<anonymous> (memory.js:4027)",
+          "estimatedMiB": 20.839
+        },
+        {
+          "frame": "next (:0)",
+          "estimatedMiB": 20.294
+        },
+        {
+          "frame": "keys (:0)",
+          "estimatedMiB": 17.839
+        },
+        {
+          "frame": "projectExecutionEvent (domain-storage.js:1541)",
+          "estimatedMiB": 17.19
+        },
+        {
+          "frame": "Set (:0)",
+          "estimatedMiB": 16.901
+        },
+        {
+          "frame": "replay (domain-storage.js:822)",
+          "estimatedMiB": 15.833
+        },
+        {
+          "frame": "createFromString (node:buffer:579)",
+          "estimatedMiB": 15.321
+        },
+        {
+          "frame": "knowledgeIdentity (knowledge.js:353)",
+          "estimatedMiB": 13.361
+        },
+        {
+          "frame": "normalizeText (knowledge.js:161)",
+          "estimatedMiB": 12.604
+        },
+        {
+          "frame": "flush (memory.js:2865)",
+          "estimatedMiB": 12.311
+        },
+        {
+          "frame": "update (hash:179)",
+          "estimatedMiB": 11.792
+        },
+        {
+          "frame": "fromEntries (:0)",
+          "estimatedMiB": 11.544
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "estimatedMiB": 3054.366,
+      "groupedMiB": {
+        "other": 869.068,
+        "authenticateCanonicalJSON": 137.093,
+        "saveCheck": 583.82,
+        "markBridge": 1464.385
+      },
+      "self": [
+        {
+          "frame": "push (:0)",
+          "estimatedMiB": 706.071
+        },
+        {
+          "frame": "slice (:0)",
+          "estimatedMiB": 569.827
+        },
+        {
+          "frame": "assertStagedTransactionSave (domain-storage.js:1492)",
+          "estimatedMiB": 504.661
+        },
+        {
+          "frame": "#markBridgeApplied (memory.js:4235)",
+          "estimatedMiB": 150.491
+        },
+        {
+          "frame": "redact (memory.js:81)",
+          "estimatedMiB": 87.829
+        },
+        {
+          "frame": "canonicalBridgeJson (orchestrator.js:51)",
+          "estimatedMiB": 66.753
+        },
+        {
+          "frame": "getOwnPropertyDescriptor (:0)",
+          "estimatedMiB": 65.612
+        },
+        {
+          "frame": "sort (:0)",
+          "estimatedMiB": 62.36
+        },
+        {
+          "frame": "structuredClone (js_transferable:101)",
+          "estimatedMiB": 42.738
+        },
+        {
+          "frame": "run (memory.js:2763)",
+          "estimatedMiB": 40.785
+        },
+        {
+          "frame": "entries (:0)",
+          "estimatedMiB": 34.71
+        },
+        {
+          "frame": "stats (memory.js:5567)",
+          "estimatedMiB": 34.193
+        },
+        {
+          "frame": "getStatsFromBinding (utils:763)",
+          "estimatedMiB": 30.69
+        },
+        {
+          "frame": "normalizeString (node:path:92)",
+          "estimatedMiB": 27.337
+        },
+        {
+          "frame": "#save (memory.js:3546)",
+          "estimatedMiB": 26.184
+        },
+        {
+          "frame": "applyExecutionEvent (memory.js:4326)",
+          "estimatedMiB": 25.976
+        },
+        {
+          "frame": "#performHousekeeping (memory.js:3593)",
+          "estimatedMiB": 24.849
+        },
+        {
+          "frame": "split (:0)",
+          "estimatedMiB": 22.295
+        },
+        {
+          "frame": "<anonymous> (memory.js:4027)",
+          "estimatedMiB": 21.593
+        },
+        {
+          "frame": "next (:0)",
+          "estimatedMiB": 21.294
+        },
+        {
+          "frame": "projectExecutionEvent (domain-storage.js:1541)",
+          "estimatedMiB": 17.408
+        },
+        {
+          "frame": "Set (:0)",
+          "estimatedMiB": 17.151
+        },
+        {
+          "frame": "replay (domain-storage.js:822)",
+          "estimatedMiB": 17.026
+        },
+        {
+          "frame": "keys (:0)",
+          "estimatedMiB": 16.745
+        },
+        {
+          "frame": "createFromString (node:buffer:579)",
+          "estimatedMiB": 15.321
+        },
+        {
+          "frame": "knowledgeIdentity (knowledge.js:353)",
+          "estimatedMiB": 12.892
+        },
+        {
+          "frame": "normalizeText (knowledge.js:161)",
+          "estimatedMiB": 12.073
+        },
+        {
+          "frame": "inst._zod.parse (schemas.js:1723)",
+          "estimatedMiB": 11.559
+        },
+        {
+          "frame": "fromEntries (:0)",
+          "estimatedMiB": 11.168
+        },
+        {
+          "frame": "writeFile (promises:2171)",
+          "estimatedMiB": 10.981
+        }
+      ]
+    }
+  ]
+}
