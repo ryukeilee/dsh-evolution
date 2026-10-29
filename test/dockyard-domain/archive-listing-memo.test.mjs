@@ -132,3 +132,27 @@ test('a replaced segment directory is read from, not remembered', async (t) => {
     'the listing follows the directory inode, not the name');
   fs.rmSync(`${directory}.old`, { recursive: true, force: true });
 });
+
+test('a transient directory stat failure is not cached as an absent archive', async (t) => {
+  const root = scratch(t, 'stat-error');
+  writeSegments(root, [segment('segment-000000000001.jsonl', 'sealed-1')]);
+  const memory = makeMemory(root);
+  assert.deepEqual(await archivedIds(memory), ['sealed-1']);
+  const original = fs.statSync;
+  let injected = false;
+  fs.statSync = function (target, ...args) {
+    if (!injected && String(target) === path.join(root, SEGMENTS)) {
+      injected = true;
+      throw Object.assign(new Error('injected directory error'), { code: 'EIO' });
+    }
+    return original.call(this, target, ...args);
+  };
+  syncBuiltinESMExports();
+  try {
+    assert.throws(() => memory.history('observations'), /injected directory error/);
+    assert.deepEqual(memory.history('observations').map(entry => entry.id), ['sealed-1']);
+  } finally {
+    fs.statSync = original;
+    syncBuiltinESMExports();
+  }
+});

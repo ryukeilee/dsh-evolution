@@ -321,3 +321,58 @@ test('append and rotation privatize shared active files before writing', async (
     assert.deepEqual(fs.readFileSync(path.join(live, active)), fs.readFileSync(path.join(stage, active)));
   } finally { fs.rmSync(live, { recursive: true, force: true }); fs.rmSync(staging, { recursive: true, force: true }); }
 });
+
+test('a failed directory materialization cannot publish missing segments as deletions', () => {
+  const live = fs.mkdtempSync(path.join(os.tmpdir(), 'archive-materialize-live-'));
+  const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'archive-materialize-stage-'));
+  const link = fs.linkSync, copy = fs.copyFileSync;
+  try {
+    writeSealedSegment(live, 1);
+    writeSealedSegment(live, 2);
+    const snapshot = mirrorArchives(live, stage);
+    const segmentDir = 'state.json.cycles-archive.jsonl.segments';
+    const original = fs.readFileSync(path.join(live, segmentDir, 'segment-000000000002.jsonl'));
+    const failure = Object.assign(new Error('injected materialization failure'), { code: 'ENOSPC' });
+    fs.linkSync = (source, target) => {
+      if (String(target).includes('segment-000000000002.jsonl')) throw failure;
+      return link(source, target);
+    };
+    fs.copyFileSync = (source, target, ...args) => {
+      if (String(target).includes('segment-000000000002.jsonl')) throw failure;
+      return copy(source, target, ...args);
+    };
+    assert.throws(() => privatizeArchiveFile({ directory: stage, snapshot, privatized: new Set(),
+      file: path.join(stage, segmentDir, 'new.tmp') }), /injected materialization failure/);
+    assert.throws(() => changedArchiveFiles(stage, snapshot, live), /injected materialization failure/);
+    assert.deepEqual(fs.readFileSync(path.join(live, segmentDir, 'segment-000000000002.jsonl')), original);
+  } finally {
+    fs.linkSync = link; fs.copyFileSync = copy;
+    fs.rmSync(stage, { recursive: true, force: true });
+    fs.rmSync(live, { recursive: true, force: true });
+  }
+});
+
+test('a failed borrow inspection stops writes before they reach the live directory', () => {
+  const live = fs.mkdtempSync(path.join(os.tmpdir(), 'archive-inspect-live-'));
+  const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'archive-inspect-stage-'));
+  const original = fs.lstatSync;
+  try {
+    writeSealedSegment(live);
+    const snapshot = mirrorArchives(live, stage);
+    const segmentDir = 'state.json.cycles-archive.jsonl.segments';
+    const target = path.join(stage, segmentDir);
+    const names = fs.readdirSync(path.join(live, segmentDir));
+    fs.lstatSync = (file, ...args) => {
+      if (String(file) === target) throw Object.assign(new Error('injected inspection failure'), { code: 'EIO' });
+      return original(file, ...args);
+    };
+    assert.throws(() => privatizeArchiveFile({ directory: stage, snapshot, privatized: new Set(),
+      file: path.join(target, 'new.tmp') }), /injected inspection failure/);
+    assert.throws(() => changedArchiveFiles(stage, snapshot, live), /injected inspection failure/);
+    assert.deepEqual(fs.readdirSync(path.join(live, segmentDir)), names);
+  } finally {
+    fs.lstatSync = original;
+    fs.rmSync(stage, { recursive: true, force: true });
+    fs.rmSync(live, { recursive: true, force: true });
+  }
+});
