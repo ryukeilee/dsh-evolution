@@ -1,0 +1,5260 @@
+{
+  "schema": 1,
+  "node": "v26.12.1",
+  "platform": "darwin/arm64",
+  "roots": {
+    "A": "/tmp/dsh-e2e-a2323eb",
+    "B": "/Users/ryukeili/GitHub/dsh-evolution"
+  },
+  "source": {
+    "A": "16d913debf10c147b39b89cf0af7e09969ea0270fdda6c82676ff157d7ee731b",
+    "B": "c6bfd703bc28b98f4a0d647e942e7bfcdc647d8d6ec843e0b20680391f086a1e"
+  },
+  "rounds": 3,
+  "counts": [
+    2000,
+    12000
+  ],
+  "phases": [
+    "aa",
+    "ab"
+  ],
+  "method": "Fresh process/temp home per sample; official DomainFacility + JsonStorageBackend + real openDomainStorage. Cold replay from no checkpoint; incremental reopens after seeding N real events then appending delta. fs wrappers only during measured open. JS fs API calls, not kernel syscalls; nested API elapsed times must not be summed. Async open FileHandle stat/read/close/sync/write/writeFile are included. maxRSS is process lifetime high-water including seed. Final byte digests before close; dynamic timestamp/path metadata can differ. A/A = identical root with alternating labels; overhead = unwrapped A vs wrapped B; A/B = roots selected explicitly.",
+  "instrument": "no",
+  "summary": [
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 2000,
+      "sides": {
+        "A": {
+          "wallMs": 427.90808400000003,
+          "cpuMs": 453.185,
+          "maxRssBytes": 112623616,
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 431.978792,
+          "cpuMs": 458.868,
+          "maxRssBytes": 112377856,
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -0.09445900000002894,
+          "cpuDeltaMs": 3.2180000000000177,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": 4.270874999999933,
+          "cpuDeltaMs": 4.266999999999996,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": 7.984000000000037,
+          "cpuDeltaMs": 6.4529999999999745,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 12000,
+      "sides": {
+        "A": {
+          "wallMs": 2926.738916,
+          "cpuMs": 3051.481,
+          "maxRssBytes": 229556224,
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 2905.290167,
+          "cpuMs": 3030.538,
+          "maxRssBytes": 229457920,
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -24.312124999999924,
+          "cpuDeltaMs": -26.494000000000142,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": 9.171333000000232,
+          "cpuDeltaMs": 3.957999999999629,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -22.727790999999797,
+          "cpuDeltaMs": -23.489000000000033,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 2000,
+      "sides": {
+        "A": {
+          "wallMs": 1521.3461670000002,
+          "cpuMs": 1572.939,
+          "maxRssBytes": 189300736,
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 1518.908,
+          "cpuMs": 1570.623,
+          "maxRssBytes": 190087168,
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -0.13908400000013899,
+          "cpuDeltaMs": 0.7479999999998199,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -6.549415999999837,
+          "cpuDeltaMs": -7.595000000000027,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": 1.1302079999998114,
+          "cpuDeltaMs": 0.7650000000001,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 12000,
+      "sides": {
+        "A": {
+          "wallMs": 4674.882833,
+          "cpuMs": 4845.615,
+          "maxRssBytes": 381616128,
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 4701.59325,
+          "cpuMs": 4869.653,
+          "maxRssBytes": 380960768,
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": 47.147750000001906,
+          "cpuDeltaMs": 36.81800000000021,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -18.33258299999943,
+          "cpuDeltaMs": -24.010999999999513,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": 26.252834000000803,
+          "cpuDeltaMs": 24.038000000000466,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 2000,
+      "sides": {
+        "A": {
+          "wallMs": 432.503958,
+          "cpuMs": 464.664,
+          "maxRssBytes": 112623616,
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 417.569709,
+          "cpuMs": 441.229,
+          "maxRssBytes": 98123776,
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -20.251124000000004,
+          "cpuDeltaMs": -24.439999999999998,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -12.058167000000026,
+          "cpuDeltaMs": -20.00200000000001,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -7.511665999999991,
+          "cpuDeltaMs": -15.293000000000006,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 12000,
+      "sides": {
+        "A": {
+          "wallMs": 2946.741375,
+          "cpuMs": 3074.314,
+          "maxRssBytes": 229408768,
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 2871.258375,
+          "cpuMs": 2951.785,
+          "maxRssBytes": 224247808,
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -135.31104199999982,
+          "cpuDeltaMs": -181.68100000000004,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -86.86483300000009,
+          "cpuDeltaMs": -122.529,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -73.20616599999994,
+          "cpuDeltaMs": -105.40299999999979,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 2000,
+      "sides": {
+        "A": {
+          "wallMs": 1525.8477090000001,
+          "cpuMs": 1578.175,
+          "maxRssBytes": 189677568,
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 1497.70125,
+          "cpuMs": 1548.144,
+          "maxRssBytes": 193167360,
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": -31.880084000000124,
+          "cpuDeltaMs": -34.74400000000014,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": -31.781750000000102,
+          "cpuDeltaMs": -30.03099999999995,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": -17.546291999999994,
+          "cpuDeltaMs": -18.884000000000015,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 12000,
+      "sides": {
+        "A": {
+          "wallMs": 4663.53875,
+          "cpuMs": 4827.517,
+          "maxRssBytes": 381386752,
+          "fs": {}
+        },
+        "B": {
+          "wallMs": 4669.646290999999,
+          "cpuMs": 4833.704,
+          "maxRssBytes": 399360000,
+          "fs": {}
+        }
+      },
+      "pairs": [
+        {
+          "round": 1,
+          "wallDeltaMs": 6.107540999999401,
+          "cpuDeltaMs": -2.6039999999993597,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 2,
+          "wallDeltaMs": 14.152916999999434,
+          "cpuDeltaMs": 10.466999999999643,
+          "archiveByteDigestEqual": false
+        },
+        {
+          "round": 3,
+          "wallDeltaMs": 2.296459000000141,
+          "cpuDeltaMs": 6.186999999999898,
+          "archiveByteDigestEqual": false
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 1,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 427.90808400000003,
+        "cpuMs": 453.185,
+        "rssBefore": 52238552,
+        "rssAfter": 79684440,
+        "maxRssBytes": 112721920,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "55b9a24074e1590189e8804d5005327957423001d39707fd137276f48b0c2944",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "ea512f107081dacfcf155b41b612e73657ff764719e79c3959c1642cd1fed1d6"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "301c4214f95a8fabd4e09c544ce1765224c3a565ba03ef61984e2ab162fbcb78"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "03baa1c5190f8e0d5449f4221f3259c225599caa903bda6b217f8784180359c0"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "fff92a4752ac0d88beb96885c41d02d1431165a1cbce69ad4e98da530092297c"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "d4088aafbf09f894a5d8bbca6ba4f410687009367369ac868603f9e825fda2f6"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "9acb61f170464319cc330bf7bfd7fae21f2dc7e8af605d31cd20cb243ea77c70",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "ea512f107081dacfcf155b41b612e73657ff764719e79c3959c1642cd1fed1d6"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 1,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 427.813625,
+        "cpuMs": 456.403,
+        "rssBefore": 52402512,
+        "rssAfter": 79110952,
+        "maxRssBytes": 112164864,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "d9bb37f6ff4641c82ec7ff297969721a465b016a113df80ab69067f52f4710b4",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "67bae77df73c2b25c7bc136c54291feb8bf925b7c1679479547a04a9f5ba76cf"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "0b88fd35c9a5c524c2972ffe3b8de81e9f069633e3c64a89daea75dd31b45439"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "577af6c89bbfff7d7c7d6a29c8379c5993e4663fe7233e44c5d343099bec3ff8"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "a8345ac6997ae408229ee675900bc7e9a818908f91adce02f0906b785da5defc"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "29d1cbbe7cf80da14299dcc0249d1aab2b5affc08bd3dd22db2958672625cd61"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "ff5af679e8477c9f562f87b0c629ea47c94344d5ee277e64f856ab70927c8b3c",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "67bae77df73c2b25c7bc136c54291feb8bf925b7c1679479547a04a9f5ba76cf"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 2,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 434.07841699999994,
+        "cpuMs": 462.867,
+        "rssBefore": 52468120,
+        "rssAfter": 79553680,
+        "maxRssBytes": 112377856,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "b605de0dc826f2c8929c26df0e96b928318a95261712988182c1d6a99c4bab83",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "96bf93035b51008c103f08ac08daee796ed4ccc844d196d869a2152024faacea"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "f826f774d076e461da9ce97e2894a6da3dd674b36cc4b69dca64f8e52abd0acb"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "82b930f0af63c8c771fce9af5f2ea860ff95ced07f1edb0559af272694c91d61"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "5f68545321ff605a6c4a4e6ddb53634f38b00c9d2785727813743b256e272934"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "073ade2bd92d3bf89251d02416dd52f4410c00754fe7247545087ef2154bc5d7"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "6bda202d8ca94fb49915e4a414e73da24fd9d50e97906d0a9088b4ddb7274781",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "96bf93035b51008c103f08ac08daee796ed4ccc844d196d869a2152024faacea"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 2,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 429.807542,
+        "cpuMs": 458.6,
+        "rssBefore": 52402464,
+        "rssAfter": 79405936,
+        "maxRssBytes": 112443392,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "bdf7f74366e26c13d4d69473997a987697ed25663121870f07ac40c4ecab4e06",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "a8f754cb96996ea5849c6d46752c7168a9149b028abb37033db7f726022ec760"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "c912f5f8a118f19eb5a3e954002cd79ce8f1769e1fab4a2f1b406b5e47f1d6e7"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "39d92d71bee92bc7fd12b67eb7e39dde13dbb640602ba1297842368835dbc1f3"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "caaec5662547b6eb216d820d81a8723901f105887cf69465a2fe6d2c87b65f09"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "3ddbbcf5d8ba2eb2965e361089ff60091f86a9db989986eb2962ccaa0975510a"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "75c773858a003773a6c49280dc0bda63a54b9c39cd9816551e9676144b454686",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "a8f754cb96996ea5849c6d46752c7168a9149b028abb37033db7f726022ec760"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 3,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 423.99479199999996,
+        "cpuMs": 452.415,
+        "rssBefore": 52287656,
+        "rssAfter": 79536936,
+        "maxRssBytes": 112623616,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "0605623c26c12d635ca39ad857b35395a735a01516995df14e4c77fd3ac41462",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "47c07deb7093a7ba0ad6b0df20bd0cbb453823f77982f252fed5d4b8a2358a62"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "1ba6857569673e570f4a048a558f9fd3e3c430d1bd1289bdc8bccb4713501d73"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "c099b5dd6c74c9c30d3cac83df58e7c6b2d2304609da3bef28bceddc82889ae5"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "69ad77bbe2c477d3606d8eb1a8b2113324a26ef9563ffe73dff3a6f3e969b265"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "3efdcc5b048f2b6d2b3db1a6248bc8bf9c9fa4db6ae553596e596d7e2e262ad3"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "7ca95b110328a740b4b516249ba936a193d9cad06be7ccb7ee3673a58332bf35",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "47c07deb7093a7ba0ad6b0df20bd0cbb453823f77982f252fed5d4b8a2358a62"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 3,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 431.978792,
+        "cpuMs": 458.868,
+        "rssBefore": 52418872,
+        "rssAfter": 79586160,
+        "maxRssBytes": 112607232,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "8df5f4b3ec5cc38644018c35368483da9d4d2935d6b100360860963b8883cee9",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "4310542d0d3ba3c942867b8654a75a018861a89f3666e3dca439d25a042f6d19"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "1fb8de3575820a28873d047ae558ba2155c9e415c92d3a938bcbee95a1c0e74e"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "e37de70687d7fb1c76f0cd473ab16f46acb92afab17da69c08479e3ebcfa7fa3"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "cc1a4f79307a66f79ecba5809043f928b149d76356300f14f476ef4533f25009"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "634467b4f65bc23bb9fd29f4ee1153369d079a42368f5b578bd9e11236955a28"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "262dcb782ccbf7f4f265f322447086f65f5bec5426e097aa49753ada4fabe3b1",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "4310542d0d3ba3c942867b8654a75a018861a89f3666e3dca439d25a042f6d19"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 1,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2929.602292,
+        "cpuMs": 3051.373,
+        "rssBefore": 103950392,
+        "rssAfter": 202179744,
+        "maxRssBytes": 229441536,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "04df18782cf16a04ec5c0b7eb4f577e27f77226f3308db303d4159ec9f4206f9",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "7a5ea8e6ab13832f85f0c2a94f40a426678b37ff239f5eea1a2ed8c7de72765a"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "a5cf502ec4bf388b4f091f8d4e60fe98b5034e75e98f3703196649b1a82693f7"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "e8368fd3749a200a60459b70b85ee8e47b5668ecfe636ef71a108755e0d3e098"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "a2b97787953d64696c0e7ba880028f31b328c8c8e223c2b8acb15eb3ea61e3a7"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "814a87bc62c097f48b4e0126661cf274ddc9bb48037fb7d4ce16b8611f2853b8"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "7e75ec3e89b2c789ad8fabbe4ec0bb7100dafbe4f3e87dcdbb0bb4c3dc4bb32b",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "7a5ea8e6ab13832f85f0c2a94f40a426678b37ff239f5eea1a2ed8c7de72765a"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 1,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2905.290167,
+        "cpuMs": 3024.879,
+        "rssBefore": 104081440,
+        "rssAfter": 202392688,
+        "maxRssBytes": 229687296,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "7a46bbdcf1787b2aefe059a49ecd869dfbdc3149acef157007fb3db8b9b59943",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "3a722b0f13b2cb5fec5048ce09bd90de039e39e37000efcea173adf1cd0cfef9"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "cc399d73903f06ee694032ab0538f05634ff7e1ce5e8e50ac330a871484f34cf"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "b424546a683008381f1f82a602499cb367b1371354936625173a74cdb8138f86"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "046f617f0e44955bdae4ab3f4982cb02871062c16271606275689b4e879bcf1f"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "d53bfacdbd6814d1f42f25cb9556be53ac6e84ddb302e958890107d62366ea78"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "116813dbdae294df6e4699240353ac16a0c858da29034c638997a0630e818f0f",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "3a722b0f13b2cb5fec5048ce09bd90de039e39e37000efcea173adf1cd0cfef9"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 2,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2930.752041,
+        "cpuMs": 3055.439,
+        "rssBefore": 104114304,
+        "rssAfter": 202376616,
+        "maxRssBytes": 229457920,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "505513c9f404a2f2c9a0d86f6038d238f9ce59bef8e3aa359c9634ca1519f547",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "4a36230fb99647ac3a46542ca3982262a2f359edcf70078195f31cfa5500b48b"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "15b0145ef730032e6ab70bee0e490005f4308aded07653d9984152e81cdd6930"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "d0e9b8e2d21b4ddb89359fdd8912460dcf468e0c7cb968a426be05d6acbd43cd"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "a70b2da3254b4d87396e1b58cb7d4193be925d8c95ebcdba588f81279d472b62"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "0bcf64e241de92024c4548b788583c77e6caa81701b4a99f95fc9625d6678d3a"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "6cf2ed11c437a7a6afb2128e43bc15b1fc659714ce03687140a1c012742a9f75",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "4a36230fb99647ac3a46542ca3982262a2f359edcf70078195f31cfa5500b48b"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 2,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2921.580708,
+        "cpuMs": 3051.481,
+        "rssBefore": 104245424,
+        "rssAfter": 202753568,
+        "maxRssBytes": 229752832,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "e4bc78ecd1d4faa2e8963ef6630dc413a99815da6fa5adc884b54d4601bc4a1f",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "51d9f664f08f169d25adb4ffa3caba192aa89f22d9ea3e8b224185dc0296fafe"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "e6b5abfc55a47fceb5132d4680de48b9e13ad93f8919451421ec0d73fcb17708"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "5952ee2038414af8dc4ea40e14c381f5d979403e32ac7f0dfed3a9ebf37e0821"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "301d779be9868c12f6c7c179134e31e197b6b936677d7567ab9423d588f9870a"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "568faffff478b3df49bb17c1f86aa88bd92958d55fa6b71967773482b879b69d"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "a3e32b8fcae7bf36f4657342485701525d85401d42f640cc59bfd2d9cd02aab9",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "51d9f664f08f169d25adb4ffa3caba192aa89f22d9ea3e8b224185dc0296fafe"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 3,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2926.738916,
+        "cpuMs": 3054.027,
+        "rssBefore": 104130664,
+        "rssAfter": 202524120,
+        "maxRssBytes": 229556224,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "000c2be347c2258d4aeda3f79797e75da55d46c4f8bc111e70fccd388c98f5c2",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "bbbdc0f394830fe1a50e9754b13790f373c3088c288bbda627fdb12e7407eabe"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "b55e2d5a5e17130eda638f956b2b8261f6254f73ee36b68558faf2b2799eb435"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "f8952230efb00daccd567f117a42d92e9b236ef5d1e555da0014a2af8ff017a7"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "fef4be10b357e1607b1ab31500c0b711b7c5b3942dd7544322408bbd11081a8a"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "57262367075c13c650130ca9a2393c3b7ac7b8385f10c3dfcbad331d5f94f934"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "9c66ad56ae71298992bef48f71ac596a5ad65c30cecb5b91147a5e5eea416450",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "bbbdc0f394830fe1a50e9754b13790f373c3088c288bbda627fdb12e7407eabe"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 3,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2904.011125,
+        "cpuMs": 3030.538,
+        "rssBefore": 103901264,
+        "rssAfter": 202261928,
+        "maxRssBytes": 229376000,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "9ba7c7d3515ff19e92a13684761f0939112f0552a1d0954adb885df297661246",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "100e4aa3f0f6ab935e67abd434c72928cadf27632b5307559811759938640502"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "703e5eb8c14698e47b0f016325ea6c44103fdbfde82c357c70d20b1eaff64a5c"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "6bd4afc43ad0ef6dfe1786cf6a1d1ac3eedfd64a913e0260414b5e51729bb8ad"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "90bfa6879ac4d0491ede38cf753837963c90080cefa98f88d2a08f741049e39d"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "8783e345cff170fb46ceab727f3f15593f2bb0973999bb513a557f69cfede25d"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "a89787f02e5a575fb45234772a28acd2376dcc5c2acc82ba436a9f3a063f89b1",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "100e4aa3f0f6ab935e67abd434c72928cadf27632b5307559811759938640502"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 1,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1519.047084,
+        "cpuMs": 1572.939,
+        "rssBefore": 89237104,
+        "rssAfter": 159891848,
+        "maxRssBytes": 189169664,
+        "fs": {},
+        "fixture": {
+          "sha256": "f45c01cca59c7bb5e1c85ee1b7c330457b6e21e4e59b13908cd1f9898882b15a",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "9200f0ba14917d7866e948758e413806825a1129dbd65c9280c8cda616c80ca5"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "1703883e04db915773db3ff432a6f6fa56eb58ed40734a78e0aea63fc4c10eb3"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "4a3d24ddfb27755d1acf366b76133ee0502c4485c17d465dc1dcda27154366e2"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "de593a067bc0ed3a4b4d2435ff88670c69ff2d23703b5675214eb14328edf0ca"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "4d2f92bf3dd32d62413cfb2b2110499ade24c8160f68663137fb38178febb5f6",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "3b9e3c4b10a3c75288ed06d2d54c4d3eea09de4f0c0fb5eacbff608c05a280d5"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "c70dfa649ed555df58f6990b3cd029ab0223ec1d1f23efad313096a068c9aff5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "1a1b6d7f84c804726721a806676022d85949592d6bbf2d0109e40079bdb11a2b"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "e1dc8f5b01222c2355ee4c8e4eeb49072dd969eff8a471775565c4cfab47d072"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "7f8ce0da9335c98a616bdd65b24b85da366911289635da142a060ede0e27fb38"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "fa6f8991473a556acd27b619a7adb691b37e83a24f19049b04b8d64a3295cdde",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "3b9e3c4b10a3c75288ed06d2d54c4d3eea09de4f0c0fb5eacbff608c05a280d5"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 1,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1518.908,
+        "cpuMs": 1573.687,
+        "rssBefore": 88466960,
+        "rssAfter": 160727336,
+        "maxRssBytes": 190087168,
+        "fs": {},
+        "fixture": {
+          "sha256": "aed6c5616ce5155d4c003aad0731cf74216b6f3e03f864f2290f6ed3115d2030",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "fa1e690d168b4359d626dcb233bf5d2eb4d968b6b16ba3c4d01b1a9117051fe5"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "e65fa611b60ee66fd4a46e1ad73a4745de1ec5cbf181f859afd42aa18ee4dbea"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "d243d4d64383361b710c24b161061196187460b606ed31fc17b038bfdbb503b4"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "3d42b4e09d92db7c5a910e8253142fc934cc5f87f4a78f160d7730cdf1994983"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "0b29c2cad314794bc4d1ea9782fb27bff47998733e439f203787d0b2dff4b770",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "4c811247c006cdb6003894a79e2a62a72328ed99fb5addf739e2cdd4d32e2a73"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "396a78ac35b3e9e0d0846776e934178ee0060144e9fb5edf788d3431a5a8c8eb"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "3ff23dedc786e323627946dec503d261ca8ef19250f641434743858d5bffe425"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "c40757339f9581f3c1af54cb4ecc2897119b46abc1038a6a5328881513dc04ff"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "c49ef6d8563dea4a79392c5c220dbbed0706b9ed54ade1f4d637e59cc1e2df0f"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "873274e50a8e0c5d0b8f2775824522f6958127113124785b4c3fdc81887716fa",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "4c811247c006cdb6003894a79e2a62a72328ed99fb5addf739e2cdd4d32e2a73"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 2,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1518.1683750000002,
+        "cpuMs": 1565.894,
+        "rssBefore": 88696240,
+        "rssAfter": 161251696,
+        "maxRssBytes": 190562304,
+        "fs": {},
+        "fixture": {
+          "sha256": "72ffef405975974ad3cb4821f46c1301e5530c46916cd3c27b638fa42809d45c",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "806f2d185c08864364524cd48d656068ef7ff8ab694a15186dc6d65c7fdad2e3"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "bc97b2bb758ffafe0c28881c9c7fca0d5b6952f517dbe13d851ee8b68d8deccd"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "42d9fc1749b16ee57b44c48f64820e67c317c383086e5b1af1ce462dc210c169"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "18fb057bb4baf966dce38f34e16f2fde8d2b15b10936d9e1f832d57f30eaf785"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "cdaead79d74c9c72f23d30c1b9d42d860f1267029bb7bd0b08e23e340649445d",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "2db89e5803191c0e6a25cab5efdcbf48922e96d15c19f03dafefb86ed015eca3"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "af0430741d03eaf5a12e30880ec031a20201232c234365a90245827843c3af8d"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "9e93610ce9470a1bac2835b4bbba9bfa1849a8f7b4f720670f9d7b821fa341b7"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "0545ad92c69d192182a0a7b48e87dcdac112e4e806cb79eac924a7a13f533f09"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "7ae7dc285a83610c3d45d9569495e431c3534eba6a976e7be79c430da67a7a8b"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "2bad54fbf79fb942350ae5df6cf5ba8f1249ab7c4009659815c18212a5667f15",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "2db89e5803191c0e6a25cab5efdcbf48922e96d15c19f03dafefb86ed015eca3"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 2,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1524.717791,
+        "cpuMs": 1573.489,
+        "rssBefore": 88335792,
+        "rssAfter": 159760416,
+        "maxRssBytes": 189300736,
+        "fs": {},
+        "fixture": {
+          "sha256": "de736cadaf3314385cf2f54fad5e42dcd4555d4f8d78924b5d4e2d51fa99194d",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "f8771ea31027202bd0ef565184cb39e3b61f157ae8ba97f5b006b04c9eb1267d"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "d60201c387a8acf89b106cfd328485a74226c2380d69f571435e008f13f3799c"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "f8056c8d62c569a0c15abbfa488d76208ea143d2b0255fccec995904e2d70144"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "307d3749da5312f0dc4648d11e9823cb6c5613f7ff41e90a4642cba64a55b0db"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "d5e501dd236f5e10bff1abb186bf65e7d9ba96b7fdd6f56488622f248d36425c",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "1e2e05787264e864761d0755b49bffb2fb5ffa6b2b0ec503823173aaaaa303fa"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "757b2ab0cda936661a0420e5fdd870db7469d454708711b703e03eedebef82e9"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "91b30b46285661b82b338ef04613a3e719e218f2b4d2eb81236c45f8ef3bf816"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "b10da95eba11dd0891f5c964c35db2ebe25c84b9dcdee3066e8590a36ece26c3"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "4a656c2f3682765e53cd7ce684c6b33c2a5260fa45b80514c63775ba1d1a9b39"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "b331e763c2ac4585d4f01e71bb06de496657183b0a2e10b2af56559e7eb06f09",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "1e2e05787264e864761d0755b49bffb2fb5ffa6b2b0ec503823173aaaaa303fa"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 3,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1521.3461670000002,
+        "cpuMs": 1569.858,
+        "rssBefore": 88810904,
+        "rssAfter": 160841736,
+        "maxRssBytes": 190414848,
+        "fs": {},
+        "fixture": {
+          "sha256": "1b59d687c262e3f9a4391e1bff07c6ff6f0450ea38aed354a56c70f59c6d635c",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "3ddf0c8506dab8b6d9df2070436c9efb022d88eaadf52eeddb18d193a218f48f"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "8cb6ca767b8c82781781f557c835e16414f1204288f9924e025fe8835b29996d"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "7573d9a714f62447edcbdc275ae70d2185970def8ae5c7a1e0dbc799f411309d"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "a6f4b7c99604f217ee1f743182a94115d2212a42adbd9b00bb3805e22de699d7"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "32064dfc4af346de44b64b117a5f19ac6a46e6a5b61d18039e4ea9471d06142c",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "60d3890d3008849d060025fe854006a0b3ae9074f0ceb57571b5e9d0f00770c4"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "a0bd77d0399ef9836bc68b23dfc89f4fbf864c8d4e51922a1ce305e3c1383d0e"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "63ed09702586a4170d0b07f1c0a3bb555678b6695ea9a9144fb3b169bbc1130d"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "47845a46b4d2ee38e885b158aa53974a5e83d38de9d576166c99173239407748"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "7483df975ea3614f6562737c4fe2b0f74b254c03fc6b9e85c23cf080eab310ac"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "c5e6c644913d33fdd7f4db59983eb1f20c300f5a91d06ff2b3bef3b87c3a49bc",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "60d3890d3008849d060025fe854006a0b3ae9074f0ceb57571b5e9d0f00770c4"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 3,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1522.476375,
+        "cpuMs": 1570.623,
+        "rssBefore": 89155184,
+        "rssAfter": 160121080,
+        "maxRssBytes": 189513728,
+        "fs": {},
+        "fixture": {
+          "sha256": "03e33f462570766747aa760404a3940e534c60bb9b344fa29bacb1d76d3456e6",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "6105c2dcae2fc4d00c7e68da066d6a305818b998976781334154188ad5bbe291"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "a1fd326114796dcdc289c1e540da3a5466ffc9cbb0c4867789a81e83d3e0c1a1"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "ce4602a4b1a983a4de76d3f7548fcd56980692bda9acf975148d96c0ba8a3a78"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "1e658160653851de58a25f6fc3354f71ed02aea4df77c4605baef7a5554d2ab2"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "216a0bc029c7997946410224ba19c6f58489eb5105c39e2d986a03fa4780d69f",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "9171ca803f2f2d59ac54f2c821be1fbeac5941fb6a224379e8fffb6e546c7856"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "566b16170e5a1ea135fff807f5e7b794c69b94f8c64430b0a72656f9c90d8839"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "a71d17cb2bbef2f4b91a05c264e33a887c404a94417095c0b466895e80a952cf"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "a580bdb6ebf0fba6cdb0b257732836cfadeb5580de03985e849ae11b42125429"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "69822ed46727d2dbbf7ff32ae786bfd7bced4def7ba9e173bb49a6a713a3605a"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "f2bf928a2bc475c60b558f3e126b9a8508c8513e4bc1ac46b1a0f52a27f8a38c",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "9171ca803f2f2d59ac54f2c821be1fbeac5941fb6a224379e8fffb6e546c7856"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 1,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4658.251082999999,
+        "cpuMs": 4841.754,
+        "rssBefore": 215648400,
+        "rssAfter": 335928488,
+        "maxRssBytes": 381616128,
+        "fs": {},
+        "fixture": {
+          "sha256": "6c6c8ac5d67501cbba8c2e49f0ac1106914024a95271681e203e66a7a740cd68",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "ff2eb0f2495d4e74a101581b71aca80864c9c564c9f64839fbf75af27e9720ad"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "e15ac4b9621fd5e53fa2e9dba5369a15677434f25d6ef42283ecda58c99d2f67"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "b52a3ce456959a714afa43f9fa7738257afa1a063ea1892458c37f1d38870d66"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "81d098d78af306eedaedcc9ed9084721bf3f328c8bd3861ada8312a5c69bc0db"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "ef3f3c0e78b43519f215440a9bf79c305118cd6cf43de187e06333120511d5a9",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "f2fb9b0a4eac6cbab23ee43ef09365d32f699ec115b1d486d87bdcd36fe7ca01"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "0fec245a53d61860e73401871e6645ec7a8c5ed6ef02d1e74fe9ddbb950680a2"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "ef72613724fdd7b8a62619431c44bdf2c696b2de8464d1f9d389c39bfb678c71"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "f11f404c5fc5f8f1df51d2e879dcad96a64ba4f6342702ae3108f5df47f7c53b"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "f2faa16536746589a0e54ed15fcef9f4f021e56a60f1456e60e39c649510cd1a"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "c5d6d81524c33541951a98ede5a485f76ecb06164f6ecae3f36ce3793c7385a2",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "f2fb9b0a4eac6cbab23ee43ef09365d32f699ec115b1d486d87bdcd36fe7ca01"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 1,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4705.398833000001,
+        "cpuMs": 4878.572,
+        "rssBefore": 215681072,
+        "rssAfter": 344924528,
+        "maxRssBytes": 375209984,
+        "fs": {},
+        "fixture": {
+          "sha256": "7f20927c31c9ae0211236f7518e80747e12ca9882e38504f3b9152259cc3d25f",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "7ae0739bee23cc6ac56c03297a5ddbe3c7c2aab370dfce5b38d73d2814dc56f5"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "6ebbd7aec3bfb1a98b34525f5742152e6b071106f0c8d88e9d46b4ea73e1db9b"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "de90e438566b1618225f45ec0df9813f90096fe062ccfabf5abbec85819fa47c"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "071b9313924e999bda3dd61607967bfe76c4bf0a5d72a0f1a31c3d32d270f8b7"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "d1e4a0adac13e313bf2196f54dff33feb6955f38f8644a6bef800d891dfda9b4",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "c19f6372849148c0d46dd4986540b341b56304dc75e38fd06fa74bf13efa54cc"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "607a3833d8b711532ae9f880229fe45f1f9967825ad76302b79ee78d23c04db1"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "8b32f8b6cc555447899c3502073025f4135956cd497bfe78b0eb23d286ef92e9"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "174e329bb9d1aad1de6bc94ada24e1331fe0c58023cca15b5ed7531b764de3c0"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "6a6039170b2b2abae04acb885e6129221cc570a7e439c6a3f81926aa5f26c291"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "00d4a318220c749cefcee78d7cd8ac006cc1598c8e1193937f531ef9fdc7303a",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "c19f6372849148c0d46dd4986540b341b56304dc75e38fd06fa74bf13efa54cc"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 2,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4701.59325,
+        "cpuMs": 4867.216,
+        "rssBefore": 215107752,
+        "rssAfter": 333913616,
+        "maxRssBytes": 380960768,
+        "fs": {},
+        "fixture": {
+          "sha256": "178aa61d8108883dd2fdbadaa553cd034ea1180cec68910836d74bac620465a0",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "a9cd6c876937b885504a4d63a845eee5a78206a1da599b01be82fefe210d6c20"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "79841922ff4cf12f0dc21d989579efd14fadacad78decbdf66021b5f07a882d4"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "c345d690697e744f27351b993c29920a27ab1c97bd784751ea853dfeedc83c9e"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "25e76a254623f7a18a283f10672ae1934c8897bb0f1ddb1ab5d7dce0f746b8f4"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "1267dd2d5fad7014e89db3ba748842524a11bd364c34d652bb2d8fc0a874bdbb",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "b840d9d4cafb92336349be795307c3989f49667567b9e95e7ac92bc39444b3f4"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "f87afe134edc006372146267778564b56cd21fe812d9abc2bdfd7f76135791ab"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "a0e8a1632ac7ebbdc9966f8f31cf18846f0884f254050ce9b3c78249d529a74b"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "0796e0a26e9dc89243dd821bc9ac9943c9698ad67a62008c042edd63cd26ae3a"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "793a1117966f35a086627e66d3b03d7d1944487cebe4b4220f1370a88972ab57"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "053e01756f929708720f3abcff428d9477349a612b68feb5566ea4a717d86f9f",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "b840d9d4cafb92336349be795307c3989f49667567b9e95e7ac92bc39444b3f4"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 2,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4719.925832999999,
+        "cpuMs": 4891.227,
+        "rssBefore": 214927312,
+        "rssAfter": 333684120,
+        "maxRssBytes": 380993536,
+        "fs": {},
+        "fixture": {
+          "sha256": "38f8d5038327923689976375d948049d71781157adb0e3bc81370a266e2e5d5c",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "a8f3e39dc64faebccf2303e0429f80d6f964ca9903acb421a6597227444f78c8"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "352b4fbe1331507385428a0d88b8e1c9651e984a2bf48bb1835ef71ebc6dec05"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "eb494da3797d2a430c75b08352c0fc3de2ab34611168623b7d812259e2d37bf7"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "fdb59e9f61e2a45408411adbf807c2a84ede3b6a8dd1e06faf55a937b1068353"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "39f8d2cd227df0af919b852181454bcd784cbb3834b2dcfd56f9dd05bceb5de4",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "1205bdfd04d1470631e149e38fd854d9455b30df3a8310ac673b2c3ea5193298"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "fbce0da92a1f76b39bcdd62ad113b9ea851adc24686ff0feb130ec7407f3d6ac"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "f55206a1d5360c121f25ae9937a78151d3cea86a13580bc01e3adab8f301ab80"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "8ea74516199f85f0273c7e375ef9e96a99b24b164672e4d43cc3cb4690c9ff63"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "ba56d117416f8ce01dcf0b6f5395caadc64366fa7df590c2d0b003f054a26624"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "543bd850c88ab31d2248e469be31207eb57ca93d337d4e1b50ae239928a4e963",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "1205bdfd04d1470631e149e38fd854d9455b30df3a8310ac673b2c3ea5193298"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 3,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4674.882833,
+        "cpuMs": 4845.615,
+        "rssBefore": 215697528,
+        "rssAfter": 336682680,
+        "maxRssBytes": 384040960,
+        "fs": {},
+        "fixture": {
+          "sha256": "bcc2d0260543e93d0c41062ca945eff39226f70a341d7790e7ab9bd59e8c679f",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "9da7e813b5ce696e603dcae761bd1594a9506c59188154b4c30eb1cf8d803054"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "4aeaa6e90a5d55601eb1520943931d6a1ca835a1d142a11b320c4df516f30284"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "310cba0da4aa29d0219e7daa8b1ad5c2f2bd9b255c3f3d5778efaf4a2512bc0f"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "01913254abfc2a18c77b62b775acbff1de5c8d78ce0bd91526256e67a25675e3"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "307abab434eeedf656f42a55845e4f20d2cd6e62a436a6821cdcc7972f2a79cd",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "1c49ae8b48658e21e38b678b1a065b69e0e8db54054bfe03c84f5cb40fb172ff"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "d1b825cbd7e12557bfd2bbb6746dfcd5ff7d53fae842bf05da480b6f3f58f3cf"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "2b0e9a9cb8e6c71888680f8ef41fc21953536ac4f595fcbb00a75fcd2cc033d1"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "0f4fa42841ff82f34a8150e13a4264b45ca9d64fe1781e40d9a715427ed04f22"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "3fb3d47473b8d5936e5170f2eecf20406755f04484d73449810297a6c1c0d2a4"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "92278bf0003cbd703a510f9423b281cb6339ca673355062c3940a7f2a6c4c16d",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "1c49ae8b48658e21e38b678b1a065b69e0e8db54054bfe03c84f5cb40fb172ff"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "aa",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 3,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4701.1356670000005,
+        "cpuMs": 4869.653,
+        "rssBefore": 214730680,
+        "rssAfter": 331373760,
+        "maxRssBytes": 382025728,
+        "fs": {},
+        "fixture": {
+          "sha256": "cf2e28cb9f371b232e990a36cb391ae64435ba44c97fb656a1ac1bb8f72ab238",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "76e75debe8f67070b6fee9bba92b4af9bab4c8c184ffaed2fb632877b4fd51c6"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "88bc96688f6634dfa606fd80c5365362e78919d8f2fcdfded071a34726e0333f"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "8fc3e811a932bcb16d770c52b9ae52cfbbe600bde3f9512c300aa8e593da72f6"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "95b5e04fe0cce54a829e3a92211e347c495d586b6496065b02abde1a5aeaa1c1"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "1e6f70daddc77516dd8c29975126594ff4514a23a5f0c864231ca734922aaa23",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "57a163183ae42ab2fdd09b0122ef8904fb51b32b4630bae5372f4c1e925b3edf"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "0ec0a3a40322371125f6ef9b944f9a44b06b2a8f13b9687835b2d72bdab4e0ba"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "976a0b45f56a1808a0d12c0b1375a6f878a0b32df1f64033d00ed6e175c12a62"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "f3d577233d9a39bf9e7862e5e6cad849efdc7e279cfc771d0c83497100438298"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "e0e0b69ff514017210770fdc56be86b4f95e773bb1bebd25fbc68c9840750c32"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "40f6554a296eb50dee121453212eba0e5490f90092add4307fed3a3d46ca8181",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "57a163183ae42ab2fdd09b0122ef8904fb51b32b4630bae5372f4c1e925b3edf"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 1,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 437.820833,
+        "cpuMs": 465.669,
+        "rssBefore": 52320640,
+        "rssAfter": 79684584,
+        "maxRssBytes": 112623616,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "fb5c0fd61be4c75a8e42a4ef9b1929acee21176686e8186ca43df6069f4dba3c",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "9fceae188f786e0e5a402de84ab288cb6f0d1e076a3a9776417baeac5e2290d5"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "d563458d32e170617c3bf77e86895bde881ecfa8f6dc1f6df5f63b3d49b822d1"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "21854e367752bed455b6cb1635d2537115852cb60d6de635af7aa1b05c438dd4"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "b3b66672a98cfdcdea1e7e1db67c5835fb3538097d1e26619471c245ac318513"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "bd2eef596abf497287e971ee854c41f6f8fe58f4c52c36b0797de2d6711cd670"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "293e2563e50136b65363cdc3e7cdb4bc609e3a6e3d9c51379c435088786fb877",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "9fceae188f786e0e5a402de84ab288cb6f0d1e076a3a9776417baeac5e2290d5"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 1,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 417.569709,
+        "cpuMs": 441.229,
+        "rssBefore": 52336880,
+        "rssAfter": 63658704,
+        "maxRssBytes": 98172928,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "cb3e57eb1ec74d20589db749c20db52540d4d1abf3a70cec8cc601851e27bdc2",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "4d6877fc1594fe4b3c26ddb2c39f0698f41894c4eae60bb1d2f5e474548aefa8"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "ea55733637d35003a83a74a10769af1eb02c0426f56955cde533299daa84f80d"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "54c15a6f497c771b7944346362ad96b2ac31ef0f808b8919669641dd10e6aa97"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "29a0ef12601b384cd7be7da9eb44eeb3453da29f46384bd0551ae133a598c034"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "c053b8fb4931e1b19e525e4a01ff74e6b20e195cc20db8c9c56f1a9456c8bc33"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "3480720d8e671b6d159acf1c00265dfe50ef25c464521ba9daa331f52ac17134",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "4d6877fc1594fe4b3c26ddb2c39f0698f41894c4eae60bb1d2f5e474548aefa8"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 2,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 416.871791,
+        "cpuMs": 436.058,
+        "rssBefore": 52156656,
+        "rssAfter": 63658800,
+        "maxRssBytes": 98123776,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "9a2f79f24da4404bd3f2b0aab01d66675b88d2b9a46a425589de60adb6267563",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "1387332e73f51d02907677f8b12766c47a55a059298ab4de48556bbbf96d835e"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "18df6529587218f8688d41e083970b3c747268471dbf1ebfc853776c67a33812"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "804b1ebaa02d672df99864689f452f9828edb8e7980ae57dd14049506a22be75"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "8bca9120b70444f65d06753130a275225d9bc40d1cfe256c2f1f5b0141418f01"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "d020619bbdcde6effa55e455e714dde531c3423708c9a93e3dcd05624b71fd85"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "ddeae394c050e4033ae5109955a469baae2028aee83669aac90048fced2b2805",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "1387332e73f51d02907677f8b12766c47a55a059298ab4de48556bbbf96d835e"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 2,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 428.929958,
+        "cpuMs": 456.06,
+        "rssBefore": 52369672,
+        "rssAfter": 79897480,
+        "maxRssBytes": 112902144,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "e0f70edfd7ed098197d6b66dac126522363ed40f68b542d02c29139c4ce6b846",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "36c75fd9bbd3e6ec65f92797724376fe349af38a0b01c896fcb1c22966ab14cd"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "30ae945c3571c3a126d0b96bca2b4a0a1a1f9a884a1906e0c42851f47324bc0e"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "e437689ccceca1e035b59738bfe11305911e6f9ec5bc5beeba9a978a7c8fd8f2"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "fb3e1b9e495c29f32d6ccb048cb5969d7d0aa1b7462935d3218abe5b3c15773b"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "8a3879cbed8ac0e9f455e92bb98da26d1bbde75f9e18247b7964816369ded72a"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "a91918a59fbc55c2dc649b37c41300fbfe78e6231155b0141fbd2a5f9b24062c",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "36c75fd9bbd3e6ec65f92797724376fe349af38a0b01c896fcb1c22966ab14cd"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 3,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 432.503958,
+        "cpuMs": 464.664,
+        "rssBefore": 52353336,
+        "rssAfter": 79586184,
+        "maxRssBytes": 112590848,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "f9681f363fff3421067a21d6ce2f988997ca0411d6bdd25bfa3992e5b4466928",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "30a487ad13a9ab1dd98d55928fab5a1034cd5bd80a8b52a46c8bc090a1c25a82"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "5897363adb264b226f39c3ea38cced2d2b0f6e409d293f82d103270d1bcf89c6"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "16340ec2fb7f0d71c78146fe9f318c57905e4a6f45a0915e961fc927470d2f03"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "148db2f10c211a83d62e63887002bca3a1e89afe388d21153adfac9043c839f2"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "db0b1719cdaf47924e64648a9ff4331617c7fec1cc96089748a227456c80ca29"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "666a3c9580dc7235094a445555c4253a6e8866f001732e676165757b92b5f5a8",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "30a487ad13a9ab1dd98d55928fab5a1034cd5bd80a8b52a46c8bc090a1c25a82"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 2000,
+      "round": 3,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 2000,
+        "delta": 0,
+        "absorbed": 2000,
+        "wallMs": 424.992292,
+        "cpuMs": 449.371,
+        "rssBefore": 52255008,
+        "rssAfter": 63494960,
+        "maxRssBytes": 97959936,
+        "fs": {},
+        "fixture": {
+          "sha256": "60ef090ac4f13a6d19123af3000cf0e2205e787d5bad52dfffcf9ee22789e695",
+          "bytes": 1251102,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "496ce11ecfb5f995f87754ad2b90ba02bd1c244f4838e88d4a43f1b05352d83d",
+          "bytes": 3130245,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "34156843d4cb7605a20712ec385ffa79ca343fe59449af3d13ab99996bd9cc0b"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "f14c115fa70714ef92b2425cc28913dba4a96d031b4c94ded9410427ca681193"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "a6b1e61b8e453ad7cc8cbe8784e6160ba7f80b398a19e7db13eee06a05f152ce"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "231c9d930a696b01238ef317793ca9c0287ae930029edee37f95f1b0fab78df8"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 1251102,
+              "sha256": "0318f51a667b9d1c9398da17b882449c1a6a15b7ef0cb32dc19d30dbf1a84ad6"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "166a9d7919c56e5c4fe14b34323b77e89e27c14f801960b3b9a233a5b3192a62"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "88a00e66782c152dd8af9dfdbd9b3d467588c0ed572a11e6df8fe16883b5703c",
+          "bytes": 1030404,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "34156843d4cb7605a20712ec385ffa79ca343fe59449af3d13ab99996bd9cc0b"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            }
+          ]
+        },
+        "applied": 2000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 1,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 3006.5694169999997,
+        "cpuMs": 3123.422,
+        "rssBefore": 103966872,
+        "rssAfter": 202376688,
+        "maxRssBytes": 229408768,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "a07200e92e69f96056f8915461d144dab61b4b153296f02b49fd6f8d7ca6454c",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "23c063dfff5f07de1476036a18bc9fff56cb94e3d71f1987588ec801c9944287"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "57dcf5d856f96cb699a6651ffc3926cca6f26fa8e80c0cb6944fa6fc6bb88cd3"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "0e9131184102c9d8e258ca4964f5bb977a54a6fdaea270ad8a2bee9f3e059c1b"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "3cf0efa63a9212ab45d5e42a0e07732cec6b1ca69e3961646f6353f4f7bdf754"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "952b7f14ffe461a41f84752b17a19e373ac22ab3154d1d9fd6caf98aa076072c"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "43a1e39b728f4f322ad05b5058cca3ac03951f950a7556ddec501c1db32eacf5",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "23c063dfff5f07de1476036a18bc9fff56cb94e3d71f1987588ec801c9944287"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 1,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2871.258375,
+        "cpuMs": 2941.741,
+        "rssBefore": 103966872,
+        "rssAfter": 197806440,
+        "maxRssBytes": 224247808,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "5b48265a3d1061bb172cbb0f7e996b1f95a17f1f20632878ad9e8af23c49c3d7",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "539955275c1f5ec8d93242f9c287c30662c6e21ed09a628662e091f5178bc58e"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "824c0ed35f11176f40e371d1f81c62aa9d12f4f03384ac249d978e1c2de7b8e6"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "dc53fed07dae2245bd489492446500385415ba1e925b22920dc2a1780c6a4253"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "e5af8cb81506ee44ba1860ef5eeec59c4a56d0bc6f02b441ecaf528dad8fa90d"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "0df724eb78672018c92823d5408d38daa7ec0325d5c03920cb50cb9e636c799f"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "53aae49134e4902b5703dc5adc2cff683c392ea5ab6f5a8f4733516c9135191d",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "539955275c1f5ec8d93242f9c287c30662c6e21ed09a628662e091f5178bc58e"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 2,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2859.876542,
+        "cpuMs": 2951.785,
+        "rssBefore": 103966824,
+        "rssAfter": 197642312,
+        "maxRssBytes": 224280576,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "3e686702f4dfdaee9f28eb17814167a1b16ee1ca09c76923b5ec8ed6c088f0bc",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "35e76835491cdd7a076ae8f1d3089e91b7342efa56eface24c74bf60b59017f0"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "6964f30cf238e69490bf1a8ece8358a82674823e8869ec098ce52234181815f7"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "6e3a534821f51f8b94389fa75d12690f5ccebec809a84323db1298dbbf94c02b"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "f100021e9a91f94a0fe7b8df9201732de080968224fb6f932b837c489cbd667f"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "161117af6474af033ece0c241b90608713cc0fcd5cff3ab6b5413fa4be3f3b11"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "0928e600eb39479593d0622540a9c4f75d328a761c0737308cd6e67c9a46f304",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "35e76835491cdd7a076ae8f1d3089e91b7342efa56eface24c74bf60b59017f0"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 2,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2946.741375,
+        "cpuMs": 3074.314,
+        "rssBefore": 104114448,
+        "rssAfter": 202360328,
+        "maxRssBytes": 229376000,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "997c6d5c6b7bd6d9dbc1cfe7a2cd98657ecdd6e496bbb15a204890b339d78599",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "9572e99af1038d7787ec73ac45cc844d7a3999276ba90cc86039249f5d944017"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "311237abe4907c3e9e7b26a410bc3d736555eb885c355d68c2af6c58acfbb63b"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "eab320452d5786074967a2968f320c59cc111e329d6b43e80ea6a34c6e1de912"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "54dba518c116e8c948223211aace246c7119440a48389ba23f5c61547eefdf99"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "37cf94c7b5806e20fb473640a3a6d177b29e87fb7eb35370838e03d6cbe7bc94"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "f1b181ae18ff39d23b4d6074d21206a0c1bc2fa44cdf5a225bb51c31b6a44213",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "9572e99af1038d7787ec73ac45cc844d7a3999276ba90cc86039249f5d944017"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 3,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2944.971333,
+        "cpuMs": 3073.723,
+        "rssBefore": 104114304,
+        "rssAfter": 202376424,
+        "maxRssBytes": 229605376,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "04ac95d35008d0a50636671aca7b615ce8fa6280d840e99bd171d8789efd916f",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "4142a9b6d0a2abc9c006f83a56b240e110ffd2a521c389f49ab30c19851c1d18"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "c5b23a195f24d1fb757c3edfd21ef1d39168b4e4438b8d09414720750478bb0e"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "35ed7c9b4bab2c5a27e58a3d3fde57acef9cafd1efd8b8fe612fa3c2ced67f67"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "f753e199050dfd3f03b7ba0b571306ed15c0472ba64819d5b7c8a4dbe635464d"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "b0580ecd3f2717adffaa5d89bdcafa99443966dd3cdcaa217403803667f87911"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "bdfcd706352ec6fa79ac2793a228a580e05c2d4ef146d1b38474d714de8655a0",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "4142a9b6d0a2abc9c006f83a56b240e110ffd2a521c389f49ab30c19851c1d18"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "cold",
+      "records": 12000,
+      "round": 3,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "cold",
+        "records": 12000,
+        "delta": 0,
+        "absorbed": 12000,
+        "wallMs": 2871.765167,
+        "cpuMs": 2968.32,
+        "rssBefore": 103852016,
+        "rssAfter": 197609736,
+        "maxRssBytes": 224100352,
+        "fs": {},
+        "fixture": {
+          "sha256": "0859ea1fa2a503c4e5245f67779289ec73f6f5c9959ae7cd030a1736c441f646",
+          "bytes": 7514192,
+          "files": [
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "0a4c10125c91cc37a346b73f3443cfb0ef4c0b72e50e8c69f04a973b28558caf",
+          "bytes": 16554540,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "727247934ce2f3e88cff987a62664f874b66794b5a6490808755684905fd8fa5"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "abd433abf997e8903a2682149645e823ed13a2fa4c01b5490218782a77f0dcdb"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "6da3ecbf52f5194031e72e4a22dc55bd0780433371b1b371fc01bf0e27d7159c"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "37aba5c13ca5f8c9bf7a72814ca4a11e485c16289f2ff59687a638abb8c080fa"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 7514192,
+              "sha256": "c45fae89b2a635e2c77709c265c113052fb66433d2b431aede31c53d9b077e52"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "9454ebd864cee81790b0cec07087ea993de5be0cf83dd75691114376a18cb1fb"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "89102f858ab0813c9150bfb259b852cfe5f73b4f45082846f6a016dd0142a9a5",
+          "bytes": 6311495,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "727247934ce2f3e88cff987a62664f874b66794b5a6490808755684905fd8fa5"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            }
+          ]
+        },
+        "applied": 12000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 1,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1525.8477090000001,
+        "cpuMs": 1582.103,
+        "rssBefore": 88712840,
+        "rssAfter": 160301328,
+        "maxRssBytes": 189677568,
+        "fs": {},
+        "fixture": {
+          "sha256": "2075803c5e92bb6c819032986e0cd464f5989587f98a732ba90037a138f9108c",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "9d6e226727e815205d1249a4a1e51fb75243dd72599679075210617adb82c99b"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "15e9043c0c8bbdbd67ab26071a36b0a26fb9b260100720c5c08218b79b1b0aa0"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "65b5b200c681e4acba9bfc9c9b275e5bddf3329da81ad3e6299fd9b9eb809e80"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "1f38f12c577215b248501cc1c53219e6376c7b383878bef4a25406ca761e6343"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "b7236a93dd9accdcdfbe1aa8c7902754d773fa63e84e03ba2da982bea997c5ba",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "767235bf7238508b0dc74372a16f1c7824cd13a28a6277f80eb9cac1229a47f1"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "19ba3ced47415bb2af005462bc22c937d83b4123811566493b78673bd193bc2d"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "bb450e724694e0e0e512794b9272c35af90c05819349e8e16cd79f4458bfce74"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "93f86ed70eae7d2e5d7d05ced90fd7b5be38af0afbaedfa6dea1a6f83924723d"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "84a0ac75d5b25ba0bd5c3d461c5fc48f657159127d5d356194f3d75e09575538"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "d4fb0f730e3770ad65bbf365e6b55ce7c32f96447dd74a997d52e8fcdf9112c5",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "767235bf7238508b0dc74372a16f1c7824cd13a28a6277f80eb9cac1229a47f1"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 1,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1493.967625,
+        "cpuMs": 1547.359,
+        "rssBefore": 78488096,
+        "rssAfter": 154665928,
+        "maxRssBytes": 188661760,
+        "fs": {},
+        "fixture": {
+          "sha256": "10eace5273f5978433d9489161d930dabfff75129855650e191d14e22fbc52b4",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "05353bd6cfe1c12235416d7a135b97b789467def573c38368fefdb3dce924188"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "276367b1c89b7b70eae53f5f659ac4967b6ee4925e5844c337c7e388c60ca4f5"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "647bc69e486eb294b24f4a8101535b97eee7922f0b1f87e1a72b18f5aa7d96d0"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "756e7006f859c4b0589e25ca56ed23f2305f64ff5025f9a4ff5d79978a227438"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "6e0a1a3b9dd6cf165a6cc753f21c952a6ff97dd401174a5094d44b5bbcf293fb",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "dc6484f2522589208e87bade8ea00d60393aeb9d4085a0b7050d489b685db877"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "33fb386c6a32a62cac1b96987287497cb9dff775efcc71205956d2da4764eb6e"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "21c6aacd56fc583eeedf763a9ba983996260535dbbee9cb8bfcc1a45cae74fc7"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "b3f166ed00bd102955757cffc72c948811ed6f2601c49b64638a4bea72087024"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "c8171532de6164011b69f6ac15445cab24a6ee132b971e2d6696e0170678ce2c"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "9bb6644e706401dae7ffa210c094aaaebd99dbb3ffa4a2e2e260137b97ba8435",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "dc6484f2522589208e87bade8ea00d60393aeb9d4085a0b7050d489b685db877"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 2,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1497.70125,
+        "cpuMs": 1548.144,
+        "rssBefore": 78520864,
+        "rssAfter": 164807480,
+        "maxRssBytes": 193806336,
+        "fs": {},
+        "fixture": {
+          "sha256": "65ba761468e62982e7a4d4f07a42ee78b758a5fe4097ed09ef0ea9f7e9e9704f",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "4937980140bfb8f207fbb8527fc6af65f89a18bf3676bf2c904bb1628f66276b"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "b89bc8cf9bd0d00ad6b3ff79de6ce6bad2abf10f46f3570854d80ea6f55521a5"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "a10b870fb4154930de6255d61eac27ad0f9d6b4249517fe9200ec498f7571f69"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "430e25b87dfb0d6bfa9826ffdc2a1dc826b4aba835f09e12310f6bb8a0e7de4d"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "fe05a10541f05e7ea53469b8d45c228b41e03626a089c80ef17ba572eab2f252",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "f3ba7cb63c06786c2b6622dcecec8dd7889a40c200c502bbc4c10d877ca51e7b"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "9499312e351406f06f344e4121ef0af56203d290e8a9494a6c03557fd6b97b2e"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "17c372d964f2479149dcfa0200fc35f5791faa58e8e4a547336b3ca73a47bfbf"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "3705de175e4b8d35bb52674e87cc96befd43b0959466a115e9219f4ed45bc9e8"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "f44cedea67e56e636d2c73f4d14657dd29fcb764e3570376fff22cdc68c51859"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "36018dbca8b6f33cb4761baed73137af7730a45fed849b028090187cecbcefdd",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "f3ba7cb63c06786c2b6622dcecec8dd7889a40c200c502bbc4c10d877ca51e7b"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 2,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1529.4830000000002,
+        "cpuMs": 1578.175,
+        "rssBefore": 88778304,
+        "rssAfter": 160219624,
+        "maxRssBytes": 189464576,
+        "fs": {},
+        "fixture": {
+          "sha256": "ca469ab70ec0eae6acbf861c9621a694703cd19d31a5ca68de37f5ca5c83fa18",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "1152e73a31b6e1bfabc94fd7a1744a171e84e6f3190a1dbd7618be3ff52bc6ab"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "2b212c1072a0a62dcd349181899008f638864c346e6fe2ae673f90395a768c75"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "cde7c04bb6c059a55c3d145482533aa6d0614abc6239ce11c726ab52053b94b3"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "0721ba469b940918b6ad139cbb9976e6143eb0031e74924c6fd04793cb9986e5"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "c7e7df7a558d3540c7559954ed4ce1c45c2eca0e5fb42935b230ffe805eeff0a",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "c8ef9a2f1782ad19f7a7732e4980c177add7955a41f32cb73fb88200bed833a9"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "24cfa70f0be551aff9652fdbc4159678e5ab3fc5744d052f5a8ce7e2f5adf282"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "ba65f764b21d905e1b1f8beeb574dbfa3a630c2ec54be88d0465e7dad27a42df"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "1c35de25e4ce97c778dda5e7ba5141dd62924708e799e63d64b0ed75c7e53d12"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "75069ba57621d5b8e6c58e687bdfc6ea936cb1578e9994233e92c29ab405ef14"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "b636920aed4b93f22e759505b6717e45e19eb0c9fd2c411c9814c09154a943a5",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "c8ef9a2f1782ad19f7a7732e4980c177add7955a41f32cb73fb88200bed833a9"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 3,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1525.271125,
+        "cpuMs": 1574.883,
+        "rssBefore": 88827480,
+        "rssAfter": 160858480,
+        "maxRssBytes": 190169088,
+        "fs": {},
+        "fixture": {
+          "sha256": "701050326d940ad178bdf23cff2590f4c648aa77eb0fcabd9469a1fea3d4ab5e",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "d78113d88a36dfb9128eb730ba25e8279c7c83ea4cc5bceb06579919c81e447b"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "62b2708824e99409712ba2fb0dc982c98dba81328cbc753986b3a049bf2eafb2"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "47a6c32fb576ec432ae5e12b59695489ad2c6cdb55de7732585cebe0a5a27bff"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "7ea8694fa6897022bc8b689b451e94c0bc9073bc4b3beafa64d5f85c5a42c055"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "9d54c49f7cdaa1dba708e7a767de0760d7399339645ef0e6129d8a53d19db0f1",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "d282eaef64f6b356e334d150e2ed49238a38ac66b6adf8db221097abd8ae3641"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "d655732e41f96539cc23bc141fb138d5b5f98a8711b57147fd710d1e4f4e33b8"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "e964a9a1235c15a600b7ca8a38c0f148341c3a541a865fbc96082e7d95dacd14"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "31052d612cc28589f948b8b2961b239d3db1c8bea094e52e609b665250cc623a"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "581931297254ec4909ef32c65ff0b3f9714360e0bedfeeb4977ce7bfa75612f8"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "fb541292ecf97b131857117504860dda18309311991c2766e8c92ad752eb757c",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "d282eaef64f6b356e334d150e2ed49238a38ac66b6adf8db221097abd8ae3641"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 2000,
+      "round": 3,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 2000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 1507.724833,
+        "cpuMs": 1555.999,
+        "rssBefore": 78176824,
+        "rssAfter": 164053624,
+        "maxRssBytes": 193167360,
+        "fs": {},
+        "fixture": {
+          "sha256": "ed1f068adb8c4c2e0509771cb98a042dd88f539689ce644cfed387b85ea795c4",
+          "bytes": 4382460,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "28a02f20c717de75a25b3ebfe56b4c68f621ee8aca09857ec13efb8cf365a06c"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 1029809,
+              "sha256": "bb5dc3648492e5fe623652ca6db09781be5f9dfcffa642cd8f75c058885ac462"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "6918d6328cfcd8d3452e69ff5d3520b67a87156b455778d03d8183b328bf1926"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "21e47a2a8e68b8995f87ae6ddb539e6a5b9ad93e37831c470d93ede60a40223a"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 848056,
+              "sha256": "b7b9487e370c191c7ae73d3ae36cea2c70d0d74ff891e4553e23420831b83f8b"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "f4b1b1b744e50eed000306c3957fe7bd837cba4a54bd430e743ba60bee501235",
+          "bytes": 6244685,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "9712c3d2fecaed09c3929e5416736e6475f13855e4dbfdd13a54287c8dea2726"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "05003a5426463e1ffcf9844d5e82341e23abc0e085a1299c081c5d3b9729160d"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "190845fa35b4d675f43446b7a9e6f5d46882646cc0a61ee0ee330ae0c4f10ad4"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 645,
+              "sha256": "4ec7861b77cf639348f2daa48ef00c5a27eaf6a4568a70f05b4f0330b4cf1937"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 2503322,
+              "sha256": "4de9ddcdb42bf5ceec33fec9be6e7484328b91a063ebe3ac35b316c8d0a6da13"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 1654056,
+              "sha256": "6afd36d5de5a9fd863dffab5479e122ef3c67d0b227152883d0dd273d2e59d38"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "04c82078691cf9cd623101d33ee732a2309ab81ba68e34827bf427e1017a0187",
+          "bytes": 2086624,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 595,
+              "sha256": "9712c3d2fecaed09c3929e5416736e6475f13855e4dbfdd13a54287c8dea2726"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 2086029,
+              "sha256": "540771362a6c6393ed1bd7e977ecbb60003519fc55fa4eea059d089828486edc"
+            }
+          ]
+        },
+        "applied": 4000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 1,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4663.53875,
+        "cpuMs": 4826.784,
+        "rssBefore": 214960152,
+        "rssAfter": 332062152,
+        "maxRssBytes": 381386752,
+        "fs": {},
+        "fixture": {
+          "sha256": "00b2e25d13fca2a10645fd7a49120af8742b410fa6f2bed2f803a6f3c43201ac",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "ced06fe5c123b36e73f4312295c433a8d3dd2035cad3d1abf9a32c57df8e8ce6"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "01697c0e2e08ab31d67b3c8c9ba3b9d3f2a7d84516aca82d7619948956ffeea0"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "da47e065a99be4ef8ee791a5803287ceefafcb60ff6f2ce01fdbb4488273185a"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "2ac27d2f24c2d14145b5de5cb519d5a00b652862ccca67ce393053ee8b15818d"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "486d2d2d321aa5029a6e8099d22a27c5b34d724f46540282dff8f6984d2e20f5",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "83896ec9572e5906cc4989e109f9e412e3714e9dc5ed414018e14fd0da6aa89a"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "d4cc049b20fa1ee9685d63da27423dbcd12786fd83ccfe6194efc25c502a611f"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "5bae4559a5050f2c731dce03282caedb0ebd302ae23ba3e19fd8bc4c69f9fc45"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "ca6a24acb16885af115f46a0830128bbd72f9a3d82a77b9148bada37ca33ce50"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "48d92a6281b53f78c91424920ad55d91ca77d81e2519a8f607eb62e2f330de6b"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "c5188cc03fd9dfc094c66cda6d14e00441dc0531884f01138e9c09f25f863aa8",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "83896ec9572e5906cc4989e109f9e412e3714e9dc5ed414018e14fd0da6aa89a"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 1,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4669.646290999999,
+        "cpuMs": 4824.18,
+        "rssBefore": 201967880,
+        "rssAfter": 276106352,
+        "maxRssBytes": 397295616,
+        "fs": {},
+        "fixture": {
+          "sha256": "fdb7f9fff58fca4dc44bb95e6f694326c67a43bc3c737d1a4a639e661bafe18d",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "a8d0945068e1cc018da67f886ac216e8fd2d31ed06125dbe3d6665fb1959e314"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "0a69c4b7c49c277da5571f5f70bb5124af314887449e0d92128f05a33b53c749"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "f56a2cb0f03adb407a517d4e9a2900820bfde3513e1fd29227e3719b84f2c865"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "bcfc856ebf88595c0875de1bc15b784ca3b797a2522eba3ad524667d0ebe8e3e"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "b89c67ef970ab44bab8a0ba7990dd63dbe7041f0599e002522dc39d67745260d",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "6d270b9cd52d2f412aa6df369905954774e9dc8e61f5d5143e2fbf26702fb28a"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "2df1c75c6cab4bc2c01c082b0279fb312691ece140e34977853cb7bb22ade117"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "1576d9c5b9e770bd928f26ca21ab7f45c9b553467ea8d89c2e5c007f67ba3374"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "f320ebf4d4af87ae521480143876160ef6fa2e2f62760798dfd9e95127c2e827"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "7392a8e6e7a74b808322947fbfefe064e06eb87ce89c4c0cffbd14a9331b1adc"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "5ac9a20f09c0461efa792de6eca497e91a4fa23e5f43ae0aba6ecf694d2ba1d6",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "6d270b9cd52d2f412aa6df369905954774e9dc8e61f5d5143e2fbf26702fb28a"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 2,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4708.6910419999995,
+        "cpuMs": 4875.25,
+        "rssBefore": 201230192,
+        "rssAfter": 277302624,
+        "maxRssBytes": 399360000,
+        "fs": {},
+        "fixture": {
+          "sha256": "90382328f1e3c5086beafcfb271d03ad18b67d4df0022771fc802bae65ee406e",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "9492e7ceab7feb5c9ba33b54d9dc8e9024308581ae78555f66fa449a691034b6"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "811ec225ca34f700f2ded552d01c8b3e559b4cdda133ac67ce6d1d37dc0eff4c"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "cccbf96d4a52b0dbdec3d1da5a1e68797ebe99146b21e7c47bbcf88c50285584"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "6fc462376dd5ab44aca7506560fb51844eb1c2ebe2e07afb66df1d2642635dd3"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "0874b2bdf09f325ae677e5f38f2ef8db98056af8705ad949cf695448ee27a813",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "c0d521c02d76a1efa37654abef571d25ef63980ec8156c16eed4f1c89c4727a6"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "8e65531db660d1a893dbf594919d8117c0583f2bffb53733c6b04fb9b7a04a95"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "92f1c2eaa4a4ecd2458d3bbd94d00714b6675b3e8217ff400cd60688aac79158"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "48266e99d8514ccd868a2e41e12966f576a9ebbba97e47cd4fe6e45bcc3111f6"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "6c38f72bd3e67153187da7316cd736378666c8cd6c8593e34b04322945ff3fbd"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "7645e0a7b1083eee4890998c72d5ac8d2534729a57e5167c4f5791624cc126d4",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "c0d521c02d76a1efa37654abef571d25ef63980ec8156c16eed4f1c89c4727a6"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 2,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4694.538125,
+        "cpuMs": 4864.783,
+        "rssBefore": 215877728,
+        "rssAfter": 328916280,
+        "maxRssBytes": 382107648,
+        "fs": {},
+        "fixture": {
+          "sha256": "495d8d9002061d674d73ffac452643ccc1691ed559002f2e97a9710089d97df0",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "e84d8f6d335ece6b68ab1d82edcdf146a403ddf90826ca4aa54afb894365a58d"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "aef4daccab94fd928391b94b8eae98c1e0a7ebc6a97ee91abaa4f82a79f89032"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "0e32725cf606029827c44acafa76e8c9374326909b67423a9648b406952cb54f"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "8b81f5a159d40fedfedd20030be289aced008af12a1665cb284dcfe16cca3588"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "da9a751c533618780fd97c56c0c194e4b25daa663128afb24ddc9ccf53b662f4",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "419f585849328f7b94a539cd0262d6b1fcfe596d802c57a4e13eea05aac7e0d8"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "d35b342e08420218ee52485ba78903463c2d518c6aa819a50258b55fa491d13b"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "75114ab571eac1dd1c2a7adf604fe4468a708c26639267e561cea79aa94dc7c8"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "b4ba34c0b2cf8f7c2cd858ffd0235dec68194fcbffb148464bd59a733c95e31b"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "427fba292e46801034124cd3bcba2f0bb3e38c763589edc419cf3670ec4cf7d9"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "eb79038553031bfb20da741ef75b862acd7e0d95cef8a63f3736e589b1df2e86",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "419f585849328f7b94a539cd0262d6b1fcfe596d802c57a4e13eea05aac7e0d8"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 3,
+      "side": "A",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4656.462833,
+        "cpuMs": 4827.517,
+        "rssBefore": 214976536,
+        "rssAfter": 350609896,
+        "maxRssBytes": 374669312,
+        "fs": {},
+        "fixture": {
+          "sha256": "fd0d09ea27cfb74e6ee70bb3b6a40b786e37a36246820eedef92d6548ad00a87",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "5317333e6866b487ae0c1565dd66ad5d980a14ead714852368b8fe21fb5597ce"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "1a8a45455db638805cf0db75ca53961bfd9f8bf4538b0558bd09e26b8b5d9fae"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "8b2fcabfc4f7acdbe5b849b9e29d4a35bfb00d476496d004eab14b14413da3f4"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "c8ef420b095639a18ecb1244f8e68346d30a976fb255b37d8ef3471502164d32"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "af7a4bd1facd9efab04223b014ab6af6293568a0ed5df6d9bce9446147fe1c57",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "25f02bd9c72d797c58a736e90b054a199301c46266b5f7f3d8d135a7e01337eb"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "10cce16ce716d644e6d8940cb1a58b3f2c414b41ae3810d80bec2688f6103920"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "0f50263eaef49a23a19e63c7b1b151660751bf4a6a68e19215667c8d11453c06"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "bc8f9c3da207b7c2cc321a891d6d19a89b9b2fe68d26da1788a0599b66eecf9c"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "3bdca9bbac58c771ae33db9d119cd928acae8aac5a25acb439192489acc264e1"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "84856f63d0b663ad8e76be6159a0a34224c550bb89d83884701cd6e508e64b36",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "25f02bd9c72d797c58a736e90b054a199301c46266b5f7f3d8d135a7e01337eb"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    },
+    {
+      "phase": "ab",
+      "scenario": "incremental",
+      "records": 12000,
+      "round": 3,
+      "side": "B",
+      "instrument": "no",
+      "sample": {
+        "scenario": "incremental",
+        "records": 12000,
+        "delta": 2000,
+        "absorbed": 2000,
+        "wallMs": 4658.759292,
+        "cpuMs": 4833.704,
+        "rssBefore": 200673256,
+        "rssAfter": 277384424,
+        "maxRssBytes": 399785984,
+        "fs": {},
+        "fixture": {
+          "sha256": "944ddc47cae4457feb97a79025551a04f19ca678af4f12da3b7566db8adfb747",
+          "bytes": 17808755,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "420bd005b0d9b62b75d50eb1a853d54d2c3c8a02fa0e543ab8ce3131b4eb107a"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 6310898,
+              "sha256": "6e9bd20d19895000266af69df935b04c5b9b87c51d9a6d292783e808eaa404f5"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "a80e667496edf0254fc090fee3bebd8127fa8b7b6bfd1c238df7ac559f9f6bbd"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "5746a8b54cbb0ac7bc46116d9ee77a7e21d50b6324c3bf8dbd5aea053726afe7"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2728169,
+              "sha256": "7f9a20a474ebc21504e735054ea707fa77529e3ff9a949abdd4cb6e2ee768dc6"
+            }
+          ]
+        },
+        "final": {
+          "sha256": "7fa911bb9bd1db6d30779421508faa0e342812e4caf8f10ec8874bb3c8566b11",
+          "bytes": 19126980,
+          "files": [
+            {
+              "path": "dockyard/state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "548304d0688c0318d1e2c460373ff573266f05c1a49c143420be8d341823c3da"
+            },
+            {
+              "path": "dockyard/state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            },
+            {
+              "path": "domain-archive.lock",
+              "bytes": 5,
+              "sha256": "e62779f755625e87e0243b85749d30a2c8350e0360b2f431da4a41e48e0d753f"
+            },
+            {
+              "path": "domain-commit.token",
+              "bytes": 33,
+              "sha256": "012c113e778ee0328bcdaa91e59fc1c141e7be71dadcb612ee5b0303509bd7d1"
+            },
+            {
+              "path": "event-log.checkpoint.json",
+              "bytes": 646,
+              "sha256": "f2318d64f0c13d209f7ae9e6998706ff7c869867c3ac9d40b56f39411fa68df8"
+            },
+            {
+              "path": "execution-events.jsonl",
+              "bytes": 8768412,
+              "sha256": "2c80beaa7458d3c2258353547ca793f7e3a9c58e9cef8d73dfe4a339b415c7a8"
+            },
+            {
+              "path": "official/evolution_domain.json",
+              "bytes": 2990169,
+              "sha256": "26118aba56cb2f863b4770c86b3f8f7971055d83259dcb637c74d9b5c99b4a02"
+            }
+          ]
+        },
+        "archive": {
+          "sha256": "6830c913444fc5b0bbbb7c33e081a35d1c03c09478d0da55e1fb478da685a70f",
+          "bytes": 7367715,
+          "files": [
+            {
+              "path": "state.json.evolution-archive-index.json",
+              "bytes": 597,
+              "sha256": "548304d0688c0318d1e2c460373ff573266f05c1a49c143420be8d341823c3da"
+            },
+            {
+              "path": "state.json.experiments-archive.jsonl",
+              "bytes": 7367118,
+              "sha256": "607fa5c11660fdae2ee11d0ba4c1e969e5472a41b908b7eee53056d2f7b016b2"
+            }
+          ]
+        },
+        "applied": 14000,
+        "pending": null
+      }
+    }
+  ]
+}
