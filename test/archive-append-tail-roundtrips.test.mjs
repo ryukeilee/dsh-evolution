@@ -7,9 +7,19 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { EvolutionMemory } from '../lib/dockyard-domain/memory.js';
 
-// Inject only into the tail probe, leaving load/index/cache filesystem work
-// real. Patching the builtins is scoped to one serial test and always undone.
+// Inject only into the tail probe and the append that follows it, leaving
+// load/index/cache filesystem work real. Patching the builtins is scoped to one
+// serial test and always undone.
+//
+// The append path reaches its directory and its file identity through
+// `#appendArchiveBytes()` and `#archiveAppendIdentity()`, both called after an
+// await, so their frames are marked `async`; matching the run frame by name
+// alone would miss them.
 const inTailProbe = () => new Error().stack.includes('#activeTailIsTorn');
+const inAppendPath = () => {
+  const stack = new Error().stack;
+  return inTailProbe() || stack.includes('#appendArchiveBytes') || /\bat (?:async )?run \(/.test(stack);
+};
 const at = '2026-01-01T00:00:00.000Z';
 const hot = ['first', 'second', 'third'].map((message, index) => ({
   id: `hot-${index}`, type: 'tool/error', componentId: 'tool', message, recordedAt: at,
@@ -35,7 +45,7 @@ async function fixture(t) {
     return { archive, original, open, memory: open() };
 }
 
-for (const failure of ['stat', 'open', 'read', 'close', 'short-read', 'mkdir', 'initial-stat']) {
+for (const failure of ['identity-stat', 'open', 'read', 'close', 'short-read', 'mkdir']) {
   test(`archive ${failure}: real load preserves the established failure boundary`, async t => {
     const { archive, original, memory } = await fixture(t);
     const real = Object.fromEntries(['statSync', 'openSync', 'readSync', 'closeSync', 'mkdirSync'].map(name => [name, fs[name]]));
@@ -45,17 +55,17 @@ for (const failure of ['stat', 'open', 'read', 'close', 'short-read', 'mkdir', '
     const error = () => Object.assign(new Error(`injected tail ${failure}`), { code: 'EIO' });
     try {
       fs.statSync = (...args) => {
-        if (inTailProbe() && failure === 'stat') { injected++; throw error(); }
-        // The initial size probe is the only non-bigint stat inside run(),
-        // outside the tail helper. Cache identities use bigint stats.
-        if (failure === 'initial-stat' && args[0] === archive && args[1] === undefined
-          && !inTailProbe() && new Error().stack.includes('at run ')) {
+        // The append path reads the active file's identity once, with a bigint
+        // stat, and reads the tail byte it already sized instead of stat'ing
+        // again. A failure here is the "no identity, so no proven tear" boundary.
+        if (failure === 'identity-stat' && injected === 0 && args[0] === archive
+          && args[1]?.bigint === true && inAppendPath()) {
           injected++; throw error();
         }
         return real.statSync(...args);
       };
       fs.mkdirSync = (...args) => {
-        if (failure === 'mkdir' && new Error().stack.includes('at run ')) { injected++; throw error(); }
+        if (failure === 'mkdir' && inAppendPath()) { injected++; throw error(); }
         return real.mkdirSync(...args);
       };
       fs.openSync = (...args) => {
@@ -99,8 +109,8 @@ for (const failure of ['stat', 'open', 'read', 'close', 'short-read', 'mkdir', '
         assert.ok(memory.archiveIntegrity().observations.some(fault => fault.kind === 'deferred-write' && fault.code === 'EIO'));
         assert.equal(await readFile(archive, 'utf8'), original, 'failed probe cannot append bytes or evict the hot row');
       } else {
-        // stat failure and EOF were already interpreted as "not torn". Keep
-        // that behavior: a healthy newline-terminated archive remains writable.
+        // A failed identity stat and EOF were already interpreted as "not torn".
+        // Keep that behavior: a healthy newline-terminated archive stays writable.
         const rows = (await readFile(archive, 'utf8')).trim().split('\n').map(JSON.parse);
         assert.deepEqual(rows.map(row => row.id), ['cold', 'hot-0']);
         assert.deepEqual(memory.history('observations').map(row => row.id), ['cold', ...hot.map(row => row.id)]);

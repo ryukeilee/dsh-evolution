@@ -1,0 +1,53 @@
+{
+  "baselineRef": "95cf0d0",
+  "aa": false,
+  "baselineSha": "95cf0d038bf454df45c9327bdf5eba75e6a09299",
+  "candidateSha": "e55dfd5a958fcf49e2e64e8152e4a6a7bcc0ecf0",
+  "candidateSources": {
+    "lib/dockyard-domain/memory.js": "0a03d3431b905d5992d677075a9bc41ce81b1aaecdad6b69bcbaac748747836f",
+    "scripts/benchmarks/archive-append-window.mjs": "e45decccce3824a94eb67547afb45fe835b36c36fd1d41555f6d794f043db333"
+  },
+  "baseline": "archive-append-window-baseline-s4gnDR",
+  "working": "/Users/ryukeili/GitHub/dsh-evolution",
+  "records": [
+    2000,
+    12000,
+    20000
+  ],
+  "rounds": 3,
+  "observes": 12,
+  "flushes": 12,
+  "node": "v26.12.1",
+  "platform": "darwin/arm64",
+  "runs": [],
+  "equivalence": [
+    {
+      "records": 2000,
+      "archiveFiles": 2,
+      "checkpointFileIdentityPresent": true,
+      "document": "e2123704df4d92ce4764266972b0f5f2519e24b12762abee20f1f0fc74245f09",
+      "documentBytes": 908371,
+      "appliedMarkers": 2000,
+      "stagedLeft": 0
+    },
+    {
+      "records": 12000,
+      "archiveFiles": 2,
+      "checkpointFileIdentityPresent": true,
+      "document": "0496b01458cf6e396c81085d9ad8eb2d54702e1474f7a61849cc316045336a56",
+      "documentBytes": 2796901,
+      "appliedMarkers": 12000,
+      "stagedLeft": 0
+    },
+    {
+      "records": 20000,
+      "archiveFiles": 3,
+      "checkpointFileIdentityPresent": true,
+      "document": "4a233c88006c3d71af7362fcc4e241c01867979554355fbeddc2edd6d4896e47",
+      "documentBytes": 3857258,
+      "appliedMarkers": 20000,
+      "stagedLeft": 0
+    }
+  ],
+  "summary": []
+}

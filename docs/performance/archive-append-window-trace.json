@@ -1,0 +1,190 @@
+{
+  "baselineRef": "95cf0d0",
+  "aa": false,
+  "baselineSha": "95cf0d038bf454df45c9327bdf5eba75e6a09299",
+  "candidateSha": "e55dfd5a958fcf49e2e64e8152e4a6a7bcc0ecf0",
+  "candidateSources": {
+    "lib/dockyard-domain/memory.js": "0a03d3431b905d5992d677075a9bc41ce81b1aaecdad6b69bcbaac748747836f",
+    "scripts/benchmarks/archive-append-window.mjs": "e45decccce3824a94eb67547afb45fe835b36c36fd1d41555f6d794f043db333"
+  },
+  "baseline": "archive-append-window-baseline-j0olVD",
+  "working": "/Users/ryukeili/GitHub/dsh-evolution",
+  "records": [
+    12000
+  ],
+  "rounds": 1,
+  "observes": 2,
+  "flushes": 3,
+  "node": "v26.12.1",
+  "platform": "darwin/arm64",
+  "runs": [
+    {
+      "round": 0,
+      "label": "baseline",
+      "records": 12000,
+      "absorption": {
+        "wallMs": 2866.187709,
+        "cpuMs": 3032.726
+      },
+      "observeRows": [
+        {
+          "wallMs": 39.17658299999994,
+          "cpuMs": 44.334
+        },
+        {
+          "wallMs": 41.78704199999993,
+          "cpuMs": 42.326
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 6.918165999999928,
+          "cpuMs": 7.011
+        },
+        {
+          "wallMs": 6.673749999999927,
+          "cpuMs": 6.668
+        },
+        {
+          "wallMs": 6.717958000000181,
+          "cpuMs": 6.715
+        }
+      ],
+      "maxRss": 259964928,
+      "rss": 234804080,
+      "retained": 50161505,
+      "documentBytes": 2746833,
+      "trace": {
+        "mkdirSync": 11953,
+        "statSync": 35979,
+        "lstatSync": 173,
+        "stat": 54,
+        "openSync": 11958,
+        "appendFile": 11950,
+        "writeFile": 1,
+        "rename": 1,
+        "renameSync": 2
+      },
+      "logBytes": 7635576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 0,
+      "label": "working",
+      "records": 12000,
+      "absorption": {
+        "wallMs": 2415.6637920000003,
+        "cpuMs": 2575.718
+      },
+      "observeRows": [
+        {
+          "wallMs": 39.28758400000015,
+          "cpuMs": 42.562
+        },
+        {
+          "wallMs": 40.02975000000015,
+          "cpuMs": 42.353
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 6.707832999999937,
+          "cpuMs": 6.757
+        },
+        {
+          "wallMs": 6.608875000000353,
+          "cpuMs": 6.604
+        },
+        {
+          "wallMs": 6.711832999999842,
+          "cpuMs": 6.709
+        }
+      ],
+      "maxRss": 259457024,
+      "rss": 234788464,
+      "retained": 49191094,
+      "documentBytes": 2746830,
+      "trace": {
+        "mkdirSync": 4,
+        "statSync": 24030,
+        "lstatSync": 173,
+        "stat": 54,
+        "openSync": 11958,
+        "appendFile": 11950,
+        "writeFile": 1,
+        "rename": 1,
+        "renameSync": 2
+      },
+      "logBytes": 7635576,
+      "node": "v26.12.1",
+      "platform": "darwin/arm64"
+    }
+  ],
+  "equivalence": [],
+  "summary": [
+    {
+      "records": 12000,
+      "baseline": {
+        "absorptionWallMs": 2866.187709,
+        "absorptionCpuMs": 3032.726,
+        "observeWallMs": 40.48181249999993,
+        "observeCpuMs": 43.33,
+        "flushWallMs": 6.717958000000181,
+        "flushCpuMs": 6.715,
+        "maxRssMiB": 247.921875,
+        "retainedMiB": 47.83773899078369,
+        "documentBytes": 2746833,
+        "perRoundAbsorptionMs": [
+          2866.2
+        ],
+        "perRoundAbsorptionCpuMs": [
+          3032.7
+        ],
+        "tracePerRecord": {
+          "mkdirSync": 0.996,
+          "statSync": 2.998,
+          "lstatSync": 0.014,
+          "stat": 0.004,
+          "openSync": 0.997,
+          "appendFile": 0.996,
+          "writeFile": 0,
+          "rename": 0,
+          "renameSync": 0
+        }
+      },
+      "working": {
+        "absorptionWallMs": 2415.6637920000003,
+        "absorptionCpuMs": 2575.718,
+        "observeWallMs": 39.65866700000015,
+        "observeCpuMs": 42.457499999999996,
+        "flushWallMs": 6.707832999999937,
+        "flushCpuMs": 6.709,
+        "maxRssMiB": 247.4375,
+        "retainedMiB": 46.912282943725586,
+        "documentBytes": 2746830,
+        "perRoundAbsorptionMs": [
+          2415.7
+        ],
+        "perRoundAbsorptionCpuMs": [
+          2575.7
+        ],
+        "tracePerRecord": {
+          "mkdirSync": 0,
+          "statSync": 2.002,
+          "lstatSync": 0.014,
+          "stat": 0.004,
+          "openSync": 0.997,
+          "appendFile": 0.996,
+          "writeFile": 0,
+          "rename": 0,
+          "renameSync": 0
+        }
+      },
+      "absorptionChange": -0.15718576825423108,
+      "absorptionCpuChange": -0.15069214957104607,
+      "observeChange": -0.02033371158961283,
+      "flushChange": -0.0015071544061816809
+    }
+  ]
+}
