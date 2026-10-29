@@ -231,6 +231,33 @@ test('hot, pending and cold experiment id reuse across event types in one batch 
   assert.ok(batched.document().aggregate.evolution.knowledge.length > 0, 'the mixed failure must really exercise knowledge');
 }));
 
+test('legacy cold metadata without count still drains before replacing a cold trial', async t => frozen(async () => {
+  const run = async batch => {
+    const f = await fixture(t);
+    await f.open();
+    f.append(measurements(60, 'legacy').map(event => measurement(event.experimentId, 'trial-completed')));
+    await f.port.flush(); await f.close();
+    const document = JSON.parse(fs.readFileSync(f.durable, 'utf8'));
+    delete document.global.aggregate.evolution.coldArchives.experiments.count;
+    fs.writeFileSync(f.durable, JSON.stringify(document));
+    await f.open();
+    assert.equal(Object.hasOwn(f.document().aggregate.evolution.coldArchives.experiments, 'count'), false);
+    // The first new row evicts a hot trial. The cold replacement must drain
+    // that pending row before the missing legacy count can hide its old id.
+    f.append([measurement('first-new'), measurement('legacy-0'), ...measurements(50, 'after-replacement')]);
+    if (batch) await f.port.flush();
+    else await patch(EvolutionMemory.prototype, 'applyExecutionEvents', () => async function (events) {
+      let duplicates = 0;
+      for (const event of events) if ((await this.applyExecutionEvent(event)).duplicate) duplicates += 1;
+      return { duplicates };
+    }, async () => { await f.port.flush(); });
+    const row = archiveRows(f.live).filter(row => row.id === rowId('legacy-0')).at(-1);
+    assert.equal(row.status, 'measured', 'the cold replacement must survive its later eviction');
+    return { document: sha(JSON.stringify(normalizedDocument(f))), tree: treeDigests(f.live), query: f.port.query('experiments', 200) };
+  };
+  assert.deepEqual(await run(true), await run(false));
+}));
+
 test('a knowledge-bearing experiment drains before its archive lookup inside a batch', async t => {
   const f = await fixture(t); await f.open();
   const record = EvolutionMemory.prototype.recordExperiment;
