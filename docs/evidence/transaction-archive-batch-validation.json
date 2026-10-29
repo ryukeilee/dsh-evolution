@@ -1,0 +1,194 @@
+{
+  "schema": 1,
+  "testedCommit": "a04de4f10ac865c32fa95666907411cfede71236",
+  "baselineCommit": "6b4dee948b4d86ba35c6736bb667a7a1bc10eb20",
+  "node": "v26.12.1",
+  "heapLimitMiB": 4096,
+  "unit": {
+    "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+    "tests": 1266,
+    "passed": 1266,
+    "failed": 0
+  },
+  "packageChecks": {
+    "command": "npm run pack:check",
+    "mode": "development",
+    "passed": 16
+  },
+  "artifact": {
+    "name": "dsh-evolution",
+    "version": "0.2.0-rc.19",
+    "filename": "dsh-evolution-0.2.0-rc.19.tgz",
+    "sha256": "b23e5876e5573178f04270551718aa906cd0506300bf2cdc44b92fff53325a70",
+    "contentSha256": "2064c9c5f07e68a73491d977230b3c71df38c9d929c3cd5f52c8c6522b8750fc",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "builtWith": {
+      "node": "v26.12.1",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    }
+  },
+  "fixedReleaseVerified": true,
+  "hosts": [
+    {
+      "host": "0.2.0-rc.2",
+      "steps": 21,
+      "ok": true,
+      "evidence": "docs/evidence/transaction-archive-batch-dsh-0.2.0-rc.2.json",
+      "sha256": "6ef81e95de13671ad3bf1231e6380d8886ef7150e3ed6587addca0853a631924"
+    },
+    {
+      "host": "0.2.1-alpha.1",
+      "steps": 21,
+      "ok": true,
+      "evidence": "docs/evidence/transaction-archive-batch-dsh-0.2.1-alpha.1.json",
+      "sha256": "a6195a583f2b016f01f5fad8e868471bb1d36a3244034b360b9e95ec6f9f028a"
+    },
+    {
+      "host": "0.2.1-rc.2",
+      "steps": 21,
+      "ok": true,
+      "evidence": "docs/evidence/transaction-archive-batch-dsh-0.2.1-rc.2.json",
+      "sha256": "8feb95acb112e66ce4e1f655121a5ef378a3cadf44d40d3bcb6aaee8d8ee9720"
+    }
+  ],
+  "benchmarks": [
+    {
+      "path": "docs/performance/transaction-archive-batch-final-timing-20261029.json",
+      "sha256": "9548e9b5df9e547c8be77fdb324509e996b3e0d4e6765264d0ceb224f44fa9fe",
+      "samples": 72,
+      "source": {
+        "A": "27f432b099dae105db3e37c18e1ecabed5a005a07f767465784a199fd5615ef8",
+        "B": "00157507dd4995dee4b365a1565a46ba1d3d439bd5028ff61d334c9b2bde6ccf"
+      }
+    },
+    {
+      "path": "docs/performance/transaction-archive-batch-final-steady-20261029.json",
+      "sha256": "4574cc25e58ebb3c736e8cefa1471f4117cf086c322dd632cc7fc1754dcab714",
+      "samples": 54,
+      "source": {
+        "A": "27f432b099dae105db3e37c18e1ecabed5a005a07f767465784a199fd5615ef8",
+        "B": "00157507dd4995dee4b365a1565a46ba1d3d439bd5028ff61d334c9b2bde6ccf"
+      }
+    },
+    {
+      "path": "docs/performance/transaction-archive-batch-final-io-20261029.json",
+      "sha256": "ac3293f5a069f7bf7753331b86821f2cb93ae89847f9d49f8ff04b4e5701a448",
+      "samples": 36,
+      "source": {
+        "A": "27f432b099dae105db3e37c18e1ecabed5a005a07f767465784a199fd5615ef8",
+        "B": "00157507dd4995dee4b365a1565a46ba1d3d439bd5028ff61d334c9b2bde6ccf"
+      }
+    },
+    {
+      "path": "docs/performance/transaction-archive-batch-final-overhead-20261029.json",
+      "sha256": "bec70d8e5e4aa8f1bd19a4cc8d719dc840f7fd60886b2a483749445b0af45305",
+      "samples": 12,
+      "source": {
+        "A": "27f432b099dae105db3e37c18e1ecabed5a005a07f767465784a199fd5615ef8",
+        "B": "00157507dd4995dee4b365a1565a46ba1d3d439bd5028ff61d334c9b2bde6ccf"
+      }
+    },
+    {
+      "path": "docs/performance/transaction-archive-batch-final-equivalence-20261029.json",
+      "sha256": "546e08f98cea5c0cfbfbc7747dedf06193bcdc52fd662cf4211229690eeb2973",
+      "samples": 12,
+      "source": {
+        "A": "27f432b099dae105db3e37c18e1ecabed5a005a07f767465784a199fd5615ef8",
+        "B": "00157507dd4995dee4b365a1565a46ba1d3d439bd5028ff61d334c9b2bde6ccf"
+      }
+    }
+  ],
+  "review": {
+    "rounds": 2,
+    "model": "gpt-6.1-sol",
+    "provider": "codex",
+    "requestedEffort": "xhigh",
+    "returnedEffort": "xhigh",
+    "runtimeInfoEffort": "xhigh",
+    "independentBackendTelemetry": false,
+    "usage": null,
+    "verdict": "APPROVE",
+    "findings": [
+      {
+        "id": "S1",
+        "severity": "should",
+        "outcome": "resolved",
+        "fixCommit": "a04de4f10ac865c32fa95666907411cfede71236",
+        "evidence": "Legacy missing-count regression reproduced before fix; eager/batched state, archive and index equality passes after fix."
+      }
+    ]
+  },
+  "logs": [
+    {
+      "name": "dsh-archive-final-unit.log",
+      "sha256": "ddcb34aa1931d5643529b2bdf7a916ac9a51e3be222433ac0f1dd03d568b9b34",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-pack-check.log",
+      "sha256": "e9d2ad553675daa48a5eb88546523987aedfc390ef159974503b6945f45050b1",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-pack.log",
+      "sha256": "e0ab7f876cad49e5228982b60e7b680e50523c87c9ca0d60ee3785891974022e",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-artifact.log",
+      "sha256": "202a6f657e50a9dbf6fe168a32409485cc991d26b5ecd5649556702b76729717",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-fixed-artifact.log",
+      "sha256": "7b7794dfcc0708d5ddf350590b3cbbf989deb004bcdcad858e301d707a50adc4",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-host-0.2.0-rc.2.log",
+      "sha256": "e5b17b7eb2a8b31561ac0ef918b1892d991444bc8c23e169e3e134305839afb9",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-host-0.2.1-alpha.1.log",
+      "sha256": "269fdaef2c35ba62f56eda1f33723d2541e9070dc01d8cab690b1a78e3657c83",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-host-0.2.1-rc.2.log",
+      "sha256": "7a114939c38f45cf4c0f7dde3aae9da8ea3e6426be7e390c8578d2a3ef55d9f4",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-timing.log",
+      "sha256": "c6c9a30f72e6caa2a0f4d094442c33606430f7f873a94384340c8c5c8f00b6da",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-steady.log",
+      "sha256": "6d4fd44df9c472e7ba9d4beaa1205dea1957a5beeebdecf26215b6992ecfb492",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-io.log",
+      "sha256": "9b2b3bc9d20e619d8354a464e41d99a3bc6e9fb341c97894356e59af49f8377c",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-overhead.log",
+      "sha256": "9cb151f5e1d4f4142ef88d4e96e3aab9dd02699784a1b212da28b0494ef10e73",
+      "exitCode": 0
+    },
+    {
+      "name": "dsh-archive-final-equivalence.log",
+      "sha256": "ac11e850f9ce72308751ce81b3f9b4cea32223383adb74be032ee3ab140bf315",
+      "exitCode": 0
+    }
+  ],
+  "benchmarkReportLayout": "Summary JSON references byte-unchanged raw samples JSONL; equality of the original duplicated samples array and JSONL was asserted before compaction."
+}

@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "node": "v26.12.1",
+  "source": {
+    "A": "27f432b099dae105db3e37c18e1ecabed5a005a07f767465784a199fd5615ef8",
+    "B": "00157507dd4995dee4b365a1565a46ba1d3d439bd5028ff61d334c9b2bde6ccf"
+  },
+  "roots": {
+    "A": "/tmp/dsh-archive-batch-6b4dee9",
+    "B": "/tmp/dsh-archive-batch-candidate-2"
+  },
+  "counts": [
+    2000,
+    12000,
+    20000
+  ],
+  "method": "Same deterministic signed fixture with fixed zero-argument new Date audit clock; Date.now remains real. All state keys retained; only coldArchives file/activeFile/indexFile/segments root prefixes canonicalized. Raw index bytes compared, including fixed audit timestamps; additionally records a diagnostic index digest with top-level and segment updatedAt normalized. JSONL bytes compared via SHA256 and size. Each side checks flush followed by two close/reopens and flushes.",
+  "sampleCount": 12,
+  "samplesFile": "transaction-archive-batch-final-equivalence-20261029.samples.jsonl",
+  "samplesSha256": "113424eeff4a0bf6880347a9cd5230b7945083ad373457d6bf89370ff4338d37"
+}
