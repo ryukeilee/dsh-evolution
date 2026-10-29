@@ -1,6 +1,7 @@
 // Reverse only the incremental marker-window round before older pinned baselines.
 // Exact source anchors and d9de6b2 source hashes prevent a partial reconstruction.
 import assert from 'node:assert/strict';
+import { reverseTransactionArchiveBatch } from './transaction-archive-batch-baseline.js';
 import { createHash } from 'node:crypto';
 const HUNKS = [
   {
@@ -55,6 +56,7 @@ const PINS = {
 };
 export function reverseMarkerWindowRound(file, source) {
   if (!PINS[file]) return source;
+  source = reverseTransactionArchiveBatch(file, source);
   for (const { file: target, post, pre } of HUNKS) {
     if (target !== file) continue;
     assert.equal(source.split(post).length - 1, 1, `${file}: incremental-window reversal anchor must occur exactly once`);
