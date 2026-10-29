@@ -92,6 +92,20 @@ const SOURCE_PATH = "lib/domain-storage.js";
 // other direction can also find: no piece deletes text another piece is anchored
 // on, and no piece is anchored on an empty string.
 const reversals = [
+  // The newest change to this file is the staged mirror's lazy sealed-segment
+  // directory: `mirrorArchives()` now links a segment directory instead of
+  // writing one hard link per sealed segment, so the stage's own removal helper
+  // (`removeStage`, which unlinks a borrow before the recursive delete) replaced
+  // the two raw `fs.rmSync()` calls. Reversing these five pieces restores the
+  // shapes every older reversal below was written against.
+  ["import { assertLiveTreeUnchanged, changedArchiveFiles, copyArchives, installArchiveFiles, mirrorArchives,\n  privatizeArchiveFile, removeStage, stageDirectory, syncFile, syncStage, syncTree, writeStageManifest } from './archive-stage.js';",
+   "import { assertLiveTreeUnchanged, changedArchiveFiles, copyArchives, installArchiveFiles, mirrorArchives,\n  privatizeArchiveFile, stageDirectory, syncFile, syncStage, syncTree, writeStageManifest } from './archive-stage.js';"],
+  ["    removeStage(source);\n", "    fs.rmSync(source, { recursive: true });\n"],
+  ["    // The stage is a mirror of the committed tree: a hard link for every file the\n    // transaction may write in place, and a link to the live directory for every\n    // sealed segment directory it may not (see `mirrorArchives`). Unchanged files\n    // need no copy and no fsync because they are the bytes that were already\n    // durable in the committed tree.\n    const mirror = mirrorArchives(root, dir);\n    const privatized = new Set();\n    const archiveWriteGuard = file => privatizeArchiveFile({ live: root, directory: dir, snapshot: mirror, privatized, file });\n",
+   "    // The stage is a hard-link mirror of the live tree: complete and correct\n    // without copying, and unchanged files need no fsync because they are the\n    // bytes that were already durable in the committed tree.\n    const snapshot = mirrorArchives(root, dir);\n    const privatized = new Set();\n    const archiveWriteGuard = file => privatizeArchiveFile({ directory: dir, snapshot, privatized, file });\n"],
+  ["    assertLiveTreeUnchanged(root, mirror);\n", "    assertLiveTreeUnchanged(root, snapshot);\n"],
+  ["    const files = changedArchiveFiles(dir, mirror, root);\n", "    const files = changedArchiveFiles(dir, snapshot, root);\n"],
+  ["      removeStage(dir, mirror);\n", "      fs.rmSync(dir, { recursive: true });\n"],
   // The staged save check is the newest change to this file: it judges the
   // bridge marker window once per marker instead of re-serializing the whole
   // document on every save (see `assertStagedTransactionSave` in

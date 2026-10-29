@@ -188,7 +188,7 @@ async function runSession(Memory, root, rows, knowledgeRows, { instrument = fals
   // Exactly what `mutate()` does before it builds the staged memory: hard-link
   // the live tree, then load an instance over the mirror.
   const snapshot = mirrorArchives(root, files.stage);
-  assert.ok(snapshot.size > 0, "the mirror must contain the live archive tree");
+  assert.ok(snapshot.files.size > 0, "the mirror must describe the live archive tree");
   const stageStore = new JsonStateStore({ filePath: join(files.stage, "state.json") });
   const staged = instance(Memory, stageStore);
   const mirrorStart = performance.now();

@@ -62,9 +62,14 @@ test('a staged tree shares the live inodes instead of copying the archive', asyn
     writeSealedSegment(live);
     const before = treeOf(live);
     const snapshot = mirrorArchives(live, stage);
-    const staged = treeOf(stage);
-    assert.deepEqual([...staged.keys()].sort(), [...before.keys()].sort());
-    for (const [relative, entry] of staged) assert.equal(entry.ino, before.get(relative).ino, `${relative} must share the live inode`);
+    // Every committed file is visible through the stage with the live inode: the
+    // active file is a hard link and the sealed segment directory is a borrow, so
+    // no copy of any archive byte exists in the stage.
+    const visible = relative => {
+      const stat = fs.statSync(path.join(stage, ...relative.split('/')), { bigint: true });
+      return { dev: String(stat.dev), ino: String(stat.ino), size: stat.size };
+    };
+    for (const [relative, entry] of before) assert.equal(visible(relative).ino, entry.ino, `${relative} must share the live inode`);
     assert.deepEqual(changedArchiveFiles(stage, snapshot), []);
 
     // A new private file in the stage is the only change; the live tree keeps
@@ -131,8 +136,12 @@ test('installing a stage replaces only the changed files and verifies their byte
     const after = treeOf(live);
     for (const [relative, entry] of before) assert.equal(after.get(relative).ino, entry.ino, `${relative} must not be rewritten`);
     // Files that are not archive entries are never walked, staged or installed.
+    // `walkArchives` over the stage reports the borrowed directory as a link, so
+    // the stage tree is read with that borrow allowed.
     fs.writeFileSync(path.join(stage, 'not-allowed.jsonl'), 'x');
-    assert.equal(treeOf(stage).has('not-allowed.jsonl'), false);
+    const staged = new Map();
+    walkArchives(stage, (nested) => staged.set(nested, true), '', { linked: new Set([...snapshot.directories.keys()]) });
+    assert.equal(staged.has('not-allowed.jsonl'), false);
   } finally {
     fs.rmSync(live, { recursive: true, force: true });
     fs.rmSync(staging, { recursive: true, force: true });
@@ -282,14 +291,29 @@ test('append and rotation privatize shared active files before writing', async (
       id: `rotation-${i}`, status: 'observed', summary: 'x'.repeat(200) })) } };
     const stateStore = { filePath: path.join(stage, 'state.json'), load: async () => aggregate,
       update: async update => { aggregate = update(aggregate); } };
+    const segments = path.join(live, 'state.json.cycles-archive.jsonl.segments');
+    const liveSegments = fs.lstatSync(segments, { bigint: true });
+    const liveSegmentNames = fs.readdirSync(segments).sort();
     const memory = new EvolutionMemory({ stateStore, hotCycles: 1, archiveMaxBytes: 256,
       archiveWriteGuard: file => privatizeArchiveFile({ directory: stage, snapshot, privatized, file }) });
     await memory.load();
     assert.ok(privatized.has(active));
     assert.deepEqual(fs.readFileSync(path.join(live, active)), original, 'uncommitted rotations leave live bytes intact');
+    // The seal writes its new segment into the staged copy of the directory, which
+    // the guard materialized first: the live directory keeps its own entries and
+    // its own identity, so a crash before the commit cannot leave a segment the
+    // active file still holds every record of.
+    assert.deepEqual(fs.readdirSync(segments).sort(), liveSegmentNames, 'the live segment directory gained nothing');
+    assert.equal(fs.lstatSync(segments, { bigint: true }).mtimeNs, liveSegments.mtimeNs, 'the live segment directory was not written through');
+    assert.equal(fs.lstatSync(path.join(stage, 'state.json.cycles-archive.jsonl.segments')).isSymbolicLink(), false,
+      'the borrow is materialized before the transaction writes into it');
     assertLiveTreeUnchanged(live, snapshot);
     const files = changedArchiveFiles(stage, snapshot);
     assert.ok(files.some(entry => entry.file.includes('.segments/')));
+    assert.deepEqual(files.filter(entry => entry.file.includes('.segments/')).map(entry => entry.file.split('/').pop()),
+      fs.readdirSync(path.join(stage, 'state.json.cycles-archive.jsonl.segments'))
+        .filter(name => /^segment-[0-9]+\.jsonl$/.test(name) && !liveSegmentNames.includes(name)),
+      'only the segment this transaction created is staged');
     writeStageManifest(stage, files);
     syncStage({ directory: stage, stagingRoot: staging, files });
     installArchiveFiles(stage, live, files);

@@ -20,7 +20,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { syncBuiltinESMExports } from 'node:module';
-import { installArchiveFiles, mirrorArchives, changedArchiveFiles } from '../lib/archive-stage.js';
+import { assertLiveTreeUnchanged, changedArchiveFiles, inspectArchiveIntegrity, installArchiveFiles, mirrorArchives,
+  removeStage, STAGE_BORROWS } from '../lib/archive-stage.js';
 
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const ACTIVE = 'state.json.cycles-archive.jsonl';
@@ -166,11 +167,78 @@ test('a staged tree is built with one directory creation per directory', (t) => 
   let snapshot;
   try { snapshot = mirrorArchives(live, stage); }
   finally { fs.mkdirSync = original; syncBuiltinESMExports(); }
-  // The stage root and the segment directory: the mirror must not ask for the
-  // same directory once per mirrored file.
-  assert.deepEqual([...new Set(created)].sort(), [stage, path.join(stage, SEGMENTS)].sort());
-  assert.equal(created.length, 2);
-  assert.deepEqual(changedArchiveFiles(stage, snapshot), [], 'the mirror shares every inode');
+  // Only the stage root: the mirror does not create the segment directory at all,
+  // because it shows that directory through one borrow instead of one entry per
+  // sealed segment. Creating it per file (or at all) is what this pins.
+  assert.deepEqual([...new Set(created)], [stage]);
+  assert.equal(created.length, 1);
+  assert.deepEqual(changedArchiveFiles(stage, snapshot), [], 'the mirror shares every inode it materializes');
+});
+
+test('a sealed segment directory is borrowed as one link, not one entry per segment', (t) => {
+  const live = scratch(t);
+  const stage = path.join(scratch(t), 'stage-1');
+  const names = [];
+  for (let index = 1; index <= 64; index++) {
+    const name = `segment-${String(index).padStart(12, '0')}.jsonl`;
+    write(path.join(live, SEGMENTS, name), `{"id":"${index}"}\n`);
+    names.push(name);
+  }
+  write(path.join(live, ACTIVE), '{"id":"active"}\n');
+  const snapshot = mirrorArchives(live, stage);
+
+  // The stage holds one entry for the directory and none of its files.
+  assert.equal(fs.lstatSync(path.join(stage, SEGMENTS)).isSymbolicLink(), true);
+  assert.deepEqual(fs.readdirSync(path.join(stage)).sort(), [STAGE_BORROWS, ACTIVE, SEGMENTS].sort());
+  assert.deepEqual(fs.readdirSync(path.join(stage, SEGMENTS)).sort(), names,
+    'the borrow still shows every committed segment');
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(stage, STAGE_BORROWS), 'utf8')), { schema: 1, borrowed: [SEGMENTS] });
+  assert.deepEqual(changedArchiveFiles(stage, snapshot), [], 'nothing under a borrow is a change');
+  assertLiveTreeUnchanged(live, snapshot);
+
+  // A live entry that appears under the borrow is a change this transaction did
+  // not make, and it is refused instead of being silently read or installed.
+  write(path.join(live, SEGMENTS, 'segment-999999999999.jsonl'), '{"id":"intruder"}\n');
+  assert.throws(() => assertLiveTreeUnchanged(live, snapshot), /E_DOMAIN_STAGE_ISOLATION/);
+});
+
+test('removing a stage unlinks the borrow instead of the live directory it names', (t) => {
+  const live = scratch(t);
+  const staging = scratch(t);
+  const stage = path.join(staging, 'stage-1');
+  write(path.join(live, SEGMENTS, 'segment-000000000001.jsonl'), '{"id":"1"}\n');
+  write(path.join(live, ACTIVE), '{"id":"active"}\n');
+  mirrorArchives(live, stage);
+
+  removeStage(stage);
+
+  assert.equal(fs.existsSync(stage), false);
+  assert.equal(bytes(path.join(live, SEGMENTS, 'segment-000000000001.jsonl')), '{"id":"1"}\n',
+    'the live archive survives the stage cleanup');
+  assert.equal(bytes(path.join(live, ACTIVE)), '{"id":"active"}\n');
+});
+
+test('an unrecorded segment-directory link is not followed by the inspector', (t) => {
+  const live = scratch(t);
+  const stage = path.join(scratch(t), 'stage-1');
+  write(path.join(live, SEGMENTS, 'segment-000000000001.jsonl'), '{"id":"1"}\n');
+  mirrorArchives(live, stage);
+
+  // The recorded borrow resolves the entries through the link.
+  const inside = inspectArchiveIntegrity({ stateFile: path.join(stage, 'state.json'), scanContents: false });
+  assert.equal(inside.findings.some((finding) => finding.code === 'archive-segment-directory-unreadable'), false,
+    'a borrow the stage recorded is read through');
+  assert.ok(inside.files.some((file) => file.file === 'segment-000000000001.jsonl'));
+
+  // Without the record the same link is an unreadable directory, exactly as any
+  // link in the live tree is, and no entry behind it is reported as present.
+  fs.rmSync(path.join(stage, STAGE_BORROWS));
+  const withheld = inspectArchiveIntegrity({ stateFile: path.join(stage, 'state.json'), scanContents: false });
+  assert.ok(withheld.findings.some((finding) => finding.code === 'archive-segment-directory-unreadable'));
+  assert.equal(withheld.files.some((file) => file.file === 'segment-000000000001.jsonl'), false);
+  const direct = inspectArchiveIntegrity({ stateFile: path.join(live, 'state.json'), scanContents: false });
+  assert.equal(direct.findings.some((finding) => finding.code === 'archive-segment-directory-unreadable'), false,
+    'the live tree is inspected through the real directory');
 });
 
 test('a live entry that is not the staged inode is replaced, never followed', (t) => {
@@ -266,4 +334,23 @@ test('a restart finishes a half-published stage and publishes only what is missi
   assert.deepEqual(temporaries(live), [], 'neither the interrupted install nor the replay leaves a temporary entry');
   assert.equal((await restarted.query('observations')).count > 0, true);
   await restarted.close();
+});
+
+test('a change list can never install a file it did not stage, even inside a borrow', (t) => {
+  const live = scratch(t);
+  const stage = path.join(scratch(t), 'stage-1');
+  write(path.join(live, SEGMENT), 'LIVE-SEGMENT\n');
+  write(path.join(live, ACTIVE), 'LIVE-ACTIVE\n');
+  mirrorArchives(live, stage);
+
+  // The segment is visible through the borrow but is not a staged file: naming it
+  // in the change list must be refused, because the bytes the installer would
+  // publish are the live tree's own and nothing proved them replaceable.
+  assert.equal(bytes(path.join(stage, SEGMENT)), 'LIVE-SEGMENT\n');
+  assert.equal(fs.lstatSync(path.join(stage, SEGMENT)).isSymbolicLink(), false, 'the file itself is reached through the borrowed directory');
+  assert.equal(fs.lstatSync(path.join(stage, SEGMENTS)).isSymbolicLink(), true);
+  assert.throws(() => installArchiveFiles(stage, live, [record(SEGMENT, 'LIVE-SEGMENT\n')]),
+    (error) => error?.code === 'E_DOMAIN_ARCHIVE_SYMLINK',
+    'the installer refuses to resolve a staged file through a borrowed directory');
+  assert.equal(bytes(path.join(live, SEGMENT)), 'LIVE-SEGMENT\n', 'the refused install publishes nothing');
 });
