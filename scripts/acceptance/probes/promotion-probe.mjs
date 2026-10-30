@@ -118,9 +118,9 @@ export function apply(ctx) {
         experimentId: proposed.experimentId,
         observation: {
           solvesProblem: true,
-          metrics: { missing: 0 },
-          beforeMetrics: { missing: 1 },
-          afterMetrics: { missing: 0 },
+          metrics: { errors: 0 },
+          beforeMetrics: { errors: 1 },
+          afterMetrics: { errors: 0 },
           sampleCount: 2,
           observationWindow: 'trial registered an executable marker and the durable restart gate is pending',
           benefitEvidence: 'a real marker execution was recorded; the restart gate remains',

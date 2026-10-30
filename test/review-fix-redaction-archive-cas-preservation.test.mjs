@@ -109,6 +109,8 @@ test('a CAS conflict that preserves the journal leaves the externally edited arc
   assert.equal(evidence.promotionJournal.stateDir, paths.promotionStateDir);
   assert.equal(evidence.promotionJournal.failures.length > 0, true, 'the rollback failure is recorded');
   assert.equal(evidence.failure.failurePhase, 'promotion-commit');
+  assert.equal(evidence.failure.rollbackResult.ok, false);
+  assert.equal(evidence.failure.rollbackResult.status, 'rollback-failed');
   assert.equal(evidence.failure.errorCategory.length > 0, true, 'the failure keeps a classification');
   assert.match(evidence.failure.errorDigest, /^sha256:[0-9a-f]{16}$/, 'the failure keeps an irreversible digest');
   assert.match(evidence.failure.errorSummary, /rollback failed|journal preserved/, 'the failure keeps a readable summary');
