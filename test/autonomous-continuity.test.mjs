@@ -239,6 +239,23 @@ test('the durable failure identity is the declaration, not the pattern', async (
     'changed Host code is a new hypothesis',
   );
   assert.match(core.strategyFingerprint(sameDeclaration), /^[0-9a-f]{64}$/);
+  // `targets` is the object form `{ components, plugins, configurations }`, not a
+  // string array: reading it as one dropped it from the identity entirely.
+  assert.notEqual(
+    core.strategyFingerprint(declaration('a', { targets: { plugins: ['target-a'] } })),
+    core.strategyFingerprint(declaration('a', { targets: { plugins: ['target-b'] } })),
+    'the declared targets are part of the identity',
+  );
+  assert.notEqual(
+    core.strategyFingerprint(declaration('a', { targets: { plugins: ['target-a'] } })),
+    core.strategyFingerprint(declaration('a', { targets: { components: ['target-a'] } })),
+    'the kind of the declared target is part of the identity',
+  );
+  assert.equal(
+    core.strategyFingerprint(declaration('a', { targets: { plugins: ['target-b', 'target-a'] } })),
+    core.strategyFingerprint(declaration('a', { targets: { plugins: ['target-a', 'target-b'] } })),
+    'the order the targets are declared in is not part of the identity',
+  );
 
   // Unreadable declarations cannot be compared, but they must not throw out of
   // the observer either.
@@ -453,4 +470,52 @@ test('end to end: the recorded failure stops the next session, a new declaration
   const [record] = [...third.core.experiments.values()];
   assert.equal(record.state, 'measured', 'and it is left waiting for its owner');
   assert.equal(record.autonomous.strategyFingerprint, third.core.strategyFingerprint(declaration('b')));
+});
+
+// ---------------------------------------------------------------------------
+// Only the declared targets change
+// ---------------------------------------------------------------------------
+
+test('changing only the declared targets is a new hypothesis for the next session', async (t) => {
+  const root = await scratch(t);
+  const scoped = (pluginTarget) => declaration('a', {
+    target: 'plugin:base',
+    targets: { plugins: [pluginTarget] },
+    measure: async () => unimproved,
+  });
+
+  const first = session(root, { strategies: { AGENT_ERROR: scoped('target-a') } });
+  assert.equal((await first.observe()).phase, 'pattern-observing');
+  assert.equal((await first.observe()).phase, 'rolled-back-no-improvement');
+
+  const changed = session(root, { strategies: { AGENT_ERROR: scoped('target-b') } });
+  assert.equal((await changed.observe()).phase, 'pattern-observing');
+  assert.equal((await changed.observe()).phase, 'rolled-back-no-improvement', 'the changed targets are attempted');
+
+  const unchanged = session(root, { strategies: { AGENT_ERROR: scoped('target-a') } });
+  assert.equal((await unchanged.observe()).phase, 'pattern-observing');
+  assert.equal((await unchanged.observe()).phase, 'suppressed', 'the original targets are still the failed ones');
+});
+
+test('a measured candidate is not offered for a declaration with different targets', async (t) => {
+  const root = await scratch(t);
+  const scoped = (pluginTarget) => declaration('a', { target: 'plugin:base', targets: { plugins: [pluginTarget] } });
+  // One session, so the pending experiment is present in `this.experiments`: the
+  // pending check reads the live experiment, and a declaration that only changed
+  // its declared targets must not be answered with the experiment of the old one.
+  const { core, observe } = session(root, { strategies: { AGENT_ERROR: scoped('target-a') } });
+  await observe();
+  const pending = await observe();
+  assert.equal(pending.phase, 'candidate-awaiting-confirmation');
+  assert.deepEqual(core.experiments.get(pending.experimentId).targets, ['plugin:target-a']);
+
+  core.strategies.AGENT_ERROR = scoped('target-b');
+  const next = await observe();
+  assert.equal(next.phase, 'candidate-awaiting-confirmation');
+  assert.notEqual(next.experimentId, pending.experimentId, 'the old experiment tested a different target set');
+  assert.deepEqual(
+    core.experiments.get(next.experimentId).targets,
+    ['plugin:target-b'],
+    'and the new experiment claims the targets the declaration names',
+  );
 });
