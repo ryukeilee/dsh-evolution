@@ -61,3 +61,12 @@ test('measurement handles direction, bounds, aliases, and incomplete evidence', 
   assert.equal(measuredEvidenceOf({ ...observation({ latencyMs: 100 }, { latencyMs: 90 }), observationWindow: 0 }), false);
   assert.equal(measuredEvidenceOf({ ...observation({ latencyMs: 100 }, { latencyMs: 90 }), sampleCount: 0 }), false);
 });
+
+
+test('nested metrics reach evaluator as a before/after pair', async () => {
+  const { domainEvaluationEvidence } = await import('../lib/orchestrator.js');
+  const evidence = domainEvaluationEvidence({ latestObservation: { solvesProblem: true, regressionPassed: true, metrics: { before: { latencyMs: 100, metrics: { qualityScore: 0.9 } }, after: { latencyMs: 90, metrics: { qualityScore: 0.1 } } } } });
+  const result = new EvolutionEvaluator().evaluate(evidence);
+  assert.equal(result.decision, 'rollback');
+  assert.equal(result.metrics.qualityScore.regressed, true);
+});
