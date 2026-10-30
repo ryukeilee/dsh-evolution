@@ -1,0 +1,95 @@
+{
+  "kind": "release-audit",
+  "package": "dsh-evolution",
+  "packageVersion": "0.2.0-rc.20",
+  "tag": "v0.2.0-rc.20",
+  "tagTarget": "aab342f0422680a9fa31293f387861d1c5a2fadc",
+  "sourceCommit": "544e4e820a1344f8f5366e34c97c89e13a78ea99",
+  "pullRequest": 11,
+  "pin": {
+    "filename": "dsh-evolution-0.2.0-rc.20.tgz",
+    "sha256": "741a1a404b8b7a3829a836ecae782d72508028a2d08dbd55e942bae593c49956",
+    "contentSha256": "e35c36a8979ec4572ca1be85de29c7d66c86cd3c27b20e201dc4907a4891a8e0",
+    "entries": 51,
+    "modes": ["0o644", "0o755"],
+    "builtWith": { "node": "v26.12.1", "npm": "11.20.0", "platform": "darwin-arm64" }
+  },
+  "localChecks": {
+    "test": { "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test", "tests": 1266, "pass": 1266, "fail": 0 },
+    "packCheckRelease": { "command": "npm run pack:check -- --release", "checks": 16, "passed": 16 },
+    "releaseVerify": { "command": "npm run release:verify", "match": true },
+    "provenance": {
+      "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.20 --require-source-commit",
+      "match": true
+    },
+    "packReproducible": { "command": "node scripts/release/pack.mjs --dist /tmp/dsh-rc20-final", "byteIdenticalTwice": true }
+  },
+  "workflows": {
+    "ciPullRequest": { "id": 41009748261, "conclusion": "success", "head": "dcb345ec" },
+    "codeqlPullRequest": { "id": 41009748288, "conclusion": "success", "head": "dcb345ec" },
+    "ciPush": { "id": 41009960397, "conclusion": "success", "head": "aab342f0" },
+    "codeqlPush": { "id": 41009960126, "conclusion": "success", "head": "aab342f0" },
+    "release": { "id": 41010022499, "conclusion": "success", "head": "aab342f0" }
+  },
+  "pullRequestChecks": {
+    "count": 8,
+    "allPassed": true,
+    "names": [
+      "unit tests (node 22.19.0)",
+      "unit tests (node 24.x)",
+      "package (clean, pinned, installable)",
+      "host acceptance (0.2.0-rc.2)",
+      "host acceptance (0.2.1-alpha.1)",
+      "host acceptance (0.2.1-rc.2)",
+      "analyze (javascript-typescript)",
+      "CodeQL"
+    ]
+  },
+  "release": {
+    "id": 428691669,
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0-rc.20",
+    "isDraft": false,
+    "isPrerelease": true,
+    "publishedAt": "2026-10-30T05:44:39Z"
+  },
+  "draftVerification": {
+    "assets": [
+      "dsh-evolution-0.2.0-rc.20.tgz",
+      "manifest.json",
+      "SHA256SUMS"
+    ],
+    "downloadedBytesIdenticalToRelease": true,
+    "sha256sumCheck": "OK"
+  },
+  "postpublishVerification": {
+    "method": "anonymous curl download of the published assets, then sha256 check, verify-artifact, and a fresh three-host acceptance against the downloaded tarball",
+    "anonymousDownload": true,
+    "tarballBytesIdenticalToRelease": true,
+    "manifestBytesIdenticalToRelease": true,
+    "sha256sumCheck": "OK",
+    "verifyArtifact": {
+      "sha256": "741a1a404b8b7a3829a836ecae782d72508028a2d08dbd55e942bae593c49956",
+      "contentSha256": "e35c36a8979ec4572ca1be85de29c7d66c86cd3c27b20e201dc4907a4891a8e0",
+      "entries": 51,
+      "matchesPin": true
+    },
+    "acceptance": [
+      { "host": "0.2.0-rc.2", "steps": 21, "ok": true, "evidence": "docs/evidence/rc20-postpublish-dsh-0.2.0-rc.2.json" },
+      { "host": "0.2.1-alpha.1", "steps": 21, "ok": true, "evidence": "docs/evidence/rc20-postpublish-dsh-0.2.1-alpha.1.json" },
+      { "host": "0.2.1-rc.2", "steps": 21, "ok": true, "evidence": "docs/evidence/rc20-postpublish-dsh-0.2.1-rc.2.json" }
+    ]
+  },
+  "review": {
+    "method": "sol-loop",
+    "model": "gpt-6.1-sol",
+    "requestedReasoningEffort": "xhigh",
+    "rounds": 2,
+    "finalVerdict": "APPROVE",
+    "effectiveOptionsVerified": false,
+    "note": "Round 1 raised 3 factual blockers, 1 should and 1 nit in the new CHANGELOG/RELEASE text; all were fixed. Round 2 approved and raised 1 nit, also fixed. The tool returned the requested provider, model and reasoning effort; no independent evidence of the effective runtime options or of token usage was returned."
+  },
+  "knownLimits": [
+    "This audit records what was executed for this candidate; it does not re-verify the historical v0.2.0-rc.1 tag/manifest mismatch recorded in RELEASE.md section 6 item 2.",
+    "Post-publish acceptance ran on one platform (darwin-arm64) with Node v26.12.1, the same host as the pinned build; the pinned artifact was separately accepted by CI on the three supported DSH hosts."
+  ]
+}
