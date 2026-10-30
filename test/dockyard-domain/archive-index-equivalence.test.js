@@ -353,6 +353,15 @@ test("the derived baseline matches the pre-change pin, and survives a shared-sca
   const repinned = baselineFromSources(working, working);
   assert.equal(repinned.pinPredatesScan, false);
   assert.equal(repinned.source, baseline.source, "a shared-scan re-pin must retain the full old baseline");
+  // A pin that carries the row-window rewrite has no `#scanArchiveRaw` either,
+  // so the old marker alone read it as older than the shared scan and compared
+  // the reversal against a source it can never equal. The shipped rc.20
+  // artifact is exactly this shape.
+  const rewrittenPin = `${working}\nclass Rewritten { #walkArchiveLines() {} }\n`;
+  assert.ok(rewrittenPin.includes("#walkArchiveLines"));
+  const laterPin = baselineFromSources(working, rewrittenPin);
+  assert.equal(laterPin.pinPredatesScan, false, "a pin that carries the row-window rewrite is not the pre-change source");
+  assert.equal(laterPin.source, baseline.source, "a later pin must still supply the guarded reconstruction");
   assert.throws(() => reconstructPreArchiveIntegrity(working.replace(
     "const integrityFaults = this.#durableArchiveIntegrityFaults();",
     "const integrityFaults = null;",

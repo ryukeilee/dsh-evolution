@@ -1438,7 +1438,12 @@ export function readBaselineSource() {
 // identity check reverses them all, in the order the table lists them.
 export function baselineFromSources(working, pinned) {
   const reconstructed = reconstructPreHousekeepingIndex(reconstructPreSharedScan(reconstructPreMeasurementMarkerSaveCoalescing(reconstructPreArchiveIntegrity(reconstructPreDeferredArchiveIndex(working)))));
-  const pinPredatesScan = !pinned.includes("#scanArchiveRaw");
+  // Only a pin older than the shared scan can be the source this differential
+  // reverses towards. `#scanArchiveRaw` alone cannot decide it any more: the
+  // row-window rewrite that froze `working` removed that method, so a pin that
+  // carries the rewrite has neither the shared scan nor the old source. A pin
+  // with `#walkArchiveLines` is that later release, not the pre-change one.
+  const pinPredatesScan = !pinned.includes("#scanArchiveRaw") && !pinned.includes("#walkArchiveLines");
   if (pinPredatesScan) {
     assert.equal(reconstructed, pinned,
       "the reconstruction must be byte-identical to the authoritative pre-change pin");
