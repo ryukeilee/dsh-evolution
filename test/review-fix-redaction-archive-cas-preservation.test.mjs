@@ -42,7 +42,7 @@ function runner() {
   };
 }
 
-async function measuredFixture(t, name) {
+async function measuredFixture(t, name, observation = OBSERVATION) {
   const root = await scratchRoot(name);
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const paths = promotionPaths(root);
@@ -59,7 +59,7 @@ async function measuredFixture(t, name) {
   const exec = execFor('review-owner');
   const proposal = core.propose({ why: 'review-cas', target: 'plugin:review', impactScope: ['test'], successMetrics: ['errors'] }, exec);
   await core.trial({ experimentId: proposal.experimentId, composition: { name: 'r', purpose: 'r', code: { host: HOST_CODE } } }, exec);
-  core.measure({ experimentId: proposal.experimentId, observation: OBSERVATION }, exec);
+  core.measure({ experimentId: proposal.experimentId, observation }, exec);
   const archive = path.join(paths.archiveDir, `${proposal.experimentId}.md`);
   await fs.mkdir(paths.archiveDir, { recursive: true });
   return { root, paths, core, exec, experimentId: proposal.experimentId, archive };
@@ -109,6 +109,8 @@ test('a CAS conflict that preserves the journal leaves the externally edited arc
   assert.equal(evidence.promotionJournal.stateDir, paths.promotionStateDir);
   assert.equal(evidence.promotionJournal.failures.length > 0, true, 'the rollback failure is recorded');
   assert.equal(evidence.failure.failurePhase, 'promotion-commit');
+  assert.equal(evidence.failure.rollbackResult.ok, false);
+  assert.equal(evidence.failure.rollbackResult.status, 'rollback-failed');
   assert.equal(evidence.failure.errorCategory.length > 0, true, 'the failure keeps a classification');
   assert.match(evidence.failure.errorDigest, /^sha256:[0-9a-f]{16}$/, 'the failure keeps an irreversible digest');
   assert.match(evidence.failure.errorSummary, /rollback failed|journal preserved/, 'the failure keeps a readable summary');
@@ -138,4 +140,20 @@ test('the normal promotion commit still writes its archive and no failure sideca
   assert.equal(written.endsWith('\n'), true, 'the archive keeps its trailing newline');
   assert.equal(await exists(path.join(paths.archiveDir, `${experimentId}.failure.json`)), false, 'a successful promotion writes no failure sidecar');
   assert.equal(durable.nextSession.archivePath, archive);
+});
+
+
+test('normalized metrics with unobserved pairs do not block promotion', async (t) => {
+  const observation = { ...OBSERVATION, beforeMetrics: { latencyMs: 100, cost: null }, afterMetrics: { latencyMs: 90, cost: null } };
+  const { core, exec, experimentId } = await measuredFixture(t, 'review-null-metrics', observation);
+  const result = await core.promote({ experimentId, confirmation: true }, exec);
+  assert.equal(result.ok, true);
+});
+
+test('nested measurement regression blocks promotion and reaches evaluator', async (t) => {
+  const observation = { ...OBSERVATION, beforeMetrics: undefined, afterMetrics: undefined, metrics: { before: { latencyMs: 100, metrics: { qualityScore: 0.9 } }, after: { latencyMs: 90, metrics: { qualityScore: 0.1 } } } };
+  const { core, exec, experimentId } = await measuredFixture(t, 'review-nested-regression', observation);
+  const result = await core.promote({ experimentId, confirmation: true }, exec);
+  assert.equal(result.ok, false);
+  assert.equal(result.gates.measuredEvidence, false);
 });

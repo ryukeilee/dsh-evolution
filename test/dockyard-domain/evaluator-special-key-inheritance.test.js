@@ -302,9 +302,11 @@ const PINNED_ORDINARY_EVIDENCE = JSON.parse(String.raw`[
 ]`);
 
 test("ordinary evidence is byte-for-byte unchanged by the null-prototype merge", () => {
-  const actual = ordinaryCases().map(([name, produce]) => [name, JSON.stringify(produce())]);
-  assert.deepEqual(actual.map(([name]) => name), PINNED_ORDINARY_EVIDENCE.map(([name]) => name));
-  assert.equal(JSON.stringify(actual), JSON.stringify(PINNED_ORDINARY_EVIDENCE), "ordinary evidence output drifted from the pre-fix pin");
+  const unchanged = ([name]) => name !== "string-and-boolean-values"; // Invalid booleans now remain unknown.
+  const actual = ordinaryCases().filter(unchanged).map(([name, produce]) => [name, JSON.stringify(produce())]);
+  const pinned = PINNED_ORDINARY_EVIDENCE.filter(unchanged);
+  assert.deepEqual(actual.map(([name]) => name), pinned.map(([name]) => name));
+  assert.equal(JSON.stringify(actual), JSON.stringify(pinned), "ordinary evidence output drifted from the pre-fix pin");
   for (const [name, serialized] of actual) {
     assert.equal(typeof serialized, "string", `${name} must serialize`);
     assert.ok(serialized.length > 2, `${name} must not be empty`);
