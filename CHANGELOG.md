@@ -6,6 +6,37 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.20 之后（未形成候选）— 自主进化的连续性
+
+本节记录 `0.2.0-rc.20` 之后、尚未打包成候选的修复，只改动 `lib/orchestrator.js`（自主观察者路径）与
+`lib/` 之外的说明文字与测试；不改持久 schema、工具面、授权来源、晋升门禁、风险分级、Trial 隔离、
+`peerDependencies`、`engines`，也不改动 `release/` 下的 rc.20 固定产物。
+
+修复前，在本仓库的夹具上可以稳定复现四个连续性问题（对照用例见
+`test/autonomous-continuity.test.mjs`，同一文件在修复前的 `lib/orchestrator.js` 上 12 个用例有 10 个失败）：
+
+- **成功被记成失败。** 同一失败模式第二次被观测到时会为同一假设再建一个实验，它无法再取得自己已经
+  持有的 target claim，抛出的 `unsafe parallel experiment conflicts` 被当作 `runtime-trial` 失败写入
+  持久失败记忆，于是刚刚通过全部 8 项证据门禁的策略被自己的成功永久抑制。
+- **改声明也无法解除抑制。** 持久失败的身份只有 `patternKey`，不包含策略声明，所以所有者换掉
+  target / composition / risk 之后仍会被旧记录拦住；而记录旁的 `prevention` 文字本来就写着「直到提供
+  新策略」。
+- **环境失败被写成策略判定。** target claim 冲突、操作忙等并发或环境条件同样写入持久失败记忆，
+  一次并发撞车就能永久否掉一个可能有效的策略。
+- **异常路径残留 Trial。** `measure` 或门禁阶段抛错后，已挂载的 Trial 与它的 target claim 都不回收，
+  失败记忆却已经宣布这个策略不行。
+
+现在的行为：抑制与「已测出证据、等待所有者确认」两个判断都按 `strategyFingerprint`（`patternKey` +
+`target` / `targets` / `idPrefix` / `risk` / `impactScope` / `successMetrics` / composition `name`、
+`purpose`、Host 与 Client 代码摘要）判定；`measured` 且门禁通过的实验由 `pendingAutonomousCandidate`
+命中并返回原 `experimentId`；环境类失败只做 session 内抑制（`experiment-deferred`），不写入失败记忆；
+异常路径复用 `revert` 回收 Trial 与 target claim，并把清理结果记进失败记录。每模式的观测窗口与候选表
+加上 `AUTONOMOUS_PATTERN_CAP`（200）上限，与已有的 200 条观测流上限一致。
+
+已知边界（不修，写在这里以免误读）：`measured` 候选只存在于进程内，它的 Cordis Trial 无法跨进程续用、
+也无法在另一进程晋升，所以新 session 会为同一假设重建一次 Trial（不是重复执行已判定失败的策略）；
+`patternThreshold` 的观测计数也随 session 重置，需要重新积累。
+
 ## 0.2.0-rc.20 — 冷路径成本收敛与归档读窗口
 
 本候选在 `0.2.0-rc.19` 之上覆盖从 `v0.2.0-rc.19`（`4e28cd7`）到 `8162d3f` 的 35 个提交（30 个非合并提交，其中 17 个改动 `lib/`），其余改动只落在
