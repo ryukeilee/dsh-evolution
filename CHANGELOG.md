@@ -6,6 +6,93 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.20 — 冷路径成本收敛与归档读窗口
+
+本候选在 `0.2.0-rc.19` 之上覆盖从 `v0.2.0-rc.19`（`4e28cd7`）到 `8162d3f` 的 35 个提交（30 个非合并提交，其中 17 个改动 `lib/`），其余改动只落在
+`docs/`、`test/` 或基准脚本。分发内容（`package.json#files`）改变的只有五个 `lib/` 源文件 ——
+`lib/archive-stage.js`、`lib/domain-storage.js`、`lib/dockyard-domain/memory.js`、
+`lib/experience-recall.js`、`lib/registration.js` —— 加上 `lib/dockyard-domain/PORTS.md`、版本号与
+`CHANGELOG.md` / `README.md` / `RELEASE.md`。**没有**改持久 schema 或 schema 版本、工具名 / 参数 /
+参数 schema、授权来源、事务边界、fsync 语义、晋升门禁、Cordis 信任根或支持宿主范围；
+`peerDependencies`、`engines` 与三个已验收宿主不变。
+
+### 冷归档读取与归档事务（2026-10-27–29）
+
+- 冷归档解析缓存从「每个集合保留整份冷归档的解析行」改为**有序键表 + 最新 2048 行 / 4 MiB 行窗口**，
+  其余行按行定位符按需重读；写路径上「这一条是否已归档 / 是否匹配」改为查表，不再为单条记录物化整份
+  历史。典型万级双档保留堆 31.66 → 10.20 MiB（−67.8%），四万级 126.64 → 23.67 MiB（−81.3%）；
+  追加型 `observe()` 122.9 → 74.4 ms（CPU 120.2 → 63.3 ms）。见
+  [`docs/performance/archive-row-window.md`](docs/performance/archive-row-window.md)。
+- 首次扫描改为按 1 MiB 块读取、按行折叠，不再 `readFileSync(utf8)` + `split("\n")`，扫描也不再保留
+  每个位置一个解析对象。80k + 80k 行（两个集合，187.2 MB 冷归档）峰值 RSS 724.7 → 305.7 MB（−57.8%），
+  200k + 200k 行（470.0 MB）1833.3 → 418.0 MB（−77.2%）；200k + 200k 规模的冷启动所需
+  `--max-old-space-size` 从 768 MiB 降到 128 MiB。20k 规模的 open CPU
+  持平/轻微回退（中位数 +9%，同规模轮间波动 ±10%），不作为收益声称。见
+  [`docs/performance/cold-archive-streaming-scan.md`](docs/performance/cold-archive-streaming-scan.md)。
+- 归档事务把密封段目录从「每个文件一个硬链接」改成一次借用，staged 归档索引每笔事务只写一次。
+  4096 段时每次 `port.observe()` 2021.425 → 125.440 ms（−93.8%），每笔事务 `linkSync` 4097 → 1 次。见
+  [`docs/performance/archive-mirror-lease.md`](docs/performance/archive-mirror-lease.md)。
+
+### 首次历史吸收与 replay（2026-10-27–29）
+
+这些轮次各自对各自基线测量，**不能相加**，也不构成对其它负载的外推。
+
+- 无有效 checkpoint 的首次吸收里，staged 工作副本的归档索引文档改为「记账 + 事务结束前付一次」。12,000 条
+  墙钟 19,136 → 14,563 ms（−23.9%），2,000 条 −43.5%、20,000 条 −22.5%；`assertTransactionSave()` 的
+  调用次数与被 stringify 的 payload 字节完全不变。见
+  [`docs/performance/first-startup-absorption-deferred-archive-index.md`](docs/performance/first-startup-absorption-deferred-archive-index.md)。
+- 事务保存校验里的桥接标记窗口改为按 marker 增量维护，正文仍每次保存同步 stringify、最终发布仍校验
+  完整文档。2,000 / 12,000 / 20,000 条墙钟 1,066.4 → 511.2 / 14,695.1 → 3,398.5 / 26,683.6 → 5,749.5 ms，
+  保存检查内访问 marker 的次数 73,529,344 → 19,999。见
+  [`docs/performance/staged-save-check.md`](docs/performance/staged-save-check.md) 与
+  [`docs/performance/marker-window-incremental.md`](docs/performance/marker-window-incremental.md)。
+- 桥接标记窗口的成员判定改为增量索引，归档追加只取一次文件身份、`mkdir` 只做一次。20,000 条首次吸收
+  4,887.8 → 4,179.2 ms（−14.5%，同码 A/A 漂移 +0.15%）。见
+  [`docs/performance/archive-append-window.md`](docs/performance/archive-append-window.md)。
+  同一序列里三项追加前检查从 Promise 线程池调度改为同位置同步调用：2,000 / 12,000 / 20,000 条冷吸收
+  510.12 → 435.06 / 3433.95 → 2943.40 / 5747.28 → 4939.07 ms；已有归档增量只有 1.65%～5.38%，
+  且该轮**不证明** syscall 减少——被检查的 I/O 动作次数两侧一致，变化只是异步调用与线程池往返换成同位置
+  同步调用——也不测量响应性或慢盘行为（同步 I/O 会占用主线程）。见
+  [`docs/performance/archive-append-roundtrips.md`](docs/performance/archive-append-roundtrips.md)。
+- 私有 replay 事务里连续的无知识 measurement 淘汰行合并为有界批次（256 条 / 256 KiB），共用一次归档
+  调用与 append；排空失败以 `E_DOMAIN_ARCHIVE_BATCH_WRITE` 拒绝整个未发布事务，live 树、aggregate、
+  ledger 与 checkpoint 都不推进。见
+  [`docs/performance/transaction-archive-batch.md`](docs/performance/transaction-archive-batch.md)。
+
+### 工具结果渲染
+
+`output.render` 从 `JSON.stringify(value, null, 2)` 改为 `JSON.stringify(value)`。这是表示层改动：同一个
+JSON 文档，键、键序、值与字符串内部空白都不变，去掉的只是 token 之间的缩进；没有改工具名、工具数量、
+参数 schema、`systemText`、门禁或持久化。代价是人类在工具结果视图里看到的是单行 JSON。`inspect` 0/10/100
+候选的结果文本 1089/8813/36803 → 751/4739/22019 B。见
+[`docs/performance/tool-result-render-compact.md`](docs/performance/tool-result-render-compact.md)。
+
+### 撤回的候选（不是最终行为）
+
+首轮吸收的重放内存读路径候选与端到端「同步 append」候选都在测量后撤回，不进入本候选：见
+[`docs/performance/event-log-replay-memory.md`](docs/performance/event-log-replay-memory.md) 与
+[`docs/performance/end-to-end-20261029/`](docs/performance/end-to-end-20261029/)。被拒绝的补丁与该轮证据
+一并留在仓库里，而不是删除。
+
+### 修复
+
+- 归档 staging 出错改为 fail-closed：目录物化失败会记进 snapshot，`changedArchiveFiles()` 直接抛出，
+  部分物化的树不再被当成一组刻意的段删除（`95cf0d0`）。
+- 行窗口换出的行按**该行自身的字节**重读。旧定位符用的是解码后长度，含非法 UTF-8 的行解码后比原始字节
+  长（一个替换字符是三个字节），读回的区间因此对不上、成为洞，`historyWindow()` 会抛 `E_VALIDATION`
+  （2049 条 tombstone 就能触发）。现在 `#walkArchiveLines()` 交出原始字节长度，定位符正好覆盖该行被解析
+  的字节；故障记录仍报告解码长度，窗口字节上限改为计档案实际占用的字节（`a90cf31`）。
+- 冷归档没有可见行时，`#mergeArchived()` 原样返回热投影：不做 id 分组、不去重、不重排。此前新增的键表
+  清单仍会分组，导致 `historyWindow()` 重排同一 id 的两行热行、`recall` 在 `maxConsidered: 1` 时把较旧的
+  匿名行排到最新命名行之后（`90ff2d6`）。
+- replay 淘汰暂存之前先建立冷键，避免批次路径在 known 表尚未建立时先归档（`a04de4f`）。
+- `assertTransactionSave()` 恢复整文档判定：带 own-`__proto__` 字面量的文档、以及每个被判定到的 marker，
+  都立刻停止增量替换并回到未改动的整文档检查（那份递归拷贝才是可能溢出的地方）。回归改观察 memo 而不再
+  依赖 V8 栈溢出这种随 Node 版本与运行上下文变化的现象（`b809d40`）。
+- 延后归档索引 flush 的失败边界写清并固定：该 flush 是发布路径的必要步骤（省略它会让已提交的树带着归档
+  字节却没有索引，直到下次 `load()` 的 `#reconcileArchiveIndex()` 才补上），并补上端口层的中止用例
+  （`8570a63`）。
+
 ## 0.2.0-rc.19 — 容量回收与恢复可靠性
 
 本候选包含截至 `a876321` 的全部生产修复，保留三个既有官方宿主与 Node 兼容范围。
