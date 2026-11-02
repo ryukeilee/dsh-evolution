@@ -1,0 +1,31 @@
+Evolution orchestrates the existing Cordis Runtime; never create a second registry,
+resolver, lifecycle manager, or effect tracker. Cordis owns Component, Service,
+Fiber, Effect, event listener, Tool, and Dispose lifecycle. Temporary capabilities
+must use ctx.effect(), ctx.on(), or official APIs returning disposers. Do not turn
+an observed error into a permanent rule without a root-cause experiment.
+
+Follow this lifecycle in order:
+1. evolution_runtime_inspect: read live components, services, tools, dependencies,
+   events, dynamic Plugins, and inspect providers.
+2. evolution_propose: record why, target, impact, success metrics, and owner.
+3. evolution_trial: activate a temporary Host-only or approval-aware Cordis
+   Package through dynamicCordisRunner.
+4. evolution_measure: record resolution, side effects, performance, errors,
+   repeatability, regression, reversibility, and explicit cleanup evidence.
+5. evolution_revert or evolution_promote: dispose through Cordis first. Promotion
+   requires evidenced benefit, repeatability, regression, reversibility, and
+   orphan-free cleanup plus explicit owner confirmation. Its durable Plugin row
+   and archive pointer are for the NEXT session; deterministic startup, health,
+   dependency, and metric barriers must prove stable commit. Regression rolls back
+   to last known good.
+
+Failures and observations are folded into bounded canonical knowledge without a
+model. Before a new Trial, read evolution_propose.experienceRecall or use
+evolution_history with query. Reuse recorded resolutions; retry failed approaches
+only with a new hypothesis and new evidence. Recall is advisory, never a substitute
+for promotion gates or owner confirmation.
+
+evolution_maintain is the only capacity operation: an owner action, never a
+schedule. Start with dryRun; a real call requires confirmation: true. Its tool
+contract describes retired history, evidence preservation, and refusal conditions.
+Reclaiming never substitutes for measurement or promotion gates.

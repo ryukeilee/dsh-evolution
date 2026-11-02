@@ -97,6 +97,8 @@ try {
   // Match the successful fake runner used in test/trial-recovery-boundary.test.mjs.
   ctx.dynamicCordisRunner.define = () => ({ pluginId: 'candidate', packageId: 'package' });
   ctx.dynamicCordisRunner.run = async () => ({ ok: true, status: 'active' });
+  ctx.dynamicCordisRunner.stop = async () => ({ ok: true });
+  ctx.dynamicCordisRunner.undefine = async () => ({ ok: true });
   await call('evolution_trial', { experimentId: proposal.experimentId,
     composition: { name: 'axis fixture', purpose: 'measurement shape', code: { host: 'return {};' } } });
   const observation = { solvesProblem: true, sideEffects: [], orphanResources: [], performanceChange: { latencyMs: { before: 100, after: 80 } },
@@ -105,12 +107,16 @@ try {
     benefitEvidence: '30 synthetic samples: p95 latency 100ms -> 80ms', repeatable: true, regressionPassed: true,
     reversible: true, cleanupEvidence: 'Disposal proof will be collected after the observation window.' };
   await add('measure', 'evolution_measure', { experimentId: proposal.experimentId, observation }, 'real propose -> trial (fake runner) -> measure; no production promotion');
+  // The runtime admits one Trial at a time. Prove cleanup before measuring a
+  // second shape; bypassing occupancy would invalidate this audit fixture.
+  assert.equal((await call('evolution_revert', { experimentId: proposal.experimentId })).runtimeRecovered, true);
   const p2 = await call('evolution_propose', { ...proposalArgs, target: 'plugin:axis-evidence' });
   await call('evolution_trial', { experimentId: p2.experimentId,
     composition: { name: 'evidence fixture', purpose: 'JSON-string evidence shape', code: { host: 'return {};' } } });
   await add('measure-json-string-evidence', 'evolution_measure', { experimentId: p2.experimentId,
     observation: { ...observation, benefitEvidence: JSON.stringify({ samples: Array.from({length: 6}, (_,i) => ({index:i, before:100, after:80})), note:'line one\nline two' }, null, 2),
       cleanupEvidence: 'line one\nline two\nNo actual cleanup assertion in this synthetic fixture.' } }, 'real measure with pretty-JSON string benefitEvidence and newline cleanupEvidence; projected under existing bounds');
+  assert.equal((await call('evolution_revert', { experimentId: p2.experimentId })).runtimeRecovered, true);
   const source = fs.readFileSync(path.join(repo, 'lib/registration.js'), 'utf8');
   const lineOf = offset => source.slice(0,offset).split('\n').length;
   // Maximal exact common substrings of >=24 characters; no fuzzy-match byte claims.

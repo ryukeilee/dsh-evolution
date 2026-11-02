@@ -1,0 +1,1144 @@
+{
+  "baselineCommit": "a39b0889f6ef7f96378e25c2955812aafb065549",
+  "productionDecision": "rejected: end-to-end improvement not proven above A/A variability; production unchanged",
+  "model": "opencode-go/beam-free",
+  "thinking": "low",
+  "fixtures": "Original lifecycle/maintenance plus Include-corrected approval; 8 original approval failures retained separately, not counted as passing tasks.",
+  "fixed": {
+    "baselineSystem": "\nEvolution is an orchestration layer above the existing Cordis Runtime. It never\ncreates a second registry, resolver, lifecycle manager, or effect tracker.\n\nUse the lifecycle exactly in this order:\n1. evolution_runtime_inspect — read live Cordis components, services, tools,\n   dependencies, events, dynamic Plugins, and inspect providers.\n2. evolution_propose — record why/target/impact/success metrics and an owner.\n3. evolution_trial — define and activate a temporary Host-only or approval-aware\n   Cordis Package through dynamicCordisRunner.\n4. evolution_measure — record problem resolution, side effects, performance,\n   errors, repeatability, regression, reversibility, and explicit cleanup\n   evidence.\n5. evolution_revert or evolution_promote — dispose through Cordis first. Promotion\n   is rejected unless benefit, repeatability, regression, reversibility, and\n   orphan-free cleanup are all evidenced. A promotion writes a durable Plugin\n   row and archive pointer for the NEXT session, then remains in deterministic\n   canary observation until startup, health, dependency, and metric barriers\n   prove a stable commit. Any regression rolls back to last known good.\n\nCordis owns Component, Service, Fiber, Effect, event listener, Tool, and Dispose\nlifecycle. Every temporary capability must use ctx.effect(), ctx.on(), or an\nofficial Cordis API that returns a disposer. Do not turn an observed error into\na permanent rule without a root-cause experiment.\n\nDurable experience is already recorded without a model in the loop: failures and\nobservations are folded into bounded canonical knowledge. Before defining a new\nTrial, read the experienceRecall attached to evolution_propose (or call\nevolution_history with query). It lists already-resolved problems, approaches\nthat already failed, and measured candidate strategies, with explicit limits and\nevidence references. Prefer reusing a recorded resolution, and do not repeat a\nfailed approach without a new hypothesis and new evidence. The recall is\nadvisory: promotion still requires the normal gates and owner confirmation.\n\nevolution_maintain is the only capacity operation, and it is an owner action, not\na schedule. Start with dryRun to read the exact byte and record counts it would\nretire. A real call requires confirmation: true; it retires terminal archive\nhistory into aggregate rows and deletes the sealed segments it replaced, and it\ndiscards the absorbed prefix of the authenticated event log after writing the\npromotion/measurement facts those rows carried into the durable evidence\nsidecar. It refuses instead of guessing: unreadable or conflicting archive\nevidence, a pending transaction and a log that changed while it was being planned\nall abort the operation without discarding anything. Reclaiming is not a\nsubstitute for measurement or for the promotion gates.\n",
+    "candidateSystem": "Evolution orchestrates the existing Cordis Runtime; never create a second registry,\nresolver, lifecycle manager, or effect tracker. Cordis owns Component, Service,\nFiber, Effect, event listener, Tool, and Dispose lifecycle. Temporary capabilities\nmust use ctx.effect(), ctx.on(), or official APIs returning disposers. Do not turn\nan observed error into a permanent rule without a root-cause experiment.\n\nFollow this lifecycle in order:\n1. evolution_runtime_inspect: read live components, services, tools, dependencies,\n   events, dynamic Plugins, and inspect providers.\n2. evolution_propose: record why, target, impact, success metrics, and owner.\n3. evolution_trial: activate a temporary Host-only or approval-aware Cordis\n   Package through dynamicCordisRunner.\n4. evolution_measure: record resolution, side effects, performance, errors,\n   repeatability, regression, reversibility, and explicit cleanup evidence.\n5. evolution_revert or evolution_promote: dispose through Cordis first. Promotion\n   requires evidenced benefit, repeatability, regression, reversibility, and\n   orphan-free cleanup plus explicit owner confirmation. Its durable Plugin row\n   and archive pointer are for the NEXT session; deterministic startup, health,\n   dependency, and metric barriers must prove stable commit. Regression rolls back\n   to last known good.\n\nFailures and observations are folded into bounded canonical knowledge without a\nmodel. Before a new Trial, read evolution_propose.experienceRecall or use\nevolution_history with query. Reuse recorded resolutions; retry failed approaches\nonly with a new hypothesis and new evidence. Recall is advisory, never a substitute\nfor promotion gates or owner confirmation.\n\nevolution_maintain is the only capacity operation: an owner action, never a\nschedule. Start with dryRun; a real call requires confirmation: true. Its tool\ncontract describes retired history, evidence preservation, and refusal conditions.\nReclaiming never substitutes for measurement or promotion gates.\n",
+    "tools": [
+      {
+        "name": "evolution_doctor",
+        "description": "Model-free health report for the Evolution bundle. Reads real package, host, registration, data, state, migration, and promotion facts; distinguishes ok, degraded, and blocked with per-check evidence. Set repair=true only to apply repairs the report marks safe and idempotent (a restart is required for promotion-journal rollback and is never attempted against a live composition).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "repair": {
+              "type": "boolean",
+              "description": "Apply the repairs the report marks safe, then re-verify. Defaults to false (read-only)."
+            },
+            "composition": {
+              "type": "boolean",
+              "description": "Also dump the composed profile through the official CLI (default true)."
+            }
+          }
+        }
+      },
+      {
+        "name": "evolution_history",
+        "description": "Read bounded non-sensitive domain history metadata, counts, and independent metric integration status. Pass query to get bounded on-demand experience recall (already-resolved problems, approaches that already failed, measured candidate strategies) instead of raw rows.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "collection": {
+              "type": "string"
+            },
+            "limit": {
+              "type": "number"
+            },
+            "query": {
+              "type": "string",
+              "description": "Optional problem/target text to recall directly relevant bounded experience for."
+            },
+            "target": {
+              "type": "string",
+              "description": "Optional evolution target used with query to detect an exact replay of prior work."
+            },
+            "impactScope": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Optional proposal impact scope used with query."
+            }
+          }
+        }
+      },
+      {
+        "name": "evolution_maintain",
+        "description": "Reclaim disk space from history that is already absorbed: retire terminal archive records into aggregate rows (deleting the sealed segments they replaced) and discard the consumed prefix of the authenticated event log, pruning its markers behind a durable retention floor. Promotion and measurement evidence is externalized before the log prefix is discarded. Everything is verified: unreadable or conflicting archive evidence, a pending transaction, an unreadable log, or a log that changed during planning aborts the whole call without discarding anything. dryRun reports the exact counts and bytes without modifying anything; a real call requires confirmation: true.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "dryRun": {
+              "type": "boolean",
+              "description": "Report the archive and log reclaim a real call would perform, without changing anything."
+            },
+            "confirmation": {
+              "type": "boolean",
+              "description": "Required for a real reclaim; the operation deletes committed archive segments and authenticated log bytes."
+            },
+            "archives": {
+              "type": "boolean",
+              "description": "Reclaim retired archive history (default true)."
+            },
+            "log": {
+              "type": "boolean",
+              "description": "Discard the absorbed event log prefix and prune its markers (default true)."
+            },
+            "retainRecords": {
+              "type": "number",
+              "description": "How many of the newest absorbed log records to keep in the log (default 1024, minimum 1)."
+            }
+          }
+        }
+      },
+      {
+        "name": "evolution_runtime_inspect",
+        "description": "Inspect the live Cordis Runtime. Returns facts from Cordis registries and scoped services; it does not use a static Evolution inventory.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "evolution_propose",
+        "description": "Create an owned Evolution Proposal before changing the Cordis composition.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "why": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "impactScope": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "successMetrics": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "risk": {
+              "type": "string",
+              "description": "low, medium, or high; autonomous execution only accepts low."
+            },
+            "targets": {
+              "type": "object",
+              "properties": {
+                "components": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "plugins": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "configurations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": [
+            "why",
+            "target",
+            "impactScope",
+            "successMetrics"
+          ]
+        }
+      },
+      {
+        "name": "evolution_trial",
+        "description": "Define and activate a temporary Cordis Package for an existing Evolution Proposal. The Host Runner owns its Fiber and lifecycle.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "experimentId": {
+              "type": "string"
+            },
+            "idPrefix": {
+              "type": "string",
+              "description": "Optional 3–6 lowercase semantic prefix for the Host-minted dynamic Plugin ID."
+            },
+            "composition": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "purpose": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "object",
+                  "properties": {
+                    "host": {
+                      "type": "string"
+                    },
+                    "client": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "host"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "purpose",
+                "code"
+              ]
+            }
+          },
+          "required": [
+            "experimentId",
+            "composition"
+          ]
+        }
+      },
+      {
+        "name": "evolution_measure",
+        "description": "Record an Observation for a running Evolution Trial and evaluate the Promotion gates.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "experimentId": {
+              "type": "string"
+            },
+            "observation": {
+              "type": "object",
+              "properties": {
+                "solvesProblem": {
+                  "type": "boolean"
+                },
+                "sideEffects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "orphanResources": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "performanceChange": {},
+                "errorChange": {},
+                "metrics": {
+                  "type": "object"
+                },
+                "beforeMetrics": {
+                  "type": "object",
+                  "description": "Baseline metrics captured before the Trial."
+                },
+                "afterMetrics": {
+                  "type": "object",
+                  "description": "Metrics captured after the Trial observation window."
+                },
+                "observationWindow": {},
+                "sampleCount": {
+                  "type": "number",
+                  "description": "Positive number of samples represented by afterMetrics."
+                },
+                "benefitEvidence": {
+                  "type": "string"
+                },
+                "repeatable": {
+                  "type": "boolean"
+                },
+                "regressionPassed": {
+                  "type": "boolean"
+                },
+                "reversible": {
+                  "type": "boolean"
+                },
+                "cleanupEvidence": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "solvesProblem"
+              ]
+            }
+          },
+          "required": [
+            "experimentId",
+            "observation"
+          ]
+        }
+      },
+      {
+        "name": "evolution_revert",
+        "description": "Stop and undefine a temporary Evolution Plugin through Cordis, then prove the Runtime signature returned to its baseline.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "experimentId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "experimentId"
+          ]
+        }
+      },
+      {
+        "name": "evolution_promote",
+        "description": "Prepare, apply, and verify a measured Trial as a durable Cordis Plugin, then enter canary observation. Stable commit requires deterministic startup/health/dependency/metric barriers. Set confirmation=true only after reviewing the measured evidence and rollback proof; false or omitted returns an owner-confirmation result without mutating production.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "experimentId": {
+              "type": "string"
+            },
+            "confirmation": {
+              "type": "boolean",
+              "description": "Explicit owner confirmation for production promotion. Only true authorizes the promotion; false or omitted is a read-only confirmation request."
+            }
+          },
+          "required": [
+            "experimentId"
+          ]
+        }
+      },
+      {
+        "name": "evolution_canary_observe",
+        "description": "Advance a pending promotion canary at a deterministic barrier. Startup, component health, dependencies, and metrics must remain healthy; regression automatically rolls back.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "experimentId": {
+              "type": "string"
+            },
+            "startupVerified": {
+              "type": "boolean"
+            },
+            "componentHealth": {
+              "type": "string"
+            },
+            "dependenciesPresent": {
+              "type": "boolean"
+            },
+            "metricRegression": {
+              "type": "boolean"
+            },
+            "metrics": {
+              "type": "object"
+            },
+            "evidence": {
+              "type": "object"
+            },
+            "barrier": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "reached": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "reached"
+              ]
+            }
+          },
+          "required": [
+            "experimentId",
+            "startupVerified",
+            "componentHealth",
+            "dependenciesPresent",
+            "metricRegression",
+            "barrier"
+          ]
+        }
+      }
+    ],
+    "systemBytes": {
+      "A": 2852,
+      "B": 2009
+    },
+    "declaredEnvelopeBytes": {
+      "A": 10147,
+      "B": 9304
+    },
+    "staticTokenEstimate": "UTF-8 bytes / 3.6 is only an estimate; absolute fixed-only provider tokens were not isolated.",
+    "firstRequestMeasuredDeltaTokens": 177,
+    "note": "First request includes the same task and Pi cwd wrapper; A/A first-request delta is 0. Not a DSH-native provider request."
+  },
+  "sourceSha256": {
+    "lib/registration.js": "647bc9e7e8332f9bd27de33a8f6472bb72e2fff86fb7217c5675500ef1337d1d",
+    "lib/orchestrator.js": "af8ccfe627b3fd9d212da522b7f747227dffa4b04ea5c9bf5597dec2736e3e37",
+    "scripts/benchmarks/fixed-context/run-one.py": "331114d318f211c7303998f7ca9ec7332129a5800d3938936d4b8f0523fb4ad7",
+    "scripts/benchmarks/fixed-context/pi-extension.mjs": "ea1475cd618f3e428fc5b02f09d7892e9dc9501f9cb02ba25d0c843b1b4cbba9",
+    "scripts/benchmarks/fixed-context/suite.py": "aaa7caaac2e97dcf2ebe08f6a2c16982493476aba47fb34805a4c949d45b9859",
+    "scripts/benchmarks/fixed-context/fixture.mjs": "d7436c07b0adbe0450e3d523101f63dae50feceb9377f96ea69716548a3ed2df",
+    "scripts/benchmarks/fixed-context/summarize.py": "85e32a83276e77480fbb2a4db78bdca466b1d930e4d215283bea1caa7106fbab",
+    "scripts/benchmarks/fixed-context/candidate-system.txt": "b148601e80791dc4f5f9597a0e85d8863e3d941e3cc21094a49dbc702de863fd"
+  },
+  "scenarios": {
+    "lifecycle": {
+      "aa": {
+        "pairs": 2,
+        "inputReductionPercent": 13.753398038182063,
+        "successesA": 1,
+        "successesB": 2
+      },
+      "ab": {
+        "pairs": 2,
+        "inputReductionPercent": 5.563960329467137,
+        "successesA": 2,
+        "successesB": 2
+      }
+    },
+    "approval": {
+      "aa": {
+        "pairs": 2,
+        "inputReductionPercent": -2.8495391896693807,
+        "successesA": 2,
+        "successesB": 1
+      },
+      "ab": {
+        "pairs": 2,
+        "inputReductionPercent": 4.465964995095183,
+        "successesA": 2,
+        "successesB": 2
+      }
+    },
+    "maintenance": {
+      "aa": {
+        "pairs": 2,
+        "inputReductionPercent": 26.20543047637453,
+        "successesA": 2,
+        "successesB": 2
+      },
+      "ab": {
+        "pairs": 2,
+        "inputReductionPercent": 5.5737062205959225,
+        "successesA": 2,
+        "successesB": 2
+      }
+    }
+  },
+  "pairs": [
+    {
+      "phase": "aa",
+      "scenario": "lifecycle",
+      "round": 1,
+      "a": 54017,
+      "b": 41836,
+      "inputReduction": 0.22550308236295982,
+      "firstPromptReductionTokens": 0,
+      "aSuccess": false,
+      "bSuccess": true
+    },
+    {
+      "phase": "aa",
+      "scenario": "lifecycle",
+      "round": 2,
+      "a": 42730,
+      "b": 41605,
+      "inputReduction": 0.026328106716592557,
+      "firstPromptReductionTokens": 0,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "aa",
+      "scenario": "maintenance",
+      "round": 1,
+      "a": 7631,
+      "b": 7605,
+      "inputReduction": 0.0034071550255536627,
+      "firstPromptReductionTokens": 0,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "aa",
+      "scenario": "maintenance",
+      "round": 2,
+      "a": 13067,
+      "b": 7669,
+      "inputReduction": 0.4131017065891176,
+      "firstPromptReductionTokens": 0,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "ab",
+      "scenario": "lifecycle",
+      "round": 1,
+      "a": 42084,
+      "b": 39552,
+      "inputReduction": 0.06016538351867693,
+      "firstPromptReductionTokens": 177,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "ab",
+      "scenario": "lifecycle",
+      "round": 2,
+      "a": 41202,
+      "b": 39100,
+      "inputReduction": 0.051016940925197804,
+      "firstPromptReductionTokens": 177,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "ab",
+      "scenario": "maintenance",
+      "round": 1,
+      "a": 7590,
+      "b": 7257,
+      "inputReduction": 0.04387351778656127,
+      "firstPromptReductionTokens": 177,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "ab",
+      "scenario": "maintenance",
+      "round": 2,
+      "a": 7714,
+      "b": 7194,
+      "inputReduction": 0.06740990407052114,
+      "firstPromptReductionTokens": 177,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "aa",
+      "scenario": "approval",
+      "round": 1,
+      "a": 67257,
+      "b": 68178,
+      "inputReduction": -0.013693741915339668,
+      "firstPromptReductionTokens": 0,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "aa",
+      "scenario": "approval",
+      "round": 2,
+      "a": 65010,
+      "b": 67858,
+      "inputReduction": -0.04380864482387325,
+      "firstPromptReductionTokens": 0,
+      "aSuccess": true,
+      "bSuccess": false
+    },
+    {
+      "phase": "ab",
+      "scenario": "approval",
+      "round": 1,
+      "a": 66845,
+      "b": 64559,
+      "inputReduction": 0.034198518961777245,
+      "firstPromptReductionTokens": 177,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "ab",
+      "scenario": "approval",
+      "round": 2,
+      "a": 68736,
+      "b": 64967,
+      "inputReduction": 0.05483298417132216,
+      "firstPromptReductionTokens": 177,
+      "aSuccess": true,
+      "bSuccess": true
+    }
+  ],
+  "total": {
+    "samples": 24,
+    "requests": 122,
+    "inputIncludingCache": 941263,
+    "output": 27203,
+    "piReportedCost": 0
+  },
+  "usageBoundary": "message_end.message.usage normalized by Pi; cache fields included. Cost is Pi catalog-based free cost, not independently audited provider invoices.",
+  "aa": {
+    "inputReductionPercent": 5.991301979880823,
+    "successesA": 5,
+    "successesB": 5
+  },
+  "ab": {
+    "inputReductionPercent": 4.92887676099944,
+    "successesA": 6,
+    "successesB": 6
+  },
+  "pilots": [
+    {
+      "purpose": "unscored pilot; before formal task plan",
+      "calls": [
+        {
+          "kind": "call",
+          "name": "evolution_runtime_inspect",
+          "args": {}
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "runtime"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latencyMs reduction from 100 to 80 over 30 samples"
+            ],
+            "target": "latency-probe",
+            "why": "Evaluate a Host-only Cordis plugin that registers a no-op listener on benchmark/latency using ctx.on() to measure baseline latency behavior."
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "Register a no-op listener on benchmark/latency using ctx.on() for latency measurement.",
+              "code": {
+                "host": "ctx.on('benchmark/latency', () => {});"
+              }
+            },
+            "experimentId": "exp-mvzv5qi6-1-4a69a6f2",
+            "idPrefix": "latp"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "Register a no-op listener on benchmark/latency using ctx.on() for latency measurement.",
+              "code": {
+                "host": "export default (ctx) => { ctx.on('benchmark/latency', () => {}); };"
+              }
+            },
+            "experimentId": "exp-mvzv5qi6-1-4a69a6f2",
+            "idPrefix": "latp"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "runtime"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latencyMs reduction from 100 to 80 over 30 samples"
+            ],
+            "target": "latency-probe",
+            "why": "Evaluate a Host-only Cordis plugin that registers a no-op listener on benchmark/latency using ctx.on() to measure baseline latency behavior."
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "Register a no-op listener on benchmark/latency using ctx.on() for latency measurement.",
+              "code": {
+                "host": "function plugin(ctx) { ctx.on('benchmark/latency', () => {}); }"
+              }
+            },
+            "experimentId": "exp-mvzv5tz3-2-575e24d8",
+            "idPrefix": "latp"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "Register a no-op listener on benchmark/latency using ctx.on() for latency measurement.",
+              "code": {
+                "host": "return function(ctx) { ctx.on('benchmark/latency', () => {}); }"
+              }
+            },
+            "experimentId": "exp-mvzv5tz3-2-575e24d8",
+            "idPrefix": "latp"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "runtime"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latencyMs reduction from 100 to 80 over 30 samples"
+            ],
+            "target": "latency-probe",
+            "why": "Evaluate a Host-only Cordis plugin that registers a no-op listener on benchmark/latency using ctx.on() to measure baseline latency behavior."
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "Register a no-op listener on benchmark/latency using ctx.on() for latency measurement.",
+              "code": {
+                "host": "return function(ctx) { ctx.on('benchmark/latency', () => {}); }"
+              }
+            },
+            "experimentId": "exp-mvzv5wu3-3-cc898ec1",
+            "idPrefix": "latp"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_measure",
+          "args": {
+            "experimentId": "exp-mvzv5wu3-3-cc898ec1",
+            "observation": {
+              "solvesProblem": true,
+              "sideEffects": [],
+              "orphanResources": [],
+              "performanceChange": {
+                "latencyMs": {
+                  "baseline": 100,
+                  "after": 80
+                }
+              },
+              "errorChange": {
+                "errors": 0
+              },
+              "metrics": {
+                "latencyMs": 80
+              },
+              "beforeMetrics": {
+                "latencyMs": 100
+              },
+              "afterMetrics": {
+                "latencyMs": 80
+              },
+              "observationWindow": "fixture-window-1",
+              "sampleCount": 30,
+              "benefitEvidence": "latencyMs reduced from 100 to 80 over 30 samples",
+              "repeatable": true,
+              "regressionPassed": true,
+              "reversible": true,
+              "cleanupEvidence": "ctx.on disposer registered"
+            }
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_revert",
+          "args": {
+            "experimentId": "exp-mvzv5wu3-3-cc898ec1"
+          }
+        }
+      ],
+      "errors": [
+        {
+          "kind": "error",
+          "name": "evolution_trial",
+          "message": "ctx is not defined"
+        },
+        {
+          "kind": "error",
+          "name": "evolution_trial",
+          "message": "experiment exp-mvzv5qi6-1-4a69a6f2 is not known in this session"
+        },
+        {
+          "kind": "error",
+          "name": "evolution_trial",
+          "message": "the Host half returned `undefined` — did you forget `return`?"
+        },
+        {
+          "kind": "error",
+          "name": "evolution_trial",
+          "message": "experiment exp-mvzv5tz3-2-575e24d8 is not known in this session"
+        }
+      ],
+      "usage": [
+        {
+          "input": 1937,
+          "output": 45,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 32,
+          "totalTokens": 1982,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 4910,
+          "output": 151,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 57,
+          "totalTokens": 5061,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1359,
+          "output": 159,
+          "cacheRead": 4864,
+          "cacheWrite": 0,
+          "reasoning": 66,
+          "totalTokens": 6382,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 197,
+          "output": 174,
+          "cacheRead": 6208,
+          "cacheWrite": 0,
+          "reasoning": 67,
+          "totalTokens": 6579,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 6618,
+          "output": 190,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 96,
+          "totalTokens": 6808,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2143,
+          "output": 179,
+          "cacheRead": 6592,
+          "cacheWrite": 0,
+          "reasoning": 74,
+          "totalTokens": 8914,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 238,
+          "output": 132,
+          "cacheRead": 8704,
+          "cacheWrite": 0,
+          "reasoning": 27,
+          "totalTokens": 9074,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 217,
+          "output": 130,
+          "cacheRead": 8896,
+          "cacheWrite": 0,
+          "reasoning": 37,
+          "totalTokens": 9243,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2338,
+          "output": 131,
+          "cacheRead": 9088,
+          "cacheWrite": 0,
+          "reasoning": 24,
+          "totalTokens": 11557,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1378,
+          "output": 229,
+          "cacheRead": 11392,
+          "cacheWrite": 0,
+          "reasoning": 29,
+          "totalTokens": 12999,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1648,
+          "output": 61,
+          "cacheRead": 12736,
+          "cacheWrite": 0,
+          "reasoning": 28,
+          "totalTokens": 14445,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1023,
+          "output": 298,
+          "cacheRead": 14336,
+          "cacheWrite": 0,
+          "reasoning": 20,
+          "totalTokens": 15657,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      ]
+    },
+    {
+      "purpose": "unscored pilot; before formal task plan",
+      "calls": [
+        {
+          "kind": "call",
+          "name": "evolution_runtime_inspect",
+          "args": {}
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "latency-probe",
+              "benchmark/latency"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latency reduction",
+              "no side effects",
+              "no orphan resources",
+              "repeatability"
+            ],
+            "target": "plugin:latency-probe",
+            "why": "Isolated experiment to validate latency-probe plugin with synthetic benchmark evidence"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "Isolated experiment to validate latency-probe plugin",
+              "code": {
+                "host": "return { name: \"latency-probe\", apply(ctx) { ctx.on(\"benchmark/latency\", () => {}); } };"
+              }
+            },
+            "experimentId": "exp-mvzv781d-1-683f6bbb",
+            "idPrefix": "lat"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_measure",
+          "args": {
+            "experimentId": "exp-mvzv781d-1-683f6bbb",
+            "observation": {
+              "solvesProblem": true,
+              "sideEffects": [],
+              "orphanResources": [],
+              "performanceChange": {
+                "latencyMs": {
+                  "before": 100,
+                  "after": 80
+                }
+              },
+              "beforeMetrics": {
+                "latencyMs": 100
+              },
+              "afterMetrics": {
+                "latencyMs": 80
+              },
+              "observationWindow": "fixture-window-1",
+              "sampleCount": 30,
+              "benefitEvidence": "latency reduced from 100ms to 80ms over 30 samples",
+              "repeatable": true,
+              "regressionPassed": true,
+              "reversible": true,
+              "cleanupEvidence": "pending revert"
+            }
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_revert",
+          "args": {
+            "experimentId": "exp-mvzv781d-1-683f6bbb"
+          }
+        }
+      ],
+      "errors": [],
+      "usage": [
+        {
+          "input": 1931,
+          "output": 97,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 80,
+          "totalTokens": 2028,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 3036,
+          "output": 124,
+          "cacheRead": 1920,
+          "cacheWrite": 0,
+          "reasoning": 33,
+          "totalTokens": 5080,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1599,
+          "output": 159,
+          "cacheRead": 4928,
+          "cacheWrite": 0,
+          "reasoning": 53,
+          "totalTokens": 6686,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1415,
+          "output": 214,
+          "cacheRead": 6464,
+          "cacheWrite": 0,
+          "reasoning": 36,
+          "totalTokens": 8093,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1579,
+          "output": 79,
+          "cacheRead": 7872,
+          "cacheWrite": 0,
+          "reasoning": 43,
+          "totalTokens": 9530,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1039,
+          "output": 565,
+          "cacheRead": 9408,
+          "cacheWrite": 0,
+          "reasoning": 184,
+          "totalTokens": 11012,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      ]
+    }
+  ],
+  "environment": {
+    "node": "v26.13.0",
+    "pi": "1.4.0",
+    "platform": "darwin/arm64",
+    "timingLimitation": "Local regression tests overlapped corrected approval samples; no latency claim."
+  }
+}
