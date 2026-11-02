@@ -2,6 +2,7 @@
 // Exact source anchors and d9de6b2 source hashes prevent a partial reconstruction.
 import assert from 'node:assert/strict';
 import { reverseTransactionArchiveBatch } from './transaction-archive-batch-baseline.js';
+import { reverseQualityRound } from './quality-round-baseline.js';
 import { createHash } from 'node:crypto';
 const HUNKS = [
   {
@@ -56,6 +57,10 @@ const PINS = {
 };
 export function reverseMarkerWindowRound(file, source) {
   if (!PINS[file]) return source;
+  // Newest round first: the quality round's rollback hunk sits in `memory.js`
+  // on top of every tree reconstructed below, so it has to be undone before the
+  // older anchors are looked for.
+  source = reverseQualityRound(file, source);
   source = reverseTransactionArchiveBatch(file, source);
   for (const { file: target, post, pre } of HUNKS) {
     if (target !== file) continue;

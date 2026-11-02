@@ -276,8 +276,12 @@ test('a failed claim write releases the target, and the next trial can claim it'
   const held = fs.readFileSync(claimFile, 'utf8');
   assert.equal(JSON.parse(held).experimentId, second.experimentId);
   const third = core.propose({ why: 'claim', target: 'plugin:claim', impactScope: ['test'], successMetrics: ['claim'] }, exec);
+  // The second experiment is still a live Trial holding the claim, so the
+  // one-Trial-per-process rule refuses the third before it touches the claim
+  // file at all. Both refusals are the same protection; the point of this case is
+  // that the held claim is never removed by another experiment's attempt.
   await assert.rejects(core.trial({ experimentId: third.experimentId, composition }, exec),
-    /unsafe parallel experiment conflicts on plugin:claim/);
+    /occupies the runtime|unsafe parallel experiment conflicts on plugin:claim/);
   assert.equal(fs.readFileSync(claimFile, 'utf8'), held, 'the holder claim was left byte-identical');
 });
 

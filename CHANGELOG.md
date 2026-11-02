@@ -6,6 +6,79 @@ alternatives in `peerDependencies`, and a version is only added there after it
 passes the full install/boot/upgrade acceptance: read the entry for the version
 you install before upgrading DSH.
 
+## 0.2.0-rc.20 之后（未形成候选）— 质量收口
+
+这一轮是对整个插件的集中审查与修复，覆盖生命周期、持久化与恢复、组合守卫和诊断，只改动
+`lib/orchestrator.js`、`lib/registration.js`、`lib/guard.js`、`lib/diagnostics.js`、`lib/dockyard-domain/memory.js`
+与相应测试；不改持久 schema 版本、工具名 / 参数 / 参数 schema、授权来源、晋升门禁的 8 项证据、
+风险分级、`peerDependencies`、`engines`，也不改动 `release/` 下的 rc.20 固定产物。
+
+工具面与授权：
+
+- `evolution_maintain` 的 `execute` 没有 `await` 异步的 `reclaim()`：工具返回
+  `{"$class":"Promise"}`（拿不到任何回收统计），跳过了外层 wrapper 的 flush/错误处理，并把
+  「缺少 confirmation」的拒绝变成未处理的 promise rejection。
+- 工具抛出的错误现在经过 `safeErrorDto` 投影后才交给宿主：宿主把 `error.message` 写进
+  tool result 与会话记录，而 Trial 的 runner 回执、disposer 拒绝、domain flush 失败都可能携带
+  本插件之外的文本（含凭据）。分类、摘要指纹、`code`/`name` 保留，消息有界且脱敏；投影本身对
+  原错误的属性读取也是非抛出的（一个抛异常的 `code` getter 不能再把原文带出去）。
+- `tools/result` 不再把整个宿主执行上下文（`agent` 的 session / options）放进 observation
+  input：它会进观测流、`inspect` 与持久失败记忆。
+- `agent/error` 监听器的 payload 读取移进受保护的异步调用内，与 `tools/result` 一致；一个抛异常的
+  getter 不能再同步逃逸到正在上报错误的事件发送者。
+- `ctx.logger.warn` 的六处直接调用统一走一个非抛出的诊断边界：抛异常或返回 rejected promise 的
+  logger 不会把一次已经发生的 revert/commit 改写成失败，也不会留下未处理的拒绝。
+
+Trial 与 target claim：
+
+- 同一进程同时只允许一个 Trial。每个 Trial 都以整份运行时基线证明清理，两个并存的 Trial 无法
+  同时恢复：任一方的基线都早于另一方的 plugin，漂移规则会把两者都判成未恢复并保留两个 claim，
+  两个实验都再也无法 revert。第二个 `evolution_trial` 现在以 `E_EVOLUTION_RUNTIME_BUSY` 明确拒绝，
+  自主观察者把它当环境条件延后（不写持久学习）。
+- Trial 失败后，只有**证明过**的清理才释放 target claim 与实验记录；`undefine` 失败（返回 `ok:false`
+  或抛错）时保留 claim 和记录（状态 `trial-cleanup-failed`），与 revert/promote 的既有规则一致。
+  仍按「define 没有返回 plugin id」这一种形状判定为「没有可清理的东西」。
+- 环境类 Trial 失败（`ENOSPC`、被取消的运行、宿主仍在等待批准）不再写进持久失败学习，只保留操作
+  证据（归档、事件）；`measure` 也不会为尚未激活的 Trial 冻结测量。同一条判定也管事件桥：这类
+  失败只发出不带失败指纹的 `experiment-rejected`，因为领域正是按指纹把事件变成 `dontRepeat` 的
+  outcome（此前本地 memory 已经跳过，领域里仍然是「不要重复」）。
+- 自主观察者创建的 proposal 在其 Trial 连 target 都没取得时会被丢弃，不再留下无法管理的孤儿记录。
+- session 抑制键、终态实验记录与观察窗口 / 候选表一样有 200 条上限（仍持有 claim 或操作中的记录
+  永不丢弃），观测流里长期运行不再无界增长。
+
+持久化与恢复：
+
+- 事件桥在确认尾字节之前不再发布 `pending.start`：被拒绝的追加（torn tail）不会在重试时被当成
+  已知边界而把两条记录粘成一行。
+- 容量回收的外部化遇到不可读 / 非法 JSON 的已有 evidence sidecar 时中止整次回收，不再当作「不
+  存在」而覆盖现场。
+- rollback 的预检在目标已回到 `beforeDigest` 且备份已缺失（上一次 rollback 在删除 state 目录时被
+  打断）时继续完成回滚；备份仍在但校验失败依旧保留现场并报 `rollback-failed`。
+- 晋升写入新的 plugin 目录后自底向上 fsync 目录项（`lib`、plugin 目录、`pluginRoot`），journal 到达
+  `canary-observing` 时磁盘上已经有 Include 要加载的那棵树。
+- 冷档案 compaction 的失败清理只撤销本次真正完成过的步骤：此前它会删掉**所有** staged 原始档案，
+  包括本次事务从未触碰的 collection；本次安装的新 segment 目录现在也会被删掉（此前会留下与索引
+  不一致的段目录）。
+
+组合守卫与诊断：
+
+- 直接 fs 写入按 API 取目标：`copyFile`/`rename`/`link`/`symlink` 的写入目标是第二个实参，此前只检查
+  第一个实参，等于放行「把内容复制 / 重命名 / 链接进 Cordis trust root」；方括号调用形式
+  （`fs["copyFileSync"]`）按归一后的方法名走同一条判定。
+- 嵌套命令（`sh -c` / `xargs` / `node -e`）不再依赖外层文本出现 "cordis" 才下钻：符号链接别名与
+  `..` 只有目标解析才能发现。下钻仍有 4 层嵌套、32 KiB 嵌套文本与 4 KiB 实参跨度上界（守卫是启发式
+  提示，不是沙箱）。
+- managed 豁免同时要求解析后的实际目标仍属于 bookkeeping 范围，别名无法把它扩展到 `.env` 之类的凭证文件。
+- `promoted.cordis.yml` 解析失败只报告固定类别与行列：parser 的 `message` 会带上配置片段，`reason`
+  本身也可能引用原文（`unknown tag !<…>`、`unidentified alias "…"`，以及把标签文字直接拼进去的
+  `tag name cannot contain such characters: …`——最后一种就是普通单词，字符集无法把它和结构性原因
+  区分开）。CLI 报告与 `evolution_doctor` 输出因此只保留 `invalid YAML` 与 parser 自己的行列。
+- 遗留 staging 目录只有在 manifest 记录的每个目标都存在且不可变证据仍匹配时才作为可修复项提供，
+  执行修复前重新验证一次；此前「安全清理」可能在目标缺失时删掉唯一的副本。
+
+验证：`NODE_OPTIONS=--max-old-space-size=4096 npm test`（1327 个用例）、`npm run pack:check`、三个官方
+宿主的真实安装验收（证据见 `docs/evidence/quality-consolidation-20261102-dsh-*.json`）。
+
 ## 0.2.0-rc.20 之后（未形成候选）— 自主进化的连续性
 
 本节记录 `0.2.0-rc.20` 之后、尚未打包成候选的修复，只改动 `lib/orchestrator.js`（自主观察者路径）与
