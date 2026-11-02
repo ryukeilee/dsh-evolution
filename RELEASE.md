@@ -27,7 +27,7 @@
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-rc.20 之后，`0.2.0` 之前最后公开的候选是 `v0.2.0-rc.20`（tag 指向发布提交 `79e7f72`，Release id 428691669，2026-10-30T05:43:37Z 以 prerelease 创建，同一组附件为 tarball + `manifest.json` + `SHA256SUMS`）。`0.2.0` 是它的正式后继：同一分发结构，版本号不再带 pre-release 后缀，Release 以正式版（非 Draft、非 Pre-release）公开。
+rc.20 之后，`0.2.0` 之前最后公开的候选是 `v0.2.0-rc.20`（tag 对象 `79e7f72` 指向发布提交 `aab342f`，Release id 428691669，2026-10-30T05:43:37Z 以 prerelease 创建，同一组附件为 tarball + `manifest.json` + `SHA256SUMS`）。`0.2.0` 是它的正式后继：同一分发结构，版本号不再带 pre-release 后缀，Release 以正式版（非 Draft、非 Pre-release）公开。
 
 rc.20 发布之前，最后公开的候选是 `v0.2.0-rc.19`（tag 指向合并提交 `4e28cd7`，Release id 424883309，2026-10-26T23:40:02Z 发布为 prerelease），其审计与发布后资产校验见同目录的 `rc19-postpublish-*.json`。
 
