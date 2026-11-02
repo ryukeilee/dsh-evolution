@@ -1,0 +1,131 @@
+{
+  "kind": "release-audit",
+  "version": "0.2.0",
+  "tag": "v0.2.0",
+  "tagCommit": "fb43bbbc2c97b59bf284b56b512034f5015c6fa0",
+  "tagObject": "50379c2785db7cb5b8eb66613228bb25e599c33a",
+  "release": {
+    "id": 431038959,
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.0",
+    "publishedAt": "2026-11-02T03:24:17Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      "dsh-evolution-0.2.0.tgz",
+      "manifest.json",
+      "SHA256SUMS"
+    ]
+  },
+  "artifact": {
+    "filename": "dsh-evolution-0.2.0.tgz",
+    "sha256": "2dfd2211ffdd3c0d3d6b44ecc476bacb93e20d96ba127fb3dd3e8ed3b4c27bb5",
+    "contentSha256": "370465f01b2d43a9a655d8feb5e7d53b76ab06b22331a86d63ec91544994ec9a",
+    "entries": 51,
+    "modes": [
+      "0o644",
+      "0o755"
+    ],
+    "sourceCommit": "6ec70a17114ac10b02cfbdfe41bc9d5bd27dac7d",
+    "builtWith": {
+      "node": "v26.13.0",
+      "npm": "11.20.0",
+      "platform": "darwin-arm64"
+    }
+  },
+  "provenance": {
+    "command": "node scripts/release/verify-provenance.mjs --tag v0.2.0 --require-source-commit",
+    "result": "ok: tag -> commit, source commit in history, source content == pin, tagged tree content == pin"
+  },
+  "workflowRuns": {
+    "release": {
+      "id": 41382646518,
+      "conclusion": "success",
+      "job": "verify and attach release artifacts"
+    },
+    "ci": {
+      "id": 41382643134,
+      "conclusion": "success",
+      "sha": "fb43bbbc2c97b59bf284b56b512034f5015c6fa0",
+      "jobs": [
+        "unit tests (node 24.x)",
+        "unit tests (node 22.19.0)",
+        "package (clean, pinned, installable)",
+        "host acceptance (0.2.0-rc.2)",
+        "host acceptance (0.2.1-alpha.1)",
+        "host acceptance (0.2.1-rc.2)"
+      ]
+    },
+    "codeql": {
+      "id": 41382643101,
+      "conclusion": "success",
+      "sha": "fb43bbbc2c97b59bf284b56b512034f5015c6fa0"
+    }
+  },
+  "draftAssetCheck": {
+    "method": "gh release download v0.2.0 before publishing",
+    "result": "all three assets byte-identical to release/ and to the pin"
+  },
+  "publicDownload": {
+    "method": "anonymous curl of the three assets from the published Release",
+    "sha256sums": "OK",
+    "verifyArtifact": "matches release/manifest.json",
+    "manifest": "identical"
+  },
+  "postPublishAcceptance": {
+    "0.2.0-rc.2": {
+      "ok": true,
+      "steps": 21,
+      "passed": 21,
+      "tarballSha256": "2dfd2211ffdd3c0d3d6b44ecc476bacb93e20d96ba127fb3dd3e8ed3b4c27bb5",
+      "contentSha256": "370465f01b2d43a9a655d8feb5e7d53b76ab06b22331a86d63ec91544994ec9a",
+      "doctor": {
+        "status": "healthy",
+        "exitCode": 0
+      }
+    },
+    "0.2.1-alpha.1": {
+      "ok": true,
+      "steps": 21,
+      "passed": 21,
+      "tarballSha256": "2dfd2211ffdd3c0d3d6b44ecc476bacb93e20d96ba127fb3dd3e8ed3b4c27bb5",
+      "contentSha256": "370465f01b2d43a9a655d8feb5e7d53b76ab06b22331a86d63ec91544994ec9a",
+      "doctor": {
+        "status": "healthy",
+        "exitCode": 0
+      }
+    },
+    "0.2.1-rc.2": {
+      "ok": true,
+      "steps": 21,
+      "passed": 21,
+      "tarballSha256": "2dfd2211ffdd3c0d3d6b44ecc476bacb93e20d96ba127fb3dd3e8ed3b4c27bb5",
+      "contentSha256": "370465f01b2d43a9a655d8feb5e7d53b76ab06b22331a86d63ec91544994ec9a",
+      "doctor": {
+        "status": "healthy",
+        "exitCode": 0
+      }
+    }
+  },
+  "upgradeCheck": {
+    "record": "docs/evidence/v020-upgrade-from-rc20.json",
+    "from": "0.2.0-rc.20 public bytes",
+    "ok": true,
+    "dataRootByteIdentical": true
+  },
+  "independentReview": {
+    "method": "sol-loop, one round, codex gpt-6.1-sol reasoningEffort xhigh",
+    "verdict": "APPROVE",
+    "findings": [
+      {
+        "id": "S1",
+        "severity": "nit",
+        "outcome": "fixed in 6ec70a1: RELEASE.md and CHANGELOG.md now name 0.2.0-rc.19 as the real retention downgrade boundary"
+      }
+    ]
+  },
+  "localChecks": {
+    "test": "1327 passed, 0 failed (NODE_OPTIONS=--max-old-space-size=4096)",
+    "packCheck": "16/16 (development and --release)",
+    "releaseVerify": "ok"
+  }
+}
