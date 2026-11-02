@@ -28,7 +28,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-import { EvolutionOrchestrator } from '../lib/orchestrator.js';
+import { EvolutionOrchestrator, safeErrorDto } from '../lib/orchestrator.js';
 import { apply } from '../lib/registration.js';
 import { context } from './fixtures/runtime-inspect.mjs';
 
@@ -461,10 +461,14 @@ test('repeated identical events count as repeats until the pattern is answered',
  * listener is fire-and-forget, so this wrapper captures the promise it starts;
  * without that, a test would have to guess how many macrotasks it takes.
  */
-function listenedSession(root, strategies) {
+function listenedSession(root, strategies, { legacy = false } = {}) {
   const listeners = new Map();
+  let trialStarts = 0;
+  const runtime = runner();
+  const define = runtime.define;
+  runtime.define = (...args) => { trialStarts += 1; return define(...args); };
   const ctx = {
-    dynamicCordisRunner: runner(),
+    dynamicCordisRunner: runtime,
     tools: { register: () => {} },
     systemPrompt: { section: () => {} },
     on: (event, listener) => listeners.set(event, listener),
@@ -485,14 +489,16 @@ function listenedSession(root, strategies) {
     autonomousStrategies: strategies,
   });
   const inFlight = [];
+  const results = [];
   const observe = core.observeAutonomous.bind(core);
   core.observeAutonomous = (...args) => {
+    if (legacy) delete args[0].errorPatternDigest;
     const started = observe(...args);
-    inFlight.push(started);
+    inFlight.push(started.then((result) => { results.push(result); return result; }));
     return started;
   };
-  const emitError = async () => {
-    const error = new Error('provider call failed');
+  const emitError = async (message = 'provider call failed') => {
+    const error = new Error(message);
     error.code = 'AGENT_ERROR';
     listeners.get('agent/error')({ agent: { id: 'continuity-owner' }, error, signal: new AbortController().signal });
     // The listener is fire-and-forget and awaits one microtask before it starts
@@ -505,7 +511,7 @@ function listenedSession(root, strategies) {
     }
     return core;
   };
-  return { core, emitError };
+  return { core, emitError, results, trialStarts: () => trialStarts };
 }
 
 test('end to end: the recorded failure stops the next session, a new declaration still runs', async (t) => {
@@ -601,4 +607,103 @@ test('a measured candidate is not offered for a declaration with different targe
     ['plugin:target-b'],
     'and the new experiment claims the targets the declaration names',
   );
+});
+
+
+test('registered numeric errors accumulate one pattern and do not repeat its trial', async (t) => {
+  const { core, emitError } = listenedSession(await scratch(t), { AGENT_ERROR: declaration('numeric') });
+  await emitError('provider call failed after 100 ms');
+  assert.equal(core.experiments.size, 0);
+  await emitError('provider call failed after 200 ms');
+  assert.equal(core.experiments.size, 1, 'numeric variants must reach the threshold');
+  assert.equal([...core.experiments.values()][0].state, 'measured');
+  await emitError('provider call failed after 300 ms');
+  assert.equal(core.experiments.size, 1, 'the pending hypothesis must not execute again');
+  assert.equal(core.patterns.size, 1);
+});
+
+test('numeric pattern digest preserves raw evidence and separates redacted root causes', async (t) => {
+  const { core, emitError } = listenedSession(await scratch(t), { AGENT_ERROR: declaration('roots') });
+  const first = safeErrorDto('provider failed token=alpha after 100 ms', "observation", { patternDigest: true });
+  const numeric = safeErrorDto('provider failed token=alpha after 200 ms', "observation", { patternDigest: true });
+  const other = safeErrorDto('provider failed token=beta after 100 ms', "observation", { patternDigest: true });
+  assert.notEqual(first.errorDigest, numeric.errorDigest);
+  assert.equal(first.errorPatternDigest, numeric.errorPatternDigest);
+  assert.notEqual(first.errorPatternDigest, other.errorPatternDigest);
+  assert.equal(first.errorSummary, other.errorSummary);
+  await emitError('provider failed token=alpha after 100 ms');
+  await emitError('provider failed token=beta after 100 ms');
+  assert.equal(core.experiments.size, 0, 'redaction collisions must not reach threshold');
+  assert.equal(core.patterns.size, 2);
+  // The pattern digest is a truncated hash of the same raw text the existing
+  // digest hashes; the redacted summary is still the only text any of these
+  // surfaces keeps, so the credential value itself never reaches them.
+  for (const secret of ['alpha', 'beta']) {
+    assert.equal(JSON.stringify(core.observations).includes(secret), false, `the observation stream must not keep ${secret}`);
+    assert.equal(JSON.stringify(core.candidates).includes(secret), false, `the candidate must not keep ${secret}`);
+    assert.equal(JSON.stringify(core.memory.data).includes(secret), false, `the failure memory must not keep ${secret}`);
+  }
+});
+
+
+test('inputs without the pattern digest keep the identity the base already assigns them', async (t) => {
+  const { core } = listenedSession(await scratch(t), {});
+  const raw = 'Failed after 100 ms';
+  // The base derives a digest when the caller supplies none, so an input without
+  // `errorPatternDigest` keeps exactly that identity: adding the pattern digest
+  // must not silently move the identity of the callers that do not send it.
+  const derived = `sha256:${crypto.createHash('sha256').update(raw).digest('hex').slice(0, 16)}`;
+  for (const digest of [undefined, 'sha256:0123456789abcdef']) {
+    const input = { type: 'agent/error', code: 'AGENT_ERROR', target: 'agent', message: raw, ...(digest ? { errorDigest: digest } : {}) };
+    const legacy = { code: 'AGENT_ERROR', digest: digest ?? derived, message: 'failed after # ms', target: 'agent', type: 'agent/error' };
+    const expected = crypto.createHash('sha256').update(JSON.stringify(legacy)).digest('hex');
+    assert.equal(core.patternKey(input), expected);
+  }
+  const a = safeErrorDto('provider item123 failed after 100 ms', "observation", { patternDigest: true });
+  const b = safeErrorDto('provider item456 failed after 200 ms', "observation", { patternDigest: true });
+  assert.notEqual(a.errorPatternDigest, b.errorPatternDigest, 'embedded digits remain distinct under the existing word-boundary rule');
+});
+
+
+test('registered semantic HTTP statuses do not combine into a trial', async (t) => {
+  const { core, emitError } = listenedSession(await scratch(t), { AGENT_ERROR: declaration('statuses') });
+  await emitError('provider failed HTTP status 401');
+  await emitError('provider failed HTTP status 500');
+  assert.equal(core.experiments.size, 0);
+  assert.equal(core.patterns.size, 2);
+});
+
+test('registered elapsed variants remain suppressed after failure memory reload', async (t) => {
+  const root = await scratch(t);
+  const strategies = { AGENT_ERROR: declaration('elapsed', { measure: async () => unimproved }) };
+  const first = listenedSession(root, strategies);
+  await first.emitError('provider call failed after 100 ms');
+  await first.emitError('provider call failed after 200 ms');
+  assert.equal(first.core.memory.data.entries.filter((entry) => entry.experiment?.strategy).length, 1);
+  const second = listenedSession(root, strategies);
+  await second.emitError('provider call failed after 300 ms');
+  await second.emitError('provider call failed after 400 ms');
+  assert.equal(second.core.experiments.size, 0);
+  assert.equal(second.trialStarts(), 0, 'no second trial may execute');
+  assert.equal(second.results.at(-1).reason, 'failure-memory');
+  assert.equal(second.core.suppressedPatterns.size, 1);
+});
+
+test('registered listener matches a reconstructable legacy failure without rewriting it', async (t) => {
+  const root = await scratch(t);
+  const strategies = { AGENT_ERROR: declaration('legacy', { measure: async () => unimproved }) };
+  const first = listenedSession(root, strategies, { legacy: true });
+  await first.emitError('provider call failed after 100 ms');
+  await first.emitError('provider call failed after 100 ms');
+  const recorded = first.core.memory.data.entries.filter((entry) => entry.experiment?.strategy);
+  assert.equal(recorded.length, 1);
+  const before = JSON.stringify(recorded);
+  const second = listenedSession(root, strategies);
+  await second.emitError('provider call failed after 100 ms');
+  await second.emitError('provider call failed after 100 ms');
+  assert.equal(second.core.experiments.size, 0);
+  assert.equal(second.trialStarts(), 0, 'no second trial may execute');
+  assert.equal(second.results.at(-1).reason, 'failure-memory');
+  assert.equal(second.core.suppressedPatterns.size, 1);
+  assert.equal(JSON.stringify(second.core.memory.data.entries.filter((entry) => entry.experiment?.strategy)), before);
 });
