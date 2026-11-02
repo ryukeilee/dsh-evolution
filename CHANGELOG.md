@@ -29,7 +29,7 @@ you install before upgrading DSH.
 现在的行为：抑制与「已测出证据、等待所有者确认」两个判断都按 `strategyFingerprint`（`patternKey` +
 `target` / `targets` / `idPrefix` / `risk` / `impactScope` / `successMetrics` / composition `name`、
 `purpose`、Host 与 Client 代码摘要）判定；`measured` 且门禁通过的实验由 `pendingAutonomousCandidate`
-命中并返回原 `experimentId`；环境类失败只做 session 内抑制（`experiment-deferred`），不写入失败记忆；
+命中并返回原 `experimentId`；环境类失败（target claim 冲突、claim 不可读、操作忙、权限与资源错误）只做 session 内抑制（`experiment-deferred`），不写入失败记忆；
 异常路径复用 `revert` 回收 Trial 与 target claim，并把清理结果记进失败记录。每模式的观测窗口与候选表
 加上 `AUTONOMOUS_PATTERN_CAP`（200）上限，与已有的 200 条观测流上限一致。
 

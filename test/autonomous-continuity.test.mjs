@@ -256,6 +256,19 @@ test('the durable failure identity is the declaration, not the pattern', async (
     core.strategyFingerprint(declaration('a', { targets: { plugins: ['target-a', 'target-b'] } })),
     'the order the targets are declared in is not part of the identity',
   );
+  // `impactScope` is read by `propose()` through `scopeList()`, which accepts the
+  // bare string form: both spellings are one declaration, and a changed scope is
+  // a new hypothesis. Reading strings as unreadable dropped the field entirely.
+  assert.equal(
+    core.strategyFingerprint(declaration('a', { impactScope: 'runtime' })),
+    core.strategyFingerprint(declaration('a', { impactScope: ['runtime'] })),
+    'the string form of the declared scope is the same declaration',
+  );
+  assert.notEqual(
+    core.strategyFingerprint(declaration('a', { impactScope: 'runtime' })),
+    core.strategyFingerprint(declaration('a', { impactScope: 'configuration:provider' })),
+    'a changed declared scope is a new hypothesis',
+  );
 
   // Unreadable declarations cannot be compared, but they must not throw out of
   // the observer either.
@@ -305,6 +318,32 @@ test('a failure that only says the target is taken is deferred, not recorded', a
   assert.equal(core.inspect(exec.agent).evolutionObservations.length >= 2, true);
 
   // The next session retries: nothing durable claims the strategy is wrong.
+  await fs.rm(claimFile, { force: true });
+  const revived = session(root);
+  assert.equal((await revived.observe()).phase, 'pattern-observing');
+  assert.equal((await revived.observe()).phase, 'candidate-awaiting-confirmation');
+});
+
+test('an unreadable target claim is deferred, not recorded as a strategy failure', async (t) => {
+  const root = await scratch(t);
+  const { core, observe } = session(root);
+  const target = 'plugin:fix-a';
+  const claimFile = path.join(core.paths.ownershipDir, `${crypto.createHash('sha256').update(target).digest('hex')}.json`);
+  await fs.mkdir(core.paths.ownershipDir, { recursive: true });
+  // A zero-byte entry is what a creator that died before writing leaves behind,
+  // and it reaches the observer as the same "experiment ownership is unreadable"
+  // error a permission failure produces. Neither says anything about the
+  // hypothesis, so neither may become a durable verdict.
+  await fs.writeFile(claimFile, '');
+
+  assert.equal((await observe()).phase, 'pattern-observing');
+  const deferred = await observe();
+  assert.equal(deferred.phase, 'experiment-deferred');
+  assert.equal(deferred.reason, 'transient-failure');
+  assert.match(deferred.error, /ownership is unreadable/);
+  assert.deepEqual(durableFailures(core), [], 'an unreadable claim is not evidence about the strategy');
+
+  // The next session tries the same declaration again once the claim is gone.
   await fs.rm(claimFile, { force: true });
   const revived = session(root);
   assert.equal((await revived.observe()).phase, 'pattern-observing');
