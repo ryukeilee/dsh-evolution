@@ -1,0 +1,213 @@
+{
+  "kind": "upgrade-compatibility",
+  "startedAt": "2026-11-02T03:20:34.826Z",
+  "from": {
+    "version": "0.2.0-rc.20",
+    "tarball": "dsh-evolution-0.2.0-rc.20.tgz",
+    "source": "https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.20/dsh-evolution-0.2.0-rc.20.tgz",
+    "sha256": "741a1a404b8b7a3829a836ecae782d72508028a2d08dbd55e942bae593c49956"
+  },
+  "to": {
+    "version": "0.2.0",
+    "tarball": "dsh-evolution-0.2.0.tgz",
+    "sha256": "2dfd2211ffdd3c0d3d6b44ecc476bacb93e20d96ba127fb3dd3e8ed3b4c27bb5",
+    "contentSha256": "370465f01b2d43a9a655d8feb5e7d53b76ab06b22331a86d63ec91544994ec9a",
+    "sourceCommit": "6ec70a17114ac10b02cfbdfe41bc9d5bd27dac7d"
+  },
+  "host": {
+    "version": "0.2.1-rc.2",
+    "note": "official host runtime reused from the three-host acceptance run"
+  },
+  "isolation": "fresh temp $DSH_HOME; no repository or user data touched",
+  "dataDigestBefore": "89d10bca354ada4db1f6a0d573394c6c19a14484e2a24e7ea3323ddcd8a0bec4",
+  "dataDigestAfter": "89d10bca354ada4db1f6a0d573394c6c19a14484e2a24e7ea3323ddcd8a0bec4",
+  "observed": {
+    "downgradeToRc20": {
+      "code": 0,
+      "installed": "0.2.0-rc.20",
+      "dataUnchanged": false
+    }
+  },
+  "checks": [
+    {
+      "name": "the prepared host runtime exists",
+      "ok": true,
+      "detail": "/tmp/evo-rc20-run/runtime/node_modules/@deepseek-ai/dsh/lib/bin.js"
+    },
+    {
+      "name": "official CLI installs rc.20",
+      "ok": true,
+      "detail": {
+        "code": 0,
+        "installed": "0.2.0-rc.20",
+        "tail": [
+          "Done in 408ms using pnpm v11.26.0",
+          "dsh: initialized profile web at /tmp/evo-upgrade-check/work/home/profiles/web"
+        ]
+      }
+    },
+    {
+      "name": "rc.20 runs the core flow",
+      "ok": true,
+      "detail": {
+        "toolCount": 10,
+        "reverted": true
+      }
+    },
+    {
+      "name": "rc.20 commits a promoted candidate into its canary state",
+      "ok": true,
+      "detail": {
+        "promotedListener": true,
+        "nextSession": {
+          "pluginName": "dsh-evolution-promoted-ee7fd663ae7a",
+          "pluginPath": "/tmp/evo-upgrade-check/work/home/storages/evolution/promoted/dsh-evolution-promoted-ee7fd663ae7a",
+          "moduleUrl": "file:///tmp/evo-upgrade-check/work/home/storages/evolution/promoted/dsh-evolution-promoted-ee7fd663ae7a/lib/index.js",
+          "adapter": "official-include",
+          "rowId": "evolution-promoted-ee7fd663ae7a",
+          "archivePath": "/tmp/evo-upgrade-check/work/home/storages/evolution/archive/experiments/exp-mvyoy655-1-cd15bef6.md",
+          "presetId": "evolution",
+          "journalPath": "/tmp/evo-upgrade-check/work/home/storages/evolution/promotion/journal.json",
+          "promotionTimestamp": "2026-11-02T03:20:17.697Z",
+          "healthObservationWindow": 2
+        }
+      }
+    },
+    {
+      "name": "rc.20 home holds Evolution user data",
+      "ok": true,
+      "detail": {
+        "entries": 1,
+        "data": "89d10bca354ada4db1f6a0d573394c6c19a14484e2a24e7ea3323ddcd8a0bec4"
+      }
+    },
+    {
+      "name": "official CLI upgrades rc.20 -> 0.2.0",
+      "ok": true,
+      "detail": {
+        "code": 0,
+        "installed": "0.2.0",
+        "tail": [
+          "Progress: resolved 5, reused 1, downloaded 1, added 1, done",
+          "Done in 300ms using pnpm v11.26.0"
+        ]
+      }
+    },
+    {
+      "name": "upgrade keeps the memory file byte-identical",
+      "ok": true,
+      "detail": {
+        "before": "53e523a0407e697459f6cc233502ccc3fff0d73eaf098e05650e3cc8264332d4",
+        "after": "53e523a0407e697459f6cc233502ccc3fff0d73eaf098e05650e3cc8264332d4"
+      }
+    },
+    {
+      "name": "upgrade keeps every memory entry",
+      "ok": true,
+      "detail": {
+        "before": 1,
+        "after": 1
+      }
+    },
+    {
+      "name": "upgrade leaves the whole Evolution data root byte-identical",
+      "ok": true,
+      "detail": {
+        "before": "89d10bca354ada4db1f6a0d573394c6c19a14484e2a24e7ea3323ddcd8a0bec4",
+        "after": "89d10bca354ada4db1f6a0d573394c6c19a14484e2a24e7ea3323ddcd8a0bec4"
+      }
+    },
+    {
+      "name": "the rc.20 committed canary is still verified after the upgrade",
+      "ok": true,
+      "detail": {
+        "verified": true,
+        "startup": "stable"
+      }
+    },
+    {
+      "name": "the core flow runs on the upgraded install with a full revert",
+      "ok": true,
+      "detail": {
+        "toolCount": 10,
+        "reverted": true
+      }
+    },
+    {
+      "name": "the core flow keeps persisting data after the upgrade",
+      "ok": true,
+      "detail": {
+        "before": 1,
+        "after": 2
+      }
+    },
+    {
+      "name": "official pluginManager sees the upgraded bundle",
+      "ok": true,
+      "detail": {
+        "action": "verify",
+        "application": "applied",
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": true,
+        "toolCount": 10,
+        "memoryUnchanged": true
+      }
+    },
+    {
+      "name": "doctor reports the upgraded profile as usable",
+      "ok": true,
+      "detail": {
+        "exit": 0,
+        "status": "healthy",
+        "degraded": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "name": "doctor verifies the host version",
+      "ok": true,
+      "detail": {
+        "found": "0.2.1-rc.2",
+        "supported": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2",
+        "verified": true,
+        "verifiedHosts": [
+          "0.2.0-rc.2",
+          "0.2.1-alpha.1",
+          "0.2.1-rc.2"
+        ],
+        "cli": "/tmp/evo-rc20-run/runtime/node_modules/@deepseek-ai/dsh/lib/bin.js"
+      }
+    },
+    {
+      "name": "doctor sees a usable plugin package",
+      "ok": true,
+      "detail": {
+        "level": "ok"
+      }
+    },
+    {
+      "name": "doctor resolves the promotion journal left by rc.20",
+      "ok": true,
+      "detail": {
+        "level": "ok",
+        "summary": "No promotion journal: no promotion is in progress."
+      }
+    },
+    {
+      "name": "doctor reads the upgraded Evolution memory",
+      "ok": true,
+      "detail": {
+        "level": "ok",
+        "summary": "Failure memory parses with 2 record(s)."
+      }
+    },
+    {
+      "name": "no doctor check is blocked",
+      "ok": true,
+      "detail": []
+    }
+  ],
+  "failures": [],
+  "ok": true
+}
