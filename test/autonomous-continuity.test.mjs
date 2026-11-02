@@ -414,6 +414,31 @@ test('the per-pattern tables stay bounded while the failure learning is untouche
   void observe;
 });
 
+test('the session suppression cache and the terminal records stay bounded too', async (t) => {
+  const root = await scratch(t);
+  // A failing declaration per pattern: every attempt reaches the durable
+  // learning, so the session suppression set and the terminal experiment records
+  // both grow with the number of distinct patterns unless they are capped.
+  const { core } = session(root, { strategies: {} });
+  const exec = { agent: { id: 'continuity-owner' }, signal: new AbortController().signal };
+  for (let index = 0; index < 205; index += 1) {
+    core.strategies[`TOOL_${index}`] = {
+      risk: 'low',
+      target: `plugin:cap-${index}`,
+      idPrefix: `cap${index}`,
+      composition: { name: `cap-${index}`, purpose: 'cap', code: { host: `return { variant: "${index}" };` } },
+      measure: async () => unimproved,
+    };
+    const input = { type: 'tool/error', code: `TOOL_${index}`, target: `tool:${index}`, message: `failure ${index}` };
+    await core.observeAutonomous(input, exec);
+    const result = await core.observeAutonomous(input, exec);
+    assert.equal(result.phase, 'rolled-back-no-improvement', 'each pattern gets its one attempt');
+  }
+  assert.ok(core.suppressedPatterns.size <= 200, `suppression keys bounded, got ${core.suppressedPatterns.size}`);
+  assert.ok(core.experiments.size <= 200, `terminal records bounded, got ${core.experiments.size}`);
+  assert.equal(core.memory.data.entries.length, 200, 'the durable learning keeps its own bounded history');
+});
+
 test('repeated identical events count as repeats until the pattern is answered', async (t) => {
   const root = await scratch(t);
   const { core, observe } = session(root, { strategies: { AGENT_ERROR: declaration('a', { measure: async () => unimproved }) } });
