@@ -13,7 +13,7 @@ unchanged as the history of that candidate line.
 `dsh-evolution` 的第一个正式版，取代整条 `0.2.0-rc.*` 候选线。分发内容等于 `0.2.0-rc.20`
 固定产物之后的全部已合并改动；持久 schema 版本、工具名 / 参数 / 参数 schema、授权来源、晋升门禁的
 8 项证据、风险分级、`peerDependencies` 与 `engines` 都与 rc.20 一致，因此从任何 rc 版本升级都不涉及
-数据迁移（唯一例外仍是执行过容量回收的数据根会带上 `retention` 字段，不可降级到 `0.2.0` 之前的版本）。
+数据迁移（唯一例外仍是执行过容量回收的数据根会带上 `retention` 字段，不可降级到不支持它的旧插件，即 `0.2.0-rc.19` 之前；rc.19 及以后的候选与本版本读取同一格式）。
 历史 RC 的 tag、Release 与 tarball 原样保留、未被覆盖。
 
 下面的两节是相对 `0.2.0-rc.20` 的变更。
