@@ -17,7 +17,7 @@
 | --- | --- |
 | `lib/index.js` | bundle 入口：解析路径、初始化 `event-bridge.key`、打开领域存储、在 Include 加载任何子项**之前**恢复中断的晋升事务、挂载官方 Include adapter、构造诊断函数 |
 | `lib/registration.js` | 工具注册与系统提示词；`EVOLUTION_TOOLS` 列出工具面（10 个，含唯一的回收入口 `evolution_maintain`），`lib/diagnostics.js` 的 `EVOLUTION_TOOL_NAMES` 用它对照实时注册表，两份列表由测试断言一致 |
-| `lib/orchestrator.js` | 实验 / trial / measurement / promotion 生命周期、journal 原子提交、CAS、跨进程锁、target claim、canary、失败学习、`promotionGates` |
+| `lib/orchestrator.js` | 实验 / trial / measurement / promotion 生命周期、journal 原子提交、CAS、跨进程锁、target claim、canary、失败学习、`promotionGates`；自主观察者的抑制与待确认候选按 `strategyFingerprint` 判身份（`observeAutonomous` / `pendingAutonomousCandidate` / `cleanupAutonomousTrial`） |
 | `lib/promotion-include.js` | 官方 `@deepseek-ai/cordis-plugin-include` 适配：不合成 loader entry、不写 profile `node_modules`，提交/回滚走公开 `refresh()` / `EntryTree.resolve` / `Entry.fiber` |
 | `cordis.patch.yml` | bundle patch：向 profile 的 loader 树 `insert` 两个条目（`evolution-orchestrator` → `dsh-evolution`、`evolution-trust-root-guard` → `dsh-evolution/guard`）。这是插件进入 composition 的唯一入口 |
 
@@ -84,7 +84,7 @@
 3. **Trial 基线只捕获一次。** 恢复基线在 Trial 首次修改运行时之前同步捕获，后续步骤不重建；因此 Trial 期间的真实并发漂移必须使恢复校验失败，并在 `revert` / `promote` 路径上保留目标锁。Trial 的 `define` / `run` 失败路径不激活任何东西，会释放目标锁并丢弃记录。
 4. **晋升门禁是生产权威。** `promotionGates` 的 8 项证据缺一不可；领域 evaluator 只是 advisory + regression veto，不得用它替代门禁。`requireRuntimeRecovery: false` 只用于"运行时尚未恢复"时给调用方看的只读证据视图（measure 响应、等待确认的响应、`domain-evaluator-rollback` 返回、dispose 之前的 `evidenceGates`，以及自主观察者在 revert 前判断候选是否成立）；晋升在 dispose 之后用默认判定（`requireRuntimeRecovery: true`），并同时要求 `disposed.recovered`，所以“运行时已恢复”被两道条件共同强制。
 5. **生产晋升必须显式确认。** `confirmation: true` 之外的一切路径（包括 autonomous 观察者）都只能返回"等待所有者确认"。
-6. **默认不会自己上生产。** `mode` 默认 `advisory`、`unattended` 默认 `false`，两者只记录在策略报告里；**它们不是自主观察者的前置开关**。观察者是否启动隔离 Trial 由 `autonomousStrategies`、`patternThreshold` 与风险等级决定（只有 `low` + `autonomousPolicy.low === "experiment"` 能走到实验，`medium` / `high` 是硬约束），且无论如何都停在 `candidate-awaiting-confirmation`。不要新增能让观察者自行批准生产的路径。
+6. **默认不会自己上生产。** `mode` 默认 `advisory`、`unattended` 默认 `false`，两者只记录在策略报告里；**它们不是自主观察者的前置开关**。观察者是否启动隔离 Trial 由 `autonomousStrategies`、`patternThreshold` 与风险等级决定（只有 `low` + `autonomousPolicy.low === "experiment"` 能走到实验，`medium` / `high` 是硬约束），且无论如何都停在 `candidate-awaiting-confirmation`。不要新增能让观察者自行批准生产的路径。抑制键是「模式 + 策略声明指纹」（`strategyFingerprint`）：同一声明跨 session 仍被已记录失败拦住，改动声明就是新假设；`measured` 且门禁通过的记录由 `pendingAutonomousCandidate` 命中，同一假设不会再启动第二个 Trial；只有环境类失败（target claim 冲突、操作忙、权限/资源错误，以及实验建立之前的失败）不写入失败记忆。
 7. **经验检索只读，且只由提交 proposal 的动作触发。** 入口是 `evolution_propose` 与 `evolution_history`（带 `query`）；不得让定时器、轮询或 measurement 触发它。自主观察者经 `evolution_propose` 间接触发属于这条路径本身，不是例外。上限只能由调用方收紧，不能放宽。
 8. **脱敏边界。** 原始错误文本在进入领域存储前必须经脱敏 DTO；不得把凭据、密钥或用户数据写入日志、证据或产物。
 9. **晋升是 Host-only，且不是安全沙箱。** `evolution_promote` 只接受 Host half，带 `client` 的 Package 直接拒绝（`evolution_trial` 允许 client）。合作式 `Function(hostCode)()` gate **不是**安全沙箱，晋升执行需要可信审批。
