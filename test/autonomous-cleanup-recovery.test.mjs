@@ -59,6 +59,9 @@ function runner() {
     undefineFails: false,
     undefineCalls: 0,
     stopCalls: 0,
+    // Set to a deferred to suspend `undefine` inside the `reverting` window, so a test
+    // can interleave a concurrent observation with a retry that is in flight.
+    undefineGate: null,
     snapshot() { return this.defined ? [{ pluginId: 'recovery-plugin', packages: [] }] : []; },
     define() { this.defined = true; this.mounted = true; return { pluginId: 'recovery-plugin', packageId: 'recovery-package' }; },
     async run() { return { ok: true, status: 'active' }; },
@@ -71,6 +74,7 @@ function runner() {
     },
     async undefine() {
       this.undefineCalls += 1;
+      if (this.undefineGate) await this.undefineGate.promise;
       if (this.undefineFails) throw new Error('undefine transport failed');
       if (!this.defined) return { ok: false, reason: 'plugin-missing', message: 'dynamic plugin "recovery-plugin" does not exist' };
       const wasRunning = this.mounted;
@@ -132,6 +136,20 @@ async function session(t, { cooldown = 0, strategies } = {}) {
     exec,
     observe: (code, owner = exec) => core.observeAutonomous(INPUT[code], owner),
   };
+}
+
+function deferred() {
+  let resolve;
+  const promise = new Promise((settle) => { resolve = settle; });
+  return { promise, resolve };
+}
+
+async function waitFor(predicate, label) {
+  for (let attempt = 0; attempt < 400; attempt += 1) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  assert.fail(`timed out waiting for ${label}`);
 }
 
 function claimFile(core, target) {
@@ -286,6 +304,43 @@ test('the retry is spaced by the cooldown instead of running on every error even
     assert.equal(h.runtime.undefineCalls, callsAfterTrial + 1, 'no retry inside the cooldown');
   }
   assert.equal(h.core.targetOwners.get(h.target), h.record.id);
+  assert.equal(await claimExists(h.core, h.target), true);
+});
+
+test('a concurrent observation does not drop the cooldown of a retry that is in flight', async (t) => {
+  const h = await wedged(t, { cooldown: 60_000 });
+  const callsAfterTrial = h.runtime.undefineCalls;
+
+  // The next retry suspends inside `undefine`: `revert` has already moved the record
+  // to `reverting`, which is not a retryable cleanup state.
+  const gate = deferred();
+  h.runtime.undefineFails = true;
+  h.runtime.undefineGate = gate;
+  assert.equal((await h.observe('TOOL_ERROR')).phase, 'pattern-observing');
+  const retry = h.observe('TOOL_ERROR');
+  await waitFor(() => h.record.state === 'reverting', 'the retry to reach the disposer');
+
+  // A concurrent observation of another (already spent) hypothesis reaches the
+  // recovery step while that retry is in flight. It must not erase the timestamp the
+  // retry is spacing: without it the next observation after a failed retry would run
+  // the disposers again immediately.
+  const concurrent = await h.observe('AGENT_ERROR');
+  assert.equal(concurrent.phase, 'suppressed');
+  assert.equal(h.core.cleanupRecoveryAttempts.has(h.record.id), true, 'the in-flight retry keeps its timestamp');
+
+  h.runtime.undefineGate = null;
+  gate.resolve();
+  const failed = await retry;
+  assert.equal(failed.cleanupRecovery.status, 'unproven');
+  assert.equal(h.record.state, 'revert-failed');
+  assert.equal(h.core.cleanupRecoveryAttempts.get(h.record.id).attempts, 1);
+  assert.equal(h.runtime.undefineCalls, callsAfterTrial + 1, 'one disposer run for the retry');
+
+  // The retry failed inside the cooldown, so the cooldown still applies.
+  const cooled = await h.observe('AGENT_ERROR');
+  assert.equal(cooled.cleanupRecovery.status, 'cooling-down');
+  assert.equal(h.runtime.undefineCalls, callsAfterTrial + 1, 'no second disposer run inside the cooldown');
+  assert.equal(h.record.state, 'revert-failed');
   assert.equal(await claimExists(h.core, h.target), true);
 });
 
