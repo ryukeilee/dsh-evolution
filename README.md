@@ -91,6 +91,7 @@ Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 i
 - **抑制以「假设」为单位，不以失败模式为单位。** 自主 Trial 的抑制键是 `patternKey` 加策略声明指纹（`target` / `targets` / `idPrefix` / `risk` / `impactScope` / `successMetrics` 与 composition 的 `name` / `purpose` / Host、Client 代码摘要）；宿主回调（`measure` / `observation`）不参与身份，因为它们无法跨进程复现。同一声明在重启后仍被已记录的失败拦住，改动声明是新假设、会被真正尝试一次。解除抑制的方式只有这一条：改声明。
 - **已经测出证据的候选不会被重复实验。** 观察者在 `measured` 且门禁通过后返回 `candidate-awaiting-confirmation` 并把实验留在原地；同一假设再次被观测到时返回同一个 `experimentId`（`reason: already-measured-awaiting-owner`），不会启动第二个 Trial，也不会再去争抢它自己已持有的 target claim。只有 revert / promote / 门禁否决把记录移出 `measured` 后，新的一次尝试才合法。
 - **环境失败不写持久判定。** target claim 冲突、claim 不可读（权限错误或半写入残件）、操作忙、权限或资源错误，以及实验尚未建立之前发生的失败，只在本 session 内抑制对应假设（`phase: experiment-deferred`、`reason: transient-failure`），不写入失败记忆；否则一次并发冲突就会永久否掉一个可能有效的策略。
+- **未证实的清理会被后续观测重试。** 每次符合条件的观测在做出任何决定之前，先用同一个 `revert` 重试上一轮未能证实的自主清理（同一份已捕获基线、同一套官方 disposer、只有证明通过才释放 claim），因此暂时性 disposer 故障消失后运行时能被重新释放，而不是等到重启；重试由观测触发并按 `cleanupRecoveryCooldownMs` 间隔，不会重跑已经抑制的策略，也不会为同一假设启动第二个 Trial。持续失败、运行时漂移或所有权不匹配时保持 claim、基线与记录，响应里的 `cleanupRecovery`（`unproven` / `cooling-down`）会指出剩余手段是显式的 `evolution_revert`。
 - **跨 session 的边界。** 失败记忆按假设持久化，重启后同一未改动声明不会再跑第二次实验。但 `measured` 候选只是本进程的运行时事实：它的 Cordis Trial 随进程结束消失，也无法在另一进程里晋升，所以新 session 会为同一假设重新建立一次 Trial，而不是复用旧证据。并发观测同一假设时只有一个进程内 claim，其余返回 `observing`。
 - `mode`（默认 `advisory`；可用 `manual` / `advisory` / `autonomous`）和 `unattended`（默认 `false`）会记录在策略报告中，但**不是自主观察者的前置开关**。
 - 任何模式都不能绕过晋升门禁或所有者确认；Trial 不直接改写生产 composition。
@@ -198,6 +199,7 @@ evolution_runtime_inspect → evolution_propose → evolution_trial
 | `domainSeed` | `false` | 显式授权载入已迁移的 `dockyard/state.json` 种子 |
 | `canaryWindow` | `2` | canary 需要的屏障数 |
 | `patternThreshold` | `3` | 相同失败模式成为候选的观测次数，下限 2 |
+| `cleanupRecoveryCooldownMs` | `30000` | 同一份未证实的自主清理两次重试之间的最小间隔；`0` 表示不间隔，仅供测试 |
 | `promotionLockTtlMs` | 15 分钟 | 晋升跨进程锁 TTL，下限 1000ms |
 | `autonomousStrategies` | 未配置 | 显式策略表；提供失败模式对应的 `target` / `composition` / `measure` / `risk` |
 | `memoryMaxEntries` / `memoryMaxText` / `memoryMaxItems` | `200` / `1200` / `8` | 有界失败记忆容量 |
