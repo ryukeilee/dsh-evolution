@@ -8,6 +8,56 @@ acceptance: read the entry for the version you install before upgrading DSH.
 `0.2.0` is the first stable release; the `0.2.0-rc.*` entries below it are kept
 unchanged as the history of that candidate line.
 
+## 0.2.0 之后 — unreleased
+
+依赖、持久 schema 版本、工具名 / 参数 / 参数 schema、授权来源、晋升门禁的 8 项证据、风险分级、
+`peerDependencies` 与 `engines` 均未改动；下列改动位于 `0.2.0` 固定产物之后，尚未重新固定。
+
+### 修复
+
+- **清理未证实的记录不再成为不可回收的运行时占用者。** `revert-failed` 与 `trial-cleanup-failed`
+  本来就该保留目标 claim 与实验记录（运行时可能仍持有那个 Trial，AGENTS.md 不变量 3），但没有任何
+  生命周期入口接受这两个状态：`revert` 要求 `trial` / `trial-awaiting-approval` / `measured`，
+  `promote` 要求 `measured`，`measure` 要求 Trial 状态，`trial` 要求 `proposed`。于是记录永久占用
+  运行时：之后每个 `evolution_trial` 都以 `E_EVOLUTION_RUNTIME_BUSY` 拒绝，而它给出的建议
+  （“revert or promote it”）两件事都做不到；失败 DTO 里写的恢复提示（“修复 dispose 路径并重新建立
+  基线”）指向的步骤同样被拒绝。一次暂时性的 `stop` / `undefine` 失败（或一次仍在的 Trial 期间漂移）
+  就此停掉整个 session，只能重启宿主。现在 `revert` 接受这两个状态并重跑同一套官方 disposer 与**同一
+  条**已捕获基线的比较，只有同一份证据通过才释放 claim，所以重试不是更松的证明；漂移仍在时重试得到
+  同一个拒绝并保留现场。自主观察者的 `cleanupAutonomousTrial()` 走同一条重试，不再把未证实的清理
+  报告成终局。`E_EVOLUTION_RUNTIME_BUSY` 的文案在占用者处于这两个状态时改为指向可行的重试。
+- **重试按官方 receipt 并集读清理证据，而不是只看 `ok`。** 可达的重试只有在 disposer 的“已在目标状态”
+  返回值也算证明时才有意义：官方 `stop` / `undefine` 不是幂等的（`@deepseek-ai/dsh-cordis-host-runner`
+  的 `DynamicCordisStopResponse` 与 `DynamicCordisUndefineReceipt` 都是封闭并集）。真实宿主实测：第一次
+  `stop` → `{ ok: true }`，第二次 → `{ ok: false, reason: 'not-running' }`；第一次 `undefine` →
+  `{ ok: true, wasRunning: false }`，第二次 → `{ ok: false, reason: 'plugin-missing' }`。因此「首次
+  `stop` 成功、`undefine` 抛出」这种最常见的暂时性失败，重试永远看不到 `ok`：此前仅放开状态的可达性
+  仍然无法证明恢复，`signatureRecovered: true` 却报 `revert-failed`，claim 永久保留。现在 `stop` 的
+  `not-running` / `plugin-missing` 与 `undefine` 的 `plugin-missing` 计为对应步骤的证明
+  （`DISPOSER_PROVED_REASONS`），其他 reason 与抛出的 receipt 仍然不算，签名比较仍必须成立，所以证据
+  集合没有变松。
+- **成功回收后档案不再自相矛盾。** 清理证明通过时档案现在写 `state: reverted` / `recovered: true`，
+  不再同时带上上一个失败留下的 `## Failure learning` 块（它声称“cleanup did not prove runtime
+  recovery”）。被取代的失败仍在两处持久：已认证的事件日志（`failure-learned`）与失败记忆里那一条。
+  这条矛盾在此之前也已可从「晋升门禁被拒 → 补齐证据 → revert 成功」到达。
+
+### 测试
+
+`test/revert-unproven-cleanup-retry.test.mjs` 用一个只输出官方 receipt 形状的 runner 端到端驱动该状态机
+（9 项）：首次 `stop` 成功、`undefine` 抛出后重试成功并释放 claim、同一目标可开始新的 Trial；两个
+`plugin-missing` 也能证明恢复；清理已成功但漂移当时仍在时，漂移消失后重试判定恢复；未文档化 reason 与
+抛出的 receipt 都不算证明、claim 全部保留；`trial-cleanup-failed` 记录可达；成功回收的档案不携带矛盾的
+失败块（且失败仍在事件桥与失败记忆里）；`cleanupAutonomousTrial()` 重试而不是返回 `not-recovered`；一次
+成功仍不需要重试。其中 7 项在 `0.2.0` 固定产物上失败，5 项在“只放开状态、不看 receipt”的中间实现上失败
+——第一版测试用的是幂等假 runner，正好掩盖了 receipt 这半边缺陷。
+真实宿主对照（同一个 `0.2.0-rc.2` runtime，同一段探针，分别装入固定产物与本轮构建）：固定产物的
+`evolution_revert` 返回 `{ ok: false, phase: 'revert-failed', cleanupProof: { stopOk: false,
+removedOk: false, signatureRecovered: true } }`，随后的 `evolution_trial` 报 `E_EVOLUTION_RUNTIME_BUSY`；
+本轮构建返回 `{ ok: true, phase: 'reverted', runtimeRecovered: true }`，同一目标的新 Trial 正常推进并在
+再次 revert 后恢复基线。该对照的探针已入库为 `scripts/acceptance/probes/retry-probe.mjs`（文件头写明
+在 `--keep` 保留下来的验收环境里手动跑的命令），两次运行的输出记录在
+`docs/evidence/revert-retry-20261102-real-host.json`。
+
 ## 0.2.0 — 首个稳定版
 
 `dsh-evolution` 的第一个正式版，取代整条 `0.2.0-rc.*` 候选线。分发内容等于 `0.2.0-rc.20`

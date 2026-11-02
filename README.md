@@ -65,7 +65,7 @@ evolution_maintain ─────────── 容量回收：dryRun 先�
 evolution_doctor ──────────── 无模型诊断
 ```
 
-Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 inspect、measure 和清理不会重建基线。Trial 期间仍存在的外部漂移会使恢复校验失败，并保留目标锁；define / run 失败没有激活任何内容，会释放目标锁并丢弃实验记录（与失败学习写入是否成功无关）。
+Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 inspect、measure 和清理不会重建基线。Trial 期间仍存在的外部漂移会使恢复校验失败，并保留目标锁；漂移消失后重试才会判定恢复（基线仍只有那一条）。define / run 失败没有激活任何内容，会释放目标锁并丢弃实验记录（与失败学习写入是否成功无关）。清理无法证实运行时已恢复时（`revert-failed` / `trial-cleanup-failed`）记录与目标锁都保留，但该记录仍可再次调用 `evolution_revert`：重试跑的是同一套官方 disposer 与同一条基线的比较，只有同一份证据通过才释放 claim。官方 disposer 不是幂等的，所以重试看到的是 `stop` 的 `not-running` / `plugin-missing` 与 `undefine` 的 `plugin-missing`——这三个 reason 本身就是证明，其他 reason 与抛出的 receipt 仍然不算（口径见 `COMPATIBILITY.md`）。
 
 晋升的 8 项门禁缺一不可：
 
@@ -290,7 +290,7 @@ dsh plugin --profile web remove dsh-evolution
 3. **晋升是 Host-only，且不是安全沙箱。** 只有持久化晋升拒绝带 `client` 的 Package（`evolution_trial` 允许 Client half）；持久化源码走合作式 `Function(hostCode)()` gate，始终需要可信审批。
 4. **依赖内部 / 未文档化宿主接口。** introspection 使用 `ctx.registry.values()`、`ctx.reflect.props/_getImpl()`、`ctx.events._hooks`、Fiber effect 元数据；Include adapter 使用公开但未文档化的 `root.data` / `store` / `Entry.fiber` / `Fiber.state` / `ctx.get()`。这些不是稳定跨版本公共契约，升级 DSH 前必须重新验收；`runtime.internal-api` 会逐探针报告可用性，缺失时降级为 `degraded`。
 5. **手工 dispose 底层 bundle Fiber 的路径无法自我断言。** `disposeTrial` 走官方 runner 的 stop/undefine；直接 dispose bundle Fiber 会让探针自身注入的 `tools` 失活，因此不作为用户关闭流程。
-6. **Trial 期间持续存在的外部漂移会拒绝恢复。** 恢复签名比较前后可观察清单，不重建基线，因此不能记录已自行恢复的瞬态漂移，也不能证明任意合作式代码或 disposer 的全部外部效果。
+6. **Trial 期间持续存在的外部漂移会拒绝恢复。** 恢复签名比较前后可观察清单，不重建基线，因此不能记录已自行恢复的瞬态漂移，也不能证明任意合作式代码或 disposer 的全部外部效果。漂移仍在时重试 `evolution_revert` 会得到同一个拒绝并继续保留目标锁；漂移消失后重试才会判定恢复。`revert-failed` / `trial-cleanup-failed` 记录本身可达（可重试），但本 session 内没有“丢弃未证实现场”的入口——那需要重启进程，让 claim 按 pid 回收规则处理。
 7. **事件签名密钥没有轮换 / 吊销流程。** `event-bridge.key` 只在该数据根首次创建，禁用与卸载都不会删除。
 8. **file 后端的失败记忆是 last-writer-wins，`save()` 不做 fsync。** 同一数据根下两个 host 实例同时归档时，后写者会覆盖整份快照；断电时最后一次 `record()` 可能丢失。跨进程锁保护领域归档事务，不保护这个文件。它是有界、advisory 的失败记忆（`promotionGates` 仍是生产权威），单实例使用不触发。
 9. **指标 ID 不是授权凭证。** 兜底 ID 使用 `crypto.randomUUID()`，同一记录只生成一次；调用方仍可提供 ID，不能把可猜测或不可猜测的 ID 当作权限控制。
