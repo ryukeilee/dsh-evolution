@@ -132,14 +132,24 @@ test('an invalid composition report withholds the configuration excerpt', async 
   assert.equal(JSON.stringify(check.evidence).includes('password'), false);
 });
 
-test('an unknown YAML tag does not echo the tag the document wrote', async () => {
-  const { home, paths } = freshHome('yaml-tag');
-  fs.writeFileSync(paths.compositionPath, 'value: !<SYNTHETIC_PRIVATE_VALUE> hello\n');
-  const report = await collectDiagnostics(baseOptions(home));
-  const check = checkOf(report, 'promotion.composition');
-  assert.equal(check.level, 'blocked');
-  assert.equal(JSON.stringify(report).includes('SYNTHETIC_PRIVATE_VALUE'), false, 'the tag text is source, not a reason');
-  assert.match(String(check.evidence.error), /^(?:invalid YAML|[A-Za-z0-9 ,.;:()-]+) \(line \d+, column \d+\)$/);
+test('no parser reason echoes the document, however the tag was written', async () => {
+  // Both shapes carry the tag's own text into the parser's `reason`: the
+  // `!<...>` form and the one whose tag name is plain words. A character-class
+  // filter cannot tell the second from a structural reason, so the report uses a
+  // fixed category and the parser's position only.
+  for (const [name, document, secret] of [
+    ['yaml-tag', 'value: !<SYNTHETIC_PRIVATE_VALUE> hello\n', 'SYNTHETIC_PRIVATE_VALUE'],
+    ['yaml-tag-words', 'value: !<SYNTHETIC PRIVATE VALUE> hello\n', 'SYNTHETIC PRIVATE VALUE'],
+    ['yaml-indent', '- id: evolution-promoted-000000000000\n  config:\n    password: SYNTHETIC_PRIVATE_VALUE\n  name: [\n', 'SYNTHETIC_PRIVATE_VALUE'],
+  ]) {
+    const { home, paths } = freshHome(name);
+    fs.writeFileSync(paths.compositionPath, document);
+    const report = await collectDiagnostics(baseOptions(home));
+    const check = checkOf(report, 'promotion.composition');
+    assert.equal(check.level, 'blocked', name);
+    assert.equal(JSON.stringify(report).includes(secret), false, `${name}: the document never reaches the report`);
+    assert.match(String(check.evidence.error), /^invalid YAML \(line \d+, column \d+\)$/, name);
+  }
 });
 
 test('a staged import is not offered for cleanup when a target is missing', async () => {

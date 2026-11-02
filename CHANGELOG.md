@@ -69,9 +69,10 @@ Trial 与 target claim：
   `..` 只有目标解析才能发现。下钻仍有 4 层嵌套、32 KiB 嵌套文本与 4 KiB 实参跨度上界（守卫是启发式
   提示，不是沙箱）。
 - managed 豁免同时要求解析后的实际目标仍属于 bookkeeping 范围，别名无法把它扩展到 `.env` 之类的凭证文件。
-- `promoted.cordis.yml` 解析失败只报告**结构性** reason 与行列：parser 的 `message` 会带上配置片段，
-  而 `reason` 本身也可能引用原文（`unknown tag !<…>`、`unidentified alias "…"`），含引号或标签的
-  reason 一律降级为固定类别，CLI 报告与 `evolution_doctor` 输出都不再携带配置内容。
+- `promoted.cordis.yml` 解析失败只报告固定类别与行列：parser 的 `message` 会带上配置片段，`reason`
+  本身也可能引用原文（`unknown tag !<…>`、`unidentified alias "…"`，以及把标签文字直接拼进去的
+  `tag name cannot contain such characters: …`——最后一种就是普通单词，字符集无法把它和结构性原因
+  区分开）。CLI 报告与 `evolution_doctor` 输出因此只保留 `invalid YAML` 与 parser 自己的行列。
 - 遗留 staging 目录只有在 manifest 记录的每个目标都存在且不可变证据仍匹配时才作为可修复项提供，
   执行修复前重新验证一次；此前「安全清理」可能在目标缺失时删掉唯一的副本。
 
