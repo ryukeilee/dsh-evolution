@@ -1,8 +1,8 @@
 # 发布说明与剩余风险
 
-本文件记录 `dsh-evolution` 当前发布候选（RC）的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
+本文件记录 `dsh-evolution` 当前稳定版的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前候选版本：`0.2.0-rc.20`，包含截至 `8162d3f` 的冷路径成本收敛（冷归档读窗口与分块扫描、归档事务借用、首次历史吸收与 replay 的增量判定）以及工具结果的紧凑渲染，详见 `CHANGELOG.md`。三个官方宿主兼容范围不变。执行 retention 回收后不可降级到旧版插件：旧版严格 schema 会拒绝新增的 `retention` 字段。
+当前版本：`0.2.0`——首个稳定版，取代整条 `0.2.0-rc.*` 候选线，历史 RC 的 tag、Release 与 tarball 原样保留、未被覆盖。它包含截至 `e560479`（PR #15 合并）的全部已合并修复，其中相对 `0.2.0-rc.20` 固定产物的分发内容变化是：`lib/diagnostics.js`、`lib/dockyard-domain/continuous/supervisor.js`、`lib/dockyard-domain/evaluator.js`、`lib/dockyard-domain/memory.js`、`lib/dockyard-domain/metric-projection.js`、`lib/guard.js`、`lib/orchestrator.js`、`lib/registration.js` 八个 `lib/` 文件，加上版本号与随包文档（`README.md`、`CHANGELOG.md`、`RELEASE.md`）；没有改持久 schema 或 schema 版本、工具名 / 参数 / 参数 schema、授权来源、事务边界、fsync 语义、晋升门禁的 8 项证据、Cordis 信任根或支持宿主范围。`CHANGELOG.md` 的 `0.2.0` 一节逐条记录这几轮修复。三个官方宿主兼容范围不变。执行 retention 回收后不可降级到 `0.2.0` 之前的插件：旧版严格 schema 会拒绝新增的 `retention` 字段。
 
 `0.2.0-rc.20` 的分发内容只改了五个 `lib/` 源文件（`lib/archive-stage.js`、`lib/domain-storage.js`、`lib/dockyard-domain/memory.js`、`lib/experience-recall.js`、`lib/registration.js`）与 `lib/dockyard-domain/PORTS.md`，加上版本号与随包文档；没有改持久 schema 或 schema 版本、工具名 / 参数 / 参数 schema、授权来源、事务边界、fsync 语义、晋升门禁、Cordis 信任根或支持宿主范围。本轮每一组数字都对各自的基线测量，**不能相加**；被撤回的候选留在 `docs/` 里而不是删除。
 
@@ -16,18 +16,20 @@
 
 源码、固定产物和三个官方宿主验收必须对应同一内容及字节。固定点通过 `npm run release:pack`、`npm run release:publish -- --force` 和针对固定 tarball 的三宿主验收生成；具体摘要和证据路径见 `release/manifest.json`。rc.18、rc.19 的 tag、Release 和历史 tarball 保留。
 
-**漂移按同一流程逐轮关闭：rc.15、rc.16 与 rc.17 各自完成了当时候选的重新固定。** `0.2.0-rc.14` 之后积压的未发布改动曾使工作树内容不等于任何固定点，`npm run pack:check` 因此如实报出三条固定点失败；rc.15 按第 2 节重新构建、重跑三宿主验收并重新固定后，这三条检查转绿（`pack:check` 共 16 项，全绿）。`7cd5453` 之后同样：三个分发文件再次离开固定点、`pack:check` 再次报出三条固定点失败，rc.16 按同一节重新固定后回到 16 项全绿。rc.16 发布之后的两轮性能优化（`e185525`、`5381299`）与一轮重放修复（`84cbe3a`）再次把工作树推离固定点，rc.17 同样按第 2 节重新构建、重跑三宿主验收并重新固定。rc.18 同样按第 2 节重新构建、重跑三宿主验收并重新固定，`pack:check` 回到 16 项全绿。rc.19 之后、本候选之前的 35 个提交又把工作树推离固定点（分发文件里的 `lib/archive-stage.js`、`lib/domain-storage.js`、`lib/dockyard-domain/memory.js`、`lib/experience-recall.js`、`lib/registration.js`、`lib/dockyard-domain/PORTS.md`，加上本轮的版本号与随包文档），rc.20 按同一节重新构建、重跑三宿主验收并重新固定。处置流程与判据保留在第 6 节第 16 条。
+**漂移按同一流程逐轮关闭：rc.15、rc.16 与 rc.17 各自完成了当时候选的重新固定。** `0.2.0-rc.14` 之后积压的未发布改动曾使工作树内容不等于任何固定点，`npm run pack:check` 因此如实报出三条固定点失败；rc.15 按第 2 节重新构建、重跑三宿主验收并重新固定后，这三条检查转绿（`pack:check` 共 16 项，全绿）。`7cd5453` 之后同样：三个分发文件再次离开固定点、`pack:check` 再次报出三条固定点失败，rc.16 按同一节重新固定后回到 16 项全绿。rc.16 发布之后的两轮性能优化（`e185525`、`5381299`）与一轮重放修复（`84cbe3a`）再次把工作树推离固定点，rc.17 同样按第 2 节重新构建、重跑三宿主验收并重新固定。rc.18 同样按第 2 节重新构建、重跑三宿主验收并重新固定，`pack:check` 回到 16 项全绿。rc.19 之后、rc.20 之前的 35 个提交又把工作树推离固定点（分发文件里的 `lib/archive-stage.js`、`lib/domain-storage.js`、`lib/dockyard-domain/memory.js`、`lib/experience-recall.js`、`lib/registration.js`、`lib/dockyard-domain/PORTS.md`，加上当时轮的版本号与随包文档），rc.20 按同一节重新构建、重跑三宿主验收并重新固定。`0.2.0` 同理：`0.2.0-rc.20` 固定之后的 10 个提交（包含 PR #12–#15）把工作树推离固定点（分发文件里的八个 `lib/` 文件，加上版本号与随包文档），`0.2.0` 按同一节重新构建、重跑三宿主验收并重新固定。处置流程与判据保留在第 6 节第 16 条。
 
 ## 1. 产物
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.0-rc.20.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.0.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-rc.20 发布之前，最后公开的是 `v0.2.0-rc.19`（tag 指向合并提交 `4e28cd7`，Release id 424883309，2026-10-26T23:40:02Z 发布为 prerelease），同一组附件为 tarball + `manifest.json` + `SHA256SUMS`。
+rc.20 之后，`0.2.0` 之前最后公开的候选是 `v0.2.0-rc.20`（tag 指向发布提交 `79e7f72`，Release id 428691669，2026-10-30T05:43:37Z 以 prerelease 创建，同一组附件为 tarball + `manifest.json` + `SHA256SUMS`）。`0.2.0` 是它的正式后继：同一分发结构，版本号不再带 pre-release 后缀，Release 以正式版（非 Draft、非 Pre-release）公开。
+
+rc.20 发布之前，最后公开的候选是 `v0.2.0-rc.19`（tag 指向合并提交 `4e28cd7`，Release id 424883309，2026-10-26T23:40:02Z 发布为 prerelease），其审计与发布后资产校验见同目录的 `rc19-postpublish-*.json`。
 
 rc.18 发布之前，最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，Release id 420147672，2026-10-21T23:19:21Z 发布为 prerelease；draft 上逐字节校验后才公开），其审计与发布后资产校验见 `docs/evidence/rc17-release-audit.json` 与同目录的 `rc17-postpublish-*.json`。更早版本的对应记录见同目录的 `rc*-release-audit.json`；`v0.2.0-rc.15` 的记录见 `rc15-release-audit.json` 与 `rc15-postpublish-*.json`，`v0.2.0-rc.10` 的入口、资产与发布后验收记录见 `rc10-release-audit.json`、`rc10-postpublish-*.json` 与 `rc10-ci-*.json`。发布流程仍是在 draft 上验证附件，再公开并重新匿名下载校验。
 
@@ -45,16 +47,16 @@ rc.18 发布之前，最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.0-rc.20，仓库内容）
+# 当前本地候选（0.2.0，仓库内容）
 npm run pack:check                              # 开发阶段：打包稳定性、白名单、权限、锁文件、文档一致性 + 工作树/固定点关系
 npm run pack:check -- --release                 # 发布阶段：另外要求工作树就是固定内容（release.yml 用这一条）
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
 # 发布后：验证 tag -> commit -> 固定点 -> 工作树（发布前在同一 commit 上也能跑）
-node scripts/release/verify-provenance.mjs --tag v0.2.0-rc.20 --require-source-commit
+node scripts/release/verify-provenance.mjs --tag v0.2.0 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.0-rc.20，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.0，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -102,11 +104,11 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 - `docs/evidence/dsh-0.2.1-alpha.1.json`
 - `docs/evidence/dsh-0.2.1-rc.2.json`
 
-证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节），`pack:check` 与 `test/release-pin.test.mjs` 都拿它们核对**发布固定点**，而不是工作树。当前固定点对应的记录应针对 `release/dsh-evolution-0.2.0-rc.20.tgz` 写回。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容，因此必须重跑三个宿主的验收再重新固定才能转绿；开发阶段的判定差别见第 6 节第 16 条。
+证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节），`pack:check` 与 `test/release-pin.test.mjs` 都拿它们核对**发布固定点**，而不是工作树。当前固定点对应的记录应针对 `release/dsh-evolution-0.2.0.tgz` 写回。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容，因此必须重跑三个宿主的验收再重新固定才能转绿；开发阶段的判定差别见第 6 节第 16 条。
 
 ### 4.1 已执行的验收记录
 
-三个官方宿主针对 rc.20 固定产物各完成 21/21 项验收，最终 doctor 均为 `healthy`、退出码为 0。固定点的宿主验收记录保存在上列三个 `docs/evidence/dsh-<host>.json` 文件中。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
+三个官方宿主针对 `0.2.0` 固定产物各完成 21/21 项验收，最终 doctor 均为 `healthy`、退出码为 0。固定点的宿主验收记录保存在上列三个 `docs/evidence/dsh-<host>.json` 文件中。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
 
 ## 5. CI 与发布链
 
@@ -125,16 +127,16 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 - 所有 action 均运行在 Node 24 运行时（`actions/checkout@v7`、`actions/setup-node@v7`、`actions/upload-artifact@v7`、`pnpm/action-setup@v6`、`github/codeql-action/*@v4`），不再出现 `Node.js 20 is deprecated` 警告。
 - `test/workflows.test.mjs` 解析全部 workflow，锁定 CI job 集、可接受宿主矩阵、发布不可覆盖与不可重建、action 运行时与 major 版本；`test/release-provenance.test.mjs` 覆盖 provenance 判定表。
 
-rc.18 没有改变 CI job 集、宿主矩阵或 publish 顺序。随候选新增的 doctor check `state.ownership` 只改变诊断报告面；它不增加 repair，也不改变 release workflow 的固定点与 provenance 校验。rc.20 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的项数（仍为 28 个 check `id`、6 个 repair `id`、5 个 degradedCapability `id`）。
+rc.18 没有改变 CI job 集、宿主矩阵或 publish 顺序。随候选新增的 doctor check `state.ownership` 只改变诊断报告面；它不增加 repair，也不改变 release workflow 的固定点与 provenance 校验。rc.20 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的项数（仍为 28 个 check `id`、6 个 repair `id`、5 个 degradedCapability `id`）。`0.2.0` 相对 rc.20 也没有改变这三者；唯一与看到“候选”二字时会预期的差异是**版本号的形状**：`0.2.0` 不再带 pre-release 后缀，所以 `release.yml` 会把它的 draft Release 建成正式版（`--prerelease` 只用于带 pre-release 组件的 tag）。相应地，`pack:check` 的版本检查从“必须是 pre-release”改为“必须是可被 release tag 文法命中的 semver 版本”，`test/release-pin.test.mjs` 的 pin 版本断言同步改成同一形状；这两处改动只是允许稳定版本，没有放宽任何其它门禁。
 
 ## 6. 发布状态与剩余风险
 
 仓库已设为 public，`v0.2.0-rc.1` 的 tarball、`SHA256SUMS` 与 `manifest.json` 可由无仓库权限的用户直接下载。此前“私有仓库导致 Release 资产无法匿名下载”的限制已解除。
 
-以下条目是仍未消除的边界与风险（第 1–14、16–42 条）；第 15 条已关闭，保留在原编号位置只为让旧说明不再误导。第 30–31 条记录 rc.17 的边界；第 25 条按 rc.18 的尾记录协议更新，仍描述事件桥的残余边界；第 32–37 条记录 rc.18 新增或明确的限制；第 38–42 条记录 rc.20 新增或改写的边界：
+以下条目是仍未消除的边界与风险（第 1–14、16–42 条）；第 15 条已关闭，保留在原编号位置只为让旧说明不再误导。第 30–31 条记录 rc.17 的边界；第 25 条按 rc.18 的尾记录协议更新，仍描述事件桥的残余边界；第 32–37 条记录 rc.18 新增或明确的限制；第 38–42 条记录 rc.20 新增或改写的边界；`0.2.0` 没有新增边界条目，只是把 rc.20 之后的修复固定为正式版：
 
 1. **发布字节由人工固定的 `release/` 决定，而不是由 CI 重新构建。** 这是刻意的（见第 1 节），但它意味着：如果 `release/` 里的 tarball 被替换而 `release/manifest.json` 未同步，两者会不一致——`pack:check`、`release:verify` 和 `test/release-pin.test.mjs` 都会失败，因此只可能被“同时改对”而无法静默漂移。
-2. **`v0.2.0-rc.1` 的 tag 与同名 Release 的已发布字节不一致。** tag 指向 `98a6425`，该 commit 固定的产物是 `d24f5e52…`（内容 `5bf862ec…`）；而 Release 上实际可下载的是 `fc41f0e0…`（内容 `763707ab…`），来自后续的 `4c87c99`（`git show 4c87c99:release/manifest.json` 可复现该固定点）。加固后的 workflow 现在会在这种 tag/manifest/产物不一致时**明确失败**。要修复历史 Release 需要移动 tag 或覆盖附件，两者都被本次目标禁止，因此它作为已知风险记录在此，而不是被修复。这也是 `release/` 只固定当前候选、旧版本只能靠 tag/commit 历史或 Release 附件校验的原因。
+2. **`v0.2.0-rc.1` 的 tag 与同名 Release 的已发布字节不一致。** tag 指向 `98a6425`，该 commit 固定的产物是 `d24f5e52…`（内容 `5bf862ec…`）；而 Release 上实际可下载的是 `fc41f0e0…`（内容 `763707ab…`），来自后续的 `4c87c99`（`git show 4c87c99:release/manifest.json` 可复现该固定点）。加固后的 workflow 现在会在这种 tag/manifest/产物不一致时**明确失败**。要修复历史 Release 需要移动 tag 或覆盖附件，两者都被本次目标禁止，因此它作为已知风险记录在此，而不是被修复。这也是 `release/` 只固定当前版本、旧版本只能靠 tag/commit 历史或 Release 附件校验的原因。
 3. **守卫仍是启发式策略检查，不是 shell/JavaScript 安全沙箱。** 本次修复工具输入可触发的多项式回溯，重定向直接从 `>` 匹配，有序程序/写动词按互不重叠的候选区间匹配，保留导出的 `RegExp` 接口；没有把守卫扩展为通用解析器。rc.14 之后又补了几种**目标无歧义**的直接写入载体（`lib/guard.js`）：`cp`/`mv`/`install`/`ln` 的 `-t`/`--target-directory`、`dd` 的 `of=`、`sh`/`bash -c` 与 `xargs` 里的内层命令（逐层递归，最多 4 层；到上限后改为“内层同时出现写动词与受保护字样才拒绝”的保守判定）、`node`/`deno`/`bun` 的 `-e`/`--eval`/`-p` 内联代码（交给同一个代码写入目标判定）、`git -C`/`--git-dir`/`--work-tree` 指向的工作树与子命令操作数；子 shell 的分组括号不再被当作命令词或操作数，`Deno` 写入家族的 `Sync` 变体也不再因前缀匹配而漏判。判定依据仍然是“真正会被写到哪”，不是命令文本里出现了受保护路径。**仍未覆盖**（需要真正的 shell 语义求值，本守卫不做）：`sudo`/`env`/`nohup` 之类的包装命令前缀、`eval`、作为**目标**出现的变量与命令替换（`$V`、`$(…)`）、别名与 shell 函数、`base64 | sh` 这类重新拼接，以及伪终端里的人工输入；它也只会识别一份写定的 API 名字表，表外的写入 API 不构成信号。promotion 执行的宿主代码同样是合作式执行，需要可信审批。
 4. **验收覆盖不到手工 dispose 底层 bundle Fiber 的路径。** `disposeTrial` 走官方 runner 的 stop/undefine；直接 dispose bundle Fiber 的手工探针无法自我断言（会让探针自身注入的 `tools` 失活），因此不作为用户关闭流程，也未被 CI 覆盖。rc.14 之后，`Include.refresh()` 会先用 `tree.root.data` 取出活动行、经 `EntryTree.resolve()` 捕获它们的 fiber，`refresh()`/`tree.await()` 之后再对**已不再是同一 fiber** 的那些 entry 逐个 `await fiber.await()`：因此“刷新已完成”现在包含被移除/被替换 entry 的异步 dispose（加载器的 `EntryGroup.remove()` 调用 `entry.fiber?.dispose()` 后立刻删 store 槽位，`EntryTree.await()` 已经看不到它）。无法确认（entry 没暴露可 await 的 fiber，或 dispose 抛错）时 refresh 直接抛错；晋升回滚只在 dispose 确认结束后才删除 journal，确认不了就保留 journal 并报 `rollback-failed`（`test/orchestrator-durability-refresh-dispose.test.mjs`）。这仍然只覆盖经官方 Include 移除的行，**不包括**手工 `fiber.dispose()` 自己持有的 Fiber。
 5. **promotion 的领域 evaluator 仍是 advisory。** `promotionGates` 是生产权威，领域 evaluator 只提供记录在案的决策与 regression 硬 veto；尚未接入宿主提供的独立生产 baseline/test 指标。
@@ -148,7 +150,7 @@ rc.18 没有改变 CI job 集、宿主矩阵或 publish 顺序。随候选新增
 13. **file 后端的失败记忆仍是 last-writer-wins，`save()` 也不做 fsync。** 同一数据根下两个 host 实例同时执行 `archive()` 时，后写者覆盖先写者的整份快照（隔离实验中 100 条记录只剩 50 条）；断电时最后一次 `record()` 也可能丢失。`openDomainStorage` 在同一数据根上的跨进程锁保护的是领域归档事务，不是这个文件。它是有界、advisory 的失败记忆（`promotionGates` 仍是生产权威），因此本次不引入锁或 fsync，而是记录为已知边界；单实例使用不触发。另外，从旧数据恢复且缺少 `signature` 的记录只能按整条内容去重，不参与后续的模式匹配。rc.14 之后 fsync 只加在**晋升事务**这一条路径上：晋升 journal、晋升写入的目标（composition、`EVOLUTION.md`、archive）与晋升的 evidence 快照走 `durable` 原子写入，先 fsync 文件字节再 `rename`，随后 fsync 所在目录，目标目录是本次新建时再 fsync 它的父目录（`test/orchestrator-durability-promotion-transaction.test.mjs` 的 `P2-8` 两项断言：晋升确实 fsync 文件与目录，普通实验档案写入仍然 0 次 fsync）。**失败记忆与其它高频路径没有加 fsync**，本条描述的行为不变；派生文件（replay checkpoint 与 stage manifest）的 fsync 在 rc.18 被有界撤回，见第 32 条。
 14. **事件桥“可信 writer”的期望值已统一，但组合读取有三态与残余边界。** doctor 与运行时对“本安装写出的日志”使用同一判定 `eventBridgeWriterTrusted()`：MAC 通过**且**记录声明的 `writer` 等于期望值。期望值来源为 in-session `config.eventBridgeWriter`（逐字照搬运行时表达式 `config.eventBridgeWriter || EVENT_BRIDGE_DEFAULT_WRITER`，不 trim、不回落组合） → 组合 profile 中 `evolution-orchestrator` 条目的 `config.eventBridgeWriter`（`--dump-config`，在归并 profile patch 拆出的多个 section 之后读取） → bundle 默认 `dsh-evolution-orchestrator`；报告记录 `evidence.trustedWriter` 与 `evidence.writerSource`，`state.event-bridge` 的 `ok` 摘要写明它验证的是哪个 writer 及其来源。组合读取只有三态：**已声明**（唯一一个 `evolution-orchestrator` 条目 + 块形式 `config:` + 直接子键恰好出现一次 + 标量可逐字恢复）→ 用该值，`writerSource: 'composition'`；**未声明**（无该层、无该条目、无该键，或 `eventBridgeWriter:` 为空 / 空串）→ bundle 默认，`writerSource: 'bundle-default'`；**无法读出**（内联 `config:`、YAML 标签/锚点/别名/块标量/flow 集合、`${...}` / `{{...}}`、注释歧义、非字符串标量、重复键、重复条目、引号内的转义）→ **不默认化**：`state.event-bridge` 报 `degraded`、`writerSource: 'unknown'`、`trustedWriter: null`，附 `writerExpectationReason` 与日志中实际出现的 `writersSeen` 供人工判断；若同时存在 MAC 层面的阻塞问题（malformed / unverifiable / conflicts），仍按 `blocked` 报告。跳过组合探针（`--no-composition`）或未解析到 DSH CLI 时，doctor 读不到 profile config，只能按 bundle 默认值判定（`writerSource: 'bundle-default'`，摘要与证据中可辨识），因此覆写了 `eventBridgeWriter` 的安装在那种调用下仍可能把自己写的日志报为 untrusted；同一次安装走组合探针或 in-session 诊断时与运行时一致。残余边界：`event-bridge-trim-partial-tail` 的修复是 check-then-act，桥文件的写入方不持锁，落在“最后一次重读”与 `rename` 之间的追加仍可能被丢弃（见 `README.md` 恢复表与 `COMPATIBILITY.md`），建议在宿主停止时执行。另需注意 `writer` 不是独立的密码学身份：它只是信封里与 MAC 一同校验的字段，`signEventBridgeEnvelope()` 接受调用方给出的任意 `writer`，因此持有同一密钥的进程可以自行声明任意 writer（密钥本身仍无轮换/吊销流程，见第 9 条）；这条判定对准的是“本安装写出的日志”，不是同一密钥下的对抗性伪造。
 15. **`satisfiesRange()` 的 prerelease 比较曾用 `localeCompare`，与 semver 的排序不一致（本轮已修，不再是待修项）。** 旧的 `compare()` 对 prerelease 段用 `localeCompare`，探针实测 `satisfiesRange('1.0.0-rc.10', '>=1.0.0-rc.2')` 返回 `false`，而 semver 中 `1.0.0-rc.10 > 1.0.0-rc.2`：两位数的序号（`10`）被字典序排到单位数（`2`）之前，比较结果与 semver 相反（同一范围下的 `1.0.0-rc.3` 仍返回 `true`，所以错的只是多位数字序号这一类）。现在 `lib/diagnostics.js` 按 semver 规范比较 prerelease 标识符（数字标识符按数值、数字低于字母数字、字母数字按 ASCII 序、标识符集更长者更大、无 prerelease 的版本高于同元组带 prerelease 的版本），并实现了 comparator 集合层的 prerelease 资格规则：只有当同一 `major.minor.patch` 元组在**该集合内**被某个带 prerelease 的比较符点名时，prerelease 版本才满足这个集合，因此 `4.0.5-alpha.2` 满足 `>=4.0.5-alpha.1 <5.0.0`，而 `4.0.6-alpha.1` 不满足 `>=4.0.5-alpha.1`（另一个 `||` 候选用自己的比较符重新接纳时才行）。版本解析同时按规范拒绝前导零（`1.02.3` 与 `1.0.0-01` 都不是合法版本）。**改动前后对当前已声明的范围与已验收宿主没有判定差异**：`test/release-integrity-version-range.test.mjs` 的既有正负例逐条不变——三个已验收宿主满足 `@deepseek-ai/dsh` 的精确替代列表，`0.2.0-rc.3` / `0.2.1-rc.1` / `0.3.0` 等仍然不满足，`^4.0.1`、include 的 `1.0.9 || 1.0.10-alpha.1 || 1.0.10-alpha.2 || 1.0.10`、`js-yaml ^4.2.0` 与 `engines` 的判定同样不变；另用广域差分脚本对受支持范围形态逐项与 node-semver 对照，结论是全部行为变化都与 node-semver 一致，因此这是一次修正而不是新增判定。它此前被记为“不修”的理由是当前三个已验证宿主解析到的模块版本（cordis `4.0.5`、include `1.0.10`、loader `1.0.6`、js-yaml `4.3.2`）都是稳定版；现在这条依赖不再靠“不会触发”结账。
-16. **固定点漂移的判据与处置（rc.15、rc.16、rc.17、rc.18 已关闭；本条同时说明为什么开发阶段与发布阶段不再共用同一条判定）。** 任何分发文件变化都会改变 `contentSha256`，于是工作树从那一刻起就不再是固定点描述的那个包，直到下一次重新固定。判定因此分两段，且永远不互相顶替：
+16. **固定点漂移的判据与处置（rc.15、rc.16、rc.17、rc.18 已关闭；`0.2.0` 同样关闵；本条同时说明为什么开发阶段与发布阶段不再共用同一条判定）。** 任何分发文件变化都会改变 `contentSha256`，于是工作树从那一刻起就不再是固定点描述的那个包，直到下一次重新固定。判定因此分两段，且永远不互相顶替：
     - **开发阶段**（`npm run pack:check` 的默认行为，CI 在 `main` 与 pull request 上跑）。先证明**固定点自身仍然成立**：`release/manifest.json` 记录的 `sourceCommit` 在历史中，且它的分发内容摘要正好等于固定点的 `contentSha256`（`release/manifest.json describes the shipped content of its source commit`）。然后给出工作树与固定点的关系（`this tree is the pinned release, or a committed successor of it`）：`pinned`（工作树就是固定点）或 `ahead`（工作树是那个已提交 commit 的**已提交**后继——分发内容摘要等于 `HEAD` 的分发内容摘要，且逐条列出与固定产物不同的分发文件）。`ahead` 只是**如实报告并点名**，结尾还会单独打印“这棵树是固定点的开发后继”，因此不能被读成“固定点覆盖了这棵树”。两种情形仍然失败：分发文件有**未提交**改动（工作树内容 ≠ `HEAD` 内容），或固定点已不能描述它自己记录的 commit（`sourceCommit` 不在历史里、或它发布的内容 ≠ 固定点记录的内容）。固定产物与验收证据照旧对**固定点**核对，`npm run release:verify` 也照旧只校验 `release/` 里固定产物与固定点彼此一致、不看工作树。
     - 这一段的判定要读 git 对象，因此检出必须带历史：`actions/checkout` 默认只取一个 commit，会让“固定点的 `sourceCommit` 不在历史中”成立并让两项判定失败。`ci.yml` 的 `test` 与 `package` 作业（以及 `npm test` 里的 `test/release-pin.test.mjs`）显式使用 `fetch-depth: 0`，`test/workflows.test.mjs` 断言这条：凡是运行 `npm test` 或 `pack:check` 的作业，检出的 `fetch-depth` 必须是 `0`。浅克隆下报错信息会点明“shallow checkout: fetch the full history”，而不是把缺失历史说成“固定点漂移”。
     - **发布阶段**（`npm run pack:check -- --release`，`release.yml` 用这一条）。保持原来的严格语义：`release/manifest.json pins this tree content` 与 `the working tree still builds the pinned content`，工作树只要不等于固定内容就失败并点名文件。
@@ -176,7 +178,7 @@ rc.18 没有改变 CI job 集、宿主矩阵或 publish 顺序。随候选新增
 
 33. **事件桥 append lock 的回收依赖同一主机与 PID namespace，且对无主 / 外地主机 owner 留有 stale 窗口。** 锁是 `<log>.append.lock` 目录，owner 记录 `{token,pid,hostname,acquiredAt}`；同主机存活 pid 永不回收，`process.kill` 返回 `ESRCH` 时立即回收，无主或外地主机条目要等 `EVENT_BRIDGE_LOCK_STALE_MS`（2,000 ms）。回收者必须先用 `open(..., 'wx')` 获得同级 `<lock>.reclaim` marker，持有后才重读 owner 与 age；超过 `EVENT_BRIDGE_RECLAIM_STALE_MS`（10,000 ms）的遗留 marker 才能删除。释放时只删除 token 仍匹配的锁。500 ms 是获取锁时等待活跃 writer 的期限，不是持锁时长保证。跨 namespace 共用数据根不在协议支持范围内；常量与流程见 `lib/orchestrator.js`。
 
-34. **own `__proto__` 键现在保留身份，但已经折叠的旧行不迁移。** 新数据从摄取、聚合、持久化、冷档案到工具与 evidence 投影都保留该自有属性；不含 own `__proto__` 的载荷保持旧身份字节。过去已把不同载荷折叠成一行的记录无法从现存字节推断其原始差异，本候选不迁移、不猜测恢复；相关边界见 `CHANGELOG.md` 与 knowledge identity 差分测试。
+34. **own `__proto__` 键现在保留身份，但已经折叠的旧行不迁移。** 新数据从摄取、聚合、持久化、冷档案到工具与 evidence 投影都保留该自有属性；不含 own `__proto__` 的载荷保持旧身份字节。过去已把不同载荷折叠成一行的记录无法从现存字节推断其原始差异，本版本不迁移、不猜测恢复；相关边界见 `CHANGELOG.md` 与 knowledge identity 差分测试。
 
 35. **doctor 的 `state.ownership` 只报告 claim，不回收无法证明陈旧的条目。** rc.18 中 check id 从 26 增至 27；rc.19 新增 `state.retention-floor`，总数为 28，repair id 为 6，degradedCapability id 为 5。doctor 与运行时共用 `parseTargetClaim` / `classifyTargetClaim` 并保持相同处理顺序，但 doctor 从不采纳或删除 claim；同 experimentId 的采纳及同主机整数 pid 确认 `ESRCH` 的回收仍只属于运行时既有路径。外地主机、不可读或缺少可用身份的 claim 只报告。`data.key` 不是新增 check id；实现和数量见 `lib/diagnostics.js`、`lib/orchestrator.js`。
 

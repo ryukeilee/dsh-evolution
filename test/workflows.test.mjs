@@ -170,8 +170,9 @@ test('the release workflow only publishes a draft of the verified artifact, neve
   const release = loadWorkflow('release.yml');
   const runs = releaseWorkflowRuns();
   assert.match(runs, /gh release create "\$tag" --draft/);
-  // A pre-release tag must produce a pre-release, so an RC can never become
-  // the repository's "latest" release.
+  // The draft is created with `--prerelease` only for a tag that carries a
+  // pre-release component: an RC can never become the repository's "latest"
+  // release, and a stable tag is published as a plain release.
   assert.match(runs, /--prerelease/);
   // The released bytes are the committed ones, verified — never a fresh build,
   // because npm's compression differs between npm versions.

@@ -207,6 +207,23 @@ function installedBundleVersion() {
   } catch { return null; }
 }
 
+/**
+ * A version strictly greater than the shipped one, for the upgrade step.
+ *
+ * A release candidate keeps the historical `<version>.upgrade` suffix: that is a
+ * valid pre-release of the same `major.minor.patch` and sorts above the candidate
+ * itself. A stable version has no pre-release component to extend, so
+ * `0.2.0.upgrade` is not semver at all and the official CLI would refuse it;
+ * the upgrade artifact takes the next patch instead, which is what a real
+ * upgrade to a newer release looks like.
+ */
+function upgradeVersionFor(version) {
+  if (version.includes('-')) return `${version}.upgrade`;
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+  if (!match) throw new Error('the bundle version is neither a stable semver version nor a pre-release of one');
+  return `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
+}
+
 /** Pack an already-extracted package directory (used for the upgrade artifact). */
 function packDirectory(dir, destDir) {
   fs.mkdirSync(destDir, { recursive: true });
@@ -418,7 +435,7 @@ async function main() {
   const extracted = runCommandSync('tar', ['-xzf', tarball, '-C', upgradeRoot]);
   if (extracted.code !== 0) throw new Error(`could not unpack ${tarball}: ${extracted.output}`);
   const upgradeSource = path.join(upgradeRoot, 'package');
-  const upgradeVersion = `${manifest.version}.upgrade`;
+  const upgradeVersion = upgradeVersionFor(manifest.version);
   const upgradeManifestPath = path.join(upgradeSource, 'package.json');
   const upgradeManifest = JSON.parse(fs.readFileSync(upgradeManifestPath, 'utf8'));
   upgradeManifest.version = upgradeVersion;

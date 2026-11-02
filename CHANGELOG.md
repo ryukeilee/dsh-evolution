@@ -1,17 +1,30 @@
 # Changelog
 
-Versions here are development artifacts of the standalone `dsh-evolution`
-bundle. They are not npm releases. The supported DSH versions are exact
-alternatives in `peerDependencies`, and a version is only added there after it
-passes the full install/boot/upgrade acceptance: read the entry for the version
-you install before upgrading DSH.
+Versions here are artifacts of the standalone `dsh-evolution` bundle. They are
+not npm releases: the bundle is distributed as a GitHub Release tarball. The
+supported DSH versions are exact alternatives in `peerDependencies`, and a
+version is only added there after it passes the full install/boot/upgrade
+acceptance: read the entry for the version you install before upgrading DSH.
+`0.2.0` is the first stable release; the `0.2.0-rc.*` entries below it are kept
+unchanged as the history of that candidate line.
 
-## 0.2.0-rc.20 之后（未形成候选）— 质量收口
+## 0.2.0 — 首个稳定版
+
+`dsh-evolution` 的第一个正式版，取代整条 `0.2.0-rc.*` 候选线。分发内容等于 `0.2.0-rc.20`
+固定产物之后的全部已合并改动；持久 schema 版本、工具名 / 参数 / 参数 schema、授权来源、晋升门禁的
+8 项证据、风险分级、`peerDependencies` 与 `engines` 都与 rc.20 一致，因此从任何 rc 版本升级都不涉及
+数据迁移（唯一例外仍是执行过容量回收的数据根会带上 `retention` 字段，不可降级到 `0.2.0` 之前的版本）。
+历史 RC 的 tag、Release 与 tarball 原样保留、未被覆盖。
+
+下面的两节是相对 `0.2.0-rc.20` 的变更。
+
+### 质量收口
 
 这一轮是对整个插件的集中审查与修复，覆盖生命周期、持久化与恢复、组合守卫和诊断，只改动
 `lib/orchestrator.js`、`lib/registration.js`、`lib/guard.js`、`lib/diagnostics.js`、`lib/dockyard-domain/memory.js`
 与相应测试；不改持久 schema 版本、工具名 / 参数 / 参数 schema、授权来源、晋升门禁的 8 项证据、
-风险分级、`peerDependencies`、`engines`，也不改动 `release/` 下的 rc.20 固定产物。
+风险分级、`peerDependencies`、`engines`，也不改动当时的 `release/` rc.20 固定产物（重新固定见
+`RELEASE.md`）。
 
 工具面与授权：
 
@@ -79,11 +92,11 @@ Trial 与 target claim：
 验证：`NODE_OPTIONS=--max-old-space-size=4096 npm test`（1327 个用例）、`npm run pack:check`、三个官方
 宿主的真实安装验收（证据见 `docs/evidence/quality-consolidation-20261102-dsh-*.json`）。
 
-## 0.2.0-rc.20 之后（未形成候选）— 自主进化的连续性
+### 自主进化的连续性
 
-本节记录 `0.2.0-rc.20` 之后、尚未打包成候选的修复，只改动 `lib/orchestrator.js`（自主观察者路径）与
+本节记录 rc.20 之后落地的修复，只改动 `lib/orchestrator.js`（自主观察者路径）与
 `lib/` 之外的说明文字与测试；不改持久 schema、工具面、授权来源、晋升门禁、风险分级、Trial 隔离、
-`peerDependencies`、`engines`，也不改动 `release/` 下的 rc.20 固定产物。
+`peerDependencies`、`engines`，也不涉及产物字节。
 
 修复前，在本仓库的夹具上可以稳定复现四个连续性问题（对照用例见
 `test/autonomous-continuity.test.mjs`，同一文件在修复前的 `lib/orchestrator.js` 上 12 个用例有 10 个失败）：

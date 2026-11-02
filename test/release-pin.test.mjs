@@ -31,11 +31,19 @@ const pin = readReleaseManifest();
 // every tree/pin assertion below reports from the same facts.
 const relation = collectPinRelation();
 
-test('the pin names this package version and a pre-release artifact', () => {
+// The pin has to name the same version this package builds, in the shape a
+// release tag can carry. The assertion used to demand a pre-release tag, which
+// only said "an RC was pinned"; a stable release pins a plain version, so the
+// semver shape is what is checked now.
+test('the pin names this package version and its artifact', () => {
   assert.equal(pin.name, manifest.name);
   assert.equal(pin.version, manifest.version);
   assert.equal(pin.filename, `${manifest.name}-${manifest.version}.tgz`);
-  assert.match(pin.version, /^\d+\.\d+\.\d+-/, 'a dev/RC artifact must carry a pre-release tag');
+  assert.match(
+    pin.version,
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/,
+    'the pinned version must be the MAJOR.MINOR.PATCH version a v-prefixed tag names',
+  );
   assert.equal(pin.builtWith?.node?.startsWith('v'), true, 'the pin must record the toolchain that produced the bytes');
   assert.equal(typeof pin.builtWith?.npm, 'string');
   assert.equal(typeof pin.builtWith?.platform, 'string');

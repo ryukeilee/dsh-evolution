@@ -332,9 +332,16 @@ if (releaseMode) {
     if (relation.state === PIN_RELATION.UNVERIFIED) throw new Error(relation.problems.join('\n        '));
   });
 }
-check('the version is a semver pre-release, never a plain release', () => {
-  if (!/^\d+\.\d+\.\d+-/.test(manifest.version)) {
-    throw new Error(`version ${manifest.version} is not a pre-release; a dev/RC artifact must carry a pre-release tag`);
+// The version has to be exactly what a release tag may name: MAJOR.MINOR.PATCH
+// with an optional pre-release component, and no build metadata (a `+build`
+// suffix is legal semver but `release.yml` would reject the tag that has to
+// match it). This check used to *require* a pre-release tag, because every
+// shipped artifact was a release candidate; a stable release is the same
+// artifact carrying a plain version, so the grammar itself is now the rule and
+// a candidate stays equally valid.
+check('the version is a semver version the release tag grammar accepts', () => {
+  if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/.test(manifest.version)) {
+    throw new Error(`version ${manifest.version} is not MAJOR.MINOR.PATCH with an optional pre-release tag, so no v${manifest.version} tag could name it`);
   }
 });
 check('package.json declares no publish configuration', () => {
