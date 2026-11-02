@@ -50,6 +50,11 @@ test('fs copy, rename, link and symlink are judged by their destination', () => 
     `fs.linkSync('/tmp/input.js', '${TRUST_ROOT}/lib/index.js')`,
     `fs.symlinkSync('/tmp/input.js', '${TRUST_ROOT}/lib/index.js')`,
     `fs.copyFileSync('${TRUST_ROOT}/lib/index.js', '/tmp/input.js')`,
+    // The bracket form is the same API; the destination argument, not the call
+    // syntax, is what the guard has to resolve.
+    `fs["copyFileSync"]('/tmp/input.js', '${TRUST_ROOT}/lib/index.js')`,
+    `fs['renameSync']('/tmp/input.js', '${TRUST_ROOT}/lib/index.js')`,
+    `fs.promises["symlinkSync"]('/tmp/input.js', '${TRUST_ROOT}/lib/index.js')`,
   ];
   for (const code of denied) assert.equal(codeMutatesComposition(code), true, code);
   const allowed = [
@@ -127,6 +132,16 @@ test('an invalid composition report withholds the configuration excerpt', async 
   assert.equal(JSON.stringify(check.evidence).includes('password'), false);
 });
 
+test('an unknown YAML tag does not echo the tag the document wrote', async () => {
+  const { home, paths } = freshHome('yaml-tag');
+  fs.writeFileSync(paths.compositionPath, 'value: !<SYNTHETIC_PRIVATE_VALUE> hello\n');
+  const report = await collectDiagnostics(baseOptions(home));
+  const check = checkOf(report, 'promotion.composition');
+  assert.equal(check.level, 'blocked');
+  assert.equal(JSON.stringify(report).includes('SYNTHETIC_PRIVATE_VALUE'), false, 'the tag text is source, not a reason');
+  assert.match(String(check.evidence.error), /^(?:invalid YAML|[A-Za-z0-9 ,.;:()-]+) \(line \d+, column \d+\)$/);
+});
+
 test('a staged import is not offered for cleanup when a target is missing', async () => {
   const { home, paths } = freshHome('migration');
   const entries = [{ target: 'legacy-source/preset/knowledge/evolution-memory.json', content: '{"schema":1,"entries":[]}' },
@@ -172,6 +187,47 @@ function observation(payload) {
     recordedAt: '2026-10-01T00:00:00.000Z',
   };
 }
+
+test('a failed compaction removes the segment directory it installed', async () => {
+  const root = scratch('compact-segments');
+  const store = path.join(root, '.dockyard-dsh');
+  const stateStore = new JsonStateStore({ home: root });
+  const first = new EvolutionMemory({ stateStore, maxEntries: 1, archiveMaxBytes: 1024 * 1024, mutationAuthority: { assertMutation() {} } });
+  await first.load();
+  for (let index = 0; index < 4; index += 1) {
+    await first.recordObservation(observation({ id: `obs-${index}`, eventId: `ev-${index}`, problem: `alpha ${index}`, componentId: `plugin:alpha-${index}` }));
+  }
+  const archiveFile = path.join(store, 'state.json.observations-archive.jsonl');
+  const before = fs.readFileSync(archiveFile, 'utf8');
+  assert.equal(fs.existsSync(path.join(store, 'state.json.observations-archive.jsonl.segments')), false, 'the first compaction kept one active archive file');
+
+  // A much smaller segment target makes the next compaction stage a segment
+  // directory that did not exist before, so the rollback has nothing to restore
+  // there but still has to remove what this attempt installed.
+  const second = new EvolutionMemory({ stateStore, maxEntries: 1, archiveMaxBytes: 256, mutationAuthority: { assertMutation() {} } });
+  await second.load();
+  const originalRename = fsp.rename;
+  let fired = false;
+  fsp.rename = async (from, to) => {
+    if (!fired && String(to).endsWith('observations-archive.jsonl') && String(to).startsWith(store)) {
+      fired = true;
+      throw Object.assign(new Error('INJECTED_INSTALL_FAILURE'), { code: 'EIO' });
+    }
+    return originalRename(from, to);
+  };
+  syncBuiltinESMExports();
+  try {
+    await assert.rejects(second.compact(), /INJECTED_INSTALL_FAILURE/);
+  } finally {
+    fsp.rename = originalRename;
+    syncBuiltinESMExports();
+  }
+  assert.equal(fired, true);
+  assert.equal(fs.readFileSync(archiveFile, 'utf8'), before, 'the previous archive file is restored byte for byte');
+  const segments = path.join(store, 'state.json.observations-archive.jsonl.segments');
+  const left = fs.existsSync(segments) ? fs.readdirSync(segments) : [];
+  assert.deepEqual(left, [], 'the segment directory this attempt installed is gone again');
+});
 
 test('a failed compaction leaves the archives of untouched collections intact', async (t) => {
   const root = scratch('compact');

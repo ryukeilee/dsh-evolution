@@ -120,6 +120,30 @@ test('an environment failure of a Trial is archived but never becomes failure le
   const archive = await fs.readFile(path.join(core.paths.archiveDir, `${created.experimentId}.md`), 'utf8');
   assert.match(archive, /ENOSPC/, 'the operation evidence is still archived');
   assert.match(archive, /not recorded \(environment failure/);
+  // The domain derives its `dontRepeat` outcome from the bridge event's
+  // fingerprint, so the durable learning has to be absent there too - not only in
+  // the local memory file.
+  const events = (await fs.readFile(core.paths.eventBridgePath, 'utf8'))
+    .split('\n').filter(Boolean).map((line) => JSON.parse(line).event)
+    .filter((event) => event.experimentId === created.experimentId);
+  assert.ok(events.length > 0, 'the rejection stays observable');
+  assert.deepEqual(events.filter((event) => event.eventType === 'failure-learned'), [],
+    'no learning event for an environment failure');
+  assert.deepEqual(events.filter((event) => event.failureFingerprint !== null).map((event) => event.eventType), [],
+    'no event the domain would turn into a dontRepeat outcome');
+});
+
+test('a strategy failure of a Trial still teaches both the local memory and the domain', async (t) => {
+  const root = await scratch(t, 'learning');
+  const { core, exec } = harness(t, root, { runner: (base) => ({ ...base, run: async () => { throw new Error('trial activation failed'); } }) });
+  const created = core.propose(PROPOSAL, exec);
+  await core.trial({ experimentId: created.experimentId, composition: COMPOSITION }, exec).catch(() => {});
+  assert.equal(core.memory.data.entries.length, 1, 'a real strategy failure is still learned');
+  assert.equal(core.memory.data.entries[0].status, 'active');
+  const events = (await fs.readFile(core.paths.eventBridgePath, 'utf8'))
+    .split('\n').filter(Boolean).map((line) => JSON.parse(line).event)
+    .filter((event) => event.experimentId === created.experimentId);
+  assert.ok(events.some((event) => event.eventType === 'failure-learned' && typeof event.failureFingerprint === 'string'));
 });
 
 test('a second Trial is refused while another experiment occupies the runtime', async (t) => {
