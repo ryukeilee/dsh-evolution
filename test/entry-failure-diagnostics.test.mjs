@@ -205,8 +205,10 @@ test('a falsy undefine rejection is a cleanup failure, not a successful preparat
   // `throw undefined` (and null / false / 0 / '') is a legal rejection. Testing
   // the thrown value's truthiness would read that failure as success: the
   // preparation would be cached, the plugin left defined, nothing reported, and
-  // the next tool call would skip the whole sequence. Each value must reject
-  // with the original value and leave the preparation retryable.
+  // the next tool call would skip the whole sequence. Each value must reject the
+  // tool call - through the tool-error boundary, which projects the value into a
+  // classified, redacted failure instead of handing it to the host - and leave
+  // the preparation retryable.
   for (const thrown of [undefined, null, false, 0, '']) {
     const fixture = await host(t);
     fixture.runner.undefine = async () => {
@@ -217,8 +219,10 @@ test('a falsy undefine rejection is a cleanup failure, not a successful preparat
 
     const first = await settle(propose(fixture));
     assert.equal(first.status, 'rejected', `thrown ${String(thrown)}: the call must not report success`);
-    assert.equal(Object.is(first.reason, thrown), true,
-      `thrown ${String(thrown)}: the original rejection value is preserved, not wrapped`);
+    assert.ok(first.reason instanceof Error,
+      `thrown ${String(thrown)}: the rejection reaches the host as a classified failure`);
+    assert.ok(first.reason.message.trim() !== '',
+      `thrown ${String(thrown)}: the value is reported, not read as "no error"`);
     assert.deepEqual(fixture.warnings, [], 'the cleanup error is the reported error, so nothing is logged');
 
     // Not cached as success: the next call runs the whole sequence again and

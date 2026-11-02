@@ -193,7 +193,16 @@ async function registeredCalls(ctx, config, port, mode, observed) {
     const [result] = await Promise.allSettled([
       tools.get(name).execute(argumentsFor(name), { agent: { id: 'synthetic-agent' } }),
     ]);
-    if (mode === 'primary-error') assert.equal(result.reason, primary, 'keep the primary error object');
+    // The tool boundary projects every rejection through the safe-error DTO, so
+    // the object identity is deliberately not preserved: the host renders
+    // `error.message` into the session record, and a primary error may carry
+    // provider text. What must stay true is which failure won - the primary
+    // message and code, not the flush diagnostic that also failed.
+    if (mode === 'primary-error') {
+      assert.ok(result.reason instanceof Error, 'the primary failure is the rejection');
+      assert.equal(result.reason.message, primary.message, 'keep the primary message');
+      assert.equal(result.reason.name, primary.name);
+    }
     observed.tools.push({ name, ...settle(result) });
   }
 }

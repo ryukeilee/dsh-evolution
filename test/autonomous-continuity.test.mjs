@@ -542,18 +542,37 @@ test('a measured candidate is not offered for a declaration with different targe
   // One session, so the pending experiment is present in `this.experiments`: the
   // pending check reads the live experiment, and a declaration that only changed
   // its declared targets must not be answered with the experiment of the old one.
-  const { core, observe } = session(root, { strategies: { AGENT_ERROR: scoped('target-a') } });
+  const { core, exec, observe } = session(root, { strategies: { AGENT_ERROR: scoped('target-a') } });
   await observe();
   const pending = await observe();
   assert.equal(pending.phase, 'candidate-awaiting-confirmation');
   assert.deepEqual(core.experiments.get(pending.experimentId).targets, ['plugin:target-a']);
 
   core.strategies.AGENT_ERROR = scoped('target-b');
-  const next = await observe();
-  assert.equal(next.phase, 'candidate-awaiting-confirmation');
-  assert.notEqual(next.experimentId, pending.experimentId, 'the old experiment tested a different target set');
+  const blocked = await observe();
+  // One experiment at a time per process: the measured candidate is still
+  // mounted, so a second Trial could not prove its own cleanup against a
+  // baseline captured before the first plugin existed. The deferral names the
+  // experiment that has to be closed first, and it is not a durable verdict on
+  // the changed declaration.
+  assert.equal(blocked.phase, 'experiment-deferred');
+  assert.equal(blocked.reason, 'transient-failure');
+  assert.match(blocked.error, /occupies the runtime/);
+  assert.equal(durableFailures(core).length, 0, 'a busy runtime is not evidence about the declaration');
+
+  // Once the owner closes the pending candidate the changed declaration is
+  // attempted again in a later session: the busy answer was session-scoped and
+  // wrote no durable verdict about the new targets.
+  const reverted = await core.revert({ experimentId: pending.experimentId }, exec);
+  assert.equal(reverted.ok, true);
+  assert.equal((await observe()).phase, 'suppressed', 'the session keeps its one attempt per hypothesis');
+  assert.equal(durableFailures(core).length, 0);
+  const fresh = session(root, { strategies: { AGENT_ERROR: scoped('target-b') } });
+  assert.equal((await fresh.observe()).phase, 'pattern-observing');
+  const changed = await fresh.observe();
+  assert.equal(changed.phase, 'candidate-awaiting-confirmation');
   assert.deepEqual(
-    core.experiments.get(next.experimentId).targets,
+    fresh.core.experiments.get(changed.experimentId).targets,
     ['plugin:target-b'],
     'and the new experiment claims the targets the declaration names',
   );
