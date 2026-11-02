@@ -1,0 +1,153 @@
+{
+  "probe": "retried cleanup after the official disposers report not-running / plugin-missing",
+  "probeFile": "scripts/acceptance/probes/retry-probe.mjs",
+  "host": "0.2.0-rc.2",
+  "node": "v26.13.0",
+  "platform": "darwin-arm64",
+  "recordedAt": "2026-11-02T14:36:38Z",
+  "method": [
+    "evolution_propose -> evolution_trial -> the official dynamicCordisRunner stops and undefines the Trial out of band",
+    "(first stop -> {ok:true}, second stop -> {ok:false,reason:\"not-running\"}, first undefine -> {ok:true}, second undefine -> {ok:false,reason:\"plugin-missing\"})",
+    "-> evolution_revert -> evolution_propose -> evolution_trial"
+  ],
+  "before": {
+    "artifact": "release/dsh-evolution-0.2.0.tgz (the pinned pre-fix build)",
+    "tarballSha256": "2dfd2211ffdd3c0d3d6b44ecc476bacb93e20d96ba127fb3dd3e8ed3b4c27bb5",
+    "contentSha256": "370465f01b2d43a9a655d8feb5e7d53b76ab06b22331a86d63ec91544994ec9a",
+    "result": {
+      "receipts": {
+        "firstStop": {
+          "ok": true
+        },
+        "secondStop": {
+          "ok": false,
+          "reason": "not-running"
+        },
+        "firstUndefine": {
+          "ok": true,
+          "wasRunning": false
+        },
+        "secondUndefine": {
+          "ok": false,
+          "reason": "plugin-missing"
+        }
+      },
+      "revert": {
+        "ok": false,
+        "phase": "revert-failed",
+        "runtimeRecovered": false,
+        "cleanupProof": {
+          "stopOk": false,
+          "removedOk": false,
+          "signatureRecovered": true,
+          "errors": []
+        }
+      },
+      "retrial": {
+        "ok": null,
+        "phase": null,
+        "error": {
+          "code": "E_EVOLUTION_RUNTIME_BUSY",
+          "message": "another experiment occupies the runtime (exp-mvzcqpv4-1-f75cfa12, revert-failed); revert or promote it before starting a new Trial"
+        }
+      },
+      "steps": [
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "evolution_revert",
+          "ok": false,
+          "phase": "revert-failed",
+          "runtimeRecovered": false
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        }
+      ]
+    }
+  },
+  "after": {
+    "artifact": "dist build of this change",
+    "tarballSha256": "b4f8da9323f399a4600fdf4f381c77e07a868368238c9caf97d89e8b91afd111",
+    "contentSha256": "35f2c066dda92c7b280fd875f29515901405cbf227edfeea222e5a9779f49917",
+    "result": {
+      "receipts": {
+        "firstStop": {
+          "ok": true
+        },
+        "secondStop": {
+          "ok": false,
+          "reason": "not-running"
+        },
+        "firstUndefine": {
+          "ok": true,
+          "wasRunning": false
+        },
+        "secondUndefine": {
+          "ok": false,
+          "reason": "plugin-missing"
+        }
+      },
+      "revert": {
+        "ok": true,
+        "phase": "reverted",
+        "runtimeRecovered": true,
+        "cleanupProof": {
+          "stopOk": true,
+          "removedOk": true,
+          "signatureRecovered": true,
+          "errors": []
+        }
+      },
+      "retrial": {
+        "ok": true,
+        "phase": "trial",
+        "error": null
+      },
+      "steps": [
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "evolution_revert",
+          "ok": true,
+          "phase": "reverted",
+          "runtimeRecovered": true
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "evolution_revert",
+          "ok": true,
+          "phase": "reverted",
+          "runtimeRecovered": true
+        }
+      ]
+    }
+  }
+}

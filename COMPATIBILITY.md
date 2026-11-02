@@ -237,7 +237,20 @@ context-member resolution.
 | `ctx.events._hooks` | private (underscore) | listener inventory | **none exists** - see below |
 | `Fiber.getEffects()`, `Fiber.state/uid/inject/store/inertia` | public - documented members of the exported `Fiber` class | lifecycle state, dependencies, effect labels | `FiberState.ACTIVE` is not importable (`const enum`, erased at runtime), so `fiberIsActive()` uses these documented fields instead of the numeric literal |
 | official Include instance state: `EntryTree.resolve/await/root`, `Entry.fiber/options/disabled` | undocumented - public members with no published stability contract | the mounted promoted row and its fiber health | `EntryTree.resolve(rowId)` instead of `EntryTree.store[rowId]`; the live root entry list has no public accessor, so the stale-tree check reads `root.data` and fails closed when it cannot |
-| `ctx.tools.schemas/get`, `dynamicCordisRunner.snapshot/define/run/stop/undefine`, `ctx.get('cordisInspect').list` | public - host service surfaces | tool surface, dynamic packages, inspect providers | none needed |
+| `ctx.tools.schemas/get`, `dynamicCordisRunner.snapshot/define/run/stop/undefine`, `ctx.get('cordisInspect').list` | public - host service surfaces | tool surface, dynamic packages, inspect providers, and the `stop` / `undefine` receipt reasons (`DynamicCordisStopResponse`, `DynamicCordisUndefineReceipt`) that the cleanup proof reads | none needed |
+
+The two disposer receipts are a closed union and are not idempotent, which is why
+the cleanup proof reads the *reason* and not only `ok`: `stop` answers
+`not-running` once the run was stopped and `plugin-missing` once the plugin is
+gone, and `undefine` answers `plugin-missing` for a plugin that is already
+removed. A retry of an unproven cleanup (see AGENTS.md invariant 3) therefore
+always sees one of these instead of `ok`, and all three describe the state the
+cleanup exists to prove. Any other reason - and every thrown receipt - stays
+unproven. Verified against the shipped `0.2.0-rc.2` runner (`lib/index.js`
+`stop`/`undefine`, `lib/types/types.d.ts`) and in the real host: the first
+`stop` answers `{ ok: true }`, the second `{ ok: false, reason: 'not-running' }`,
+the first `undefine` `{ ok: true, wasRunning: false }`, the second
+`{ ok: false, reason: 'plugin-missing' }`.
 
 **The working tree that follows rc.14 adds no new host interface dependency.** The promotion rollback path changed *how* these surfaces are used, not which ones: the new waiting in `lib/promotion-include.js`'s `refresh()` uses the same members classified above — `tree.root.data` (the live row list), `EntryTree.resolve(rowId)`, `Entry.fiber`, and `fiberIsActive()` from `cordis-compat.js` (the documented `Fiber` lifecycle fields). The one surface worth spelling out is `Fiber.await()`: it is a documented method of the exported `Fiber` class ("Wait for current lifecycle work and rethrow startup errors", `lib/types/fiber.d.ts`) and `verify()` already used it, so it is not a new dependency — and `SURFACES` in `lib/cordis-compat.js` now probes it too (`typeof ctx.fiber.await === 'function`), classified `required: false`: a host that dropped `Fiber.await()` is listed in `runtime.internal-api`'s `advisoryUnavailable` evidence instead of being absent from the report, and because it is optional it never turns that check `degraded`. That path now fails closed instead: `refresh()` throws when a started entry exposes no awaitable fiber and when a disposal rejects, so a rollback never declares itself finished while a disposal outcome is unknown.
 
