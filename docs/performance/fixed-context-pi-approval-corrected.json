@@ -1,0 +1,2546 @@
+{
+  "source": "Pi message_end.message.usage and request/tool traces; free catalog cost, not an invoice",
+  "samples": [
+    {
+      "sample": "01-aa-approval-A",
+      "phase": "aa",
+      "scenario": "approval",
+      "round": 1,
+      "label": "A",
+      "actual": "A",
+      "run": {
+        "side": "A",
+        "exit": 0,
+        "elapsedSeconds": 11.281329666991951,
+        "model": "opencode-go/beam-free",
+        "thinking": "low",
+        "scenario": "approval"
+      },
+      "requests": 7,
+      "usage": [
+        {
+          "input": 1358,
+          "output": 134,
+          "cacheRead": 576,
+          "cacheWrite": 0,
+          "reasoning": 123,
+          "totalTokens": 2068,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 4314,
+          "output": 108,
+          "cacheRead": 1920,
+          "cacheWrite": 0,
+          "reasoning": 35,
+          "totalTokens": 6342,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2257,
+          "output": 141,
+          "cacheRead": 6208,
+          "cacheWrite": 0,
+          "reasoning": 43,
+          "totalTokens": 8606,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2031,
+          "output": 191,
+          "cacheRead": 8448,
+          "cacheWrite": 0,
+          "reasoning": 18,
+          "totalTokens": 10670,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2272,
+          "output": 57,
+          "cacheRead": 10432,
+          "cacheWrite": 0,
+          "reasoning": 18,
+          "totalTokens": 12761,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 212,
+          "output": 55,
+          "cacheRead": 12672,
+          "cacheWrite": 0,
+          "reasoning": 22,
+          "totalTokens": 12939,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1693,
+          "output": 348,
+          "cacheRead": 12864,
+          "cacheWrite": 0,
+          "reasoning": 19,
+          "totalTokens": 14905,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      ],
+      "inputIncludingCache": 67257,
+      "output": 1034,
+      "cost": 0,
+      "requestBytes": [
+        11676,
+        33301,
+        43537,
+        53224,
+        63662,
+        64565,
+        72801
+      ],
+      "requestDigests": [
+        "5f20fd07bdf4d164ad070ecb1249d343b51684b3a835f6781132d633d84e5a56",
+        "88998a2d768419de837be633adc4dc9cc61a2ea2f132f179f27fc7282b28fc70",
+        "2b663ee5e0e69e68f688af9c1b5bc8b4a4c368a27316b44034a70a81a66cfc72",
+        "81463cd0eb0022bb4bf8b97ad6b834735dc9731da464ced4b3aeed353b0fe029",
+        "9a03ffface662bd281910c437e220ef1aa96b5082f850ba47f03f70f7347355b",
+        "90c0757c5fb189f27bfcb190a9608298158ad1e505da47d72b2456933e622ffc",
+        "183e25de8eb51b596e886331e83ea693c512fd0966f3b334d290745972184bbc"
+      ],
+      "systemBytes": 2852,
+      "systemSha256": "2bb6785682d9ec4714aaeedce9b83ab7542d7004f42cb853a67672569b16f2ff",
+      "registrySha256": "59ac9c2508bcbce2ecc9d4f1e31f7b61608ccb72b6a58c31768e8a2202794959",
+      "firstPromptTokens": 1934,
+      "calls": [
+        {
+          "kind": "call",
+          "name": "evolution_runtime_inspect",
+          "args": {}
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "latency",
+              "benchmark"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latency reduction",
+              "no side effects",
+              "no orphans"
+            ],
+            "target": "latency-probe",
+            "why": "Evaluate latency-probe candidate for production readiness"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "latency probe trial",
+              "code": {
+                "host": "return { name: \"latency-probe\", apply(ctx) { ctx.on(\"benchmark/latency\", () => {}); } };"
+              }
+            },
+            "experimentId": "exp-mvzveamz-1-f72f5ed7",
+            "idPrefix": "lat"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_measure",
+          "args": {
+            "experimentId": "exp-mvzveamz-1-f72f5ed7",
+            "observation": {
+              "solvesProblem": true,
+              "sideEffects": [],
+              "orphanResources": [],
+              "performanceChange": {
+                "latencyMs": {
+                  "before": 100,
+                  "after": 80
+                }
+              },
+              "beforeMetrics": {
+                "latencyMs": 100
+              },
+              "afterMetrics": {
+                "latencyMs": 80
+              },
+              "observationWindow": "fixture-window-1",
+              "sampleCount": 30,
+              "benefitEvidence": "latency reduced from 100ms to 80ms",
+              "repeatable": true,
+              "regressionPassed": true,
+              "reversible": true,
+              "cleanupEvidence": "no orphans"
+            }
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_promote",
+          "args": {
+            "confirmation": false,
+            "experimentId": "exp-mvzveamz-1-f72f5ed7"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_revert",
+          "args": {
+            "experimentId": "exp-mvzveamz-1-f72f5ed7"
+          }
+        }
+      ],
+      "errors": [],
+      "facts": [
+        {
+          "name": "evolution_runtime_inspect",
+          "value": {}
+        },
+        {
+          "name": "evolution_propose",
+          "value": {
+            "ok": true,
+            "phase": "proposed"
+          }
+        },
+        {
+          "name": "evolution_trial",
+          "value": {
+            "ok": true,
+            "phase": "trial"
+          }
+        },
+        {
+          "name": "evolution_measure",
+          "value": {
+            "ok": true,
+            "phase": "measured",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_promote",
+          "value": {
+            "ok": false,
+            "phase": "awaiting-owner-confirmation",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_revert",
+          "value": {
+            "ok": true,
+            "phase": "reverted",
+            "runtimeRecovered": true
+          }
+        }
+      ],
+      "final": {
+        "kind": "final",
+        "experiments": [
+          {
+            "state": "reverted",
+            "targetsAcquired": false
+          }
+        ],
+        "owners": 0
+      },
+      "observationCorrect": true,
+      "success": true,
+      "answer": "Evaluation complete. Here's the summary:\n\n**Runtime inspection** — Cordis runtime healthy; 8 active components, no dynamic plugins initially.\n\n**Proposal** — Created `exp-mvzveamz-1-f72f5ed7` (latency-probe, low risk). Experience recall flagged a prior failed \"latency-probe\" fixture (3 failures), but we proceeded with the supplied candidate.\n\n**Trial** — Activated temporary Host plugin `lat-2` (`latency-probe`) via dynamicCordisRunner. It registered a `benchmark/latency` event listener using `ctx.on()`.\n\n**Measurement** — Recorded synthetic evidence: latency 100→80 ms, 30 samples, window `fixture-window-1`, problem solved, no side effects/orphans, repeatable, regression passed, reversible. All promotion gates passed (`eligible: true`).\n\n**Promotion request (no confirmation)** — Returned `awaiting-owner-confirmation` / `explicit_user_confirmation_required_for_production_promotion`. Gates all true, but production promotion is blocked pending explicit owner confirmation (`confirmation: true`). **No production change occurred.**\n\n**Revert & recovery** — Temporary plugin disposed through Cordis; `runtimeRecovered: true`. Runtime signature returned to baseline (latency-probe component and `benchmark/latency` listener removed; no dynamic plugins remain).\n\n**What still needs approval:** An owner must re-run `evolution_promote` with `confirmation: true` after reviewing the measured evidence and rollback proof. Until then, the candidate remains measured but not promoted."
+    },
+    {
+      "sample": "02-aa-approval-B",
+      "phase": "aa",
+      "scenario": "approval",
+      "round": 1,
+      "label": "B",
+      "actual": "A",
+      "run": {
+        "side": "A",
+        "exit": 0,
+        "elapsedSeconds": 14.237080792023335,
+        "model": "opencode-go/beam-free",
+        "thinking": "low",
+        "scenario": "approval"
+      },
+      "requests": 7,
+      "usage": [
+        {
+          "input": 1358,
+          "output": 186,
+          "cacheRead": 576,
+          "cacheWrite": 0,
+          "reasoning": 173,
+          "totalTokens": 2120,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 4366,
+          "output": 301,
+          "cacheRead": 1920,
+          "cacheWrite": 0,
+          "reasoning": 206,
+          "totalTokens": 6587,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2164,
+          "output": 229,
+          "cacheRead": 6272,
+          "cacheWrite": 0,
+          "reasoning": 130,
+          "totalTokens": 8665,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2177,
+          "output": 296,
+          "cacheRead": 8384,
+          "cacheWrite": 0,
+          "reasoning": 102,
+          "totalTokens": 10857,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 12352,
+          "output": 105,
+          "cacheRead": 576,
+          "cacheWrite": 0,
+          "reasoning": 64,
+          "totalTokens": 13033,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 230,
+          "output": 95,
+          "cacheRead": 12928,
+          "cacheWrite": 0,
+          "reasoning": 55,
+          "totalTokens": 13253,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1755,
+          "output": 472,
+          "cacheRead": 13120,
+          "cacheWrite": 0,
+          "reasoning": 45,
+          "totalTokens": 15347,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      ],
+      "inputIncludingCache": 68178,
+      "output": 1684,
+      "cost": 0,
+      "requestBytes": [
+        11676,
+        33622,
+        44015,
+        54164,
+        65212,
+        66408,
+        74877
+      ],
+      "requestDigests": [
+        "3de695d94ac13d191ed56aa92c5afa6141a534c6e018166be2af0783b6a1de2a",
+        "4398e6f63f7c87efd7e42fd99c9410a14726c66e2f150e302d7e95d5a86d08f6",
+        "d327528dd651db0c4160643929914fea1b32324b5b8e9f0461e321cc35d10e8a",
+        "52549a0ce4d1ea89d45163b7558b709a3cb0833d391ed3f8bbb55d76f37936a8",
+        "583ee3c93c91cf3e4543f070c5fea3369bf3960824d52c6efd2a9378ff52eecc",
+        "7e6b49ff54aedec7c83432c6c2c5b75ccaf3925c2656e69aa0ce27142c5a6837",
+        "d80f080a2192f095b80d490a54c1ef5b9962dd3f758c09cbf3405adb81bf0bc4"
+      ],
+      "systemBytes": 2852,
+      "systemSha256": "2bb6785682d9ec4714aaeedce9b83ab7542d7004f42cb853a67672569b16f2ff",
+      "registrySha256": "59ac9c2508bcbce2ecc9d4f1e31f7b61608ccb72b6a58c31768e8a2202794959",
+      "firstPromptTokens": 1934,
+      "calls": [
+        {
+          "kind": "call",
+          "name": "evolution_runtime_inspect",
+          "args": {}
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "events",
+              "performance"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latencyMs reduction",
+              "no side effects",
+              "no orphan resources"
+            ],
+            "target": "latency-probe event listener on benchmark/latency",
+            "why": "Add a latency probe that listens on benchmark/latency event to measure and potentially improve latency"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "Latency probe listening on benchmark/latency event",
+              "code": {
+                "host": "return { name: \"latency-probe\", apply(ctx) { ctx.on(\"benchmark/latency\", () => {}); } };"
+              }
+            },
+            "experimentId": "exp-mvzvek84-1-a270e2f1"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_measure",
+          "args": {
+            "experimentId": "exp-mvzvek84-1-a270e2f1",
+            "observation": {
+              "solvesProblem": true,
+              "sideEffects": [],
+              "orphanResources": [],
+              "performanceChange": {
+                "latencyMs": {
+                  "before": 100,
+                  "after": 80
+                }
+              },
+              "beforeMetrics": {
+                "latencyMs": 100
+              },
+              "afterMetrics": {
+                "latencyMs": 80
+              },
+              "observationWindow": "fixture-window-1",
+              "sampleCount": 30,
+              "benefitEvidence": "latency reduced from 100ms to 80ms over 30 samples",
+              "repeatable": true,
+              "regressionPassed": true,
+              "reversible": true,
+              "cleanupEvidence": "no side effects or orphans, plugin uses ctx.on with registered disposer"
+            }
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_promote",
+          "args": {
+            "confirmation": false,
+            "experimentId": "exp-mvzvek84-1-a270e2f1"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_revert",
+          "args": {
+            "experimentId": "exp-mvzvek84-1-a270e2f1"
+          }
+        }
+      ],
+      "errors": [],
+      "facts": [
+        {
+          "name": "evolution_runtime_inspect",
+          "value": {}
+        },
+        {
+          "name": "evolution_propose",
+          "value": {
+            "ok": true,
+            "phase": "proposed"
+          }
+        },
+        {
+          "name": "evolution_trial",
+          "value": {
+            "ok": true,
+            "phase": "trial"
+          }
+        },
+        {
+          "name": "evolution_measure",
+          "value": {
+            "ok": true,
+            "phase": "measured",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_promote",
+          "value": {
+            "ok": false,
+            "phase": "awaiting-owner-confirmation",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_revert",
+          "value": {
+            "ok": true,
+            "phase": "reverted",
+            "runtimeRecovered": true
+          }
+        }
+      ],
+      "final": {
+        "kind": "final",
+        "experiments": [
+          {
+            "state": "reverted",
+            "targetsAcquired": false
+          }
+        ],
+        "owners": 0
+      },
+      "observationCorrect": true,
+      "success": true,
+      "answer": "Evaluation complete. Summary of findings:\n\n## Runtime Inspection\n- Cordis runtime healthy; 8 active components, no dynamic plugins initially.\n\n## Proposal & Trial\n- Proposed latency-probe (low risk) — experiment `exp-mvzvek84-1-a270e2f1`.\n- Trial activated as dynamic plugin `evo-2` / component `latency-probe` (uid 10), registering a `ctx.on(\"benchmark/latency\")` listener. No client half.\n\n## Measurement (Synthetic Evidence)\n- **Solves problem:** true\n- **Latency:** 100 ms → 80 ms (30 samples, window `fixture-window-1`)\n- **Side effects / orphans:** none\n- **Repeatable / regression / reversible:** all true\n- **Promotion gates:** all green (realBenefit, measuredEvidence, repeatable, regressionTest, reversible, cleanupEvidence, noOrphans) → **eligible: true**. `runtimeRecovered` false only because trial still active at measurement time (expected).\n\n## Production Promotion Decision (confirmation=false)\n- **Result:** `awaiting-owner-confirmation` — **not promoted**.\n- Reason: `explicit_user_confirmation_required_for_production_promotion`.\n- All gates are eligible; only missing piece is **explicit owner confirmation** (confirmation=true) to write the durable Plugin row + archive pointer and enter canary observation.\n\n## Revert & Recovery\n- Revert succeeded; `runtimeRecovered: true`.\n- `latency-probe` component removed, `benchmark/latency` event listener gone, `dynamicPlugins` empty.\n- Runtime signature matches pre-trial baseline (8 components, 5 services, original events only).\n\n## What Still Needs Approval\n- **Owner must set `confirmation: true` on `evolution_promote`** to authorize production promotion. Until then, no production mutation occurred. Canary barriers (startup, health, dependencies, metrics) would still need to pass after promotion before stable commit."
+    },
+    {
+      "sample": "03-aa-approval-B",
+      "phase": "aa",
+      "scenario": "approval",
+      "round": 2,
+      "label": "B",
+      "actual": "A",
+      "run": {
+        "side": "A",
+        "exit": 0,
+        "elapsedSeconds": 13.633173750014976,
+        "model": "opencode-go/beam-free",
+        "thinking": "low",
+        "scenario": "approval"
+      },
+      "requests": 7,
+      "usage": [
+        {
+          "input": 1294,
+          "output": 217,
+          "cacheRead": 640,
+          "cacheWrite": 0,
+          "reasoning": 204,
+          "totalTokens": 2151,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 4397,
+          "output": 107,
+          "cacheRead": 1920,
+          "cacheWrite": 0,
+          "reasoning": 44,
+          "totalTokens": 6424,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2267,
+          "output": 158,
+          "cacheRead": 6272,
+          "cacheWrite": 0,
+          "reasoning": 65,
+          "totalTokens": 8697,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2065,
+          "output": 208,
+          "cacheRead": 8512,
+          "cacheWrite": 0,
+          "reasoning": 64,
+          "totalTokens": 10785,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 12233,
+          "output": 66,
+          "cacheRead": 576,
+          "cacheWrite": 0,
+          "reasoning": 26,
+          "totalTokens": 12875,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 199,
+          "output": 64,
+          "cacheRead": 12800,
+          "cacheWrite": 0,
+          "reasoning": 32,
+          "totalTokens": 13063,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1691,
+          "output": 486,
+          "cacheRead": 12992,
+          "cacheWrite": 0,
+          "reasoning": 28,
+          "totalTokens": 15169,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      ],
+      "inputIncludingCache": 67858,
+      "output": 1306,
+      "cost": 0,
+      "requestBytes": [
+        11676,
+        33731,
+        43945,
+        53743,
+        64277,
+        65234,
+        73513
+      ],
+      "requestDigests": [
+        "21be2dfce56f6e5ec668bf0e91e962d9535cac8e89961c02104c6af2fb31d700",
+        "ae3a720c7fdb40ef87151f1cbb87bf39b6624688d2b47ec14a13cb258af0d05f",
+        "1189bc564d3e2e336fa49e106bb39010aa8cd83026ba5693ccd634218ea1f77d",
+        "7f8849c61b8fede87cc60e67de04bf944a5082a87d971c18f0d4969ecaacbc77",
+        "e5b2f1918e12b91941c43c77ec54fe2bf195336a42701154af92045c22d7372f",
+        "e8d97954a3cb29ee60350cba0fe97a786a7dd493d7803b71eb7402c7eacc94c6",
+        "9821d207ca7a90817993cab48237c707414b69feeba7bafe97cd5816eeaaaee0"
+      ],
+      "systemBytes": 2852,
+      "systemSha256": "2bb6785682d9ec4714aaeedce9b83ab7542d7004f42cb853a67672569b16f2ff",
+      "registrySha256": "59ac9c2508bcbce2ecc9d4f1e31f7b61608ccb72b6a58c31768e8a2202794959",
+      "firstPromptTokens": 1934,
+      "calls": [
+        {
+          "kind": "call",
+          "name": "evolution_runtime_inspect",
+          "args": {}
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "latency-probe"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latency reduction"
+            ],
+            "target": "latency-probe",
+            "why": "Evaluate isolated latency-probe candidate for production readiness"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "latency probe candidate",
+              "code": {
+                "host": "return { name: \"latency-probe\", apply(ctx) { ctx.on(\"benchmark/latency\", () => {}); } };"
+              }
+            },
+            "experimentId": "exp-mvzvevd2-1-51d9a3db",
+            "idPrefix": "lat"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_measure",
+          "args": {
+            "experimentId": "exp-mvzvevd2-1-51d9a3db",
+            "observation": {
+              "solvesProblem": true,
+              "sideEffects": [],
+              "orphanResources": [],
+              "beforeMetrics": {
+                "latencyMs": 100
+              },
+              "afterMetrics": {
+                "latencyMs": 80
+              },
+              "sampleCount": 30,
+              "benefitEvidence": "latency reduced from 100ms to 80ms",
+              "repeatable": true,
+              "regressionPassed": true,
+              "reversible": true,
+              "cleanupEvidence": "temporary plugin reverts cleanly through Cordis"
+            }
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_promote",
+          "args": {
+            "confirmation": false,
+            "experimentId": "exp-mvzvevd2-1-51d9a3db"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_revert",
+          "args": {
+            "experimentId": "exp-mvzvevd2-1-51d9a3db"
+          }
+        }
+      ],
+      "errors": [],
+      "facts": [
+        {
+          "name": "evolution_runtime_inspect",
+          "value": {}
+        },
+        {
+          "name": "evolution_propose",
+          "value": {
+            "ok": true,
+            "phase": "proposed"
+          }
+        },
+        {
+          "name": "evolution_trial",
+          "value": {
+            "ok": true,
+            "phase": "trial"
+          }
+        },
+        {
+          "name": "evolution_measure",
+          "value": {
+            "ok": true,
+            "phase": "measured",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": false,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": false
+            }
+          }
+        },
+        {
+          "name": "evolution_promote",
+          "value": {
+            "ok": false,
+            "phase": "awaiting-owner-confirmation",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": false,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": false
+            }
+          }
+        },
+        {
+          "name": "evolution_revert",
+          "value": {
+            "ok": true,
+            "phase": "reverted",
+            "runtimeRecovered": true
+          }
+        }
+      ],
+      "final": {
+        "kind": "final",
+        "experiments": [
+          {
+            "state": "reverted",
+            "targetsAcquired": false
+          }
+        ],
+        "owners": 0
+      },
+      "observationCorrect": false,
+      "success": false,
+      "answer": "## Evaluation Complete\n\n**Runtime inspection** confirmed a healthy Cordis composition with dynamic runner, loader, system prompt, tool runtime, and inspect services all active; no dynamic plugins initially.\n\n**Proposal** `exp-mvzvevd2-1-51d9a3db` created (low risk, owner `free-context-owner`). Experience recall flagged a prior failure memory for `latency-probe` (3 occurrences, 0% success rate) — advisory only; trial proceeded with the supplied candidate.\n\n**Trial** activated Host package `latency-probe` (plugin `lat-2`) which registered a `benchmark/latency` event listener via `ctx.on`. Runtime signature changed (added latency-probe component + listener), all disposers registered.\n\n**Measurement** recorded synthetic evidence:\n- latencyMs: 100 → 80 (30 samples)\n- Problem solved, no side effects, no orphans\n- Repeatable ✓, regression passed ✓, reversible ✓, cleanup evidence ✓\n- Gates: `realBenefit=true`, `repeatable=true`, `regressionTest=true`, `reversible=true`, `cleanupEvidence=true`, `noOrphans=true`\n- **Blocked gates:** `measuredEvidence=false`, `runtimeRecovered=false` (runtime not yet reverted during measurement), `eligible=false`\n\n**Promotion request (confirmation=false)** returned `phase: awaiting-owner-confirmation`, reason `explicit_user_confirmation_required_for_production_promotion`. Production unchanged. What still needs approval:\n1. Owner confirmation (`confirmation: true`) — explicit user authorization required by policy.\n2. `measuredEvidence` gate — must be satisfied (currently false; likely needs observation-window/metric integration evidence beyond synthetic before/after).\n3. `runtimeRecovered` gate — satisfied only after revert (now done); re-measure/re-promote would need this demonstrated.\n4. Canary barriers (startup, component health, dependencies, metrics) must pass before stable commit; any regression auto-rolls back.\n\n**Revert** succeeded: temporary plugin stopped and removed, runtime signature returned to baseline (latency-probe component and `benchmark/latency` listener gone), `runtimeRecovered: true`, archive written. No production mutation occurred."
+    },
+    {
+      "sample": "04-aa-approval-A",
+      "phase": "aa",
+      "scenario": "approval",
+      "round": 2,
+      "label": "A",
+      "actual": "A",
+      "run": {
+        "side": "A",
+        "exit": 0,
+        "elapsedSeconds": 10.21022500001709,
+        "model": "opencode-go/beam-free",
+        "thinking": "low",
+        "scenario": "approval"
+      },
+      "requests": 7,
+      "usage": [
+        {
+          "input": 1358,
+          "output": 87,
+          "cacheRead": 576,
+          "cacheWrite": 0,
+          "reasoning": 74,
+          "totalTokens": 2021,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 4267,
+          "output": 76,
+          "cacheRead": 1920,
+          "cacheWrite": 0,
+          "reasoning": 13,
+          "totalTokens": 6263,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1928,
+          "output": 116,
+          "cacheRead": 6144,
+          "cacheWrite": 0,
+          "reasoning": 32,
+          "totalTokens": 8188,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2002,
+          "output": 165,
+          "cacheRead": 8064,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 10231,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2201,
+          "output": 51,
+          "cacheRead": 10048,
+          "cacheWrite": 0,
+          "reasoning": 13,
+          "totalTokens": 12300,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 198,
+          "output": 42,
+          "cacheRead": 12224,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 12464,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1664,
+          "output": 36,
+          "cacheRead": 12416,
+          "cacheWrite": 0,
+          "reasoning": 14,
+          "totalTokens": 14116,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      ],
+      "inputIncludingCache": 65010,
+      "output": 573,
+      "cost": 0,
+      "requestBytes": [
+        11676,
+        33090,
+        42332,
+        51927,
+        62225,
+        63100,
+        71256
+      ],
+      "requestDigests": [
+        "b488da4f2f0aadfa2eac404b5f7df745f982271eb1fad06f3989ecd5de16c6f4",
+        "ca1aaa1b5f09b6aef33cd716abc183044ffea36e6e5ff1df1caac026577b0526",
+        "877ec0febfd4f419fb2ff955eb43e2215f1a4f0817ac9b3e1c710b87228b9456",
+        "4f43779abc3663624164dc744de5b6ff0c447c0d52a8ad03af9d68929178ac93",
+        "93b2ee95a3d17fb2cea03d193b2b2e2c29c051d77d176350e983148598ac07a8",
+        "357dffc7886f07be82e839393edce302446d0d9f2ee772b84df1790a0db27047",
+        "c87496f804799f774fe2ca9bf7246b7e5c03a8c0d9be76f6271fae22d1f6a201"
+      ],
+      "systemBytes": 2852,
+      "systemSha256": "2bb6785682d9ec4714aaeedce9b83ab7542d7004f42cb853a67672569b16f2ff",
+      "registrySha256": "59ac9c2508bcbce2ecc9d4f1e31f7b61608ccb72b6a58c31768e8a2202794959",
+      "firstPromptTokens": 1934,
+      "calls": [
+        {
+          "kind": "call",
+          "name": "evolution_runtime_inspect",
+          "args": {}
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "runtime"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latency reduction"
+            ],
+            "target": "latency-probe event listener",
+            "why": "Evaluate isolated candidate for production readiness without authorizing production"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "latency probe",
+              "code": {
+                "host": "return { name: \"latency-probe\", apply(ctx) { ctx.on(\"benchmark/latency\", () => {}); } };"
+              }
+            },
+            "experimentId": "exp-mvzvf5rv-1-b0bfcb93"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_measure",
+          "args": {
+            "experimentId": "exp-mvzvf5rv-1-b0bfcb93",
+            "observation": {
+              "solvesProblem": true,
+              "sideEffects": [],
+              "orphanResources": [],
+              "performanceChange": "improved",
+              "beforeMetrics": {
+                "latencyMs": 100
+              },
+              "afterMetrics": {
+                "latencyMs": 80
+              },
+              "observationWindow": "fixture-window-1",
+              "sampleCount": 30,
+              "benefitEvidence": "latency reduced from 100 to 80 ms",
+              "repeatable": true,
+              "regressionPassed": true,
+              "reversible": true,
+              "cleanupEvidence": "no orphans"
+            }
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_promote",
+          "args": {
+            "confirmation": false,
+            "experimentId": "exp-mvzvf5rv-1-b0bfcb93"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_revert",
+          "args": {
+            "experimentId": "exp-mvzvf5rv-1-b0bfcb93"
+          }
+        }
+      ],
+      "errors": [],
+      "facts": [
+        {
+          "name": "evolution_runtime_inspect",
+          "value": {}
+        },
+        {
+          "name": "evolution_propose",
+          "value": {
+            "ok": true,
+            "phase": "proposed"
+          }
+        },
+        {
+          "name": "evolution_trial",
+          "value": {
+            "ok": true,
+            "phase": "trial"
+          }
+        },
+        {
+          "name": "evolution_measure",
+          "value": {
+            "ok": true,
+            "phase": "measured",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_promote",
+          "value": {
+            "ok": false,
+            "phase": "awaiting-owner-confirmation",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_revert",
+          "value": {
+            "ok": true,
+            "phase": "reverted",
+            "runtimeRecovered": true
+          }
+        }
+      ],
+      "final": {
+        "kind": "final",
+        "experiments": [
+          {
+            "state": "reverted",
+            "targetsAcquired": false
+          }
+        ],
+        "owners": 0
+      },
+      "observationCorrect": true,
+      "success": true,
+      "answer": "Trial reverted, runtime recovered. Production promotion not authorized (confirmation false); eligible candidate pending owner confirmation."
+    },
+    {
+      "sample": "05-ab-approval-A",
+      "phase": "ab",
+      "scenario": "approval",
+      "round": 1,
+      "label": "A",
+      "actual": "A",
+      "run": {
+        "side": "A",
+        "exit": 0,
+        "elapsedSeconds": 13.36669641599292,
+        "model": "opencode-go/beam-free",
+        "thinking": "low",
+        "scenario": "approval"
+      },
+      "requests": 7,
+      "usage": [
+        {
+          "input": 1357,
+          "output": 112,
+          "cacheRead": 576,
+          "cacheWrite": 0,
+          "reasoning": 94,
+          "totalTokens": 2045,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 4291,
+          "output": 204,
+          "cacheRead": 1920,
+          "cacheWrite": 0,
+          "reasoning": 113,
+          "totalTokens": 6415,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2047,
+          "output": 181,
+          "cacheRead": 6208,
+          "cacheWrite": 0,
+          "reasoning": 77,
+          "totalTokens": 8436,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2141,
+          "output": 303,
+          "cacheRead": 8192,
+          "cacheWrite": 0,
+          "reasoning": 71,
+          "totalTokens": 10636,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2389,
+          "output": 58,
+          "cacheRead": 10304,
+          "cacheWrite": 0,
+          "reasoning": 26,
+          "totalTokens": 12751,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 202,
+          "output": 55,
+          "cacheRead": 12672,
+          "cacheWrite": 0,
+          "reasoning": 22,
+          "totalTokens": 12929,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1682,
+          "output": 393,
+          "cacheRead": 12864,
+          "cacheWrite": 0,
+          "reasoning": 10,
+          "totalTokens": 14939,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      ],
+      "inputIncludingCache": 66845,
+      "output": 1306,
+      "cost": 0,
+      "requestBytes": [
+        11676,
+        33250,
+        43102,
+        53058,
+        64007,
+        64932,
+        73168
+      ],
+      "requestDigests": [
+        "98e7c5a203eebcf6f16baeb379ca0e3a0f7b4faadb15c21afafca60701800a83",
+        "60a52c6dce5f125c947f436e98e9aebac19fa9762b4a72c32333a110a6d2cef1",
+        "b32e22b977a4adac23c8f9f867948bed05d4c625722d54b818691ad4c9db0b2c",
+        "a217830a1a31eaf0687fee9fce15259c399d805a01c11cc7d4f20c9dd76a2479",
+        "6a8760c6183627c60bd6a66346f6ade0c0a13aeabfb1e1fe019da8ae35a32f57",
+        "ca19b0001cda13938758bfec90b4f50fcf3d101373ae833642bb50ddb9643b9e",
+        "8f406af59a3cdd73b80e08a5e2bd1ffd48029df3435160ed1c8d1ea964426777"
+      ],
+      "systemBytes": 2852,
+      "systemSha256": "2bb6785682d9ec4714aaeedce9b83ab7542d7004f42cb853a67672569b16f2ff",
+      "registrySha256": "59ac9c2508bcbce2ecc9d4f1e31f7b61608ccb72b6a58c31768e8a2202794959",
+      "firstPromptTokens": 1933,
+      "calls": [
+        {
+          "kind": "call",
+          "name": "evolution_runtime_inspect",
+          "args": {}
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "runtime",
+              "benchmark/latency",
+              "host"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latencyMs reduction",
+              "no side effects",
+              "reversible cleanup"
+            ],
+            "target": "latency-probe host plugin",
+            "why": "Evaluate isolated candidate for production readiness: latency probe that listens on benchmark/latency event."
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "Latency probe listening on benchmark/latency event",
+              "code": {
+                "host": "return { name: \"latency-probe\", apply(ctx) { ctx.on(\"benchmark/latency\", () => {}); } };"
+              }
+            },
+            "experimentId": "exp-mvzvfea4-1-09b2fee8",
+            "idPrefix": "probe"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_measure",
+          "args": {
+            "experimentId": "exp-mvzvfea4-1-09b2fee8",
+            "observation": {
+              "solvesProblem": true,
+              "sideEffects": [],
+              "orphanResources": [],
+              "performanceChange": {
+                "latencyMs": {
+                  "before": 100,
+                  "after": 80
+                }
+              },
+              "errorChange": {
+                "before": 0,
+                "after": 0
+              },
+              "metrics": {
+                "latencyMs": 80
+              },
+              "beforeMetrics": {
+                "latencyMs": 100
+              },
+              "afterMetrics": {
+                "latencyMs": 80
+              },
+              "observationWindow": "fixture-window-1",
+              "sampleCount": 30,
+              "benefitEvidence": "Latency reduced from 100ms to 80ms over 30 samples",
+              "repeatable": true,
+              "regressionPassed": true,
+              "reversible": true,
+              "cleanupEvidence": "ctx.on disposer registered; no orphans"
+            }
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_promote",
+          "args": {
+            "experimentId": "exp-mvzvfea4-1-09b2fee8"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_revert",
+          "args": {
+            "experimentId": "exp-mvzvfea4-1-09b2fee8"
+          }
+        }
+      ],
+      "errors": [],
+      "facts": [
+        {
+          "name": "evolution_runtime_inspect",
+          "value": {}
+        },
+        {
+          "name": "evolution_propose",
+          "value": {
+            "ok": true,
+            "phase": "proposed"
+          }
+        },
+        {
+          "name": "evolution_trial",
+          "value": {
+            "ok": true,
+            "phase": "trial"
+          }
+        },
+        {
+          "name": "evolution_measure",
+          "value": {
+            "ok": true,
+            "phase": "measured",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_promote",
+          "value": {
+            "ok": false,
+            "phase": "awaiting-owner-confirmation",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_revert",
+          "value": {
+            "ok": true,
+            "phase": "reverted",
+            "runtimeRecovered": true
+          }
+        }
+      ],
+      "final": {
+        "kind": "final",
+        "experiments": [
+          {
+            "state": "reverted",
+            "targetsAcquired": false
+          }
+        ],
+        "owners": 0
+      },
+      "observationCorrect": true,
+      "success": true,
+      "answer": "## Evaluation Summary\n\n**Runtime inspected** — Cordis runtime active with 8 components, 5 services, 10 tools; no dynamic plugins initially.\n\n**Proposal created** — `exp-mvzvfea4-1-09b2fee8` (risk: low, owner: free-context-owner). No prior experience matched.\n\n**Trial activated** — Host plugin `latency-probe` (probe-2) registered a `ctx.on(\"benchmark/latency\")` listener. Runtime signature changed (added latency-probe component + benchmark/latency event).\n\n**Observations recorded** — All promotion gates passed on measurement:\n- realBenefit: ✓ (100ms → 80ms, 30 samples, fixture-window-1)\n- measuredEvidence, repeatable, regressionTest, reversible, cleanupEvidence, noOrphans: ✓\n- runtimeRecovered: false (expected while trial still running)\n\n**Promotion decision requested without owner confirmation** — Returned `awaiting-owner-confirmation`:\n- Reason: `explicit_user_confirmation_required_for_production_promotion`\n- All gates eligible, but production promotion is blocked until explicit owner confirmation (`confirmation: true`).\n\n**What still needs approval**: An owner must call `evolution_promote` with `confirmation: true` after reviewing measured evidence and rollback proof. Then the candidate enters canary observation (startup/health/dependency/metric barriers) before stable commit.\n\n**Revert executed** — Temporary plugin stopped and removed; runtime signature restored to baseline (latency-probe component and benchmark/latency event gone). `runtimeRecovered: true`. Archive written to `domain/archive/exp-mvzvfea4-1-09b2fee8.md`.\n\n**Production was not changed.** No `confirmation: true` was set at any point."
+    },
+    {
+      "sample": "06-ab-approval-B",
+      "phase": "ab",
+      "scenario": "approval",
+      "round": 1,
+      "label": "B",
+      "actual": "B",
+      "run": {
+        "side": "B",
+        "exit": 0,
+        "elapsedSeconds": 10.239183749974472,
+        "model": "opencode-go/beam-free",
+        "thinking": "low",
+        "scenario": "approval"
+      },
+      "requests": 7,
+      "usage": [
+        {
+          "input": 1308,
+          "output": 129,
+          "cacheRead": 448,
+          "cacheWrite": 0,
+          "reasoning": 116,
+          "totalTokens": 1885,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 4323,
+          "output": 100,
+          "cacheRead": 1728,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 6151,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1986,
+          "output": 118,
+          "cacheRead": 6016,
+          "cacheWrite": 0,
+          "reasoning": 28,
+          "totalTokens": 8120,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2008,
+          "output": 194,
+          "cacheRead": 8000,
+          "cacheWrite": 0,
+          "reasoning": 5,
+          "totalTokens": 10202,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2264,
+          "output": 46,
+          "cacheRead": 9984,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 12294,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 193,
+          "output": 43,
+          "cacheRead": 12224,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 12460,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1661,
+          "output": 256,
+          "cacheRead": 12416,
+          "cacheWrite": 0,
+          "reasoning": 14,
+          "totalTokens": 14333,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      ],
+      "inputIncludingCache": 64559,
+      "output": 886,
+      "cost": 0,
+      "requestBytes": [
+        10820,
+        32452,
+        41975,
+        51640,
+        62117,
+        62969,
+        71125
+      ],
+      "requestDigests": [
+        "5cbbf454ca9cd23cda551959cc2c80c9ba5a44776e97527ad962527faf27a643",
+        "508f22fb3738d174f69ffc0990bf0af8a3182f309e2815ce3743bafe10110f63",
+        "949667cdbf1b63aba61981a173a8d444de70428ce76909468ea57102a538ac4b",
+        "c10e0090be2db1aa79b587eb514f4a3154cd48488c65ac75f770f04cbfefe99a",
+        "290eaa3da6c57fa51489ffcc4ca9ef97d24e05e436682c7181a92c7662b19279",
+        "89e0a814c574cb558443cc36a5dbfa288dc399ba5901f64a8e629b6f71e1deff",
+        "ca1f8a2495cce29f847336d4ca4dd3da4d0121d0cf40663ab19d75bd566028da"
+      ],
+      "systemBytes": 2009,
+      "systemSha256": "b148601e80791dc4f5f9597a0e85d8863e3d941e3cc21094a49dbc702de863fd",
+      "registrySha256": "59ac9c2508bcbce2ecc9d4f1e31f7b61608ccb72b6a58c31768e8a2202794959",
+      "firstPromptTokens": 1756,
+      "calls": [
+        {
+          "kind": "call",
+          "name": "evolution_runtime_inspect",
+          "args": {}
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "runtime",
+              "events"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latencyMs reduction",
+              "no side effects"
+            ],
+            "target": "latency-probe plugin registration of benchmark/latency listener",
+            "why": "Evaluate isolated candidate for production readiness: register a latency-probe plugin that listens on benchmark/latency event."
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "Register benchmark/latency listener",
+              "code": {
+                "host": "return { name: \"latency-probe\", apply(ctx) { ctx.on(\"benchmark/latency\", () => {}); } };"
+              }
+            },
+            "experimentId": "exp-mvzvfoey-1-dd1088f4"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_measure",
+          "args": {
+            "experimentId": "exp-mvzvfoey-1-dd1088f4",
+            "observation": {
+              "solvesProblem": true,
+              "sideEffects": [],
+              "orphanResources": [],
+              "performanceChange": {
+                "latencyMs": {
+                  "before": 100,
+                  "after": 80
+                }
+              },
+              "metrics": {
+                "latencyMs": 80
+              },
+              "beforeMetrics": {
+                "latencyMs": 100
+              },
+              "afterMetrics": {
+                "latencyMs": 80
+              },
+              "observationWindow": "fixture-window-1",
+              "sampleCount": 30,
+              "benefitEvidence": "latency reduced from 100 to 80 ms",
+              "repeatable": true,
+              "regressionPassed": true,
+              "reversible": true,
+              "cleanupEvidence": "no orphans"
+            }
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_promote",
+          "args": {
+            "experimentId": "exp-mvzvfoey-1-dd1088f4"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_revert",
+          "args": {
+            "experimentId": "exp-mvzvfoey-1-dd1088f4"
+          }
+        }
+      ],
+      "errors": [],
+      "facts": [
+        {
+          "name": "evolution_runtime_inspect",
+          "value": {}
+        },
+        {
+          "name": "evolution_propose",
+          "value": {
+            "ok": true,
+            "phase": "proposed"
+          }
+        },
+        {
+          "name": "evolution_trial",
+          "value": {
+            "ok": true,
+            "phase": "trial"
+          }
+        },
+        {
+          "name": "evolution_measure",
+          "value": {
+            "ok": true,
+            "phase": "measured",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_promote",
+          "value": {
+            "ok": false,
+            "phase": "awaiting-owner-confirmation",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_revert",
+          "value": {
+            "ok": true,
+            "phase": "reverted",
+            "runtimeRecovered": true
+          }
+        }
+      ],
+      "final": {
+        "kind": "final",
+        "experiments": [
+          {
+            "state": "reverted",
+            "targetsAcquired": false
+          }
+        ],
+        "owners": 0
+      },
+      "observationCorrect": true,
+      "success": true,
+      "answer": "Summary:\n\n- Inspected runtime: Cordis runtime healthy, baseline captured.\n- Proposed experiment `exp-mvzvfoey-1-dd1088f4` (latency-probe listener on `benchmark/latency`), risk low.\n- Trialed supplied Host code exactly; dynamic plugin `evo-2` activated with `latency-probe` component registering the listener.\n- Measured with synthetic evidence: latencyMs 100→80, 30 samples, window `fixture-window-1`, problem solved, no side effects/orphans, repeatable, regression passed, reversible. All promotion gates eligible=true.\n- Requested production promotion **without** owner confirmation (`confirmation` omitted): result `awaiting-owner-confirmation` — explicit user confirmation still required (`explicit_user_confirmation_required_for_production_promotion`). No production mutation occurred.\n- Reverted temporary plugin; runtime signature recovered to baseline (`runtimeRecovered: true`), dynamic plugins cleared, benchmark/latency listener removed.\n\nStill needs approval: explicit owner confirmation (`confirmation: true`) on `evolution_promote` before any durable promotion/canary. Production was not changed."
+    },
+    {
+      "sample": "07-ab-approval-B",
+      "phase": "ab",
+      "scenario": "approval",
+      "round": 2,
+      "label": "B",
+      "actual": "B",
+      "run": {
+        "side": "B",
+        "exit": 0,
+        "elapsedSeconds": 9.550059582979884,
+        "model": "opencode-go/beam-free",
+        "thinking": "low",
+        "scenario": "approval"
+      },
+      "requests": 7,
+      "usage": [
+        {
+          "input": 1308,
+          "output": 35,
+          "cacheRead": 448,
+          "cacheWrite": 0,
+          "reasoning": 22,
+          "totalTokens": 1791,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 5509,
+          "output": 72,
+          "cacheRead": 448,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 6029,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2189,
+          "output": 102,
+          "cacheRead": 5952,
+          "cacheWrite": 0,
+          "reasoning": 4,
+          "totalTokens": 8243,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1992,
+          "output": 184,
+          "cacheRead": 8128,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 10304,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2218,
+          "output": 46,
+          "cacheRead": 10112,
+          "cacheWrite": 0,
+          "reasoning": 11,
+          "totalTokens": 12376,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 212,
+          "output": 44,
+          "cacheRead": 12288,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 12544,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1683,
+          "output": 61,
+          "cacheRead": 12480,
+          "cacheWrite": 0,
+          "reasoning": 13,
+          "totalTokens": 14224,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      ],
+      "inputIncludingCache": 64967,
+      "output": 544,
+      "cost": 0,
+      "requestBytes": [
+        10820,
+        32006,
+        42044,
+        51598,
+        61981,
+        62819,
+        70971
+      ],
+      "requestDigests": [
+        "f9ca2bfc17f2f5815b1f9ea0712dff389fd5ac5f26249ff36e1589dbc0d554c6",
+        "5669368d7bc1aa0b601c592931aab7c61abc8ad305f34713939063cd56edc416",
+        "6312c4aac42cba5e817e0831ce6c01a5b26f7e409e733abc70f3708d93ff034b",
+        "e4e63e5477a2a66ac2c67b8f2d7602e12dc8d4f8680f969281d2c320552bb5c0",
+        "d14a1106b9193335354f51eaabab0b6e6319437523cab343b95fbc9dbfe86e4e",
+        "a8c82b2cad78a104301ea5faa96f1add68efa512110ea96973873a3c76dd89eb",
+        "b2d1b284b4920bc703bee2365b0e08fe0664dc7b516c814420e8885c0c27e7e6"
+      ],
+      "systemBytes": 2009,
+      "systemSha256": "b148601e80791dc4f5f9597a0e85d8863e3d941e3cc21094a49dbc702de863fd",
+      "registrySha256": "59ac9c2508bcbce2ecc9d4f1e31f7b61608ccb72b6a58c31768e8a2202794959",
+      "firstPromptTokens": 1756,
+      "calls": [
+        {
+          "kind": "call",
+          "name": "evolution_runtime_inspect",
+          "args": {}
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "benchmark/latency"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latencyMs reduction"
+            ],
+            "target": "latency-probe plugin",
+            "why": "Evaluate isolated candidate for production readiness"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "latency probe",
+              "code": {
+                "host": "return { name: \"latency-probe\", apply(ctx) { ctx.on(\"benchmark/latency\", () => {}); } };"
+              }
+            },
+            "experimentId": "exp-mvzvfw61-1-1aff7c45",
+            "idPrefix": "lat"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_measure",
+          "args": {
+            "experimentId": "exp-mvzvfw61-1-1aff7c45",
+            "observation": {
+              "solvesProblem": true,
+              "sideEffects": [],
+              "orphanResources": [],
+              "performanceChange": {
+                "latencyMs": {
+                  "before": 100,
+                  "after": 80
+                }
+              },
+              "metrics": {
+                "latencyMs": 80
+              },
+              "beforeMetrics": {
+                "latencyMs": 100
+              },
+              "afterMetrics": {
+                "latencyMs": 80
+              },
+              "observationWindow": "fixture-window-1",
+              "sampleCount": 30,
+              "benefitEvidence": "latency reduced",
+              "repeatable": true,
+              "regressionPassed": true,
+              "reversible": true,
+              "cleanupEvidence": "revert available"
+            }
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_promote",
+          "args": {
+            "experimentId": "exp-mvzvfw61-1-1aff7c45"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_revert",
+          "args": {
+            "experimentId": "exp-mvzvfw61-1-1aff7c45"
+          }
+        }
+      ],
+      "errors": [],
+      "facts": [
+        {
+          "name": "evolution_runtime_inspect",
+          "value": {}
+        },
+        {
+          "name": "evolution_propose",
+          "value": {
+            "ok": true,
+            "phase": "proposed"
+          }
+        },
+        {
+          "name": "evolution_trial",
+          "value": {
+            "ok": true,
+            "phase": "trial"
+          }
+        },
+        {
+          "name": "evolution_measure",
+          "value": {
+            "ok": true,
+            "phase": "measured",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_promote",
+          "value": {
+            "ok": false,
+            "phase": "awaiting-owner-confirmation",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_revert",
+          "value": {
+            "ok": true,
+            "phase": "reverted",
+            "runtimeRecovered": true
+          }
+        }
+      ],
+      "final": {
+        "kind": "final",
+        "experiments": [
+          {
+            "state": "reverted",
+            "targetsAcquired": false
+          }
+        ],
+        "owners": 0
+      },
+      "observationCorrect": true,
+      "success": true,
+      "answer": "Completed the lifecycle: trial ran, measured gates eligible, promote without confirmation returned awaiting-owner-confirmation (no production change), then reverted with runtimeRecovered true. Owner confirmation still required for production promotion. No confirmation was set true."
+    },
+    {
+      "sample": "08-ab-approval-A",
+      "phase": "ab",
+      "scenario": "approval",
+      "round": 2,
+      "label": "A",
+      "actual": "A",
+      "run": {
+        "side": "A",
+        "exit": 0,
+        "elapsedSeconds": 12.741104082990205,
+        "model": "opencode-go/beam-free",
+        "thinking": "low",
+        "scenario": "approval"
+      },
+      "requests": 7,
+      "usage": [
+        {
+          "input": 1293,
+          "output": 115,
+          "cacheRead": 640,
+          "cacheWrite": 0,
+          "reasoning": 101,
+          "totalTokens": 2048,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 5574,
+          "output": 232,
+          "cacheRead": 640,
+          "cacheWrite": 0,
+          "reasoning": 137,
+          "totalTokens": 6446,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2393,
+          "output": 197,
+          "cacheRead": 6208,
+          "cacheWrite": 0,
+          "reasoning": 91,
+          "totalTokens": 8798,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2134,
+          "output": 264,
+          "cacheRead": 8576,
+          "cacheWrite": 0,
+          "reasoning": 63,
+          "totalTokens": 10974,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 12413,
+          "output": 93,
+          "cacheRead": 640,
+          "cacheWrite": 0,
+          "reasoning": 51,
+          "totalTokens": 13146,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 2584,
+          "output": 58,
+          "cacheRead": 10688,
+          "cacheWrite": 0,
+          "reasoning": 22,
+          "totalTokens": 13330,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        {
+          "input": 1705,
+          "output": 432,
+          "cacheRead": 13248,
+          "cacheWrite": 0,
+          "reasoning": 15,
+          "totalTokens": 15385,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      ],
+      "inputIncludingCache": 68736,
+      "output": 1391,
+      "cost": 0,
+      "requestBytes": [
+        11676,
+        33213,
+        44153,
+        54276,
+        65238,
+        66348,
+        74584
+      ],
+      "requestDigests": [
+        "c9288c143bbbcd405c7af655683d6571b610677571c857015e1c23d85dd8526f",
+        "c23f24f93d8aba96af04f4a43f49b868528d6d3c88e657e145e55003f1e6c549",
+        "842aa95c74fb45f8937bf6b83fdae82084538b3622a62aa750c9d397062bab05",
+        "d1855db88f4c4d99fad1f5450ebf5e7d9064c007c4b1445ffc4c81bfe90b552f",
+        "24ae5dea75655e83a8ce8c606ac83cb53cd777a265b76b2c2072b9ef582113fd",
+        "6bd2e27c332c6125b31a056eba8070938dc54c6bab0ae1fedff9353b30d6b2b3",
+        "14a4dc403f0a2143164bb66dc830feaec3e54a49eaec446dd4ca828324ea710e"
+      ],
+      "systemBytes": 2852,
+      "systemSha256": "2bb6785682d9ec4714aaeedce9b83ab7542d7004f42cb853a67672569b16f2ff",
+      "registrySha256": "59ac9c2508bcbce2ecc9d4f1e31f7b61608ccb72b6a58c31768e8a2202794959",
+      "firstPromptTokens": 1933,
+      "calls": [
+        {
+          "kind": "call",
+          "name": "evolution_runtime_inspect",
+          "args": {}
+        },
+        {
+          "kind": "call",
+          "name": "evolution_propose",
+          "args": {
+            "impactScope": [
+              "event-listener",
+              "benchmark/latency"
+            ],
+            "risk": "low",
+            "successMetrics": [
+              "latencyMs reduction",
+              "no side effects",
+              "repeatability",
+              "regression passed"
+            ],
+            "target": "latency-probe",
+            "why": "Evaluate isolated latency-probe candidate for production readiness: registers a benchmark/latency event listener."
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_trial",
+          "args": {
+            "composition": {
+              "name": "latency-probe",
+              "purpose": "Evaluate isolated latency-probe candidate: registers benchmark/latency event listener.",
+              "code": {
+                "host": "return { name: \"latency-probe\", apply(ctx) { ctx.on(\"benchmark/latency\", () => {}); } };"
+              }
+            },
+            "experimentId": "exp-mvzvg4a5-1-0887750d",
+            "idPrefix": "probe"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_measure",
+          "args": {
+            "experimentId": "exp-mvzvg4a5-1-0887750d",
+            "observation": {
+              "solvesProblem": true,
+              "sideEffects": [],
+              "orphanResources": [],
+              "performanceChange": {
+                "latencyMs": {
+                  "before": 100,
+                  "after": 80
+                }
+              },
+              "errorChange": {},
+              "metrics": {
+                "latencyMs": 80
+              },
+              "beforeMetrics": {
+                "latencyMs": 100
+              },
+              "afterMetrics": {
+                "latencyMs": 80
+              },
+              "observationWindow": "fixture-window-1",
+              "sampleCount": 30,
+              "benefitEvidence": "latency reduced from 100ms to 80ms over 30 samples",
+              "repeatable": true,
+              "regressionPassed": true,
+              "reversible": true,
+              "cleanupEvidence": "plugin disposed cleanly through Cordis"
+            }
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_promote",
+          "args": {
+            "confirmation": false,
+            "experimentId": "exp-mvzvg4a5-1-0887750d"
+          }
+        },
+        {
+          "kind": "call",
+          "name": "evolution_revert",
+          "args": {
+            "experimentId": "exp-mvzvg4a5-1-0887750d"
+          }
+        }
+      ],
+      "errors": [],
+      "facts": [
+        {
+          "name": "evolution_runtime_inspect",
+          "value": {}
+        },
+        {
+          "name": "evolution_propose",
+          "value": {
+            "ok": true,
+            "phase": "proposed"
+          }
+        },
+        {
+          "name": "evolution_trial",
+          "value": {
+            "ok": true,
+            "phase": "trial"
+          }
+        },
+        {
+          "name": "evolution_measure",
+          "value": {
+            "ok": true,
+            "phase": "measured",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_promote",
+          "value": {
+            "ok": false,
+            "phase": "awaiting-owner-confirmation",
+            "gates": {
+              "realBenefit": true,
+              "measuredEvidence": true,
+              "repeatable": true,
+              "regressionTest": true,
+              "reversible": true,
+              "cleanupEvidence": true,
+              "noOrphans": true,
+              "runtimeRecovered": false,
+              "eligible": true
+            }
+          }
+        },
+        {
+          "name": "evolution_revert",
+          "value": {
+            "ok": true,
+            "phase": "reverted",
+            "runtimeRecovered": true
+          }
+        }
+      ],
+      "final": {
+        "kind": "final",
+        "experiments": [
+          {
+            "state": "reverted",
+            "targetsAcquired": false
+          }
+        ],
+        "owners": 0
+      },
+      "observationCorrect": true,
+      "success": true,
+      "answer": "All steps executed; no production mutation occurred.\n\n**Summary (experiment `exp-mvzvg4a5-1-0887750d`):**\n\n1. **Runtime inspected** — Cordis runtime healthy; baseline captured (no `latency-probe` component, no `benchmark/latency` listener).\n2. **Proposed** — target `latency-probe`, low risk, impact scope `event-listener`/`benchmark/latency`. Experience recall flagged a prior failed approach for `latency-probe` (3 failures, `tool tool failure fixture latency`); proceeding with new evidence as required.\n3. **Trialled** — Host package `probe-2` activated; `latency-probe` component registered a `ctx.on(\"benchmark/latency\")` listener. Trial ran.\n4. **Measured** — supplied synthetic evidence: latency 100→80 ms, 30 samples, window `fixture-window-1`, problem solved, no side effects/orphans, repeatable, regression passed, reversible. Gates: `eligible: true` (all promotion gates green except `runtimeRecovered` pending revert).\n5. **Promotion requested without owner confirmation** (`confirmation: false`) — returned `phase: awaiting-owner-confirmation`, reason `explicit_user_confirmation_required_for_production_promotion`. **No production change.** Gates all green; eligible for promotion.\n6. **Reverted** — temporary plugin stopped and removed; `runtimeRecovered: true`; runtime signature returned to baseline (no `latency-probe` component/listener, no dynamic plugins). Archive written.\n\n**What still needs approval:** explicit owner confirmation (`confirmation: true`) on `evolution_promote` for `exp-mvzvg4a5-1-0887750d`. Only then would it write a durable Plugin row + archive pointer and enter canary observation; stable commit requires deterministic startup/health/dependency/metric barriers. Production was not changed."
+    }
+  ],
+  "pairs": [
+    {
+      "phase": "aa",
+      "scenario": "approval",
+      "round": 1,
+      "a": 67257,
+      "b": 68178,
+      "inputReduction": -0.013693741915339668,
+      "firstPromptReductionTokens": 0,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "aa",
+      "scenario": "approval",
+      "round": 2,
+      "a": 65010,
+      "b": 67858,
+      "inputReduction": -0.04380864482387325,
+      "firstPromptReductionTokens": 0,
+      "aSuccess": true,
+      "bSuccess": false
+    },
+    {
+      "phase": "ab",
+      "scenario": "approval",
+      "round": 1,
+      "a": 66845,
+      "b": 64559,
+      "inputReduction": 0.034198518961777245,
+      "firstPromptReductionTokens": 177,
+      "aSuccess": true,
+      "bSuccess": true
+    },
+    {
+      "phase": "ab",
+      "scenario": "approval",
+      "round": 2,
+      "a": 68736,
+      "b": 64967,
+      "inputReduction": 0.05483298417132216,
+      "firstPromptReductionTokens": 177,
+      "aSuccess": true,
+      "bSuccess": true
+    }
+  ]
+}
