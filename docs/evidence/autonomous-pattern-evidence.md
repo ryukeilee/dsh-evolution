@@ -37,6 +37,14 @@ observations = this.domainStorage.autonomousObservations().filter(row => row.pat
 只算一次；行按 `at` 升序返回，因为任一半都可能缺对方有的一段。当前这次发生也显式放进并集：端口若回答
 了过期尾部，本次调用也不会丢掉自己的事件。
 
+本 session 的那一半在持久提交**之后**读取，不是之前。`agent/error` 与 `tools/result` 是两个独立监听器，
+没有任何东西串行化它们：一个调用在等自己的持久写入时，另一次发生已经提交并更新了窗口。在 `await` 之前
+取快照正好会漏掉那一次——即使两半的并集本身正确，计数仍会少 1，已经达到阈值的假设仍会被报成
+`pattern-observing`。放在提交之后读取不需要新锁：窗口在本调用恢复之前就已写好，两半又按
+`observationId` 去重。独立审核用官方存储在“不等待地交错提交第二次发生、240 条无关观测、第三次发生”的
+顺序上复现了它（旧代码返回 `occurrences: 2`），回归用例为 `an occurrence committed while another call is
+waiting is not lost`。
+
 未改动：每个模式仍只保留窗口内最近 `patternThreshold` 行（`this.patterns` 的内存占用不变，仍受
 `AUTONOMOUS_PATTERN_CAP` 的模式数上限约束）；跨重启仍以存储保留的最近 200 个观测为界；观测仍然先提交
 再计数；读取次数不变；没有新增持久 schema、定时器、后台读取或额外提交。阈值、策略选择、风险分级、
@@ -57,11 +65,12 @@ node --max-old-space-size=4096 --test test/autonomous-pattern-evidence.test.mjs
 
 | 代码 | 结果 |
 | --- | --- |
-| `47fee8e`（改动前） | 4 项中 2 项失败：阈值用例与过期尾部用例都是 `actual: 'pattern-observing'` 而非 `'candidate-awaiting-confirmation'` |
-| 本分支 | 4 项全部通过 |
+| `47fee8e`（改动前） | 5 项中 3 项失败：阈值用例、交错用例与过期尾部用例都是 `actual: 'pattern-observing'` 而非 `'candidate-awaiting-confirmation'` |
+| 本分支 | 5 项全部通过 |
 
 两项通过的是“同一次发生在两半里只算一次”和“重启后仍由存储那一半回答”，即并集没有引入重复计数，
-跨重启语义没有变化。
+跨重启语义没有变化。交错用例的差分是在**只修了并集、未修读取顺序**的中间实现上单独确认的：那一版
+5 项中 1 项（交错用例）失败，其余通过；两处一起修之后 5/5 通过。
 
 阈值用例的场景是真实 session 的形状：同一故障观测两次 → 120 个不同模式各观测两次（240 行，越过 200
 行尾部，同时仍在 200 个模式的上限内）→ 第三次观测同一故障。改动前 `autonomousObservations()` 里这个
@@ -73,8 +82,8 @@ node --max-old-space-size=4096 --test test/autonomous-pattern-evidence.test.mjs
 
 | 检查 | 结果 |
 | --- | --- |
-| `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 1373 项中 1372 通过，唯一失败是提交前的 `release-pin`（工作树未提交）；提交后该文件 10/10 通过 |
-| 聚焦套件（新用例 + 4 个既有自主套件 + 观测/失败记忆/质量整合） | 90/90 通过 |
+| `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 1374 项中 1373 通过，唯一失败是提交前的 `release-pin`（工作树未提交）；提交后该文件 10/10 通过 |
+| 聚焦套件（新用例 + 4 个既有自主套件 + 观测/失败记忆/质量整合） | 91/91 通过 |
 | `npm run pack:check` | 16 项通过，判定为固定点的已提交后继 |
 | 三宿主真实安装验收 | 每宿主 21/21 步通过（证据见下） |
 
