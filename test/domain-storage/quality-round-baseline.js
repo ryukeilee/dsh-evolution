@@ -8,6 +8,7 @@
 // older trees by reversing rounds newest-first, so this hunk has to run before
 // the first of them, or their anchors and pins no longer describe history.
 import assert from 'node:assert/strict';
+import { reverseAutonomousRound } from './autonomous-round-baseline.js';
 
 const HUNKS = [
   {
@@ -31,6 +32,7 @@ const HUNKS = [
  * still matches the fix exactly once.
  */
 export function reverseQualityRound(file, source) {
+  source = reverseAutonomousRound(file, source);
   if (file !== "lib/dockyard-domain/memory.js") return source;
   for (const { post, pre } of HUNKS) {
     assert.equal(source.split(post).length - 1, 1, `${file}: quality-round reversal anchor must occur exactly once`);

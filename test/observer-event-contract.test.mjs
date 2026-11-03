@@ -93,7 +93,8 @@ test('a throwing tools/result domain write is contained, redacted, and still sho
   const { core, listeners } = fixture({ mode: 'autonomous', domainStorage });
   core.ctx.logger.warn = (warning) => warnings.push(warning);
   const observed = [];
-  core.observeAutonomous = async () => { observed.push(1); };
+  const observe = core.observeAutonomous.bind(core);
+  core.observeAutonomous = async (...args) => { await observe(...args); observed.push(1); };
   const exec = { agent: { id: 'a' }, name: 'bash', callId: 'c-store' };
   const result = frozenToolResult();
   assert.equal(listeners.get('tools/result')(exec, result), undefined);

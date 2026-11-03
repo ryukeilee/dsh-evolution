@@ -92,7 +92,7 @@ Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 i
 - **已经测出证据的候选不会被重复实验。** 观察者在 `measured` 且门禁通过后返回 `candidate-awaiting-confirmation` 并把实验留在原地；同一假设再次被观测到时返回同一个 `experimentId`（`reason: already-measured-awaiting-owner`），不会启动第二个 Trial，也不会再去争抢它自己已持有的 target claim。只有 revert / promote / 门禁否决把记录移出 `measured` 后，新的一次尝试才合法。
 - **环境失败不写持久判定。** target claim 冲突、claim 不可读（权限错误或半写入残件）、操作忙、权限或资源错误，以及实验尚未建立之前发生的失败，只在本 session 内抑制对应假设（`phase: experiment-deferred`、`reason: transient-failure`），不写入失败记忆；否则一次并发冲突就会永久否掉一个可能有效的策略。
 - **未证实的清理会被后续观测重试。** 每次符合条件的观测在做出任何决定之前，先用同一个 `revert` 重试上一轮未能证实的自主清理（同一份已捕获基线、同一套官方 disposer、只有证明通过才释放 claim），因此暂时性 disposer 故障消失后运行时能被重新释放，而不是等到重启；重试由观测触发并按 `cleanupRecoveryCooldownMs` 间隔，不会重跑已经抑制的策略，也不会为同一假设启动第二个 Trial。持续失败、运行时漂移或所有权不匹配时保持 claim、基线与记录，响应里的 `cleanupRecovery`（`unproven` / `cooling-down`）会指出剩余手段是显式的 `evolution_revert`。
-- **跨 session 的边界。** 失败记忆按假设持久化，重启后同一未改动声明不会再跑第二次实验。但 `measured` 候选只是本进程的运行时事实：它的 Cordis Trial 随进程结束消失，也无法在另一进程里晋升，所以新 session 会为同一假设重新建立一次 Trial，而不是复用旧证据。并发观测同一假设时只有一个进程内 claim，其余返回 `observing`。
+- **跨 session 的边界。** 官方领域存储保留版本化故障身份和发生样本，重开后从最近 200 个观测恢复精确匹配的累计；没有该身份的旧记录不参与推测。同一假设在 Trial 前持久占位；重启后返回 `prior-decision-requires-owner`，不会重复建立 Trial，也不把旧候选当作可晋升证据。`measured` 的 Cordis Trial 是本进程的运行时事实，不能在另一进程里晋升。占位与当前抑制表同样保留最近 200 项；同进程已证实的 revert 或已干净丢弃的环境冲突会释放占位，已记录的策略失败仍由失败记忆拦住。并发观测同一假设时只有一个进程内 claim，其余返回 `observing`。
 - `mode`（默认 `advisory`；可用 `manual` / `advisory` / `autonomous`）和 `unattended`（默认 `false`）会记录在策略报告中，但**不是自主观察者的前置开关**。
 - 任何模式都不能绕过晋升门禁或所有者确认；Trial 不直接改写生产 composition。
 
