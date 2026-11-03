@@ -110,12 +110,14 @@ node --max-old-space-size=4096 --test test/autonomous-pattern-evidence.test.mjs
 - **模式表上限仍是 200 个模式。** 超过 200 个不同模式时 `pruneAutonomousPatterns` 会淘汰最老的窗口
   （既有行为，注释里写明“淘汰只意味着该模式重新计数”）。我用 210 个不同模式复现过：那种情况下并集
   同样救不回被淘汰的窗口。本轮没有改动这个上限，因为它同时是内存上界。
-- **另一个已知的自治循环限制，本轮未改。** 运行时被其它实验占用时的失败（`E_EVOLUTION_RUNTIME_BUSY`、
-  target claim 冲突、操作忙等）会 `suppressForSession` 该假设：一次环境类冲突之后，这个假设在本
-  session 内不再被尝试，后续观测报 `suppressed` / `reason: "duplicate-failure"`，即使占用它的
-  `measured` 候选随后被所有者 revert、运行时已经空出来。复现：同一 session 里让两个低风险模式都达到
-  阈值，第一个到 `measured` 后 `revert` 它，第二个模式的后续观测仍是 `suppressed`。这是 README
-  明确写下的策略（“环境失败不写持久判定，只在本 session 内抑制对应假设”），改动它属于放宽既有抑制
-  策略，需要单独的取舍与验证，因此本轮只如实记录，不做。
+- **另一个已知的自治循环限制：本轮未改，但已由后续一轮修复。** 运行时被其它实验占用时的失败
+  （`E_EVOLUTION_RUNTIME_BUSY`、target claim 冲突、操作忙等）曾会 `suppressForSession` 该假设：一次
+  环境类冲突之后，这个假设在本 session 内不再被尝试，后续观测报 `suppressed` /
+  `reason: "duplicate-failure"`，即使占用它的 `measured` 候选随后被所有者 revert、运行时已经空出来
+  （复现：同一 session 里让两个低风险模式都达到阈值，第一个到 `measured` 后 `revert` 它，第二个模式
+  的后续观测仍是 `suppressed`）。改动它要放宽既有 session 抑制策略，属于单独的取舍与验证，所以本文件
+  只如实记录当时的边界，不包含这项修复。它已由 `docs/evidence/autonomous-transient-retry.md` 那一轮
+  处理：环境类失败改走 `deferForSession`，按 `transientRetryCooldownMs` 推迟同一假设并在冷却后重试。
+  该文件描述的是**并集改动单独在树的那个时点**的行为，当前树的 session 抑制语义以那一轮为准。
 - 本轮没有改 trial/teardown、跨进程锁、CAS、journal、canary 或启动恢复，所以没有为它们另写宿主机
   探针；三宿主 21 步验收（含 `core-flow` 与 `promotion-restart-and-rollback`）已覆盖这些路径的回归。
