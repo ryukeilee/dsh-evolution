@@ -15,6 +15,27 @@ unchanged as the history of that candidate line.
 
 ### 修复
 
+- **同一个根因的工具失败不再因为返回内容变化而被拆成不同模式。** `tools/result` 观测用
+  `sha256(JSON.stringify(result))` 作为模式身份，而官方 registry 发布的结果包含渲染出的
+  `content` 与失败文本本身（`dsh-tools` 的 `toolErrorResult()` 把同一条消息同时写进
+  `error.message` 和 `content[0].text`），于是**每一个实例都是一个新模式**。用真实官方 registry
+  （`dsh-tools` 的 `prepare`/`dispatch`/`finalize`/`finish`，即 `dsh-agent-loop` 的四次调用）
+  与真实官方领域存储复现：同一个缺失的 build 目录让 `read` 失败三次、每次只是文件名不同，
+  得到三个模式、每个 `occurrences: 1`，永远到不了 `patternThreshold`，候选、隔离 Trial 与测量
+  整条链根本不会为该故障启动。改动前后同一份 fixture 的输出分别是
+  `4ff913948cc7 / 0a3a0ba94941 / 215411423385`（三个模式，`candidates: []`）与
+  `727e3f7957a5 × 3`（一个模式，`candidate-awaiting-confirmation`）。现在模式身份是宿主发布的
+  失败文本的**形状**（`toolFailurePatternDigest`）：文件系统路径（`/…`、`~/…`、`X:\…`）、数字
+  与带标签的耗时（含官方的 `after 120000ms` 写法）是值并被替换，其余文本是结构并原样参与身份，
+  渲染内容、`meta` 与 `additionalContexts` 不再参与；整份结果字节仍以 `errorDigest` 作为精确
+  证据保留，重放与去重仍按 `observationId`。这不放宽风险分级、门禁与所有者确认：`medium` 仍停在
+  `candidate-awaiting-confirmation`，`low` + `autonomousPolicy.low === "experiment"` 仍只启动一个
+  隔离 Trial 并停在等待确认。合并方向被两侧钉住：`ENOENT` 与 `EACCES`、同一工具对两个不同参数的
+  模式校验拒绝（`"value.command"` 与 `"value.timeoutMs"`，两者码同为 `INVALID_ARGS`）、以及不同
+  工具仍然各是独立模式，不因共享工具名与错误码而合并。兼容边界：`agent/error` 的身份逐字不变；
+  `tools/result` 的旧记录携带「整份结果字节」的旧身份，无法从新身份重建，因此不参与计数（该模式
+  从 1 重新累计），旧失败记忆仍按可重建的旧身份做一次只读精确匹配（`test/autonomous-tool-failure-identity.test.mjs`
+  钉住重启、并发、重放与该匹配）。
 - **故障模式的证据窗口不再被无关故障挤出。** 自主观测要看到同一故障达到 `patternThreshold` 才会启动隔离
   Trial，而计数只来源于 `autonomousObservations()`：一份**整张观测集合**最近 200 行的尾部，每一行都是一次
   失败的工具调用或 provider 错误（无论属于哪个模式）。`observeAutonomous` 用这份尾部**替代**了本 session
