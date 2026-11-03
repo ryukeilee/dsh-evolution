@@ -61,7 +61,7 @@ const low = { risk: 'low', target: 'plugin:fix', idPrefix: 'durable',
   composition: { name: 'durable-fix', purpose: 'fix', code: { host: 'return {};' } }, observation: improved };
 const options = { autonomousStrategies: { AGENT_ERROR: low } };
 
-test('official storage: concurrent threshold events run once; restart holds prior decision without promotion authority', async t => {
+test('official storage: concurrent threshold events run once; a restart re-arms the decision without promotion authority', async t => {
   const session = await fixture(t);
   let s = await session(options);
   await s.error(); await s.error();
@@ -69,14 +69,22 @@ test('official storage: concurrent threshold events run once; restart holds prio
   assert.equal(s.core.experiments.size, 1);
   assert.ok(outcomes.some(row => row.phase === 'candidate-awaiting-confirmation'));
   assert.equal([...s.core.experiments.values()][0].state, 'measured');
+  const interrupted = [...s.core.experiments.keys()][0];
   await s.close();
   s = await session(options);
   try {
+    // The interrupted Trial did not survive the restart, so its reservation is
+    // released instead of retiring the hypothesis. This "restart" reuses the
+    // process, so the previous session's target claim is still live here and the
+    // Trial is deferred with a transient reason - the full re-arm to a measured
+    // candidate needs a real process boundary and is pinned in
+    // `test/autonomous-decision-recovery.test.mjs`.
     const result = await s.error();
-    assert.equal(result.reason, 'prior-decision-requires-owner');
+    assert.equal(result.decisionRecovery.reason, 'previous-session-decision');
     assert.equal(result.automatic, false);
-    assert.equal(result.gates, undefined);
+    assert.equal(result.reason, 'transient-failure');
     assert.equal(s.core.experiments.size, 0);
+    assert.deepEqual(s.core.memory.data.entries, [], 'an environment failure learns nothing about the hypothesis');
   } finally { await s.close(); }
 });
 
@@ -111,7 +119,7 @@ test('an observation commit failure refuses the decision and leaves no counted i
   finally { await next.close(); }
 });
 
-test('a reservation surviving interruption blocks a second Trial; changed strategy remains independent', async t => {
+test('a reservation surviving interruption is released and retaken; changed strategy remains independent', async t => {
   const session = await fixture(t);
   let s = await session(options);
   await s.error(); await s.error();
@@ -122,8 +130,15 @@ test('a reservation surviving interruption blocks a second Trial; changed strate
   await s.close();
   s = await session(options);
   try {
-    assert.equal((await s.error()).reason, 'prior-decision-requires-owner');
-    assert.equal(s.core.experiments.size, 0);
+    // The reservation is durable, but the Trial it described is not: this session
+    // inherits it, releases it, and takes it for the Trial it runs itself. The
+    // decision stays exactly one per hypothesis, so a changed declaration is
+    // still the only way to run a second one.
+    const result = await s.error();
+    assert.equal(result.phase, 'candidate-awaiting-confirmation');
+    assert.equal(result.decisionRecovery.reason, 'previous-session-decision');
+    assert.equal(s.core.experiments.size, 1);
+    assert.equal(await s.port.reserveAutonomousDecision(identity), false, 'the identity is held by this session now');
     assert.equal(await s.port.reserveAutonomousDecision(`${key}:${s.core.strategyFingerprint({ ...low, target: 'plugin:other' })}`), true);
   } finally { await s.close(); }
 });
@@ -227,7 +242,7 @@ test('official listener/storage: elapsed variants kept distinct from a different
 const unimproved = { ...improved, solvesProblem: false, performanceChange: 'unchanged', errorChange: 'unchanged',
   metrics: {}, beforeMetrics: {}, afterMetrics: {}, benefitEvidence: 'no measurable improvement', repeatable: false };
 
-test('official storage: a held low-risk decision is not re-trialed by a later elapsed variant', async (t) => {
+test('official storage: a held low-risk decision is re-armed by a later session instead of being retired', async (t) => {
   const session = await fixture(t);
   let s = await session(options);
   await s.error('provider unavailable after 100 ms');
@@ -236,13 +251,20 @@ test('official storage: a held low-risk decision is not re-trialed by a later el
   assert.equal(candidate.phase, 'candidate-awaiting-confirmation');
   assert.equal(s.core.experiments.size, 1);
   assert.equal([...s.core.experiments.values()][0].state, 'measured');
+  const interrupted = [...s.core.experiments.keys()][0];
   await s.close();
   s = await session(options);
   try {
+    // Same elapsed-time identity, so this is the same hypothesis. Its candidate
+    // did not survive the restart, which is why the reservation it left behind is
+    // released: the owner could never have confirmed a Trial that is gone. The
+    // re-armed Trial needs a real process boundary (the previous session's claim
+    // is still live here); `test/autonomous-decision-recovery.test.mjs` pins it.
     const result = await s.error('provider unavailable after 400 ms');
-    assert.equal(result.reason, 'prior-decision-requires-owner');
+    assert.equal(result.decisionRecovery.reason, 'previous-session-decision');
     assert.equal(result.automatic, false);
-    assert.equal(s.core.experiments.size, 0, 'the same hypothesis is not trialed twice');
+    assert.notEqual(result.phase, 'rolled-back-no-improvement', 'nothing is learned against the hypothesis');
+    assert.deepEqual(s.core.memory.data.entries, []);
   } finally { await s.close(); }
 });
 
