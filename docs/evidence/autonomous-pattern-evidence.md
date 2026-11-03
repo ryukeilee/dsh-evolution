@@ -87,10 +87,12 @@ node --max-old-space-size=4096 --test test/autonomous-pattern-evidence.test.mjs
 | `npm run pack:check` | 16 项通过，判定为固定点的已提交后继 |
 | 三宿主真实安装验收 | 每宿主 21/21 步通过（证据见下） |
 
-本地产物 `dist/pattern-evidence/dsh-evolution-0.2.0.tgz`：sha256
-`0cc7adadd9ec2828c6001130e8169ed4b9b789a1a045dfd59c40912cf3b69d16`，内容摘要
-`dc9c90a5269fdcb039bb802213252db283089978093d496b98e01143f0fcc120`（51 个条目）。三宿主使用
-同一份产物、隔离 runtime/home **串行**验收（避开历史上 alpha `lifecycle-disable` 的抖动）：
+本地产物 `dist/pattern-evidence-r2/dsh-evolution-0.2.0.tgz`：sha256
+`ef324ade252640e150bbcb69601248955da74dce3660d9a1fefb7f6c7e67c9cd`，内容摘要
+`1ce141ffc48db247eb63f15de7850a5b3741806a2335172c6ba4ec88f4196b88`（51 个条目）。三宿主使用
+同一份产物、隔离 runtime/home **串行**验收（避开历史上 alpha `lifecycle-disable` 的抖动）。产物是在
+交错顺序修复**之后**重新打包的，所以验收证据描述的是最终分发内容（`lib/orchestrator.js` 的改动会
+改变 `contentSha256`）：
 
 | 宿主 | 结果 | 证据 |
 | --- | --- | --- |
