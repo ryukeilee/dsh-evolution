@@ -27,7 +27,11 @@ unchanged as the history of that candidate line.
   `727e3f7957a5 × 3`（一个模式，`candidate-awaiting-confirmation`）。现在模式身份是宿主发布的
   失败文本的**形状**（`toolFailurePatternDigest`）：文件系统路径（`/…`、`~/…`、`X:\…`）、数字
   与带标签的耗时（含官方的 `after 120000ms` 写法）是值并被替换，其余文本是结构并原样参与身份，
-  渲染内容、`meta` 与 `additionalContexts` 不再参与；整份结果字节仍以 `errorDigest` 作为精确
+  渲染内容、`meta` 与 `additionalContexts` 不再参与；带引号的路径是**被定界的值**，一直取到收尾引号，所以名字里带空格或方括号的目录不会在定界符处被截断
+  （`'/repo/build cache/a.json'` 与 `'/repo/[cache]/b.json'` 仍是同一个值），未被定界的路径则在第一个空格处
+  结束——无引号的 `/a b/c` 与「路径加两个词」无法区分，在那里猜测会合并本该分开的故障；超过脱敏上界
+  （64 KiB）的文本不做投影（它会被整体替换成一个占位符，投影后所有超长故障形状相同），此时沿用整份
+  结果字节的精确身份，宁可不累计也不合并不同根因；整份结果字节仍以 `errorDigest` 作为精确
   证据保留，重放与去重仍按 `observationId`。这不放宽风险分级、门禁与所有者确认：`medium` 仍停在
   `candidate-awaiting-confirmation`，`low` + `autonomousPolicy.low === "experiment"` 仍只启动一个
   隔离 Trial 并停在等待确认。合并方向被两侧钉住：`ENOENT` 与 `EACCES`、同一工具对两个不同参数的

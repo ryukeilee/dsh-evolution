@@ -51,7 +51,7 @@ import { ToolRuntime, TOOL_RUNTIME_SCHEDULER, ToolArgsError, defineTool } from '
 import { DomainFacility } from '@deepseek-ai/dsh-storage-domain';
 import { JsonStorageBackend } from '@deepseek-ai/dsh-storage-json';
 import { openDomainStorage } from '../lib/domain-storage.js';
-import { safeErrorDto } from '../lib/orchestrator.js';
+import { safeErrorDto, toolFailurePatternDigest } from '../lib/orchestrator.js';
 import { context } from './fixtures/runtime-inspect.mjs';
 import { apply } from '../lib/registration.js';
 
@@ -318,6 +318,58 @@ test('a different tool keeps its own pattern, and a labelled duration is a value
   } finally { await s.close(); }
 });
 
+test('a quoted directory whose name contains a space or a bracket is one value', async (t) => {
+  const session = await fixture(t, { config: { autonomousStrategies: { TOOL_READ: medium } } });
+  const s = await session();
+  try {
+    // A delimited subject runs to its closing quote. Without that, the value ends
+    // at the first space or bracket, the tail of the path stays in the identity,
+    // and a project living under `build cache/` or a bracketed cache directory
+    // splits its own root cause again - the defect this identity exists to fix,
+    // one delimiter further in.
+    const spaced = await s.read('/repo/build cache/a.json');
+    const spacedAgain = await s.read('/repo/build cache/b.json');
+    const bracketed = await s.read('/repo/[cache]/c.json');
+    assert.equal(spacedAgain.patternKey, spaced.patternKey);
+    assert.equal(bracketed.patternKey, spaced.patternKey, 'the bracket is inside the same delimited subject');
+    assert.equal(bracketed.phase, 'candidate-awaiting-confirmation');
+    assert.equal(bracketed.candidate.observationIds.length, 3);
+
+    // A double-quoted subject is delimited the same way, and the *kind* of
+    // failure is still structure: a denied access on the same path is its own
+    // pattern.
+    const doubled = await s.read('/repo/build cache/d.json', 'EACCES: permission denied, open "/repo/build cache/d.json"');
+    assert.notEqual(doubled.patternKey, spaced.patternKey);
+    assert.equal(doubled.occurrences, 1);
+  } finally { await s.close(); }
+});
+
+test('an over-long failure text is not projected, so unrelated causes never accumulate together', async (t) => {
+  const session = await fixture(t, { config: { autonomousStrategies: { TOOL_READ: medium } } });
+  const s = await session();
+  try {
+    // The credential boundary replaces text above 64 KiB with one marker, so a
+    // projection over that text would give every over-long failure of one tool
+    // the same shape. Three unrelated causes would then reach `patternThreshold`
+    // together and select a strategy for a "pattern" nobody observed.
+    const long = (kind) => `${kind}: ${'detail '.repeat(10000)}`;
+    const syntax = await s.failAs('read', long('Syntax error'));
+    const denied = await s.failAs('read', long('Permission denied'));
+    const disk = await s.failAs('read', long('Disk full'));
+    assert.notEqual(denied.patternKey, syntax.patternKey);
+    assert.notEqual(disk.patternKey, syntax.patternKey);
+    assert.equal(syntax.occurrences, 1);
+    assert.equal(denied.occurrences, 1);
+    assert.equal(s.core.candidates.size, 0, 'three unrelated over-long failures are not one pattern');
+    // The identity falls back to the exact result bytes there, which is the
+    // conservative side of the trade: an unrelated cause is never merged in.
+    const syntaxAgain = await s.failAs('read', long('Syntax error'));
+    assert.equal(syntaxAgain.patternKey, syntax.patternKey);
+    assert.equal(syntaxAgain.occurrences, 2);
+    assert.equal(s.core.candidates.size, 0);
+  } finally { await s.close(); }
+});
+
 // ---------------------------------------------------------------------------
 // Continuity: restart, concurrency, duplicates, and the durable verdict
 // ---------------------------------------------------------------------------
@@ -419,4 +471,14 @@ test('a failure recorded before this projection existed still suppresses its hyp
     assert.notEqual(row.patternKey, legacyPatternKey, 'the new identity is not the old one');
     assert.equal(s.core.experiments.size, 0);
   } finally { await s.close(); }
+});
+
+test('the projection is bounded: it refuses text it would have to withhold', () => {
+  const result = (text) => ({ isError: true, error: { message: text }, content: [{ type: 'text', text }] });
+  // `REDACTION_TEXT_BOUND` (64 KiB) is the one bound both boundaries share: at or
+  // below it the text is scanned and projected, above it the host's message is
+  // withheld as a marker and the identity falls back to the exact result bytes.
+  assert.match(toolFailurePatternDigest(result('x'.repeat(64 * 1024))), /^sha256:[0-9a-f]{16}$/);
+  assert.equal(toolFailurePatternDigest(result('x'.repeat(64 * 1024 + 1))), null);
+  assert.equal(toolFailurePatternDigest({ isError: true }), null, 'no failure text means no shape');
 });
