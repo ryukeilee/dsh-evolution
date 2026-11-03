@@ -120,6 +120,30 @@ test('an occurrence both halves know about is counted once', async (t) => {
   } finally { await s.close(); }
 });
 
+test('an occurrence committed while another call is waiting is not lost', async (t) => {
+  const session = await fixture(t);
+  const s = await session();
+  try {
+    assert.equal((await s.rare()).occurrences, 1);
+    // Nothing serializes the two observers, so these calls overlap for real: the
+    // second occurrence and the churn are started without waiting, and the third
+    // one starts its durable commit while the second is still waiting for its own.
+    // The session half therefore has to be read after the commit: a snapshot taken
+    // before it misses the occurrence that the waiting call stored in between, and
+    // the count comes out one short although every occurrence was recorded.
+    const pending = [s.rare()];
+    for (let index = 0; index < NOISE_PATTERNS; index += 1) {
+      for (let repeat = 0; repeat < NOISE_REPEATS; repeat += 1) pending.push(s.noise(index));
+    }
+    pending.push(s.rare());
+    const results = await Promise.all(pending);
+    const third = results.at(-1);
+    assert.equal(third.phase, 'candidate-awaiting-confirmation', 'the threshold is reached although the calls overlapped');
+    assert.equal(third.candidate.observationIds.length, THRESHOLD);
+    assert.equal(new Set(third.candidate.observationIds).size, THRESHOLD, 'no occurrence was counted twice either');
+  } finally { await s.close(); }
+});
+
 test('a port that answers a stale tail does not drop the occurrence being observed', async (t) => {
   const session = await fixture(t);
   const s = await session();
