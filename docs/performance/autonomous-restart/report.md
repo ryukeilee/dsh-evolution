@@ -27,3 +27,13 @@ node --max-old-space-size=4096 --test test/autonomous-durable-observations.test.
 证据窗口限于最近 200 个观测；更久的发生不保证用于当前阈值。低风险决策按模式和策略声明指纹持久占位，沿用 200 项上限。中断后的占位只阻止重复 Trial，返回需所有者处理，不重建旧 plugin/owner/基线，也不提供晋升证据；此变更没有添加重启后继续操作旧 Trial 的协议。原有确认、风险、回滚、失败学习门禁仍是权威。
 
 回归覆盖：相同故障与不同根因、并发阈值、等待确认、重启去重、旧记录、同 ID 重放、提交前故障、占位中断恢复及策略身份隔离。真实宿主完整安装/生命周期验收记录位于 `docs/evidence/autonomous-restart-*.json`，只有报告实际生成并通过时才算验证通过。
+
+## 最终验证
+
+实现提交 `abd1976`：带 4096 MiB 堆上限的全量测试 1353/1353，通过；`npm run pack:check` 16 项通过（开发后继语义，不是发布固定点）。独立审核两轮通过，记录见 `review.md`。
+
+最终本地产物 SHA-256 为 `f5f069fd956920e5e4ba7ad7fb71a94dc9d21b3f0b5a6c37970424f0d05fde22`，内容摘要为 `1f295ac874e8b6dd67c33512a1fd25304b80fa62dc9abfcd844aee514c51bdcf`。三宿主 `0.2.0-rc.2 / 0.2.1-alpha.1 / 0.2.1-rc.2` 的最终验收均通过，每宿主 21 个步骤，使用隔离 runtime/home。
+
+其中 alpha 在同时运行全量测试与三宿主验收时曾失败于既有 `lifecycle-disable` 探针：宿主回执 `restart-required` 与读取到的即时 live 状态不一致。原始失败记录保存在 `docs/evidence/autonomous-restart-0.2.1-alpha.1-failed.json`；其他负载结束后，在代码、产物和探针不变的情况下单独重试通过。未确定该不一致的根因，不能把单次重试通过解释为已修复此宿主生命周期问题。
+
+`verify-artifact --content-only` 与已固定的旧发布包比较会拒绝内容不一致，这与本次改变分发源码一致；没有更新 `release/`，没有发布新版本。
