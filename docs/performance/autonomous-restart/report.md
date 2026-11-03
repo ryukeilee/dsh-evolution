@@ -69,3 +69,19 @@ node --max-old-space-size=4096 --test test/autonomous-durable-observations.test.
 边界：含 `after N ms` 的旧记录携带带耗时的旧身份，无法从新身份重建，因此升级后不参与计数（该模式从 1
 重新累计），不做猜测性合并；旧失败记忆条目另按可重建的旧身份做一次只读精确匹配，不重写。只识别
 `after <整数> ms` 这一种标签且区分大小写，其它耗时写法不归一化（保守方向：不合并而不是错合并）。
+
+### 本轮的最终验证
+
+实现提交 `b18ff05` + `b1d71b2`（文档 `9d1666d`）：带 4096 MiB 堆上限的全量测试 1366/1366 通过；
+`npm run pack:check` 16 项通过（开发后继语义，不是发布固定点）。独立审核 1 轮通过（GPT-6.1 Sol，
+Xhigh，无 blocker / should）。
+
+本地产物 `dist/elapsed-identity/dsh-evolution-0.2.0.tgz` 的 SHA-256 为
+`4bc6e670e9eaaf9761f24b88a984db9b38c475f914c19f8f3e6a5abb8a0e62d8`，内容摘要为
+`3f5d9f77131dfd740f1baa9050dee78d9244ce0ef1c57125504f0d094548e05b`（51 个条目）。三宿主
+`0.2.0-rc.2 / 0.2.1-alpha.1 / 0.2.1-rc.2` 使用同一份产物、隔离 runtime/home 串行验收，各自 21 个步骤
+全部通过，证据为 `docs/evidence/elapsed-identity-<host>.json`。串行执行（不在验收同时跑全量测试）
+是为了避开上面记录过的 alpha `lifecycle-disable` 抖动；本轮三次验收首次即通过，没有复现该不一致，
+但这不等于已定位它的根因。
+
+没有更新 `release/` 固定点，也没有发布新版本。
