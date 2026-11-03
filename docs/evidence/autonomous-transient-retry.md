@@ -74,10 +74,11 @@ experiments: [ 'exp-...:reverted', 'exp-...:measured' ]
   test/autonomous-continuity.test.mjs test/autonomous-cleanup-recovery.test.mjs
   test/autonomous-durable-observations.test.mjs` → 52 pass。
 - 相关集合：`node --max-old-space-size=4096 --test test/autonomous-*.test.mjs
-  test/quality-consolidation-trial.test.mjs test/revert-unproven-cleanup-retry.test.mjs` → 84 pass。
-- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` → 1386 项，1385 pass；唯一失败是提交前的
-  `test/release-pin.test.mjs`（“工作树带有未提交的分发改动”），提交后同一命令全绿。
-- 打包：`npm run pack:check` → 提交后 16/16 通过（`--release` 语义未跑，本轮不更新 `release/` 固定点）。
+  test/quality-consolidation-trial.test.mjs test/revert-unproven-cleanup-retry.test.mjs` → 73 pass。
+- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` → 1375 项全部通过。提交前同一命令唯一的失败是
+  `test/release-pin.test.mjs`（“工作树带有未提交的分发改动”），提交后消失。
+- 打包：`npm run pack:check` → 16/16 通过（“工作树是固定点的已提交后继”）；`pack:check -- --release`
+  未跑，本轮不更新 `release/` 固定点。
 - 三宿主真实验收（同一份产物、隔离 runtime/home，串行）：
 
   | 宿主 | 结果 | 证据 |
