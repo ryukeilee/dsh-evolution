@@ -40,6 +40,20 @@ unchanged as the history of that candidate line.
   不再同时带上上一个失败留下的 `## Failure learning` 块（它声称“cleanup did not prove runtime
   recovery”）。被取代的失败仍在两处持久：已认证的事件日志（`failure-learned`）与失败记忆里那一条。
   这条矛盾在此之前也已可从「晋升门禁被拒 → 补齐证据 → revert 成功」到达。
+- **同一故障的耗时变化不再被当成新故障，跨重启的累计也不再因此归零。** `agent/error` 的脱敏摘要
+  会把所有数字换成 `#`，所以 `after 100 ms` 与 `after 200 ms` 的摘要相同；但模式身份里的 digest 是
+  原始文本的摘要，两者不同，于是它们是两个模式，各自从 1 开始，永远到不了 `patternThreshold`。
+  带持久观测窗口的重启路径同样如此：每次重启后同一故障只认到 1 次。现在 `safeErrorDto()` 在保留
+  原始摘要（`errorDigest`，仍是精确失败证据）的同时给出 `errorPatternDigest`——只把**带标签的耗时**
+  `after N ms` 归一化后的摘要；`agent/error` 观察用它作为模式身份的 digest，`patternKey` 的消息成分
+  仍是原来的「数字折叠成 `#`」。于是同一故障在不同耗时下、以及宿主重启之后（持久窗口按版本化模式
+  身份匹配）都会累计到同一个模式并触发既定决策：`low` 仍进入隔离 Trial，`medium` 仍停在等待所有者
+  确认。状态码、计数与嵌入标识符等其它数字仍是身份的一部分，脱敏后摘要相同的不同根因仍靠 digest
+  分开；失败记忆用同一个模式身份记录问题，改动声明仍是新假设、仍会被真正尝试一次。兼容边界：
+  不含 `after N ms` 的故障身份逐字不变（旧持久观测与旧失败记忆继续有效）；含该耗时的旧记录携带
+  带耗时的旧身份，无法从新身份重建，因此不参与计数（该模式从 1 重新累计），不做猜测性合并；
+  旧失败记忆条目另按可重建的旧身份做一次只读精确匹配，不重写。不传 `errorPatternDigest` 的调用方
+  （`tools/result` 观测）身份完全不变。授权、风险分级、晋升门禁与所有者确认未改动。
 
 ### 测试
 
@@ -57,6 +71,18 @@ removedOk: false, signatureRecovered: true } }`，随后的 `evolution_trial` �
 再次 revert 后恢复基线。该对照的探针已入库为 `scripts/acceptance/probes/retry-probe.mjs`（文件头写明
 在 `--keep` 保留下来的验收环境里手动跑的命令），两次运行的输出记录在
 `docs/evidence/revert-retry-20261102-real-host.json`。
+
+耗时身份与持久累计的回归分两层。`test/autonomous-continuity.test.mjs` 用注册的 `agent/error` 监听器
+驱动模式身份：耗时变化的同类故障累计到阈值且只跑一个 Trial、状态码不同不合并、脱敏后摘要相同但根因
+不同的故障仍分开、旧失败记忆按旧身份只读匹配且不被重写、不传新 digest 的调用方身份逐字不变。
+`test/autonomous-durable-observations.test.mjs` 用真实官方 `DomainFacility` + `JsonStorageBackend` 与
+隔离数据根驱动跨重启：耗时变化的同一故障经过三次观测（含一次重启）达到 `patternThreshold` 并触发候选；
+`measured` 的低风险候选不被后续耗时变体重跑（`prior-decision-requires-owner`）；失败策略的耗时变体在
+重启后仍被 `failure-memory` 拦住且持久判定不被重写；并发耗时变体只跑一个 Trial；不带 `after N ms`
+的故障身份逐字不变（旧持久观测继续计数）；带耗时的旧身份不参与计数也不合并。新增的 7 项跨重启用例中
+5 项在整合前的 main 上失败；身份兼容用例在“把 `patternKey` 的消息成分也归一化”的中间实现上失败
+（那个改法本身不是必需的：消息已经折叠了所有数字，耗时差异本来就只能由 digest 携带）。注入的观测
+提交失败仍在计数与决策之前中止。
 
 ## 0.2.0 — 首个稳定版
 

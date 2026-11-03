@@ -37,3 +37,35 @@ node --max-old-space-size=4096 --test test/autonomous-durable-observations.test.
 其中 alpha 在同时运行全量测试与三宿主验收时曾失败于既有 `lifecycle-disable` 探针：宿主回执 `restart-required` 与读取到的即时 live 状态不一致。原始失败记录保存在 `docs/evidence/autonomous-restart-0.2.1-alpha.1-failed.json`；其他负载结束后，在代码、产物和探针不变的情况下单独重试通过。未确定该不一致的根因，不能把单次重试通过解释为已修复此宿主生命周期问题。
 
 `verify-artifact --content-only` 与已固定的旧发布包比较会拒绝内容不一致，这与本次改变分发源码一致；没有更新 `release/`，没有发布新版本。
+
+## 追加：耗时身份整合（PR #18 + 本 PR）
+
+2026-11-03 追加。上面的持久窗口让同一故障跨重启累计，但模式身份里的 digest 仍是原始文本的摘要，
+所以同一故障的 `after 100 ms` 与 `after 200 ms` 是两条模式：各自从 1 开始，到不了 `patternThreshold`。
+这次把只归一化带标签耗时（`after N ms`）的 `errorPatternDigest` 接进模式身份，持久窗口因此对耗时
+变化也有效。改动只在模式身份的 digest 成分与失败记忆的问题成分：消息成分保持原来的「数字折叠成
+`#`」，这样不含 `after N ms` 的故障身份逐字不变（旧的持久观测与旧的失败记忆继续有效）。
+
+差分验证（同一台机器、同一套测试文件）：
+
+| 代码 | `test/autonomous-durable-observations.test.mjs` |
+| --- | --- |
+| 整合前 main（`35e737f`） | 15 项中 5 项失败：跨重启累计、根因隔离、`measured` 候选不重跑、失败抑制跨重启、并发变体 |
+| 本分支 | 15 项全部通过 |
+
+另有 1 项身份兼容用例（不带 `after N ms` 的旧身份继续计数）在“把消息成分也归一化”的中间实现上失败，
+在最终实现上通过：那个中间实现会让带其它数字的故障身份漂移，属于不必要的兼容损失。
+
+复现命令：
+
+```sh
+git worktree add /tmp/dsh-main-proof 35e737f
+ln -s "$PWD/node_modules" /tmp/dsh-main-proof/node_modules
+cp test/autonomous-durable-observations.test.mjs /tmp/dsh-main-proof/test/
+(cd /tmp/dsh-main-proof && node --max-old-space-size=4096 --test test/autonomous-durable-observations.test.mjs)
+node --max-old-space-size=4096 --test test/autonomous-durable-observations.test.mjs
+```
+
+边界：含 `after N ms` 的旧记录携带带耗时的旧身份，无法从新身份重建，因此升级后不参与计数（该模式从 1
+重新累计），不做猜测性合并；旧失败记忆条目另按可重建的旧身份做一次只读精确匹配，不重写。只识别
+`after <整数> ms` 这一种标签且区分大小写，其它耗时写法不归一化（保守方向：不合并而不是错合并）。
