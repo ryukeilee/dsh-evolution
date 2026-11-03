@@ -15,6 +15,23 @@ unchanged as the history of that candidate line.
 
 ### 修复
 
+- **进程结束后遗留的自主决策占位不再永久退休一个假设。** `reserveAutonomousDecision` 在 Trial 触碰
+  runner **之前** 就持久占位，而释放它的只有本进程还能证明的结果：已证实的 revert，或一次干净丢弃的
+  环境类失败。进程先结束时没有任何路径释放它——崩溃，或者一个 `measured` 候选还在等所有者确认时
+  正常退出——于是占位比它描述的 Trial 与其记录活得更久。之后的每个 session 都用
+  `prior-decision-requires-owner` 回答这个假设，而这个建议指向一个**没人能做的决定**：它指名的 Trial
+  已经随进程消失，既不可能晋升（`promote` 要求本进程内有活动记录），也没有记录可供 `revert`。占位表
+  只保留最近 200 项，所以实际上就是永久。这与 `cleanupAutonomousTrial` 与清理重试要防的是同一类
+  失效，只是那种失效还能在后续观测里被看到。现在 `openDomainStorage` 在打开端口时（replay 之后、
+  本进程还不可能占位之前）记录当时已存在的占位，`observeAutonomous` 在遇到一个不存在的决定时先问
+  这份只读快照：占位是本进程继承的、且本进程内**没有任何记录**回答该身份，就释放并重新占位，然后
+  照常建立一次隔离 Trial；响应里的 `decisionRecovery`（`reason: previous-session-decision`）如实
+  报告这次释放。释放边界是双重的：本进程自己取得的占位永远不当成遗弃，只要本进程内仍有记录回答该
+  身份（`measured` 待确认、宿主尚未批准的 Trial、未证实的清理）就不释放。晋升授权、门禁、二次确认
+  与所有所有者动作未改动：自主决策从不晋升，`promote` 仍要求本进程内有活动记录，这次释放既不能
+  创建、批准也不能回滚任何实验。它能付出的代价最多是一个假设多跑一次隔离 Trial，而那次 Trial 仍然
+  停在 `candidate-awaiting-confirmation`；同一个 session 内仍只有一个 Trial，后续观测报
+  `already-measured-awaiting-owner`。
 - **清理未证实的记录不再成为不可回收的运行时占用者。** `revert-failed` 与 `trial-cleanup-failed`
   本来就该保留目标 claim 与实验记录（运行时可能仍持有那个 Trial，AGENTS.md 不变量 3），但没有任何
   生命周期入口接受这两个状态：`revert` 要求 `trial` / `trial-awaiting-approval` / `measured`，
@@ -56,6 +73,19 @@ unchanged as the history of that candidate line.
   （`tools/result` 观测）身份完全不变。授权、风险分级、晋升门禁与所有者确认未改动。
 
 ### 测试
+
+`test/autonomous-decision-recovery.test.mjs`（3 项）用真实官方 `DomainFacility` + `JsonStorageBackend`
+与**真实进程边界**（`test/fixtures/autonomous-decision-session.mjs`，每次 session 一个新进程，所以
+上一个进程的 target claim 由 `process.kill(pid, 0)` 证明已死而不是假设已死）钉住这条边界：上一进程
+只占位不 Trial 时，下一进程会继承并释放它、重新占位、跑一次隔离 Trial 到 `measured`，响应报
+`decisionRecovery`；再下一次 session 同样重臂而不是重跑同一 session（每个 session 仍只一个 Trial，
+其余观测报 `already-measured-awaiting-owner`，`suppressed` 为 0）。另两项守住不放松：本进程内有
+`measured` 记录回答该身份时 `releaseInheritedAutonomousDecision()` 返回 `null`，且该身份根本不在
+继承快照里；本 session 自己取的占位仍以 `prior-decision-requires-owner` 生效。同一份测试在改动前的
+实现上 3 项中 2 项失败（第一项、第二项），第三项在两侧都通过，说明放宽的只有“遗弃占位”这一条。
+`test/autonomous-durable-observations.test.mjs` 里三项原先断言“重启后拒绝”的用例已按新契约改写，
+并保留它们原本要钉的安全结论：重启不会晋任何东西（`automatic: false`）、环境类失败仍然不写入失败
+记忆、同一假设在一个 session 内仍然只跑一个 Trial。
 
 `test/revert-unproven-cleanup-retry.test.mjs` 用一个只输出官方 receipt 形状的 runner 端到端驱动该状态机
 （9 项）：首次 `stop` 成功、`undefine` 抛出后重试成功并释放 claim、同一目标可开始新的 Trial；两个
