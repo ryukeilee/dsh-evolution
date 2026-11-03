@@ -112,11 +112,21 @@ async function session(t, root, { rounds = 0, threshold = 2, reserve = false, va
   const core = apply(ctx, { ...config, domainStorage: port });
   const exec = { agent: { id: 'decision-owner' }, signal: new AbortController().signal };
   const identity = `${core.patternKey(INPUT)}:${core.strategyFingerprint(strategy)}`;
-  t.after(async () => { await port.close(); await backend.close(); });
+  // One port per data root at a time (the archive lock is a bare pid, so a second
+  // open in this process would meet its own owner), which is why a session here is
+  // closed explicitly before the next one opens.
+  let closed = false;
+  const close = async () => {
+    if (closed) return;
+    closed = true;
+    await port.close();
+    await backend.close();
+  };
+  t.after(close);
   if (reserve) await port.reserveAutonomousDecision(identity);
   const observed = [];
   for (let round = 0; round < rounds; round += 1) observed.push(await core.observeAutonomous(INPUT, exec));
-  return { core, port, identity, observed };
+  return { core, port, identity, observed, close };
 }
 
 function runSessionProcess(root, settings) {
@@ -173,17 +183,27 @@ test('an inherited decision is released and re-trialed instead of refusing the h
 
 test('a decision a live record still answers for is never released', async (t) => {
   const root = await scratch(t);
-  const { core, port, identity, observed } = await session(t, root, { rounds: 2 });
-  assert.equal(observed[1].phase, 'candidate-awaiting-confirmation');
-  assert.equal(core.experiments.get(observed[1].experimentId).state, 'measured');
+  // One session reserves the identity and ends, so the next session inherits it.
+  const seeded = await session(t, root, { reserve: true });
+  await seeded.close();
+  // The next session resolves that inheritance, which is also what creates a
+  // record for the identity in this process.
+  const live = await session(t, root, { rounds: 2 });
+  assert.equal(live.identity, seeded.identity);
+  assert.equal(live.observed[1].phase, 'candidate-awaiting-confirmation');
+  assert.equal(live.observed[1].decisionRecovery.reason, 'previous-session-decision');
+  assert.equal(live.core.experiments.get(live.observed[1].experimentId).state, 'measured');
 
-  // The measured candidate waits for its owner, which is exactly the state the
-  // reservation exists to protect: a second Trial would mutate the runtime again
-  // and fight over the target claim it already owns.
-  assert.equal(await core.releaseInheritedAutonomousDecision(identity), null,
+  // Both halves of the guard are now satisfied on purpose: the identity is still
+  // in the snapshot this port opened on, so the inherited check alone would allow
+  // a release. What blocks it is the `measured` candidate waiting for its owner -
+  // a second Trial would mutate the runtime again and fight over the target claim
+  // that candidate already owns.
+  assert.equal((await live.port.autonomousDecisions()).includes(live.identity), true,
+    'the identity is inherited, so only the live record can explain the refusal');
+  assert.equal(await live.core.releaseInheritedAutonomousDecision(live.identity), null,
     'a record in this process answers for the identity, so the decision is live');
-  assert.equal((await port.autonomousDecisions()).includes(identity), false,
-    'and it is not even inherited: this session took it');
+  assert.equal(await live.port.reserveAutonomousDecision(live.identity), false, 'the reservation is untouched');
 });
 
 test('a reservation this session took is not treated as inherited', async (t) => {
