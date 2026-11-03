@@ -591,12 +591,15 @@ test('a measured candidate is not offered for a declaration with different targe
   assert.match(blocked.error, /occupies the runtime/);
   assert.equal(durableFailures(core).length, 0, 'a busy runtime is not evidence about the declaration');
 
-  // Once the owner closes the pending candidate the changed declaration is
-  // attempted again in a later session: the busy answer was session-scoped and
-  // wrote no durable verdict about the new targets.
+  // Once the owner closes the pending candidate the runtime is free again, but the
+  // busy answer was a transient failure: this observation reports the remaining
+  // retry cooldown instead of a duplicate failure, and nothing durable was learned
+  // about the new targets.
   const reverted = await core.revert({ experimentId: pending.experimentId }, exec);
   assert.equal(reverted.ok, true);
-  assert.equal((await observe()).phase, 'suppressed', 'the session keeps its one attempt per hypothesis');
+  const cooled = await observe();
+  assert.equal(cooled.phase, 'experiment-deferred');
+  assert.equal(cooled.reason, 'transient-retry-cooldown');
   assert.equal(durableFailures(core).length, 0);
   const fresh = session(root, { strategies: { AGENT_ERROR: scoped('target-b') } });
   assert.equal((await fresh.observe()).phase, 'pattern-observing');

@@ -90,7 +90,7 @@ Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 i
 - **自主 Trial 有硬约束。** 只有存在匹配的 `autonomousStrategies` 条目、同一失败模式达到 `patternThreshold`、且风险为 `low` 并配置为 `autonomousPolicy.low === "experiment"` 时，观察者才会启动隔离 Trial。`medium` 等待确认，`high` 阻止；修改策略不能放宽这两级，自定义风险字符串也不会启动实验。
 - **抑制以「假设」为单位，不以失败模式为单位。** 自主 Trial 的抑制键是 `patternKey` 加策略声明指纹（`target` / `targets` / `idPrefix` / `risk` / `impactScope` / `successMetrics` 与 composition 的 `name` / `purpose` / Host、Client 代码摘要）；宿主回调（`measure` / `observation`）不参与身份，因为它们无法跨进程复现。同一声明在重启后仍被已记录的失败拦住，改动声明是新假设、会被真正尝试一次。解除抑制的方式只有这一条：改声明。
 - **已经测出证据的候选不会被重复实验。** 观察者在 `measured` 且门禁通过后返回 `candidate-awaiting-confirmation` 并把实验留在原地；同一假设再次被观测到时返回同一个 `experimentId`（`reason: already-measured-awaiting-owner`），不会启动第二个 Trial，也不会再去争抢它自己已持有的 target claim。只有 revert / promote / 门禁否决把记录移出 `measured` 后，新的一次尝试才合法。
-- **环境失败不写持久判定。** target claim 冲突、claim 不可读（权限错误或半写入残件）、操作忙、权限或资源错误，以及实验尚未建立之前发生的失败，只在本 session 内抑制对应假设（`phase: experiment-deferred`、`reason: transient-failure`），不写入失败记忆；否则一次并发冲突就会永久否掉一个可能有效的策略。
+- **环境失败不写持久判定，也不会因为一次冲突就停掉一个假设。** target claim 冲突、claim 不可读（权限错误或半写入残件）、操作忙、权限或资源错误，以及实验尚未建立之前发生的失败，都不写入失败记忆，也不进入 session 终局抑制：它们只把该假设推迟 `transientRetryCooldownMs`（默认 30000 ms），响应为 `phase: experiment-deferred`，冷却期内 `reason: transient-retry-cooldown` 并带 `retryAfterMs`，冷却过后的一次观测会重新尝试同一个假设。因此占用运行时的候选被所有者 revert、权限恢复或宿主操作结束后，本 session 内就能继续执行该策略、隔离 Trial 与后续测量，而不是只能等重启；一次并发冲突也就不会否掉一个可能有效的策略。重试由观测触发、按冷却间隔上界，不在两次观测之间自行重试，并与第一次尝试走完全相同的门禁（清理重试、待确认候选、`E_EVOLUTION_RUNTIME_BUSY` 检查与 target claim），所以不会产生第二个 Trial、重复记录或绕过资源互斥。已记录的策略失败仍按上一条终局抑制。
 - **未证实的清理会被后续观测重试。** 每次符合条件的观测在做出任何决定之前，先用同一个 `revert` 重试上一轮未能证实的自主清理（同一份已捕获基线、同一套官方 disposer、只有证明通过才释放 claim），因此暂时性 disposer 故障消失后运行时能被重新释放，而不是等到重启；重试由观测触发并按 `cleanupRecoveryCooldownMs` 间隔，不会重跑已经抑制的策略，也不会为同一假设启动第二个 Trial。持续失败、运行时漂移或所有权不匹配时保持 claim、基线与记录，响应里的 `cleanupRecovery`（`unproven` / `cooling-down`）会指出剩余手段是显式的 `evolution_revert`。
 - **跨 session 的边界。** 官方领域存储保留版本化故障身份和发生样本，重开后从最近 200 个观测恢复精确匹配的累计；没有该身份的旧记录不参与推测。模式身份只对带标签的耗时 `after N ms` 归一化：同一故障在耗时变化及宿主重启后仍累计到同一个模式并触发既定决策，而状态码、计数与嵌入标识符等其它数字仍然参与身份，不同根因（包括脱敏后摘要完全相同的那些）不会合并。不含该耗时的故障身份与改动前逐字相同；含该耗时的旧记录携带带耗时的旧身份，无法从新身份重建，因此不参与计数（该模式从 1 重新累计），也不做猜测性合并。同一假设在 Trial 前持久占位；占位若由本进程继承（上一个进程在 Trial 之前结束，占位描述的那个 Trial 已随进程消失），新的观测会释放该占位并为该假设重新建立一次隔离 Trial，而不是永久拒绝它——它既不重建旧 Trial，也绝不把旧候选当作可晋升证据。本进程自己取得的占位仍然生效，第二次决策仍返回 `prior-decision-requires-owner`；由本进程内仍回答该身份的记录（`measured` 待确认、宿主尚未批准的 Trial、未证实的清理）保护的占位一律不释放。`measured` 的 Cordis Trial 是本进程的运行时事实，不能在另一进程里晋升。占位与当前抑制表同样保留最近 200 项；同进程已证实的 revert 或已干净丢弃的环境冲突会释放占位，已记录的策略失败仍由失败记忆拦住。并发观测同一假设时只有一个进程内 claim，其余返回 `observing`。
 - `mode`（默认 `advisory`；可用 `manual` / `advisory` / `autonomous`）和 `unattended`（默认 `false`）会记录在策略报告中，但**不是自主观察者的前置开关**。
@@ -200,6 +200,7 @@ evolution_runtime_inspect → evolution_propose → evolution_trial
 | `canaryWindow` | `2` | canary 需要的屏障数 |
 | `patternThreshold` | `3` | 相同失败模式成为候选的观测次数，下限 2 |
 | `cleanupRecoveryCooldownMs` | `30000` | 同一份未证实的自主清理两次重试之间的最小间隔；`0` 表示不间隔，仅供测试 |
+| `transientRetryCooldownMs` | `30000` | 环境类失败推迟同一假设两次尝试之间的最小间隔；`0` 表示不间隔，仅供测试 |
 | `promotionLockTtlMs` | 15 分钟 | 晋升跨进程锁 TTL，下限 1000ms |
 | `autonomousStrategies` | 未配置 | 显式策略表；提供失败模式对应的 `target` / `composition` / `measure` / `risk` |
 | `memoryMaxEntries` / `memoryMaxText` / `memoryMaxItems` | `200` / `1200` / `8` | 有界失败记忆容量 |
