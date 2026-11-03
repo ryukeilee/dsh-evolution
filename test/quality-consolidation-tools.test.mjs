@@ -102,7 +102,7 @@ test('the tools/result observation carries no host execution context', async () 
   listeners.get('tools/result')({ agent, name: 'bash', callId: 'call-1' }, Object.freeze({ isError: true, code: 'TOOL_FAILED', content: Object.freeze([]) }));
   await tick();
   assert.equal(observed.length, 1);
-  assert.deepEqual(Object.keys(observed[0]).sort(), ['code', 'message', 'target', 'type']);
+  assert.deepEqual(Object.keys(observed[0]).sort(), ['code', 'errorDigest', 'message', 'target', 'type']);
   assert.equal(JSON.stringify(observed[0]).includes('PRIVATE'), false);
   assert.equal(JSON.stringify(observed[0]).includes('private prompt'), false);
 });
