@@ -10,9 +10,10 @@
 //
 //   A#2 -> rolled-back-no-improvement, cleanup 'not-recovered'  (undefine threw)
 //   B#2 -> experiment-deferred / transient-failure, error names the occupant
-//   B#n -> suppressed (its one attempt is spent)
-//   env heals -> nothing retries the cleanup, so no Trial runs again in that
-//               session; only a manual `evolution_revert` or a restart cleared it.
+//   B#n -> experiment-deferred / transient-retry-cooldown (the transient failure
+//          defers the hypothesis instead of suppressing it for the session)
+//   env heals -> the cleanup retry reclaims the runtime and a later B observation
+//               (after the cooldown) attempts the hypothesis again.
 //
 // What the fix must not do is retry the *strategy*: `suppressForSession` and the
 // durable failure memory still answer the hypothesis, so one unproven cleanup can
@@ -218,10 +219,13 @@ test('a transient cleanup failure is retried by a later observation and the loop
   assert.equal(h.core.targetOwners.get(h.target), undefined);
   assert.equal(await claimExists(h.core, h.target), false);
 
-  // `TOOL_ERROR` already spent its one attempt on the refusal above, which is the
-  // documented session rule; a later hypothesis still runs, so the loop continues.
-  assert.equal(recovered.phase, 'suppressed');
-  assert.equal(recovered.reason, 'duplicate-failure');
+  // The refusal above was a transient environment failure, so this hypothesis is
+  // deferred for `transientRetryCooldownMs` (this fixture keeps the 30 s default)
+  // rather than suppressed for the session; the runtime is free again, so the next
+  // hypothesis runs and the loop continues either way.
+  assert.equal(recovered.phase, 'experiment-deferred');
+  assert.equal(recovered.reason, 'transient-retry-cooldown');
+  assert.ok(recovered.retryAfterMs > 0);
 
   assert.equal((await h.observe('BUILD_ERROR')).phase, 'pattern-observing');
   const ran = await h.observe('BUILD_ERROR');
@@ -293,12 +297,13 @@ test('the retry is spaced by the cooldown instead of running on every error even
   assert.equal(h.runtime.undefineCalls, callsAfterTrial + 1);
   assert.equal(first.cleanupRecovery.next, 'retry evolution_revert to finish disposing it');
 
-  // The refusal above spent this hypothesis's one attempt, and every later event
-  // inside the cooldown still reports the occupant while touching nothing: the
-  // cooldown is what keeps a persistent failure from being retried per error event.
+  // The refusal above deferred this hypothesis, and every later event inside the
+  // cooldown still reports the wait while touching nothing: the cooldown is what
+  // keeps a persistent failure from being retried per error event.
   for (let event = 0; event < 2; event += 1) {
     const cooled = await h.observe('TOOL_ERROR');
-    assert.equal(cooled.phase, 'suppressed');
+    assert.equal(cooled.phase, 'experiment-deferred');
+    assert.equal(cooled.reason, 'transient-retry-cooldown');
     assert.equal(cooled.cleanupRecovery.status, 'cooling-down');
     assert.equal(cooled.cleanupRecovery.attempts, 1, 'the cooldown reports the attempt already made');
     assert.equal(h.runtime.undefineCalls, callsAfterTrial + 1, 'no retry inside the cooldown');

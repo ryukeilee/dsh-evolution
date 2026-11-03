@@ -15,6 +15,21 @@ unchanged as the history of that candidate line.
 
 ### 修复
 
+- **一次环境冲突不再让一个假设停到重启。** 自主观察者把失败分成两类：说声明本身有问题（测量无改善、
+  门禁拒绝）的，和说环境有问题（`E_EVOLUTION_RUNTIME_BUSY`、target claim 被别的实验持有、权限或
+  资源错误、被取消的运行）的。前者是终局判定，写进持久失败记忆并在本 session 抑制该假设；后者关于
+  假设本身什么都没说，所以从不落盘。但 session 那一半此前是错的：`catch` 对**所有**失败都调用
+  `suppressForSession`，一次环境冲突就把该假设停到进程退出为止。在同一份 fixture 上复现：A 到
+  `measured` 并占着运行时，B 的第二条观测得到 `experiment-deferred` / `transient-failure`；所有者
+  revert A、claim 与运行时都空出来之后，B 仍报 `suppressed` / `duplicate-failure`，重启是唯一出口。
+  现在环境失败走 `deferForSession`：一个时间戳加尝试计数，按 `transientRetryCooldownMs`（默认
+  `AUTONOMOUS_TRANSIENT_RETRY_COOLDOWN_MS` = 30 s）推迟同一假设，冷却期内的观测报
+  `experiment-deferred` / `reason: transient-retry-cooldown` 与 `retryAfterMs`，冷却过后的一次观测
+  重新尝试它。重试仍由观测触发、按冷却间隔上界（没有定时器、没有循环），并与第一次尝试走完全相同的
+  门禁：`recoverAutonomousOccupancy`、`pendingAutonomousCandidate`、`assertRuntimeAvailable`、target
+  claim 与失败记忆依次照样判定，所以占用者仍在时重试仍被拒、也不会为同一假设启动第二个 Trial；真实
+  策略失败仍由 session 抑制与失败记忆终局拦住，`suppressForSession` 会清掉同一身份上的推迟。推迟表与
+  其它 session 表共用 `AUTONOMOUS_PATTERN_CAP`（200）上限，它只存在内存里，重启后不做任何推测。
 - **进程结束后遗留的自主决策占位不再永久退休一个假设。** `reserveAutonomousDecision` 在 Trial 触碰
   runner **之前** 就持久占位，而释放它的只有本进程还能证明的结果：已证实的 revert，或一次干净丢弃的
   环境类失败。进程先结束时没有任何路径释放它——崩溃，或者一个 `measured` 候选还在等所有者确认时
