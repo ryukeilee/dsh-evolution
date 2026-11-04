@@ -186,16 +186,38 @@ verify  OK applied           selected=true  mountedAfter=true  tools=10 liveAppl
 ## 4. 已执行的验证
 
 - 定向：`node --max-old-space-size=4096 --test test/lifecycle-probe-live-vs-selected.test.mjs` → 9 pass。
-- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` → 见第 6 节（提交后重跑记录）。
-- 打包：`npm run pack:check` → 16 项通过（开发后继语义）；`pack:check -- --release` 未跑，本轮不更新
-  `release/` 固定点，也没有改动任何分发文件里的实现。
+- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` → 1400 项全部通过（提交后重跑）。
+- 打包：`npm run pack:check` → 16 项通过（开发后继语义：“工作树是固定点的已提交后继”）；
+  `pack:check -- --release` 未跑，本轮不更新 `release/` 固定点。
+- 本地产物：`npm run release:pack -- --dist dist/lifecycle-live-apply` →
+  `dsh-evolution-0.2.0.tgz`，sha256 `3bfaadfc5a8fa9807960adae9ec4e9d917b4b37b0473fbc6106eaa35082d70a0`，
+  内容摘要 `7870d3d94f399d7318a444a6f1c59e6864f0975a397c6425d218855e2be12d8e`（51 个条目），
+  Node v26.13.0 / npm 11.20.0 / darwin-arm64。
 - 三宿主真实验收：见第 5 节。
 - 独立审核：见第 6 节。
 
 ## 5. 三宿主验收
 
-见 `docs/evidence/lifecycle-live-apply-race-<host>.json`（每宿主 21 步）。它们记录的是**本轮树**的
-产物内容摘要，不是 `release/` 固定点；`docs/evidence/dsh-<host>.json` 仍然描述固定点，未被改写。
+同一份产物、隔离 runtime/home，串行（每宿主全新安装官方 DSH，21 步）：
+
+| 宿主 | 结果 | 证据 |
+| --- | --- | --- |
+| `0.2.0-rc.2` | 21/21 ok | `docs/evidence/lifecycle-live-apply-race-0.2.0-rc.2.json` |
+| `0.2.1-alpha.1` | 21/21 ok | `docs/evidence/lifecycle-live-apply-race-0.2.1-alpha.1.json` |
+| `0.2.1-rc.2` | 21/21 ok | `docs/evidence/lifecycle-live-apply-race-0.2.1-rc.2.json` |
+
+三个宿主都记录了同一条能力轨迹（`liveApplyBefore -> liveApplyAfter`），也就是“回执与能力一致”的那一
+支断言真正被执行：
+
+```
+lifecycle-verify   applied           selected=true  mountedAfter=true  tools=10  true  -> true
+lifecycle-disable  applied           selected=false mountedAfter=false tools=0   true  -> true
+lifecycle-enable   restart-required  selected=true  mountedAfter=false tools=0   false -> false
+lifecycle-verify   applied           selected=true  mountedAfter=true  tools=10  true  -> true
+```
+
+这些文件记录的是**本轮树**的产物内容摘要，不是 `release/` 固定点；`docs/evidence/dsh-<host>.json`
+仍然描述固定点，未被改写。
 
 ## 6. 边界与剩余风险
 
