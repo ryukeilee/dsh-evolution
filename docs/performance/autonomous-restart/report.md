@@ -34,7 +34,9 @@ node --max-old-space-size=4096 --test test/autonomous-durable-observations.test.
 
 最终本地产物 SHA-256 为 `f5f069fd956920e5e4ba7ad7fb71a94dc9d21b3f0b5a6c37970424f0d05fde22`，内容摘要为 `1f295ac874e8b6dd67c33512a1fd25304b80fa62dc9abfcd844aee514c51bdcf`。三宿主 `0.2.0-rc.2 / 0.2.1-alpha.1 / 0.2.1-rc.2` 的最终验收均通过，每宿主 21 个步骤，使用隔离 runtime/home。
 
-其中 alpha 在同时运行全量测试与三宿主验收时曾失败于既有 `lifecycle-disable` 探针：宿主回执 `restart-required` 与读取到的即时 live 状态不一致。原始失败记录保存在 `docs/evidence/autonomous-restart-0.2.1-alpha.1-failed.json`；其他负载结束后，在代码、产物和探针不变的情况下单独重试通过。未确定该不一致的根因，不能把单次重试通过解释为已修复此宿主生命周期问题。
+其中 alpha 在同时运行全量测试与三宿主验收时曾失败于既有 `lifecycle-disable` 探针：宿主回执 `restart-required` 与读取到的即时 live 状态不一致。原始失败记录保存在 `docs/evidence/autonomous-restart-0.2.1-alpha.1-failed.json`；其他负载结束后，在代码、产物和探针不变的情况下单独重试通过。
+
+该不一致的根因已单独确认：宿主 `pluginManager` 把“实时应用能力”（`ctx.get('hmr')`）读两次——一次写进回执，一次在 profile 写入之后决定是否实时生效——而 `hmr` 在启动期是异步出现的，所以跨过这个转变的一次调用会报 `restart-required` 并照样实时生效。失败与通过的记录只是同一次启动竞态的两种落点，插件生产代码没有参与该判定，本轮也未改动。复现、证据与验收断言的修正见 `docs/evidence/lifecycle-live-apply-race.md`。
 
 `verify-artifact --content-only` 与已固定的旧发布包比较会拒绝内容不一致，这与本次改变分发源码一致；没有更新 `release/`，没有发布新版本。
 

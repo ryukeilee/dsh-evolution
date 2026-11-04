@@ -54,7 +54,7 @@
 | 路径 | 职责 |
 | --- | --- |
 | `lib/diagnostics.js`、`scripts/doctor.mjs` | 运行时与 CLI 诊断；`resolveEvolutionPaths()` 是路径解析的唯一来源（doctor 与运行时共用），`runDiagnostics()` 产出全部 check（当前 28 个 check `id`；另有 6 个 repair `id` 与 5 个 degradedCapability `id`，三者不要混算），`--repair` 只处理 `recoverable=true` 且带 repair 的项。CLI 报告不得与运行时判断不一致 |
-| `scripts/acceptance/` | `run-host-acceptance.mjs` 真实隔离宿主验收（自包含安装官方 DSH），`probes/{core,lifecycle,body,promotion}-probe.mjs` 是它驱动的宿主内探针 |
+| `scripts/acceptance/` | `run-host-acceptance.mjs` 真实隔离宿主验收（自包含安装官方 DSH），`probes/{core,lifecycle,body,promotion}-probe.mjs` 是它驱动的宿主内探针；`probes/live-apply-race-probe.mjs` 复现宿主“实时应用能力”的启动竞态（诊断用，不属于验收流程） |
 | `scripts/release/` | `pack.mjs`（本地打包）、`verify-package.mjs`（`pack:check`，开发/发布两种语义）、`verify-artifact.mjs`（字节校验与 `--content-only`）、`verify-provenance.mjs`（tag 与来源）、`publish-artifact.mjs`（**写** `release/` 固定点）、`release-lib.mjs` 与 `pin-relation.mjs`（摘要、条目、固定点关系的共享实现） |
 | `scripts/benchmarks/` | 可复现性能基准：domain 写路径/回放/retention、冷档案、事件桥、诊断、经验检索、启动内存等；对应数据与收益边界写在 `docs/performance/` |
 | `scripts/import-evolution-data.mjs` | 旧 preset / Dockyard 快照迁移 |
@@ -62,7 +62,7 @@
 
 ### 测试与发布数据
 
-- `test/`：Node 原生测试（`.test.mjs` / `.test.js`，当前 150 个文件）。根目录以 `review-fix-*` 命名保留各轮评审的回归，`test/domain-storage/`、`test/dockyard-domain/`（含 `continuous/`）按层分组，`test/fixtures/` 与各目录的 `*-baseline.js` 是差分等价性基线。
+- `test/`：Node 原生测试（`.test.mjs` / `.test.js`，当前 179 个文件）。根目录以 `review-fix-*` 命名保留各轮评审的回归，`test/domain-storage/`、`test/dockyard-domain/`（含 `continuous/`）按层分组，`test/fixtures/` 与各目录的 `*-baseline.js` 是差分等价性基线。
 - `test/workflows.test.mjs` 断言 CI 形状（作业集合、作业级堆上限、验收矩阵），`test/release-pin.test.mjs` 判定工作树与固定点的关系。
 - `release/`：随仓库固定的发布产物（每个候选一个 tarball，历史候选保留）、`manifest.json`、`SHA256SUMS`。**不要手工编辑这些文件。**
 - `docs/evidence/`：与固定产物对应的验收记录；`docs/performance/`：性能数据与收益边界；`docs/core-reliability.md`：rc.5 时期的恢复边界探索记录，不是当前合同。
