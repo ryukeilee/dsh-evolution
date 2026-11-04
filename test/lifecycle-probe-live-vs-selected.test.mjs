@@ -55,8 +55,7 @@ const PRE_FIX_LIVE_VIOLATION = ({ action, application, expectMountedBefore, expe
  * `capabilityReads` is the scripted answer of `ctx.get('hmr')`, in call order:
  * the probe's pre-call read, then the host's three reads (snapshot, configure,
  * reload), then the probe's post-call read. The last value repeats.
- */
-function createHost(overrides = {}) {
+ */function createHost(overrides = {}) {
   const host = {
     /** Whether `ctx.get('evolution')` resolves. */
     service: true,
@@ -82,15 +81,15 @@ function createHost(overrides = {}) {
     // PluginManager.change(): the report is a snapshot taken before the write.
     const snapshot = host.capability();
     host.selection = enabled;
-    // configure(): the apply path is chosen from a second read.
+    // configure(): the capability only chooses `runExclusive()` or a direct call;
+    // the operation body runs either way. Its `reload()` reads the capability
+    // again, so both reads always happen.
+    host.capability();
     if (host.capability()) {
-      // reload(): the tree is reconciled only when a third read agrees.
-      if (host.capability()) {
-        if (host.onLiveEffect) host.onLiveEffect(enabled);
-        else {
-          host.service = enabled;
-          host.tools = enabled ? EVOLUTION_TOOL_COUNT : 0;
-        }
+      if (host.onLiveEffect) host.onLiveEffect(enabled);
+      else {
+        host.service = enabled;
+        host.tools = enabled ? EVOLUTION_TOOL_COUNT : 0;
       }
     }
     return {
@@ -244,6 +243,41 @@ test('a capability that vanishes during the call is not reported as a live viola
   assert.equal(result.toolCount, EVOLUTION_TOOL_COUNT);
   assert.equal(result.liveApplyBefore, true);
   assert.equal(result.liveApplyAfter, false);
+});
+
+test('an `applied` report must reach the live tree even when the capability appeared during the call', async () => {
+  // The probe read, then the host's snapshot: the capability appeared between
+  // them, so the report is `applied` and the reload decision reads it later
+  // still. The only thing that can keep the tree mounted is a failed unmount.
+  const broken = createHost({
+    capabilityReads: [false, true, true, true, true],
+    onLiveEffect: () => {},
+  });
+  const failed = await runProbe(broken, 'disable');
+  assert.match(failed.error, /application=applied but live state is mounted=true, tools=10, expected mounted=false, tools=0/);
+
+  // Same reads with a working unmount: accepted, and the transition recorded.
+  const working = createHost({ capabilityReads: [false, true, true, true, true] });
+  const { result, error } = await runProbe(working, 'disable');
+  assert.equal(error, undefined);
+  assert.equal(result.application, 'applied');
+  assert.equal(result.mountedAfter, false);
+  assert.equal(result.toolCount, 0);
+  assert.equal(result.liveApplyBefore, false);
+  assert.equal(result.liveApplyAfter, true);
+});
+
+test('a capability that appears between the configure read and the reload read', async () => {
+  // The realistic startup window: the snapshot and the configure read both miss
+  // the capability, the reload read sees it. The report is the older snapshot.
+  const host = createHost({ capabilityReads: [false, false, false, true, true] });
+  const { result, error } = await runProbe(host, 'disable');
+  assert.equal(error, undefined);
+  assert.equal(result.application, 'restart-required');
+  assert.equal(result.mountedAfter, false);
+  assert.equal(result.toolCount, 0);
+  assert.equal(result.liveApplyBefore, false);
+  assert.equal(result.liveApplyAfter, true);
 });
 
 test('a switch that does not reach the live tree is still rejected', async () => {
