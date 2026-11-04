@@ -219,7 +219,11 @@ verify  OK applied           selected=true  mountedAfter=true  tools=10 liveAppl
   内容摘要 `f5681a69d03345f92063aabe599b853fa6e17465fed5ccc46e2853b632eb3a0d`（51 个条目），
   Node v26.13.0 / npm 11.20.0 / darwin-arm64。
 - 三宿主真实验收：见第 5 节。
-- 独立审核：见第 6 节。
+- 独立审核：sol-loop 2 轮，GPT-6.1 Sol（`codex` / `gpt-6.1-sol`，请求 `reasoningEffort: xhigh`）。
+  第 1 轮 `VERDICT: CHANGES`：S1（能力切换分支会放过真实卸载失败）、S2（fake host 把 `configure()`
+  的能力读取当成执行门禁）两条 should，均已修复并补回归（见第 3 节）；第 2 轮 `VERDICT: APPROVE`，
+  无 blocker/should。有效推理档位只有请求值与回传值一致，未取得独立的运行时证据，因此不声称已验证
+  xhigh。
 
 ## 5. 三宿主验收
 
