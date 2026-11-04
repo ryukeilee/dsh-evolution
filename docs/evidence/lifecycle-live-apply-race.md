@@ -210,13 +210,13 @@ verify  OK applied           selected=true  mountedAfter=true  tools=10 liveAppl
 
 ## 4. 已执行的验证
 
-- 定向：`node --max-old-space-size=4096 --test test/lifecycle-probe-live-vs-selected.test.mjs` → 9 pass。
-- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` → 1400 项全部通过（提交后重跑）。
+- 定向：`node --max-old-space-size=4096 --test test/lifecycle-probe-live-vs-selected.test.mjs` → 11 pass。
+- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` → 1402 项全部通过（提交后重跑）。
 - 打包：`npm run pack:check` → 16 项通过（开发后继语义：“工作树是固定点的已提交后继”）；
   `pack:check -- --release` 未跑，本轮不更新 `release/` 固定点。
 - 本地产物：`npm run release:pack -- --dist dist/lifecycle-live-apply` →
-  `dsh-evolution-0.2.0.tgz`，sha256 `3bfaadfc5a8fa9807960adae9ec4e9d917b4b37b0473fbc6106eaa35082d70a0`，
-  内容摘要 `7870d3d94f399d7318a444a6f1c59e6864f0975a397c6425d218855e2be12d8e`（51 个条目），
+  `dsh-evolution-0.2.0.tgz`，sha256 `10f3ec979f67ef9803be66f079a6b72aff346b120f31a1d74aecaf3bbdc58f38`，
+  内容摘要 `f5681a69d03345f92063aabe599b853fa6e17465fed5ccc46e2853b632eb3a0d`（51 个条目），
   Node v26.13.0 / npm 11.20.0 / darwin-arm64。
 - 三宿主真实验收：见第 5 节。
 - 独立审核：见第 6 节。
