@@ -24,9 +24,10 @@
  *     report and for the reload, so the report must match it exactly and the
  *     live tree must follow the report;
  *   - capability changed during the call → the report may be the older snapshot,
- *     so either live outcome is explainable, but the switch must still be
- *     atomic (the service and the tool surface agree on one state) and the
- *     transition is recorded in the evidence.
+ *     so the outcome is ambiguous in exactly one direction per report value
+ *     (see `outcomeIsAmbiguous` below); every other combination still has to
+ *     reach the tree the report promises, and the switch must always be atomic
+ *     (the service and the tool surface agree on one state).
  *
  * This is not a retry and adds no delay: the action is issued once, at the same
  * moment as before.
@@ -100,21 +101,35 @@ export function apply(ctx) {
 
     if (action === 'verify') {
       if (!matches(liveBefore)) throw new Error(`verify: live state is ${format(observed)}, expected ${format(liveBefore)}`);
-    } else if (liveApplyBefore === liveApplyAfter) {
-      // One stable capability value for the report and for the reload decision.
-      const expectedApplication = liveApplyAfter ? 'applied' : 'restart-required';
-      if (result.application !== expectedApplication) {
-        throw new Error(`${action}: host reported application=${result.application} although live apply was ${liveApplyAfter ? 'available' : 'unavailable'} for the whole call`);
+    } else {
+      // Only one combination per report value is ambiguous, because the report is
+      // the *earlier* read: `applied` says the snapshot already saw live apply, so
+      // the reload decision (read later, inside the operation body the host runs
+      // either way) must have seen it too — unless the capability disappeared
+      // during the call. `restart-required` says the snapshot did not see it, and
+      // the reload may have seen it when the capability appeared during the call.
+      const outcomeIsAmbiguous = result.application === 'applied'
+        ? liveApplyBefore && !liveApplyAfter
+        : !liveApplyBefore && liveApplyAfter;
+      if (outcomeIsAmbiguous) {
+        // The switch must still be all-or-nothing: the service and the tool
+        // surface agree on the pre-call state or on the selected one.
+        if (!matches(liveBefore) && !matches(liveSelected)) {
+          throw new Error(`${action}: live state is ${format(observed)}, neither the pre-call ${format(liveBefore)} nor the selected ${format(liveSelected)} state (live apply changed during the call: ${liveApplyBefore} -> ${liveApplyAfter})`);
+        }
+      } else {
+        if (liveApplyBefore === liveApplyAfter) {
+          // One stable capability value for the report and for the reload.
+          const expectedApplication = liveApplyAfter ? 'applied' : 'restart-required';
+          if (result.application !== expectedApplication) {
+            throw new Error(`${action}: host reported application=${result.application} although live apply was ${liveApplyAfter ? 'available' : 'unavailable'} for the whole call`);
+          }
+        }
+        const expected = result.application === 'applied' ? liveSelected : liveBefore;
+        if (!matches(expected)) {
+          throw new Error(`${action}: application=${result.application} but live state is ${format(observed)}, expected ${format(expected)}`);
+        }
       }
-      const expected = result.application === 'applied' ? liveSelected : liveBefore;
-      if (!matches(expected)) {
-        throw new Error(`${action}: application=${result.application} but live state is ${format(observed)}, expected ${format(expected)}`);
-      }
-    } else if (!matches(liveBefore) && !matches(liveSelected)) {
-      // Live apply became available (or vanished) while the call was in flight:
-      // the report is a snapshot older than the reload decision, so either live
-      // outcome is explainable, but the switch itself must stay atomic.
-      throw new Error(`${action}: live state is ${format(observed)}, neither the pre-call ${format(liveBefore)} nor the selected ${format(liveSelected)} state (live apply changed during the call: ${liveApplyBefore} -> ${liveApplyAfter})`);
     }
     const after = await memorySha();
     await fs.access(path.join(dataRoot(), 'event-bridge.key'));

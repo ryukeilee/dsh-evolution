@@ -136,41 +136,66 @@ gapMs: -117, 0, -159, -184, -158, 0
 ## 3. 改动（只改验收探针）
 
 `scripts/acceptance/probes/lifecycle-probe.mjs` 不再用回执推断 live 树，而是记录能力在调用前后的
-取值（`liveApplyBefore` / `liveApplyAfter`），并按**reload 决策实际看到的能力**断言：
+取值（`liveApplyBefore` / `liveApplyAfter`），并按**reload 决策实际看到的能力**断言。歧义只有一个方向
+——回执是更早的那次读取：
 
 - 能力在调用前后**未变**：回执必须与该能力一致（`hmr` 可见 ⇒ `applied`，不可见 ⇒
   `restart-required`），live 树必须跟随回执；
-- 能力在调用期间**出现或消失**：回执可能是更早的快照，两种 live 结果都可解释，但切换必须仍是原子的
-  （服务与工具面必须同时处于“调用前”或“选中后”之一），并把这次转变写进证据；
-- `applied` 但 live 树没变、`restart-required` 但 live 树处于第三种状态、回执与稳定能力矛盾、用户数据
-  被改写——一律仍然失败。
+- 能力在调用期间**出现**（`false → true`）且回执是 `restart-required`：快照早于出现，reload 可能已经
+  看到能力，两种 live 结果都可解释；
+- 能力在调用期间**消失**（`true → false`）且回执是 `applied`：快照早于消失，reload 可能没看到能力，
+  两种 live 结果都可解释；
+- 其余组合都没有歧义：回执 `applied` 说明快照已经看到能力，而 reload 的读取在快照之后，所以**必须**
+  到达 live 树（`false → true` 也不例外）；回执 `restart-required` 而能力从未出现时 live 树**必须**
+  不动。
+
+两种“可解释”情形仍然要求切换是原子的（服务与工具面同时处于“调用前”或“选中后”之一），并把这次
+转变写进证据。`applied` 但 live 树没变（除上面的消失情形）、`restart-required` 但 live 树处于第三种
+状态、回执与稳定能力矛盾、用户数据被改写——一律仍然失败。
 
 没有新增重试、没有新增延迟、动作仍只发出一次。用户数据逐字节不变、`event-bridge.key` 存在、工具数
 `10`/`0` 的断言原样保留。
 
-同一份观察（回执是 `hmr` 出现之前的快照、reload 之后实时生效）对**改前**与**改后**的差分（
-`test/lifecycle-probe-live-vs-selected.test.mjs` 的 fake host 按宿主的三次读取复现）：
+fake host 按宿主的三次读取（快照 → `configure()` → `reload()`）复现：`configure()` 只决定是否走
+`runExclusive()`，操作体（含 `reload()`）**总会**执行，所以三次读取都会发生。改前/改后对同一批观察的
+差分：
 
 ```
-## capability appears during the call (disable)
-pre-fix : FAILED Error: disable: application=restart-required but live state violates restart semantics
-current : ok application=restart-required mountedAfter=false tools=0 liveApply=false->true
-
-## capability stable (disable)
+## stable capability (disable)
 pre-fix : ok application=applied mountedAfter=false tools=0
 current : ok application=applied mountedAfter=false tools=0 liveApply=true->true
 
-## capability absent for the whole call (enable)
+## stable capability absent (enable)
 pre-fix : ok application=restart-required mountedAfter=false tools=0
 current : ok application=restart-required mountedAfter=false tools=0 liveApply=false->false
 
-## applied but the tree never unmounts (disable, broken switch)
+## capability appears before the snapshot, unmount works (disable)
+pre-fix : ok application=applied mountedAfter=false tools=0
+current : ok application=applied mountedAfter=false tools=0 liveApply=false->true
+
+## capability appears before the snapshot, unmount fails (disable)
+pre-fix : FAILED Error: disable: application=applied but live state violates restart semantics
 current : FAILED Error: disable: application=applied but live state is mounted=true, tools=10, expected mounted=false, tools=0
+
+## capability appears between the snapshot and configure (disable)
+pre-fix : FAILED Error: disable: application=restart-required but live state violates restart semantics
+current : ok application=restart-required mountedAfter=false tools=0 liveApply=false->true
+
+## capability appears between configure and reload (disable)
+pre-fix : FAILED Error: disable: application=restart-required but live state violates restart semantics
+current : ok application=restart-required mountedAfter=false tools=0 liveApply=false->true
+
+## capability vanishes after the snapshot (disable)
+pre-fix : FAILED Error: disable: application=applied but live state violates restart semantics
+current : ok application=applied mountedAfter=true tools=10 liveApply=true->false
 ```
 
-单元测试把这条差分固定下来：同一观察必须被冻结的改前判定拒绝（返回的就是失败记录里的那句话），
-被改后的探针接受；而“回执 `applied` 但没卸载”“服务消失但工具面留着”“回执与稳定能力矛盾”
-“能力转变期间 live 树既不等于调用前也不等于选中后”“用户数据被改写”仍然全部被拒绝。
+中间两组就是失败记录里的形状（旧断言误报，`restart-required` + live 已切换）；最后一组是反方向的
+误报（`applied` + live 未切换，旧断言没有记录，因为三宿主验收里 `hmr` 没有在调用中消失）。第四组证明
+“回执 `applied` 就必须到达 live 树”这条守卫没有因为修误报而放宽。单元测试把这些都固定下来：同一批
+观察必须被冻结的改前判定拒绝（返回的就是失败记录里的那句话），被改后的探针接受；而“回执 `applied`
+但没卸载”“服务消失但工具面留着”“回执与稳定能力矛盾”“能力转变期间 live 树既不等于调用前也不等于选中
+后”“用户数据被改写”仍然全部被拒绝。
 
 真实宿主上（0.2.1-alpha.1，隔离 runtime/home，改后探针）：
 

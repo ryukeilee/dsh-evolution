@@ -90,7 +90,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 
 1. 官方 CLI 只读诊断（`host.version` 必须是 `verified: true`，状态不得为 `blocked`）
 2. 核心流程：`runtime_inspect → propose → trial → measure → revert`，要求 `runtimeRecovered: true`，以及 10 个工具全部注册
-3. 官方 `pluginManager` 禁用 / 启用，断言 `applied` / `restart-required` 的实时与选中语义，且用户数据逐字节不变。宿主把 `application` 当作实时应用能力的快照报告，并在写入 profile 之后再次读取该能力来决定是否实时生效，所以探针记录调用前后的能力（`liveApplyBefore` / `liveApplyAfter`）：能力未变时回执必须与能力一致、live 树必须跟随回执；能力在调用期间出现或消失时只要求切换是原子的，并把这次转变记进证据（见 `docs/evidence/lifecycle-live-apply-race.md`）
+3. 官方 `pluginManager` 禁用 / 启用，断言 `applied` / `restart-required` 的实时与选中语义，且用户数据逐字节不变。宿主把 `application` 当作实时应用能力的快照报告，并在写入 profile 之后再次读取该能力来决定是否实时生效，所以探针记录调用前后的能力（`liveApplyBefore` / `liveApplyAfter`）：能力未变时回执必须与能力一致、live 树必须跟随回执；能力在调用期间出现或消失时，只有“回执早于那次转变”的组合可解释，其余仍必须到达回执承诺的 live 树，且切换必须保持原子（见 `docs/evidence/lifecycle-live-apply-race.md`）
 4. 官方 CLI 卸载，官方宿主在插件缺席时仍能启动，再重新安装
 5. 重装后核心流程再次通过，且原有 memory 条目全部保留
 6. README 的升级与回滚流程：把同一棵树重打包成更高版本用官方 CLI 升级，再用当前 tarball 回滚；两步之后宿主仍注册 10 个工具且用户数据不变
