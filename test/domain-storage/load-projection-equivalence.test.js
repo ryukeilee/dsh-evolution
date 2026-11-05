@@ -193,6 +193,10 @@ test('the reversal returns all three files to a real pre-change source', async (
   assert.match(reconstructed.get('lib/domain-storage.js'), /await instance\.load\(\);/);
   assert.match(reconstructed.get('lib/domain-storage.js'), /await observations\.load\(\);/);
   assert.match(reconstructed.get('lib/dockyard-domain/observation.js'), /await this\.load\(\);/);
+  // The newest round bounds the hot knowledge window with its own constant; the
+  // reversal chain has to take it back out before the older pins can match.
+  assert.match(working.get('lib/dockyard-domain/memory.js'), /const KNOWLEDGE_HOT_ENTRIES = 200;/);
+  assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /KNOWLEDGE_HOT_ENTRIES/);
   assert.match(working.get('lib/domain-storage.js'), /await instance\.load\(\{ snapshot: false \}\);/);
   assert.match(working.get('lib/domain-storage.js'), /await observations\.load\(\{ snapshot: false \}\);/);
   // The newer round's pieces are gone from the reconstructed tree as well: the
