@@ -51,12 +51,13 @@ const QUERY_COLLECTIONS = ['cycles', 'observations', 'proposals', 'experiments',
 const OBSERVATIONS = ['observations', 'knowledge', 'candidates', 'proposals', 'experiments', 'experimentRecords', 'journal',
   'selections', 'promotions', 'outcomes', 'cycles', 'lineage', 'learnings', 'strategies', 'strategyMutations', 'tombstones', 'diagnoses', 'gaps'];
 
-const codeOf = index => {
+const lettersOf = index => {
   let text = '';
   let value = index;
   do { text = String.fromCharCode(65 + (value % 26)) + text; value = Math.floor(value / 26); } while (value > 0);
-  return `HISTORY_${text}`;
+  return text;
 };
+const codeOf = index => `HISTORY_${lettersOf(index)}`;
 
 // ---------------------------------------------------------------------------
 // main: materialise sources and fixtures, spawn one child per job
@@ -138,6 +139,7 @@ if (!has('child')) {
       bySide[side].cpuMs = Object.fromEntries(scenarios.map(scenario => [scenario, median(selected.map(row => row.scenarios[scenario].cpuMs))]));
       bySide[side].bytes = Object.fromEntries(scenarios.map(scenario => [scenario, median(selected.map(row => row.scenarios[scenario].writeBytes))]));
       bySide[side].transactions = Object.fromEntries(scenarios.map(scenario => [scenario, median(selected.map(row => row.scenarios[scenario].transactions))]));
+      bySide[side].domainSets = Object.fromEntries(scenarios.map(scenario => [scenario, median(selected.map(row => row.scenarios[scenario].domainSets ?? 0))]));
       bySide[side].fsync = Object.fromEntries(scenarios.map(scenario => [scenario, median(selected.map(row => row.scenarios[scenario].fsync ?? 0))]));
       bySide[side].readSyncBytes = Object.fromEntries(scenarios.map(scenario => [scenario, median(selected.map(row => row.scenarios[scenario].readSyncBytes ?? 0))]));
       bySide[side].documentBytes = median(selected.map(row => row.partition.documentBytes));
@@ -322,8 +324,11 @@ function trackStages() {
 
 trackStages();
 
-const newSubject = suffix => ({ code: `SUBJECT_${suffix}`, type: 'agent/error', target: 'host' });
-await measure('firstWrite', () => port.observe(newSubject('FIRST')));
+const newSubject = index => ({ code: `SUBJECT_${lettersOf(index)}`, type: 'agent/error', target: 'host' });
+const knowledgeCount = () => port.query('knowledge', 50).count;
+const beforeFirst = knowledgeCount();
+await measure('firstWrite', () => port.observe(newSubject(1)));
+assert.equal(knowledgeCount(), beforeFirst + 1, 'one new subject must add exactly one canonical knowledge row');
 await port.close();
 const restartStarted = performance.now();
 port = await openPort();
@@ -331,17 +336,37 @@ const restartOpenMs = performance.now() - restartStarted;
 
 const steady = [];
 for (let index = 0; index < SAMPLES; index += 1) {
-  steady.push(await measure('newSubject', () => port.observe(newSubject(`STEADY_${index}`))));
+  steady.push(await measure('newSubject', () => port.observe(newSubject(10 + index))));
 }
+assert.equal(knowledgeCount(), beforeFirst + 1 + SAMPLES, 'each distinct steady subject must be its own knowledge identity');
 const coldSample = [];
 for (let index = 0; index < SAMPLES; index += 1) {
   coldSample.push(await measure('coldRepeat', () => port.observe({ code: codeOf(0), type: 'tool/error', target: 'host' })));
 }
+const coldState = await readLogicalState(root);
+const coldRow = coldState.merged.knowledge.find(row => row.semanticFact === 'official operation failure history a');
+assert.ok(coldRow, 'the cold repeat must have reached the history row');
+const coldAdded = size === 0 ? 1 : 0;
+if (size === 0) {
+  // No seeded row exists at this size: the first repeat creates one identity and
+  // the remaining repeats update it.
+  assert.equal(knowledgeCount(), beforeFirst + 1 + SAMPLES + 1, 'a repeat at zero history creates one identity');
+  assert.equal(coldRow.count, SAMPLES);
+} else {
+  assert.equal(knowledgeCount(), beforeFirst + 1 + SAMPLES, 'a cold repeat updates the existing identity instead of adding one');
+  assert.equal(coldRow.count, SAMPLES + 1, 'the cold row accumulates every repeat');
+  assert.equal(coldState.merged.knowledge.indexOf(coldRow), 0, 'a cold update keeps the row position');
+}
 const hotSample = [];
 for (let index = 0; index < SAMPLES; index += 1) {
-  hotSample.push(await measure('hotRepeat', () => port.observe(newSubject(`STEADY_${SAMPLES - 1}`))));
+  hotSample.push(await measure('hotRepeat', () => port.observe(newSubject(10 + SAMPLES - 1))));
 }
-await measure('concurrent', () => Promise.all(Array.from({ length: CONCURRENT }, (_, index) => port.observe(newSubject(`CONCURRENT_${index}`)))));
+assert.equal(knowledgeCount(), beforeFirst + 1 + SAMPLES + coldAdded, 'a hot repeat updates the existing identity instead of adding one');
+const hotState = await readLogicalState(root);
+const hotRows = hotState.merged.knowledge.filter(row => row.semanticFact?.includes('subject') && row.count === SAMPLES + 1);
+assert.equal(hotRows.length, 1, 'the hot repeat accumulates into the one last subject');
+await measure('concurrent', () => Promise.all(Array.from({ length: CONCURRENT }, (_, index) => port.observe(newSubject(100 + index)))));
+assert.equal(knowledgeCount(), beforeFirst + 1 + SAMPLES + coldAdded + CONCURRENT, 'every concurrent subject must be its own knowledge identity');
 const recallSample = [];
 for (let index = 0; index < SAMPLES; index += 1) {
   recallSample.push(await measure('recall', () => port.recall({ problem: 'Official operation failed', target: 'host' }, {})));
@@ -369,9 +394,16 @@ const beforeRestart = await readLogicalState(root);
 // business state under comparison, so each observation id is projected onto its
 // position in the complete history; every reference to one (knowledge sourceId,
 // sourceRef.id, event ids) follows through the same map.
-const idMap = new Map(beforeRestart.merged.observations.map((row, index) => [String(row.id), `observation:${index}`]));
-const projected = value => canonicalizeUuids(projectIds(value, idMap));
+const uuidOf = value => String(value ?? '').match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g)?.at(-1) ?? null;
+const knownUuids = new Map();
+beforeRestart.merged.observations.forEach((row, index) => {
+  const uuid = uuidOf(row.id);
+  if (uuid !== null) knownUuids.set(uuid, `observation:${index}`);
+});
+const projected = value => canonicalizeUuids(value, knownUuids);
+const mergedBefore = Object.fromEntries(OBSERVATIONS.map(collection => [collection, digest(projected(beforeRestart.merged[collection]))]));
 const logical = {
+  merged: mergedBefore,
   queries: Object.fromEntries(QUERY_COLLECTIONS.map(collection => {
     const result = port.query(collection, 50);
     return [collection, { count: result.count, entries: digest(projected(result.entries)) }];
@@ -384,6 +416,8 @@ const logical = {
 await port.close();
 const afterPort = await openPort();
 const afterRestart = await readLogicalState(root);
+const restartMerged = Object.fromEntries(OBSERVATIONS.map(collection => [collection, digest(projected(afterRestart.merged[collection]))]));
+assert.deepEqual(restartMerged, logical.merged, 'a restart must preserve the complete merged history');
 const restartedQueries = Object.fromEntries(QUERY_COLLECTIONS.map(collection => {
   const result = afterPort.query(collection, 50);
   return [collection, { count: result.count, entries: digest(projected(result.entries)) }];
@@ -422,8 +456,9 @@ const output = {
   logical: {
     before: logical,
     partitionDigest: digest({ hot: beforeRestart.hot, archived: beforeRestart.archived }),
-    merged: Object.fromEntries(OBSERVATIONS.map(collection => [collection, digest(projected(beforeRestart.merged[collection]))])),
+    merged: mergedBefore,
     afterRestartPartitionDigest: digest({ hot: afterRestart.hot, archived: afterRestart.archived }),
+    restartMerged,
     restartQueries: restartedQueries,
     restartRecall: restartedRecall,
     restartKeys: restartedKeys,
@@ -510,30 +545,19 @@ function mergeRows(archived, hot) {
  * only by the stream offset. Tokens are numbered by first appearance in a
  * deterministic traversal, which is the same traversal for equal structures.
  */
-function canonicalizeUuids(value, tokens = new Map()) {
+function canonicalizeUuids(value, known, tokens = new Map()) {
   if (typeof value === 'string') return value.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, uuid => {
+    if (known.has(uuid)) return known.get(uuid);
     if (!tokens.has(uuid)) tokens.set(uuid, `uuid:${tokens.size}`);
     return tokens.get(uuid);
   });
-  if (Array.isArray(value)) return value.map(item => canonicalizeUuids(item, tokens));
+  if (Array.isArray(value)) return value.map(item => canonicalizeUuids(item, known, tokens));
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonicalizeUuids(value[key], tokens)]));
+    return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonicalizeUuids(value[key], known, tokens)]));
   }
   return value;
 }
 
-function projectIds(value, idMap) {
-  if (typeof value === 'string') {
-    let text = value;
-    for (const [id, ordinal] of idMap) if (text.includes(id)) text = text.split(id).join(ordinal);
-    return text;
-  }
-  if (Array.isArray(value)) return value.map(item => projectIds(item, idMap));
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, projectIds(item, idMap)]));
-  }
-  return value;
-}
 
 function partitionOf(state) {
   return { hot: state.hot, archived: state.archived };
@@ -548,11 +572,18 @@ async function buildInlineFixture(baseline, count) {
   for (let index = 0; index < count; index += 1) {
     const code = codeOf(index);
     const type = index % 2 ? 'agent/error' : 'tool/error';
+    // The store normalises every observation through `observationInput()` before
+    // either the observation row or the knowledge identity is built. For these
+    // letters-only codes its pattern seed is exactly `<domain>:<type>:<code>`
+    // with the release's lowercase/space collapse; the cold-repeat assertion
+    // below proves at runtime that a real `port.observe()` lands on this row.
+    const domain = type.startsWith('agent') ? 'agent' : 'tool';
+    const patternKey = `${domain}:${type}:${code}`.toLowerCase().replace(/\s+/g, ' ');
     const observation = {
       ...projectObservation({ code, type, target: 'host' }),
       id: `obs-${index}`,
-      domain: 'tool',
-      patternKey: `official-tools:${type}:${code}`,
+      domain,
+      patternKey,
       observedAt: new Date(FROZEN_NOW + index).toISOString(),
       recordedAt: new Date(FROZEN_NOW + index).toISOString(),
       confidence: 0.7,
