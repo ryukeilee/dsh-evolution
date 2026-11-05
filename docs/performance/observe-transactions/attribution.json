@@ -1,0 +1,656 @@
+{
+  "node": "v26.13.0",
+  "platform": "darwin/arm64",
+  "libTreeSha256": "b0faefd4df0fd83401e2e1f066f4847235661cf111b4272aaaf67e6ad1840307",
+  "segments": 0,
+  "segmentBytes": 1024,
+  "samples": 3,
+  "warmWrites": 60,
+  "median": {
+    "elapsedMs": 14.537625000000162,
+    "cpuMs": 7.807
+  },
+  "perSampleElapsedMs": [
+    18.225,
+    12.568,
+    14.538
+  ],
+  "byFunction": {
+    "writeFileSync": 1.637,
+    "openSync": 1.522,
+    "mkdirSync": 0.782,
+    "lstatSync": 0.663,
+    "statSync": 0.469,
+    "linkSync": 0.336,
+    "readdirSync": 0.279,
+    "rmSync": 0.26,
+    "readFileSync": 0.259,
+    "renameSync": 0.234,
+    "unlinkSync": 0.206,
+    "closeSync": 0.045
+  },
+  "byCaller": {
+    "openSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+      "calls": 5,
+      "elapsedMs": 1.509
+    },
+    "writeFileSync@lib/archive-stage.js:235": {
+      "calls": 1,
+      "elapsedMs": 1.005
+    },
+    "mkdirSync@lib/archive-stage.js:182": {
+      "calls": 1,
+      "elapsedMs": 0.782
+    },
+    "writeFileSync@lib/archive-stage.js:463": {
+      "calls": 1,
+      "elapsedMs": 0.509
+    },
+    "lstatSync@lib/archive-stage.js:751": {
+      "calls": 76,
+      "elapsedMs": 0.421
+    },
+    "linkSync@lib/archive-stage.js:199": {
+      "calls": 1,
+      "elapsedMs": 0.336
+    },
+    "rmSync@lib/archive-stage.js:457": {
+      "calls": 1,
+      "elapsedMs": 0.26
+    },
+    "statSync@lib/dockyard-domain/memory.js:1233": {
+      "calls": 38,
+      "elapsedMs": 0.222
+    },
+    "statSync@lib/dockyard-domain/memory.js:1107": {
+      "calls": 36,
+      "elapsedMs": 0.218
+    },
+    "unlinkSync@lib/archive-stage.js:454": {
+      "calls": 1,
+      "elapsedMs": 0.206
+    },
+    "lstatSync@lib/archive-stage.js:915": {
+      "calls": 36,
+      "elapsedMs": 0.174
+    },
+    "readFileSync@lib/archive-stage.js:754": {
+      "calls": 2,
+      "elapsedMs": 0.145
+    },
+    "renameSync@lib/domain-storage.js:436": {
+      "calls": 1,
+      "elapsedMs": 0.14
+    },
+    "writeFileSync@lib/domain-storage.js:435": {
+      "calls": 1,
+      "elapsedMs": 0.122
+    },
+    "renameSync@lib/archive-stage.js:464": {
+      "calls": 1,
+      "elapsedMs": 0.093
+    },
+    "readdirSync@lib/archive-stage.js:138": {
+      "calls": 3,
+      "elapsedMs": 0.078
+    },
+    "readFileSync@lib/domain-storage.js:430": {
+      "calls": 2,
+      "elapsedMs": 0.064
+    },
+    "readdirSync@lib/dockyard-domain/memory.js:1247": {
+      "calls": 2,
+      "elapsedMs": 0.06
+    },
+    "readdirSync@lib/archive-stage.js:835": {
+      "calls": 2,
+      "elapsedMs": 0.055
+    },
+    "closeSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+      "calls": 5,
+      "elapsedMs": 0.045
+    },
+    "readdirSync@lib/archive-stage.js:449": {
+      "calls": 1,
+      "elapsedMs": 0.045
+    },
+    "readdirSync@lib/archive-stage.js:926": {
+      "calls": 2,
+      "elapsedMs": 0.042
+    },
+    "readFileSync@lib/domain-storage.js:364": {
+      "calls": 1,
+      "elapsedMs": 0.031
+    },
+    "lstatSync@lib/archive-stage.js:453": {
+      "calls": 4,
+      "elapsedMs": 0.022
+    },
+    "lstatSync@lib/archive-stage.js:143": {
+      "calls": 4,
+      "elapsedMs": 0.021
+    },
+    "readFileSync@lib/archive-stage.js:847": {
+      "calls": 1,
+      "elapsedMs": 0.019
+    },
+    "lstatSync@lib/archive-stage.js:110": {
+      "calls": 2,
+      "elapsedMs": 0.013
+    },
+    "statSync@lib/dockyard-domain/memory.js:1374": {
+      "calls": 2,
+      "elapsedMs": 0.012
+    },
+    "openSync@lib/dockyard-domain/memory.js:1750": {
+      "calls": 2,
+      "elapsedMs": 0.012
+    },
+    "statSync@lib/domain-storage.js:665": {
+      "calls": 1,
+      "elapsedMs": 0.007
+    },
+    "statSync@lib/archive-stage.js:923": {
+      "calls": 1,
+      "elapsedMs": 0.005
+    },
+    "statSync@lib/domain-storage.js:685": {
+      "calls": 1,
+      "elapsedMs": 0.005
+    },
+    "lstatSync@lib/archive-stage.js:386": {
+      "calls": 1,
+      "elapsedMs": 0.004
+    },
+    "lstatSync@lib/domain-storage.js:197": {
+      "calls": 1,
+      "elapsedMs": 0.004
+    },
+    "lstatSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+      "calls": 1,
+      "elapsedMs": 0.004
+    }
+  },
+  "results": [
+    {
+      "elapsedMs": 18.225374999999985,
+      "cpuMs": 8.246,
+      "byFunction": {
+        "readFileSync": 0.262,
+        "mkdirSync": 0.075,
+        "readdirSync": 0.286,
+        "lstatSync": 0.676,
+        "linkSync": 0.321,
+        "openSync": 2.905,
+        "closeSync": 0.054,
+        "writeFileSync": 3.043,
+        "statSync": 0.476,
+        "renameSync": 0.239,
+        "unlinkSync": 0.259,
+        "rmSync": 0.257
+      },
+      "byCaller": {
+        "readFileSync@lib/domain-storage.js:430": {
+          "calls": 2,
+          "elapsedMs": 0.065
+        },
+        "mkdirSync@lib/archive-stage.js:182": {
+          "calls": 1,
+          "elapsedMs": 0.075
+        },
+        "readdirSync@lib/archive-stage.js:138": {
+          "calls": 3,
+          "elapsedMs": 0.078
+        },
+        "lstatSync@lib/archive-stage.js:143": {
+          "calls": 4,
+          "elapsedMs": 0.022
+        },
+        "linkSync@lib/archive-stage.js:199": {
+          "calls": 1,
+          "elapsedMs": 0.321
+        },
+        "openSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+          "calls": 5,
+          "elapsedMs": 2.892
+        },
+        "closeSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+          "calls": 5,
+          "elapsedMs": 0.054
+        },
+        "writeFileSync@lib/archive-stage.js:235": {
+          "calls": 1,
+          "elapsedMs": 2.745
+        },
+        "statSync@lib/dockyard-domain/memory.js:1107": {
+          "calls": 36,
+          "elapsedMs": 0.222
+        },
+        "statSync@lib/dockyard-domain/memory.js:1233": {
+          "calls": 38,
+          "elapsedMs": 0.224
+        },
+        "readdirSync@lib/dockyard-domain/memory.js:1247": {
+          "calls": 2,
+          "elapsedMs": 0.064
+        },
+        "lstatSync@lib/archive-stage.js:751": {
+          "calls": 76,
+          "elapsedMs": 0.43
+        },
+        "readFileSync@lib/archive-stage.js:754": {
+          "calls": 2,
+          "elapsedMs": 0.143
+        },
+        "lstatSync@lib/archive-stage.js:915": {
+          "calls": 36,
+          "elapsedMs": 0.175
+        },
+        "readFileSync@lib/archive-stage.js:847": {
+          "calls": 1,
+          "elapsedMs": 0.021
+        },
+        "statSync@lib/archive-stage.js:923": {
+          "calls": 1,
+          "elapsedMs": 0.005
+        },
+        "readdirSync@lib/archive-stage.js:926": {
+          "calls": 2,
+          "elapsedMs": 0.045
+        },
+        "readdirSync@lib/archive-stage.js:835": {
+          "calls": 2,
+          "elapsedMs": 0.058
+        },
+        "statSync@lib/dockyard-domain/memory.js:1374": {
+          "calls": 2,
+          "elapsedMs": 0.012
+        },
+        "openSync@lib/dockyard-domain/memory.js:1750": {
+          "calls": 2,
+          "elapsedMs": 0.013
+        },
+        "lstatSync@lib/archive-stage.js:110": {
+          "calls": 2,
+          "elapsedMs": 0.015
+        },
+        "lstatSync@lib/archive-stage.js:386": {
+          "calls": 1,
+          "elapsedMs": 0.004
+        },
+        "writeFileSync@lib/archive-stage.js:463": {
+          "calls": 1,
+          "elapsedMs": 0.169
+        },
+        "renameSync@lib/archive-stage.js:464": {
+          "calls": 1,
+          "elapsedMs": 0.089
+        },
+        "lstatSync@lib/domain-storage.js:197": {
+          "calls": 1,
+          "elapsedMs": 0.005
+        },
+        "readFileSync@lib/domain-storage.js:364": {
+          "calls": 1,
+          "elapsedMs": 0.033
+        },
+        "writeFileSync@lib/domain-storage.js:435": {
+          "calls": 1,
+          "elapsedMs": 0.129
+        },
+        "renameSync@lib/domain-storage.js:436": {
+          "calls": 1,
+          "elapsedMs": 0.15
+        },
+        "readdirSync@lib/archive-stage.js:449": {
+          "calls": 1,
+          "elapsedMs": 0.041
+        },
+        "lstatSync@lib/archive-stage.js:453": {
+          "calls": 4,
+          "elapsedMs": 0.022
+        },
+        "unlinkSync@lib/archive-stage.js:454": {
+          "calls": 1,
+          "elapsedMs": 0.259
+        },
+        "lstatSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+          "calls": 1,
+          "elapsedMs": 0.003
+        },
+        "rmSync@lib/archive-stage.js:457": {
+          "calls": 1,
+          "elapsedMs": 0.257
+        },
+        "statSync@lib/domain-storage.js:665": {
+          "calls": 1,
+          "elapsedMs": 0.007
+        },
+        "statSync@lib/domain-storage.js:685": {
+          "calls": 1,
+          "elapsedMs": 0.006
+        }
+      }
+    },
+    {
+      "elapsedMs": 12.568082999999888,
+      "cpuMs": 7.807,
+      "byFunction": {
+        "readFileSync": 0.269,
+        "mkdirSync": 0.924,
+        "readdirSync": 0.278,
+        "lstatSync": 0.662,
+        "linkSync": 0.341,
+        "openSync": 0.827,
+        "closeSync": 0.04,
+        "writeFileSync": 0.936,
+        "statSync": 0.464,
+        "renameSync": 0.229,
+        "unlinkSync": 0.057,
+        "rmSync": 0.251
+      },
+      "byCaller": {
+        "readFileSync@lib/domain-storage.js:430": {
+          "calls": 2,
+          "elapsedMs": 0.065
+        },
+        "mkdirSync@lib/archive-stage.js:182": {
+          "calls": 1,
+          "elapsedMs": 0.924
+        },
+        "readdirSync@lib/archive-stage.js:138": {
+          "calls": 3,
+          "elapsedMs": 0.078
+        },
+        "lstatSync@lib/archive-stage.js:143": {
+          "calls": 4,
+          "elapsedMs": 0.021
+        },
+        "linkSync@lib/archive-stage.js:199": {
+          "calls": 1,
+          "elapsedMs": 0.341
+        },
+        "openSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+          "calls": 5,
+          "elapsedMs": 0.815
+        },
+        "closeSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+          "calls": 5,
+          "elapsedMs": 0.04
+        },
+        "writeFileSync@lib/archive-stage.js:235": {
+          "calls": 1,
+          "elapsedMs": 0.137
+        },
+        "statSync@lib/dockyard-domain/memory.js:1107": {
+          "calls": 36,
+          "elapsedMs": 0.215
+        },
+        "statSync@lib/dockyard-domain/memory.js:1233": {
+          "calls": 38,
+          "elapsedMs": 0.219
+        },
+        "readdirSync@lib/dockyard-domain/memory.js:1247": {
+          "calls": 2,
+          "elapsedMs": 0.059
+        },
+        "lstatSync@lib/archive-stage.js:751": {
+          "calls": 76,
+          "elapsedMs": 0.42
+        },
+        "readFileSync@lib/archive-stage.js:754": {
+          "calls": 2,
+          "elapsedMs": 0.156
+        },
+        "lstatSync@lib/archive-stage.js:915": {
+          "calls": 36,
+          "elapsedMs": 0.175
+        },
+        "readFileSync@lib/archive-stage.js:847": {
+          "calls": 1,
+          "elapsedMs": 0.018
+        },
+        "statSync@lib/archive-stage.js:923": {
+          "calls": 1,
+          "elapsedMs": 0.005
+        },
+        "readdirSync@lib/archive-stage.js:926": {
+          "calls": 2,
+          "elapsedMs": 0.041
+        },
+        "readdirSync@lib/archive-stage.js:835": {
+          "calls": 2,
+          "elapsedMs": 0.053
+        },
+        "statSync@lib/dockyard-domain/memory.js:1374": {
+          "calls": 2,
+          "elapsedMs": 0.012
+        },
+        "openSync@lib/dockyard-domain/memory.js:1750": {
+          "calls": 2,
+          "elapsedMs": 0.012
+        },
+        "lstatSync@lib/archive-stage.js:110": {
+          "calls": 2,
+          "elapsedMs": 0.013
+        },
+        "lstatSync@lib/archive-stage.js:386": {
+          "calls": 1,
+          "elapsedMs": 0.003
+        },
+        "writeFileSync@lib/archive-stage.js:463": {
+          "calls": 1,
+          "elapsedMs": 0.68
+        },
+        "renameSync@lib/archive-stage.js:464": {
+          "calls": 1,
+          "elapsedMs": 0.095
+        },
+        "lstatSync@lib/domain-storage.js:197": {
+          "calls": 1,
+          "elapsedMs": 0.004
+        },
+        "readFileSync@lib/domain-storage.js:364": {
+          "calls": 1,
+          "elapsedMs": 0.029
+        },
+        "writeFileSync@lib/domain-storage.js:435": {
+          "calls": 1,
+          "elapsedMs": 0.119
+        },
+        "renameSync@lib/domain-storage.js:436": {
+          "calls": 1,
+          "elapsedMs": 0.134
+        },
+        "readdirSync@lib/archive-stage.js:449": {
+          "calls": 1,
+          "elapsedMs": 0.047
+        },
+        "lstatSync@lib/archive-stage.js:453": {
+          "calls": 4,
+          "elapsedMs": 0.022
+        },
+        "unlinkSync@lib/archive-stage.js:454": {
+          "calls": 1,
+          "elapsedMs": 0.057
+        },
+        "lstatSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+          "calls": 1,
+          "elapsedMs": 0.004
+        },
+        "rmSync@lib/archive-stage.js:457": {
+          "calls": 1,
+          "elapsedMs": 0.251
+        },
+        "statSync@lib/domain-storage.js:665": {
+          "calls": 1,
+          "elapsedMs": 0.007
+        },
+        "statSync@lib/domain-storage.js:685": {
+          "calls": 1,
+          "elapsedMs": 0.005
+        }
+      }
+    },
+    {
+      "elapsedMs": 14.537625000000162,
+      "cpuMs": 7.323,
+      "byFunction": {
+        "readFileSync": 0.245,
+        "mkdirSync": 1.348,
+        "readdirSync": 0.274,
+        "lstatSync": 0.651,
+        "linkSync": 0.346,
+        "openSync": 0.833,
+        "closeSync": 0.04,
+        "writeFileSync": 0.931,
+        "statSync": 0.468,
+        "renameSync": 0.233,
+        "unlinkSync": 0.302,
+        "rmSync": 0.272
+      },
+      "byCaller": {
+        "readFileSync@lib/domain-storage.js:430": {
+          "calls": 2,
+          "elapsedMs": 0.061
+        },
+        "mkdirSync@lib/archive-stage.js:182": {
+          "calls": 1,
+          "elapsedMs": 1.348
+        },
+        "readdirSync@lib/archive-stage.js:138": {
+          "calls": 3,
+          "elapsedMs": 0.077
+        },
+        "lstatSync@lib/archive-stage.js:143": {
+          "calls": 4,
+          "elapsedMs": 0.021
+        },
+        "linkSync@lib/archive-stage.js:199": {
+          "calls": 1,
+          "elapsedMs": 0.346
+        },
+        "openSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+          "calls": 5,
+          "elapsedMs": 0.82
+        },
+        "closeSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+          "calls": 5,
+          "elapsedMs": 0.04
+        },
+        "writeFileSync@lib/archive-stage.js:235": {
+          "calls": 1,
+          "elapsedMs": 0.134
+        },
+        "statSync@lib/dockyard-domain/memory.js:1107": {
+          "calls": 36,
+          "elapsedMs": 0.217
+        },
+        "statSync@lib/dockyard-domain/memory.js:1233": {
+          "calls": 38,
+          "elapsedMs": 0.223
+        },
+        "readdirSync@lib/dockyard-domain/memory.js:1247": {
+          "calls": 2,
+          "elapsedMs": 0.058
+        },
+        "lstatSync@lib/archive-stage.js:751": {
+          "calls": 76,
+          "elapsedMs": 0.412
+        },
+        "readFileSync@lib/archive-stage.js:754": {
+          "calls": 2,
+          "elapsedMs": 0.137
+        },
+        "lstatSync@lib/archive-stage.js:915": {
+          "calls": 36,
+          "elapsedMs": 0.171
+        },
+        "readFileSync@lib/archive-stage.js:847": {
+          "calls": 1,
+          "elapsedMs": 0.018
+        },
+        "statSync@lib/archive-stage.js:923": {
+          "calls": 1,
+          "elapsedMs": 0.005
+        },
+        "readdirSync@lib/archive-stage.js:926": {
+          "calls": 2,
+          "elapsedMs": 0.039
+        },
+        "readdirSync@lib/archive-stage.js:835": {
+          "calls": 2,
+          "elapsedMs": 0.054
+        },
+        "statSync@lib/dockyard-domain/memory.js:1374": {
+          "calls": 2,
+          "elapsedMs": 0.012
+        },
+        "openSync@lib/dockyard-domain/memory.js:1750": {
+          "calls": 2,
+          "elapsedMs": 0.012
+        },
+        "lstatSync@lib/archive-stage.js:110": {
+          "calls": 2,
+          "elapsedMs": 0.012
+        },
+        "lstatSync@lib/archive-stage.js:386": {
+          "calls": 1,
+          "elapsedMs": 0.004
+        },
+        "writeFileSync@lib/archive-stage.js:463": {
+          "calls": 1,
+          "elapsedMs": 0.679
+        },
+        "renameSync@lib/archive-stage.js:464": {
+          "calls": 1,
+          "elapsedMs": 0.095
+        },
+        "lstatSync@lib/domain-storage.js:197": {
+          "calls": 1,
+          "elapsedMs": 0.004
+        },
+        "readFileSync@lib/domain-storage.js:364": {
+          "calls": 1,
+          "elapsedMs": 0.03
+        },
+        "writeFileSync@lib/domain-storage.js:435": {
+          "calls": 1,
+          "elapsedMs": 0.119
+        },
+        "renameSync@lib/domain-storage.js:436": {
+          "calls": 1,
+          "elapsedMs": 0.137
+        },
+        "readdirSync@lib/archive-stage.js:449": {
+          "calls": 1,
+          "elapsedMs": 0.047
+        },
+        "lstatSync@lib/archive-stage.js:453": {
+          "calls": 4,
+          "elapsedMs": 0.023
+        },
+        "unlinkSync@lib/archive-stage.js:454": {
+          "calls": 1,
+          "elapsedMs": 0.302
+        },
+        "lstatSync@scripts/benchmarks/archive-observe-attribution.mjs:105": {
+          "calls": 1,
+          "elapsedMs": 0.004
+        },
+        "rmSync@lib/archive-stage.js:457": {
+          "calls": 1,
+          "elapsedMs": 0.272
+        },
+        "statSync@lib/domain-storage.js:665": {
+          "calls": 1,
+          "elapsedMs": 0.006
+        },
+        "statSync@lib/domain-storage.js:685": {
+          "calls": 1,
+          "elapsedMs": 0.005
+        }
+      }
+    }
+  ]
+}
