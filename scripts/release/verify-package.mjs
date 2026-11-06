@@ -14,6 +14,10 @@
  *      pins, and is the committed `release/` artifact exactly those bytes?
  *   6. do the README install/doctor/upgrade/rollback/uninstall instructions
  *      and the compatibility declaration agree with the shipped package?
+ *   7. is the committed acceptance record still the one it claims to be? The
+ *      record has two lanes and they are never merged: the hosts the pin
+ *      verified are checked against the pinned bytes and content, and every
+ *      host this tree adds is checked against this tree's content.
  *
  * Checks 1 and 5 are split on purpose: byte identity is only promised inside
  * one environment, because npm's compression is npm-version-dependent, while
@@ -33,14 +37,24 @@
  * The tolerance is not a way to ship: `verify-provenance.mjs` still refuses a
  * tag whose tree content differs from the pin, so the publishing path is
  * unchanged. See `pin-relation.mjs` and RELEASE.md section 6 item 16.
+ *
+ * The acceptance check is split the same way, and for the same reason. A pin is
+ * a record of one release: its `verifiedHosts` can only describe the hosts those
+ * bytes shipped support for, so that lane is read from the pin and the committed
+ * artifact. The hosts the working tree adds afterwards are a claim about this
+ * tree, so that lane compares their record to this tree's content. Driving both
+ * from `package.json` made a development successor unable to add a supported
+ * host without either re-pinning or overwriting the historical record.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
   DuplicateJsonKeyError, REPO_ROOT, assertCleanContent, assertCleanEntries,
-  assertReproducible, contentDigestOf, expectedEntries, formatBytes, parseJsonText, pinnedArtifactFile,
-  pinnedArtifactStatus, readManifest, readReleaseManifest, readTarEntries, releaseRootFileStatus, treeContentDigest,
+  assertReproducible, contentDigestOf, declaredHostVersions, evaluateAddedHostAcceptance,
+  evaluatePinnedAcceptance, expectedEntries, formatBytes, parseJsonText, pinnedArtifactFile,
+  pinnedArtifactStatus, pinnedDeclaredHostVersions, readManifest, readReleaseManifest, readTarEntries,
+  releaseRootFileStatus, treeContentDigest,
 } from './release-lib.mjs';
 import { PIN_RELATION, collectPinRelation, formatRelation } from './pin-relation.mjs';
 
@@ -166,49 +180,38 @@ check('package-lock.json matches package.json', () => {
 // 5. declarations agree with the documentation users actually follow
 // ---------------------------------------------------------------------------
 
-const hostVersions = (manifest.peerDependencies?.['@deepseek-ai/dsh'] || '').split('||').map((value) => value.trim()).filter(Boolean);
+const hostVersions = declaredHostVersions(manifest);
 const readme = fs.readFileSync(path.join(REPO_ROOT, 'README.md'), 'utf8');
 const compatibility = fs.readFileSync(path.join(REPO_ROOT, 'COMPATIBILITY.md'), 'utf8');
 const changelog = fs.readFileSync(path.join(REPO_ROOT, 'CHANGELOG.md'), 'utf8');
 
 check('the committed acceptance evidence describes the pinned package content', () => {
-  // The acceptance evidence records the content digest of the tarball it was
-  // produced against, plus the byte hash of the pinned artifact. The pin is the
-  // authority for both: evidence is written once, against the artifact that
-  // shipped, and a later development tree must neither invalidate it nor
-  // re-target it. A change to any shipped file still forces a new acceptance
-  // run, because it changes the content the next pin will record.
+  // The pin is the authority for its own hosts, and this loop is driven from the
+  // pin for that reason. It used to be driven from `package.json`, which
+  // conflated two different records: the hosts the *released* bytes were accepted
+  // on, and the hosts the *working tree* declares. A successor that adds a
+  // supported host then cannot pass without either re-pinning (claiming a release
+  // that never happened) or writing the candidate's digest into the historical
+  // record. Here the evidence is written once, against the artifact that shipped,
+  // and a later development tree neither invalidates nor re-targets it.
   const releaseManifest = readReleaseManifest();
-  const problems = [];
-  for (const host of hostVersions) {
-    const file = path.join(REPO_ROOT, 'docs', 'evidence', `dsh-${host}.json`);
-    if (!fs.existsSync(file)) { problems.push(`missing docs/evidence/dsh-${host}.json`); continue; }
-    let evidence;
-    // Duplicate-safe, before any field is looked at. `JSON.parse` keeps the last
-    // value for a repeated key, so a record that spelled `"ok": false` and then
-    // `"\u006fk": true` parsed to `{ ok: true }` and counted as a passed
-    // acceptance — a failed run recorded as a passed one. The refusal names the
-    // file and one fixed category; the record's own text is never echoed.
-    try {
-      evidence = parseJsonText(fs.readFileSync(file, 'utf8'));
-    } catch (error) {
-      problems.push(`docs/evidence/dsh-${host}.json ${error instanceof DuplicateJsonKeyError
-        ? 'repeats an object key, so which value applies is ambiguous'
-        : 'is not readable: invalid JSON'}`);
-      continue;
-    }
-    if (evidence.ok !== true) problems.push(`${host}: the recorded acceptance did not pass`);
-    if (evidence.hostVersion !== host) problems.push(`${host}: the evidence was recorded against host ${evidence.hostVersion}`);
-    if (evidence.packageVersion !== manifest.version) problems.push(`${host}: the evidence was recorded for package ${evidence.packageVersion}, not ${manifest.version}`);
-    if (evidence.contentSha256 !== releaseManifest.contentSha256) {
-      problems.push(`${host}: the evidence covers content ${evidence.contentSha256}, but the pin records ${releaseManifest.contentSha256}; re-run the host acceptance and re-pin`);
-    }
-    if (evidence.tarballSha256 !== releaseManifest.sha256) {
-      problems.push(`${host}: the evidence was recorded against ${evidence.tarballSha256}, but the pinned artifact is ${releaseManifest.sha256}`);
-    }
-  }
+  const { hosts, problems } = evaluatePinnedAcceptance(releaseManifest);
   if (problems.length > 0) throw new Error(problems.join('\n        '));
-  notes.push(`        ${hostVersions.length} hosts, content ${releaseManifest.contentSha256}`);
+  notes.push(`        ${hosts.length} hosts, content ${releaseManifest.contentSha256}`);
+});
+check('every host this tree adds was accepted against this tree', () => {
+  // A host the pin never verified has no historical record, so the only honest
+  // proof that this content was accepted on it is a record produced against this
+  // content. Old release evidence — or a record from an earlier candidate —
+  // describes another build and is refused rather than read as coverage; the
+  // hosts the pin verified are left to the check above.
+  const releaseManifest = readReleaseManifest();
+  const treeDigest = treeContentDigest();
+  const { hosts, problems } = evaluateAddedHostAcceptance({ pin: releaseManifest, manifest, treeDigest });
+  if (problems.length > 0) throw new Error(problems.join('\n        '));
+  notes.push(hosts.length === 0
+    ? '        no host beyond the pin, so this tree adds no acceptance to prove'
+    : `        ${hosts.join(', ')} against content ${treeDigest}`);
 });
 if (releaseMode) {
   check('release/manifest.json pins this tree content', () => {
@@ -283,6 +286,16 @@ check('the committed release artifact is exactly the pinned build', () => {
     throw new Error(`the committed artifact has modes ${JSON.stringify(modes)}, release/manifest.json pins ${JSON.stringify(releaseManifest.modes)}`);
   }
   assertCleanEntries(entries.map((entry) => entry.path), expectedEntries(manifest));
+  // The pin claims which hosts the released bytes were accepted on, and those
+  // bytes declare which hosts they support. The two have to be the same set: a
+  // release can neither ship a host it never accepted nor accept a host it does
+  // not ship support for. The shipped declaration is read from the artifact, not
+  // from this tree, which is what keeps the claim verifiable after the tree has
+  // moved on.
+  const shippedHosts = pinnedDeclaredHostVersions(releaseManifest, entries);
+  if (JSON.stringify(shippedHosts) !== JSON.stringify(releaseManifest.verifiedHosts)) {
+    throw new Error(`the committed artifact declares hosts ${JSON.stringify(shippedHosts)}, but release/manifest.json verifies ${JSON.stringify(releaseManifest.verifiedHosts)}`);
+  }
   // The checksum file is the third file of the release set and is read at a
   // fixed name inside `release/`, so it is held to the same rule as the pin:
   // `lstat` first, a regular committed file only, never a link to somewhere else.

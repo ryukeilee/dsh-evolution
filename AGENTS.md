@@ -111,7 +111,7 @@ npm run release:verify -- dist/<build>.tgz --content-only   # 本机重建只比
 node scripts/release/verify-provenance.mjs --tag vX --require-source-commit
 ```
 
-- `npm test` 展开为 `node --test "test/**/*.test.mjs" "test/**/*.test.js"`。`pack:check` 两种模式都执行 16 项检查：开发模式包含“固定点描述自己的提交”与“工作树是固定点或已提交后继”，`--release` 把这两项换成“固定点固定本树内容”与“工作树构建出固定内容”。它把"工作树是固定点的已提交后继"作为独立结论打印，所以读结果时要区分"16 项通过"与"这棵树就是发布产物"；分发文件存在**未提交**改动时它一律失败。
+- `npm test` 展开为 `node --test "test/**/*.test.mjs" "test/**/*.test.js"`。`pack:check` 两种模式都执行 17 项检查：开发模式包含“固定点描述自己的提交”与“工作树是固定点或已提交后继”，`--release` 把这两项换成“固定点固定本树内容”与“工作树构建出固定内容”。验收证据按两条通道核对：固定点 `verifiedHosts` 里的宿主核对 `release/` 固定产物（内容与字节），工作树新增的宿主核对本树构建的内容（新增宿主没有固定产物可比，只核内容摘要）；固定点的 `verifiedHosts` 还必须等于固定产物 `package.json` 声明的宿主集合。它把"工作树是固定点的已提交后继"作为独立结论打印，所以读结果时要区分"17 项通过"与"这棵树就是发布产物"；分发文件存在**未提交**改动时它一律失败。
 
 - **全量测试必须带 V8 堆上限，不要裸跑 `npm test`。** 2026-10-20 的实际事故：用 `/tmp/nodedist/v24.9.0/bin/node` 跑全量套件时，单个 `node --test` 子进程累计分配约 200 GB 匿名内存（`JetsamEvent` 中 `rpages` = 13,002,874 × 16 KB ≈ 203 GB，`largestProcess` = `node`），被内核以 `memorystatus: killing ... due to low-swap` 强杀，连带弹出「应用程序内存不足」并清理 `cfprefsd` / `suggestd` / Dock 相关等系统进程。01:28–09:19 间共触发 4 次，峰值稳定在约 201,9xx MiB。事故记录把这归为确定性的无界分配；该归因本身没有被本轮验证，边界见 §5 最后一条与 `docs/performance/oom-localization.md`。
   - 全量回归用 `NODE_OPTIONS=--max-old-space-size=4096 npm test`；单文件用 `node --max-old-space-size=4096 --test <file>`。不得用 `--no-max-old-space-size` 或空 `NODE_OPTIONS` 覆盖该上限。

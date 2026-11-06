@@ -410,6 +410,161 @@ export function pinnedSourceCommit(pin = readReleaseManifest()) {
 }
 
 /**
+ * The DSH host versions a package manifest declares as supported.
+ *
+ * The declaration is the `@deepseek-ai/dsh` alternative range: the acceptance
+ * matrix, the compatibility table and these gates all read the same list, so a
+ * host cannot be covered by one of them and missing from another.
+ */
+export function declaredHostVersions(manifest = readManifest()) {
+  const range = manifest?.peerDependencies?.['@deepseek-ai/dsh'];
+  if (typeof range !== 'string') return [];
+  return range.split('||').map((value) => value.trim()).filter(Boolean);
+}
+
+/**
+ * The DSH host versions the *pinned artifact* declares, read from the
+ * `package.json` inside the committed tarball.
+ *
+ * This is the pin's own claim about the hosts the released bytes supported, so
+ * it is read from the bytes rather than from the working tree: a development
+ * successor may add a host, and that must not rewrite what shipped. `entries`
+ * lets a caller that already opened the artifact reuse one read of it.
+ */
+export function pinnedDeclaredHostVersions(pin = readReleaseManifest(), entries = null) {
+  const shipped = (entries ?? readTarEntries(pinnedArtifactFile(pin))).find((entry) => entry.path === 'package.json');
+  if (!shipped) throw new Error('the pinned artifact has no package.json');
+  let document;
+  try {
+    document = parseJsonText(shipped.bytes.toString('utf8'));
+  } catch (error) {
+    throw new Error(error instanceof DuplicateJsonKeyError
+      ? 'the pinned artifact package.json repeats an object key, so which value applies is ambiguous'
+      : 'the pinned artifact package.json is not readable: invalid JSON');
+  }
+  return declaredHostVersions(document);
+}
+
+/**
+ * A host version is also a file name component
+ * (`docs/evidence/dsh-<host>.json`), so only the shape the acceptance matrix
+ * writes is accepted. The recorded path in `release/manifest.json` is never
+ * opened: the path is derived from the host and the recorded value has to agree
+ * with the derived one, so a pin cannot point the reader at another file.
+ */
+const HOST_FILE_NAME_GRAMMAR = /^[0-9A-Za-z][0-9A-Za-z.+-]*$/;
+
+function acceptanceEvidencePath(host) {
+  return `docs/evidence/dsh-${host}.json`;
+}
+
+/**
+ * One acceptance record, read duplicate-safe before any field is looked at.
+ *
+ * `JSON.parse` keeps the last value for a repeated key, so a record that spelled
+ * `"ok": false` and then `"\u006fk": true` parsed to `{ ok: true }` and counted
+ * as a passed acceptance — a failed run recorded as a passed one. The refusal
+ * names the file and one fixed category; the record's own text is never echoed.
+ *
+ * Returns `{ evidence, problems }`; `evidence` is absent when it could not be
+ * read, so a caller only compares digests on a record it actually got.
+ */
+function readAcceptanceRecord({ root, host, file, packageVersion }) {
+  if (!HOST_FILE_NAME_GRAMMAR.test(host)) {
+    return { problems: [`${JSON.stringify(host)} is not a host version an acceptance record can be named after`] };
+  }
+  const absolute = path.join(root, file);
+  if (!fs.existsSync(absolute)) return { problems: [`missing ${file}`] };
+  let evidence;
+  try {
+    evidence = parseJsonText(fs.readFileSync(absolute, 'utf8'));
+  } catch (error) {
+    return {
+      problems: [`${file} ${error instanceof DuplicateJsonKeyError
+        ? 'repeats an object key, so which value applies is ambiguous'
+        : 'is not readable: invalid JSON'}`],
+    };
+  }
+  const problems = [];
+  if (evidence.ok !== true) problems.push(`${host}: the recorded acceptance did not pass`);
+  if (evidence.hostVersion !== host) problems.push(`${host}: the evidence was recorded against host ${evidence.hostVersion}`);
+  if (evidence.packageVersion !== packageVersion) {
+    problems.push(`${host}: the evidence was recorded for package ${evidence.packageVersion}, not ${packageVersion}`);
+  }
+  return { evidence, problems };
+}
+
+/**
+ * The pin's own acceptance claim, decided from the pin and the committed
+ * artifact only.
+ *
+ * Every host `release/manifest.json#verifiedHosts` records must have the
+ * evidence the pin names, and that record must describe exactly the pinned
+ * bytes and content. This is a statement about immutable history: it is
+ * deliberately not driven by `package.json`, because a development successor
+ * may declare a host the pin never shipped, and that must neither re-target
+ * this record (writing a candidate's digest into it) nor invalidate it
+ * (demanding the pin describe a host it never accepted).
+ */
+export function evaluatePinnedAcceptance(pin = readReleaseManifest(), { root = REPO_ROOT } = {}) {
+  const hosts = Array.isArray(pin.verifiedHosts) ? pin.verifiedHosts : [];
+  const recorded = Array.isArray(pin.evidence) ? pin.evidence : [];
+  const problems = [];
+  if (hosts.length === 0) problems.push('release/manifest.json records no verified hosts');
+  if (recorded.length !== hosts.length) {
+    problems.push(`release/manifest.json lists ${hosts.length} verified host(s) and ${recorded.length} acceptance record(s)`);
+  }
+  hosts.forEach((host, index) => {
+    const file = acceptanceEvidencePath(host);
+    if (recorded[index] !== file) {
+      problems.push(`${JSON.stringify(host)}: release/manifest.json names ${JSON.stringify(recorded[index] ?? null)} instead of ${file}`);
+      return;
+    }
+    const { evidence, problems: readProblems } = readAcceptanceRecord({ root, host, file, packageVersion: pin.version });
+    problems.push(...readProblems);
+    if (!evidence) return;
+    if (evidence.contentSha256 !== pin.contentSha256) {
+      problems.push(`${host}: the evidence covers content ${evidence.contentSha256}, but the pin records ${pin.contentSha256}; re-run the host acceptance and re-pin`);
+    }
+    if (evidence.tarballSha256 !== pin.sha256) {
+      problems.push(`${host}: the evidence was recorded against ${evidence.tarballSha256}, but the pinned artifact is ${pin.sha256}`);
+    }
+  });
+  return { hosts, problems };
+}
+
+/**
+ * The acceptance this *tree* still owes for the hosts it added.
+ *
+ * A host the pin never verified has no historical record, so the only honest
+ * proof that this content was accepted on it is a record produced against this
+ * content. An older release's evidence, or a record left over from an earlier
+ * candidate, describes another build and proves nothing about this one; it is
+ * refused instead of being read as coverage. The pin's own hosts are out of
+ * scope here — their record belongs to the pin — and the split between the two
+ * lanes is exactly `verifiedHosts`. The bytes are not compared for an added
+ * host: `npm pack` bytes vary with the npm version while the content digest does
+ * not, and there is no committed artifact for a candidate to hash against.
+ */
+export function evaluateAddedHostAcceptance({ pin = readReleaseManifest(), manifest = readManifest(), treeDigest, root = REPO_ROOT } = {}) {
+  const verified = new Set(Array.isArray(pin.verifiedHosts) ? pin.verifiedHosts : []);
+  const hosts = declaredHostVersions(manifest).filter((host) => !verified.has(host));
+  const problems = [];
+  if (hosts.length === 0) return { hosts, problems };
+  const digest = treeDigest ?? treeContentDigest();
+  for (const host of hosts) {
+    const file = acceptanceEvidencePath(host);
+    const { evidence, problems: readProblems } = readAcceptanceRecord({ root, host, file, packageVersion: manifest.version });
+    problems.push(...readProblems);
+    if (!evidence) continue;
+    if (evidence.contentSha256 !== digest) {
+      problems.push(`${host}: the evidence covers content ${evidence.contentSha256}, but this tree builds ${digest}; re-run the host acceptance for this tree`);
+    }
+  }
+  return { hosts, problems };
+}
+
+/**
  * Where the pin's own artifact is: `<repo>/release/<name>-<version>.tgz`.
  *
  * Path arithmetic only, but the two things that make it safe are decided here
