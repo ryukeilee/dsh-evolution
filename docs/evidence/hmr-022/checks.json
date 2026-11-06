@@ -11,13 +11,13 @@
   "fullTest": {
     "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
     "tests": 1417,
-    "passed": 1413,
-    "failed": 2,
+    "passed": 1414,
+    "failed": 1,
     "skipped": 2,
     "failures": [
-      "test/release-pin.test.mjs: the pin lists an acceptance evidence file per supported host (peerDependencies now declares 0.2.2-rc.1; release/manifest.json still pins the three historical hosts, and re-pinning is a release write that this change does not perform)",
-      "test/release-pin.test.mjs: the working tree is the pinned release, or a committed successor of it (the tree that produced this file was not committed yet)"
-    ]
+      "test/release-pin.test.mjs: the pin lists an acceptance evidence file per supported host — peerDependencies now also declares 0.2.2-rc.1 while release/manifest.json still pins the three historical hosts; re-pinning is a release write that this change does not perform"
+    ],
+    "note": "the run was made on commit f781e10; the two later commits change README text, docs/evidence and this file only. test/release-pin.test.mjs + test/workflows.test.mjs + test/diagnostics.test.mjs were re-run on e86febd: 80 tests, 79 pass, 1 fail (the same pin item)."
   },
   "focused": {
     "diagnostics": {
@@ -36,9 +36,9 @@
   },
   "packCheck": {
     "command": "npm run pack:check",
-    "result": "15/16 checks pass; the failing check is 'the committed acceptance evidence describes the pinned package content' (0.2.2-rc.1 evidence covers d43c7e81…, the pin records 370465f0…). Before the lockfile sync it also reported peerDependencies drift in package-lock.json; that is fixed in this change (package-lock.json is not a shipped file).",
+    "result": "15/16 checks pass on the final tree; the failing check is 'the committed acceptance evidence describes the pinned package content' (0.2.2-rc.1 evidence covers bec5d91a…, the pin records 370465f0…).",
     "knownFailures": [
-      "evidence-vs-pin: requires re-pinning release/manifest.json, which is a release write (npm run release:publish) not performed by this change"
+      "evidence-vs-pin: requires re-pinning release/manifest.json (npm run release:publish) and re-running all four host acceptances; not performed by this change"
     ]
   },
   "hostAcceptance": {
@@ -88,5 +88,50 @@
     },
     "note": "CPU is one median over each sample's user+system (not the sum of two medians); a sample that never reached its ready state is an error and makes the run exit non-zero."
   },
-  "production": "unchanged: no production DSH_HOME, no production config, no release/ artifact was modified"
+  "production": "unchanged: no production DSH_HOME, no production config, no release/ artifact was modified",
+  "review": {
+    "workflow": "sol-loop",
+    "rounds": 2,
+    "provider": "codex",
+    "model": "gpt-6.1-sol",
+    "requestedEffort": "xhigh",
+    "returnedEffort": "xhigh",
+    "effectiveEffort": "unverified: no independent runtime options metadata returned",
+    "verdict": "APPROVE",
+    "round1": {
+      "verdict": "CHANGES",
+      "findings": [
+        {
+          "id": "S1",
+          "severity": "blocker",
+          "outcome": "fixed",
+          "claim": "reproduce-hmr-startup.mjs read the mode from the parent environment, so the no-HMR overlays never disabled the hmr row while the run still reported 9/9"
+        },
+        {
+          "id": "S2",
+          "severity": "should",
+          "outcome": "fixed",
+          "claim": "a benchmark sample whose probe timed out was still counted as a success"
+        },
+        {
+          "id": "S3",
+          "severity": "nit",
+          "outcome": "fixed",
+          "claim": "cpuMs was the sum of two component medians instead of the median of per-sample totals"
+        }
+      ]
+    },
+    "round2": {
+      "verdict": "APPROVE",
+      "findings": [
+        {
+          "id": "S4",
+          "severity": "nit",
+          "outcome": "fixed",
+          "claim": "README still said 7 rounds; the committed dataset and report are 9"
+        }
+      ]
+    },
+    "usage": "not returned"
+  }
 }

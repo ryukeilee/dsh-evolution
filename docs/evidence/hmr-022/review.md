@@ -1,15 +1,16 @@
-VERDICT: APPROVE
+VERDICT: APPROVE（第 2 轮）
 
-未发现 blocker 或 should，无需修复。
+第 1 轮 CHANGES 的三项已全部修复并复核：
 
-证据足以证明：无 Evolution 时，上游也存在启动事务缺口。诊断屏障只改变调度，保留真实 HMR、ALS 和官方 guard；报告明确区分受控复现与历史失败，未超出证据。
+- S1 blocker `scripts/acceptance/reproduce-hmr-startup.mjs`：模式改为显式传入 overlay 生成，写盘后回读校验
+  `- id: hmr` / `disabled: true`，缺行抛错；保留的临时根里三个 no-HMR overlay 都含该行，对照组不含。
+  reviewer 独立确认 63/63 聚焦测试通过、无跳过。
+- S2 should `scripts/benchmarks/host-startup.mjs`：超时样本排除出统计并非零退出；reviewer 用正常、单次超时、
+  全部超时三种注入验证。
+- S3 nit `scripts/benchmarks/host-startup.mjs`：CPU 改为按样本总量取中位数；提交的原始数据与统计一致。
 
-本次实际检查：
+第 2 轮只留一项 nit（README 写 7 轮，实际 9 轮），已修正；因 README 是分发文件，改后重新打包并对新
+构建重跑 0.2.2-rc.1 验收（21/21，`contentSha256` bec5d91a…）。
 
-- 兼容及恢复边界测试 25/25 通过，含真实 Cordis 4.1 测试 4/4，无跳过；均带 4096 MiB 堆上限。
-- 独立复现退出 0：屏障组 3/3 触发预期错误，对照组 3/3 applied。[本次报告](/tmp/dsh-hmr-review-control-20261106-71ac.json)
-- 三份官方源码摘要与留存证据一致；范围内 `git diff --check` 通过。
-
-尚未验证：历史那次失败的具体交错、自然发生概率、实例替换情形及上游修复。Evolution core 和临时 appReady 下的 12 次生命周期结果仅核对留存证据，未独立重跑；新旧宿主完整验收本次均未重跑，新宿主仍未通过。
-
-全量与 pack:check 本次未重跑；留存结果各有一个未提交分发改动门禁失败，不能称通过，也不属于运行时回归。本次批准仅覆盖当前适配与诊断证据，不能据此升级。
+本轮未发现新增 blocker 或 should。审核范围是 0.2.2-rc.1 适配、验收/基准脚本与文档；不覆盖
+`release/` 重新固定（本变更刻意不做），也不覆盖生产环境升级。
