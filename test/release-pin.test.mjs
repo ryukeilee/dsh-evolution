@@ -15,7 +15,11 @@ import {
   REPO_ROOT,
   archiveContentDigest,
   archiveEntries,
+  declaredHostVersions,
+  evaluateAddedHostAcceptance,
+  evaluatePinnedAcceptance,
   expectedEntries,
+  pinnedDeclaredHostVersions,
   readManifest,
   readReleaseManifest,
   readTarEntries,
@@ -218,18 +222,43 @@ test('release/SHA256SUMS records the pinned artifact', () => {
   assert.equal(fs.readFileSync(file, 'utf8').trim(), `${pin.sha256}  ${pin.filename}`);
 });
 
-test('the pin lists an acceptance evidence file per supported host', () => {
-  const hosts = (manifest.peerDependencies['@deepseek-ai/dsh'] || '').split('||').map((value) => value.trim()).filter(Boolean);
-  assert.deepEqual(pin.verifiedHosts, hosts);
-  assert.deepEqual(pin.evidence, hosts.map((host) => `docs/evidence/dsh-${host}.json`));
-  for (const host of hosts) {
+test('the pin verifies exactly the hosts its own artifact declares', () => {
+  // The pin's claim is about the released bytes, so it is read from them: the
+  // hosts in `verifiedHosts` have to be the hosts that artifact says it supports.
+  // It is deliberately not compared with this tree's declaration — a development
+  // successor may add a supported host, and the pin cannot describe a host it
+  // never shipped. The next test owns that side of the split.
+  const shippedHosts = pinnedDeclaredHostVersions(pin, readTarEntries(releaseArtifactPath(pin)));
+  assert.deepEqual(pin.verifiedHosts, shippedHosts);
+  assert.deepEqual(pin.evidence, shippedHosts.map((host) => `docs/evidence/dsh-${host}.json`));
+  for (const host of shippedHosts) {
     const file = path.join(REPO_ROOT, 'docs', 'evidence', `dsh-${host}.json`);
     assert.equal(fs.existsSync(file), true, `missing acceptance evidence for ${host}`);
-    const evidence = JSON.parse(fs.readFileSync(file, 'utf8'));
-    assert.equal(evidence.ok, true, `the recorded acceptance for ${host} did not pass`);
-    assert.equal(evidence.hostVersion, host);
-    assert.equal(evidence.packageVersion, manifest.version);
+  }
+  const { problems } = evaluatePinnedAcceptance(pin);
+  assert.deepEqual(problems, [], 'the pin\'s own record must describe the pinned bytes and content');
+  for (const host of shippedHosts) {
+    const evidence = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'docs', 'evidence', `dsh-${host}.json`), 'utf8'));
     assert.equal(evidence.contentSha256, pin.contentSha256, `the acceptance for ${host} ran against different content`);
     assert.equal(evidence.tarballSha256, pin.sha256, `the acceptance for ${host} ran against different bytes`);
+  }
+});
+
+test('every host this tree adds is accepted against this tree, not against the pin', () => {
+  // The other lane: a host the pin never verified proves nothing about this tree
+  // unless its record was produced against this tree's content. Without this the
+  // only two ways to add a host would be re-pinning or re-targeting history.
+  const treeDigest = treeContentDigest();
+  const { hosts, problems } = evaluateAddedHostAcceptance({ pin, manifest, treeDigest });
+  assert.deepEqual(problems, []);
+  const declared = declaredHostVersions(manifest);
+  assert.deepEqual([...new Set([...pin.verifiedHosts, ...hosts])].sort(), [...declared].sort(),
+    'the two lanes together must cover exactly the hosts this tree declares');
+  for (const host of hosts) {
+    assert.equal(pin.verifiedHosts.includes(host), false, `${host} cannot be in both lanes`);
+    const evidence = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'docs', 'evidence', `dsh-${host}.json`), 'utf8'));
+    assert.equal(evidence.ok, true);
+    assert.equal(evidence.hostVersion, host);
+    assert.equal(evidence.contentSha256, treeDigest, `the acceptance for ${host} describes another build`);
   }
 });

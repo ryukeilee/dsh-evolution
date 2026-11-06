@@ -1,0 +1,50 @@
+[
+  {
+    "ref": "master",
+    "component": "plugin-manager",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/master/packages/boot/plugin-manager/src/index.ts",
+    "file": "master-plugin-manager.ts",
+    "hits": [
+      {
+        "line": 1210,
+        "excerpt": "  }\n\n  private configure<T>(operation: () => Promise<T>): Promise<T> {\n    const hmr = this.ownerContext.get('hmr')\n    const apply = () => { this.abort.signal.throwIfAborted(); return operation() }\n    return hmr === undefined ? apply() : hmr.runExclusive(apply)\n  }\n\n  /**\n   * Publish the profile's runtime resolution without HMR, unless a deselected startup bundle still runs and needs the\n   * current table. A publication that needs a restart waits for the restart the result already reports.\n   */\n  private async refreshPackages(): Promise<void> {\n    const selected = bundleSelection(readProfileManifest('dsh', this.profile.dir))\n    if (this.profile.startedBundles.some(name => !selected.includes(name))) return\n    try {\n      const packages = this.ownerContext.get('pluginPackages')\n      // A dropped mapping's bundle is not running: the guard above keeps the table while a deselected startup bundle runs.\n      if (packages?.resolution !== undefined) await packages.refresh()\n    } catch (error) {\n      if (!(error instanceof ResolutionRestartRequired)) throw error\n    }\n  }\n\n  /**\n   * Apply a package change: without HMR, publish the runtime resolution when that is safe, then {@link reload}."
+      },
+      {
+        "line": 1247,
+        "excerpt": "   * @returns Warnings about entries that were already inactive, and why the change waits for a restart, if it does.\n   */\n  private async reload(requiredIds: readonly string[] = []): Promise<Reload> {\n    const hmr = this.ownerContext.get('hmr')\n    if (hmr === undefined) {\n      // Startup-only profiles recompose at restart; the saved patches still have to compose.\n      composeEntries([readProfilePatches('dsh', this.profile)])\n      return { warnings: [] }\n    }\n    const { warnings, pending, restartReason } = await hmr.reconcileProfile(requiredIds)\n    const restart = restartReason ?? pending[0]?.reason\n    return restart === undefined ? { warnings } : { warnings, restartReason: restart }\n  }\n\n  private async change(\n    operation: (result: ChangeResult) => Promise<ChangeResult['application'] | void>,\n    request: Pick<ChangeResult, 'stage' | 'target' | 'enabled'>,\n    reason: PluginChange['reason'],\n    identity?: Pick<PluginOperation, 'target' | 'version'>,\n  ): Promise<ChangeResult> {\n    const id = randomUUID() as PluginOperationId\n    const target = identity === undefined ? this.operationTarget(reason, request.target) : identity.target\n    const version = identity === undefined ? this.operationVersion(reason, reason === 'plugin' ? request.target : target) : identity.version\n    const facts = { id, reason, stage: request.stage,\n      target,\n      ...version === undefined ? {} : { version },"
+      },
+      {
+        "line": 1254,
+        "excerpt": "      return { warnings: [] }\n    }\n    const { warnings, pending, restartReason } = await hmr.reconcileProfile(requiredIds)\n    const restart = restartReason ?? pending[0]?.reason\n    return restart === undefined ? { warnings } : { warnings, restartReason: restart }\n  }\n\n  private async change(\n    operation: (result: ChangeResult) => Promise<ChangeResult['application'] | void>,\n    request: Pick<ChangeResult, 'stage' | 'target' | 'enabled'>,\n    reason: PluginChange['reason'],\n    identity?: Pick<PluginOperation, 'target' | 'version'>,\n  ): Promise<ChangeResult> {\n    const id = randomUUID() as PluginOperationId\n    const target = identity === undefined ? this.operationTarget(reason, request.target) : identity.target\n    const version = identity === undefined ? this.operationVersion(reason, reason === 'plugin' ? request.target : target) : identity.version\n    const facts = { id, reason, stage: request.stage,\n      target,\n      ...version === undefined ? {} : { version },\n      ...request.enabled === undefined ? {} : { enabled: request.enabled } }\n    this.reportOperation({ ...facts, time: new Date().toISOString(), phase: 'started' })\n    let settled: ChangeResult\n    try {\n      settled = await withFileLock(join(this.profile.dir, 'package.json'), async () => {\n        this.abort.signal.throwIfAborted()\n        const before = this.diskState()"
+      }
+    ]
+  },
+  {
+    "ref": "master",
+    "component": "hmr",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/master/packages/boot/hmr/src/index.ts",
+    "file": "master-hmr.ts",
+    "hits": [
+      {
+        "line": 930,
+        "excerpt": "   * replacement plugin that fails to load or start, whose previous code no longer runs.\n   */\n  async reconcileProfile(requiredIds: readonly string[] = []): Promise<ProfileReconciliation> {\n    if (this.executing.getStore() !== true) throw new Error('HMR profile reconciliation must run inside runExclusive')\n    const profile = this.ownerContext.get('profileContext')\n    if (profile === undefined) throw new Error('HMR profile reconciliation requires profileContext')\n    // Entries this recomposition stops start again, and fail it when they cannot.\n    const running = [...this.ctx.loader.entries()].filter(entry => entry.fiber?.state === FiberState.ACTIVE)\n    // Read while the packages are still on disk, so a removed link's target is known in its real spellings.\n    const mapped = mappedDirectories(this.ownerContext.get('pluginPackages')?.resolution)\n    let comparison: ProfileComparison | undefined\n    let comparedAt = 0\n    let pending: PendingModule[] = []\n    try {\n      const patches = readProfilePatches('dsh', profile)\n      comparedAt = this.files.now()\n      // A failed comparison keeps every record, so the next recomposition compares the same modules again.\n      comparison = await this.contained('comparing loaded modules with disk', () => {\n        const roots = profileRoots(profile.dir)\n        return Promise.resolve({ roots, ...this.files.compare(this.profileModules(roots)) })\n      }, undefined)\n      // Changed modules stay stale until replaced, including when the generation cannot be applied.\n      pending = [...comparison?.stale ?? []].map(url => ({ url, reason: 'module-comparison' }))\n      const compared = comparison\n      const unavailable = !this.hasEsmCache()\n      if (!unavailable && compared !== undefined && pending.length > 0) {"
+      },
+      {
+        "line": 931,
+        "excerpt": "   */\n  async reconcileProfile(requiredIds: readonly string[] = []): Promise<ProfileReconciliation> {\n    if (this.executing.getStore() !== true) throw new Error('HMR profile reconciliation must run inside runExclusive')\n    const profile = this.ownerContext.get('profileContext')\n    if (profile === undefined) throw new Error('HMR profile reconciliation requires profileContext')\n    // Entries this recomposition stops start again, and fail it when they cannot.\n    const running = [...this.ctx.loader.entries()].filter(entry => entry.fiber?.state === FiberState.ACTIVE)\n    // Read while the packages are still on disk, so a removed link's target is known in its real spellings.\n    const mapped = mappedDirectories(this.ownerContext.get('pluginPackages')?.resolution)\n    let comparison: ProfileComparison | undefined\n    let comparedAt = 0\n    let pending: PendingModule[] = []\n    try {\n      const patches = readProfilePatches('dsh', profile)\n      comparedAt = this.files.now()\n      // A failed comparison keeps every record, so the next recomposition compares the same modules again.\n      comparison = await this.contained('comparing loaded modules with disk', () => {\n        const roots = profileRoots(profile.dir)\n        return Promise.resolve({ roots, ...this.files.compare(this.profileModules(roots)) })\n      }, undefined)\n      // Changed modules stay stale until replaced, including when the generation cannot be applied.\n      pending = [...comparison?.stale ?? []].map(url => ({ url, reason: 'module-comparison' }))\n      const compared = comparison\n      const unavailable = !this.hasEsmCache()\n      if (!unavailable && compared !== undefined && pending.length > 0) {\n        pending = await this.contained('planning module replacement', async () => {"
+      }
+    ]
+  },
+  {
+    "ref": "release/dsh-0.2.2",
+    "component": "plugin-manager",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/release/dsh-0.2.2/packages/boot/plugin-manager/src/index.ts",
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "ref": "release/dsh-0.2.2",
+    "component": "hmr",
+    "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/release/dsh-0.2.2/packages/boot/hmr/src/index.ts",
+    "error": "HTTP Error 404: Not Found"
+  }
+]

@@ -7,7 +7,7 @@
 | 关键事实 | 当前值 |
 | --- | --- |
 | 版本 | `0.2.0`（首个稳定版） |
-| 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2` |
+| 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1`（须关闭宿主 HMR，见下） |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
 | 许可证 | MIT |
@@ -177,6 +177,35 @@ DSH_HOME=/isolated/home dsh web --no-open
 node "$DSH_HOME/profiles/web/node_modules/dsh-evolution/scripts/doctor.mjs" --home "$DSH_HOME" --profile web
 ```
 
+### 在 DSH `0.2.2-rc.1` 上关闭宿主 HMR
+
+`0.2.2-rc.1` 的 `PluginManager` 在**宿主启动窗口内**做 profile 变更时存在一个属于上游的事务缺口：
+`configure()` 在 `hmr` 服务尚未可用时直接执行操作（不进入 `runExclusive`），而同一个操作后面的
+`reload()` 会重新读取 `hmr`，看到刚变为可用就调用 `reconcileProfile()`；该实例的
+`executing.getStore()` 不是 `true`，于是官方保护正确拒绝，结果是
+`changed: true` / `application: failed` / `HMR profile reconciliation must run inside runExclusive`。
+这与本 bundle 无关：只用官方 bundle、不装 Evolution 也能复现（见 `COMPATIBILITY.md`）。
+
+官方为这种情况准备了明确的配置：**关闭 `hmr` 行，profile 变更按重启生效**。这不是绕过官方保护，
+也不改宿主源码；`PluginManager.configure()` 直接执行操作、`reload()` 只重组已保存的 profile，
+并报告 `application: "restart-required"` / `restartReason: "no-hmr"`。在 `$DSH_HOME/profiles/web/cordis.patch.yml`
+（你的 profile patch 层）里追加：
+
+```yaml
+- id: hmr
+  disabled: true
+```
+
+然后重启宿主。此后 `dsh plugin add/remove`、`setPluginEnabled()`、`setBundleEnabled()` 都只保存选择，
+下一次启动才生效；Evolution 自己的晋升（官方 Include adapter + `refresh()`）不受影响，仍然实时生效，
+因为它是独立的 Include，不走宿主 HMR 队列。`scripts/acceptance/run-host-acceptance.mjs --no-hmr`
+用同一个 overlay 形式在每个引导进程里关闭该行，并断言启用 / 禁用确实报告 `restart-required` 且在重启后生效。
+
+实测（隔离 0.2.2-rc.1 runtime，Evolution 已安装，9 轮交替 A/B 冷启动中位数，见
+`docs/performance/host-startup-0.2.2.md`）：关掉 HMR 后冷启动 **−87.9 ms / −5.8%**、CPU **−128.0 ms / −6.6%**、
+RSS **−6.8 MiB / −2.0%**；不装 Evolution 时该收益为 −122.8 ms / −8.4%。这是本 bundle 在 0.2.2-rc.1
+上的推荐部署形态，也是验收覆盖的唯一形态。
+
 最短会话闭环：
 
 ```text
@@ -306,6 +335,7 @@ dsh plugin --profile web remove dsh-evolution
 16. **执行事件日志与领域标记表随历史单调增长；回收是显式 owner 操作，不自动运行。** `execution-events.jsonl` 每个执行事件一行（含 measurement / promotion / canary 事实），领域文档的 `applied` 每个去重身份一个 64 位十六进制 MAC（上限 9 类事件 × experiment 数）。代价是：启动时按日志字节线性读取并逐条验签，`flush()` 每个 pass 读取并 HMAC 整份已提交前缀并对整张标记表重算摘要，领域文档随标记数增长。`evolution_maintain` 是唯一的回收入口：`dryRun` 只报告字节与记录数，`confirmation: true` 才执行。归档侧沿用既有语义压缩（终态记录折叠为聚合行），被替换的 sealed 段以 `pending.files` 的 `removed` 条目在同一事务里发布，**只有新文件全部安装成功之后才删除**；日志侧先把被丢弃记录携带的 promotion / measurement 事实写进 evidence sidecar（`*.evidence.json`，hydration 链中优先级高于事件桥），再提交裁剪后的 marker 与 `retention` floor（被裁 marker 的 keyed 链、累计的裁剪数与被丢弃字节/记录数、原文件摘要 `prior`、保留尾部摘要 `tail`），最后才截断那些已证明被吸收的字节。顺序是安全论证的一部分：**先提交 floor、后截断**。floor 记录计划时整份日志的摘要（`prior`）与截断后保留前缀的摘要（`tail`），所以“floor 已提交、截断未发生或被打断”是一个可以由下一次 replay 幂等完成的已提交事务（先核对 `prior` 再重写，再核对 `tail`），不会变成永久拒绝；反过来（先截断、后提交）会让 floor 描述已经不存在的字节，第二次回收崩溃后无法恢复。replay 只信任 floor 描述的字节：日志必须要么以保留尾部开头（`continuation`），要么**恰好**是 floor 记录的 `prior` 文件（此时先幂等完成那次已提交的截断）。两者都不是时以 `E_DOMAIN_EVENT_LOG_FLOOR_MISMATCH` 拒绝吸收，而不是重放可能已裁剪 marker 的记录——空文件也一样：空日志不能证明保留字节没有丢，而接受它会让下一次追加造出永远对不上 floor 的头部，所以这里直接失败、把现场留给操作者（恢复那段保留字节，或换一个数据根）。
 
 回收后的已知边界：领域文档带 `retention` 键，旧版本插件的严格 schema 会拒绝它，所以**回收后不要降级到旧版本**（先回滚再回收，或回收后不要回滚）；被裁 marker 的 eventId 不再参与重放冲突检测：同一身份重新发出时领域 ledger 以新 MAC 重新吸收，而内存 marker 窗口仍按 id 把它当重复，记录效果不会重复应用（不再抛冲突）；段目录里 `.tmp` 形状的 seal 残件会被保留、不进事务；doctor 的 `state.retention-floor` 与运行时共用只读分类，检查已提交（含 pending）的 floor：正常保留尾部为 ok、待截断原文件为 degraded，缺失或摘要不匹配为 blocked，不提供猜测式 repair；floor 自身不自洽（有被裁 marker 却没有链、链与零被裁数矛盾、累计丢弃字节小于最后一次丢弃、`prior` 与 `tail` 摘要相同）或 pending floor 落后于已提交 floor 时先报 `floor-inconsistent`（blocked，附 `floorProblems`），并在证据里给出 floor 计数器投影、floor 来源与仅报告不删除的回收临时残件。seal 临时残件由 `state.archives` 报告为 degraded 并保留。二次回收必须先补完上一轮已提交截断并验证保留尾部；**已补完的 floor 不需要 append lock**，所以无关的并发写者不会让启动重放或回收失败，只有确实需要补完时 append lock 竞争才以 `E_DOMAIN_EVENT_LOG_BUSY`（可重试）拒绝推进新 floor，dry run 则只读报告 `pending-truncation`；截断自身的其它失败保留原来的错误码，不会被伪装成锁竞争。没有任何定时器或后台任务调用回收；诊断仍由 `state.event-bridge` 报告 `bytes`、`lines`、`verifiedEvents`、`absorbedRecords`、`unabsorbedRecords`、`oldestRecordAt`、`newestRecordAt` 让操作者先看增长与“已吸收 / 未吸收”的分布。实测数字、修复前三个阻塞的复核与收益边界分别见 `docs/performance/capacity-reclaim-20261027.md`、`docs/performance/retention-reclaim-blockers.md` 与 `docs/performance/capacity-reclaim-evaluation.md`。
+17. **`0.2.2-rc.1` 只验收了关闭宿主 HMR 的形态，且该缺口属于上游。** 在这个宿主上，`hmr` 行启用时，**宿主启动窗口内**的 profile 变更可能以 `application: failed` + `HMR profile reconciliation must run inside runExclusive` 结束（选择已保存、未应用）。用纯官方 bundle 可复现，所以本 bundle 不声称修复它，也不绕过官方事务保护；已验收的部署形态是 `- id: hmr / disabled: true` + 重启生效。Evolution 自己的试用、测量、回滚与晋升在两种形态下都通过，因为晋升走自己的官方 Include，不经过宿主 HMR 队列。复现与证据见 `COMPATIBILITY.md` 与 `docs/evidence/hmr-022/`。
 
 ## 验证与证据
 
@@ -320,9 +350,10 @@ npm run release:verify
 npm run acceptance:host -- --host 0.2.0-rc.2 --out <evidence-path>
 npm run acceptance:host -- --host 0.2.1-alpha.1 --out <evidence-path>
 npm run acceptance:host -- --host 0.2.1-rc.2 --out <evidence-path>
+npm run acceptance:host -- --host 0.2.2-rc.1 --no-hmr --out <evidence-path>
 ```
 
-`scripts/acceptance/run-host-acceptance.mjs` 按实际记录路径生成 21 个步骤：每个宿主包含官方安装、CLI doctor、核心 Trial / revert、pluginManager 禁用 / 启用、卸载与重装、升级 / 回滚，以及真实 promotion、跨重启 canary 和最终 doctor。固定证据中的每个宿主均为 21/21 步通过，最终诊断为 `healthy`。
+`scripts/acceptance/run-host-acceptance.mjs` 按实际记录路径生成 21 个步骤：每个宿主包含官方安装、CLI doctor、核心 Trial / revert、pluginManager 禁用 / 启用、卸载与重装、升级 / 回滚，以及真实 promotion、跨重启 canary 和最终 doctor。固定证据中的每个宿主均为 21/21 步通过，最终诊断为 `healthy`。`--no-hmr` 额外要求启用 / 禁用报告 `restart-required` / `no-hmr`、期间观测不到 HMR 能力，且保存的选择在下一次启动生效。
 
 覆盖分为 9 组：官方 CLI 只读诊断；核心 `inspect → propose → trial → measure → revert`（要求 Runtime 恢复并注册 10 个工具）；pluginManager 禁用 / 启用并验证 memory 字节不变；卸载、无插件启动、重新安装；重装后核心流程和已有 memory 保留；升级与回滚并验证工具和 memory 哈希；真实晋升进入 canary 且监听器跨进程重启存活；startup 提交 stable 并验证指标回归只回滚新候选；再次重启验证候选状态并以最终 doctor 收尾。
 
@@ -331,10 +362,11 @@ npm run acceptance:host -- --host 0.2.1-rc.2 --out <evidence-path>
 | `0.2.0-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | 21/21 | `healthy` |
 | `0.2.1-alpha.1` | `4.0.5` | `1.0.10` | `1.0.6` | 21/21 | `healthy` |
 | `0.2.1-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | 21/21 | `healthy` |
+| `0.2.2-rc.1` | `4.1.0` | `1.1.0` | `1.1.0` | 21/21（`--no-hmr`） | `healthy` |
 
-对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json` 与 `docs/evidence/dsh-0.2.1-rc.2.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节），验收和固定点检查核对的是 `release/` 固定产物，不会因后续工作树修改而改写历史证据。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
+对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json` 与 `docs/evidence/dsh-0.2.2-rc.1.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。验收证据按宿主分两条通道核对：固定点验收过的三个宿主核对 `release/` 固定产物（内容与字节），后续工作树修改不会改写它们；`0.2.2-rc.1` 是固定点之后新增的宿主，没有历史记录可核对，它的记录必须描述**本工作树构建的内容**，固定点或旧构建的记录不能冒充这份覆盖。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
 
-`npm run pack:check` 两种模式都执行 16 项检查。开发模式允许工作树是固定点的**已提交**后继（脚本会逐条点名与固定产物不同的文件），但分发文件存在**未提交**改动时一律失败；`--release` 则把“固定点描述自己的提交 / 工作树是固定点或已提交后继”换成更严格的“固定点固定本树内容 / 工作树构建出固定内容”。
+`npm run pack:check` 两种模式都执行 17 项检查。开发模式允许工作树是固定点的**已提交**后继（脚本会逐条点名与固定产物不同的文件），但分发文件存在**未提交**改动时一律失败；`--release` 则把“固定点描述自己的提交 / 工作树是固定点或已提交后继”换成更严格的“固定点固定本树内容 / 工作树构建出固定内容”。
 
 源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.0.tgz --content-only`。
 

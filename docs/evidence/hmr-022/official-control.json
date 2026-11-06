@@ -1,0 +1,355 @@
+{
+  "host": "0.2.2-rc.1",
+  "node": "v26.13.0",
+  "work": "/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/dsh-hmr-022-qFCr5Y",
+  "diagnosticOnly": true,
+  "sources": {
+    "dsh-plugin-manager/lib/index.js": "6f0fdc6a6e4cd2bc9d969ba582636729ade450e415f0fc20bbef9da3f65823f3",
+    "dsh-hmr/lib/index.js": "d4990a34a9874f94fa1e045563e016526e4fefe5a72a4945532043188a65dfde",
+    "cordis/lib/index.js": "627409afa06a265f7253200d3bc4648e88805c39fd3768568eb9b9518a31fe8f"
+  },
+  "runs": [
+    {
+      "mode": "barrier",
+      "expected": true,
+      "result": {
+        "mode": "barrier",
+        "results": [
+          {
+            "stage": "enable",
+            "target": "@deepseek-ai/dsh-web-app",
+            "enabled": true,
+            "changed": true,
+            "application": "failed",
+            "error": {
+              "code": "operation-error",
+              "diagnostic": "HMR profile reconciliation must run inside runExclusive"
+            }
+          }
+        ],
+        "events": [
+          {
+            "stage": "before",
+            "ms": 0,
+            "hmr": false,
+            "instance": null,
+            "inTransaction": false
+          },
+          {
+            "stage": "configure",
+            "ms": 2,
+            "hmr": false,
+            "instance": null,
+            "inTransaction": false
+          },
+          {
+            "stage": "barrier-released",
+            "ms": 613,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "reload",
+            "ms": 614,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "after",
+            "ms": 629,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          }
+        ],
+        "evolutionEntries": 0,
+        "selected": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-ai/dsh-web-app"
+        ]
+      }
+    },
+    {
+      "mode": "barrier",
+      "expected": true,
+      "result": {
+        "mode": "barrier",
+        "results": [
+          {
+            "stage": "enable",
+            "target": "@deepseek-ai/dsh-web-app",
+            "enabled": true,
+            "changed": true,
+            "application": "failed",
+            "error": {
+              "code": "operation-error",
+              "diagnostic": "HMR profile reconciliation must run inside runExclusive"
+            }
+          }
+        ],
+        "events": [
+          {
+            "stage": "before",
+            "ms": 0,
+            "hmr": false,
+            "instance": null,
+            "inTransaction": false
+          },
+          {
+            "stage": "configure",
+            "ms": 2,
+            "hmr": false,
+            "instance": null,
+            "inTransaction": false
+          },
+          {
+            "stage": "barrier-released",
+            "ms": 610,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "reload",
+            "ms": 611,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "after",
+            "ms": 626,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          }
+        ],
+        "evolutionEntries": 0,
+        "selected": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-ai/dsh-web-app"
+        ]
+      }
+    },
+    {
+      "mode": "barrier",
+      "expected": true,
+      "result": {
+        "mode": "barrier",
+        "results": [
+          {
+            "stage": "enable",
+            "target": "@deepseek-ai/dsh-web-app",
+            "enabled": true,
+            "changed": true,
+            "application": "failed",
+            "error": {
+              "code": "operation-error",
+              "diagnostic": "HMR profile reconciliation must run inside runExclusive"
+            }
+          }
+        ],
+        "events": [
+          {
+            "stage": "before",
+            "ms": 0,
+            "hmr": false,
+            "instance": null,
+            "inTransaction": false
+          },
+          {
+            "stage": "configure",
+            "ms": 1,
+            "hmr": false,
+            "instance": null,
+            "inTransaction": false
+          },
+          {
+            "stage": "barrier-released",
+            "ms": 614,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "reload",
+            "ms": 615,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "after",
+            "ms": 630,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          }
+        ],
+        "evolutionEntries": 0,
+        "selected": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-ai/dsh-web-app"
+        ]
+      }
+    },
+    {
+      "mode": "stable",
+      "expected": true,
+      "result": {
+        "mode": "stable",
+        "results": [
+          {
+            "stage": "enable",
+            "target": "@deepseek-ai/dsh-web-app",
+            "enabled": true,
+            "changed": true,
+            "application": "applied",
+            "warnings": []
+          }
+        ],
+        "events": [
+          {
+            "stage": "before",
+            "ms": 12,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "configure",
+            "ms": 13,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "reload",
+            "ms": 19,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": true
+          },
+          {
+            "stage": "after",
+            "ms": 650,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          }
+        ],
+        "evolutionEntries": 0,
+        "selected": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-ai/dsh-web-app"
+        ]
+      }
+    },
+    {
+      "mode": "stable",
+      "expected": true,
+      "result": {
+        "mode": "stable",
+        "results": [
+          {
+            "stage": "enable",
+            "target": "@deepseek-ai/dsh-web-app",
+            "enabled": true,
+            "changed": true,
+            "application": "applied",
+            "warnings": []
+          }
+        ],
+        "events": [
+          {
+            "stage": "before",
+            "ms": 12,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "configure",
+            "ms": 13,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "reload",
+            "ms": 19,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": true
+          },
+          {
+            "stage": "after",
+            "ms": 700,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          }
+        ],
+        "evolutionEntries": 0,
+        "selected": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-ai/dsh-web-app"
+        ]
+      }
+    },
+    {
+      "mode": "stable",
+      "expected": true,
+      "result": {
+        "mode": "stable",
+        "results": [
+          {
+            "stage": "enable",
+            "target": "@deepseek-ai/dsh-web-app",
+            "enabled": true,
+            "changed": true,
+            "application": "applied",
+            "warnings": []
+          }
+        ],
+        "events": [
+          {
+            "stage": "before",
+            "ms": 12,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "configure",
+            "ms": 13,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          },
+          {
+            "stage": "reload",
+            "ms": 19,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": true
+          },
+          {
+            "stage": "after",
+            "ms": 658,
+            "hmr": true,
+            "instance": 1,
+            "inTransaction": false
+          }
+        ],
+        "evolutionEntries": 0,
+        "selected": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-ai/dsh-web-app"
+        ]
+      }
+    }
+  ]
+}

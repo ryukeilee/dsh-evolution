@@ -1,0 +1,34 @@
+{
+  "workflow": "sol-loop",
+  "rounds": 2,
+  "model": "gpt-6.1-sol",
+  "requestedEffort": "xhigh",
+  "returnedEffort": "xhigh",
+  "effectiveEffort": "unverified: no independent runtime options metadata returned",
+  "verdict": "APPROVE",
+  "rounds_detail": [
+    {
+      "round": 1,
+      "taskId": "node:delegated-task:command%3Amcp%3A2e2f7454-a894-4ba3-b230-6e610481b2f9%3Adelegate-task%3Adsh022-review-20261106-r1",
+      "clientRequestId": "dsh022-review-20261106-r1",
+      "verdict": "CHANGES",
+      "findings": [
+        { "id": "S1", "severity": "blocker", "file": "scripts/acceptance/reproduce-hmr-startup.mjs", "outcome": "fixed" },
+        { "id": "S2", "severity": "should", "file": "scripts/benchmarks/host-startup.mjs", "outcome": "fixed" },
+        { "id": "S3", "severity": "nit", "file": "scripts/benchmarks/host-startup.mjs", "outcome": "fixed" }
+      ]
+    },
+    {
+      "round": 2,
+      "taskId": "node:delegated-task:command%3Amcp%3A33f78e99-17ce-4db8-93ad-4c3d454b8c05%3Adelegate-task%3Adsh022-review-20261106-r2",
+      "clientRequestId": "dsh022-review-20261106-r2",
+      "verdict": "APPROVE",
+      "focusedTests": { "tests": 63, "passed": 63, "skipped": 0 },
+      "findings": [
+        { "id": "S4", "severity": "nit", "file": "README.md", "outcome": "fixed" }
+      ]
+    }
+  ],
+  "usage": "not returned",
+  "pushed": false
+}
