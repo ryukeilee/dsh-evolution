@@ -6,7 +6,7 @@
 
 | 关键事实 | 当前值 |
 | --- | --- |
-| 版本 | `0.2.0`（首个稳定版） |
+| 版本 | `0.2.1`（稳定版） |
 | 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1`（须关闭宿主 HMR，见下） |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
@@ -158,8 +158,8 @@ CLI 退出码：`0` 健康、`1` 存在降级项、`2` 存在阻塞项、`3` 参
 从 GitHub Release 下载 tarball 和校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.0.tgz" -o dsh-evolution-0.2.0.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.1
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.1.tgz" -o dsh-evolution-0.2.1.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
@@ -167,7 +167,7 @@ sha256sum --check SHA256SUMS
 macOS 可用 `shasum -a 256 -c SHA256SUMS` 校验。也可用 GitHub CLI 下载同一 Release 的 tarball、`SHA256SUMS` 与 `manifest.json`。校验通过后，用官方 CLI 安装：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.0.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.1.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
@@ -364,11 +364,11 @@ npm run acceptance:host -- --host 0.2.2-rc.1 --no-hmr --out <evidence-path>
 | `0.2.1-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | 21/21 | `healthy` |
 | `0.2.2-rc.1` | `4.1.0` | `1.1.0` | `1.1.0` | 21/21（`--no-hmr`） | `healthy` |
 
-对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json` 与 `docs/evidence/dsh-0.2.2-rc.1.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。验收证据按宿主分两条通道核对：固定点验收过的三个宿主核对 `release/` 固定产物（内容与字节），后续工作树修改不会改写它们；`0.2.2-rc.1` 是固定点之后新增的宿主，没有历史记录可核对，它的记录必须描述**本工作树构建的内容**，固定点或旧构建的记录不能冒充这份覆盖。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
+对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json` 与 `docs/evidence/dsh-0.2.2-rc.1.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。`0.2.1` 的固定点覆盖全部四个宿主：四份记录都必须描述 `release/` 固定产物的内容与字节，后续工作树修改不会改写它们。固定点之后新增的宿主没有历史记录可核对，它的记录必须描述**本工作树构建的内容**（判定按 `release/manifest.json#verifiedHosts` 分成两条通道），固定点或旧构建的记录不能冒充这份覆盖；当前固定点没有这样的新增宿主。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
 
 `npm run pack:check` 两种模式都执行 17 项检查。开发模式允许工作树是固定点的**已提交**后继（脚本会逐条点名与固定产物不同的文件），但分发文件存在**未提交**改动时一律失败；`--release` 则把“固定点描述自己的提交 / 工作树是固定点或已提交后继”换成更严格的“固定点固定本树内容 / 工作树构建出固定内容”。
 
-源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.0.tgz --content-only`。
+源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.1.tgz --content-only`。
 
 ## 相关文档
 
