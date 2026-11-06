@@ -379,9 +379,7 @@ function materializeAttributed() {
   const domainFile = path.join(directory, "lib/domain-storage.js");
   fs.writeFileSync(domainFile, prologue + patchAnchors(fs.readFileSync(domainFile, "utf8"), DOMAIN_STORAGE_ANCHORS, "domain-storage.js"));
   const memoryFile = path.join(directory, "lib/dockyard-domain/memory.js");
-  fs.writeFileSync(memoryFile, prologue + patchAnchors(fs.readFileSync(memoryFile, "utf8"), MEMORY_ANCHORS, "memory.js").replace(
-    "    const state = this.#archiveRead(collection);\n    __A(\"memory.sourceMatches.read\"",
-    "    const state = this.#archiveRead(collection);\n    __A(\"memory.sourceMatches.read\""));
+  fs.writeFileSync(memoryFile, prologue + patchAnchors(fs.readFileSync(memoryFile, "utf8"), MEMORY_ANCHORS, "memory.js"));
   return directory;
 }
 
