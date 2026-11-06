@@ -6,14 +6,17 @@ supported DSH versions are exact alternatives in `peerDependencies`, and a
 version is only added there after it passes the full install/boot/upgrade
 acceptance: read the entry for the version you install before upgrading DSH.
 `0.2.0` is the first stable release; the `0.2.0-rc.*` entries below it are kept
-unchanged as the history of that candidate line.
+unchanged as the history of that candidate line. `0.2.1` is the stable successor
+that adds DSH `0.2.2-rc.1` (Cordis 4.1 / Include 1.1) to the accepted hosts.
 
-## 0.2.0 之后 — unreleased
+## 0.2.1 — 稳定版
 
-依赖、持久 schema 版本、工具名 / 参数 / 参数 schema、授权来源、晋升门禁的 8 项证据、风险分级、
-`engines` 均未改动；下列改动位于 `0.2.0` 固定产物之后，尚未重新固定。`peerDependencies` 本轮
-新增了 `0.2.2-rc.1` 及其宿主侧 `@deepseek-ai/cordis` `~4.1.0` / `cordis-plugin-include` `~1.1.0`
-（原有版本仍在范围内）。
+`0.2.0` 的稳定后继。依赖、持久 schema 版本、工具名 / 参数 / 参数 schema、授权来源、晋升门禁的 8 项
+证据、风险分级、`engines` 均未改动；下列改动相对 `0.2.0` 固定产物，分发内容变化集中在
+`lib/cordis-compat.js`、`lib/dockyard-domain/memory.js`、`lib/domain-storage.js`、`lib/orchestrator.js`、
+`lib/registration.js` 五个 `lib/` 文件与随包文档。本版本已按 `RELEASE.md` 重新构建、对四个官方宿主
+重跑验收并重新固定。`peerDependencies` 新增了 `0.2.2-rc.1` 及其宿主侧 `@deepseek-ai/cordis`
+`~4.1.0` / `cordis-plugin-include` `~1.1.0`（原有三个宿主仍在范围内）。
 
 ### 适配
 
@@ -47,6 +50,19 @@ unchanged as the history of that candidate line.
   `docs/performance/host-startup-0.2.2.md`。宿主自身的耗时占主导（Evolution 已安装时约占 1.52 s 中的
   85.9 ms）；仓库自身代码在启动阶段的自耗时是毫秒级，可得的惰性加载候选只有约 2.5 ms（`js-yaml`）与约 20 ms
   （`zod`），量级不足且会把加载失败窗口推进入晋升/写入路径，因此没有为微小收益引入惰性加载或缓存。
+
+### 性能
+
+- **有归档的 canonical knowledge 热窗口改为 `min(maxEntries, 200)`。** 每次持久提交都要写整份
+  aggregate（改到归档的事务写两次：pending 记录一次、已提交文档一次），而 1,000 条知识热区就是每次
+  观测数 MB 的 payload；完整历史本来就由冷档案持有，读取会合并它。`maxEntries` 更小时仍然生效，
+  没有归档的存储仍用原来的非归档上限；冷档案、查询与恢复路径未改。1000 / 5000 条历史下：提交文档
+  3,293,623 → 721,436 / 3,296,979 → 722,004 字节，32 个并发事务的后端文档写入约 −78.6%，
+  `newSubject` / `coldRepeat` / `restartOpen` 各档 −41.5% 至 −67.6%（A/A-control 噪声 +6.9% 至
+  −11.2%）。事务数、每次事务的两次写入与 sync 次数未减少，收益来自每次写入的字节减少。已知边界：
+  约 200 条附近首次跨越热窗口会增加归档写入及相关同步成本，200–750 与 20000 档未重测，因此这些规模
+  的收益或回退未确定。数据、口径与复现命令见 `docs/performance/knowledge-hot-window.md`，回归用例见
+  `test/domain-storage/knowledge-hot-window.test.mjs`。
 
 ### 修复
 

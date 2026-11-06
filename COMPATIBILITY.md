@@ -38,8 +38,10 @@ records the `contentSha256` of the package it installed and the `sha256` of the
 bytes it installed. `npm run pack:check` and `test/release-pin.test.mjs` keep the
 two records apart instead of comparing every file to the pin: a host the pin
 verified must still describe the pinned artifact (content *and* bytes), while a
-host the pin never covered — currently `0.2.2-rc.1` — must describe the content
-this tree builds, because an older build's record proves nothing about this one.
+host the pin never covered must describe the content this tree builds, because an
+older build's record proves nothing about this one. `0.2.1` pins all four
+declared hosts, so no host uses the second lane today; it exists for the next
+host a development tree adds, before the pin that covers it is cut.
 The split is `release/manifest.json#verifiedHosts`, so it moves only when a new
 pin is cut, never when the working tree changes. The harness is self-contained: it installs the
 official host release itself, so a fresh checkout can re-derive every file. CI
