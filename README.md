@@ -201,7 +201,7 @@ node "$DSH_HOME/profiles/web/node_modules/dsh-evolution/scripts/doctor.mjs" --ho
 因为它是独立的 Include，不走宿主 HMR 队列。`scripts/acceptance/run-host-acceptance.mjs --no-hmr`
 用同一个 overlay 形式在每个引导进程里关闭该行，并断言启用 / 禁用确实报告 `restart-required` 且在重启后生效。
 
-实测（隔离 0.2.2-rc.1 runtime，Evolution 已安装，7 轮交替 A/B 冷启动中位数，见
+实测（隔离 0.2.2-rc.1 runtime，Evolution 已安装，9 轮交替 A/B 冷启动中位数，见
 `docs/performance/host-startup-0.2.2.md`）：关掉 HMR 后冷启动 **−87.9 ms / −5.8%**、CPU **−128.0 ms / −6.6%**、
 RSS **−6.8 MiB / −2.0%**；不装 Evolution 时该收益为 −122.8 ms / −8.4%。这是本 bundle 在 0.2.2-rc.1
 上的推荐部署形态，也是验收覆盖的唯一形态。
