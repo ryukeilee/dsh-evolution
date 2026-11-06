@@ -35,9 +35,13 @@ Evidence: `docs/evidence/dsh-0.2.0-rc.2.json`,
 `docs/evidence/dsh-0.2.1-rc.2.json` and
 `docs/evidence/dsh-0.2.2-rc.1.json` (host scratch paths redacted). Each file
 records the `contentSha256` of the package it installed and the `sha256` of the
-bytes it installed; both are checked against the committed pin in
-`release/manifest.json` by `npm run pack:check` and
-`test/release-pin.test.mjs`. The harness is self-contained: it installs the
+bytes it installed. `npm run pack:check` and `test/release-pin.test.mjs` keep the
+two records apart instead of comparing every file to the pin: a host the pin
+verified must still describe the pinned artifact (content *and* bytes), while a
+host the pin never covered — currently `0.2.2-rc.1` — must describe the content
+this tree builds, because an older build's record proves nothing about this one.
+The split is `release/manifest.json#verifiedHosts`, so it moves only when a new
+pin is cut, never when the working tree changes. The harness is self-contained: it installs the
 official host release itself, so a fresh checkout can re-derive every file. CI
 runs the same command per host (`ci.yml` on `ubuntu-latest`).
 

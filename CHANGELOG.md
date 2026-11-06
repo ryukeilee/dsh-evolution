@@ -50,6 +50,16 @@ unchanged as the history of that candidate line.
 
 ### 修复
 
+- **发布固定点与当前候选的验收证据不再混在一条判定里。** `pack:check` 与
+  `test/release-pin.test.mjs` 的验收检查原先由工作树 `peerDependencies` 决定核对哪些宿主，却把所有记录
+  都与 `release/manifest.json` 比对：开发树一旦新增受支持宿主，就只能靠重新固定（声称一次没有发生的发布）
+  或把候选摘要写进历史记录（毁掉“发布过什么”的唯一证明）才能转绿。现在判定按固定点自己的
+  `verifiedHosts` 分两条通道：固定点验收过的宿主始终核对固定产物的内容与字节，工作树新增的宿主必须核对
+  **本树构建的内容**（`npm pack` 字节随 npm 版本变化，候选没有可核对的固定产物，所以新增宿主只核对内容
+  摘要）。固定点的 `verifiedHosts` 还必须等于固定产物 `package.json` 声明的宿主集合，即“发布过的字节
+  声明支持哪些宿主，就必须验收过哪些宿主”。`--release` 与 `verify-provenance.mjs` 的发布门禁没有放松：
+  工作树仍须构建固定内容。回归用例见 `test/release-evidence-lanes.test.mjs`。
+
 - **同一个根因的工具失败不再因为返回内容变化而被拆成不同模式。** `tools/result` 观测用
   `sha256(JSON.stringify(result))` 作为模式身份，而官方 registry 发布的结果包含渲染出的
   `content` 与失败文本本身（`dsh-tools` 的 `toolErrorResult()` 把同一条消息同时写进

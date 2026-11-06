@@ -69,7 +69,7 @@ shasum -a 256 -c SHA256SUMS                    # Linux：sha256sum --check SHA25
 git clone <this-repo> && cd dsh-evolution
 npm ci                 # 严格按 package-lock.json 安装
 NODE_OPTIONS=--max-old-space-size=4096 npm test   # 完整套件（含可靠性、安全、性能差分与发布 pin 回归）
-npm run pack:check     # 16 项检查（开发阶段判定，见第 6 节第 16 条；发布阶段加 `-- --release`）
+npm run pack:check     # 17 项检查（开发阶段判定，见第 6 节第 16 条；发布阶段加 `-- --release`）
 npm run release:verify # 固定产物与发布固定点一致
 node --version         # 需要 ^22.19.0 || >=24.0.0
 ```
@@ -112,16 +112,19 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr
 - `docs/evidence/dsh-0.2.1-rc.2.json`
 - `docs/evidence/dsh-0.2.2-rc.1.json`（`hostLiveApply: "disabled"`）
 
-证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节），`pack:check` 与 `test/release-pin.test.mjs` 都拿它们核对**发布固定点**，而不是工作树。当前固定点对应的记录应针对 `release/dsh-evolution-0.2.0.tgz` 写回。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容，因此必须重跑三个宿主的验收再重新固定才能转绿；开发阶段的判定差别见第 6 节第 16 条。
+证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 按宿主分两条通道核对：固定点验收过的宿主核对**发布固定点**，固定点之后新增的宿主核对**本树构建的内容**（`npm pack` 字节随 npm 版本变化，候选没有可核对的固定产物，所以新增宿主只核对内容摘要）。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容：固定点覆盖的宿主在重新固定时重跑，新增宿主的记录则必须立即重跑才能通过 `pack:check`。开发阶段的判定差别见第 6 节第 16 条。
 
 ### 4.1 已执行的验收记录
 
 三个官方宿主针对 `0.2.0` 固定产物各完成 21/21 项验收，最终 doctor 均为 `healthy`、退出码为 0。固定点的宿主验收记录保存在上列三个 `docs/evidence/dsh-<host>.json` 文件中。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
 
 `0.2.2-rc.1` 的 21/21 验收是针对**本轮工作树内容**（下一次固定点的候选）完成的，记录的
-`contentSha256` 不等于当前固定点，因此在重新固定之前不满足上面那条一致性要求；这是预期的，
-不是验收失败。转绿的方式只有按本文件重新固定：先把 `peerDependencies` 与 `release/manifest.json`
-的 `verifiedHosts` / `evidence` 对齐到四个宿主，再对固定产物重跑四个宿主的验收。
+`contentSha256` 不等于当前固定点，所以它不属于固定点那条通道：它核对的是本树内容，由
+`pack:check` 与 `test/release-pin.test.mjs` 的“新增宿主”通道判定。两条通道的分配由固定点自己的
+`verifiedHosts` 决定，不随工作树改写，所以既有历史证据不可变，新增宿主的记录也不会被误当作发布验收。
+重新固定时四份记录一起进入固定点：把 `peerDependencies` 与 `release/manifest.json` 的
+`verifiedHosts` / `evidence` 对齐到四个宿主、`sourceCommit` 指向本次提交，再对固定产物重跑四个宿主的
+验收并 `npm run release:publish`。
 
 ## 5. CI 与发布链
 
