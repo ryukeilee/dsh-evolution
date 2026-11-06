@@ -100,6 +100,12 @@ export function apply(ctx) {
       steps.push({ name: 'runtime-stable', ok: true });
 
       const existingMemory = ctx.evolution.orchestrator.memory.snapshot().entries;
+      const doctor = await call('evolution_doctor', { composition: false });
+      if (!doctor || doctor.status === 'blocked') throw new Error('live doctor is blocked or unavailable');
+      const history = await call('evolution_history', { limit: 1 });
+      if (!history || typeof history !== 'object') throw new Error('history did not return a result');
+      const maintenance = await call('evolution_maintain', { dryRun: true });
+      if (!maintenance || typeof maintenance !== 'object' || maintenance.ok === false) throw new Error('maintenance dry run failed');
       const baselineRuntime = await call('evolution_runtime_inspect', {});
       let baseline = signatureOf(baselineRuntime);
 

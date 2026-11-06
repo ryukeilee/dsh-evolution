@@ -9,7 +9,7 @@ none of them is hidden behind an implicit patch.
 
 | Component | Range |
 | --- | --- |
-| DSH | `0.2.0-rc.2`, `0.2.1-alpha.1` or `0.2.1-rc.2` (exact alternatives, enforced by `peerDependencies`) |
+| DSH | `0.2.0-rc.2`, `0.2.1-alpha.1`, `0.2.1-rc.2` or `0.2.2-rc.1` (exact alternatives, enforced by `peerDependencies`; `0.2.2-rc.1` requires the host `hmr` row disabled, see [The upstream HMR transaction gap](#the-upstream-hmr-transaction-gap-on-022-rc1)) |
 | Node | `^22.19.0 || >=24.0.0` |
 | Bundle format | `dsh.bundle.patch` + profile `dsh.profile.bundles` |
 
@@ -27,17 +27,28 @@ npm run release:pack
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr
 ```
 
 Evidence: `docs/evidence/dsh-0.2.0-rc.2.json`,
-`docs/evidence/dsh-0.2.1-alpha.1.json` and
-`docs/evidence/dsh-0.2.1-rc.2.json` (host scratch paths redacted). Each file
+`docs/evidence/dsh-0.2.1-alpha.1.json`,
+`docs/evidence/dsh-0.2.1-rc.2.json` and
+`docs/evidence/dsh-0.2.2-rc.1.json` (host scratch paths redacted). Each file
 records the `contentSha256` of the package it installed and the `sha256` of the
 bytes it installed; both are checked against the committed pin in
 `release/manifest.json` by `npm run pack:check` and
 `test/release-pin.test.mjs`. The harness is self-contained: it installs the
 official host release itself, so a fresh checkout can re-derive every file. CI
 runs the same command per host (`ci.yml` on `ubuntu-latest`).
+
+The `0.2.2-rc.1` run records `hostLiveApply: "disabled"` and passes `--no-hmr`,
+which adds the ordinary overlay row `- id: hmr` / `disabled: true` to every boot
+and additionally requires each enable/disable to report
+`application: "restart-required"` with `restartReason: "no-hmr"`, to observe no
+HMR capability during the call, and to apply the saved selection on the next
+boot. The reason is the upstream gap documented below, not a workaround of this
+bundle's own checks: the same overlay form is what `@deepseek-ai/dsh-hmr`
+documents for "disabling or omitting HMR applies changes on restart".
 
 ### Verified compatibility matrix
 
@@ -46,6 +57,7 @@ runs the same command per host (`ci.yml` on `ubuntu-latest`).
 | `0.2.0-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.0-rc.2.json` (full acceptance, 21/21 steps) |
 | `0.2.1-alpha.1` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.1-alpha.1.json` (full acceptance, 21/21 steps) |
 | `0.2.1-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.1-rc.2.json` (full acceptance, 21/21 steps) |
+| `0.2.2-rc.1` | `4.1.0` | `1.1.0` | `1.1.0` | yes — `docs/evidence/dsh-0.2.2-rc.1.json` (full acceptance, 21/21 steps, host `hmr` row disabled) |
 
 The unit suite is not run per host: `ci.yml` runs it in a separate job on Node
 `22.19.0` and `24.x`, against the module versions locked in `package-lock.json`
@@ -158,6 +170,82 @@ still modifies no DSH code, keeps no host fork, and hides no downgrade. The
 `@deepseek-ai/cordis` `4.0.1` -> `4.0.4` delta that the previous release already
 shipped over only changed `Fiber.update()`'s return value and one logger
 exporter allocation; every surface in the table above is unchanged by it.
+
+| Package | `0.2.1-rc.2` -> `0.2.2-rc.1` | Effect on this bundle |
+| --- | --- | --- |
+| `@deepseek-ai/cordis` | `4.0.5` -> `4.1.0`: **breaking lifecycle rename.** A fiber's active-service snapshot is `Fiber.committed` instead of `Fiber.store`, and a bound service implementation reports its owner fiber as `impl.ctx.fiber` instead of `impl.fiber`. `Fiber.getEffects()`, `Fiber.state/uid/inject/inertia`, `ctx.reflect.props/store`, `ctx.reflect._getImpl()` and `ctx.events._hooks` are still present. | adapted in `lib/cordis-compat.js#fiberIsActive` (reads `committed` when the fiber exposes it, `store` otherwise) and `lib/orchestrator.js#inspectServices` (`impl.fiber ?? impl.ctx?.fiber`). A legacy 4.0 fiber that owns an obsolete `store` while exposing `committed: undefined` stays inactive, so a 4.0 value cannot be read as a 4.1 one. `test/cordis-41-compat.test.mjs` pins both shapes and runs the real 4.1 lifecycle (`EVOLUTION_CORDIS_41_MODULE`) |
+| `@deepseek-ai/cordis-plugin-include` | `1.0.10` -> `1.1.0`: adds a journal module and `lib/types/journal.d.ts`; `refresh()`, `root.data`, `EntryTree.resolve()/await()`, `Entry.fiber` remain the members this bundle mounts and refreshes through | none; re-verified by the acceptance promotion phases, and reported by `runtime.internal-api` at mount |
+| `@deepseek-ai/cordis-plugin-loader` | `1.0.6` -> `1.1.0`: `lib/index.js` changed; `entries()` and `Entry.fiber/options/disabled` remain the layer this bundle reads | none; re-verified by `runtime.internal-api` and the acceptance |
+| `@deepseek-ai/dsh-tools` | `0.2.1-rc.2` -> `0.2.2-rc.1`: adds `lib/pipeline.js`, a shared chunk module and `types/batch.d.ts`; `ToolsService.schemas()` and `get()` keep their signatures | none; the acceptance asserts the live 10-tool surface and calls every tool through the registry |
+| `@deepseek-ai/dsh-cordis-host-runner` | `0.2.1-rc.2` -> `0.2.2-rc.1`: `lib/index.js` and `lib/typert.host.js` changed; `snapshot()/define()/run()/stop()/undefine()` remain the dynamic runner surface this bundle uses | none; the core acceptance flow starts and reverts a real trial through it |
+| `@deepseek-ai/dsh-storage-domain`, `@deepseek-ai/dsh-storage-json` | `0.2.1-rc.2` -> `0.2.2-rc.1`: `lib/` changed in both | none on the ports this bundle opens (`stateStore`, `transaction`, `mutationAuthority`); covered by the full unit suite against the pinned devDependencies and by the host acceptance |
+| `@deepseek-ai/dsh` (the host itself) | new `PluginManager` restart semantics without HMR (`application: "restart-required"`, `restartReason: "no-hmr"`) and the upstream startup transaction gap described below | the deployment this release accepts disables the `hmr` row; the gap is documented, not worked around |
+
+The `0.2.1-rc.2` -> `0.2.2-rc.1` delta is the first one that needed an adapter
+(two field reads), and it is the only code change in that release. Every other
+row above is a surface the bundle already used and still finds live: the
+acceptance boots the real host, asserts the 10-tool surface, and the final
+doctor's `runtime.internal-api` reports each probed surface on the live fiber
+tree. Nothing here is inferred from a type declaration alone.
+
+<a id="the-upstream-hmr-transaction-gap-on-022-rc1"></a>
+### The upstream HMR transaction gap on `0.2.2-rc.1`
+
+On this host a profile change started **inside the host's own startup window**
+can end as `changed: true` / `application: failed` with
+`HMR profile reconciliation must run inside runExclusive`. It is reproducible
+with the official base bundle only: no Evolution entry, no Evolution dependency,
+no guard change, no patched host. In
+`@deepseek-ai/dsh-plugin-manager@0.2.2-rc.1/lib/index.js`:
+
+1. `configure()` (`:3093`) reads HMR once and runs the operation directly when
+   the service is not available yet, without entering `runExclusive`;
+2. the operation saves the profile asynchronously (`selectBundle()`, `:3048`),
+   during which HMR's own asynchronous init can complete and publish the
+   service;
+3. `reload()` (`:3129`) reads HMR **again**, now sees it, and calls
+   `reconcileProfile()` (`@deepseek-ai/dsh-hmr/lib/index.js:1325`), which
+   correctly refuses because this instance's `executing.getStore()` is not
+   `true`. The selection is already saved, so the caller sees a saved change
+   that was not applied.
+
+`docs/evidence/hmr-022/official-control.json` holds the controlled
+reproduction: the only instrumentation pauses after the real `selectBundle()`
+returns until real HMR init is visible (scheduling only, no service, guard or
+source replacement). It fails 3/3 with that diagnostic and succeeds 3/3 when the
+same enable is issued after HMR is visible. That is a controlled schedule, not a
+measured natural frequency: eight ordinary plugin toggles and ten official
+bundle enables did not hit it. `docs/evidence/hmr-022/README.md` records the
+source digests and the scope of both groups.
+
+**What this release does instead of waiting for an upstream fix.** The official
+documentation for `@deepseek-ai/dsh-hmr` states that "disabling or omitting HMR
+applies changes on restart"; the same file documents the row override used here.
+With the `hmr` row disabled, `PluginManager.configure()` runs the operation
+directly, `reload()` recomposes the saved profile and does not call
+`reconcileProfile()` at all, and `change()` reports
+`application: "restart-required"` / `restartReason: "no-hmr"` before any
+operation runs. Nothing is skipped, delayed or retried, and the guard stays
+exactly as the host ships it.
+
+`docs/evidence/hmr-022/hmr-route.json` records three paired boots of the same
+enable action under that configuration: every run reports
+`restart-required`/`no-hmr` with `changed: true`, observes no HMR capability at
+`configure` or `reload`, and the immediately following boot of the same
+`$DSH_HOME` mounts the rows the first boot withheld. Reproduce both groups with:
+
+```sh
+node --max-old-space-size=4096 scripts/acceptance/reproduce-hmr-startup.mjs \
+  <installed-0.2.2-rc.1-runtime> docs/evidence/hmr-022/hmr-route.json
+```
+
+Evolution's own operations do not use that path: a promotion writes its own
+`promoted.cordis.yml` and applies it through its own official Include
+(`lib/promotion-include.js`), so trial, measurement, revert, promotion and
+restart recovery behave identically with HMR enabled or disabled. The
+difference is only in the host's own profile changes, which is why the accepted
+deployment for this host disables HMR and reports every such change as
+`restart-required`.
 
 Notable findings from the audit, all fixed in this release:
 

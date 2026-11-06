@@ -84,7 +84,14 @@ node --version         # 需要 ^22.19.0 || >=24.0.0
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr
 ```
+
+`--no-hmr` 在每个引导进程的官方 overlay 里加上 `- id: hmr` / `disabled: true`，并要求启用 / 禁用
+报告 `application: "restart-required"` / `restartReason: "no-hmr"`、调用期间观测不到 HMR 能力、
+保存的选择在下一次启动生效。`0.2.2-rc.1` 上的 profile 变更在 HMR 可用前开始时会命中一个属于上游的
+`PluginManager` / HMR 事务缺口（只用官方 bundle 就能复现），所以该版本只验收这个部署形态；
+根因、复现与证据范围见 `COMPATIBILITY.md` 的 “The upstream HMR transaction gap on 0.2.2-rc.1”。
 
 脚本是自包含的：它在一个临时目录里用 pnpm 安装指定版本的官方 `@deepseek-ai/dsh`，在全新的 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步：
 
@@ -103,6 +110,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 - `docs/evidence/dsh-0.2.0-rc.2.json`
 - `docs/evidence/dsh-0.2.1-alpha.1.json`
 - `docs/evidence/dsh-0.2.1-rc.2.json`
+- `docs/evidence/dsh-0.2.2-rc.1.json`（`hostLiveApply: "disabled"`）
 
 证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节），`pack:check` 与 `test/release-pin.test.mjs` 都拿它们核对**发布固定点**，而不是工作树。当前固定点对应的记录应针对 `release/dsh-evolution-0.2.0.tgz` 写回。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容，因此必须重跑三个宿主的验收再重新固定才能转绿；开发阶段的判定差别见第 6 节第 16 条。
 
@@ -110,12 +118,17 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 
 三个官方宿主针对 `0.2.0` 固定产物各完成 21/21 项验收，最终 doctor 均为 `healthy`、退出码为 0。固定点的宿主验收记录保存在上列三个 `docs/evidence/dsh-<host>.json` 文件中。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
 
+`0.2.2-rc.1` 的 21/21 验收是针对**本轮工作树内容**（下一次固定点的候选）完成的，记录的
+`contentSha256` 不等于当前固定点，因此在重新固定之前不满足上面那条一致性要求；这是预期的，
+不是验收失败。转绿的方式只有按本文件重新固定：先把 `peerDependencies` 与 `release/manifest.json`
+的 `verifiedHosts` / `evidence` 对齐到四个宿主，再对固定产物重跑四个宿主的验收。
+
 ## 5. CI 与发布链
 
 - `.github/workflows/ci.yml`
   - `test`：Node `22.19.0` 与 `24.x`，`npm ci --ignore-scripts`，`npm test`；作业级 `env: NODE_OPTIONS=--max-old-space-size=4096`（`AGENTS.md` 第 5 节要求的堆上限，由 `test/workflows.test.mjs` 断言，安装步骤与 runner 起的每个子进程都带同一个上限）
   - `package`：`pack:check`（开发阶段判定：工作树是固定点，或是它的已提交后继并逐条列出差异）、对固定产物的 `release:verify`、本机重建的 `--content-only --tree` 校验（证明本机打包复现的就是工作树内容；发布字节仍由 `release/` 固定）、从**发布 tarball** 解包后在没有任何 `node_modules` 的情况下启动 doctor、`sha256sum --check`
-  - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1` / `0.2.1-rc.2`，用真实官方宿主执行第 4 节的全部步骤，并断言证据的内容摘要等于发布固定点
+  - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1` / `0.2.1-rc.2` / `0.2.2-rc.1`（后者带 `--no-hmr`），用真实官方宿主执行第 4 节的全部步骤，并证明记录的 `contentSha256` 等于**本树**内容（与固定点的比较在 `package` job）
 - `.github/workflows/codeql.yml`：对 `javascript-typescript` 在 `main`、pull request 与每周运行 CodeQL，并把 SARIF 上传到 GitHub code scanning（job 权限仅 `security-events: write` + 只读内容）
 - `.github/workflows/release.yml`：tag push 或 `workflow_dispatch` 时
   1. 校验 tag 形如 `v*`，并核对 tag 版本、checkout 到的 commit、`release/manifest.json` 的 `sourceCommit`（新版本必须有，必须是 tag 历史中的祖先，并从 git 对象计算其实际包内容摘要）与工作树内容摘要（`scripts/release/verify-provenance.mjs`）

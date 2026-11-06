@@ -1,0 +1,92 @@
+{
+  "round": "2026-11-06 0.2.2-rc.1 adaptation",
+  "host": "0.2.2-rc.1",
+  "node": "v26.13.0",
+  "platform": "darwin-arm64",
+  "candidate": {
+    "contentSha256": "0d68824a7a29b27fd8691ff10e1444b62f32e3d45772e111ba8c03becebda537",
+    "tarballSha256": "916ad6fa6bc8cd7acc1a42dc61fac4f7eeeb35c545646dbbb1663e0665bb31b2",
+    "note": "dist/ build of this worktree; release/ still pins 0.2.0. Verified against the home the benchmark used: only README/CHANGELOG/COMPATIBILITY/RELEASE differ from that build's installed copy."
+  },
+  "fullTest": {
+    "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+    "tests": 1417,
+    "passed": 1413,
+    "failed": 2,
+    "skipped": 2,
+    "failures": [
+      "test/release-pin.test.mjs: the pin lists an acceptance evidence file per supported host (peerDependencies now declares 0.2.2-rc.1; release/manifest.json still pins the three historical hosts, and re-pinning is a release write that this change does not perform)",
+      "test/release-pin.test.mjs: the working tree is the pinned release, or a committed successor of it (the tree that produced this file was not committed yet)"
+    ]
+  },
+  "focused": {
+    "diagnostics": {
+      "command": "node --max-old-space-size=4096 --test test/diagnostics.test.mjs",
+      "tests": 59,
+      "passed": 59,
+      "failed": 0
+    },
+    "cordis41": {
+      "command": "EVOLUTION_CORDIS_41_MODULE=<installed-0.2.2-rc.1>/node_modules/@deepseek-ai/cordis/lib/index.js node --max-old-space-size=4096 --test test/cordis-41-compat.test.mjs",
+      "tests": 4,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "packCheck": {
+    "command": "npm run pack:check",
+    "result": "15/16 checks pass; the failing check is 'the committed acceptance evidence describes the pinned package content' (0.2.2-rc.1 evidence covers d43c7e81…, the pin records 370465f0…). Before the lockfile sync it also reported peerDependencies drift in package-lock.json; that is fixed in this change (package-lock.json is not a shipped file).",
+    "knownFailures": [
+      "evidence-vs-pin: requires re-pinning release/manifest.json, which is a release write (npm run release:publish) not performed by this change"
+    ]
+  },
+  "hostAcceptance": {
+    "0.2.2-rc.1": {
+      "command": "node --max-old-space-size=4096 scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --runtime <installed-0.2.2-rc.1> --no-hmr --out docs/evidence/dsh-0.2.2-rc.1.json",
+      "steps": 21,
+      "passed": 21,
+      "failed": 0,
+      "finalDoctor": "healthy",
+      "hostLiveApply": "disabled",
+      "evidence": "docs/evidence/dsh-0.2.2-rc.1.json"
+    },
+    "0.2.1-rc.2": {
+      "command": "node --max-old-space-size=4096 scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2 --runtime <installed-0.2.1-rc.2> --out <tmp>/evidence.json",
+      "steps": 21,
+      "passed": 21,
+      "failed": 0,
+      "note": "re-run with the same candidate to prove the older host did not regress; the committed docs/evidence/dsh-0.2.1-rc.2.json still describes the pinned 0.2.0 artifact and was not rewritten"
+    }
+  },
+  "hmrRoute": {
+    "command": "node --max-old-space-size=4096 scripts/acceptance/reproduce-hmr-startup.mjs <installed-0.2.2-rc.1> docs/evidence/hmr-022/hmr-route.json",
+    "groups": {
+      "barrier": 3,
+      "stable": 3,
+      "no-hmr-pairs": 3
+    },
+    "allExpected": true,
+    "note": "barrier reproduces the upstream guard failure 3/3; stable applies live 3/3; each no-HMR pair reports restart-required/no-hmr with changed:true and the following boot mounts the withheld rows. The overlay for every no-HMR boot was re-read from disk after the run and starts with '- id: hmr' / 'disabled: true'; the driver now throws if it does not, because the first version of this script read the mode from the parent environment and silently produced HMR-enabled overlays while still reporting 9/9."
+  },
+  "benchmark": {
+    "command": "node --max-old-space-size=4096 scripts/benchmarks/host-startup.mjs --runtime <installed-0.2.2-rc.1> --home <acceptance home> --rounds 9 --out docs/performance/host-startup-0.2.2.json",
+    "samples": 36,
+    "errors": 0,
+    "medianWallMs": {
+      "evolution-hmr-on": 1521.0,
+      "evolution-hmr-off": 1433.2,
+      "host-hmr-on": 1470.0,
+      "host-hmr-off": 1347.2
+    },
+    "report": "docs/performance/host-startup-0.2.2.md",
+    "medianCpuMs": {
+      "evolution-hmr-on": 1940.5,
+      "evolution-hmr-off": 1812.5,
+      "host-hmr-on": 1884.1,
+      "host-hmr-off": 1690.8
+    },
+    "note": "CPU is one median over each sample's user+system (not the sum of two medians); a sample that never reached its ready state is an error and makes the run exit non-zero."
+  },
+  "production": "unchanged: no production DSH_HOME, no production config, no release/ artifact was modified"
+}

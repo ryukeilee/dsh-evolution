@@ -31,6 +31,12 @@
  *
  * This is not a retry and adds no delay: the action is issued once, at the same
  * moment as before.
+ *
+ * With the `hmr` row disabled (the supported configuration for a host where a
+ * profile change must wait for a restart) the capability is absent before and
+ * after the call, so the report is never ambiguous: it must be
+ * `restart-required` with `restartReason: 'no-hmr'`, and the live tree must stay
+ * at the pre-call state until the harness restarts the host.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -138,6 +144,7 @@ export function apply(ctx) {
     return {
       action,
       application: result.application,
+      restartReason: result.restartReason ?? null,
       mountedBefore,
       mountedAfter: observed.mounted,
       selected,

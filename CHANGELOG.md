@@ -11,7 +11,42 @@ unchanged as the history of that candidate line.
 ## 0.2.0 之后 — unreleased
 
 依赖、持久 schema 版本、工具名 / 参数 / 参数 schema、授权来源、晋升门禁的 8 项证据、风险分级、
-`peerDependencies` 与 `engines` 均未改动；下列改动位于 `0.2.0` 固定产物之后，尚未重新固定。
+`engines` 均未改动；下列改动位于 `0.2.0` 固定产物之后，尚未重新固定。`peerDependencies` 本轮
+新增了 `0.2.2-rc.1` 及其宿主侧 `@deepseek-ai/cordis` `~4.1.0` / `cordis-plugin-include` `~1.1.0`
+（原有版本仍在范围内）。
+
+### 适配
+
+- **支持官方 DSH `0.2.2-rc.1`（Cordis 4.1 / Include 1.1 / Loader 1.1），要求关闭宿主 HMR。**
+  Cordis 4.1 把 fiber 的活跃快照从 `Fiber.store` 改名为 `Fiber.committed`，并把服务实现的所有者
+  fiber 从 `impl.fiber` 移到 `impl.ctx.fiber`：`lib/cordis-compat.js#fiberIsActive` 现在按 fiber
+  是否暴露 `committed` 选择字段（4.0 的 `store` 不会被当作 4.1 的快照），
+  `lib/orchestrator.js#inspectServices` 用 `impl.fiber ?? impl.ctx?.fiber` 读取所有者。
+  `test/cordis-41-compat.test.mjs` 同时钉住两种 fiber 形状，并用真实 4.1 跑完整生命周期。
+  除这两处字段读取外没有改宿主代码、没有 fork、没有豁免宿主兼容检查。
+- **`0.2.2-rc.1` 的验收形态是「关闭宿主 HMR + 重启生效」，原因是上游事务缺口。** 该版本
+  `PluginManager.configure()` 在 HMR 尚未可用时直接执行操作，而同一个操作的 `reload()` 会再次
+  读取 HMR 并调用 `reconcileProfile()`；此时事务标记不是 `true`，官方保护正确拒绝，结果是选择
+  已保存但 `application: failed`。只用官方 bundle、不装本插件也能 3/3 复现
+  （`docs/evidence/hmr-022/`），所以本插件不声称修复、不绕过 guard、不改宿主源码；已验收的部署
+  形态是在 profile patch 里写 `- id: hmr` / `disabled: true`，此后 profile 变更报告
+  `restart-required` / `no-hmr`，下一次启动生效。同一形态下 3/3 次配对启动证明保存的选择确实在
+  重启后挂载。Evolution 自己的试用、测量、回滚、晋升与重启恢复不经由宿主 HMR 队列（晋升走自己的
+  官方 Include），两种形态下行为一致。
+
+### 验证
+
+- **`run-host-acceptance.mjs --no-hmr`。** 每个引导进程通过官方 overlay 形式关掉 `hmr` 行，并额外
+  断言启用 / 禁用报告 `restart-required` / `no-hmr`、调用期间观测不到 HMR 能力、保存的选择在重启
+  后生效。`0.2.2-rc.1` 真实隔离验收 21/21 步通过（最终 `doctor-final` 为 `healthy`），证据见
+  `docs/evidence/dsh-0.2.2-rc.1.json`。
+- **新增可复现冷启动基准与实测收益。** `scripts/benchmarks/host-startup.mjs` 在已安装的官方 runtime
+  上交替 A/B 测四种配置的冷启动（到 Evolution 服务与 10 个工具就绪，及到 HMR 就绪）。隔离
+  `0.2.2-rc.1` 上 9 轮中位数：Evolution 已安装时关闭 HMR **−87.9 ms / −5.8% 墙钟、−128.0 ms / −6.6%
+  CPU、−6.8 MiB / −2.0% RSS**；不装 Evolution 时为 −122.8 ms / −8.4%。原始数据与口径见
+  `docs/performance/host-startup-0.2.2.md`。宿主自身的耗时占主导（Evolution 已安装时约占 1.52 s 中的
+  85.9 ms）；仓库自身代码在启动阶段的自耗时是毫秒级，可得的惰性加载候选只有约 2.5 ms（`js-yaml`）与约 20 ms
+  （`zod`），量级不足且会把加载失败窗口推进入晋升/写入路径，因此没有为微小收益引入惰性加载或缓存。
 
 ### 修复
 

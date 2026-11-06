@@ -14,7 +14,8 @@
  *   4. core flow through the official tool registry (inspect/propose/trial/
  *      measure/revert) and memory persistence
  *   5. official pluginManager disable -> enable, asserting live-vs-selected
- *      semantics and unchanged user data
+ *      semantics and unchanged user data (with `--no-hmr` the host must report
+ *      `restart-required` / `no-hmr` and apply the saved selection on restart)
  *   6. CLI uninstall, host boot with the bundle absent, CLI reinstall
  *   7. core flow again, proving the original user data was retained
  *   8. final doctor
@@ -22,7 +23,7 @@
  * Usage:
  *   node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2 \
  *     [--tarball dist/dsh-evolution-0.2.0-rc.1.tgz] [--out docs/evidence/...] \
- *     [--work <dir>] [--runtime <dir>] [--keep]
+ *     [--work <dir>] [--runtime <dir>] [--no-hmr] [--keep]
  */
 import { fork, spawn, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -41,7 +42,7 @@ const PROBES = path.join(HERE, 'probes');
 const EXPECTED_TOOL_COUNT = 10;
 
 function parseArgs(argv) {
-  const options = { keep: false, timeoutMs: 180000 };
+  const options = { keep: false, timeoutMs: 180000, noHmr: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     const value = () => {
@@ -55,6 +56,7 @@ function parseArgs(argv) {
     else if (arg === '--out') options.out = path.resolve(value());
     else if (arg === '--work') options.work = path.resolve(value());
     else if (arg === '--runtime') options.runtime = path.resolve(value());
+    else if (arg === '--no-hmr') options.noHmr = true;
     else if (arg === '--keep') options.keep = true;
     else if (arg === '--timeout-ms') options.timeoutMs = Number(value());
     else if (arg === '--help' || arg === '-h') options.help = true;
@@ -70,6 +72,8 @@ const HELP = `node scripts/acceptance/run-host-acceptance.mjs --host <dsh-versio
   --out <path>        evidence JSON (default: docs/evidence/dsh-<host>.json)
   --work <dir>        scratch directory (default: a fresh temp directory)
   --runtime <dir>     reuse an already-prepared runtime instead of installing
+  --no-hmr            disable the host's HMR row in every boot overlay, so a
+                      profile change is applied on restart ("restart-required")
   --keep              keep the scratch directory after the run
 `;
 
@@ -111,6 +115,9 @@ const evidence = {
   node: process.version,
   platform: `${process.platform}-${process.arch}`,
   work,
+  // The host capability that decides whether a profile change is applied live.
+  // Every boot overlay disables the `hmr` row when this is false.
+  hostLiveApply: options.noHmr ? 'disabled' : 'enabled',
   startedAt: new Date().toISOString(),
   steps: [],
 };
@@ -164,7 +171,13 @@ function runCli(args) {
 
 function bootProbe(name, probeFile, extraEnv = {}) {
   const patchFile = path.join(work, `${name}.patch.yml`);
-  fs.writeFileSync(patchFile, `- insert:\n    - id: evolution-acceptance-${name}\n      name: '${pathToFileURL(probeFile).href}'\n`);
+  // `--no-hmr` addresses the base bundle's `hmr` row in the official overlay
+  // form ("id-targeted config overrides, disables, and insert lists"). It is the
+  // documented "applies changes on restart" configuration, not a workaround:
+  // without the service, PluginManager.configure() runs the operation directly
+  // and reload() composes the saved profile instead of reconciling it live.
+  const hmrRow = options.noHmr ? '- id: hmr\n  disabled: true\n' : '';
+  fs.writeFileSync(patchFile, `${hmrRow}- insert:\n    - id: evolution-acceptance-${name}\n      name: '${pathToFileURL(probeFile).href}'\n`);
   return new Promise((resolve) => {
     const child = fork(
       cliPath(),
@@ -376,6 +389,17 @@ async function main() {
       error: outcome.error,
     });
     if (outcome.error) throw new Error(`lifecycle ${action} failed: ${outcome.error}`);
+    if (options.noHmr && action !== 'verify') {
+      // The probe already derives the live tree from the capability; here the
+      // capability is absent for the whole run, so the report is not ambiguous.
+      const result = outcome.result;
+      if (result.application !== 'restart-required' || result.restartReason !== 'no-hmr') {
+        throw new Error(`lifecycle ${action} reported application=${result.application} restartReason=${result.restartReason}, expected restart-required/no-hmr`);
+      }
+      if (result.liveApplyBefore || result.liveApplyAfter) {
+        throw new Error(`lifecycle ${action} observed the HMR capability although the run disabled it`);
+      }
+    }
   }
 
   // 6. official CLI uninstall, body boot, CLI reinstall
