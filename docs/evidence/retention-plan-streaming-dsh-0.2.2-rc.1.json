@@ -1,0 +1,213 @@
+{
+  "host": "0.2.2-rc.1",
+  "packageVersion": "0.2.1",
+  "tarball": "dist/dsh-evolution-0.2.1.tgz",
+  "tarballSha256": "ac09b2a7fc1dfcbfcc17dc7671c1266430accf441038d229731b9a13b16f2895",
+  "contentSha256": "857b64293703ac16cb2bf115efec5c6707c911395a7fd1433c84fdda8734f048",
+  "node": "v26.13.0",
+  "platform": "darwin-arm64",
+  "work": "<work>",
+  "hostLiveApply": "disabled",
+  "startedAt": "2026-11-06T15:42:56.123Z",
+  "steps": [
+    {
+      "name": "host-install",
+      "at": "2026-11-06T15:42:59.566Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "│   to run scripts.                                                            │",
+        "│                                                                              │",
+        "╰──────────────────────────────────────────────────────────────────────────────╯",
+        "Done in 3.2s using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "plugin-add",
+      "at": "2026-11-06T15:43:00.301Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "  Virtual store is at:             node_modules/.pnpm",
+        "Progress: resolved 4, reused 3, downloaded 1, added 4, done",
+        "Done in 423ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "profile-lists-bundle",
+      "at": "2026-11-06T15:43:00.301Z",
+      "ok": true,
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "dsh-evolution"
+      ]
+    },
+    {
+      "name": "doctor-cli",
+      "at": "2026-11-06T15:43:00.616Z",
+      "ok": true,
+      "status": "degraded",
+      "exitCode": 1,
+      "hostVersion": "0.2.2-rc.1",
+      "verified": true,
+      "degraded": 2,
+      "blocked": 0
+    },
+    {
+      "name": "core-flow",
+      "at": "2026-11-06T15:43:05.114Z",
+      "ok": false,
+      "error": "Error: live doctor is blocked or unavailable\n    at run (file:///Users/ryukeili/GitHub/dsh-evolution/.agents/worktrees/perf/retention-plan-streaming/scripts/acceptance/probes/core-probe.mjs:104:57)"
+    }
+  ],
+  "hostVersion": "0.2.2-rc.1",
+  "hostModules": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/cordis-plugin-include": "1.1.0",
+    "@deepseek-ai/cordis-plugin-loader": "1.1.0",
+    "@deepseek-ai/dsh": "0.2.2-rc.1",
+    "js-yaml": "4.3.2",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-cordis-host-runner": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-storage-domain": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-storage-json": "0.2.2-rc.1"
+  },
+  "doctor": {
+    "status": "degraded",
+    "coverage": {
+      "evaluated": [
+        "plugin.home",
+        "plugin.package",
+        "plugin.patch",
+        "plugin.support-matrix",
+        "host.install",
+        "host.cli",
+        "host.version",
+        "host.modules",
+        "host.composition",
+        "compat.legacy-adapters",
+        "capabilities.known-limits",
+        "data.root",
+        "state.memory",
+        "state.archives",
+        "state.event-bridge",
+        "migration.manifest",
+        "state.domain",
+        "state.ownership",
+        "data.key",
+        "promotion.journal",
+        "promotion.composition",
+        "promotion.pointer"
+      ],
+      "notEvaluated": [
+        {
+          "id": "runtime.capabilities",
+          "reason": "cli mode without a live context"
+        },
+        {
+          "id": "runtime.registration",
+          "reason": "cli mode without a live context"
+        },
+        {
+          "id": "runtime.internal-api",
+          "reason": "cli mode without a live context"
+        },
+        {
+          "id": "state.retention-floor",
+          "reason": "not observable in this mode"
+        }
+      ]
+    },
+    "degradedCapabilities": [
+      {
+        "id": "evaluator-advisory",
+        "impact": "The domain evaluator records a decision and hard-vetoes a detected regression, but promotionGates remains the production authority; independent host baseline/test metrics are not wired in.",
+        "resolution": "Provide a DSH host surface that supplies independent baseline/test metrics for an experiment."
+      },
+      {
+        "id": "continuous-and-governance-not-wired",
+        "impact": "lib/dockyard-domain/continuous and lib/dockyard-domain/governance are pure domain modules covered by unit tests and are not started by the orchestrator live loop.",
+        "resolution": "Wire them into the live loop behind an explicit opt-in once the loop is designed."
+      },
+      {
+        "id": "host-only-promotion",
+        "impact": "Client halves are rejected; promoted host code runs through a cooperative Function(hostCode)() gate that is not a security sandbox.",
+        "resolution": "Requires an approval-aware durable composition contract from the host."
+      },
+      {
+        "id": "legacy-compat-adapters",
+        "impact": "lib/compat/legacy-startup-drift.js and the legacy preset/default-path handling stay present but disabled by default.",
+        "resolution": "Remove once no supported DSH layout publishes the legacy drift engine or preset layout."
+      },
+      {
+        "id": "internal-api-dependency",
+        "impact": "Two introspection surfaces are private to Cordis by its own rule: ctx.events._hooks (no public listener enumeration exists) and the ctx.reflect._getImpl() fallback (used only when the documented ctx.reflect.store + Context.isolate path is absent). FiberState.ACTIVE is not importable (const enum, erased at runtime), so ACTIVE is decided from documented lifecycle fields. The official loader/Include members used for the mounted promoted row (EntryTree.resolve/root, Entry.fiber/options/disabled) are public but undocumented.",
+        "resolution": "Replace ctx.events._hooks once the host publishes a public listener enumeration; every other surface already goes through a documented or explicitly classified path recorded in lib/cordis-compat.js."
+      }
+    ],
+    "levels": {
+      "plugin.home": "ok",
+      "plugin.package": "ok",
+      "plugin.patch": "ok",
+      "plugin.support-matrix": "ok",
+      "host.install": "ok",
+      "host.cli": "ok",
+      "host.version": "ok",
+      "host.modules": "ok",
+      "host.composition": "ok",
+      "runtime.capabilities": "not-evaluated",
+      "runtime.registration": "not-evaluated",
+      "runtime.internal-api": "not-evaluated",
+      "compat.legacy-adapters": "ok",
+      "capabilities.known-limits": "ok",
+      "data.root": "degraded",
+      "state.memory": "ok",
+      "state.archives": "ok",
+      "state.event-bridge": "ok",
+      "migration.manifest": "ok",
+      "state.domain": "ok",
+      "state.retention-floor": "not-evaluated",
+      "state.ownership": "ok",
+      "data.key": "degraded",
+      "promotion.journal": "ok",
+      "promotion.composition": "ok",
+      "promotion.pointer": "ok"
+    },
+    "findings": [
+      {
+        "id": "runtime.capabilities",
+        "level": "not-evaluated",
+        "summary": "Live Cordis capabilities are not observable outside a running host session."
+      },
+      {
+        "id": "runtime.registration",
+        "level": "not-evaluated",
+        "summary": "Live tool registration is not observable outside a running host session."
+      },
+      {
+        "id": "runtime.internal-api",
+        "level": "not-evaluated",
+        "summary": "Introspection probes were not exercised outside a running host session."
+      },
+      {
+        "id": "data.root",
+        "level": "degraded",
+        "summary": "The Evolution data root is not initialized yet: data root is not initialized yet (created on first run)."
+      },
+      {
+        "id": "state.retention-floor",
+        "level": "not-evaluated",
+        "summary": "Event log retention continuity: domain-unverified."
+      },
+      {
+        "id": "data.key",
+        "level": "degraded",
+        "summary": "The event bridge key is absent; no key-derived MAC is on disk (every artifact is absent or empty), so the next start creates the key, exactly as the runtime does whenever the path is free."
+      }
+    ]
+  },
+  "ok": false,
+  "error": "Error: core flow probe failed: Error: live doctor is blocked or unavailable\n    at run (file:///Users/ryukeili/GitHub/dsh-evolution/.agents/worktrees/perf/retention-plan-streaming/scripts/acceptance/probes/core-probe.mjs:104:57)\n    at main (file:///Users/ryukeili/GitHub/dsh-evolution/.agents/worktrees/perf/retention-plan-streaming/scripts/acceptance/run-host-acceptance.mjs:378:30)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///Users/ryukeili/GitHub/dsh-evolution/.agents/worktrees/perf/retention-plan-streaming/scripts/acceptance/run-host-acceptance.mjs:562:3",
+  "finishedAt": "2026-11-06T15:43:05.114Z"
+}
