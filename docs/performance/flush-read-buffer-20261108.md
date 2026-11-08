@@ -136,19 +136,47 @@ node --max-old-space-size=4096 scripts/benchmarks/flush-read-buffer.mjs \
 
 200 条写入的追加复测：[原始 9 轮 × 60 样本 A/A/B](flush-read-buffer-200-write-repeat-20261108.json)。
 单次 wall 中位数 A 11.940 ms、B 12.494 ms（+4.64%），每轮 A/A 最大差 0.861 ms；
-B 相对每轮 A1/A2 均值有 6 轮上升、3 轮下降，不能将其认定为稳定的速度改善，也不能排除小幅
+B 相对每轮 A1/A2 均值有 7 轮上升、2 轮下降，不能将其认定为稳定的速度改善，也不能排除小幅
 单次中位数回退。但 60 次累计 wall A 1,054.220 ms、B 1,054.265 ms（+0.004%），
 累计 CPU A 544.081 ms、B 543.956 ms（−0.023%）；配对 A/A 的累计 wall 最大差 65.178 ms、
 累计 CPU 最大差 21.426 ms，累计指标没有显著回退。单次中位数与累计结果不同，反映同步等待
 的长尾分布，不能挑其中一个指标宣称写入更快。本轮保留的收益只由连续无新事件组承担。
 
-实际验证（持续补齐最终门禁）：
+实际验证（已执行门禁）：
 
 - 相关聚焦测试 65 项通过，含新差分 2 项。
 - 首次全量 1,455 项通过、2 项跳过，唯一失败是 `release-pin` 拒绝未提交分发改动；提交后重新验证。
 - 默认打包目录已有其他版本，脚本拒绝覆盖；改用全新的 `/tmp/dsh-evolution-flush-buffer-20261108`
   成功构建，未改写既有 `dist/` 或 `release/`。
-- 官方宿主验收、最终全量、pack:check 与独立审核结果见后续记录。
+- 提交后全量重新执行：1,456 项通过、2 项跳过、0 失败（本地工作区包含原有未提交的 4 项 serializer 回归，不纳入本 PR）。
+- `npm run pack:check` 全部检查通过；本树是固定发布产物的已提交开发后继，不等于发布固定点。
+- 17 项 `pack:check` 检查通过；开发后继与发布固定点的区别已由脚本明确报告。
+- 四个声明支持的官方宿主均在全新隔离 runtime/home 中完成安装、诊断、工具生命周期、卸载重装、
+  升级回滚与晋升重启验证：
+  [0.2.0-rc.2](../evidence/flush-read-buffer-20261108-host-0.2.0-rc.2.json)、
+  [0.2.1-alpha.1](../evidence/flush-read-buffer-20261108-host-0.2.1-alpha.1.json)、
+  [0.2.1-rc.2](../evidence/flush-read-buffer-20261108-host-0.2.1-rc.2.json)、
+  [0.2.2-rc.1](../evidence/flush-read-buffer-20261108-host-0.2.2-rc.1.json)。
+  共同 tarball SHA-256 为 `88b9aeb11c694440f3f98d0f631e268a4c872b2f60df9cbfe5f5df82c3e7b182`，
+  内容摘要为 `7f1730f0035f5a1e21c22deeb5e012a204ecb069fa65d95f59614b7277e69937`。
+- 独立审核结果在审核完成后补记；此处不预填通过。
+
+验证命令（均已实际运行，首次全量的未提交门禁失败和后续重跑分开记录）：
+
+```sh
+node --max-old-space-size=4096 --test test/domain-storage/checkpoint-read-chunks.test.js \
+  test/domain-storage/checkpoint-keyed-digest.test.js test/domain-storage/event-log-checkpoint.test.js \
+  test/domain-storage/replay-batch-commit.test.js test/domain-storage/transaction-commit-shape.test.js \
+  test/domain-storage/storage.test.js test/domain-storage/domain-storage-write-path-equivalence.test.js \
+  test/retention-log-floor.test.mjs test/domain-storage/marker-table-special-keys.test.js
+NODE_OPTIONS=--max-old-space-size=4096 npm test
+npm run pack:check
+npm run release:pack -- --dist /tmp/dsh-evolution-flush-buffer-20261108
+# 分别取上述四个宿主版本：
+NODE_OPTIONS=--max-old-space-size=4096 node scripts/acceptance/run-host-acceptance.mjs \
+  --host <version> --tarball /tmp/dsh-evolution-flush-buffer-20261108/dsh-evolution-0.2.1.tgz \
+  --out <evidence-path>
+```
 
 ## 收益边界
 
