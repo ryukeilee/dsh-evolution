@@ -159,7 +159,11 @@ B 相对每轮 A1/A2 均值有 7 轮上升、2 轮下降，不能将其认定为
   [0.2.2-rc.1](../evidence/flush-read-buffer-20261108-host-0.2.2-rc.1.json)。
   共同 tarball SHA-256 为 `88b9aeb11c694440f3f98d0f631e268a4c872b2f60df9cbfe5f5df82c3e7b182`，
   内容摘要为 `7f1730f0035f5a1e21c22deeb5e012a204ecb069fa65d95f59614b7277e69937`。
-- 独立审核结果在审核完成后补记；此处不预填通过。
+- 独立 sol-loop 审核 1 轮，GPT-6.1 Sol，APPROVE，无 blocker/should，ledger 为空。
+  请求、返回及 Reviewer 自述的运行时证据均为 codex / gpt-6.1-sol / xhigh；未返回 usage，不估算。
+  审核覆盖 `c2c8d2e → bd866d1`；额外独立执行 39 项定向测试和 24 个读取中追加差分场景，
+  重算全部 135 组、16,020 个逐次样本，核验持久化、四宿主证据与 tarball 的 51 个分发条目。
+  无需代码修正；审核后只补记本段，不改变行为或测量。
 
 验证命令（均已实际运行，首次全量的未提交门禁失败和后续重跑分开记录）：
 
