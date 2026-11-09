@@ -148,5 +148,8 @@ node --max-old-space-size=4096 --expose-gc scripts/benchmarks/observe-transactio
 
 ## 7. 独立审核
 
-待独立 sol-loop 审核后补记。审核只应检查本轮 `memory.js` 改动、测试与测量；没有行为改动时
-不需要重开审核。
+独立 sol-loop 审核 1 轮，GPT-6.1 Sol，verdict **APPROVE**，无 blocker / should / nit，
+ledger 为空。请求目标为 `codex` / `gpt-6.1-sol` / `reasoningEffort: "xhigh"`，返回的
+target options 记录同一档位；Reviewer 没有返回运行时自述，因此 Xhigh 只是请求与返回配置的
+记录，未额外验证。审核覆盖 `b0a5602..b94a71b` 的 `memory.js`、测试、反转链与本文件；
+没有行为改动，审核后只补记本段。未返回 usage，不推测消耗。
