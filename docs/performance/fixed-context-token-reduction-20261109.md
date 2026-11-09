@@ -106,7 +106,7 @@
 验收在 macOS arm64 / Node `v26.13.0` 上完成；每个宿主使用独立的临时 runtime 与 home，未触碰正式 `DSH_HOME`。四份证据对应最终文本重新打包出的 tarball（`dist/fixed-context-20261109/dsh-evolution-0.2.1.tgz`），不是初版候选。这里有一次环境注意事项：本机 ACP 会话导出了 `DSH_PROFILE=acp` 等变量，它会覆盖验收自己设置的 profile，导致 live doctor 读取 `profiles/acp/package.json` 并把 `host.install` 判为 blocked。首轮失败就是这个原因；在 `env -u DSH_PROFILE -u DSH_PROFILE_DIR -u DSH_SESSION_ID -u DSH_SHELL -u DSH_HOME` 下复跑后四个宿主全部通过。CI 的干净环境不会带这些变量；本报告不把首轮环境失败当作代码失败，也不隐藏它。
 
 
-- 独立代码审核（sol-loop，GPT-6.1 Sol，Xhigh）：结论与轮次见 PR 描述；审核只覆盖本次行为 diff 与本报告引用的证据。
+- 独立代码审核（sol-loop，2 轮，GPT-6.1 Sol）：第 1 轮 `CHANGES`，唯一 should 发现是压缩时丢了「晋升写入持久 Plugin 行与归档指针、供下一会话重新加载」；已补回并加合同断言。第 2 轮 `APPROVE`，确认 S1 已解决、抵消字节的措辞删减未遗漏必保留事实。请求与返回配置均为 `codex` / `gpt-6.1-sol` / `reasoningEffort=xhigh`；宿主没有暴露 xhigh 实际生效的运行时证据，因此不声称已验证。
 
 
 ## 6. 未采纳的更激进候选
