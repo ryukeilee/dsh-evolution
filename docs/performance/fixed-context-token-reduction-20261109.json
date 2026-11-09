@@ -1,0 +1,198 @@
+{
+  "identity": {
+    "baseCommit": "25d6200",
+    "baseDescription": "origin/main merge of PR #37",
+    "candidateCommit": "e10b23cb4d5ac8480bcf617199f083cdc24c8230",
+    "branch": "perf/fixed-context-token-cost",
+    "node": "v26.13.0",
+    "capturedBy": "scripts/benchmarks/fixed-context/fixture.mjs --capture (real @deepseek-ai/dsh-tools + dsh-system-prompt, production apply())"
+  },
+  "ruler": {
+    "fields": "systemText + per-tool name + description + compact parameters JSON (UTF-8 bytes)",
+    "normalized": "systemText + JSON.stringify([{name,description,parameters}]) (compact tool array envelope)",
+    "tokensEstimated": "bytes / 3.6 assumption only; the real measurement is in realProviderMeasurement"
+  },
+  "composition": {
+    "baseline": {
+      "systemBytes": 2852,
+      "tools": [
+        {
+          "name": "evolution_doctor",
+          "descriptionBytes": 381,
+          "parametersJsonBytes": 285
+        },
+        {
+          "name": "evolution_history",
+          "descriptionBytes": 268,
+          "parametersJsonBytes": 459
+        },
+        {
+          "name": "evolution_maintain",
+          "descriptionBytes": 669,
+          "parametersJsonBytes": 673
+        },
+        {
+          "name": "evolution_runtime_inspect",
+          "descriptionBytes": 136,
+          "parametersJsonBytes": 33
+        },
+        {
+          "name": "evolution_propose",
+          "descriptionBytes": 74,
+          "parametersJsonBytes": 573
+        },
+        {
+          "name": "evolution_trial",
+          "descriptionBytes": 128,
+          "parametersJsonBytes": 481
+        },
+        {
+          "name": "evolution_measure",
+          "descriptionBytes": 85,
+          "parametersJsonBytes": 901
+        },
+        {
+          "name": "evolution_revert",
+          "descriptionBytes": 121,
+          "parametersJsonBytes": 93
+        },
+        {
+          "name": "evolution_promote",
+          "descriptionBytes": 350,
+          "parametersJsonBytes": 287
+        },
+        {
+          "name": "evolution_canary_observe",
+          "descriptionBytes": 173,
+          "parametersJsonBytes": 512
+        }
+      ],
+      "descriptionBytes": 2385,
+      "parametersJsonBytes": 4297,
+      "fieldsBytes": 9716,
+      "normalizedToolsArrayBytes": 7295,
+      "normalizedBytes": 10147,
+      "fieldsTokensEstimated": 2698.9,
+      "normalizedTokensEstimated": 2818.6
+    },
+    "candidate": {
+      "systemBytes": 1633,
+      "tools": [
+        {
+          "name": "evolution_doctor",
+          "descriptionBytes": 269,
+          "parametersJsonBytes": 256
+        },
+        {
+          "name": "evolution_history",
+          "descriptionBytes": 133,
+          "parametersJsonBytes": 356
+        },
+        {
+          "name": "evolution_maintain",
+          "descriptionBytes": 443,
+          "parametersJsonBytes": 566
+        },
+        {
+          "name": "evolution_runtime_inspect",
+          "descriptionBytes": 170,
+          "parametersJsonBytes": 33
+        },
+        {
+          "name": "evolution_propose",
+          "descriptionBytes": 74,
+          "parametersJsonBytes": 573
+        },
+        {
+          "name": "evolution_trial",
+          "descriptionBytes": 108,
+          "parametersJsonBytes": 464
+        },
+        {
+          "name": "evolution_measure",
+          "descriptionBytes": 71,
+          "parametersJsonBytes": 917
+        },
+        {
+          "name": "evolution_revert",
+          "descriptionBytes": 99,
+          "parametersJsonBytes": 93
+        },
+        {
+          "name": "evolution_promote",
+          "descriptionBytes": 264,
+          "parametersJsonBytes": 236
+        },
+        {
+          "name": "evolution_canary_observe",
+          "descriptionBytes": 157,
+          "parametersJsonBytes": 577
+        }
+      ],
+      "descriptionBytes": 1788,
+      "parametersJsonBytes": 4071,
+      "fieldsBytes": 7674,
+      "normalizedToolsArrayBytes": 6472,
+      "normalizedBytes": 8105,
+      "fieldsTokensEstimated": 2131.7,
+      "normalizedTokensEstimated": 2251.4
+    },
+    "reduction": {
+      "systemBytes": 1219,
+      "systemPercent": 42.74,
+      "descriptionBytes": 597,
+      "descriptionPercent": 25.03,
+      "parametersJsonBytes": 226,
+      "parametersPercent": 5.26,
+      "fieldsBytes": 2042,
+      "fieldsPercent": 21.02,
+      "normalizedBytes": 2042,
+      "normalizedPercent": 20.12
+    }
+  },
+  "realProviderMeasurement": {
+    "source": "Pi 1.5.0 JSON events, first assistant message_end.message.usage",
+    "model": "opencode-go/beam-free",
+    "thinking": "low",
+    "prompt": "Reply with the single word OK. Do not call any tool.",
+    "method": "first assistant usage.input+cacheRead+cacheWrite from Pi JSON events; identical tiny prompt and model flags on both sides",
+    "abBaseline": [
+      1793,
+      1793,
+      1793
+    ],
+    "abCandidate": [
+      1415,
+      1415,
+      1415
+    ],
+    "deltaTokensEachPair": [
+      378,
+      378,
+      378
+    ],
+    "reductionPercentOfWholeRequest": [
+      21.08,
+      21.08,
+      21.08
+    ],
+    "aaControl": {
+      "inputs": [
+        1793,
+        1793
+      ],
+      "pairDeltas": [
+        0
+      ]
+    },
+    "note": "Total input = input+cacheRead+cacheWrite; provider prompt caching moved tokens between those fields across runs, so raw input alone is not comparable. The identical prompt and model flags mean the delta is the fixed-context difference. The prompt+wrapper is nonzero, so the fixed-context reduction is at least the reported whole-request percentage."
+  },
+  "boundaries": [
+    "The probe is one free catalog model (opencode-go/beam-free); costs are catalog zeros, not an invoice.",
+    "Only the first request of each session is measured; a session may send more requests, and each later request also re-sends the fixed context.",
+    "The byte ruler is a declared accounting envelope, not captured provider wire bytes; provider tokenizers differ.",
+    "Prompt-cache discounts are not quantified: tokenizer counts shrink, billed input cost depends on the provider cache price.",
+    "Changed text only: tool names, parameter structure, registration mechanism, execute functions and results are unchanged; one intentional compiler fix surfaces a declared description on a type:\"json\" field."
+  ],
+  "runFolders": "/tmp/fc-token-final3 (ephemeral); reproduce with scripts/benchmarks/fixed-context/token-probe.py"
+}
