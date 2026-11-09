@@ -1,0 +1,103 @@
+{
+  "mode": "counterexample",
+  "script": "scripts/benchmarks/observe-commit-cost.mjs",
+  "requirement": "install-time verification: the bytes that were verified are the bytes that were installed",
+  "tree": {
+    "arm": "tree",
+    "outcome": "committed",
+    "recovery": "committed",
+    "tamper": null,
+    "aggregateObservations": 50,
+    "pendingInDurableDocument": false,
+    "tamperedContentInLiveArchive": false,
+    "liveArchiveBytes": 269574,
+    "liveArchiveLastLine": "{\"id\":\"observation:seed-00006y\",\"source\":\"official-tools\",\"domain\":\"tool\",\"type\":\"tool/error\",\"patternKey\":\"tool:tools/result:code-00006y\",\"issueType\":null,\"rootCause\":null,\"failureMode\":null,\"strateg",
+    "stageDirectoriesRemaining": 0,
+    "afterRecovery": {
+      "aggregateObservations": 50,
+      "pendingInDurableDocument": false,
+      "tamperedContentInLiveArchive": false,
+      "liveArchiveBytes": 269574,
+      "liveArchiveLastLine": "{\"id\":\"observation:seed-00006y\",\"source\":\"official-tools\",\"domain\":\"tool\",\"type\":\"tool/error\",\"patternKey\":\"tool:tools/result:code-00006y\",\"issueType\":null,\"rootCause\":null,\"failureMode\":null,\"strateg",
+      "stageDirectoriesRemaining": 0
+    }
+  },
+  "treeWithTamper": {
+    "arm": "tree-tampered",
+    "outcome": "threw: E_DOMAIN_PENDING_ARCHIVE_CORRUPT",
+    "recovery": "open-refused threw: E_DOMAIN_PENDING_ARCHIVE_CORRUPT",
+    "tamper": {
+      "file": "state.json.observations-archive.jsonl",
+      "bytesUnchanged": true,
+      "devSame": true,
+      "inoSame": true,
+      "sizeSame": true,
+      "mtimeNsSame": false,
+      "expectedDigest": "02a77fb7308b3ee8dff4fbe7209d5b288b0898ee9f62407923393a5bae9f04bd",
+      "actualDigest": "f96df5066ce11e0caf838299d465c2689f43236e12a8b0664bce83146956544b"
+    },
+    "aggregateObservations": 300,
+    "pendingInDurableDocument": true,
+    "tamperedContentInLiveArchive": false,
+    "liveArchiveBytes": 0,
+    "liveArchiveLastLine": null,
+    "stageDirectoriesRemaining": 2,
+    "afterRecovery": {
+      "aggregateObservations": 300,
+      "pendingInDurableDocument": true,
+      "tamperedContentInLiveArchive": false,
+      "liveArchiveBytes": 0,
+      "liveArchiveLastLine": null,
+      "stageDirectoriesRemaining": 2
+    }
+  },
+  "candidate": {
+    "arm": "candidate",
+    "outcome": "committed",
+    "recovery": "committed",
+    "tamper": null,
+    "aggregateObservations": 50,
+    "pendingInDurableDocument": false,
+    "tamperedContentInLiveArchive": false,
+    "liveArchiveBytes": 269574,
+    "liveArchiveLastLine": "{\"id\":\"observation:seed-00006y\",\"source\":\"official-tools\",\"domain\":\"tool\",\"type\":\"tool/error\",\"patternKey\":\"tool:tools/result:code-00006y\",\"issueType\":null,\"rootCause\":null,\"failureMode\":null,\"strateg",
+    "stageDirectoriesRemaining": 0,
+    "afterRecovery": {
+      "aggregateObservations": 50,
+      "pendingInDurableDocument": false,
+      "tamperedContentInLiveArchive": false,
+      "liveArchiveBytes": 269574,
+      "liveArchiveLastLine": "{\"id\":\"observation:seed-00006y\",\"source\":\"official-tools\",\"domain\":\"tool\",\"type\":\"tool/error\",\"patternKey\":\"tool:tools/result:code-00006y\",\"issueType\":null,\"rootCause\":null,\"failureMode\":null,\"strateg",
+      "stageDirectoriesRemaining": 0
+    }
+  },
+  "candidateWithTamper": {
+    "arm": "candidate-tampered",
+    "outcome": "committed",
+    "recovery": "committed",
+    "tamper": {
+      "file": "state.json.observations-archive.jsonl",
+      "bytesUnchanged": true,
+      "devSame": true,
+      "inoSame": true,
+      "sizeSame": true,
+      "mtimeNsSame": false,
+      "expectedDigest": "2a6fad3ec712d73c7d88c4ef693c88b10021153ac5eaa6f7c3da7083b7fe8769",
+      "actualDigest": "d98dae8ab8a90cfe05ecf0ac70f380aa889472022aa4eef1650ffa04e91fd756"
+    },
+    "aggregateObservations": 50,
+    "pendingInDurableDocument": false,
+    "tamperedContentInLiveArchive": true,
+    "liveArchiveBytes": 269574,
+    "liveArchiveLastLine": "{\"id\":\"observation:seed-00006y\",\"source\":\"official-tools\",\"domain\":\"tool\",\"type\":\"tool/error\",\"patternKey\":\"tool:tools/result:code-00006y\",\"issueType\":null,\"rootCause\":null,\"failureMode\":null,\"strateg",
+    "stageDirectoriesRemaining": 1,
+    "afterRecovery": {
+      "aggregateObservations": 50,
+      "pendingInDurableDocument": false,
+      "tamperedContentInLiveArchive": true,
+      "liveArchiveBytes": 269574,
+      "liveArchiveLastLine": "{\"id\":\"observation:seed-00006y\",\"source\":\"official-tools\",\"domain\":\"tool\",\"type\":\"tool/error\",\"patternKey\":\"tool:tools/result:code-00006y\",\"issueType\":null,\"rootCause\":null,\"failureMode\":null,\"strateg",
+      "stageDirectoriesRemaining": 1
+    }
+  }
+}
