@@ -1,0 +1,5701 @@
+{
+  "mode": "attribute",
+  "node": "v26.13.0",
+  "platform": "darwin/arm64",
+  "script": "scripts/benchmarks/observe-commit-cost.mjs",
+  "histories": [
+    20000
+  ],
+  "steps": 10,
+  "results": [
+    {
+      "history": 20000,
+      "steps": 10,
+      "wallPerStep": 80.222,
+      "autonomousReadMs": 14.3,
+      "mutateTotal": 65.674,
+      "phaseCoverage": 0.9874,
+      "archiveRescansPerStep": 0.028,
+      "documentBytesMean": {
+        "pendingBytes": 199517,
+        "closingBytes": 97353
+      },
+      "documentBytesPerStep": [
+        192811,
+        95293,
+        196475,
+        95770,
+        197474,
+        96262,
+        198458,
+        96724,
+        199427,
+        97201,
+        200426,
+        97693,
+        201425,
+        98170,
+        202409,
+        98647,
+        202865,
+        98624,
+        203396,
+        99148
+      ],
+      "phases": [
+        {
+          "key": "mutate.total",
+          "perStep": 65.674,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.work",
+          "perStep": 26.743,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "memory.inheritedReads",
+          "perStep": 24.754,
+          "bytesPerStep": 6,
+          "callsPerStep": 2
+        },
+        {
+          "key": "memory.sourceMatches",
+          "perStep": 15.721,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.installPending2",
+          "perStep": 14.609,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "installPending.total",
+          "perStep": 14.607,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "memory.sourceMatches.read",
+          "perStep": 13.068,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "memory.archiveEntries",
+          "perStep": 9.916,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "installPending.installFiles",
+          "perStep": 7.538,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.pendingSet",
+          "perStep": 6.923,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.syncStage",
+          "perStep": 6.781,
+          "bytesPerStep": 2,
+          "callsPerStep": 1
+        },
+        {
+          "key": "io.syncDirectory",
+          "perStep": 6.235,
+          "bytesPerStep": 0,
+          "callsPerStep": 3
+        },
+        {
+          "key": "installPending.finalSet",
+          "perStep": 5.883,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "createMemory.total",
+          "perStep": 4.579,
+          "bytesPerStep": 0,
+          "callsPerStep": 2
+        },
+        {
+          "key": "createMemory.instanceLoad",
+          "perStep": 4.068,
+          "bytesPerStep": 0,
+          "callsPerStep": 2
+        },
+        {
+          "key": "syncStage.file",
+          "perStep": 4.056,
+          "bytesPerStep": 0,
+          "callsPerStep": 2
+        },
+        {
+          "key": "installFiles.syncDirectories",
+          "perStep": 3.545,
+          "bytesPerStep": 1,
+          "callsPerStep": 1
+        },
+        {
+          "key": "privatize.copy",
+          "perStep": 3.544,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.createMemoryStage",
+          "perStep": 3.007,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "syncStage.directories",
+          "perStep": 2.704,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.changedArchiveFiles",
+          "perStep": 2.465,
+          "bytesPerStep": 2,
+          "callsPerStep": 1
+        },
+        {
+          "key": "memory.prefixDigest",
+          "perStep": 2.06,
+          "bytesPerStep": 4658475,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.hydrate",
+          "perStep": 1.978,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "hydrate.total",
+          "perStep": 1.976,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "memory.cacheCopy",
+          "perStep": 1.953,
+          "bytesPerStep": 19957.5,
+          "callsPerStep": 1
+        },
+        {
+          "key": "installFiles.hash",
+          "perStep": 1.808,
+          "bytesPerStep": 4661320,
+          "callsPerStep": 2
+        },
+        {
+          "key": "changedArchiveFiles.hash",
+          "perStep": 1.748,
+          "bytesPerStep": 4661320,
+          "callsPerStep": 2
+        },
+        {
+          "key": "hydrate.createMemory",
+          "perStep": 1.579,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "installFiles.publish",
+          "perStep": 1.542,
+          "bytesPerStep": 2,
+          "callsPerStep": 1
+        },
+        {
+          "key": "load.loadArchiveIndex",
+          "perStep": 1.188,
+          "bytesPerStep": 0,
+          "callsPerStep": 2
+        },
+        {
+          "key": "load.inspectArchiveIntegrity",
+          "perStep": 1.122,
+          "bytesPerStep": 0,
+          "callsPerStep": 2
+        },
+        {
+          "key": "mutate.mirrorArchives",
+          "perStep": 1.028,
+          "bytesPerStep": 4,
+          "callsPerStep": 1
+        },
+        {
+          "key": "memory.cachePublish",
+          "perStep": 0.891,
+          "bytesPerStep": 19957.5,
+          "callsPerStep": 1
+        },
+        {
+          "key": "changedArchiveFiles.read",
+          "perStep": 0.636,
+          "bytesPerStep": 4661320,
+          "callsPerStep": 2
+        },
+        {
+          "key": "mirror.link",
+          "perStep": 0.622,
+          "bytesPerStep": 0,
+          "callsPerStep": 2
+        },
+        {
+          "key": "installFiles.read",
+          "perStep": 0.617,
+          "bytesPerStep": 4661320,
+          "callsPerStep": 2
+        },
+        {
+          "key": "mutate.flushDeferredIndex",
+          "perStep": 0.549,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "installPending.parse",
+          "perStep": 0.543,
+          "bytesPerStep": 0,
+          "callsPerStep": 2
+        },
+        {
+          "key": "installPending.removeStage",
+          "perStep": 0.493,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "createMemory.clone",
+          "perStep": 0.48,
+          "bytesPerStep": 0,
+          "callsPerStep": 2
+        },
+        {
+          "key": "hydrate.observations.load",
+          "perStep": 0.367,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.pendingSet.parse",
+          "perStep": 0.357,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "installPending.commitToken",
+          "perStep": 0.335,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.installPending1",
+          "perStep": 0.233,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.snapshot",
+          "perStep": 0.209,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "memory.snapshot",
+          "perStep": 0.207,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.writeStageManifest",
+          "perStep": 0.206,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "privatize.rename",
+          "perStep": 0.203,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.publishScanSeeds",
+          "perStep": 0.061,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "mutate.assertLiveTreeUnchanged",
+          "perStep": 0.055,
+          "bytesPerStep": 0,
+          "callsPerStep": 1
+        },
+        {
+          "key": "memory.scanArchiveRead",
+          "perStep": 0.028,
+          "bytesPerStep": 1,
+          "callsPerStep": 1
+        }
+      ],
+      "callsPerStep": {
+        "readFileSync": {
+          "callsPerStep": 11,
+          "bytesPerStep": 9326332,
+          "msPerStep": 1.472
+        },
+        "mkdirSync": {
+          "callsPerStep": 2,
+          "bytesPerStep": 0,
+          "msPerStep": 0.09
+        },
+        "readdirSync": {
+          "callsPerStep": 10,
+          "bytesPerStep": 0,
+          "msPerStep": 0.3
+        },
+        "lstatSync": {
+          "callsPerStep": 36,
+          "bytesPerStep": 0,
+          "msPerStep": 0.205
+        },
+        "linkSync": {
+          "callsPerStep": 4,
+          "bytesPerStep": 0,
+          "msPerStep": 1.333
+        },
+        "writeSync": {
+          "callsPerStep": 4,
+          "bytesPerStep": 0,
+          "msPerStep": 0.142
+        },
+        "writeFileSync": {
+          "callsPerStep": 4,
+          "bytesPerStep": 443,
+          "msPerStep": 0.525
+        },
+        "statSync": {
+          "callsPerStep": 39,
+          "bytesPerStep": 0,
+          "msPerStep": 0.263
+        },
+        "promises.readFile": {
+          "callsPerStep": 2,
+          "bytesPerStep": 3542,
+          "msPerStep": 1.129
+        },
+        "promises.stat": {
+          "callsPerStep": 2,
+          "bytesPerStep": 0,
+          "msPerStep": 0.072
+        },
+        "openSync": {
+          "callsPerStep": 13,
+          "bytesPerStep": 0,
+          "msPerStep": 0.444
+        },
+        "readSync": {
+          "callsPerStep": 55,
+          "bytesPerStep": 47529334,
+          "msPerStep": 5.961
+        },
+        "copyFileSync": {
+          "callsPerStep": 1,
+          "bytesPerStep": 0,
+          "msPerStep": 3.541
+        },
+        "renameSync": {
+          "callsPerStep": 6,
+          "bytesPerStep": 0,
+          "msPerStep": 1.432
+        },
+        "promises.appendFile": {
+          "callsPerStep": 1,
+          "bytesPerStep": 1074,
+          "msPerStep": 0.867
+        },
+        "promises.mkdir": {
+          "callsPerStep": 1,
+          "bytesPerStep": 0,
+          "msPerStep": 0.037
+        },
+        "promises.writeFile": {
+          "callsPerStep": 1,
+          "bytesPerStep": 1771,
+          "msPerStep": 0.167
+        },
+        "promises.rename": {
+          "callsPerStep": 3,
+          "bytesPerStep": 0,
+          "msPerStep": 0.533
+        },
+        "fsyncSync": {
+          "callsPerStep": 5,
+          "bytesPerStep": 0,
+          "msPerStep": 10.147
+        },
+        "promises.open": {
+          "callsPerStep": 4,
+          "bytesPerStep": 0,
+          "msPerStep": 0.307
+        },
+        "handle.writeFile": {
+          "callsPerStep": 2,
+          "bytesPerStep": 296869.8,
+          "msPerStep": 0.156
+        },
+        "handle.sync": {
+          "callsPerStep": 4,
+          "bytesPerStep": 0,
+          "msPerStep": 11.461
+        },
+        "handle.close": {
+          "callsPerStep": 4,
+          "bytesPerStep": 0,
+          "msPerStep": 0.085
+        },
+        "rmSync": {
+          "callsPerStep": 1,
+          "bytesPerStep": 0,
+          "msPerStep": 0.362
+        }
+      },
+      "fileReadsPerStep": [
+        {
+          "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 9,
+          "bytesPerStep": 8387940
+        },
+        {
+          "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 9,
+          "bytesPerStep": 8387940
+        },
+        {
+          "file": "dockyard/state.json.observations-archive.jsonl",
+          "readsPerStep": 6,
+          "bytesPerStep": 4659549
+        },
+        {
+          "file": "domain-staging/stage-1d53f2fa-66fc-4515-b410-dc944982dfe1/state.json.observations-archive.jsonl",
+          "readsPerStep": 1.5,
+          "bytesPerStep": 1865645.5
+        },
+        {
+          "file": "domain-staging/stage-5ec70a0a-b5e1-497f-913d-b6c9e89b8314/state.json.observations-archive.jsonl",
+          "readsPerStep": 1.5,
+          "bytesPerStep": 1865215.9
+        },
+        {
+          "file": "domain-staging/stage-ea6afc0d-ba39-4ec7-9b33-a1f12ef6159d/state.json.observations-archive.jsonl",
+          "readsPerStep": 1.5,
+          "bytesPerStep": 1864786.3
+        },
+        {
+          "file": "domain-staging/stage-32c7aee3-69f8-47b7-be69-1b33ef7d29ad/state.json.observations-archive.jsonl",
+          "readsPerStep": 1.5,
+          "bytesPerStep": 1864356.7
+        },
+        {
+          "file": "domain-staging/stage-f745a141-2d6b-4c8d-89db-c394a1c9cf5d/state.json.observations-archive.jsonl",
+          "readsPerStep": 1.5,
+          "bytesPerStep": 1863927.1
+        },
+        {
+          "file": "domain-staging/stage-4ddcd66a-01ce-4606-8a5b-042dc04474c3/state.json.observations-archive.jsonl",
+          "readsPerStep": 1.5,
+          "bytesPerStep": 1863497.5
+        },
+        {
+          "file": "domain-staging/stage-912b8113-bf52-4307-a6a9-98898c597998/state.json.observations-archive.jsonl",
+          "readsPerStep": 1.5,
+          "bytesPerStep": 1863067.9
+        },
+        {
+          "file": "domain-staging/stage-1dff96c8-f483-4cb7-b0fb-439bbc08cb1b/state.json.observations-archive.jsonl",
+          "readsPerStep": 1.5,
+          "bytesPerStep": 1862638.3
+        },
+        {
+          "file": "domain-staging/stage-51cd6586-be3f-4067-86e8-7a9135de6dcf/state.json.observations-archive.jsonl",
+          "readsPerStep": 1.5,
+          "bytesPerStep": 1862208.7
+        },
+        {
+          "file": "domain-staging/stage-6ecf75b0-1b9b-4542-b34d-0f2c660d76de/state.json.observations-archive.jsonl",
+          "readsPerStep": 1.5,
+          "bytesPerStep": 1861779.1
+        },
+        {
+          "file": "domain-staging/stage-6ecf75b0-1b9b-4542-b34d-0f2c660d76de/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-6ecf75b0-1b9b-4542-b34d-0f2c660d76de/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-51cd6586-be3f-4067-86e8-7a9135de6dcf/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-51cd6586-be3f-4067-86e8-7a9135de6dcf/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-1dff96c8-f483-4cb7-b0fb-439bbc08cb1b/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-1dff96c8-f483-4cb7-b0fb-439bbc08cb1b/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-912b8113-bf52-4307-a6a9-98898c597998/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-912b8113-bf52-4307-a6a9-98898c597998/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-4ddcd66a-01ce-4606-8a5b-042dc04474c3/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-4ddcd66a-01ce-4606-8a5b-042dc04474c3/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-f745a141-2d6b-4c8d-89db-c394a1c9cf5d/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-f745a141-2d6b-4c8d-89db-c394a1c9cf5d/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-32c7aee3-69f8-47b7-be69-1b33ef7d29ad/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-32c7aee3-69f8-47b7-be69-1b33ef7d29ad/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-ea6afc0d-ba39-4ec7-9b33-a1f12ef6159d/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-ea6afc0d-ba39-4ec7-9b33-a1f12ef6159d/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-5ec70a0a-b5e1-497f-913d-b6c9e89b8314/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-5ec70a0a-b5e1-497f-913d-b6c9e89b8314/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-1d53f2fa-66fc-4515-b410-dc944982dfe1/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "domain-staging/stage-1d53f2fa-66fc-4515-b410-dc944982dfe1/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+          "readsPerStep": 0.9,
+          "bytesPerStep": 838794
+        },
+        {
+          "file": "dockyard/state.json.evolution-archive-index.json",
+          "readsPerStep": 2,
+          "bytesPerStep": 3542
+        },
+        {
+          "file": "domain-staging/stage-6ecf75b0-1b9b-4542-b34d-0f2c660d76de/state.json.evolution-archive-index.json",
+          "readsPerStep": 0.4,
+          "bytesPerStep": 708.4
+        },
+        {
+          "file": "domain-staging/stage-51cd6586-be3f-4067-86e8-7a9135de6dcf/state.json.evolution-archive-index.json",
+          "readsPerStep": 0.4,
+          "bytesPerStep": 708.4
+        },
+        {
+          "file": "domain-staging/stage-1dff96c8-f483-4cb7-b0fb-439bbc08cb1b/state.json.evolution-archive-index.json",
+          "readsPerStep": 0.4,
+          "bytesPerStep": 708.4
+        },
+        {
+          "file": "domain-staging/stage-912b8113-bf52-4307-a6a9-98898c597998/state.json.evolution-archive-index.json",
+          "readsPerStep": 0.4,
+          "bytesPerStep": 708.4
+        },
+        {
+          "file": "domain-staging/stage-4ddcd66a-01ce-4606-8a5b-042dc04474c3/state.json.evolution-archive-index.json",
+          "readsPerStep": 0.4,
+          "bytesPerStep": 708.4
+        },
+        {
+          "file": "domain-staging/stage-f745a141-2d6b-4c8d-89db-c394a1c9cf5d/state.json.evolution-archive-index.json",
+          "readsPerStep": 0.4,
+          "bytesPerStep": 708.4
+        },
+        {
+          "file": "domain-staging/stage-32c7aee3-69f8-47b7-be69-1b33ef7d29ad/state.json.evolution-archive-index.json",
+          "readsPerStep": 0.4,
+          "bytesPerStep": 708.4
+        },
+        {
+          "file": "domain-staging/stage-ea6afc0d-ba39-4ec7-9b33-a1f12ef6159d/state.json.evolution-archive-index.json",
+          "readsPerStep": 0.4,
+          "bytesPerStep": 708.4
+        },
+        {
+          "file": "domain-staging/stage-5ec70a0a-b5e1-497f-913d-b6c9e89b8314/state.json.evolution-archive-index.json",
+          "readsPerStep": 0.4,
+          "bytesPerStep": 708.4
+        },
+        {
+          "file": "domain-staging/stage-1d53f2fa-66fc-4515-b410-dc944982dfe1/state.json.evolution-archive-index.json",
+          "readsPerStep": 0.4,
+          "bytesPerStep": 708.4
+        },
+        {
+          "file": "domain-commit.token",
+          "readsPerStep": 2,
+          "bytesPerStep": 66
+        },
+        {
+          "file": "domain-archive.lock",
+          "readsPerStep": 2,
+          "bytesPerStep": 10
+        },
+        {
+          "file": "domain-staging/stage-6ecf75b0-1b9b-4542-b34d-0f2c660d76de/.archive-borrowed.json",
+          "readsPerStep": 0.1,
+          "bytesPerStep": 7.4
+        },
+        {
+          "file": "domain-staging/stage-51cd6586-be3f-4067-86e8-7a9135de6dcf/.archive-borrowed.json",
+          "readsPerStep": 0.1,
+          "bytesPerStep": 7.4
+        },
+        {
+          "file": "domain-staging/stage-1dff96c8-f483-4cb7-b0fb-439bbc08cb1b/.archive-borrowed.json",
+          "readsPerStep": 0.1,
+          "bytesPerStep": 7.4
+        },
+        {
+          "file": "domain-staging/stage-912b8113-bf52-4307-a6a9-98898c597998/.archive-borrowed.json",
+          "readsPerStep": 0.1,
+          "bytesPerStep": 7.4
+        },
+        {
+          "file": "domain-staging/stage-4ddcd66a-01ce-4606-8a5b-042dc04474c3/.archive-borrowed.json",
+          "readsPerStep": 0.1,
+          "bytesPerStep": 7.4
+        },
+        {
+          "file": "domain-staging/stage-f745a141-2d6b-4c8d-89db-c394a1c9cf5d/.archive-borrowed.json",
+          "readsPerStep": 0.1,
+          "bytesPerStep": 7.4
+        },
+        {
+          "file": "domain-staging/stage-32c7aee3-69f8-47b7-be69-1b33ef7d29ad/.archive-borrowed.json",
+          "readsPerStep": 0.1,
+          "bytesPerStep": 7.4
+        },
+        {
+          "file": "domain-staging/stage-ea6afc0d-ba39-4ec7-9b33-a1f12ef6159d/.archive-borrowed.json",
+          "readsPerStep": 0.1,
+          "bytesPerStep": 7.4
+        },
+        {
+          "file": "domain-staging/stage-5ec70a0a-b5e1-497f-913d-b6c9e89b8314/.archive-borrowed.json",
+          "readsPerStep": 0.1,
+          "bytesPerStep": 7.4
+        },
+        {
+          "file": "domain-staging/stage-1d53f2fa-66fc-4515-b410-dc944982dfe1/.archive-borrowed.json",
+          "readsPerStep": 0.1,
+          "bytesPerStep": 7.4
+        }
+      ],
+      "perStep": [
+        {
+          "wallMs": 86.088,
+          "phases": [
+            {
+              "key": "mutate.total",
+              "ms": 69.689,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.work",
+              "ms": 29.813,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.inheritedReads",
+              "ms": 27.618,
+              "bytes": 6,
+              "calls": 2
+            },
+            {
+              "key": "memory.sourceMatches",
+              "ms": 19.118,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches.read",
+              "ms": 15.731,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending2",
+              "ms": 15.516,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.total",
+              "ms": 15.514,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.archiveEntries",
+              "ms": 9.74,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.syncStage",
+              "ms": 8.942,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "installPending.installFiles",
+              "ms": 7.656,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "io.syncDirectory",
+              "ms": 6.81,
+              "bytes": 0,
+              "calls": 3
+            },
+            {
+              "key": "installPending.finalSet",
+              "ms": 6.671,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet",
+              "ms": 6.172,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.file",
+              "ms": 5.683,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.syncDirectories",
+              "ms": 3.6,
+              "bytes": 1,
+              "calls": 1
+            },
+            {
+              "key": "privatize.copy",
+              "ms": 3.547,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.directories",
+              "ms": 3.228,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.total",
+              "ms": 3.112,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "createMemory.instanceLoad",
+              "ms": 2.699,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.changedArchiveFiles",
+              "ms": 2.534,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "memory.prefixDigest",
+              "ms": 2.06,
+              "bytes": 4653642,
+              "calls": 1
+            },
+            {
+              "key": "mutate.hydrate",
+              "ms": 1.976,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.total",
+              "ms": 1.975,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.cacheCopy",
+              "ms": 1.893,
+              "bytes": 19953,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.hash",
+              "ms": 1.83,
+              "bytes": 4656487,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.hash",
+              "ms": 1.737,
+              "bytes": 4656487,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.createMemory",
+              "ms": 1.571,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.createMemoryStage",
+              "ms": 1.546,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.publish",
+              "ms": 1.54,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "load.inspectArchiveIntegrity",
+              "ms": 1.109,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.mirrorArchives",
+              "ms": 1.003,
+              "bytes": 4,
+              "calls": 1
+            },
+            {
+              "key": "memory.cachePublish",
+              "ms": 0.915,
+              "bytes": 19953,
+              "calls": 1
+            },
+            {
+              "key": "changedArchiveFiles.read",
+              "ms": 0.685,
+              "bytes": 4656487,
+              "calls": 2
+            },
+            {
+              "key": "mirror.link",
+              "ms": 0.641,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.read",
+              "ms": 0.637,
+              "bytes": 4656487,
+              "calls": 2
+            },
+            {
+              "key": "mutate.flushDeferredIndex",
+              "ms": 0.634,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.removeStage",
+              "ms": 0.501,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.parse",
+              "ms": 0.465,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "createMemory.clone",
+              "ms": 0.388,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.pendingSet.parse",
+              "ms": 0.369,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.observations.load",
+              "ms": 0.368,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.commitToken",
+              "ms": 0.338,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.writeStageManifest",
+              "ms": 0.225,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.snapshot",
+              "ms": 0.209,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.snapshot",
+              "ms": 0.206,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "privatize.rename",
+              "ms": 0.197,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending1",
+              "ms": 0.169,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "load.loadArchiveIndex",
+              "ms": 0.162,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.assertLiveTreeUnchanged",
+              "ms": 0.07,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.publishScanSeeds",
+              "ms": 0.05,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.scanArchiveRead",
+              "ms": 0.02,
+              "bytes": 1,
+              "calls": 1
+            }
+          ],
+          "calls": {
+            "readFileSync": {
+              "calls": 11,
+              "bytes": 9316666,
+              "ms": 1.523
+            },
+            "mkdirSync": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.066
+            },
+            "readdirSync": {
+              "calls": 10,
+              "bytes": 0,
+              "ms": 0.291
+            },
+            "lstatSync": {
+              "calls": 36,
+              "bytes": 0,
+              "ms": 0.216
+            },
+            "linkSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 1.346
+            },
+            "writeSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.197
+            },
+            "writeFileSync": {
+              "calls": 4,
+              "bytes": 443,
+              "ms": 0.55
+            },
+            "statSync": {
+              "calls": 39,
+              "bytes": 0,
+              "ms": 0.303
+            },
+            "promises.readFile": {
+              "calls": 2,
+              "bytes": 3542,
+              "ms": 0.108
+            },
+            "promises.stat": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.031
+            },
+            "openSync": {
+              "calls": 13,
+              "bytes": 0,
+              "ms": 0.5
+            },
+            "readSync": {
+              "calls": 55,
+              "bytes": 47514835,
+              "ms": 5.86
+            },
+            "copyFileSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 3.541
+            },
+            "renameSync": {
+              "calls": 6,
+              "bytes": 0,
+              "ms": 1.389
+            },
+            "promises.appendFile": {
+              "calls": 1,
+              "bytes": 1074,
+              "ms": 0.768
+            },
+            "promises.mkdir": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.044
+            },
+            "promises.writeFile": {
+              "calls": 1,
+              "bytes": 1771,
+              "ms": 0.171
+            },
+            "promises.rename": {
+              "calls": 3,
+              "bytes": 0,
+              "ms": 0.489
+            },
+            "fsyncSync": {
+              "calls": 5,
+              "bytes": 0,
+              "ms": 12.328
+            },
+            "promises.open": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.231
+            },
+            "handle.writeFile": {
+              "calls": 2,
+              "bytes": 288104,
+              "ms": 0.147
+            },
+            "handle.sync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 11.687
+            },
+            "handle.close": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.056
+            },
+            "rmSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.354
+            }
+          },
+          "files": [
+            {
+              "file": "domain-commit.token",
+              "reads": 2,
+              "bytes": 66
+            },
+            {
+              "file": "domain-staging/stage-6ecf75b0-1b9b-4542-b34d-0f2c660d76de/state.json.evolution-archive-index.json",
+              "reads": 4,
+              "bytes": 7084
+            },
+            {
+              "file": "domain-staging/stage-6ecf75b0-1b9b-4542-b34d-0f2c660d76de/.archive-borrowed.json",
+              "reads": 1,
+              "bytes": 74
+            },
+            {
+              "file": "domain-staging/stage-6ecf75b0-1b9b-4542-b34d-0f2c660d76de/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-6ecf75b0-1b9b-4542-b34d-0f2c660d76de/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-6ecf75b0-1b9b-4542-b34d-0f2c660d76de/state.json.observations-archive.jsonl",
+              "reads": 15,
+              "bytes": 18617791
+            },
+            {
+              "file": "domain-archive.lock",
+              "reads": 2,
+              "bytes": 10
+            },
+            {
+              "file": "dockyard/state.json.evolution-archive-index.json",
+              "reads": 2,
+              "bytes": 3542
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl",
+              "reads": 6,
+              "bytes": 4654716
+            }
+          ],
+          "documents": [
+            192811,
+            95293
+          ]
+        },
+        {
+          "wallMs": 75.554,
+          "phases": [
+            {
+              "key": "mutate.total",
+              "ms": 61.31,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.work",
+              "ms": 25.927,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.inheritedReads",
+              "ms": 24.639,
+              "bytes": 6,
+              "calls": 2
+            },
+            {
+              "key": "memory.sourceMatches",
+              "ms": 15.153,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches.read",
+              "ms": 12.722,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending2",
+              "ms": 12.659,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.total",
+              "ms": 12.658,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.archiveEntries",
+              "ms": 9.626,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.syncStage",
+              "ms": 6.616,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "installPending.installFiles",
+              "ms": 6.108,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.finalSet",
+              "ms": 5.475,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "io.syncDirectory",
+              "ms": 5.164,
+              "bytes": 0,
+              "calls": 3
+            },
+            {
+              "key": "mutate.pendingSet",
+              "ms": 5.074,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.total",
+              "ms": 4.896,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "createMemory.instanceLoad",
+              "ms": 4.344,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "syncStage.file",
+              "ms": 3.62,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "privatize.copy",
+              "ms": 3.384,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.createMemoryStage",
+              "ms": 3.378,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.directories",
+              "ms": 2.968,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.changedArchiveFiles",
+              "ms": 2.501,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.syncDirectories",
+              "ms": 2.211,
+              "bytes": 1,
+              "calls": 1
+            },
+            {
+              "key": "memory.prefixDigest",
+              "ms": 2.042,
+              "bytes": 4654716,
+              "calls": 1
+            },
+            {
+              "key": "memory.cacheCopy",
+              "ms": 1.965,
+              "bytes": 19954,
+              "calls": 1
+            },
+            {
+              "key": "mutate.hydrate",
+              "ms": 1.931,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.total",
+              "ms": 1.926,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.hash",
+              "ms": 1.782,
+              "bytes": 4657561,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.hash",
+              "ms": 1.761,
+              "bytes": 4657561,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.createMemory",
+              "ms": 1.523,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "load.loadArchiveIndex",
+              "ms": 1.502,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.publish",
+              "ms": 1.46,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "load.inspectArchiveIntegrity",
+              "ms": 1.125,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.mirrorArchives",
+              "ms": 1.119,
+              "bytes": 4,
+              "calls": 1
+            },
+            {
+              "key": "memory.cachePublish",
+              "ms": 0.902,
+              "bytes": 19954,
+              "calls": 1
+            },
+            {
+              "key": "mirror.link",
+              "ms": 0.666,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.read",
+              "ms": 0.66,
+              "bytes": 4657561,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.read",
+              "ms": 0.63,
+              "bytes": 4657561,
+              "calls": 2
+            },
+            {
+              "key": "mutate.flushDeferredIndex",
+              "ms": 0.535,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.parse",
+              "ms": 0.531,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "createMemory.clone",
+              "ms": 0.521,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.removeStage",
+              "ms": 0.427,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.observations.load",
+              "ms": 0.372,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet.parse",
+              "ms": 0.363,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.commitToken",
+              "ms": 0.283,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "privatize.rename",
+              "ms": 0.232,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending1",
+              "ms": 0.216,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.snapshot",
+              "ms": 0.204,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.writeStageManifest",
+              "ms": 0.204,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.snapshot",
+              "ms": 0.201,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.assertLiveTreeUnchanged",
+              "ms": 0.051,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.publishScanSeeds",
+              "ms": 0.048,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.scanArchiveRead",
+              "ms": 0.028,
+              "bytes": 1,
+              "calls": 1
+            }
+          ],
+          "calls": {
+            "readFileSync": {
+              "calls": 11,
+              "bytes": 9318814,
+              "ms": 1.524
+            },
+            "mkdirSync": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.094
+            },
+            "readdirSync": {
+              "calls": 10,
+              "bytes": 0,
+              "ms": 0.31
+            },
+            "lstatSync": {
+              "calls": 36,
+              "bytes": 0,
+              "ms": 0.207
+            },
+            "linkSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 1.33
+            },
+            "writeSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.119
+            },
+            "writeFileSync": {
+              "calls": 4,
+              "bytes": 443,
+              "ms": 0.483
+            },
+            "statSync": {
+              "calls": 39,
+              "bytes": 0,
+              "ms": 0.246
+            },
+            "promises.readFile": {
+              "calls": 2,
+              "bytes": 3542,
+              "ms": 1.446
+            },
+            "promises.stat": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.082
+            },
+            "openSync": {
+              "calls": 13,
+              "bytes": 0,
+              "ms": 0.449
+            },
+            "readSync": {
+              "calls": 55,
+              "bytes": 47518057,
+              "ms": 6.037
+            },
+            "copyFileSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 3.378
+            },
+            "renameSync": {
+              "calls": 6,
+              "bytes": 0,
+              "ms": 1.426
+            },
+            "promises.appendFile": {
+              "calls": 1,
+              "bytes": 1074,
+              "ms": 0.72
+            },
+            "promises.mkdir": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.038
+            },
+            "promises.writeFile": {
+              "calls": 1,
+              "bytes": 1771,
+              "ms": 0.156
+            },
+            "promises.rename": {
+              "calls": 3,
+              "bytes": 0,
+              "ms": 0.486
+            },
+            "fsyncSync": {
+              "calls": 5,
+              "bytes": 0,
+              "ms": 8.615
+            },
+            "promises.open": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.23
+            },
+            "handle.writeFile": {
+              "calls": 2,
+              "bytes": 292245,
+              "ms": 0.134
+            },
+            "handle.sync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 9.347
+            },
+            "handle.close": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.07
+            },
+            "rmSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.285
+            }
+          },
+          "files": [
+            {
+              "file": "domain-commit.token",
+              "reads": 2,
+              "bytes": 66
+            },
+            {
+              "file": "domain-staging/stage-51cd6586-be3f-4067-86e8-7a9135de6dcf/state.json.evolution-archive-index.json",
+              "reads": 4,
+              "bytes": 7084
+            },
+            {
+              "file": "domain-staging/stage-51cd6586-be3f-4067-86e8-7a9135de6dcf/.archive-borrowed.json",
+              "reads": 1,
+              "bytes": 74
+            },
+            {
+              "file": "domain-staging/stage-51cd6586-be3f-4067-86e8-7a9135de6dcf/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-51cd6586-be3f-4067-86e8-7a9135de6dcf/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-51cd6586-be3f-4067-86e8-7a9135de6dcf/state.json.observations-archive.jsonl",
+              "reads": 15,
+              "bytes": 18622087
+            },
+            {
+              "file": "domain-archive.lock",
+              "reads": 2,
+              "bytes": 10
+            },
+            {
+              "file": "dockyard/state.json.evolution-archive-index.json",
+              "reads": 2,
+              "bytes": 3542
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl",
+              "reads": 6,
+              "bytes": 4655790
+            }
+          ],
+          "documents": [
+            196475,
+            95770
+          ]
+        },
+        {
+          "wallMs": 82.603,
+          "phases": [
+            {
+              "key": "mutate.total",
+              "ms": 66.927,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.work",
+              "ms": 26.576,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.inheritedReads",
+              "ms": 25.058,
+              "bytes": 6,
+              "calls": 2
+            },
+            {
+              "key": "memory.sourceMatches",
+              "ms": 15.419,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending2",
+              "ms": 14.714,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.total",
+              "ms": 14.712,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches.read",
+              "ms": 12.779,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.archiveEntries",
+              "ms": 9.799,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet",
+              "ms": 8.315,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.installFiles",
+              "ms": 7.619,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.syncStage",
+              "ms": 5.941,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "installPending.finalSet",
+              "ms": 5.94,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "io.syncDirectory",
+              "ms": 5.544,
+              "bytes": 0,
+              "calls": 3
+            },
+            {
+              "key": "createMemory.total",
+              "ms": 5.254,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "createMemory.instanceLoad",
+              "ms": 4.687,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "syncStage.file",
+              "ms": 4.022,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.createMemoryStage",
+              "ms": 3.698,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.syncDirectories",
+              "ms": 3.66,
+              "bytes": 1,
+              "calls": 1
+            },
+            {
+              "key": "privatize.copy",
+              "ms": 3.357,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.changedArchiveFiles",
+              "ms": 2.482,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "memory.prefixDigest",
+              "ms": 2.057,
+              "bytes": 4655790,
+              "calls": 1
+            },
+            {
+              "key": "memory.cacheCopy",
+              "ms": 1.974,
+              "bytes": 19955,
+              "calls": 1
+            },
+            {
+              "key": "mutate.hydrate",
+              "ms": 1.972,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.total",
+              "ms": 1.969,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.directories",
+              "ms": 1.894,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.hash",
+              "ms": 1.826,
+              "bytes": 4658635,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.hash",
+              "ms": 1.734,
+              "bytes": 4658635,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.createMemory",
+              "ms": 1.567,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.publish",
+              "ms": 1.495,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "load.loadArchiveIndex",
+              "ms": 1.438,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "load.inspectArchiveIntegrity",
+              "ms": 1.181,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.mirrorArchives",
+              "ms": 1.022,
+              "bytes": 4,
+              "calls": 1
+            },
+            {
+              "key": "memory.cachePublish",
+              "ms": 0.901,
+              "bytes": 19955,
+              "calls": 1
+            },
+            {
+              "key": "changedArchiveFiles.read",
+              "ms": 0.66,
+              "bytes": 4658635,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.read",
+              "ms": 0.617,
+              "bytes": 4658635,
+              "calls": 2
+            },
+            {
+              "key": "mirror.link",
+              "ms": 0.616,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.parse",
+              "ms": 0.582,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.flushDeferredIndex",
+              "ms": 0.564,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.removeStage",
+              "ms": 0.534,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.clone",
+              "ms": 0.525,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.observations.load",
+              "ms": 0.371,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet.parse",
+              "ms": 0.352,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending1",
+              "ms": 0.287,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.commitToken",
+              "ms": 0.281,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.writeStageManifest",
+              "ms": 0.219,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.snapshot",
+              "ms": 0.208,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.snapshot",
+              "ms": 0.205,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "privatize.rename",
+              "ms": 0.203,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.assertLiveTreeUnchanged",
+              "ms": 0.058,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.publishScanSeeds",
+              "ms": 0.053,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.scanArchiveRead",
+              "ms": 0.029,
+              "bytes": 1,
+              "calls": 1
+            }
+          ],
+          "calls": {
+            "readFileSync": {
+              "calls": 11,
+              "bytes": 9320962,
+              "ms": 1.502
+            },
+            "mkdirSync": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.102
+            },
+            "readdirSync": {
+              "calls": 10,
+              "bytes": 0,
+              "ms": 0.306
+            },
+            "lstatSync": {
+              "calls": 36,
+              "bytes": 0,
+              "ms": 0.214
+            },
+            "linkSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 1.305
+            },
+            "writeSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.11
+            },
+            "writeFileSync": {
+              "calls": 4,
+              "bytes": 443,
+              "ms": 0.464
+            },
+            "statSync": {
+              "calls": 39,
+              "bytes": 0,
+              "ms": 0.28
+            },
+            "promises.readFile": {
+              "calls": 2,
+              "bytes": 3542,
+              "ms": 1.371
+            },
+            "promises.stat": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.071
+            },
+            "openSync": {
+              "calls": 13,
+              "bytes": 0,
+              "ms": 0.445
+            },
+            "readSync": {
+              "calls": 55,
+              "bytes": 47521279,
+              "ms": 5.801
+            },
+            "copyFileSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 3.354
+            },
+            "renameSync": {
+              "calls": 6,
+              "bytes": 0,
+              "ms": 1.434
+            },
+            "promises.appendFile": {
+              "calls": 1,
+              "bytes": 1074,
+              "ms": 0.863
+            },
+            "promises.mkdir": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.032
+            },
+            "promises.writeFile": {
+              "calls": 1,
+              "bytes": 1771,
+              "ms": 0.184
+            },
+            "promises.rename": {
+              "calls": 3,
+              "bytes": 0,
+              "ms": 0.463
+            },
+            "fsyncSync": {
+              "calls": 5,
+              "bytes": 0,
+              "ms": 9.449
+            },
+            "promises.open": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.224
+            },
+            "handle.writeFile": {
+              "calls": 2,
+              "bytes": 293736,
+              "ms": 0.169
+            },
+            "handle.sync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 13.07
+            },
+            "handle.close": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.059
+            },
+            "rmSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.38
+            }
+          },
+          "files": [
+            {
+              "file": "domain-commit.token",
+              "reads": 2,
+              "bytes": 66
+            },
+            {
+              "file": "domain-staging/stage-1dff96c8-f483-4cb7-b0fb-439bbc08cb1b/state.json.evolution-archive-index.json",
+              "reads": 4,
+              "bytes": 7084
+            },
+            {
+              "file": "domain-staging/stage-1dff96c8-f483-4cb7-b0fb-439bbc08cb1b/.archive-borrowed.json",
+              "reads": 1,
+              "bytes": 74
+            },
+            {
+              "file": "domain-staging/stage-1dff96c8-f483-4cb7-b0fb-439bbc08cb1b/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-1dff96c8-f483-4cb7-b0fb-439bbc08cb1b/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-1dff96c8-f483-4cb7-b0fb-439bbc08cb1b/state.json.observations-archive.jsonl",
+              "reads": 15,
+              "bytes": 18626383
+            },
+            {
+              "file": "domain-archive.lock",
+              "reads": 2,
+              "bytes": 10
+            },
+            {
+              "file": "dockyard/state.json.evolution-archive-index.json",
+              "reads": 2,
+              "bytes": 3542
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl",
+              "reads": 6,
+              "bytes": 4656864
+            }
+          ],
+          "documents": [
+            197474,
+            96262
+          ]
+        },
+        {
+          "wallMs": 77.225,
+          "phases": [
+            {
+              "key": "mutate.total",
+              "ms": 62.916,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.work",
+              "ms": 26.121,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.inheritedReads",
+              "ms": 24.54,
+              "bytes": 6,
+              "calls": 2
+            },
+            {
+              "key": "mutate.installPending2",
+              "ms": 16.282,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.total",
+              "ms": 16.279,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches",
+              "ms": 15.287,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches.read",
+              "ms": 12.667,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.archiveEntries",
+              "ms": 9.767,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.finalSet",
+              "ms": 7.739,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.installFiles",
+              "ms": 7.429,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "io.syncDirectory",
+              "ms": 5.462,
+              "bytes": 0,
+              "calls": 3
+            },
+            {
+              "key": "mutate.pendingSet",
+              "ms": 4.929,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.total",
+              "ms": 4.871,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.syncStage",
+              "ms": 4.687,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.instanceLoad",
+              "ms": 4.361,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.syncDirectories",
+              "ms": 3.53,
+              "bytes": 1,
+              "calls": 1
+            },
+            {
+              "key": "privatize.copy",
+              "ms": 3.398,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.createMemoryStage",
+              "ms": 3.354,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.file",
+              "ms": 2.724,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.changedArchiveFiles",
+              "ms": 2.462,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "memory.prefixDigest",
+              "ms": 2.024,
+              "bytes": 4656864,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.directories",
+              "ms": 1.945,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.cacheCopy",
+              "ms": 1.941,
+              "bytes": 19956,
+              "calls": 1
+            },
+            {
+              "key": "mutate.hydrate",
+              "ms": 1.938,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.total",
+              "ms": 1.937,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.hash",
+              "ms": 1.792,
+              "bytes": 4659709,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.hash",
+              "ms": 1.736,
+              "bytes": 4659709,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.createMemory",
+              "ms": 1.538,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.publish",
+              "ms": 1.482,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "load.loadArchiveIndex",
+              "ms": 1.479,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "load.inspectArchiveIntegrity",
+              "ms": 1.115,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.mirrorArchives",
+              "ms": 1.064,
+              "bytes": 4,
+              "calls": 1
+            },
+            {
+              "key": "memory.cachePublish",
+              "ms": 0.893,
+              "bytes": 19956,
+              "calls": 1
+            },
+            {
+              "key": "changedArchiveFiles.read",
+              "ms": 0.653,
+              "bytes": 4659709,
+              "calls": 2
+            },
+            {
+              "key": "mirror.link",
+              "ms": 0.633,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.read",
+              "ms": 0.603,
+              "bytes": 4659709,
+              "calls": 2
+            },
+            {
+              "key": "installPending.parse",
+              "ms": 0.519,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.flushDeferredIndex",
+              "ms": 0.509,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.clone",
+              "ms": 0.481,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.removeStage",
+              "ms": 0.475,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.observations.load",
+              "ms": 0.368,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet.parse",
+              "ms": 0.345,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.commitToken",
+              "ms": 0.286,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "privatize.rename",
+              "ms": 0.218,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending1",
+              "ms": 0.216,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.writeStageManifest",
+              "ms": 0.214,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.snapshot",
+              "ms": 0.204,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.snapshot",
+              "ms": 0.201,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.publishScanSeeds",
+              "ms": 0.07,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.assertLiveTreeUnchanged",
+              "ms": 0.054,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.scanArchiveRead",
+              "ms": 0.027,
+              "bytes": 1,
+              "calls": 1
+            }
+          ],
+          "calls": {
+            "readFileSync": {
+              "calls": 11,
+              "bytes": 9323110,
+              "ms": 1.482
+            },
+            "mkdirSync": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.091
+            },
+            "readdirSync": {
+              "calls": 10,
+              "bytes": 0,
+              "ms": 0.3
+            },
+            "lstatSync": {
+              "calls": 36,
+              "bytes": 0,
+              "ms": 0.201
+            },
+            "linkSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 1.304
+            },
+            "writeSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.113
+            },
+            "writeFileSync": {
+              "calls": 4,
+              "bytes": 443,
+              "ms": 0.459
+            },
+            "statSync": {
+              "calls": 39,
+              "bytes": 0,
+              "ms": 0.26
+            },
+            "promises.readFile": {
+              "calls": 2,
+              "bytes": 3542,
+              "ms": 1.411
+            },
+            "promises.stat": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.089
+            },
+            "openSync": {
+              "calls": 13,
+              "bytes": 0,
+              "ms": 0.446
+            },
+            "readSync": {
+              "calls": 55,
+              "bytes": 47524501,
+              "ms": 6
+            },
+            "copyFileSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 3.397
+            },
+            "renameSync": {
+              "calls": 6,
+              "bytes": 0,
+              "ms": 1.455
+            },
+            "promises.appendFile": {
+              "calls": 1,
+              "bytes": 1074,
+              "ms": 0.834
+            },
+            "promises.mkdir": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.035
+            },
+            "promises.writeFile": {
+              "calls": 1,
+              "bytes": 1771,
+              "ms": 0.159
+            },
+            "promises.rename": {
+              "calls": 3,
+              "bytes": 0,
+              "ms": 0.504
+            },
+            "fsyncSync": {
+              "calls": 5,
+              "bytes": 0,
+              "ms": 8.051
+            },
+            "promises.open": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.234
+            },
+            "handle.writeFile": {
+              "calls": 2,
+              "bytes": 295182,
+              "ms": 0.132
+            },
+            "handle.sync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 11.481
+            },
+            "handle.close": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.065
+            },
+            "rmSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.345
+            }
+          },
+          "files": [
+            {
+              "file": "domain-commit.token",
+              "reads": 2,
+              "bytes": 66
+            },
+            {
+              "file": "domain-staging/stage-912b8113-bf52-4307-a6a9-98898c597998/state.json.evolution-archive-index.json",
+              "reads": 4,
+              "bytes": 7084
+            },
+            {
+              "file": "domain-staging/stage-912b8113-bf52-4307-a6a9-98898c597998/.archive-borrowed.json",
+              "reads": 1,
+              "bytes": 74
+            },
+            {
+              "file": "domain-staging/stage-912b8113-bf52-4307-a6a9-98898c597998/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-912b8113-bf52-4307-a6a9-98898c597998/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-912b8113-bf52-4307-a6a9-98898c597998/state.json.observations-archive.jsonl",
+              "reads": 15,
+              "bytes": 18630679
+            },
+            {
+              "file": "domain-archive.lock",
+              "reads": 2,
+              "bytes": 10
+            },
+            {
+              "file": "dockyard/state.json.evolution-archive-index.json",
+              "reads": 2,
+              "bytes": 3542
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl",
+              "reads": 6,
+              "bytes": 4657938
+            }
+          ],
+          "documents": [
+            198458,
+            96724
+          ]
+        },
+        {
+          "wallMs": 82.131,
+          "phases": [
+            {
+              "key": "mutate.total",
+              "ms": 67.807,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.work",
+              "ms": 26.132,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.inheritedReads",
+              "ms": 24.48,
+              "bytes": 6,
+              "calls": 2
+            },
+            {
+              "key": "memory.sourceMatches",
+              "ms": 15.335,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending2",
+              "ms": 13.596,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.total",
+              "ms": 13.593,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches.read",
+              "ms": 12.693,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.syncStage",
+              "ms": 10.588,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "memory.archiveEntries",
+              "ms": 9.697,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.file",
+              "ms": 7.638,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.installFiles",
+              "ms": 7.597,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "io.syncDirectory",
+              "ms": 6.582,
+              "bytes": 0,
+              "calls": 3
+            },
+            {
+              "key": "mutate.pendingSet",
+              "ms": 6.376,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.total",
+              "ms": 4.903,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.finalSet",
+              "ms": 4.781,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.instanceLoad",
+              "ms": 4.38,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.syncDirectories",
+              "ms": 3.686,
+              "bytes": 1,
+              "calls": 1
+            },
+            {
+              "key": "privatize.copy",
+              "ms": 3.354,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.createMemoryStage",
+              "ms": 3.293,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.directories",
+              "ms": 2.924,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.changedArchiveFiles",
+              "ms": 2.571,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "memory.prefixDigest",
+              "ms": 2.028,
+              "bytes": 4657938,
+              "calls": 1
+            },
+            {
+              "key": "mutate.hydrate",
+              "ms": 2.014,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.total",
+              "ms": 2.012,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.cacheCopy",
+              "ms": 1.969,
+              "bytes": 19957,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.hash",
+              "ms": 1.827,
+              "bytes": 4660783,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.hash",
+              "ms": 1.805,
+              "bytes": 4660783,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.createMemory",
+              "ms": 1.617,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.publish",
+              "ms": 1.47,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "load.loadArchiveIndex",
+              "ms": 1.443,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "load.inspectArchiveIntegrity",
+              "ms": 1.131,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.mirrorArchives",
+              "ms": 1.08,
+              "bytes": 4,
+              "calls": 1
+            },
+            {
+              "key": "memory.cachePublish",
+              "ms": 0.889,
+              "bytes": 19957,
+              "calls": 1
+            },
+            {
+              "key": "changedArchiveFiles.read",
+              "ms": 0.683,
+              "bytes": 4660783,
+              "calls": 2
+            },
+            {
+              "key": "mirror.link",
+              "ms": 0.638,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.read",
+              "ms": 0.594,
+              "bytes": 4660783,
+              "calls": 2
+            },
+            {
+              "key": "mutate.flushDeferredIndex",
+              "ms": 0.553,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.parse",
+              "ms": 0.526,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.removeStage",
+              "ms": 0.526,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.clone",
+              "ms": 0.484,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.observations.load",
+              "ms": 0.367,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet.parse",
+              "ms": 0.352,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.commitToken",
+              "ms": 0.352,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending1",
+              "ms": 0.228,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.writeStageManifest",
+              "ms": 0.228,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.snapshot",
+              "ms": 0.218,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.snapshot",
+              "ms": 0.215,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "privatize.rename",
+              "ms": 0.206,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.publishScanSeeds",
+              "ms": 0.07,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.assertLiveTreeUnchanged",
+              "ms": 0.047,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.scanArchiveRead",
+              "ms": 0.03,
+              "bytes": 1,
+              "calls": 1
+            }
+          ],
+          "calls": {
+            "readFileSync": {
+              "calls": 11,
+              "bytes": 9325258,
+              "ms": 1.487
+            },
+            "mkdirSync": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.112
+            },
+            "readdirSync": {
+              "calls": 10,
+              "bytes": 0,
+              "ms": 0.307
+            },
+            "lstatSync": {
+              "calls": 36,
+              "bytes": 0,
+              "ms": 0.202
+            },
+            "linkSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 1.301
+            },
+            "writeSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.236
+            },
+            "writeFileSync": {
+              "calls": 4,
+              "bytes": 443,
+              "ms": 0.601
+            },
+            "statSync": {
+              "calls": 39,
+              "bytes": 0,
+              "ms": 0.267
+            },
+            "promises.readFile": {
+              "calls": 2,
+              "bytes": 3542,
+              "ms": 1.386
+            },
+            "promises.stat": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.074
+            },
+            "openSync": {
+              "calls": 13,
+              "bytes": 0,
+              "ms": 0.412
+            },
+            "readSync": {
+              "calls": 55,
+              "bytes": 47527723,
+              "ms": 5.841
+            },
+            "copyFileSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 3.352
+            },
+            "renameSync": {
+              "calls": 6,
+              "bytes": 0,
+              "ms": 1.37
+            },
+            "promises.appendFile": {
+              "calls": 1,
+              "bytes": 1074,
+              "ms": 0.817
+            },
+            "promises.mkdir": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.036
+            },
+            "promises.writeFile": {
+              "calls": 1,
+              "bytes": 1771,
+              "ms": 0.17
+            },
+            "promises.rename": {
+              "calls": 3,
+              "bytes": 0,
+              "ms": 0.464
+            },
+            "fsyncSync": {
+              "calls": 5,
+              "bytes": 0,
+              "ms": 14.096
+            },
+            "promises.open": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.233
+            },
+            "handle.writeFile": {
+              "calls": 2,
+              "bytes": 296628,
+              "ms": 0.133
+            },
+            "handle.sync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 9.963
+            },
+            "handle.close": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.104
+            },
+            "rmSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.387
+            }
+          },
+          "files": [
+            {
+              "file": "domain-commit.token",
+              "reads": 2,
+              "bytes": 66
+            },
+            {
+              "file": "domain-staging/stage-4ddcd66a-01ce-4606-8a5b-042dc04474c3/state.json.evolution-archive-index.json",
+              "reads": 4,
+              "bytes": 7084
+            },
+            {
+              "file": "domain-staging/stage-4ddcd66a-01ce-4606-8a5b-042dc04474c3/.archive-borrowed.json",
+              "reads": 1,
+              "bytes": 74
+            },
+            {
+              "file": "domain-staging/stage-4ddcd66a-01ce-4606-8a5b-042dc04474c3/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-4ddcd66a-01ce-4606-8a5b-042dc04474c3/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-4ddcd66a-01ce-4606-8a5b-042dc04474c3/state.json.observations-archive.jsonl",
+              "reads": 15,
+              "bytes": 18634975
+            },
+            {
+              "file": "domain-archive.lock",
+              "reads": 2,
+              "bytes": 10
+            },
+            {
+              "file": "dockyard/state.json.evolution-archive-index.json",
+              "reads": 2,
+              "bytes": 3542
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl",
+              "reads": 6,
+              "bytes": 4659012
+            }
+          ],
+          "documents": [
+            199427,
+            97201
+          ]
+        },
+        {
+          "wallMs": 81.156,
+          "phases": [
+            {
+              "key": "mutate.total",
+              "ms": 66.709,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.work",
+              "ms": 26.936,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.inheritedReads",
+              "ms": 24.56,
+              "bytes": 6,
+              "calls": 2
+            },
+            {
+              "key": "memory.sourceMatches",
+              "ms": 15.232,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending2",
+              "ms": 13.686,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.total",
+              "ms": 13.684,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches.read",
+              "ms": 12.641,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.archiveEntries",
+              "ms": 10.537,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet",
+              "ms": 8.235,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.installFiles",
+              "ms": 7.611,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "io.syncDirectory",
+              "ms": 7.291,
+              "bytes": 0,
+              "calls": 3
+            },
+            {
+              "key": "mutate.syncStage",
+              "ms": 6.582,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.total",
+              "ms": 5.201,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.finalSet",
+              "ms": 4.882,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.instanceLoad",
+              "ms": 4.665,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "privatize.copy",
+              "ms": 4.243,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.syncDirectories",
+              "ms": 3.661,
+              "bytes": 1,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.directories",
+              "ms": 3.644,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.createMemoryStage",
+              "ms": 3.478,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.file",
+              "ms": 2.929,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.changedArchiveFiles",
+              "ms": 2.432,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "mutate.hydrate",
+              "ms": 2.124,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.total",
+              "ms": 2.122,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.prefixDigest",
+              "ms": 2.045,
+              "bytes": 4659012,
+              "calls": 1
+            },
+            {
+              "key": "memory.cacheCopy",
+              "ms": 1.973,
+              "bytes": 19958,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.hash",
+              "ms": 1.825,
+              "bytes": 4661857,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.hash",
+              "ms": 1.737,
+              "bytes": 4661857,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.createMemory",
+              "ms": 1.727,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "load.loadArchiveIndex",
+              "ms": 1.484,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.publish",
+              "ms": 1.477,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "load.inspectArchiveIntegrity",
+              "ms": 1.144,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.mirrorArchives",
+              "ms": 1.029,
+              "bytes": 4,
+              "calls": 1
+            },
+            {
+              "key": "memory.cachePublish",
+              "ms": 0.903,
+              "bytes": 19958,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.read",
+              "ms": 0.625,
+              "bytes": 4661857,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.read",
+              "ms": 0.622,
+              "bytes": 4661857,
+              "calls": 2
+            },
+            {
+              "key": "mirror.link",
+              "ms": 0.603,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.parse",
+              "ms": 0.57,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.flushDeferredIndex",
+              "ms": 0.554,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.removeStage",
+              "ms": 0.516,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.clone",
+              "ms": 0.502,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.observations.load",
+              "ms": 0.365,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet.parse",
+              "ms": 0.359,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.commitToken",
+              "ms": 0.33,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "privatize.rename",
+              "ms": 0.328,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending1",
+              "ms": 0.277,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.snapshot",
+              "ms": 0.21,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.snapshot",
+              "ms": 0.206,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.writeStageManifest",
+              "ms": 0.194,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.publishScanSeeds",
+              "ms": 0.079,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.assertLiveTreeUnchanged",
+              "ms": 0.052,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.scanArchiveRead",
+              "ms": 0.033,
+              "bytes": 1,
+              "calls": 1
+            }
+          ],
+          "calls": {
+            "readFileSync": {
+              "calls": 11,
+              "bytes": 9327406,
+              "ms": 1.469
+            },
+            "mkdirSync": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.097
+            },
+            "readdirSync": {
+              "calls": 10,
+              "bytes": 0,
+              "ms": 0.292
+            },
+            "lstatSync": {
+              "calls": 36,
+              "bytes": 0,
+              "ms": 0.203
+            },
+            "linkSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 1.274
+            },
+            "writeSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.116
+            },
+            "writeFileSync": {
+              "calls": 4,
+              "bytes": 443,
+              "ms": 0.458
+            },
+            "statSync": {
+              "calls": 39,
+              "bytes": 0,
+              "ms": 0.277
+            },
+            "promises.readFile": {
+              "calls": 2,
+              "bytes": 3542,
+              "ms": 1.419
+            },
+            "promises.stat": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.097
+            },
+            "openSync": {
+              "calls": 13,
+              "bytes": 0,
+              "ms": 0.467
+            },
+            "readSync": {
+              "calls": 55,
+              "bytes": 47530945,
+              "ms": 6.149
+            },
+            "copyFileSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 4.241
+            },
+            "renameSync": {
+              "calls": 6,
+              "bytes": 0,
+              "ms": 1.587
+            },
+            "promises.appendFile": {
+              "calls": 1,
+              "bytes": 1074,
+              "ms": 0.632
+            },
+            "promises.mkdir": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.039
+            },
+            "promises.writeFile": {
+              "calls": 1,
+              "bytes": 1771,
+              "ms": 0.158
+            },
+            "promises.rename": {
+              "calls": 3,
+              "bytes": 0,
+              "ms": 0.498
+            },
+            "fsyncSync": {
+              "calls": 5,
+              "bytes": 0,
+              "ms": 10.076
+            },
+            "promises.open": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.267
+            },
+            "handle.writeFile": {
+              "calls": 2,
+              "bytes": 298119,
+              "ms": 0.142
+            },
+            "handle.sync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 11.863
+            },
+            "handle.close": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.101
+            },
+            "rmSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.396
+            }
+          },
+          "files": [
+            {
+              "file": "domain-commit.token",
+              "reads": 2,
+              "bytes": 66
+            },
+            {
+              "file": "domain-staging/stage-f745a141-2d6b-4c8d-89db-c394a1c9cf5d/state.json.evolution-archive-index.json",
+              "reads": 4,
+              "bytes": 7084
+            },
+            {
+              "file": "domain-staging/stage-f745a141-2d6b-4c8d-89db-c394a1c9cf5d/.archive-borrowed.json",
+              "reads": 1,
+              "bytes": 74
+            },
+            {
+              "file": "domain-staging/stage-f745a141-2d6b-4c8d-89db-c394a1c9cf5d/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-f745a141-2d6b-4c8d-89db-c394a1c9cf5d/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-f745a141-2d6b-4c8d-89db-c394a1c9cf5d/state.json.observations-archive.jsonl",
+              "reads": 15,
+              "bytes": 18639271
+            },
+            {
+              "file": "domain-archive.lock",
+              "reads": 2,
+              "bytes": 10
+            },
+            {
+              "file": "dockyard/state.json.evolution-archive-index.json",
+              "reads": 2,
+              "bytes": 3542
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl",
+              "reads": 6,
+              "bytes": 4660086
+            }
+          ],
+          "documents": [
+            200426,
+            97693
+          ]
+        },
+        {
+          "wallMs": 85.408,
+          "phases": [
+            {
+              "key": "mutate.total",
+              "ms": 71.09,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.work",
+              "ms": 26.39,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.inheritedReads",
+              "ms": 24.325,
+              "bytes": 6,
+              "calls": 2
+            },
+            {
+              "key": "mutate.installPending2",
+              "ms": 17.486,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.total",
+              "ms": 17.484,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches",
+              "ms": 15.08,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches.read",
+              "ms": 12.524,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.archiveEntries",
+              "ms": 10.211,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "io.syncDirectory",
+              "ms": 8.84,
+              "bytes": 0,
+              "calls": 3
+            },
+            {
+              "key": "mutate.syncStage",
+              "ms": 8.769,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "installPending.installFiles",
+              "ms": 8.607,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.finalSet",
+              "ms": 7.441,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet",
+              "ms": 7.309,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.total",
+              "ms": 4.986,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "syncStage.directories",
+              "ms": 4.876,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.instanceLoad",
+              "ms": 4.453,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "privatize.copy",
+              "ms": 3.991,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.syncDirectories",
+              "ms": 3.976,
+              "bytes": 1,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.file",
+              "ms": 3.874,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.createMemoryStage",
+              "ms": 3.411,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.changedArchiveFiles",
+              "ms": 2.404,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.publish",
+              "ms": 2.121,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "memory.prefixDigest",
+              "ms": 2.045,
+              "bytes": 4660086,
+              "calls": 1
+            },
+            {
+              "key": "mutate.hydrate",
+              "ms": 1.993,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.total",
+              "ms": 1.992,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.cacheCopy",
+              "ms": 1.945,
+              "bytes": 19959,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.hash",
+              "ms": 1.854,
+              "bytes": 4662931,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.hash",
+              "ms": 1.751,
+              "bytes": 4662931,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.createMemory",
+              "ms": 1.58,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "load.loadArchiveIndex",
+              "ms": 1.438,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "load.inspectArchiveIntegrity",
+              "ms": 1.131,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.mirrorArchives",
+              "ms": 1.049,
+              "bytes": 4,
+              "calls": 1
+            },
+            {
+              "key": "memory.cachePublish",
+              "ms": 0.877,
+              "bytes": 19959,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.read",
+              "ms": 0.635,
+              "bytes": 4662931,
+              "calls": 2
+            },
+            {
+              "key": "installPending.parse",
+              "ms": 0.623,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mirror.link",
+              "ms": 0.611,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.read",
+              "ms": 0.574,
+              "bytes": 4662931,
+              "calls": 2
+            },
+            {
+              "key": "mutate.flushDeferredIndex",
+              "ms": 0.555,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.commitToken",
+              "ms": 0.555,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.clone",
+              "ms": 0.499,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.removeStage",
+              "ms": 0.494,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.observations.load",
+              "ms": 0.374,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet.parse",
+              "ms": 0.364,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending1",
+              "ms": 0.283,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.snapshot",
+              "ms": 0.211,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.snapshot",
+              "ms": 0.209,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.writeStageManifest",
+              "ms": 0.19,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "privatize.rename",
+              "ms": 0.179,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.publishScanSeeds",
+              "ms": 0.073,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.assertLiveTreeUnchanged",
+              "ms": 0.064,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.scanArchiveRead",
+              "ms": 0.029,
+              "bytes": 1,
+              "calls": 1
+            }
+          ],
+          "calls": {
+            "readFileSync": {
+              "calls": 11,
+              "bytes": 9329554,
+              "ms": 1.43
+            },
+            "mkdirSync": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.093
+            },
+            "readdirSync": {
+              "calls": 10,
+              "bytes": 0,
+              "ms": 0.316
+            },
+            "lstatSync": {
+              "calls": 36,
+              "bytes": 0,
+              "ms": 0.218
+            },
+            "linkSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 1.683
+            },
+            "writeSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.231
+            },
+            "writeFileSync": {
+              "calls": 4,
+              "bytes": 443,
+              "ms": 0.89
+            },
+            "statSync": {
+              "calls": 39,
+              "bytes": 0,
+              "ms": 0.266
+            },
+            "promises.readFile": {
+              "calls": 2,
+              "bytes": 3542,
+              "ms": 1.379
+            },
+            "promises.stat": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.086
+            },
+            "openSync": {
+              "calls": 13,
+              "bytes": 0,
+              "ms": 0.459
+            },
+            "readSync": {
+              "calls": 55,
+              "bytes": 47534167,
+              "ms": 6.069
+            },
+            "copyFileSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 3.989
+            },
+            "renameSync": {
+              "calls": 6,
+              "bytes": 0,
+              "ms": 1.545
+            },
+            "promises.appendFile": {
+              "calls": 1,
+              "bytes": 1074,
+              "ms": 0.802
+            },
+            "promises.mkdir": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.041
+            },
+            "promises.writeFile": {
+              "calls": 1,
+              "bytes": 1771,
+              "ms": 0.172
+            },
+            "promises.rename": {
+              "calls": 3,
+              "bytes": 0,
+              "ms": 0.552
+            },
+            "fsyncSync": {
+              "calls": 5,
+              "bytes": 0,
+              "ms": 12.553
+            },
+            "promises.open": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.776
+            },
+            "handle.writeFile": {
+              "calls": 2,
+              "bytes": 299595,
+              "ms": 0.184
+            },
+            "handle.sync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 12.872
+            },
+            "handle.close": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.094
+            },
+            "rmSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.369
+            }
+          },
+          "files": [
+            {
+              "file": "domain-commit.token",
+              "reads": 2,
+              "bytes": 66
+            },
+            {
+              "file": "domain-staging/stage-32c7aee3-69f8-47b7-be69-1b33ef7d29ad/state.json.evolution-archive-index.json",
+              "reads": 4,
+              "bytes": 7084
+            },
+            {
+              "file": "domain-staging/stage-32c7aee3-69f8-47b7-be69-1b33ef7d29ad/.archive-borrowed.json",
+              "reads": 1,
+              "bytes": 74
+            },
+            {
+              "file": "domain-staging/stage-32c7aee3-69f8-47b7-be69-1b33ef7d29ad/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-32c7aee3-69f8-47b7-be69-1b33ef7d29ad/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-32c7aee3-69f8-47b7-be69-1b33ef7d29ad/state.json.observations-archive.jsonl",
+              "reads": 15,
+              "bytes": 18643567
+            },
+            {
+              "file": "domain-archive.lock",
+              "reads": 2,
+              "bytes": 10
+            },
+            {
+              "file": "dockyard/state.json.evolution-archive-index.json",
+              "reads": 2,
+              "bytes": 3542
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl",
+              "reads": 6,
+              "bytes": 4661160
+            }
+          ],
+          "documents": [
+            201425,
+            98170
+          ]
+        },
+        {
+          "wallMs": 77.653,
+          "phases": [
+            {
+              "key": "mutate.total",
+              "ms": 63.47,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.work",
+              "ms": 25.782,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.inheritedReads",
+              "ms": 24.335,
+              "bytes": 6,
+              "calls": 2
+            },
+            {
+              "key": "memory.sourceMatches",
+              "ms": 15.092,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending2",
+              "ms": 14.33,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.total",
+              "ms": 14.329,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches.read",
+              "ms": 12.6,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.archiveEntries",
+              "ms": 9.584,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.installFiles",
+              "ms": 7.494,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet",
+              "ms": 6.618,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.syncStage",
+              "ms": 6.041,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "installPending.finalSet",
+              "ms": 5.732,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "io.syncDirectory",
+              "ms": 5.425,
+              "bytes": 0,
+              "calls": 3
+            },
+            {
+              "key": "createMemory.total",
+              "ms": 4.783,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "createMemory.instanceLoad",
+              "ms": 4.264,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "syncStage.file",
+              "ms": 4.256,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.syncDirectories",
+              "ms": 3.668,
+              "bytes": 1,
+              "calls": 1
+            },
+            {
+              "key": "privatize.copy",
+              "ms": 3.358,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.createMemoryStage",
+              "ms": 3.248,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.changedArchiveFiles",
+              "ms": 2.456,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "memory.prefixDigest",
+              "ms": 2.01,
+              "bytes": 4661160,
+              "calls": 1
+            },
+            {
+              "key": "memory.cacheCopy",
+              "ms": 1.971,
+              "bytes": 19960,
+              "calls": 1
+            },
+            {
+              "key": "mutate.hydrate",
+              "ms": 1.937,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.total",
+              "ms": 1.936,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.hash",
+              "ms": 1.78,
+              "bytes": 4664005,
+              "calls": 2
+            },
+            {
+              "key": "syncStage.directories",
+              "ms": 1.767,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "changedArchiveFiles.hash",
+              "ms": 1.737,
+              "bytes": 4664005,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.createMemory",
+              "ms": 1.539,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.publish",
+              "ms": 1.424,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "load.loadArchiveIndex",
+              "ms": 1.389,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "load.inspectArchiveIntegrity",
+              "ms": 1.129,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.mirrorArchives",
+              "ms": 1.011,
+              "bytes": 4,
+              "calls": 1
+            },
+            {
+              "key": "memory.cachePublish",
+              "ms": 0.873,
+              "bytes": 19960,
+              "calls": 1
+            },
+            {
+              "key": "changedArchiveFiles.read",
+              "ms": 0.651,
+              "bytes": 4664005,
+              "calls": 2
+            },
+            {
+              "key": "mirror.link",
+              "ms": 0.617,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.read",
+              "ms": 0.601,
+              "bytes": 4664005,
+              "calls": 2
+            },
+            {
+              "key": "mutate.flushDeferredIndex",
+              "ms": 0.508,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.parse",
+              "ms": 0.505,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "createMemory.clone",
+              "ms": 0.492,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.removeStage",
+              "ms": 0.471,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.observations.load",
+              "ms": 0.369,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet.parse",
+              "ms": 0.352,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.commitToken",
+              "ms": 0.291,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.snapshot",
+              "ms": 0.208,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.snapshot",
+              "ms": 0.207,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending1",
+              "ms": 0.202,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.writeStageManifest",
+              "ms": 0.202,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "privatize.rename",
+              "ms": 0.151,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.publishScanSeeds",
+              "ms": 0.066,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.assertLiveTreeUnchanged",
+              "ms": 0.047,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.scanArchiveRead",
+              "ms": 0.029,
+              "bytes": 1,
+              "calls": 1
+            }
+          ],
+          "calls": {
+            "readFileSync": {
+              "calls": 11,
+              "bytes": 9331702,
+              "ms": 1.475
+            },
+            "mkdirSync": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.089
+            },
+            "readdirSync": {
+              "calls": 10,
+              "bytes": 0,
+              "ms": 0.29
+            },
+            "lstatSync": {
+              "calls": 36,
+              "bytes": 0,
+              "ms": 0.185
+            },
+            "linkSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 1.264
+            },
+            "writeSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.098
+            },
+            "writeFileSync": {
+              "calls": 4,
+              "bytes": 443,
+              "ms": 0.432
+            },
+            "statSync": {
+              "calls": 39,
+              "bytes": 0,
+              "ms": 0.245
+            },
+            "promises.readFile": {
+              "calls": 2,
+              "bytes": 3542,
+              "ms": 1.33
+            },
+            "promises.stat": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.078
+            },
+            "openSync": {
+              "calls": 13,
+              "bytes": 0,
+              "ms": 0.399
+            },
+            "readSync": {
+              "calls": 55,
+              "bytes": 47537389,
+              "ms": 5.974
+            },
+            "copyFileSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 3.357
+            },
+            "renameSync": {
+              "calls": 6,
+              "bytes": 0,
+              "ms": 1.372
+            },
+            "promises.appendFile": {
+              "calls": 1,
+              "bytes": 1074,
+              "ms": 0.872
+            },
+            "promises.mkdir": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.035
+            },
+            "promises.writeFile": {
+              "calls": 1,
+              "bytes": 1771,
+              "ms": 0.161
+            },
+            "promises.rename": {
+              "calls": 3,
+              "bytes": 0,
+              "ms": 0.515
+            },
+            "fsyncSync": {
+              "calls": 5,
+              "bytes": 0,
+              "ms": 9.555
+            },
+            "promises.open": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.234
+            },
+            "handle.writeFile": {
+              "calls": 2,
+              "bytes": 301056,
+              "ms": 0.131
+            },
+            "handle.sync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 11.101
+            },
+            "handle.close": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.081
+            },
+            "rmSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.356
+            }
+          },
+          "files": [
+            {
+              "file": "domain-commit.token",
+              "reads": 2,
+              "bytes": 66
+            },
+            {
+              "file": "domain-staging/stage-ea6afc0d-ba39-4ec7-9b33-a1f12ef6159d/state.json.evolution-archive-index.json",
+              "reads": 4,
+              "bytes": 7084
+            },
+            {
+              "file": "domain-staging/stage-ea6afc0d-ba39-4ec7-9b33-a1f12ef6159d/.archive-borrowed.json",
+              "reads": 1,
+              "bytes": 74
+            },
+            {
+              "file": "domain-staging/stage-ea6afc0d-ba39-4ec7-9b33-a1f12ef6159d/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-ea6afc0d-ba39-4ec7-9b33-a1f12ef6159d/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-ea6afc0d-ba39-4ec7-9b33-a1f12ef6159d/state.json.observations-archive.jsonl",
+              "reads": 15,
+              "bytes": 18647863
+            },
+            {
+              "file": "domain-archive.lock",
+              "reads": 2,
+              "bytes": 10
+            },
+            {
+              "file": "dockyard/state.json.evolution-archive-index.json",
+              "reads": 2,
+              "bytes": 3542
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl",
+              "reads": 6,
+              "bytes": 4662234
+            }
+          ],
+          "documents": [
+            202409,
+            98647
+          ]
+        },
+        {
+          "wallMs": 75.346,
+          "phases": [
+            {
+              "key": "mutate.total",
+              "ms": 62.518,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.work",
+              "ms": 26.213,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.inheritedReads",
+              "ms": 23.674,
+              "bytes": 6,
+              "calls": 2
+            },
+            {
+              "key": "memory.sourceMatches",
+              "ms": 15.544,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending2",
+              "ms": 13.357,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.total",
+              "ms": 13.355,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches.read",
+              "ms": 12.992,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.archiveEntries",
+              "ms": 9.584,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.installFiles",
+              "ms": 7.633,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet",
+              "ms": 7.399,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "io.syncDirectory",
+              "ms": 5.562,
+              "bytes": 0,
+              "calls": 3
+            },
+            {
+              "key": "mutate.syncStage",
+              "ms": 4.988,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.total",
+              "ms": 4.769,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installPending.finalSet",
+              "ms": 4.477,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.instanceLoad",
+              "ms": 4.249,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.syncDirectories",
+              "ms": 3.754,
+              "bytes": 1,
+              "calls": 1
+            },
+            {
+              "key": "privatize.copy",
+              "ms": 3.375,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.createMemoryStage",
+              "ms": 3.213,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.file",
+              "ms": 3.151,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.changedArchiveFiles",
+              "ms": 2.388,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "memory.prefixDigest",
+              "ms": 2.028,
+              "bytes": 4662234,
+              "calls": 1
+            },
+            {
+              "key": "memory.cacheCopy",
+              "ms": 1.941,
+              "bytes": 19961,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.total",
+              "ms": 1.935,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.hydrate",
+              "ms": 1.935,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.directories",
+              "ms": 1.82,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "changedArchiveFiles.hash",
+              "ms": 1.745,
+              "bytes": 4665079,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.hash",
+              "ms": 1.738,
+              "bytes": 4665079,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.createMemory",
+              "ms": 1.56,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.publish",
+              "ms": 1.487,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "load.loadArchiveIndex",
+              "ms": 1.389,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "load.inspectArchiveIntegrity",
+              "ms": 1.113,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.mirrorArchives",
+              "ms": 0.965,
+              "bytes": 4,
+              "calls": 1
+            },
+            {
+              "key": "memory.cachePublish",
+              "ms": 0.872,
+              "bytes": 19961,
+              "calls": 1
+            },
+            {
+              "key": "installPending.parse",
+              "ms": 0.629,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "installFiles.read",
+              "ms": 0.627,
+              "bytes": 4665079,
+              "calls": 2
+            },
+            {
+              "key": "mirror.link",
+              "ms": 0.598,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.read",
+              "ms": 0.571,
+              "bytes": 4665079,
+              "calls": 2
+            },
+            {
+              "key": "mutate.flushDeferredIndex",
+              "ms": 0.511,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.removeStage",
+              "ms": 0.509,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.clone",
+              "ms": 0.489,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.pendingSet.parse",
+              "ms": 0.36,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.observations.load",
+              "ms": 0.347,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.commitToken",
+              "ms": 0.298,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending1",
+              "ms": 0.274,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.snapshot",
+              "ms": 0.21,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.snapshot",
+              "ms": 0.209,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.writeStageManifest",
+              "ms": 0.187,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "privatize.rename",
+              "ms": 0.16,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.assertLiveTreeUnchanged",
+              "ms": 0.05,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.publishScanSeeds",
+              "ms": 0.045,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.scanArchiveRead",
+              "ms": 0.028,
+              "bytes": 1,
+              "calls": 1
+            }
+          ],
+          "calls": {
+            "readFileSync": {
+              "calls": 11,
+              "bytes": 9333850,
+              "ms": 1.422
+            },
+            "mkdirSync": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.081
+            },
+            "readdirSync": {
+              "calls": 10,
+              "bytes": 0,
+              "ms": 0.301
+            },
+            "lstatSync": {
+              "calls": 36,
+              "bytes": 0,
+              "ms": 0.217
+            },
+            "linkSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 1.259
+            },
+            "writeSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.1
+            },
+            "writeFileSync": {
+              "calls": 4,
+              "bytes": 443,
+              "ms": 0.453
+            },
+            "statSync": {
+              "calls": 39,
+              "bytes": 0,
+              "ms": 0.237
+            },
+            "promises.readFile": {
+              "calls": 2,
+              "bytes": 3542,
+              "ms": 1.328
+            },
+            "promises.stat": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.085
+            },
+            "openSync": {
+              "calls": 13,
+              "bytes": 0,
+              "ms": 0.437
+            },
+            "readSync": {
+              "calls": 55,
+              "bytes": 47540611,
+              "ms": 5.819
+            },
+            "copyFileSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 3.373
+            },
+            "renameSync": {
+              "calls": 6,
+              "bytes": 0,
+              "ms": 1.367
+            },
+            "promises.appendFile": {
+              "calls": 1,
+              "bytes": 1074,
+              "ms": 0.856
+            },
+            "promises.mkdir": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.035
+            },
+            "promises.writeFile": {
+              "calls": 1,
+              "bytes": 1771,
+              "ms": 0.155
+            },
+            "promises.rename": {
+              "calls": 3,
+              "bytes": 0,
+              "ms": 0.741
+            },
+            "fsyncSync": {
+              "calls": 5,
+              "bytes": 0,
+              "ms": 8.558
+            },
+            "promises.open": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.397
+            },
+            "handle.writeFile": {
+              "calls": 2,
+              "bytes": 301489,
+              "ms": 0.228
+            },
+            "handle.sync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 10.123
+            },
+            "handle.close": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.117
+            },
+            "rmSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.382
+            }
+          },
+          "files": [
+            {
+              "file": "domain-commit.token",
+              "reads": 2,
+              "bytes": 66
+            },
+            {
+              "file": "domain-staging/stage-5ec70a0a-b5e1-497f-913d-b6c9e89b8314/state.json.evolution-archive-index.json",
+              "reads": 4,
+              "bytes": 7084
+            },
+            {
+              "file": "domain-staging/stage-5ec70a0a-b5e1-497f-913d-b6c9e89b8314/.archive-borrowed.json",
+              "reads": 1,
+              "bytes": 74
+            },
+            {
+              "file": "domain-staging/stage-5ec70a0a-b5e1-497f-913d-b6c9e89b8314/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-5ec70a0a-b5e1-497f-913d-b6c9e89b8314/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-5ec70a0a-b5e1-497f-913d-b6c9e89b8314/state.json.observations-archive.jsonl",
+              "reads": 15,
+              "bytes": 18652159
+            },
+            {
+              "file": "domain-archive.lock",
+              "reads": 2,
+              "bytes": 10
+            },
+            {
+              "file": "dockyard/state.json.evolution-archive-index.json",
+              "reads": 2,
+              "bytes": 3542
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl",
+              "reads": 6,
+              "bytes": 4663308
+            }
+          ],
+          "documents": [
+            202865,
+            98624
+          ]
+        },
+        {
+          "wallMs": 77.765,
+          "phases": [
+            {
+              "key": "mutate.total",
+              "ms": 64.3,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.work",
+              "ms": 27.541,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.inheritedReads",
+              "ms": 24.316,
+              "bytes": 6,
+              "calls": 2
+            },
+            {
+              "key": "memory.sourceMatches",
+              "ms": 15.952,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending2",
+              "ms": 14.467,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.total",
+              "ms": 14.466,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.sourceMatches.read",
+              "ms": 13.332,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.archiveEntries",
+              "ms": 10.618,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet",
+              "ms": 8.808,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.installFiles",
+              "ms": 7.619,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.finalSet",
+              "ms": 5.691,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "io.syncDirectory",
+              "ms": 5.668,
+              "bytes": 0,
+              "calls": 3
+            },
+            {
+              "key": "mutate.syncStage",
+              "ms": 4.656,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.syncDirectories",
+              "ms": 3.702,
+              "bytes": 1,
+              "calls": 1
+            },
+            {
+              "key": "privatize.copy",
+              "ms": 3.428,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "createMemory.total",
+              "ms": 3.013,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "syncStage.file",
+              "ms": 2.668,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "createMemory.instanceLoad",
+              "ms": 2.573,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.changedArchiveFiles",
+              "ms": 2.417,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "memory.prefixDigest",
+              "ms": 2.261,
+              "bytes": 4663308,
+              "calls": 1
+            },
+            {
+              "key": "syncStage.directories",
+              "ms": 1.98,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.hydrate",
+              "ms": 1.961,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.cacheCopy",
+              "ms": 1.96,
+              "bytes": 19962,
+              "calls": 1
+            },
+            {
+              "key": "hydrate.total",
+              "ms": 1.96,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.hash",
+              "ms": 1.828,
+              "bytes": 4666153,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.hash",
+              "ms": 1.735,
+              "bytes": 4666153,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.createMemory",
+              "ms": 1.563,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.publish",
+              "ms": 1.463,
+              "bytes": 2,
+              "calls": 1
+            },
+            {
+              "key": "mutate.createMemoryStage",
+              "ms": 1.453,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "load.inspectArchiveIntegrity",
+              "ms": 1.04,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.mirrorArchives",
+              "ms": 0.934,
+              "bytes": 4,
+              "calls": 1
+            },
+            {
+              "key": "memory.cachePublish",
+              "ms": 0.884,
+              "bytes": 19962,
+              "calls": 1
+            },
+            {
+              "key": "installFiles.read",
+              "ms": 0.604,
+              "bytes": 4666153,
+              "calls": 2
+            },
+            {
+              "key": "changedArchiveFiles.read",
+              "ms": 0.602,
+              "bytes": 4666153,
+              "calls": 2
+            },
+            {
+              "key": "mirror.link",
+              "ms": 0.594,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "mutate.flushDeferredIndex",
+              "ms": 0.569,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.removeStage",
+              "ms": 0.482,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.parse",
+              "ms": 0.479,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "createMemory.clone",
+              "ms": 0.417,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "hydrate.observations.load",
+              "ms": 0.367,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.pendingSet.parse",
+              "ms": 0.354,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "installPending.commitToken",
+              "ms": 0.331,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.snapshot",
+              "ms": 0.21,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.snapshot",
+              "ms": 0.209,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.writeStageManifest",
+              "ms": 0.194,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.installPending1",
+              "ms": 0.177,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "load.loadArchiveIndex",
+              "ms": 0.156,
+              "bytes": 0,
+              "calls": 2
+            },
+            {
+              "key": "privatize.rename",
+              "ms": 0.156,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.publishScanSeeds",
+              "ms": 0.061,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "mutate.assertLiveTreeUnchanged",
+              "ms": 0.055,
+              "bytes": 0,
+              "calls": 1
+            },
+            {
+              "key": "memory.scanArchiveRead",
+              "ms": 0.021,
+              "bytes": 1,
+              "calls": 1
+            }
+          ],
+          "calls": {
+            "readFileSync": {
+              "calls": 11,
+              "bytes": 9335998,
+              "ms": 1.407
+            },
+            "mkdirSync": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.079
+            },
+            "readdirSync": {
+              "calls": 10,
+              "bytes": 0,
+              "ms": 0.283
+            },
+            "lstatSync": {
+              "calls": 36,
+              "bytes": 0,
+              "ms": 0.185
+            },
+            "linkSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 1.259
+            },
+            "writeSync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.101
+            },
+            "writeFileSync": {
+              "calls": 4,
+              "bytes": 443,
+              "ms": 0.46
+            },
+            "statSync": {
+              "calls": 39,
+              "bytes": 0,
+              "ms": 0.249
+            },
+            "promises.readFile": {
+              "calls": 2,
+              "bytes": 3542,
+              "ms": 0.111
+            },
+            "promises.stat": {
+              "calls": 2,
+              "bytes": 0,
+              "ms": 0.03
+            },
+            "openSync": {
+              "calls": 13,
+              "bytes": 0,
+              "ms": 0.424
+            },
+            "readSync": {
+              "calls": 55,
+              "bytes": 47543833,
+              "ms": 6.057
+            },
+            "copyFileSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 3.425
+            },
+            "renameSync": {
+              "calls": 6,
+              "bytes": 0,
+              "ms": 1.376
+            },
+            "promises.appendFile": {
+              "calls": 1,
+              "bytes": 1074,
+              "ms": 1.511
+            },
+            "promises.mkdir": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.039
+            },
+            "promises.writeFile": {
+              "calls": 1,
+              "bytes": 1771,
+              "ms": 0.181
+            },
+            "promises.rename": {
+              "calls": 3,
+              "bytes": 0,
+              "ms": 0.615
+            },
+            "fsyncSync": {
+              "calls": 5,
+              "bytes": 0,
+              "ms": 8.191
+            },
+            "promises.open": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.246
+            },
+            "handle.writeFile": {
+              "calls": 2,
+              "bytes": 302544,
+              "ms": 0.162
+            },
+            "handle.sync": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 13.103
+            },
+            "handle.close": {
+              "calls": 4,
+              "bytes": 0,
+              "ms": 0.106
+            },
+            "rmSync": {
+              "calls": 1,
+              "bytes": 0,
+              "ms": 0.365
+            }
+          },
+          "files": [
+            {
+              "file": "domain-commit.token",
+              "reads": 2,
+              "bytes": 66
+            },
+            {
+              "file": "domain-staging/stage-1d53f2fa-66fc-4515-b410-dc944982dfe1/state.json.evolution-archive-index.json",
+              "reads": 4,
+              "bytes": 7084
+            },
+            {
+              "file": "domain-staging/stage-1d53f2fa-66fc-4515-b410-dc944982dfe1/.archive-borrowed.json",
+              "reads": 1,
+              "bytes": 74
+            },
+            {
+              "file": "domain-staging/stage-1d53f2fa-66fc-4515-b410-dc944982dfe1/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-1d53f2fa-66fc-4515-b410-dc944982dfe1/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "domain-staging/stage-1d53f2fa-66fc-4515-b410-dc944982dfe1/state.json.observations-archive.jsonl",
+              "reads": 15,
+              "bytes": 18656455
+            },
+            {
+              "file": "domain-archive.lock",
+              "reads": 2,
+              "bytes": 10
+            },
+            {
+              "file": "dockyard/state.json.evolution-archive-index.json",
+              "reads": 2,
+              "bytes": 3542
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000001.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl.segments/segment-000000000002.jsonl",
+              "reads": 9,
+              "bytes": 8387940
+            },
+            {
+              "file": "dockyard/state.json.observations-archive.jsonl",
+              "reads": 6,
+              "bytes": 4664382
+            }
+          ],
+          "documents": [
+            203396,
+            99148
+          ]
+        }
+      ]
+    }
+  ]
+}
