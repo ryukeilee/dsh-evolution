@@ -1,0 +1,3020 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-11-09T12:22:30.511Z",
+  "environment": {
+    "node": "v26.13.0",
+    "platform": "darwin/arm64",
+    "cpus": 8,
+    "loadavg": [
+      1.581,
+      2.069,
+      2.54
+    ],
+    "maxOldSpaceSizeMb": 4096,
+    "fixtureRoot": "/tmp/diag-archive-fixture"
+  },
+  "sources": {
+    "baseline": {
+      "rev": "13adaafb835209943a42479ca67e8eb42f8ca517",
+      "path": "lib/diagnostics.js",
+      "sha256": "350351727c2ee5f21c2bd9d3807c687a535c09c9ef16253ed75e2b4e7c673f2f"
+    },
+    "candidate": {
+      "rev": "working-tree",
+      "path": "lib/diagnostics.js",
+      "sha256": "06f6b7b986aaa3c78129818ac330dca82b7ce8e12869205349525d6cf44e1e21"
+    },
+    "note": "both sides import the same working-tree lib/ modules; only lib/diagnostics.js differs, and it is the only file this change edits"
+  },
+  "fixture": {
+    "small": {
+      "home": "/tmp/diag-archive-fixture/small/home",
+      "files": [
+        {
+          "name": "state.json.diagnostics.jsonl",
+          "bytes": 2006,
+          "sha256": "434c50755cd8c798cef5b70cef1908cfa656757ffc950d166e1dc780bf45847a"
+        },
+        {
+          "name": "state.json.knowledge-archive.jsonl",
+          "bytes": 19907,
+          "sha256": "6655d683a527e0809476b915ff41da166f551411a211a1e7526a1389e510c379"
+        },
+        {
+          "name": "state.json.observations.jsonl",
+          "bytes": 39832,
+          "sha256": "0aead390851c85e6f43be6b50c2299d62ed02e6e4d26113af864cdd6b3487650"
+        }
+      ],
+      "bytes": 61745
+    },
+    "single-32m": {
+      "home": "/tmp/diag-archive-fixture/single-32m/home",
+      "files": [
+        {
+          "name": "state.json.observations.jsonl",
+          "bytes": 33601690,
+          "sha256": "6b8fbdbebdad9a5747d9779cf98fca137916749aed99eef0e4be6076025a02d7"
+        }
+      ],
+      "bytes": 33601690
+    },
+    "single-128m": {
+      "home": "/tmp/diag-archive-fixture/single-128m/home",
+      "files": [
+        {
+          "name": "state.json.observations.jsonl",
+          "bytes": 134347258,
+          "sha256": "235860efdb8fe516c4f1900aee06c7d4403d8c5ba7c5baded4905f803b5b5002"
+        }
+      ],
+      "bytes": 134347258
+    },
+    "single-256m": {
+      "home": "/tmp/diag-archive-fixture/single-256m/home",
+      "files": [
+        {
+          "name": "state.json.observations.jsonl",
+          "bytes": 268546554,
+          "sha256": "dfc096633650d0502690e0173867510c45143d8c7b6154b27cb76b076dd6b71e"
+        }
+      ],
+      "bytes": 268546554
+    },
+    "single-128m-archive": {
+      "home": "/tmp/diag-archive-fixture/single-128m-archive/home",
+      "files": [
+        {
+          "name": "state.json.knowledge-archive.jsonl",
+          "bytes": 134365690,
+          "sha256": "dc64e1e9ffe38f34c380c2c8018ebf0b06cb52eebbad86e840a3fc8cc090cbd4"
+        }
+      ],
+      "bytes": 134365690
+    },
+    "single-256m-archive": {
+      "home": "/tmp/diag-archive-fixture/single-256m-archive/home",
+      "files": [
+        {
+          "name": "state.json.observations-archive.jsonl",
+          "bytes": 268581370,
+          "sha256": "d6155301ed67860963f64925c10a557f3f880aaa507b2b6c5c66b552d3928939"
+        }
+      ],
+      "bytes": 268581370
+    },
+    "multi-256m": {
+      "home": "/tmp/diag-archive-fixture/multi-256m/home",
+      "files": [
+        {
+          "name": "state.json.cycles-archive.jsonl",
+          "bytes": 67214490,
+          "sha256": "161b416fbaab6a9e6adbbb055dca99572a58c2b4a666b8d296bd061036aebf65"
+        },
+        {
+          "name": "state.json.experiments-archive.jsonl",
+          "bytes": 67214490,
+          "sha256": "161b416fbaab6a9e6adbbb055dca99572a58c2b4a666b8d296bd061036aebf65"
+        },
+        {
+          "name": "state.json.knowledge-archive.jsonl",
+          "bytes": 67214490,
+          "sha256": "161b416fbaab6a9e6adbbb055dca99572a58c2b4a666b8d296bd061036aebf65"
+        },
+        {
+          "name": "state.json.observations-archive.jsonl",
+          "bytes": 67214490,
+          "sha256": "161b416fbaab6a9e6adbbb055dca99572a58c2b4a666b8d296bd061036aebf65"
+        }
+      ],
+      "bytes": 268857960
+    },
+    "realistic-multi": {
+      "home": "/tmp/diag-archive-fixture/realistic-multi/home",
+      "files": [
+        {
+          "name": "state.json.candidates-archive.jsonl",
+          "bytes": 8565162,
+          "sha256": "267ad494b66e070ce5339b4c9b8fe7b8dce4d255e825ae79221cead1e646ac80"
+        },
+        {
+          "name": "state.json.cycles-archive.jsonl",
+          "bytes": 8565162,
+          "sha256": "267ad494b66e070ce5339b4c9b8fe7b8dce4d255e825ae79221cead1e646ac80"
+        },
+        {
+          "name": "state.json.diagnoses-archive.jsonl",
+          "bytes": 8565162,
+          "sha256": "267ad494b66e070ce5339b4c9b8fe7b8dce4d255e825ae79221cead1e646ac80"
+        },
+        {
+          "name": "state.json.gaps-archive.jsonl",
+          "bytes": 8565162,
+          "sha256": "267ad494b66e070ce5339b4c9b8fe7b8dce4d255e825ae79221cead1e646ac80"
+        },
+        {
+          "name": "state.json.knowledge-archive.jsonl",
+          "bytes": 8565162,
+          "sha256": "267ad494b66e070ce5339b4c9b8fe7b8dce4d255e825ae79221cead1e646ac80"
+        },
+        {
+          "name": "state.json.observations-archive.jsonl",
+          "bytes": 8565162,
+          "sha256": "267ad494b66e070ce5339b4c9b8fe7b8dce4d255e825ae79221cead1e646ac80"
+        },
+        {
+          "name": "state.json.proposals-archive.jsonl",
+          "bytes": 8565162,
+          "sha256": "267ad494b66e070ce5339b4c9b8fe7b8dce4d255e825ae79221cead1e646ac80"
+        }
+      ],
+      "bytes": 59956134
+    }
+  },
+  "method": {
+    "wallAndCpu": "one collectDiagnostics() call in a fresh child process per sample; median over the rounds",
+    "peakRss": "process.resourceUsage().maxRSS of a fresh child process that ran collectDiagnostics() once (includes process startup)",
+    "allocation": "V8 HeapProfiler sampling, interval 32768 bytes, includes GC-collected objects, per call",
+    "bytes": "whole-file readFileSync calls on the scenario *.jsonl files are counted per side; the fixture byte total is what the summary loop scans on either side",
+    "equality": "sha256 of the whole report with generatedAt removed; identical across all sides and pairings",
+    "aa": "A/A runs the same baseline module twice; its delta is the noise floor"
+  },
+  "pairings": {
+    "A/A": {
+      "small": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 35.956,
+          "cpuMsMedian": 43.425,
+          "maxRssKbMedian": 68656,
+          "maxRssKbMin": 68512,
+          "heapUsedAfterGcMedian": 12284792,
+          "readFileSyncBytesMedian": 81652,
+          "readFileSyncCallsMedian": 4,
+          "reportHashes": [
+            "a946dc23fbe26a86dd25867188b4f332a3e4c1b4bfefc43799157dcd79df6233"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.diagnostics.jsonl",
+              "lines": 5,
+              "invalid": 2,
+              "truncatedTail": true
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 22,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 48,
+              "invalid": 2,
+              "truncatedTail": true
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 68656,
+              "wallMsMedian": 36.866,
+              "cpuMsMedian": 44.162,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 1,
+              "maxRssKb": 68720,
+              "wallMsMedian": 35.316,
+              "cpuMsMedian": 42.735,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 2,
+              "maxRssKb": 68656,
+              "wallMsMedian": 35.921,
+              "cpuMsMedian": 43.279,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 3,
+              "maxRssKb": 68560,
+              "wallMsMedian": 35.956,
+              "cpuMsMedian": 43.425,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 4,
+              "maxRssKb": 68512,
+              "wallMsMedian": 36.243,
+              "cpuMsMedian": 43.735,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 36.055,
+          "cpuMsMedian": 43.514,
+          "maxRssKbMedian": 68752,
+          "maxRssKbMin": 68432,
+          "heapUsedAfterGcMedian": 12284320,
+          "readFileSyncBytesMedian": 81652,
+          "readFileSyncCallsMedian": 4,
+          "reportHashes": [
+            "a946dc23fbe26a86dd25867188b4f332a3e4c1b4bfefc43799157dcd79df6233"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.diagnostics.jsonl",
+              "lines": 5,
+              "invalid": 2,
+              "truncatedTail": true
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 22,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 48,
+              "invalid": 2,
+              "truncatedTail": true
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 68992,
+              "wallMsMedian": 36.24,
+              "cpuMsMedian": 43.65,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 1,
+              "maxRssKb": 68640,
+              "wallMsMedian": 36.178,
+              "cpuMsMedian": 43.514,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 2,
+              "maxRssKb": 68752,
+              "wallMsMedian": 35.96,
+              "cpuMsMedian": 43.458,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 3,
+              "maxRssKb": 68992,
+              "wallMsMedian": 35.844,
+              "cpuMsMedian": 43.227,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 4,
+              "maxRssKb": 68432,
+              "wallMsMedian": 36.055,
+              "cpuMsMedian": 43.597,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": 0.275,
+          "cpuMsPercent": 0.205,
+          "maxRssPercent": 0.14,
+          "readFileSyncBytesPercent": 0
+        }
+      },
+      "single-32m": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 65.309,
+          "cpuMsMedian": 81.721,
+          "maxRssKbMedian": 145728,
+          "maxRssKbMin": 145360,
+          "heapUsedAfterGcMedian": 12261576,
+          "readFileSyncBytesMedian": 33601690,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "356b5d1efa3a9851793e498d061f8c8c607110158b6982f1524ab9a109b6602f"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 33280,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 145728,
+              "wallMsMedian": 65.581,
+              "cpuMsMedian": 82.091,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 145648,
+              "wallMsMedian": 65.179,
+              "cpuMsMedian": 81.721,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 145360,
+              "wallMsMedian": 65.309,
+              "cpuMsMedian": 80.123,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 145792,
+              "wallMsMedian": 64.977,
+              "cpuMsMedian": 81.615,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 145728,
+              "wallMsMedian": 65.564,
+              "cpuMsMedian": 82.139,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 65.088,
+          "cpuMsMedian": 81.439,
+          "maxRssKbMedian": 145504,
+          "maxRssKbMin": 145408,
+          "heapUsedAfterGcMedian": 12261560,
+          "readFileSyncBytesMedian": 33601690,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "356b5d1efa3a9851793e498d061f8c8c607110158b6982f1524ab9a109b6602f"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 33280,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 145504,
+              "wallMsMedian": 65.722,
+              "cpuMsMedian": 82.529,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 145408,
+              "wallMsMedian": 64.835,
+              "cpuMsMedian": 81.419,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 145472,
+              "wallMsMedian": 65.112,
+              "cpuMsMedian": 81.439,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 145552,
+              "wallMsMedian": 65.088,
+              "cpuMsMedian": 81.385,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 145776,
+              "wallMsMedian": 64.983,
+              "cpuMsMedian": 81.772,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": -0.338,
+          "cpuMsPercent": -0.345,
+          "maxRssPercent": -0.154,
+          "readFileSyncBytesPercent": 0
+        }
+      },
+      "single-128m": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 147.126,
+          "cpuMsMedian": 162.075,
+          "maxRssKbMedian": 342144,
+          "maxRssKbMin": 341888,
+          "heapUsedAfterGcMedian": 12263256,
+          "readFileSyncBytesMedian": 134347258,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "dd1cc5f33ae4e2d12aefbc0d452b9b394846ac8d514b5fdb56efb83adae451b7"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 132864,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 342176,
+              "wallMsMedian": 147.126,
+              "cpuMsMedian": 163.231,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 341984,
+              "wallMsMedian": 147.694,
+              "cpuMsMedian": 162.075,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 341888,
+              "wallMsMedian": 148.08,
+              "cpuMsMedian": 162.399,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 342192,
+              "wallMsMedian": 144.868,
+              "cpuMsMedian": 160.967,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 342144,
+              "wallMsMedian": 145.323,
+              "cpuMsMedian": 161.346,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 145.936,
+          "cpuMsMedian": 162.181,
+          "maxRssKbMedian": 342224,
+          "maxRssKbMin": 341936,
+          "heapUsedAfterGcMedian": 12263256,
+          "readFileSyncBytesMedian": 134347258,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "dd1cc5f33ae4e2d12aefbc0d452b9b394846ac8d514b5fdb56efb83adae451b7"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 132864,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 342400,
+              "wallMsMedian": 145.936,
+              "cpuMsMedian": 162.181,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 341936,
+              "wallMsMedian": 145.682,
+              "cpuMsMedian": 161.464,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 342048,
+              "wallMsMedian": 145.388,
+              "cpuMsMedian": 161.238,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 342240,
+              "wallMsMedian": 148.034,
+              "cpuMsMedian": 163.963,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 342224,
+              "wallMsMedian": 146.672,
+              "cpuMsMedian": 162.818,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": -0.809,
+          "cpuMsPercent": 0.065,
+          "maxRssPercent": 0.023,
+          "readFileSyncBytesPercent": 0
+        }
+      },
+      "single-256m": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 256.39,
+          "cpuMsMedian": 272.524,
+          "maxRssKbMedian": 604400,
+          "maxRssKbMin": 604128,
+          "heapUsedAfterGcMedian": 12263208,
+          "readFileSyncBytesMedian": 268546554,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "2074f2e18f25309360651c2d1b7348ee249da84476faa1dd52118c79f1cc6778"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 265472,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 604320,
+              "wallMsMedian": 259.013,
+              "cpuMsMedian": 273.361,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 604416,
+              "wallMsMedian": 256.141,
+              "cpuMsMedian": 271.881,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 604480,
+              "wallMsMedian": 256.39,
+              "cpuMsMedian": 272.524,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 604128,
+              "wallMsMedian": 258.003,
+              "cpuMsMedian": 276.559,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 604400,
+              "wallMsMedian": 255.771,
+              "cpuMsMedian": 271.953,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 256.025,
+          "cpuMsMedian": 272.255,
+          "maxRssKbMedian": 604240,
+          "maxRssKbMin": 604112,
+          "heapUsedAfterGcMedian": 12263192,
+          "readFileSyncBytesMedian": 268546554,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "2074f2e18f25309360651c2d1b7348ee249da84476faa1dd52118c79f1cc6778"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 265472,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 604544,
+              "wallMsMedian": 256.289,
+              "cpuMsMedian": 272.369,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 604112,
+              "wallMsMedian": 257.944,
+              "cpuMsMedian": 274.206,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 604240,
+              "wallMsMedian": 256.025,
+              "cpuMsMedian": 272.255,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 604240,
+              "wallMsMedian": 252.609,
+              "cpuMsMedian": 268.889,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 604224,
+              "wallMsMedian": 254.009,
+              "cpuMsMedian": 269.519,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": -0.142,
+          "cpuMsPercent": -0.099,
+          "maxRssPercent": -0.026,
+          "readFileSyncBytesPercent": 0
+        }
+      },
+      "single-128m-archive": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 317.798,
+          "cpuMsMedian": 344.816,
+          "maxRssKbMedian": 480064,
+          "maxRssKbMin": 479968,
+          "heapUsedAfterGcMedian": 12269064,
+          "readFileSyncBytesMedian": 268731380,
+          "readFileSyncCallsMedian": 2,
+          "reportHashes": [
+            "aa873cd1c60c561f85c952c62f4616e11fe42396bc1c1a3dda761dabd7e57a39"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 131840,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 480368,
+              "wallMsMedian": 346.772,
+              "cpuMsMedian": 351.302,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 1,
+              "maxRssKb": 479968,
+              "wallMsMedian": 315.079,
+              "cpuMsMedian": 342.537,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 2,
+              "maxRssKb": 480016,
+              "wallMsMedian": 317.798,
+              "cpuMsMedian": 344.816,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 3,
+              "maxRssKb": 480160,
+              "wallMsMedian": 317.683,
+              "cpuMsMedian": 345.26,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 4,
+              "maxRssKb": 480064,
+              "wallMsMedian": 317.839,
+              "cpuMsMedian": 344.768,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 316.413,
+          "cpuMsMedian": 343.524,
+          "maxRssKbMedian": 480048,
+          "maxRssKbMin": 479968,
+          "heapUsedAfterGcMedian": 12269064,
+          "readFileSyncBytesMedian": 268731380,
+          "readFileSyncCallsMedian": 2,
+          "reportHashes": [
+            "aa873cd1c60c561f85c952c62f4616e11fe42396bc1c1a3dda761dabd7e57a39"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 131840,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 480032,
+              "wallMsMedian": 314.902,
+              "cpuMsMedian": 342.411,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 1,
+              "maxRssKb": 479968,
+              "wallMsMedian": 317.915,
+              "cpuMsMedian": 345.158,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 2,
+              "maxRssKb": 480096,
+              "wallMsMedian": 316.413,
+              "cpuMsMedian": 343.524,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 3,
+              "maxRssKb": 480048,
+              "wallMsMedian": 315.325,
+              "cpuMsMedian": 342.559,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 4,
+              "maxRssKb": 480128,
+              "wallMsMedian": 319.399,
+              "cpuMsMedian": 346.999,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": -0.436,
+          "cpuMsPercent": -0.375,
+          "maxRssPercent": -0.003,
+          "readFileSyncBytesPercent": 0
+        }
+      },
+      "single-256m-archive": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 595.954,
+          "cpuMsMedian": 627.985,
+          "maxRssKbMedian": 898544,
+          "maxRssKbMin": 898384,
+          "heapUsedAfterGcMedian": 12272192,
+          "readFileSyncBytesMedian": 537162740,
+          "readFileSyncCallsMedian": 2,
+          "reportHashes": [
+            "5230d3f8365f54fd02d73fcef9d5d671db7410dfbb4acd33c4e16724a1e90115"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 263424,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 898688,
+              "wallMsMedian": 661.012,
+              "cpuMsMedian": 653.141,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 1,
+              "maxRssKb": 898512,
+              "wallMsMedian": 594.332,
+              "cpuMsMedian": 625.46,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 2,
+              "maxRssKb": 898544,
+              "wallMsMedian": 592.317,
+              "cpuMsMedian": 624.036,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 3,
+              "maxRssKb": 898384,
+              "wallMsMedian": 603.533,
+              "cpuMsMedian": 636.568,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 4,
+              "maxRssKb": 898560,
+              "wallMsMedian": 595.954,
+              "cpuMsMedian": 627.985,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 597.508,
+          "cpuMsMedian": 626.185,
+          "maxRssKbMedian": 898704,
+          "maxRssKbMin": 898528,
+          "heapUsedAfterGcMedian": 12272120,
+          "readFileSyncBytesMedian": 537162740,
+          "readFileSyncCallsMedian": 2,
+          "reportHashes": [
+            "5230d3f8365f54fd02d73fcef9d5d671db7410dfbb4acd33c4e16724a1e90115"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 263424,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 899680,
+              "wallMsMedian": 598.033,
+              "cpuMsMedian": 626.185,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 1,
+              "maxRssKb": 898528,
+              "wallMsMedian": 594.528,
+              "cpuMsMedian": 624.786,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 2,
+              "maxRssKb": 898704,
+              "wallMsMedian": 601.532,
+              "cpuMsMedian": 632.765,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 3,
+              "maxRssKb": 898576,
+              "wallMsMedian": 593.379,
+              "cpuMsMedian": 625.158,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 4,
+              "maxRssKb": 898720,
+              "wallMsMedian": 597.508,
+              "cpuMsMedian": 627.864,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": 0.261,
+          "cpuMsPercent": -0.287,
+          "maxRssPercent": 0.018,
+          "readFileSyncBytesPercent": 0
+        }
+      },
+      "multi-256m": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 588.077,
+          "cpuMsMedian": 660.219,
+          "maxRssKbMedian": 428352,
+          "maxRssKbMin": 427952,
+          "heapUsedAfterGcMedian": 11071240,
+          "readFileSyncBytesMedian": 537715920,
+          "readFileSyncCallsMedian": 8,
+          "reportHashes": [
+            "7bfa64d2b427f176c0017cb1db09d355e27484b48ae7ed1329d064b4bf650570"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.cycles-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.experiments-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 430016,
+              "wallMsMedian": 630.663,
+              "cpuMsMedian": 668.23,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 1,
+              "maxRssKb": 427952,
+              "wallMsMedian": 587.235,
+              "cpuMsMedian": 658.779,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 2,
+              "maxRssKb": 428064,
+              "wallMsMedian": 588.077,
+              "cpuMsMedian": 658.636,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 3,
+              "maxRssKb": 428480,
+              "wallMsMedian": 588.347,
+              "cpuMsMedian": 660.219,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 4,
+              "maxRssKb": 428352,
+              "wallMsMedian": 586.835,
+              "cpuMsMedian": 660.397,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 588.58,
+          "cpuMsMedian": 662.737,
+          "maxRssKbMedian": 429104,
+          "maxRssKbMin": 428032,
+          "heapUsedAfterGcMedian": 11071240,
+          "readFileSyncBytesMedian": 537715920,
+          "readFileSyncCallsMedian": 8,
+          "reportHashes": [
+            "7bfa64d2b427f176c0017cb1db09d355e27484b48ae7ed1329d064b4bf650570"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.cycles-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.experiments-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 430016,
+              "wallMsMedian": 583.037,
+              "cpuMsMedian": 657.507,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 1,
+              "maxRssKb": 428272,
+              "wallMsMedian": 585.905,
+              "cpuMsMedian": 658.222,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 2,
+              "maxRssKb": 429104,
+              "wallMsMedian": 589.466,
+              "cpuMsMedian": 662.737,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 3,
+              "maxRssKb": 428032,
+              "wallMsMedian": 588.58,
+              "cpuMsMedian": 663.763,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 4,
+              "maxRssKb": 430272,
+              "wallMsMedian": 590.271,
+              "cpuMsMedian": 663.052,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": 0.086,
+          "cpuMsPercent": 0.381,
+          "maxRssPercent": 0.176,
+          "readFileSyncBytesPercent": 0
+        }
+      },
+      "realistic-multi": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 164.997,
+          "cpuMsMedian": 197.99,
+          "maxRssKbMedian": 156352,
+          "maxRssKbMin": 156048,
+          "heapUsedAfterGcMedian": 12276840,
+          "readFileSyncBytesMedian": 119912268,
+          "readFileSyncCallsMedian": 14,
+          "reportHashes": [
+            "5be3e6fb616fb82b4a3cd2ab1cc47acee676f18aa77015f8f913fda9d465f66b"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.candidates-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.cycles-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.diagnoses-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.gaps-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.proposals-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 156048,
+              "wallMsMedian": 179.516,
+              "cpuMsMedian": 199.488,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 1,
+              "maxRssKb": 156352,
+              "wallMsMedian": 164.35,
+              "cpuMsMedian": 197.99,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 2,
+              "maxRssKb": 156176,
+              "wallMsMedian": 165.009,
+              "cpuMsMedian": 197.584,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 3,
+              "maxRssKb": 156496,
+              "wallMsMedian": 164.145,
+              "cpuMsMedian": 196.489,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 4,
+              "maxRssKb": 156688,
+              "wallMsMedian": 164.997,
+              "cpuMsMedian": 198.249,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 163.887,
+          "cpuMsMedian": 196.826,
+          "maxRssKbMedian": 156608,
+          "maxRssKbMin": 156080,
+          "heapUsedAfterGcMedian": 12276808,
+          "readFileSyncBytesMedian": 119912268,
+          "readFileSyncCallsMedian": 14,
+          "reportHashes": [
+            "5be3e6fb616fb82b4a3cd2ab1cc47acee676f18aa77015f8f913fda9d465f66b"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.candidates-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.cycles-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.diagnoses-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.gaps-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.proposals-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 156608,
+              "wallMsMedian": 164.621,
+              "cpuMsMedian": 196.759,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 1,
+              "maxRssKb": 156608,
+              "wallMsMedian": 165.459,
+              "cpuMsMedian": 203.936,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 2,
+              "maxRssKb": 156464,
+              "wallMsMedian": 163.653,
+              "cpuMsMedian": 196.886,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 3,
+              "maxRssKb": 156080,
+              "wallMsMedian": 163.887,
+              "cpuMsMedian": 196.826,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 4,
+              "maxRssKb": 156624,
+              "wallMsMedian": 162.998,
+              "cpuMsMedian": 195.386,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": -0.673,
+          "cpuMsPercent": -0.588,
+          "maxRssPercent": 0.164,
+          "readFileSyncBytesPercent": 0
+        }
+      }
+    },
+    "A/B": {
+      "small": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 35.956,
+          "cpuMsMedian": 43.425,
+          "maxRssKbMedian": 68656,
+          "maxRssKbMin": 68512,
+          "heapUsedAfterGcMedian": 12284792,
+          "readFileSyncBytesMedian": 81652,
+          "readFileSyncCallsMedian": 4,
+          "reportHashes": [
+            "a946dc23fbe26a86dd25867188b4f332a3e4c1b4bfefc43799157dcd79df6233"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.diagnostics.jsonl",
+              "lines": 5,
+              "invalid": 2,
+              "truncatedTail": true
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 22,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 48,
+              "invalid": 2,
+              "truncatedTail": true
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 68656,
+              "wallMsMedian": 36.866,
+              "cpuMsMedian": 44.162,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 1,
+              "maxRssKb": 68720,
+              "wallMsMedian": 35.316,
+              "cpuMsMedian": 42.735,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 2,
+              "maxRssKb": 68656,
+              "wallMsMedian": 35.921,
+              "cpuMsMedian": 43.279,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 3,
+              "maxRssKb": 68560,
+              "wallMsMedian": 35.956,
+              "cpuMsMedian": 43.425,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 4,
+              "maxRssKb": 68512,
+              "wallMsMedian": 36.243,
+              "cpuMsMedian": 43.735,
+              "readFileSyncBytes": 81652,
+              "readFileSyncCalls": 4
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 36.336,
+          "cpuMsMedian": 43.729,
+          "maxRssKbMedian": 70768,
+          "maxRssKbMin": 70544,
+          "heapUsedAfterGcMedian": 12313088,
+          "readFileSyncBytesMedian": 19907,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "a946dc23fbe26a86dd25867188b4f332a3e4c1b4bfefc43799157dcd79df6233"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.diagnostics.jsonl",
+              "lines": 5,
+              "invalid": 2,
+              "truncatedTail": true
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 22,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 48,
+              "invalid": 2,
+              "truncatedTail": true
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 70768,
+              "wallMsMedian": 36.336,
+              "cpuMsMedian": 43.729,
+              "readFileSyncBytes": 19907,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 71264,
+              "wallMsMedian": 36.366,
+              "cpuMsMedian": 43.907,
+              "readFileSyncBytes": 19907,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 70896,
+              "wallMsMedian": 36.443,
+              "cpuMsMedian": 43.919,
+              "readFileSyncBytes": 19907,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 70768,
+              "wallMsMedian": 36.078,
+              "cpuMsMedian": 43.608,
+              "readFileSyncBytes": 19907,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 70544,
+              "wallMsMedian": 36.166,
+              "cpuMsMedian": 43.639,
+              "readFileSyncBytes": 19907,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": 1.057,
+          "cpuMsPercent": 0.7,
+          "maxRssPercent": 3.076,
+          "readFileSyncBytesPercent": -75.62
+        },
+        "bytes": {
+          "fixture": 61745,
+          "fixtureFiles": 3,
+          "baselineReadFileSync": 81652,
+          "candidateReadFileSync": 19907,
+          "baselineReadFileSyncCalls": 4,
+          "candidateReadFileSyncCalls": 1,
+          "integrityReadBytes": 19907
+        }
+      },
+      "single-32m": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 65.309,
+          "cpuMsMedian": 81.721,
+          "maxRssKbMedian": 145728,
+          "maxRssKbMin": 145360,
+          "heapUsedAfterGcMedian": 12261576,
+          "readFileSyncBytesMedian": 33601690,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "356b5d1efa3a9851793e498d061f8c8c607110158b6982f1524ab9a109b6602f"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 33280,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 145728,
+              "wallMsMedian": 65.581,
+              "cpuMsMedian": 82.091,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 145648,
+              "wallMsMedian": 65.179,
+              "cpuMsMedian": 81.721,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 145360,
+              "wallMsMedian": 65.309,
+              "cpuMsMedian": 80.123,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 145792,
+              "wallMsMedian": 64.977,
+              "cpuMsMedian": 81.615,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 145728,
+              "wallMsMedian": 65.564,
+              "cpuMsMedian": 82.139,
+              "readFileSyncBytes": 33601690,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 66.78,
+          "cpuMsMedian": 82.29,
+          "maxRssKbMedian": 82416,
+          "maxRssKbMin": 82208,
+          "heapUsedAfterGcMedian": 12336352,
+          "readFileSyncBytesMedian": 0,
+          "readFileSyncCallsMedian": 0,
+          "reportHashes": [
+            "356b5d1efa3a9851793e498d061f8c8c607110158b6982f1524ab9a109b6602f"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 33280,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 82208,
+              "wallMsMedian": 66.184,
+              "cpuMsMedian": 82.29,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 1,
+              "maxRssKb": 82592,
+              "wallMsMedian": 66.834,
+              "cpuMsMedian": 82.8,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 2,
+              "maxRssKb": 82416,
+              "wallMsMedian": 66.467,
+              "cpuMsMedian": 82.285,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 3,
+              "maxRssKb": 82400,
+              "wallMsMedian": 66.78,
+              "cpuMsMedian": 82.277,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 4,
+              "maxRssKb": 82528,
+              "wallMsMedian": 67.059,
+              "cpuMsMedian": 83.297,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": 2.252,
+          "cpuMsPercent": 0.696,
+          "maxRssPercent": -43.445,
+          "readFileSyncBytesPercent": -100
+        },
+        "bytes": {
+          "fixture": 33601690,
+          "fixtureFiles": 1,
+          "baselineReadFileSync": 33601690,
+          "candidateReadFileSync": 0,
+          "baselineReadFileSyncCalls": 1,
+          "candidateReadFileSyncCalls": 0,
+          "integrityReadBytes": 0
+        }
+      },
+      "single-128m": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 147.126,
+          "cpuMsMedian": 162.075,
+          "maxRssKbMedian": 342144,
+          "maxRssKbMin": 341888,
+          "heapUsedAfterGcMedian": 12263256,
+          "readFileSyncBytesMedian": 134347258,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "dd1cc5f33ae4e2d12aefbc0d452b9b394846ac8d514b5fdb56efb83adae451b7"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 132864,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 342176,
+              "wallMsMedian": 147.126,
+              "cpuMsMedian": 163.231,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 341984,
+              "wallMsMedian": 147.694,
+              "cpuMsMedian": 162.075,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 341888,
+              "wallMsMedian": 148.08,
+              "cpuMsMedian": 162.399,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 342192,
+              "wallMsMedian": 144.868,
+              "cpuMsMedian": 160.967,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 342144,
+              "wallMsMedian": 145.323,
+              "cpuMsMedian": 161.346,
+              "readFileSyncBytes": 134347258,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 150.477,
+          "cpuMsMedian": 167.552,
+          "maxRssKbMedian": 82448,
+          "maxRssKbMin": 82352,
+          "heapUsedAfterGcMedian": 12336168,
+          "readFileSyncBytesMedian": 0,
+          "readFileSyncCallsMedian": 0,
+          "reportHashes": [
+            "dd1cc5f33ae4e2d12aefbc0d452b9b394846ac8d514b5fdb56efb83adae451b7"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 132864,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 82544,
+              "wallMsMedian": 150.477,
+              "cpuMsMedian": 167.552,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 1,
+              "maxRssKb": 82544,
+              "wallMsMedian": 148.559,
+              "cpuMsMedian": 165.913,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 2,
+              "maxRssKb": 82400,
+              "wallMsMedian": 148.497,
+              "cpuMsMedian": 166.049,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 3,
+              "maxRssKb": 82448,
+              "wallMsMedian": 151.028,
+              "cpuMsMedian": 168.192,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 4,
+              "maxRssKb": 82352,
+              "wallMsMedian": 150.724,
+              "cpuMsMedian": 167.948,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": 2.278,
+          "cpuMsPercent": 3.379,
+          "maxRssPercent": -75.903,
+          "readFileSyncBytesPercent": -100
+        },
+        "bytes": {
+          "fixture": 134347258,
+          "fixtureFiles": 1,
+          "baselineReadFileSync": 134347258,
+          "candidateReadFileSync": 0,
+          "baselineReadFileSyncCalls": 1,
+          "candidateReadFileSyncCalls": 0,
+          "integrityReadBytes": 0
+        }
+      },
+      "single-256m": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 256.39,
+          "cpuMsMedian": 272.524,
+          "maxRssKbMedian": 604400,
+          "maxRssKbMin": 604128,
+          "heapUsedAfterGcMedian": 12263208,
+          "readFileSyncBytesMedian": 268546554,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "2074f2e18f25309360651c2d1b7348ee249da84476faa1dd52118c79f1cc6778"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 265472,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 604320,
+              "wallMsMedian": 259.013,
+              "cpuMsMedian": 273.361,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 604416,
+              "wallMsMedian": 256.141,
+              "cpuMsMedian": 271.881,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 604480,
+              "wallMsMedian": 256.39,
+              "cpuMsMedian": 272.524,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 604128,
+              "wallMsMedian": 258.003,
+              "cpuMsMedian": 276.559,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 604400,
+              "wallMsMedian": 255.771,
+              "cpuMsMedian": 271.953,
+              "readFileSyncBytes": 268546554,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 257.849,
+          "cpuMsMedian": 275.643,
+          "maxRssKbMedian": 82544,
+          "maxRssKbMin": 82416,
+          "heapUsedAfterGcMedian": 12340128,
+          "readFileSyncBytesMedian": 0,
+          "readFileSyncCallsMedian": 0,
+          "reportHashes": [
+            "2074f2e18f25309360651c2d1b7348ee249da84476faa1dd52118c79f1cc6778"
+          ],
+          "archivesLevels": [
+            "ok"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations.jsonl",
+              "lines": 265472,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 82544,
+              "wallMsMedian": 258.295,
+              "cpuMsMedian": 276.094,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 1,
+              "maxRssKb": 82496,
+              "wallMsMedian": 257.599,
+              "cpuMsMedian": 275.431,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 2,
+              "maxRssKb": 82576,
+              "wallMsMedian": 257.849,
+              "cpuMsMedian": 275.492,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 3,
+              "maxRssKb": 82416,
+              "wallMsMedian": 262.061,
+              "cpuMsMedian": 280.014,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            },
+            {
+              "round": 4,
+              "maxRssKb": 82608,
+              "wallMsMedian": 257.73,
+              "cpuMsMedian": 275.643,
+              "readFileSyncBytes": 0,
+              "readFileSyncCalls": 0
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": 0.569,
+          "cpuMsPercent": 1.144,
+          "maxRssPercent": -86.343,
+          "readFileSyncBytesPercent": -100
+        },
+        "bytes": {
+          "fixture": 268546554,
+          "fixtureFiles": 1,
+          "baselineReadFileSync": 268546554,
+          "candidateReadFileSync": 0,
+          "baselineReadFileSyncCalls": 1,
+          "candidateReadFileSyncCalls": 0,
+          "integrityReadBytes": 0
+        }
+      },
+      "single-128m-archive": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 317.798,
+          "cpuMsMedian": 344.816,
+          "maxRssKbMedian": 480064,
+          "maxRssKbMin": 479968,
+          "heapUsedAfterGcMedian": 12269064,
+          "readFileSyncBytesMedian": 268731380,
+          "readFileSyncCallsMedian": 2,
+          "reportHashes": [
+            "aa873cd1c60c561f85c952c62f4616e11fe42396bc1c1a3dda761dabd7e57a39"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 131840,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 480368,
+              "wallMsMedian": 346.772,
+              "cpuMsMedian": 351.302,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 1,
+              "maxRssKb": 479968,
+              "wallMsMedian": 315.079,
+              "cpuMsMedian": 342.537,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 2,
+              "maxRssKb": 480016,
+              "wallMsMedian": 317.798,
+              "cpuMsMedian": 344.816,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 3,
+              "maxRssKb": 480160,
+              "wallMsMedian": 317.683,
+              "cpuMsMedian": 345.26,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 4,
+              "maxRssKb": 480064,
+              "wallMsMedian": 317.839,
+              "cpuMsMedian": 344.768,
+              "readFileSyncBytes": 268731380,
+              "readFileSyncCalls": 2
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 314.562,
+          "cpuMsMedian": 343.931,
+          "maxRssKbMedian": 351552,
+          "maxRssKbMin": 351296,
+          "heapUsedAfterGcMedian": 12326984,
+          "readFileSyncBytesMedian": 134365690,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "aa873cd1c60c561f85c952c62f4616e11fe42396bc1c1a3dda761dabd7e57a39"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 131840,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 351552,
+              "wallMsMedian": 314.562,
+              "cpuMsMedian": 343.931,
+              "readFileSyncBytes": 134365690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 351504,
+              "wallMsMedian": 312.31,
+              "cpuMsMedian": 341.65,
+              "readFileSyncBytes": 134365690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 351552,
+              "wallMsMedian": 316.198,
+              "cpuMsMedian": 345.69,
+              "readFileSyncBytes": 134365690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 351296,
+              "wallMsMedian": 313.146,
+              "cpuMsMedian": 343.079,
+              "readFileSyncBytes": 134365690,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 351584,
+              "wallMsMedian": 314.775,
+              "cpuMsMedian": 344.864,
+              "readFileSyncBytes": 134365690,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": -1.018,
+          "cpuMsPercent": -0.257,
+          "maxRssPercent": -26.77,
+          "readFileSyncBytesPercent": -50
+        },
+        "bytes": {
+          "fixture": 134365690,
+          "fixtureFiles": 1,
+          "baselineReadFileSync": 268731380,
+          "candidateReadFileSync": 134365690,
+          "baselineReadFileSyncCalls": 2,
+          "candidateReadFileSyncCalls": 1,
+          "integrityReadBytes": 134365690
+        }
+      },
+      "single-256m-archive": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 595.954,
+          "cpuMsMedian": 627.985,
+          "maxRssKbMedian": 898544,
+          "maxRssKbMin": 898384,
+          "heapUsedAfterGcMedian": 12272192,
+          "readFileSyncBytesMedian": 537162740,
+          "readFileSyncCallsMedian": 2,
+          "reportHashes": [
+            "5230d3f8365f54fd02d73fcef9d5d671db7410dfbb4acd33c4e16724a1e90115"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 263424,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 898688,
+              "wallMsMedian": 661.012,
+              "cpuMsMedian": 653.141,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 1,
+              "maxRssKb": 898512,
+              "wallMsMedian": 594.332,
+              "cpuMsMedian": 625.46,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 2,
+              "maxRssKb": 898544,
+              "wallMsMedian": 592.317,
+              "cpuMsMedian": 624.036,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 3,
+              "maxRssKb": 898384,
+              "wallMsMedian": 603.533,
+              "cpuMsMedian": 636.568,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            },
+            {
+              "round": 4,
+              "maxRssKb": 898560,
+              "wallMsMedian": 595.954,
+              "cpuMsMedian": 627.985,
+              "readFileSyncBytes": 537162740,
+              "readFileSyncCalls": 2
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 588.618,
+          "cpuMsMedian": 622.244,
+          "maxRssKbMedian": 638048,
+          "maxRssKbMin": 637968,
+          "heapUsedAfterGcMedian": 12334664,
+          "readFileSyncBytesMedian": 268581370,
+          "readFileSyncCallsMedian": 1,
+          "reportHashes": [
+            "5230d3f8365f54fd02d73fcef9d5d671db7410dfbb4acd33c4e16724a1e90115"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 263424,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 638016,
+              "wallMsMedian": 587.417,
+              "cpuMsMedian": 622.244,
+              "readFileSyncBytes": 268581370,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 1,
+              "maxRssKb": 637968,
+              "wallMsMedian": 587.143,
+              "cpuMsMedian": 621.824,
+              "readFileSyncBytes": 268581370,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 2,
+              "maxRssKb": 638048,
+              "wallMsMedian": 588.805,
+              "cpuMsMedian": 621.588,
+              "readFileSyncBytes": 268581370,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 3,
+              "maxRssKb": 638240,
+              "wallMsMedian": 588.618,
+              "cpuMsMedian": 622.441,
+              "readFileSyncBytes": 268581370,
+              "readFileSyncCalls": 1
+            },
+            {
+              "round": 4,
+              "maxRssKb": 638080,
+              "wallMsMedian": 590.881,
+              "cpuMsMedian": 624.714,
+              "readFileSyncBytes": 268581370,
+              "readFileSyncCalls": 1
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": -1.231,
+          "cpuMsPercent": -0.914,
+          "maxRssPercent": -28.991,
+          "readFileSyncBytesPercent": -50
+        },
+        "bytes": {
+          "fixture": 268581370,
+          "fixtureFiles": 1,
+          "baselineReadFileSync": 537162740,
+          "candidateReadFileSync": 268581370,
+          "baselineReadFileSyncCalls": 2,
+          "candidateReadFileSyncCalls": 1,
+          "integrityReadBytes": 268581370
+        }
+      },
+      "multi-256m": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 588.077,
+          "cpuMsMedian": 660.219,
+          "maxRssKbMedian": 428352,
+          "maxRssKbMin": 427952,
+          "heapUsedAfterGcMedian": 11071240,
+          "readFileSyncBytesMedian": 537715920,
+          "readFileSyncCallsMedian": 8,
+          "reportHashes": [
+            "7bfa64d2b427f176c0017cb1db09d355e27484b48ae7ed1329d064b4bf650570"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.cycles-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.experiments-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 430016,
+              "wallMsMedian": 630.663,
+              "cpuMsMedian": 668.23,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 1,
+              "maxRssKb": 427952,
+              "wallMsMedian": 587.235,
+              "cpuMsMedian": 658.779,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 2,
+              "maxRssKb": 428064,
+              "wallMsMedian": 588.077,
+              "cpuMsMedian": 658.636,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 3,
+              "maxRssKb": 428480,
+              "wallMsMedian": 588.347,
+              "cpuMsMedian": 660.219,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            },
+            {
+              "round": 4,
+              "maxRssKb": 428352,
+              "wallMsMedian": 586.835,
+              "cpuMsMedian": 660.397,
+              "readFileSyncBytes": 537715920,
+              "readFileSyncCalls": 8
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 596.541,
+          "cpuMsMedian": 663,
+          "maxRssKbMedian": 369104,
+          "maxRssKbMin": 368832,
+          "heapUsedAfterGcMedian": 12362832,
+          "readFileSyncBytesMedian": 268857960,
+          "readFileSyncCallsMedian": 4,
+          "reportHashes": [
+            "7bfa64d2b427f176c0017cb1db09d355e27484b48ae7ed1329d064b4bf650570"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.cycles-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.experiments-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 66560,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 368832,
+              "wallMsMedian": 596.199,
+              "cpuMsMedian": 662.204,
+              "readFileSyncBytes": 268857960,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 1,
+              "maxRssKb": 369008,
+              "wallMsMedian": 594.606,
+              "cpuMsMedian": 661.886,
+              "readFileSyncBytes": 268857960,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 2,
+              "maxRssKb": 369360,
+              "wallMsMedian": 596.81,
+              "cpuMsMedian": 663,
+              "readFileSyncBytes": 268857960,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 3,
+              "maxRssKb": 369216,
+              "wallMsMedian": 596.541,
+              "cpuMsMedian": 663.953,
+              "readFileSyncBytes": 268857960,
+              "readFileSyncCalls": 4
+            },
+            {
+              "round": 4,
+              "maxRssKb": 369104,
+              "wallMsMedian": 597.596,
+              "cpuMsMedian": 665.357,
+              "readFileSyncBytes": 268857960,
+              "readFileSyncCalls": 4
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": 1.439,
+          "cpuMsPercent": 0.421,
+          "maxRssPercent": -13.832,
+          "readFileSyncBytesPercent": -50
+        },
+        "bytes": {
+          "fixture": 268857960,
+          "fixtureFiles": 4,
+          "baselineReadFileSync": 537715920,
+          "candidateReadFileSync": 268857960,
+          "baselineReadFileSyncCalls": 8,
+          "candidateReadFileSyncCalls": 4,
+          "integrityReadBytes": 268857960
+        }
+      },
+      "realistic-multi": {
+        "a": {
+          "childRuns": 5,
+          "wallMsMedian": 164.997,
+          "cpuMsMedian": 197.99,
+          "maxRssKbMedian": 156352,
+          "maxRssKbMin": 156048,
+          "heapUsedAfterGcMedian": 12276840,
+          "readFileSyncBytesMedian": 119912268,
+          "readFileSyncCallsMedian": 14,
+          "reportHashes": [
+            "5be3e6fb616fb82b4a3cd2ab1cc47acee676f18aa77015f8f913fda9d465f66b"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.candidates-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.cycles-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.diagnoses-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.gaps-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.proposals-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 156048,
+              "wallMsMedian": 179.516,
+              "cpuMsMedian": 199.488,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 1,
+              "maxRssKb": 156352,
+              "wallMsMedian": 164.35,
+              "cpuMsMedian": 197.99,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 2,
+              "maxRssKb": 156176,
+              "wallMsMedian": 165.009,
+              "cpuMsMedian": 197.584,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 3,
+              "maxRssKb": 156496,
+              "wallMsMedian": 164.145,
+              "cpuMsMedian": 196.489,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            },
+            {
+              "round": 4,
+              "maxRssKb": 156688,
+              "wallMsMedian": 164.997,
+              "cpuMsMedian": 198.249,
+              "readFileSyncBytes": 119912268,
+              "readFileSyncCalls": 14
+            }
+          ]
+        },
+        "b": {
+          "childRuns": 5,
+          "wallMsMedian": 168.435,
+          "cpuMsMedian": 212.001,
+          "maxRssKbMedian": 156720,
+          "maxRssKbMin": 156640,
+          "heapUsedAfterGcMedian": 12354216,
+          "readFileSyncBytesMedian": 59956134,
+          "readFileSyncCallsMedian": 7,
+          "reportHashes": [
+            "5be3e6fb616fb82b4a3cd2ab1cc47acee676f18aa77015f8f913fda9d465f66b"
+          ],
+          "archivesLevels": [
+            "degraded"
+          ],
+          "jsonl": [
+            {
+              "name": "state.json.candidates-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.cycles-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.diagnoses-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.gaps-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.knowledge-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.observations-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            },
+            {
+              "name": "state.json.proposals-archive.jsonl",
+              "lines": 8448,
+              "invalid": 0,
+              "truncatedTail": false
+            }
+          ],
+          "children": [
+            {
+              "round": 0,
+              "maxRssKb": 156640,
+              "wallMsMedian": 167.873,
+              "cpuMsMedian": 210.022,
+              "readFileSyncBytes": 59956134,
+              "readFileSyncCalls": 7
+            },
+            {
+              "round": 1,
+              "maxRssKb": 156720,
+              "wallMsMedian": 168.095,
+              "cpuMsMedian": 210.61,
+              "readFileSyncBytes": 59956134,
+              "readFileSyncCalls": 7
+            },
+            {
+              "round": 2,
+              "maxRssKb": 156720,
+              "wallMsMedian": 168.435,
+              "cpuMsMedian": 212.001,
+              "readFileSyncBytes": 59956134,
+              "readFileSyncCalls": 7
+            },
+            {
+              "round": 3,
+              "maxRssKb": 157008,
+              "wallMsMedian": 168.835,
+              "cpuMsMedian": 223.233,
+              "readFileSyncBytes": 59956134,
+              "readFileSyncCalls": 7
+            },
+            {
+              "round": 4,
+              "maxRssKb": 156752,
+              "wallMsMedian": 169.198,
+              "cpuMsMedian": 213.959,
+              "readFileSyncBytes": 59956134,
+              "readFileSyncCalls": 7
+            }
+          ]
+        },
+        "delta": {
+          "wallMsPercent": 2.084,
+          "cpuMsPercent": 7.077,
+          "maxRssPercent": 0.235,
+          "readFileSyncBytesPercent": -50
+        },
+        "bytes": {
+          "fixture": 59956134,
+          "fixtureFiles": 7,
+          "baselineReadFileSync": 119912268,
+          "candidateReadFileSync": 59956134,
+          "baselineReadFileSyncCalls": 14,
+          "candidateReadFileSyncCalls": 7,
+          "integrityReadBytes": 59956134
+        }
+      }
+    }
+  },
+  "allocation": {
+    "A/A": {
+      "small": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 1107296
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 1034155
+        }
+      },
+      "single-32m": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 37812933
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 37481987
+        }
+      },
+      "single-128m": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 151587464
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 150821696
+        }
+      },
+      "single-256m": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 299593920
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 301653621
+        }
+      },
+      "single-128m-archive": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 301095936
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 302744605
+        }
+      },
+      "single-256m-archive": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 599469320
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 602310285
+        }
+      },
+      "multi-256m": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 604288843
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 605570384
+        }
+      },
+      "realistic-multi": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 132864280
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 134677059
+        }
+      }
+    },
+    "A/B": {
+      "small": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 1107296
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 997504
+        }
+      },
+      "single-32m": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 37812933
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 75286613
+        }
+      },
+      "single-128m": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 151587464
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 300290931
+        }
+      },
+      "single-256m": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 299593920
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 596590939
+        }
+      },
+      "single-128m-archive": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 301095936
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 453190339
+        }
+      },
+      "single-256m-archive": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 599469320
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 899865523
+        }
+      },
+      "multi-256m": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 604288843
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 907899768
+        }
+      },
+      "realistic-multi": {
+        "a": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 132864280
+        },
+        "b": {
+          "interval": 32768,
+          "calls": 3,
+          "sampledBytesPerCall": 201948779
+        }
+      }
+    }
+  },
+  "allocationControl": {
+    "small": {
+      "file": "/tmp/diag-archive-fixture/small/home/storages/evolution/dockyard/state.json.diagnostics.jsonl",
+      "bytes": 2006,
+      "samplingInterval": 32768,
+      "wholeFileReadSampledBytes": 0,
+      "chunkDecodedSampledBytes": 16864
+    },
+    "single-32m": {
+      "file": "/tmp/diag-archive-fixture/single-32m/home/storages/evolution/dockyard/state.json.observations.jsonl",
+      "bytes": 33601690,
+      "samplingInterval": 32768,
+      "wholeFileReadSampledBytes": 0,
+      "chunkDecodedSampledBytes": 35405352
+    },
+    "single-128m": {
+      "file": "/tmp/diag-archive-fixture/single-128m/home/storages/evolution/dockyard/state.json.observations.jsonl",
+      "bytes": 134347258,
+      "samplingInterval": 32768,
+      "wholeFileReadSampledBytes": 0,
+      "chunkDecodedSampledBytes": 139786784
+    },
+    "single-256m": {
+      "file": "/tmp/diag-archive-fixture/single-256m/home/storages/evolution/dockyard/state.json.observations.jsonl",
+      "bytes": 268546554,
+      "samplingInterval": 32768,
+      "wholeFileReadSampledBytes": 0,
+      "chunkDecodedSampledBytes": 271044632
+    },
+    "single-128m-archive": {
+      "file": "/tmp/diag-archive-fixture/single-128m-archive/home/storages/evolution/dockyard/state.json.knowledge-archive.jsonl",
+      "bytes": 134365690,
+      "samplingInterval": 32768,
+      "wholeFileReadSampledBytes": 0,
+      "chunkDecodedSampledBytes": 134881648
+    },
+    "single-256m-archive": {
+      "file": "/tmp/diag-archive-fixture/single-256m-archive/home/storages/evolution/dockyard/state.json.observations-archive.jsonl",
+      "bytes": 268581370,
+      "samplingInterval": 32768,
+      "wholeFileReadSampledBytes": 0,
+      "chunkDecodedSampledBytes": 277469632
+    },
+    "multi-256m": {
+      "file": "/tmp/diag-archive-fixture/multi-256m/home/storages/evolution/dockyard/state.json.cycles-archive.jsonl",
+      "bytes": 67214490,
+      "samplingInterval": 32768,
+      "wholeFileReadSampledBytes": 0,
+      "chunkDecodedSampledBytes": 68087072
+    },
+    "realistic-multi": {
+      "file": "/tmp/diag-archive-fixture/realistic-multi/home/storages/evolution/dockyard/state.json.candidates-archive.jsonl",
+      "bytes": 8565162,
+      "samplingInterval": 32768,
+      "wholeFileReadSampledBytes": 0,
+      "chunkDecodedSampledBytes": 9346640
+    }
+  }
+}
