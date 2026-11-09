@@ -1,0 +1,2573 @@
+{
+  "mode": "compare",
+  "node": "v26.13.0",
+  "platform": "darwin/arm64",
+  "method": "one process; fresh copied fixture per sample; arm order rotates through every permutation before repeating; warmup excluded; open/seed/restart excluded; official storage",
+  "baseline": "b0a560280aa1946d654851247c84785be96f5dca",
+  "histories": [
+    20000
+  ],
+  "rounds": 3,
+  "burst": 16,
+  "warmup": 2,
+  "samples": [
+    {
+      "arm": "A1",
+      "history": 20000,
+      "core": true,
+      "round": 0,
+      "calls": 16,
+      "wallMedian": 96.89,
+      "cpuMedian": 134.896,
+      "wallMin": 88.253,
+      "wallMax": 102.539,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290182
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": 3546704,
+      "rssDeltaBytes": 35407024,
+      "candidates": 1,
+      "durable": {
+        "observations": 20018,
+        "autonomous": 18
+      }
+    },
+    {
+      "arm": "A2",
+      "history": 20000,
+      "core": true,
+      "round": 0,
+      "calls": 16,
+      "wallMedian": 96.42,
+      "cpuMedian": 134.749,
+      "wallMin": 92.166,
+      "wallMax": 103.954,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290182
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": 3299608,
+      "rssDeltaBytes": 8307792,
+      "candidates": 1,
+      "durable": {
+        "observations": 20018,
+        "autonomous": 18
+      }
+    },
+    {
+      "arm": "B",
+      "history": 20000,
+      "core": true,
+      "round": 0,
+      "calls": 16,
+      "wallMedian": 95.671,
+      "cpuMedian": 123.649,
+      "wallMin": 88.113,
+      "wallMax": 98.203,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290167
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": 3218224,
+      "rssDeltaBytes": 50823816,
+      "candidates": 1,
+      "durable": {
+        "observations": 20018,
+        "autonomous": 18
+      }
+    },
+    {
+      "arm": "A1",
+      "history": 20000,
+      "core": true,
+      "round": 1,
+      "calls": 16,
+      "wallMedian": 93.88,
+      "cpuMedian": 138.366,
+      "wallMin": 90.685,
+      "wallMax": 104.34,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290182
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": 2010632,
+      "rssDeltaBytes": 4866744,
+      "candidates": 1,
+      "durable": {
+        "observations": 20018,
+        "autonomous": 18
+      }
+    },
+    {
+      "arm": "B",
+      "history": 20000,
+      "core": true,
+      "round": 1,
+      "calls": 16,
+      "wallMedian": 93.953,
+      "cpuMedian": 130.862,
+      "wallMin": 90.485,
+      "wallMax": 99.205,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290167
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": 1944376,
+      "rssDeltaBytes": 262288,
+      "candidates": 1,
+      "durable": {
+        "observations": 20018,
+        "autonomous": 18
+      }
+    },
+    {
+      "arm": "A2",
+      "history": 20000,
+      "core": true,
+      "round": 1,
+      "calls": 16,
+      "wallMedian": 95.772,
+      "cpuMedian": 143.158,
+      "wallMin": 90.479,
+      "wallMax": 105.294,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290182
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": 1961056,
+      "rssDeltaBytes": 4391512,
+      "candidates": 1,
+      "durable": {
+        "observations": 20018,
+        "autonomous": 18
+      }
+    },
+    {
+      "arm": "B",
+      "history": 20000,
+      "core": true,
+      "round": 2,
+      "calls": 16,
+      "wallMedian": 92.589,
+      "cpuMedian": 104.782,
+      "wallMin": 87.801,
+      "wallMax": 97.243,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290167
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": -33640,
+      "rssDeltaBytes": -1195864,
+      "candidates": 1,
+      "durable": {
+        "observations": 20018,
+        "autonomous": 18
+      }
+    },
+    {
+      "arm": "A1",
+      "history": 20000,
+      "core": true,
+      "round": 2,
+      "calls": 16,
+      "wallMedian": 96.071,
+      "cpuMedian": 140.513,
+      "wallMin": 87.307,
+      "wallMax": 103.534,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290182
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": 1888,
+      "rssDeltaBytes": 2457792,
+      "candidates": 1,
+      "durable": {
+        "observations": 20018,
+        "autonomous": 18
+      }
+    },
+    {
+      "arm": "A2",
+      "history": 20000,
+      "core": true,
+      "round": 2,
+      "calls": 16,
+      "wallMedian": 96.112,
+      "cpuMedian": 140.144,
+      "wallMin": 92.076,
+      "wallMax": 100.185,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290182
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": 41816,
+      "rssDeltaBytes": -236850784,
+      "candidates": 1,
+      "durable": {
+        "observations": 20018,
+        "autonomous": 18
+      }
+    },
+    {
+      "arm": "A1",
+      "history": 20000,
+      "core": false,
+      "round": 0,
+      "calls": 1,
+      "wallMedian": 78.311,
+      "cpuMedian": 92.037,
+      "wallMin": 78.311,
+      "wallMax": 78.311,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280440
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": -51048,
+      "rssDeltaBytes": -1720416,
+      "candidates": null,
+      "durable": {
+        "observations": 20003,
+        "autonomous": 0
+      }
+    },
+    {
+      "arm": "A2",
+      "history": 20000,
+      "core": false,
+      "round": 0,
+      "calls": 1,
+      "wallMedian": 79.689,
+      "cpuMedian": 94.185,
+      "wallMin": 79.689,
+      "wallMax": 79.689,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280440
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": -54712,
+      "rssDeltaBytes": -1458248,
+      "candidates": null,
+      "durable": {
+        "observations": 20003,
+        "autonomous": 0
+      }
+    },
+    {
+      "arm": "B",
+      "history": 20000,
+      "core": false,
+      "round": 0,
+      "calls": 1,
+      "wallMedian": 77.272,
+      "cpuMedian": 67.877,
+      "wallMin": 77.272,
+      "wallMax": 77.272,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280425
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": -63920,
+      "rssDeltaBytes": -589800,
+      "candidates": null,
+      "durable": {
+        "observations": 20003,
+        "autonomous": 0
+      }
+    },
+    {
+      "arm": "A1",
+      "history": 20000,
+      "core": false,
+      "round": 1,
+      "calls": 1,
+      "wallMedian": 77.336,
+      "cpuMedian": 98.818,
+      "wallMin": 77.336,
+      "wallMax": 77.336,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280440
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": 24280,
+      "rssDeltaBytes": -23789784,
+      "candidates": null,
+      "durable": {
+        "observations": 20003,
+        "autonomous": 0
+      }
+    },
+    {
+      "arm": "B",
+      "history": 20000,
+      "core": false,
+      "round": 1,
+      "calls": 1,
+      "wallMedian": 79.144,
+      "cpuMedian": 70.087,
+      "wallMin": 79.144,
+      "wallMax": 79.144,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280425
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": -2016,
+      "rssDeltaBytes": -589800,
+      "candidates": null,
+      "durable": {
+        "observations": 20003,
+        "autonomous": 0
+      }
+    },
+    {
+      "arm": "A2",
+      "history": 20000,
+      "core": false,
+      "round": 1,
+      "calls": 1,
+      "wallMedian": 79.238,
+      "cpuMedian": 99.094,
+      "wallMin": 79.238,
+      "wallMax": 79.238,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280440
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": -1744,
+      "rssDeltaBytes": -1753160,
+      "candidates": null,
+      "durable": {
+        "observations": 20003,
+        "autonomous": 0
+      }
+    },
+    {
+      "arm": "B",
+      "history": 20000,
+      "core": false,
+      "round": 2,
+      "calls": 1,
+      "wallMedian": 76.225,
+      "cpuMedian": 73.448,
+      "wallMin": 76.225,
+      "wallMax": 76.225,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280425
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": -25168,
+      "rssDeltaBytes": 294936,
+      "candidates": null,
+      "durable": {
+        "observations": 20003,
+        "autonomous": 0
+      }
+    },
+    {
+      "arm": "A1",
+      "history": 20000,
+      "core": false,
+      "round": 2,
+      "calls": 1,
+      "wallMedian": 80.073,
+      "cpuMedian": 98.928,
+      "wallMin": 80.073,
+      "wallMax": 80.073,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280440
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": -13696,
+      "rssDeltaBytes": -1720416,
+      "candidates": null,
+      "durable": {
+        "observations": 20003,
+        "autonomous": 0
+      }
+    },
+    {
+      "arm": "A2",
+      "history": 20000,
+      "core": false,
+      "round": 2,
+      "calls": 1,
+      "wallMedian": 80.421,
+      "cpuMedian": 100.141,
+      "wallMin": 80.421,
+      "wallMax": 80.421,
+      "ioPerCall": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280440
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "heapDeltaBytes": -12256,
+      "rssDeltaBytes": -1720416,
+      "candidates": null,
+      "durable": {
+        "observations": 20003,
+        "autonomous": 0
+      }
+    }
+  ],
+  "summary": [
+    {
+      "history": 20000,
+      "kind": "chain",
+      "arm": "A1",
+      "samples": 3,
+      "calls": 16,
+      "wallMedian": 96.071,
+      "cpuMedian": 138.366,
+      "wallMin": 87.307,
+      "wallMax": 104.34,
+      "heapMedian": 2010632,
+      "io": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290182
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      }
+    },
+    {
+      "history": 20000,
+      "kind": "chain",
+      "arm": "A2",
+      "samples": 3,
+      "calls": 16,
+      "wallMedian": 96.112,
+      "cpuMedian": 140.144,
+      "wallMin": 90.479,
+      "wallMax": 105.294,
+      "heapMedian": 1961056,
+      "io": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290182
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      }
+    },
+    {
+      "history": 20000,
+      "kind": "chain",
+      "arm": "B",
+      "samples": 3,
+      "calls": 16,
+      "wallMedian": 93.953,
+      "cpuMedian": 123.649,
+      "wallMin": 87.801,
+      "wallMax": 99.205,
+      "heapMedian": 1944376,
+      "io": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9330628
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 24,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 38,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 290167
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      }
+    },
+    {
+      "history": 20000,
+      "kind": "port",
+      "arm": "A1",
+      "samples": 3,
+      "calls": 1,
+      "wallMedian": 78.311,
+      "cpuMedian": 98.818,
+      "wallMin": 77.336,
+      "wallMax": 80.073,
+      "heapMedian": -13696,
+      "io": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280440
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      }
+    },
+    {
+      "history": 20000,
+      "kind": "port",
+      "arm": "A2",
+      "samples": 3,
+      "calls": 1,
+      "wallMedian": 79.689,
+      "cpuMedian": 99.094,
+      "wallMin": 79.238,
+      "wallMax": 80.421,
+      "heapMedian": -12256,
+      "io": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280440
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      }
+    },
+    {
+      "history": 20000,
+      "kind": "port",
+      "arm": "B",
+      "samples": 3,
+      "calls": 1,
+      "wallMedian": 77.272,
+      "cpuMedian": 70.087,
+      "wallMin": 76.225,
+      "wallMax": 79.144,
+      "heapMedian": -25168,
+      "io": {
+        "readFileSync": {
+          "calls": 11,
+          "bytes": 9314518
+        },
+        "mkdirSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readdirSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 36,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "openSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 21,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 443
+        },
+        "statSync": {
+          "calls": 30,
+          "bytes": 0
+        },
+        "promises.readFile": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "promises.stat": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "copyFileSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "promises.mkdir": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "promises.writeFile": {
+          "calls": 1,
+          "bytes": 1771
+        },
+        "promises.rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "promises.open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "handle.writeFile": {
+          "calls": 2,
+          "bytes": 280425
+        },
+        "handle.sync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      }
+    }
+  ]
+}

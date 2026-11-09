@@ -12,10 +12,11 @@
 // not terminated after. A digest mismatch shows up as a rescan: the successor
 // replaces the shared digest table instead of keeping it.
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import test from "node:test";
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
 
@@ -26,6 +27,8 @@ function memory(filePath, cache = null) {
   return new EvolutionMemory({ stateStore: { filePath, load: async () => ({}), update: async () => {} },
     archiveReadCache: cache, clock: () => new Date(NOW), mutationAuthority: authority });
 }
+
+const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 /** One archive line whose JSON text carries a byte that is not valid UTF-8. */
 function invalidUtf8Line(id) {
@@ -54,6 +57,10 @@ test("the digest-only walk reproduces the scan digest for long, unterminated and
   assert.equal(before.total, 4);
   const scanned = predecessor.archiveReadCache.get("observations");
   assert.ok(scanned?.digests instanceof Map, "the scan must publish a digest table");
+  // The invalid block must keep the historical decoded-text digest, not the raw
+  // bytes: the digest-only walk proves the same identity the scan published.
+  assert.equal(scanned.digests.get(basename(archive)),
+    sha256(Buffer.from(fs.readFileSync(archive).toString("utf8"), "utf8")));
 
   // A successor gets a *copy* of the entry, but shares the digest table only
   // while it reproduces it. `historyScan` is the first read of this instance, so
@@ -64,4 +71,27 @@ test("the digest-only walk reproduces the scan digest for long, unterminated and
   assert.equal(successor.archiveReadCache.get("observations")?.digests, scanned.digests,
     "the digest-only walk must reproduce the scan digest instead of forcing a rescan");
   assert.deepEqual(successor.history("observations").map((row) => row.id), ["plain", "invalid", "long", "tail"]);
+});
+
+test("an all-valid UTF-8 archive hashes directly to the bytes the scan decoded", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "archive-digest-utf8-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const filePath = join(root, "state.json");
+  const archive = `${filePath}.observations-archive.jsonl`;
+  const text = [
+    JSON.stringify({ id: "bom", message: "\uFEFFleading byte-order mark" }),
+    JSON.stringify({ id: "cjk", message: "汉字与假名" }),
+    JSON.stringify({ id: "emoji", message: "🙂" }),
+  ].join("\n") + "\n";
+  fs.writeFileSync(archive, text);
+
+  const predecessor = memory(filePath);
+  predecessor.historyScan("observations", { window: 1 });
+  const scanned = predecessor.archiveReadCache.get("observations");
+  assert.equal(scanned.digests.get(basename(archive)), sha256(Buffer.from(text, "utf8")));
+
+  const successor = memory(filePath, predecessor.archiveReadCache);
+  successor.historyScan("observations", { window: 1 });
+  assert.equal(successor.archiveReadCache.get("observations")?.digests, scanned.digests,
+    "a valid UTF-8 block must not force the successor to rescan");
 });
