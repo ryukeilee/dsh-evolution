@@ -27,8 +27,8 @@
 
 | 文件 | 职责 |
 | --- | --- |
-| `lib/domain-storage.js` | 领域存储 adapter：`AsyncLocalStorage` 作用域、事件桥重放、pending 协议、领域 schema 校验、显式 `domainSeed`，端口上的显式 `reclaim()`（容量回收；见不变量 16），以及打开时尚存的自主决策占位的只读快照（`autonomousDecisions()`，由 `observeAutonomous` 判断占位是否已被进程遗弃；见不变量 6） |
-| `lib/dockyard-domain/memory.js` | hot 聚合 + 冷档案：`*.COLLECTION-archive.jsonl`、`.segments/segment-N.jsonl`、`*.evolution-archive-index.json`、retention、`history()` / `historyView()`、执行事件去重 |
+| `lib/domain-storage.js` | 领域存储 adapter：`AsyncLocalStorage` 作用域、事件桥重放、pending 协议、领域 schema 校验、显式 `domainSeed`，端口上的显式 `reclaim()`（容量回收；见不变量 16），以及打开时尚存的自主决策占位的只读快照（`autonomousDecisions()`，由 `observeAutonomous` 判断占位是否已被进程遗弃；见不变量 6）；提交后发布本次事务写出的 archive scan seed，供下一次加载复用已证明的扫描事实 |
+| `lib/dockyard-domain/memory.js` | hot 聚合 + 冷档案：`*.COLLECTION-archive.jsonl`、`.segments/segment-N.jsonl`、`*.evolution-archive-index.json`、retention、`history()` / `historyView()`、执行事件去重；冷档案按 1–16 MiB 有界读取块扫描与哈希（跨块长行保留未完成行），进程内 scan memo（上限 32 个活跃归档，按 collection + 文件名 + 设备 + inode 索引，并复核字节数 + 纳秒 mtime）在已提交 append 后延续索引事实；retention/compact 规划按行读取历史，`dryRun` 不物化会被丢弃的输出（`#retentionPlan({ materialize })`） |
 | `lib/dockyard-domain/knowledge.js` | canonical knowledge：`knowledgeKey` 身份、`compactValue()`、聚合与去重（键名脱敏的结构化判定也由它导出） |
 | `lib/dockyard-domain/observation.js` | 观测存储：健康信息 dedup、error 样本、`forceRecord`、>5% perf 转变阈值；只接收 DTO，不采集进程 perf、不订阅运行时事件 |
 | `lib/dockyard-domain/evaluator.js`、`metric-projection.js` | advisory evaluator（独立 goal / test / regression 门槛与反刷分指标）与指标投影 |
@@ -53,16 +53,16 @@
 
 | 路径 | 职责 |
 | --- | --- |
-| `lib/diagnostics.js`、`scripts/doctor.mjs` | 运行时与 CLI 诊断；`resolveEvolutionPaths()` 是路径解析的唯一来源（doctor 与运行时共用），`runDiagnostics()` 产出全部 check（当前 28 个 check `id`；另有 6 个 repair `id` 与 5 个 degradedCapability `id`，三者不要混算），`--repair` 只处理 `recoverable=true` 且带 repair 的项。CLI 报告不得与运行时判断不一致 |
-| `scripts/acceptance/` | `run-host-acceptance.mjs` 真实隔离宿主验收（自包含安装官方 DSH），`probes/{core,lifecycle,body,promotion}-probe.mjs` 是它驱动的宿主内探针；`probes/live-apply-race-probe.mjs` 复现宿主“实时应用能力”的启动竞态（诊断用，不属于验收流程） |
+| `lib/diagnostics.js`、`scripts/doctor.mjs` | 运行时与 CLI 诊断；`resolveEvolutionPaths()` 是路径解析的唯一来源（doctor 与运行时共用），`runDiagnostics()` 产出全部 check（当前 28 种 check `id`：`plugin.home` 只在传入 home 时加入，找不到宿主 CLI 时 `host.version` / `host.modules` / `host.composition` 不加入，`state.dockyard-legacy` 与 `state.memory-quarantine` 只在对应现场存在时加入；另有 6 个 repair `id` 与 5 个 degradedCapability `id`，三者不要混算）；事件桥与冷历史 JSONL 的行摘要扫描共用 1 MiB 分块字节扫描，不把整份文件解码成一个字符串，`state.archives` 的归档完整性校验仍读取归档与封存段的字节（成本随被校验字节增长），`--repair` 只处理 `recoverable=true` 且带 repair 的项。CLI 报告不得与运行时判断不一致 |
+| `scripts/acceptance/` | `run-host-acceptance.mjs` 真实隔离宿主验收（自包含安装官方 DSH），`probes/{core,lifecycle,body,promotion,retry}-probe.mjs` 是它驱动的宿主内探针；`probes/live-apply-race-probe.mjs`、`probes/hmr-transaction-probe.mjs` 与 `reproduce-hmr-startup.mjs` 复现宿主“实时应用能力”启动竞态与 `0.2.2-rc.1` HMR 事务缺口（诊断用，不属于验收流程） |
 | `scripts/release/` | `pack.mjs`（本地打包）、`verify-package.mjs`（`pack:check`，开发/发布两种语义）、`verify-artifact.mjs`（字节校验与 `--content-only`）、`verify-provenance.mjs`（tag 与来源）、`publish-artifact.mjs`（**写** `release/` 固定点）、`release-lib.mjs` 与 `pin-relation.mjs`（摘要、条目、固定点关系的共享实现） |
 | `scripts/benchmarks/` | 可复现性能基准：domain 写路径/回放/retention、冷档案、事件桥、诊断、经验检索、启动内存等；对应数据与收益边界写在 `docs/performance/` |
 | `scripts/import-evolution-data.mjs` | 旧 preset / Dockyard 快照迁移 |
-| `.github/workflows/` | `ci.yml`（单测矩阵 22.19.0 / 24.x + package + 三宿主验收）、`codeql.yml`（Code Scanning）、`release.yml`（校验 tag 并创建 **draft** Release，不重建产物） |
+| `.github/workflows/` | `ci.yml`（单测矩阵 22.19.0 / 24.x + package + 四宿主验收，`0.2.2-rc.1` 带 `--no-hmr`）、`codeql.yml`（Code Scanning）、`release.yml`（校验 tag 并创建 **draft** Release，不重建产物） |
 
 ### 测试与发布数据
 
-- `test/`：Node 原生测试（`.test.mjs` / `.test.js`，当前 179 个文件）。根目录以 `review-fix-*` 命名保留各轮评审的回归，`test/domain-storage/`、`test/dockyard-domain/`（含 `continuous/`）按层分组，`test/fixtures/` 与各目录的 `*-baseline.js` 是差分等价性基线。
+- `test/`：Node 原生测试（`.test.mjs` / `.test.js`，当前 191 个文件）。根目录以 `review-fix-*` 命名保留各轮评审的回归，`test/domain-storage/`、`test/dockyard-domain/`（含 `continuous/`）按层分组，`test/fixtures/` 与各目录的 `*-baseline.js` 是差分等价性基线。
 - `test/workflows.test.mjs` 断言 CI 形状（作业集合、作业级堆上限、验收矩阵），`test/release-pin.test.mjs` 判定工作树与固定点的关系。
 - `release/`：随仓库固定的发布产物（每个候选一个 tarball，历史候选保留）、`manifest.json`、`SHA256SUMS`。**不要手工编辑这些文件。**
 - `docs/evidence/`：与固定产物对应的验收记录；`docs/performance/`：性能数据与收益边界；`docs/core-reliability.md`：rc.5 时期的恢复边界探索记录，不是当前合同。
@@ -117,7 +117,7 @@ node scripts/release/verify-provenance.mjs --tag vX --require-source-commit
   - 全量回归用 `NODE_OPTIONS=--max-old-space-size=4096 npm test`；单文件用 `node --max-old-space-size=4096 --test <file>`。不得用 `--no-max-old-space-size` 或空 `NODE_OPTIONS` 覆盖该上限。
   - 不得用临时下载的 Node 发行版（如 `/tmp/nodedist/v*/bin/node`）跑全量套件 —— 那正是本次事故的触发方式。多版本验证走 `package.json#engines` 声明的范围，并保留堆上限。
   - 出现 `RangeError: Maximum call stack size exceeded`、正则回溯超时或 RSS 单调增长时立即中止、不要重试；先二分到单文件，并确认 `REDACTION_TEXT_BOUND`（`lib/orchestrator.js`）这类输入边界仍然生效。
-  - 单文件二分**已完成（有界）**：`docs/performance/oom-localization.md` 记录了对 95 个测试文件逐个起独立进程组的复测（`--max-old-space-size=4096`、2 GiB RSS 上限、300 s 超时），全部通过，峰值最高为 `test/dockyard-domain/continuous/continuous.test.js` 的 459 MiB，没有任何文件被上限杀掉；与此同时，事故点名的 8 MiB 病态 `\x` 输入在当前规则表上（绕过 64 KiB `REDACTION_TEXT_BOUND`）只需 27 ms、RSS 增加 9 MiB、不再抛错。结论的边界要说清楚：在本次环境（Node v26.12.0）与当前代码上，那次无界分配与事故点名的 `RangeError` 都无法复现；事故时的 Node 发行版与工作树、以及产生它的中间规则表版本都没有留存，所以这不是对历史根因的定论。「`rpages` ≈ 203 GB」那个具体数值也**未复现**，不要把它当作已被验证的上界。CI 的单元测试作业现在通过作业级 `NODE_OPTIONS` 强制执行同一个上限（`test/workflows.test.mjs` 断言），定位与复测都必须继续在带堆上限的前提下进行。
+  - 单文件二分**已完成（有界）**：`docs/performance/oom-localization.md` 记录了对 95 个测试文件逐个起独立进程组的复测（`--max-old-space-size=4096`、2 GiB RSS 上限、300 s 超时），全部通过，峰值最高为 `test/dockyard-domain/continuous/continuous.test.js` 的 459 MiB，没有任何文件被上限杀掉（该复测对应当时 95 个测试文件；当前套件为 191 个）；与此同时，事故点名的 8 MiB 病态 `\x` 输入在当前规则表上（绕过 64 KiB `REDACTION_TEXT_BOUND`）只需 27 ms、RSS 增加 9 MiB、不再抛错。结论的边界要说清楚：在本次环境（Node v26.12.0）与当前代码上，那次无界分配与事故点名的 `RangeError` 都无法复现；事故时的 Node 发行版与工作树、以及产生它的中间规则表版本都没有留存，所以这不是对历史根因的定论。「`rpages` ≈ 203 GB」那个具体数值也**未复现**，不要把它当作已被验证的上界。CI 的单元测试作业现在通过作业级 `NODE_OPTIONS` 强制执行同一个上限（`test/workflows.test.mjs` 断言），定位与复测都必须继续在带堆上限的前提下进行。
 - 改动 **trial/teardown、跨进程锁、CAS、journal、canary 或重启恢复**时，必须补对应失败路径测试。
 - 真实宿主验收：`npm run acceptance:host -- --host <version> --out <evidence-path>`。它会安装依赖并生成证据，**必须使用隔离 runtime/home**，不得触碰正式 `DSH_HOME`。
 - 修改任何**分发文件**（`package.json#files` 覆盖的内容）都会改变 `contentSha256`，于是工作树不再是固定点描述的那个包。`pack:check` 默认按开发阶段判定：固定点必须仍然描述它自己记录的 `sourceCommit`（该 commit 在历史中、是 HEAD 的祖先、且发布的内容等于固定内容），工作树要么就是固定点，要么是它的**已提交**后继（逐条点名差异）；未提交的分发改动、浅克隆（缺历史）与“固定点不再描述自己记录的 commit”仍然失败；`pack:check -- --release`（`release.yml` 使用）保持严格语义，工作树不等于固定内容即失败。把漂移转绿的唯一途径是按 `RELEASE.md` 重新构建、重跑宿主验收、再更新固定点，**不手工伪造通过记录**。
