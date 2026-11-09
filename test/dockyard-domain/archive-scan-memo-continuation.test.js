@@ -20,6 +20,9 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { EvolutionMemory } from "../../lib/dockyard-domain/memory.js";
+import { openDomainStorage } from "../../lib/domain-storage.js";
+import { DomainFacility } from "@deepseek-ai/dsh-storage-domain";
+import { JsonStorageBackend } from "@deepseek-ai/dsh-storage-json";
 import { JsonStateStore } from "./support.js";
 
 const NOW = "2026-10-12T00:00:00.000Z";
@@ -199,4 +202,52 @@ test("a sealed active file does not publish a seed for the empty file it becomes
   assert.equal(active.physicalCount, 0);
   assert.equal(active.sealed, false);
   await cleanup(files.home);
+});
+
+test("the real port publishes the seed after install, so committed observes parse no active lines", async () => {
+  const root = await mkdtemp(join(tmpdir(), "dsh-scan-continuation-port-"));
+  const backend = new JsonStorageBackend(join(root, "official"));
+  const ctx = {
+    emit() {}, logger: { warn() {}, error() {} },
+    storage: { backend: { get: () => backend } }, effect() {},
+  };
+  ctx.storageDomain = new DomainFacility(ctx, { backend: "json" });
+  const live = join(root, "dockyard");
+  const activeArchive = join(live, "state.json.observations-archive.jsonl");
+  const signal = (component, extra = {}) => ({
+    type: "tool/result", code: "CACHE_READY", message: "cache warmup completed",
+    problem: "cache warmup", componentId: `plugin:${component}`, severity: "info",
+    status: "observed", success: true, recordedAt: NOW, ...extra,
+  });
+  await mkdir(live, { recursive: true });
+  await writeFile(activeArchive, observations(signal("cold", { id: "cold" })));
+  // A full hot window makes the next observation evict one record into the
+  // active archive, which is the append whose facts the committed load reuses.
+  await writeFile(join(live, "state.json"), JSON.stringify({
+    evolution: { schema: 4, observations: Array.from({ length: 50 }, (_, index) => signal(`seed-${index}`, { id: `seed-${index}` })) },
+  }));
+  const port = await openDomainStorage(ctx, {
+    presetDir: root, eventBridgePath: join(root, "execution-events.jsonl"),
+    eventBridgeKey: "b".repeat(64), domainSeed: true,
+  });
+  const lines = (await readFile(activeArchive, "utf8")).split("\n").filter(Boolean);
+  try {
+    for (let round = 1; round <= 2; round += 1) {
+      const { parses } = await countActiveParses(lines, async () => {
+        await port.observe({ code: `CACHE_TEST_${round}`, target: "tool:x" });
+      });
+      assert.equal(parses, 0,
+        `committed observe ${round} must reuse the seed instead of re-parsing active lines`);
+    }
+    const document = JSON.parse(await readFile(`${live}/state.json.evolution-archive-index.json`, "utf8"));
+    const active = document.segments.find((entry) => entry.collection === "observations" && entry.sealed === false);
+    assert.ok(active, "the committed index must still describe the active archive");
+    assert.equal(active.byteSize, (await readFile(activeArchive)).length,
+      "the committed index entry must describe the installed bytes");
+    assert.equal(active.physicalCount, (await readFile(activeArchive, "utf8")).split("\n").filter(Boolean).length);
+  } finally {
+    await port.close();
+    await backend.close();
+    await rm(root, { recursive: true, force: true });
+  }
 });
