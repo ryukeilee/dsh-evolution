@@ -205,13 +205,22 @@ GC 时间线或 32 条备忘满负荷。
 
 ## 6. 验证
 
-本轮实际执行（结果见交付说明与提交记录）：
+本轮实际执行：
 
-```sh
-NODE_OPTIONS=--max-old-space-size=4096 npm test
-npm run pack:check
-npm run acceptance:host -- --host <每个 peerDependencies 宿主> --out <隔离证据路径>
-```
+| 检查 | 结果 |
+| --- | --- |
+| `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 1,471 项：1,468 通过、2 跳过、1 失败（`release-pin` 对未提交分发改动的预期拒绝）；提交 `9b6f152` 后 `test/release-pin.test.mjs` 11/11 通过 |
+| `npm run pack:check` | 17 项全部通过；开发后继，固定点与产物未变 |
+| 最终候选 tarball | `sha256 623802d4…ab7bdbc`，`contentSha256 b038b0e3…17bb4b00` |
+| 宿主 `0.2.0-rc.2` / `0.2.1-alpha.1` / `0.2.1-rc.2` | 各 21/21 步通过，证据 `docs/evidence/scan-memo-continuation-<host>.json` |
+| 宿主 `0.2.2-rc.1` | 21/21 步通过；按 CI 矩阵使用 `--no-hmr`（该宿主上游 PluginManager/HMR startup 窗口，见 `COMPATIBILITY.md`） |
 
-官方宿主验收使用隔离 runtime/home，不触碰正式 `DSH_HOME`；`release/`、版本号与
-发布产物未改动。
+宿主验收全部使用隔离 runtime/home；本地 shell 若继承 `DSH_PROFILE=desktop`，会在
+探针里覆盖被 boot 的 `web` profile 并让 `host.install` 误报 blocked，因此验收命令
+显式 `env -u DSH_PROFILE -u DSH_PROFILE_DIR`。这与插件代码无关，也未写进产品行为。
+
+独立对抗式审核（另一个模型，只读，HEAD `3bd4912` + 本轮 follow-up）结论：
+**无 blocker**；逐字段等价性、发布门禁、不变量、基线与故障注入均未发现可发布错误
+seed 的路径。两条 should 已修复：新增真实端口测试（删掉 `mutate()` 里的发布调用会让
+该测试失败，F4 已从“全绿”变为可捕获）；50k port 与 1k port 的文档数字按 JSON
+重算修正。残余为已披露的备忘身份边界与未验证平台。
