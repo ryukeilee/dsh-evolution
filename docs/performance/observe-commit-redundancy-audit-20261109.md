@@ -374,15 +374,19 @@ staged 文件的摘要」，因为没分别计时而没有提出候选）；本�
 `attr:installPending.parse` = 0.584 / 0.480 / 0.557 ms（calls=20，即每步 2 次），发布点
 那 2 次投影计入 `attr:mutate.pendingSet`。合计量级约 1–1.5 ms。
 
-三处都**有独立失败边界、都被测试钉住**：
+三处各自都对应一个被攻击过的失败场景，但测试覆盖强度不同（发布点只有间接覆盖，见下）：
 
 - 入口（`:688`→`:543`）：`test/domain-storage/domain-hotpath-20261024-entry-validation.test.js:85`
   用四种「同进程原地改写 live 文档」的形状，断言下一次 `observe` 在创建 stage 之前以
   对应 `ZodError` 的 issue code/path 拒绝、durable 字节完全不变、`after.staged` 为空；
   `:134` 断言修好文档后同一记录恰好提交一次。该文件头 `:1-30` 记录了这个入口 parse
   不可替换成 identity 快路径的原因；`:169` 把被否决的 identity-skip 候选跑成差分测试。
-- 发布前（`:806`）：同一候选差分（`:169`）证明发布点的 parse 是四种形状里唯一仍拒绝
-  「被 wash out 的非法值」的边界；若去掉，非法文档会成为持久 pending 记录。
+- 发布前（`:806`）：`domain-hotpath-20261024-entry-validation.test.js:169` 的候选差分显示，
+  保留发布点 parse 的被否决候选**仍会成功提交**三种「被 wash out」的形状，只有第四种
+  （非法值落在事务重新生成的文档之外的 marker 形状）被发布点拒绝并留下 stage。因此发布点
+  parse 不能替代入口 parse（它看不到重新生成文档时被丢掉的非法值），它的作用是让非法内容
+  不成为持久 pending 记录；这条边界只由该差分的第四形状间接覆盖，**没有**单独的「发布点
+  必须拒绝」回归。
 - 安装前（`:808`→`:543`）：`test/domain-storage/event-log-checkpoint.test.js:275`
   （`a listener that rewrites the pending record cannot bypass its validation`，四种形态
   都必须 `ZodError`）、`:314`（`a rejected commit does not install the staged archive`，
@@ -393,8 +397,9 @@ staged 文件的摘要」，因为没分别计时而没有提出候选）；本�
   移到安装之后，削弱「被拒绝的提交不得改动实时树」）；2026-10-24 的 identity-skip 候选
   被否决（`domain-hotpath-20261024-entry-validation.test.js`）。
 
-**结论：这 5 次投影不是可以合并的重复**，每一处都对应一个被攻击过的失败场景；三处
-各自都是「校验点」，删任何一处都会移动已有回归钉住的边界。不可采用。
+**结论：这 5 次投影不是可以合并的重复**。入口与安装前两处各有直接回归（上面的反例/
+差分与监听器改写用例），发布点只有候选差分的第四形状间接覆盖；即便如此，删掉它会让非法
+文档成为持久 pending 记录（第 4 节的「恢复后永久拒绝」），仍然不可采用。
 
 ### `stableJson` / `aggregateDigest`：常规路径不计算
 

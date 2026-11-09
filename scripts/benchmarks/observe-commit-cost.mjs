@@ -46,6 +46,7 @@ const STEPS = Number(option("steps", 10));
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), "observe-commit-"));
 
 const median = (values) => [...values].sort((left, right) => left - right)[Math.floor(values.length / 2)];
+const mean = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
 const round = (value, digits = 3) => Number(value.toFixed(digits));
 
 /** One materialized `lib/` tree, importable on its own. */
@@ -216,13 +217,22 @@ function installCounters() {
     io.files.set(name, row);
   };
   const fdPaths = new Map();
+  // `readFileSync`/`writeFileSync` are implemented on top of the very
+  // `openSync`/`readSync`/`writeSync`/`closeSync` bindings wrapped below, so their
+  // internal calls must not be counted a second time - not as calls, not as
+  // milliseconds and not as file bytes. Only the two high-level entries are
+  // accumulated while nested, and the low-level ones are counted outside them.
+  let nested = 0;
   for (const name of ["readFileSync", "writeFileSync", "writeSync", "fsyncSync", "linkSync", "renameSync",
     "rmSync", "statSync", "lstatSync", "readdirSync", "mkdirSync", "copyFileSync"]) {
     const original = fs[name];
+    const highLevel = name === "readFileSync" || name === "writeFileSync";
     restores.push(() => { fs[name] = original; });
     fs[name] = function traced(...values) {
       const started = performance.now();
-      const result = original.apply(this, values);
+      if (highLevel) nested += 1;
+      let result;
+      try { result = original.apply(this, values); } finally { if (highLevel) nested -= 1; }
       const ms = performance.now() - started;
       const bytes = name === "readFileSync" ? (result?.length ?? 0)
         : name === "writeFileSync" && typeof values[1] === "string" ? Buffer.byteLength(values[1]) : 0;
@@ -237,8 +247,10 @@ function installCounters() {
     fs.openSync = function traced(target, ...rest) {
       const started = performance.now();
       const fd = original.call(this, target, ...rest);
-      bump("openSync", performance.now() - started, 0);
-      if (typeof target === "string") fdPaths.set(fd, target);
+      if (nested === 0) {
+        bump("openSync", performance.now() - started, 0);
+        if (typeof target === "string") fdPaths.set(fd, target);
+      }
       return fd;
     };
   }
@@ -248,8 +260,10 @@ function installCounters() {
     fs.readSync = function traced(fd, ...rest) {
       const started = performance.now();
       const read = original.call(this, fd, ...rest);
-      bump("readSync", performance.now() - started, read);
-      noteFile(fdPaths.get(fd), read);
+      if (nested === 0) {
+        bump("readSync", performance.now() - started, read);
+        noteFile(fdPaths.get(fd), read);
+      }
       return read;
     };
   }
@@ -257,7 +271,7 @@ function installCounters() {
     const original = fs.closeSync;
     restores.push(() => { fs.closeSync = original; });
     fs.closeSync = function traced(fd, ...rest) {
-      fdPaths.delete(fd);
+      if (nested === 0) fdPaths.delete(fd);
       return original.call(this, fd, ...rest);
     };
   }
@@ -437,9 +451,15 @@ async function attribute() {
       assert.ok(mutateTotal > 0 && Math.abs(covered - mutateTotal) / mutateTotal < 0.05,
         `history ${history}: measured phases cover ${covered.toFixed(3)} of mutate.total ${mutateTotal.toFixed(3)}`);
       const rescans = phases.find((entry) => entry.key === "memory.scanArchiveRead");
+      // The two whole-document writes alternate per step: pending first, closing
+      // second. Report their means so the doc does not quote one sample.
+      const documentMean = {
+        pendingBytes: Math.round(mean(documents.filter((_, index) => index % 2 === 0))),
+        closingBytes: Math.round(mean(documents.filter((_, index) => index % 2 === 1))) };
       results.push({ history, steps: STEPS, wallPerStep: round(wall), autonomousReadMs: round(median(reads)),
         mutateTotal, phaseCoverage: round(covered / mutateTotal, 4),
-        archiveRescansPerStep: rescans?.perStep ?? 0, documentBytesPerStep: documents,
+        archiveRescansPerStep: rescans?.perStep ?? 0, documentBytesMean: documentMean,
+        documentBytesPerStep: documents,
         phases,
         callsPerStep: (() => {
           const merged = {};
