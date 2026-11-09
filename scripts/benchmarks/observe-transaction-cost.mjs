@@ -5,7 +5,8 @@
 //
 // `--compare` measures A / A-control / B, where the baseline arms are rebuilt
 // from `--baseline` (default: the revision before the digest-walk change) and B
-// is this tree; the run fails unless the trees differ in exactly one file.
+// is this tree; the run fails unless the trees differ only in the files this
+// round touches (`memory.js` and the commit-hook line in `domain-storage.js`).
 // `--attribute` patches a temporary copy of `lib/` with expression-level timers;
 // each anchor must match exactly one site, so a moved site fails the run instead
 // of silently reporting nothing. `--counterexample` reproduces why the larger
@@ -346,8 +347,8 @@ const MEMORY_ANCHORS = [
     "  async #archiveEntries(collection, entries, { replaceExisting = false } = {}) {\n    const __e = performance.now();\n    const run = async () => {"],
   ["    const queued = this.archiveWriting.then(run, run);\n    this.archiveWriting = queued.catch(() => {});\n    return queued;",
     "    const queued = this.archiveWriting.then(run, run);\n    this.archiveWriting = queued.catch(() => {});\n    return queued.then((value) => { __A(\"memory.archiveEntries\", performance.now() - __e); return value; }, (error) => { __A(\"memory.archiveEntries\", performance.now() - __e); throw error; });"],
-  ["    const rebuilt = this.#indexEntryFromFacts(collection, file, facts, { sealed: false });\n    this.archiveActiveKeys.set(collection, facts.objectKeys);\n    rememberArchiveScan(collection, file, info, rebuilt, facts.objectKeys);\n    return rebuilt;",
-    "    const rebuilt = this.#indexEntryFromFacts(collection, file, facts, { sealed: false });\n    this.archiveActiveKeys.set(collection, facts.objectKeys);\n    rememberArchiveScan(collection, file, info, rebuilt, facts.objectKeys);\n    __A(\"memory.reconcileActiveScan\", performance.now() - __scanStart);\n    return rebuilt;"],
+  ["    const rebuilt = this.#indexEntryFromFacts(collection, file, facts, { sealed: false });\n    this.archiveActiveKeys.set(collection, facts.objectKeys);\n    this.#archiveScanBases.set(collection, { identity, parsed: facts.parsed });\n    rememberArchiveScan(collection, file, info, rebuilt, facts.objectKeys, facts.parsed);\n    return rebuilt;",
+    "    const rebuilt = this.#indexEntryFromFacts(collection, file, facts, { sealed: false });\n    this.archiveActiveKeys.set(collection, facts.objectKeys);\n    this.#archiveScanBases.set(collection, { identity, parsed: facts.parsed });\n    rememberArchiveScan(collection, file, info, rebuilt, facts.objectKeys, facts.parsed);\n    __A(\"memory.reconcileActiveScan\", performance.now() - __scanStart);\n    return rebuilt;"],
   ["  async #reconcileActiveArchive(collection, file) {\n    const info = await stat(file, { bigint: true });",
     "  async #reconcileActiveArchive(collection, file) {\n    const __scanStart = performance.now();\n    const info = await stat(file, { bigint: true });"],
 ];
@@ -499,12 +500,14 @@ async function counterexample() {
 
 // ---------------------------------------------------------------------------
 
-/** A tree whose `memory.js` is exactly the one in `ref`; the rest is this tree. */
+/** A tree whose measured files are exactly the ones in `ref`; the rest is this tree. */
 function materializeBaseline(name, ref) {
   return materialize(name, (libDirectory) => {
-    const file = path.join(libDirectory, "dockyard-domain/memory.js");
-    fs.writeFileSync(file, execFileSync("git", ["-C", REPO, "show", `${ref}:lib/dockyard-domain/memory.js`],
-      { encoding: "buffer", maxBuffer: 32 * 1024 * 1024 }));
+    for (const relative of ["dockyard-domain/memory.js", "domain-storage.js"]) {
+      const file = path.join(libDirectory, relative);
+      fs.writeFileSync(file, execFileSync("git", ["-C", REPO, "show", `${ref}:lib/${relative}`],
+        { encoding: "buffer", maxBuffer: 32 * 1024 * 1024 }));
+    }
   });
 }
 
@@ -550,7 +553,7 @@ async function compare() {
   const files = list(baselineLib);
   assert.deepEqual(list(candidateLib), files, "the two trees must contain the same files");
   const changed = files.filter((file) => !fs.readFileSync(path.join(baselineLib, file)).equals(fs.readFileSync(path.join(candidateLib, file))));
-  assert.deepEqual(changed, ["dockyard-domain/memory.js"], "only the measured file may differ from the baseline");
+  assert.deepEqual(changed, ["dockyard-domain/memory.js", "domain-storage.js"], "only the measured files may differ from the baseline");
   return measure({ armNames: ["A1", "A2", "B"],
     armDirs: { ...baselineDirs, B: candidateDirectory }, mode: "compare" });
 }

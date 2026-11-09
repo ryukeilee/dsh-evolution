@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { REPO_ROOT } from "../../scripts/release/release-lib.mjs";
 import { reverseArchiveDigestUtf8Round } from "./archive-digest-utf8-baseline.js";
+import { reverseArchiveScanMemoContinuationRound } from "./archive-scan-memo-continuation-baseline.js";
 import { STAGED_SAVE_CHECK_TEXT } from "./staged-save-check-text.js";
 
 // Revert the projection-free load round, so the whole pre-change tree can be
@@ -267,7 +268,8 @@ export async function loadProjectionBaseline() {
   // The valid-UTF-8 digest round is the newest change to `memory.js`, so it is
   // reversed first; the hook delegates to the archive-digest-walk round and then
   // down the older chain.
-  const reconstructed = new Map([...working].map(([file, source]) => [file, reverseArchiveDigestUtf8Round(file, source)]));
+  const reconstructed = new Map([...working].map(([file, source]) => [file,
+    reverseArchiveDigestUtf8Round(file, reverseArchiveScanMemoContinuationRound(file, source))]));
   for (const { file, post, pre } of HUNKS) {
     const source = reconstructed.get(file);
     assert.ok(source !== undefined, `${file} is not part of the projection-free load round`);
