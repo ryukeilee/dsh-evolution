@@ -132,7 +132,7 @@ Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 i
 
 `evolution_doctor` 会话工具与 `dsh-evolution-doctor` / `doctor.mjs` CLI 使用同一套检查和分级，不依赖模型推理、不联网、不上传 Evolution 数据。CLI 没有实时 Cordis context，`runtime.capabilities`、`runtime.registration` 和 `runtime.internal-api` 会标为 `not-evaluated`；具体接口探针须在会话内检查。
 
-冷历史 JSONL（Dockyard 活动归档与 rotation 文件）按 1 MiB 有界块字节扫描并逐行解析，不再把整份文件解码成一个字符串，所以大档案诊断的瞬时内存不再随文件大小整份增长；超过 V8 单个字符串上限的文件仍走原有整份读取路径，读取失败按既有规则报告 `unreadable`。改动前后的峰值实测见 `docs/performance/diagnostics-archive-streaming-20261109.md`。
+冷历史 JSONL 的行摘要检查（活动归档与 rotation 文件的行数、不可解析行、未终止尾行）按 1 MiB 有界块字节扫描并逐行解析，不再把整份文件解码成一个字符串，因此这项检查的瞬时内存不再随文件大小整份增长；`state.archives` 的完整性校验仍会读取并校验归档与封存段的字节，其成本仍随被校验字节增长。超过 V8 单个字符串上限的文件仍走原有整份读取路径，读取失败按既有规则报告 `unreadable`。改动前后的峰值实测与收益边界见 `docs/performance/diagnostics-archive-streaming-20261109.md`。
 
 | 覆盖组 | 检查内容 |
 | --- | --- |

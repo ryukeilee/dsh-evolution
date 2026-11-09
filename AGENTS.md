@@ -28,7 +28,7 @@
 | 文件 | 职责 |
 | --- | --- |
 | `lib/domain-storage.js` | 领域存储 adapter：`AsyncLocalStorage` 作用域、事件桥重放、pending 协议、领域 schema 校验、显式 `domainSeed`，端口上的显式 `reclaim()`（容量回收；见不变量 16），以及打开时尚存的自主决策占位的只读快照（`autonomousDecisions()`，由 `observeAutonomous` 判断占位是否已被进程遗弃；见不变量 6）；提交后发布本次事务写出的 archive scan seed，供下一次加载复用已证明的扫描事实 |
-| `lib/dockyard-domain/memory.js` | hot 聚合 + 冷档案：`*.COLLECTION-archive.jsonl`、`.segments/segment-N.jsonl`、`*.evolution-archive-index.json`、retention、`history()` / `historyView()`、执行事件去重；冷档案按 1 MiB 有界块扫描与哈希，进程内 scan memo（上限 32 个活跃归档，按 collection + 文件名 + 设备 + inode 索引，并复核字节数 + 纳秒 mtime）在已提交 append 后延续索引事实；retention/compact 规划按行读取历史，`dryRun` 不物化会被丢弃的输出（`#retentionPlan({ materialize })`） |
+| `lib/dockyard-domain/memory.js` | hot 聚合 + 冷档案：`*.COLLECTION-archive.jsonl`、`.segments/segment-N.jsonl`、`*.evolution-archive-index.json`、retention、`history()` / `historyView()`、执行事件去重；冷档案按 1–16 MiB 有界读取块扫描与哈希（跨块长行保留未完成行），进程内 scan memo（上限 32 个活跃归档，按 collection + 文件名 + 设备 + inode 索引，并复核字节数 + 纳秒 mtime）在已提交 append 后延续索引事实；retention/compact 规划按行读取历史，`dryRun` 不物化会被丢弃的输出（`#retentionPlan({ materialize })`） |
 | `lib/dockyard-domain/knowledge.js` | canonical knowledge：`knowledgeKey` 身份、`compactValue()`、聚合与去重（键名脱敏的结构化判定也由它导出） |
 | `lib/dockyard-domain/observation.js` | 观测存储：健康信息 dedup、error 样本、`forceRecord`、>5% perf 转变阈值；只接收 DTO，不采集进程 perf、不订阅运行时事件 |
 | `lib/dockyard-domain/evaluator.js`、`metric-projection.js` | advisory evaluator（独立 goal / test / regression 门槛与反刷分指标）与指标投影 |
@@ -53,7 +53,7 @@
 
 | 路径 | 职责 |
 | --- | --- |
-| `lib/diagnostics.js`、`scripts/doctor.mjs` | 运行时与 CLI 诊断；`resolveEvolutionPaths()` 是路径解析的唯一来源（doctor 与运行时共用），`runDiagnostics()` 产出全部 check（当前 28 个 check `id`：`state.dockyard-legacy` 与 `state.memory-quarantine` 只在对应现场存在时加入，其余在常规报告中出现；另有 6 个 repair `id` 与 5 个 degradedCapability `id`，三者不要混算）；事件桥与冷历史 JSONL 共用 1 MiB 分块字节扫描，不把整份文件解码成一个字符串，`--repair` 只处理 `recoverable=true` 且带 repair 的项。CLI 报告不得与运行时判断不一致 |
+| `lib/diagnostics.js`、`scripts/doctor.mjs` | 运行时与 CLI 诊断；`resolveEvolutionPaths()` 是路径解析的唯一来源（doctor 与运行时共用），`runDiagnostics()` 产出全部 check（当前 28 种 check `id`：`plugin.home` 只在传入 home 时加入，找不到宿主 CLI 时 `host.version` / `host.modules` / `host.composition` 不加入，`state.dockyard-legacy` 与 `state.memory-quarantine` 只在对应现场存在时加入；另有 6 个 repair `id` 与 5 个 degradedCapability `id`，三者不要混算）；事件桥与冷历史 JSONL 的行摘要扫描共用 1 MiB 分块字节扫描，不把整份文件解码成一个字符串，`state.archives` 的归档完整性校验仍读取归档与封存段的字节（成本随被校验字节增长），`--repair` 只处理 `recoverable=true` 且带 repair 的项。CLI 报告不得与运行时判断不一致 |
 | `scripts/acceptance/` | `run-host-acceptance.mjs` 真实隔离宿主验收（自包含安装官方 DSH），`probes/{core,lifecycle,body,promotion,retry}-probe.mjs` 是它驱动的宿主内探针；`probes/live-apply-race-probe.mjs`、`probes/hmr-transaction-probe.mjs` 与 `reproduce-hmr-startup.mjs` 复现宿主“实时应用能力”启动竞态与 `0.2.2-rc.1` HMR 事务缺口（诊断用，不属于验收流程） |
 | `scripts/release/` | `pack.mjs`（本地打包）、`verify-package.mjs`（`pack:check`，开发/发布两种语义）、`verify-artifact.mjs`（字节校验与 `--content-only`）、`verify-provenance.mjs`（tag 与来源）、`publish-artifact.mjs`（**写** `release/` 固定点）、`release-lib.mjs` 与 `pin-relation.mjs`（摘要、条目、固定点关系的共享实现） |
 | `scripts/benchmarks/` | 可复现性能基准：domain 写路径/回放/retention、冷档案、事件桥、诊断、经验检索、启动内存等；对应数据与收益边界写在 `docs/performance/` |
