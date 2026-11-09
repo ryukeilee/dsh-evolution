@@ -218,10 +218,12 @@ function installCounters() {
   };
   const fdPaths = new Map();
   // `readFileSync`/`writeFileSync` are implemented on top of the very
-  // `openSync`/`readSync`/`writeSync`/`closeSync` bindings wrapped below, so their
-  // internal calls must not be counted a second time - not as calls, not as
-  // milliseconds and not as file bytes. Only the two high-level entries are
-  // accumulated while nested, and the low-level ones are counted outside them.
+  // `openSync`/`readSync`/`closeSync` bindings wrapped below, so those internal
+  // calls must not be counted a second time - not as calls, not as milliseconds
+  // and not as file bytes. While one of the two high-level entries is on the
+  // stack, its inner opens/reads/closes are skipped; `writeSync` is counted as
+  // its own entry (a buffered `writeFileSync` may appear there too) and is not
+  // used by any claim in the report.
   let nested = 0;
   for (const name of ["readFileSync", "writeFileSync", "writeSync", "fsyncSync", "linkSync", "renameSync",
     "rmSync", "statSync", "lstatSync", "readdirSync", "mkdirSync", "copyFileSync"]) {
