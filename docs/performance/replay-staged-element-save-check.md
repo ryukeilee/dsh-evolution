@@ -11,30 +11,31 @@ save 只序列化窗口外的少量成员，而不是把整份非窗口文档重
 
 | 记录数 | 墙钟 ms：基线 → 候选 | CPU ms：基线 → 候选 | 稳态 observe | 稳态 flush |
 | ---: | --- | --- | --- | --- |
-| 2,000 | 234.1 → 166.0（**−29.06%**） | 251.0 → 185.2（**−26.21%**） | +0.47% | −1.00% |
-| 12,000 | 1,237.1 → 827.2（**−33.14%**） | 1,320.8 → 919.8（**−30.36%**） | −1.32% | +0.24% |
-| 20,000 | 2,062.1 → 1,372.9（**−33.42%**） | 2,196.3 → 1,512.9（**−31.12%**） | +0.34% | +0.14% |
-| 50,000 | 5,048.7 → 3,314.6（**−34.35%**） | 5,318.5 → 3,621.5（**−31.91%**） | +0.83% | −0.98% |
+| 2,000 | 239.1 → 173.2（**−27.56%**） | 261.0 → 204.1（**−21.80%**） | +0.54% | +0.09% |
+| 12,000 | 1,262.1 → 865.2（**−31.44%**） | 1,349.0 → 972.8（**−27.89%**） | +3.37% | +0.56% |
+| 20,000 | 2,112.5 → 1,452.8（**−31.23%**） | 2,253.2 → 1,592.0（**−29.34%**） | +1.37% | +0.18% |
+| 50,000 | 5,127.3 → 3,453.6（**−32.64%**） | 5,411.4 → 3,737.8（**−30.93%**） | +0.43% | −0.52% |
 
 同码 A/A 控制（两侧都跑候选树，同夹具、同参数、交替三轮）：
 
 | 记录数 | 墙钟差 | CPU 差 | 峰值 RSS 差 | 保留堆差 |
 | ---: | ---: | ---: | ---: | ---: |
-| 2,000 | −2.38% | −0.25% | −0.1 MiB | 0.0 MiB |
-| 12,000 | +0.14% | −0.41% | +21.9 MiB | −6.0 MiB |
-| 20,000 | +0.95% | +0.31% | −0.3 MiB | 0.0 MiB |
-| 50,000 | −1.06% | −0.05% | 0.0 MiB | 0.0 MiB |
+| 2,000 | −0.39% | −0.82% | +1.0 MiB | 0.0 MiB |
+| 12,000 | −0.65% | +0.48% | +33.7 MiB | −6.0 MiB |
+| 20,000 | +0.11% | +0.11% | −3.6 MiB | +0.1 MiB |
+| 50,000 | +0.02% | +0.13% | +9.7 MiB | 0.0 MiB |
 
 每个规模的 A/B 收益都远超同码漂移；稳态路径（无积压事件）不受影响。
 
-**不声称峰值内存收益。** A/B 的峰值 RSS 差（2k/12k/20k/50k：−0.7 / +0.1 / −8.2 /
-−9.6 MiB）落在同码 A/A 漂移内（12k 一轮 A/A 就有 +21.9 MiB），保留堆差同样在
-同码漂移内。为什么这轮优化不改峰值，见下文“成本与边界”。
+**不声称峰值内存收益。** A/B 的峰值 RSS 差（2k/12k/20k/50k：+1.2 / +4.6 / −8.8 /
+−4.9 MiB）落在同码 A/A 漂移内（12k、50k 的 A/A 分别有 +33.7、+9.7 MiB），保留堆差
+（−2.8 / −1.1 / −1.3 / −1.0 MiB）同样在同码漂移内（12k 的 A/A 保留堆差 −6.0 MiB）。
+为什么这轮优化不改峰值，见下文“成本与边界”。
 
 源码、测试、基准与证据：
 
-- 源码提交：`db812f0`（本文件与基准证据随后单独提交，不改变分发内容）。
-- 候选源哈希：`lib/domain-storage.js` `848ba8c92a4185856db6bbc925cc5eae3e816c846e7a859dcfae83040ff07fb8`；
+- 源码提交：`42f7a17`（本文件与基准证据随后单独提交，不改变分发内容）。
+- 候选源哈希：`lib/domain-storage.js` `523b7b05ae65d3bf289ea704254520f739693aae0fc0f2abcb85e476625d2adc`；
   `lib/dockyard-domain/memory.js` `99e0870a3a0f5e68f067d4e75e040c541c033c0d332339e7eb55e9f57f03d44e`。
 - 原始数据：[A/B](replay-staged-element-save-check.json)、
   [A/A](replay-staged-element-save-check-aa.json)、
@@ -114,7 +115,7 @@ query 投影全部相同，marker 数等于记录数，staged 残留为 0。
   `execution-event-save-coalescing.test.mjs` 对 9 种事件类型的 durable base64 pin
   都继续通过；它们现在同时覆盖元素路径。
 
-验证：`NODE_OPTIONS=--max-old-space-size=4096 npm test` 1490/1492 通过、0 失败、
+验证：`NODE_OPTIONS=--max-old-space-size=4096 npm test` 1493 项、1491 通过、0 失败、
 2 跳过（既有跳过）；官方宿主验收见下方交付记录。
 
 ## 测量方法
@@ -128,14 +129,15 @@ query 投影全部相同，marker 数等于记录数，staged 残留为 0。
 - I/O：`BENCH_AUDIT_MODULE=scripts/benchmarks/replay-io-audit.mjs` 在吸收窗口内包裹
   `node:fs` / `node:fs/promises` 入口，按调用点计调用数与字节。它是 JS API 计数，
   不是内核 syscall 或物理磁盘流量。20,000 条时两侧完全相同：`readFileSync` 10 次 /
-  32.7 MB、`readSync` 88 次 / 34.2 MB、`openSync` 101 次、`appendFile` 79 次 /
-  9.95 MB、`writeFile` 3 次 / 8.39 MB、`fsyncSync` 10 次、`statSync` 181 次；2,000 /
-  12,000 档同样逐项相同。这符合改动只影响内存中的序列化、不影响读写调用的预期。
+  32.66 MB、`readSync` 88 次 / 34.22 MB、`openSync` 101 次、`appendFile` 79 次 /
+  9.95 MB、`writeFile` 3 次 / 8.39 MB、`fsyncSync` 10 次、`statSync` 181 次、
+  `writeFileSync` 4 次 / 549 B；2,000 / 12,000 档同样逐项相同。这符合改动只影响内存
+  中的序列化、不影响读写调用的预期。
 - 阶段 heap：另用 [event-log-replay-memory.mjs](../../scripts/benchmarks/event-log-replay-memory.mjs)
   在基线 worktree 与候选树之间做同样的三轮 A/B（`--baseline-root`）。12k/20k 的
-  `preCommit` 与 `committed` 阶段 heapUsed/arrayBuffers 在噪声内；20k 的进程
-  maxRSS 中位数 255.9 → 250.0 MiB，但 12k 是同码上下的反向偏移，因此不据此宣称
-  内存下降。
+  `preCommit`/`committed` 阶段 heapUsed 与 arrayBuffers 在噪声内；进程 maxRSS 中位数
+  12k 为 211 → 223 MiB、20k 为 256 → 246 MiB，两个方向都有，且同 harness 的 A/A
+  漂移可达 14–38 MiB，因此不据此宣称内存下降。
 
 复现：
 
@@ -166,12 +168,12 @@ node --max-old-space-size=4096 --expose-gc scripts/benchmarks/event-log-replay-m
 
 ## 交付记录
 
-- 全量回归：`NODE_OPTIONS=--max-old-space-size=4096 npm test` → 1490 pass / 0 fail /
-  2 skip（既有 skip）。
+- 全量回归：`NODE_OPTIONS=--max-old-space-size=4096 npm test` → 1493 tests / 1491 pass /
+  0 fail / 2 skip（既有 skip）。
 - `npm run pack:check`（开发语义）：17/17；工作树是固定点的已提交后继，未改
   `release/`。
 - 官方宿主验收：用本轮 `release:pack` 产物（content sha256
-  `be1ba287…`、tarball sha256 `ce827a3d…`）在隔离临时 runtime/home 中各跑一次完整
+  `a22f0eb6…`、tarball sha256 `422dd4ea…`）在隔离临时 runtime/home 中各跑一次完整
   21 步，四个声明宿主全部通过、最终 doctor `degraded`（已知的 5 项
   degradedCapabilities，无 blocked）：`docs/evidence/replay-staged-element-save-check-dsh-0.2.0-rc.2.json`、
   `…-0.2.1-alpha.1.json`、`…-0.2.1-rc.2.json`、`…-0.2.2-rc.1.json`（最后一份带
