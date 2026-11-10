@@ -39,7 +39,7 @@ bytes it installed. `npm run pack:check` and `test/release-pin.test.mjs` keep th
 two records apart instead of comparing every file to the pin: a host the pin
 verified must still describe the pinned artifact (content *and* bytes), while a
 host the pin never covered must describe the content this tree builds, because an
-older build's record proves nothing about this one. `0.2.2` pins all four
+older build's record proves nothing about this one. `0.2.3` pins all four
 declared hosts, so no host uses the second lane today; it exists for the next
 host a development tree adds, before the pin that covers it is cut.
 The split is `release/manifest.json#verifiedHosts`, so it moves only when a new
