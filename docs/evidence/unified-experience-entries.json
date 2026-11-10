@@ -1,16 +1,18 @@
 {
   "artifact": {
-    "sha256": "a3949f2067281548aa1ac0b40b9fe9c6651e32ea6b6de12cc5133308dc89d13e",
-    "contentSha256": "1432a695a98af0f2a10637037361ca6ff4504c274dae7bb4549ada1a8ffb2a7c",
-    "entries": 54
+    "sha256": "a730a6ac12538d39c0562a9b20bab4e8bb66b6852903c95501eece1ed4e36da9",
+    "contentSha256": "8e9a620ed02515058316df956459d80face271b7e71d383a6c0a469627c91661",
+    "entries": 55
   },
   "runtimeFileSha256": {
-    "lib/shared-experience.js": "9cbc619f792c4ef446d06add3d1cec2b56a1731038de1e2931f68fa3f40d03be",
-    "lib/experience-collector.js": "2fcda25ef2c2a8a1007b5318f6778306bfef6c46238d3973e09c2b725f1ec421",
-    "lib/index.js": "2266dee2be491bab4ddaba0c7599e66e0c3da9387a16138068ef3767edfde4be",
-    "lib/orchestrator.js": "a6b3167b40cf1a2806a87367b8c04a8d40f1e4143386a0726e5e7c13e4d42d1d",
+    "lib/shared-experience.js": "a0a4d9fe1108b5880ffa2a86187dd2f0f8ee9845ebafaaf7119195bd018d1b9b",
+    "lib/experience-collector.js": "dad8854fea3082a7e9141f31280d31dd07b819e3d0819ad1e9cb7aa3802840d0",
+    "lib/experience-history.js": "7d4e7491db3802fd50d90c33ca412ca488fb43ebece4b5970767e641ebfed4c8",
+    "lib/index.js": "7d290829b7ef4bf371cf3ae2f344438b438abaa1d1cb86d608ff8689bb54aa9d",
+    "lib/orchestrator.js": "ed26cf8956d167236e5754845233bdbe704f8934b33a1644dc4ab61158267974",
     "lib/registration.js": "7773c5c7ac70f4c88fc1459f1d51fcea94b286d90c38fd15e929125dcb74639e",
-    "scripts/setup-experience.mjs": "63a5f8465c1b166be51bfa41af3d0b286f6f4301097e37d16a3a4aae0f369435"
+    "lib/experience-recall.js": "4ae24e2bc1a6295f00e772f4f4851f2e956026f5f6b506e320ddde55a9d87f77",
+    "scripts/setup-experience.mjs": "4f24b8db4f1da2703755dfdd2bada70a90135e225f00e46464e03c8782fe5cae"
   },
   "hmr": false,
   "installedProfileBytesVerifiedAgainstTree": [
@@ -18,6 +20,7 @@
     "acp",
     "web"
   ],
+  "installedByteComparison": "extracted dist tarball diffed recursively against each profile node_modules/dsh-evolution: identical for desktop, acp and web; lib/experience-history.js present in all three",
   "desktop": {
     "entry": "official Desktop application",
     "isolatedElectronUserData": true,
@@ -28,19 +31,19 @@
     "actualTool": "read",
     "startupPhase": "none",
     "before": {
-      "events": 22,
+      "events": 30,
       "knowledge": 4
     },
     "afterParent": {
-      "events": 23,
+      "events": 31,
       "knowledge": 4
     },
     "afterRepeatCallId": {
-      "events": 24,
+      "events": 32,
       "knowledge": 4
     },
     "afterChild": {
-      "events": 25,
+      "events": 33,
       "knowledge": 4
     },
     "experimentsBefore": 0,
@@ -48,7 +51,7 @@
     "corePresent": true,
     "historyTools": 1,
     "sharedRecallRecords": 2,
-    "sharedRecallOccurrences": 3,
+    "sharedRecallOccurrences": 4,
     "externalModelCalls": 0,
     "sharedKnownTarget": "plugin:promotion_probe_stable",
     "sharedKnownResults": 2
@@ -61,30 +64,30 @@
     "simulatedEvents": false,
     "actualTool": "read",
     "before": {
-      "events": 25,
-      "knowledge": 4
+      "events": 34,
+      "knowledge": 5
     },
     "afterParent": {
-      "events": 26,
-      "knowledge": 4
+      "events": 35,
+      "knowledge": 5
     },
     "afterRepeatCallId": {
-      "events": 27,
-      "knowledge": 4
+      "events": 36,
+      "knowledge": 5
     },
     "afterChild": {
-      "events": 28,
-      "knowledge": 4
+      "events": 37,
+      "knowledge": 5
     },
     "experimentsBefore": 0,
     "experimentsAfter": 0,
     "corePresent": false,
     "historyTools": 1,
     "sharedRecallRecords": 1,
-    "sharedRecallOccurrences": 23,
+    "sharedRecallOccurrences": 30,
     "externalModelCalls": 0,
-    "sharedKnownTarget": "plugin:promotion_probe_stable",
-    "sharedKnownResults": 1
+    "sharedKnownTarget": "plugin:promotion_probe_r2",
+    "sharedKnownResults": 2
   },
   "acp": {
     "ok": true,
@@ -101,16 +104,16 @@
       "stopReason": "end_turn"
     },
     "stats": {
-      "events": 30,
-      "knowledge": 4
+      "events": 39,
+      "knowledge": 5
     },
     "recallRecords": 2,
     "historyResult": {
       "sources": [
         {
           "source": "shared-knowledge",
-          "considered": 4,
-          "scanned": 4,
+          "considered": 5,
+          "scanned": 5,
           "matched": 1,
           "duplicates": 0,
           "dropped": 0,
@@ -118,14 +121,14 @@
         }
       ],
       "failures": 1,
-      "occurrences": 24
+      "occurrences": 31
     },
     "actualReadTool": "read",
-    "priorReadOccurrences": 23,
-    "knownTarget": "plugin:promotion_probe_stable",
+    "priorReadOccurrences": 30,
+    "knownTarget": "plugin:promotion_probe_r2",
     "knownResult": {
-      "resolved": 1,
-      "successes": 2
+      "resolved": 2,
+      "successes": 3
     },
     "updates": [
       "usage_update",
@@ -182,18 +185,18 @@
         "historySchemaBytes": 401
       },
       {
-        "bytes": 40005,
+        "bytes": 41371,
         "toolSchemaBytes": 19266,
         "historySchemas": 1,
         "historySchemaBytes": 401
       }
     ],
-    "elapsedMs": 737.457958,
+    "elapsedMs": 660.7792919999999,
     "tokenMeasurement": "Fixture usage is synthetic; schema bytes are measured, billing tokens are not."
   },
   "manualDesktopPromotion": {
     "listenerExecuted": true,
-    "target": "plugin:promotion_probe_stable",
+    "target": "plugin:promotion_probe_r2",
     "sharedKnown": true,
     "steps": [
       {
@@ -211,7 +214,7 @@
         "phase": "trial"
       },
       {
-        "name": "event:promotion_probe_stable",
+        "name": "event:promotion_probe_r2",
         "ok": true
       },
       {
@@ -230,7 +233,7 @@
         "phase": "canary-observing"
       },
       {
-        "name": "event:promotion_probe_stable",
+        "name": "event:promotion_probe_r2",
         "ok": true
       },
       {
@@ -240,13 +243,15 @@
       }
     ]
   },
-  "manualPromotionProof": "Manual promotion was executed before the receipt-identity-only collector fix; the core, shared adapter and publication-hook bytes are unchanged. The current artifact was installed in all three profiles before the recorded restart and recall checks.",
+  "manualPromotionProof": "Desktop executed the real propose/trial/measure/confirmation-gate/promote/canary-observe path with promotion_probe_r2 against the current artifact in the isolated home; the promoted listener ran and the promotion-succeeded fact was published through the signed bridge with a writer sequence. Web and ACP processes started later read the new target from the shared store through the separate experience-history entry. Restart, startup-canary and rollback coverage comes from the re-run host acceptance evidence (docs/evidence/shared-experience-host-0.2.2-rc.1.json).",
   "limits": [
     "Runtime integration through official entry and tool APIs; Desktop GUI and Web browser clicks were not automated.",
     "ACP uses a real stdio process and a deterministic loopback model transport, not a live external provider.",
     "Native receipt dedup is a focused unit test; repeated callId executions in real entry probes must count separately.",
     "Legacy free-text knowledge stays in the original Desktop store; it is not automatically shared.",
-    "Provider billing tokens are unmeasured; only actual request counts and schema bytes are reported."
+    "Provider billing tokens are unmeasured; only actual request counts and schema bytes are reported.",
+    "The Desktop entry probe ends at canary-observing for the new candidate; the canary commit/rollback lifecycle is proven by the host acceptance run, not by this entry probe.",
+    "Recall for the new promotion target also returned the previous promotion_probe_stable row because the query matches on tokens; the new row itself reports its own successCount."
   ],
   "formalDshProfilesOrDataModified": false
 }
