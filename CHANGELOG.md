@@ -12,6 +12,36 @@ that adds DSH `0.2.2-rc.1` (Cordis 4.1 / Include 1.1) to the accepted hosts.
 (`0.2.0-rc.2`, `0.2.1-alpha.1`, `0.2.1-rc.2`, `0.2.2-rc.1`, still with host HMR
 disabled for the last one), and it carries the merged performance, measurement and
 fix work below without adding a host, a persistence format or a tool-surface shape.
+`0.2.3` is the stable successor of `0.2.2` and changes only the composition
+guard's verb boundary: read-only commands whose arguments merely contain the
+words `install` / `publish` (for example test file names) are allowed again,
+while real writes and irreversible operations stay denied. No host, persistence
+format, tool-surface shape or authorization source changes.
+
+## 0.2.3 — 稳定版
+
+`0.2.2` 的稳定后继。依赖、持久 schema 与 schema 版本、工具名 / 参数 / 参数 schema、授权来源、
+晋升门禁的 8 项证据、风险分级、`engines`、`peerDependencies` 与受支持宿主集合均未改动。相对
+`0.2.2` 固定产物，分发内容只变化 `lib/guard.js` 一个实现文件，加上 `README.md`、`COMPATIBILITY.md`、
+`CHANGELOG.md`、`RELEASE.md`、版本号与发布固定点。
+
+### 修复
+
+- **只读命令不再因文件名里的 `install` / `publish` 被当成「不可逆操作 + 写动词」拒绝（PR #43）。**
+  `commandMutatesComposition()` 的第三段判定把 `IRREVERSIBLE_OPERATION_RE` 与 `MUTATION_VERBS_RE`
+  都作用于整条 argv：真实失败的 `git show bf38283:test/storage-transaction-archive-publish.test.mjs`
+  通过管道接 `grep`（以及遍历 `test/storage-transaction-archive-{install,publish}.test.mjs` 的 for
+  循环）里，文件名 `…archive-install…` 命中写动词 `install`、`…archive-publish…` 命中不可逆 `publish`，
+  于是被报成直接修改 Cordis trust root。现在独立写动词（`tee` `cp` `mv` `rm` `install` `truncate`
+  `ln` `shred` `sponge`）只在命令词位置匹配：绝对路径命令（`/bin/rm`）、既有的可执行后缀
+  （`rm.exe`）与命令位置的动词保持原判定，粘在名字或后缀里的片段（`x-install`、`install.test.mjs`、
+  `install/`）不再匹配。深度 / 规模上限后的 `NESTED_FALLBACK_WRITE_RE` 复用同一份正则源，因此保守
+  回退也获得同一条边界。
+- **范围与代价。** 只改这一个动词边界；真实写入、不可逆操作、绝对路径命令、嵌套 shell 与受保护目标的
+  拒绝语义不变，`assertPromotableHostSource`、trust-root 保护规则、经验积累机制、Token 策略与工作流
+  未改。守卫仍是启发式误操作提示，不是 shell 沙箱（见 `RELEASE.md` 第 6 节第 3 条）。回归用真实失败
+  命令与旧 / 新差分钉住：50 条命令里只有两条只读判定从拒绝变为放行，真实写入全部保持拒绝；新增用例
+  在修复前失败、修复后通过。
 
 ## 0.2.2 — 稳定版
 
