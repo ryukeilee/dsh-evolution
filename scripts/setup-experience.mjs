@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 
 const BEGIN = '# BEGIN dsh-evolution shared experience';
 const END = '# END dsh-evolution shared experience';
@@ -31,11 +31,15 @@ export function managedPatch(previous, profile) {
 export function setupPlan({ home, tarball, cli }) {
   if (!path.isAbsolute(home) || !path.isAbsolute(tarball)) throw new Error('Absolute home and tarball paths required');
   if (!fs.statSync(tarball).isFile()) throw new Error('Tarball required');
+  const sha256 = createHash('sha256').update(fs.readFileSync(tarball)).digest('hex');
+  // A file dependency is cached by path. Rebuilding the same development
+  // filename must not be mistaken for an already installed older package.
+  const artifact = path.join(home, 'storages', 'evolution-package-cache', `${sha256}.tgz`);
   return ['desktop', 'acp', 'web'].map(profile => {
     const file = path.join(home, 'profiles', profile, 'cordis.patch.yml');
     const previous = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
     return { profile, file, previous, next: managedPatch(previous, profile),
-      command: cli, args: ['plugin', '--profile', profile, 'add', tarball],
+      command: cli, args: ['plugin', '--profile', profile, 'add', artifact], artifact, sha256,
       role: profile === 'desktop' ? 'existing manual Evolution + shared collection/recall' : 'shared collection/recall only' };
   });
 }
@@ -55,6 +59,16 @@ function main(argv) {
   const plan = setupPlan({ ...options, home, tarball: path.resolve(options.tarball) });
   console.log(JSON.stringify({ apply: options.apply, home, profiles: plan.map(({ profile, file, role, command, args }) => ({ profile, file, role, command, args })) }, null, 2));
   if (!options.apply) return;
+  const bytes = fs.readFileSync(path.resolve(options.tarball));
+  if (createHash('sha256').update(bytes).digest('hex') !== plan[0].sha256) throw new Error('Package changed after planning; nothing installed');
+  const artifact = plan[0].artifact;
+  fs.mkdirSync(path.dirname(artifact), { recursive: true, mode: 0o700 });
+  try {
+    const descriptor = fs.openSync(artifact, 'wx', 0o600);
+    try { fs.writeFileSync(descriptor, bytes); fs.fsyncSync(descriptor); }
+    finally { fs.closeSync(descriptor); }
+  } catch (error) { if (error.code !== 'EEXIST') throw error; }
+  if (!fs.readFileSync(artifact).equals(bytes)) throw new Error('Cached package disagrees with its digest; preserving it for inspection');
   // Official plugin management owns dependency registration. Apply each owned
   // override only after success; report partial progress instead of pretending
   // a multi-profile install is an atomic DSH transaction.

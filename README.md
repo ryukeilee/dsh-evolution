@@ -14,7 +14,7 @@
 
 ## 30 秒了解
 
-本开发树新增统一经验采集；`release/` 中的 0.2.3 固定包不包含该改动。尚未完成三入口全部验收，见 [接入审计](docs/design/unified-experience.md)，不要把下面的配置方案当作已发布支持声明。
+本开发树新增统一经验采集；`release/` 中的 0.2.3 固定包不包含该改动。开发候选的运行验收与边界见 [接入审计](docs/design/unified-experience.md)，下面的配置方案不是已发布支持声明。
 
 ### Desktop、ACP、Web 共用经验
 
@@ -33,7 +33,7 @@ node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.3.tgz
 node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.3.tgz --apply
 ```
 
-安装器只维护标记块，保留其他插件、Skills、T3 工作流与 storage route；HMR 保持关闭。它不会复制或迁移历史，不会启停正在运行的正式应用。每个 profile 的官方安装结果分别报告，途中失败会停止并报告已完成项；多 profile 安装不是原子事务。安装后重启对应入口。非 macOS 或自定义安装可用 `--cli <官方 dsh 可执行文件>` 指定 CLI。
+安装器只维护标记块，保留其他插件、Skills、T3 工作流与 storage route；HMR 保持关闭。它不会复制或迁移历史，不会启停正在运行的正式应用。待安装包以内容摘要缓存在 `storages/evolution-package-cache`，由官方 CLI 从不可变路径安装，避免同版本本地重建被文件依赖缓存误判为已安装。缓存内容不匹配时拒绝覆盖。每个 profile 的官方安装结果分别报告，途中失败会停止并报告已完成项；多 profile 安装不是原子事务。安装后重启对应入口。非 macOS 或自定义安装可用 `--cli <官方 dsh 可执行文件>` 指定 CLI。
 
 采集不增加模型调用。轻量入口为显式检索增加一个 history 工具 schema；它仍占上下文，不能宣称零 Token。实际延迟和 schema 字节测量见 [性能记录](docs/performance/shared-experience.md)。卸载插件不会删除共享库；降级同样保留它，旧版本不会读取该库。
 

@@ -21,27 +21,34 @@ const requests = [];
 let tools = [];
 let stage = -1;
 let historyResult = null;
+let actualReadTool = null;
+let priorReadOccurrences = 0;
+const knownTarget = process.env.EVOLUTION_ACCEPTANCE_KNOWLEDGE_TARGET;
+let knownResult = null;
 const server = http.createServer(async (req, res) => {
   let body = '';
   for await (const chunk of req) body += chunk;
   const input = JSON.parse(body);
   tools = input.tools || [];
   requests.push({ bytes: Buffer.byteLength(body), toolSchemaBytes: Buffer.byteLength(JSON.stringify(tools)),
-    historySchemas: tools.filter(tool => tool.name === 'evolution_history').length });
+    historySchemas: tools.filter(tool => tool.name === 'evolution_history').length,
+    historySchemaBytes: Buffer.byteLength(JSON.stringify(tools.filter(tool => tool.name === 'evolution_history'))) });
   if (stage === -1) {
     stage = 0;
     res.writeHead(400, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: 'Isolated acceptance provider failure' } }));
     return;
   }
-  if (stage === 3) {
+  if (stage === 3 || stage === 5) {
     const result = input.messages.flatMap(message => Array.isArray(message.content) ? message.content : [])
-      .find(block => block.type === 'tool_result' && block.tool_use_id === 'fixture-call-2');
+      .find(block => block.type === 'tool_result' && block.tool_use_id === `fixture-call-${stage - 1}`);
     const content = typeof result?.content === 'string' ? result.content : result?.content?.filter(block => block.type === 'text').map(block => block.text).join('');
     if (content) {
       try {
         const value = JSON.parse(content);
-        historyResult = { sources: value.sources, failures: value.failures?.length };
+        if (stage === 3) historyResult = { sources: value.sources, failures: value.failures?.length,
+          occurrences: value.failures?.reduce((n, row) => n + row.occurrences, 0) };
+        else knownResult = { resolved: value.resolved?.length, successes: value.resolved?.reduce((n, row) => n + row.successCount, 0) };
       } catch {}
     }
   }
@@ -49,11 +56,17 @@ const server = http.createServer(async (req, res) => {
   const send = (type, data) => res.write(`event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`);
   send('message_start', { message: { id: `fixture-${stage}`, type: 'message', role: 'assistant', model: 'deepseek-v4-flash',
     content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 0 } } });
-  if (stage === 0 || stage === 2) {
+  if (stage === 0 || stage === 2 || stage === 4) {
     const tool = stage === 0 ? tools.find(tool => /read.*file|file.*read|^read$/.test(tool.name)) : tools.find(tool => tool.name === 'evolution_history');
     if (!tool) { res.destroy(new Error('Required real tool unavailable')); return; }
+    if (stage === 0) {
+      actualReadTool = tool.name;
+      const store = openSharedExperience(path.join(home, 'storages', 'evolution-experience'));
+      priorReadOccurrences = store.recall({ problem: actualReadTool, target: `tool:${actualReadTool}` }).records.reduce((n, row) => n + row.occurrences, 0);
+      store.close();
+    }
     const args = stage === 0 ? Object.fromEntries(Object.keys(tool.input_schema.properties || {}).filter(key => /path/.test(key)).map(key => [key, path.join(home, 'definitely-missing.txt')]))
-      : { query: 'agent', target: 'agent' };
+      : stage === 2 ? { query: actualReadTool, target: `tool:${actualReadTool}` } : { query: knownTarget, target: knownTarget };
     send('content_block_start', { index: 0, content_block: { type: 'tool_use', id: `fixture-call-${stage}`, name: tool.name, input: {} } });
     send('content_block_delta', { index: 0, delta: { type: 'input_json_delta', partial_json: JSON.stringify(args) } });
     send('content_block_stop', { index: 0 });
@@ -104,17 +117,22 @@ try {
   catch { failedPrompt = true; }
   if (!failedPrompt) throw new Error('Expected real provider failure was not observed');
   const first = await rpc('session/prompt', { sessionId, prompt: [{ type: 'text', text: 'Read the missing acceptance file.' }] });
-  const second = await rpc('session/prompt', { sessionId, prompt: [{ type: 'text', text: 'Recall shared agent experience.' }] });
+  const second = await rpc('session/prompt', { sessionId, prompt: [{ type: 'text', text: 'Recall shared tool experience.' }] });
+  if (knownTarget) await rpc('session/prompt', { sessionId, prompt: [{ type: 'text', text: 'Recall the verified Desktop promotion.' }] });
   const store = openSharedExperience(path.join(home, 'storages', 'evolution-experience'));
   const stats = store.stats();
   const recall = store.recall({ problem: 'agent', target: 'agent' });
   store.close();
-  if (requests.length !== 5 || requests.some(row => row.historySchemas !== 1)) throw new Error('Unexpected model rounds or duplicate/missing history schema');
+  if (requests.length !== (knownTarget ? 7 : 5) || requests.some(row => row.historySchemas !== 1)) throw new Error('Unexpected model rounds or duplicate/missing history schema');
   if (!historyResult?.sources?.some(source => source.source === 'shared-knowledge' && source.available) || !historyResult.failures) throw new Error('Shared recall through the actual ACP history tool not proven');
+  if (historyResult.occurrences < priorReadOccurrences + 1) throw new Error('Previously committed cross-entry occurrences were lost');
+  if (knownTarget && (!knownResult?.resolved || !knownResult.successes)) throw new Error('Verified Desktop knowledge unavailable through ACP');
   if (stats.events < 2 || !updates.includes('tool_call')) throw new Error('Real tool pipeline collection not proven');
   evidence = { ok: true, transport: 'real ACP stdio; loopback deterministic Anthropic responses',
     simulatedEvents: false, externalModelCalls: 0, modelResponses: requests.length,
     collectionAdditionalModelCalls: 0, failedPrompt, first, second, stats, recallRecords: recall.records.length, historyResult,
+    actualReadTool, priorReadOccurrences,
+    ...(knownTarget ? { knownTarget, knownResult } : {}),
     updates, requests, elapsedMs: performance.now() - start,
     tokenMeasurement: 'Fixture usage is synthetic; schema bytes are measured, billing tokens are not.' };
 } catch (error) { evidence = { ok: false, error: error.message, requests, updates, stderr: stderr.slice(-3000) }; process.exitCode = 1; }

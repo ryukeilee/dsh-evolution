@@ -7,7 +7,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { openSharedExperience, experienceEventId } from '../lib/shared-experience.js';
 import { normalizeKnowledgeEvent, mergeKnowledgeEntry } from '../lib/dockyard-domain/knowledge.js';
-import { managedPatch } from '../scripts/setup-experience.mjs';
+import { managedPatch, setupPlan } from '../scripts/setup-experience.mjs';
 import yaml from 'js-yaml';
 import { EvolutionEventBridge } from '../lib/orchestrator.js';
 import { apply as applyCore } from '../lib/registration.js';
@@ -121,6 +121,18 @@ test('daily collector configuration leaves manual lifecycle and startup canary h
   assert.ok(!listeners.has('agent/error')); assert.ok(!listeners.has('tools/result'));
   for (const name of ['evolution_trial', 'evolution_measure', 'evolution_promote', 'evolution_revert']) assert.ok(names.includes(name));
   assert.equal(typeof core.trial, 'function');
+});
+
+test('different bytes at one development tarball path produce different official install identities', t => {
+  const root = temporary(t); const tarball = path.join(root, 'development.tgz');
+  fs.writeFileSync(tarball, 'first candidate');
+  const first = setupPlan({ home: root, tarball, cli: 'dsh' });
+  fs.writeFileSync(tarball, 'second candidate');
+  const second = setupPlan({ home: root, tarball, cli: 'dsh' });
+  assert.notEqual(first[0].artifact, second[0].artifact);
+  assert.equal(first.length, 3);
+  assert.ok(first.every(item => item.artifact === first[0].artifact));
+  assert.ok(!fs.existsSync(first[0].artifact), 'planning must not write a cache or profile');
 });
 
 test('shared publication can recover from the authenticated bridge without trusting a foreign event', t => {
