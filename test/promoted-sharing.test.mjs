@@ -309,12 +309,16 @@ test('consumer composition entries contain each record exactly once', async (t) 
 test('startup reconciliation republishes only explicit stable approvals', async (t) => {
   const env = await fixture(t, { id: 'exp-share-reconcile' });
   // A stable sidecar with an explicit approval and a committed durable identity.
+  const manifestBytes = await fs.readFile(path.join(env.pluginDir, 'package.json'), 'utf8');
   const sidecar = {
     stableCommittedAt: '2026-01-02T00:00:00.000Z',
     shareTargets: ['acp'],
     durable: env.durable,
     canary: env.experiment.canary,
     decision: { kind: 'benefit' },
+    // The verified publication identity is the durable stable fact a reconciler
+    // must reuse; without it a republish is refused, never re-derived.
+    publication: { sourceSha256: HEX(env.source), manifestSha256: HEX(manifestBytes), verifiedAt: '2026-01-02T00:00:00.000Z', host: HOST },
   };
   await fs.writeFile(path.join(env.paths.archiveDir, 'exp-share-reconcile.evidence.json'), JSON.stringify(sidecar));
   // A historical Desktop-only stable promotion stays out of the index.
@@ -322,12 +326,18 @@ test('startup reconciliation republishes only explicit stable approvals', async 
   const candidates = await scanStableShareCandidates(env.paths);
   assert.deepEqual(candidates.map((row) => row.experimentId), ['exp-share-reconcile']);
 
-  const result = await reconcileSharedIndex({ paths: env.paths, host: HOST, capabilities: CAPABILITIES });
+  const newerHost = { ...HOST, dsh: '0.2.9-rc.9', cordis: '4.9.0', include: '1.9.0', node: 'v26.0.0' };
+  const result = await reconcileSharedIndex({ paths: env.paths, host: newerHost, capabilities: CAPABILITIES });
   assert.equal(result.status, 'ok');
   assert.deepEqual(result.published.map((row) => row.id), [env.durable.rowId]);
   const index = await readSharedIndex(env.paths);
   assert.deepEqual(index.records[0].approvedProfiles, ['acp']);
   assert.equal(index.records[0].stable.canary.healthObservationWindow, 2);
+  // The reconciler's own host is NOT adopted: the record keeps the identity the
+  // promotion was verified on, so consumers on the new host wait for
+  // revalidation instead of treating an unverified host as verified.
+  assert.equal(index.records[0].host.dsh, HOST.dsh);
+  assert.equal(index.records[0].host.cordis, HOST.cordis);
 
   // Reconcile again: the same stable fact is a no-op.
   const again = await reconcileSharedIndex({ paths: env.paths, host: HOST, capabilities: CAPABILITIES });
@@ -385,4 +395,63 @@ test('the publication lock reclaims a dead owner and never steals a live one', a
   await assert.rejects(publishSharedRecord(env.paths, record), (error) => error?.code === 'E_SHARED_PUBLISH_BUSY');
   assert.equal((await readSharedIndex(env.paths)).records.length, 1, 'the live owner\'s index state is untouched');
   await fs.rm(lockPath, { force: true });
+});
+
+test('a reconciler never republishes a changed source or a missing identity', async (t) => {
+  const env = await fixture(t, { id: 'exp-share-reconcile-tamper' });
+  const manifestBytes = await fs.readFile(path.join(env.pluginDir, 'package.json'), 'utf8');
+  const sidecar = {
+    stableCommittedAt: '2026-01-02T00:00:00.000Z',
+    shareTargets: ['acp'],
+    durable: env.durable,
+    canary: env.experiment.canary,
+    decision: { kind: 'benefit' },
+    publication: { sourceSha256: HEX(env.source), manifestSha256: HEX(manifestBytes), verifiedAt: '2026-01-02T00:00:00.000Z', host: HOST },
+  };
+  const sidecarPath = path.join(env.paths.archiveDir, 'exp-share-reconcile-tamper.evidence.json');
+  await fs.writeFile(sidecarPath, JSON.stringify(sidecar));
+  // The plugin bytes changed after the stable commit: refuse, do not launder.
+  await fs.writeFile(env.modulePath, 'tampered after stable commit');
+  const tampered = await reconcileSharedIndex({ paths: env.paths, host: HOST, capabilities: CAPABILITIES });
+  assert.deepEqual(tampered.published, []);
+  assert.equal((await readSharedIndex(env.paths)).records.length, 0);
+  assert.ok(tampered.skipped.some((row) => /verified promotion source|differs/.test(String(row.reason))), JSON.stringify(tampered.skipped));
+
+  // A stable approval with no recorded publication identity cannot be rebuilt
+  // from the reconciler's current view either.
+  await fs.writeFile(env.modulePath, env.source);
+  await fs.writeFile(sidecarPath, JSON.stringify({ ...sidecar, publication: undefined }));
+  const anonymous = await reconcileSharedIndex({ paths: env.paths, host: HOST, capabilities: CAPABILITIES });
+  assert.deepEqual(anonymous.published, []);
+  assert.ok(anonymous.skipped.some((row) => row.reason === 'no-verified-publication-identity'), JSON.stringify(anonymous.skipped));
+});
+
+test('Cordis object-form inject declarations gate compatibility by required services', async (t) => {
+  const env = await fixture(t, {
+    id: 'exp-share-object-inject',
+    moduleSource: 'export const name = "declared";\nexport const inject = { required: ["kernelOnlyService"], optional: ["tools"] };\nexport function apply() {}\n',
+  });
+  const record = await buildRecord(env);
+  assert.deepEqual(record.requiredServices, ['kernelOnlyService']);
+  assert.deepEqual(record.optionalServices, ['tools']);
+  const decision = await evaluateSharedRecord({
+    paths: env.paths,
+    record,
+    profile: 'acp',
+    host: { ...HOST, profile: 'acp' },
+    capabilities: CAPABILITIES,
+    services: { has: (name) => name === 'tools', memberPresent: () => true },
+    mountedModuleUrls: [],
+    disableState: { entries: [] },
+    previousState: null,
+  });
+  assert.equal(decision.status, SHARED_STATUS.INCOMPATIBLE);
+  assert.equal(decision.reason, 'missing-service');
+  assert.deepEqual(decision.services, ['kernelOnlyService']);
+  // The optional service is not a compatibility requirement.
+  assert.equal((await evaluateSharedRecord({
+    paths: env.paths, record, profile: 'acp', host: { ...HOST, profile: 'acp' }, capabilities: CAPABILITIES,
+    services: { has: (name) => name === 'kernelOnlyService', memberPresent: () => true },
+    mountedModuleUrls: [], disableState: { entries: [] }, previousState: null,
+  })).status, 'eligible');
 });

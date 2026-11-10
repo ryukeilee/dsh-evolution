@@ -10,6 +10,10 @@ import { normalizeShareTargets, writeDurablePromotion, recoverInterruptedPromoti
 import { readSharedIndex, sharingPaths } from '../lib/promoted-sharing.js';
 import { promotionPaths, unitPromotionRuntime, promotionExperiment, HOST_CODE, orchestratorContext, scratchRoot } from './orchestrator-durability-fixtures.mjs';
 import { pathToFileURL } from 'node:url';
+import crypto from 'node:crypto';
+
+const HOST = { profile: 'desktop', dsh: '0.2.2-rc.1', cordis: '4.1.0', include: '1.1.0', node: 'v24.21.0', capturedAt: '2026-01-01T00:00:00.000Z' };
+const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
 async function fixture(t, name = 'share-targets') {
   const root = await scratchRoot(name);
@@ -44,6 +48,22 @@ test('the durable transaction records the approved deployment scope', async (t) 
   const archive = await fs.readFile(durable.archivePath, 'utf8');
   assert.match(archive, /shared with: acp, web/);
   assert.equal(journal.phase, 'canary-observing');
+});
+
+test('an approved promotion records the verified publication identity with its journal', async (t) => {
+  const { paths } = await fixture(t, 'share-targets-publication');
+  const experiment = { ...promotionExperiment('exp-share-publication'), shareTargets: ['acp'] };
+  await writeDurablePromotion({ experiment, paths, packageInspection: { code: { host: HOST_CODE } }, publicationHost: HOST });
+  const journal = JSON.parse(await fs.readFile(path.join(paths.promotionStateDir, 'journal.json'), 'utf8'));
+  assert.equal(journal.publication.sourceSha256.length, 64);
+  assert.equal(journal.publication.host.dsh, HOST.dsh);
+  assert.deepEqual(journal.evidenceSnapshot.publication, journal.publication);
+  assert.equal(journal.durable.publication.sourceSha256, journal.publication.sourceSha256);
+  // The identity describes the bytes actually written, not the host's guess.
+  const module = await fs.readFile(path.join(journal.durable.pluginPath, 'lib', 'index.js'));
+  const manifest = await fs.readFile(path.join(journal.durable.pluginPath, 'package.json'));
+  assert.equal(journal.publication.sourceSha256, sha256(module));
+  assert.equal(journal.publication.manifestSha256, sha256(manifest));
 });
 
 test('a rollout without explicit approval records no sharing fact at all', async (t) => {
@@ -166,6 +186,12 @@ test('startup reconciliation republishes durable stable approvals through the ke
     durable: { pluginName, pluginPath: pluginDir, moduleUrl: pathToFileURL(modulePath).href, rowId, promotionTimestamp: '2026-01-01T00:00:00.000Z' },
     canary: { promotionTimestamp: '2026-01-01T00:00:00.000Z', healthObservationWindow: 2, startupVerified: true, observations: [{ barrierId: 'startup' }, { barrierId: 'health' }] },
     decision: { version: 1, kind: 'benefit' },
+    publication: {
+      sourceSha256: sha256(await fs.readFile(modulePath)),
+      manifestSha256: sha256(await fs.readFile(path.join(pluginDir, 'package.json'))),
+      verifiedAt: '2026-01-02T00:00:00.000Z',
+      host: HOST,
+    },
   }));
   const ctx = {
     ...orchestratorContext(),
@@ -186,4 +212,46 @@ test('startup reconciliation republishes durable stable approvals through the ke
   const index = await readSharedIndex({ dataRoot: paths.presetDir, pluginRoot: paths.pluginRoot });
   assert.deepEqual(index.records[0].approvedProfiles, ['acp', 'web']);
   assert.equal(index.records[0].stable.committedAt, '2026-01-02T00:00:00.000Z');
+});
+
+test('stable journal recovery keeps the approved scope and the verified publication identity', async (t) => {
+  const { paths } = await fixture(t, 'share-targets-recovery');
+  const experiment = { ...promotionExperiment('exp-share-recovery'), shareTargets: ['acp', 'web'] };
+  const durable = await writeDurablePromotion({ experiment, paths, packageInspection: { code: { host: HOST_CODE } }, publicationHost: HOST });
+  const journalFile = path.join(paths.promotionStateDir, 'journal.json');
+  const journal = JSON.parse(await fs.readFile(journalFile, 'utf8'));
+  // The crash window: the stable phase was written, the journal was not removed.
+  journal.phase = 'stable-committed';
+  journal.stableCommittedAt = '2026-04-01T00:00:00.000Z';
+  journal.canary = {
+    ...journal.canary,
+    startupVerified: true,
+    observations: [{ barrierId: 'startup:desktop', startupVerified: true }, { barrierId: 'health:desktop' }],
+  };
+  await fs.writeFile(journalFile, JSON.stringify(journal));
+  const recovered = await recoverInterruptedPromotion(paths);
+  assert.equal(recovered.status, 'committed-cleaned');
+
+  // The replay sidecar must still carry the durable stable facts: dropping them
+  // here (the pre-fix behaviour) left reconciliation with nothing to publish
+  // after the journal was deleted.
+  const sidecar = JSON.parse(await fs.readFile(path.join(paths.archiveDir, 'exp-share-recovery.evidence.json'), 'utf8'));
+  assert.deepEqual(sidecar.shareTargets, ['acp', 'web']);
+  assert.equal(sidecar.stableCommittedAt, '2026-04-01T00:00:00.000Z');
+  assert.equal(sidecar.publication.sourceSha256, journal.publication.sourceSha256);
+  assert.equal(sidecar.publication.host.dsh, HOST.dsh);
+  assert.equal(sidecar.durable.publication.sourceSha256, journal.publication.sourceSha256);
+
+  // And reconciliation republishes exactly that durable fact, with the identity
+  // verified at promotion time (not the reconciler's current host).
+  const newerHost = { ...HOST, dsh: '0.2.9-rc.9', cordis: '4.9.0', include: '1.9.0', node: 'v26.0.0' };
+  const result = await reconcileSharedPromotions({ ctx: { get: (name) => name === 'profileContext' ? { name: 'desktop' } : name === 'pluginPackages' ? { packageOf: () => ({ version: '0.2.9-rc.9' }) } : undefined, fiber: { state: 2, uid: 1, inject: {}, inertia: undefined, store: {}, await: async () => {} } },
+    presetDir: paths.presetDir, pluginRoot: paths.pluginRoot, archiveDir: paths.archiveDir,
+    promotionRuntime: { ...unitPromotionRuntime(), capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true } } });
+  assert.equal(result.status, 'ok');
+  assert.deepEqual(result.published.map((row) => row.id), [durable.rowId]);
+  const index = await readSharedIndex({ dataRoot: paths.presetDir, pluginRoot: paths.pluginRoot });
+  assert.deepEqual(index.records[0].approvedProfiles, ['acp', 'web']);
+  assert.equal(index.records[0].stable.committedAt, '2026-04-01T00:00:00.000Z');
+  assert.equal(index.records[0].host.dsh, HOST.dsh);
 });
