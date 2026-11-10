@@ -192,4 +192,5 @@ node --max-old-space-size=4096 scripts/benchmarks/marker-window-write-cost.mjs \
   loaded 原样）。残留风险只剩证书所依赖的私有数组契约：该数组只 append 或整体替换，
   从不原地改内部元素（`lib/dockyard-domain/memory.js` 的 `#bridgeDeferredWindow`
   注释写明）。
-- 未合并、未发布；`release/` 固定产物未变。
+- PR：[#41 perf: grow the staged replay marker window in place](https://github.com/ryukeilee/dsh-evolution/pull/41)
+  （未合并、未发布；`release/` 固定产物未变）。
