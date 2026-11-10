@@ -170,6 +170,13 @@ node --max-old-space-size=4096 --expose-gc scripts/benchmarks/event-log-replay-m
   2 skip（既有 skip）。
 - `npm run pack:check`（开发语义）：17/17；工作树是固定点的已提交后继，未改
   `release/`。
-- 官方宿主验收（隔离临时 runtime/home，不触碰正式 `DSH_HOME`）：见
-  `docs/evidence/` 下与本轮对应的证据文件。
+- 官方宿主验收：用本轮 `release:pack` 产物（content sha256
+  `be1ba287…`、tarball sha256 `ce827a3d…`）在隔离临时 runtime/home 中各跑一次完整
+  21 步，四个声明宿主全部通过、最终 doctor `degraded`（已知的 5 项
+  degradedCapabilities，无 blocked）：`docs/evidence/replay-staged-element-save-check-dsh-0.2.0-rc.2.json`、
+  `…-0.2.1-alpha.1.json`、`…-0.2.1-rc.2.json`、`…-0.2.2-rc.1.json`（最后一份带
+  `--no-hmr`，与 CI 的该宿主行一致）。第一次重跑时当前会话的 `DSH_PROFILE` /
+  `DSH_PROFILE_DIR` 环境变量泄漏进宿主子进程导致 4 个宿主都在 core-flow 的 live
+  doctor 上失败；用未修改的基线产物可复现同一失败，清掉这些变量后同一产物 21/21
+  通过，因此该失败是采集环境问题，不是本改动。失败的原始记录未保留为证据。
 - 未合并、未发布；`release/` 固定产物未变。
