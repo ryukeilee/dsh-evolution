@@ -22,12 +22,18 @@
  *      Include adapter across restarts, and a canary rollback
  *   9. (with --experience-evolution) real tool failures -> evolution_plan ->
  *      paired baseline/candidate probes -> refuse or promote -> restart recall
- *  10. final doctor
+ *  10. (with --cross-entry) publish a stable promotion from the full-kernel Web
+ *      entry with explicit ACP/Web approval, then prove the ACP and Web
+ *      consumers mount it without the Evolution kernel: restart, incompatible
+ *      plugin isolation, tampered source, operator revocation, simulated host
+ *      upgrade/revalidation, and a real headless ACP consumer boot
+ *  11. final doctor
  *
  * Usage:
  *   node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2 \
  *     [--tarball dist/dsh-evolution-0.2.0-rc.1.tgz] [--out docs/evidence/...] \
- *     [--work <dir>] [--runtime <dir>] [--no-hmr] [--experience-evolution] [--keep]
+ *     [--work <dir>] [--runtime <dir>] [--no-hmr] [--experience-evolution] \
+ *     [--cross-entry] [--keep]
  */
 import { fork, spawn, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -40,6 +46,16 @@ import { createPrivateNpmEnv } from './npm-cache-env.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROBES = path.join(HERE, 'probes');
+/**
+ * Never inherit the caller's DSH environment. This acceptance must run only
+ * against the isolated `$DSH_HOME` it creates: a caller that is itself running
+ * inside a DSH profile (for example an ACP agent session) exports `DSH_PROFILE`
+ * and `DSH_HOME`, and the booted host gives `process.env.DSH_PROFILE` priority
+ * over its own `profileContext` when it resolves its profile. Inheriting it
+ * would make the run diagnose (and consume) the wrong profile while the data
+ * root is the isolated one.
+ */
+const INHERITED_ENV = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DSH_')));
 /** The tool surface the bundle registers (lib/registration.js#EVOLUTION_TOOLS).
  *  It is pinned here as a number so the harness does not have to load the host
  *  module; `scripts/acceptance/probes/*.mjs` wait for the same count live. */
@@ -55,7 +71,7 @@ const EXPERIENCE_EVOLUTION_HOST = '0.2.2-rc.1';
 const EXPERIENCE_EVOLUTION_PHASES = ['seed', 'invalid', 'restart', 'regression'];
 
 function parseArgs(argv) {
-  const options = { keep: false, timeoutMs: 180000, noHmr: false, experienceEvolution: false };
+  const options = { keep: false, timeoutMs: 180000, noHmr: false, experienceEvolution: false, crossEntry: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     const value = () => {
@@ -71,6 +87,7 @@ function parseArgs(argv) {
     else if (arg === '--runtime') options.runtime = path.resolve(value());
     else if (arg === '--no-hmr') options.noHmr = true;
     else if (arg === '--experience-evolution') options.experienceEvolution = true;
+    else if (arg === '--cross-entry') options.crossEntry = true;
     else if (arg === '--keep') options.keep = true;
     else if (arg === '--timeout-ms') options.timeoutMs = Number(value());
     else if (arg === '--help' || arg === '-h') options.help = true;
@@ -93,6 +110,12 @@ const HELP = `node scripts/acceptance/run-host-acceptance.mjs --host <dsh-versio
                       (real failures -> plan -> baseline/candidate probes ->
                       measure -> refuse or promote -> restart recall); only
                       supported on ${EXPERIENCE_EVOLUTION_HOST}
+  --cross-entry       add the real-host cross-entry promotion acceptance: publish
+                      a stable promotion with explicit ACP/Web approval from the
+                      full-kernel Web entry, then prove the consumer-only Web and
+                      headless ACP entries mount it and every fault-isolation,
+                      revocation and revalidation case; only supported on
+                      ${EXPERIENCE_EVOLUTION_HOST}
   --keep              keep the scratch directory after the run
 `;
 
@@ -108,6 +131,10 @@ if (!supportedHosts.includes(options.host)) {
 }
 if (options.experienceEvolution && options.host !== EXPERIENCE_EVOLUTION_HOST) {
   console.error(`refusing to run: --experience-evolution needs the official batch tool executor, which only ${EXPERIENCE_EVOLUTION_HOST} of the declared hosts provides`);
+  process.exit(2);
+}
+if (options.crossEntry && options.host !== EXPERIENCE_EVOLUTION_HOST) {
+  console.error(`refusing to run: --cross-entry needs the host surfaces (batch tool executor, official Include consumer) that only ${EXPERIENCE_EVOLUTION_HOST} of the declared hosts provides`);
   process.exit(2);
 }
 
@@ -287,7 +314,7 @@ function cliPath() {
 
 function runCommand(command, args, { cwd = work, env = {}, timeoutMs = options.timeoutMs } = {}) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { cwd, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(command, args, { cwd, env: { ...INHERITED_ENV, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
     let output = '';
     const timer = setTimeout(() => { child.kill('SIGKILL'); }, timeoutMs);
     child.stdout.on('data', (bytes) => { output += bytes.toString(); });
@@ -297,13 +324,23 @@ function runCommand(command, args, { cwd = work, env = {}, timeoutMs = options.t
   });
 }
 
-function runCli(args) {
-  return runCommand(process.execPath, [cliPath(), 'plugin', '--profile', 'web', ...args], {
+function runCliProfile(profile, args) {
+  return runCommand(process.execPath, [cliPath(), 'plugin', '--profile', profile, ...args], {
     env: { DSH_HOME: home },
   });
 }
 
-function bootProbe(name, probeFile, extraEnv = {}) {
+function runCli(args) {
+  return runCliProfile('web', args);
+}
+
+/**
+ * Boot one probe entry. Existing callers keep the original three-argument form
+ * (web profile, no extra rows); the cross-entry acceptance passes extra overlay
+ * rows (for example disabling the kernel row to boot a consumer-only entry) and
+ * an alternate profile without changing any earlier step.
+ */
+function bootProbe(name, probeFile, extraEnv = {}, { profile = 'web', rows = [], awaitExit = false } = {}) {
   const patchFile = path.join(work, `${name}.patch.yml`);
   // `--no-hmr` addresses the base bundle's `hmr` row in the official overlay
   // form ("id-targeted config overrides, disables, and insert lists"). It is the
@@ -311,12 +348,15 @@ function bootProbe(name, probeFile, extraEnv = {}) {
   // without the service, PluginManager.configure() runs the operation directly
   // and reload() composes the saved profile instead of reconciling it live.
   const hmrRow = options.noHmr ? '- id: hmr\n  disabled: true\n' : '';
-  fs.writeFileSync(patchFile, `${hmrRow}- insert:\n    - id: evolution-acceptance-${name}\n      name: '${pathToFileURL(probeFile).href}'\n`);
+  const extraRows = rows
+    .map((row) => `- id: ${row.id}\n  disabled: ${row.disabled === true}\n`)
+    .join('');
+  fs.writeFileSync(patchFile, `${hmrRow}${extraRows}- insert:\n    - id: evolution-acceptance-${name}\n      name: '${pathToFileURL(probeFile).href}'\n`);
   return new Promise((resolve) => {
     const child = fork(
       cliPath(),
-      ['--profile', 'web', '--patch', patchFile, '--', '--no-open', '--host', '127.0.0.1', '--port', '0'],
-      { cwd: work, env: { ...process.env, DSH_HOME: home, ...extraEnv }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] },
+      ['--profile', profile, '--patch', patchFile, '--', '--no-open', '--host', '127.0.0.1', '--port', '0'],
+      { cwd: work, env: { ...INHERITED_ENV, DSH_HOME: home, ...extraEnv }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] },
     );
     let text = '';
     let settled = false;
@@ -327,7 +367,14 @@ function bootProbe(name, probeFile, extraEnv = {}) {
       fs.writeFileSync(path.join(logs, `${name}.log`), text);
       child.kill('SIGTERM');
       setTimeout(() => child.kill('SIGKILL'), 2000).unref?.();
-      resolve({ ...value, log: text });
+      if (!awaitExit) { resolve({ ...value, log: text }); return; }
+      // Consumer restarts must start only after the previous entry finished its
+      // shutdown: its disposal rewrites the consumer state, and reading that
+      // write as the next boot's activation would fake a duplicate-free restart.
+      const exited = () => resolve({ ...value, log: text });
+      if (child.exitCode !== null || child.signalCode !== null) { exited(); return; }
+      child.once('exit', exited);
+      setTimeout(exited, 5000).unref?.();
     };
     const timer = setTimeout(() => finish({ error: `${name} timed out after ${options.timeoutMs} ms` }), options.timeoutMs);
     child.stdout.on('data', (bytes) => { text += bytes.toString().replace(/token=\S+/g, 'token=[redacted]'); });
@@ -404,6 +451,408 @@ function pnpmModuleVersion(name) {
     } catch { /* keep looking */ }
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// cross-entry acceptance (--cross-entry)
+// ---------------------------------------------------------------------------
+
+/** The marker events the promoted probe plugins register; the consumer probe
+ *  executes the same names, so one fixed vocabulary links both phases. */
+const CROSS_ENTRY_MARKERS = Object.freeze({
+  stable: 'cross-entry/probe/stable',
+  incompatible: 'cross-entry/probe/incompatible',
+});
+
+function readJsonFile(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+}
+
+function fileSha256(file) {
+  try { return sha256(file); } catch { return null; }
+}
+
+function assertCross(condition, message) {
+  if (!condition) throw new Error(`cross-entry: ${message}`);
+}
+
+/** Boot one Web entry that runs only the lightweight consumer (kernel row off). */
+async function bootWebConsumer(label, { expect, markers, kernel = false }) {
+  const bootAfter = new Date().toISOString();
+  return bootProbe(`cross-entry-${label}`, path.join(PROBES, 'cross-entry-consumer-probe.mjs'), {
+    EVOLUTION_CROSS_ENTRY_PROFILE: 'web',
+    EVOLUTION_CROSS_ENTRY_EXPECT: JSON.stringify(expect),
+    EVOLUTION_CROSS_ENTRY_MARKERS: JSON.stringify(markers || {}),
+    EVOLUTION_CROSS_ENTRY_BOOT_AFTER: bootAfter,
+    ...(kernel ? { EVOLUTION_CROSS_ENTRY_EXPECT_KERNEL: '1' } : {}),
+  }, kernel ? { awaitExit: true } : { rows: [{ id: 'evolution-orchestrator', disabled: true }], awaitExit: true });
+}
+
+/**
+ * Boot the headless ACP consumer.
+ *
+ * The ACP entry is a JSON-RPC server, so the runner keeps its stdin open with
+ * one documented, model-free `initialize` handshake and waits for the probe's
+ * file receipt. No session is created and no model call is made; the ACP entry
+ * boots its plugin tree (and therefore the consumer) as soon as it starts.
+ */
+function bootAcpConsumer(label, { expect, markers }) {
+  const probeFile = path.join(PROBES, 'cross-entry-consumer-probe.mjs');
+  const patchFile = path.join(work, `cross-entry-${label}.patch.yml`);
+  fs.writeFileSync(patchFile, `- id: evolution-orchestrator\n  disabled: true\n- insert:\n    - id: evolution-acceptance-${label}\n      name: '${pathToFileURL(probeFile).href}'\n`);
+  const receipt = path.join(work, `cross-entry-${label}.receipt.json`);
+  const bootAfter = new Date().toISOString();
+  return new Promise((resolve) => {
+    const child = spawn(cliPath(), ['--profile', 'acp', '--patch', patchFile], {
+      cwd: work,
+      env: {
+        ...INHERITED_ENV,
+        DSH_HOME: home,
+        EVOLUTION_ENTRY_PROBE_OUT: receipt,
+        EVOLUTION_CROSS_ENTRY_PROFILE: 'acp',
+        EVOLUTION_CROSS_ENTRY_EXPECT: JSON.stringify(expect),
+        EVOLUTION_CROSS_ENTRY_MARKERS: JSON.stringify(markers || {}),
+        EVOLUTION_CROSS_ENTRY_BOOT_AFTER: bootAfter,
+      },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let text = '';
+    let settled = false;
+    let poll = null;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      clearInterval(poll);
+      fs.writeFileSync(path.join(logs, `cross-entry-${label}.log`), text);
+      child.kill('SIGTERM');
+      setTimeout(() => child.kill('SIGKILL'), 2000).unref?.();
+      const exited = () => resolve({ ...value, log: text });
+      if (child.exitCode !== null || child.signalCode !== null) { exited(); return; }
+      child.once('exit', exited);
+      setTimeout(exited, 5000).unref?.();
+    };
+    const timer = setTimeout(() => finish({ error: `${label} timed out after ${options.timeoutMs} ms` }), options.timeoutMs);
+    child.stdout.on('data', (bytes) => { text += bytes.toString(); });
+    child.stderr.on('data', (bytes) => { text += bytes.toString(); });
+    child.on('exit', (code, signal) => finish({ error: `${label} exited before reporting: ${code ?? signal}` }));
+    try {
+      child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: 1, clientCapabilities: {} } })}\n`);
+    } catch { /* reported by the timeout if the entry cannot start */ }
+    poll = setInterval(() => {
+      if (!fs.existsSync(receipt)) return;
+      const value = readJsonFile(receipt);
+      if (!value) return;
+      finish(value.ok === false ? { error: value.error } : { result: value });
+    }, 200);
+  });
+}
+
+/**
+ * The `--cross-entry` steps. Every assertion below fails the run; the evidence
+ * section records the observed facts (ids, statuses, hit counts, digests,
+ * file presence) instead of restating the expectation.
+ */
+async function runCrossEntryAcceptance() {
+  const dataRoot = path.join(home, 'storages', 'evolution');
+  const sharedDir = path.join(dataRoot, 'shared-plugins');
+  const publishedPath = path.join(sharedDir, 'published.json');
+  const consumerStatePath = (profile) => path.join(sharedDir, 'consumers', `${profile}.json`);
+  const promotedRoot = path.join(dataRoot, 'promoted');
+  const archiveDir = path.join(dataRoot, 'archive', 'experiments');
+  const sharedExperienceDb = path.join(home, 'storages', 'evolution-experience', 'experience.sqlite');
+
+  const report = {
+    // The isolated host acceptance has no Desktop binary, so the full Evolution
+    // kernel booted on the Web profile is the promotion authority here and the
+    // published records carry `publisherProfile: 'web'`. The real Desktop ->
+    // ACP/Web role split is proven by scripts/acceptance/run-cross-entry.mjs.
+    publisherProfile: 'web',
+    publisherProfileNote: 'isolated host acceptance boots the full Evolution kernel on the web profile; no Desktop binary in CI',
+    markers: { ...CROSS_ENTRY_MARKERS },
+    indexPath: path.join('$DSH_HOME', 'storages', 'evolution', 'shared-plugins', 'published.json'),
+  };
+  evidence.crossEntry = report;
+
+  // (a) publish a stable promotion with explicit ACP/Web approval.
+  const publishOutcome = await bootProbe('cross-entry-publish', path.join(PROBES, 'cross-entry-promotion-probe.mjs'), {
+    EVOLUTION_CROSS_ENTRY_PHASE: 'publish',
+    EVOLUTION_ACCEPTANCE_CWD: work,
+  });
+  const published = publishOutcome.result;
+  const stable = published?.candidates?.stable;
+  const desktopOnly = published?.candidates?.desktopOnly;
+  const incompatible = published?.candidates?.incompatible;
+  record('cross-entry-publish', {
+    ok: !publishOutcome.error && Boolean(stable && desktopOnly && incompatible),
+    ids: { stable: stable?.id, desktopOnly: desktopOnly?.id, incompatible: incompatible?.id },
+    approvedProfiles: stable?.approvedProfiles,
+    stable: stable?.stable,
+    desktopOnlySharedStatus: desktopOnly?.sharedStatus,
+    incompatibleRequiredServices: incompatible?.requiredServices,
+    indexUpdatedAt: published?.index?.updatedAt,
+    services: published?.services,
+    error: publishOutcome.error,
+  });
+  if (publishOutcome.error) throw new Error(`cross-entry publish probe failed: ${publishOutcome.error}`);
+  assertCross(Boolean(stable && desktopOnly && incompatible), 'the publish probe did not report all three candidates');
+  assertCross(JSON.stringify(stable.approvedProfiles) === JSON.stringify(['acp', 'web']), `the published record carries approvedProfiles ${JSON.stringify(stable.approvedProfiles)}`);
+  assertCross(stable.stable?.decision === 'benefit' && stable.stable?.canary?.startupVerified === true && typeof stable.stable?.committedAt === 'string', 'the published record has no stable proof');
+  assertCross(/^[a-f0-9]{64}$/.test(String(stable.sourceSha256)), 'the published record has no source digest');
+  assertCross(['published', 'updated', 'unchanged'].includes(stable.sharedStatus), `the stable commit reported shared.status ${stable.sharedStatus}`);
+  assertCross(desktopOnly.sharedStatus === 'desktop-only' && desktopOnly.published === false, `the Desktop-only control reported ${JSON.stringify({ status: desktopOnly.sharedStatus, published: desktopOnly.published })}`);
+  assertCross(Array.isArray(incompatible.requiredServices) && incompatible.requiredServices.includes('evolution'), `the incompatible record does not require the kernel service: ${JSON.stringify(incompatible.requiredServices)}`);
+
+  const indexAfterPublish = readJsonFile(publishedPath);
+  assertCross(Boolean(indexAfterPublish) && Array.isArray(indexAfterPublish.plugins), 'the publication index is missing after the stable commit');
+  const publishedIds = indexAfterPublish.plugins.map((row) => row?.id);
+  assertCross(publishedIds.includes(stable.id) && publishedIds.includes(incompatible.id), `the publication index does not contain both approved records: ${JSON.stringify(publishedIds)}`);
+  assertCross(!publishedIds.includes(desktopOnly.id), 'the Desktop-only control promotion was published');
+  assertCross(indexAfterPublish.updatedAt === published.index.updatedAt, `the probe observed index ${published.index.updatedAt}, the file says ${indexAfterPublish.updatedAt}`);
+  const indexUpdatedAt = indexAfterPublish.updatedAt;
+  report.index = {
+    updatedAt: indexUpdatedAt,
+    digest: fileSha256(publishedPath),
+    records: indexAfterPublish.plugins.map((row) => ({
+      id: row?.id,
+      approvedProfiles: row?.approvedProfiles,
+      sourceSha256: row?.sourceSha256,
+      stable: row?.stable,
+      host: row?.host,
+    })),
+  };
+  report.publish = { steps: published.steps, services: published.services, candidates: { stable, desktopOnly, incompatible } };
+
+  const expectedActive = {
+    [stable.id]: { status: 'active' },
+    [incompatible.id]: { status: 'skipped-incompatible', reason: 'missing-service' },
+  };
+  const activeMarkers = {
+    [stable.id]: CROSS_ENTRY_MARKERS.stable,
+    [incompatible.id]: CROSS_ENTRY_MARKERS.incompatible,
+  };
+
+  // (b) consumer-only boot: same home, same Web profile, kernel row disabled.
+  const firstConsumer = await bootWebConsumer('consumer', { expect: expectedActive, markers: activeMarkers });
+  const firstResult = firstConsumer.result;
+  record('cross-entry-consumer', {
+    ok: !firstConsumer.error && Boolean(firstResult),
+    profile: firstResult?.profile,
+    kernelPresent: firstResult?.kernelPresent,
+    evolutionTools: firstResult?.evolutionTools,
+    observedIndexUpdatedAt: firstResult?.observedIndexUpdatedAt,
+    indexUpdatedAt,
+    rows: firstResult?.rows,
+    markerHits: firstResult?.markerHits,
+    services: firstResult?.services,
+    error: firstConsumer.error,
+  });
+  if (firstConsumer.error) throw new Error(`cross-entry consumer probe failed: ${firstConsumer.error}`);
+  assertCross(firstResult.kernelPresent === false && firstResult.evolutionTools === 0, 'the consumer-only boot still runs the Evolution kernel');
+  assertCross(firstResult.observedIndexUpdatedAt === indexUpdatedAt, `the consumer observed index ${firstResult.observedIndexUpdatedAt}, expected ${indexUpdatedAt}`);
+  assertCross(firstResult.markerHits?.[stable.id] === 1, `the promoted listener executed ${firstResult.markerHits?.[stable.id]} times, expected exactly once`);
+  assertCross(firstResult.markerHits?.[incompatible.id] === 0, 'the incompatible plugin was mounted in the consumer');
+  report.consumer = { initial: firstResult };
+
+  // (c) restart: no duplicate instance or registration, activatedAt moves.
+  const restarted = await bootWebConsumer('consumer-restart', { expect: expectedActive, markers: activeMarkers });
+  const restartResult = restarted.result;
+  const firstActivatedAt = (firstResult.rows || []).find((row) => row.id === stable.id)?.activatedAt;
+  const secondActivatedAt = (restartResult?.rows || []).find((row) => row.id === stable.id)?.activatedAt;
+  record('cross-entry-consumer-restart', {
+    ok: !restarted.error && Boolean(restartResult),
+    rows: restartResult?.rows,
+    markerHits: restartResult?.markerHits,
+    firstActivatedAt,
+    secondActivatedAt,
+    error: restarted.error,
+  });
+  if (restarted.error) throw new Error(`cross-entry consumer restart probe failed: ${restarted.error}`);
+  assertCross(restartResult.markerHits?.[stable.id] === 1, `the promoted listener executed ${restartResult.markerHits?.[stable.id]} times after restart, expected exactly once`);
+  assertCross(typeof firstActivatedAt === 'string' && typeof secondActivatedAt === 'string' && secondActivatedAt > firstActivatedAt, `activatedAt did not move across restart: ${firstActivatedAt} -> ${secondActivatedAt}`);
+  report.consumer.restart = restartResult;
+
+  // (d) full-kernel Web boot: the consumer row is also enabled, and it must not
+  //     double-mount its own profile's publications.
+  const combined = await bootWebConsumer('consumer-kernel', {
+    expect: {
+      [stable.id]: { status: 'disabled', reason: 'publisher-profile', expectListener: true },
+      [incompatible.id]: { status: 'disabled', reason: 'publisher-profile' },
+    },
+    markers: { [stable.id]: CROSS_ENTRY_MARKERS.stable },
+    kernel: true,
+  });
+  const combinedResult = combined.result;
+  record('cross-entry-consumer-kernel', {
+    ok: !combined.error && Boolean(combinedResult),
+    kernelPresent: combinedResult?.kernelPresent,
+    evolutionTools: combinedResult?.evolutionTools,
+    rows: combinedResult?.rows,
+    markerHits: combinedResult?.markerHits,
+    error: combined.error,
+  });
+  if (combined.error) throw new Error(`cross-entry full-kernel consumer probe failed: ${combined.error}`);
+  assertCross(combinedResult.kernelPresent === true && combinedResult.evolutionTools === EXPECTED_TOOL_COUNT, 'the full-kernel Web boot did not expose the kernel surface');
+  assertCross(combinedResult.markerHits?.[stable.id] === 1, `the full-kernel Web boot registered the promoted listener ${combinedResult.markerHits?.[stable.id]} times, expected exactly once (no duplicate mount)`);
+  report.consumer.kernelCombined = combinedResult;
+
+  // (e) tampered promoted source: only that record is invalid, the other keeps
+  //     its own status, and restoring the bytes recovers.
+  const stableSource = path.join(promotedRoot, stable.pluginName, 'lib', 'index.js');
+  const incompatibleSource = path.join(promotedRoot, incompatible.pluginName, 'lib', 'index.js');
+  assertCross(fs.existsSync(stableSource), 'the promoted stable source is missing');
+  assertCross(fs.existsSync(incompatibleSource), 'the promoted incompatible source is missing');
+  assertCross(fileSha256(stableSource) === stable.sourceSha256, 'the promoted stable source digest does not match the published record');
+  const stableSourceBytes = fs.readFileSync(stableSource);
+  fs.writeFileSync(stableSource, `${stableSourceBytes.toString('utf8')}\n// tampered by the isolated acceptance run\n`);
+  let tamperedResult;
+  try {
+    const tampered = await bootWebConsumer('consumer-tampered', {
+      expect: {
+        [stable.id]: { status: 'skipped-invalid', reason: 'source-digest-mismatch' },
+        [incompatible.id]: { status: 'skipped-incompatible', reason: 'missing-service' },
+      },
+      markers: {},
+    });
+    if (tampered.error) throw new Error(`cross-entry tampered-source probe failed: ${tampered.error}`);
+    tamperedResult = tampered.result;
+  } finally {
+    fs.writeFileSync(stableSource, stableSourceBytes);
+  }
+  record('cross-entry-tampered-source', { ok: Boolean(tamperedResult), rows: tamperedResult?.rows });
+  assertCross(tamperedResult.rows.some((row) => row.id === stable.id && row.status === 'skipped-invalid' && row.reason === 'source-digest-mismatch'), `the tampered source was not reported as skipped-invalid: ${JSON.stringify(tamperedResult.rows)}`);
+  assertCross(tamperedResult.rows.some((row) => row.id === incompatible.id && row.status === 'skipped-incompatible'), 'the tampered plugin changed the unrelated record');
+  assertCross(fileSha256(stableSource) === stable.sourceSha256, 'restoring the promoted source bytes failed');
+  const recovered = await bootWebConsumer('consumer-source-restored', { expect: expectedActive, markers: activeMarkers });
+  if (recovered.error) throw new Error(`cross-entry source-restore probe failed: ${recovered.error}`);
+  assertCross(recovered.result.markerHits?.[stable.id] === 1, 'the restored source did not mount again');
+  report.consumer.tampered = tamperedResult;
+  report.consumer.sourceRestored = recovered.result;
+
+  // (f) operator revocation through the installed shared-plugins CLI.
+  const sharedCli = path.join(home, 'profiles', 'web', 'node_modules', 'dsh-evolution', 'scripts', 'shared-plugins.mjs');
+  assertCross(fs.existsSync(sharedCli), `the installed bundle has no shared-plugins CLI at ${sharedCli}`);
+  const revoke = await runCommand(process.execPath, [sharedCli, 'disable', '--home', home, '--plugin', stable.id, '--profile', 'web'], { env: { DSH_HOME: home } });
+  record('cross-entry-revoke', { ok: revoke.code === 0, code: revoke.code, tail: revoke.output.trim().split('\n').slice(-3) });
+  assertCross(revoke.code === 0, `shared-plugins disable exited ${revoke.code}: ${revoke.output.slice(-500)}`);
+  const revoked = await bootWebConsumer('consumer-revoked', {
+    expect: {
+      [stable.id]: { status: 'disabled', reason: 'operator-disabled' },
+      [incompatible.id]: { status: 'skipped-incompatible', reason: 'missing-service' },
+    },
+    markers: {},
+  });
+  if (revoked.error) throw new Error(`cross-entry revoked probe failed: ${revoked.error}`);
+  assertCross(revoked.result.rows.some((row) => row.id === stable.id && row.status === 'disabled' && row.reason === 'operator-disabled'), `the revoked record is not disabled: ${JSON.stringify(revoked.result.rows)}`);
+  report.consumer.revoked = revoked.result;
+  const restore = await runCommand(process.execPath, [sharedCli, 'enable', '--home', home, '--plugin', stable.id, '--profile', 'web'], { env: { DSH_HOME: home } });
+  record('cross-entry-enable', { ok: restore.code === 0, code: restore.code, tail: restore.output.trim().split('\n').slice(-3) });
+  assertCross(restore.code === 0, `shared-plugins enable exited ${restore.code}: ${restore.output.slice(-500)}`);
+  const reenabled = await bootWebConsumer('consumer-reenabled', { expect: expectedActive, markers: activeMarkers });
+  if (reenabled.error) throw new Error(`cross-entry re-enabled probe failed: ${reenabled.error}`);
+  assertCross(reenabled.result.markerHits?.[stable.id] === 1, 'the re-enabled record did not mount again');
+  report.consumer.reenabled = reenabled.result;
+
+  // (g) simulated host upgrade: a record verified on another DSH release needs
+  //     revalidation and is not mounted; the unrelated record is unaffected;
+  //     restoring the index recovers without changing promoted bytes.
+  const preserved = {
+    promotedSources: {
+      stable: { path: path.join('$DSH_HOME', 'storages', 'evolution', 'promoted', stable.pluginName, 'lib', 'index.js'), sha256: fileSha256(stableSource) },
+      incompatible: { path: path.join('$DSH_HOME', 'storages', 'evolution', 'promoted', incompatible.pluginName, 'lib', 'index.js'), sha256: fileSha256(incompatibleSource) },
+      desktopOnly: { path: path.join('$DSH_HOME', 'storages', 'evolution', 'promoted', desktopOnly.pluginName, 'lib', 'index.js'), sha256: fileSha256(path.join(promotedRoot, desktopOnly.pluginName, 'lib', 'index.js')) },
+    },
+    archives: [stable.experimentId, incompatible.experimentId, desktopOnly.experimentId].map((experimentId) => ({
+      experimentId,
+      archive: fs.existsSync(path.join(archiveDir, `${experimentId}.md`)),
+      sidecar: fs.existsSync(path.join(archiveDir, `${experimentId}.evidence.json`)),
+    })),
+    sharedExperience: { present: fs.existsSync(sharedExperienceDb), sha256: fileSha256(sharedExperienceDb) },
+    memory: { present: fs.existsSync(memoryPath), sha256: fileSha256(memoryPath) },
+  };
+  assertCross(preserved.promotedSources.stable.sha256 === stable.sourceSha256, 'the stable promoted source is not the published source');
+  assertCross(preserved.promotedSources.incompatible.sha256 === incompatible.sourceSha256, 'the incompatible promoted source is not the published source');
+  assertCross(preserved.archives.every((row) => row.archive && row.sidecar), `promotion archives/sidecars are missing: ${JSON.stringify(preserved.archives)}`);
+  assertCross(preserved.sharedExperience.present, 'the shared-experience SQLite database is missing');
+
+  const indexBytes = fs.readFileSync(publishedPath);
+  const simulatedIndex = JSON.parse(indexBytes.toString('utf8'));
+  const simulatedRow = simulatedIndex.plugins.find((row) => row?.id === stable.id);
+  assertCross(Boolean(simulatedRow), 'the published stable record disappeared before the upgrade simulation');
+  simulatedRow.host = { ...simulatedRow.host, dsh: '9.9.9-simulated-upgrade' };
+  fs.writeFileSync(publishedPath, `${JSON.stringify(simulatedIndex, null, 2)}\n`);
+  let revalidationResult;
+  try {
+    const pending = await bootWebConsumer('consumer-revalidation', {
+      expect: {
+        [stable.id]: { status: 'pending-revalidation', reason: 'host-version-mismatch' },
+        [incompatible.id]: { status: 'skipped-incompatible', reason: 'missing-service' },
+      },
+      markers: {},
+    });
+    if (pending.error) throw new Error(`cross-entry revalidation probe failed: ${pending.error}`);
+    revalidationResult = pending.result;
+  } finally {
+    fs.writeFileSync(publishedPath, indexBytes);
+  }
+  record('cross-entry-revalidation', { ok: Boolean(revalidationResult), rows: revalidationResult?.rows });
+  assertCross(revalidationResult.rows.some((row) => row.id === stable.id && row.status === 'pending-revalidation' && row.reason === 'host-version-mismatch'), `the upgraded-host record is not pending-revalidation: ${JSON.stringify(revalidationResult.rows)}`);
+  assertCross(revalidationResult.rows.some((row) => row.id === incompatible.id && row.status === 'skipped-incompatible'), 'the simulated upgrade changed the unrelated record');
+  assertCross(fileSha256(publishedPath) === report.index.digest, 'restoring the publication index failed');
+  const restoredIndex = await bootWebConsumer('consumer-index-restored', { expect: expectedActive, markers: activeMarkers });
+  if (restoredIndex.error) throw new Error(`cross-entry index-restore probe failed: ${restoredIndex.error}`);
+  assertCross(restoredIndex.result.markerHits?.[stable.id] === 1, 'the restored index did not mount the record again');
+  report.consumer.revalidation = revalidationResult;
+  report.consumer.indexRestored = restoredIndex.result;
+
+  const afterPreserved = {
+    promotedSources: {
+      stable: fileSha256(stableSource),
+      incompatible: fileSha256(incompatibleSource),
+      desktopOnly: fileSha256(path.join(promotedRoot, desktopOnly.pluginName, 'lib', 'index.js')),
+    },
+    sharedExperience: fileSha256(sharedExperienceDb),
+    memory: fileSha256(memoryPath),
+  };
+  assertCross(afterPreserved.promotedSources.stable === preserved.promotedSources.stable.sha256
+    && afterPreserved.promotedSources.incompatible === preserved.promotedSources.incompatible.sha256
+    && afterPreserved.promotedSources.desktopOnly === preserved.promotedSources.desktopOnly.sha256,
+  'a consumer boot changed the promoted plugin sources');
+  assertCross(afterPreserved.sharedExperience === preserved.sharedExperience.sha256, 'a consumer boot changed the shared-experience SQLite database');
+  assertCross(afterPreserved.memory === preserved.memory.sha256, 'a consumer boot changed the Evolution memory');
+  report.preserved = { ...preserved, after: afterPreserved };
+
+  // (h) real headless ACP consumer: install the same bundle into the acp
+  //     profile of the same isolated home and boot it with the kernel disabled.
+  const acpAdded = await runCliProfile('acp', ['add', tarball]);
+  record('cross-entry-acp-install', { ok: acpAdded.code === 0, code: acpAdded.code, tail: acpAdded.output.trim().split('\n').slice(-3) });
+  assertCross(acpAdded.code === 0, `dsh plugin --profile acp add failed: ${acpAdded.output.slice(-800)}`);
+  const acp = await bootAcpConsumer('acp-consumer', { expect: expectedActive, markers: activeMarkers });
+  const acpResult = acp.result;
+  record('cross-entry-acp-consumer', {
+    ok: !acp.error && Boolean(acpResult),
+    profile: acpResult?.profile,
+    kernelPresent: acpResult?.kernelPresent,
+    evolutionTools: acpResult?.evolutionTools,
+    observedIndexUpdatedAt: acpResult?.observedIndexUpdatedAt,
+    indexUpdatedAt,
+    rows: acpResult?.rows,
+    markerHits: acpResult?.markerHits,
+    services: acpResult?.services,
+    error: acp.error,
+  });
+  if (acp.error) throw new Error(`cross-entry ACP consumer probe failed: ${acp.error}`);
+  assertCross(acpResult.profile === 'acp', `the ACP consumer reported profile ${acpResult.profile}`);
+  assertCross(acpResult.kernelPresent === false && acpResult.evolutionTools === 0, 'the ACP consumer boot still runs the Evolution kernel');
+  assertCross(acpResult.observedIndexUpdatedAt === indexUpdatedAt, `the ACP consumer observed index ${acpResult.observedIndexUpdatedAt}, expected ${indexUpdatedAt}`);
+  assertCross(acpResult.markerHits?.[stable.id] === 1, `the ACP consumer executed the promoted listener ${acpResult.markerHits?.[stable.id]} times, expected exactly once`);
+  report.acp = {
+    installedProfile: 'acp',
+    consumerStatePath: path.join('$DSH_HOME', 'storages', 'evolution', 'shared-plugins', 'consumers', 'acp.json'),
+    consumerStatePresent: fs.existsSync(consumerStatePath('acp')),
+    result: acpResult,
+  };
+  log(`cross-entry: stable record ${stable.id}, ACP/Web consumers active, incompatible ${incompatible.id} skipped`);
 }
 
 // ---------------------------------------------------------------------------
@@ -710,6 +1159,13 @@ async function main() {
       evidence.experienceEvolution[phase] = selectExperienceEvidence(phase, result);
     }
   }
+
+  // 10. cross-entry promotion and consumption: a Desktop-verified stable plugin
+  //     is published with explicit ACP/Web approval from the full-kernel Web
+  //     entry, then mounted by the consumer-only Web and headless ACP entries,
+  //     with every incompatibility, fault-isolation, revocation and
+  //     revalidation case exercised through the real host.
+  if (options.crossEntry) await runCrossEntryAcceptance();
 
   const finalDoctor = await runCommand(process.execPath, [installedDoctor, '--home', home, '--dsh-cli', cliPath(), '--json'], { env: { DSH_HOME: home } });
   let finalReport = null;
