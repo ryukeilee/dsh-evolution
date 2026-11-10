@@ -1,0 +1,93 @@
+{
+  "source": "real isolated-host acceptance run (DSH 0.2.2-rc.1, node v26.13.0) captured from home/storages/evolution-experience/experience.sqlite; raw failure targets are the fixture tool names the acceptance probe used, normalized scopes are what the store persisted",
+  "capturedAt": "2026-11-10T19:33:00.709Z",
+  "host": {
+    "dsh": "0.2.2-rc.1",
+    "cordis": "4.1.0",
+    "evolution": "0.2.3"
+  },
+  "failures": [
+    {
+      "target": "tool:probe_healthcheck",
+      "scope": "tool probe healthcheck",
+      "occurrences": 7,
+      "firstSeen": "2026-11-10T19:30:58.830Z",
+      "lastSeen": "2026-11-10T19:31:00.835Z"
+    },
+    {
+      "target": "tool:probe_invalid_fix",
+      "scope": "tool probe invalid fix",
+      "occurrences": 10,
+      "firstSeen": "2026-11-10T19:31:02.112Z",
+      "lastSeen": "2026-11-10T19:31:04.139Z"
+    },
+    {
+      "target": "tool:probe_regression_fix",
+      "scope": "tool probe regression fix",
+      "occurrences": 6,
+      "firstSeen": "2026-11-10T19:31:06.298Z",
+      "lastSeen": "2026-11-10T19:31:08.294Z"
+    },
+    {
+      "target": "tool:probe_control",
+      "scope": "tool probe control",
+      "occurrences": 3,
+      "firstSeen": "2026-11-10T19:31:08.329Z",
+      "lastSeen": "2026-11-10T19:31:08.331Z"
+    }
+  ],
+  "resolutions": [
+    {
+      "target": "plugin promotion probe stable",
+      "scope": "plugin promotion probe stable",
+      "successCount": 2,
+      "firstSeen": "2026-11-10T19:30:54.452Z",
+      "lastSeen": "2026-11-10T19:30:55.498Z"
+    },
+    {
+      "target": "plugin promotion probe rollback",
+      "scope": "plugin promotion probe rollback",
+      "successCount": 1,
+      "firstSeen": "2026-11-10T19:30:56.826Z",
+      "lastSeen": "2026-11-10T19:30:56.887Z"
+    }
+  ],
+  "conclusions": [
+    {
+      "target": "tool probe healthcheck",
+      "approach": "register the missing tool through a reversible Trial",
+      "fingerprint": "772ba0bca29376dd",
+      "rootCause": "the capability was absent from the live tool registry",
+      "failureMode": null,
+      "decision": "adopted",
+      "occurredAt": "2026-11-10T19:31:01.079Z"
+    },
+    {
+      "target": "tool probe invalid fix",
+      "approach": "acceptance: a no-op candidate that never adds the capability",
+      "fingerprint": "d387e503e0f6ebd2",
+      "rootCause": "the capability is absent and the candidate does not add it",
+      "failureMode": null,
+      "decision": "no-benefit",
+      "occurredAt": "2026-11-10T19:31:04.144Z"
+    },
+    {
+      "target": "tool probe invalid fix",
+      "approach": "acceptance: retry after the refused strategy",
+      "fingerprint": "7b38fd4de3f7293b",
+      "rootCause": null,
+      "failureMode": null,
+      "decision": "insufficient-evidence",
+      "occurredAt": "2026-11-10T19:31:04.355Z"
+    },
+    {
+      "target": "tool probe regression fix",
+      "approach": "acceptance: add the capability and break the control capability",
+      "fingerprint": "dfbc2fe48ee19f76",
+      "rootCause": "the capability is absent",
+      "failureMode": "regression",
+      "decision": "regression",
+      "occurredAt": "2026-11-10T19:31:08.357Z"
+    }
+  ]
+}

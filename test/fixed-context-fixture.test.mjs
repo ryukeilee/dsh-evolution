@@ -10,7 +10,7 @@ test('the context-cost fixture reaches owner confirmation through the real Inclu
   let f;
   try {
     f=await fixture(root);
-    assert.equal(f.tools.length,10);
+    assert.equal(f.tools.length,12);
     const proposed=await f.call('evolution_propose',{why:'fixture regression',target:'plugin:context-fixture',impactScope:['test'],successMetrics:['recovery']});
     const experimentId=proposed.experimentId;
     await f.call('evolution_trial',{experimentId,composition:{name:'context-fixture',purpose:'exercise official teardown',code:{host:'return { name: "context-fixture", apply(ctx) { ctx.on("fixture/context", () => {}); } };'}}});

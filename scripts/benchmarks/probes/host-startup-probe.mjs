@@ -30,7 +30,7 @@ export function apply(ctx) {
     const deadline = Date.now() + 60000;
     let timedOut = false;
     while (Date.now() < deadline) {
-      const evolutionReady = wantEvolution ? Boolean(ctx.get('evolution')) && evolutionTools() === 10 : true;
+      const evolutionReady = wantEvolution ? Boolean(ctx.get('evolution')) && evolutionTools() === 12 : true;
       const hmrReady = wantHmr ? Boolean(ctx.get('hmr')) : true;
       if (evolutionReady && hmrReady) break;
       await new Promise((resolve) => setTimeout(resolve, 5));

@@ -57,7 +57,7 @@ export function apply(ctx) {
 
   async function run() {
     const names = () => ctx.tools.schemas().filter((tool) => tool.name.startsWith('evolution_')).map((tool) => tool.name).sort();
-    await waitFor(() => Boolean(ctx.get('evolution')) && names().length === 10, 'the evolution service and all 10 tools');
+    await waitFor(() => Boolean(ctx.get('evolution')) && names().length === 12, 'the evolution service and all 12 tools');
     const handle = await ctx.agents.create({
       sessionId: `evolution-retry-probe-${Date.now()}`,
       meta: { cwd: process.env.EVOLUTION_ACCEPTANCE_CWD || process.cwd() },

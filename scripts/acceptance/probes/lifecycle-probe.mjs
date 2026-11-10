@@ -43,7 +43,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 /** The tool surface the bundle registers (lib/registration.js#EVOLUTION_TOOLS). */
-const EVOLUTION_TOOL_COUNT = 10;
+const EVOLUTION_TOOL_COUNT = 12;
 /** The host service whose availability decides a live profile application. */
 const LIVE_APPLY_SERVICE = 'hmr';
 
