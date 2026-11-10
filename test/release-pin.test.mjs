@@ -211,7 +211,7 @@ test('every shipped file matches the artifact, except the named development succ
   // …and the listing is exact: every file it names really did change.
   for (const relative of named) {
     assert.equal(
-      archived.get(relative)?.bytes.equals(fs.readFileSync(path.join(REPO_ROOT, relative))),
+      Boolean(archived.get(relative)?.bytes.equals(fs.readFileSync(path.join(REPO_ROOT, relative)))),
       false,
       `${relative} is reported as differing but matches the released artifact`,
     );
