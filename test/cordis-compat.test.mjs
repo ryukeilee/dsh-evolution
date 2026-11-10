@@ -279,7 +279,11 @@ test('every recorded surface is classified and its class matches the shipped pac
     'ctx.tools.schemas() (visible tools)',
     'dynamicCordisRunner.snapshot()',
   ]);
-  assert.deepEqual(advisoryUnavailable, ["ctx.get('cordisInspect').list() (providers)"]);
+  assert.deepEqual(advisoryUnavailable, [
+    "ctx.get('pluginPackages').packageOf() (resolved host packages)",
+    "ctx.get('loader').entries() (live loader entries)",
+    "ctx.get('cordisInspect').list() (providers)",
+  ]);
 
   const impl = probes.find((probe) => probe.api.includes('_getImpl'));
   assert.equal(impl.resolution, 'public: ctx.reflect.store + Context.isolate');

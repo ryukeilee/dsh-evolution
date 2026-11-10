@@ -17,7 +17,7 @@ const normalize = (report) => { delete report.generatedAt; return report; };
  * fixture is an addition this baseline cannot list - it is named here so any
  * *unnamed* new check still fails the comparison.
  */
-const ADDED_CHECK_IDS = new Set(['state.ownership', 'state.retention-floor']);
+const ADDED_CHECK_IDS = new Set(['state.ownership', 'state.retention-floor', 'promotion.sharing']);
 const ADDITIONAL_CHECK_IDS = new Set(['data.key']);
 
 /**

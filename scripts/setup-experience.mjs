@@ -25,7 +25,7 @@ export function managedPatch(previous, profile) {
   }
   // Official patches replace config wholesale; role selection uses only entry
   // enabled flags, leaving every config (including expressions) intact.
-  const block = `${BEGIN}\n- id: hmr\n  disabled: true\n- id: evolution-experience\n  disabled: false\n- id: evolution-experience-history\n  disabled: ${profile === 'desktop'}\n- id: evolution-orchestrator\n  disabled: ${profile !== 'desktop'}\n${END}`;
+  const block = `${BEGIN}\n- id: hmr\n  disabled: true\n- id: evolution-experience\n  disabled: false\n- id: evolution-experience-history\n  disabled: ${profile === 'desktop'}\n- id: evolution-orchestrator\n  disabled: ${profile !== 'desktop'}\n- id: evolution-promoted-consumer\n  disabled: ${profile === 'desktop'}\n${END}`;
   return begin < 0 ? previous + (previous.endsWith('\n') || !previous ? '' : '\n') + block + '\n'
     : previous.slice(0, begin) + block + previous.slice(end + END.length);
 }
@@ -42,7 +42,7 @@ export function setupPlan({ home, tarball, cli }) {
     const previous = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
     return { profile, file, previous, next: managedPatch(previous, profile),
       command: cli, args: ['plugin', '--profile', profile, 'add', artifact], artifact, sha256,
-      role: profile === 'desktop' ? 'existing manual Evolution + shared collection/recall' : 'shared collection/recall only' };
+      role: profile === 'desktop' ? 'existing manual Evolution + shared collection/recall' : 'shared collection/recall + promoted-plugin consumer' };
   });
 }
 

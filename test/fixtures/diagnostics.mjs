@@ -88,8 +88,11 @@ const REQUIRED_PACKAGE_FILES = Object.freeze([
   'lib/promotion-include.js',
   'lib/diagnostics.js',
   'lib/cordis-compat.js',
+  'lib/promoted-sharing.js',
+  'lib/promoted-consumer.js',
   'lib/compat/legacy-startup-drift.js',
   'scripts/doctor.mjs',
+  'scripts/shared-plugins.mjs',
   'cordis.patch.yml',
 ]);
 

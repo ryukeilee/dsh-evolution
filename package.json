@@ -10,11 +10,13 @@
     "./guard": "./lib/guard.js",
     "./experience": "./lib/experience-collector.js",
     "./experience-history": "./lib/experience-history.js",
-    "./core": "./lib/orchestrator.js"
+    "./core": "./lib/orchestrator.js",
+    "./promoted-consumer": "./lib/promoted-consumer.js"
   },
   "files": [
     "lib",
     "scripts/doctor.mjs",
+    "scripts/shared-plugins.mjs",
     "scripts/setup-experience.mjs",
     "scripts/import-evolution-data.mjs",
     "cordis.patch.yml",
@@ -64,7 +66,8 @@
   ],
   "bin": {
     "dsh-evolution-doctor": "scripts/doctor.mjs",
-    "dsh-evolution-setup": "scripts/setup-experience.mjs"
+    "dsh-evolution-setup": "scripts/setup-experience.mjs",
+    "dsh-evolution-shared": "scripts/shared-plugins.mjs"
   },
   "overrides": {
     "@deepseek-ai/dsh-mcp-client": {
