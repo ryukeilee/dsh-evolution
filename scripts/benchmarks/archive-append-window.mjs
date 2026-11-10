@@ -30,7 +30,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { performance } from 'node:perf_hooks';
+import { PerformanceObserver, performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 import { syncBuiltinESMExports } from 'node:module';
 
@@ -176,13 +176,25 @@ if (flag('child')) {
     const trace = process.env.BENCH_TRACE === '1' ? installTrace(root) : null;
     // The absorption itself: no checkpoint exists yet, so this call authenticates
     // and applies every record, then closes the replay checkpoint.
+    // GC work is part of the absorption's CPU cost, and the two windows differ
+    // in how much they allocate. Entries are collected only for the absorption
+    // (the observer is installed immediately before it and read immediately
+    // after), and the same counting runs on both sides of an A/B.
+    const gcEntries = [];
+    const gcObserver = new PerformanceObserver(list => {
+      for (const entry of list.getEntries()) gcEntries.push(entry.duration);
+    });
+    gcObserver.observe({ entryTypes: ['gc'] });
     await audit?.start();
     const cpu = process.cpuUsage();
     const started = performance.now();
     port = await openDomainStorage(ctx, { presetDir: root, eventBridgePath: eventLog, eventBridgeKey: KEY });
     const absorptionMs = performance.now() - started;
     const used = process.cpuUsage(cpu);
-    const absorption = { wallMs: absorptionMs, cpuMs: (used.user + used.system) / 1000 };
+    gcObserver.disconnect();
+    for (const entry of gcObserver.takeRecords()) gcEntries.push(entry.duration);
+    const absorption = { wallMs: absorptionMs, cpuMs: (used.user + used.system) / 1000,
+      gcCount: gcEntries.length, gcMs: gcEntries.reduce((sum, duration) => sum + duration, 0) };
     const auditResult = await audit?.stop();
     const traced = trace === null ? null : trace.restore();
     const steady = await port.flush();
@@ -397,6 +409,8 @@ try {
         row[label] = {
           absorptionWallMs: median(runs.map(entry => entry.absorption.wallMs)),
           absorptionCpuMs: median(runs.map(entry => entry.absorption.cpuMs)),
+          absorptionGcMs: median(runs.map(entry => entry.absorption.gcMs ?? 0)),
+          absorptionGcCount: median(runs.map(entry => entry.absorption.gcCount ?? 0)),
           observeWallMs: median(runs.map(entry => median(entry.observeRows.map(sample => sample.wallMs)))),
           observeCpuMs: median(runs.map(entry => median(entry.observeRows.map(sample => sample.cpuMs)))),
           flushWallMs: median(runs.map(entry => median(entry.flushRows.map(sample => sample.wallMs)))),
@@ -423,6 +437,7 @@ try {
       console.log(`records=${String(row.records).padStart(6)}  absorption ${row.baseline.absorptionWallMs.toFixed(1)}→` +
         `${row.working.absorptionWallMs.toFixed(1)}ms (${(row.absorptionChange * 100).toFixed(2)}%)  ` +
         `cpu ${row.baseline.absorptionCpuMs.toFixed(1)}→${row.working.absorptionCpuMs.toFixed(1)}ms (${(row.absorptionCpuChange * 100).toFixed(2)}%)  ` +
+        `gc ${row.baseline.absorptionGcMs.toFixed(1)}→${row.working.absorptionGcMs.toFixed(1)}ms  ` +
         `observe ${row.baseline.observeWallMs.toFixed(2)}→${row.working.observeWallMs.toFixed(2)}ms (${(row.observeChange * 100).toFixed(2)}%)  ` +
         `flush ${row.baseline.flushWallMs.toFixed(2)}→${row.working.flushWallMs.toFixed(2)}ms (${(row.flushChange * 100).toFixed(2)}%)  ` +
         `maxRss ${row.baseline.maxRssMiB.toFixed(1)}→${row.working.maxRssMiB.toFixed(1)}MiB  ` +

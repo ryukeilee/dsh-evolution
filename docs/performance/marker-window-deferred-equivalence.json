@@ -1,0 +1,54 @@
+{
+  "baselineRef": "20e2cf0",
+  "aa": false,
+  "baselineSha": "20e2cf0b10b5dd96ff100e7c3841ecc278b667af",
+  "candidateSha": "7dd9c6d486b53de59abacc8aea2fa48abf5d53fc",
+  "candidateSources": {
+    "lib/domain-storage.js": "e545ec0be33750cf6de50e40ee13e8ff84ac282e6a87afb2178e323023f8755d",
+    "lib/dockyard-domain/memory.js": "761770161970ad1290d82e82f7644acecdb85a4d3ed2d401acd1bdc2b898b2d2",
+    "scripts/benchmarks/archive-append-window.mjs": "acf82601ca1052f96aa917957d439b20806f4bf0c124e7e6f4e30675103236f4"
+  },
+  "baseline": "archive-append-window-baseline-g8YDVV",
+  "working": "/Users/ryukeili/GitHub/dsh-evolution/.agents/worktrees/dsh-3d02e52f-f0d6",
+  "records": [
+    12000,
+    20000,
+    50000
+  ],
+  "rounds": 3,
+  "observes": 12,
+  "flushes": 12,
+  "node": "v26.13.0",
+  "platform": "darwin/arm64",
+  "runs": [],
+  "equivalence": [
+    {
+      "records": 12000,
+      "archiveFiles": 2,
+      "checkpointFileIdentityPresent": true,
+      "document": "0496b01458cf6e396c81085d9ad8eb2d54702e1474f7a61849cc316045336a56",
+      "documentBytes": 2796901,
+      "appliedMarkers": 12000,
+      "stagedLeft": 0
+    },
+    {
+      "records": 20000,
+      "archiveFiles": 3,
+      "checkpointFileIdentityPresent": true,
+      "document": "4a233c88006c3d71af7362fcc4e241c01867979554355fbeddc2edd6d4896e47",
+      "documentBytes": 3857258,
+      "appliedMarkers": 20000,
+      "stagedLeft": 0
+    },
+    {
+      "records": 50000,
+      "archiveFiles": 4,
+      "checkpointFileIdentityPresent": true,
+      "document": "5ac64f28c3f5b209105423e25f5854a05acd0290b5a871a3ab4a9464b10705ce",
+      "documentBytes": 7817413,
+      "appliedMarkers": 50000,
+      "stagedLeft": 0
+    }
+  ],
+  "summary": []
+}
