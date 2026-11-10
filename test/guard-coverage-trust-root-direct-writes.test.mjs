@@ -152,6 +152,12 @@ test('verb words inside file names stay read-only, real mutation verbs stay deni
   // 既有的可执行后缀判定不变；文件名里的同名片段仍不匹配。
   assert.equal(MUTATION_VERBS_RE.test('rm.exe -rf /tmp/build'), true);
   assert.equal(MUTATION_VERBS_RE.test('test/install.exe.test.mjs'), false);
+  // 深度上限后的保守回退（NESTED_FALLBACK_WRITE_RE）复用同一份动词源：
+  // 内层只读命令里的文件名片段不再触发，真实内层写入仍被拒绝。
+  const readOnlyDeep = `git show bf38283:node_modules/@deepseek-ai/cordis/lib/archive-install.test.mjs | grep -n "^test("`;
+  assert.equal(commandMutatesComposition(readOnlyDeep), false);
+  assert.equal(commandMutatesComposition(nestShell(6, readOnlyDeep)), false);
+  assert.equal(commandMutatesComposition(nestShell(6, `cp /tmp/src.js ${TR}/lib/a.js`)), true);
 });
 
 test('nested shell analysis is bounded and cannot be escaped by deeper nesting', () => {
