@@ -121,7 +121,15 @@ test('a stable promotion with approval publishes once and only after the canary 
   const modulePath = path.join(pluginDir, 'lib', 'index.js');
   await fs.writeFile(modulePath, 'export const name = "shared";\nexport const inject = ["tools"];\nexport function apply() {}\n');
   await fs.writeFile(path.join(pluginDir, 'package.json'), `${JSON.stringify({ name: pluginName, version: '0.1.0', type: 'module', main: 'lib/index.js' })}\n`);
-  const durable = { pluginName, pluginPath: pluginDir, moduleUrl: pathToFileURL(modulePath).href, rowId, promotionTimestamp: '2026-01-01T00:00:00.000Z', healthObservationWindow: 2 };
+  // The verified publication identity is captured at promotion time; a live
+  // publication must reuse it instead of deriving it from the current files.
+  const publication = {
+    sourceSha256: sha256('export const name = "shared";\nexport const inject = ["tools"];\nexport function apply() {}\n'),
+    manifestSha256: sha256(await fs.readFile(path.join(pluginDir, 'package.json'))),
+    verifiedAt: '2026-01-01T00:00:00.000Z',
+    host: HOST,
+  };
+  const durable = { pluginName, pluginPath: pluginDir, moduleUrl: pathToFileURL(modulePath).href, rowId, promotionTimestamp: '2026-01-01T00:00:00.000Z', healthObservationWindow: 2, publication };
   const record = {
     id: 'exp-share-publish',
     ownerId: 'desktop-owner',
@@ -155,6 +163,10 @@ test('a stable promotion with approval publishes once and only after the canary 
   assert.equal(index.records.length, 1);
   assert.deepEqual(index.records[0].approvedProfiles, ['acp', 'web']);
   assert.equal(index.records[0].stable.committedAt, '2026-01-02T00:00:00.000Z');
+  // The recorded host is the verified promotion host, not the kernel's current
+  // identity (the fixture host differs from the fake package service).
+  assert.equal(index.records[0].host.dsh, HOST.dsh);
+  assert.equal(index.records[0].host.cordis, HOST.cordis);
   // Republishing the same stable fact is a no-op.
   const again = await orchestrator.publishCrossEntryPlugin(record, null);
   assert.equal(again.status, 'unchanged');
@@ -212,6 +224,10 @@ test('startup reconciliation republishes durable stable approvals through the ke
   const index = await readSharedIndex({ dataRoot: paths.presetDir, pluginRoot: paths.pluginRoot });
   assert.deepEqual(index.records[0].approvedProfiles, ['acp', 'web']);
   assert.equal(index.records[0].stable.committedAt, '2026-01-02T00:00:00.000Z');
+  // The recorded host is the verified promotion host, not the kernel's current
+  // identity (the fixture host differs from the fake package service).
+  assert.equal(index.records[0].host.dsh, HOST.dsh);
+  assert.equal(index.records[0].host.cordis, HOST.cordis);
 });
 
 test('stable journal recovery keeps the approved scope and the verified publication identity', async (t) => {
@@ -254,4 +270,37 @@ test('stable journal recovery keeps the approved scope and the verified publicat
   assert.deepEqual(index.records[0].approvedProfiles, ['acp', 'web']);
   assert.equal(index.records[0].stable.committedAt, '2026-04-01T00:00:00.000Z');
   assert.equal(index.records[0].host.dsh, HOST.dsh);
+});
+
+test('a live publication without a verified identity stays Desktop-only', async (t) => {
+  const root = await scratchRoot('share-targets-no-publication');
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const paths = promotionPaths(root);
+  const pluginName = 'dsh-evolution-promoted-abcdefabcdef';
+  const rowId = 'evolution-promoted-abcdefabcdef';
+  const pluginDir = path.join(paths.pluginRoot, pluginName);
+  await fs.mkdir(path.join(pluginDir, 'lib'), { recursive: true });
+  const modulePath = path.join(pluginDir, 'lib', 'index.js');
+  await fs.writeFile(modulePath, 'export const name = "shared";\nexport function apply() {}\n');
+  await fs.writeFile(path.join(pluginDir, 'package.json'), `${JSON.stringify({ name: pluginName, type: 'module', main: 'lib/index.js' })}\n`);
+  const durable = { pluginName, pluginPath: pluginDir, moduleUrl: pathToFileURL(modulePath).href, rowId };
+  const record = {
+    id: 'exp-share-no-publication', ownerId: 'owner', state: 'stable',
+    stableCommittedAt: '2026-01-02T00:00:00.000Z', shareTargets: ['acp'], durable,
+    canary: { promotionTimestamp: '2026-01-01T00:00:00.000Z', healthObservationWindow: 2, startupVerified: true, observations: [{ barrierId: 'a' }, { barrierId: 'b' }] },
+    decision: { version: 1, kind: 'benefit' },
+  };
+  const ctx = {
+    ...orchestratorContext(), baseUrl: 'file:///tmp/',
+    fiber: { state: 2, uid: 1, inject: {}, inertia: undefined, store: {}, await: async () => {} },
+    get: (name) => name === 'pluginPackages' ? { packageOf: () => ({ version: '0.2.2-rc.1' }) } : name === 'profileContext' ? { name: 'desktop' } : undefined,
+  };
+  const orchestrator = new EvolutionOrchestrator(ctx, {
+    presetDir: paths.presetDir, pluginRoot: paths.pluginRoot, archiveDir: paths.archiveDir,
+    eventBridgePath: paths.eventBridgePath, eventBridgeKey: paths.eventBridgeKey,
+    promotionRuntime: { ...unitPromotionRuntime(), capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true } },
+  });
+  const shared = await orchestrator.publishCrossEntryPlugin(record, null);
+  assert.equal(shared.status, 'failed');
+  assert.equal((await readSharedIndex({ dataRoot: paths.presetDir, pluginRoot: paths.pluginRoot })).records.length, 0);
 });

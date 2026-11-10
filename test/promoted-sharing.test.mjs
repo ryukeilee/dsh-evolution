@@ -429,11 +429,11 @@ test('a reconciler never republishes a changed source or a missing identity', as
 test('Cordis object-form inject declarations gate compatibility by required services', async (t) => {
   const env = await fixture(t, {
     id: 'exp-share-object-inject',
-    moduleSource: 'export const name = "declared";\nexport const inject = { required: ["kernelOnlyService"], optional: ["tools"] };\nexport function apply() {}\n',
+    // The official Cordis object form maps service name -> intercept config.
+    moduleSource: 'export const name = "declared";\nexport const inject = { kernelOnlyService: {} };\nexport function apply() {}\n',
   });
   const record = await buildRecord(env);
   assert.deepEqual(record.requiredServices, ['kernelOnlyService']);
-  assert.deepEqual(record.optionalServices, ['tools']);
   const decision = await evaluateSharedRecord({
     paths: env.paths,
     record,
@@ -448,7 +448,8 @@ test('Cordis object-form inject declarations gate compatibility by required serv
   assert.equal(decision.status, SHARED_STATUS.INCOMPATIBLE);
   assert.equal(decision.reason, 'missing-service');
   assert.deepEqual(decision.services, ['kernelOnlyService']);
-  // The optional service is not a compatibility requirement.
+  // The declared object-form service is the only requirement, so providing it
+  // makes the record eligible even when unrelated services are absent.
   assert.equal((await evaluateSharedRecord({
     paths: env.paths, record, profile: 'acp', host: { ...HOST, profile: 'acp' }, capabilities: CAPABILITIES,
     services: { has: (name) => name === 'kernelOnlyService', memberPresent: () => true },
