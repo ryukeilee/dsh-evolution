@@ -1,0 +1,4123 @@
+{
+  "baselineRef": "9c7c103",
+  "aa": false,
+  "baselineSha": "9c7c103f7a661a736f96f3b9aba7fce8685967c0",
+  "candidateSha": "db812f091b148754940e06bc32b26563dc43b8c7",
+  "candidateSources": {
+    "lib/domain-storage.js": "848ba8c92a4185856db6bbc925cc5eae3e816c846e7a859dcfae83040ff07fb8",
+    "lib/dockyard-domain/memory.js": "99e0870a3a0f5e68f067d4e75e040c541c033c0d332339e7eb55e9f57f03d44e",
+    "scripts/benchmarks/archive-append-window.mjs": "cb646978895da9c0158aa636f7a80873938168a4eacd25e82f254c5484589f32"
+  },
+  "baseline": "archive-append-window-baseline-wzf7gq",
+  "working": "/Users/ryukeili/.t3/worktrees/dsh-evolution/t3-f4dbe465-2e12800df2ed90b2",
+  "records": [
+    2000,
+    12000,
+    20000
+  ],
+  "rounds": 3,
+  "observes": 12,
+  "flushes": 12,
+  "node": "v26.13.0",
+  "platform": "darwin/arm64",
+  "runs": [
+    {
+      "round": 0,
+      "label": "baseline",
+      "records": 2000,
+      "absorption": {
+        "wallMs": 232.933292,
+        "cpuMs": 251.095
+      },
+      "observeRows": [
+        {
+          "wallMs": 29.61420899999996,
+          "cpuMs": 27.717
+        },
+        {
+          "wallMs": 22.657791999999972,
+          "cpuMs": 19.878
+        },
+        {
+          "wallMs": 22.910500000000013,
+          "cpuMs": 18.955
+        },
+        {
+          "wallMs": 19.895459000000017,
+          "cpuMs": 14.243
+        },
+        {
+          "wallMs": 21.237292000000025,
+          "cpuMs": 14.127
+        },
+        {
+          "wallMs": 22.865249999999946,
+          "cpuMs": 18.56
+        },
+        {
+          "wallMs": 19.237374999999986,
+          "cpuMs": 14.027
+        },
+        {
+          "wallMs": 21.70270899999997,
+          "cpuMs": 14.744
+        },
+        {
+          "wallMs": 23.163915999999972,
+          "cpuMs": 31.939
+        },
+        {
+          "wallMs": 21.864374999999995,
+          "cpuMs": 14.509
+        },
+        {
+          "wallMs": 19.893958999999995,
+          "cpuMs": 14.565
+        },
+        {
+          "wallMs": 21.06570899999997,
+          "cpuMs": 13.949
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 1.2609999999999673,
+          "cpuMs": 1.259
+        },
+        {
+          "wallMs": 1.091083000000026,
+          "cpuMs": 1.09
+        },
+        {
+          "wallMs": 1.0815000000000055,
+          "cpuMs": 1.182
+        },
+        {
+          "wallMs": 1.0529170000000931,
+          "cpuMs": 1.112
+        },
+        {
+          "wallMs": 1.0140840000000253,
+          "cpuMs": 1.013
+        },
+        {
+          "wallMs": 1.0460000000000491,
+          "cpuMs": 1.119
+        },
+        {
+          "wallMs": 1.0350419999999758,
+          "cpuMs": 1.034
+        },
+        {
+          "wallMs": 1.03550000000007,
+          "cpuMs": 1.089
+        },
+        {
+          "wallMs": 1.0194169999999758,
+          "cpuMs": 1.019
+        },
+        {
+          "wallMs": 1.0135830000000396,
+          "cpuMs": 1.002
+        },
+        {
+          "wallMs": 1.099917000000005,
+          "cpuMs": 1.23
+        },
+        {
+          "wallMs": 1.0171250000000782,
+          "cpuMs": 1.016
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 15,
+          "bytes": 4163527
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 3198808
+        },
+        "appendFile": {
+          "calls": 8,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 8,
+          "bytes": 964722
+        },
+        "statSync": {
+          "calls": 19,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        }
+      },
+      "maxRss": 169541632,
+      "rss": 140918840,
+      "retained": 25565915,
+      "documentBytes": 908611,
+      "trace": null,
+      "logBytes": 1267572,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 0,
+      "label": "working",
+      "records": 2000,
+      "absorption": {
+        "wallMs": 168.088583,
+        "cpuMs": 185.247
+      },
+      "observeRows": [
+        {
+          "wallMs": 21.151292000000012,
+          "cpuMs": 17.495
+        },
+        {
+          "wallMs": 22.02937499999996,
+          "cpuMs": 18.191
+        },
+        {
+          "wallMs": 22.038542000000007,
+          "cpuMs": 18.717
+        },
+        {
+          "wallMs": 21.925292000000013,
+          "cpuMs": 27.924
+        },
+        {
+          "wallMs": 19.994583999999975,
+          "cpuMs": 14.108
+        },
+        {
+          "wallMs": 21.887792000000047,
+          "cpuMs": 14.288
+        },
+        {
+          "wallMs": 18.916166000000032,
+          "cpuMs": 14.378
+        },
+        {
+          "wallMs": 23.308374999999955,
+          "cpuMs": 17.929
+        },
+        {
+          "wallMs": 20.41700000000003,
+          "cpuMs": 14.515
+        },
+        {
+          "wallMs": 21.269000000000005,
+          "cpuMs": 14.877
+        },
+        {
+          "wallMs": 20.604916000000003,
+          "cpuMs": 19.539
+        },
+        {
+          "wallMs": 21.65949999999998,
+          "cpuMs": 13.783
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 1.2514589999999544,
+          "cpuMs": 1.25
+        },
+        {
+          "wallMs": 1.0982919999999012,
+          "cpuMs": 1.097
+        },
+        {
+          "wallMs": 1.0688750000000482,
+          "cpuMs": 1.176
+        },
+        {
+          "wallMs": 1.0348330000000487,
+          "cpuMs": 1.092
+        },
+        {
+          "wallMs": 1.0367499999999836,
+          "cpuMs": 1.037
+        },
+        {
+          "wallMs": 1.0451249999999845,
+          "cpuMs": 1.114
+        },
+        {
+          "wallMs": 1.0327909999999747,
+          "cpuMs": 1.029
+        },
+        {
+          "wallMs": 1.0409169999999222,
+          "cpuMs": 1.09
+        },
+        {
+          "wallMs": 1.019666999999913,
+          "cpuMs": 1.016
+        },
+        {
+          "wallMs": 1.0073340000000144,
+          "cpuMs": 1.006
+        },
+        {
+          "wallMs": 1.1092499999999745,
+          "cpuMs": 1.262
+        },
+        {
+          "wallMs": 1.0033750000000055,
+          "cpuMs": 1.002
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 15,
+          "bytes": 4163527
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 3198808
+        },
+        "appendFile": {
+          "calls": 8,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 8,
+          "bytes": 964722
+        },
+        "statSync": {
+          "calls": 19,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        }
+      },
+      "maxRss": 167903232,
+      "rss": 139182040,
+      "retained": 22641925,
+      "documentBytes": 908608,
+      "trace": null,
+      "logBytes": 1267572,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 0,
+      "label": "baseline",
+      "records": 12000,
+      "absorption": {
+        "wallMs": 1238.9724589999998,
+        "cpuMs": 1320.881
+      },
+      "observeRows": [
+        {
+          "wallMs": 40.879249999999956,
+          "cpuMs": 46.279
+        },
+        {
+          "wallMs": 42.53066600000011,
+          "cpuMs": 39.286
+        },
+        {
+          "wallMs": 41.63016700000003,
+          "cpuMs": 35.867
+        },
+        {
+          "wallMs": 40.927459,
+          "cpuMs": 35.961
+        },
+        {
+          "wallMs": 38.69462500000009,
+          "cpuMs": 36.164
+        },
+        {
+          "wallMs": 39.35195799999997,
+          "cpuMs": 32.126
+        },
+        {
+          "wallMs": 40.28862499999991,
+          "cpuMs": 35.592
+        },
+        {
+          "wallMs": 40.758375000000115,
+          "cpuMs": 36.631
+        },
+        {
+          "wallMs": 37.8681660000002,
+          "cpuMs": 32.116
+        },
+        {
+          "wallMs": 40.02266600000007,
+          "cpuMs": 36.155
+        },
+        {
+          "wallMs": 42.086500000000115,
+          "cpuMs": 58.256
+        },
+        {
+          "wallMs": 39.927625000000035,
+          "cpuMs": 31.82
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 6.921207999999979,
+          "cpuMs": 7.18
+        },
+        {
+          "wallMs": 6.539417000000185,
+          "cpuMs": 6.821
+        },
+        {
+          "wallMs": 6.485417000000098,
+          "cpuMs": 6.552
+        },
+        {
+          "wallMs": 6.4347499999998945,
+          "cpuMs": 6.651
+        },
+        {
+          "wallMs": 6.44133399999987,
+          "cpuMs": 6.578
+        },
+        {
+          "wallMs": 6.3783750000000055,
+          "cpuMs": 6.458
+        },
+        {
+          "wallMs": 6.409167000000025,
+          "cpuMs": 6.407
+        },
+        {
+          "wallMs": 6.491457999999966,
+          "cpuMs": 6.553
+        },
+        {
+          "wallMs": 6.357250000000022,
+          "cpuMs": 6.355
+        },
+        {
+          "wallMs": 6.353542000000061,
+          "cpuMs": 6.351
+        },
+        {
+          "wallMs": 6.377540999999837,
+          "cpuMs": 6.376
+        },
+        {
+          "wallMs": 6.3377499999999145,
+          "cpuMs": 6.46
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 59,
+          "bytes": 25464991
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 19522429
+        },
+        "appendFile": {
+          "calls": 47,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 47,
+          "bytes": 5942526
+        },
+        "statSync": {
+          "calls": 97,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        }
+      },
+      "maxRss": 332972032,
+      "rss": 265330256,
+      "retained": 39335816,
+      "documentBytes": 2797141,
+      "trace": null,
+      "logBytes": 7635576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 0,
+      "label": "working",
+      "records": 12000,
+      "absorption": {
+        "wallMs": 822.1633750000001,
+        "cpuMs": 918.472
+      },
+      "observeRows": [
+        {
+          "wallMs": 45.17695800000001,
+          "cpuMs": 70.772
+        },
+        {
+          "wallMs": 40.550166999999874,
+          "cpuMs": 36.503
+        },
+        {
+          "wallMs": 42.11991699999999,
+          "cpuMs": 36.847
+        },
+        {
+          "wallMs": 41.97358300000019,
+          "cpuMs": 37.777
+        },
+        {
+          "wallMs": 41.618291,
+          "cpuMs": 40.108
+        },
+        {
+          "wallMs": 37.66204199999993,
+          "cpuMs": 32.311
+        },
+        {
+          "wallMs": 40.772500000000036,
+          "cpuMs": 35.415
+        },
+        {
+          "wallMs": 40.380292000000054,
+          "cpuMs": 36.813
+        },
+        {
+          "wallMs": 40.8537080000001,
+          "cpuMs": 33.352
+        },
+        {
+          "wallMs": 39.71258399999988,
+          "cpuMs": 38.126
+        },
+        {
+          "wallMs": 38.92304100000001,
+          "cpuMs": 36.668
+        },
+        {
+          "wallMs": 40.03766600000017,
+          "cpuMs": 31.677
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 6.836041000000023,
+          "cpuMs": 7.09
+        },
+        {
+          "wallMs": 6.5349999999998545,
+          "cpuMs": 6.809
+        },
+        {
+          "wallMs": 6.4335419999999885,
+          "cpuMs": 6.499
+        },
+        {
+          "wallMs": 6.404583000000002,
+          "cpuMs": 6.618
+        },
+        {
+          "wallMs": 6.388625000000047,
+          "cpuMs": 6.52
+        },
+        {
+          "wallMs": 6.366958999999952,
+          "cpuMs": 6.442
+        },
+        {
+          "wallMs": 6.311124999999947,
+          "cpuMs": 6.309
+        },
+        {
+          "wallMs": 6.357250000000022,
+          "cpuMs": 6.415
+        },
+        {
+          "wallMs": 6.301582999999937,
+          "cpuMs": 6.301
+        },
+        {
+          "wallMs": 6.280665999999883,
+          "cpuMs": 6.279
+        },
+        {
+          "wallMs": 6.310208999999986,
+          "cpuMs": 6.307
+        },
+        {
+          "wallMs": 7.4341249999999945,
+          "cpuMs": 9.265
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 59,
+          "bytes": 25464991
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 19522429
+        },
+        "appendFile": {
+          "calls": 47,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 47,
+          "bytes": 5942526
+        },
+        "statSync": {
+          "calls": 97,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        }
+      },
+      "maxRss": 341377024,
+      "rss": 310648280,
+      "retained": 34643481,
+      "documentBytes": 2797138,
+      "trace": null,
+      "logBytes": 7635576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 0,
+      "label": "baseline",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 2065.985708,
+        "cpuMs": 2199.049
+      },
+      "observeRows": [
+        {
+          "wallMs": 53.02175000000034,
+          "cpuMs": 57.354
+        },
+        {
+          "wallMs": 54.69466599999987,
+          "cpuMs": 41.604
+        },
+        {
+          "wallMs": 49.983791999999994,
+          "cpuMs": 45.046
+        },
+        {
+          "wallMs": 50.99541700000009,
+          "cpuMs": 47.513
+        },
+        {
+          "wallMs": 51.10708399999976,
+          "cpuMs": 44.579
+        },
+        {
+          "wallMs": 50.94499999999971,
+          "cpuMs": 40.969
+        },
+        {
+          "wallMs": 51.01033300000017,
+          "cpuMs": 44.486
+        },
+        {
+          "wallMs": 48.7709160000004,
+          "cpuMs": 45.724
+        },
+        {
+          "wallMs": 46.81183400000009,
+          "cpuMs": 41.114
+        },
+        {
+          "wallMs": 49.77162499999986,
+          "cpuMs": 44.325
+        },
+        {
+          "wallMs": 51.81537500000013,
+          "cpuMs": 46.174
+        },
+        {
+          "wallMs": 49.87037499999997,
+          "cpuMs": 40.385
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.226666999999907,
+          "cpuMs": 11.549
+        },
+        {
+          "wallMs": 11.012749999999869,
+          "cpuMs": 11.371
+        },
+        {
+          "wallMs": 10.860749999999825,
+          "cpuMs": 10.858
+        },
+        {
+          "wallMs": 10.883458999999675,
+          "cpuMs": 10.957
+        },
+        {
+          "wallMs": 11.813583000000108,
+          "cpuMs": 13.68
+        },
+        {
+          "wallMs": 10.682542000000012,
+          "cpuMs": 10.775
+        },
+        {
+          "wallMs": 10.600540999999794,
+          "cpuMs": 10.597
+        },
+        {
+          "wallMs": 10.81899999999996,
+          "cpuMs": 11.701
+        },
+        {
+          "wallMs": 10.548541999999998,
+          "cpuMs": 10.545
+        },
+        {
+          "wallMs": 10.679333000000042,
+          "cpuMs": 10.676
+        },
+        {
+          "wallMs": 10.671333000000232,
+          "cpuMs": 10.668
+        },
+        {
+          "wallMs": 10.677999999999884,
+          "cpuMs": 10.673
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 55,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 88,
+          "bytes": 34222363
+        },
+        "readFileSync": {
+          "calls": 10,
+          "bytes": 32660178
+        },
+        "appendFile": {
+          "calls": 79,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 79,
+          "bytes": 9950526
+        },
+        "statSync": {
+          "calls": 181,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 2,
+          "bytes": 8389588
+        },
+        "writeFile": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 3,
+          "bytes": 8389588
+        },
+        "rename": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 20,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "maxRss": 416710656,
+      "rss": 393737520,
+      "retained": 48481920,
+      "documentBytes": 3857578,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 0,
+      "label": "working",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 1370.405666,
+        "cpuMs": 1506.633
+      },
+      "observeRows": [
+        {
+          "wallMs": 53.077,
+          "cpuMs": 58.615
+        },
+        {
+          "wallMs": 50.05187500000011,
+          "cpuMs": 41.453
+        },
+        {
+          "wallMs": 54.994874999999865,
+          "cpuMs": 46.108
+        },
+        {
+          "wallMs": 50.97891600000003,
+          "cpuMs": 46.286
+        },
+        {
+          "wallMs": 51.08220800000004,
+          "cpuMs": 45.347
+        },
+        {
+          "wallMs": 54.00974999999994,
+          "cpuMs": 48.944
+        },
+        {
+          "wallMs": 48.86520799999994,
+          "cpuMs": 40.674
+        },
+        {
+          "wallMs": 51.03887500000019,
+          "cpuMs": 45.089
+        },
+        {
+          "wallMs": 50.969916999999896,
+          "cpuMs": 45.532
+        },
+        {
+          "wallMs": 48.957958999999846,
+          "cpuMs": 40.933
+        },
+        {
+          "wallMs": 52.08833300000015,
+          "cpuMs": 46.24
+        },
+        {
+          "wallMs": 50.90262500000017,
+          "cpuMs": 45.031
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.640625,
+          "cpuMs": 11.95
+        },
+        {
+          "wallMs": 11.286000000000058,
+          "cpuMs": 11.639
+        },
+        {
+          "wallMs": 11.245499999999993,
+          "cpuMs": 11.241
+        },
+        {
+          "wallMs": 11.676250000000437,
+          "cpuMs": 11.757
+        },
+        {
+          "wallMs": 11.056790999999976,
+          "cpuMs": 11.054
+        },
+        {
+          "wallMs": 11.32320800000025,
+          "cpuMs": 11.409
+        },
+        {
+          "wallMs": 11.568000000000211,
+          "cpuMs": 11.565
+        },
+        {
+          "wallMs": 11.282250000000204,
+          "cpuMs": 12.174
+        },
+        {
+          "wallMs": 10.882375000000138,
+          "cpuMs": 10.878
+        },
+        {
+          "wallMs": 10.929749999999785,
+          "cpuMs": 10.926
+        },
+        {
+          "wallMs": 12.236459000000195,
+          "cpuMs": 13.351
+        },
+        {
+          "wallMs": 10.899583000000348,
+          "cpuMs": 10.894
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 55,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 88,
+          "bytes": 34222363
+        },
+        "readFileSync": {
+          "calls": 10,
+          "bytes": 32660178
+        },
+        "appendFile": {
+          "calls": 79,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 79,
+          "bytes": 9950526
+        },
+        "statSync": {
+          "calls": 181,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 2,
+          "bytes": 8389588
+        },
+        "writeFile": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 3,
+          "bytes": 8389588
+        },
+        "rename": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 20,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "maxRss": 434618368,
+      "rss": 401372536,
+      "retained": 46968087,
+      "documentBytes": 3857574,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 1,
+      "label": "working",
+      "records": 2000,
+      "absorption": {
+        "wallMs": 172.26012500000002,
+        "cpuMs": 196.101
+      },
+      "observeRows": [
+        {
+          "wallMs": 22.018250000000023,
+          "cpuMs": 17.793
+        },
+        {
+          "wallMs": 21.786790999999994,
+          "cpuMs": 18.983
+        },
+        {
+          "wallMs": 19.837458999999967,
+          "cpuMs": 18.258
+        },
+        {
+          "wallMs": 19.073166999999955,
+          "cpuMs": 27.483
+        },
+        {
+          "wallMs": 22.974666000000013,
+          "cpuMs": 14.471
+        },
+        {
+          "wallMs": 19.946665999999993,
+          "cpuMs": 14.181
+        },
+        {
+          "wallMs": 22.312208,
+          "cpuMs": 14.623
+        },
+        {
+          "wallMs": 22.755042000000003,
+          "cpuMs": 17.401
+        },
+        {
+          "wallMs": 22.075625000000002,
+          "cpuMs": 14.732
+        },
+        {
+          "wallMs": 21.055875000000015,
+          "cpuMs": 14.97
+        },
+        {
+          "wallMs": 21.24687499999999,
+          "cpuMs": 19.713
+        },
+        {
+          "wallMs": 21.627917000000025,
+          "cpuMs": 14.032
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 1.2726249999999482,
+          "cpuMs": 1.272
+        },
+        {
+          "wallMs": 1.10024999999996,
+          "cpuMs": 1.099
+        },
+        {
+          "wallMs": 1.083833000000027,
+          "cpuMs": 1.194
+        },
+        {
+          "wallMs": 1.0332090000000562,
+          "cpuMs": 1.094
+        },
+        {
+          "wallMs": 1.0558340000000044,
+          "cpuMs": 1.053
+        },
+        {
+          "wallMs": 1.0444590000000744,
+          "cpuMs": 1.113
+        },
+        {
+          "wallMs": 1.0217499999999973,
+          "cpuMs": 1.022
+        },
+        {
+          "wallMs": 1.0328750000001037,
+          "cpuMs": 1.085
+        },
+        {
+          "wallMs": 1.0016669999999976,
+          "cpuMs": 1.001
+        },
+        {
+          "wallMs": 0.9987919999999804,
+          "cpuMs": 0.995
+        },
+        {
+          "wallMs": 1.0725830000000087,
+          "cpuMs": 1.229
+        },
+        {
+          "wallMs": 0.9943339999999807,
+          "cpuMs": 0.993
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 15,
+          "bytes": 4163527
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 3198808
+        },
+        "appendFile": {
+          "calls": 8,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 8,
+          "bytes": 964722
+        },
+        "statSync": {
+          "calls": 19,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        }
+      },
+      "maxRss": 167772160,
+      "rss": 139001528,
+      "retained": 22641901,
+      "documentBytes": 908608,
+      "trace": null,
+      "logBytes": 1267572,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 1,
+      "label": "baseline",
+      "records": 2000,
+      "absorption": {
+        "wallMs": 235.14933399999998,
+        "cpuMs": 253.028
+      },
+      "observeRows": [
+        {
+          "wallMs": 21.15729200000004,
+          "cpuMs": 16.955
+        },
+        {
+          "wallMs": 20.39137500000004,
+          "cpuMs": 18.387
+        },
+        {
+          "wallMs": 20.767375000000015,
+          "cpuMs": 18.507
+        },
+        {
+          "wallMs": 20.925917000000027,
+          "cpuMs": 14.251
+        },
+        {
+          "wallMs": 21.170416999999986,
+          "cpuMs": 14.241
+        },
+        {
+          "wallMs": 20.25479100000001,
+          "cpuMs": 18.384
+        },
+        {
+          "wallMs": 21.728083000000026,
+          "cpuMs": 14.04
+        },
+        {
+          "wallMs": 22.06687500000004,
+          "cpuMs": 15.125
+        },
+        {
+          "wallMs": 21.319875000000025,
+          "cpuMs": 32.466
+        },
+        {
+          "wallMs": 21.624082999999928,
+          "cpuMs": 14.838
+        },
+        {
+          "wallMs": 20.859749999999963,
+          "cpuMs": 14.702
+        },
+        {
+          "wallMs": 20.959333000000015,
+          "cpuMs": 14.128
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 1.2636249999999336,
+          "cpuMs": 1.262
+        },
+        {
+          "wallMs": 1.088124999999991,
+          "cpuMs": 1.087
+        },
+        {
+          "wallMs": 1.0805829999999332,
+          "cpuMs": 1.183
+        },
+        {
+          "wallMs": 1.0604999999999336,
+          "cpuMs": 1.117
+        },
+        {
+          "wallMs": 1.0239590000001044,
+          "cpuMs": 1.023
+        },
+        {
+          "wallMs": 1.0490419999999858,
+          "cpuMs": 1.119
+        },
+        {
+          "wallMs": 1.0201250000000073,
+          "cpuMs": 1.019
+        },
+        {
+          "wallMs": 1.031541999999945,
+          "cpuMs": 1.081
+        },
+        {
+          "wallMs": 1.0201250000000073,
+          "cpuMs": 1.019
+        },
+        {
+          "wallMs": 1.046291999999994,
+          "cpuMs": 1.045
+        },
+        {
+          "wallMs": 1.0898329999999987,
+          "cpuMs": 1.217
+        },
+        {
+          "wallMs": 1.0712500000000773,
+          "cpuMs": 1.07
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 15,
+          "bytes": 4163527
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 3198808
+        },
+        "appendFile": {
+          "calls": 8,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 8,
+          "bytes": 964722
+        },
+        "statSync": {
+          "calls": 19,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        }
+      },
+      "maxRss": 168755200,
+      "rss": 140329376,
+      "retained": 25567923,
+      "documentBytes": 908611,
+      "trace": null,
+      "logBytes": 1267572,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 1,
+      "label": "working",
+      "records": 12000,
+      "absorption": {
+        "wallMs": 838.063167,
+        "cpuMs": 930.846
+      },
+      "observeRows": [
+        {
+          "wallMs": 43.22262500000011,
+          "cpuMs": 70.046
+        },
+        {
+          "wallMs": 40.65833299999986,
+          "cpuMs": 35.991
+        },
+        {
+          "wallMs": 40.04879099999994,
+          "cpuMs": 37.206
+        },
+        {
+          "wallMs": 40.54666699999984,
+          "cpuMs": 37.874
+        },
+        {
+          "wallMs": 39.943708000000015,
+          "cpuMs": 40.627
+        },
+        {
+          "wallMs": 41.40279100000021,
+          "cpuMs": 32.686
+        },
+        {
+          "wallMs": 40.58349999999996,
+          "cpuMs": 35.249
+        },
+        {
+          "wallMs": 38.878791999999976,
+          "cpuMs": 36.118
+        },
+        {
+          "wallMs": 39.62916599999994,
+          "cpuMs": 32.713
+        },
+        {
+          "wallMs": 40.830666000000065,
+          "cpuMs": 38.498
+        },
+        {
+          "wallMs": 39.0329999999999,
+          "cpuMs": 36.58
+        },
+        {
+          "wallMs": 41.29087500000014,
+          "cpuMs": 32.821
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 7.350957999999991,
+          "cpuMs": 7.64
+        },
+        {
+          "wallMs": 6.71875,
+          "cpuMs": 7.008
+        },
+        {
+          "wallMs": 6.77170799999999,
+          "cpuMs": 6.843
+        },
+        {
+          "wallMs": 6.517875000000004,
+          "cpuMs": 6.736
+        },
+        {
+          "wallMs": 6.496208000000024,
+          "cpuMs": 6.631
+        },
+        {
+          "wallMs": 6.608749999999873,
+          "cpuMs": 6.686
+        },
+        {
+          "wallMs": 6.554583000000093,
+          "cpuMs": 6.552
+        },
+        {
+          "wallMs": 6.990291999999954,
+          "cpuMs": 7.05
+        },
+        {
+          "wallMs": 6.768000000000029,
+          "cpuMs": 6.766
+        },
+        {
+          "wallMs": 6.519291000000067,
+          "cpuMs": 6.516
+        },
+        {
+          "wallMs": 6.516209000000117,
+          "cpuMs": 6.514
+        },
+        {
+          "wallMs": 7.518000000000029,
+          "cpuMs": 9.789
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 59,
+          "bytes": 25464991
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 19522429
+        },
+        "appendFile": {
+          "calls": 47,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 47,
+          "bytes": 5942526
+        },
+        "statSync": {
+          "calls": 97,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        }
+      },
+      "maxRss": 341606400,
+      "rss": 310549616,
+      "retained": 34645145,
+      "documentBytes": 2797138,
+      "trace": null,
+      "logBytes": 7635576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 1,
+      "label": "baseline",
+      "records": 12000,
+      "absorption": {
+        "wallMs": 1244.1425,
+        "cpuMs": 1342.856
+      },
+      "observeRows": [
+        {
+          "wallMs": 41.921833000000106,
+          "cpuMs": 46.558
+        },
+        {
+          "wallMs": 41.393540999999914,
+          "cpuMs": 39.278
+        },
+        {
+          "wallMs": 45.870124999999916,
+          "cpuMs": 36.378
+        },
+        {
+          "wallMs": 40.6545000000001,
+          "cpuMs": 36.152
+        },
+        {
+          "wallMs": 40.22591599999987,
+          "cpuMs": 35.621
+        },
+        {
+          "wallMs": 39.9057499999999,
+          "cpuMs": 32.262
+        },
+        {
+          "wallMs": 42.05412500000011,
+          "cpuMs": 36.059
+        },
+        {
+          "wallMs": 40.951249999999845,
+          "cpuMs": 37.26
+        },
+        {
+          "wallMs": 40.061084000000164,
+          "cpuMs": 32.315
+        },
+        {
+          "wallMs": 39.896375000000035,
+          "cpuMs": 35.737
+        },
+        {
+          "wallMs": 45.07658300000003,
+          "cpuMs": 57.24
+        },
+        {
+          "wallMs": 39.92979199999991,
+          "cpuMs": 31.846
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 7.078958999999941,
+          "cpuMs": 7.334
+        },
+        {
+          "wallMs": 6.70858300000009,
+          "cpuMs": 6.984
+        },
+        {
+          "wallMs": 6.673999999999978,
+          "cpuMs": 6.736
+        },
+        {
+          "wallMs": 6.597250000000031,
+          "cpuMs": 6.81
+        },
+        {
+          "wallMs": 6.568959000000177,
+          "cpuMs": 6.612
+        },
+        {
+          "wallMs": 6.609417000000121,
+          "cpuMs": 6.784
+        },
+        {
+          "wallMs": 6.5039580000000115,
+          "cpuMs": 6.502
+        },
+        {
+          "wallMs": 6.496499999999969,
+          "cpuMs": 6.559
+        },
+        {
+          "wallMs": 6.619291999999859,
+          "cpuMs": 6.618
+        },
+        {
+          "wallMs": 6.5340419999999995,
+          "cpuMs": 6.532
+        },
+        {
+          "wallMs": 6.561625000000049,
+          "cpuMs": 6.56
+        },
+        {
+          "wallMs": 6.4984159999999065,
+          "cpuMs": 6.619
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 59,
+          "bytes": 25464991
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 19522429
+        },
+        "appendFile": {
+          "calls": 47,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 47,
+          "bytes": 5942526
+        },
+        "statSync": {
+          "calls": 97,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        }
+      },
+      "maxRss": 328400896,
+      "rss": 263266184,
+      "retained": 39310944,
+      "documentBytes": 2797141,
+      "trace": null,
+      "logBytes": 7635576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 1,
+      "label": "working",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 1378.8101669999999,
+        "cpuMs": 1508.768
+      },
+      "observeRows": [
+        {
+          "wallMs": 53.24933399999986,
+          "cpuMs": 58.82
+        },
+        {
+          "wallMs": 51.044208000000026,
+          "cpuMs": 41.536
+        },
+        {
+          "wallMs": 52.718624999999975,
+          "cpuMs": 45.823
+        },
+        {
+          "wallMs": 50.978166999999985,
+          "cpuMs": 45.805
+        },
+        {
+          "wallMs": 50.05708400000003,
+          "cpuMs": 41.3
+        },
+        {
+          "wallMs": 52.07320800000002,
+          "cpuMs": 45.16
+        },
+        {
+          "wallMs": 50.84520799999996,
+          "cpuMs": 45.397
+        },
+        {
+          "wallMs": 50.0402909999998,
+          "cpuMs": 41.546
+        },
+        {
+          "wallMs": 50.98870800000009,
+          "cpuMs": 44.873
+        },
+        {
+          "wallMs": 52.08895900000016,
+          "cpuMs": 45.964
+        },
+        {
+          "wallMs": 48.514124999999694,
+          "cpuMs": 41.943
+        },
+        {
+          "wallMs": 83.32920899999999,
+          "cpuMs": 52.959
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 17.621124999999665,
+          "cpuMs": 17.753
+        },
+        {
+          "wallMs": 16.263792000000194,
+          "cpuMs": 16.406
+        },
+        {
+          "wallMs": 14.169166999999561,
+          "cpuMs": 13.968
+        },
+        {
+          "wallMs": 13.664540999999645,
+          "cpuMs": 13.735
+        },
+        {
+          "wallMs": 14.178666999999678,
+          "cpuMs": 13.776
+        },
+        {
+          "wallMs": 12.71895799999993,
+          "cpuMs": 12.842
+        },
+        {
+          "wallMs": 15.226000000000113,
+          "cpuMs": 14.979
+        },
+        {
+          "wallMs": 14.20849999999973,
+          "cpuMs": 17.59
+        },
+        {
+          "wallMs": 14.59029099999998,
+          "cpuMs": 14.159
+        },
+        {
+          "wallMs": 17.47133299999996,
+          "cpuMs": 16.769
+        },
+        {
+          "wallMs": 16.666666000000077,
+          "cpuMs": 15.199
+        },
+        {
+          "wallMs": 15.297791999999845,
+          "cpuMs": 13.961
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 55,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 88,
+          "bytes": 34222363
+        },
+        "readFileSync": {
+          "calls": 10,
+          "bytes": 32660178
+        },
+        "appendFile": {
+          "calls": 79,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 79,
+          "bytes": 9950526
+        },
+        "statSync": {
+          "calls": 181,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 2,
+          "bytes": 8389588
+        },
+        "writeFile": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 3,
+          "bytes": 8389588
+        },
+        "rename": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 20,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "maxRss": 417841152,
+      "rss": 389493776,
+      "retained": 47155951,
+      "documentBytes": 3857574,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 1,
+      "label": "baseline",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 2219.67375,
+        "cpuMs": 2363.295
+      },
+      "observeRows": [
+        {
+          "wallMs": 53.70091699999966,
+          "cpuMs": 58.68
+        },
+        {
+          "wallMs": 49.807624999999916,
+          "cpuMs": 41.703
+        },
+        {
+          "wallMs": 51.02016700000013,
+          "cpuMs": 46.129
+        },
+        {
+          "wallMs": 53.027958000000126,
+          "cpuMs": 45.979
+        },
+        {
+          "wallMs": 50.11395900000025,
+          "cpuMs": 41.383
+        },
+        {
+          "wallMs": 51.33141599999999,
+          "cpuMs": 45.397
+        },
+        {
+          "wallMs": 51.53704199999993,
+          "cpuMs": 45.291
+        },
+        {
+          "wallMs": 50.7209170000001,
+          "cpuMs": 42.402
+        },
+        {
+          "wallMs": 52.21283299999959,
+          "cpuMs": 45.953
+        },
+        {
+          "wallMs": 51.62220799999977,
+          "cpuMs": 45.677
+        },
+        {
+          "wallMs": 50.59008300000005,
+          "cpuMs": 42.169
+        },
+        {
+          "wallMs": 62.461874999999964,
+          "cpuMs": 56.248
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.560915999999906,
+          "cpuMs": 11.878
+        },
+        {
+          "wallMs": 11.147458999999799,
+          "cpuMs": 11.502
+        },
+        {
+          "wallMs": 10.959374999999909,
+          "cpuMs": 10.952
+        },
+        {
+          "wallMs": 11.112458999999944,
+          "cpuMs": 11.201
+        },
+        {
+          "wallMs": 11.012749999999869,
+          "cpuMs": 11.006
+        },
+        {
+          "wallMs": 11.05679199999986,
+          "cpuMs": 11.139
+        },
+        {
+          "wallMs": 11.081375000000207,
+          "cpuMs": 11.078
+        },
+        {
+          "wallMs": 11.849625000000287,
+          "cpuMs": 14.807
+        },
+        {
+          "wallMs": 10.91595899999993,
+          "cpuMs": 10.912
+        },
+        {
+          "wallMs": 11.172167000000172,
+          "cpuMs": 11.167
+        },
+        {
+          "wallMs": 11.288625000000138,
+          "cpuMs": 11.283
+        },
+        {
+          "wallMs": 11.813791999999921,
+          "cpuMs": 11.808
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 55,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 88,
+          "bytes": 34222363
+        },
+        "readFileSync": {
+          "calls": 10,
+          "bytes": 32660178
+        },
+        "appendFile": {
+          "calls": 79,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 79,
+          "bytes": 9950526
+        },
+        "statSync": {
+          "calls": 181,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 2,
+          "bytes": 8389588
+        },
+        "writeFile": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 3,
+          "bytes": 8389588
+        },
+        "rename": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 20,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "maxRss": 415137792,
+      "rss": 386791160,
+      "retained": 48276408,
+      "documentBytes": 3857578,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 2,
+      "label": "baseline",
+      "records": 2000,
+      "absorption": {
+        "wallMs": 248.963708,
+        "cpuMs": 269.6
+      },
+      "observeRows": [
+        {
+          "wallMs": 21.67666700000001,
+          "cpuMs": 17.721
+        },
+        {
+          "wallMs": 25.61450000000002,
+          "cpuMs": 19.067
+        },
+        {
+          "wallMs": 22.029541999999992,
+          "cpuMs": 18.689
+        },
+        {
+          "wallMs": 21.886915999999985,
+          "cpuMs": 14.509
+        },
+        {
+          "wallMs": 20.426417000000015,
+          "cpuMs": 14.587
+        },
+        {
+          "wallMs": 23.660916000000043,
+          "cpuMs": 18.552
+        },
+        {
+          "wallMs": 18.606250000000045,
+          "cpuMs": 14.22
+        },
+        {
+          "wallMs": 20.93587500000001,
+          "cpuMs": 15.145
+        },
+        {
+          "wallMs": 21.84954099999993,
+          "cpuMs": 32.433
+        },
+        {
+          "wallMs": 22.715417000000002,
+          "cpuMs": 15.151
+        },
+        {
+          "wallMs": 20.379666999999927,
+          "cpuMs": 14.84
+        },
+        {
+          "wallMs": 22.450166999999965,
+          "cpuMs": 14.194
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 1.271541999999954,
+          "cpuMs": 1.271
+        },
+        {
+          "wallMs": 1.1357920000000377,
+          "cpuMs": 1.134
+        },
+        {
+          "wallMs": 1.1117499999999154,
+          "cpuMs": 1.225
+        },
+        {
+          "wallMs": 1.0907909999999674,
+          "cpuMs": 1.146
+        },
+        {
+          "wallMs": 1.1127500000000055,
+          "cpuMs": 1.112
+        },
+        {
+          "wallMs": 1.0826250000000073,
+          "cpuMs": 1.15
+        },
+        {
+          "wallMs": 1.0548750000000382,
+          "cpuMs": 1.054
+        },
+        {
+          "wallMs": 1.0702080000000933,
+          "cpuMs": 1.117
+        },
+        {
+          "wallMs": 1.0586250000000064,
+          "cpuMs": 1.055
+        },
+        {
+          "wallMs": 1.0329169999999976,
+          "cpuMs": 1.032
+        },
+        {
+          "wallMs": 1.1055409999999029,
+          "cpuMs": 1.248
+        },
+        {
+          "wallMs": 1.0944589999999152,
+          "cpuMs": 1.093
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 15,
+          "bytes": 4163527
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 3198808
+        },
+        "appendFile": {
+          "calls": 8,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 8,
+          "bytes": 964722
+        },
+        "statSync": {
+          "calls": 19,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        }
+      },
+      "maxRss": 168689664,
+      "rss": 140001144,
+      "retained": 25566043,
+      "documentBytes": 908611,
+      "trace": null,
+      "logBytes": 1267572,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 2,
+      "label": "working",
+      "records": 2000,
+      "absorption": {
+        "wallMs": 182.91283399999998,
+        "cpuMs": 200.163
+      },
+      "observeRows": [
+        {
+          "wallMs": 23.099625000000003,
+          "cpuMs": 19.199
+        },
+        {
+          "wallMs": 23.160333000000037,
+          "cpuMs": 19.707
+        },
+        {
+          "wallMs": 24.261374999999987,
+          "cpuMs": 19.723
+        },
+        {
+          "wallMs": 22.424249999999972,
+          "cpuMs": 30.164
+        },
+        {
+          "wallMs": 21.16383300000001,
+          "cpuMs": 15.256
+        },
+        {
+          "wallMs": 22.897792000000038,
+          "cpuMs": 15.429
+        },
+        {
+          "wallMs": 20.527832999999987,
+          "cpuMs": 15.041
+        },
+        {
+          "wallMs": 23.47954199999998,
+          "cpuMs": 17.805
+        },
+        {
+          "wallMs": 22.10495800000001,
+          "cpuMs": 14.623
+        },
+        {
+          "wallMs": 23.32408300000003,
+          "cpuMs": 15.675
+        },
+        {
+          "wallMs": 24.555708000000095,
+          "cpuMs": 20.763
+        },
+        {
+          "wallMs": 20.356499999999983,
+          "cpuMs": 14.186
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 1.2758330000000342,
+          "cpuMs": 1.275
+        },
+        {
+          "wallMs": 1.1025829999999814,
+          "cpuMs": 1.102
+        },
+        {
+          "wallMs": 1.1153340000000753,
+          "cpuMs": 1.22
+        },
+        {
+          "wallMs": 1.088707999999997,
+          "cpuMs": 1.141
+        },
+        {
+          "wallMs": 1.0509160000000293,
+          "cpuMs": 1.047
+        },
+        {
+          "wallMs": 1.0891659999999774,
+          "cpuMs": 1.162
+        },
+        {
+          "wallMs": 1.049833000000035,
+          "cpuMs": 1.045
+        },
+        {
+          "wallMs": 1.0862920000000713,
+          "cpuMs": 1.14
+        },
+        {
+          "wallMs": 1.044917000000055,
+          "cpuMs": 1.044
+        },
+        {
+          "wallMs": 1.0424580000000105,
+          "cpuMs": 1.041
+        },
+        {
+          "wallMs": 1.0945840000000544,
+          "cpuMs": 1.22
+        },
+        {
+          "wallMs": 1.070291999999995,
+          "cpuMs": 1.07
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 26,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 15,
+          "bytes": 4163527
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 3198808
+        },
+        "appendFile": {
+          "calls": 8,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 8,
+          "bytes": 964722
+        },
+        "statSync": {
+          "calls": 19,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 594
+        }
+      },
+      "maxRss": 168034304,
+      "rss": 139378672,
+      "retained": 22641957,
+      "documentBytes": 908608,
+      "trace": null,
+      "logBytes": 1267572,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 2,
+      "label": "baseline",
+      "records": 12000,
+      "absorption": {
+        "wallMs": 1267.967916,
+        "cpuMs": 1354.902
+      },
+      "observeRows": [
+        {
+          "wallMs": 41.03658299999984,
+          "cpuMs": 46.437
+        },
+        {
+          "wallMs": 40.180417000000034,
+          "cpuMs": 35.062
+        },
+        {
+          "wallMs": 41.61854100000005,
+          "cpuMs": 38.623
+        },
+        {
+          "wallMs": 42.07641699999999,
+          "cpuMs": 59.399
+        },
+        {
+          "wallMs": 41.10195899999985,
+          "cpuMs": 36.528
+        },
+        {
+          "wallMs": 39.89520799999991,
+          "cpuMs": 36.587
+        },
+        {
+          "wallMs": 44.000375000000076,
+          "cpuMs": 38.105
+        },
+        {
+          "wallMs": 42.481457999999975,
+          "cpuMs": 40.926
+        },
+        {
+          "wallMs": 40.69570900000008,
+          "cpuMs": 32.843
+        },
+        {
+          "wallMs": 41.822208000000046,
+          "cpuMs": 37.581
+        },
+        {
+          "wallMs": 40.966917000000194,
+          "cpuMs": 32.419
+        },
+        {
+          "wallMs": 41.007499999999936,
+          "cpuMs": 35.983
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 7.02599999999984,
+          "cpuMs": 7.285
+        },
+        {
+          "wallMs": 6.791709000000083,
+          "cpuMs": 7.056
+        },
+        {
+          "wallMs": 6.590666999999939,
+          "cpuMs": 6.676
+        },
+        {
+          "wallMs": 6.572040999999899,
+          "cpuMs": 6.8
+        },
+        {
+          "wallMs": 6.541832999999997,
+          "cpuMs": 6.682
+        },
+        {
+          "wallMs": 6.570249999999987,
+          "cpuMs": 6.647
+        },
+        {
+          "wallMs": 6.5222080000000915,
+          "cpuMs": 6.521
+        },
+        {
+          "wallMs": 6.55595900000003,
+          "cpuMs": 6.617
+        },
+        {
+          "wallMs": 6.554624999999987,
+          "cpuMs": 6.552
+        },
+        {
+          "wallMs": 6.5747499999999945,
+          "cpuMs": 6.572
+        },
+        {
+          "wallMs": 6.503584000000046,
+          "cpuMs": 6.5
+        },
+        {
+          "wallMs": 6.57529199999999,
+          "cpuMs": 6.694
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 59,
+          "bytes": 25464991
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 19522429
+        },
+        "appendFile": {
+          "calls": 47,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 47,
+          "bytes": 5942526
+        },
+        "statSync": {
+          "calls": 97,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        }
+      },
+      "maxRss": 332857344,
+      "rss": 309501280,
+      "retained": 39369061,
+      "documentBytes": 2797141,
+      "trace": null,
+      "logBytes": 7635576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 2,
+      "label": "working",
+      "records": 12000,
+      "absorption": {
+        "wallMs": 833.147,
+        "cpuMs": 927.552
+      },
+      "observeRows": [
+        {
+          "wallMs": 46.03820800000017,
+          "cpuMs": 69.433
+        },
+        {
+          "wallMs": 40.729333,
+          "cpuMs": 38.546
+        },
+        {
+          "wallMs": 43.93291700000009,
+          "cpuMs": 37.789
+        },
+        {
+          "wallMs": 40.83358300000009,
+          "cpuMs": 38.191
+        },
+        {
+          "wallMs": 41.88762500000007,
+          "cpuMs": 40.917
+        },
+        {
+          "wallMs": 44.453209000000015,
+          "cpuMs": 32.878
+        },
+        {
+          "wallMs": 46.50787500000001,
+          "cpuMs": 36.167
+        },
+        {
+          "wallMs": 41.393625000000156,
+          "cpuMs": 36.966
+        },
+        {
+          "wallMs": 39.03820900000005,
+          "cpuMs": 33.05
+        },
+        {
+          "wallMs": 39.931125000000065,
+          "cpuMs": 38.654
+        },
+        {
+          "wallMs": 40.97158300000001,
+          "cpuMs": 37.485
+        },
+        {
+          "wallMs": 40.02141699999993,
+          "cpuMs": 32.161
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 7.100584000000026,
+          "cpuMs": 7.352
+        },
+        {
+          "wallMs": 6.78795799999989,
+          "cpuMs": 7.079
+        },
+        {
+          "wallMs": 6.618249999999989,
+          "cpuMs": 6.685
+        },
+        {
+          "wallMs": 6.59029200000009,
+          "cpuMs": 6.813
+        },
+        {
+          "wallMs": 6.618165999999974,
+          "cpuMs": 6.761
+        },
+        {
+          "wallMs": 6.595166999999947,
+          "cpuMs": 6.667
+        },
+        {
+          "wallMs": 6.514791999999943,
+          "cpuMs": 6.513
+        },
+        {
+          "wallMs": 6.55541600000015,
+          "cpuMs": 6.628
+        },
+        {
+          "wallMs": 6.524666000000025,
+          "cpuMs": 6.519
+        },
+        {
+          "wallMs": 6.519667000000027,
+          "cpuMs": 6.517
+        },
+        {
+          "wallMs": 6.500500000000102,
+          "cpuMs": 6.496
+        },
+        {
+          "wallMs": 7.4396250000002055,
+          "cpuMs": 9.835
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 65,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 54,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 59,
+          "bytes": 25464991
+        },
+        "readFileSync": {
+          "calls": 8,
+          "bytes": 19522429
+        },
+        "appendFile": {
+          "calls": 47,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 47,
+          "bytes": 5942526
+        },
+        "statSync": {
+          "calls": 97,
+          "bytes": 0
+        },
+        "writeFile": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        },
+        "rename": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 12,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 6,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 1,
+          "bytes": 597
+        }
+      },
+      "maxRss": 341835776,
+      "rss": 310926544,
+      "retained": 34644633,
+      "documentBytes": 2797138,
+      "trace": null,
+      "logBytes": 7635576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 2,
+      "label": "baseline",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 2062.599875,
+        "cpuMs": 2199.961
+      },
+      "observeRows": [
+        {
+          "wallMs": 53.25199999999995,
+          "cpuMs": 58.716
+        },
+        {
+          "wallMs": 52.61633299999994,
+          "cpuMs": 49.229
+        },
+        {
+          "wallMs": 49.24858399999994,
+          "cpuMs": 41.634
+        },
+        {
+          "wallMs": 52.01324999999997,
+          "cpuMs": 45.648
+        },
+        {
+          "wallMs": 51.99670900000001,
+          "cpuMs": 46.095
+        },
+        {
+          "wallMs": 50.98695799999996,
+          "cpuMs": 42.152
+        },
+        {
+          "wallMs": 51.03545900000017,
+          "cpuMs": 44.888
+        },
+        {
+          "wallMs": 51.808166999999685,
+          "cpuMs": 46.854
+        },
+        {
+          "wallMs": 49.88729199999989,
+          "cpuMs": 41.809
+        },
+        {
+          "wallMs": 52.25400000000036,
+          "cpuMs": 44.977
+        },
+        {
+          "wallMs": 50.70845799999961,
+          "cpuMs": 47.033
+        },
+        {
+          "wallMs": 52.34191600000031,
+          "cpuMs": 46.246
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.154999999999745,
+          "cpuMs": 11.482
+        },
+        {
+          "wallMs": 11.134292000000187,
+          "cpuMs": 11.486
+        },
+        {
+          "wallMs": 11.268332999999984,
+          "cpuMs": 11.262
+        },
+        {
+          "wallMs": 11.134083999999802,
+          "cpuMs": 11.227
+        },
+        {
+          "wallMs": 11.013374999999996,
+          "cpuMs": 11.01
+        },
+        {
+          "wallMs": 11.027250000000095,
+          "cpuMs": 11.106
+        },
+        {
+          "wallMs": 11.026499999999942,
+          "cpuMs": 11.023
+        },
+        {
+          "wallMs": 11.11087499999985,
+          "cpuMs": 12.01
+        },
+        {
+          "wallMs": 10.953250000000025,
+          "cpuMs": 10.949
+        },
+        {
+          "wallMs": 10.995957999999973,
+          "cpuMs": 10.996
+        },
+        {
+          "wallMs": 11.853167000000212,
+          "cpuMs": 12.744
+        },
+        {
+          "wallMs": 10.698541000000205,
+          "cpuMs": 10.695
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 55,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 88,
+          "bytes": 34222363
+        },
+        "readFileSync": {
+          "calls": 10,
+          "bytes": 32660178
+        },
+        "appendFile": {
+          "calls": 79,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 79,
+          "bytes": 9950526
+        },
+        "statSync": {
+          "calls": 181,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 2,
+          "bytes": 8389588
+        },
+        "writeFile": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 3,
+          "bytes": 8389588
+        },
+        "rename": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 20,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "maxRss": 415334400,
+      "rss": 387332000,
+      "retained": 47966792,
+      "documentBytes": 3857578,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "round": 2,
+      "label": "working",
+      "records": 20000,
+      "absorption": {
+        "wallMs": 1404.2200420000001,
+        "cpuMs": 1546.799
+      },
+      "observeRows": [
+        {
+          "wallMs": 54.252292000000125,
+          "cpuMs": 58.895
+        },
+        {
+          "wallMs": 49.746624999999995,
+          "cpuMs": 41.495
+        },
+        {
+          "wallMs": 50.08212500000013,
+          "cpuMs": 45.944
+        },
+        {
+          "wallMs": 51.86941700000011,
+          "cpuMs": 46.247
+        },
+        {
+          "wallMs": 50.18641699999989,
+          "cpuMs": 45.797
+        },
+        {
+          "wallMs": 52.481708000000026,
+          "cpuMs": 49.692
+        },
+        {
+          "wallMs": 48.9660829999998,
+          "cpuMs": 40.784
+        },
+        {
+          "wallMs": 49.785290999999916,
+          "cpuMs": 45.451
+        },
+        {
+          "wallMs": 52.597833000000264,
+          "cpuMs": 45.849
+        },
+        {
+          "wallMs": 51.32187500000009,
+          "cpuMs": 41.404
+        },
+        {
+          "wallMs": 51.84979199999998,
+          "cpuMs": 46.279
+        },
+        {
+          "wallMs": 51.90137500000037,
+          "cpuMs": 45.636
+        }
+      ],
+      "flushRows": [
+        {
+          "wallMs": 11.385416000000077,
+          "cpuMs": 11.726
+        },
+        {
+          "wallMs": 11.204375000000255,
+          "cpuMs": 11.555
+        },
+        {
+          "wallMs": 11.165209000000232,
+          "cpuMs": 11.162
+        },
+        {
+          "wallMs": 11.220083000000159,
+          "cpuMs": 11.809
+        },
+        {
+          "wallMs": 11.097959000000174,
+          "cpuMs": 11.094
+        },
+        {
+          "wallMs": 11.13262500000019,
+          "cpuMs": 11.225
+        },
+        {
+          "wallMs": 11.009165999999823,
+          "cpuMs": 11.006
+        },
+        {
+          "wallMs": 11.186874999999873,
+          "cpuMs": 12.079
+        },
+        {
+          "wallMs": 11.030874999999924,
+          "cpuMs": 11.028
+        },
+        {
+          "wallMs": 11.049708999999893,
+          "cpuMs": 11.046
+        },
+        {
+          "wallMs": 11.820542000000387,
+          "cpuMs": 13.41
+        },
+        {
+          "wallMs": 10.924917000000278,
+          "cpuMs": 10.92
+        }
+      ],
+      "audit": {
+        "openSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "fstatSync": {
+          "calls": 2,
+          "bytes": 0
+        },
+        "writeFileSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "closeSync": {
+          "calls": 101,
+          "bytes": 0
+        },
+        "mkdir": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "readFile": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "mkdirSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "existsSync": {
+          "calls": 5,
+          "bytes": 0
+        },
+        "stat": {
+          "calls": 55,
+          "bytes": 0
+        },
+        "fsyncSync": {
+          "calls": 10,
+          "bytes": 0
+        },
+        "readSync": {
+          "calls": 88,
+          "bytes": 34222363
+        },
+        "readFileSync": {
+          "calls": 10,
+          "bytes": 32660178
+        },
+        "appendFile": {
+          "calls": 79,
+          "bytes": 0
+        },
+        "appendFile.bytes": {
+          "calls": 79,
+          "bytes": 9950526
+        },
+        "statSync": {
+          "calls": 181,
+          "bytes": 0
+        },
+        "readFile.bytes": {
+          "calls": 2,
+          "bytes": 8389588
+        },
+        "writeFile": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "writeFile.bytes": {
+          "calls": 3,
+          "bytes": 8389588
+        },
+        "rename": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "lstatSync": {
+          "calls": 20,
+          "bytes": 0
+        },
+        "writeSync": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "renameSync": {
+          "calls": 7,
+          "bytes": 0
+        },
+        "open": {
+          "calls": 4,
+          "bytes": 0
+        },
+        "linkSync": {
+          "calls": 3,
+          "bytes": 0
+        },
+        "rmSync": {
+          "calls": 1,
+          "bytes": 0
+        }
+      },
+      "maxRss": 429768704,
+      "rss": 396112696,
+      "retained": 46982767,
+      "documentBytes": 3857574,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    }
+  ],
+  "equivalence": [],
+  "summary": [
+    {
+      "records": 2000,
+      "baseline": {
+        "absorptionWallMs": 235.14933399999998,
+        "absorptionCpuMs": 253.028,
+        "observeWallMs": 21.783541999999983,
+        "observeCpuMs": 14.9815,
+        "flushWallMs": 1.0547709999999597,
+        "flushCpuMs": 1.0895000000000001,
+        "maxRssMiB": 160.9375,
+        "retainedMiB": 24.381678581237793,
+        "documentBytes": 908611,
+        "perRoundAbsorptionMs": [
+          232.9,
+          235.1,
+          249
+        ],
+        "perRoundAbsorptionCpuMs": [
+          251.1,
+          253,
+          269.6
+        ],
+        "tracePerRecord": null
+      },
+      "working": {
+        "absorptionWallMs": 172.26012500000002,
+        "absorptionCpuMs": 196.101,
+        "observeWallMs": 21.70735400000001,
+        "observeCpuMs": 16.186,
+        "flushWallMs": 1.0388340000000653,
+        "flushCpuMs": 1.0910000000000002,
+        "maxRssMiB": 160.125,
+        "retainedMiB": 21.593022346496582,
+        "documentBytes": 908608,
+        "perRoundAbsorptionMs": [
+          168.1,
+          172.3,
+          182.9
+        ],
+        "perRoundAbsorptionCpuMs": [
+          185.2,
+          196.1,
+          200.2
+        ],
+        "tracePerRecord": null
+      },
+      "absorptionChange": -0.26744370451842303,
+      "absorptionCpuChange": -0.2249830058333465,
+      "observeChange": -0.0034975028395278214,
+      "flushChange": -0.015109440816911922
+    },
+    {
+      "records": 12000,
+      "baseline": {
+        "absorptionWallMs": 1244.1425,
+        "absorptionCpuMs": 1342.856,
+        "observeWallMs": 40.80287499999997,
+        "observeCpuMs": 36.1055,
+        "flushWallMs": 6.571145499999943,
+        "flushCpuMs": 6.6185,
+        "maxRssMiB": 317.4375,
+        "retainedMiB": 37.51355743408203,
+        "documentBytes": 2797141,
+        "perRoundAbsorptionMs": [
+          1239,
+          1244.1,
+          1268
+        ],
+        "perRoundAbsorptionCpuMs": [
+          1320.9,
+          1342.9,
+          1354.9
+        ],
+        "tracePerRecord": null
+      },
+      "working": {
+        "absorptionWallMs": 833.147,
+        "absorptionCpuMs": 927.552,
+        "observeWallMs": 40.661333499999955,
+        "observeCpuMs": 36.7405,
+        "flushWallMs": 6.592729500000019,
+        "flushCpuMs": 6.676,
+        "maxRssMiB": 325.78125,
+        "retainedMiB": 33.03969669342041,
+        "documentBytes": 2797138,
+        "perRoundAbsorptionMs": [
+          822.2,
+          838.1,
+          833.1
+        ],
+        "perRoundAbsorptionCpuMs": [
+          918.5,
+          930.8,
+          927.6
+        ],
+        "tracePerRecord": null
+      },
+      "absorptionChange": -0.3303443938294849,
+      "absorptionCpuChange": -0.309269199378042,
+      "observeChange": -0.0034689099726432694,
+      "flushChange": 0.0032846632295808254
+    },
+    {
+      "records": 20000,
+      "baseline": {
+        "absorptionWallMs": 2065.985708,
+        "absorptionCpuMs": 2199.961,
+        "observeWallMs": 51.43422899999996,
+        "observeCpuMs": 45.537,
+        "flushWallMs": 11.069062499999973,
+        "flushCpuMs": 11.1665,
+        "maxRssMiB": 396.09375,
+        "retainedMiB": 46.03997039794922,
+        "documentBytes": 3857578,
+        "perRoundAbsorptionMs": [
+          2066,
+          2219.7,
+          2062.6
+        ],
+        "perRoundAbsorptionCpuMs": [
+          2199,
+          2363.3,
+          2200
+        ],
+        "tracePerRecord": null
+      },
+      "working": {
+        "absorptionWallMs": 1378.8101669999999,
+        "absorptionCpuMs": 1508.768,
+        "observeWallMs": 51.01645800000006,
+        "observeCpuMs": 45.439499999999995,
+        "flushWallMs": 11.284125000000131,
+        "flushCpuMs": 11.487,
+        "maxRssMiB": 409.859375,
+        "retainedMiB": 44.80625820159912,
+        "documentBytes": 3857574,
+        "perRoundAbsorptionMs": [
+          1370.4,
+          1378.8,
+          1404.2
+        ],
+        "perRoundAbsorptionCpuMs": [
+          1506.6,
+          1508.8,
+          1546.8
+        ],
+        "tracePerRecord": null
+      },
+      "absorptionChange": -0.332613889021153,
+      "absorptionCpuChange": -0.3141842059927425,
+      "observeChange": -0.008122431464850047,
+      "flushChange": 0.019429152197863078
+    }
+  ]
+}
