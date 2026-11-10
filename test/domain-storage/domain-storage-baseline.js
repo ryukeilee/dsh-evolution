@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { RELEASE_DIR, readTarEntries } from "../../scripts/release/release-lib.mjs";
 import { reverseInheritedDecisionRound } from "./autonomous-decision-baseline.js";
 import { reverseArchiveScanMemoContinuationRound } from "./archive-scan-memo-continuation-baseline.js";
+import { reverseStagedElementMemoRound } from "./staged-element-memo-baseline.js";
 import { STAGED_SAVE_CHECK_TEXT } from "./staged-save-check-text.js";
 
 const WORKING_SOURCE = fileURLToPath(new URL("../../lib/domain-storage.js", import.meta.url));
@@ -1373,7 +1374,8 @@ const reversals = [
 /** Revert only the retained write-path variant; everything else stays as written. */
 export function reconstructPreMerge(source) {
   source = reverseInheritedDecisionRound("lib/domain-storage.js",
-    reverseArchiveScanMemoContinuationRound("lib/domain-storage.js", source));
+    reverseArchiveScanMemoContinuationRound("lib/domain-storage.js",
+      reverseStagedElementMemoRound("lib/domain-storage.js", source)));
   for (const [after, before] of reversals) {
     assert.equal(source.split(after).length - 1, 1,
       "domain-storage merged-variant post-change shape must occur exactly once before reconstruction");
