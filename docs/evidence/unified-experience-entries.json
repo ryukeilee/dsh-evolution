@@ -1,0 +1,255 @@
+{
+  "artifact": {
+    "sha256": "f0de6a720a022ab4467a7cf4bc228b0660a626e4be2bfd7cdbb13cb23e5473b0",
+    "contentSha256": "d3c29905295cf52f6a90688fb9e12c3d964bdab3037b9bbb90ff6643d7561030",
+    "entries": 55
+  },
+  "runtimeFileSha256": {
+    "lib/shared-experience.js": "e31d936fdca3ece08653df28e755831469e3ebbe48c9f9f4fa26242256857b0a",
+    "lib/experience-collector.js": "dad8854fea3082a7e9141f31280d31dd07b819e3d0819ad1e9cb7aa3802840d0",
+    "lib/experience-history.js": "7d4e7491db3802fd50d90c33ca412ca488fb43ebece4b5970767e641ebfed4c8",
+    "lib/index.js": "7d290829b7ef4bf371cf3ae2f344438b438abaa1d1cb86d608ff8689bb54aa9d",
+    "lib/orchestrator.js": "ed26cf8956d167236e5754845233bdbe704f8934b33a1644dc4ab61158267974",
+    "lib/registration.js": "7773c5c7ac70f4c88fc1459f1d51fcea94b286d90c38fd15e929125dcb74639e",
+    "lib/experience-recall.js": "4ae24e2bc1a6295f00e772f4f4851f2e956026f5f6b506e320ddde55a9d87f77",
+    "scripts/setup-experience.mjs": "4f24b8db4f1da2703755dfdd2bada70a90135e225f00e46464e03c8782fe5cae"
+  },
+  "hmr": false,
+  "installedProfileBytesVerifiedAgainstTree": [
+    "desktop",
+    "acp",
+    "web"
+  ],
+  "installedByteComparison": "extracted dist tarball diffed recursively against each profile node_modules/dsh-evolution: identical for desktop, acp and web; lib/experience-history.js present in all three",
+  "desktop": {
+    "entry": "official Desktop application",
+    "isolatedElectronUserData": true,
+    "guiInteractionTested": false,
+    "ok": true,
+    "node": "v24.21.0",
+    "simulatedEvents": false,
+    "actualTool": "read",
+    "startupPhase": "none",
+    "before": {
+      "events": 0,
+      "knowledge": 0
+    },
+    "afterParent": {
+      "events": 1,
+      "knowledge": 1
+    },
+    "afterRepeatCallId": {
+      "events": 2,
+      "knowledge": 1
+    },
+    "afterChild": {
+      "events": 3,
+      "knowledge": 1
+    },
+    "experimentsBefore": 0,
+    "experimentsAfter": 0,
+    "corePresent": true,
+    "historyTools": 1,
+    "sharedRecallRecords": 0,
+    "sharedRecallOccurrences": 0,
+    "externalModelCalls": 0
+  },
+  "web": {
+    "entry": "official Web profile",
+    "browserInteractionTested": false,
+    "ok": true,
+    "node": "v24.21.0",
+    "simulatedEvents": false,
+    "actualTool": "read",
+    "before": {
+      "events": 4,
+      "knowledge": 2
+    },
+    "afterParent": {
+      "events": 5,
+      "knowledge": 2
+    },
+    "afterRepeatCallId": {
+      "events": 6,
+      "knowledge": 2
+    },
+    "afterChild": {
+      "events": 7,
+      "knowledge": 2
+    },
+    "experimentsBefore": 0,
+    "experimentsAfter": 0,
+    "corePresent": false,
+    "historyTools": 1,
+    "sharedRecallRecords": 1,
+    "sharedRecallOccurrences": 6,
+    "externalModelCalls": 0,
+    "sharedKnownTarget": "plugin:promotion_probe_r3",
+    "sharedKnownResults": 1
+  },
+  "acp": {
+    "ok": true,
+    "transport": "real ACP stdio; loopback deterministic Anthropic responses",
+    "simulatedEvents": false,
+    "externalModelCalls": 0,
+    "modelResponses": 7,
+    "collectionAdditionalModelCalls": 0,
+    "failedPrompt": true,
+    "first": {
+      "stopReason": "end_turn"
+    },
+    "second": {
+      "stopReason": "end_turn"
+    },
+    "stats": {
+      "events": 9,
+      "knowledge": 3
+    },
+    "recallRecords": 1,
+    "historyResult": {
+      "sources": [
+        {
+          "source": "shared-knowledge",
+          "considered": 3,
+          "scanned": 3,
+          "matched": 1,
+          "duplicates": 0,
+          "dropped": 0,
+          "available": true
+        }
+      ],
+      "failures": 1,
+      "occurrences": 7
+    },
+    "actualReadTool": "read",
+    "priorReadOccurrences": 6,
+    "knownTarget": "plugin:promotion_probe_r3",
+    "knownResult": {
+      "resolved": 1,
+      "successes": 1
+    },
+    "updates": [
+      "usage_update",
+      "tool_call",
+      "tool_call_update",
+      "agent_message_chunk",
+      "usage_update",
+      "usage_update",
+      "tool_call",
+      "tool_call_update",
+      "agent_message_chunk",
+      "usage_update",
+      "usage_update",
+      "tool_call",
+      "tool_call_update",
+      "agent_message_chunk",
+      "usage_update"
+    ],
+    "requests": [
+      {
+        "bytes": 59092,
+        "toolSchemaBytes": 19266,
+        "historySchemas": 1,
+        "historySchemaBytes": 401
+      },
+      {
+        "bytes": 60494,
+        "toolSchemaBytes": 19266,
+        "historySchemas": 1,
+        "historySchemaBytes": 401
+      },
+      {
+        "bytes": 33850,
+        "toolSchemaBytes": 19266,
+        "historySchemas": 1,
+        "historySchemaBytes": 401
+      },
+      {
+        "bytes": 33721,
+        "toolSchemaBytes": 19266,
+        "historySchemas": 1,
+        "historySchemaBytes": 401
+      },
+      {
+        "bytes": 36915,
+        "toolSchemaBytes": 19266,
+        "historySchemas": 1,
+        "historySchemaBytes": 401
+      },
+      {
+        "bytes": 35604,
+        "toolSchemaBytes": 19266,
+        "historySchemas": 1,
+        "historySchemaBytes": 401
+      },
+      {
+        "bytes": 39669,
+        "toolSchemaBytes": 19266,
+        "historySchemas": 1,
+        "historySchemaBytes": 401
+      }
+    ],
+    "elapsedMs": 651.9740409999999,
+    "tokenMeasurement": "Fixture usage is synthetic; schema bytes are measured, billing tokens are not."
+  },
+  "manualDesktopPromotion": {
+    "listenerExecuted": true,
+    "target": "plugin:promotion_probe_r3",
+    "sharedKnown": true,
+    "steps": [
+      {
+        "name": "runtime-stable",
+        "ok": true
+      },
+      {
+        "name": "evolution_propose",
+        "ok": true,
+        "phase": "proposed"
+      },
+      {
+        "name": "evolution_trial",
+        "ok": true,
+        "phase": "trial"
+      },
+      {
+        "name": "event:promotion_probe_r3",
+        "ok": true
+      },
+      {
+        "name": "evolution_measure",
+        "ok": true,
+        "phase": "measured"
+      },
+      {
+        "name": "evolution_promote",
+        "ok": false,
+        "phase": "awaiting-owner-confirmation"
+      },
+      {
+        "name": "evolution_promote",
+        "ok": true,
+        "phase": "canary-observing"
+      },
+      {
+        "name": "event:promotion_probe_r3",
+        "ok": true
+      },
+      {
+        "name": "evolution_canary_observe",
+        "ok": true,
+        "phase": "canary-observing"
+      }
+    ]
+  },
+  "manualPromotionProof": "Desktop executed the real propose/trial/measure/confirmation-gate/promote/canary-observe path with promotion_probe_r3 against the current artifact in a freshly initialized isolated home; the promoted listener ran and the promotion-succeeded fact was published through the signed bridge with a writer sequence. Web and ACP processes started later read the new target from the shared store through the separate experience-history entry. Restart, startup-canary and rollback coverage comes from the re-run host acceptance evidence (docs/evidence/shared-experience-host-0.2.2-rc.1.json).",
+  "limits": [
+    "Runtime integration through official entry and tool APIs; Desktop GUI and Web browser clicks were not automated.",
+    "ACP uses a real stdio process and a deterministic loopback model transport, not a live external provider.",
+    "Native receipt dedup is a focused unit test; repeated callId executions in real entry probes must count separately.",
+    "Legacy free-text knowledge stays in the original Desktop store; it is not automatically shared.",
+    "Provider billing tokens are unmeasured; only actual request counts and schema bytes are reported.",
+    "The Desktop entry probe ends at canary-observing for the new candidate; the canary commit/rollback lifecycle is proven by the host acceptance run, not by this entry probe.",
+    "The entry probes ran in a freshly initialized isolated DSH_HOME, so the recorded counts start at zero and only the current artifact's facts appear."
+  ],
+  "formalDshProfilesOrDataModified": false
+}

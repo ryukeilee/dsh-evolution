@@ -23,6 +23,7 @@ import { DomainFacility } from '@deepseek-ai/dsh-storage-domain';
 import { JsonStorageBackend } from '@deepseek-ai/dsh-storage-json';
 import { apply, EVOLUTION_TOOLS } from '../lib/registration.js';
 import * as bundle from '../lib/index.js';
+import { openSharedExperience } from '../lib/shared-experience.js';
 
 const SECRET = 'hunter2-entry-secret';
 
@@ -139,6 +140,8 @@ async function host(t, { composition = '[]\n' } = {}) {
   const facility = new DomainFacility(app, { backend: 'json' });
   app.provide('storageDomain', facility);
   app.provide('dynamicCordisRunner', runner);
+  const shared = openSharedExperience(path.join(root, 'shared-experience'));
+  app.provide('evolutionExperience', { store: shared });
   app.logger.warn = (message) => warnings.push(message);
 
   const mounted = [];
@@ -154,6 +157,7 @@ async function host(t, { composition = '[]\n' } = {}) {
   t.after(async () => {
     for (const fiber of mounted) await fiber.dispose().catch(() => {});
     await backend.close().catch(() => {});
+    shared.close();
     fs.rmSync(root, { recursive: true, force: true });
   });
   return { root, dataRoot, compositionPath, lockPath, app, tools, warnings, runner, mount, proposal };

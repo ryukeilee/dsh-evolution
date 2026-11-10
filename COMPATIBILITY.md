@@ -7,6 +7,28 @@ none of them is hidden behind an implicit patch.
 
 ## Supported versions
 
+### Unified experience development boundary
+
+The development tree adds a runner-independent collector and a dedicated local
+SQLite experience adapter, using Node's built-in `node:sqlite`. The pinned 0.2.3
+artifact is unchanged. Desktop retains the complete manual Evolution flow;
+ACP and Web are configured for collection and shared recall only. CLI/TUI is
+outside this task. Profile installation does not prove runtime compatibility.
+
+The existing core domain/archive root remains exclusive to Desktop. The
+collector does not open `evolution_domain`, change storage-json routing, or
+share journal/claim/canary state. Old free-text knowledge is retained in place;
+only allowlisted metadata from authenticated structured Evolution facts can be
+additively published on restart. Offline free-text legacy history is not
+automatically available from ACP/Web. Shared recall remains advisory.
+
+Current evidence and outstanding entry checks are recorded in
+`docs/design/unified-experience.md`. The dedicated ACP acceptance drives real
+stdio and the official Agent/tool pipeline with a loopback deterministic model
+transport; it does not inject simulated host events. Its synthetic provider
+usage is not a billing-token measurement. Desktop UI acceptance is separate
+from Web host acceptance and must not be inferred from it.
+
 | Component | Range |
 | --- | --- |
 | DSH | `0.2.0-rc.2`, `0.2.1-alpha.1`, `0.2.1-rc.2` or `0.2.2-rc.1` (exact alternatives, enforced by `peerDependencies`; `0.2.2-rc.1` requires the host `hmr` row disabled, see [The upstream HMR transaction gap](#the-upstream-hmr-transaction-gap-on-022-rc1)) |

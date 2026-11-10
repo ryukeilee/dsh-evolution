@@ -1,0 +1,265 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import { once } from 'node:events';
+import { openSharedExperience, experienceEventId } from '../lib/shared-experience.js';
+import { normalizeKnowledgeEvent, mergeKnowledgeEntry } from '../lib/dockyard-domain/knowledge.js';
+import { managedPatch, setupPlan } from '../scripts/setup-experience.mjs';
+import yaml from 'js-yaml';
+import { EvolutionEventBridge } from '../lib/orchestrator.js';
+import { apply as applyCore } from '../lib/registration.js';
+import { Context } from '@deepseek-ai/cordis';
+import * as collector from '../lib/experience-collector.js';
+import { composeEntries } from '@deepseek-ai/dsh-app-boot';
+import { finalizeExperienceRecall } from '../lib/experience-recall.js';
+
+const moduleUrl = new URL('../lib/shared-experience.js', import.meta.url).href;
+function temporary(t) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'evolution-experience-test-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  return root;
+}
+const input = n => ({ id: experienceEventId('test', n), type: 'tool/error', code: 'ENOENT', target: 'tool:read_file' });
+function child(code) {
+  const process = spawn(globalThis.process.execPath, ['--max-old-space-size=4096', '--input-type=module', '-e', code], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let stderr = ''; process.stderr.on('data', value => { stderr += value; });
+  return { process, done: once(process, 'exit').then(([code]) => { assert.equal(code, 0, stderr); }) };
+}
+
+test('committed facts survive reopen; permanent event ledger dedups beyond canonical window', t => {
+  const root = temporary(t);
+  let store = openSharedExperience(root);
+  for (let n = 0; n < 300; n++) store.recordFailure(input(n));
+  store.close(); store = openSharedExperience(root); t.after(() => store.close());
+  assert.equal(store.recordFailure(input(0)).duplicate, true);
+  assert.deepEqual(store.stats(), { events: 300, knowledge: 1 });
+  const row = store.recall({ problem: 'read_file' }).records[0];
+  assert.equal(row.occurrences, 300);
+  assert.equal(row.state, 'LEARNING');
+  assert.equal(row.successCount, 0);
+  assert.throws(() => store.recordFailure({ ...input(0), code: 'EACCES' }), /E_EXPERIENCE_EVENT_CONFLICT/);
+  assert.equal(store.recall({ problem: 'read_file' }).records[0].occurrences, 300);
+});
+
+test('four concurrent host processes cannot overwrite facts; replay is exactly once', async t => {
+  const root = temporary(t);
+  const workers = Array.from({ length: 4 }, (_, worker) => child(`
+    import {openSharedExperience,experienceEventId} from ${JSON.stringify(moduleUrl)};
+    const s=openSharedExperience(${JSON.stringify(root)});
+    for(let n=0;n<80;n++) s.recordFailure({id:experienceEventId('concurrent',${worker},n),type:'tool/error',code:'ENOENT',target:'tool:read_file'});
+    s.recordFailure({id:experienceEventId('common'),code:'EACCES',target:'tool:read_file'});s.close();`));
+  await Promise.all(workers.map(worker => worker.done));
+  const store = openSharedExperience(root); t.after(() => store.close());
+  assert.deepEqual(store.stats(), { events: 321, knowledge: 2 });
+  assert.equal(store.recall({ problem: 'read_file' }).records.reduce((n, row) => n + row.occurrences, 0), 321);
+});
+
+test('a writer waits out a write lock held by another process instead of dropping the fact', async t => {
+  const root = temporary(t);
+  const store = openSharedExperience(root); t.after(() => store.close());
+  // Hold the write lock for longer than the old 250 ms bound, so only a wait
+  // that outlives a single timeout can commit this record.
+  const script = `import {DatabaseSync} from 'node:sqlite';
+    const db=new DatabaseSync(${JSON.stringify(path.join(root, 'experience.sqlite'))});
+    db.exec('BEGIN IMMEDIATE');
+    process.stdout.write('locked\\n');
+    setTimeout(()=>{db.exec('COMMIT');db.close();process.exit(0);},1000);`;
+  const holder = spawn(process.execPath, ['--max-old-space-size=4096', '--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let output = ''; let stderr = '';
+  holder.stderr.on('data', value => { stderr += value; });
+  holder.stdout.on('data', value => { output += value; });
+  const exited = once(holder, 'exit');
+  try {
+    const deadline = Date.now() + 30000;
+    while (!output.includes('locked') && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5));
+    assert.ok(output.includes('locked'), `the helper process did not take the write lock: ${stderr}`);
+    const started = Date.now();
+    const result = store.recordFailure({ id: experienceEventId('busy-wait'), type: 'tool/error', code: 'ENOENT', target: 'tool:read_file' });
+    assert.equal(result.committed, true);
+    // The helper becomes visible to the parent within a small scheduling delay,
+    // so the wait is ~1 s minus that delay: 250 ms still proves the old bound
+    // could not have committed this record without making the assertion depend
+    // on how fast the parent observes "locked".
+    assert.ok(Date.now() - started >= 250, 'the writer must have waited past the old single-wait bound');
+  } finally { const [code] = await exited; assert.equal(code, 0, stderr); }
+  assert.deepEqual(store.stats(), { events: 1, knowledge: 1 });
+});
+
+test('SIGKILL after COMMIT retains facts; interrupted SQLite transaction rolls back on reopen', async t => {
+  const root = temporary(t);
+  const script = `import {openSharedExperience,experienceEventId} from ${JSON.stringify(moduleUrl)};
+    import {DatabaseSync} from 'node:sqlite'; const s=openSharedExperience(${JSON.stringify(root)});
+    s.recordFailure({id:experienceEventId('committed'),code:'ENOENT',target:'tool:read_file'});
+    const db=new DatabaseSync(${JSON.stringify(path.join(root, 'experience.sqlite'))});
+    db.exec("BEGIN IMMEDIATE; DELETE FROM events; DELETE FROM knowledge;");
+    console.log('transaction-open');setInterval(()=>{},1000);`;
+  const p = spawn(process.execPath, ['--max-old-space-size=4096', '--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'pipe'] });
+  const exited = once(p, 'exit');
+  await once(p.stdout, 'data'); p.kill('SIGKILL'); await exited;
+  const store = openSharedExperience(root); t.after(() => store.close());
+  assert.deepEqual(store.stats(), { events: 1, knowledge: 1 });
+  assert.equal(store.recall({ problem: 'read_file' }).records[0].occurrences, 1);
+});
+
+test('only metadata is persisted; hostile text never crosses the storage boundary', t => {
+  const root = temporary(t); const store = openSharedExperience(root); t.after(() => store.close());
+  store.recordFailure({ ...input(1), code: 'secret: password', target: 'secret token=private', message: 'private payload', arguments: { key: 'private' } });
+  store.close();
+  const bytes = fs.readFileSync(path.join(root, 'experience.sqlite')).toString();
+  assert.ok(!bytes.includes('private payload')); assert.ok(!bytes.includes('secret token'));
+  assert.ok(!bytes.includes('secret: password'));
+});
+
+test('failure canonical output uses existing domain semantics', t => {
+  const root = temporary(t); const store = openSharedExperience(root); t.after(() => store.close());
+  store.recordFailure(input(1));
+  const event = normalizeKnowledgeEvent({ type: 'tool/error', code: 'ENOENT', componentId: 'tool:read_file',
+    severity: 'error', status: 'failed', message: 'Official operation failed (ENOENT)', eventId: input(1).id }, { sourceCollection: 'observations' });
+  const baseline = mergeKnowledgeEntry(null, event);
+  const actual = store.recall({ problem: 'read_file' }).records[0];
+  assert.equal(actual.key, baseline.knowledgeKey); assert.equal(actual.failureCount, baseline.failureCount);
+});
+
+test('only completed Evolution promotion facts become successful knowledge', t => {
+  const root = temporary(t); const store = openSharedExperience(root); t.after(() => store.close());
+  assert.deepEqual(store.recordEvolution({ eventType: 'trial-completed' }, 'test'), { ignored: true });
+  const receipt = sequence => ({ writer: 'dsh-evolution-orchestrator', sequence });
+  store.recordEvolution({ eventType: 'promotion-succeeded', target: 'tool-a', eventId: 'evolution:promotion-succeeded:exp-a' }, 'core-a', receipt(1));
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].successCount, 1);
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN');
+  store.recordEvolution({ eventType: 'canary-failed', target: 'tool-a', eventId: 'evolution:canary-failed:exp-a' }, 'core-a', receipt(2));
+  const regressed = store.recall({ target: 'tool-a' }).records;
+  assert.equal(regressed.length, 1);
+  assert.equal(regressed[0].state, 'REGRESSED');
+  assert.equal(regressed[0].regressionCount, 1);
+  const final = finalizeExperienceRecall({ target: 'tool-a' }, [store.recall({ target: 'tool-a' })]);
+  assert.equal(final.resolved.length, 0); assert.equal(final.candidates.length, 0);
+  assert.equal(final.failures.length, 1);
+  assert.ok(final.advice.every(line => !line.includes('reusing') && !line.includes('reuse the recorded')));
+});
+
+test('setup is idempotent and preserves unrelated profile contents byte for byte', () => {
+  const user = '- id: tstack-skills\n  config:\n    customSkillDirs: []\n';
+  const next = managedPatch(user, 'acp');
+  assert.ok(next.startsWith(user)); assert.equal(managedPatch(next, 'acp'), next);
+  assert.match(next, /evolution-experience-history\n  disabled: false/); assert.match(next, /evolution-orchestrator\n  disabled: true/);
+  assert.match(managedPatch(user, 'desktop'), /evolution-orchestrator\n  disabled: false/);
+  assert.throws(() => managedPatch('# BEGIN dsh-evolution shared experience\n', 'web'), /Ambiguous/);
+  assert.equal(yaml.load(managedPatch('# official stock\n[]\n', 'acp')).length, 4);
+});
+
+test('daily collector configuration leaves manual lifecycle and startup canary hooks intact', () => {
+  const listeners = new Map(); const names = [];
+  const ctx = { dynamicCordisRunner: {}, tools: { register: definition => names.push(definition.name) },
+    systemPrompt: { section() {} }, on: (name, callback) => listeners.set(name, callback) };
+  const core = applyCore(ctx, { memory: {}, eventBridge: {}, startupDrift: false,
+    domainStorage: {}, dailyAutonomousObservation: false, autonomous: true });
+  assert.ok(listeners.has('agent/pre-step'));
+  assert.ok(!listeners.has('agent/error')); assert.ok(!listeners.has('tools/result'));
+  for (const name of ['evolution_trial', 'evolution_measure', 'evolution_promote', 'evolution_revert']) assert.ok(names.includes(name));
+  assert.equal(typeof core.trial, 'function');
+});
+
+test('different bytes at one development tarball path produce different official install identities', t => {
+  const root = temporary(t); const tarball = path.join(root, 'development.tgz');
+  fs.writeFileSync(tarball, 'first candidate');
+  const first = setupPlan({ home: root, tarball, cli: 'dsh' });
+  fs.writeFileSync(tarball, 'second candidate');
+  const second = setupPlan({ home: root, tarball, cli: 'dsh' });
+  assert.notEqual(first[0].artifact, second[0].artifact);
+  assert.equal(first.length, 3);
+  assert.ok(first.every(item => item.artifact === first[0].artifact));
+  assert.ok(!fs.existsSync(first[0].artifact), 'planning must not write a cache or profile');
+});
+
+test('shared publication can recover from the authenticated bridge without trusting a foreign event', t => {
+  const root = temporary(t); const store = openSharedExperience(path.join(root, 'shared')); t.after(() => store.close());
+  const file = path.join(root, 'execution-events.jsonl'); const key = 'a'.repeat(64);
+  const bridge = new EvolutionEventBridge({ file, key });
+  bridge.emit('promotion-succeeded', { id: 'exp-a', proposal: { target: 'tool-a' } });
+  const publish = (event, order) => store.recordEvolution(event, file, order);
+  new EvolutionEventBridge({ file, key, onVerifiedEvent: publish });
+  new EvolutionEventBridge({ file, key, onVerifiedEvent: publish });
+  assert.deepEqual(store.stats(), { events: 1, knowledge: 1 });
+  const foreign = new EvolutionEventBridge({ file: path.join(root, 'foreign.jsonl'), key, writer: 'another-writer' });
+  foreign.emit('promotion-succeeded', { id: 'exp-b', proposal: { target: 'tool-b' } });
+  fs.appendFileSync(file, fs.readFileSync(foreign.file));
+  new EvolutionEventBridge({ file, key, onVerifiedEvent: publish });
+  assert.equal(store.stats().events, 1);
+});
+
+test('collector dedups a repeated receipt but counts a real new execution reusing callId (unit event fixture)', async t => {
+  const root = temporary(t); const app = new Context();
+  app.provide('tools', { register() {} });
+  const fiber = app.plugin(collector, { dshHome: root }); await fiber.await();
+  try {
+    const exec = { callId: 'reused', name: 'read', agent: { id: 'agent-a' } };
+    const result = { isError: true };
+    app.emit('tools/result', exec, result); app.emit('tools/result', exec, result);
+    const store = app.get('evolutionExperience').store;
+    assert.equal(store.stats().events, 1);
+    app.emit('tools/result', { ...exec }, result);
+    assert.equal(store.stats().events, 2);
+  } finally { await fiber.dispose(); }
+});
+
+test('managed setup preserves effective config through the official patch composer', () => {
+  const bundle = yaml.load(fs.readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8'));
+  const previous = `- id: evolution-orchestrator\n  config:\n    dataRoot: /isolated/custom-core\n    canaryWindow: 7\n- id: evolution-experience\n  config:\n    experienceRoot: /isolated/shared\n`;
+  for (const profile of ['desktop', 'acp', 'web']) {
+    const warnings = [];
+    const entries = composeEntries([bundle, yaml.load(managedPatch(previous, profile))], warning => warnings.push(warning));
+    assert.deepEqual(warnings.filter(warning => !warning.includes('hmr')), []);
+    assert.deepEqual(entries.find(row => row.id === 'evolution-orchestrator').config,
+      { dataRoot: '/isolated/custom-core', canaryWindow: 7 });
+    assert.deepEqual(entries.find(row => row.id === 'evolution-experience').config,
+      { experienceRoot: '/isolated/shared' });
+    assert.equal(entries.find(row => row.id === 'evolution-experience-history').disabled, profile === 'desktop');
+  }
+});
+
+test('Trial cleanup cannot invalidate a proven production outcome, but durable rollback can', t => {
+  const root = temporary(t); const store = openSharedExperience(path.join(root, 'shared')); t.after(() => store.close());
+  const file = path.join(root, 'bridge.jsonl');
+  const bridge = new EvolutionEventBridge({ file, key: 'b'.repeat(64),
+    onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
+  const base = { id: 'production', proposal: { target: 'tool-a' }, durable: { adapter: 'official-include', rowId: 'fixture-row' } };
+  bridge.emit('promotion-succeeded', base);
+  bridge.emit('promotion-reverted', { id: 'trial-only', proposal: base.proposal }, { status: 'reverted' });
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN');
+  assert.equal(store.stats().events, 1);
+  bridge.emit('promotion-reverted', base, { status: 'rolled-back' });
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'REGRESSED');
+});
+
+test('verified bridge backfill preserves latest outcome even when timestamps tie and a prior publish was missed', t => {
+  const root = temporary(t); const store = openSharedExperience(path.join(root, 'shared')); t.after(() => store.close());
+  const file = path.join(root, 'bridge.jsonl'); const key = 'c'.repeat(64); const at = '2026-11-10T00:00:00.000Z';
+  const bridge = new EvolutionEventBridge({ file, key,
+    onVerifiedEvent: (event, order) => { if (order.sequence > 1) store.recordEvolution(event, file, order); } });
+  const base = { id: 'production', proposal: { target: 'tool-a' } };
+  bridge.emit('promotion-succeeded', base, { at });
+  bridge.emit('canary-failed', base, { at });
+  assert.equal(store.stats().events, 1);
+  new EvolutionEventBridge({ file, key, onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
+  const row = store.recall({ target: 'tool-a' }).records[0];
+  assert.equal(row.state, 'REGRESSED'); assert.equal(row.lastOutcome, 'regression');
+  assert.equal(row.occurrences, 2); assert.equal(store.stats().events, 2);
+  const final = finalizeExperienceRecall({ target: 'tool-a' }, [store.recall({ target: 'tool-a' })]);
+  assert.equal(final.resolved.length, 0); assert.equal(final.failures.length, 1);
+  bridge.emit('promotion-succeeded', { ...base, id: 'new-production' }, { at });
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN', 'a genuinely newer success can recover the target');
+  new EvolutionEventBridge({ file, key, onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN');
+  assert.equal(store.stats().events, 3);
+});
+
+test('setup bin invoked through a symlink runs its argument validation', t => {
+  const root = temporary(t); const link = path.join(root, 'dsh-evolution-setup');
+  fs.symlinkSync(new URL('../scripts/setup-experience.mjs', import.meta.url), link);
+  const result = spawnSync(process.execPath, ['--max-old-space-size=4096', link], { encoding: 'utf8' });
+  assert.equal(result.status, 1); assert.match(result.stderr, /--tarball is required/);
+});

@@ -14,6 +14,29 @@
 
 ## 30 秒了解
 
+本开发树新增统一经验采集；`release/` 中的 0.2.3 固定包不包含该改动。开发候选的运行验收与边界见 [接入审计](docs/design/unified-experience.md)，下面的配置方案不是已发布支持声明。
+
+### Desktop、ACP、Web 共用经验
+
+日常采集由独立的 `dsh-evolution/experience` 插件订阅官方 `agent/error`、`tools/result`，同步提交有界失败元数据；不读取工具正文、参数或聊天记录，不调用模型，也不触发 Trial。普通工具成功不作为解决方案。Desktop 完整 Evolution 的已签名晋升/canary 事实另外投影到共享经验中；发布失败时保留原桥日志，重启会重试其仍保留的已验证记录。
+
+共享库是同一 `DSH_HOME/storages/evolution-experience/experience.sqlite`，只支持同一机器、同一 OS 用户和本地文件系统。SQLite WAL 事务同时提交永久去重身份与 canonical knowledge 更新，跨进程不共享 JSON 内存快照。目录/数据库要求私有权限。未知格式拒绝打开，不删除或重建。永久去重账本会随不同事件增长，目前没有自动回收任务。
+
+手动 Trial、测量、晋升和回滚集中在 Desktop；ACP 和 Web 只提供自动采集与 `evolution_history`。Desktop 继续使用原工具查询本地历史，并合并共享来源；其他入口查询新增共享经验。旧的自由文本经验和冷档案原地保留，不自动迁移到共享库。各入口默认不会把经验注入每个 Agent 回合，只有显式 history/proposal 检索会返回有界结果。
+
+一次配置三个 profile（需要先启动过 Desktop 完成官方初始化，再完全退出；正式环境安装需由操作者执行）：
+
+```sh
+# 查看计划，不写 profile
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.3.tgz
+# 使用官方 CLI 安装并应用计划；可用 --home 指定隔离 DSH_HOME
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.3.tgz --apply
+```
+
+安装器只维护标记块，保留其他插件、Skills、T3 工作流与 storage route；HMR 保持关闭。它不会复制或迁移历史，不会启停正在运行的正式应用。待安装包以内容摘要缓存在 `storages/evolution-package-cache`，由官方 CLI 从不可变路径安装，避免同版本本地重建被文件依赖缓存误判为已安装。缓存内容不匹配时拒绝覆盖。每个 profile 的官方安装结果分别报告，途中失败会停止并报告已完成项；多 profile 安装不是原子事务。安装后重启对应入口。非 macOS 或自定义安装可用 `--cli <官方 dsh 可执行文件>` 指定 CLI。
+
+采集不增加模型调用。轻量入口为显式检索增加一个 history 工具 schema；它仍占上下文，不能宣称零 Token。实际延迟和 schema 字节测量见 [性能记录](docs/performance/shared-experience.md)。卸载插件不会删除共享库；降级同样保留它，旧版本不会读取该库。
+
 - 通过官方 Cordis runner 做隔离实验，保留首次修改运行时前捕获的基线。
 - Trial 可以回滚；回滚路径比较运行时签名，恢复失败时拒绝继续晋升。
 - 晋升需通过 8 项证据门禁，并由所有者显式传入 `confirmation: true`。

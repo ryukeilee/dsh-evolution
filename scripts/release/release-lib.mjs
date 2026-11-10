@@ -1060,7 +1060,7 @@ export function treeContentDigest() {
  * text comparison). Either way this fails closed: no digest, one fixed label, and
  * never the document, its keys or the parser's message.
  */
-export function commitContentDigest(commit, cwd = REPO_ROOT) {
+export function commitArchiveEntries(commit, cwd = REPO_ROOT) {
   // stderr is captured, not inherited: a caller that probes a commit which is not
   // in this checkout treats the failure as an answer and reports it itself.
   const gitBytes = (args) => execFileSync('git', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -1084,7 +1084,11 @@ export function commitContentDigest(commit, cwd = REPO_ROOT) {
     if (type !== 'blob' || !['100644', '100755'].includes(mode)) throw new Error(`unsupported shipped git entry: ${relative} (${mode} ${type})`);
     entries.push({ path: relative, mode: mode === '100755' ? 0o755 : 0o644, bytes: gitBytes(['cat-file', 'blob', object]) });
   }
-  return contentDigestOf(entries);
+  return entries;
+}
+
+export function commitContentDigest(commit, cwd = REPO_ROOT) {
+  return contentDigestOf(commitArchiveEntries(commit, cwd));
 }
 
 // ---------------------------------------------------------------------------

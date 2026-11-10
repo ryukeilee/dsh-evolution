@@ -26,7 +26,7 @@ export const inject = ['evolution', 'agents', 'tools'];
 export function apply(ctx) {
   const receive = (message) => {
     if (message !== 'run') return;
-    void run().then(
+    void runPromotionProbe(ctx).then(
       (result) => process.send?.({ result }),
       (error) => process.send?.({ error: `${String(error?.stack || error)}`.slice(0, 4000) }),
     );
@@ -36,6 +36,10 @@ export function apply(ctx) {
     return () => process.off('message', receive);
   });
   process.send?.({ ready: true });
+}
+
+export async function runPromotionProbe(ctx, onStep = () => {}) {
+  const evolution = ctx.get('evolution');
 
   async function waitFor(predicate, label, timeoutMs = 30000) {
     const deadline = Date.now() + timeoutMs;
@@ -52,6 +56,7 @@ export function apply(ctx) {
   }
 
   async function run() {
+    onStep('waiting-for-core-tools');
     await waitFor(() => Boolean(ctx.get('evolution')) && ctx.tools.schemas().filter((tool) => tool.name.startsWith('evolution_')).length === 10, 'the evolution service and 10 tools');
     const command = process.env.EVOLUTION_PROMOTION_COMMAND || 'promote';
     const handle = await ctx.agents.create({
@@ -61,12 +66,13 @@ export function apply(ctx) {
     const agent = handle.agent;
     const steps = [];
     const call = async (name, args, expectedFailure = false) => {
+      onStep(name);
       const definition = ctx.tools.get(name, agent);
       if (!definition) throw new Error(`the official registry cannot resolve ${name}`);
       const result = await definition.execute(args, { agent, signal: new AbortController().signal });
       steps.push({ name, ok: result?.ok !== false, phase: result?.phase });
       if (!expectedFailure && result?.ok === false) {
-        const record = ctx.evolution.orchestrator.experiments.get(args.experimentId);
+        const record = evolution.orchestrator.experiments.get(args.experimentId);
         throw new Error(`${name} refused: ${JSON.stringify({ phase: result?.phase, reason: result?.reason, runtimeRecovered: result?.runtimeRecovered, cleanupProof: record?.cleanupProof, recoveryProof: record?.recoveryProof })}`);
       }
       return result;
@@ -141,9 +147,10 @@ export function apply(ctx) {
     };
 
     try {
-      const output = { command, steps, dataRoot: ctx.evolution.dataRoot };
+      const output = { command, steps, dataRoot: evolution.dataRoot };
       if (command === 'promote') {
-        output.promotion = await candidate('stable');
+        const suffix = process.env.EVOLUTION_ENTRY_PROBE_PROMOTION_SUFFIX || 'stable';
+        output.promotion = await candidate(suffix);
         await call('evolution_canary_observe', {
           experimentId: output.promotion.experimentId,
           startupVerified: true,
@@ -153,11 +160,11 @@ export function apply(ctx) {
           barrier: { id: 'promotion-active-listener-execute', reached: true },
           evidence: { listenerExecuted: true },
         });
-        output.promotedListener = has('promotion_probe_stable');
+        output.promotedListener = has(`promotion_probe_${suffix}`);
       } else if (command === 'restart-and-rollback') {
         if (!has('promotion_probe_stable')) throw new Error('the promoted listener did not survive the process restart');
         await executeMarker('promotion_probe_stable');
-        output.startup = await ctx.evolution.orchestrator.verifyStartupCanary(agent);
+        output.startup = await evolution.orchestrator.verifyStartupCanary(agent);
         if (output.startup.phase !== 'stable') throw new Error(`the startup canary did not commit: ${JSON.stringify(output.startup)}`);
         output.rollbackPromotion = await candidate('rollback');
         const rolledBack = await call('evolution_canary_observe', {
@@ -177,7 +184,7 @@ export function apply(ctx) {
         if (!has('promotion_probe_stable')) throw new Error('the committed candidate is not live after restart');
         if (has('promotion_probe_rollback')) throw new Error('the rolled-back candidate came back after restart');
         await executeMarker('promotion_probe_stable');
-        output.startup = await ctx.evolution.orchestrator.verifyStartupCanary(agent);
+        output.startup = await evolution.orchestrator.verifyStartupCanary(agent);
         // The committed canary journal was already cleaned up by the previous
         // restart, so a settled install legitimately reports `none` here; any
         // pending or failing canary state would not be one of these.
@@ -185,7 +192,7 @@ export function apply(ctx) {
         if (!['stable', 'none', 'committed-cleaned'].includes(startupState)) {
           throw new Error(`the startup canary is not settled: ${JSON.stringify(output.startup)}`);
         }
-        const compositionPath = path.join(ctx.evolution.dataRoot, 'promoted.cordis.yml');
+        const compositionPath = path.join(evolution.dataRoot, 'promoted.cordis.yml');
         await fs.access(compositionPath);
         output.compositionPath = compositionPath;
         output.verified = true;
@@ -197,4 +204,5 @@ export function apply(ctx) {
       await handle.dispose();
     }
   }
+  return run();
 }
