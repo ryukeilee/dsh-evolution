@@ -1,6 +1,6 @@
 # 统一经验采集与共享
 
-基线：main cb319da / Evolution 0.2.3。用户确认只覆盖 Desktop、ACP、Web；手动 Trial、测量、晋升、回滚集中在 Desktop，CLI/TUI 不在本次范围。当前为开发候选，release/ 固定产物不变。独立审核首轮（codex / gpt-6.1-sol / xhigh）提出 5 项 CHANGES（C1–C5），已修复并由第二轮（pi / opencode-go/deepseek-v4.1-flash，thinking max）复核通过；PR 与 CI 状态以 GitHub PR 为准。
+基线：main cb319da / Evolution 0.2.3。用户确认只覆盖 Desktop、ACP、Web；手动 Trial、测量、晋升、回滚集中在 Desktop，CLI/TUI 不在本次范围。当前为开发候选，release/ 固定产物不变。独立审核首轮（codex / gpt-6.1-sol / xhigh）提出 5 项 CHANGES（C1–C5），已修复并由第二轮（pi / opencode-go/deepseek-v4.1-flash，thinking max）复核通过；CI 首跑发现四进程并发下的写锁饥饿，修复后第三轮复核通过（仅剩测试/文档 nit，已采纳）。PR 与 CI 状态以 GitHub PR 为准。
 
 ## 实际缺口
 
@@ -25,11 +25,11 @@ storage-json 整文件替换以进程内单写者为前提。Evolution 在 port 
 
 原始结果在 docs/evidence/unified-experience-entries.json，含候选包摘要和关键运行文件 SHA256；安装后核对三个 profile 的字节与候选 tar 逐文件一致（含新增 lib/experience-history.js）。
 
-Desktop 官方应用使用隔离 DSH_HOME 和 Electron user-data-dir，用户数据目录及单实例锁独立。真实根 Agent、按官方 preset 继承的子 Agent 通过官方 pipeline 触发读文件失败并入库。日常失败没有启动实验。Desktop 显式执行真实 propose/trial/measure，先证明无确认时拒绝，再以测试确认晋升（本次新目标 promotion_probe_r2，经 EVOLUTION_ENTRY_PROBE_PROMOTION_SUFFIX 避免与既有 stable 重名），并执行晋升后的监听器；共享事实在之后启动的 Web/ACP 进程中被读到。
+Desktop 官方应用使用隔离 DSH_HOME 和 Electron user-data-dir，用户数据目录及单实例锁独立。真实根 Agent、按官方 preset 继承的子 Agent 通过官方 pipeline 触发读文件失败并入库。日常失败没有启动实验。Desktop 显式执行真实 propose/trial/measure，先证明无确认时拒绝，再以测试确认晋升（本次新目标 promotion_probe_r3，经 EVOLUTION_ENTRY_PROBE_PROMOTION_SUFFIX 生成唯一目标），并执行晋升后的监听器；共享事实在之后启动的 Web/ACP 进程中被读到。
 
-Web 真实 profile 中 core 缺席、evolution-experience-history 独立条目启用，根/子 Agent 均能采集，history 能读取 Desktop 新晋升事实（promotion_probe_r2）和此前累计失败。ACP 同样经该独立条目使用真实 stdio/session/prompt 与官方工具链；本地确定性 Anthropic 响应驱动 provider 失败、真实读取失败及 history 查询，没有模拟宿主事件。ACP 检索到 Desktop 晋升事实，并保留 Desktop/Web 累积失败次数。7 个预期传输响应，没有采集附加回合；history schema 恰好一个、401 字节。
+Web 真实 profile 中 core 缺席、evolution-experience-history 独立条目启用，根/子 Agent 均能采集，history 能读取 Desktop 新晋升事实（promotion_probe_r3）和此前累计失败。ACP 同样经该独立条目使用真实 stdio/session/prompt 与官方工具链；本地确定性 Anthropic 响应驱动 provider 失败、真实读取失败及 history 查询，没有模拟宿主事件。ACP 检索到 Desktop 晋升事实，并保留 Desktop/Web 累积失败次数。7 个预期传输响应，没有采集附加回合；history schema 恰好一个、401 字节。
 
-针对性测试覆盖四进程并发、超出 256 窗口的持久去重、冲突拒绝、SIGKILL/事务恢复、回归降级、签名桥补投与序号有序性、原生重复收据、配置保留及幂等；修复后的定向套件 110/110 通过。本次带 4096 MiB 堆上限的全量回归：1,518 通过、2 跳过（共 1,520）；开发态 pack:check 通过。docs/evidence/shared-experience-host-0.2.2-rc.1.json 绑定本候选（sha256 a730a6ac…、content 8e9a620e…）的 21 步隔离宿主验收，含完整手动生命周期、重启、回滚、升级及卸载，HMR 关闭。
+针对性测试覆盖四进程并发、持锁等待、超出 256 窗口的持久去重、冲突拒绝、SIGKILL/事务恢复、回归降级、签名桥补投与序号有序性、原生重复收据、配置保留及幂等；修复后的定向套件 111/111 通过。本次带 4096 MiB 堆上限的全量回归：1,519 通过、2 跳过（共 1,521）；开发态 pack:check 通过。docs/evidence/shared-experience-host-0.2.2-rc.1.json 绑定本候选（sha256 f0de6a72…、content d3c29905…）的 21 步隔离宿主验收，含完整手动生命周期、重启、回滚、升级及卸载，HMR 关闭。
 
 ## 已纠正的问题与限制
 
@@ -38,6 +38,8 @@ Web 真实 profile 中 core 缺席、evolution-experience-history 独立条目�
 早期重复验收把再次执行相同 callId 当作重复投递，已纠正；当前真实入口会增加两次计数，重复收据另由明确标注的 unit event fixture 验证。早期同路径 tarball 安装曾留下旧字节，已由内容寻址安装与磁盘字节核对排除，不能沿用其结果作为最终候选证明。
 
 独立审核发现的五项问题已修复：安装器只切换条目 enabled 标记、配置经官方 composer 保留；REGRESSED 知识不再进入 resolved/复用建议；仅 durable official-include 回滚降级生产事实；签名桥按 writer+sequence 判定补投次序，旧事实不覆盖最新结果；setup 入口按 realpath 识别符号链接。第二轮审核确认五项均消除，仅剩非阻塞 nit（日志重建后的序号回绕、project() 重建 durable 不带 adapter、日常监听默认值写法、传递安装的测试依赖等），已记录为后续项。
+
+CI 首次运行暴露四进程并发下的写锁饥饿：250 ms 的 SQLite busy timeout 在 CI 慢盘上会让其中一个写者在两个 Node 版本都失败为 `database is locked`。正常事务改为与首次 schema 写入一致的 2 s 有界等待，并新增“另一进程持锁 1 s 时写入必须等待后提交”的回归测试（250 ms 上限下该测试以同一错误失败）。等待仍是同步的，因此 2 s 也是单次采集对宿主事件循环的最坏停顿上界。
 
 在 ACP 会话内直接运行宿主验收时，宿主动态注入的 DSH_PROFILE 会让 live doctor 检查错误的 profile（宿主 CLI 的 profile 选择只认 --profile），验收需清除该变量；清除后 21 步全绿。
 

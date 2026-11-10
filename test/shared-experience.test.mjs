@@ -57,6 +57,37 @@ test('four concurrent host processes cannot overwrite facts; replay is exactly o
   assert.equal(store.recall({ problem: 'read_file' }).records.reduce((n, row) => n + row.occurrences, 0), 321);
 });
 
+test('a writer waits out a write lock held by another process instead of dropping the fact', async t => {
+  const root = temporary(t);
+  const store = openSharedExperience(root); t.after(() => store.close());
+  // Hold the write lock for longer than the old 250 ms bound, so only a wait
+  // that outlives a single timeout can commit this record.
+  const script = `import {DatabaseSync} from 'node:sqlite';
+    const db=new DatabaseSync(${JSON.stringify(path.join(root, 'experience.sqlite'))});
+    db.exec('BEGIN IMMEDIATE');
+    process.stdout.write('locked\\n');
+    setTimeout(()=>{db.exec('COMMIT');db.close();process.exit(0);},1000);`;
+  const holder = spawn(process.execPath, ['--max-old-space-size=4096', '--input-type=module', '-e', script], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let output = ''; let stderr = '';
+  holder.stderr.on('data', value => { stderr += value; });
+  holder.stdout.on('data', value => { output += value; });
+  const exited = once(holder, 'exit');
+  try {
+    const deadline = Date.now() + 30000;
+    while (!output.includes('locked') && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5));
+    assert.ok(output.includes('locked'), `the helper process did not take the write lock: ${stderr}`);
+    const started = Date.now();
+    const result = store.recordFailure({ id: experienceEventId('busy-wait'), type: 'tool/error', code: 'ENOENT', target: 'tool:read_file' });
+    assert.equal(result.committed, true);
+    // The helper becomes visible to the parent within a small scheduling delay,
+    // so the wait is ~1 s minus that delay: 250 ms still proves the old bound
+    // could not have committed this record without making the assertion depend
+    // on how fast the parent observes "locked".
+    assert.ok(Date.now() - started >= 250, 'the writer must have waited past the old single-wait bound');
+  } finally { const [code] = await exited; assert.equal(code, 0, stderr); }
+  assert.deepEqual(store.stats(), { events: 1, knowledge: 1 });
+});
+
 test('SIGKILL after COMMIT retains facts; interrupted SQLite transaction rolls back on reopen', async t => {
   const root = temporary(t);
   const script = `import {openSharedExperience,experienceEventId} from ${JSON.stringify(moduleUrl)};
