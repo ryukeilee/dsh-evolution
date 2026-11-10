@@ -1,48 +1,40 @@
-# 统一经验采集与共享：接入审计与实施边界
+# 统一经验采集与共享
 
-状态：已实现开发候选，尚未完成三入口全部验收及最终审核，不能据此声称已交付。用户后续确认：手动进化集中在 Desktop；本次只覆盖 Desktop、ACP、Web，CLI/TUI 暂不实施。
+基线：main cb319da / Evolution 0.2.3。用户确认只覆盖 Desktop、ACP、Web；手动 Trial、测量、晋升、回滚集中在 Desktop，CLI/TUI 不在本次范围。当前为开发候选，release/ 固定产物不变，独立代码审核及 PR/CI 尚待完成。
 
-## 本次开发进度
+## 实际缺口
 
-- 新增独立 collector、SQLite 事务经验 adapter、单命令 profile 配置器。Desktop 继续独占原 core 领域/归档根；ACP/Web 禁用 core，只提供共享 history；不改变任何 storage-json route。
-- 日常 listener 与自主 Trial 分开；默认 bundle 关闭 core 的日常自主监听。手动生命周期与 startup canary 保留。共享元数据复用 canonical 算法和有界 recall；提交完成点是同步 SQLite COMMIT，监听器没有待退出 drain 的异步写队列。
-- 原生工具事件按宿主执行对象分配收据身份，同一执行对象的重复投递复用身份；新的实际执行即使复用模型 callId 也单独计数。原生事件不是跨进程重放日志。跨重启补投的结构化事实使用签名桥的来源 + eventId，持久去重不依赖 canonical 的 256 条窗口。曾把两次复用 callId 的执行当作重复事件的验收已纠正，不能沿用其计数结论。
-- 针对性测试覆盖四进程并发、超出 canonical 256 窗口的永久去重、SIGKILL 后恢复、共享成功事实的回归降级、签名桥重启补投、无日常 Trial 监听、配置保留与幂等。尚需最终版本全量回归与审核。
-- 真实 ACP stdio 初步通过：本地确定性 Anthropic 响应驱动官方 Agent/工具链，provider 实际失败、读文件实际失败及 history 查询均完成；没有模拟宿主事件，没有外部模型调用。五个预期模型传输响应，history schema 恰好一个。不是实际供应商 Token 计费测量，也不是 T3 UI 全程验收。
-- 已对开发候选 tarball 执行 DSH 0.2.2-rc.1 隔离 Web 宿主 21 步验收（HMR 关闭），含手动 Trial/测量/恢复、真实晋升、重启与回滚。证据 `docs/evidence/shared-experience-host-0.2.2-rc.1.json` 绑定其 tarball 摘要；后续修改尚需重验受影响部分，不能称其覆盖最终 diff。
-- Desktop 正式 profile 没有修改。全新隔离 home 的官方 Desktop 安装被 CLI 拒绝，要求先由 Desktop 应用初始化；尚未找到不接触正式 Electron userData/单实例状态的已验证启动方式。不能用 Web 验收替代 Desktop 真实入口验收。
+只读检查正式 profile 的接入字段发现：Desktop 安装 Evolution 0.2.3，Web 为 0.2.1，ACP 未安装 Evolution，并隔离 storage-json 与 session 根。没有读取正式经验、会话或密钥正文，没有修改正式配置。
 
-## 基线与已观察事实
+官方 ACP 0.2.2-rc.1 有 Agent、tools 和 storage-domain，没有完整 core 要求的 dynamicCordisRunner。安装 bundle 不等于 core 有效挂载。原错误监听器调用 observeAutonomous，observe:false 也不足以关闭它，不能直接用于只采集的路径。
 
-- 开发基线：`cb319da`，Evolution 0.2.3；本次 fetch 后与 `origin/main` 一致。
-- 本机 Desktop 携带 DSH / ACP / storage-domain / storage-json 0.2.2-rc.1，Electron Node 24.21.0。
-- 只读检查正式 profile 的插件与接入字段：Desktop 安装 Evolution 0.2.3；Web 安装 0.2.1；ACP 未安装 Evolution，并隔离 storage-json 与 session-persistence 根。没有读取用户经验、会话或密钥正文，没有修改这些配置。
-- 官方 ACP 与 headless 模板含 tools、agent-loop、storage-domain，但不含 Web 模板中的 cordis-host-runner。`lib/index.js` 强制注入 dynamicCordisRunner，不能把完整 bundle 在这些入口的安装成功等同于运行成功。
-- 当前官方安装包含 headless CLI，未找到可用的官方 TUI 模板；TUI 的 default-config 命令失败。CLI 验收以 headless 为对象，不声称支持未验证的 TUI。
-- ACP 官方实现通过 `ctx.agents.create()` 创建 Agent，订阅 `agent/error`。tools pipeline 的 `notifyResult()` 对最终冻结结果发出 `tools/result`；execution 有 `callId` 和 `agent`。这是可复用事件合同，不需要解析会话文本。
+storage-json 整文件替换以进程内单写者为前提。Evolution 在 port 生命周期持有 domain-archive.lock；领域名固定为 evolution_domain，物理路径取决于宿主 storage route。共用归档根会被锁拒绝，只拆 dataRoot 仍可能覆盖同一领域 JSON。
 
-## 真实 ACP 初步探测
+## 实现与权威边界
 
-使用新建临时 DSH_HOME，overlay 关闭 hmr，通过 Desktop 官方 CLI 启动真实 ACP stdio。JSON-RPC `initialize`、`session/new` 均成功；`session/prompt` 返回真实的缺少 provider API key 错误（-32603）。没有注入模拟 `agent/error` 或 `tools/result`。
+- 独立 collector 只依赖 tools，订阅官方 agent/error、tools/result。不采集正文、参数、会话选项或完整错误文本，只保存有界类型、错误码、目标元数据。
+- SQLite WAL/FULL 事务同时提交事件身份和 canonical 更新，复用现有知识算法及 experienceRecall。只支持同机、同 OS 用户、本地文件系统与同一 DSH_HOME。没有新进化决策引擎。
+- 监听器同步 COMMIT 后返回，没有脱离宿主的写队列。未提交的尝试没有持久保证，失败经现有脱敏 warning 边界报告。
+- 同一宿主执行对象的重复收据复用随机身份；新的实际执行即使复用模型 callId 也单独计数。原生事件不是跨进程重放日志。签名桥补投按来源 + eventId 持久去重，不依赖 canonical 的 256 条窗口。
+- 普通工具成功不构成解决方案。Desktop 已完成的晋升/canary/失败学习事实只共享结构化元数据；重启补投先验签并核对 writer。回滚与 canary 回归降级同目标旧 KNOWN 事实。
+- Desktop 保留原领域存储、手动门禁及 startup canary；新增共享发布、共享 recall 和关闭日常自主 listener 的窄接缝。ACP/Web 禁用完整 core，不改 storage route，不共享 journal、claim 或晋升权威。
+- 旧自由文本与冷档案原地保留，Desktop 原查询继续可用；ACP/Web 不自动获得旧自由文本。共享查询只提供建议，不授权执行。
+- 单命令安装器先显示三个 profile 的计划，--apply 才调用官方 CLI。只维护自己的标记块，保留其他插件、T3 工作流、Skills 与 storage route；HMR 关闭。内容寻址缓存避免同路径重建被包管理器误认为已安装。多 profile 安装不是原子事务，失败逐项报告。
 
-随后用官方 `dsh plugin --profile acp add <release/0.2.3 tarball>` 在同一临时 home 安装成功。尚未证明安装后的 Evolution 有效挂载、错误入库或跨入口检索，不能将这次协议探测算作经验采集验收。测试没有使用正式凭据，也没有证明正常模型调用或有效策略知识产生。
+## 本次证明
 
-## 存储边界
+原始结果在 docs/evidence/unified-experience-entries.json，含候选包摘要和关键运行文件 SHA256；安装后核对三个 profile 的字节与开发树一致。
 
-`storage-json` 使用进程内状态与整文件原子替换；官方注释明确其 last-write-wins 以一个进程内单写者为前提。`storage-domain` 的队列不能提供跨进程 read-modify-write 隔离。
+Desktop 官方应用使用隔离 DSH_HOME 和 Electron user-data-dir，用户数据目录及单实例锁独立。真实根 Agent、按官方 preset 继承的子 Agent 通过官方 pipeline 触发读文件失败并入库。日常失败没有启动实验。Desktop 显式执行真实 propose/trial/measure，先证明无确认时拒绝，再以测试确认晋升，并执行晋升后的监听器；共享事实在之后的重启中保留。
 
-Evolution 的 `openDomainStorage()` 在整个 port 生命周期持有 `domain-archive.lock`，阻止多个实例共享同一个归档根。不同 dataRoot 又不等于不同领域单元：`evolutionDomainSpec.name` 固定为 `evolution_domain`，其实际 JSON 路径由宿主 storage route 决定。因此只改 dataRoot 或只共用 storage-json 根都不是安全共享方案。
+Web 真实 profile 中 core 缺席，根/子 Agent 均能采集，history 能读取 Desktop 成功事实和此前累计失败。ACP 使用真实 stdio/session/prompt 与官方工具链；本地确定性 Anthropic 响应驱动 provider 失败、真实读取失败及 history 查询，没有模拟宿主事件。ACP 检索到 Desktop 晋升事实，并保留 Desktop/Web 累积失败次数。7 个预期传输响应，没有采集附加回合；history schema 恰好一个、401 字节。
 
-现有 `agent/error` / `tools/result` listener 调用 `observeAutonomous()`，它先提交观测，再在策略满足时启动隔离 Trial。日常采集不能通过增加策略或扩大这一入口来实现；采集必须与自主实验决策分开。
+针对性测试覆盖四进程并发、超出 256 窗口的持久去重、冲突拒绝、SIGKILL/事务恢复、回归降级、签名桥补投、原生重复收据、配置保留及幂等。本次带 4096 MiB 堆上限的全量回归：1,514 通过、2 跳过；开发态 pack:check 通过。docs/evidence/shared-experience-host-0.2.2-rc.1.json 绑定当前候选的 21 步隔离宿主验收，含完整手动生命周期、重启、回滚、升级及卸载，HMR 关闭。
 
-## 设计阶段提出的方案（以下不是完成证明）
+## 已纠正的问题与限制
 
-1. 采集入口只依赖各官方入口实际具有的服务，与 runner / Include / Trial 解耦；沿用官方事件、现有脱敏 DTO、canonical knowledge 规范化/聚合与 experienceRecall。普通成功工具调用不等同于已验证策略，不批量把正文写成知识。
-2. 共享范围仅为经验事实与 canonical 投影；完整 Evolution 的 journal、claim、canary、晋升和恢复协议不搬进共享层。正式历史原地保留，不自动迁移或删除。
-3. 共享写入必须有实际的跨进程事务与持久事件去重，不能共写现有 JSON 快照。候选为专用经验 SQLite adapter，复用领域知识算法，使用事务提交事件身份与 canonical 更新；尚未选定或实现。必须验证受支持 Node / Electron、锁等待成本、异常退出恢复及旧历史如何参与检索，再定案。
-4. 不增加定时器、Agent 回合或自动历史注入。跨入口检索只由显式查询/现有 proposal 动作触发。任何新增工具 schema 的上下文成本必须实测，不能把“无额外模型调用”声称为零 Token。
-5. 一条安装命令统一登记三个支持的 profile，底层沿用官方 bundle/profile 管理。默认先显示计划，显式应用时才安装。不得覆盖用户其他插件、storage route、Skills 或 T3 工作流；HMR 关闭，本次不应用到正式环境。
+初始化压力下的写锁争用已复现并修复：已有 schema 的打开不取 schema 写锁，首次 schema 等待上限 2 s，WAL 切换有界重试。旧固定包的文件集合对照自己的 sourceCommit 校验，开发树新增文件仍须是已提交后继；发布态严格门禁和 release/ 不变。
 
-## 未完成的验收
+早期重复验收把再次执行相同 callId 当作重复投递，已纠正；当前真实入口会增加两次计数，重复收据另由明确标注的 unit event fixture 验证。早期同路径 tarball 安装曾留下旧字节，已由内容寻址安装与磁盘字节核对排除，不能沿用其结果作为最终候选证明。
 
-Desktop 实际入口、Web 轻量部署、正常子 Agent 的真实采集；三个入口间的双向检索；最终 tarball 与完整 diff 的针对性/全量回归、独立代码审核、PR 与 CI；真实供应商 Token 与 Desktop UI 的端到端耗时。已完成的初步证据不能替代这些项目。
+没有自动化 Desktop GUI/Web 点击，没有使用正式 T3 会话或外部真实模型服务；证明覆盖实际宿主/ACP 协议与工具链。供应商计费 Token 未测量，不能称零 Token；实际 schema 字节、回合数与 adapter A/B 成本见 docs/performance/shared-experience.md。旧自由文本不自动迁移，去重账本随事件增长，Windows 入口未验收。正式环境未安装、启停、升级或迁移。
