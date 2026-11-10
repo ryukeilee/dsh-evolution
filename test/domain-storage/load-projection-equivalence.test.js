@@ -206,7 +206,11 @@ test('the reversal returns all three files to a real pre-change source', async (
   assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /addedKnown/);
   assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /Object\.freeze\(\{\n      eventId/);
   assert.doesNotMatch(reconstructed.get('lib/dockyard-domain/memory.js'), /#freezeBridgeMarkers/);
-  assert.match(working.get('lib/dockyard-domain/memory.js'), /applied\.push\(Object\.freeze\(\{/);
+  // The newest (deferred marker-window) round builds the frozen marker once and
+  // appends it; the reconstructed tree below still carries the older
+  // inline-`Object.freeze` append.
+  assert.match(working.get('lib/dockyard-domain/memory.js'), /const marker = Object\.freeze\(\{/);
+  assert.match(working.get('lib/dockyard-domain/memory.js'), /applied\.push\(marker\);/);
   // The archive-append-window round is gone from the reconstructed tree too: no
   // window index, no directory memo and no identity-`stat` fold, and the torn
   // tail probe still takes its own size.
