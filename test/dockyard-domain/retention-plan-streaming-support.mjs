@@ -1,11 +1,12 @@
 // Shared harness for the retention/compaction streaming verification.
 //
 // The baseline is not a hand-maintained copy of `lib/`: it is the implementation
-// shipped in the pinned 0.2.1 artifact, extracted at test time and imported as a
-// second, independent module instance. Its bytes are checked against the digest
-// `release/manifest.json` records, so the differential compares the working tree
-// against exactly the release the task names, not against whatever happens to
-// sit in `release/`.
+// shipped in the released 0.2.1 artifact, extracted at test time and imported as
+// a second, independent module instance. The historical tarball stays in
+// `release/` after the pin moves on, and its bytes are checked against a fixed
+// digest (the same anchor convention as `test/archive-row-window.test.mjs` uses
+// for rc.16), so this differential keeps comparing the working tree against the
+// release the task names instead of following the current pin.
 //
 // The corpus builder uses the *pinned* knowledge helpers (`mergeKnowledgeEntry` /
 // `normalizeKnowledgeEvent`) so that fixture rows are shaped by the reference
@@ -19,12 +20,15 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { readReleaseManifest, readTarEntries } from "../../scripts/release/release-lib.mjs";
+import { readTarEntries } from "../../scripts/release/release-lib.mjs";
 import { JsonStateStore } from "./support.js";
 
 export const AT = "2026-10-10T00:00:00.000Z";
 export const NOW = "2026-10-12T00:00:00.000Z";
 export const PINNED_VERSION = "0.2.1";
+/** The released 0.2.1 artifact is retained in `release/` after the pin moves. */
+const PINNED_ARTIFACT = `dsh-evolution-${PINNED_VERSION}.tgz`;
+const PINNED_ARTIFACT_SHA256 = "b06f61d5a08fe4d6cd4da7b5203800ad393d92fc087b0a396b1b726655600764";
 export const WORKING_MEMORY = fileURLToPath(new URL("../../lib/dockyard-domain/memory.js", import.meta.url));
 const RELEASE_DIRECTORY = fileURLToPath(new URL("../../release/", import.meta.url));
 
@@ -36,14 +40,9 @@ const variantDirectories = new Set();
 export async function loadPinnedMemory() {
   if (extraction) return extraction;
   extraction = (async () => {
-    const manifest = readReleaseManifest();
-    assert.equal(manifest.version, PINNED_VERSION,
-      "the retention differential is anchored to the pinned 0.2.1 artifact");
-    assert.equal(manifest.filename, `dsh-evolution-${PINNED_VERSION}.tgz`,
-      "the pinned artifact filename must be the one the manifest records");
-    const artifact = await readFile(join(RELEASE_DIRECTORY, manifest.filename));
-    assert.equal(createHash("sha256").update(artifact).digest("hex"), manifest.sha256,
-      "the release artifact bytes must still be the ones the manifest pins");
+    const artifact = await readFile(join(RELEASE_DIRECTORY, PINNED_ARTIFACT));
+    assert.equal(createHash("sha256").update(artifact).digest("hex"), PINNED_ARTIFACT_SHA256,
+      "the retention differential anchor must retain the released 0.2.1 bytes");
     const entries = readTarEntries(artifact);
     assert.ok(entries.some((entry) => entry.path === "lib/dockyard-domain/memory.js"),
       "the pinned artifact must ship the memory implementation");
@@ -58,7 +57,7 @@ export async function loadPinnedMemory() {
     const knowledge = await import(pathToFileURL(join(directory, "lib/dockyard-domain/knowledge.js")).href);
     assert.equal(typeof memory.EvolutionMemory, "function", "the pinned memory module must export EvolutionMemory");
     assert.equal(typeof knowledge.mergeKnowledgeEntry, "function", "the pinned knowledge module must export the merge");
-    return { directory, EvolutionMemory: memory.EvolutionMemory, knowledge, manifest };
+    return { directory, EvolutionMemory: memory.EvolutionMemory, knowledge };
   })();
   return extraction;
 }
@@ -86,8 +85,7 @@ export async function cleanupPinnedMemory() {
  * bytes, never to the working tree.
  */
 export async function importPinnedVariant(transform) {
-  const manifest = readReleaseManifest();
-  const artifact = await readFile(join(RELEASE_DIRECTORY, manifest.filename));
+  const artifact = await readFile(join(RELEASE_DIRECTORY, PINNED_ARTIFACT));
   const entries = readTarEntries(artifact);
   const directory = await mkdtemp(join(tmpdir(), "dsh-retention-variant-"));
   variantDirectories.add(directory);
