@@ -149,7 +149,8 @@ export async function runPromotionProbe(ctx, onStep = () => {}) {
     try {
       const output = { command, steps, dataRoot: evolution.dataRoot };
       if (command === 'promote') {
-        output.promotion = await candidate('stable');
+        const suffix = process.env.EVOLUTION_ENTRY_PROBE_PROMOTION_SUFFIX || 'stable';
+        output.promotion = await candidate(suffix);
         await call('evolution_canary_observe', {
           experimentId: output.promotion.experimentId,
           startupVerified: true,
@@ -159,7 +160,7 @@ export async function runPromotionProbe(ctx, onStep = () => {}) {
           barrier: { id: 'promotion-active-listener-execute', reached: true },
           evidence: { listenerExecuted: true },
         });
-        output.promotedListener = has('promotion_probe_stable');
+        output.promotedListener = has(`promotion_probe_${suffix}`);
       } else if (command === 'restart-and-rollback') {
         if (!has('promotion_probe_stable')) throw new Error('the promoted listener did not survive the process restart');
         await executeMarker('promotion_probe_stable');

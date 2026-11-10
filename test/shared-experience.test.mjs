@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { openSharedExperience, experienceEventId } from '../lib/shared-experience.js';
 import { normalizeKnowledgeEvent, mergeKnowledgeEntry } from '../lib/dockyard-domain/knowledge.js';
@@ -13,6 +13,8 @@ import { EvolutionEventBridge } from '../lib/orchestrator.js';
 import { apply as applyCore } from '../lib/registration.js';
 import { Context } from '@deepseek-ai/cordis';
 import * as collector from '../lib/experience-collector.js';
+import { composeEntries } from '@deepseek-ai/dsh-app-boot';
+import { finalizeExperienceRecall } from '../lib/experience-recall.js';
 
 const moduleUrl = new URL('../lib/shared-experience.js', import.meta.url).href;
 function temporary(t) {
@@ -93,24 +95,29 @@ test('failure canonical output uses existing domain semantics', t => {
 test('only completed Evolution promotion facts become successful knowledge', t => {
   const root = temporary(t); const store = openSharedExperience(root); t.after(() => store.close());
   assert.deepEqual(store.recordEvolution({ eventType: 'trial-completed' }, 'test'), { ignored: true });
-  store.recordEvolution({ eventType: 'promotion-succeeded', target: 'tool-a', eventId: 'evolution:promotion-succeeded:exp-a' }, 'core-a');
+  const receipt = sequence => ({ writer: 'dsh-evolution-orchestrator', sequence });
+  store.recordEvolution({ eventType: 'promotion-succeeded', target: 'tool-a', eventId: 'evolution:promotion-succeeded:exp-a' }, 'core-a', receipt(1));
   assert.equal(store.recall({ target: 'tool-a' }).records[0].successCount, 1);
   assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN');
-  store.recordEvolution({ eventType: 'canary-failed', target: 'tool-a', eventId: 'evolution:canary-failed:exp-a' }, 'core-a');
+  store.recordEvolution({ eventType: 'canary-failed', target: 'tool-a', eventId: 'evolution:canary-failed:exp-a' }, 'core-a', receipt(2));
   const regressed = store.recall({ target: 'tool-a' }).records;
   assert.equal(regressed.length, 1);
   assert.equal(regressed[0].state, 'REGRESSED');
   assert.equal(regressed[0].regressionCount, 1);
+  const final = finalizeExperienceRecall({ target: 'tool-a' }, [store.recall({ target: 'tool-a' })]);
+  assert.equal(final.resolved.length, 0); assert.equal(final.candidates.length, 0);
+  assert.equal(final.failures.length, 1);
+  assert.ok(final.advice.every(line => !line.includes('reusing') && !line.includes('reuse the recorded')));
 });
 
 test('setup is idempotent and preserves unrelated profile contents byte for byte', () => {
   const user = '- id: tstack-skills\n  config:\n    customSkillDirs: []\n';
   const next = managedPatch(user, 'acp');
   assert.ok(next.startsWith(user)); assert.equal(managedPatch(next, 'acp'), next);
-  assert.match(next, /historyTool: true/); assert.match(next, /evolution-orchestrator\n  disabled: true/);
+  assert.match(next, /evolution-experience-history\n  disabled: false/); assert.match(next, /evolution-orchestrator\n  disabled: true/);
   assert.match(managedPatch(user, 'desktop'), /evolution-orchestrator\n  disabled: false/);
   assert.throws(() => managedPatch('# BEGIN dsh-evolution shared experience\n', 'web'), /Ambiguous/);
-  assert.equal(yaml.load(managedPatch('# official stock\n[]\n', 'acp')).length, 3);
+  assert.equal(yaml.load(managedPatch('# official stock\n[]\n', 'acp')).length, 4);
 });
 
 test('daily collector configuration leaves manual lifecycle and startup canary hooks intact', () => {
@@ -142,7 +149,7 @@ test('shared publication can recover from the authenticated bridge without trust
   const file = path.join(root, 'execution-events.jsonl'); const key = 'a'.repeat(64);
   const bridge = new EvolutionEventBridge({ file, key });
   bridge.emit('promotion-succeeded', { id: 'exp-a', proposal: { target: 'tool-a' } });
-  const publish = event => store.recordEvolution(event, file);
+  const publish = (event, order) => store.recordEvolution(event, file, order);
   new EvolutionEventBridge({ file, key, onVerifiedEvent: publish });
   new EvolutionEventBridge({ file, key, onVerifiedEvent: publish });
   assert.deepEqual(store.stats(), { events: 1, knowledge: 1 });
@@ -166,4 +173,62 @@ test('collector dedups a repeated receipt but counts a real new execution reusin
     app.emit('tools/result', { ...exec }, result);
     assert.equal(store.stats().events, 2);
   } finally { await fiber.dispose(); }
+});
+
+test('managed setup preserves effective config through the official patch composer', () => {
+  const bundle = yaml.load(fs.readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8'));
+  const previous = `- id: evolution-orchestrator\n  config:\n    dataRoot: /isolated/custom-core\n    canaryWindow: 7\n- id: evolution-experience\n  config:\n    experienceRoot: /isolated/shared\n`;
+  for (const profile of ['desktop', 'acp', 'web']) {
+    const warnings = [];
+    const entries = composeEntries([bundle, yaml.load(managedPatch(previous, profile))], warning => warnings.push(warning));
+    assert.deepEqual(warnings.filter(warning => !warning.includes('hmr')), []);
+    assert.deepEqual(entries.find(row => row.id === 'evolution-orchestrator').config,
+      { dataRoot: '/isolated/custom-core', canaryWindow: 7 });
+    assert.deepEqual(entries.find(row => row.id === 'evolution-experience').config,
+      { experienceRoot: '/isolated/shared' });
+    assert.equal(entries.find(row => row.id === 'evolution-experience-history').disabled, profile === 'desktop');
+  }
+});
+
+test('Trial cleanup cannot invalidate a proven production outcome, but durable rollback can', t => {
+  const root = temporary(t); const store = openSharedExperience(path.join(root, 'shared')); t.after(() => store.close());
+  const file = path.join(root, 'bridge.jsonl');
+  const bridge = new EvolutionEventBridge({ file, key: 'b'.repeat(64),
+    onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
+  const base = { id: 'production', proposal: { target: 'tool-a' }, durable: { adapter: 'official-include', rowId: 'fixture-row' } };
+  bridge.emit('promotion-succeeded', base);
+  bridge.emit('promotion-reverted', { id: 'trial-only', proposal: base.proposal }, { status: 'reverted' });
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN');
+  assert.equal(store.stats().events, 1);
+  bridge.emit('promotion-reverted', base, { status: 'rolled-back' });
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'REGRESSED');
+});
+
+test('verified bridge backfill preserves latest outcome even when timestamps tie and a prior publish was missed', t => {
+  const root = temporary(t); const store = openSharedExperience(path.join(root, 'shared')); t.after(() => store.close());
+  const file = path.join(root, 'bridge.jsonl'); const key = 'c'.repeat(64); const at = '2026-11-10T00:00:00.000Z';
+  const bridge = new EvolutionEventBridge({ file, key,
+    onVerifiedEvent: (event, order) => { if (order.sequence > 1) store.recordEvolution(event, file, order); } });
+  const base = { id: 'production', proposal: { target: 'tool-a' } };
+  bridge.emit('promotion-succeeded', base, { at });
+  bridge.emit('canary-failed', base, { at });
+  assert.equal(store.stats().events, 1);
+  new EvolutionEventBridge({ file, key, onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
+  const row = store.recall({ target: 'tool-a' }).records[0];
+  assert.equal(row.state, 'REGRESSED'); assert.equal(row.lastOutcome, 'regression');
+  assert.equal(row.occurrences, 2); assert.equal(store.stats().events, 2);
+  const final = finalizeExperienceRecall({ target: 'tool-a' }, [store.recall({ target: 'tool-a' })]);
+  assert.equal(final.resolved.length, 0); assert.equal(final.failures.length, 1);
+  bridge.emit('promotion-succeeded', { ...base, id: 'new-production' }, { at });
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN', 'a genuinely newer success can recover the target');
+  new EvolutionEventBridge({ file, key, onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN');
+  assert.equal(store.stats().events, 3);
+});
+
+test('setup bin invoked through a symlink runs its argument validation', t => {
+  const root = temporary(t); const link = path.join(root, 'dsh-evolution-setup');
+  fs.symlinkSync(new URL('../scripts/setup-experience.mjs', import.meta.url), link);
+  const result = spawnSync(process.execPath, ['--max-old-space-size=4096', link], { encoding: 'utf8' });
+  assert.equal(result.status, 1); assert.match(result.stderr, /--tarball is required/);
 });

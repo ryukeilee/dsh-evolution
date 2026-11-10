@@ -23,7 +23,9 @@ export function managedPatch(previous, profile) {
     || previous.indexOf(BEGIN, begin + BEGIN.length) >= 0 || previous.indexOf(END, end + END.length) >= 0))) {
     throw new Error('Ambiguous managed patch; preserve the file and resolve its markers manually');
   }
-  const block = `${BEGIN}\n- id: hmr\n  disabled: true\n- id: evolution-experience\n  config:\n    historyTool: ${profile !== 'desktop'}\n- id: evolution-orchestrator\n  disabled: ${profile !== 'desktop'}\n  config:\n    dailyAutonomousObservation: false\n${END}`;
+  // Official patches replace config wholesale; role selection uses only entry
+  // enabled flags, leaving every config (including expressions) intact.
+  const block = `${BEGIN}\n- id: hmr\n  disabled: true\n- id: evolution-experience\n  disabled: false\n- id: evolution-experience-history\n  disabled: ${profile === 'desktop'}\n- id: evolution-orchestrator\n  disabled: ${profile !== 'desktop'}\n${END}`;
   return begin < 0 ? previous + (previous.endsWith('\n') || !previous ? '' : '\n') + block + '\n'
     : previous.slice(0, begin) + block + previous.slice(end + END.length);
 }
@@ -91,7 +93,11 @@ function main(argv) {
   }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+const isEntryPoint = (() => {
+  try { return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url)); }
+  catch { return false; }
+})();
+if (isEntryPoint) {
   try { main(process.argv.slice(2)); }
   catch (error) { console.error(error.message); process.exitCode = 1; }
 }
