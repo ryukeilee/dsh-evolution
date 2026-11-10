@@ -26,11 +26,11 @@ const sizeOf = (value) => {
 const SYNC_CALLS = ['openSync', 'closeSync', 'statSync', 'lstatSync', 'fstatSync', 'renameSync', 'fsyncSync',
   'mkdirSync', 'rmSync', 'unlinkSync', 'linkSync', 'copyFileSync', 'existsSync', 'realpathSync'];
 const SYNC_BYTES = {
-  readFileSync: sizeOf,
+  readFileSync: (value) => sizeOf(value),
   readSync: (value) => Number(value) || 0,
-  writeSync: sizeOf,
-  writeFileSync: sizeOf,
-  appendFileSync: sizeOf,
+  writeSync: (value) => Number(value) || 0,
+  writeFileSync: (value, args) => sizeOf(args[1]),
+  appendFileSync: (value, args) => sizeOf(args[1]),
 };
 const ASYNC_CALLS = ['open', 'close', 'stat', 'lstat', 'rename', 'mkdir', 'rm', 'unlink', 'copyFile', 'access'];
 const ASYNC_BYTES = {
@@ -53,7 +53,7 @@ export function install() {
     if (typeof original !== 'function') return;
     fs[name] = function audited(...args) {
       const result = original.apply(this, args);
-      bump(name, bytesOf ? bytesOf(result) : 0);
+      bump(name, bytesOf ? bytesOf(result, args) : 0);
       return result;
     };
   };

@@ -90,6 +90,17 @@ test('the element certificate reaches the same outcome as the whole-document che
   }
 });
 
+test('an index accessor keeps the released throw order', () => {
+  const accessor = [];
+  Object.defineProperty(accessor, '0', { enumerable: true, configurable: true, get() { throw new TypeError('index getter'); } });
+  // `total` precedes `experiments` in the document's own key order, so the
+  // released check throws on the bigint before it ever reaches the array. The
+  // element path must not run the index getter first.
+  const payload = { evolution: { schema: 4, total: 10n, eventBridge: { schema: 1, applied: [marker(1)] }, experiments: accessor } };
+  assert.deepEqual(outcome(() => checkWithElements(payload, elementsOf())),
+    outcome(() => checkWhole({ evolution: { schema: 4, total: 10n, eventBridge: { schema: 1, applied: [marker(1)] }, experiments: accessor } })));
+});
+
 test('a collection array the substitution cannot describe stays in the shell', () => {
   const subclass = new (class Records extends Array {})();
   subclass.push(row());
