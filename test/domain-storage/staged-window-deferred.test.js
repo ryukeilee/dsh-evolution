@@ -292,3 +292,19 @@ test('a loaded window longer than the bound is reduced on the first append', asy
   assert.equal((await deferred.memory.applyExecutionEvent(event(1))).duplicate,
     (await released.memory.applyExecutionEvent(event(1))).duplicate);
 });
+
+test('a loaded window longer than the bound is published unchanged when nothing is appended', async () => {
+  // A transaction can legitimately apply no record (all of them were already in
+  // the recovered ledger). The released path publishes the loaded window as it
+  // is, so the deferred path must not reduce it without an append of its own.
+  const loaded = Array.from({ length: 4100 }, (unused, index) => marker(`loaded-${index}`));
+  const released = await replayMemory({ defer: false, events: [], initialWindow: loaded.map((entry) => entry) });
+  const deferred = await replayMemory({ defer: true, events: [], initialWindow: loaded.map((entry) => entry) });
+  for (const memory of [released.memory, deferred.memory]) {
+    assert.equal(memory.snapshot().eventBridge.applied.length, 4100);
+    assert.equal(memory.fullSnapshot().eventBridge.applied.length, 4100);
+    assert.equal(memory.stats().bridgeEventsApplied, 4100);
+  }
+  assert.deepEqual(deferred.memory.snapshot().eventBridge.applied.map((entry) => entry.eventId),
+    released.memory.snapshot().eventBridge.applied.map((entry) => entry.eventId));
+});

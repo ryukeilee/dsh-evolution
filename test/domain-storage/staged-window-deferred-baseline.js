@@ -248,7 +248,10 @@ const HUNKS = [
       "  #bridgeWindow;\n" +
       "  // The growable native array the private replay working copy appends bridge\n" +
       "  // markers to when it opted out of rebuilding a frozen successor per record;\n" +
-      "  // `null` everywhere else. See `#markBridgeApplied()` and `snapshot()`.\n" +
+      "  // `null` everywhere else. This instance only ever appends to it or replaces it\n" +
+      "  // wholesale with the retained suffix (see `#markBridgeApplied()`); nothing\n" +
+      "  // rewrites an element in place, which is what the port's length+tail\n" +
+      "  // certificate relies on. See `snapshot()`.\n" +
       "  #bridgeDeferredWindow = null;\n" +
       "  // Whether this instance has appended to `#bridgeDeferredWindow` since load.\n" +
       "  #bridgeDeferredAppended = false;\n" +
@@ -389,7 +392,10 @@ const HUNKS = [
       "    // The staged replay working copy grows its window in place (see\n" +
       "    // `#markBridgeApplied()`); the published window is always the bounded last\n" +
       "    // 4096 markers, in event order.\n" +
-      "    if (this.#bridgeDeferredWindow !== null && this.#bridgeDeferredWindow === this.#data.eventBridge?.applied\n" +
+      "    // Only a window this transaction actually grew is reduced here; a loaded\n" +
+      "    // window that was never appended to is published exactly as loaded, like the\n" +
+      "    // released path.\n" +
+      "    if (this.#bridgeDeferredAppended && this.#bridgeDeferredWindow !== null && this.#bridgeDeferredWindow === this.#data.eventBridge?.applied\n" +
       "      && this.#bridgeDeferredWindow.length > BRIDGE_MARKER_WINDOW) {\n" +
       "      return clone({ ...this.#data,\n" +
       "        eventBridge: { ...this.#data.eventBridge, applied: this.#bridgeDeferredWindow.slice(-BRIDGE_MARKER_WINDOW) } });\n" +
@@ -416,7 +422,7 @@ const HUNKS = [
       "    // second copy of every hot record during each public snapshot build.\n" +
       "    const output = {\n" +
       "      ...this.#data,\n" +
-      "      ...(this.#bridgeDeferredWindow !== null && this.#bridgeDeferredWindow === this.#data.eventBridge?.applied\n" +
+      "      ...(this.#bridgeDeferredAppended && this.#bridgeDeferredWindow !== null && this.#bridgeDeferredWindow === this.#data.eventBridge?.applied\n" +
       "        && this.#bridgeDeferredWindow.length > BRIDGE_MARKER_WINDOW\n" +
       "        ? { eventBridge: { ...this.#data.eventBridge, applied: this.#bridgeDeferredWindow.slice(-BRIDGE_MARKER_WINDOW) } }\n" +
       "        : {}),\n" +

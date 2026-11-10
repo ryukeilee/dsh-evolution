@@ -31,7 +31,7 @@ CPU 同向，−232…−254 ms、−429…−444 ms、−1067…−1122 ms。�
 
 **不声称峰值内存收益。** 峰值 RSS 配对差在 A/B 中为 −22.7 / +18.5 / −8.3 MiB（12k）、
 −5.1 / −33.7 / −6.5 MiB（20k）、+0.5 / −10.0 / −4.7 MiB（50k），与同码 A/A 的
-−38.4…+21.2 MiB 漂移重叠。GC 时间与次数在两个规模上都下降（50k：53.8 → 43.9 ms，
+−38.4…+21.3 MiB 漂移重叠。GC 时间与次数在三个规模上都下降（12k：35 → 24 次，20k：55 → 37 次，50k：53.8 → 43.9 ms，
 140 → 90 次），但 GC 是吸收窗口内的 `PerformanceObserver` 计数，不是分配流量归因。
 
 **稳态路径不变。** 12,000 条的 observe +1.36% / flush +2.18% 是 6.9 ms 上的 0.15 ms，
@@ -88,11 +88,12 @@ CPU 同向，−232…−254 ms、−429…−444 ms、−1067…−1122 ms。�
 
 `--validate`（冻结时钟与 UUID）在 12k / 20k / 50k 上逐字节核对：整棵归档树
 （2 / 3 / 4 个文件）、领域文档摘要（`0496b014…` / `4a233c8…` / `5ac64f28…`）、
-checkpoint 内容与 query 投影全部相同；marker 数等于记录数，staged 残留为 0。
+checkpoint 内容与 query 投影全部相同；marker 数等于记录数，staged 残留为 0。这些相等由脚本断言后写出摘要；JSON 记录的是断言通过
+后的摘要，而非逐文件证据表。
 数据见 [`marker-window-deferred-equivalence.json`](marker-window-deferred-equivalence.json)。
 
 新增回归 [`test/domain-storage/staged-window-deferred.test.js`](../../test/domain-storage/staged-window-deferred.test.js)
-（10 项）：
+（11 项）：
 
 - 已验证窗口的原地 append 只判定新增 marker；长度或尾元素被未报告地改变时删除证书并
   退回整份检查；失败 save 不认证，后续 save 仍拒绝。
@@ -125,7 +126,12 @@ checkpoint 内容与 query 投影全部相同；marker 数等于记录数，stag
   [20k 候选](marker-window-deferred-cost-deferred-20k.json) /
   [50k 冻结](marker-window-deferred-cost-frozen-50k.json) /
   [50k 候选](marker-window-deferred-cost-deferred-50k.json)。
-- 环境：Node `v26.13.0` / `darwin/arm64` / 8 逻辑 CPU。测量期间机器为共享状态
+- A/B 记录里的 `candidateSha` 是测量时的 HEAD（`20e2cf0`，改动尚未提交），真实候选由
+`candidateSources` 中 `lib/domain-storage.js` / `lib/dockyard-domain/memory.js` /
+`scripts/benchmarks/archive-append-window.mjs` 的 SHA-256 钉住；它们在提交 `0ffcfd4`
+与最终树上相同（报告里的 `candidateSources` 即最终值）。
+
+环境：Node `v26.13.0` / `darwin/arm64` / 8 逻辑 CPU。测量期间机器为共享状态
   （load average 在 2–4 之间波动），A/A 与逐轮交替用于约束噪声；超过同码漂移的结论
   只来自 A/B 配对差。
 
@@ -150,7 +156,7 @@ node --max-old-space-size=4096 scripts/benchmarks/marker-window-write-cost.mjs \
 ```
 
 比例结论只适用于本机 Node 26 / darwin-arm64、热页缓存的合成 measurement 事件负载，
-以及“每条记录一次事务保存”的形状；积压只有 1 条、或由磁盘提交主导的路径收益更小。
+以及“同一 replay 事务内每条记录一次 save”的形状；积压只有 1 条、或由磁盘提交主导的路径收益更小。
 2,000 条规模没有单独跑：窗口尚未填满，复制量本来就小，收益上限低于本报告的三个规模。
 
 ## 边界
@@ -159,10 +165,24 @@ node --max-old-space-size=4096 scripts/benchmarks/marker-window-write-cost.mjs \
   observe / reclaim / compact / hydrate、直接构造的 store 不进入此路径，窗口仍是原形态。
 - 证书不声称数组不可变；它声称**这次 append 的长度与尾元素与报告一致**。不匹配的
   窗口一律整份检查，未报告的替换窗口没有证书。marker 仍是冻结的定形数据属性。
-- 不改变 4,096 的窗口语义：发布窗口、`#bridgeApplied()` 的集合判定与 `stats()` 都只
-  看最后 4,096 条；内部数组在两次缩减之间最多保留 8,193 条。
+- 不改变 4,096 的窗口语义：首次 append 之后，发布窗口、`#bridgeApplied()` 的集合判定与
+  `stats()` 都只看最后 4,096 条；内部数组在两次缩减之间最多保留 8,193 条。本事务没有
+  append 时，loaded 窗口按原样发布与计数（与 released 路径一致）。
 - 不改变正常 Memory 路径、官方 DSH、发布固定产物；未引入定时器、后台任务或跨进程协议。
 
 ## 交付记录
 
-见文末（全量回归、四个官方宿主验收、独立评审与 PR 状态在收尾时补充）。
+- 全量回归（提交后）：`NODE_OPTIONS=--max-old-space-size=4096 npm test` →
+  1503 tests / 1501 pass / 0 fail / 2 skip（既有 skip）。
+- `npm run pack:check`（开发语义）：17/17；工作树是固定点的已提交后继，`release/`
+  未改动。
+- 四个声明宿主的隔离真实安装验收（本树 `release:pack` 产物，content sha256
+  `893d7363…`、tarball sha256 `227a48c8…`），每个完整 21 步全部通过，最终 doctor
+  均为 `degraded`（既有 5 项 degradedCapabilities，无 blocked）：
+  [`0.2.0-rc.2`](../evidence/marker-window-deferred-dsh-0.2.0-rc.2.json)、
+  [`0.2.1-alpha.1`](../evidence/marker-window-deferred-dsh-0.2.1-alpha.1.json)、
+  [`0.2.1-rc.2`](../evidence/marker-window-deferred-dsh-0.2.1-rc.2.json)、
+  [`0.2.2-rc.1`](../evidence/marker-window-deferred-dsh-0.2.2-rc.1.json)
+  （最后一份带 `--no-hmr`，与 CI 的该宿主行一致）。
+- 独立评审：见 PR 记录。
+- 未合并、未发布；`release/` 固定产物未变。
