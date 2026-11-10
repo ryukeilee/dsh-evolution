@@ -11,6 +11,7 @@ import {
   codeMutatesComposition,
   commandMutatesComposition,
   isCordisTrustRoot,
+  MUTATION_VERBS_RE,
 } from '../lib/guard.js';
 
 const TR = '/srv/app/node_modules/@deepseek-ai/cordis';
@@ -123,6 +124,34 @@ test('benign neighbours of the new shapes stay allowed', () => {
     `grep -rn cordis ${TR}/lib`,
   ];
   for (const command of allowed) assert.equal(commandMutatesComposition(command), false, command);
+});
+
+// 2026-11-09 的真实失败：文件名里的 publish/install 被当成不可逆操作与写动词，
+// 导致只读的 `git show <rev>:<file> | grep` 被当作直接修改 trust root 拒绝。
+// 判定的依据是命令词，不是路径/文件名片段；同时真实写操作不得因此放行。
+test('verb words inside file names stay read-only, real mutation verbs stay denied', () => {
+  const readOnly = [
+    `grep -n "^test(" test/storage-transaction-archive-install.test.mjs test/storage-transaction-archive-publish.test.mjs`,
+    `grep -n "^test(" test/storage-transaction-archive-install.test.mjs`,
+    `git show bf38283:test/storage-transaction-archive-publish.test.mjs | grep -n "^test("`,
+    `cd /repo && for f in test/restart-recovery.test.mjs test/storage-transaction-archive-install.test.mjs test/storage-transaction-archive-publish.test.mjs; do echo "=== $f"; git show bf38283:$f 2>/dev/null | grep -n "^test(" | head -20; done`,
+  ];
+  for (const command of readOnly) assert.equal(commandMutatesComposition(command), false, command);
+  const denied = [
+    `npm publish && rm -rf build`,
+    `deploy && cp -r dist /tmp/x`,
+    `git push --force && rm -rf build`,
+    // 命令词位置的 install 仍是写动词，边界只排除文件名/路径片段。
+    `npm publish && install -m 755 dist/app /tmp/out`,
+  ];
+  for (const command of denied) assert.equal(commandMutatesComposition(command), true, command);
+  // 直接钉住导出的写动词表：文件名片段不匹配，命令词（含绝对路径）匹配。
+  assert.equal(MUTATION_VERBS_RE.test('test/storage-transaction-archive-install.test.mjs'), false);
+  assert.equal(MUTATION_VERBS_RE.test('install -m 755 /tmp/src /tmp/dst'), true);
+  assert.equal(MUTATION_VERBS_RE.test('/bin/rm -rf /tmp/build'), true);
+  // 既有的可执行后缀判定不变；文件名里的同名片段仍不匹配。
+  assert.equal(MUTATION_VERBS_RE.test('rm.exe -rf /tmp/build'), true);
+  assert.equal(MUTATION_VERBS_RE.test('test/install.exe.test.mjs'), false);
 });
 
 test('nested shell analysis is bounded and cannot be escaped by deeper nesting', () => {
