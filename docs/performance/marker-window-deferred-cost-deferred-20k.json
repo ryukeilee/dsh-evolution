@@ -1,0 +1,135 @@
+{
+  "method": {
+    "mode": "working-tree",
+    "records": 20000,
+    "repetitions": 3,
+    "node": "v26.13.0",
+    "platform": "darwin/arm64",
+    "workload": "archive-append-window.mjs --child (official DomainFacility/JsonStorageBackend, fresh temp root)",
+    "note": "instrumented attribution; the timers and GC observer make these wall times unsuitable as A/B evidence"
+  },
+  "sources": {
+    "lib/dockyard-domain/memory.js": "ce6485281fc31703c6e50590568c1806d8fa3d99040c14fad6c36d631ce7ee90",
+    "lib/domain-storage.js": "e545ec0be33750cf6de50e40ee13e8ff84ac282e6a87afb2178e323023f8755d"
+  },
+  "shape": "deferred",
+  "runs": [
+    {
+      "records": 20000,
+      "absorption": {
+        "wallMs": 1055.512334,
+        "cpuMs": 1199.605,
+        "gcCount": 36,
+        "gcMs": 17.873462915420532
+      },
+      "observeRows": [],
+      "flushRows": [],
+      "audit": {
+        "window": {
+          "calls": 20000,
+          "refs": 0,
+          "copyMs": 0,
+          "freezeMs": 0,
+          "appendMs": 8.594921999992039,
+          "reductions": 3,
+          "saveCheckMs": 195.80224800001025,
+          "saveCalls": 20000
+        },
+        "gc": {
+          "count": 36,
+          "ms": 17.873462915420532
+        }
+      },
+      "maxRss": 316391424,
+      "rss": 290413776,
+      "retained": 51133270,
+      "documentBytes": 3797182,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "records": 20000,
+      "absorption": {
+        "wallMs": 1081.011542,
+        "cpuMs": 1219.12,
+        "gcCount": 36,
+        "gcMs": 16.311253547668457
+      },
+      "observeRows": [],
+      "flushRows": [],
+      "audit": {
+        "window": {
+          "calls": 20000,
+          "refs": 0,
+          "copyMs": 0,
+          "freezeMs": 0,
+          "appendMs": 9.207187000005888,
+          "reductions": 3,
+          "saveCheckMs": 198.44283299999887,
+          "saveCalls": 20000
+        },
+        "gc": {
+          "count": 36,
+          "ms": 16.311253547668457
+        }
+      },
+      "maxRss": 321519616,
+      "rss": 295378200,
+      "retained": 51130526,
+      "documentBytes": 3797182,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "records": 20000,
+      "absorption": {
+        "wallMs": 1144.6755,
+        "cpuMs": 1273.894,
+        "gcCount": 37,
+        "gcMs": 20.20062279701233
+      },
+      "observeRows": [],
+      "flushRows": [],
+      "audit": {
+        "window": {
+          "calls": 20000,
+          "refs": 0,
+          "copyMs": 0,
+          "freezeMs": 0,
+          "appendMs": 9.565163999993729,
+          "reductions": 3,
+          "saveCheckMs": 209.41244299998033,
+          "saveCalls": 20000
+        },
+        "gc": {
+          "count": 37,
+          "ms": 20.20062279701233
+        }
+      },
+      "maxRss": 311853056,
+      "rss": 288185816,
+      "retained": 51130809,
+      "documentBytes": 3797182,
+      "trace": null,
+      "logBytes": 12755576,
+      "node": "v26.13.0",
+      "platform": "darwin/arm64"
+    }
+  ],
+  "summary": {
+    "absorptionWallMs": 1081.011542,
+    "absorptionCpuMs": 1219.12,
+    "saveCheckMs": 198.44283299999887,
+    "copyMs": 0,
+    "freezeMs": 0,
+    "appendMs": 9.207187000005888,
+    "reductions": 3,
+    "gcMs": 17.873462915420532,
+    "gcCount": 36,
+    "maxRssMiB": 301.734375
+  }
+}
