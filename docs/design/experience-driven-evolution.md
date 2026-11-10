@@ -55,6 +55,18 @@
 
 比较规则：目标步骤必须从失败变为成功（`benefit`），任一阶段成功数下降即 `regression`；对照步骤必须在候选阶段仍成功且 value digest 不变（`controlStable`）。重复执行结果全一致才算 `repeatable`。对照实验固定同进程、同 profile、同版本、同场景；跨环境的等价性不被假设。
 
+### 执行安全边界
+
+probe 不复刻工具执行器、沙箱或权限系统，只复用官方工具定义里已有的 truthful 信号：`isConcurrencySafe(args) === true` 表示该工具加入官方并行调度契约，其文档要求不修改父级拥有的状态，共享状态必须容忍并发或 fail closed。据此：
+
+- 默认只允许**显式 opt-in 且按本次参数判定安全**的工具步骤；`write`、`edit`、`apply_patch`、`bash`、`terminal` 等没有该声明的工具一律在执行前拒绝（`E_EVOLUTION_PROBE_UNSAFE_STEP`）；
+- 未注册的工具、保留的 `run_code` 传输与 `evolution_*` 生命周期工具一律拒绝——它们的行为无法在 probe 前被证明；
+- 委派/后台执行入口（真实注册名 `subagent`、`subagent_fork`、`workflow`、`send_message`、`job_*`、`schedule_*`、`list_*`、`interrupt_agent`）、`plugin_manager`、`present`、`ask_user_question`、goal 工具与 `working_directory`、网络工具（`web_*`）、session/transcript 读取（`session_*`）同样拒绝。`isConcurrencySafe` 只是官方并行调度契约，不保证调用在返回前完成：真实 `subagent` 声明它并立即返回 activation，后台工作仍可执行 shell/write，所以不能只信这个标志；
+- baseline 和 candidate 使用同一份场景与同一套安全检查，任何阶段都不会因为“已挂载 Trial”而放宽；
+- 拒绝发生在任何官方调用之前，因此不会产生目标副作用；超时取消、未结算保留 claim、单 Trial 与恢复校验保持原语义。
+
+代价是 probe 不能直接观察“Trial 新注册的工具”：目标能力必须通过 probe 自己的、已 opt-in 的安全 dispatcher 工具暴露（真实宿主验收就是这样做的）。这是有意的保守边界，而不是新增的权限系统。
+
 ## Measure：只接受派生的证据
 
 `evolution_measure` 在 `record.probe` 成对存在时，用 probe 的原始样本派生 `beforeMetrics` / `afterMetrics` / `sampleCount` / `observationWindow` / `solvesProblem` / `repeatable` / `regressionPassed`，并覆盖调用方填写的同名字段；调用方仍提供 probe 无法观察的进程事实（reversible、cleanupEvidence、orphanResources、风险文本）。`observation.probe` 保存场景、版本、双方聚合、逐步对照与样本 digest，进入 latest observation / archive / evidence sidecar。
@@ -84,6 +96,17 @@
 结论作为 canonical knowledge 的一行（`type: experiment-conclusion`，`sourceCollection: learnings`），复用现有身份、去重、状态机与 `REGRESSED` 降级：同一（问题、策略、根因、版本）的新 `no-benefit` / `regression` 会把旧 `adopted` 降级；不同版本是不同身份，互不降级；`reverted-unconfirmed` / `insufficient-evidence` 不伪造成功也不否定旧成功。`strategy` 以对象形式保存，版本数字不会被知识身份归一化抹掉；版本缺失写 `unknown`，`unknown` 永不等于任何版本，因此不会被当作“同条件”。
 
 `findConclusions()` 按 target + 三项版本 + strategy 指纹做有界查询；`evolution_propose` 对“同 target、同适用条件、同 strategy 指纹且已证明无效”的提案返回 `reason: "strategy-already-proven-ineffective"` 并附旧证据。换了假设（不同 strategy 文本）或换了适用版本即可继续，不需要降低门禁。
+
+## Desktop / 打包宿主的版本身份
+
+版本只从官方包清单读取，不从命令行参数、环境变量或相邻包猜：
+
+- **Evolution**：本 bundle 自己的 `package.json`；
+- **DSH**：精确匹配 `name === "@deepseek-ai/dsh"` 的包清单。Desktop 的 Electron argv 指向 `@deepseek-ai/dsh-desktop-host/lib/cli.js`，真实 host 是该 entry 的**同级** `@deepseek-ai/dsh`；只按 `@deepseek-ai/dsh` 前缀匹配会把 desktop-host/tools 的版本误当成 DSH 版本；
+- **Cordis**：host 包同级或嵌套的官方 `@deepseek-ai/cordis`；pnpm store 布局逐级向上查找；
+- Electron 打包布局下，argv 不暴露模块入口时使用 Electron 官方的 `process.resourcesPath`，在 `app.asar/dsh/node_modules/@deepseek-ai/dsh` 与 `app.asar.unpacked` 中查找精确包；仍找不到就保持 `null`/`unknown`，绝不猜测或降低匹配门槛。
+
+`evolution_plan`、`evolution_probe`、`recordConclusion` 与 `findConclusions` 全部调用同一个 `applicability()`，因此同一轮实验、结论检索和下一轮提案共享同一个 `{dsh, cordis, evolution}` 三元组。真实 Desktop Electron 环境（Electron 44.7.0 / Node 24.21.0，DSH 0.2.2-rc.1 / Cordis 4.1.0 / Evolution 0.2.3）的只读验证记录在 `docs/evidence/desktop-version-detection-0.2.2-rc.1.json`。
 
 ## 运行期与安全不变量
 

@@ -111,7 +111,18 @@ async function createHarness(t, name, options = {}) {
   };
   const runner = fakeRunner();
   const ctx = orchestratorContext(warnings);
-  ctx.tools = { schemas: () => [], register() {}, execute };
+  // Probe steps must resolve to a definition that opts into the official
+  // concurrency-safe contract; the default fixture tools do.
+  const probeDefinitions = new Map([
+    ['probe-target', { name: 'probe-target', isConcurrencySafe: () => true }],
+    ['probe-control', { name: 'probe-control', isConcurrencySafe: () => true }],
+  ]);
+  ctx.tools = {
+    schemas: () => [],
+    register() {},
+    execute,
+    get: (name) => probeDefinitions.get(name),
+  };
   ctx.dynamicCordisRunner = runner;
   const orchestrator = new EvolutionOrchestrator(ctx, {
     ...paths,
@@ -1176,4 +1187,98 @@ test('a probe call that ignores abort keeps the claim until it settles', async (
   const trial = await startTrial(h, experimentId);
   assert.equal(trial.ok, true);
   await h.orchestrator.revert({ experimentId }, h.exec);
+});
+
+// ---------------------------------------------------------------------------
+// Applicability identity and probe safety boundaries
+// ---------------------------------------------------------------------------
+
+test('plan, probe and conclusion lookups share one applicability identity', async (t) => {
+  const h = await createHarness(t, 'applicability-identity');
+  seedFailures(h.store, TARGET, 3);
+  const planned = h.orchestrator.plan({ focus: TARGET }, h.exec);
+  assert.equal(planned.ok, true);
+  assert.deepEqual(planned.applicability, APPLICABILITY);
+  assert.deepEqual(planned.versions, HOST_VERSIONS);
+  const experimentId = await proposeExperiment(h);
+  const baseline = await runBaseline(h, experimentId);
+  assert.deepEqual(baseline.versions, APPLICABILITY, 'the probe records the same triple the plan used');
+  assert.equal(baseline.safety?.policy, 'official-concurrency-safe');
+  recordConclusion(h.store, { target: PROBLEM_KEY, strategy: STRATEGY, decision: 'no-benefit', applicability: APPLICABILITY });
+  const found = h.store.findConclusions({
+    target: PROBLEM_KEY,
+    applicability: APPLICABILITY,
+    strategyFingerprint: strategyFingerprint(TARGET, STRATEGY),
+  });
+  assert.ok(found.best, 'the conclusion lookup must see the recorded verdict');
+  assert.equal(found.best.sameApplicability, true);
+});
+
+test('a step that does not opt into the concurrency-safe contract is refused before execution', async (t) => {
+  const h = await createHarness(t, 'probe-safety-refused');
+  const experimentId = await proposeExperiment(h);
+  h.ctx.tools.get = (name) => ({ name, isConcurrencySafe: () => name !== 'probe-target' });
+  const callsBefore = h.calls.length;
+  await rejectsWithCode(runBaseline(h, experimentId), 'E_EVOLUTION_PROBE_UNSAFE_STEP');
+  assert.equal(h.calls.length, callsBefore, 'an unsafe step must not reach the official tool pipeline');
+  assert.equal(h.orchestrator.experiments.get(experimentId).probe, undefined);
+});
+
+test('reserved and unknown tools are refused before execution', async (t) => {
+  const h = await createHarness(t, 'probe-safety-reserved');
+  const experimentId = await proposeExperiment(h);
+  for (const forbidden of ['run_code', 'evolution_measure']) {
+    h.ctx.tools.get = (name) => ({ name, isConcurrencySafe: () => true });
+    const callsBefore = h.calls.length;
+    await rejectsWithCode(
+      h.orchestrator.probe({ experimentId, phase: 'baseline', scenario: { id: `reserved-${forbidden}`, repetitions: 1, steps: [{ name: forbidden, arguments: {}, role: 'target' }] } }, h.exec),
+      'E_EVOLUTION_PROBE_UNSAFE_STEP',
+    );
+    assert.equal(h.calls.length, callsBefore);
+  }
+  h.ctx.tools.get = () => undefined;
+  await rejectsWithCode(runBaseline(h, experimentId, probeScenario({ id: 'unknown-step' })), 'E_EVOLUTION_PROBE_UNSAFE_STEP');
+  assert.equal(h.orchestrator.experiments.get(experimentId).probe, undefined);
+});
+
+test('the candidate phase applies the same safety preflight as the baseline', async (t) => {
+  const h = await createHarness(t, 'probe-safety-candidate');
+  const experimentId = await proposeExperiment(h);
+  await runBaseline(h, experimentId);
+  await startTrial(h, experimentId);
+  h.ctx.tools.get = (name) => ({ name, isConcurrencySafe: () => name !== 'probe-control' });
+  const callsBefore = h.calls.length;
+  await rejectsWithCode(runCandidate(h, experimentId), 'E_EVOLUTION_PROBE_UNSAFE_STEP');
+  assert.equal(h.calls.length, callsBefore, 'the candidate phase must not execute an unsafe control step');
+  assert.equal(h.orchestrator.experiments.get(experimentId).probe.candidate, null);
+  await h.orchestrator.revert({ experimentId }, h.exec);
+});
+
+test('delegation and background entry points are refused even when they claim concurrency safety', async (t) => {
+  const h = await createHarness(t, 'probe-safety-background');
+  const experimentId = await proposeExperiment(h);
+  // The real Desktop `subagent` definition declares isConcurrencySafe (it is a
+  // dispatch-overlap flag, not an "all work finishes inline" promise) while the
+  // delegated work keeps running in the background. These actual registered
+  // names must be refused before the definition is trusted.
+  const backgroundEntryPoints = [
+    'subagent', 'subagent_fork', 'workflow', 'send_message', 'interrupt_agent',
+    'list_agents', 'list_subagent_models', 'job_output', 'job_list', 'job_kill',
+    'schedule_create', 'schedule_edit', 'web_fetch', 'web_search', 'session_trace',
+    'plugin_manager', 'present', 'create_goal', 'update_goal', 'working_directory',
+  ];
+  for (const [index, name] of backgroundEntryPoints.entries()) {
+    h.ctx.tools.get = (toolName) => ({ name: toolName, isConcurrencySafe: () => true });
+    const callsBefore = h.calls.length;
+    await rejectsWithCode(
+      h.orchestrator.probe({
+        experimentId,
+        phase: 'baseline',
+        scenario: { id: `background-${index}`, repetitions: 1, steps: [{ name, arguments: {}, role: 'target' }] },
+      }, h.exec),
+      'E_EVOLUTION_PROBE_UNSAFE_STEP',
+    );
+    assert.equal(h.calls.length, callsBefore, `${name} must be refused before the official pipeline`);
+  }
+  assert.equal(h.orchestrator.experiments.get(experimentId).probe, undefined);
 });

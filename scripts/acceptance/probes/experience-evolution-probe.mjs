@@ -69,6 +69,10 @@ export function apply(ctx) {
       description: `Acceptance fixture capability ${toolName}: succeeds only when a mounted plugin provides its listener.`,
       parameters: { type: 'object', properties: {} },
       output: { schema: {}, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
+      // Truthful official metadata: the tool dispatches a local Cordis event and
+      // reads the payload; it does not mutate parent-owned state. A promoted
+      // Host-only plugin adds a listener to the same event.
+      isConcurrencySafe: () => true,
       async execute() {
         const payload = { hits: 0 };
         await ctx.parallel(eventName, payload);
@@ -86,6 +90,7 @@ export function apply(ctx) {
     description: 'Acceptance fixture control capability; fails when a candidate interferes with it.',
     parameters: { type: 'object', properties: {} },
     output: { schema: {}, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
+    isConcurrencySafe: () => true,
     async execute() {
       const payload = { hits: 0 };
       await ctx.parallel(CONTROL_EVENT, payload);
@@ -215,6 +220,10 @@ export function apply(ctx) {
     const raw = await call('evolution_probe', { experimentId, phase: 'baseline', scenario });
     const part = probePart(raw?.samples, scenario, raw?.scenarioDigest ?? null, raw?.baseline ?? null);
     if (part.samples.length === 0) throw new Error('the baseline probe recorded no samples');
+    if (raw?.safety?.policy !== 'official-concurrency-safe') {
+      throw new Error(`the baseline probe did not run the official concurrency-safe preflight: ${JSON.stringify(raw?.safety)}`);
+    }
+    part.safety = raw.safety;
     return part;
   }
 
@@ -224,8 +233,13 @@ export function apply(ctx) {
     const raw = await call('evolution_probe', { experimentId, phase: 'candidate', scenario });
     const baselineSamples = Array.isArray(raw?.baselineSamples) ? raw.baselineSamples : baselinePart.samples;
     const baseline = probePart(baselineSamples, scenario, raw?.scenarioDigest ?? baselinePart.scenarioDigest, null, null);
+    baseline.safety = baselinePart.safety ?? null;
     const candidate = probePart(raw?.samples, scenario, raw?.scenarioDigest ?? null, raw?.candidate ?? null, raw?.comparison ?? null);
     if (candidate.samples.length === 0) throw new Error('the candidate probe recorded no samples');
+    if (raw?.safety?.policy !== 'official-concurrency-safe') {
+      throw new Error(`the candidate probe did not run the official concurrency-safe preflight: ${JSON.stringify(raw?.safety)}`);
+    }
+    candidate.safety = raw.safety;
     return { baseline, candidate, comparison: raw?.comparison ?? null, digest: raw?.scenarioDigest ?? baselinePart.scenarioDigest };
   }
 
@@ -490,7 +504,7 @@ export function apply(ctx) {
       },
       experimentId: proposed.experimentId,
       pluginId: trialed.pluginId ?? null,
-      probes: { baseline: { samples: pair.baseline.samples, scenarioDigest: pair.baseline.scenarioDigest }, candidate: { samples: candidate.samples, scenarioDigest: candidate.scenarioDigest } },
+      probes: { baseline: { samples: pair.baseline.samples, scenarioDigest: pair.baseline.scenarioDigest, safety: pair.baseline.safety ?? null }, candidate: { samples: candidate.samples, scenarioDigest: candidate.scenarioDigest, safety: candidate.safety ?? null } },
       measure: { gates: measured.gates, decision: measured.decision ?? null, beforeMetrics: observation.beforeMetrics ?? null, afterMetrics: observation.afterMetrics ?? null, comparison: observation.probe?.comparison ?? null },
       canary: { first: canary1?.phase ?? null, second: canary2?.phase ?? null },
       markerHits: markerPayload.hits,
@@ -616,7 +630,7 @@ export function apply(ctx) {
       store: { before, after: stats.after, seededFailures: failures.length },
       experimentId: proposed.experimentId,
       pluginId: trialed.pluginId ?? null,
-      probes: { baseline: { samples: invalidPair.baseline.samples, scenarioDigest: invalidPair.baseline.scenarioDigest }, candidate: { samples: candidate.samples, scenarioDigest: candidate.scenarioDigest } },
+      probes: { baseline: { samples: invalidPair.baseline.samples, scenarioDigest: invalidPair.baseline.scenarioDigest, safety: invalidPair.baseline.safety ?? null }, candidate: { samples: candidate.samples, scenarioDigest: candidate.scenarioDigest, safety: candidate.safety ?? null } },
       measure: { gates: measured.gates, decision: measured.decision ?? null, comparison: measuredObservation?.probe?.comparison ?? null },
       refused: { reason: refused.reason, phase: refused.phase },
       revert: { ok: reverted.ok, runtimeRecovered: reverted.runtimeRecovered },
@@ -791,7 +805,7 @@ export function apply(ctx) {
       toolCount: evolutionTools().length,
       store: { before, after: stats.after, seededFailures: failures.length },
       experimentId: proposed.experimentId,
-      probes: { baseline: { samples: regressionPair.baseline.samples, scenarioDigest: regressionPair.baseline.scenarioDigest }, candidate: { samples: candidate.samples, scenarioDigest: candidate.scenarioDigest } },
+      probes: { baseline: { samples: regressionPair.baseline.samples, scenarioDigest: regressionPair.baseline.scenarioDigest, safety: regressionPair.baseline.safety ?? null }, candidate: { samples: candidate.samples, scenarioDigest: candidate.scenarioDigest, safety: candidate.safety ?? null } },
       measure: { gates: measured.gates, decision: measured.decision ?? null, comparison: measuredObservation?.probe?.comparison ?? null },
       refused: { reason: refused.reason, phase: refused.phase },
       revert: { ok: reverted.ok, runtimeRecovered: reverted.runtimeRecovered },

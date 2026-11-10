@@ -210,6 +210,8 @@ function crossCheckExperiencePhase(phase, result) {
   const candidate = countProbeSamples(result.probes?.candidate?.samples);
   const checks = {};
   if (phase === 'seed') {
+    checks.safetyPreflight = result.probes?.baseline?.safety?.policy === 'official-concurrency-safe'
+      && result.probes?.candidate?.safety?.policy === 'official-concurrency-safe';
     checks.baselineTargetFailed = baseline.target.total > 0 && baseline.target.errors === baseline.target.total;
     checks.baselineControlSucceeded = baseline.control.total > 0 && baseline.control.errors === 0;
     checks.candidateTargetSucceeded = candidate.target.total > 0 && candidate.target.errors === 0;
@@ -217,6 +219,8 @@ function crossCheckExperiencePhase(phase, result) {
     checks.measureBenefit = result.measure?.gates?.measuredEvidence === true && result.measure?.gates?.realBenefit === true;
     checks.canarySettled = result.canary?.second === 'stable';
   } else if (phase === 'invalid') {
+    checks.safetyPreflight = result.probes?.baseline?.safety?.policy === 'official-concurrency-safe'
+      && result.probes?.candidate?.safety?.policy === 'official-concurrency-safe';
     checks.baselineTargetFailed = baseline.target.total > 0 && baseline.target.errors === baseline.target.total;
     checks.candidateTargetUnimproved = candidate.target.total > 0 && candidate.target.errors === candidate.target.total;
     checks.gatesRefused = result.measure?.gates?.measuredEvidence === false && result.measure?.gates?.realBenefit === false;
@@ -224,6 +228,8 @@ function crossCheckExperiencePhase(phase, result) {
     checks.claimReleased = result.claimReleased === true;
     checks.strategyRefused = result.duplicateProposal?.reason === 'strategy-already-proven-ineffective';
   } else if (phase === 'regression') {
+    checks.safetyPreflight = result.probes?.baseline?.safety?.policy === 'official-concurrency-safe'
+      && result.probes?.candidate?.safety?.policy === 'official-concurrency-safe';
     checks.baselineTargetFailed = baseline.target.total > 0 && baseline.target.errors === baseline.target.total;
     checks.baselineControlSucceeded = baseline.control.total > 0 && baseline.control.errors === 0;
     checks.candidateTargetSucceeded = candidate.target.total > 0 && candidate.target.errors === 0;
@@ -248,7 +254,7 @@ function selectExperienceEvidence(phase, result) {
   const probes = {};
   for (const name of ['baseline', 'candidate']) {
     const part = result?.probes?.[name];
-    if (part) probes[name] = { scenarioDigest: part.scenarioDigest ?? null, samples: part.samples ?? [], summary: countProbeSamples(part.samples) };
+    if (part) probes[name] = { scenarioDigest: part.scenarioDigest ?? null, safety: part.safety ?? null, samples: part.samples ?? [], summary: countProbeSamples(part.samples) };
   }
   return {
     ok: true,

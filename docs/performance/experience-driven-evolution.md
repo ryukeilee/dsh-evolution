@@ -4,15 +4,15 @@
 
 ## 1. 固定模型上下文（每个请求都付）
 
-用 `scripts/benchmarks/fixed-context/fixture.mjs` 捕获当前注册面（12 工具）与 `origin/main` 前的 10 工具面：
+用 `scripts/benchmarks/fixed-context/fixture.mjs` 捕获当前注册面（12 工具，含 probe 安全说明）与 `origin/main` 前的 10 工具面：
 
 | 项 | 10 工具（HEAD） | 12 工具（本树） | 增量 |
 | --- | --- | --- | --- |
 | `systemText` | 1,633 B | 2,388 B | +755 B |
-| fields（text + 每工具 name/description/紧凑 parameters） | 7,674 B | 9,633 B | +1,959 B |
-| wire（text + 紧凑工具数组 JSON） | 8,105 B | 10,150 B | +2,045 B |
+| fields（text + 每工具 name/description/紧凑 parameters） | 7,674 B | 9,835 B | +2,161 B |
+| wire（text + 紧凑工具数组 JSON） | 8,105 B | 10,352 B | +2,247 B |
 
-结论：新增 `evolution_plan` / `evolution_probe` 与相应系统提示词，使模型可见固定上下文增加约 2.0 KB/请求（按 UTF-8 字节计，**不是**计费 token，也没有做真实 provider 计费测量）。`test/fixed-context-budget.test.mjs` 用“原基线 + 已批准的 2,350 B / 2,550 B 工具增量”的 80% 预算继续守住这条成本，仍拒绝无预算增长。
+结论：新增 `evolution_plan` / `evolution_probe`、相应系统提示词与 probe 安全说明，使模型可见固定上下文增加约 2.2 KB/请求（按 UTF-8 字节计，**不是**计费 token，也没有做真实 provider 计费测量）。`test/fixed-context-budget.test.mjs` 用“原基线 + 已批准的 2,600 B / 2,800 B 工具与安全说明增量”的 80% 预算继续守住这条成本，仍拒绝无预算增长。
 
 ## 2. 真实宿主验收
 
@@ -26,6 +26,7 @@
 
 - `evolution_plan`：一次有界扫描（默认窗口 500 行 canonical knowledge，上限 2,000；`discover` 只读 SQLite 事务），加上本地失败记忆（≤200 条）的纯投影与评分。没有模型调用、没有定时器。
 - `evolution_probe`：每次调用执行声明的场景（≤8 步 × ≤5 重复，分 baseline/candidate 两次），每步一次官方 `ctx.tools.execute`，单步超时 30 s；样本只保留工具名/role/isError/错误分类码/value digest/耗时，不保留返回值正文。
+- `evolution_probe` 的安全预检：每个步骤一次官方 `ctx.tools.get()` 与 `isConcurrencySafe(args)` 判定，发生在任何执行之前；没有 opt-in 的工具、未知工具、`run_code` 与 `evolution_*` 直接拒绝。它不新增执行器或沙箱，成本是每个场景步骤一次同步注册表读取。
 - `evolution_measure`：纯内存计算，无额外 I/O；`recordConclusion` 是每次终态转换一次同步 SQLite 事务（BEGIN IMMEDIATE，2 s busy timeout，与现有采集器同一语义）。
 - 结论写回失败只记 warning，不改变 Revert/Promotion 结果；共享 SQLite schema 仍为 v1，旧库可直接打开。
 

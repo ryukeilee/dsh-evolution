@@ -102,6 +102,25 @@ that the same strategy under the same applicability is then refused with
 `strategy-already-proven-ineffective`. The older declared hosts do not expose
 the official batch tool executor, so the harness refuses the flag there.
 
+Probe steps are limited to tools whose official definition opts into the
+concurrency-safe contract (`isConcurrencySafe(args) === true`, which forbids
+mutating parent-owned state); write/edit/shell/unknown/`run_code`/`evolution_*`
+steps are refused before any call, in both phases, as are delegation/background
+entry points (`subagent`, `workflow`, `job_*`, `schedule_*`, `send_message`, ...),
+network tools, session-transcript readers and profile/UI/permission tools: the
+concurrency flag is only a parallel-dispatch contract and does not promise that
+the call finishes its work inline (the real `subagent` returns an activation and
+keeps working in the background). The Desktop Electron
+applicability triple is resolved from exact official package manifests (the
+sibling `@deepseek-ai/dsh`, the sibling or nested `@deepseek-ai/cordis`, and
+this bundle's own `package.json`), with Electron's official
+`process.resourcesPath` as the packaged-layout fallback; anything unprovable
+stays `unknown`. A read-only real-Desktop Electron run (Electron 44.7.0, Node
+24.21.0) is recorded in
+`docs/evidence/desktop-version-detection-0.2.2-rc.1.json`: it resolved DSH
+`0.2.2-rc.1`, Cordis `4.1.0`, Evolution `0.2.3`, matching the manifests read
+independently from the same install.
+
 The unit suite is not run per host: `ci.yml` runs it in a separate job on Node
 `22.19.0` and `24.x`, against the module versions locked in `package-lock.json`
 (`4.0.4` / `1.0.9` / `1.0.5`, from the devDependency baseline pinned to the

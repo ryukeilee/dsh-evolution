@@ -103,6 +103,19 @@ canary 与回滚语义不变。实验结束（revert 证明恢复、门禁拒绝
 `strategy-already-proven-ineffective`，换假设或换适用版本即可继续。详见
 `docs/design/experience-driven-evolution.md`。
 
+`evolution_probe` 只执行官方工具定义中 `isConcurrencySafe(args) === true` 的步骤：该契约要求
+不修改父级拥有的状态。write/edit/apply_patch、shell、未注册工具、保留的 `run_code`、
+`evolution_*`，以及委派/后台执行入口（`subagent`、`workflow`、`job_*`、`schedule_*`、
+`send_message` 等）、网络、session/transcript 与 UI/权限入口都会在任何执行之前被拒绝
+（`E_EVOLUTION_PROBE_UNSAFE_STEP`）。原因是并发安全只是官方并行调度契约，不保证调用在返回前
+完成（真实 `subagent` 立即返回 activation、后台继续执行）；baseline 与 candidate 共用同一套
+检查。需要观察新能力时，由 probe 自己的、已 opt-in 的安全工具暴露。
+
+适用版本身份只从官方包清单读取：Evolution 用自身 `package.json`，DSH 精确匹配
+`@deepseek-ai/dsh`（Desktop 的真实 host 是其 `dsh-desktop-host` entry 的同级包，前缀匹配不会
+借版本），Cordis 取 host 同级或嵌套的官方包；Electron 打包布局用官方
+`process.resourcesPath` 兜底。无法可靠识别时保持 `unknown`，不猜测、不降低匹配门槛。
+
 Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 inspect、measure 和清理不会重建基线。Trial 期间仍存在的外部漂移会使恢复校验失败，并保留目标锁；漂移消失后重试才会判定恢复（基线仍只有那一条）。define / run 失败没有激活任何内容，会释放目标锁并丢弃实验记录（与失败学习写入是否成功无关）。清理无法证实运行时已恢复时（`revert-failed` / `trial-cleanup-failed`）记录与目标锁都保留，但该记录仍可再次调用 `evolution_revert`：重试跑的是同一套官方 disposer 与同一条基线的比较，只有同一份证据通过才释放 claim。官方 disposer 不是幂等的，所以重试看到的是 `stop` 的 `not-running` / `plugin-missing` 与 `undefine` 的 `plugin-missing`——这三个 reason 本身就是证明，其他 reason 与抛出的 receipt 仍然不算（口径见 `COMPATIBILITY.md`）。
 
 晋升的 8 项门禁缺一不可：
