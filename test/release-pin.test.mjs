@@ -15,6 +15,7 @@ import {
   REPO_ROOT,
   archiveContentDigest,
   archiveEntries,
+  commitArchiveEntries,
   declaredHostVersions,
   evaluateAddedHostAcceptance,
   evaluatePinnedAcceptance,
@@ -193,13 +194,14 @@ test('the shipping gate refuses a tree that does not build the pin', () => {
 test('every shipped file matches the artifact, except the named development successors', () => {
   const archived = new Map(readTarEntries(releaseArtifactPath(pin)).map((entry) => [entry.path, entry]));
   const declared = expectedEntries(manifest);
-  // The shipped *set* never drifts: adding or removing a declared file is a
-  // package-surface change, not development on top of a release.
-  assert.deepEqual([...archived.keys()].sort(), [...declared].sort());
+  // The pin remains accountable to its own source, even when a committed
+  // development successor adds a module. No release bytes are rebuilt here.
+  const pinned = pin.sourceCommit ? commitArchiveEntries(pin.sourceCommit).map(entry => entry.path) : declared;
+  assert.deepEqual([...archived.keys()].sort(), [...pinned].sort());
   const named = new Set((relation.differing ?? []).map((entry) => entry.path));
   for (const relative of declared) {
     const onDisk = fs.readFileSync(path.join(REPO_ROOT, relative));
-    if (archived.get(relative).bytes.equals(onDisk)) continue;
+    if (archived.get(relative)?.bytes.equals(onDisk)) continue;
     assert.equal(
       named.has(relative),
       true,

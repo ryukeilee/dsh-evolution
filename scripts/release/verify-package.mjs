@@ -50,7 +50,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  DuplicateJsonKeyError, REPO_ROOT, assertCleanContent, assertCleanEntries,
+  DuplicateJsonKeyError, REPO_ROOT, assertCleanContent, assertCleanEntries, commitArchiveEntries,
   assertReproducible, contentDigestOf, declaredHostVersions, evaluateAddedHostAcceptance,
   evaluatePinnedAcceptance, expectedEntries, formatBytes, parseJsonText, pinnedArtifactFile,
   pinnedArtifactStatus, pinnedDeclaredHostVersions, readManifest, readReleaseManifest, readTarEntries,
@@ -285,7 +285,13 @@ check('the committed release artifact is exactly the pinned build', () => {
   if (JSON.stringify(modes) !== JSON.stringify(releaseManifest.modes)) {
     throw new Error(`the committed artifact has modes ${JSON.stringify(modes)}, release/manifest.json pins ${JSON.stringify(releaseManifest.modes)}`);
   }
-  assertCleanEntries(entries.map((entry) => entry.path), expectedEntries(manifest));
+  // A development successor may add modules. The immutable artifact is held
+  // to its own source commit's file set; the tree is checked against its own
+  // declaration above, and the strict release gate still requires equality.
+  const pinnedEntries = releaseManifest.sourceCommit
+    ? commitArchiveEntries(releaseManifest.sourceCommit).map(entry => entry.path)
+    : expectedEntries(manifest);
+  assertCleanEntries(entries.map((entry) => entry.path), pinnedEntries);
   // The pin claims which hosts the released bytes were accepted on, and those
   // bytes declare which hosts they support. The two have to be the same set: a
   // release can neither ship a host it never accepted nor accept a host it does
