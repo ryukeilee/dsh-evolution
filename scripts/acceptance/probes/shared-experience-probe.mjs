@@ -41,11 +41,11 @@ export function apply(ctx) {
       await call(parent.agent, 'parent-read');
       const afterParent = store.stats();
       await call(parent.agent, 'parent-read');
-      const afterDuplicate = store.stats();
+      const afterRepeatCallId = store.stats();
       await call(child.agent, 'child-read');
       const afterChild = store.stats();
-      if (afterParent.events !== before.events + 1 || afterDuplicate.events !== afterParent.events
-        || afterChild.events !== before.events + 2) throw new Error('Root/child collection or duplicate receipt mismatch');
+      if (afterParent.events !== before.events + 1 || afterRepeatCallId.events !== before.events + 2
+        || afterChild.events !== before.events + 3) throw new Error('Root/child collection or reused callId mismatch');
       const history = ctx.tools.get('evolution_history', parent.agent);
       const query = core ? { query: 'agent', target: 'agent' } : { query: read.name, target: `tool:${read.name}` };
       const recalled = await history.execute(query, { agent: parent.agent, signal: new AbortController().signal });
@@ -53,7 +53,7 @@ export function apply(ctx) {
       if ((core?.experiments.size ?? 0) !== experimentsBefore) throw new Error('Daily failure started an experiment');
       evidence = { node: process.version, simulatedEvents: false, actualTool: read.name,
         ...(startup ? { startupPhase: startup.phase ?? startup.status } : {}),
-        before, afterParent, afterDuplicate, afterChild, experimentsBefore, experimentsAfter: core?.experiments.size ?? 0,
+        before, afterParent, afterRepeatCallId, afterChild, experimentsBefore, experimentsAfter: core?.experiments.size ?? 0,
         corePresent: Boolean(core), historyTools: ctx.tools.schemas().filter(tool => tool.name === 'evolution_history').length,
         sharedRecallRecords: recalled.failures.length + recalled.resolved.length + recalled.candidates.length,
         sharedRecallOccurrences: recalled.failures.reduce((n, row) => n + row.occurrences, 0),

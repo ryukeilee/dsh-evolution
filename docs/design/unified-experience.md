@@ -6,6 +6,7 @@
 
 - 新增独立 collector、SQLite 事务经验 adapter、单命令 profile 配置器。Desktop 继续独占原 core 领域/归档根；ACP/Web 禁用 core，只提供共享 history；不改变任何 storage-json route。
 - 日常 listener 与自主 Trial 分开；默认 bundle 关闭 core 的日常自主监听。手动生命周期与 startup canary 保留。共享元数据复用 canonical 算法和有界 recall；提交完成点是同步 SQLite COMMIT，监听器没有待退出 drain 的异步写队列。
+- 原生工具事件按宿主执行对象分配收据身份，同一执行对象的重复投递复用身份；新的实际执行即使复用模型 callId 也单独计数。原生事件不是跨进程重放日志。跨重启补投的结构化事实使用签名桥的来源 + eventId，持久去重不依赖 canonical 的 256 条窗口。曾把两次复用 callId 的执行当作重复事件的验收已纠正，不能沿用其计数结论。
 - 针对性测试覆盖四进程并发、超出 canonical 256 窗口的永久去重、SIGKILL 后恢复、共享成功事实的回归降级、签名桥重启补投、无日常 Trial 监听、配置保留与幂等。尚需最终版本全量回归与审核。
 - 真实 ACP stdio 初步通过：本地确定性 Anthropic 响应驱动官方 Agent/工具链，provider 实际失败、读文件实际失败及 history 查询均完成；没有模拟宿主事件，没有外部模型调用。五个预期模型传输响应，history schema 恰好一个。不是实际供应商 Token 计费测量，也不是 T3 UI 全程验收。
 - 已对开发候选 tarball 执行 DSH 0.2.2-rc.1 隔离 Web 宿主 21 步验收（HMR 关闭），含手动 Trial/测量/恢复、真实晋升、重启与回滚。证据 `docs/evidence/shared-experience-host-0.2.2-rc.1.json` 绑定其 tarball 摘要；后续修改尚需重验受影响部分，不能称其覆盖最终 diff。

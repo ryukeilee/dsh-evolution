@@ -11,6 +11,8 @@ import { managedPatch, setupPlan } from '../scripts/setup-experience.mjs';
 import yaml from 'js-yaml';
 import { EvolutionEventBridge } from '../lib/orchestrator.js';
 import { apply as applyCore } from '../lib/registration.js';
+import { Context } from '@deepseek-ai/cordis';
+import * as collector from '../lib/experience-collector.js';
 
 const moduleUrl = new URL('../lib/shared-experience.js', import.meta.url).href;
 function temporary(t) {
@@ -149,4 +151,19 @@ test('shared publication can recover from the authenticated bridge without trust
   fs.appendFileSync(file, fs.readFileSync(foreign.file));
   new EvolutionEventBridge({ file, key, onVerifiedEvent: publish });
   assert.equal(store.stats().events, 1);
+});
+
+test('collector dedups a repeated receipt but counts a real new execution reusing callId (unit event fixture)', async t => {
+  const root = temporary(t); const app = new Context();
+  app.provide('tools', { register() {} });
+  const fiber = app.plugin(collector, { dshHome: root }); await fiber.await();
+  try {
+    const exec = { callId: 'reused', name: 'read', agent: { id: 'agent-a' } };
+    const result = { isError: true };
+    app.emit('tools/result', exec, result); app.emit('tools/result', exec, result);
+    const store = app.get('evolutionExperience').store;
+    assert.equal(store.stats().events, 1);
+    app.emit('tools/result', { ...exec }, result);
+    assert.equal(store.stats().events, 2);
+  } finally { await fiber.dispose(); }
 });
