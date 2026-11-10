@@ -8,6 +8,207 @@ acceptance: read the entry for the version you install before upgrading DSH.
 `0.2.0` is the first stable release; the `0.2.0-rc.*` entries below it are kept
 unchanged as the history of that candidate line. `0.2.1` is the stable successor
 that adds DSH `0.2.2-rc.1` (Cordis 4.1 / Include 1.1) to the accepted hosts.
+`0.2.2` is the stable successor of `0.2.1`: the accepted host set is unchanged
+(`0.2.0-rc.2`, `0.2.1-alpha.1`, `0.2.1-rc.2`, `0.2.2-rc.1`, still with host HMR
+disabled for the last one), and it carries the merged performance, measurement and
+fix work below without adding a host, a persistence format or a tool-surface shape.
+
+## 0.2.2 — 稳定版
+
+`0.2.1` 的稳定后继。依赖、持久 schema 与 schema 版本、工具名、参数名 / 类型 / 必填集合与参数 schema 的
+接受形状、授权来源、晋升门禁的 8 项证据、风险分级、`engines`、`peerDependencies` 与受支持宿主集合均未
+改动。相对 `0.2.1` 固定产物，分发内容的变化集中在 `lib/dockyard-domain/memory.js`、
+`lib/domain-storage.js`、`lib/diagnostics.js`、`lib/event-log-checkpoint.js`、`lib/registration.js`
+五个 `lib/` 文件，另加 `lib/dockyard-domain/PORTS.md`、`README.md`、版本号与 `CHANGELOG.md`。本版本的
+版本号、固定产物与验收记录由发布流程按 `RELEASE.md` 重新生成；下面每个数字都来自各改动合入前在隔离环境
+中的实测与随改动入库的 `docs/performance/` 原始数据，不是对 0.2.2 发布产物的复测。
+
+### 性能
+
+- **首次重放的桥接标记窗口原地增长，不再逐条重建冻结窗口（PR #41）。** replay 的私有 staged 工作副本
+  此前每 append 一条 marker 都要重建并 `Object.freeze` 一个最多 4,095 项的冻结后继数组；现在这个副本把
+  窗口换成自己的可增长原生数组，append 时 `push`（O(1)），每次向端口报告本次 append 产生的准确长度与
+  尾元素，`assertStagedTransactionSave()` 只在 `window.length` 等于报告长度、且末项就是报告尾元素时复用
+  该条目的证书，不匹配就删除证书并退回原来的整份 / 逐 marker 检查；窗口每 4,096 次 append 用
+  `slice(-4096)` 缩减一次，`snapshot()` / `fullSnapshot()` 发布前再归约为最后 4,096 条。分项归因
+  （`scripts/benchmarks/marker-window-write-cost.mjs`，50,000 条）显示窗口重建占总吸收 3,384 ms 的
+  1,021.0 ms（30.2%），整轮累计复制 196,363,440 个数组引用。真实官方 `DomainFacility` /
+  `JsonStorageBackend`、无 checkpoint 的首次吸收、交替 A/B 各三轮：12,000 条 847.0 → 625.7 ms
+  （**−26.12%**）、20,000 条 1,395.3 → 999.4 ms（**−28.37%**）、50,000 条 3,367.9 → 2,340.8 ms
+  （**−30.50%**），CPU 分别为 −24.81% / −26.72% / −28.51%；同码 A/A 的最大绝对墙钟差
+  32.7 / 4.4 / 16.2 ms。稳态 observe / flush 不变（最大绝对量 < 1 ms）。**不声称峰值内存收益**：A/B 的
+  峰值 RSS 配对差与同码 A/A 的离散度同量级；GC 时间与次数下降（50k：41.0 → 36.9 ms、139 → 90 次），但
+  那是吸收窗口内的 `PerformanceObserver` 计数，不是分配流量归因。持久字节在 12k / 20k / 50k 上逐字节
+  相同（归档树、领域文档摘要、checkpoint 内容与 query 投影），marker 数等于记录数、staged 残留为 0。
+  该模式只在 `openDomainStorage()` 的 replay 私有工作副本开启，普通 `EvolutionMemory`、
+  observe / reclaim / compact / hydrate 与直接构造的 store 完全走原路径；未新增定时器、后台任务或跨进程
+  协议。回归见 `test/domain-storage/staged-window-deferred.test.js`（11 项）。见
+  [`docs/performance/marker-window-deferred.md`](docs/performance/marker-window-deferred.md)。
+- **首次重放的 staged save 检查把每个集合数组元素判定一次并深冻结（PR #40）。** 无 checkpoint 的首次吸收
+  把整份日志在一次 `mutate()` 事务里应用，而那次事务里每条记录都会让 `assertStagedTransactionSave()`
+  重新序列化整份非窗口文档来证明它可被 `JSON.stringify` 表示且不含 own-`__proto__` 字面量：20,000 条时
+  每次保存的壳 27.1 KB 中 `evolution.experiments` 热窗（50 条）占 26.0 KB（约 95.8%）。现在 replay 的
+  私有工作副本额外打开一个每事务的 `WeakMap`：每次 save 先把每个非空、原生、稠密、无 own `toJSON` 的
+  集合数组替换成冻结空窗口，按文档键序得到壳；每个热窗元素第一次出现时审计它只由 JSON 可表示的值与数据
+  属性组成、序列化一次检查 own-`__proto__` 字面量、通过后深冻结并记录判定，之后的 save 不再序列化它；
+  任何无法审计的元素或命中的字面量都回退到 `assertTransactionSave(payload)` 的整份检查（抛点与错误
+  不变），深冻结只发生在事务私有的 `structuredClone` 工作副本上。真实官方设施、交替 A/B 各三轮：
+  2,000 条 239.1 → 173.2 ms（**−27.56%**，CPU −21.80%）、12,000 条 1,262.1 → 865.2 ms（**−31.44%**，
+  CPU −27.89%）、20,000 条 2,112.5 → 1,452.8 ms（**−31.23%**，CPU −29.34%）、50,000 条
+  5,127.3 → 3,453.6 ms（**−32.64%**，CPU −30.93%）；同码 A/A 的墙钟差在 −0.65% … +0.11% 之间，稳态
+  observe / flush 与 A/A 控制同量级，未当作回归或收益。**不声称峰值内存收益**：A/B 的峰值 RSS 与保留堆
+  差都落在同码 A/A 漂移内。持久字节由 `--validate`（冻结时钟与 UUID）在四个规模上逐字节核对一致，
+  I/O 计数两侧逐项相同（20,000 条：`readFileSync` 10 次 / 32.66 MB、`readSync` 88 次 / 34.22 MB、
+  `fsyncSync` 10 次等）。回归见 `test/domain-storage/staged-save-elements.test.js`（21 类载荷）。见
+  [`docs/performance/replay-staged-element-save-check.md`](docs/performance/replay-staged-element-save-check.md)。
+- **retention / compact 规划不再把完整历史深拷贝两遍，`dryRun` 也不再物化会被丢弃的输出（PR #31）。**
+  此前一次计划先用 `history()` 拿一份完整历史深拷贝，再对保留行 clone 出第二份 `records`；`dryRun` 还会
+  构造整套随后被丢弃的 `records` / canonical / tombstones 输出（40,000 冷行的一次 dryRun 里 live heap
+  峰值 +62.63 MiB，其中 `histories` 深拷贝保活 32.39 MiB、`records` 输出保活 32.46–32.80 MiB）。现在
+  `#retentionPlan({ materialize })` 让 `compact({ dryRun: true })` 只计算计数、不物化输出，
+  `#historyPlanRows()` 用 `historyView()`（只复制数组、不复制行）构建计划视图并按对象身份转移行所有权：
+  hot 行读取时 clone，archive 读缓存窗口行在输出边界 clone，本次新解析的行直接移交。保留 / 退休 /
+  聚合 / tombstone 决策、每行时钟读取次数与顺序、`report` 字段、零写入语义全部不变；tombstone 合并求值
+  在 dryRun 与真实 compact 上仍是同一条路径（损坏的 `recordIds` 在两种模式下抛同一个 `TypeError`）。
+  40,000 / 80,000 冷行、每侧 n=6：dryRun 墙钟 −12.55% / −12.79%、CPU −11.70% / −13.71%、外部采样峰值
+  RSS −7.58% / −15.72%（294.9 → 272.5 / 427.3 → 360.1 MiB），write 墙钟 −6.70% / −9.39%、峰值
+  −6.35% / −7.36%；10,000 档 dryRun −9.57% / −5.56% / 峰值 −17.39%。唯一显著负项是 10,000 条 write
+  的外部峰值 RSS +5.12%（+10.7 MiB，两轮同向），同格 wall / CPU / GC 后 heapUsed / archive 字节无显著
+  差异且未定位到单一分配点，如实保留、不包装为收益。收益来自计划读取的完整历史行数，空计划或没有冷档案的
+  小 store 接近零收益。C3（compact 归档回读流式校验）与 C4（dryRun 跳过 `oldData` clone）实现并测量后
+  **撤回**：C3 的稳定收益只有 80k write CPU 约 −3%、峰值 RSS 无稳定收益，C4 未建立稳定可归因的独立
+  收益，两者数据保留在 `docs/performance/retention-plan-streaming-{c3,c3c4}-ab.*`。未改
+  `history()` / `historyView()` 方法体，未新增持久化格式、索引、缓存或后台任务；固定点差分
+  `test/dockyard-domain/retention-plan-equivalence-v021.test.mjs` 18/18 通过，12 格 144/144 行等价断言
+  通过。见 [`docs/performance/retention-plan-streaming.md`](docs/performance/retention-plan-streaming.md)。
+- **提交后的 live 加载不再重解析本进程刚写过的活动档案（PR #35）。** 活动档案扫描备忘按
+  `(collection, basename, dev, ino) + (size, mtimeNs)` 命中；暂存实例加载命中的是写前身份，写后 inode /
+  size / mtime 都变，于是提交后的 `hydrate()` 必然 miss、把活动档案整体逐行解析一遍，再让紧随其后的
+  `autonomousObservations()` 付一次内容摘要读证明（20,000 条时占观测链 11.9%）。现在暂存实例用与完整
+  扫描同一套折叠规则精确续算自己追加的索引事实，并在事务提交、安装后的文件身份（`dev` / `ino` / `size` /
+  `mtimeNs`）仍等于写后身份时经 `publishArchiveScanSeeds()` 发布给进程内备忘；`lib/domain-storage.js` 在
+  `installPending()`（或单写提交）成功之后、`hydrate()` 之前调用一次。续算不成立时退回发布版增量条目并
+  丢弃种子，下一次加载仍全扫修偏；事务失败、CAS 拒绝、索引 flush 失败、install 失败都不发布；备忘仍是
+  进程内、非持久、上限 32 条。20,000 条：chain 95.033 / 96.529 → 81.981 ms（**−14.4%**，CPU
+  129.607 → 91.942 ms，**−29.1%**）、port 76.611 / 76.074 → 65.516 ms（**−14.2%**），两个基线臂的
+  A/A 差 ≤1.6%；50,000 条 chain −5.4%（A/A 0.5%），port 的 A/A 本身有 8.0% 波动，不把其 −9.0% 当作
+  稳定结论；8,000 条（该相位活动文件约 164 KB）与 1,000 条没有收益。每次事务仍保留两次继任内容证明与
+  约 27–30 ms 的持久提交固定成本；直接写路径、启动 / 新进程、sealed 段与 pending 恢复安装都不使用本轮
+  种子。残余边界：同 inode、同 size、用 `utimes` 恢复 mtime 的外部原地改写无法与「字节没变」区分
+  （与既有备忘同源，`history()` 仍由摘要证明兜底）。见
+  [`docs/performance/observe-scan-memo-continuation-20261109.md`](docs/performance/observe-scan-memo-continuation-20261109.md)。
+- **冷档案摘要走行省掉无人消费的切行，以及一次多余的解码与重编码（PR #32、PR #34）。** 一次触发归档的
+  观测事务会由暂存实例与提交后的 live 实例各做一次内容证明：读取冷档案的每个文件、计算 SHA-256 并与
+  前驱解析的摘要表比较，20,000 条时一次 `port.observe()` 读取约 9.3 MB，是这条高频失败观测路径里随历史
+  线性增长的部分。PR #32 让 `#archiveFileDigest()` 的 `#walkArchiveLines(file, hash, null)` 只在存在行
+  消费者时切行，2026-11-07 的交替 A / A-control / B 测量里 20,000 条 chain 101.39 / 101.20 → 95.14 ms
+  （**−6.1%**，五轮逐轮 −5.2% … −6.8%，该档逐轮 A/A 差 ≤1.97%），8,000 条 −4.4%（逐轮 A/A 差
+  ≤3.29%，只按方向性结果看），1,000 条内容证明只有约 1.9 ms、**不声称收益**。PR #34 进一步在块为
+  **有效 UTF-8** 时把该块对应的 `Buffer` 直接交给同一个 SHA-256 对象（`node:buffer` 的 `isUtf8`），无效
+  UTF-8 仍走原来的「解码成文本再按 UTF-8 编码」路径，所以历史摘要、继任解析采用 / 重扫判定与读取故障
+  行为都不变；20,000 条两次测量 chain 墙钟 −3.25% / −2.23%，CPU −21.72% / −11.21%，1,000 条 5 轮重测
+  无可测收益（−0.02%），8,000 条 −2.76% 只有 3 轮、只作方向性证据。两侧 I/O 计数相同（每次
+  `readFileSync` 11 次、9.3 MB 量级），没有减少落盘或认证字节；代价是每块多一次 `isUtf8` 扫描，没有新增
+  跨调用状态、缓存或常驻内存，**不声称内存下降**。见
+  [`docs/performance/observe-transaction-digest-walk-20261107.md`](docs/performance/observe-transaction-digest-walk-20261107.md)
+  与 [`docs/performance/archive-digest-utf8-20261109.md`](docs/performance/archive-digest-utf8-20261109.md)。
+- **每次 flush 的临时读取缓冲区从 1 MiB 降到 64 KiB（PR #33）。** `lib/event-log-checkpoint.js` 的
+  `READ_CHUNK_BYTES` 从 `1 << 20` 改为 `1 << 16`：高频、无新事件的 `flush()` 每次都要重新认证整个已消费
+  前缀与标记表，此前每趟固定分配一个新的 1 MiB `Buffer.allocUnsafe`，持续产生分配与 GC / 分配器压力；
+  现在每次 flush 的临时缓冲区字节从 **1,048,576 降到 65,536（−93.75%）**，每次仍只分配一次，不需要任何
+  跨调用状态。同一端口连续 600 次无新事件 flush：累计墙钟 −7.21%、CPU −19.38%、采样期 RSS 高值
+  −55.88%；20,000 条稳态墙钟名义 +0.24%，A/A 每轮绝对差最大 0.072 ms、候选相对合并基线差 0.025 ms，
+  不能判定为回退；持续写入组累计墙钟 +0.25%、CPU −0.47%，**不能声称写入速度收益**（其 RSS 名义 −2.83%
+  证据不足，不推广为稳定的写入内存收益）。代价是同步读取调用次数增加（20,000 条无新事件时 `readSync`
+  14 → 198 次），本机墙钟与总 CPU 没有测出显著回退；不减少落盘字节与认证字节。新增差分回归
+  `test/domain-storage/checkpoint-read-chunks.test.js` 覆盖 64 KiB 与 1 MiB 两侧的 ±1 字节边界、完整 /
+  撕裂尾、无效 checkpoint、短读与第二次 read 抛 `EIO`。收益主要是高频、无新事件、日志约 0.1–1.3 MB 的
+  重复 flush 的外部分配压力，不是把历史增长变为 O(1)。见
+  [`docs/performance/flush-read-buffer-20261108.md`](docs/performance/flush-read-buffer-20261108.md)。
+- **`evolution_doctor` 的冷历史 JSONL 检查改为按 1 MiB 块有界扫描（PR #37）。** `diagnoseArchives()` 对
+  `dockyard/state.json.*.jsonl`（活动归档与 rotation 文件）的行数、非空行 `JSON.parse` 失败计数与未终止
+  尾行，原先用 `readFileSync(file, "utf8")` 把整份文件解码成一个字符串再切行；现在复用事件桥已有的
+  `scanJsonLinesFile()` 1 MiB 分块字节扫描，逐行解码结果与旧整文件路径等价。公开 API、报告字段、问题
+  文本、故障分类、持久化协议、认证与恢复行为均未改；超过 V8 最大字符串长度的文件与非普通文件保留旧的
+  整文件路径，错误文本因此不变；共享常量改名为 `JSONL_SCAN_CHUNK_BYTES`（仍是 1 MiB）。单进程峰值 RSS：
+  256 MiB rotation 文件 590.2 → 80.6 MB（**−86.34%**）、128 MiB 334.1 → 80.5 MB（**−75.90%**）、
+  32 MiB 142.3 → 80.5 MB（**−43.45%**）；集合归档名的单文件仍由未改动的
+  `inspectArchiveIntegrity()` 整文件读取主导，因此只降 **−26.77% / −28.99%**；4 × 64 MiB 集合归档
+  −13.83%；当前安装的 7 × 8 MiB 布局峰值变化在噪声内（+0.24%）。墙钟两轮最差 +2.3%（绝对 < 6 ms，
+  A/A 噪声 ≤1.3%）；空 / 极小历史峰值 RSS +2.9%（约 +2 MiB，来自 1 MiB 扫描缓冲区与一次 `stat`）。
+  收益随单个 JSONL 文件的字节数增长。新增差分测试 `test/diagnostics-archive-streaming.test.mjs` 在测试
+  内部复制 `origin/main` 的旧读取器作为 oracle，逐字段比较完整 `state.archives` 检查对象。见
+  [`docs/performance/diagnostics-archive-streaming-20261109.md`](docs/performance/diagnostics-archive-streaming-20261109.md)。
+- **每个模型请求携带的固定上下文压缩约 21%（PR #39）。** 宿主把 `ctx.systemPrompt` 的段落与 10 个工具
+  的名称 / description / JSON Schema 放进每一次模型请求，因此压缩的是「请求数 × 固定字段」的输入 token。
+  本轮只改 `lib/registration.js` 的模型可见文本（`systemText`、10 个工具的顶层 description、编译后参数里
+  的 description）与一处参数 Schema 编译行为：`type: "json"` 的字段不再丢弃作者声明的 description（接受
+  的值形状未变）。工具名、参数名 / 类型 / 必填集合、注册机制、执行函数、返回结果与安全门禁都没有改；
+  `runtime_inspect` 的 description 与 `measure` / `canary_observe` 的参数说明是**有意加长**的（接管原先
+  写在 system 里的 inspect 范围、补上 before/after 指标与 `componentHealth` 取值），其余减少来自删除与
+  system 段重复的复述、字段名重复的解释与冗余修饰。固定字段 UTF-8 字节 **9,716 → 7,674（−21.02%）**，
+  其中 `systemText` 2,852 → 1,633、10 个 description 合计 2,385 → 1,788、parameters JSON 合计
+  4,297 → 4,071，工具名合计 182 未改；紧凑工具数组包装 10,147 → 8,105（−20.12%）。真实 provider（同一
+  免费模型、交替 A/B）首次请求输入 token 1,793 → 1,412（B 侧三轮稳定为 1,412，A 侧 1,793；报告结论段
+  写作 1,415 / −378，与表中的 1,412 相差 3 token，降幅都在 21% 量级），A/A 对照两侧都是 1,793。32 次真实
+  模型任务的 A/A 与 A/B 对照里，候选侧在 lifecycle / approval / maintenance / doctor 四类上都是 8/8 通过，
+  失败只出现在基线注册侧（缺 `observationWindow`、重复 measure），且 A/A 的基线侧同样复现，说明是同一
+  注册下的模型行为抖动而非候选引入的退化；16 个 A/B 样本全部满足「不带 `confirmation: true`、doctor
+  不修复、maintain 只用 `dryRun`、最终无遗留 target claim」的安全断言。**边界**：每类只有两对样本，不能
+  当作成功率非劣效的统计证明；没有测正式宿主 wire payload、tokenizer、prompt cache 折扣或计费，不能把
+  token 降幅换算成金额或延迟收益，也没有长会话 / 多代理并行采样。压缩不得删除合同事实的结论已固化为
+  `test/fixed-context-budget.test.mjs` 的 31 条断言；独立审核第 1 轮曾发现「晋升会写入持久 Plugin 行与
+  归档指针、供下一会话重新加载」被压缩掉，已补回。见
+  [`docs/performance/fixed-context-token-reduction-20261109.md`](docs/performance/fixed-context-token-reduction-20261109.md)。
+
+### 验证
+
+- **高频 observe 事务的 27–30 ms 持久提交成本被归因完毕，没有可安全消除的重复工作（PR #36）。**
+  假设是这段「领域文档写入 + 暂存同步 + 归档安装」成本里存在可消除的重复；实测 20,000 条时其中
+  **82%（24.53 ms）是 9 次同步调用的等待**（8,000 条档 88%、50,000 条档 83%），每一次都对应一个独立的
+  崩溃恢复窗口（pending 文档、`official/` 目录、暂存活动档案、暂存归档索引、stage 目录、staging 根、
+  live 归档根、收尾文档等），没有同目标重复；其余约 5 ms 是安装前的内容校验（2.45 ms）、原子替换的
+  元数据操作（1.51 ms）与序列化 / 校验（约 1 ms），各自压在一个不变式上。看起来可省的三处（安装二次读、
+  写路径前缀证明、复用内存摘要）合计约 7.2 ms（8.7%），但每一处都会削弱内容认证或改变失败行为；故障
+  注入反例显示，删掉安装点的内容读会把「变更清单摘要来自改前、发布字节来自改后」的篡改字节装进 live 树
+  （现行树在注入下报 `E_DOMAIN_PENDING_ARCHIVE_CORRUPT` 并保留现场），所以本轮**不改生产代码**：
+  `lib/` 与 `b690fe0` 逐字节相同，持久化格式、事务语义、fsync 次数与恢复行为都不变。这份归因、拒绝
+  理由与反例用于后续轮次不再重试这些方向。见
+  [`docs/performance/observe-transaction-commit-cost-20261109.md`](docs/performance/observe-transaction-commit-cost-20261109.md)
+  与独立只读审计
+  [`docs/performance/observe-commit-redundancy-audit-20261109.md`](docs/performance/observe-commit-redundancy-audit-20261109.md)。
+- **验收与回归按 PR 记录，0.2.2 自身的固定产物由发布流程重新生成。** flush、scan memo、doctor streaming、
+  fixed context、staged element save check 与 marker window 六项在合入前都用各自 PR 构建的 tarball 在
+  隔离 runtime / home 里对四个声明宿主跑过完整的 21 步验收（`0.2.2-rc.1` 带 `--no-hmr`，与 CI 矩阵
+  一致），每份 21/21 通过、最后一步 `doctor-final` 为 `healthy`（exit 0），例如
+  [`docs/evidence/marker-window-deferred-dsh-0.2.2-rc.1.json`](docs/evidence/marker-window-deferred-dsh-0.2.2-rc.1.json)；
+  这些记录对应各自的候选产物（`packageVersion` 仍是 0.2.1），不是 0.2.2 发布产物的验收。archive digest
+  walk / UTF-8 两项没有本地宿主验收证据：UTF-8 那轮明确把四宿主验收交给该 PR 的 CI 矩阵，walk 那轮的
+  报告未记录宿主验收，因此这里不引用未重跑的数字。retention plan streaming 的宿主验收先在本机被环境
+  阻塞：两个宿主都在 `core-flow` 的 live doctor 失败，未修改的基线产物在同一隔离流程重跑得到同一失败，
+  这些失败 / 对照记录保留在 `docs/evidence/retention-plan-streaming-dsh-*.json`；随后同一 tarball 的
+  两次重跑 21 步通过（含 `core-flow`、重装、晋升、重启回滚与最终 doctor），证据为
+  `docs/evidence/retention-plan-streaming-live-doctor-dsh-*.json`，旧 blocked 未复现、根因未知，不能把
+  这次通过解释为已修复历史根因；该项改动的依据仍是固定点差分与全量回归。各 PR 报告的全量回归
+  （带 4096 MiB 堆上限）除未提交分发改动导致的 `release-pin` 预期拒绝外均为 0 失败，套件随这些改动从
+  1,452 项增长到 1,504 项（2 项为既有 skip），`pack:check` 各 17/17；正式版本的重新构建、四宿主重跑与
+  重新固定按 `RELEASE.md` 执行。
+
+### 修复
+
+- **集合数组的索引是 accessor 时，staged save 检查不再提前读取它（随 PR #40 合入）。** 元素路径原先在
+  序列化壳之前就读 `array[index]`，于是集合数组上的索引 accessor 会在比整份检查更早的位置执行；当文档
+  里更早还有另一个不可序列化的值时，抛出顺序会与发布版检查不同。评审指出这条分歧（今天的 replay 路径
+  不会产生这种文档，但检查器的契约是抛点等价），现在只有每个索引都是自有数据属性的数组才被替换成
+  `EMPTY_WINDOW`，其余数组留在壳里、保持原有抛点与顺序；回归补进
+  `test/domain-storage/staged-save-elements.test.js`。见
+  [`docs/performance/replay-staged-element-save-check.md`](docs/performance/replay-staged-element-save-check.md)。
+- **没有 append 的已加载重放窗口按原样发布（PR #41 的 `7dd9c6d`）。** 当加载进来的窗口本身就长于 4,096
+  条时，deferred 路径此前只检查窗口对象是否仍是文档里的同一个，就无条件在发布前裁剪；一个所有记录都已
+  在恢复的 ledger 中、本事务零 append 的事务于是把 4,100 条发布成 4,096 条，而发布版路径原样发布。
+  现在只有本事务实际增长过的窗口才裁剪，未 append 的 loaded 窗口按原样发布与计数；回归见
+  `test/domain-storage/staged-window-deferred.test.js`。见
+  [`docs/performance/marker-window-deferred.md`](docs/performance/marker-window-deferred.md)。
 
 ## 0.2.1 — 稳定版
 
