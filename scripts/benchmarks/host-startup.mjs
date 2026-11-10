@@ -3,7 +3,7 @@
  * End-to-end cold-start benchmark against an installed official DSH runtime.
  *
  * It measures the real host process: spawn -> the state named by the config is
- * reachable (`evolution` service + its 10 tools, and the `hmr` service when the
+ * reachable (`evolution` service + its 12 tools, and the `hmr` service when the
  * config leaves it enabled). Alternating A/B order and a per-config median make
  * the host-level cost of the profile configuration visible, which is the whole
  * point of the "profile changes apply on restart" deployment.

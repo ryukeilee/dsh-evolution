@@ -85,7 +85,22 @@ documents for "disabling or omitting HMR applies changes on restart".
 | `0.2.0-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.0-rc.2.json` (full acceptance, 21/21 steps) |
 | `0.2.1-alpha.1` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.1-alpha.1.json` (full acceptance, 21/21 steps) |
 | `0.2.1-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.1-rc.2.json` (full acceptance, 21/21 steps) |
-| `0.2.2-rc.1` | `4.1.0` | `1.1.0` | `1.1.0` | yes — `docs/evidence/dsh-0.2.2-rc.1.json` (full acceptance, 21/21 steps, host `hmr` row disabled) |
+| `0.2.2-rc.1` | `4.1.0` | `1.1.0` | `1.1.0` | yes — `docs/evidence/dsh-0.2.2-rc.1.json` (full acceptance, 21/21 steps, host `hmr` row disabled); `docs/evidence/experience-evolution-0.2.2-rc.1.json` (experience-driven acceptance, 25/25 steps) |
+
+The `0.2.2-rc.1` host additionally runs the experience-driven acceptance
+(`--experience-evolution`, four separate processes over one `$DSH_HOME`): real
+tool failures are recorded by the bundled collector, `evolution_plan` discovers
+the recurring target from that shared experience, a paired baseline/candidate
+probe is executed through the official tool pipeline, `evolution_measure`
+derives the before/after metrics itself, a real benefit candidate is promoted
+and survives a restart, an ineffective candidate is refused by the promotion
+gates and reverted with proven runtime recovery, and a regression candidate is
+refused by the regression gate. The acceptance also proves that the structured
+conclusion (strategy, decision, measured delta, DSH/Cordis applicability) is
+written back to the unified experience store and recalled after a restart, and
+that the same strategy under the same applicability is then refused with
+`strategy-already-proven-ineffective`. The older declared hosts do not expose
+the official batch tool executor, so the harness refuses the flag there.
 
 The unit suite is not run per host: `ci.yml` runs it in a separate job on Node
 `22.19.0` and `24.x`, against the module versions locked in `package-lock.json`
@@ -103,7 +118,7 @@ only the new candidate, disable/enable, uninstall/reinstall with data
 retention, and a final doctor.
 
 The committed `docs/evidence/` files describe the **pinned** build (the harness
-covered its 9-tool surface); the harness now also asserts the 10-tool surface
+covered its 9-tool surface); the harness now also asserts the 12-tool surface
 this tree registers, and re-running it rewrites those files only as part of a
 pin. They cover install, boot, the live tool surface, CLI doctor, the core flow, the official
 pluginManager lifecycle, CLI uninstall/reinstall with data retention, the
@@ -204,7 +219,7 @@ exporter allocation; every surface in the table above is unchanged by it.
 | `@deepseek-ai/cordis` | `4.0.5` -> `4.1.0`: **breaking lifecycle rename.** A fiber's active-service snapshot is `Fiber.committed` instead of `Fiber.store`, and a bound service implementation reports its owner fiber as `impl.ctx.fiber` instead of `impl.fiber`. `Fiber.getEffects()`, `Fiber.state/uid/inject/inertia`, `ctx.reflect.props/store`, `ctx.reflect._getImpl()` and `ctx.events._hooks` are still present. | adapted in `lib/cordis-compat.js#fiberIsActive` (reads `committed` when the fiber exposes it, `store` otherwise) and `lib/orchestrator.js#inspectServices` (`impl.fiber ?? impl.ctx?.fiber`). A legacy 4.0 fiber that owns an obsolete `store` while exposing `committed: undefined` stays inactive, so a 4.0 value cannot be read as a 4.1 one. `test/cordis-41-compat.test.mjs` pins both shapes and runs the real 4.1 lifecycle (`EVOLUTION_CORDIS_41_MODULE`) |
 | `@deepseek-ai/cordis-plugin-include` | `1.0.10` -> `1.1.0`: adds a journal module and `lib/types/journal.d.ts`; `refresh()`, `root.data`, `EntryTree.resolve()/await()`, `Entry.fiber` remain the members this bundle mounts and refreshes through | none; re-verified by the acceptance promotion phases, and reported by `runtime.internal-api` at mount |
 | `@deepseek-ai/cordis-plugin-loader` | `1.0.6` -> `1.1.0`: `lib/index.js` changed; `entries()` and `Entry.fiber/options/disabled` remain the layer this bundle reads | none; re-verified by `runtime.internal-api` and the acceptance |
-| `@deepseek-ai/dsh-tools` | `0.2.1-rc.2` -> `0.2.2-rc.1`: adds `lib/pipeline.js`, a shared chunk module and `types/batch.d.ts`; `ToolsService.schemas()` and `get()` keep their signatures | none; the acceptance asserts the live 10-tool surface and calls every tool through the registry |
+| `@deepseek-ai/dsh-tools` | `0.2.1-rc.2` -> `0.2.2-rc.1`: adds `lib/pipeline.js`, a shared chunk module and `types/batch.d.ts`; `ToolsService.schemas()` and `get()` keep their signatures | none; the acceptance asserts the live 12-tool surface and calls every tool through the registry |
 | `@deepseek-ai/dsh-cordis-host-runner` | `0.2.1-rc.2` -> `0.2.2-rc.1`: `lib/index.js` and `lib/typert.host.js` changed; `snapshot()/define()/run()/stop()/undefine()` remain the dynamic runner surface this bundle uses | none; the core acceptance flow starts and reverts a real trial through it |
 | `@deepseek-ai/dsh-storage-domain`, `@deepseek-ai/dsh-storage-json` | `0.2.1-rc.2` -> `0.2.2-rc.1`: `lib/` changed in both | none on the ports this bundle opens (`stateStore`, `transaction`, `mutationAuthority`); covered by the full unit suite against the pinned devDependencies and by the host acceptance |
 | `@deepseek-ai/dsh` (the host itself) | new `PluginManager` restart semantics without HMR (`application: "restart-required"`, `restartReason: "no-hmr"`) and the upstream startup transaction gap described below | the deployment this release accepts disables the `hmr` row; the gap is documented, not worked around |
@@ -212,7 +227,7 @@ exporter allocation; every surface in the table above is unchanged by it.
 The `0.2.1-rc.2` -> `0.2.2-rc.1` delta is the first one that needed an adapter
 (two field reads), and it is the only code change in that release. Every other
 row above is a surface the bundle already used and still finds live: the
-acceptance boots the real host, asserts the 10-tool surface, and the final
+acceptance boots the real host, asserts the 12-tool surface, and the final
 doctor's `runtime.internal-api` reports each probed surface on the live fiber
 tree. Nothing here is inferred from a type declaration alone.
 

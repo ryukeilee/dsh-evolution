@@ -64,14 +64,20 @@ node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.3.tgz --apply
 
 ## 工作原理
 
-十个工具按系统提示词规定的生命周期顺序工作：
+十二个工具按系统提示词规定的生命周期顺序工作：
 
 ```text
+evolution_plan ─────────────── 只读：从共享经验与失败记忆发现证据排序的候选；无可执行候选时返回 none
+        ↓
 evolution_runtime_inspect
         ↓
 evolution_propose
         ↓
+evolution_probe（baseline）── 在 proposed 状态用官方工具管线执行固定场景，记录真实基线样本
+        ↓
 evolution_trial
+        ↓
+evolution_probe（candidate）─ Trial 挂载后重跑同一场景，记录候选样本
         ↓
 evolution_measure
         ↓
@@ -87,6 +93,15 @@ evolution_history ──────────── 读取有界历史；传 
 evolution_maintain ─────────── 容量回收：dryRun 先看收益，确认后才删除
 evolution_doctor ──────────── 无模型诊断
 ```
+
+`evolution_measure` 在 baseline/candidate 成对存在时，用 probe 的真实执行样本自行派生
+`beforeMetrics` / `afterMetrics` / `sampleCount` / `observationWindow` / `solvesProblem` /
+`repeatable` / `regressionPassed`，并覆盖调用方填写的同名字段；8 项晋升门禁、owner 确认、
+canary 与回滚语义不变。实验结束（revert 证明恢复、门禁拒绝、canary 回滚或 stable）时，
+结构化结论（问题、策略、根因、决策、实测 delta、DSH/Cordis/Evolution 适用版本）写回统一共享
+经验；同 target + 同 strategy + 同适用条件已被证明无效时，`evolution_propose` 返回
+`strategy-already-proven-ineffective`，换假设或换适用版本即可继续。详见
+`docs/design/experience-driven-evolution.md`。
 
 Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 inspect、measure 和清理不会重建基线。Trial 期间仍存在的外部漂移会使恢复校验失败，并保留目标锁；漂移消失后重试才会判定恢复（基线仍只有那一条）。define / run 失败没有激活任何内容，会释放目标锁并丢弃实验记录（与失败学习写入是否成功无关）。清理无法证实运行时已恢复时（`revert-failed` / `trial-cleanup-failed`）记录与目标锁都保留，但该记录仍可再次调用 `evolution_revert`：重试跑的是同一套官方 disposer 与同一条基线的比较，只有同一份证据通过才释放 claim。官方 disposer 不是幂等的，所以重试看到的是 `stop` 的 `not-running` / `plugin-missing` 与 `undefine` 的 `plugin-missing`——这三个 reason 本身就是证明，其他 reason 与抛出的 receipt 仍然不算（口径见 `COMPATIBILITY.md`）。
 
@@ -125,7 +140,7 @@ Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 i
 
 原始错误文本不会写入领域存储或工具输出。失败记录、实验档案、事件桥与运行时报告使用 `errorCode`、`errorCategory`、`errorDigest`（`sha256:` 加 16 位十六进制）和脱敏短摘要 `errorSummary`（最多 240 字符，并记录原始长度）。
 
-经验检索只由 `evolution_propose` 和带 `query` 的 `evolution_history` 触发；自主观察者提交 proposal 时走同一入口。inspect、measurement、canary、定时器、轮询和后台模型回合都不会单独触发检索。检索只读：结果由已知字段重建为副本并夹在上限内，不修改来源记录；读取失败会在 `unavailable` 中显式报告，不伪装成没有历史。
+经验检索/发现只由显式动作触发：`evolution_plan`（有界发现候选）、`evolution_propose`（附带 recall）与带 `query` 的 `evolution_history`；自主观察者提交 proposal 时走同一入口。inspect、measurement、canary、定时器、轮询和后台模型回合都不会单独触发检索。检索与发现只读：结果由已知字段重建为副本并夹在上限内，不修改来源记录；读取失败会在 `unavailable` 中显式报告，不伪装成没有历史。
 
 结果包含三类事实：
 
@@ -160,7 +175,7 @@ Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 i
 | 覆盖组 | 检查内容 |
 | --- | --- |
 | 宿主 | CLI、版本与模块、安装、官方 composition |
-| 运行时 | 能力、10 个工具的注册、Cordis / Include 接口探针 |
+| 运行时 | 能力、12 个工具的注册、Cordis / Include 接口探针 |
 | 数据与状态 | 数据根、key、target claim、memory、档案、事件桥 MAC、domain 聚合 / staging / 锁、旧 Dockyard 状态 |
 | 迁移与晋升 | migration manifest；journal、composition、pointer |
 | 插件与能力 | 插件目录、包、patch、支持矩阵、legacy adapter、已知限制 |
@@ -234,9 +249,10 @@ RSS **−6.8 MiB / −2.0%**；不装 Evolution 时该收益为 −122.8 ms / �
 最短会话闭环：
 
 ```text
-evolution_runtime_inspect → evolution_propose → evolution_trial
+evolution_plan（可选，发现候选）→ evolution_runtime_inspect → evolution_propose
+→ evolution_probe(baseline) → evolution_trial → evolution_probe(candidate)
 → evolution_measure → evolution_revert（放弃）
-                     或 → evolution_promote → evolution_canary_observe（采纳）
+                    或 → evolution_promote → evolution_canary_observe（采纳）
 ```
 
 ## 配置
@@ -380,7 +396,7 @@ npm run acceptance:host -- --host 0.2.2-rc.1 --no-hmr --out <evidence-path>
 
 `scripts/acceptance/run-host-acceptance.mjs` 按实际记录路径生成 21 个步骤：每个宿主包含官方安装、CLI doctor、核心 Trial / revert、pluginManager 禁用 / 启用、卸载与重装、升级 / 回滚，以及真实 promotion、跨重启 canary 和最终 doctor。固定证据中的每个宿主均为 21/21 步通过，最终诊断为 `healthy`。`--no-hmr` 额外要求启用 / 禁用报告 `restart-required` / `no-hmr`、期间观测不到 HMR 能力，且保存的选择在下一次启动生效。
 
-覆盖分为 9 组：官方 CLI 只读诊断；核心 `inspect → propose → trial → measure → revert`（要求 Runtime 恢复并注册 10 个工具）；pluginManager 禁用 / 启用并验证 memory 字节不变；卸载、无插件启动、重新安装；重装后核心流程和已有 memory 保留；升级与回滚并验证工具和 memory 哈希；真实晋升进入 canary 且监听器跨进程重启存活；startup 提交 stable 并验证指标回归只回滚新候选；再次重启验证候选状态并以最终 doctor 收尾。
+覆盖分为 9 组：官方 CLI 只读诊断；核心 `inspect → propose → trial → measure → revert`（要求 Runtime 恢复并注册 12 个工具）；pluginManager 禁用 / 启用并验证 memory 字节不变；卸载、无插件启动、重新安装；重装后核心流程和已有 memory 保留；升级与回滚并验证工具和 memory 哈希；真实晋升进入 canary 且监听器跨进程重启存活；startup 提交 stable 并验证指标回归只回滚新候选；再次重启验证候选状态并以最终 doctor 收尾。
 
 | DSH 宿主 | Cordis | Include | Loader | 验收 | 最终诊断 |
 | --- | --- | --- | --- | --- | --- |

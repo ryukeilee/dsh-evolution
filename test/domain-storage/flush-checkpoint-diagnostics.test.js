@@ -176,7 +176,10 @@ async function registeredCalls(ctx, config, port, mode, observed) {
   const core = apply(ctx, { ...config, domainStorage, startupDrift: false,
     memory: {}, eventBridge: {}, diagnose: () => ({ ok: true }) });
   const primary = new Error('PRIMARY: trial body failed');
-  for (const method of ['inspect', 'propose', 'trial', 'measure', 'revert', 'promote', 'observeCanary']) {
+  // Every tool body that would start an experiment (including the discovery and
+  // probe stages) is stubbed; the sweep exercises the registration wrapper's
+  // result/finally/flush chain, not the orchestrator lifecycle.
+  for (const method of ['inspect', 'plan', 'propose', 'trial', 'probe', 'measure', 'revert', 'promote', 'observeCanary']) {
     core[method] = () => {
       if (mode === 'primary-error') throw primary;
       return { ok: true };

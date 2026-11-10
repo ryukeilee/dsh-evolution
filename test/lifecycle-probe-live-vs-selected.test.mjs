@@ -36,6 +36,11 @@ import { EVOLUTION_TOOLS } from '../lib/registration.js';
 const EVOLUTION_TOOL_COUNT = EVOLUTION_TOOLS.length;
 const BUNDLE = 'dsh-evolution';
 
+/** Escape a message fragment so a template-supplied count is matched literally:
+ *  the probe reports the real tool count, and the assertions below stay exact
+ *  (not a wider "any N" pattern) while following the registered surface size. */
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * The pre-fix live-vs-selected predicate, frozen verbatim (the failing
  * acceptance message included). It is the differential baseline: the same
@@ -254,7 +259,9 @@ test('an `applied` report must reach the live tree even when the capability appe
     onLiveEffect: () => {},
   });
   const failed = await runProbe(broken, 'disable');
-  assert.match(failed.error, /application=applied but live state is mounted=true, tools=10, expected mounted=false, tools=0/);
+  assert.match(failed.error, new RegExp(escapeRegExp(
+    `application=applied but live state is mounted=true, tools=${EVOLUTION_TOOL_COUNT}, expected mounted=false, tools=0`,
+  )));
 
   // Same reads with a working unmount: accepted, and the transition recorded.
   const working = createHost({ capabilityReads: [false, true, true, true, true] });
@@ -287,7 +294,9 @@ test('a switch that does not reach the live tree is still rejected', async () =>
     onLiveEffect: () => {},
   });
   const { error } = await runProbe(host, 'disable');
-  assert.match(error, /application=applied but live state is mounted=true, tools=10, expected mounted=false, tools=0/);
+  assert.match(error, new RegExp(escapeRegExp(
+    `application=applied but live state is mounted=true, tools=${EVOLUTION_TOOL_COUNT}, expected mounted=false, tools=0`,
+  )));
 });
 
 test('a partial live tree is rejected', async () => {
@@ -300,7 +309,9 @@ test('a partial live tree is rejected', async () => {
     },
   });
   const { error } = await runProbe(host, 'disable');
-  assert.match(error, /application=applied but live state is mounted=false, tools=10, expected mounted=false, tools=0/);
+  assert.match(error, new RegExp(escapeRegExp(
+    `application=applied but live state is mounted=false, tools=${EVOLUTION_TOOL_COUNT}, expected mounted=false, tools=0`,
+  )));
 });
 
 test('a report that contradicts a stable capability is rejected', async () => {
@@ -328,7 +339,9 @@ test('a mid-call capability change must still leave one consistent live state', 
     },
   });
   const { error } = await runProbe(host, 'disable');
-  assert.match(error, /live state is mounted=true, tools=0, neither the pre-call mounted=true, tools=10 nor the selected mounted=false, tools=0 state \(live apply changed during the call: false -> true\)/);
+  assert.match(error, new RegExp(escapeRegExp(
+    `live state is mounted=true, tools=0, neither the pre-call mounted=true, tools=${EVOLUTION_TOOL_COUNT} nor the selected mounted=false, tools=0 state (live apply changed during the call: false -> true)`,
+  )));
 });
 
 test('Evolution user data must stay byte-identical across the switch', async () => {

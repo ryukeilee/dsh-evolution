@@ -18,12 +18,16 @@
  *      `restart-required` / `no-hmr` and apply the saved selection on restart)
  *   6. CLI uninstall, host boot with the bundle absent, CLI reinstall
  *   7. core flow again, proving the original user data was retained
- *   8. final doctor
+ *   8. the README upgrade/rollback flow, real promotion through the official
+ *      Include adapter across restarts, and a canary rollback
+ *   9. (with --experience-evolution) real tool failures -> evolution_plan ->
+ *      paired baseline/candidate probes -> refuse or promote -> restart recall
+ *  10. final doctor
  *
  * Usage:
  *   node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2 \
  *     [--tarball dist/dsh-evolution-0.2.0-rc.1.tgz] [--out docs/evidence/...] \
- *     [--work <dir>] [--runtime <dir>] [--no-hmr] [--keep]
+ *     [--work <dir>] [--runtime <dir>] [--no-hmr] [--experience-evolution] [--keep]
  */
 import { fork, spawn, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -39,10 +43,19 @@ const PROBES = path.join(HERE, 'probes');
 /** The tool surface the bundle registers (lib/registration.js#EVOLUTION_TOOLS).
  *  It is pinned here as a number so the harness does not have to load the host
  *  module; `scripts/acceptance/probes/*.mjs` wait for the same count live. */
-const EXPECTED_TOOL_COUNT = 10;
+const EXPECTED_TOOL_COUNT = 12;
+
+/**
+ * The experience-driven experiment acceptance runs its phases in separate
+ * processes that share one `$DSH_HOME`. It needs the official batch tool
+ * executor (`ctx.tools.execute({calls})`) that `0.2.2-rc.1` introduced; the
+ * older declared hosts do not have that surface.
+ */
+const EXPERIENCE_EVOLUTION_HOST = '0.2.2-rc.1';
+const EXPERIENCE_EVOLUTION_PHASES = ['seed', 'invalid', 'restart', 'regression'];
 
 function parseArgs(argv) {
-  const options = { keep: false, timeoutMs: 180000, noHmr: false };
+  const options = { keep: false, timeoutMs: 180000, noHmr: false, experienceEvolution: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     const value = () => {
@@ -57,6 +70,7 @@ function parseArgs(argv) {
     else if (arg === '--work') options.work = path.resolve(value());
     else if (arg === '--runtime') options.runtime = path.resolve(value());
     else if (arg === '--no-hmr') options.noHmr = true;
+    else if (arg === '--experience-evolution') options.experienceEvolution = true;
     else if (arg === '--keep') options.keep = true;
     else if (arg === '--timeout-ms') options.timeoutMs = Number(value());
     else if (arg === '--help' || arg === '-h') options.help = true;
@@ -74,6 +88,11 @@ const HELP = `node scripts/acceptance/run-host-acceptance.mjs --host <dsh-versio
   --runtime <dir>     reuse an already-prepared runtime instead of installing
   --no-hmr            disable the host's HMR row in every boot overlay, so a
                       profile change is applied on restart ("restart-required")
+  --experience-evolution
+                      add the real-host experience-driven experiment acceptance
+                      (real failures -> plan -> baseline/candidate probes ->
+                      measure -> refuse or promote -> restart recall); only
+                      supported on ${EXPERIENCE_EVOLUTION_HOST}
   --keep              keep the scratch directory after the run
 `;
 
@@ -85,6 +104,10 @@ const manifest = readManifest();
 const supportedHosts = (manifest.peerDependencies['@deepseek-ai/dsh'] || '').split('||').map((v) => v.trim());
 if (!supportedHosts.includes(options.host)) {
   console.error(`refusing to run: ${options.host} is not a declared supported host (${supportedHosts.join(', ')})`);
+  process.exit(2);
+}
+if (options.experienceEvolution && options.host !== EXPERIENCE_EVOLUTION_HOST) {
+  console.error(`refusing to run: --experience-evolution needs the official batch tool executor, which only ${EXPERIENCE_EVOLUTION_HOST} of the declared hosts provides`);
   process.exit(2);
 }
 
@@ -120,6 +143,7 @@ const evidence = {
   hostLiveApply: options.noHmr ? 'disabled' : 'enabled',
   startedAt: new Date().toISOString(),
   steps: [],
+  ...(options.experienceEvolution ? { experienceEvolution: {} } : {}),
 };
 
 const log = (message) => console.log(`[${options.host}] ${message}`);
@@ -145,6 +169,110 @@ function redact(value) {
     .split(JSON.stringify(home).slice(1, -1)).join('$DSH_HOME')
     .split(JSON.stringify(work).slice(1, -1)).join('<work>');
   return JSON.parse(json);
+}
+
+/**
+ * Count the raw samples a probe reported, by scenario role. The runner
+ * re-derives every count from the samples instead of trusting the probe's own
+ * summary; a phase only passes when the recorded calls show the behaviour the
+ * phase claims (baseline fails, candidate succeeds, control does not regress).
+ */
+function countProbeSamples(samples) {
+  const summary = { total: 0, errors: 0, target: { total: 0, errors: 0 }, control: { total: 0, errors: 0 } };
+  for (const sample of Array.isArray(samples) ? samples : []) {
+    const bucket = sample?.role === 'control' ? summary.control : summary.target;
+    bucket.total += 1;
+    summary.total += 1;
+    if (sample?.isError === true) { bucket.errors += 1; summary.errors += 1; }
+  }
+  return summary;
+}
+
+/** Independent semantic cross-check of one experience-evolution phase. */
+function crossCheckExperiencePhase(phase, result) {
+  if (!result || result.ok === false) return { ok: false, reason: 'the phase did not report ok' };
+  if (phase === 'restart') {
+    const checks = {
+      promotedToolExecuted: result.promotedTool?.executed === true && result.promotedTool?.markerMatched === true,
+      startupSettled: ['stable', 'none', 'committed', 'committed-cleaned'].includes(result.startupPhase),
+      sharedConclusion: Number(result.history?.successes ?? 0) > 0,
+      planSettled: result.planSettled === true,
+      durableEvidence: result.durableEvidence?.sidecar === true && result.durableEvidence?.decision === true
+        && Boolean(result.durableEvidence?.applicability),
+    };
+    return {
+      ok: Object.values(checks).every(Boolean),
+      checks,
+      failure: Object.entries(checks).filter(([, value]) => !value).map(([name]) => name),
+    };
+  }
+  const baseline = countProbeSamples(result.probes?.baseline?.samples);
+  const candidate = countProbeSamples(result.probes?.candidate?.samples);
+  const checks = {};
+  if (phase === 'seed') {
+    checks.baselineTargetFailed = baseline.target.total > 0 && baseline.target.errors === baseline.target.total;
+    checks.baselineControlSucceeded = baseline.control.total > 0 && baseline.control.errors === 0;
+    checks.candidateTargetSucceeded = candidate.target.total > 0 && candidate.target.errors === 0;
+    checks.candidateControlSucceeded = candidate.control.total > 0 && candidate.control.errors === 0;
+    checks.measureBenefit = result.measure?.gates?.measuredEvidence === true && result.measure?.gates?.realBenefit === true;
+    checks.canarySettled = result.canary?.second === 'stable';
+  } else if (phase === 'invalid') {
+    checks.baselineTargetFailed = baseline.target.total > 0 && baseline.target.errors === baseline.target.total;
+    checks.candidateTargetUnimproved = candidate.target.total > 0 && candidate.target.errors === candidate.target.total;
+    checks.gatesRefused = result.measure?.gates?.measuredEvidence === false && result.measure?.gates?.realBenefit === false;
+    checks.runtimeRecovered = result.revert?.runtimeRecovered === true;
+    checks.claimReleased = result.claimReleased === true;
+    checks.strategyRefused = result.duplicateProposal?.reason === 'strategy-already-proven-ineffective';
+  } else if (phase === 'regression') {
+    checks.baselineTargetFailed = baseline.target.total > 0 && baseline.target.errors === baseline.target.total;
+    checks.baselineControlSucceeded = baseline.control.total > 0 && baseline.control.errors === 0;
+    checks.candidateTargetSucceeded = candidate.target.total > 0 && candidate.target.errors === 0;
+    checks.candidateControlRegressed = candidate.control.errors > 0;
+    checks.promotionRefused = result.refused?.reason === 'promotion-gate' || result.refused?.reason === 'domain-evaluator-rollback';
+    checks.runtimeRecovered = result.revert?.runtimeRecovered === true;
+  } else {
+    return { ok: false, reason: `unknown experience-evolution phase ${phase}` };
+  }
+  return {
+    ok: Object.values(checks).every(Boolean),
+    checks,
+    baseline,
+    candidate,
+    failure: Object.entries(checks).filter(([, value]) => !value).map(([name]) => name),
+  };
+}
+
+/** The evidence projection of one phase; raw samples stay bounded and free of
+ *  tool error text (only codes, roles and timestamps cross this boundary). */
+function selectExperienceEvidence(phase, result) {
+  const probes = {};
+  for (const name of ['baseline', 'candidate']) {
+    const part = result?.probes?.[name];
+    if (part) probes[name] = { scenarioDigest: part.scenarioDigest ?? null, samples: part.samples ?? [], summary: countProbeSamples(part.samples) };
+  }
+  return {
+    ok: true,
+    phase,
+    experimentId: result?.experimentId ?? null,
+    toolCount: result?.toolCount ?? null,
+    store: result?.store ?? null,
+    plan: result?.plan ?? null,
+    probes,
+    measure: result?.measure ?? null,
+    canary: result?.canary ?? null,
+    refused: result?.refused ?? null,
+    revert: result?.revert ?? null,
+    trialGone: result?.trialGone ?? null,
+    duplicateProposal: result?.duplicateProposal ?? null,
+    claimReleased: result?.claimReleased ?? null,
+    conclusionRecallable: result?.conclusionRecallable ?? null,
+    promotedTool: result?.promotedTool ?? null,
+    startupPhase: result?.startupPhase ?? null,
+    history: result?.history ?? null,
+    planSettled: result?.planSettled ?? null,
+    durableEvidence: result?.durableEvidence ?? null,
+    controlRestored: result?.controlRestored ?? null,
+  };
 }
 
 function cliPath() {
@@ -538,6 +666,43 @@ async function main() {
       committed: result?.promotion?.durable,
       rolledBack: result?.rollbackPromotion?.durable,
     };
+  }
+
+  // 9. experience-driven evolution through the real host: seed real tool
+  //    failures, let evolution_plan discover the problem, run the paired
+  //    baseline/candidate probes, then prove refusal, promotion and recall
+  //    across a restart. Every phase is its own process; the state file in the
+  //    scratch directory carries the experiment identity between them.
+  if (options.experienceEvolution) {
+    const probeFile = path.join(PROBES, 'experience-evolution-probe.mjs');
+    const stateFile = path.join(work, 'experience-evolution-state.json');
+    for (const phase of EXPERIENCE_EVOLUTION_PHASES) {
+      const outcome = await bootProbe(`experience-evolution-${phase}`, probeFile, {
+        EVOLUTION_EXPERIENCE_PHASE: phase,
+        EVOLUTION_PROBE_STATE: stateFile,
+        EVOLUTION_ACCEPTANCE_CWD: work,
+      });
+      const result = outcome.result;
+      const crossCheck = crossCheckExperiencePhase(phase, result);
+      const phaseOk = !outcome.error && Boolean(result) && result.ok !== false
+        && result.phase === phase && crossCheck.ok;
+      record(`experiment-${phase}`, {
+        ok: phaseOk,
+        phase,
+        experimentId: result?.experimentId,
+        toolCount: result?.toolCount,
+        crossCheck,
+        error: outcome.error,
+      });
+      if (outcome.error) throw new Error(`experience-evolution ${phase} failed: ${outcome.error}`);
+      if (!result || result.ok === false || result.phase !== phase) {
+        throw new Error(`experience-evolution ${phase} did not report a successful ${phase} phase`);
+      }
+      if (!crossCheck.ok) {
+        throw new Error(`experience-evolution ${phase} evidence did not cross-check: ${JSON.stringify(crossCheck)}`);
+      }
+      evidence.experienceEvolution[phase] = selectExperienceEvidence(phase, result);
+    }
   }
 
   const finalDoctor = await runCommand(process.execPath, [installedDoctor, '--home', home, '--dsh-cli', cliPath(), '--json'], { env: { DSH_HOME: home } });

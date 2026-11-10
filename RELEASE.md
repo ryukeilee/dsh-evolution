@@ -105,17 +105,18 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr
 `PluginManager` / HMR 事务缺口（只用官方 bundle 就能复现），所以该版本只验收这个部署形态；
 根因、复现与证据范围见 `COMPATIBILITY.md` 的 “The upstream HMR transaction gap on 0.2.2-rc.1”。
 
-脚本是自包含的：它在一个临时目录里用 pnpm 安装指定版本的官方 `@deepseek-ai/dsh`，在全新的 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步：
+脚本是自包含的：它在一个临时目录里用 pnpm 安装指定版本的官方 `@deepseek-ai/dsh`，在全新的 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步（`--experience-evolution` 只在 `0.2.2-rc.1` 上加 4 个独立进程 phase，共 25 步）：
 
 1. 官方 CLI 只读诊断（`host.version` 必须是 `verified: true`，状态不得为 `blocked`）
-2. 核心流程：`runtime_inspect → propose → trial → measure → revert`，要求 `runtimeRecovered: true`，以及 10 个工具全部注册
+2. 核心流程：`runtime_inspect → propose → trial → measure → revert`，要求 `runtimeRecovered: true`，以及 12 个工具全部注册
 3. 官方 `pluginManager` 禁用 / 启用，断言 `applied` / `restart-required` 的实时与选中语义，且用户数据逐字节不变。宿主把 `application` 当作实时应用能力的快照报告，并在写入 profile 之后再次读取该能力来决定是否实时生效，所以探针记录调用前后的能力（`liveApplyBefore` / `liveApplyAfter`）：能力未变时回执必须与能力一致、live 树必须跟随回执；能力在调用期间出现或消失时，只有“回执早于那次转变”的组合可解释，其余仍必须到达回执承诺的 live 树，且切换必须保持原子（见 `docs/evidence/lifecycle-live-apply-race.md`）
 4. 官方 CLI 卸载，官方宿主在插件缺席时仍能启动，再重新安装
 5. 重装后核心流程再次通过，且原有 memory 条目全部保留
-6. README 的升级与回滚流程：把同一棵树重打包成更高版本用官方 CLI 升级，再用当前 tarball 回滚；两步之后宿主仍注册 10 个工具且用户数据不变
+6. README 的升级与回滚流程：把同一棵树重打包成更高版本用官方 CLI 升级，再用当前 tarball 回滚；两步之后宿主仍注册 12 个工具且用户数据不变
 7. 真实 promotion：`propose → trial → measure → 二次确认门 → promote → canary 观察`，监听器可被真实触发并跨进程重启存活
 8. 重启后 startup canary 提交为 `stable`；新候选注入 `metricRegression` 触发 canary 回滚，且只回滚新候选、保留已提交候选
 9. 再次重启后已提交候选仍存活、被回滚候选未复活，最终诊断 `healthy`
+10. （仅 `0.2.2-rc.1`，`--experience-evolution`）经验驱动实验：真实工具失败入库 → `evolution_plan` 发现候选 → baseline/candidate probe → measure 派生指标 → 收益候选经确认晋升并跨重启存活 / 无效候选被门禁拒绝并回滚 / 回归候选被回归门禁拒绝并恢复 → 结构化结论跨重启可检索；旧宿主没有官方 batch tool executor，脚本明确拒绝该开关
 
 验收证据（每次运行由脚本重写，本地路径脱敏为 `<work>` / `$DSH_HOME`）：
 
@@ -123,6 +124,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr
 - `docs/evidence/dsh-0.2.1-alpha.1.json`
 - `docs/evidence/dsh-0.2.1-rc.2.json`
 - `docs/evidence/dsh-0.2.2-rc.1.json`（`hostLiveApply: "disabled"`）
+- `docs/evidence/experience-evolution-0.2.2-rc.1.json`（同一宿主、`--experience-evolution`，25/25 步；绑定本树内容摘要）
 
 证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 按宿主分两条通道核对：固定点验收过的宿主核对**发布固定点**，固定点之后新增的宿主核对**本树构建的内容**（`npm pack` 字节随 npm 版本变化，候选没有可核对的固定产物，所以新增宿主只核对内容摘要）。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容：固定点覆盖的宿主在重新固定时重跑，新增宿主的记录则必须立即重跑才能通过 `pack:check`。开发阶段的判定差别见第 6 节第 16 条。
 

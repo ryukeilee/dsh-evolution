@@ -30,7 +30,7 @@
 export const inject = ['pluginManager', 'tools'];
 
 /** The tool surface the bundle registers (lib/registration.js#EVOLUTION_TOOLS). */
-const EVOLUTION_TOOL_COUNT = 10;
+const EVOLUTION_TOOL_COUNT = 12;
 const EVOLUTION_TOOL_PREFIX = 'evolution_';
 
 export function apply(ctx) {

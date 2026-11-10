@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { collectDiagnostics, resolveEvolutionPaths, inspectJsonLines } from '../lib/diagnostics.js';
+import { EVOLUTION_TOOLS } from '../lib/registration.js';
 import { collectDiagnostics as baseline, inspectJsonLines as oldInspect } from './fixtures/diagnostics.mjs';
 
 const normalize = (report) => { delete report.generatedAt; return report; };
@@ -29,6 +30,16 @@ const ADDITIONAL_CHECK_IDS = new Set(['data.key']);
  *   (lib/domain-storage.js `inspectArchiveLock`), a shape this baseline predates.
  */
 const withoutDeliberateReportChanges = (check) => {
+  if (check.id === 'runtime.registration') {
+    // Approved tool-surface extension 10 -> 12 (`evolution_plan`,
+    // `evolution_probe`): the frozen baseline pins the historical expected list,
+    // so the list-derived evidence is a named deliberate change, excluded from
+    // the historical snapshot and asserted against the current declaration
+    // below. This is a tool-surface extension, not runtime drift; the summary,
+    // remediation and every other field still compare exactly.
+    const { expected, tools, missingTools, ...evidence } = check.evidence ?? {};
+    return { ...check, evidence };
+  }
   if (check.id === 'data.root') {
     const { key, archiveLock, staleLock, lockProblems, lockAdvisory, ...evidence } = check.evidence ?? {};
     return { ...check, evidence };
@@ -109,6 +120,22 @@ function assertMatchesBaseline(currentReport, frozenReport) {
   assert.equal(archives.evidence.dockyard.archiveIntegrity.valid, true, 'the shared read-only archive classifier is reported');
   if (archives.level === 'degraded') assert.match(archives.remediation, /Resolve any pending install or compaction transition first/);
   assert.ok(current.checks.some((check) => check.id === 'state.ownership'), 'the new ownership check is present');
+
+  // The named exclusion for `runtime.registration` is asserted, not swallowed:
+  // the reported expectation follows the current declared surface (order
+  // included), and a live report still proves the surface is complete.
+  const registration = current.checks.find((check) => check.id === 'runtime.registration');
+  assert.deepEqual(registration.evidence.expected, [...EVOLUTION_TOOLS],
+    'runtime.registration expects the current declared tool surface, in order');
+  if (Array.isArray(registration.evidence.tools)) {
+    assert.deepEqual(registration.evidence.tools.map((tool) => tool.name), [...EVOLUTION_TOOLS],
+      'a live runtime.registration reports every expected tool in the declared order');
+  }
+  for (const field of ['missingTools', 'extraTools', 'missing', 'extra']) {
+    if (Object.hasOwn(registration.evidence, field)) {
+      assert.deepEqual(registration.evidence[field], [], `runtime.registration.${field} must stay empty`);
+    }
+  }
 }
 
 test('cold history diagnostics match the baseline across valid, damaged and absent files', async () => {

@@ -1,0 +1,2098 @@
+{
+  "host": "0.2.2-rc.1",
+  "packageVersion": "0.2.3",
+  "tarball": "dist/dsh-evolution-0.2.3.tgz",
+  "tarballSha256": "ecd3d03e5ce7cbd7bb34ccf3a126d0376ca13c55dd281ac7b133797577d20e51",
+  "contentSha256": "9530fb948f2d56a3cb37c45dc44745706c77d7ea872be0db98dc1f375da9f311",
+  "node": "v26.13.0",
+  "platform": "darwin-arm64",
+  "work": "<work>",
+  "hostLiveApply": "disabled",
+  "startedAt": "2026-11-10T19:54:11.531Z",
+  "steps": [
+    {
+      "name": "host-install",
+      "at": "2026-11-10T19:54:11.532Z",
+      "ok": true,
+      "reused": true
+    },
+    {
+      "name": "plugin-add",
+      "at": "2026-11-10T19:54:12.272Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "  Virtual store is at:             node_modules/.pnpm",
+        "Progress: resolved 4, reused 3, downloaded 1, added 4, done",
+        "Done in 440ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "profile-lists-bundle",
+      "at": "2026-11-10T19:54:12.272Z",
+      "ok": true,
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "dsh-evolution"
+      ]
+    },
+    {
+      "name": "doctor-cli",
+      "at": "2026-11-10T19:54:12.580Z",
+      "ok": true,
+      "status": "degraded",
+      "exitCode": 1,
+      "hostVersion": "0.2.2-rc.1",
+      "verified": true,
+      "degraded": 2,
+      "blocked": 0
+    },
+    {
+      "name": "core-flow",
+      "at": "2026-11-10T19:54:15.399Z",
+      "ok": true,
+      "toolCount": 12,
+      "tools": [
+        "evolution_canary_observe",
+        "evolution_doctor",
+        "evolution_history",
+        "evolution_maintain",
+        "evolution_measure",
+        "evolution_plan",
+        "evolution_probe",
+        "evolution_promote",
+        "evolution_propose",
+        "evolution_revert",
+        "evolution_runtime_inspect",
+        "evolution_trial"
+      ],
+      "steps": [
+        {
+          "name": "runtime-stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_doctor",
+          "ok": true
+        },
+        {
+          "name": "evolution_history",
+          "ok": true
+        },
+        {
+          "name": "evolution_maintain",
+          "ok": true
+        },
+        {
+          "name": "evolution_runtime_inspect",
+          "ok": true
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "experience-recall",
+          "ok": true,
+          "matched": 0,
+          "limits": {
+            "maxEntries": 3,
+            "maxRecords": 12,
+            "maxText": 160,
+            "maxEvidenceRefs": 2,
+            "maxConsidered": 2000
+          }
+        },
+        {
+          "name": "evolution_runtime_inspect",
+          "ok": true
+        },
+        {
+          "name": "pre-trial-host-drift",
+          "ok": true
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "evolution_measure",
+          "ok": true,
+          "phase": "measured"
+        },
+        {
+          "name": "evolution_revert",
+          "ok": true,
+          "phase": "reverted",
+          "runtimeRecovered": true
+        },
+        {
+          "name": "evolution_runtime_inspect",
+          "ok": true
+        }
+      ],
+      "reverted": true,
+      "signatureDiff": {},
+      "memoryPersisted": true
+    },
+    {
+      "name": "lifecycle-verify",
+      "at": "2026-11-10T19:54:16.796Z",
+      "ok": true,
+      "result": {
+        "action": "verify",
+        "application": "applied",
+        "restartReason": null,
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": true,
+        "toolCount": 12,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "lifecycle-disable",
+      "at": "2026-11-10T19:54:18.029Z",
+      "ok": true,
+      "result": {
+        "action": "disable",
+        "application": "restart-required",
+        "restartReason": "no-hmr",
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": false,
+        "toolCount": 12,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "lifecycle-enable",
+      "at": "2026-11-10T19:54:19.220Z",
+      "ok": true,
+      "result": {
+        "action": "enable",
+        "application": "restart-required",
+        "restartReason": "no-hmr",
+        "mountedBefore": false,
+        "mountedAfter": false,
+        "selected": true,
+        "toolCount": 0,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "lifecycle-verify",
+      "at": "2026-11-10T19:54:20.458Z",
+      "ok": true,
+      "result": {
+        "action": "verify",
+        "application": "applied",
+        "restartReason": null,
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": true,
+        "toolCount": 12,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "plugin-remove",
+      "at": "2026-11-10T19:54:20.971Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "",
+        "Already up to date",
+        "Done in 248ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "body-after-uninstall",
+      "at": "2026-11-10T19:54:22.317Z",
+      "ok": true,
+      "result": {
+        "bodyOk": true,
+        "evolutionAbsent": true,
+        "evolutionTools": 0
+      }
+    },
+    {
+      "name": "plugin-reinstall",
+      "at": "2026-11-10T19:54:23.019Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "  Virtual store is at:             node_modules/.pnpm",
+        "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
+        "Done in 410ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "core-flow-after-reinstall",
+      "at": "2026-11-10T19:54:25.386Z",
+      "ok": true,
+      "toolCount": 12,
+      "reverted": true,
+      "memoryEntriesBefore": 1,
+      "memoryEntriesAfter": 1,
+      "existingMemoryRetained": true,
+      "signatureDiff": {}
+    },
+    {
+      "name": "cli-upgrade",
+      "at": "2026-11-10T19:54:26.339Z",
+      "ok": true,
+      "code": 0,
+      "installedVersion": "0.2.4",
+      "tail": [
+        "+",
+        "Progress: resolved 5, reused 1, downloaded 1, added 1, done",
+        "Done in 308ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "host-after-upgrade",
+      "at": "2026-11-10T19:54:27.572Z",
+      "ok": true,
+      "result": {
+        "action": "verify",
+        "application": "applied",
+        "restartReason": null,
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": true,
+        "toolCount": 12,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "cli-rollback",
+      "at": "2026-11-10T19:54:28.137Z",
+      "ok": true,
+      "code": 0,
+      "installedVersion": "0.2.3",
+      "tail": [
+        "+",
+        "Progress: resolved 5, reused 2, downloaded 0, added 1, done",
+        "Done in 298ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "host-after-rollback",
+      "at": "2026-11-10T19:54:29.373Z",
+      "ok": true,
+      "result": {
+        "action": "verify",
+        "application": "applied",
+        "restartReason": null,
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": true,
+        "toolCount": 12,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "promotion-promote",
+      "at": "2026-11-10T19:54:31.669Z",
+      "ok": true,
+      "steps": [
+        {
+          "name": "runtime-stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "event:promotion_probe_stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_measure",
+          "ok": true,
+          "phase": "measured"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": false,
+          "phase": "awaiting-owner-confirmation"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": true,
+          "phase": "canary-observing"
+        },
+        {
+          "name": "event:promotion_probe_stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_canary_observe",
+          "ok": true,
+          "phase": "canary-observing"
+        }
+      ],
+      "committed": {
+        "pluginName": "dsh-evolution-promoted-3971fed25d90",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-3971fed25d90",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-3971fed25d90/lib/index.js",
+        "adapter": "official-include",
+        "rowId": "evolution-promoted-3971fed25d90",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwb3zkog-1-d8c4cf3e.md",
+        "presetId": "evolution",
+        "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+        "promotionTimestamp": "2026-11-10T19:54:31.548Z",
+        "healthObservationWindow": 2
+      }
+    },
+    {
+      "name": "promotion-restart-and-rollback",
+      "at": "2026-11-10T19:54:34.127Z",
+      "ok": true,
+      "steps": [
+        {
+          "name": "event:promotion_probe_stable",
+          "ok": true
+        },
+        {
+          "name": "runtime-stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "event:promotion_probe_rollback",
+          "ok": true
+        },
+        {
+          "name": "evolution_measure",
+          "ok": true,
+          "phase": "measured"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": false,
+          "phase": "awaiting-owner-confirmation"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": true,
+          "phase": "canary-observing"
+        },
+        {
+          "name": "event:promotion_probe_rollback",
+          "ok": true
+        },
+        {
+          "name": "evolution_canary_observe",
+          "ok": false,
+          "phase": "rolled-back"
+        }
+      ],
+      "startupPhase": "stable",
+      "rolledBack": {
+        "pluginName": "dsh-evolution-promoted-71d24ecd82e1",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-71d24ecd82e1",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-71d24ecd82e1/lib/index.js",
+        "adapter": "official-include",
+        "rowId": "evolution-promoted-71d24ecd82e1",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwb3zmj9-1-e397c2e7.md",
+        "presetId": "evolution",
+        "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+        "promotionTimestamp": "2026-11-10T19:54:33.957Z",
+        "healthObservationWindow": 2
+      }
+    },
+    {
+      "name": "promotion-verify",
+      "at": "2026-11-10T19:54:35.088Z",
+      "ok": true,
+      "steps": [
+        {
+          "name": "event:promotion_probe_stable",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "name": "experiment-seed",
+      "at": "2026-11-10T19:54:38.332Z",
+      "ok": true,
+      "phase": "seed",
+      "experimentId": "exp-mwb3zpr0-1-57b03e34",
+      "toolCount": 12,
+      "crossCheck": {
+        "ok": true,
+        "checks": {
+          "baselineTargetFailed": true,
+          "baselineControlSucceeded": true,
+          "candidateTargetSucceeded": true,
+          "candidateControlSucceeded": true,
+          "measureBenefit": true,
+          "canarySettled": true
+        },
+        "baseline": {
+          "total": 6,
+          "errors": 3,
+          "target": {
+            "total": 3,
+            "errors": 3
+          },
+          "control": {
+            "total": 3,
+            "errors": 0
+          }
+        },
+        "candidate": {
+          "total": 6,
+          "errors": 0,
+          "target": {
+            "total": 3,
+            "errors": 0
+          },
+          "control": {
+            "total": 3,
+            "errors": 0
+          }
+        },
+        "failure": []
+      }
+    },
+    {
+      "name": "experiment-invalid",
+      "at": "2026-11-10T19:54:41.555Z",
+      "ok": true,
+      "phase": "invalid",
+      "experimentId": "exp-mwb3zs98-1-32336efb",
+      "toolCount": 12,
+      "crossCheck": {
+        "ok": true,
+        "checks": {
+          "baselineTargetFailed": true,
+          "candidateTargetUnimproved": true,
+          "gatesRefused": true,
+          "runtimeRecovered": true,
+          "claimReleased": true,
+          "strategyRefused": true
+        },
+        "baseline": {
+          "total": 6,
+          "errors": 3,
+          "target": {
+            "total": 3,
+            "errors": 3
+          },
+          "control": {
+            "total": 3,
+            "errors": 0
+          }
+        },
+        "candidate": {
+          "total": 6,
+          "errors": 3,
+          "target": {
+            "total": 3,
+            "errors": 3
+          },
+          "control": {
+            "total": 3,
+            "errors": 0
+          }
+        },
+        "failure": []
+      }
+    },
+    {
+      "name": "experiment-restart",
+      "at": "2026-11-10T19:54:42.542Z",
+      "ok": true,
+      "phase": "restart",
+      "experimentId": "exp-mwb3zpr0-1-57b03e34",
+      "toolCount": 12,
+      "crossCheck": {
+        "ok": true,
+        "checks": {
+          "promotedToolExecuted": true,
+          "startupSettled": true,
+          "sharedConclusion": true,
+          "planSettled": true,
+          "durableEvidence": true
+        },
+        "failure": []
+      }
+    },
+    {
+      "name": "experiment-regression",
+      "at": "2026-11-10T19:54:45.643Z",
+      "ok": true,
+      "phase": "regression",
+      "experimentId": "exp-mwb3zvim-1-7514a858",
+      "toolCount": 12,
+      "crossCheck": {
+        "ok": true,
+        "checks": {
+          "baselineTargetFailed": true,
+          "baselineControlSucceeded": true,
+          "candidateTargetSucceeded": true,
+          "candidateControlRegressed": true,
+          "promotionRefused": true,
+          "runtimeRecovered": true
+        },
+        "baseline": {
+          "total": 6,
+          "errors": 3,
+          "target": {
+            "total": 3,
+            "errors": 3
+          },
+          "control": {
+            "total": 3,
+            "errors": 0
+          }
+        },
+        "candidate": {
+          "total": 6,
+          "errors": 3,
+          "target": {
+            "total": 3,
+            "errors": 0
+          },
+          "control": {
+            "total": 3,
+            "errors": 3
+          }
+        },
+        "failure": []
+      }
+    },
+    {
+      "name": "doctor-final",
+      "at": "2026-11-10T19:54:45.946Z",
+      "ok": true,
+      "status": "healthy",
+      "exitCode": 0,
+      "findings": [
+        {
+          "id": "runtime.capabilities",
+          "level": "not-evaluated",
+          "summary": "Live Cordis capabilities are not observable outside a running host session."
+        },
+        {
+          "id": "runtime.registration",
+          "level": "not-evaluated",
+          "summary": "Live tool registration is not observable outside a running host session."
+        },
+        {
+          "id": "runtime.internal-api",
+          "level": "not-evaluated",
+          "summary": "Introspection probes were not exercised outside a running host session."
+        }
+      ]
+    }
+  ],
+  "experienceEvolution": {
+    "seed": {
+      "ok": true,
+      "phase": "seed",
+      "experimentId": "exp-mwb3zpr0-1-57b03e34",
+      "toolCount": 12,
+      "store": {
+        "before": {
+          "events": 10,
+          "knowledge": 6
+        },
+        "after": {
+          "events": 14,
+          "knowledge": 7
+        },
+        "seededFailures": 4
+      },
+      "plan": {
+        "selected": {
+          "problemKey": "tool probe healthcheck",
+          "problem": "tool probe healthcheck",
+          "occurrences": 4,
+          "failureModes": [],
+          "regressionCount": 0,
+          "firstSeen": "2026-11-10T19:54:36.048Z",
+          "lastSeen": "2026-11-10T19:54:36.052Z",
+          "evidenceRefs": [
+            "observations:09a28e463f6d8a159ff77a321e3028e2433422384b4c193b09c18b9fe1cea272",
+            "observations:33c8e5b2e39eb0718ac015f6f68cad49dc5fc390cd262636682565fe556a4314",
+            "observations:9b5173601a5ceff937214c7cb9067b99dcadbc010d8181c35f6512e0868e5348"
+          ],
+          "priorAttempts": [],
+          "provenIneffective": [],
+          "knownResolution": null,
+          "applicability": {
+            "dsh": "0.2.2-rc.1",
+            "cordis": "4.1.0",
+            "evolution": "0.2.3"
+          },
+          "applicabilityVerified": true,
+          "requiresNewHypothesis": false,
+          "risk": "low",
+          "whyCordisPlugin": "通过官方 Cordis 工具注册补齐缺失能力，再以隔离 Trial 验证。",
+          "expectedImprovement": "提高 tool probe healthcheck 的 successRate 并降低 errorCount；probeControlStable 对照不得回归。",
+          "acceptanceMetrics": [
+            {
+              "name": "successRate",
+              "direction": "higher"
+            },
+            {
+              "name": "errorCount",
+              "direction": "lower"
+            },
+            {
+              "name": "probeControlStable",
+              "direction": "stable"
+            }
+          ],
+          "rollbackConditions": [
+            "任一 acceptance metric 相比基线变差时回滚 tool probe healthcheck 的变更",
+            "probeControlStable 出现回归时立即回滚",
+            "dispose 后运行时恢复校验未通过时回滚并保留现场"
+          ],
+          "score": 0.5833,
+          "experienceRecall": {
+            "query": {
+              "problem": "tool probe healthcheck",
+              "target": "tool probe healthcheck",
+              "tokens": 3
+            },
+            "resolved": [],
+            "failures": [
+              {
+                "source": "knowledge",
+                "key": "knowledge:d433057f96e43b75f01654fdd1db59f6",
+                "problem": "official operation failure host operation failure",
+                "scope": "tool probe healthcheck",
+                "strategy": "",
+                "failureMode": "",
+                "rootCause": "",
+                "state": "LEARNING",
+                "lastOutcome": "failure",
+                "decision": "failure",
+                "successCount": 0,
+                "failureCount": 4,
+                "successRate": 0,
+                "fitnessMean": null,
+                "regressionCount": 0,
+                "occurrences": 4,
+                "firstSeen": "2026-11-10T19:54:36.048Z",
+                "lastSeen": "2026-11-10T19:54:36.052Z",
+                "evidenceRefs": [
+                  "observations:09a28e463f6d8a159ff77a321e3028e2433422384b4c193b09c18b9fe1cea272",
+                  "observations:33c8e5b2e39eb0718ac015f6f68cad49dc5fc390cd262636682565fe556a4314"
+                ],
+                "prevention": "",
+                "coverage": 1,
+                "exact": false,
+                "score": 0.6
+              }
+            ],
+            "candidates": [],
+            "duplicate": null,
+            "advice": [
+              "failed: prior attempts did not succeed (official operation failure host operation failure); require a new hypothesis with new evidence before repeating."
+            ],
+            "counts": {
+              "matched": 1,
+              "returned": 1,
+              "duplicates": 0
+            },
+            "sources": [
+              {
+                "source": "failure-memory",
+                "considered": 3,
+                "scanned": 3,
+                "matched": 0,
+                "duplicates": 0,
+                "dropped": 0,
+                "available": true
+              },
+              {
+                "source": "shared-knowledge",
+                "considered": 7,
+                "scanned": 7,
+                "matched": 1,
+                "duplicates": 0,
+                "dropped": 0,
+                "available": true
+              },
+              {
+                "source": "knowledge",
+                "considered": 6,
+                "scanned": 6,
+                "matched": 0,
+                "duplicates": 0,
+                "dropped": 0,
+                "available": true
+              }
+            ],
+            "unavailable": [],
+            "sourceErrors": [],
+            "truncated": false,
+            "limits": {
+              "maxEntries": 3,
+              "maxRecords": 12,
+              "maxText": 160,
+              "maxEvidenceRefs": 2,
+              "maxConsidered": 2000
+            }
+          }
+        },
+        "problemKey": "tool probe healthcheck",
+        "occurrences": 4,
+        "versions": {
+          "host": "0.2.2-rc.1",
+          "cordis": "4.1.0",
+          "evolution": "0.2.3"
+        },
+        "sources": {
+          "shared": 7,
+          "failureMemory": 3,
+          "errors": []
+        }
+      },
+      "probes": {
+        "baseline": {
+          "scenarioDigest": "sha256:f63d634e460a35b94d34118f0c38f002e135347305ce8d2b87d0dc5f7d6454ef",
+          "samples": [
+            {
+              "index": 0,
+              "name": "probe_healthcheck",
+              "role": "target",
+              "repetition": 0,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 1,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 0,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            },
+            {
+              "index": 2,
+              "name": "probe_healthcheck",
+              "role": "target",
+              "repetition": 1,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 3,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 1,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            },
+            {
+              "index": 4,
+              "name": "probe_healthcheck",
+              "role": "target",
+              "repetition": 2,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 5,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 2,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            }
+          ],
+          "summary": {
+            "total": 6,
+            "errors": 3,
+            "target": {
+              "total": 3,
+              "errors": 3
+            },
+            "control": {
+              "total": 3,
+              "errors": 0
+            }
+          }
+        },
+        "candidate": {
+          "scenarioDigest": "sha256:f63d634e460a35b94d34118f0c38f002e135347305ce8d2b87d0dc5f7d6454ef",
+          "samples": [
+            {
+              "index": 0,
+              "name": "probe_healthcheck",
+              "role": "target",
+              "repetition": 0,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:132cddbdfa77ff08110ae7f43fa40b839ddb3b7ceb54a4eb8b8b6b4a691e1ea0",
+              "at": null
+            },
+            {
+              "index": 1,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 0,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            },
+            {
+              "index": 2,
+              "name": "probe_healthcheck",
+              "role": "target",
+              "repetition": 1,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:132cddbdfa77ff08110ae7f43fa40b839ddb3b7ceb54a4eb8b8b6b4a691e1ea0",
+              "at": null
+            },
+            {
+              "index": 3,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 1,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            },
+            {
+              "index": 4,
+              "name": "probe_healthcheck",
+              "role": "target",
+              "repetition": 2,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:132cddbdfa77ff08110ae7f43fa40b839ddb3b7ceb54a4eb8b8b6b4a691e1ea0",
+              "at": null
+            },
+            {
+              "index": 5,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 2,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            }
+          ],
+          "summary": {
+            "total": 6,
+            "errors": 0,
+            "target": {
+              "total": 3,
+              "errors": 0
+            },
+            "control": {
+              "total": 3,
+              "errors": 0
+            }
+          }
+        }
+      },
+      "measure": {
+        "gates": {
+          "realBenefit": true,
+          "measuredEvidence": true,
+          "repeatable": true,
+          "regressionTest": true,
+          "reversible": true,
+          "cleanupEvidence": true,
+          "noOrphans": true,
+          "runtimeRecovered": false,
+          "eligible": true
+        },
+        "decision": {
+          "version": 1,
+          "kind": "benefit",
+          "source": "measure",
+          "at": "2026-11-10T19:54:38.066Z",
+          "observationAt": "2026-11-10T19:54:38.062Z",
+          "eligible": true,
+          "reasons": [
+            "measured behavior improved and the correctness control stayed stable"
+          ],
+          "gates": {
+            "realBenefit": true,
+            "measuredEvidence": true,
+            "repeatable": true,
+            "regressionTest": true,
+            "reversible": true,
+            "cleanupEvidence": true,
+            "noOrphans": true,
+            "runtimeRecovered": false
+          },
+          "probe": {
+            "benefit": true,
+            "regression": false,
+            "controlStable": true,
+            "repeatable": true,
+            "targetImproved": 1,
+            "scenarioId": "experience-evolution-seed-v1",
+            "scenarioDigest": "sha256:f63d634e460a35b94d34118f0c38f002e135347305ce8d2b87d0dc5f7d6454ef",
+            "sampleDigest": {
+              "baseline": "sha256:3f9cf44e06714dc4b19ac577eb5d9e8baa2c7ee5aa6c9a090e13f1fa344330ef",
+              "candidate": "sha256:2d9e3ade0ae9ab6c824fb02438d3b79b9c7a2cd7fd031a529ce229b239f93b12"
+            }
+          }
+        },
+        "beforeMetrics": {
+          "successRate": 0.5,
+          "errorCount": 3
+        },
+        "afterMetrics": {
+          "successRate": 1,
+          "errorCount": 0
+        },
+        "comparison": {
+          "benefit": true,
+          "regression": false,
+          "controlStable": true,
+          "repeatable": true,
+          "targetImproved": 1,
+          "before": {
+            "executions": 6,
+            "successes": 3,
+            "errors": 3,
+            "successRate": 0.5,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "probe_healthcheck",
+                "role": "target",
+                "executions": 3,
+                "successes": 0,
+                "errors": 3,
+                "codes": [
+                  "TOOL_ERROR"
+                ],
+                "digests": []
+              },
+              {
+                "index": 1,
+                "step": "probe_control",
+                "role": "control",
+                "executions": 3,
+                "successes": 3,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518"
+                ]
+              }
+            ]
+          },
+          "after": {
+            "executions": 6,
+            "successes": 6,
+            "errors": 0,
+            "successRate": 1,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "probe_healthcheck",
+                "role": "target",
+                "executions": 3,
+                "successes": 3,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:132cddbdfa77ff08110ae7f43fa40b839ddb3b7ceb54a4eb8b8b6b4a691e1ea0"
+                ]
+              },
+              {
+                "index": 1,
+                "step": "probe_control",
+                "role": "control",
+                "executions": 3,
+                "successes": 3,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518"
+                ]
+              }
+            ]
+          },
+          "beforeMetrics": {
+            "successRate": 0.5,
+            "errorCount": 3
+          },
+          "afterMetrics": {
+            "successRate": 1,
+            "errorCount": 0
+          },
+          "sampleDigest": {
+            "baseline": "sha256:3f9cf44e06714dc4b19ac577eb5d9e8baa2c7ee5aa6c9a090e13f1fa344330ef",
+            "candidate": "sha256:2d9e3ade0ae9ab6c824fb02438d3b79b9c7a2cd7fd031a529ce229b239f93b12"
+          },
+          "reasons": [],
+          "steps": [
+            {
+              "index": 0,
+              "step": "probe_healthcheck",
+              "role": "target",
+              "executions": 3,
+              "baselineSuccesses": 0,
+              "candidateSuccesses": 3
+            },
+            {
+              "index": 1,
+              "step": "probe_control",
+              "role": "control",
+              "executions": 3,
+              "baselineSuccesses": 3,
+              "candidateSuccesses": 3
+            }
+          ]
+        }
+      },
+      "canary": {
+        "first": "canary-observing",
+        "second": "stable"
+      },
+      "refused": null,
+      "revert": null,
+      "trialGone": null,
+      "duplicateProposal": null,
+      "claimReleased": null,
+      "conclusionRecallable": null,
+      "promotedTool": null,
+      "startupPhase": null,
+      "history": null,
+      "planSettled": null,
+      "durableEvidence": null,
+      "controlRestored": null
+    },
+    "invalid": {
+      "ok": true,
+      "phase": "invalid",
+      "experimentId": "exp-mwb3zs98-1-32336efb",
+      "toolCount": 12,
+      "store": {
+        "before": {
+          "events": 18,
+          "knowledge": 8
+        },
+        "after": {
+          "events": 22,
+          "knowledge": 9
+        },
+        "seededFailures": 4
+      },
+      "plan": null,
+      "probes": {
+        "baseline": {
+          "scenarioDigest": "sha256:dd9410c4b031b85266a99af87bc90539f7c1ccaedfbb149082942a88c4c281d0",
+          "samples": [
+            {
+              "index": 0,
+              "name": "probe_invalid_fix",
+              "role": "target",
+              "repetition": 0,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 1,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 0,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            },
+            {
+              "index": 2,
+              "name": "probe_invalid_fix",
+              "role": "target",
+              "repetition": 1,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 3,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 1,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            },
+            {
+              "index": 4,
+              "name": "probe_invalid_fix",
+              "role": "target",
+              "repetition": 2,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 5,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 2,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            }
+          ],
+          "summary": {
+            "total": 6,
+            "errors": 3,
+            "target": {
+              "total": 3,
+              "errors": 3
+            },
+            "control": {
+              "total": 3,
+              "errors": 0
+            }
+          }
+        },
+        "candidate": {
+          "scenarioDigest": "sha256:dd9410c4b031b85266a99af87bc90539f7c1ccaedfbb149082942a88c4c281d0",
+          "samples": [
+            {
+              "index": 0,
+              "name": "probe_invalid_fix",
+              "role": "target",
+              "repetition": 0,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 1,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 0,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            },
+            {
+              "index": 2,
+              "name": "probe_invalid_fix",
+              "role": "target",
+              "repetition": 1,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 3,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 1,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            },
+            {
+              "index": 4,
+              "name": "probe_invalid_fix",
+              "role": "target",
+              "repetition": 2,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 5,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 2,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            }
+          ],
+          "summary": {
+            "total": 6,
+            "errors": 3,
+            "target": {
+              "total": 3,
+              "errors": 3
+            },
+            "control": {
+              "total": 3,
+              "errors": 0
+            }
+          }
+        }
+      },
+      "measure": {
+        "gates": {
+          "realBenefit": false,
+          "measuredEvidence": false,
+          "repeatable": true,
+          "regressionTest": true,
+          "reversible": true,
+          "cleanupEvidence": true,
+          "noOrphans": true,
+          "runtimeRecovered": false,
+          "eligible": false
+        },
+        "decision": {
+          "version": 1,
+          "kind": "no-benefit",
+          "source": "measure",
+          "at": "2026-11-10T19:54:41.317Z",
+          "observationAt": "2026-11-10T19:54:41.313Z",
+          "eligible": false,
+          "reasons": [
+            "candidate did not improve any target step over the baseline"
+          ],
+          "gates": {
+            "realBenefit": false,
+            "measuredEvidence": false,
+            "repeatable": true,
+            "regressionTest": true,
+            "reversible": true,
+            "cleanupEvidence": true,
+            "noOrphans": true,
+            "runtimeRecovered": false
+          },
+          "probe": {
+            "benefit": false,
+            "regression": false,
+            "controlStable": true,
+            "repeatable": true,
+            "targetImproved": 0,
+            "scenarioId": "experience-evolution-invalid-v1",
+            "scenarioDigest": "sha256:dd9410c4b031b85266a99af87bc90539f7c1ccaedfbb149082942a88c4c281d0",
+            "sampleDigest": {
+              "baseline": "sha256:857ab4fdaddb9240f5fe57e3760635d20a360ee864622334d4de667cee7a10e2",
+              "candidate": "sha256:87384c07c7aef91a09c8ac54596fab6c424b6c53197f0e439c3e274e3cb4ddfa"
+            }
+          }
+        },
+        "comparison": {
+          "benefit": false,
+          "regression": false,
+          "controlStable": true,
+          "repeatable": true,
+          "targetImproved": 0,
+          "before": {
+            "executions": 6,
+            "successes": 3,
+            "errors": 3,
+            "successRate": 0.5,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "probe_invalid_fix",
+                "role": "target",
+                "executions": 3,
+                "successes": 0,
+                "errors": 3,
+                "codes": [
+                  "TOOL_ERROR"
+                ],
+                "digests": []
+              },
+              {
+                "index": 1,
+                "step": "probe_control",
+                "role": "control",
+                "executions": 3,
+                "successes": 3,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518"
+                ]
+              }
+            ]
+          },
+          "after": {
+            "executions": 6,
+            "successes": 3,
+            "errors": 3,
+            "successRate": 0.5,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "probe_invalid_fix",
+                "role": "target",
+                "executions": 3,
+                "successes": 0,
+                "errors": 3,
+                "codes": [
+                  "TOOL_ERROR"
+                ],
+                "digests": []
+              },
+              {
+                "index": 1,
+                "step": "probe_control",
+                "role": "control",
+                "executions": 3,
+                "successes": 3,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518"
+                ]
+              }
+            ]
+          },
+          "beforeMetrics": {
+            "successRate": 0.5,
+            "errorCount": 3
+          },
+          "afterMetrics": {
+            "successRate": 0.5,
+            "errorCount": 3
+          },
+          "sampleDigest": {
+            "baseline": "sha256:857ab4fdaddb9240f5fe57e3760635d20a360ee864622334d4de667cee7a10e2",
+            "candidate": "sha256:87384c07c7aef91a09c8ac54596fab6c424b6c53197f0e439c3e274e3cb4ddfa"
+          },
+          "reasons": [
+            "candidate did not improve any target step over the baseline"
+          ],
+          "steps": [
+            {
+              "index": 0,
+              "step": "probe_invalid_fix",
+              "role": "target",
+              "executions": 3,
+              "baselineSuccesses": 0,
+              "candidateSuccesses": 0
+            },
+            {
+              "index": 1,
+              "step": "probe_control",
+              "role": "control",
+              "executions": 3,
+              "baselineSuccesses": 3,
+              "candidateSuccesses": 3
+            }
+          ]
+        }
+      },
+      "canary": null,
+      "refused": {
+        "reason": "promotion-gate",
+        "phase": "measured"
+      },
+      "revert": {
+        "ok": true,
+        "runtimeRecovered": true
+      },
+      "trialGone": {
+        "dynamicPlugins": 0,
+        "claimsReleased": true
+      },
+      "duplicateProposal": {
+        "reason": "strategy-already-proven-ineffective",
+        "strategyFingerprint": "d387e503e0f6ebd2"
+      },
+      "claimReleased": true,
+      "conclusionRecallable": true,
+      "promotedTool": null,
+      "startupPhase": null,
+      "history": null,
+      "planSettled": null,
+      "durableEvidence": null,
+      "controlRestored": null
+    },
+    "restart": {
+      "ok": true,
+      "phase": "restart",
+      "experimentId": "exp-mwb3zpr0-1-57b03e34",
+      "toolCount": 12,
+      "store": null,
+      "plan": {
+        "settled": true,
+        "selected": null,
+        "noneReason": "insufficient-evidence",
+        "rejectedResolved": true
+      },
+      "probes": {},
+      "measure": null,
+      "canary": null,
+      "refused": null,
+      "revert": null,
+      "trialGone": null,
+      "duplicateProposal": null,
+      "claimReleased": null,
+      "conclusionRecallable": null,
+      "promotedTool": {
+        "name": "probe_healthcheck",
+        "executed": true,
+        "markerMatched": true
+      },
+      "startupPhase": "none",
+      "history": {
+        "sharedSources": 1,
+        "successes": 2,
+        "records": {
+          "resolved": 1,
+          "failures": 3,
+          "candidates": 1
+        }
+      },
+      "planSettled": true,
+      "durableEvidence": {
+        "sidecar": true,
+        "markdown": true,
+        "scenarioDigest": true,
+        "decision": true,
+        "applicability": {
+          "dsh": "0.2.2-rc.1",
+          "cordis": "4.1.0"
+        }
+      },
+      "controlRestored": null
+    },
+    "regression": {
+      "ok": true,
+      "phase": "regression",
+      "experimentId": "exp-mwb3zvim-1-7514a858",
+      "toolCount": 12,
+      "store": {
+        "before": {
+          "events": 30,
+          "knowledge": 11
+        },
+        "after": {
+          "events": 33,
+          "knowledge": 12
+        },
+        "seededFailures": 3
+      },
+      "plan": null,
+      "probes": {
+        "baseline": {
+          "scenarioDigest": "sha256:33111ee3933a513cebe96b1eed364e6b3a7505a297f6e85cb7c15ed7027224b6",
+          "samples": [
+            {
+              "index": 0,
+              "name": "probe_regression_fix",
+              "role": "target",
+              "repetition": 0,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 1,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 0,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            },
+            {
+              "index": 2,
+              "name": "probe_regression_fix",
+              "role": "target",
+              "repetition": 1,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 3,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 1,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            },
+            {
+              "index": 4,
+              "name": "probe_regression_fix",
+              "role": "target",
+              "repetition": 2,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 5,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 2,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518",
+              "at": null
+            }
+          ],
+          "summary": {
+            "total": 6,
+            "errors": 3,
+            "target": {
+              "total": 3,
+              "errors": 3
+            },
+            "control": {
+              "total": 3,
+              "errors": 0
+            }
+          }
+        },
+        "candidate": {
+          "scenarioDigest": "sha256:33111ee3933a513cebe96b1eed364e6b3a7505a297f6e85cb7c15ed7027224b6",
+          "samples": [
+            {
+              "index": 0,
+              "name": "probe_regression_fix",
+              "role": "target",
+              "repetition": 0,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:1df962a43b0be475209e07e385f33df4280964053b9f79d7caac48bda24fe697",
+              "at": null
+            },
+            {
+              "index": 1,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 0,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 2,
+              "name": "probe_regression_fix",
+              "role": "target",
+              "repetition": 1,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:1df962a43b0be475209e07e385f33df4280964053b9f79d7caac48bda24fe697",
+              "at": null
+            },
+            {
+              "index": 3,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 1,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            },
+            {
+              "index": 4,
+              "name": "probe_regression_fix",
+              "role": "target",
+              "repetition": 2,
+              "callId": null,
+              "isError": false,
+              "code": null,
+              "valueDigest": "sha256:1df962a43b0be475209e07e385f33df4280964053b9f79d7caac48bda24fe697",
+              "at": null
+            },
+            {
+              "index": 5,
+              "name": "probe_control",
+              "role": "control",
+              "repetition": 2,
+              "callId": null,
+              "isError": true,
+              "code": "TOOL_ERROR",
+              "valueDigest": null,
+              "at": null
+            }
+          ],
+          "summary": {
+            "total": 6,
+            "errors": 3,
+            "target": {
+              "total": 3,
+              "errors": 0
+            },
+            "control": {
+              "total": 3,
+              "errors": 3
+            }
+          }
+        }
+      },
+      "measure": {
+        "gates": {
+          "realBenefit": false,
+          "measuredEvidence": false,
+          "repeatable": true,
+          "regressionTest": false,
+          "reversible": true,
+          "cleanupEvidence": true,
+          "noOrphans": true,
+          "runtimeRecovered": false,
+          "eligible": false
+        },
+        "decision": {
+          "version": 1,
+          "kind": "regression",
+          "source": "measure",
+          "at": "2026-11-10T19:54:45.546Z",
+          "observationAt": "2026-11-10T19:54:45.542Z",
+          "eligible": false,
+          "reasons": [
+            "probe_control: candidate succeeded 0/3 vs baseline 3/3",
+            "probe_control: correctness control no longer succeeds"
+          ],
+          "gates": {
+            "realBenefit": false,
+            "measuredEvidence": false,
+            "repeatable": true,
+            "regressionTest": false,
+            "reversible": true,
+            "cleanupEvidence": true,
+            "noOrphans": true,
+            "runtimeRecovered": false
+          },
+          "probe": {
+            "benefit": false,
+            "regression": true,
+            "controlStable": false,
+            "repeatable": true,
+            "targetImproved": 1,
+            "scenarioId": "experience-evolution-regression-v1",
+            "scenarioDigest": "sha256:33111ee3933a513cebe96b1eed364e6b3a7505a297f6e85cb7c15ed7027224b6",
+            "sampleDigest": {
+              "baseline": "sha256:397c4d2ed2dad007fab00f025ec3caf364f068e5907a6fd801e153d3c5e3b32d",
+              "candidate": "sha256:1aef2885eeb64a589c521148f13306a82c6038642bc3fc319d607d996a02ecc0"
+            }
+          }
+        },
+        "comparison": {
+          "benefit": false,
+          "regression": true,
+          "controlStable": false,
+          "repeatable": true,
+          "targetImproved": 1,
+          "before": {
+            "executions": 6,
+            "successes": 3,
+            "errors": 3,
+            "successRate": 0.5,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "probe_regression_fix",
+                "role": "target",
+                "executions": 3,
+                "successes": 0,
+                "errors": 3,
+                "codes": [
+                  "TOOL_ERROR"
+                ],
+                "digests": []
+              },
+              {
+                "index": 1,
+                "step": "probe_control",
+                "role": "control",
+                "executions": 3,
+                "successes": 3,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:58dea8d3047acca273b89ec2daa26abcd61abd219b43491357243ccb0d8ce518"
+                ]
+              }
+            ]
+          },
+          "after": {
+            "executions": 6,
+            "successes": 3,
+            "errors": 3,
+            "successRate": 0.5,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "probe_regression_fix",
+                "role": "target",
+                "executions": 3,
+                "successes": 3,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:1df962a43b0be475209e07e385f33df4280964053b9f79d7caac48bda24fe697"
+                ]
+              },
+              {
+                "index": 1,
+                "step": "probe_control",
+                "role": "control",
+                "executions": 3,
+                "successes": 0,
+                "errors": 3,
+                "codes": [
+                  "TOOL_ERROR"
+                ],
+                "digests": []
+              }
+            ]
+          },
+          "beforeMetrics": {
+            "successRate": 0.5,
+            "errorCount": 3
+          },
+          "afterMetrics": {
+            "successRate": 0.5,
+            "errorCount": 3
+          },
+          "sampleDigest": {
+            "baseline": "sha256:397c4d2ed2dad007fab00f025ec3caf364f068e5907a6fd801e153d3c5e3b32d",
+            "candidate": "sha256:1aef2885eeb64a589c521148f13306a82c6038642bc3fc319d607d996a02ecc0"
+          },
+          "reasons": [
+            "probe_control: candidate succeeded 0/3 vs baseline 3/3",
+            "probe_control: correctness control no longer succeeds"
+          ],
+          "steps": [
+            {
+              "index": 0,
+              "step": "probe_regression_fix",
+              "role": "target",
+              "executions": 3,
+              "baselineSuccesses": 0,
+              "candidateSuccesses": 3
+            },
+            {
+              "index": 1,
+              "step": "probe_control",
+              "role": "control",
+              "executions": 3,
+              "baselineSuccesses": 3,
+              "candidateSuccesses": 0
+            }
+          ]
+        }
+      },
+      "canary": null,
+      "refused": {
+        "reason": "domain-evaluator-rollback",
+        "phase": "measured"
+      },
+      "revert": {
+        "ok": true,
+        "runtimeRecovered": true
+      },
+      "trialGone": {
+        "dynamicPlugins": 0,
+        "claimsReleased": true
+      },
+      "duplicateProposal": null,
+      "claimReleased": null,
+      "conclusionRecallable": null,
+      "promotedTool": null,
+      "startupPhase": null,
+      "history": null,
+      "planSettled": null,
+      "durableEvidence": null,
+      "controlRestored": true
+    }
+  },
+  "hostVersion": "0.2.2-rc.1",
+  "hostModules": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/cordis-plugin-include": "1.1.0",
+    "@deepseek-ai/cordis-plugin-loader": "1.1.0",
+    "@deepseek-ai/dsh": "0.2.2-rc.1",
+    "js-yaml": "4.3.2",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-cordis-host-runner": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-storage-domain": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-storage-json": "0.2.2-rc.1"
+  },
+  "doctor": {
+    "status": "degraded",
+    "coverage": {
+      "evaluated": [
+        "plugin.home",
+        "plugin.package",
+        "plugin.patch",
+        "plugin.support-matrix",
+        "host.install",
+        "host.cli",
+        "host.version",
+        "host.modules",
+        "host.composition",
+        "compat.legacy-adapters",
+        "capabilities.known-limits",
+        "data.root",
+        "state.memory",
+        "state.archives",
+        "state.event-bridge",
+        "migration.manifest",
+        "state.domain",
+        "state.ownership",
+        "data.key",
+        "promotion.journal",
+        "promotion.composition",
+        "promotion.pointer"
+      ],
+      "notEvaluated": [
+        {
+          "id": "runtime.capabilities",
+          "reason": "cli mode without a live context"
+        },
+        {
+          "id": "runtime.registration",
+          "reason": "cli mode without a live context"
+        },
+        {
+          "id": "runtime.internal-api",
+          "reason": "cli mode without a live context"
+        },
+        {
+          "id": "state.retention-floor",
+          "reason": "not observable in this mode"
+        }
+      ]
+    },
+    "degradedCapabilities": [
+      {
+        "id": "evaluator-advisory",
+        "impact": "The domain evaluator records a decision and hard-vetoes a detected regression, but promotionGates remains the production authority; independent host baseline/test metrics are not wired in.",
+        "resolution": "Provide a DSH host surface that supplies independent baseline/test metrics for an experiment."
+      },
+      {
+        "id": "continuous-and-governance-not-wired",
+        "impact": "lib/dockyard-domain/continuous and lib/dockyard-domain/governance are pure domain modules covered by unit tests and are not started by the orchestrator live loop.",
+        "resolution": "Wire them into the live loop behind an explicit opt-in once the loop is designed."
+      },
+      {
+        "id": "host-only-promotion",
+        "impact": "Client halves are rejected; promoted host code runs through a cooperative Function(hostCode)() gate that is not a security sandbox.",
+        "resolution": "Requires an approval-aware durable composition contract from the host."
+      },
+      {
+        "id": "legacy-compat-adapters",
+        "impact": "lib/compat/legacy-startup-drift.js and the legacy preset/default-path handling stay present but disabled by default.",
+        "resolution": "Remove once no supported DSH layout publishes the legacy drift engine or preset layout."
+      },
+      {
+        "id": "internal-api-dependency",
+        "impact": "Two introspection surfaces are private to Cordis by its own rule: ctx.events._hooks (no public listener enumeration exists) and the ctx.reflect._getImpl() fallback (used only when the documented ctx.reflect.store + Context.isolate path is absent). FiberState.ACTIVE is not importable (const enum, erased at runtime), so ACTIVE is decided from documented lifecycle fields. The official loader/Include members used for the mounted promoted row (EntryTree.resolve/root, Entry.fiber/options/disabled) are public but undocumented.",
+        "resolution": "Replace ctx.events._hooks once the host publishes a public listener enumeration; every other surface already goes through a documented or explicitly classified path recorded in lib/cordis-compat.js."
+      }
+    ],
+    "levels": {
+      "plugin.home": "ok",
+      "plugin.package": "ok",
+      "plugin.patch": "ok",
+      "plugin.support-matrix": "ok",
+      "host.install": "ok",
+      "host.cli": "ok",
+      "host.version": "ok",
+      "host.modules": "ok",
+      "host.composition": "ok",
+      "runtime.capabilities": "not-evaluated",
+      "runtime.registration": "not-evaluated",
+      "runtime.internal-api": "not-evaluated",
+      "compat.legacy-adapters": "ok",
+      "capabilities.known-limits": "ok",
+      "data.root": "degraded",
+      "state.memory": "ok",
+      "state.archives": "ok",
+      "state.event-bridge": "ok",
+      "migration.manifest": "ok",
+      "state.domain": "ok",
+      "state.retention-floor": "not-evaluated",
+      "state.ownership": "ok",
+      "data.key": "degraded",
+      "promotion.journal": "ok",
+      "promotion.composition": "ok",
+      "promotion.pointer": "ok"
+    },
+    "findings": [
+      {
+        "id": "runtime.capabilities",
+        "level": "not-evaluated",
+        "summary": "Live Cordis capabilities are not observable outside a running host session."
+      },
+      {
+        "id": "runtime.registration",
+        "level": "not-evaluated",
+        "summary": "Live tool registration is not observable outside a running host session."
+      },
+      {
+        "id": "runtime.internal-api",
+        "level": "not-evaluated",
+        "summary": "Introspection probes were not exercised outside a running host session."
+      },
+      {
+        "id": "data.root",
+        "level": "degraded",
+        "summary": "The Evolution data root is not initialized yet: data root is not initialized yet (created on first run)."
+      },
+      {
+        "id": "state.retention-floor",
+        "level": "not-evaluated",
+        "summary": "Event log retention continuity: domain-unverified."
+      },
+      {
+        "id": "data.key",
+        "level": "degraded",
+        "summary": "The event bridge key is absent; no key-derived MAC is on disk (every artifact is absent or empty), so the next start creates the key, exactly as the runtime does whenever the path is free."
+      }
+    ]
+  },
+  "memoryShaAfterCore": "12401233478b29a28eab6681d5c42e7df7deac48f641576a06f6461ce33d5d4a",
+  "memoryShaBeforeUninstall": "12401233478b29a28eab6681d5c42e7df7deac48f641576a06f6461ce33d5d4a",
+  "memoryEntriesAtUninstall": 1,
+  "memoryEntriesAfterReinstall": 1,
+  "memoryShaAfterReinstall": "700fa2fa0a164c6e3194eb57cb668674adafc04047f961f4f13bf08a03d4e810",
+  "upgradeRollback": {
+    "from": "0.2.3",
+    "to": "0.2.4",
+    "preservedUserData": true
+  },
+  "promotion": {
+    "promote": {
+      "ok": true,
+      "committed": {
+        "pluginName": "dsh-evolution-promoted-3971fed25d90",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-3971fed25d90",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-3971fed25d90/lib/index.js",
+        "adapter": "official-include",
+        "rowId": "evolution-promoted-3971fed25d90",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwb3zkog-1-d8c4cf3e.md",
+        "presetId": "evolution",
+        "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+        "promotionTimestamp": "2026-11-10T19:54:31.548Z",
+        "healthObservationWindow": 2
+      }
+    },
+    "restart-and-rollback": {
+      "ok": true,
+      "startupPhase": "stable",
+      "rolledBack": {
+        "pluginName": "dsh-evolution-promoted-71d24ecd82e1",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-71d24ecd82e1",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-71d24ecd82e1/lib/index.js",
+        "adapter": "official-include",
+        "rowId": "evolution-promoted-71d24ecd82e1",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwb3zmj9-1-e397c2e7.md",
+        "presetId": "evolution",
+        "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+        "promotionTimestamp": "2026-11-10T19:54:33.957Z",
+        "healthObservationWindow": 2
+      }
+    },
+    "verify": {
+      "ok": true
+    }
+  },
+  "ok": true,
+  "finishedAt": "2026-11-10T19:54:45.946Z"
+}

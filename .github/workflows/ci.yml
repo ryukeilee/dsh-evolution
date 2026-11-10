@@ -144,7 +144,7 @@ jobs:
         host: ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-rc.2', '0.2.2-rc.1']
         include:
           - host: '0.2.2-rc.1'
-            acceptance_args: '--no-hmr'
+            acceptance_args: '--no-hmr --experience-evolution'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

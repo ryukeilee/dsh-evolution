@@ -16,7 +16,7 @@
 | 文件 | 职责 |
 | --- | --- |
 | `lib/index.js` | bundle 入口：解析路径、初始化 `event-bridge.key`、打开领域存储、在 Include 加载任何子项**之前**恢复中断的晋升事务、挂载官方 Include adapter、构造诊断函数 |
-| `lib/registration.js` | 工具注册与系统提示词；`EVOLUTION_TOOLS` 列出工具面（10 个，含唯一的回收入口 `evolution_maintain`），`lib/diagnostics.js` 的 `EVOLUTION_TOOL_NAMES` 用它对照实时注册表，两份列表由测试断言一致 |
+| `lib/registration.js` | 工具注册与系统提示词；`EVOLUTION_TOOLS` 列出工具面（12 个，含 `evolution_plan` / `evolution_probe` 与唯一的回收入口 `evolution_maintain`），`lib/diagnostics.js` 的 `EVOLUTION_TOOL_NAMES` 用它对照实时注册表，两份列表由测试断言一致 |
 | `lib/orchestrator.js` | 实验 / trial / measurement / promotion 生命周期、journal 原子提交、CAS、跨进程锁、target claim、canary、失败学习、`promotionGates`；自主观察者的抑制、环境类推迟与待确认候选按 `strategyFingerprint` 判身份（`observeAutonomous` / `pendingAutonomousCandidate` / `cleanupAutonomousTrial` / `recoverAutonomousOccupancy` / `deferForSession` / `releaseInheritedAutonomousDecision`） |
 | `lib/promotion-include.js` | 官方 `@deepseek-ai/cordis-plugin-include` 适配：不合成 loader entry、不写 profile `node_modules`，提交/回滚走公开 `refresh()` / `EntryTree.resolve` / `Entry.fiber` |
 | `cordis.patch.yml` | bundle patch：向 profile 的 loader 树 `insert` 两个条目（`evolution-orchestrator` → `dsh-evolution`、`evolution-trust-root-guard` → `dsh-evolution/guard`）。这是插件进入 composition 的唯一入口 |
@@ -39,7 +39,9 @@
 | `lib/dockyard-domain/governance/` | 纯领域模块：`authority`（四级授权）、`capability-registry`（生命周期）、`fitness`（加权评分）、`generation-policy`、`retirement`（移除前置条件）、`canary`（流量与屏障）、`store`（分区校验）、`trust-root`（只把 Cordis 本身视为不可改写）、`mutation-authority`、`helpers`（钳制/克隆/时间戳）。同样**未接入**实时循环 |
 | `lib/archive-stage.js` | 冷档案树与进行中事务的隔离：staging、按变更集复制、逐字节校验、原子安装；变更清单可表达 `removed` 条目，但只限 `<stateFile>.<collection>-archive.jsonl.segments/segment-N.jsonl`，且删除在新文件全部安装成功之后执行 |
 | `lib/event-log-checkpoint.js` | 事件桥日志的持久重放检查点（已消费字节长度、记录数、keyed digest 与 MAC；schema 3 的 `appliedDigest` 同时绑定 `retention` floor）**以及回收 floor 的纯逻辑**：裁掉哪个已吸收前缀（`planLogPrune`）、已提交截断的幂等补完（`completeEventLogTruncation`）、floor 尾部校验（`verifyLogFloorTail`）、被裁 marker 的 keyed 链与 floor 合并（`advanceRetention`）、保留字节的 checkpoint 覆盖（`planRetainedCoverage`） |
-| `lib/experience-recall.js` | 只读、有界的按需经验检索；`EXPERIENCE_RECALL_LIMITS` 是全部上限的唯一来源 |
+| `lib/experience-recall.js` | 只读、有界的按需经验检索；`EXPERIENCE_RECALL_LIMITS` 是全部上限的唯一来源；记录投影带 `decision`（canonical `lastStatus`），供发现与下一轮复用 |
+| `lib/experience-plan.js` | 纯逻辑的经验发现：按问题身份（canonical scope）分组、汇总证据、按频率/时效/广度/回归/证据确定性评分，给出候选与拒绝理由；无 I/O、无时钟（`now` 由调用方传入）、无模型 |
+| `lib/shared-experience.js` | 统一共享经验 SQLite（schema v1）：除 `recordFailure` / `recordEvolution` 外，`recordConclusion` 写入结构化实验结论（target 是归一化问题身份）、`findConclusions` 按同 target + 三项版本 + strategy 指纹做有界查询、`discover` 提供有界发现窗口 |
 
 ### 兼容与安全
 
@@ -62,7 +64,7 @@
 
 ### 测试与发布数据
 
-- `test/`：Node 原生测试（`.test.mjs` / `.test.js`，当前 191 个文件）。根目录以 `review-fix-*` 命名保留各轮评审的回归，`test/domain-storage/`、`test/dockyard-domain/`（含 `continuous/`）按层分组，`test/fixtures/` 与各目录的 `*-baseline.js` 是差分等价性基线。
+- `test/`：Node 原生测试（`.test.mjs` / `.test.js`，当前 198 个文件）。根目录以 `review-fix-*` 命名保留各轮评审的回归，`test/domain-storage/`、`test/dockyard-domain/`（含 `continuous/`）按层分组，`test/fixtures/` 与各目录的 `*-baseline.js` 是差分等价性基线。
 - `test/workflows.test.mjs` 断言 CI 形状（作业集合、作业级堆上限、验收矩阵），`test/release-pin.test.mjs` 判定工作树与固定点的关系。
 - `release/`：随仓库固定的发布产物（每个候选一个 tarball，历史候选保留）、`manifest.json`、`SHA256SUMS`。**不要手工编辑这些文件。**
 - `docs/evidence/`：与固定产物对应的验收记录；`docs/performance/`：性能数据与收益边界；`docs/core-reliability.md`：rc.5 时期的恢复边界探索记录，不是当前合同。
@@ -85,7 +87,7 @@
 4. **晋升门禁是生产权威。** `promotionGates` 的 8 项证据缺一不可；领域 evaluator 只是 advisory + regression veto，不得用它替代门禁。`requireRuntimeRecovery: false` 只用于"运行时尚未恢复"时给调用方看的只读证据视图（measure 响应、等待确认的响应、`domain-evaluator-rollback` 返回、dispose 之前的 `evidenceGates`，以及自主观察者在 revert 前判断候选是否成立）；晋升在 dispose 之后用默认判定（`requireRuntimeRecovery: true`），并同时要求 `disposed.recovered`，所以“运行时已恢复”被两道条件共同强制。
 5. **生产晋升必须显式确认。** `confirmation: true` 之外的一切路径（包括 autonomous 观察者）都只能返回"等待所有者确认"。
 6. **默认不会自己上生产。** `mode` 默认 `advisory`、`unattended` 默认 `false`，两者只记录在策略报告里；**它们不是自主观察者的前置开关**。观察者是否启动隔离 Trial 由 `autonomousStrategies`、`patternThreshold` 与风险等级决定（只有 `low` + `autonomousPolicy.low === "experiment"` 能走到实验，`medium` / `high` 是硬约束），且无论如何都停在 `candidate-awaiting-confirmation`。不要新增能让观察者自行批准生产的路径。抑制键是「模式 + 策略声明指纹」（`strategyFingerprint`）：同一声明跨 session 仍被已记录失败拦住，改动声明就是新假设；`measured` 且门禁通过的记录由 `pendingAutonomousCandidate` 命中，同一假设不会再启动第二个 Trial；本进程继承的占位（上一个进程在 Trial 之前或期间结束，它描述的那个 Trial 已随进程消失）由一次新的观测释放并重新占位，使该假设重新建立一次隔离 Trial——释放只针对本进程打开存储时就已存在的占位，且只要本进程内仍有记录回答该身份（`measured` 待确认、宿主未批准的 Trial、未证实的清理）就不释放，本进程自己取得的占位也不释放；它既不重建旧 Trial，也不把旧候选当作可晋升证据（`releaseInheritedAutonomousDecision`）；只有环境类失败（target claim 冲突、操作忙、权限/资源错误、被取消的运行、宿主仍在等待批准的 Trial，以及实验建立之前的失败）不写入失败记忆，**也不进入 session 终局抑制**：它们由 `deferForSession` 按 `transientRetryCooldownMs`（默认 `AUTONOMOUS_TRANSIENT_RETRY_COOLDOWN_MS` = 30 s，`0` 仅供测试）推迟同一假设，冷却期内的观测报 `experiment-deferred` / `reason: transient-retry-cooldown` 与 `retryAfterMs`，冷却后的一次观测重新尝试该假设；重试由观测触发、按冷却间隔上界，并与第一次尝试走完全相同的门禁（清理重试、`pendingAutonomousCandidate`、`assertRuntimeAvailable`、target claim），所以一次 `E_EVOLUTION_RUNTIME_BUSY` 在占用者被 revert 后不再让该假设停到重启。session 抑制（`suppressedPatterns`）与失败记忆仍只由真实策略失败写入，`suppressForSession` 会清掉同一身份上的推迟。Trial 自身失败时，环境类错误只留在归档证据里（`archive(..., { learn: false })`），不进持久学习。上面那次「未证实清理的重试」发生在抑制与推迟判定之前，所以一个已经用掉本次 session 尝试的假设仍能把运行时交还给后续假设；它只重试清理，不重跑策略（见不变量 3），环境类失败的推迟则按 `transientRetryCooldownMs` 过期后由后续观测重新尝试。session 抑制键、环境类推迟表、终态实验记录与按模式的观察窗口 / 候选表共用 `AUTONOMOUS_PATTERN_CAP`（200）上限，终态实验记录只在既不持有 target claim 也没有操作中时才被回收（`pruneTerminalExperiments()`）；持久失败记忆有自己的 `maxEntries` 上限。
-7. **经验检索只读，且只由提交 proposal 的动作触发。** 入口是 `evolution_propose` 与 `evolution_history`（带 `query`）；不得让定时器、轮询或 measurement 触发它。自主观察者经 `evolution_propose` 间接触发属于这条路径本身，不是例外。上限只能由调用方收紧，不能放宽。
+7. **经验检索/发现只读，且只由显式动作触发。** 入口是 `evolution_plan`（有界发现候选，并明确报告 store 是否可用）、`evolution_propose` 与 `evolution_history`（带 `query`）；不得让定时器、轮询、measurement、canary 或后台模型回合触发它们。自主观察者经 `evolution_propose` 间接触发属于这条路径本身，不是例外。上限只能由调用方收紧，不能放宽。
 8. **脱敏边界。** 原始错误文本在进入领域存储前必须经脱敏 DTO；不得把凭据、密钥或用户数据写入日志、证据或产物。同一条边界覆盖**工具错误**：宿主用 `error.message` 生成 tool result（进入会话记录，模型每轮重读），所以 `lib/registration.js` 的 wrapper 用 `redactedToolError()` 把每个拒绝投影成有界、脱敏的消息并保留 `code`/`name`/分类/摘要指纹，而不是原样抛出 runner 回执或 disposer 文本。观测输入（`observeAutonomous` 的 input）只包含 `type`/`code`/`message`/`target` 这层遥测字段，宿主执行上下文（`agent` 的 session / options）只作为第二个参数传递，绝不进入观测流、`inspect` 或持久失败记忆。`ctx.logger.warn` 一律经非抛出的诊断边界（`orchestrator.warn()` / `warnRedacted()`）：抛异常或返回 rejected promise 的 logger 不得改写已经发生的生命周期结果，也不得留下未处理的拒绝。
 9. **晋升是 Host-only，且不是安全沙箱。** `evolution_promote` 只接受 Host half，带 `client` 的 Package 直接拒绝（`evolution_trial` 允许 client）。合作式 `Function(hostCode)()` gate **不是**安全沙箱，晋升执行需要可信审批。
 10. **发布字节固定。** 发布附件永远是 `release/` 中固定的那个 tarball；发布 workflow 不重新构建，只验证并上传它。普通 CI 会重新打包，但那是为了验证内容一致性与跑验收，不会成为发布字节。

@@ -100,9 +100,9 @@ test('the tool surface the renderer serves is the declared one', () => {
   // A fixed expectation, not one derived from what happened to register: a
   // dropped or renamed tool must fail here rather than shrink its own oracle.
   assert.deepEqual([...EVOLUTION_TOOLS], [
-    'evolution_runtime_inspect', 'evolution_propose', 'evolution_trial', 'evolution_measure',
-    'evolution_revert', 'evolution_promote', 'evolution_canary_observe', 'evolution_history',
-    'evolution_maintain', 'evolution_doctor',
+    'evolution_runtime_inspect', 'evolution_plan', 'evolution_propose', 'evolution_trial',
+    'evolution_probe', 'evolution_measure', 'evolution_revert', 'evolution_promote',
+    'evolution_canary_observe', 'evolution_history', 'evolution_maintain', 'evolution_doctor',
   ]);
   // `evolution_history` and `evolution_maintain` are domain-only tools: without a
   // domain store they are not registered, and their renderer is the shared one.

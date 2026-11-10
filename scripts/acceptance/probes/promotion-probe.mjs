@@ -57,7 +57,7 @@ export async function runPromotionProbe(ctx, onStep = () => {}) {
 
   async function run() {
     onStep('waiting-for-core-tools');
-    await waitFor(() => Boolean(ctx.get('evolution')) && ctx.tools.schemas().filter((tool) => tool.name.startsWith('evolution_')).length === 10, 'the evolution service and 10 tools');
+    await waitFor(() => Boolean(ctx.get('evolution')) && ctx.tools.schemas().filter((tool) => tool.name.startsWith('evolution_')).length === 12, 'the evolution service and 12 tools');
     const command = process.env.EVOLUTION_PROMOTION_COMMAND || 'promote';
     const handle = await ctx.agents.create({
       sessionId: `promotion-probe-${command}-${Date.now()}`,
