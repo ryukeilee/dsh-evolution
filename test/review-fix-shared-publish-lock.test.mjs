@@ -231,7 +231,8 @@ test('the first concurrent creators of the lock database all publish', async (t)
       pluginName: `dsh-evolution-promoted-${String(index).padStart(12, 'c')}`,
     }));
   }
-  const { paths } = env;
+  const paths = env.paths;
+  const { lockPath } = sharingPaths(env.paths);
   const moduleUrl = new URL('../lib/promoted-sharing.js', import.meta.url).href;
   const pathsFile = path.join(env.root, 'paths.json');
   await fs.writeFile(pathsFile, JSON.stringify(paths));
@@ -241,19 +242,41 @@ test('the first concurrent creators of the lock database all publish', async (t)
     await fs.writeFile(file, JSON.stringify(record));
     recordFiles.push(file);
   }
-  const code = `(async () => {
-    const fs = require('node:fs');
-    const mod = await import(process.argv[1]);
-    const paths = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-    const record = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
-    const result = await mod.publishSharedRecord(paths, record);
-    process.exit(result.status === 'published' || result.status === 'updated' ? 0 : 3);
-  })().catch((error) => { console.error(String(error?.code || error)); process.exit(2); });`;
-  // Every process races on the very first creation of the lock database: the
-  // loser of the exclusive create must join the winner's file, not fail.
-  const children = recordFiles.map((recordFile) => spawn(process.execPath, ['-e', code, moduleUrl, pathsFile, recordFile], { stdio: ['ignore', 'ignore', 'pipe'] }));
+  // Every child pauses immediately before the exclusive create of the lock
+  // database and reports readiness. The parent releases them together, so the
+  // losers of the create race really do observe EEXIST at the same instant.
+  const go = path.join(env.root, 'go');
+  const code = `const fs = require('node:fs');
+    const target = process.argv[4];
+    const ready = process.argv[5];
+    const go = process.argv[6];
+    const originalOpen = fs.openSync;
+    fs.openSync = function (file, flags, mode) {
+      if (file === target && flags === 'wx') {
+        fs.writeFileSync(ready, 'ready');
+        const deadline = Date.now() + 5000;
+        const sleeper = new Int32Array(new SharedArrayBuffer(4));
+        while (!fs.existsSync(go)) {
+          if (Date.now() > deadline) throw new Error('barrier timeout');
+          Atomics.wait(sleeper, 0, 0, 5);
+        }
+      }
+      return originalOpen.call(this, file, flags, mode);
+    };
+    (async () => {
+      const mod = await import(process.argv[1]);
+      const paths = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+      const record = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+      const result = await mod.publishSharedRecord(paths, record);
+      process.exit(result.status === 'published' || result.status === 'updated' ? 0 : 3);
+    })().catch((error) => { console.error(String(error?.code || error)); process.exit(2); });`;
+  const children = recordFiles.map((recordFile, index) => spawn(process.execPath, ['-e', code, moduleUrl, pathsFile, recordFile, lockPath, path.join(env.root, `ready-${index}`), go], { stdio: ['ignore', 'ignore', 'pipe'] }));
   const errors = recordFiles.map(() => '');
   children.forEach((child, index) => { child.stderr.on('data', (chunk) => { errors[index] += String(chunk); }); });
+  for (let index = 0; index < recordFiles.length; index += 1) {
+    await waitForFile(path.join(env.root, `ready-${index}`));
+  }
+  await fs.writeFile(go, 'go');
   const codes = await Promise.all(children.map((child) => new Promise((resolve) => child.once('exit', (exitCode) => resolve(exitCode)))));
   assert.deepEqual(codes, [0, 0, 0, 0], errors.join(' | '));
   const index = await readSharedIndex(paths);
@@ -312,4 +335,38 @@ test('the index write happens inside the exclusive transaction', async (t) => {
   assert.equal(await fs.readFile(probe, 'utf8'), '5', 'the probe was refused with SQLITE_BUSY');
   releaseWrite.resolve();
   assert.equal((await published).status, 'published');
+});
+
+test('a queued publisher waits at most the acquisition budget', async (t) => {
+  const env = await fixture(t);
+  const holderRecord = await buildRecord(env);
+  const queuedRecord = await addRecord(env, { id: 'exp-lock-queued-2', pluginName: 'dsh-evolution-promoted-eeeeeeeeeeee' });
+  const { indexPath } = sharingPaths(env.paths);
+  const context = new AsyncLocalStorage();
+  const atWrite = deferred();
+  const releaseWrite = deferred();
+  const originalRename = fs.rename;
+  fs.rename = async function (from, to, ...rest) {
+    if (to === indexPath && context.getStore() === 'holder') {
+      atWrite.resolve();
+      await releaseWrite.promise;
+    }
+    return originalRename.call(this, from, to, ...rest);
+  };
+  t.after(() => { fs.rename = originalRename; });
+  const holder = context.run('holder', () => publishSharedRecord(env.paths, holderRecord));
+  await atWrite.promise;
+  // The holder is stuck inside its write. A queued caller must not wait past
+  // the promised acquisition budget even though the holder is still alive.
+  const started = Date.now();
+  await assert.rejects(
+    publishSharedRecord(env.paths, queuedRecord),
+    (error) => error?.code === 'E_SHARED_PUBLISH_BUSY',
+  );
+  const elapsed = Date.now() - started;
+  assert.ok(elapsed >= 2000, `the queued caller waited for its budget (${elapsed} ms)`);
+  assert.ok(elapsed < 4000, `the queued caller returned at its deadline (${elapsed} ms)`);
+  releaseWrite.resolve();
+  assert.equal((await holder).status, 'published');
+  assert.equal((await publishSharedRecord(env.paths, queuedRecord)).status, 'published');
 });
