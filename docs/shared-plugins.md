@@ -22,8 +22,9 @@
   Trial/Canary 状态机、无领域存储、无工具注册、无模型调用），也不写发布索引、晋升 journal、canary 状态、
   Desktop composition 或领域存储。
 - **数据布局**：发布索引 `published.json`、逐 profile 撤销表 `disabled.json`、消费状态
-  `consumers/<profile>.json`、消费 composition `consumers/<profile>.cordis.yml` 与发布锁 `.publish.lock`
-  都在 `$DSH_HOME/storages/evolution/shared-plugins/` 下；插件源码与 Desktop 的 `promoted/` 是同一份。
+  `consumers/<profile>.json`、消费 composition `consumers/<profile>.cordis.yml` 与发布锁数据库
+  `.publish.lock.sqlite` 都在 `$DSH_HOME/storages/evolution/shared-plugins/` 下；插件源码与 Desktop 的
+  `promoted/` 是同一份。旧版本留下的 `.publish.lock` 租约文件不参与新协议，也不会被删除。
 - **没有后台同步。** consumer 只在启动时读索引，没有定时器、watcher 或轮询。发布发生在 consumer 已经
   启动之后时，需要重启该入口才生效（部署形态保持宿主 HMR 关闭，见 `README.md`）。
 
@@ -96,16 +97,12 @@ consumer 拒绝挂载**任何**记录（不能把「读不出撤销项」当成�
 
 - 索引与 consumer 状态都通过「同目录临时文件 + fsync + rename」原子替换，因此读者只会看到上一份完整文件或
   下一份完整文件，不会看到半写。
-- 发布索引的 read-modify-write 在索引旁的 `.publish.lock` 跨进程独占锁下进行：锁文件以 `wx` 创建并记录
-  token / pid / hostname；锁内容先写入私有临时文件并 fsync，再用 `link` 原子发布到锁路径，因此不存在
-  「已创建但尚未写入」的空锁，暂停的获取者不会留下可被按年龄回收的残件。**同主机且 pid 仍存活的持有者
-  永不被回收，与文件年龄无关**（慢 fsync 或暂停的进程不能被第二个写者顶掉），pid 可证明已消失的同主机锁
-  立即回收；无法用 pid 解释的锁（外地主机、不可读或格式错误的字节）才按 10 s 陈旧窗口回收。回收通过同级
-  `<lock>.reclaim` 标记串行化：持标记者才读取 owner 与 age，回收前复核同一 dev/ino，再用 rename 移走锁；
-  失效标记的清理同样是「先 rename、核对移动到的 inode、必要时 link 放回」，不会删掉并发回收者刚建立的
-  标记，回收者也在动锁前重新证明自己仍持有标记。2.5 s 内拿不到锁以 `E_SHARED_PUBLISH_BUSY`（可重试）报告。
-  拿到锁后先回读确认 token 仍是本次的（暂停期间被回收则重试），写入后再回读索引确认该记录确实落盘，
-  未落盘则重试（最多 3 次）。
+- 发布索引的 read-modify-write 在索引旁的 `.publish.lock.sqlite` 独占事务下进行：每次发布打开这个私有
+  SQLite 数据库并执行 `BEGIN IMMEDIATE`，成功即持有跨进程写锁，`COMMIT`/`ROLLBACK`（或进程崩溃时 SQLite
+  的自动回滚）释放。互斥由 SQLite 的事务与文件锁保证，因此没有「租约」需要回收：不存在按 mtime/pid 判定
+  陈旧并抢占的窗口，暂停的持有者不会被第二个写者顶掉，崩溃的持有者也不会把锁永久留下。2.5 s 内拿不到
+  写锁以 `E_SHARED_PUBLISH_BUSY`（可重试）报告。同一进程内的并发发布先在进程内排队，避免同步
+  `node:sqlite` 的等待阻塞当前持有者完成索引写入。旧协议遗留的 `.publish.lock` 文件不是所有权，被原样保留。
 - 同一 stable 事实重复发布是逐字节 no-op；已有记录若源码摘要冲突则拒绝（**不会**用不同字节静默
   替换已验证源码）；重发布保留发布身份与首次发布时间，只追加 revalidation 代（`revalidate` 采用新宿主
   证据时同时更新该记录的 host 身份）。

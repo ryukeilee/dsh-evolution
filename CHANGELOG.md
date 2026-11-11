@@ -61,19 +61,19 @@ format, tool-surface shape or authorization source changes.
 
 ### 可靠性收口（发布前审查修复）
 
-- **共享发布锁不再错误回收活跃持锁者。** `publishLockIsReclaimable()` 原先把「文件 mtime 超过 10 s」作为
-  第一个判据，早于读取 owner：一个仍在运行、但在慢 fsync / 暂停 / 长时间发布中持锁超过 10 s 的发布者会被
-  第二个写者顶掉，两个进程同时执行索引 read-modify-write，其中一方已经报告 `published` 的记录会被另一方
-  覆盖。现在同主机且 pid 仍存活的持有者**永不**被回收（与文件年龄无关），pid 可证明消失的同主机锁立即
-  回收，只有无法用 pid 解释的锁（外地主机、不可读 / 格式错误字节）才按 10 s 窗口回收。锁本身通过
-  「私有临时文件 fsync 后再 hard-link 到锁路径」发布，因此任何时候都只会看到完整 owner 记录或没有锁，
-  暂停在写入中途的进程不会再留下可被按年龄回收的空锁。回收由同级 `<lock>.reclaim` 标记串行化，持标记后
-  重新分类并核对 dev/ino，再用 rename 移走；清理失效标记改为「先 rename、再核对移动到的 inode、必要时
-  link 放回」，不会删除并发回收者刚建立的新标记，回收者也在动锁前重新证明自己仍持有标记。常量、超时与
-  `E_SHARED_PUBLISH_BUSY` 语义不变。回归见
-  `test/review-fix-shared-publish-lock.test.mjs`（活跃持锁者跨陈旧窗口、死持有者立即回收、
-  不可解释锁的新鲜 / 陈旧两态、崩溃回收者标记、并发回收压力下不丢记录，以及两个确定性交错：暂停的获取者
-  不会暴露半写锁，失效标记清理者会把并发回收者的活标记原样放回）。
+- **共享发布锁不再错误回收活跃持锁者。** 旧实现把「文件 mtime 超过 10 s」作为第一个回收判据，早于读取
+  owner：一个仍在运行、但在慢 fsync / 暂停 / 长时间发布中持锁超过 10 s 的发布者会被第二个写者顶掉，
+  两个进程同时执行索引 read-modify-write，其中一方已经报告 `published` 的记录会被另一方覆盖。审计还证明，
+  任何基于「读 owner → 判断 → 按路径删除/改名」的文件租约都留有恢复窗口：暂停的持有者可以恢复并进入
+  临界区，而回收者仍然移走同一个 inode；再加一级 `<lock>.reclaim` 标记也只是把竞争推迟到标记本身。
+  现在发布互斥改由索引旁的私有 SQLite 数据库 `.publish.lock.sqlite` 承担：每次发布执行
+  `BEGIN IMMEDIATE` 取得跨进程写事务，`COMMIT`/`ROLLBACK` 释放，进程崩溃时由 SQLite 自动回滚。因此
+  没有「陈旧锁」需要按 mtime/pid 判定或回收，暂停的持有者不会被顶掉，崩溃的持有者也不会永久占锁；同一
+  进程内的并发发布先在进程内排队，避免同步 `node:sqlite` 的等待阻塞当前持有者完成写入。2.5 s 内拿不到
+  写锁仍以 `E_SHARED_PUBLISH_BUSY`（可重试）报告；旧协议遗留的 `.publish.lock` 文件不是所有权，原样保留。
+  回归见 `test/review-fix-shared-publish-lock.test.mjs`（并发发布会话化且不丢记录、真实子进程持有写锁时
+  第二次发布以 `E_SHARED_PUBLISH_BUSY` 失败关闭、持有写锁的子进程崩溃后下一次发布自动恢复、锁库是私有
+  普通文件、旧租约文件不阻塞也不被删除）。
 - **撤销表损坏时 consumer 失败关闭。** `disabled.json` 不可读或格式错误时，`readDisableState()` 返回
   `invalid` / `unreadable` 与空 entries；consumer 以前把它当成「没有任何撤销」并继续挂载，操作者明确
   禁用的插件可能因此重新激活。现在未知撤销状态会让 consumer 拒绝挂载**任何**记录并报告
