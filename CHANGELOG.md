@@ -18,6 +18,21 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 未发布
+
+- **共享经验库 events 表改用 BLOB 身份（schema 2）。** `lib/shared-experience.js` 新建库直接创建
+  `events (id BLOB PRIMARY KEY, digest BLOB NOT NULL) STRICT, WITHOUT ROWID`，把 64 字符小写十六进制
+  的完整 SHA-256 事件 id 与内容摘要存为等价的 32 字节 BLOB，去掉 rowid 与 TEXT 唯一索引。永久去重、
+  重复投递识别、同 id 不同内容冲突、canonical knowledge 合并与全部检索/结论语义不变；不截断哈希、
+  不删除历史。schema 1 库在普通启动下继续按原 TEXT 布局读写，**不静默迁移**。
+- **一次性离线迁移 `dsh-evolution-experience-migrate`。** 新 `lib/shared-experience-migration.js` 与
+  `scripts/migrate-experience-store.mjs`：单个 `BEGIN EXCLUSIVE` 事务内复制、逐行校验事件 id/digest
+  与 knowledge 指纹后替换表；事务前完整 checkpoint 并写私有 `experience.sqlite.v1-backup`，提交后才
+  截断 WAL 并 `VACUUM`；失败回滚到未改动的 schema 1，重复执行幂等，库忙时拒绝。迁移后的库不再被旧版本
+  插件打开（未知 `user_version`），仍在运行的旧版本进程的 TEXT 写入被 `STRICT` 拒绝，不会静默混写。
+- 测量、复现命令与收益边界见 `docs/performance/shared-experience-storage.md`；升级与备份恢复步骤见
+  `README.md` 的「共享经验库 schema 2 与一次性迁移」。
+
 ## 0.2.4 — 稳定版
 
 `0.2.3` 的稳定后继，包含 PR #45–#48 与发布前可靠性审查的修复：统一经验采集与共享、经验驱动的
