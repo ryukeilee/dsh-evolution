@@ -25,6 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { DatabaseSync } from 'node:sqlite';
 import { pathToFileURL } from 'node:url';
 import {
   buildSharedRecord,
@@ -369,4 +370,45 @@ test('a queued publisher waits at most the acquisition budget', async (t) => {
   releaseWrite.resolve();
   assert.equal((await holder).status, 'published');
   assert.equal((await publishSharedRecord(env.paths, queuedRecord)).status, 'published');
+});
+
+test('a timed-out waiter does not hand the turn to a later waiter', async (t) => {
+  const env = await fixture(t);
+  const holderRecord = await buildRecord(env);
+  const timedOutRecord = await addRecord(env, { id: 'exp-lock-turn-b', pluginName: 'dsh-evolution-promoted-ffffffffffff' });
+  const laterRecord = await addRecord(env, { id: 'exp-lock-turn-c', pluginName: 'dsh-evolution-promoted-111111111111' });
+  const { indexPath } = sharingPaths(env.paths);
+  const context = new AsyncLocalStorage();
+  const atWrite = deferred();
+  const releaseWrite = deferred();
+  const originalRename = fs.rename;
+  fs.rename = async function (from, to, ...rest) {
+    if (to === indexPath && context.getStore() === 'holder') {
+      atWrite.resolve();
+      await releaseWrite.promise;
+    }
+    return originalRename.call(this, from, to, ...rest);
+  };
+  const originalExec = DatabaseSync.prototype.exec;
+  let holderReleased = false;
+  let trackBegins = false;
+  let prematureBegins = 0;
+  DatabaseSync.prototype.exec = function (sql, ...rest) {
+    if (trackBegins && !holderReleased && String(sql).trim().toUpperCase().startsWith('BEGIN IMMEDIATE')) prematureBegins += 1;
+    return originalExec.call(this, sql, ...rest);
+  };
+  t.after(() => { fs.rename = originalRename; DatabaseSync.prototype.exec = originalExec; });
+  const holder = context.run('holder', () => publishSharedRecord(env.paths, holderRecord));
+  await atWrite.promise;
+  trackBegins = true;
+  await assert.rejects(publishSharedRecord(env.paths, timedOutRecord), (error) => error?.code === 'E_SHARED_PUBLISH_BUSY');
+  // The timed-out waiter must only remove itself: the next waiter stays queued
+  // while the holder is still inside its transaction.
+  const later = publishSharedRecord(env.paths, laterRecord);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(prematureBegins, 0, 'no later waiter may enter the transaction while the holder still owns it');
+  releaseWrite.resolve();
+  holderReleased = true;
+  assert.equal((await holder).status, 'published');
+  assert.equal((await later).status, 'published');
 });
