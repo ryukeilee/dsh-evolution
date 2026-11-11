@@ -69,8 +69,11 @@ format, tool-surface shape or authorization source changes.
   现在发布互斥改由索引旁的私有 SQLite 数据库 `.publish.lock.sqlite` 承担：每次发布执行
   `BEGIN IMMEDIATE` 取得跨进程写事务，`COMMIT`/`ROLLBACK` 释放，进程崩溃时由 SQLite 自动回滚。因此
   没有「陈旧锁」需要按 mtime/pid 判定或回收，暂停的持有者不会被顶掉，崩溃的持有者也不会永久占锁；同一
-  进程内的并发发布先在进程内排队，避免同步 `node:sqlite` 的等待阻塞当前持有者完成写入。2.5 s 内拿不到
-  写锁仍以 `E_SHARED_PUBLISH_BUSY`（可重试）报告；旧协议遗留的 `.publish.lock` 文件不是所有权，原样保留。
+  进程内的并发发布先在进程内排队，避免同步 `node:sqlite` 的等待阻塞当前持有者完成写入；排队与跨进程等待
+  共用同一个 2.5 s 预算，超时仍以 `E_SHARED_PUBLISH_BUSY`（可重试）报告。取得事务后还会做一次真实写入来
+  证明它是写事务（SQLite 在文件不可写时会静默退回只读连接，只读连接上的 `BEGIN IMMEDIATE` 不取得写锁），
+  不可写时以 `E_SHARED_PUBLISH_LOCK_UNWRITABLE` 失败关闭，绝不无锁写入。旧协议遗留的 `.publish.lock` 文件
+  不是所有权，原样保留。
   回归见 `test/review-fix-shared-publish-lock.test.mjs`（并发发布会话化且不丢记录、真实子进程持有写锁时
   第二次发布以 `E_SHARED_PUBLISH_BUSY` 失败关闭、持有写锁的子进程崩溃后下一次发布自动恢复、锁库是私有
   普通文件、旧租约文件不阻塞也不被删除）。

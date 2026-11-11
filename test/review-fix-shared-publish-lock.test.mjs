@@ -24,6 +24,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { pathToFileURL } from 'node:url';
 import {
   buildSharedRecord,
@@ -111,6 +112,12 @@ async function addRecord(env, { id, pluginName }) {
     capabilities: CAPABILITIES,
     source: { stableCommittedAt: experiment.stableCommittedAt },
   });
+}
+
+function deferred() {
+  let resolve;
+  const promise = new Promise((settle) => { resolve = settle; });
+  return { promise, resolve };
 }
 
 async function waitForFile(file, timeoutMs = 5000) {
@@ -251,4 +258,58 @@ test('the first concurrent creators of the lock database all publish', async (t)
   assert.deepEqual(codes, [0, 0, 0, 0], errors.join(' | '));
   const index = await readSharedIndex(paths);
   assert.deepEqual(index.records.map((row) => row.id).sort(), records.map((record) => record.id).sort());
+});
+
+test('a read-only lock database fails closed instead of publishing without exclusion', async (t) => {
+  const env = await fixture(t);
+  const first = await buildRecord(env);
+  assert.equal((await publishSharedRecord(env.paths, first)).status, 'published');
+  const second = await addRecord(env, { id: 'exp-lock-readonly-2', pluginName: 'dsh-evolution-promoted-dddddddddddd' });
+  const { lockPath } = sharingPaths(env.paths);
+  await fs.chmod(lockPath, 0o444);
+  t.after(() => fs.chmod(lockPath, 0o600).catch(() => {}));
+  await assert.rejects(
+    publishSharedRecord(env.paths, second),
+    (error) => error?.code === 'E_SHARED_PUBLISH_LOCK_UNWRITABLE',
+  );
+  const index = await readSharedIndex(env.paths);
+  assert.deepEqual(index.records.map((row) => row.id), [first.id], 'nothing was written without a writable lock');
+  await fs.chmod(lockPath, 0o600);
+  assert.equal((await publishSharedRecord(env.paths, second)).status, 'published');
+});
+
+test('the index write happens inside the exclusive transaction', async (t) => {
+  const env = await fixture(t);
+  const record = await buildRecord(env);
+  const { indexPath, lockPath } = sharingPaths(env.paths);
+  const context = new AsyncLocalStorage();
+  const atWrite = deferred();
+  const releaseWrite = deferred();
+  const originalRename = fs.rename;
+  fs.rename = async function (from, to, ...rest) {
+    if (to === indexPath && context.getStore() === 'publisher') {
+      atWrite.resolve();
+      await releaseWrite.promise;
+    }
+    return originalRename.call(this, from, to, ...rest);
+  };
+  t.after(() => { fs.rename = originalRename; });
+  const published = context.run('publisher', () => publishSharedRecord(env.paths, record));
+  await atWrite.promise;
+  // The publisher is in the middle of its atomic index replacement. Another
+  // process must not be able to take the write transaction now.
+  const probe = path.join(env.root, 'probe.txt');
+  const code = `const { DatabaseSync } = require('node:sqlite'); const fs = require('node:fs');
+   let out = 'ok';
+   try {
+     const db = new DatabaseSync(process.argv[1]);
+     db.exec('PRAGMA busy_timeout=0');
+     db.exec('BEGIN IMMEDIATE'); db.exec('ROLLBACK'); db.close();
+   } catch (error) { out = String(error?.errcode ?? error?.code ?? error); }
+   fs.writeFileSync(process.argv[2], out);`;
+  const child = spawn(process.execPath, ['-e', code, lockPath, probe], { stdio: 'ignore' });
+  await new Promise((resolve) => child.once('exit', resolve));
+  assert.equal(await fs.readFile(probe, 'utf8'), '5', 'the probe was refused with SQLITE_BUSY');
+  releaseWrite.resolve();
+  assert.equal((await published).status, 'published');
 });
