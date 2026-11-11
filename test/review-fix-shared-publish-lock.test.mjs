@@ -214,3 +214,41 @@ test('a leftover lease file from the previous protocol neither blocks nor is del
   assert.equal((await publishSharedRecord(env.paths, record)).status, 'published');
   assert.equal(await fs.readFile(legacy, 'utf8'), bytes, 'unknown on-disk state is preserved');
 });
+
+test('the first concurrent creators of the lock database all publish', async (t) => {
+  const env = await fixture(t);
+  const records = [];
+  for (let index = 0; index < 4; index += 1) {
+    records.push(await addRecord(env, {
+      id: `exp-lock-first-${index}`,
+      pluginName: `dsh-evolution-promoted-${String(index).padStart(12, 'c')}`,
+    }));
+  }
+  const { paths } = env;
+  const moduleUrl = new URL('../lib/promoted-sharing.js', import.meta.url).href;
+  const pathsFile = path.join(env.root, 'paths.json');
+  await fs.writeFile(pathsFile, JSON.stringify(paths));
+  const recordFiles = [];
+  for (const record of records) {
+    const file = path.join(env.root, `${record.id}.record.json`);
+    await fs.writeFile(file, JSON.stringify(record));
+    recordFiles.push(file);
+  }
+  const code = `(async () => {
+    const fs = require('node:fs');
+    const mod = await import(process.argv[1]);
+    const paths = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+    const record = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+    const result = await mod.publishSharedRecord(paths, record);
+    process.exit(result.status === 'published' || result.status === 'updated' ? 0 : 3);
+  })().catch((error) => { console.error(String(error?.code || error)); process.exit(2); });`;
+  // Every process races on the very first creation of the lock database: the
+  // loser of the exclusive create must join the winner's file, not fail.
+  const children = recordFiles.map((recordFile) => spawn(process.execPath, ['-e', code, moduleUrl, pathsFile, recordFile], { stdio: ['ignore', 'ignore', 'pipe'] }));
+  const errors = recordFiles.map(() => '');
+  children.forEach((child, index) => { child.stderr.on('data', (chunk) => { errors[index] += String(chunk); }); });
+  const codes = await Promise.all(children.map((child) => new Promise((resolve) => child.once('exit', (exitCode) => resolve(exitCode)))));
+  assert.deepEqual(codes, [0, 0, 0, 0], errors.join(' | '));
+  const index = await readSharedIndex(paths);
+  assert.deepEqual(index.records.map((row) => row.id).sort(), records.map((record) => record.id).sort());
+});

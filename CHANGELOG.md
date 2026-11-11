@@ -95,12 +95,11 @@ format, tool-surface shape or authorization source changes.
   `truncated` 的含义相应变为「该 target 的结论数超过窗口」，不再由无关增长触发。回归见
   `test/shared-experience-conclusion.test.mjs` 与
   `test/experience-evolution-lifecycle.test.mjs`（505 条无关失败后同一策略仍被 `propose` 拒绝）。
-- **未改变的边界。** 发布锁与 target claim / archive lock 一样依赖同一主机与 PID namespace；持锁进程崩溃
-  后若其 pid 被无关进程复用，锁会一直等到该进程退出（可人工删除，doctor 不报告发布锁），这与既有协议
-  一致。同主机存活 pid 的锁永不回收，因此若持锁进程自己在 release 时读锁失败而把锁留下，该进程生命周期内
-  后续发布都会以 `E_SHARED_PUBLISH_BUSY` 失败，需要人工删除 `.publish.lock`（doctor 不检查该文件）。
-  被晋升插件若导出永不 settle 的 `apply`，consumer 挂载仍会等待它（没有超时），因为同一插件在 Trial 阶段
-  已经会卡住晋升；本版本未为此新增超时。
+- **未改变的边界。** 发布互斥依赖 SQLite 的文件锁，因此数据根必须位于本地文件系统：网络文件系统与
+  不完整实现文件锁的 FUSE 挂载不受支持（与 `lib/dockyard-domain/PORTS.md` 的本地数据根前提一致）。
+  旧版本遗留的 `.publish.lock` 租约文件不参与新协议、也不提供新旧版本之间的互斥，新旧版本同时写同一个
+  数据根不在支持范围内。被晋升插件若导出永不 settle 的 `apply`，consumer 挂载仍会等待它（没有超时），
+  因为同一插件在 Trial 阶段已经会卡住晋升；本版本未为此新增超时。
 
 ### 边界
 
