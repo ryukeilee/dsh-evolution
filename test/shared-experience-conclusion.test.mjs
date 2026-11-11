@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -273,4 +274,26 @@ test('an identifier-legal target keeps its previous behavior', (t) => {
   // stays unused.
   assert.equal(store.findConclusions({ target: 'plugin edge-cache' }).matches.length, 1);
   assert.equal(store.findConclusions({ target: 'host' }).matches.length, 0);
+});
+
+test('a conclusion is still found after unrelated knowledge exceeds the global scan window', (t) => {
+  const store = open(t);
+  store.recordConclusion(conclude({ experimentId: 'exp-window', decision: 'no-benefit' }), ORIGIN);
+  // The window is the newest N canonical rows. Before the scoped read, 505
+  // newer unrelated failures pushed this conclusion out of it, `findConclusions`
+  // reported no match, and the proposal gate treated a proven-ineffective
+  // strategy as new.
+  for (let index = 0; index < 505; index += 1) {
+    store.recordFailure({
+      id: crypto.createHash('sha256').update(`unrelated:${index}`).digest('hex'),
+      type: 'tool/error',
+      code: 'E_UNRELATED',
+      target: `tool:unrelated-${index}`,
+    });
+  }
+  const found = store.findConclusions({ target: TARGET, applicability: VERSIONS, strategyFingerprint: FINGERPRINT });
+  assert.equal(found.matches.length, 1);
+  assert.equal(found.matches[0].decision, 'no-benefit');
+  assert.equal(found.matches[0].sameApplicability, true);
+  assert.equal(found.truncated, false, 'the window now covers every conclusion for this target');
 });

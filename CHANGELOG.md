@@ -59,6 +59,41 @@ format, tool-surface shape or authorization source changes.
   公式与预算见 `docs/performance/fixed-context-token-reduction-20261109.md` 第 9 节（来自仓库内 fixture，
   不是 provider token 测量）。
 
+### 可靠性收口（发布前审查修复）
+
+- **共享发布锁不再错误回收活跃持锁者。** `publishLockIsReclaimable()` 原先把「文件 mtime 超过 10 s」作为
+  第一个判据，早于读取 owner：一个仍在运行、但在慢 fsync / 暂停 / 长时间发布中持锁超过 10 s 的发布者会被
+  第二个写者顶掉，两个进程同时执行索引 read-modify-write，其中一方已经报告 `published` 的记录会被另一方
+  覆盖。现在同主机且 pid 仍存活的持有者**永不**被回收（与文件年龄无关），pid 可证明消失的同主机锁立即
+  回收，只有无法用 pid 解释的锁（外地主机、不可读 / 格式错误字节）才按 10 s 窗口回收；回收由同级
+  `<lock>.reclaim` 标记串行化，持标记后重新分类并核对 dev/ino，再用 rename 移走，两个回收者不会删掉
+  对方刚建立的锁。取得锁后还会回读确认 token 仍是本次的，暂停期间被回收时重试而不是继续发布。常量、
+  超时与 `E_SHARED_PUBLISH_BUSY` 语义不变。回归见
+  `test/review-fix-shared-publish-lock.test.mjs`（活跃持锁者跨陈旧窗口、死持有者立即回收、
+  不可解释锁的新鲜 / 陈旧两态、崩溃回收者标记、并发回收不丢记录）。
+- **撤销表损坏时 consumer 失败关闭。** `disabled.json` 不可读或格式错误时，`readDisableState()` 返回
+  `invalid` / `unreadable` 与空 entries；consumer 以前把它当成「没有任何撤销」并继续挂载，操作者明确
+  禁用的插件可能因此重新激活。现在未知撤销状态会让 consumer 拒绝挂载**任何**记录并报告
+  `disable-state-<status>`，doctor 的 `promotion.sharing` 同时报 `degraded` 并给出 `disableStatus`。
+  `ok` 与 `absent` 保持原语义。回归见 `test/review-fix-shared-publish-safety.test.mjs` 与
+  `test/promoted-sharing-diagnostics.test.mjs`。
+- **崩溃 reconciliation 不再被旧记录挤掉。** 此前 `scanStableShareCandidates()` 按名称升序取前 200 个
+  sidecar 再过滤，实验数超过上限时最新 stable 提交（正是索引写入丢失的崩溃窗口）不在读取范围内。现在候选
+  按名称倒序（实验 id 内嵌创建时间）读取，已在索引中的 experiment 直接跳过且不消耗读取预算，单位预算落在
+  真正缺失的记录上；`published` / `unchanged` / `skipped` 的报告语义保持不变。回归见
+  `test/review-fix-shared-publish-safety.test.mjs`。
+- **已证明无效的结论不再被无关知识挤出检索窗口。** `findConclusions()` 只扫描最新的 500 条 canonical 行；
+  长期使用后新增的无关失败会把结论行挤出窗口，`priorIneffectiveConclusion()` 因此看不到它，同一
+  target + strategy + 版本三元组会被再次提案并启动 Trial。现在读路径按结论的 canonical `scope` 在 SQLite
+  内过滤（payload 仍按同一种 `"scope":<json>` 形式匹配），窗口只受同一 target 的结论数限制；
+  `truncated` 的含义相应变为「该 target 的结论数超过窗口」，不再由无关增长触发。回归见
+  `test/shared-experience-conclusion.test.mjs` 与
+  `test/experience-evolution-lifecycle.test.mjs`（505 条无关失败后同一策略仍被 `propose` 拒绝）。
+- **未改变的边界。** 发布锁与 target claim / archive lock 一样依赖同一主机与 PID namespace；持锁进程崩溃
+  后若其 pid 被无关进程复用，锁会一直等到该进程退出（可人工删除，doctor 不报告发布锁），这与既有协议
+  一致。被晋升插件若导出永不 settle 的 `apply`，consumer 挂载仍会等待它（没有超时），因为同一插件在
+  Trial 阶段已经会卡住晋升；本版本未为此新增超时。
+
 ### 边界
 
 - 只支持同一台机器、同一 OS 用户、同一本地文件系统与同一个 `DSH_HOME`；没有跨机器同步、插件市场、

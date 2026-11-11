@@ -88,14 +88,21 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 索引本身缺失是正常的 Desktop-only 安装；索引不可读或格式错误时视为「没有任何记录被授权」，所有记录都不能
 挂载（doctor 报 `blocked`）。单个记录非法不会丢弃其它合法记录。
 
+撤销表按同一条安全规则处理：`disabled.json` 存在但不可读或格式错误时状态是 `invalid` / `unreadable`，
+consumer 拒绝挂载**任何**记录（不能把「读不出撤销项」当成「没有任何撤销」），doctor 的 `promotion.sharing`
+报 `degraded` 并给出 `disableStatus`。只有 `ok`（可读）与 `absent`（没有撤销表）是正常状态。
+
 ## 4. 发布是原子且幂等的
 
 - 索引与 consumer 状态都通过「同目录临时文件 + fsync + rename」原子替换，因此读者只会看到上一份完整文件或
   下一份完整文件，不会看到半写。
 - 发布索引的 read-modify-write 在索引旁的 `.publish.lock` 跨进程独占锁下进行：锁文件以 `wx` 创建并记录
-  token / pid / hostname；只在同主机且 pid 可证明已消失、或超过 10 s 陈旧窗口时通过 rename 回收（只会有一个
-  回收者成功），无法解释的锁宁可直接等待也不删除；2.5 s 内拿不到锁以 `E_SHARED_PUBLISH_BUSY`（可重试）
-  报告。写入后再回读索引确认该记录确实落盘，未落盘则重试（最多 3 次）。
+  token / pid / hostname；**同主机且 pid 仍存活的持有者永不被回收，与文件年龄无关**（慢 fsync 或暂停的进程
+  不能被第二个写者顶掉），pid 可证明已消失的同主机锁立即回收；无法用 pid 解释的锁（外地主机、不可读或格式
+  错误的字节）才按 10 s 陈旧窗口回收。回收通过同级 `<lock>.reclaim` 标记串行化：持标记者才读取 owner 与
+  age，回收前复核同一 dev/ino，再用 rename 移走锁，因此两个回收者不会删掉对方刚建立的锁。2.5 s 内拿不到锁
+  以 `E_SHARED_PUBLISH_BUSY`（可重试）报告。拿到锁后先回读确认 token 仍是本次的（暂停期间被回收则重试），
+  写入后再回读索引确认该记录确实落盘，未落盘则重试（最多 3 次）。
 - 同一 stable 事实重复发布是逐字节 no-op；已有记录若源码摘要冲突则拒绝（**不会**用不同字节静默
   替换已验证源码）；重发布保留发布身份与首次发布时间，只追加 revalidation 代（`revalidate` 采用新宿主
   证据时同时更新该记录的 host 身份）。
@@ -105,8 +112,10 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
   `reconcileSharedPromotions()`（`lib/orchestrator.js`）扫描
   `archive/experiments/<experimentId>.evidence.json`，只采纳同时具备 `stableCommittedAt`、
   committed `durable` 身份与非空 `shareTargets` 的快照，为索引中缺失的记录补发布。它从不重新打开 canary、
-  不推断批准、不删除记录；重复执行是幂等的。覆盖的崩溃窗口包括 stable journal 阶段写出后、journal 清理前，
-  以及 stable 提交与索引写入之间。
+  不推断批准、不删除记录；重复执行是幂等的。候选按名称倒序（实验 id 内嵌创建时间，最新优先）读取，已在索引
+  中的 experiment 直接跳过、不消耗读取预算，因此补发布预算落在真正缺失的记录上——即使 archive 里的实验数
+  （`*.evidence.json`）超过单次读取上限（200），最近的崩溃窗口也不会被旧记录挤掉。覆盖的崩溃窗口包括
+  stable journal 阶段写出后、journal 清理前，以及 stable 提交与索引写入之间。
 
 ## 5. 操作流程
 

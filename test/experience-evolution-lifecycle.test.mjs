@@ -1282,3 +1282,26 @@ test('delegation and background entry points are refused even when they claim co
   }
   assert.equal(h.orchestrator.experiments.get(experimentId).probe, undefined);
 });
+
+test('a proven-ineffective strategy stays blocked after unrelated knowledge outgrows the scan window', async (t) => {
+  const h = await createHarness(t, 'conclusion-window');
+  recordConclusion(h.store, { target: TARGET, strategy: STRATEGY, decision: 'no-benefit' });
+  // 505 newer unrelated failures are more than the default 500-row window. They
+  // must not hide the conclusion: with a windowed read the same strategy would
+  // look new and a second Trial would start under identical conditions.
+  for (let index = 0; index < 505; index += 1) {
+    h.store.recordFailure({
+      id: sha256(`unrelated-failure:${index}`),
+      type: 'tool/error',
+      code: 'E_UNRELATED',
+      target: `tool:unrelated-${index}`,
+    });
+  }
+  const rejection = h.orchestrator.propose(
+    { target: TARGET, strategy: STRATEGY, why: 'repeat the same hypothesis', rootCause: 'recorded by the lifecycle regression test' },
+    h.exec,
+  );
+  assert.equal(rejection.ok, false);
+  assert.equal(rejection.reason, 'strategy-already-proven-ineffective');
+  assert.equal(rejection.prior.decision, 'no-benefit');
+});
