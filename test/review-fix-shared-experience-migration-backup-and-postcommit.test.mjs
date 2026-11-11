@@ -200,9 +200,12 @@ db.close();
     assert.equal(report.migrated, true);
     assert.equal(state.version, EXPERIENCE_SCHEMA_VERSION);
     assert.equal(state.integrity, 'ok');
-    if (result.wrote !== null && result.wrote <= migrationEnded) {
-      interleaved = true;
+    if (result.wrote !== null) {
+      // The writer always commits once it observes schema 2, so the fact is
+      // present even when it landed after the conversion returned; the earlier
+      // branch only decides whether that happened inside the migration.
       assert.equal(state.events, 20001, 'the post-commit fact must be kept');
+      if (result.wrote <= migrationEnded) interleaved = true;
     } else {
       assert.equal(state.events, 20000);
     }
