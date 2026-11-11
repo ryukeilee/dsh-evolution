@@ -578,12 +578,16 @@ test('read-only inspection: inspect() changes no bytes and creates no backup on 
     for (let i = 0; i < 5; i += 1) v2.recordFailure({ id: sha256(`inspect-v2-${i}`), type: 'tool/error', code: 'E_INSPECT', target: 'editor' });
   } finally { v2.close(); }
 
+  // A read-only SQLite open may create or reuse WAL/SHM sidecars; they are not
+  // inspection state. The database/backup files themselves must stay identical.
+  const mainFiles = root => fileSnapshot(root)
+    .filter(entry => !entry.name.endsWith('-wal') && !entry.name.endsWith('-shm'));
   for (const [root, expectedVersion, pending] of [[v1Root, 1, true], [v2Root, 2, false]]) {
-    const before = fileSnapshot(root);
+    const before = mainFiles(root);
     const first = inspectSharedExperience(root);
     const second = inspectSharedExperience(root);
-    const after = fileSnapshot(root);
-    assert.deepEqual(after, before, `schema ${expectedVersion} inspection left the directory byte-identical`);
+    const after = mainFiles(root);
+    assert.deepEqual(after, before, `schema ${expectedVersion} inspection left the database bytes identical`);
     assert.equal(first.schemaVersion, expectedVersion);
     assert.equal(first.pending, pending);
     assert.equal(first.migrated, expectedVersion === 2);

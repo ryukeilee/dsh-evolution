@@ -86,11 +86,15 @@ function fileHash(file) {
 }
 
 function fileSnapshot(root) {
-  return fs.readdirSync(root).sort().map(name => {
-    const file = path.join(root, name);
-    const stat = fs.lstatSync(file);
-    return { name, bytes: stat.size, isFile: stat.isFile(), sha256: stat.isFile() ? fileHash(file) : null };
-  });
+  // SQLite read-only opens may create/reuse WAL/SHM sidecars; dry-run
+  // comparisons cover the database, backup and staging files only.
+  return fs.readdirSync(root).sort()
+    .filter(name => !name.endsWith('-wal') && !name.endsWith('-shm'))
+    .map(name => {
+      const file = path.join(root, name);
+      const stat = fs.lstatSync(file);
+      return { name, bytes: stat.size, isFile: stat.isFile(), sha256: stat.isFile() ? fileHash(file) : null };
+    });
 }
 
 function v1Snapshot(root) {

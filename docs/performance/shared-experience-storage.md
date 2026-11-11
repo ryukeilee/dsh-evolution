@@ -30,7 +30,7 @@ node --max-old-space-size=4096 scripts/benchmarks/shared-experience-storage.mjs 
 ## 环境
 
 - Node `v26.13.0`，`darwin/arm64`，文件系统 `apfs`，8 逻辑 CPU，16 GiB 内存。
-- 被测源码版本：git HEAD `48c8f2e77bba3b72cad2c787b53a63d4cf498619`；`lib/shared-experience.js` sha256 `d47722fd751682f5df77a80b6388ce79c25ce0d17e0591c8fcfe4fe04441f037`，各文件哈希与工作树状态见 JSON 的 `sources`。
+- 被测源码版本：git HEAD `aaf043b25426b17d74200e931e077b1d039e550a`；`lib/shared-experience.js` sha256 `d47722fd751682f5df77a80b6388ce79c25ce0d17e0591c8fcfe4fe04441f037`，各文件哈希与工作树状态见 JSON 的 `sources`。
 - 数据库都建在 `fs.mkdtempSync(os.tmpdir())` 隔离目录并清理，未使用真实 `$DSH_HOME` 或正式数据。
 
 ## 体积结果（每轮中位数）
@@ -82,36 +82,36 @@ node --max-old-space-size=4096 scripts/benchmarks/shared-experience-storage.mjs 
 
 | 场景 | size | 变体 | 写入 p50 | 写入 p95 | 写入 max | 写入 mean | 写入总耗时 | 批量耗时 | 重放 p50 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| uniform-ledger | 1000 | A | 0.220 ms | 0.246 ms | 0.811 ms | 0.227 ms | 227.1 ms | 227.9 ms | — |
-| uniform-ledger | 1000 | B | 0.216 ms | 0.245 ms | 0.732 ms | 0.224 ms | 223.8 ms | 224.6 ms | — |
-| uniform-ledger | 10000 | A | 0.224 ms | 0.252 ms | 2.394 ms | 0.237 ms | 2365.1 ms | 2372.1 ms | — |
-| uniform-ledger | 10000 | B | 0.218 ms | 0.244 ms | 1.175 ms | 0.227 ms | 2271.5 ms | 2278.3 ms | — |
-| diverse-knowledge | 1000 | A | 0.114 ms | 0.150 ms | 1.746 ms | 0.125 ms | 125.4 ms | 126.0 ms | — |
-| diverse-knowledge | 1000 | B | 0.111 ms | 0.148 ms | 1.223 ms | 0.121 ms | 120.7 ms | 121.4 ms | — |
-| diverse-knowledge | 10000 | A | 0.114 ms | 0.139 ms | 5.839 ms | 0.146 ms | 1458.4 ms | 1464.8 ms | — |
-| diverse-knowledge | 10000 | B | 0.110 ms | 0.135 ms | 5.754 ms | 0.138 ms | 1379.6 ms | 1385.9 ms | — |
-| replay-duplicates | 1000 | A | 0.220 ms | 0.246 ms | 1.596 ms | 0.228 ms | 227.5 ms | 228.2 ms | 0.008 ms |
-| replay-duplicates | 1000 | B | 0.215 ms | 0.243 ms | 0.808 ms | 0.223 ms | 223.0 ms | 223.7 ms | 0.009 ms |
-| replay-duplicates | 10000 | A | 0.223 ms | 0.247 ms | 1.750 ms | 0.234 ms | 2342.8 ms | 2349.5 ms | 0.008 ms |
-| replay-duplicates | 10000 | B | 0.217 ms | 0.242 ms | 3.339 ms | 0.228 ms | 2281.1 ms | 2287.8 ms | 0.008 ms |
+| uniform-ledger | 1000 | A | 0.222 ms | 0.247 ms | 0.716 ms | 0.229 ms | 228.9 ms | 229.6 ms | — |
+| uniform-ledger | 1000 | B | 0.217 ms | 0.243 ms | 0.792 ms | 0.224 ms | 223.8 ms | 224.5 ms | — |
+| uniform-ledger | 10000 | A | 0.224 ms | 0.251 ms | 3.542 ms | 0.238 ms | 2380.2 ms | 2387.0 ms | — |
+| uniform-ledger | 10000 | B | 0.219 ms | 0.247 ms | 1.613 ms | 0.229 ms | 2288.7 ms | 2295.5 ms | — |
+| diverse-knowledge | 1000 | A | 0.114 ms | 0.152 ms | 1.591 ms | 0.127 ms | 127.3 ms | 128.0 ms | — |
+| diverse-knowledge | 1000 | B | 0.113 ms | 0.150 ms | 1.483 ms | 0.122 ms | 122.2 ms | 122.7 ms | — |
+| diverse-knowledge | 10000 | A | 0.114 ms | 0.140 ms | 5.856 ms | 0.146 ms | 1456.7 ms | 1463.0 ms | — |
+| diverse-knowledge | 10000 | B | 0.111 ms | 0.137 ms | 5.855 ms | 0.139 ms | 1389.5 ms | 1395.4 ms | — |
+| replay-duplicates | 1000 | A | 0.222 ms | 0.249 ms | 1.469 ms | 0.230 ms | 230.1 ms | 230.8 ms | 0.008 ms |
+| replay-duplicates | 1000 | B | 0.217 ms | 0.244 ms | 0.910 ms | 0.224 ms | 224.3 ms | 225.0 ms | 0.008 ms |
+| replay-duplicates | 10000 | A | 0.225 ms | 0.253 ms | 3.242 ms | 0.238 ms | 2384.4 ms | 2390.9 ms | 0.008 ms |
+| replay-duplicates | 10000 | B | 0.218 ms | 0.244 ms | 2.189 ms | 0.227 ms | 2272.2 ms | 2279.1 ms | 0.008 ms |
 
 ### B/A 延迟比与 open 成本
 
 | 场景 | size | 写入 p50 B/A | 写入总耗时 B/A | 重放 p50 B/A |
 | --- | --- | --- | --- | --- |
-| uniform-ledger | 1000 | 98.1% | 98.5% | — |
-| uniform-ledger | 10000 | 97.6% | 96.0% | — |
-| diverse-knowledge | 1000 | 97.1% | 96.3% | — |
-| diverse-knowledge | 10000 | 97.0% | 94.6% | — |
-| replay-duplicates | 1000 | 98.0% | 98.0% | 104.6% |
-| replay-duplicates | 10000 | 97.7% | 97.4% | 104.7% |
+| uniform-ledger | 1000 | 98.0% | 97.7% | — |
+| uniform-ledger | 10000 | 98.0% | 96.2% | — |
+| diverse-knowledge | 1000 | 98.4% | 96.0% | — |
+| diverse-knowledge | 10000 | 97.5% | 95.4% | — |
+| replay-duplicates | 1000 | 97.8% | 97.5% | 105.2% |
+| replay-duplicates | 10000 | 96.9% | 95.3% | 103.6% |
 
 | open 场景 | A 中位数 | B 中位数 | B/A |
 | --- | --- | --- | --- |
-| 空根建库 open+close（20 次/轮/变体） | 0.855 ms | 0.806 ms | 94.3% |
-| 已存在库 open（20 次/轮/变体，uniform-ledger 最大 size） | 0.306 ms | 0.323 ms | 105.4% |
+| 空根建库 open+close（20 次/轮/变体） | 0.850 ms | 0.798 ms | 93.8% |
+| 已存在库 open（20 次/轮/变体，uniform-ledger 最大 size） | 0.307 ms | 0.307 ms | 100.2% |
 
-重放命中路径（事件已存在，只做 SELECT + COMMIT）的 B−A 绝对差：size 1000: 0.0004 ms（104.6%）；size 10000: 0.0004 ms（104.7%）。这是亚微秒到一微秒量级的差异，且低于同一路径的轮次波动。
+重放命中路径（事件已存在，只做 SELECT + COMMIT）的 B−A 绝对差：size 1000: 0.0004 ms（105.2%）；size 10000: 0.0003 ms（103.6%）。这是亚微秒到一微秒量级的差异，且低于同一路径的轮次波动。
 
 延迟回退判定容差（写入 p50/总耗时 B ≤ 1.25×A + 0.02 ms，open B ≤ 1.5×A + 1 ms）记录在 `selfChecks`。
 
@@ -174,10 +174,10 @@ node --max-old-space-size=4096 scripts/benchmarks/shared-experience-storage.mjs 
 
 | 场景 | size | 迁移墙钟 | 主库迁移前 | 主库迁移后 | events 迁移前 | events 迁移后 | freelist 后 | 备份文件 | dry-run | hex 一致 | knowledge 一致 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| uniform-ledger | 1000 | 138.8 ms | 284.0 KiB | 112.0 KiB | 224.0 KiB | 72.0 KiB | 0 | 284.0 KiB | 0/128.6 ms | 是 | 是 |
-| uniform-ledger | 10000 | 224.8 ms | 2.18 MiB | 740.0 KiB | 2.13 MiB | 700.0 KiB | 0 | 2.18 MiB | 0/116.6 ms | 是 | 是 |
-| diverse-knowledge | 1000 | 163.0 ms | 2.26 MiB | 2.11 MiB | 228.0 KiB | 72.0 KiB | 0 | 2.26 MiB | 0/116.0 ms | 是 | 是 |
-| diverse-knowledge | 10000 | 487.4 ms | 22.38 MiB | 20.86 MiB | 2.14 MiB | 700.0 KiB | 0 | 22.38 MiB | 0/120.9 ms | 是 | 是 |
+| uniform-ledger | 1000 | 144.1 ms | 284.0 KiB | 112.0 KiB | 224.0 KiB | 72.0 KiB | 0 | 284.0 KiB | 0/114.5 ms | 是 | 是 |
+| uniform-ledger | 10000 | 229.3 ms | 2.18 MiB | 740.0 KiB | 2.13 MiB | 700.0 KiB | 0 | 2.18 MiB | 0/115.5 ms | 是 | 是 |
+| diverse-knowledge | 1000 | 159.4 ms | 2.26 MiB | 2.11 MiB | 228.0 KiB | 72.0 KiB | 0 | 2.26 MiB | 0/118.6 ms | 是 | 是 |
+| diverse-knowledge | 10000 | 488.2 ms | 22.38 MiB | 20.86 MiB | 2.14 MiB | 700.0 KiB | 0 | 22.38 MiB | 0/123.5 ms | 是 | 是 |
 
 迁移后 `SELECT hex(id), hex(digest)` 与迁移前 TEXT 逐行一致；`typeof(id)='blob' AND length(id)=32` 的行数等于原事件数。dry-run 输出与迁移 CLI 的 JSON 报告保存在原始数据 JSON 的 `migration.samples[].{dryRun,report}`。
 

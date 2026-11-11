@@ -11,6 +11,10 @@
  * before and after the swap. A failure leaves the schema 1 database untouched.
  *
  * Usage:
+ * A dry run never modifies the database or writes a backup; SQLite may create or
+ * reuse its own WAL/SHM sidecar files in the store directory, which are not
+ * migration artifacts.
+ *
  *   node scripts/migrate-experience-store.mjs --dry-run [--root <dir> | --home <DSH_HOME>]
  *   node scripts/migrate-experience-store.mjs [--root <dir> | --home <DSH_HOME>]
  *     [--backup <path>] [--no-backup] [--no-vacuum] [--json]
@@ -62,7 +66,7 @@ Options:
   --backup <path>    write the schema 1 backup to this path instead of the default
   --no-backup        do not keep a backup (refused for a pending conversion unless explicitly requested)
   --no-vacuum        convert without VACUUM; free pages and WAL are still checkpointed
-  --dry-run          read-only report; never writes
+  --dry-run          read-only report; does not modify the database or write a backup
   --json             machine-readable report
 `;
 

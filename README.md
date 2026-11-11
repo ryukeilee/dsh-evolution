@@ -381,7 +381,7 @@ dsh plugin --profile web remove dsh-evolution
 
 ```sh
 # 1. 完全退出 Desktop、ACP、Web（迁移需要独占写事务）
-# 2. 只读检查（不写任何文件）
+# 2. 只读检查（不修改数据库内容、不写备份）
 dsh-evolution-experience-migrate --dry-run
 # 3. 迁移；默认在库旁保留 experience.sqlite.v1-backup
 dsh-evolution-experience-migrate
@@ -391,6 +391,7 @@ node scripts/migrate-experience-store.mjs --root "$DSH_HOME/storages/evolution-e
 
 - 选项：`--root <dir>` 或 `--home <DSH_HOME>` 指定库位置；`--backup <path>` 改备份路径；`--no-backup` 跳过备份；`--no-vacuum` 只回收 WAL 而不执行 `VACUUM`；`--json` 输出机器可读报告。退出码 `0` 成功 / 无操作，`1` 拒绝（库忙、版本或表形状未知、既有备份不匹配），`2` 失败。
 - 库忙或 WAL 无法完整 checkpoint 时命令拒绝执行（`E_EXPERIENCE_MIGRATION_BUSY`），不会降级成部分迁移；确认入口进程已退出后重试。迁移期间需要额外磁盘空间（库旁备份 + 事务期间的 WAL 增长），请先确认可用空间。
+- 只读检查不修改主库字节、不创建备份；SQLite 只读连接可能在该目录创建或复用 WAL/SHM 辅助文件，它们不是迁移产物。既有备份必须是自包含的：如果备份依赖自己未 checkpoint 的 WAL 帧（主库单独无法恢复全部行），迁移会拒绝并保留该备份的全部文件，而不是读取后删除其 WAL。
 - **迁移后不要降级到 0.2.4 或更早版本**：旧版本以未知 `user_version` 拒绝打开共享库，不会猜测或重建。迁移时仍在运行的旧版本进程，其后续 TEXT 写入会被 `STRICT` 表 loud 拒绝；重启入口加载新版本即可，不会产生混合格式的账本。
 - **恢复备份**：停止所有入口，删除 `experience.sqlite`、`experience.sqlite-wal`、`experience.sqlite-shm`，把 `experience.sqlite.v1-backup` 复制为 `experience.sqlite` 并保持 `0600`，然后重启。备份与库同目录且包含完整账本，确认迁移成功后可按需删除。
 - 迁移不引入后台服务、定时器，也不在日常事件写入路径上执行 `VACUUM` 或全库重建。实测体积、写入延迟、打开成本与迁移成本见 [共享经验存储对照](docs/performance/shared-experience-storage.md)。

@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import {
   EXPERIENCE_LEGACY_SCHEMA_VERSION,
@@ -292,9 +293,74 @@ test('dry run reports the pending conversion and writes no files', t => {
   assert.equal(dry.dryRun, true);
   assert.equal(dry.pending, true);
   assert.equal(dry.events, view.events);
-  assert.deepEqual(fs.readdirSync(root).sort(), entriesBefore, 'inspection removes the sidecars its own read created');
+  // A read-only SQLite connection may create WAL/SHM sidecars next to the live
+  // store; they are not migration artifacts and must never be unlinked by an
+  // inspection. The database bytes and the absence of a backup are the contract.
+  assert.ok(!fs.readdirSync(root).some(name => name.endsWith('.v1-backup') || name.includes('.tmp-')
+    || name === 'events_next'));
   assert.deepEqual(fs.readFileSync(databaseFile(root)), fileBytes);
   assert.equal(fs.existsSync(backupFile(root)), false);
+});
+
+test('inspection never unlinks the live WAL/SHM sidecars and reads their committed rows', t => {
+  const root = temporary(t);
+  let store = openSharedExperience(root);
+  store.recordFailure(failure(1));
+  // Keep the writer connection open so the second commit stays in the WAL and
+  // the WAL/SHM files exist for the duration of the read-only inspection.
+  store.recordFailure(failure(2));
+  const wal = `${databaseFile(root)}-wal`;
+  const shm = `${databaseFile(root)}-shm`;
+  const walBytes = fs.readFileSync(wal);
+  assert.ok(walBytes.length > 0);
+
+  const view = inspectSharedExperience(root);
+  assert.equal(view.schemaVersion, EXPERIENCE_SCHEMA_VERSION);
+  assert.equal(view.events, 2, 'the read-only inspection sees the committed WAL rows');
+  assert.deepEqual(fs.readFileSync(wal), walBytes, 'inspection must not unlink or rewrite the live WAL');
+  assert.equal(fs.existsSync(shm), true, 'inspection must not unlink the live shared-memory index');
+
+  store.close();
+  store = null;
+  const reopened = openSharedExperience(root);
+  t.after(() => reopened.close());
+  assert.deepEqual(reopened.stats(), { events: 2, knowledge: 1 });
+});
+
+test('a backup that relies on uncheckpointed WAL frames is refused and left untouched', t => {
+  const root = temporary(t);
+  buildLegacyStore(root);
+  const before = rawLedger(databaseFile(root));
+  // Build a schema 1 backup whose main file is complete on its own, then add a
+  // committed row that lives only in its WAL and keep the writer connection
+  // open: the main file alone can no longer prove the full ledger.
+  const seedRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'evolution-experience-backup-wal-'));
+  t.after(() => fs.rmSync(seedRoot, { recursive: true, force: true }));
+  const seed = openSharedExperienceV1Baseline(seedRoot);
+  seed.recordFailure(failure(1));
+  seed.close();
+  fs.copyFileSync(databaseFile(seedRoot), backupFile(root));
+  fs.chmodSync(backupFile(root), 0o600);
+  const writer = new DatabaseSync(backupFile(root));
+  try {
+    const digest = createHash('sha256').update(JSON.stringify({ wal: 'backup-only' })).digest('hex');
+    writer.prepare('INSERT INTO events VALUES (?,?)').run(experienceEventId('wal-backup'), digest);
+    const wal = `${backupFile(root)}-wal`;
+    assert.ok(fs.statSync(wal).size > 0, 'the extra row is still in the backup WAL');
+    const walBytes = fs.readFileSync(wal);
+
+    assert.throws(() => migrateSharedExperience(root), (error) => {
+      assert.match(error.message, /E_EXPERIENCE_MIGRATION_BACKUP/);
+      assert.match(error.message, /WAL frames/i);
+      return true;
+    });
+    assert.equal(rawLedger(databaseFile(root)).version, EXPERIENCE_LEGACY_SCHEMA_VERSION);
+    assert.deepEqual(rawLedger(databaseFile(root)).events, before.events);
+    assert.deepEqual(fs.readFileSync(wal), walBytes, 'the refused backup WAL is not deleted or rewritten');
+    assert.equal(fs.existsSync(`${backupFile(root)}-shm`), true);
+    // The writer still sees its committed row after the refusal.
+    assert.equal(writer.prepare('SELECT count(*) AS n FROM events').get().n, 2);
+  } finally { writer.close(); }
 });
 
 test('SIGKILL during conversion never leaves a partial ledger', async t => {
