@@ -137,6 +137,7 @@ async function commandList(options) {
     ok: index.status === 'ok' || index.status === 'absent',
     indexPath: sharingPaths(paths).indexPath,
     indexStatus: index.status,
+    disableStatus: disable.status,
     indexUpdatedAt: index.updatedAt,
     invalidRecords: index.invalid,
     records,

@@ -72,19 +72,21 @@ format, tool-surface shape or authorization source changes.
   link 放回」，不会删除并发回收者刚建立的新标记，回收者也在动锁前重新证明自己仍持有标记。常量、超时与
   `E_SHARED_PUBLISH_BUSY` 语义不变。回归见
   `test/review-fix-shared-publish-lock.test.mjs`（活跃持锁者跨陈旧窗口、死持有者立即回收、
-  不可解释锁的新鲜 / 陈旧两态、崩溃回收者标记、并发回收不丢记录，以及两个确定性交错：暂停的获取者不会
-  暴露半写锁，失效标记清理者会把并发回收者的活标记原样放回）。
+  不可解释锁的新鲜 / 陈旧两态、崩溃回收者标记、并发回收压力下不丢记录，以及两个确定性交错：暂停的获取者
+  不会暴露半写锁，失效标记清理者会把并发回收者的活标记原样放回）。
 - **撤销表损坏时 consumer 失败关闭。** `disabled.json` 不可读或格式错误时，`readDisableState()` 返回
   `invalid` / `unreadable` 与空 entries；consumer 以前把它当成「没有任何撤销」并继续挂载，操作者明确
   禁用的插件可能因此重新激活。现在未知撤销状态会让 consumer 拒绝挂载**任何**记录并报告
   `disable-state-<status>`，doctor 的 `promotion.sharing` 同时报 `degraded` 并给出 `disableStatus`。
-  `ok` 与 `absent` 保持原语义。回归见 `test/review-fix-shared-publish-safety.test.mjs` 与
+  `setDisabledForProfile()` 在撤销表不可读时拒绝写入（否则会用空 entries 覆盖已有撤销、静默重新启用插件），
+  `dsh-evolution-shared list` 输出 `disableStatus`，doctor 的 remediation 给出「从备份恢复或刻意删除」的
+  处置。`ok` 与 `absent` 保持原语义。回归见 `test/review-fix-shared-publish-safety.test.mjs` 与
   `test/promoted-sharing-diagnostics.test.mjs`。
 - **崩溃 reconciliation 不再被旧记录挤掉。** 此前 `scanStableShareCandidates()` 按名称升序取前 200 个
   sidecar 再过滤，实验数超过上限时最新 stable 提交（正是索引写入丢失的崩溃窗口）不在读取范围内。现在候选
   按名称倒序（实验 id 内嵌创建时间）读取，已在索引中的 experiment 直接跳过且不消耗读取预算，单位预算落在
-  真正缺失的记录上；`maxRecords` 仍是每轮实际读取 sidecar 的上限。`published` / `unchanged` / `skipped`
-  的报告语义保持不变。回归见
+  真正缺失的记录上；`maxRecords` 仍是每轮实际读取 sidecar 的上限。`published` / `skipped` 的报告语义
+  不变，`unchanged` 现在按索引中已存在的记录数报告（不再只统计重新读到的 sidecar）。回归见
   `test/review-fix-shared-publish-safety.test.mjs`。
 - **已证明无效的结论不再被无关知识挤出检索窗口。** `findConclusions()` 只扫描最新的 500 条 canonical 行；
   长期使用后新增的无关失败会把结论行挤出窗口，`priorIneffectiveConclusion()` 因此看不到它，同一
@@ -95,8 +97,10 @@ format, tool-surface shape or authorization source changes.
   `test/experience-evolution-lifecycle.test.mjs`（505 条无关失败后同一策略仍被 `propose` 拒绝）。
 - **未改变的边界。** 发布锁与 target claim / archive lock 一样依赖同一主机与 PID namespace；持锁进程崩溃
   后若其 pid 被无关进程复用，锁会一直等到该进程退出（可人工删除，doctor 不报告发布锁），这与既有协议
-  一致。被晋升插件若导出永不 settle 的 `apply`，consumer 挂载仍会等待它（没有超时），因为同一插件在
-  Trial 阶段已经会卡住晋升；本版本未为此新增超时。
+  一致。同主机存活 pid 的锁永不回收，因此若持锁进程自己在 release 时读锁失败而把锁留下，该进程生命周期内
+  后续发布都会以 `E_SHARED_PUBLISH_BUSY` 失败，需要人工删除 `.publish.lock`（doctor 不检查该文件）。
+  被晋升插件若导出永不 settle 的 `apply`，consumer 挂载仍会等待它（没有超时），因为同一插件在 Trial 阶段
+  已经会卡住晋升；本版本未为此新增超时。
 
 ### 边界
 

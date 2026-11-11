@@ -173,11 +173,14 @@ dsh-evolution-shared revalidate --evidence <evidence.json>
 `dsh-evolution-doctor` 与会话内 `evolution_doctor` 共用同一个只读检查 `promotion.sharing`：
 
 - 索引缺失 → `ok`（全部 Desktop-only）；
-- 所有记录源码摘要匹配且 consumer 无失败、无派生的 `pendingRestart` → `ok`；
-- 存在兼容性问题、失败激活或需要重启 → `degraded`；
+- 所有记录源码摘要匹配、撤销表可读（`ok` / `absent`）、consumer 无失败且无派生的 `pendingRestart` → `ok`；
+- 存在兼容性问题、失败激活、需要重启，或撤销表 `invalid` / `unreadable`（consumer 此时拒绝挂载任何记录，
+  evidence 给出 `disableStatus`）→ `degraded`；
 - 索引不可读 / 格式错误，或某条记录与其源码摘要不一致 → `blocked`。
 
-检查只报告，不激活、不撤销、不修复。
+检查只报告，不激活、不撤销、不修复。撤销表不可读时，operator 应从备份恢复，或**刻意**删除该文件表示
+「没有任何逐 profile 撤销」（这会重新启用所有曾被撤销的插件）；`shared-plugins disable|enable` 在撤销表
+不可读时拒绝写入，不会用空 entries 覆盖已有撤销。
 
 ## 8. 明确的非目标
 

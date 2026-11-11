@@ -29,6 +29,7 @@ import {
   readSharedIndex,
   reconcileSharedIndex,
   scanStableShareCandidates,
+  setDisabledForProfile,
   sharingPaths,
   SHARED_STATUS,
 } from '../lib/promoted-sharing.js';
@@ -170,7 +171,7 @@ test('revocation state written by the CLI still disables one profile', async (t)
   const env = await fixture(t);
   const record = await buildRecord(env);
   await publishSharedRecord(env.paths, record);
-  const { setDisabledForProfile, readDisableState } = await import('../lib/promoted-sharing.js');
+  const { readDisableState } = await import('../lib/promoted-sharing.js');
   await setDisabledForProfile(env.paths, { pluginId: record.id, profile: 'acp', disabled: true });
   assert.equal((await readDisableState(env.paths)).status, 'ok');
   const decision = await evaluateSharedRecord({
@@ -186,6 +187,20 @@ test('revocation state written by the CLI still disables one profile', async (t)
   });
   assert.equal(decision.status, SHARED_STATUS.DISABLED);
   assert.equal(decision.reason, 'operator-disabled');
+});
+
+test('a write to a corrupt revocation table is refused and leaves it untouched', async (t) => {
+  const env = await fixture(t);
+  const record = await buildRecord(env);
+  await publishSharedRecord(env.paths, record);
+  const disablePath = sharingPaths(env.paths).disablePath;
+  const corrupt = '{not json';
+  await fs.writeFile(disablePath, corrupt);
+  await assert.rejects(
+    setDisabledForProfile(env.paths, { pluginId: record.id, profile: 'acp', disabled: true }),
+    /revocation table is invalid/,
+  );
+  assert.equal(await fs.readFile(disablePath, 'utf8'), corrupt, 'the unknown file is preserved, never rewritten from empty entries');
 });
 
 test('reconciliation keeps the sidecar read budget bounded', async (t) => {
