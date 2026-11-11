@@ -327,6 +327,25 @@ test('inspection never unlinks the live WAL/SHM sidecars and reads their committ
   assert.deepEqual(reopened.stats(), { events: 2, knowledge: 1 });
 });
 
+test('inspection does not remove the WAL/SHM sidecars its own read creates', t => {
+  const root = temporary(t);
+  const store = openSharedExperience(root);
+  store.recordFailure(failure(1));
+  store.close();
+  const wal = `${databaseFile(root)}-wal`;
+  const shm = `${databaseFile(root)}-shm`;
+  assert.equal(fs.existsSync(wal), false, 'a cleanly closed store has no sidecars');
+  assert.equal(fs.existsSync(shm), false);
+  // The old implementation tracked sidecars that did not exist before its
+  // read-only open and unlinked "new" ones on close. That is the same deletion
+  // window that could discard a concurrent writer's committed WAL frames; a
+  // read-only inspection must leave every file SQLite creates in place.
+  const view = inspectSharedExperience(root);
+  assert.equal(view.events, 1);
+  assert.equal(fs.existsSync(wal), true, 'inspection leaves the WAL file it created');
+  assert.equal(fs.existsSync(shm), true, 'inspection leaves the SHM file it created');
+});
+
 test('a backup that relies on uncheckpointed WAL frames is refused and left untouched', t => {
   const root = temporary(t);
   buildLegacyStore(root);
