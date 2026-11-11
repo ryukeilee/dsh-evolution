@@ -1,0 +1,202 @@
+{
+  "kind": "dsh-evolution-local-entry-install",
+  "version": "0.2.5",
+  "at": "2026-11-11T17:10:22.370Z",
+  "release": {
+    "tag": "v0.2.5",
+    "tagCommit": "0219c1e13e97a4aaeca3c4144195ecb8a1d3bfeb",
+    "releaseUrl": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.5",
+    "publicLatest": true,
+    "anonymousDownloadVerified": true,
+    "ciRun": "https://github.com/ryukeilee/dsh-evolution/actions/runs/43063406707",
+    "releaseWorkflowRun": "https://github.com/ryukeilee/dsh-evolution/actions/runs/43064209750",
+    "environment": {
+      "node": "v26.13.0",
+      "dshHost": "0.2.2-rc.1",
+      "desktopApp": "0.2.2-rc.1"
+    },
+    "artifact": {
+      "sha256": "d4a90e26c19fb36bc4b3b0a2b4ecbb0fc589b1eededc75a2417fdc74aa636492",
+      "contentSha256": "db9fafaf89d50b49e9a8df102e637e5484e16cd52f0190072de95bb4d2122e9e",
+      "entries": 61,
+      "sourceCommit": "47d83175025b62889e5a5041f087a470fdd1421a"
+    }
+  },
+  "install": {
+    "method": "node scripts/setup-experience.mjs --tarball <public release tarball> --apply",
+    "home": "<home>",
+    "profiles": {
+      "desktop": {
+        "installedVersion": "0.2.5",
+        "dependency": "d4a90e26c19fb36bc4b3b0a2b4ecbb0fc589b1eededc75a2417fdc74aa636492.tgz",
+        "shippedEntriesMatched": 61,
+        "fileProblems": [],
+        "profilePatchUnchangedFromBaseline": true,
+        "installedPackageJsonMatchesTarball": true
+      },
+      "acp": {
+        "installedVersion": "0.2.5",
+        "dependency": "d4a90e26c19fb36bc4b3b0a2b4ecbb0fc589b1eededc75a2417fdc74aa636492.tgz",
+        "shippedEntriesMatched": 61,
+        "fileProblems": [],
+        "profilePatchUnchangedFromBaseline": true,
+        "installedPackageJsonMatchesTarball": true
+      },
+      "web": {
+        "installedVersion": "0.2.5",
+        "dependency": "d4a90e26c19fb36bc4b3b0a2b4ecbb0fc589b1eededc75a2417fdc74aa636492.tgz",
+        "shippedEntriesMatched": 61,
+        "fileProblems": [],
+        "profilePatchUnchangedFromBaseline": true,
+        "installedPackageJsonMatchesTarball": true
+      }
+    }
+  },
+  "dataPreservation": {
+    "experience": {
+      "schemaVersionBefore": 1,
+      "schemaVersionAfter": 1,
+      "automaticallyMigrated": false,
+      "migrationBackupCreated": false,
+      "baselineEvents": 94,
+      "missingBaselineEvents": 0,
+      "baselineKnowledgeRows": 7,
+      "missingBaselineKnowledge": [],
+      "eventsAfterVerificationRuns": 110,
+      "knowledgeAfterVerificationRuns": 8,
+      "integrity": "ok"
+    },
+    "evolutionTree": {
+      "changedFiles": [
+        "<home>/storages/evolution/shared-plugins/consumers/acp.json"
+      ],
+      "onlyExpectedConsumerBookkeeping": true,
+      "note": "The per-profile promoted-consumer state updates when that entry starts; EVOLUTION.md, evolution-memory.json, execution-events.jsonl, the promotion state and published index were not modified."
+    }
+  },
+  "entries": {
+    "desktop": {
+      "entry": "official Desktop application (formal DSH_HOME)",
+      "officialDesktopApp": true,
+      "isolatedElectronUserData": true,
+      "hostProcessFound": true,
+      "hostProcessHeldExperienceStoreOpen": true,
+      "hostOpenStoreFiles": [
+        "experience.sqlite-shm",
+        "experience.sqlite",
+        "experience.sqlite-wal",
+        "experience.sqlite-shm"
+      ],
+      "webUrlAnnounced": true,
+      "pluginLoadErrors": [],
+      "guiInteractionTested": false,
+      "capturePath": "isolated Desktop acceptance with the same pinned artifact (docs/evidence/cross-entry-desktop-0.2.2-rc.1.json and dsh-0.2.2-rc.1.json)"
+    },
+    "acp": {
+      "entry": "official ACP profile process (formal DSH_HOME)",
+      "runs": [
+        {
+          "ok": true,
+          "simulatedEvents": false,
+          "actualTool": "read",
+          "before": {
+            "events": 97,
+            "knowledge": 8
+          },
+          "afterChild": {
+            "events": 100,
+            "knowledge": 8
+          },
+          "corePresent": false,
+          "historyTools": 1,
+          "sharedRecallOccurrences": 5,
+          "experimentsBefore": 0,
+          "experimentsAfter": 0,
+          "externalModelCalls": 0
+        },
+        {
+          "ok": true,
+          "simulatedEvents": false,
+          "actualTool": "read",
+          "before": {
+            "events": 103,
+            "knowledge": 8
+          },
+          "afterChild": {
+            "events": 106,
+            "knowledge": 8
+          },
+          "corePresent": false,
+          "historyTools": 1,
+          "sharedRecallOccurrences": 11,
+          "experimentsBefore": 0,
+          "experimentsAfter": 0,
+          "externalModelCalls": 0
+        }
+      ],
+      "restartPersisted": true
+    },
+    "web": {
+      "entry": "official Web profile (formal DSH_HOME)",
+      "runs": [
+        {
+          "ok": true,
+          "simulatedEvents": false,
+          "actualTool": "read",
+          "before": {
+            "events": 100,
+            "knowledge": 8
+          },
+          "afterChild": {
+            "events": 103,
+            "knowledge": 8
+          },
+          "corePresent": false,
+          "historyTools": 1,
+          "sharedRecallOccurrences": 8,
+          "experimentsBefore": 0,
+          "experimentsAfter": 0,
+          "externalModelCalls": 0
+        },
+        {
+          "ok": true,
+          "simulatedEvents": false,
+          "actualTool": "read",
+          "before": {
+            "events": 106,
+            "knowledge": 8
+          },
+          "afterChild": {
+            "events": 109,
+            "knowledge": 8
+          },
+          "corePresent": false,
+          "historyTools": 1,
+          "sharedRecallOccurrences": 14,
+          "experimentsBefore": 0,
+          "experimentsAfter": 0,
+          "externalModelCalls": 0
+        }
+      ],
+      "restartPersisted": true
+    }
+  },
+  "crossEntry": {
+    "acpSawWebFacts": true,
+    "webSawAcpFacts": true,
+    "occurrenceGrowth": [
+      5,
+      8,
+      11,
+      14
+    ],
+    "isolatedHostAcceptance": "docs/evidence/cross-entry-0.2.2-rc.1.json (31/31)",
+    "realDesktopRunner": "docs/evidence/cross-entry-desktop-0.2.2-rc.1.json (stable record mounted by Web and ACP)"
+  },
+  "limitations": [
+    "The formal-home Desktop entry was booted and loaded the installed 0.2.5 bundle (its host process held the shared experience store open); a GUI/model turn in the formal Desktop window was not automated.",
+    "ACP and Web real-home probes were driven by the official --patch overlay (temporary, removed after each run); profile files stayed byte-identical to the pre-install baseline.",
+    "Verification runs legitimately grew the shared experience ledger and the per-profile consumer state; no baseline event id or knowledge key was lost."
+  ],
+  "ok": true
+}
