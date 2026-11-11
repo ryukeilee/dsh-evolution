@@ -36,6 +36,38 @@ export const inject = ['tools'];
 
 /** The tool surface the kernel registers (lib/registration.js#EVOLUTION_TOOLS). */
 const EVOLUTION_TOOL_COUNT = 12;
+/**
+ * `evolution_history` is registered by the bundle's separate
+ * `dsh-evolution/experience-history` entry, which `setup-experience` enables in
+ * every profile so the shared experience store can be read without a kernel.
+ * The kernel-only orchestrator tools are the other eleven: a consumer-only
+ * entry must register none of them even though `evolution_history` is present.
+ */
+const SHARED_EXPERIENCE_TOOL = 'evolution_history';
+const KERNEL_ONLY_TOOLS = Object.freeze([
+  'evolution_runtime_inspect',
+  'evolution_plan',
+  'evolution_propose',
+  'evolution_trial',
+  'evolution_probe',
+  'evolution_measure',
+  'evolution_revert',
+  'evolution_promote',
+  'evolution_canary_observe',
+  'evolution_maintain',
+  'evolution_doctor',
+]);
+
+/**
+ * One probe driver per process. The Desktop host can compose the same profile
+ * patch into more than one live context in one process; two live instances
+ * would each dispatch the marker once and each report `hits === 1`, hiding a
+ * double execution from the runner. The first instance drives and records how
+ * many instances the process composed.
+ */
+const PROBE_INSTANCE_KEY = Symbol.for('dsh-evolution.cross-entry-consumer-probe');
+const probeInstances = (globalThis[PROBE_INSTANCE_KEY] ??= { count: 0, driver: false });
+probeInstances.count += 1;
 
 function parseJsonEnv(name, fallback) {
   const raw = process.env[name];
@@ -84,6 +116,8 @@ export function apply(ctx) {
     if (output || message !== 'run') return;
     report(runConsumerProbe(ctx));
   };
+  if (probeInstances.driver) return;
+  probeInstances.driver = true;
   if (!output) {
     ctx.effect(() => {
       process.on('message', receive);
@@ -91,6 +125,17 @@ export function apply(ctx) {
     });
   }
   if (output) {
+    // A file-receipt entry has no IPC channel: run once the profile tree has
+    // settled. A `wx` lock makes exactly one instance the driver even if a
+    // second probe process shares the receipt path.
+    let driver = false;
+    try {
+      fs.closeSync(fs.openSync(`${output}.lock`, 'wx', 0o600));
+      driver = true;
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error;
+    }
+    if (!driver) return;
     const timer = setTimeout(() => report(runConsumerProbe(ctx)), 1500);
     ctx.effect(() => () => clearTimeout(timer));
   }
@@ -152,23 +197,34 @@ export async function runConsumerProbe(ctx) {
   if (!indexUpdatedAt) throw new Error('the publication index has no updatedAt');
 
   const evolutionTools = ctx.tools.schemas().filter((tool) => tool.name.startsWith('evolution_')).length;
+  const evolutionToolNames = ctx.tools.schemas().map((tool) => tool.name).filter((name) => name.startsWith('evolution_'));
+  const kernelOnlyTools = evolutionToolNames.filter((name) => KERNEL_ONLY_TOOLS.includes(name));
+  const unexpectedEvolutionTools = evolutionToolNames.filter((name) => !KERNEL_ONLY_TOOLS.includes(name) && name !== SHARED_EXPERIENCE_TOOL);
   const kernelPresent = Boolean(ctx.get('evolution'));
   if (expectKernel) {
     if (!kernelPresent) throw new Error('the full-kernel boot unexpectedly has no evolution service');
-    if (evolutionTools !== EVOLUTION_TOOL_COUNT) throw new Error(`the full-kernel boot registered ${evolutionTools} evolution_* tools, expected ${EVOLUTION_TOOL_COUNT}`);
+    if (evolutionToolNames.length !== EVOLUTION_TOOL_COUNT) throw new Error(`the full-kernel boot registered ${evolutionToolNames.length} evolution_* tools, expected ${EVOLUTION_TOOL_COUNT}`);
+    if (kernelOnlyTools.length !== KERNEL_ONLY_TOOLS.length) throw new Error(`the full-kernel boot did not register the kernel tool surface: ${JSON.stringify(evolutionToolNames)}`);
   } else {
     if (kernelPresent) throw new Error('the consumer-only boot still has the Evolution kernel mounted');
-    if (evolutionTools !== 0) throw new Error(`the consumer-only boot registered ${evolutionTools} evolution_* tools, expected 0`);
+    // The kernel is absent iff its service is absent and none of its
+    // orchestrator-only tools are registered. `evolution_history` is allowed:
+    // it is the shared-experience read tool, enabled by the product profile
+    // setup in every entry, not part of the kernel.
+    if (kernelOnlyTools.length !== 0) throw new Error(`the consumer-only boot registered kernel tools: ${JSON.stringify(kernelOnlyTools)}`);
+    if (unexpectedEvolutionTools.length !== 0) throw new Error(`the consumer-only boot registered unexpected evolution_* tools: ${JSON.stringify(unexpectedEvolutionTools)}`);
   }
 
-  const hasListener = (name) => {
+  const listenerCount = (name) => {
     const hooks = ctx.events?._hooks?.[name];
-    return Array.isArray(hooks) && hooks.length > 0;
+    return Array.isArray(hooks) ? hooks.length : 0;
   };
+  const hasListener = (name) => listenerCount(name) > 0;
 
   const rows = new Map((state.plugins || []).map((row) => [row?.id, row]));
   const observed = [];
   const markerHits = {};
+  const markerListeners = {};
   for (const [pluginId, expectation] of Object.entries(expected)) {
     const row = rows.get(pluginId);
     if (!row) throw new Error(`the consumer state has no row for ${pluginId}`);
@@ -193,6 +249,8 @@ export async function runConsumerProbe(ctx) {
       // The kernel mounted this record; the consumer must not mount a second
       // copy, so the listener still executes exactly once.
       await waitFor(() => hasListener(marker), `the kernel-mounted listener ${marker} of ${pluginId}`);
+      markerListeners[pluginId] = listenerCount(marker);
+      if (markerListeners[pluginId] !== 1) throw new Error(`the kernel-mounted record ${pluginId} registered ${markerListeners[pluginId]} listener(s) for ${marker}, expected exactly one`);
       const payload = { hits: 0 };
       await ctx.parallel(marker, payload);
       if (payload.hits !== 1) throw new Error(`the kernel-mounted listener ${marker} executed ${payload.hits} times, expected exactly once`);
@@ -203,11 +261,14 @@ export async function runConsumerProbe(ctx) {
       // A skipped/disabled/revoked record must not be mounted at all: its
       // listener may not exist. (The record's own module is still importable,
       // which is why the status alone is not the proof.)
-      if (hasListener(marker)) throw new Error(`the ${want.status} record ${pluginId} is still registered`);
+      markerListeners[pluginId] = listenerCount(marker);
+      if (markerListeners[pluginId] !== 0) throw new Error(`the ${want.status} record ${pluginId} is still registered (${markerListeners[pluginId]} listener(s))`);
       markerHits[pluginId] = 0;
       continue;
     }
     await waitFor(() => hasListener(marker), `the promoted listener ${marker} of ${pluginId}`);
+    markerListeners[pluginId] = listenerCount(marker);
+    if (markerListeners[pluginId] !== 1) throw new Error(`the promoted record ${pluginId} registered ${markerListeners[pluginId]} listener(s) for ${marker}, expected exactly one`);
     const payload = { hits: 0 };
     await ctx.parallel(marker, payload);
     if (payload.hits !== 1) throw new Error(`the promoted listener ${marker} executed ${payload.hits} times, expected exactly once`);
@@ -231,14 +292,27 @@ export async function runConsumerProbe(ctx) {
     publishedIds: records.map((row) => row?.id),
     kernelPresent,
     evolutionTools,
+    evolutionToolNames,
+    kernelOnlyTools,
+    // How many live probe instances this process composed (1 on every known
+    // entry; >1 would mean the patch was composed into several contexts).
+    probeInstances: probeInstances.count,
+    // The actual consumer runtime, so the runner can record its versions.
+    processVersions: {
+      node: process.versions?.node ?? null,
+      electron: process.versions?.electron ?? null,
+      chrome: process.versions?.chrome ?? null,
+    },
     expectKernel,
     services: {
       evolution: Boolean(ctx.get('evolution')),
       dynamicCordisRunner: Boolean(ctx.get('dynamicCordisRunner')),
       tools: Boolean(ctx.get('tools')),
+      evolutionExperience: Boolean(ctx.get('evolutionExperience')),
     },
     rows: observed,
     markerHits,
+    markerListeners,
     // The same facts the runner asserts independently from the JSON files.
     consumerRows: (state.plugins || []).map((row) => ({ id: row?.id, status: row?.status, reason: row?.reason ?? null, activatedAt: row?.activatedAt ?? null })),
   };

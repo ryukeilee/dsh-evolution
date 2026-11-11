@@ -100,3 +100,48 @@ test('run-cross-entry documents its commands and refuses an unusable invocation 
     fs.rmSync(scratch, { recursive: true, force: true });
   }
 });
+
+test('the runner uses a per-run marker namespace and proves the exact listener counts', () => {
+  const runner = fs.readFileSync(runCrossEntry, 'utf8');
+  // The fixed marker names are the defaults of the publish probe; the runner
+  // must override them per run so a persisted home cannot make a previously
+  // promoted plugin share an event name with this run's candidates.
+  assert.match(runner, /const RUN_ID = crypto\.randomBytes\(\d+\)\.toString\('hex'\)/);
+  assert.match(runner, /EVOLUTION_CROSS_ENTRY_MARKERS: JSON\.stringify\(MARKERS\)/);
+  assert.match(runner, /EVOLUTION_CROSS_ENTRY_EXTENDED: '1'/);
+  // Root-cause regression: the runner records version identity for the real
+  // Desktop Electron runtime and never reports a run that changed the Desktop
+  // promotion state.
+  assert.match(runner, /electron: publish\.hostRuntime\.electron/);
+  assert.match(runner, /applicationVersion: desktopAppVersion\(desktopBinary\)/);
+  assert.match(runner, /treeDigest\(dataRoot/);
+  assert.match(runner, /const revalidateHome = path\.join\(work, 'revalidate-home'\)/);
+
+  const publish = fs.readFileSync(promotionProbe, 'utf8');
+  assert.match(publish, /export function resolveMarkers/);
+  assert.match(publish, /listenerCount\(name\)/);
+  assert.match(publish, /listenersBeforeTrial !== 0/);
+  assert.match(publish, /listenersAfterTrial !== 1/);
+  // A reused home must fail loudly instead of recording ambiguous evidence.
+  assert.match(publish, /isolated DSH_HOME is not clean for this run/);
+  // The approval gate must be proven from the live index, not only asserted.
+  assert.match(publish, /publishedAtConfirmationGate/);
+  assert.match(publish, /publishedBeforeCanaryCommit/);
+  assert.match(runner, /publishedBeforeCanaryCommit: stable\.gates\.publishedBeforeCanaryCommit/);
+});
+
+test('the consumer probe separates the shared-experience tool from the kernel surface and runs one driver per process', () => {
+  const consume = fs.readFileSync(consumerProbe, 'utf8');
+  // `evolution_history` is enabled in every profile by setup-experience; the
+  // kernel-only tools are the orchestrator ones and must be absent without the
+  // kernel service. Counting every evolution_* tool as the kernel would reject
+  // the product's real consumer profile.
+  assert.match(consume, /const SHARED_EXPERIENCE_TOOL = 'evolution_history'/);
+  assert.match(consume, /KERNEL_ONLY_TOOLS/);
+  assert.match(consume, /kernelOnlyTools/);
+  assert.match(consume, /unexpectedEvolutionTools/);
+  // A second live probe instance must not dispatch its own marker execution.
+  assert.match(consume, /const PROBE_INSTANCE_KEY = Symbol\.for\('dsh-evolution\.cross-entry-consumer-probe'\)/);
+  assert.match(consume, /probeInstances\.driver/);
+  assert.match(consume, /markerListeners/);
+});
