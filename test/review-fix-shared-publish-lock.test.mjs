@@ -20,6 +20,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import {
   buildSharedRecord,
   publishSharedRecord,
@@ -138,6 +139,12 @@ function reclaimLeftovers(directory) {
   return fs.readdir(directory).then((names) => names.filter((name) => name.includes('.reclaim') || name.endsWith('.stale')));
 }
 
+function deferred() {
+  let resolve;
+  const promise = new Promise((settle) => { resolve = settle; });
+  return { promise, resolve };
+}
+
 test('a live same-host publisher keeps its lock past the stale window', async (t) => {
   const env = await fixture(t);
   const record = await buildRecord(env);
@@ -232,4 +239,101 @@ test('reclaimers racing over a stale dead lock never lose a committed record', a
   assert.deepEqual(index.records.map((row) => row.id).sort(), records.map((record) => record.id).sort());
   assert.deepEqual(await reclaimLeftovers(path.dirname(sharingPaths(target).lockPath)), []);
   assert.equal(await fs.access(sharingPaths(target).lockPath).then(() => true).catch(() => false), false);
+});
+
+// The following two tests pin the interleavings an independent review used to
+// demonstrate lost updates in the earlier implementation. They inject the exact
+// pause points with the real `fs/promises` object the module imported (the same
+// technique the archive-lock tests use), so they are deterministic rather than
+// timing-dependent.
+
+test('a paused acquirer never exposes a partial lock or loses the other publisher record', async (t) => {
+  const env = await fixture(t);
+  const pausedRecord = await buildRecord(env);
+  const otherRecord = await addRecord(env, { id: 'exp-lock-partial-2', pluginName: 'dsh-evolution-promoted-bbbbbbbbbbbb' });
+  const { lockPath } = sharingPaths(env.paths);
+  const context = new AsyncLocalStorage();
+  const pausedBeforePublish = deferred();
+  const releasePause = deferred();
+  const originalLink = fs.link;
+  fs.link = async function (from, to, ...rest) {
+    if (to === lockPath && context.getStore() === 'paused') {
+      pausedBeforePublish.resolve();
+      await releasePause.promise;
+    }
+    return originalLink.call(this, from, to, ...rest);
+  };
+  t.after(() => { fs.link = originalLink; });
+  // A is paused after its owner record is complete but before it is published.
+  // It never held a zero-byte lock, so B cannot mistake it for an abandoned one.
+  const paused = context.run('paused', () => publishSharedRecord(env.paths, pausedRecord));
+  await pausedBeforePublish.promise;
+  const other = await publishSharedRecord(env.paths, otherRecord);
+  assert.equal(other.status, 'published');
+  releasePause.resolve();
+  const resumed = await paused;
+  assert.equal(resumed.status, 'published');
+  const index = await readSharedIndex(env.paths);
+  assert.deepEqual(index.records.map((row) => row.id).sort(), [pausedRecord.id, otherRecord.id].sort());
+  assert.equal(await fs.access(lockPath).then(() => true).catch(() => false), false);
+});
+
+test('a stale marker cleaner puts back a concurrent reclaimer marker instead of deleting it', async (t) => {
+  const env = await fixture(t);
+  const newRecord = await buildRecord(env);
+  const staleRecord = await addRecord(env, { id: 'exp-lock-marker-2', pluginName: 'dsh-evolution-promoted-cccccccccccc' });
+  const { lockPath } = sharingPaths(env.paths);
+  const marker = `${lockPath}.reclaim`;
+  // Both processes start from a crashed lock plus a crashed reclaimer marker.
+  await writeLock(env, lockOwner(DEAD_PID), { ageMs: 60_000 });
+  await fs.writeFile(marker, JSON.stringify(lockOwner(DEAD_PID)));
+  const context = new AsyncLocalStorage();
+  const staleAtClear = deferred();
+  const releaseStale = deferred();
+  const newAtLockRename = deferred();
+  const releaseNew = deferred();
+  const markerRestored = deferred();
+  const originalRename = fs.rename;
+  const originalLink = fs.link;
+  let staleClearSeen = false;
+  let newRenameSeen = false;
+  fs.rename = async function (from, to, ...rest) {
+    if (from === marker && context.getStore() === 'stale-cleaner' && !staleClearSeen) {
+      staleClearSeen = true;
+      staleAtClear.resolve();
+      await releaseStale.promise;
+    }
+    if (from === lockPath && context.getStore() === 'new-reclaimer' && !newRenameSeen) {
+      newRenameSeen = true;
+      newAtLockRename.resolve();
+      await releaseNew.promise;
+    }
+    return originalRename.call(this, from, to, ...rest);
+  };
+  fs.link = async function (from, to, ...rest) {
+    const result = await originalLink.call(this, from, to, ...rest);
+    if (to === marker && from.endsWith('.stale') && context.getStore() === 'stale-cleaner') markerRestored.resolve();
+    return result;
+  };
+  t.after(() => { fs.rename = originalRename; fs.link = originalLink; });
+  // The stale cleaner classifies the dead marker, then pauses before deleting it.
+  const stale = context.run('stale-cleaner', () => publishSharedRecord(env.paths, staleRecord));
+  await staleAtClear.promise;
+  // A newer reclaimer clears the dead marker, publishes its own marker and
+  // classifies the dead lock, then pauses before renaming the lock.
+  const fresh = context.run('new-reclaimer', () => publishSharedRecord(env.paths, newRecord));
+  await newAtLockRename.promise;
+  const freshMarker = JSON.parse(await fs.readFile(marker, 'utf8'));
+  assert.notEqual(freshMarker.token, 'reclaim');
+  releaseStale.resolve();
+  await markerRestored.promise; // the stale cleaner moved the live marker and put it back
+  assert.deepEqual(JSON.parse(await fs.readFile(marker, 'utf8')), freshMarker, 'the live marker was restored byte-for-byte');
+  releaseNew.resolve();
+  const freshResult = await fresh;
+  const staleResult = await stale;
+  assert.equal(freshResult.status, 'published');
+  assert.equal(staleResult.status, 'published');
+  const index = await readSharedIndex(env.paths);
+  assert.deepEqual(index.records.map((row) => row.id).sort(), [newRecord.id, staleRecord.id].sort());
+  assert.deepEqual(await reclaimLeftovers(path.dirname(lockPath)), []);
 });

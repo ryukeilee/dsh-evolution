@@ -187,3 +187,25 @@ test('revocation state written by the CLI still disables one profile', async (t)
   assert.equal(decision.status, SHARED_STATUS.DISABLED);
   assert.equal(decision.reason, 'operator-disabled');
 });
+
+test('reconciliation keeps the sidecar read budget bounded', async (t) => {
+  const env = await fixture(t, { id: 'exp-zzzz-budget' });
+  await writeSidecar(env, 'exp-zzzz-budget', sidecar(env));
+  // Older names sort before the candidate; none of them is publishable.
+  for (let index = 0; index < 20; index += 1) {
+    await writeSidecar(env, `exp-old-${String(index).padStart(4, '0')}`, {
+      stableCommittedAt: env.experiment.stableCommittedAt,
+      shareTargets: [],
+    });
+  }
+  let reads = 0;
+  const originalRead = fs.readFile;
+  fs.readFile = async function (file, ...rest) {
+    if (String(file).endsWith('.evidence.json')) reads += 1;
+    return originalRead.call(this, file, ...rest);
+  };
+  t.after(() => { fs.readFile = originalRead; });
+  const candidates = await scanStableShareCandidates(env.paths, { maxRecords: 1 });
+  assert.deepEqual(candidates.map((row) => row.experimentId), ['exp-zzzz-budget']);
+  assert.equal(reads, 1, 'maxRecords still bounds how many sidecars are read');
+});
