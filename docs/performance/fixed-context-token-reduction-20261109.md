@@ -157,3 +157,39 @@ npm run pack:check
 ```
 
 原始数据：`fixed-context-token-reduction-20261109.json`（组成、真实 token 测量与边界）；`fixed-context-ab-20261109.json`（任务矩阵的逐样本调用、参数、门禁结果与 usage）。
+
+## 9. 2026-11-11 追加：跨入口共享的批准参数
+
+本轮开发树新增的跨入口插件共享（见 `docs/shared-plugins.md`）需要每个晋升都显式声明跨入口批准范围，
+因此在模型可见的固定上下文里增加两处：`evolution_promote` 的可选参数 `targetProfiles`
+（`type: "array"`, `items: { type: "string" }`）与系统提示词中的一句话。参数本身不改变工具名、其它参数
+名/类型/必填集合或执行函数，`confirmation: true` 也不隐含 `targetProfiles`（不带该参数仍是 Desktop-only）；
+那一句话只陈述「只有 stable commit 才发布，ACP/Web 挂载前会重新校验摘要、服务与宿主兼容性」。这是经批准的
+固定上下文扩展，不是压缩目标之外的自由预算。
+
+测量口径与 §2 相同：`scripts/benchmarks/fixed-context/fixture.mjs --capture <root>` 挂载真实官方
+Tools/SystemPrompt 并调用生产的 `apply()`，在本次工作树上于 2026-11-11 实测：
+
+| 组成 | 实测字节 |
+|---|---:|
+| `systemText`（12 个工具注册） | 2,577 |
+| 固定字段合计（`systemText` + 工具名 + description + 编译后 parameters JSON） | 10,217 |
+| 紧凑工具数组包装（`systemText` + `JSON.stringify({name, description, parameters}[])`） | 10,734 |
+
+沿用同一条 allowance 公式：
+
+```text
+allowance = ceil(ceil((actual - floor(origin * 0.8)) / 0.8) / 50) * 50
+          = 3100 B fields / 3300 B wire，再向上取整留少量措辞余量 = 3150 / 3350
+budget    = floor((origin + allowance) * 0.8)
+          = floor((9716 + 3150) * 0.8) = 10292 B fields
+          = floor((10147 + 3350) * 0.8) = 10797 B wire
+```
+
+本次实测 10,217 ≤ 10,292、10,734 ≤ 10,797，仍在「比扩展后的基线小 20%」的同一条目标内。
+`test/fixed-context-budget.test.mjs` 的 allowance 与这两条预算按该公式更新，并继续用合同断言钉住
+参数结构与必须保留的事实。
+
+边界：以上是仓库内 fixture 的 UTF-8 字节测量，**不是** provider token 测量。本轮没有为这条增量重跑
+§3 的真实 provider A/B（那次测量的固定文本与本次不同），因此不能把字节数换算成每请求 token 收益；
+本节只说明新增的固定文本仍在批准的预算内。

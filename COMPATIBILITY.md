@@ -78,6 +78,34 @@ boot. The reason is the upstream gap documented below, not a workaround of this
 bundle's own checks: the same overlay form is what `@deepseek-ai/dsh-hmr`
 documents for "disabling or omitting HMR applies changes on restart".
 
+### Cross-entry promoted plugin sharing (development tree)
+
+The development tree adds an opt-in cross-entry feature: a Desktop promotion that the owner explicitly approved
+for `acp` / `web` can be mounted by those profiles after it commits stable. It adds no DSH version, no new host
+support claim and no new promotion authority. The consumer is a separate lightweight bundle entry
+(`dsh-evolution/promoted-consumer`, `lib/promoted-consumer.js`) that is enabled for `acp` / `web` and disabled on
+`desktop` by `scripts/setup-experience.mjs`; it never runs the Evolution kernel (no orchestrator, Trial/Canary
+state machine, domain storage, tool registration or model call), and it writes only its own per-profile
+state and composition. The Desktop kernel is still the only publisher: only a stable canary commit produces a
+publication record, and records carry the exact host identity the promotion was verified on. The 0.2.3 pinned
+artifact does not contain this feature. See `docs/shared-plugins.md` and `README.md`.
+
+The isolated host acceptance covers it on `0.2.2-rc.1`: 31/31 steps pass in
+`docs/evidence/cross-entry-0.2.2-rc.1.json` (isolated runtime and `$DSH_HOME`, HMR disabled, marker listener
+executed exactly once per consumer boot, restart without a duplicate mount, incompatible record skipped,
+tampered source skipped as invalid, per-profile revoke/enable, simulated host upgrade to
+`pending-revalidation`, real ACP consumer, and preserved promoted sources/archives/experience data). That
+acceptance has no Desktop binary, so it publishes from the full Evolution kernel booted on the Web profile
+(recorded as `publisherProfile: "web"`) and then proves the Web and ACP consumer entries; the installed
+production shape still runs the kernel only on Desktop. It is not a Desktop UI or Desktop-layout acceptance.
+Reproduce it with:
+
+```sh
+npm run release:pack
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr --cross-entry \
+  --tarball dist/dsh-evolution-0.2.3.tgz --out docs/evidence/cross-entry-0.2.2-rc.1.json
+```
+
 ### Verified compatibility matrix
 
 | Host | `@deepseek-ai/cordis` | `cordis-plugin-include` | `cordis-plugin-loader` | Verified |
@@ -388,6 +416,8 @@ context-member resolution.
 | `Fiber.getEffects()`, `Fiber.state/uid/inject/store/inertia` | public - documented members of the exported `Fiber` class | lifecycle state, dependencies, effect labels | `FiberState.ACTIVE` is not importable (`const enum`, erased at runtime), so `fiberIsActive()` uses these documented fields instead of the numeric literal |
 | official Include instance state: `EntryTree.resolve/await/root`, `Entry.fiber/options/disabled` | undocumented - public members with no published stability contract | the mounted promoted row and its fiber health | `EntryTree.resolve(rowId)` instead of `EntryTree.store[rowId]`; the live root entry list has no public accessor, so the stale-tree check reads `root.data` and fails closed when it cannot |
 | `ctx.tools.schemas/get`, `dynamicCordisRunner.snapshot/define/run/stop/undefine`, `ctx.get('cordisInspect').list` | public - host service surfaces | tool surface, dynamic packages, inspect providers, and the `stop` / `undefine` receipt reasons (`DynamicCordisStopResponse`, `DynamicCordisUndefineReceipt`) that the cleanup proof reads | none needed |
+| `ctx.get('pluginPackages').packageOf() (resolved host packages)` | public - `PluginPackages.packageOf(specifier, parentURL)`, "Locate the package named by a specifier without requiring a package export"; owner `@deepseek-ai/dsh-app-boot`; `required: false` | the exact `@deepseek-ai/dsh` / `@deepseek-ai/cordis` / `@deepseek-ai/cordis-plugin-include` versions the booted host resolved, so a publication records the host it was verified on instead of guessing from a version string or a PATH lookup | none needed; advisory, and without it host facts stay unknown so no publication or revalidation is possible (an existing promotion is never changed) |
+| `ctx.get('loader').entries() (live loader entries)` | undocumented - `EntryTree.entries()`, "Iterate entries in this tree and any nested subtrees"; a public member of the shipped loader class without a published stability contract; owner `@deepseek-ai/cordis-plugin-loader`; `required: false` | the module URLs already mounted by this profile, so the cross-entry consumer cannot mount a second instance of a row the kernel already owns (duplicate-mount precaution only) | none exists; per-record verification on the consumer-owned Include tree stays the activation authority, so losing the surface only loses the short-circuit |
 
 The two disposer receipts are a closed union and are not idempotent, which is why
 the cleanup proof reads the *reason* and not only `ok`: `stop` answers
@@ -401,6 +431,21 @@ unproven. Verified against the shipped `0.2.0-rc.2` runner (`lib/index.js`
 `stop` answers `{ ok: true }`, the second `{ ok: false, reason: 'not-running' }`,
 the first `undefine` `{ ok: true, wasRunning: false }`, the second
 `{ ok: false, reason: 'plugin-missing' }`.
+
+**Cross-entry sharing adds exactly two host surfaces.** The two rows above
+(`ctx.get('pluginPackages').packageOf() (resolved host packages)` and
+`ctx.get('loader').entries() (live loader entries)`) are the only host surfaces
+this change adds; both are recorded in `lib/cordis-compat.js` `SURFACES` so
+`runtime.internal-api` probes them like every other surface. Both are
+`required: false`: their absence appears in `advisoryUnavailable` instead of
+turning the check `degraded`, and each degrades only its own convenience (host
+facts stay unknown, or the duplicate-mount short-circuit is unavailable) while
+the per-record digest, approval, host, service and capability checks keep
+gating every mount. The Include members (`EntryTree.resolve/await/root`,
+`Entry.fiber/options/disabled`), `Fiber.await()`, the documented `Fiber`
+lifecycle fields and `ctx.tools.schemas()` were already classified above.
+`lib/cordis-compat.js` remains the single classification source for the
+publisher, the consumer and the doctor.
 
 **The working tree that follows rc.14 adds no new host interface dependency.** The promotion rollback path changed *how* these surfaces are used, not which ones: the new waiting in `lib/promotion-include.js`'s `refresh()` uses the same members classified above — `tree.root.data` (the live row list), `EntryTree.resolve(rowId)`, `Entry.fiber`, and `fiberIsActive()` from `cordis-compat.js` (the documented `Fiber` lifecycle fields). The one surface worth spelling out is `Fiber.await()`: it is a documented method of the exported `Fiber` class ("Wait for current lifecycle work and rethrow startup errors", `lib/types/fiber.d.ts`) and `verify()` already used it, so it is not a new dependency — and `SURFACES` in `lib/cordis-compat.js` now probes it too (`typeof ctx.fiber.await === 'function`), classified `required: false`: a host that dropped `Fiber.await()` is listed in `runtime.internal-api`'s `advisoryUnavailable` evidence instead of being absent from the report, and because it is optional it never turns that check `degraded`. That path now fails closed instead: `refresh()` throws when a started entry exposes no awaitable fiber and when a disposal rejects, so a rollback never declares itself finished while a disposal outcome is unknown.
 
@@ -458,6 +503,45 @@ one by hand.
 Evidence and the exact official references used during migration are kept in
 the private migration workspace; they are not part of this package. See the
 plugin `README.md` for the supported-version contract.
+
+## Cross-entry shared plugin state (development tree)
+
+The cross-entry feature adds one durable tree, all under the existing data root
+`$DSH_HOME/storages/evolution/shared-plugins/`. Plugin source is **not**
+copied: records reference the bytes still in
+`$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-<12 hex>/`, and
+the source digest is re-hashed before every activation.
+
+| File | Contents and guarantees |
+| --- | --- |
+| `published.json` | The publication index (`schemaVersion: 1`, `kind: "dsh-evolution-shared-plugins"`). Written atomically (temp file + fsync + rename); absent is a normal Desktop-only install; unreadable or malformed authorizes nothing; a single malformed record is reported but does not discard the valid ones. Each record must be a stable fact (committed time, benefit decision, satisfied canary window), carry a non-empty `approvedProfiles` subset of `acp`/`web`, the source and manifest digests, required services/capabilities and the exact verified host identity. |
+| `.publish.lock` | The index's cross-process publication lock: exclusive `wx` create with a `token`/`pid`/`hostname` owner; only a same-host lock whose pid is provably gone, or one older than the 10 s stale window, is reclaimed via a uniquely-won rename; an uninterpretable lock is waited out (never deleted); acquisition times out after 2.5 s as `E_SHARED_PUBLISH_BUSY` (retryable); release removes the file only when the token still matches. |
+| `disabled.json` | Per-profile operator revocations (`kind: "dsh-evolution-shared-plugin-disable"`), one entry per plugin id + consumer profile. It only removes that profile's activation eligibility; the Desktop stable promotion is untouched. |
+| `consumers/<profile>.json` | A consumer-owned activation report (`kind: "dsh-evolution-promoted-consumer"`): the host it ran on, `observedIndexUpdatedAt`, the per-record status rows and the disposal proof. It can never become a Desktop promotion fact. |
+| `consumers/<profile>.cordis.yml` | The consumer-owned Include composition; derived state, rewritten at every start (first empty, then only eligible rows). The Desktop composition is never reused or modified. |
+
+Refused by design: publishing a non-stable fact; publishing without a non-empty
+explicit approval; replacing an existing record with different source bytes (the
+publication is a same-id/different-digest conflict, verified bytes are never
+silently replaced); paths that are symlinks, escape `promoted/`, disagree with
+the record id/plugin name/module URL; records that are not `hostOnly`; consumer
+writes to the publication index, promotion journal, canary state, Desktop
+composition or domain storage; and any cross-machine use (the contract is one
+machine, one OS user, one local filesystem and one `DSH_HOME`).
+
+The doctor reports this tree through the read-only `promotion.sharing` check
+(category `promotion`): `ok` with `evidence.status: "absent"` when nothing is
+published, `blocked` when the index is unreadable/malformed or a record
+disagrees with its on-disk source, and `degraded` for compatibility problems,
+failed consumer activations or a publication that needs a restart. It never
+activates, revokes, repairs or deletes anything. Operator actions go through
+`dsh-evolution-shared` (`scripts/shared-plugins.mjs`): `list`, `disable`,
+`enable`, `reset` and `revalidate`; a host upgrade leaves affected records
+`pending-revalidation` until real isolated-host evidence is adopted, and no path
+auto-deletes the index, consumer state or plugin source. The consumer entry is
+host-only and lightweight: it imports the sharing contract and the official
+Include helper, and never `lib/orchestrator.js` or `lib/diagnostics.js`; it runs
+no Evolution kernel, tools, model call, timer, poller or background work.
 
 ## Legacy compatibility adapters (isolated, off by default)
 

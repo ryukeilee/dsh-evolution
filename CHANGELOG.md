@@ -18,6 +18,59 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 未发布（开发树）— 跨入口共享已验证的晋升插件
+
+本节只描述当前开发树的新增内容，`release/` 中的 `0.2.3` 固定产物**不包含**这些改动；版本号、
+`peerDependencies` 与受支持宿主集合都没有变化，也没有新的真实宿主验收声明。基线：
+统一经验采集、Propose–Probe–Compose 之后的工作树。
+
+### 新增
+
+- **Desktop 仍是唯一晋升权威，ACP / Web 可消费已验证的 stable 插件。**
+  `evolution_promote` 新增可选参数 `targetProfiles: ['acp', 'web']`：只有显式的
+  `confirmation: true` + `targetProfiles` 才记录跨入口批准（`confirmation` 本身不隐含该批准；省略仍是
+  Desktop-only；未知 profile 在写入任何状态前被拒绝）。批准范围随 durable 事务写入 journal、evidence
+  sidecar 与 archive；只有 canary 提交 stable 之后才发布；回滚或不带批准的晋升不会留下可共享记录。
+- **一个发布索引，各入口独立消费。** `lib/promoted-sharing.js` 是 host-free 的发布 / 校验 / 兼容契约：
+  从 durable stable 事实构造记录，原子写入
+  `$DSH_HOME/storages/evolution/shared-plugins/published.json`，同一事实重复发布是幂等的，同 id 不同源码
+  摘要会冲突拒绝。新 bundle entry `dsh-evolution/promoted-consumer`（`lib/promoted-consumer.js`）在
+  `acp` / `web` 启动时读取索引，逐条校验记录结构、源码摘要、显式批准、宿主身份与所需服务/能力，再通过
+  官方 Cordis Include 挂载到该 profile 自己的 composition；它不运行 Evolution kernel（无 orchestrator、
+  无 Trial/Canary、无领域存储、无工具注册、无模型调用），也不写发布索引或晋升状态。Desktop 通过
+  `scripts/setup-experience.mjs` 的托管块禁用该 bundle entry，ACP / Web 启用。
+- **崩溃 reconciliation。** `lib/orchestrator.js` 的启动流程在恢复中断晋升事务、挂载 promoted Include 之后
+  调用 `reconcileSharedPromotions()`：只从带 `stableCommittedAt`、committed `durable` 身份与非空
+  `shareTargets` 的 evidence sidecar 补发布缺失记录，不重新打开 canary、不推断批准、不删除任何文件。
+- **操作命令 `dsh-evolution-shared`**（`scripts/shared-plugins.mjs`）：只读 `list`；按 profile 的
+  `disable` / `enable`（只影响该 profile 的激活资格，Desktop stable 晋升不变）；`reset`（清除 sticky
+  失败，下一次启动重试一次）；`revalidate --evidence <json>`（采用真实隔离宿主验证证据，追加 revalidation
+  代并采用其宿主身份；摘要不匹配或未证明任何 profile 激活即拒绝）。支持 `--home` / `--data-root` / `--json`；
+  退出码 `0` 成功、`1` 拒绝、`2` 状态不可读。
+- **诊断。** doctor 新增只读检查 `promotion.sharing`（category `promotion`）：未发布时报 `ok`（全部
+  Desktop-only）；源码摘要不一致或索引损坏报 `blocked`；兼容性问题、失败激活或待重启报 `degraded`。
+  它不激活、不撤销、不修复。
+- **复用官方 Include。** `lib/promotion-include.js` 抽出 `mountIncludeTree()`，Desktop kernel 与轻量
+  consumer 共用同一套官方 Include 挂载 / refresh / verify 实现，不新建 loader entry 或第二套生命周期。
+
+### 固定上下文
+
+- `evolution_promote.targetProfiles` 参数与系统提示词中的一句说明属于经批准的固定上下文扩展；字节测量、
+  公式与预算见 `docs/performance/fixed-context-token-reduction-20261109.md` 第 9 节（来自仓库内 fixture，
+  不是 provider token 测量）。
+
+### 边界
+
+- 只支持同一台机器、同一 OS 用户、同一本地文件系统与同一个 `DSH_HOME`；没有跨机器同步、插件市场、
+  第二个晋升/canary 引擎或后台轮询。consumer 只在启动时读索引，新发布在入口下次启动时生效。
+- 记录校验与源码摘要不是安全沙箱；发布仍来自 Desktop 的合作式 `Function(hostCode)()` 晋升路径，需要可信
+  审批。索引、撤销表、consumer 状态与 `promoted/` 源码都没有自动删除路径。
+- 隔离真实宿主验收记录在 `docs/evidence/cross-entry-0.2.2-rc.1.json`：31/31 步通过（隔离 runtime / home，
+  HMR 关闭），覆盖真实 Web / ACP consumer、重启不重复挂载、不兼容 / 源码篡改 / 撤销 / 恢复 / 升级重验证与
+  数据保留。CI 环境没有 Desktop 二进制，该验收用带完整 kernel 的 Web profile 充当 publisher
+  （`publisherProfile: "web"`）；生产安装形态仍只在 Desktop 运行完整 kernel。这不是 Desktop UI 或 Desktop
+  布局验收。完整记录 schema、状态词表与操作流程见 `docs/shared-plugins.md`。
+
 ## 0.2.3 — 稳定版
 
 `0.2.2` 的稳定后继。依赖、持久 schema 与 schema 版本、工具名 / 参数 / 参数 schema、授权来源、

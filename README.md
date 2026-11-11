@@ -22,7 +22,7 @@
 
 共享库是同一 `DSH_HOME/storages/evolution-experience/experience.sqlite`，只支持同一机器、同一 OS 用户和本地文件系统。SQLite WAL 事务同时提交永久去重身份与 canonical knowledge 更新，跨进程不共享 JSON 内存快照。目录/数据库要求私有权限。未知格式拒绝打开，不删除或重建。永久去重账本会随不同事件增长，目前没有自动回收任务。
 
-手动 Trial、测量、晋升和回滚集中在 Desktop；ACP 和 Web 只提供自动采集与 `evolution_history`。Desktop 继续使用原工具查询本地历史，并合并共享来源；其他入口查询新增共享经验。旧的自由文本经验和冷档案原地保留，不自动迁移到共享库。各入口默认不会把经验注入每个 Agent 回合，只有显式 history/proposal 检索会返回有界结果。
+手动 Trial、测量、晋升和回滚集中在 Desktop；ACP 和 Web 只提供自动采集与 `evolution_history`，并可按下面的显式批准挂载 Desktop 已验证的 stable 晋升插件。Desktop 继续使用原工具查询本地历史，并合并共享来源；其他入口查询新增共享经验。旧的自由文本经验和冷档案原地保留，不自动迁移到共享库。各入口默认不会把经验注入每个 Agent 回合，只有显式 history/proposal 检索会返回有界结果。
 
 一次配置三个 profile（需要先启动过 Desktop 完成官方初始化，再完全退出；正式环境安装需由操作者执行）：
 
@@ -43,6 +43,39 @@ node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.3.tgz --apply
 - 晋升后进入 canary；启动健康、依赖或屏障上报告的指标回归会按规则提交或回滚候选。
 - 失败与观测可在无模型参与下保存；经验只在提交 proposal 或带查询的 history 时读取。
 - CLI 和会话内 doctor 不依赖模型；CLI 无法观测的运行时项目会明确标为 `not-evaluated`。
+
+### 跨入口共享已验证的晋升插件
+
+Desktop 是唯一的晋升权威：Trial、measure、promotion、canary 与 rollback 仍只由 Desktop 的 Evolution kernel
+执行。ACP / Web 可以挂载 Desktop 已提交 stable 的插件，但不会因此运行 Evolution kernel。
+
+- **发布需要显式批准。** 只有
+  `evolution_promote({ experimentId, confirmation: true, targetProfiles: ['acp', 'web'] })` 会声明跨入口范围；
+  `confirmation: true` 本身不隐含该批准，省略 `targetProfiles` 仍是 Desktop-only。未知 profile 在写入任何状态前
+  被拒绝。只有 canary 提交 stable 之后才会发布；回滚或不带批准的晋升不会留下可共享记录。
+- **消费走官方生命周期。** ACP / Web 的 bundle entry `dsh-evolution/promoted-consumer`（安装器
+  `scripts/setup-experience.mjs` 的托管块在 `acp` / `web` 启用它、在 `desktop` 禁用它）在启动时读取发布索引，
+  逐条校验记录结构、源码摘要、显式批准、宿主身份与所需服务/能力，再把合格记录通过官方 Cordis Include 挂载到
+  该 profile 自己的 composition。插件源码仍引用 `promoted/` 中的同一份字节，不复制；重复启动或已被 profile
+  loader 挂载的插件不会被挂载第二次。不兼容、未批准或失败的记录按条跳过，并写入该 profile 自己的状态文件，
+  一条失败不影响其它记录。
+- **操作与撤销。** `dsh-evolution-shared`（`scripts/shared-plugins.mjs`）提供只读 `list`、逐 profile 的
+  `disable` / `enable`、清除 sticky 失败的 `reset`，以及在宿主升级后采用真实隔离宿主验证证据的
+  `revalidate --evidence <json>`。`disable` 只移除该 profile 的激活资格，Desktop 的 stable 晋升不受影响；
+  `reset` 让下一次启动重试一次；宿主版本变化时记录停在 `pending-revalidation`，不会自动挂载或删除。
+- **生效时机与数据位置。** consumer 只在启动时读索引，因此新的发布在入口下次启动时生效；部署形态同时保持
+  宿主 HMR 关闭（见下）。索引、撤销表与各 profile 的消费状态都在
+  `$DSH_HOME/storages/evolution/shared-plugins/`；插件源码仍在 `$DSH_HOME/storages/evolution/promoted/`。
+- **边界。** 只支持同一台机器、同一 OS 用户、同一 `DSH_HOME`；没有跨机器同步、插件市场、第二个晋升/canary
+  引擎，也没有定时器或后台轮询。记录校验与摘要不是安全沙箱。
+
+诊断把发布与消费状态合并为只读的 `promotion.sharing` 检查：没有发布时报告 `ok`（全部 Desktop-only），
+源码摘要不一致或索引损坏报告 `blocked`，有兼容性问题、失败激活或待重启报告 `degraded`。完整记录 schema、
+状态词表与操作流程见 [跨入口共享](docs/shared-plugins.md)。隔离真实宿主验收记录在
+`docs/evidence/cross-entry-0.2.2-rc.1.json`（31/31 步通过，隔离 runtime/home，未触碰正式 `$DSH_HOME`）：
+验收在真实 Web 与 ACP 入口分别证明 consumer 在无 Evolution kernel 时挂载插件并执行一次、重启后只挂载一次，
+同时覆盖不兼容跳过、源码篡改、撤销 / 恢复与升级重验证；因为 CI 环境没有 Desktop 二进制，该隔离验收用带
+完整 kernel 的 Web profile 充当 publisher，生产安装形态仍只由 Desktop 晋升。
 
 ## 它解决什么问题
 
@@ -427,6 +460,7 @@ npm run acceptance:host -- --host 0.2.2-rc.1 --no-hmr --out <evidence-path>
 ## 相关文档
 
 - `COMPATIBILITY.md` — 宿主接口审计、兼容矩阵与阻塞依赖
+- `docs/shared-plugins.md` — 跨入口共享已验证晋升插件的记录、状态与操作流程
 - `RELEASE.md` — 固定产物、验证命令、复现步骤与发布风险
 - `CHANGELOG.md` — 版本变更记录
 - `AGENTS.md` — 仓库开发约定与验证要求

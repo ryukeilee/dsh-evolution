@@ -148,7 +148,13 @@ test('setup is idempotent and preserves unrelated profile contents byte for byte
   assert.match(next, /evolution-experience-history\n  disabled: false/); assert.match(next, /evolution-orchestrator\n  disabled: true/);
   assert.match(managedPatch(user, 'desktop'), /evolution-orchestrator\n  disabled: false/);
   assert.throws(() => managedPatch('# BEGIN dsh-evolution shared experience\n', 'web'), /Ambiguous/);
-  assert.equal(yaml.load(managedPatch('# official stock\n[]\n', 'acp')).length, 4);
+  // The managed block owns the role selection for every evolution row,
+  // including the cross-entry consumer row: it stays enabled for ACP/Web and is
+  // disabled on Desktop, which mounts promoted plugins through its own Include.
+  const managed = yaml.load(managedPatch('# official stock\n[]\n', 'acp'));
+  assert.deepEqual(managed.map((row) => row.id), ['hmr', 'evolution-experience', 'evolution-experience-history', 'evolution-orchestrator', 'evolution-promoted-consumer']);
+  assert.equal(managed.find((row) => row.id === 'evolution-promoted-consumer').disabled, false);
+  assert.equal(yaml.load(managedPatch('# official stock\n[]\n', 'desktop')).find((row) => row.id === 'evolution-promoted-consumer').disabled, true);
 });
 
 test('daily collector configuration leaves manual lifecycle and startup canary hooks intact', () => {

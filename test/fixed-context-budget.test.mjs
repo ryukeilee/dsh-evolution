@@ -45,20 +45,28 @@ const ORIGIN_WIRE_BYTES = 10147;
  *  re-measured with the fixture in this file on 2026-11-11 after the probe
  *  safety sentence (including delegation/background refusal) was added:
  *
- *    text   = 2388 B (systemText, 12 tools registered)
+ *    text   = 2577 B (systemText, 12 tools registered)
  *    fields = systemText + names + descriptions + compiled parameter JSON
- *           = 9835 B;
+ *           = 10217 B;
  *    wire   = systemText + JSON.stringify({name, description, parameters}[])
- *           = 10352 B;
+ *           = 10734 B;
  *    allowance = ceil(ceil((actual - floor(origin * 0.8)) / 0.8) / 50) * 50
- *              = 2550 B fields / 2750 B wire (rounded up once more to leave a
- *                small wording headroom: 2600 / 2800).
+ *              = 3100 B fields / 3300 B wire (rounded up once more to leave a
+ *                small wording headroom: 3150 / 3350).
+ *
+ *  The 2026-11-11 cross-entry sharing extension adds the optional
+ *  `evolution_promote.targetProfiles` approval scope (acp/web, which is never
+ *  implied by `confirmation:true`) plus one system-prompt sentence stating that
+ *  only a stable commit publishes it and that consumers re-verify digest,
+ *  services and host compatibility before mounting. That is a capability
+ *  extension, and the measured allowance above keeps the same "20% smaller than
+ *  the extended baseline" target instead of an unbounded budget.
  *
  *  So the assertion below is still "at least 20% smaller than the extended
  *  baseline", not an unbounded budget. Adding prose or another tool must raise
  *  the allowance only with a new measurement and this same formula. */
-const FIELDS_ALLOWANCE_BYTES = 2600;
-const WIRE_ALLOWANCE_BYTES = 2800;
+const FIELDS_ALLOWANCE_BYTES = 3150;
+const WIRE_ALLOWANCE_BYTES = 3350;
 const BASELINE_FIELDS_BYTES = ORIGIN_FIELDS_BYTES + FIELDS_ALLOWANCE_BYTES;
 const BASELINE_WIRE_BYTES = ORIGIN_WIRE_BYTES + WIRE_ALLOWANCE_BYTES;
 
@@ -82,7 +90,7 @@ const EXPECTED_PARAMETER_STRUCTURE = JSON.parse(`{
  "evolution_probe": {"required":["experimentId","phase","scenario"],"properties":{"experimentId":{"type":"string"},"phase":{"type":"string"},"scenario":{"type":"object","required":["id","steps"],"properties":{"id":{"type":"string"},"description":{"type":"string"},"repetitions":{"type":"number"},"steps":{"type":"array","items":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"arguments":{"type":"json"},"role":{"type":"string"}}}}}}}},
  "evolution_measure": {"required":["experimentId","observation"],"properties":{"experimentId":{"type":"string"},"observation":{"type":"object","required":["solvesProblem"],"properties":{"solvesProblem":{"type":"boolean"},"sideEffects":{"type":"array","items":{"type":"string"}},"orphanResources":{"type":"array","items":{"type":"string"}},"performanceChange":{"type":"json"},"errorChange":{"type":"json"},"metrics":{"type":"object"},"beforeMetrics":{"type":"object"},"afterMetrics":{"type":"object"},"observationWindow":{"type":"json"},"sampleCount":{"type":"number"},"benefitEvidence":{"type":"string"},"repeatable":{"type":"boolean"},"regressionPassed":{"type":"boolean"},"reversible":{"type":"boolean"},"cleanupEvidence":{"type":"string"}}}}},
  "evolution_revert": {"required":["experimentId"],"properties":{"experimentId":{"type":"string"}}},
- "evolution_promote": {"required":["experimentId"],"properties":{"experimentId":{"type":"string"},"confirmation":{"type":"boolean"}}},
+ "evolution_promote": {"required":["experimentId"],"properties":{"experimentId":{"type":"string"},"confirmation":{"type":"boolean"},"targetProfiles":{"type":"array","items":{"type":"string"}}}},
  "evolution_canary_observe": {"required":["experimentId","startupVerified","componentHealth","dependenciesPresent","metricRegression","barrier"],"properties":{"experimentId":{"type":"string"},"startupVerified":{"type":"boolean"},"componentHealth":{"type":"string"},"dependenciesPresent":{"type":"boolean"},"metricRegression":{"type":"boolean"},"metrics":{"type":"object"},"evidence":{"type":"object"},"barrier":{"type":"object","required":["id","reached"],"properties":{"id":{"type":"string"},"reached":{"type":"boolean"}}}}}
 }`);
 

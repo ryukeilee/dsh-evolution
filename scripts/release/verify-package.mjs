@@ -333,7 +333,11 @@ if (releaseMode) {
       for (const relative of pinned.keys()) {
         if (!declared.includes(relative)) drifted.push(`${relative}: in the released artifact but no longer declared`);
       }
-      throw new Error(`the tree builds ${treeDigest}, but release/manifest.json pins ${releaseManifest.contentSha256}\n        re-run the host acceptance and "npm run release:publish" after reviewing the changes\n        ${drifted.slice(0, 20).join('\n        ')}`);
+      // List every drifted entry. The declared file set is already small and
+      // bounded by package.json#files, and a truncated list lets a release
+      // control (test/release-pin.test.mjs) believe a shipped file was named
+      // when it was silently cut off.
+      throw new Error(`the tree builds ${treeDigest}, but release/manifest.json pins ${releaseManifest.contentSha256}\n        re-run the host acceptance and "npm run release:publish" after reviewing the changes\n        ${drifted.join('\n        ')}`);
     }
     notes.push(`        tree content ${treeDigest} matches the pin`);
   });
