@@ -1,6 +1,6 @@
 # 跨入口共享已验证的晋升插件
 
-基线：本开发树（Evolution `0.2.3` 之后的开发候选）。`release/` 中的 0.2.3 固定产物不包含该能力。
+基线：`0.2.4` 正式版（含本文描述的全部行为）。
 本文只描述本树 `lib/promoted-sharing.js`、`lib/promoted-consumer.js`、`lib/orchestrator.js`、
 `lib/diagnostics.js` 与 `scripts/shared-plugins.mjs` 的实际行为；没有实际执行过的验证不写成已验证。
 
@@ -219,7 +219,7 @@ Desktop 布局验收，也不覆盖真实的 Desktop Electron 入口。
 隔离 `$DSH_HOME` 与 Electron user-data-dir，证据记录在
 `docs/evidence/cross-entry-desktop-0.2.2-rc.1.json`（本树实测：Desktop 应用与 DSH `0.2.2-rc.1`、
 Electron `44.7.0`、Chrome `152.0.7977.130`、Electron 内置 Node `24.21.0`、Cordis `4.1.0`、
-官方 Include `1.1.0`、Evolution `0.2.3`）。该运行证明：
+官方 Include `1.1.0`、Evolution `0.2.4`）。该运行证明：
 
 - 真实 Desktop Electron 中的 publisher 完成四个候选：带 `['acp','web']` 显式批准的 stable 晋升、
   Desktop-only 对照（stable 但不发布）、缺少 kernel 服务的 incompatible 候选、以及只在 kernel 存在时
