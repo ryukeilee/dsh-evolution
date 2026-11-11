@@ -223,4 +223,19 @@ test('reconciliation keeps the sidecar read budget bounded', async (t) => {
   const candidates = await scanStableShareCandidates(env.paths, { maxRecords: 1 });
   assert.deepEqual(candidates.map((row) => row.experimentId), ['exp-zzzz-budget']);
   assert.equal(reads, 1, 'maxRecords still bounds how many sidecars are read');
+  // Newest-first is bounded, not unbounded: newer non-candidates consume the
+  // budget, so an older candidate is not read. The previous unbounded scan
+  // would have returned it (and read every sidecar).
+  reads = 0;
+  const budgetEnv = await fixture(t, { id: 'exp-zzzz-budget-two' });
+  await writeSidecar(budgetEnv, 'exp-zzzz-budget-two', sidecar(budgetEnv));
+  for (let index = 0; index < 4; index += 1) {
+    await writeSidecar(budgetEnv, `exp-zzzz-newer-${String(index).padStart(4, '0')}`, {
+      stableCommittedAt: budgetEnv.experiment.stableCommittedAt,
+      shareTargets: [],
+    });
+  }
+  const bounded = await scanStableShareCandidates(budgetEnv.paths, { maxRecords: 2 });
+  assert.equal(reads, 2, 'two reads, both spent on the newest non-candidates');
+  assert.deepEqual(bounded, [], 'the older candidate is outside the read budget');
 });

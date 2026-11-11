@@ -136,7 +136,7 @@ async function readLock(env) {
 }
 
 function reclaimLeftovers(directory) {
-  return fs.readdir(directory).then((names) => names.filter((name) => name.includes('.reclaim') || name.endsWith('.stale')));
+  return fs.readdir(directory).then((names) => names.filter((name) => name.includes('.reclaim') || name.endsWith('.stale') || name.includes('.tmp')));
 }
 
 function deferred() {
@@ -268,6 +268,9 @@ test('a paused acquirer never exposes a partial lock or loses the other publishe
   // It never held a zero-byte lock, so B cannot mistake it for an abandoned one.
   const paused = context.run('paused', () => publishSharedRecord(env.paths, pausedRecord));
   await pausedBeforePublish.promise;
+  // The paused writer has a complete owner record in a private temp file and no
+  // lock at the published path: the property that replaced the zero-byte lock.
+  await assert.rejects(fs.access(lockPath), (error) => error?.code === 'ENOENT');
   const other = await publishSharedRecord(env.paths, otherRecord);
   assert.equal(other.status, 'published');
   releasePause.resolve();
