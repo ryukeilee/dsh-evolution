@@ -376,25 +376,20 @@ test('concurrent publications never lose a record and never expose a half write'
   assert.deepEqual(index.records.map((row) => row.id).sort(), [first.id, secondRecord.id].sort());
 });
 
-test('the publication lock reclaims a dead owner and never steals a live one', async (t) => {
-  const os = await import('node:os');
-  const env = await fixture(t, { id: 'exp-share-lock' });
+test('a leftover lease file from the previous protocol does not block publishing', async (t) => {
+  const env = await fixture(t, { id: 'exp-share-legacy-lock' });
   const record = await buildRecord(env);
   const sharedDir = path.dirname(sharingPaths(env.paths).indexPath);
   await fs.mkdir(sharedDir, { recursive: true });
-  const lockPath = sharingPaths(env.paths).lockPath;
-  // The previous publisher crashed before releasing its lock: its pid is gone.
-  await fs.writeFile(lockPath, JSON.stringify({ token: 'dead-owner', pid: 999_999_999, hostname: os.hostname(), at: new Date(0).toISOString() }));
+  // The lock is a SQLite transaction now. A lease file left by an older version
+  // is not ownership and must not wedge publishing; it is preserved as unknown
+  // on-disk state instead of being guessed at.
+  const legacy = path.join(sharedDir, '.publish.lock');
+  const legacyBytes = JSON.stringify({ token: 'legacy-owner', pid: 999_999_999, hostname: os.hostname(), at: new Date(0).toISOString() });
+  await fs.writeFile(legacy, legacyBytes);
   const published = await publishSharedRecord(env.paths, record);
   assert.equal(published.status, 'published');
-  await assert.rejects(fs.access(lockPath), 'the successful publisher releases its own lock');
-
-  // A live owner's lock is waited out, not deleted, and the publication fails
-  // closed instead of interleaving with it.
-  await fs.writeFile(lockPath, JSON.stringify({ token: 'live-owner', pid: process.pid, hostname: os.hostname(), at: new Date().toISOString() }));
-  await assert.rejects(publishSharedRecord(env.paths, record), (error) => error?.code === 'E_SHARED_PUBLISH_BUSY');
-  assert.equal((await readSharedIndex(env.paths)).records.length, 1, 'the live owner\'s index state is untouched');
-  await fs.rm(lockPath, { force: true });
+  assert.equal(await fs.readFile(legacy, 'utf8'), legacyBytes, 'unknown legacy state is preserved');
 });
 
 test('a reconciler never republishes a changed source or a missing identity', async (t) => {

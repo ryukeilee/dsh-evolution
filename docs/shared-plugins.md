@@ -22,8 +22,9 @@
   Trial/Canary 状态机、无领域存储、无工具注册、无模型调用），也不写发布索引、晋升 journal、canary 状态、
   Desktop composition 或领域存储。
 - **数据布局**：发布索引 `published.json`、逐 profile 撤销表 `disabled.json`、消费状态
-  `consumers/<profile>.json`、消费 composition `consumers/<profile>.cordis.yml` 与发布锁 `.publish.lock`
-  都在 `$DSH_HOME/storages/evolution/shared-plugins/` 下；插件源码与 Desktop 的 `promoted/` 是同一份。
+  `consumers/<profile>.json`、消费 composition `consumers/<profile>.cordis.yml` 与发布锁数据库
+  `.publish.lock.sqlite` 都在 `$DSH_HOME/storages/evolution/shared-plugins/` 下；插件源码与 Desktop 的
+  `promoted/` 是同一份。旧版本留下的 `.publish.lock` 租约文件不参与新协议，也不会被删除。
 - **没有后台同步。** consumer 只在启动时读索引，没有定时器、watcher 或轮询。发布发生在 consumer 已经
   启动之后时，需要重启该入口才生效（部署形态保持宿主 HMR 关闭，见 `README.md`）。
 
@@ -88,14 +89,23 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 索引本身缺失是正常的 Desktop-only 安装；索引不可读或格式错误时视为「没有任何记录被授权」，所有记录都不能
 挂载（doctor 报 `blocked`）。单个记录非法不会丢弃其它合法记录。
 
+撤销表按同一条安全规则处理：`disabled.json` 存在但不可读或格式错误时状态是 `invalid` / `unreadable`，
+consumer 拒绝挂载**任何**记录（不能把「读不出撤销项」当成「没有任何撤销」），doctor 的 `promotion.sharing`
+报 `degraded` 并给出 `disableStatus`。只有 `ok`（可读）与 `absent`（没有撤销表）是正常状态。
+
 ## 4. 发布是原子且幂等的
 
 - 索引与 consumer 状态都通过「同目录临时文件 + fsync + rename」原子替换，因此读者只会看到上一份完整文件或
   下一份完整文件，不会看到半写。
-- 发布索引的 read-modify-write 在索引旁的 `.publish.lock` 跨进程独占锁下进行：锁文件以 `wx` 创建并记录
-  token / pid / hostname；只在同主机且 pid 可证明已消失、或超过 10 s 陈旧窗口时通过 rename 回收（只会有一个
-  回收者成功），无法解释的锁宁可直接等待也不删除；2.5 s 内拿不到锁以 `E_SHARED_PUBLISH_BUSY`（可重试）
-  报告。写入后再回读索引确认该记录确实落盘，未落盘则重试（最多 3 次）。
+- 发布索引的 read-modify-write 在索引旁的 `.publish.lock.sqlite` 独占事务下进行：每次发布打开这个私有
+  SQLite 数据库并执行 `BEGIN IMMEDIATE`，成功即持有跨进程写锁，`COMMIT`/`ROLLBACK`（或进程崩溃时 SQLite
+  的自动回滚）释放。互斥由 SQLite 的事务与文件锁保证，因此没有「租约」需要回收：不存在按 mtime/pid 判定
+  陈旧并抢占的窗口，暂停的持有者不会被第二个写者顶掉，崩溃的持有者也不会把锁永久留下。2.5 s 内拿不到
+  写锁以 `E_SHARED_PUBLISH_BUSY`（可重试）报告。同一进程内的并发发布先在进程内排队（排队与跨进程等待
+  共用同一 2.5 s 预算），避免同步 `node:sqlite` 的等待阻塞当前持有者完成索引写入。锁库必须可写：取得事务
+  后会做一次真实写入证明它是写事务（SQLite 对不可写文件会静默退回只读连接，只读连接上的 `BEGIN IMMEDIATE`
+  不取得写锁），不可写时以 `E_SHARED_PUBLISH_LOCK_UNWRITABLE` 失败关闭。旧协议遗留的 `.publish.lock` 文件
+  不是所有权，被原样保留。
 - 同一 stable 事实重复发布是逐字节 no-op；已有记录若源码摘要冲突则拒绝（**不会**用不同字节静默
   替换已验证源码）；重发布保留发布身份与首次发布时间，只追加 revalidation 代（`revalidate` 采用新宿主
   证据时同时更新该记录的 host 身份）。
@@ -105,8 +115,10 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
   `reconcileSharedPromotions()`（`lib/orchestrator.js`）扫描
   `archive/experiments/<experimentId>.evidence.json`，只采纳同时具备 `stableCommittedAt`、
   committed `durable` 身份与非空 `shareTargets` 的快照，为索引中缺失的记录补发布。它从不重新打开 canary、
-  不推断批准、不删除记录；重复执行是幂等的。覆盖的崩溃窗口包括 stable journal 阶段写出后、journal 清理前，
-  以及 stable 提交与索引写入之间。
+  不推断批准、不删除记录；重复执行是幂等的。候选按名称倒序（实验 id 内嵌创建时间，最新优先）读取，已在索引
+  中的 experiment 直接跳过、不消耗读取预算，因此补发布预算落在真正缺失的记录上——即使 archive 里的实验数
+  （`*.evidence.json`）超过单次读取上限（200），最近的崩溃窗口也不会被旧记录挤掉。覆盖的崩溃窗口包括
+  stable journal 阶段写出后、journal 清理前，以及 stable 提交与索引写入之间。
 
 ## 5. 操作流程
 
@@ -161,11 +173,14 @@ dsh-evolution-shared revalidate --evidence <evidence.json>
 `dsh-evolution-doctor` 与会话内 `evolution_doctor` 共用同一个只读检查 `promotion.sharing`：
 
 - 索引缺失 → `ok`（全部 Desktop-only）；
-- 所有记录源码摘要匹配且 consumer 无失败、无派生的 `pendingRestart` → `ok`；
-- 存在兼容性问题、失败激活或需要重启 → `degraded`；
+- 所有记录源码摘要匹配、撤销表可读（`ok` / `absent`）、consumer 无失败且无派生的 `pendingRestart` → `ok`；
+- 存在兼容性问题、失败激活、需要重启，或撤销表 `invalid` / `unreadable`（consumer 此时拒绝挂载任何记录，
+  evidence 给出 `disableStatus`）→ `degraded`；
 - 索引不可读 / 格式错误，或某条记录与其源码摘要不一致 → `blocked`。
 
-检查只报告，不激活、不撤销、不修复。
+检查只报告，不激活、不撤销、不修复。撤销表不可读时，operator 应从备份恢复，或**刻意**删除该文件表示
+「没有任何逐 profile 撤销」（这会重新启用所有曾被撤销的插件）；`shared-plugins disable|enable` 在撤销表
+不可读时拒绝写入，不会用空 entries 覆盖已有撤销。
 
 ## 8. 明确的非目标
 

@@ -122,3 +122,17 @@ test('a failed consumer activation degrades the check and names the plugin', asy
   assert.deepEqual(check.evidence.consumers.web.plugins.map((row) => row.status), ['failed']);
   assert.equal(check.evidence.consumers.web.plugins[0].reason, 'plugin-apply-failed');
 });
+
+test('an unreadable revocation table degrades the check and names its status', async (t) => {
+  const env = await home(t);
+  const host = await observedHostOf(env.dshHome);
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const disablePath = path.join(env.paths.dataRoot, 'shared-plugins', 'disabled.json');
+  await fs.writeFile(disablePath, '{not json');
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded');
+  assert.equal(check.evidence.disableStatus, 'invalid');
+  assert.match(check.summary, /revocation table is invalid/);
+});

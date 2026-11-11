@@ -59,6 +59,51 @@ format, tool-surface shape or authorization source changes.
   公式与预算见 `docs/performance/fixed-context-token-reduction-20261109.md` 第 9 节（来自仓库内 fixture，
   不是 provider token 测量）。
 
+### 可靠性收口（发布前审查修复）
+
+- **共享发布锁不再错误回收活跃持锁者。** 旧实现把「文件 mtime 超过 10 s」作为第一个回收判据，早于读取
+  owner：一个仍在运行、但在慢 fsync / 暂停 / 长时间发布中持锁超过 10 s 的发布者会被第二个写者顶掉，
+  两个进程同时执行索引 read-modify-write，其中一方已经报告 `published` 的记录会被另一方覆盖。审计还证明，
+  任何基于「读 owner → 判断 → 按路径删除/改名」的文件租约都留有恢复窗口：暂停的持有者可以恢复并进入
+  临界区，而回收者仍然移走同一个 inode；再加一级 `<lock>.reclaim` 标记也只是把竞争推迟到标记本身。
+  现在发布互斥改由索引旁的私有 SQLite 数据库 `.publish.lock.sqlite` 承担：每次发布执行
+  `BEGIN IMMEDIATE` 取得跨进程写事务，`COMMIT`/`ROLLBACK` 释放，进程崩溃时由 SQLite 自动回滚。因此
+  没有「陈旧锁」需要按 mtime/pid 判定或回收，暂停的持有者不会被顶掉，崩溃的持有者也不会永久占锁；同一
+  进程内的并发发布先在进程内排队，避免同步 `node:sqlite` 的等待阻塞当前持有者完成写入；排队与跨进程等待
+  共用同一个 2.5 s 预算，超时仍以 `E_SHARED_PUBLISH_BUSY`（可重试）报告。取得事务后还会做一次真实写入来
+  证明它是写事务（SQLite 在文件不可写时会静默退回只读连接，只读连接上的 `BEGIN IMMEDIATE` 不取得写锁），
+  不可写时以 `E_SHARED_PUBLISH_LOCK_UNWRITABLE` 失败关闭，绝不无锁写入。旧协议遗留的 `.publish.lock` 文件
+  不是所有权，原样保留。
+  回归见 `test/review-fix-shared-publish-lock.test.mjs`（并发发布会话化且不丢记录、真实子进程持有写锁时
+  第二次发布以 `E_SHARED_PUBLISH_BUSY` 失败关闭、持有写锁的子进程崩溃后下一次发布自动恢复、锁库是私有
+  普通文件、旧租约文件不阻塞也不被删除）。
+- **撤销表损坏时 consumer 失败关闭。** `disabled.json` 不可读或格式错误时，`readDisableState()` 返回
+  `invalid` / `unreadable` 与空 entries；consumer 以前把它当成「没有任何撤销」并继续挂载，操作者明确
+  禁用的插件可能因此重新激活。现在未知撤销状态会让 consumer 拒绝挂载**任何**记录并报告
+  `disable-state-<status>`，doctor 的 `promotion.sharing` 同时报 `degraded` 并给出 `disableStatus`。
+  `setDisabledForProfile()` 在撤销表不可读时拒绝写入（否则会用空 entries 覆盖已有撤销、静默重新启用插件），
+  `dsh-evolution-shared list` 输出 `disableStatus`，doctor 的 remediation 给出「从备份恢复或刻意删除」的
+  处置。`ok` 与 `absent` 保持原语义。回归见 `test/review-fix-shared-publish-safety.test.mjs` 与
+  `test/promoted-sharing-diagnostics.test.mjs`。
+- **崩溃 reconciliation 不再被旧记录挤掉。** 此前 `scanStableShareCandidates()` 按名称升序取前 200 个
+  sidecar 再过滤，实验数超过上限时最新 stable 提交（正是索引写入丢失的崩溃窗口）不在读取范围内。现在候选
+  按名称倒序（实验 id 内嵌创建时间）读取，已在索引中的 experiment 直接跳过且不消耗读取预算，单位预算落在
+  真正缺失的记录上；`maxRecords` 仍是每轮实际读取 sidecar 的上限。`published` / `skipped` 的报告语义
+  不变，`unchanged` 现在按索引中已存在的记录数报告（不再只统计重新读到的 sidecar）。回归见
+  `test/review-fix-shared-publish-safety.test.mjs`。
+- **已证明无效的结论不再被无关知识挤出检索窗口。** `findConclusions()` 只扫描最新的 500 条 canonical 行；
+  长期使用后新增的无关失败会把结论行挤出窗口，`priorIneffectiveConclusion()` 因此看不到它，同一
+  target + strategy + 版本三元组会被再次提案并启动 Trial。现在读路径按结论的 canonical `scope` 在 SQLite
+  内过滤（payload 仍按同一种 `"scope":<json>` 形式匹配），窗口只受同一 target 的结论数限制；
+  `truncated` 的含义相应变为「该 target 的结论数超过窗口」，不再由无关增长触发。回归见
+  `test/shared-experience-conclusion.test.mjs` 与
+  `test/experience-evolution-lifecycle.test.mjs`（505 条无关失败后同一策略仍被 `propose` 拒绝）。
+- **未改变的边界。** 发布互斥依赖 SQLite 的文件锁，因此数据根必须位于本地文件系统：网络文件系统与
+  不完整实现文件锁的 FUSE 挂载不受支持（与 `lib/dockyard-domain/PORTS.md` 的本地数据根前提一致）。
+  旧版本遗留的 `.publish.lock` 租约文件不参与新协议、也不提供新旧版本之间的互斥，新旧版本同时写同一个
+  数据根不在支持范围内。被晋升插件若导出永不 settle 的 `apply`，consumer 挂载仍会等待它（没有超时），
+  因为同一插件在 Trial 阶段已经会卡住晋升；本版本未为此新增超时。
+
 ### 边界
 
 - 只支持同一台机器、同一 OS 用户、同一本地文件系统与同一个 `DSH_HOME`；没有跨机器同步、插件市场、

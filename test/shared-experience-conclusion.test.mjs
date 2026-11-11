@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { openSharedExperience } from '../lib/shared-experience.js';
 import { parseConclusionStrategy, strategyFingerprint } from '../lib/experience-plan.js';
 
@@ -273,4 +275,42 @@ test('an identifier-legal target keeps its previous behavior', (t) => {
   // stays unused.
   assert.equal(store.findConclusions({ target: 'plugin edge-cache' }).matches.length, 1);
   assert.equal(store.findConclusions({ target: 'host' }).matches.length, 0);
+});
+
+test('a conclusion is still found after unrelated knowledge exceeds the global scan window', (t) => {
+  const store = open(t);
+  store.recordConclusion(conclude({ experimentId: 'exp-window', decision: 'no-benefit' }), ORIGIN);
+  // The window is the newest N canonical rows. Before the scoped read, 505
+  // newer unrelated failures pushed this conclusion out of it, `findConclusions`
+  // reported no match, and the proposal gate treated a proven-ineffective
+  // strategy as new.
+  for (let index = 0; index < 505; index += 1) {
+    store.recordFailure({
+      id: crypto.createHash('sha256').update(`unrelated:${index}`).digest('hex'),
+      type: 'tool/error',
+      code: 'E_UNRELATED',
+      target: `tool:unrelated-${index}`,
+    });
+  }
+  const found = store.findConclusions({ target: TARGET, applicability: VERSIONS, strategyFingerprint: FINGERPRINT });
+  assert.equal(found.matches.length, 1);
+  assert.equal(found.matches[0].decision, 'no-benefit');
+  assert.equal(found.matches[0].sameApplicability, true);
+  assert.equal(found.truncated, false, 'the window now covers every conclusion for this target');
+});
+
+test('the stored conclusion body keeps the canonical scope marker the windowed read uses', (t) => {
+  const root = temporary(t);
+  const store = openSharedExperience(root);
+  store.recordConclusion(conclude({ experimentId: 'exp-scope-marker', decision: 'no-benefit' }), ORIGIN);
+  store.close();
+  // `findConclusions()` filters canonical rows with `instr(body, '"scope":<json>')`.
+  // That scoped read is what keeps a proven-ineffective conclusion visible after
+  // unrelated failures accumulate, so the marker itself is pinned here: a future
+  // writer change that stops emitting it would silently turn the gate fail-open.
+  const db = new DatabaseSync(path.join(root, 'experience.sqlite'));
+  t.after(() => db.close());
+  const row = db.prepare('SELECT body FROM knowledge').get();
+  assert.ok(row?.body, 'one canonical row was written');
+  assert.ok(row.body.includes('"scope":"plugin edge-cache"'), row.body);
 });
