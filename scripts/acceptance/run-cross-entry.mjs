@@ -558,11 +558,13 @@ try {
   // appears only after the canary committed stable.
   assert(stable.gates?.publishedAtConfirmationGate === false, `the confirmation-gated promotion published a record: ${JSON.stringify(stable.gates)}`);
   assert(stable.gates?.publishedBeforeCanaryCommit === false, `the plugin was published before the canary committed stable: ${JSON.stringify(stable.gates)}`);
+  assert(stable.gates?.publishedAfterFirstObservation === false, `the plugin was published while the canary window was still open: ${JSON.stringify(stable.gates)}`);
   evidence.approval = {
     input: { confirmation: true, targetProfiles: ['acp', 'web'] },
     approvedProfiles: stableRecord.approvedProfiles,
     publishedAtConfirmationGate: stable.gates.publishedAtConfirmationGate,
     publishedBeforeCanaryCommit: stable.gates.publishedBeforeCanaryCommit,
+    publishedAfterFirstObservation: stable.gates.publishedAfterFirstObservation,
     desktopOnlyControlPublished: index.plugins.some((row) => row?.id === desktopOnly.id),
   };
   assert(stableRecord.hostOnly === true, 'the published record is not host-only');
@@ -607,7 +609,7 @@ try {
   const expectedActive = {
     [stable.id]: { status: 'active' },
     [incompatible.id]: { status: 'skipped-incompatible', reason: 'missing-service' },
-    [loadFailure.id]: { status: 'failed' },
+    [loadFailure.id]: { status: 'failed', reason: 'plugin-apply-failed' },
   };
   const activeMarkers = {
     [stable.id]: MARKERS.stable,
@@ -687,20 +689,29 @@ try {
   const rejections = {};
   const stableSourcePath = fileURLToPath(stableRecord.moduleUrl);
   const originalSource = fs.readFileSync(stableSourcePath);
+  const tamperedSource = Buffer.concat([originalSource, Buffer.from('\n// acceptance tamper: source digest must not match\n')]);
+  let tamperedSourceAfterBoot;
+  let indexAfterTamperedBoot;
   let tamperedBoot;
   try {
-    fs.writeFileSync(stableSourcePath, Buffer.concat([originalSource, Buffer.from('\n// acceptance tamper: source digest must not match\n')]));
+    fs.writeFileSync(stableSourcePath, tamperedSource);
     tamperedBoot = await bootWeb('web-tampered', {
       expect: {
         [stable.id]: { status: 'skipped-invalid', reason: 'source-digest-mismatch' },
         [incompatible.id]: { status: 'skipped-incompatible', reason: 'missing-service' },
-        [loadFailure.id]: { status: 'failed' },
+        [loadFailure.id]: { status: 'failed', reason: 'plugin-apply-failed' },
       },
       markers: activeMarkers,
     });
+    // Read the injected files back BEFORE restoring them: restoring first would
+    // hide a consumer that rewrote either file during the tampered boot.
+    tamperedSourceAfterBoot = fs.readFileSync(stableSourcePath);
+    indexAfterTamperedBoot = fs.readFileSync(publishedPath);
   } finally {
     fs.writeFileSync(stableSourcePath, originalSource);
   }
+  assert(tamperedSourceAfterBoot?.equals(tamperedSource), 'the consumer changed the tampered promoted source during its boot');
+  assert(indexAfterTamperedBoot?.equals(indexBytes), 'the consumer changed the publication index during the tampered boot');
   assert(sha256File(stableSourcePath) === stableRecord.sourceSha256, 'the tampered promoted source was not restored byte-for-byte');
   assert(tamperedBoot.markerListeners?.[stable.id] === 0 && tamperedBoot.markerHits?.[stable.id] === 0, 'the tampered record was still mounted');
   rejections.tamperedSource = {
@@ -712,23 +723,27 @@ try {
   assert(sha256(fs.readFileSync(publishedPath)) === indexDigest, 'the tampered consumer boot changed the publication index');
 
   const originalIndex = fs.readFileSync(publishedPath);
+  const modifiedIndex = JSON.parse(originalIndex);
+  const upgradeTarget = modifiedIndex.plugins.find((row) => row.id === stable.id);
+  upgradeTarget.host = { ...upgradeTarget.host, dsh: '9.9.9-acceptance-upgrade' };
+  const modifiedIndexBytes = Buffer.from(`${JSON.stringify(modifiedIndex, null, 2)}\n`);
+  let upgradedIndexAfterBoot;
   let upgradedBoot;
   try {
-    const modified = JSON.parse(originalIndex);
-    const target = modified.plugins.find((row) => row.id === stable.id);
-    target.host = { ...target.host, dsh: '9.9.9-acceptance-upgrade' };
-    fs.writeFileSync(publishedPath, `${JSON.stringify(modified, null, 2)}\n`);
+    fs.writeFileSync(publishedPath, modifiedIndexBytes);
     upgradedBoot = await bootWeb('web-upgraded', {
       expect: {
         [stable.id]: { status: 'pending-revalidation', reason: 'host-version-mismatch' },
         [incompatible.id]: { status: 'skipped-incompatible', reason: 'missing-service' },
-        [loadFailure.id]: { status: 'failed' },
+        [loadFailure.id]: { status: 'failed', reason: 'plugin-apply-failed' },
       },
       markers: activeMarkers,
     });
+    upgradedIndexAfterBoot = fs.readFileSync(publishedPath);
   } finally {
     fs.writeFileSync(publishedPath, originalIndex);
   }
+  assert(upgradedIndexAfterBoot?.equals(modifiedIndexBytes), 'the consumer changed the publication index during the pending-revalidation boot');
   assert(sha256(fs.readFileSync(publishedPath)) === indexDigest, 'the publication index was not restored byte-for-byte');
   assert(upgradedBoot.markerListeners?.[stable.id] === 0 && upgradedBoot.markerHits?.[stable.id] === 0, 'the pending-revalidation record was still mounted');
   rejections.hostVersionMismatch = {

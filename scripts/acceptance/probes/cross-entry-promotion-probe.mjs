@@ -284,11 +284,15 @@ export async function runCrossEntryPublish(ctx, onStep = () => {}) {
   });
 
   /** Close the default two-observation canary window and assert the stable commit. */
-  async function commitStable({ experimentId, suffix }) {
+  async function commitStable({ experimentId, suffix }, { assertNotPublished } = {}) {
     const firstObservation = await observeCanary(experimentId, `cross-entry-${suffix}-1`);
     if (firstObservation.stable === true) {
       throw new Error('the canary window completed after one observation; the acceptance expected the default window');
     }
+    // The barrier must hold for the whole window, not only before the first
+    // observation: a publication that happens while the window is still open is
+    // a real leak even if the first observation reports `stable: false`.
+    if (assertNotPublished) await assertNotPublished('the plugin was published while the canary window was still open');
     const committed = await observeCanary(experimentId, `cross-entry-${suffix}-2`);
     if (committed.stable !== true) {
       throw new Error(`the canary did not commit stable: ${JSON.stringify({ phase: committed.phase, stable: committed.stable })}`);
@@ -322,7 +326,13 @@ export async function runCrossEntryPublish(ctx, onStep = () => {}) {
       throw new Error(`the plugin was published before the canary committed stable (${expectedId})`);
     }
     // (c) Two canary observations -> stable commit -> publication.
-    const committed = await commitStable(candidate);
+    let publishedAfterFirstObservation = false;
+    const committed = await commitStable(candidate, {
+      assertNotPublished: async (message) => {
+        publishedAfterFirstObservation = (await readIndex()).plugins.some((row) => row?.id === expectedId);
+        if (publishedAfterFirstObservation) throw new Error(`${message} (${expectedId})`);
+      },
+    });
     if (!['published', 'updated', 'unchanged'].includes(committed.shared?.status)) {
       throw new Error(`the stable commit did not publish a shared record: ${JSON.stringify(committed.shared)}`);
     }
@@ -359,7 +369,7 @@ export async function runCrossEntryPublish(ctx, onStep = () => {}) {
       stable: record.stable,
       marker,
       hits: { trial: candidate.trialHits, promoted: promotedHits },
-      gates: { publishedAtConfirmationGate, publishedBeforeCanaryCommit },
+      gates: { publishedAtConfirmationGate, publishedBeforeCanaryCommit, publishedAfterFirstObservation },
       sharedStatus: committed.shared.status,
     };
   }

@@ -67,7 +67,6 @@ const KERNEL_ONLY_TOOLS = Object.freeze([
  */
 const PROBE_INSTANCE_KEY = Symbol.for('dsh-evolution.cross-entry-consumer-probe');
 const probeInstances = (globalThis[PROBE_INSTANCE_KEY] ??= { count: 0, driver: false });
-probeInstances.count += 1;
 
 function parseJsonEnv(name, fallback) {
   const raw = process.env[name];
@@ -96,6 +95,10 @@ function readJsonFile(file) {
 }
 
 export function apply(ctx) {
+  // Count live applications, not module evaluations: a host that composes the
+  // same patch into several contexts evaluates this module once and applies it
+  // once per context. The run below refuses anything but one application.
+  probeInstances.count += 1;
   const output = process.env.EVOLUTION_ENTRY_PROBE_OUT;
   const report = (promise) => {
     void promise.then(
@@ -145,6 +148,9 @@ export function apply(ctx) {
 }
 
 export async function runConsumerProbe(ctx) {
+  if (probeInstances.count !== 1) {
+    throw new Error(`the consumer probe was applied ${probeInstances.count} times in this process; exactly one live instance is required`);
+  }
   const startedAt = new Date().toISOString();
   const profile = process.env.EVOLUTION_CROSS_ENTRY_PROFILE || 'web';
   const expected = parseJsonEnv('EVOLUTION_CROSS_ENTRY_EXPECT', {});

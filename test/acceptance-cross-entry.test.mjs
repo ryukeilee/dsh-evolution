@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const acceptance = path.join(repoRoot, 'scripts', 'acceptance');
@@ -144,4 +144,24 @@ test('the consumer probe separates the shared-experience tool from the kernel su
   assert.match(consume, /const PROBE_INSTANCE_KEY = Symbol\.for\('dsh-evolution\.cross-entry-consumer-probe'\)/);
   assert.match(consume, /probeInstances\.driver/);
   assert.match(consume, /markerListeners/);
+});
+
+test('a second consumer probe application is counted and refused, not silently dropped', () => {
+  // The single-driver guard must not hide a host that applies the probe in two
+  // live contexts: only the first application registers the run effect, and the
+  // application counter is what the probe reports (and refuses) in that case.
+  const script = `
+    import { apply } from ${JSON.stringify(pathToFileURL(consumerProbe).href)};
+    const key = Symbol.for('dsh-evolution.cross-entry-consumer-probe');
+    let effects = 0;
+    const ctx = { effect(fn) { effects += 1; return fn(); }, get() { return undefined; }, tools: { schemas: () => [] }, events: {} };
+    apply(ctx);
+    apply(ctx);
+    console.log(JSON.stringify({ applied: globalThis[key].count, effects }));
+  `;
+  const result = runNode(['--input-type=module', '-e', script], { EVOLUTION_ENTRY_PROBE_OUT: '' });
+  assert.equal(result.status, 0, result.stderr);
+  const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+  assert.equal(parsed.applied, 2, 'the probe must count applications, not module evaluations');
+  assert.equal(parsed.effects, 1, 'only the first application may register the probe effect');
 });
