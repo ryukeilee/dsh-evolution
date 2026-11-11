@@ -18,11 +18,16 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
-## 未发布（开发树）— 跨入口共享已验证的晋升插件
+## 0.2.4 — 稳定版
 
-本节只描述当前开发树的新增内容，`release/` 中的 `0.2.3` 固定产物**不包含**这些改动；版本号、
-`peerDependencies` 与受支持宿主集合都没有变化，也没有新的真实宿主验收声明。基线：
-统一经验采集、Propose–Probe–Compose 之后的工作树。
+`0.2.3` 的稳定后继，包含 PR #45–#48 与发布前可靠性审查的修复：统一经验采集与共享、经验驱动的
+Propose–Probe–Compose 自我进化、Desktop 唯一晋升权威下的 stable Cordis 插件跨入口授权共享、ACP/Web
+轻量消费者，以及本轮共享发布锁、撤销表失败关闭、崩溃 reconciliation 与结论检索窗口的可靠性修复。
+相对 `0.2.3` 固定产物的分发包内容新增 `lib/promoted-sharing.js`、`lib/promoted-consumer.js`、
+`lib/promotion-include.js`、`lib/shared-experience.js`、`lib/experience-*.js` 等实现文件；持久 schema 与
+schema 版本、工具名 / 参数名 / 类型 / 必填集合、授权来源、晋升门禁的 8 项证据、Cordis 信任根、`engines`、
+`peerDependencies` 与受支持宿主集合均未改动。本版本按 `RELEASE.md` 重新构建、对四个官方宿主重跑验收并
+重新固定。
 
 ### 新增
 
