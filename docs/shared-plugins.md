@@ -196,5 +196,32 @@ dsh-evolution-shared revalidate --evidence <evidence.json>
 
 边界：该验收环境没有 Desktop 二进制，因此由带完整 kernel 的 Web profile 充当 publisher
 （证据记录 `publisherProfile: "web"`）；生产安装形态仍只在 Desktop 运行完整 kernel。它不是 Desktop UI /
-Desktop 布局验收，也不覆盖真实的 Desktop Electron 入口。`scripts/acceptance/run-cross-entry.mjs` 另提供
-在本机用真实 Desktop 二进制执行的三入口流程，其证据文件只在该流程真实通过后才会作为验收记录引用。
+Desktop 布局验收，也不覆盖真实的 Desktop Electron 入口。
+
+### 9.1 真实 Desktop Electron 三入口验收
+
+`scripts/acceptance/run-cross-entry.mjs` 在本机用已安装的 macOS Desktop 应用执行同一角色分离流程，
+隔离 `$DSH_HOME` 与 Electron user-data-dir，证据记录在
+`docs/evidence/cross-entry-desktop-0.2.2-rc.1.json`（本树实测：Desktop 应用与 DSH `0.2.2-rc.1`、
+Electron `44.7.0`、Chrome `152.0.7977.130`、Electron 内置 Node `24.21.0`、Cordis `4.1.0`、
+官方 Include `1.1.0`、Evolution `0.2.3`）。该运行证明：
+
+- 真实 Desktop Electron 中的 publisher 完成四个候选：带 `['acp','web']` 显式批准的 stable 晋升、
+  Desktop-only 对照（stable 但不发布）、缺少 kernel 服务的 incompatible 候选、以及只在 kernel 存在时
+  才可加载的 consumer 侧加载失败候选。`confirmation: true` 的确认门禁与 canary 窗口未完成前，索引里都
+  不出现记录；stable 记录的批准范围、源码与 manifest 摘要、`committedAt` 与 canary 窗口由 runner 从发布
+  字节重新计算。
+- 每个 Trial 与 Promoted marker 的 listener 恰好 1 个、执行恰好 1 次。历史 `hits=2` 不是重复激活：手工
+  重跑复用了已包含前一次稳定晋升插件的 `$DSH_HOME`，两个不同插件注册了同一个固定事件名。runner 现在为
+  每次运行生成独立 marker 命名空间，并在 Trial 前后与每次执行前后断言 listener 数量。
+- 真实 Web 与 headless ACP 入口各启动两次：每次只挂载一次、marker 执行一次，`activatedAt` 跨重启前移；
+  两个入口的 Evolution 工具面只有共享经验的 `evolution_history`，没有 `evolution` 服务或 kernel-only
+  工具。incompatible 记录 `skipped-incompatible`，加载失败记录 `failed`（`plugin-apply-failed`）且不注册
+  listener，stable 记录不受影响。
+- 真实拒绝路径：篡改 stable 源码后 Web 报 `skipped-invalid`/`source-digest-mismatch` 且不挂载，恢复字节后
+  重新 `active`；改写索引 host 版本后 `pending-revalidation` 且不挂载，恢复索引字节后重新 `active`。
+- 所有 consumer 启动前后，`storages/evolution`（除 consumer 自己的状态目录）逐文件摘要不变，发布索引字节
+  不变，共享经验库行数不变；证据文件本身可被 `dsh-evolution-shared revalidate` 采纳（在隔离副本上验证）。
+
+该 runner 需要已安装的 macOS Desktop 应用，不在 CI 中运行；CI 的 `--cross-entry` 官方宿主验收仍是发布
+门禁引用的宿主证据。

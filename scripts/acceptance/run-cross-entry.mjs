@@ -41,19 +41,26 @@
  * isolated `--user-data-dir` and an isolated `$DSH_HOME`, and the runner refuses
  * the real `~/.dsh`.
  *
- * KNOWN LIMITATION (observed 2026-11-11 on macOS, DSH 0.2.2-rc.1):
- * the isolated Desktop application initializes its profile and installs the
- * bundle, but the in-app publish probe does not complete. Inside the Desktop
- * host the trial marker listener was observed twice (`hits=2`), so the probe
- * refused to continue instead of recording ambiguous evidence; the exact
- * Desktop-host composition that duplicates the listener was not isolated within
- * the run's time box. This runner is therefore NOT part of CI and does not by
- * itself prove the Desktop -> ACP/Web role split. The CI host acceptance
- * (`docs/evidence/cross-entry-0.2.2-rc.1.json`, `--cross-entry`) proves the
- * publisher path through the full Evolution kernel booted on the Web profile
- * and the consumer path on a real headless ACP entry and a real Web entry. This
- * runner additionally requires an already-initialized isolated Desktop profile
- * (it initializes one itself when the profile manifest is absent).
+ * ROOT CAUSE OF THE OLD `hits=2` OBSERVATION (proven 2026-11-11 on macOS, DSH
+ * 0.2.2-rc.1, Desktop Electron): a manual publish attempt reused an isolated
+ * `$DSH_HOME` in which an earlier run had already committed a stable plugin
+ * whose generated source registers the same fixed event name
+ * (`cross-entry/probe/stable`). On the second boot the Desktop kernel restores
+ * that promoted plugin from `promoted.cordis.yml`, so its listener exists
+ * before the new trial and the new trial adds a second listener for the same
+ * name: `hits=2`. That is two different plugins sharing a marker name, not one
+ * plugin being activated twice. On a fresh isolated home the same real Desktop
+ * run executes every trial and promoted marker exactly once (see this runner's
+ * evidence file), and the probe now asserts the exact listener count before and
+ * after each trial/marker execution. This runner additionally gives every run
+ * its own marker namespace, so a persisted home can never reproduce that
+ * ambiguity, and it records the actual Desktop Electron/DSH/Cordis/Include/Node/
+ * Evolution versions plus the unmodified promotion state. It is intentionally
+ * not part of CI (it needs the installed macOS Desktop application); the CI
+ * host acceptance (`docs/evidence/cross-entry-0.2.2-rc.1.json`, `--cross-entry`)
+ * proves the same role split through a real headless ACP entry and a real Web
+ * entry. This runner initializes the isolated Desktop profile itself when the
+ * profile manifest is absent.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -69,7 +76,19 @@ const DESKTOP_CLI = '/Applications/DeepSeek Harness.app/Contents/Resources/runti
 const SETUP = path.join(REPO_ROOT, 'scripts', 'setup-experience.mjs');
 const PROBE = path.join(HERE, 'probes', 'cross-entry-promotion-probe.mjs');
 const CONSUMER_PROBE = path.join(HERE, 'probes', 'cross-entry-consumer-probe.mjs');
-const MARKERS = Object.freeze({ stable: 'cross-entry/probe/stable', incompatible: 'cross-entry/probe/incompatible' });
+/**
+ * Per-run event namespace. A stable plugin keeps its marker name in its
+ * generated promoted source, so reusing the fixed names in a persisted home
+ * makes a later run observe the earlier run's listener. A fresh namespace per
+ * run keeps every assertion unambiguous even when `--work` is reused.
+ */
+const RUN_ID = crypto.randomBytes(8).toString('hex');
+const MARKERS = Object.freeze({
+  stable: `cross-entry/probe/${RUN_ID}/stable`,
+  desktopOnly: `cross-entry/probe/${RUN_ID}/desktop-only`,
+  incompatible: `cross-entry/probe/${RUN_ID}/incompatible`,
+  loadFailure: `cross-entry/probe/${RUN_ID}/load-failure`,
+});
 
 /**
  * The driving session may itself run inside a DSH profile (an ACP agent exports
@@ -149,6 +168,80 @@ function readJson(file) {
 function assert(condition, message) {
   if (!condition) throw new Error(`cross-entry: ${message}`);
 }
+
+const sha256File = (file) => {
+  try { return sha256(fs.readFileSync(file)); } catch { return null; }
+};
+
+/** Every regular file under `root`, relative and sorted, for tree snapshots. */
+function walkRelative(root, prefix = '') {
+  const out = [];
+  let entries;
+  try { entries = fs.readdirSync(prefix === '' ? root : path.join(root, prefix), { withFileTypes: true }); } catch { return out; }
+  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+    const rel = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
+    if (entry.isDirectory()) out.push(...walkRelative(root, rel));
+    else if (entry.isFile()) out.push(rel);
+  }
+  return out;
+}
+
+/**
+ * Digest of every file under one root. Used to prove that the consumer entries
+ * did not modify the Desktop promotion state: the promotion journal directory is
+ * already gone after a stable commit, so the proof covers the whole data root
+ * (evidence sidecars, promoted sources and composition, memory, domain files)
+ * rather than a single file that may not exist.
+ */
+function treeDigest(root, { exclude = [] } = {}) {
+  const rows = [];
+  for (const rel of walkRelative(root)) {
+    if (exclude.some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`))) continue;
+    rows.push([rel, sha256File(path.join(root, rel))]);
+  }
+  return { digest: sha256(JSON.stringify(rows)), files: Object.fromEntries(rows) };
+}
+
+/** The installed application's bundle version (macOS `Info.plist`). */
+function desktopAppVersion(binary) {
+  const plist = path.resolve(path.dirname(binary), '..', 'Info.plist');
+  if (!fs.existsSync(plist)) return null;
+  const result = spawnSync('plutil', ['-convert', 'json', '-o', '-', plist], { encoding: 'utf8' });
+  if (result.status !== 0) return null;
+  try { return JSON.parse(result.stdout).CFBundleShortVersionString ?? null; } catch { return null; }
+}
+
+function packageVersion(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')).version ?? null; } catch { return null; }
+}
+
+/**
+ * The shared experience store is opened by the experience collector in every
+ * profile (including the consumers). "Preserved" therefore means the committed
+ * rows are still there, not that the SQLite file bytes never change.
+ */
+async function experienceSnapshot(dshHome) {
+  const dir = path.join(dshHome, 'storages', 'evolution-experience');
+  const file = path.join(dir, 'experience.sqlite');
+  const snapshot = { path: '$DSH_HOME/storages/evolution-experience/experience.sqlite', present: fs.existsSync(file), sha256: sha256File(file), rows: null };
+  if (!snapshot.present) return snapshot;
+  try {
+    const { DatabaseSync } = await import('node:sqlite');
+    const db = new DatabaseSync(file, { readOnly: true });
+    try {
+      const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((row) => row.name);
+      snapshot.rows = Object.fromEntries(tables.map((table) => {
+        try { return [table, db.prepare(`SELECT COUNT(*) AS n FROM "${String(table).replaceAll('"', '""')}"`).get().n]; } catch { return [table, null]; }
+      }));
+    } finally { db.close(); }
+  } catch (error) {
+    snapshot.rows = { unavailable: String(error?.code || error?.message || error) };
+  }
+  return snapshot;
+}
+
+/** ISO-8601 timestamp check for the durable stable proof. */
+const isIsoTimestamp = (value) => typeof value === 'string' && Number.isFinite(Date.parse(value));
 
 /**
  * Boot one Web consumer entry with the profile's managed patch (which disables
@@ -302,6 +395,10 @@ function runDesktopPublish() {
     DSH_HOME: home,
     EVOLUTION_ENTRY_PROBE_OUT: receipt,
     EVOLUTION_CROSS_ENTRY_PHASE: 'publish',
+    // A per-run marker namespace and the extended candidate set (a real
+    // consumer-side load failure) are only used by this runner.
+    EVOLUTION_CROSS_ENTRY_MARKERS: JSON.stringify(MARKERS),
+    EVOLUTION_CROSS_ENTRY_EXTENDED: '1',
     EVOLUTION_ACCEPTANCE_CWD: home,
   };
   delete env.ELECTRON_RUN_AS_NODE;
@@ -376,7 +473,7 @@ try {
   const version = runSync(cli, ['--version'], { cwd: work, env: { DSH_HOME: home } });
   if (version.code !== 0) throw new Error(`the official CLI did not report a version: ${version.output.slice(-800)}`);
   const hostVersion = version.output.trim().split('\n').filter(Boolean).pop();
-  evidence.host = { dsh: hostVersion, cli: path.relative(REPO_ROOT, cli) };
+  evidence.host = { dsh: hostVersion, cli: path.basename(cli) };
 
   // 2. initialize the Desktop profile once (the official CLI requires it), then
   //    install the freshly packed bundle into all three profiles through the
@@ -410,9 +507,13 @@ try {
   const publish = await runDesktopPublish();
   evidence.desktop = {
     binary: path.basename(desktopBinary),
+    applicationVersion: desktopAppVersion(desktopBinary),
     userDataDir: '<work>/electron-user-data',
     publisherProfile: 'desktop',
     phase: publish.phase,
+    hostRuntime: publish.hostRuntime ?? null,
+    markers: publish.markers ?? null,
+    extended: publish.extended === true,
     services: publish.services,
     candidates: publish.candidates,
     index: publish.index,
@@ -420,45 +521,136 @@ try {
   const stable = publish.candidates?.stable;
   const incompatible = publish.candidates?.incompatible;
   const desktopOnly = publish.candidates?.desktopOnly;
+  const loadFailure = publish.candidates?.loadFailure ?? null;
   assert(Boolean(stable && incompatible && desktopOnly), 'the Desktop publish probe did not report all candidates');
   assert(JSON.stringify(stable.approvedProfiles) === JSON.stringify(['acp', 'web']), `the Desktop-published record carries approvedProfiles ${JSON.stringify(stable.approvedProfiles)}`);
-  assert(stable.stable?.decision === 'benefit' && stable.stable?.canary?.startupVerified === true, 'the Desktop-published record has no stable proof');
   assert(desktopOnly.sharedStatus === 'desktop-only' && desktopOnly.published === false, 'the Desktop-only control promotion was published');
+  // The publisher ran inside the installed Desktop application: the receipt must
+  // prove the Electron runtime and use the exact Node version the durable host
+  // identity was captured with.
+  assert(typeof publish.hostRuntime?.electron === 'string' && publish.hostRuntime.electron !== '', 'the Desktop publish receipt does not prove an Electron runtime');
+  const normalizeNodeVersion = (value) => String(value ?? '').replace(/^v/, '');
+  assert(normalizeNodeVersion(publish.hostRuntime.node) === normalizeNodeVersion(stable.host?.node), `the committed host Node ${stable.host?.node} is not the Desktop runtime ${publish.hostRuntime.node}`);
+  assert(publish.markers && JSON.stringify(publish.markers) === JSON.stringify(MARKERS), 'the Desktop publish probe did not use this run marker namespace');
+  assert(publish.extended === true, 'the Desktop publish probe did not run the extended candidate set');
+  assert(Boolean(loadFailure), 'the extended Desktop run did not report the load-failure candidate');
+  assert(JSON.stringify(loadFailure.approvedProfiles) === JSON.stringify(['acp', 'web']), `the load-failure record carries approvedProfiles ${JSON.stringify(loadFailure.approvedProfiles)}`);
 
   const dataRoot = path.join(home, 'storages', 'evolution');
   const publishedPath = path.join(dataRoot, 'shared-plugins', 'published.json');
-  const index = readJson(publishedPath);
+  const indexBytes = fs.readFileSync(publishedPath);
+  const index = JSON.parse(indexBytes);
   assert(Boolean(index) && Array.isArray(index.plugins), 'the publication index is missing after the Desktop promotion');
   const stableRecord = index.plugins.find((row) => row?.id === stable.id);
   assert(Boolean(stableRecord), 'the Desktop-published stable record is missing from the index');
   assert(stableRecord.publisherProfile === 'desktop', `the record publisherProfile is ${stableRecord.publisherProfile}, expected desktop`);
   assert(!index.plugins.some((row) => row?.id === desktopOnly.id), 'the Desktop-only control promotion was published');
-  const indexDigest = sha256(fs.readFileSync(publishedPath));
+  // Durable stable proof: a committed timestamp, the satisfied canary window
+  // and the benefit decision are all required, and the published byte digests
+  // are recomputed from the promoted source instead of trusted from the record.
+  assert(isIsoTimestamp(stableRecord.stable?.committedAt) && isIsoTimestamp(stableRecord.stable?.promotionTimestamp), `the record has no durable stable commit times: ${JSON.stringify(stableRecord.stable)}`);
+  assert(stableRecord.stable?.decision === 'benefit' && stableRecord.stable?.canary?.startupVerified === true, 'the Desktop-published record has no stable proof');
+  const canaryWindow = stableRecord.stable?.canary?.healthObservationWindow;
+  const canaryObservations = stableRecord.stable?.canary?.observations;
+  assert(Number.isInteger(canaryWindow) && canaryWindow >= 1 && Number.isInteger(canaryObservations) && canaryObservations >= canaryWindow, `the record does not carry a satisfied canary window: ${JSON.stringify(stableRecord.stable?.canary)}`);
+  // The explicit cross-entry approval was a separate input, and neither the
+  // confirmation gate nor the open canary window published anything: the record
+  // appears only after the canary committed stable.
+  assert(stable.gates?.publishedAtConfirmationGate === false, `the confirmation-gated promotion published a record: ${JSON.stringify(stable.gates)}`);
+  assert(stable.gates?.publishedBeforeCanaryCommit === false, `the plugin was published before the canary committed stable: ${JSON.stringify(stable.gates)}`);
+  assert(stable.gates?.publishedAfterFirstObservation === false, `the plugin was published while the canary window was still open: ${JSON.stringify(stable.gates)}`);
+  evidence.approval = {
+    input: { confirmation: true, targetProfiles: ['acp', 'web'] },
+    approvedProfiles: stableRecord.approvedProfiles,
+    publishedAtConfirmationGate: stable.gates.publishedAtConfirmationGate,
+    publishedBeforeCanaryCommit: stable.gates.publishedBeforeCanaryCommit,
+    publishedAfterFirstObservation: stable.gates.publishedAfterFirstObservation,
+    desktopOnlyControlPublished: index.plugins.some((row) => row?.id === desktopOnly.id),
+  };
+  assert(stableRecord.hostOnly === true, 'the published record is not host-only');
+  assert(stableRecord.host?.dsh === hostVersion, `the verified host DSH ${stableRecord.host?.dsh} is not the installed CLI ${hostVersion}`);
+  const stableModuleFile = fileURLToPath(stableRecord.moduleUrl);
+  assert(sha256File(stableModuleFile) === stableRecord.sourceSha256, 'the promoted source digest does not match the published record');
+  assert(sha256File(path.join(path.dirname(stableModuleFile), '..', 'package.json')) === stableRecord.manifestSha256, 'the promoted manifest digest does not match the published record');
+  assert(!index.plugins.some((row) => row?.id === loadFailure.id && !Array.isArray(row.approvedProfiles)), 'the load-failure record was not published with its approval');
+  const indexDigest = sha256(indexBytes);
   evidence.index = {
     path: path.join('$DSH_HOME', 'storages', 'evolution', 'shared-plugins', 'published.json'),
     updatedAt: index.updatedAt,
     digest: indexDigest,
-    records: index.plugins.map((row) => ({ id: row?.id, publisherProfile: row?.publisherProfile, approvedProfiles: row?.approvedProfiles, sourceSha256: row?.sourceSha256, host: row?.host, stable: row?.stable })),
+    records: index.plugins.map((row) => ({ id: row?.id, publisherProfile: row?.publisherProfile, approvedProfiles: row?.approvedProfiles, sourceSha256: row?.sourceSha256, manifestSha256: row?.manifestSha256, host: row?.host, stable: row?.stable })),
   };
+
+  const evolutionVersion = packageVersion(path.join(home, 'profiles', 'desktop', 'node_modules', 'dsh-evolution', 'package.json'));
+  assert(typeof evolutionVersion === 'string' && evolutionVersion !== '', 'the installed Evolution bundle version is unreadable');
+  evidence.versions = {
+    desktop: {
+      application: desktopAppVersion(desktopBinary),
+      electron: publish.hostRuntime.electron,
+      chrome: publish.hostRuntime.chrome ?? null,
+      node: publish.hostRuntime.node,
+    },
+    runner: { node: process.version, platform: `${process.platform}-${process.arch}` },
+    dsh: hostVersion,
+    cordis: stableRecord.host?.cordis ?? null,
+    include: stableRecord.host?.include ?? null,
+    evolution: evolutionVersion,
+  };
+  // The revalidate-shaped whole-file projection needs the verified host
+  // identity at the top level (the operator command reads it from there).
+  evidence.host = { ...evidence.host, cordis: stableRecord.host?.cordis ?? null, include: stableRecord.host?.include ?? null, node: stableRecord.host?.node ?? process.version };
+
+  // Everything the promotion left behind, before any consumer runs. The
+  // consumer's own state directory is the only thing it is allowed to write.
+  const CONSUMER_STATE = 'shared-plugins/consumers';
+  const evolutionBefore = treeDigest(dataRoot, { exclude: [CONSUMER_STATE] });
+  const experienceBefore = await experienceSnapshot(home);
 
   const expectedActive = {
     [stable.id]: { status: 'active' },
     [incompatible.id]: { status: 'skipped-incompatible', reason: 'missing-service' },
+    [loadFailure.id]: { status: 'failed', reason: 'plugin-apply-failed' },
   };
-  const activeMarkers = { [stable.id]: MARKERS.stable, [incompatible.id]: MARKERS.incompatible };
+  const activeMarkers = {
+    [stable.id]: MARKERS.stable,
+    [incompatible.id]: MARKERS.incompatible,
+    [loadFailure.id]: MARKERS.loadFailure,
+  };
+  const nodeMajor = (value) => String(value ?? '').replace(/^v/, '').split('.')[0];
+
+  /** Assert one consumer boot really mounted only the records it may mount. */
+  function assertConsumerBoot(profile, result, label) {
+    assert(result.profile === profile, `the ${profile} consumer ${label} reported profile ${result.profile}`);
+    assert(result.probeInstances === 1, `the ${profile} consumer ${label} composed ${result.probeInstances} probe instances`);
+    assert(result.kernelPresent === false, `the ${profile} consumer ${label} still runs the Evolution kernel service`);
+    assert(JSON.stringify(result.kernelOnlyTools) === '[]', `the ${profile} consumer ${label} registered kernel tools: ${JSON.stringify(result.kernelOnlyTools)}`);
+    assert((result.evolutionToolNames || []).every((name) => name === 'evolution_history'), `the ${profile} consumer ${label} registered unexpected evolution tools: ${JSON.stringify(result.evolutionToolNames)}`);
+    assert(result.markerListeners?.[stable.id] === 1, `the ${profile} consumer ${label} registered ${result.markerListeners?.[stable.id]} listeners for the stable record`);
+    assert(result.markerHits?.[stable.id] === 1, `the ${profile} consumer ${label} executed the promoted listener ${result.markerHits?.[stable.id]} times`);
+    assert(result.markerListeners?.[incompatible.id] === 0, `the ${profile} consumer ${label} mounted the incompatible plugin`);
+    assert(result.markerHits?.[incompatible.id] === 0, `the ${profile} consumer ${label} executed the incompatible plugin`);
+    assert(result.markerListeners?.[loadFailure.id] === 0, `the ${profile} consumer ${label} registered a listener for the failed plugin`);
+    assert(result.markerHits?.[loadFailure.id] === 0, `the ${profile} consumer ${label} executed the failed plugin`);
+    assert(result.observedIndexUpdatedAt === index.updatedAt, `the ${profile} consumer ${label} observed index ${result.observedIndexUpdatedAt}, expected ${index.updatedAt}`);
+    assert(nodeMajor(result.processVersions?.node) === nodeMajor(stableRecord.host?.node), `the ${profile} consumer ${label} ran on Node ${result.processVersions?.node}, not the verified host Node ${stableRecord.host?.node}`);
+  }
+  const bootWeb = async (label, payload) => {
+    const outcome = await bootWebConsumer(label, payload);
+    if (outcome.error) throw new Error(`Web consumer ${label} failed: ${outcome.error}`);
+    return outcome.result;
+  };
+  const bootAcp = async (label, payload) => {
+    const outcome = await bootAcpConsumer(label, payload);
+    if (outcome.error) throw new Error(`ACP consumer ${label} failed: ${outcome.error}`);
+    return outcome.result;
+  };
 
   // 4. the Web consumer, twice, with no kernel.
   log('booting the Web consumer entry (restart x2)');
   const webBoots = [];
   for (const label of ['web-1', 'web-2']) {
-    const outcome = await bootWebConsumer(label, { expect: expectedActive, markers: activeMarkers });
-    if (outcome.error) throw new Error(`Web consumer ${label} failed: ${outcome.error}`);
-    const result = outcome.result;
-    assert(result.profile === 'web', `the Web consumer reported profile ${result.profile}`);
-    assert(result.kernelPresent === false && result.evolutionTools === 0, 'the Web consumer boot still runs the Evolution kernel');
-    assert(result.observedIndexUpdatedAt === index.updatedAt, `the Web consumer observed index ${result.observedIndexUpdatedAt}, expected ${index.updatedAt}`);
-    assert(result.markerHits?.[stable.id] === 1, `the Web consumer executed the promoted listener ${result.markerHits?.[stable.id]} times`);
-    assert(result.markerHits?.[incompatible.id] === 0, 'the Web consumer mounted the incompatible plugin');
+    const result = await bootWeb(label, { expect: expectedActive, markers: activeMarkers });
+    assertConsumerBoot('web', result, label);
     webBoots.push(result);
   }
   const webActivated = webBoots.map((boot) => (boot.rows || []).find((row) => row.id === stable.id)?.activatedAt);
@@ -475,14 +667,8 @@ try {
   log('booting the headless ACP consumer entry (restart x2)');
   const acpBoots = [];
   for (const label of ['acp-1', 'acp-2']) {
-    const outcome = await bootAcpConsumer(label, { expect: expectedActive, markers: activeMarkers });
-    if (outcome.error) throw new Error(`ACP consumer ${label} failed: ${outcome.error}`);
-    const result = outcome.result;
-    assert(result.profile === 'acp', `the ACP consumer reported profile ${result.profile}`);
-    assert(result.kernelPresent === false && result.evolutionTools === 0, 'the ACP consumer boot still runs the Evolution kernel');
-    assert(result.observedIndexUpdatedAt === index.updatedAt, `the ACP consumer observed index ${result.observedIndexUpdatedAt}, expected ${index.updatedAt}`);
-    assert(result.markerHits?.[stable.id] === 1, `the ACP consumer executed the promoted listener ${result.markerHits?.[stable.id]} times`);
-    assert(result.markerHits?.[incompatible.id] === 0, 'the ACP consumer mounted the incompatible plugin');
+    const result = await bootAcp(label, { expect: expectedActive, markers: activeMarkers });
+    assertConsumerBoot('acp', result, label);
     acpBoots.push(result);
   }
   const acpActivated = acpBoots.map((boot) => (boot.rows || []).find((row) => row.id === stable.id)?.activatedAt);
@@ -495,29 +681,158 @@ try {
   };
   assert(sha256(fs.readFileSync(publishedPath)) === indexDigest, 'the ACP consumer boot changed the publication index');
 
-  // 6. the revalidate-shaped projection: exact host identity, source digest and
-  //    per-profile activation proof for each published plugin.
-  evidence.plugins = index.plugins.map((row) => ({
-    id: row.id,
-    sourceSha256: row.sourceSha256,
-    approvedProfiles: row.approvedProfiles,
-    profiles: {
-      web: {
-        active: webBoots.every((boot) => (boot.rows || []).some((entry) => entry.id === row.id && entry.status === 'active')),
-        status: (webBoots.at(-1)?.rows || []).find((entry) => entry.id === row.id)?.status ?? null,
-        markerHits: webBoots.at(-1)?.markerHits?.[row.id] ?? null,
+  // 6. real rejection paths on the records this Desktop run published: a
+  //    tampered source must be skipped-invalid (not mounted) while the other
+  //    records keep their verdicts, and a host-version mismatch must hold the
+  //    record back as pending-revalidation until the index is restored.
+  log('driving the real rejection paths (tampered source, host-version mismatch)');
+  const rejections = {};
+  const stableSourcePath = fileURLToPath(stableRecord.moduleUrl);
+  const originalSource = fs.readFileSync(stableSourcePath);
+  const tamperedSource = Buffer.concat([originalSource, Buffer.from('\n// acceptance tamper: source digest must not match\n')]);
+  let tamperedSourceAfterBoot;
+  let indexAfterTamperedBoot;
+  let tamperedBoot;
+  try {
+    fs.writeFileSync(stableSourcePath, tamperedSource);
+    tamperedBoot = await bootWeb('web-tampered', {
+      expect: {
+        [stable.id]: { status: 'skipped-invalid', reason: 'source-digest-mismatch' },
+        [incompatible.id]: { status: 'skipped-incompatible', reason: 'missing-service' },
+        [loadFailure.id]: { status: 'failed', reason: 'plugin-apply-failed' },
       },
-      acp: {
-        active: acpBoots.every((boot) => (boot.rows || []).some((entry) => entry.id === row.id && entry.status === 'active')),
-        status: (acpBoots.at(-1)?.rows || []).find((entry) => entry.id === row.id)?.status ?? null,
-        markerHits: acpBoots.at(-1)?.markerHits?.[row.id] ?? null,
+      markers: activeMarkers,
+    });
+    // Read the injected files back BEFORE restoring them: restoring first would
+    // hide a consumer that rewrote either file during the tampered boot.
+    tamperedSourceAfterBoot = fs.readFileSync(stableSourcePath);
+    indexAfterTamperedBoot = fs.readFileSync(publishedPath);
+  } finally {
+    fs.writeFileSync(stableSourcePath, originalSource);
+  }
+  assert(tamperedSourceAfterBoot?.equals(tamperedSource), 'the consumer changed the tampered promoted source during its boot');
+  assert(indexAfterTamperedBoot?.equals(indexBytes), 'the consumer changed the publication index during the tampered boot');
+  assert(sha256File(stableSourcePath) === stableRecord.sourceSha256, 'the tampered promoted source was not restored byte-for-byte');
+  assert(tamperedBoot.markerListeners?.[stable.id] === 0 && tamperedBoot.markerHits?.[stable.id] === 0, 'the tampered record was still mounted');
+  rejections.tamperedSource = {
+    status: (tamperedBoot.rows || []).find((row) => row.id === stable.id)?.status ?? null,
+    reason: (tamperedBoot.rows || []).find((row) => row.id === stable.id)?.reason ?? null,
+    otherStatus: (tamperedBoot.rows || []).filter((row) => row.id !== stable.id).map((row) => ({ id: row.id, status: row.status, reason: row.reason ?? null })),
+    restoredSourceSha256: sha256File(stableSourcePath),
+  };
+  assert(sha256(fs.readFileSync(publishedPath)) === indexDigest, 'the tampered consumer boot changed the publication index');
+
+  const originalIndex = fs.readFileSync(publishedPath);
+  const modifiedIndex = JSON.parse(originalIndex);
+  const upgradeTarget = modifiedIndex.plugins.find((row) => row.id === stable.id);
+  upgradeTarget.host = { ...upgradeTarget.host, dsh: '9.9.9-acceptance-upgrade' };
+  const modifiedIndexBytes = Buffer.from(`${JSON.stringify(modifiedIndex, null, 2)}\n`);
+  let upgradedIndexAfterBoot;
+  let upgradedBoot;
+  try {
+    fs.writeFileSync(publishedPath, modifiedIndexBytes);
+    upgradedBoot = await bootWeb('web-upgraded', {
+      expect: {
+        [stable.id]: { status: 'pending-revalidation', reason: 'host-version-mismatch' },
+        [incompatible.id]: { status: 'skipped-incompatible', reason: 'missing-service' },
+        [loadFailure.id]: { status: 'failed', reason: 'plugin-apply-failed' },
       },
-    },
-  }));
-  evidence.host = { ...evidence.host, cordis: stableRecord.host?.cordis ?? null, include: stableRecord.host?.include ?? null, node: stableRecord.host?.node ?? process.version };
+      markers: activeMarkers,
+    });
+    upgradedIndexAfterBoot = fs.readFileSync(publishedPath);
+  } finally {
+    fs.writeFileSync(publishedPath, originalIndex);
+  }
+  assert(upgradedIndexAfterBoot?.equals(modifiedIndexBytes), 'the consumer changed the publication index during the pending-revalidation boot');
+  assert(sha256(fs.readFileSync(publishedPath)) === indexDigest, 'the publication index was not restored byte-for-byte');
+  assert(upgradedBoot.markerListeners?.[stable.id] === 0 && upgradedBoot.markerHits?.[stable.id] === 0, 'the pending-revalidation record was still mounted');
+  rejections.hostVersionMismatch = {
+    status: (upgradedBoot.rows || []).find((row) => row.id === stable.id)?.status ?? null,
+    reason: (upgradedBoot.rows || []).find((row) => row.id === stable.id)?.reason ?? null,
+    otherStatus: (upgradedBoot.rows || []).filter((row) => row.id !== stable.id).map((row) => ({ id: row.id, status: row.status, reason: row.reason ?? null })),
+    restoredIndexSha256: sha256(fs.readFileSync(publishedPath)),
+  };
+  const recoveredBoot = await bootWeb('web-recovered', { expect: expectedActive, markers: activeMarkers });
+  assertConsumerBoot('web', recoveredBoot, 'web-recovered');
+  rejections.recovered = {
+    status: (recoveredBoot.rows || []).find((row) => row.id === stable.id)?.status ?? null,
+    markerHits: recoveredBoot.markerHits?.[stable.id] ?? null,
+    activatedAt: (recoveredBoot.rows || []).find((row) => row.id === stable.id)?.activatedAt ?? null,
+  };
+  evidence.rejections = rejections;
+
+  // 7. every consumer boot above ran outside the Desktop authority: the
+  //    promotion state, promoted sources and the publication index are
+  //    byte-identical, and the shared experience rows are all still present.
+  const evolutionAfter = treeDigest(dataRoot, { exclude: [CONSUMER_STATE] });
+  const changed = Object.keys(evolutionBefore.files).filter((rel) => evolutionBefore.files[rel] !== evolutionAfter.files[rel]);
+  const added = Object.keys(evolutionAfter.files).filter((rel) => !(rel in evolutionBefore.files));
+  const removed = Object.keys(evolutionBefore.files).filter((rel) => !(rel in evolutionAfter.files));
+  assert(changed.length === 0 && added.length === 0 && removed.length === 0, `the consumers changed the Desktop promotion state: changed=${JSON.stringify(changed)} added=${JSON.stringify(added)} removed=${JSON.stringify(removed)}`);
+  const experienceAfter = await experienceSnapshot(home);
+  assert(experienceAfter.present, 'the shared experience store disappeared during the consumer boots');
+  if (experienceBefore.rows && experienceAfter.rows) {
+    assert(JSON.stringify(experienceBefore.rows) === JSON.stringify(experienceAfter.rows), `the consumer boots changed the shared experience rows: ${JSON.stringify({ before: experienceBefore.rows, after: experienceAfter.rows })}`);
+  }
+  evidence.preserved = {
+    evolutionTreeDigestBefore: evolutionBefore.digest,
+    evolutionTreeDigestAfter: evolutionAfter.digest,
+    promotedSources: Object.fromEntries(index.plugins.map((row) => [row.id, sha256File(fileURLToPath(row.moduleUrl))])),
+    sharedExperience: { before: experienceBefore, after: experienceAfter },
+  };
+
+  // 8. the revalidate-shaped projection: exact host identity, source digest and
+  //    per-profile activation proof, only for records some consumer activated.
+  const profileProof = (boots, row) => ({
+    active: boots.every((boot) => (boot.rows || []).some((entry) => entry.id === row.id && entry.status === 'active')),
+    status: (boots.at(-1)?.rows || []).find((entry) => entry.id === row.id)?.status ?? null,
+    markerHits: boots.at(-1)?.markerHits?.[row.id] ?? null,
+    markerListeners: boots.at(-1)?.markerListeners?.[row.id] ?? null,
+  });
+  const consumerWebBoots = [...webBoots, recoveredBoot];
+  evidence.plugins = index.plugins
+    .map((row) => ({ id: row.id, sourceSha256: row.sourceSha256, approvedProfiles: row.approvedProfiles, profiles: { web: profileProof(consumerWebBoots, row), acp: profileProof(acpBoots, row) } }))
+    .filter((row) => row.profiles.web.active || row.profiles.acp.active);
+  evidence.skippedRecords = index.plugins
+    .filter((row) => !evidence.plugins.some((kept) => kept.id === row.id))
+    .map((row) => ({
+      id: row.id,
+      sourceSha256: row.sourceSha256,
+      web: profileProof(consumerWebBoots, row),
+      acp: profileProof(acpBoots, row),
+    }));
+  assert(evidence.plugins.some((row) => row.id === stable.id), 'the stable record has no consumer activation proof');
+  assert(evidence.skippedRecords.some((row) => row.id === incompatible.id), 'the incompatible record was not reported as skipped');
+
+  // The committed evidence must be consumable by the operator revalidation
+  // command. Run it on a copy of the isolated home so this check cannot change
+  // the real promotion state the evidence describes.
+  const revalidateEvidence = path.join(work, 'revalidate-evidence.json');
+  fs.writeFileSync(revalidateEvidence, `${JSON.stringify(redact(evidence), null, 2)}\n`);
+  const revalidateHome = path.join(work, 'revalidate-home');
+  // Only the data root is needed by the revalidation command; copying the
+  // profile node_modules would duplicate the installed runtime for no reason.
+  fs.mkdirSync(revalidateHome, { recursive: true });
+  fs.cpSync(path.join(home, 'storages'), path.join(revalidateHome, 'storages'), { recursive: true });
+  // The copied records still name the original absolute module URLs, and the
+  // official path validation rejects a record whose source is outside its own
+  // data root. Rewrite the copy to point at the copied promoted sources.
+  const copiedIndexPath = path.join(revalidateHome, 'storages', 'evolution', 'shared-plugins', 'published.json');
+  const copiedIndex = JSON.parse(fs.readFileSync(copiedIndexPath, 'utf8'));
+  for (const record of copiedIndex.plugins) {
+    record.moduleUrl = pathToFileURL(path.join(revalidateHome, 'storages', 'evolution', 'promoted', record.pluginName, 'lib', 'index.js')).href;
+  }
+  fs.writeFileSync(copiedIndexPath, `${JSON.stringify(copiedIndex, null, 2)}\n`);
+  const revalidate = runSync(process.execPath, [path.join(REPO_ROOT, 'scripts', 'shared-plugins.mjs'), 'revalidate', '--home', revalidateHome, '--evidence', revalidateEvidence, '--json'], {
+    cwd: REPO_ROOT,
+    env: { DSH_HOME: revalidateHome },
+  });
+  assert(revalidate.code === 0, `the evidence file was rejected by dsh-evolution-shared revalidate: ${revalidate.output.slice(-1200)}`);
+  evidence.revalidate = { command: 'dsh-evolution-shared revalidate --home <copy> --evidence <this file>', code: revalidate.code, result: revalidate.output.trim().slice(-2000) };
+
   evidence.ok = true;
   evidence.finishedAt = new Date().toISOString();
-  log(`stable record ${stable.id} mounted by Web and ACP consumers; incompatible ${incompatible.id} skipped`);
+  log(`stable record ${stable.id} mounted by Web and ACP consumers; incompatible ${incompatible.id} skipped; load failure ${loadFailure.id} isolated`);
 } catch (error) {
   failure = String(error.stack || error);
   evidence.ok = false;
