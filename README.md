@@ -20,7 +20,7 @@
 
 日常采集由独立的 `dsh-evolution/experience` 插件订阅官方 `agent/error`、`tools/result`，同步提交有界失败元数据；不读取工具正文、参数或聊天记录，不调用模型，也不触发 Trial。普通工具成功不作为解决方案。Desktop 完整 Evolution 的已签名晋升/canary 事实另外投影到共享经验中；发布失败时保留原桥日志，重启会重试其仍保留的已验证记录。
 
-共享库是同一 `DSH_HOME/storages/evolution-experience/experience.sqlite`，只支持同一机器、同一 OS 用户和本地文件系统。SQLite WAL 事务同时提交永久去重身份与 canonical knowledge 更新，跨进程不共享 JSON 内存快照。目录/数据库要求私有权限。未知格式拒绝打开，不删除或重建。永久去重账本会随不同事件增长，目前没有自动回收任务。
+共享库是同一 `DSH_HOME/storages/evolution-experience/experience.sqlite`，只支持同一机器、同一 OS 用户和本地文件系统。SQLite WAL 事务同时提交永久去重身份与 canonical knowledge 更新，跨进程不共享 JSON 内存快照。目录/数据库要求私有权限。未知格式拒绝打开，不删除或重建。永久去重账本会随不同事件增长，目前没有自动回收任务；新库以 schema 2 保存它（每个事件身份是两列 32 字节 BLOB，`STRICT` + `WITHOUT ROWID`，不再是两列 64 字符 TEXT 加独立唯一索引），旧 schema 1 库继续按原 TEXT 布局读写，直到操作者显式运行一次性离线迁移（见[升级、回滚与卸载](#升级回滚与卸载)下的迁移说明）。
 
 手动 Trial、测量、晋升和回滚集中在 Desktop；ACP 和 Web 只提供自动采集与 `evolution_history`，并可按下面的显式批准挂载 Desktop 已验证的 stable 晋升插件。Desktop 继续使用原工具查询本地历史，并合并共享来源；其他入口查询新增共享经验。旧的自由文本经验和冷档案原地保留，不自动迁移到共享库。各入口默认不会把经验注入每个 Agent 回合，只有显式 history/proposal 检索会返回有界结果。
 
@@ -373,9 +373,32 @@ dsh plugin --profile web remove dsh-evolution
 
 升级只替换插件包；Evolution 数据、`promoted.cordis.yml`、promoted 子插件源码、archive 和 evidence 保留。回滚旧插件包不会自动撤销已 stable 提交的 promotion。残留的 `prepared` / `committing` journal 会按边界校验回滚；`stable-committed` / `committed` 只清理 journal。stable commit 后若要移除 composition 引用，需人工处理后重启。卸载不删除用户数据；官方 pluginManager 禁用 / 启用可热切换或要求重启，dispose promoted 子 Fiber 时 composition、源码和档案仍保留。
 
+### 共享经验库 schema 2 与一次性迁移
+
+共享经验库使用 SQLite schema 2：`events` 表用两列 32 字节 BLOB 保存完整的 SHA-256 事件 id 与内容摘要（等价于原来的 64 字符小写十六进制），表是 `STRICT` + `WITHOUT ROWID`，不再为每行支付 rowid 与 TEXT 唯一索引。永久去重、重复投递识别、同 id 不同内容冲突、knowledge 合并与检索语义都不变；不使用截断哈希，也不通过删除历史取得空间收益。
+
+**普通启动永不迁移。** 新库直接创建 schema 2；已有 schema 1 库继续按原 TEXT 布局读写（旧版本插件仍可共存），只有操作者显式运行一次性离线命令才转换。迁移在单个 `BEGIN EXCLUSIVE` 事务内完成复制、逐行校验（全部事件 id/digest 与 knowledge 指纹）和替换，任何失败都回滚到未改动的 schema 1 库；事务前先完整 checkpoint，并在库旁写入私有备份 `experience.sqlite.v1-backup`，事务提交之后才执行 WAL 截断与 `VACUUM`。重复执行是幂等的。
+
+```sh
+# 1. 完全退出 Desktop、ACP、Web（迁移需要独占写事务）
+# 2. 只读检查（不修改数据库内容、不写备份）
+dsh-evolution-experience-migrate --dry-run
+# 3. 迁移；默认在库旁保留 experience.sqlite.v1-backup
+dsh-evolution-experience-migrate
+# 安装包之外的仓库内等价命令
+node scripts/migrate-experience-store.mjs --root "$DSH_HOME/storages/evolution-experience"
+```
+
+- 选项：`--root <dir>` 或 `--home <DSH_HOME>` 指定库位置；`--backup <path>` 改备份路径；`--no-backup` 跳过备份；`--no-vacuum` 只回收 WAL 而不执行 `VACUUM`；`--json` 输出机器可读报告。退出码 `0` 成功 / 无操作，`1` 拒绝（库忙、版本或表形状未知、既有备份不匹配），`2` 失败。
+- 库忙或 WAL 无法完整 checkpoint 时命令拒绝执行（`E_EXPERIENCE_MIGRATION_BUSY`），不会降级成部分迁移；确认入口进程已退出后重试。迁移期间需要额外磁盘空间（库旁备份 + 事务期间的 WAL 增长），请先确认可用空间。
+- 只读检查不修改主库字节、不创建备份；SQLite 只读连接可能在该目录创建或复用 WAL/SHM 辅助文件，它们不是迁移产物。既有备份必须是自包含的：如果备份依赖自己未 checkpoint 的 WAL 帧（主库单独无法恢复全部行），迁移会拒绝并保留该备份的全部文件，而不是读取后删除其 WAL。
+- **迁移后不要降级到 0.2.4 或更早版本**：旧版本以未知 `user_version` 拒绝打开共享库，不会猜测或重建。迁移时仍在运行的旧版本进程，其后续 TEXT 写入会被 `STRICT` 表 loud 拒绝；重启入口加载新版本即可，不会产生混合格式的账本。
+- **恢复备份**：停止所有入口，删除 `experience.sqlite`、`experience.sqlite-wal`、`experience.sqlite-shm`，把 `experience.sqlite.v1-backup` 复制为 `experience.sqlite` 并保持 `0600`，然后重启。备份与库同目录且包含完整账本，确认迁移成功后可按需删除。
+- 迁移不引入后台服务、定时器，也不在日常事件写入路径上执行 `VACUUM` 或全库重建。实测体积、写入延迟、打开成本与迁移成本见 [共享经验存储对照](docs/performance/shared-experience-storage.md)。
+
 ## 数据根与状态处置
 
-默认数据根为 `$DSH_HOME/storages/evolution`。主要文件包括 `event-bridge.key`、`execution-events.jsonl`、`evolution-memory.json`、`promoted.cordis.yml`、`EVOLUTION.md`、`promoted/`、`archive/experiments/`、`promotion/`、`promotion.lock`、`ownership/`、`dockyard/`、`domain-staging/`、`domain-archive.lock`、`migration-manifest.json` 和 `official-runtime-baseline.json`。领域聚合名为 `evolution_domain`，位于 `$DSH_HOME/storages/evolution_domain.json`。
+默认数据根为 `$DSH_HOME/storages/evolution`。主要文件包括 `event-bridge.key`、`execution-events.jsonl`、`evolution-memory.json`、`promoted.cordis.yml`、`EVOLUTION.md`、`promoted/`、`archive/experiments/`、`promotion/`、`promotion.lock`、`ownership/`、`dockyard/`、`domain-staging/`、`domain-archive.lock`、`migration-manifest.json` 和 `official-runtime-baseline.json`。领域聚合名为 `evolution_domain`，位于 `$DSH_HOME/storages/evolution_domain.json`。统一共享经验库独立位于 `$DSH_HOME/storages/evolution-experience/experience.sqlite`，其一次性迁移备份默认是同目录的 `experience.sqlite.v1-backup`。
 
 `event-bridge.key` 仅当路径不存在时由运行时以 `wx` 创建（`0600`）；创建失败时只清理由本次创建且未写成的条目。已有非法密钥会拒绝启动，永不替换。禁用、卸载和 doctor 都不会删除或改写密钥。Doctor 只报告状态，不会修复 claim 或 key。
 
@@ -423,6 +446,8 @@ dsh plugin --profile web remove dsh-evolution
 
 回收后的已知边界：领域文档带 `retention` 键，旧版本插件的严格 schema 会拒绝它，所以**回收后不要降级到旧版本**（先回滚再回收，或回收后不要回滚）；被裁 marker 的 eventId 不再参与重放冲突检测：同一身份重新发出时领域 ledger 以新 MAC 重新吸收，而内存 marker 窗口仍按 id 把它当重复，记录效果不会重复应用（不再抛冲突）；段目录里 `.tmp` 形状的 seal 残件会被保留、不进事务；doctor 的 `state.retention-floor` 与运行时共用只读分类，检查已提交（含 pending）的 floor：正常保留尾部为 ok、待截断原文件为 degraded，缺失或摘要不匹配为 blocked，不提供猜测式 repair；floor 自身不自洽（有被裁 marker 却没有链、链与零被裁数矛盾、累计丢弃字节小于最后一次丢弃、`prior` 与 `tail` 摘要相同）或 pending floor 落后于已提交 floor 时先报 `floor-inconsistent`（blocked，附 `floorProblems`），并在证据里给出 floor 计数器投影、floor 来源与仅报告不删除的回收临时残件。seal 临时残件由 `state.archives` 报告为 degraded 并保留。二次回收必须先补完上一轮已提交截断并验证保留尾部；**已补完的 floor 不需要 append lock**，所以无关的并发写者不会让启动重放或回收失败，只有确实需要补完时 append lock 竞争才以 `E_DOMAIN_EVENT_LOG_BUSY`（可重试）拒绝推进新 floor，dry run 则只读报告 `pending-truncation`；截断自身的其它失败保留原来的错误码，不会被伪装成锁竞争。没有任何定时器或后台任务调用回收；诊断仍由 `state.event-bridge` 报告 `bytes`、`lines`、`verifiedEvents`、`absorbedRecords`、`unabsorbedRecords`、`oldestRecordAt`、`newestRecordAt` 让操作者先看增长与“已吸收 / 未吸收”的分布。实测数字、修复前三个阻塞的复核与收益边界分别见 `docs/performance/capacity-reclaim-20261027.md`、`docs/performance/retention-reclaim-blockers.md` 与 `docs/performance/capacity-reclaim-evaluation.md`。
 17. **`0.2.2-rc.1` 只验收了关闭宿主 HMR 的形态，且该缺口属于上游。** 在这个宿主上，`hmr` 行启用时，**宿主启动窗口内**的 profile 变更可能以 `application: failed` + `HMR profile reconciliation must run inside runExclusive` 结束（选择已保存、未应用）。用纯官方 bundle 可复现，所以本 bundle 不声称修复它，也不绕过官方事务保护；已验收的部署形态是 `- id: hmr / disabled: true` + 重启生效。Evolution 自己的试用、测量、回滚与晋升在两种形态下都通过，因为晋升走自己的官方 Include，不经过宿主 HMR 队列。复现与证据见 `COMPATIBILITY.md` 与 `docs/evidence/hmr-022/`。
+
+18. **共享经验库的空间回收是显式离线操作，日常写入不触发维护。** schema 1 的永久去重账本按原 TEXT 布局保留，只有显式运行 `dsh-evolution-experience-migrate` 才转换为 schema 2（32 字节 BLOB + `STRICT` + `WITHOUT ROWID`）并回收空闲页与 WAL；转换要求 Desktop / ACP / Web 已退出，默认留下完整 schema 1 备份，失败回滚且不删除任何事件、知识或结论。迁移后旧版本插件拒绝打开该库（未知 `user_version`），仍在运行的旧版本进程的 TEXT 写入会被 `STRICT` 拒绝，不会静默混写；日常事件写入路径没有 `VACUUM`、全库重建、后台清理服务或定时器。体积与延迟证据见 `docs/performance/shared-experience-storage.md`。
 
 ## 验证与证据
 
