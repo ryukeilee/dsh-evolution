@@ -593,7 +593,12 @@ recorded rather than worked around:
   second engine or scheduler.
 - **Host-only promotion.** Client halves are rejected; promoted host code is
   evaluated through a cooperative `Function(hostCode)()` gate, which is not a
-  security sandbox.
+  security sandbox. The gate accepts only `harness.defineTool` /
+  `harness.registerTool` from the runner sandbox and backs them with the
+  installation's official `@deepseek-ai/dsh-tools` `defineTool` (resolved at
+  promotion time and recorded in the generated module) and the official
+  `tools.register`; other runner-only helpers (including `harness.handle`) and
+  bare `harness` references are still refused.
 
 None of these keeps code in the old DSH repository: the bundle here is complete
 and installable, and each blocker is a documented boundary with a stated

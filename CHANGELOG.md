@@ -18,6 +18,34 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.6 — 稳定版
+
+`0.2.5` 的稳定后继：不新增宿主、持久化格式或授权来源。修复三处让真实候选无法完成测量、
+晋升与跨入口复用的边界，同时保留全部 8 项晋升门禁、canary/stable 判定与 owner 确认语义。
+
+### 新增
+
+- **probe 可声明 Trial 新增的能力（`absentInBaseline`）。** 同一配对 scenario 现在可以声明
+  一个由 Trial 注册的 step：baseline 在 `proposed` 状态把它记为一次真实的「能力不存在」错误
+  样本（`E_EVOLUTION_PROBE_CAPABILITY_ABSENT`，不执行、不进入工具管线）；candidate 仍必须
+  解析到该工具并满足 `isConcurrencySafe(args) === true`。未声明的未知工具照旧拒绝，收益 /
+  回归 / 控制步仍由 orchestrator 从原始样本派生，调用方不能自报。
+- **工具型候选可晋升。** 晋升生成的模块为 Trial 中的 `harness.defineTool` /
+  `harness.registerTool` 提供真实等价物：`defineTool` 是本机安装的官方
+  `@deepseek-ai/dsh-tools`（模块 URL 在晋升时由校验过的宿主解析并写入生成源码），注册转发
+  官方 `tools.register`。其它 runner-only helper（如 `harness.handle`）与裸 `harness` 引用
+  继续被拒绝；这仍是合作式 `Function(hostCode)()` gate，不是安全沙箱。
+- **guard 文本回退不再把只读命令的参数当写操作。** `commandMutatesComposition` 的历史
+  「不可逆词 ∧ 写动词」文本回退对只读命令（grep/rg/cat/git show/log 等）的参数，以及带
+  eval 选项的 node/python 等内联代码（其真实写入仍由代码路径判定）不再计数；真实写动词、
+  重定向、嵌套命令、目标解析与 trust-root 保护路径保持不变。
+
+### 边界
+
+- 生成源码内嵌本机安装的官方 `defineTool` 模块 URL；跨机器复制 `$DSH_HOME` 不在支持范围
+  （与「跨入口只支持同一机器、同一 OS 用户、同一 `DSH_HOME`」一致）。宿主升级时共享记录
+  仍按既有 `pending-revalidation` 流程重新验证。
+
 ## 0.2.5 — 稳定版
 
 `0.2.4` 的稳定后继：共享经验库事件的永久账本改用 schema 2（完整 SHA-256 身份存为两列 32 字节

@@ -6,7 +6,7 @@
 
 | 关键事实 | 当前值 |
 | --- | --- |
-| 版本 | `0.2.5`（稳定版） |
+| 版本 | `0.2.6`（稳定版） |
 | 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1`（须关闭宿主 HMR，见下） |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
@@ -142,7 +142,10 @@ canary 与回滚语义不变。实验结束（revert 证明恢复、门禁拒绝
 `send_message` 等）、网络、session/transcript 与 UI/权限入口都会在任何执行之前被拒绝
 （`E_EVOLUTION_PROBE_UNSAFE_STEP`）。原因是并发安全只是官方并行调度契约，不保证调用在返回前
 完成（真实 `subagent` 立即返回 activation、后台继续执行）；baseline 与 candidate 共用同一套
-检查。需要观察新能力时，由 probe 自己的、已 opt-in 的安全工具暴露。
+检查。Trial 要新增的能力可以进入同一组配对样本：step 上声明 `absentInBaseline: true` 后，
+baseline 把该 step 记为一次真实的「能力不存在」失败样本（不执行、不算安全证明），candidate
+仍必须解析到同名工具并通过同一条 `isConcurrencySafe(args) === true` 检查；未声明的未知工具
+照旧拒绝。于是「安装前 baseline / 挂载后 candidate」仍由原始样本比较，收益不是调用方自报的。
 
 适用版本身份只从官方包清单读取：Evolution 用自身 `package.json`，DSH 精确匹配
 `@deepseek-ai/dsh`（Desktop 的真实 host 是其 `dsh-desktop-host` entry 的同级包，前缀匹配不会
@@ -165,6 +168,8 @@ Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 i
 领域 evaluator 只提供 advisory 判断，并在识别到 regression 时否决；`promotionGates` 才是生产晋升权威。
 
 晋升先一次性捕获三份计划文件与回滚基线，把备份持久写入，再以 `prepared` / `committing` 落 journal，然后原子写入并做 Include 校验。成功后持久 Plugin 行与 archive 指针供下一 session 加载。canary 必须由调用方在确定性屏障上报告结果；指标回归由调用方报告，插件不会自行比较指标数值。达到观察条件后提交 stable；启动健康或依赖不成立、或屏障报告指标回归时会自动回滚，而且只回滚新候选。已 stable 并清理 journal 的晋升不能从 evidence sidecar 或 archive 重新打开为 canary。
+
+晋升生成的 Host-only 模块会给 Trial 中的 `harness.defineTool` / `harness.registerTool` 提供真实等价物：`defineTool` 来自本机安装的官方 `@deepseek-ai/dsh-tools`，注册走官方 `tools.register`，所以工具型候选在晋升后与 Trial 中行为一致，也能在 ACP / Web 的 consumer 入口加载执行。其它 runner-only helper（如 `harness.handle`）与裸 `harness` 引用仍被拒绝；这仍是合作式 `Function(hostCode)()` gate，不是安全沙箱。
 
 启动时先恢复中断的晋升事务，再让 Include 加载子项。启动 canary 屏障检查插件健康与依赖，并固定报告 `metricRegression: false`；canary 完成要求启动验证和所需观察屏障都满足。跨 session 推进要求存在活动 canary journal，所有者从持久状态读取；调用者自己的 Agent id 不是 fallback。同一进程内的并发 canary 观察会与 revert / promote 共用操作 claim 串行化，重复并发请求会被拒绝；该 claim 是进程内 Map，不是跨进程锁（跨进程的晋升提交由 `promotion.lock` 保护）。
 
