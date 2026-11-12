@@ -129,8 +129,11 @@ try {
   await command(process.execPath, [path.join(repo, 'scripts/setup-experience.mjs'), '--tarball', tarball, '--home', home, '--cli', cli, '--apply']);
   const patches = Object.fromEntries(await Promise.all(['desktop', 'acp', 'web'].map(async profile => [profile, await fs.readFile(path.join(home, 'profiles', profile, 'cordis.patch.yml'), 'utf8')])));
   const resumedRequest = consumeTask ? await readJson(consumeTask) : null;
-  const id = resumedRequest?.id ?? `acp_text_stats_${crypto.randomBytes(4).toString('hex')}`;
-  const hostCode = `const tool = harness.defineTool({ name: ${JSON.stringify(id)}, description: 'Read-only text character and line counts', parameters: { text: { type: 'string', required: true } }, output: { schema: { type: 'object', properties: { characters: { type: 'integer', required: true }, lines: { type: 'integer', required: true } }, additionalProperties: false }, render: (_args, result) => [{ type: 'text', text: JSON.stringify(result) }] }, isConcurrencySafe: () => true, execute: async ({ text }) => ({ characters: text.length, lines: text.split('\\n').length }) }); return { name: ${JSON.stringify(id)}, inject: ['tools'], apply(ctx) { harness.registerTool(ctx, tool); } };`;
+  const generatedId = consumeTask ? null : `acp_text_stats_${crypto.randomBytes(4).toString('hex')}`;
+  const id = resumedRequest?.id ?? generatedId;
+  // Only the fixed prefix + random hex name enters source. A resumed task is
+  // consumed as data and never used to construct another candidate.
+  const hostCode = consumeTask ? null : `const tool = harness.defineTool({ name: '${generatedId}', description: 'Read-only text character and line counts', parameters: { text: { type: 'string', required: true } }, output: { schema: { type: 'object', properties: { characters: { type: 'integer', required: true }, lines: { type: 'integer', required: true } }, additionalProperties: false }, render: (_args, result) => [{ type: 'text', text: JSON.stringify(result) }] }, isConcurrencySafe: () => true, execute: async ({ text }) => ({ characters: text.length, lines: text.split('\\n').length }) }); return { name: '${generatedId}', inject: ['tools'], apply(ctx) { harness.registerTool(ctx, tool); } };`;
   const taskPath = consumeTask ?? path.join(work, `${id}.task.json`);
   console.log(`ACP task: ${taskPath}`);
   if (!consumeTask) await fs.writeFile(taskPath, JSON.stringify({ id, toolName: id, hostCode, cwd: home }, null, 2), { mode: 0o600 });
