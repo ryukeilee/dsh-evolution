@@ -646,3 +646,93 @@ test('reviewExperience reuses the unified experience store and reports its absen
   assert.equal(unavailable.errors[0].reason, 'shared-experience-store-unavailable');
   assert.equal(unavailable.errors[0].errorCode, 'E_EVOLUTION_PLAN_NO_SHARED_STORE');
 });
+
+// A consumer row describes the profile's last boot. When the operator restores
+// eligibility (enable, or approving a profile that was skipped) without
+// restarting that entry, the stale row must be read as "restart this consumer",
+// never as active/inactive with no action.
+test('restored eligibility without a consumer restart is restart-required, not a false no-action', async (t) => {
+  const env = await fixture(t, 'restored-eligibility');
+  const digest = hostDigest(CURRENT_HOST);
+  await writeConsumers(env, {
+    rows: {
+      acp: [{ id: env.record.id, status: 'disabled', reason: 'operator-disabled', hostDigest: digest, activatedAt: null }],
+      web: [{ id: env.record.id, status: 'skipped-unapproved', reason: 'profile-not-approved', hostDigest: digest, activatedAt: null }],
+    },
+  });
+
+  const result = await review(env);
+  assert.equal(result.status, 'restart-required');
+  const [record] = result.records;
+  assert.equal(record.status, 'restart-required');
+  assert.equal(record.action, REVIEW_ACTIONS.RESTART);
+  assert.deepEqual(record.profiles.map((row) => row.status), ['restart-required', 'restart-required']);
+  assert.deepEqual(result.nextActions.map((action) => action.action), [REVIEW_ACTIONS.RESTART]);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'restart-consumer');
+  assert.equal(composed.hasBlockingStableIssue, false);
+});
+
+test('already-mounted and publisher-profile rows stay inactive instead of becoming a restart loop', async (t) => {
+  const env = await fixture(t, 'sticky-disabled');
+  const digest = hostDigest(CURRENT_HOST);
+  await writeConsumers(env, {
+    rows: {
+      acp: [{ id: env.record.id, status: 'disabled', reason: 'already-mounted', hostDigest: digest, activatedAt: null }],
+      web: [{ id: env.record.id, status: 'disabled', reason: 'publisher-profile', hostDigest: digest, activatedAt: null }],
+    },
+  });
+
+  const result = await review(env);
+  const [record] = result.records;
+  assert.deepEqual(record.profiles.map((row) => row.status), ['disabled', 'disabled']);
+  assert.equal(result.nextActions.some((action) => action.action === REVIEW_ACTIONS.RESTART), false);
+});
+
+// The review host and a consumer can run different versions (one entry upgraded
+// first). A restart cannot clear a mismatch that is still real, so the review
+// must keep asking for revalidation rather than loop on restart-consumer.
+test('a consumer that still runs another host keeps the revalidation action', async (t) => {
+  const env = await fixture(t, 'consumer-host-mismatch');
+  const staleDigest = hostDigest(PREVIOUS_HOST);
+  await writeConsumers(env, {
+    host: PREVIOUS_HOST,
+    rows: {
+      acp: [{ id: env.record.id, status: 'pending-revalidation', reason: 'host-version-mismatch', hostDigest: staleDigest, activatedAt: null }],
+      web: [{ id: env.record.id, status: 'pending-revalidation', reason: 'host-version-mismatch', hostDigest: staleDigest, activatedAt: null }],
+    },
+  });
+
+  const result = await review(env);
+  assert.equal(result.status, 'pending-revalidation');
+  const [record] = result.records;
+  assert.equal(record.hostCompatible, true, 'the record itself matches the review host');
+  assert.equal(record.status, 'pending-revalidation');
+  assert.equal(record.action, REVIEW_ACTIONS.REVALIDATE);
+  assert.deepEqual(result.nextActions.map((action) => action.action), [REVIEW_ACTIONS.REVALIDATE]);
+  // The guidance must name the consumer that runs another host instead of
+  // asking for evidence on "the current host", which would leave that consumer
+  // pending forever.
+  const [action] = result.nextActions;
+  assert.deepEqual(action.profiles, ['acp', 'web']);
+  assert.equal(action.consumerHosts.acp.dsh, PREVIOUS_HOST.dsh);
+  assert.equal(action.consumerHosts.web.dsh, PREVIOUS_HOST.dsh);
+  assert.match(action.why, /consumer acp runs DSH 0\.2\.2-rc\.1/);
+  assert.match(action.prerequisite, /align the named consumer/);
+  assert.match(action.evidence, /consumerHosts/);
+  assert.equal(result.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART), false);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'revalidate');
+});
+
+test('a truncated stable review cannot compose a complete no-action result', () => {
+  const composed = composeSelfEvolutionReview({
+    stable: { status: 'active', truncated: true, nextActions: [], nextActionsDropped: 0, summary: { total: 50 } },
+    experience: null,
+    versions: CURRENT_HOST,
+  });
+  assert.equal(composed.kind, 'no-action');
+  assert.equal(composed.incomplete, true);
+});

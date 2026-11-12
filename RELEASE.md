@@ -2,7 +2,7 @@
 
 本文件记录 `dsh-evolution` 当前稳定版的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前版本：`0.2.7`——`0.2.6` 的稳定后继，新增官方宿主 DSH `0.2.2-rc.2` 的真实安装、加载、工具注册、生命周期、doctor、经验驱动与跨入口验收，并首次正式发布已合并的 ACP → Desktop 自进化控制链（PR #55 / #56）。相对 `0.2.6` 固定产物的分发内容变化是：新增 `lib/desktop-task-*.js`，修改 `lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/promotion-include.js`、`scripts/setup-experience.mjs`、`cordis.patch.yml`，`package.json` 的版本号与 `peerDependencies`（新增 `0.2.2-rc.2`），以及随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）。没有改变持久化 schema 或 schema 版本、工具名 / 参数 / 参数 schema、授权来源、晋升门禁的 8 项证据、Cordis 信任根或 `engines`。`0.2.2-rc.2` 的运行时包与本 bundle 触及的 Cordis / Include / Loader / storage / runner 接口与 `0.2.2-rc.1` 相同或向后兼容；`dsh-hmr` 逐字节相同，所以该宿主与 `0.2.2-rc.1` 一样只验收关闭宿主 HMR 的部署形态。本版本对五个官方宿主重跑验收并重新固定。
+当前版本：`0.2.8`——`0.2.7` 的稳定后继，把显式“自我进化”请求统一为一次只读检查（Desktop 的 `evolution_plan` 与 ACP `evolution_desktop` 的 `audit`）：先按当前宿主分类已发布的 stable 插件并给出 `operator-action` → `revalidate` → `repair-stable` → `restart-consumer` → `experience-candidate` → `no-action` 的有序动作，再排序共享经验候选；检查不写索引、不启动 Trial、不批准晋升，也不修改或重新生成旧插件源码。相对 `0.2.7` 固定产物的分发内容变化是：新增 `lib/runtime-versions.js`、`lib/self-evolution-review.js`，修改 `lib/orchestrator.js`、`lib/registration.js`、`lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/diagnostics.js`，以及版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）。没有改变持久化 schema 或 schema 版本、授权来源、晋升门禁的 8 项证据、Cordis 信任根、`engines` 或 `peerDependencies`（五个宿主不变）；工具名与已有参数结构不变，`evolution_plan` 的返回新增 `stablePlugins` / `selfEvolution`，`evolution_desktop` 的 `action` 枚举新增只读 `audit`。发布前独立审核修复了陈旧 consumer 行分类、跨 DSH 版本 consumer 判定、截断结果，以及打包宿主下 doctor `promotion.sharing` 的宿主身份兜底四处会误导下一步动作的缺口（见 `CHANGELOG.md` 的 `0.2.8` 一节）。本版本对五个官方宿主重跑验收并重新固定。
 
 `0.2.6` 是 `0.2.5` 的稳定后继，修复三处阻塞真实候选完成测量、晋升与跨入口复用的边界，不新增宿主、持久化格式或授权来源。相对 `0.2.5` 固定产物的分发内容变化是：`lib/guard.js`、`lib/orchestrator.js`、`lib/registration.js`，新增测试 `test/review-fix-guard-readonly-arguments.test.mjs`，以及版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）。具体为：(1) `evolution_probe` 的 step 可声明 `absentInBaseline`，让 baseline 在 `proposed` 状态为 Trial 新增能力记录一次真实的「能力不存在」失败样本（注册表查询本身失败时拒绝 probe，不伪造缺失），candidate 仍须解析同名工具并满足官方并发安全契约；(2) 晋升生成的 Host-only 模块导入本机安装的官方 runner sandbox helper（与 Trial 同一实现，保留参数 DSL 规范化与 guarded 注册），解析和生成在晋升事务第一次磁盘写入之前完成，其它 runner-only helper 与裸 `harness` 引用仍拒绝；(3) guard 的文本回退只掩码简单只读过滤命令（grep/rg/cat/echo/find 等）的参数，sed/awk/perl/node/python/ruby 等脚本型 verb、内联代码、命令替换、换行后的命令与带写选项的 `--output` 均不掩码（fail-closed），真实写动词、重定向、嵌套命令与目标解析的拒绝路径保持不变。工具名 / 参数 / 参数 schema（除新增可选 `absentInBaseline`）、授权来源、晋升门禁的 8 项证据、Cordis 信任根、`engines` 与 `peerDependencies`（四个宿主）均未改动。本版本按 `RELEASE.md` 重新构建、对四个官方宿主重跑验收并重新固定。执行 retention 回收后不可降级到不支持该字段的旧插件（`0.2.0-rc.19` 之前）：它们严格的领域 schema 会拒绝新增的 `retention` 字段；`0.2.0-rc.19` 及以后的候选与本版本读取同一份格式。迁移后的共享库不可降级到 `0.2.4` 或更早版本（旧版本以未知 `user_version` 拒绝打开）。
 
@@ -34,10 +34,12 @@
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.7.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.8.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
+
+`v0.2.8` 是 `v0.2.7` 的稳定后继：分发内容新增统一只读自我进化检查（`lib/self-evolution-review.js`、`lib/runtime-versions.js`）与发布前审核修复，五个宿主针对它的固定产物重新验收，Release 以正式版（非 Draft、非 Pre-release、Latest）公开；`v0.2.7` 的 tag、Release 与附件原样保留、未被覆盖。
 
 `v0.2.7` 是 `v0.2.6` 的稳定后继：分发内容新增 DSH `0.2.2-rc.2` 兼容声明与 ACP → Desktop 自进化控制链，五个宿主针对它的固定产物重新验收，Release 以正式版（非 Draft、非 Pre-release、Latest）公开；`v0.2.6` 的 tag、Release 与附件原样保留、未被覆盖。
 
@@ -73,16 +75,16 @@ rc.18 发布之前，最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.7，仓库内容）
+# 当前本地候选（0.2.8，仓库内容）
 npm run pack:check                              # 开发阶段：打包稳定性、白名单、权限、锁文件、文档一致性 + 工作树/固定点关系
 npm run pack:check -- --release                 # 发布阶段：另外要求工作树就是固定内容（release.yml 用这一条）
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
 # 发布后：验证 tag -> commit -> 固定点 -> 工作树（发布前在同一 commit 上也能跑）
-node scripts/release/verify-provenance.mjs --tag v0.2.7 --require-source-commit
+node scripts/release/verify-provenance.mjs --tag v0.2.8 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.7，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.8，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -146,7 +148,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.2 --no-hmr --exp
 
 ### 4.1 已执行的验收记录
 
-五个官方宿主针对 `0.2.7` 固定产物完成验收（`0.2.2-rc.1` / `0.2.2-rc.2` 为 `--no-hmr --experience-evolution`，各 25/25；其余各 21/21），最终 doctor 均为 `healthy`、退出码为 0。固定点的宿主验收记录保存在上列五个 `docs/evidence/dsh-<host>.json` 文件中（`0.2.2-rc.1` / `0.2.2-rc.2` 为 `--no-hmr`）。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
+五个官方宿主针对 `0.2.8` 固定产物完成验收（`0.2.2-rc.1` / `0.2.2-rc.2` 为 `--no-hmr --experience-evolution`，各 25/25；其余各 21/21），最终 doctor 均为 `healthy`、退出码为 0。固定点的宿主验收记录保存在上列五个 `docs/evidence/dsh-<host>.json` 文件中（`0.2.2-rc.1` / `0.2.2-rc.2` 为 `--no-hmr`）。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
 
 固定点与工作树仍是两条通道：固定点自己的 `verifiedHosts` 这一段覆盖五个宿主，它们的记录按固定产物的内容与字节核对；固定点之后新增的宿主（当前没有）只核对本树构建的内容。两条通道的分配由固定点自己的 `verifiedHosts` 决定，不随工作树改写，所以既有历史证据不可变，新增宿主的记录也不会被误当作发布验收。重新固定的流程是：把 `peerDependencies` 与 `release/manifest.json` 的 `verifiedHosts` / `evidence` 对齐、`sourceCommit` 指向本次提交，再对固定产物重跑全部宿主的验收并 `npm run release:publish -- --force`。
 
