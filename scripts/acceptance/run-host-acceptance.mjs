@@ -998,7 +998,8 @@ async function runCrossEntryAcceptance() {
   const revalidatedReviewActions = (revalidatedReviewDocument.selfEvolution?.nextActions ?? []).filter((row) => row.recordId === stable.id);
   record('cross-entry-review-revalidated', { ok: Boolean(revalidatedReviewReceipt), summary: reviewSummary(revalidatedReviewReceipt), error: revalidatedReview.error });
   assertCross(revalidatedReviewDocument.stablePlugins?.readOnly === true && revalidatedReviewDocument.selfEvolution?.readOnly === true, 'the post-revalidation review does not declare itself read-only');
-  assertCross(revalidatedReviewStable?.status !== 'pending-revalidation', `the review still reports the adopted record as pending-revalidation: ${JSON.stringify(revalidatedReviewStable)}`);
+  // The stable record is compatible again and no longer needs revalidation; the ACP activation row is stale against the adopted index because only the Web consumer was booted, so the one remaining action is a restart, never a source change.
+  assertCross(revalidatedReviewStable?.status === 'restart-required' && revalidatedReviewStable?.action === 'restart-consumer', `the post-revalidation review did not report the stale ACP consumer as a restart: ${JSON.stringify(revalidatedReviewStable)}`);
   assertCross(revalidatedReviewStable?.hostCompatible === true, `the adopted record is still not host-compatible: ${JSON.stringify(revalidatedReviewStable?.hostReason)}`);
   assertCross(revalidatedReviewStable?.action !== 'revalidate' && !revalidatedReviewActions.some((row) => row.action === 'revalidate'), `the review still advises revalidation after adoption: ${JSON.stringify(revalidatedReviewActions)}`);
   assertCross(Number.isInteger(revalidatedReviewStable?.revalidationGenerations) && revalidatedReviewStable.revalidationGenerations >= 1, 'the review does not report the adopted revalidation generation');

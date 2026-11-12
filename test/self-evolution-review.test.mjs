@@ -344,6 +344,47 @@ test('operator-disabled for every approved profile is inactive with no next acti
   assert.equal(composed.kind, 'no-action');
 });
 
+test('a record disabled for one profile stays active where it is still enabled', async (t) => {
+  const env = await fixture(t, 'partial-disabled');
+  await writeConsumers(env);
+  const outcome = await setDisabledForProfile(env.paths, { pluginId: RECORD_ID, profile: 'acp', disabled: true, reason: 'operator test' });
+  assert.equal(outcome.ok, true);
+
+  const result = await review(env);
+  assert.equal(result.status, 'active');
+  assert.equal(result.summary.active, 1);
+  assert.deepEqual(result.nextActions, []);
+
+  const [record] = result.records;
+  assert.equal(record.status, 'active');
+  assert.equal(record.action, null);
+  assert.deepEqual(record.profiles.map((row) => row.status).sort(), ['active', 'disabled']);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'no-action');
+});
+
+test('an invalid published record surfaces an operator action instead of a silent no-action', async (t) => {
+  const env = await fixture(t, 'invalid-mixed');
+  await writeConsumers(env);
+  const indexPath = sharingPaths(env.paths).indexPath;
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  index.plugins.push({ id: 'evolution-promoted-000000000000', schemaVersion: 1 });
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+
+  const result = await review(env);
+  assert.equal(result.indexStatus, 'ok');
+  assert.equal(result.summary.invalid, 1);
+  assert.equal(result.summary.active, 1);
+  assert.equal(result.status, 'blocked');
+  assert.ok(result.invalidRecords.some((row) => typeof row.reason === 'string' && row.reason !== ''));
+  const operator = result.nextActions.find((row) => row.action === REVIEW_ACTIONS.OPERATOR && /failed validation/.test(row.why));
+  assert.ok(operator, `the invalid record did not get an operator action: ${JSON.stringify(result.nextActions)}`);
+  assert.equal(operator.recordId, 'evolution-promoted-000000000000');
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'operator-action');
+});
 test('a consumer whose index moved since it started needs a restart, not a source change', async (t) => {
   const env = await fixture(t, 'restart');
   await writeConsumers(env, { observedIndexUpdatedAt: '2020-01-01T00:00:00.000Z' });

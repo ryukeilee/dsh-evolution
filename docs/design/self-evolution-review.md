@@ -54,18 +54,22 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 | 状态 | 含义 | 动作 |
 | --- | --- | --- |
 | `active` | 所有已批准 profile 在当前宿主上 active，且索引未在 consumer 启动后变化 | `none` |
-| `inactive` | 所有已批准 profile 都被操作者撤销或未批准 | `none` |
+| `inactive` | 所有已批准 profile 都被操作者撤销；consumer 行里未批准的陈旧记录也归入此列 | `none` |
 | `pending-revalidation` | 记录宿主与当前 DSH/Cordis/Include/Node 身份不一致 | `revalidate` |
 | `incompatible` | 当前宿主上 consumer 报告缺少能力/服务或 plugin apply 失败 | `repair-stable` |
-| `restart-required` | consumer 状态过期（索引变化、pending-restart、或宿主已匹配但记录仍是旧 pending-revalidation） | `restart-consumer` |
+| `restart-required` | consumer 状态过期或不可读（索引变化、pending-restart、状态文件缺失/不可读、或宿主已匹配但记录仍是旧 pending-revalidation） | `restart-consumer` |
 | `host-unavailable` | consumer 报告 `include-unavailable`（宿主可用性失败，不是插件结论） | `restart-consumer` |
 | `verify-host` | 无法证明当前宿主身份 | `verify-host` |
 | `source-unusable` | 源码缺失、符号链接、摘要不一致 | `operator-action` |
-| `invalid` / `blocked` | 记录或索引/撤销表不可读 | `operator-action` |
+| `invalid` | 索引结构合法但某条记录未通过校验，或 consumer 报告 `skipped-invalid` | `operator-action` |
+| `blocked` | 索引或撤销表本身不可读 | `operator-action` |
 
 判定顺序是固定的：源码完整性 → 全部 approved profile 已被操作者撤销（inactive，不触发重验证）→ 宿主身份可证明性
 → 宿主一致性 → 撤销表可读性 → 每个 approved profile 的 consumer 行。
 宿主不匹配时不会尝试判断“是否兼容”，因为只有真实隔离宿主验证才能回答这个问题。
+索引结构合法但包含未通过 `validateSharedRecord` 的记录时，review 不会静默跳过：它计入 `summary.invalid`、把总状态标为
+`blocked`，并为每条损坏记录给出 `operator-action`；consumer 对同一行实际会报 `skipped-invalid`。`skipped-unapproved`
+只能来自与该记录批准范围不一致的陈旧 consumer 行（主循环只遍历记录自己的 `approvedProfiles`），因此按 stale 处理。
 
 ## 4. 动作排序
 
@@ -112,7 +116,7 @@ revalidate 不是新的晋升，也不改变八项门禁、所有者确认或授
 
 - 检查只读：不修复索引、不重试 consumer、不 reset sticky failure；这些仍是显式操作者动作。
 - consumer 的 `hostDigest` 是上一次启动时捕获的事实；索引在其后变化时只报告 `restart-required`，不推断当前运行状态。
-- 当前宿主身份来自官方 `PluginPackages.packageOf`；读不到时记录为 `verify-host`，绝不按“兼容”处理。
+- 当前宿主身份优先来自官方 `PluginPackages.packageOf`；ACP 等 profile 缺少该服务时回退到进程/包布局的精确解析（`lib/runtime-versions.js`），仍读不到时记录为 `verify-host`，绝不按“兼容”处理。
 - ACP 的 `audit` 使用同机共享数据根与共享经验库；它不能替代真实隔离宿主验证，也不会在本机执行 revalidate。
 - 检查不引入后台扫描、定时器或启动时自动修复；只有用户显式触发工具调用时运行。
 
