@@ -313,6 +313,131 @@ test('the host recovery marks a leftover non-terminal task interrupted and never
   assert.equal(kernel.state.reverts, 0);
 });
 
+test('the host recovery adopts a durable stable commit instead of reporting interrupted', async (t) => {
+  const home = temporary(t);
+  const paths = taskChannelPaths(home);
+  await fsp.mkdir(paths.state, { recursive: true });
+  const taskId = mintTaskId();
+  const experimentId = 'exp-recovered-stable';
+  const state = {
+    schemaVersion: SCHEMA_VERSION,
+    protocol: PROTOCOL_VERSION,
+    taskId,
+    phase: 'canary-observing',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    experimentId,
+    candidateSourceSha256: 'c'.repeat(64),
+    host: { instanceId: 'dead-host', pid: 2 ** 30 },
+  };
+  await fsp.writeFile(path.join(paths.state, `${taskId}.json`), JSON.stringify(state));
+  const dataRoot = path.join(home, 'storages', 'evolution');
+  await fsp.mkdir(path.join(dataRoot, 'archive', 'experiments'), { recursive: true });
+  await fsp.writeFile(path.join(dataRoot, 'archive', 'experiments', `${experimentId}.evidence.json`), JSON.stringify({
+    experimentId,
+    decision: { version: 1, kind: 'benefit', source: 'canary-passed', at: new Date().toISOString(), eligible: true },
+    runtimeRecovered: true,
+    recoveryProof: { status: 'recovered' },
+    stableCommittedAt: new Date().toISOString(),
+    gateEvidence: { gates: GATES },
+    publication: { sourceSha256: 'kernel-source-sha' },
+  }));
+  await fsp.mkdir(path.join(dataRoot, 'shared-plugins'), { recursive: true });
+  await fsp.writeFile(path.join(dataRoot, 'shared-plugins', 'published.json'), JSON.stringify({
+    plugins: [{ id: 'evolution-promoted-recovered', experimentId, pluginName: 'dsh-evolution-promoted-recovered', sourceSha256: 'kernel-source-sha', approvedProfiles: ['acp'], publisherProfile: 'desktop', stable: { committedAt: new Date().toISOString() } }],
+  }));
+  const kernel = fakeKernel();
+  const host = createDesktopTaskHost(fakeCtx(kernel, planFor(taskId)), { dshHome: home, scanIntervalMs: 0, settlePollMs: 1 });
+  t.after(async () => { await host.dispose(); });
+  await host.start();
+  const recovered = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(recovered.kernelSourceSha256, 'kernel-source-sha');
+  assert.equal(recovered.publication.id, 'evolution-promoted-recovered');
+  assert.equal(recovered.error, null);
+  assert.equal(kernel.calls.length, 0, 'a durable stable commit must not be re-executed');
+});
+
+test('a canary sample regression uses the kernel rollback and does not call revert again', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  let candidateVisible = false;
+  let promoted = false;
+  let observations = 0;
+  const calls = [];
+  const tools = new Map();
+  tools.set('evolution_runtime_inspect', { execute: async () => ({ components: [], services: [], events: [] }) });
+  tools.set('evolution_propose', { execute: async () => ({ ok: true, experimentId: 'exp-canary-regression', phase: 'proposed' }) });
+  tools.set('evolution_trial', { execute: async () => { candidateVisible = true; return { ok: true, phase: 'trial' }; } });
+  tools.set('evolution_measure', { execute: async () => ({ ok: true, phase: 'measured', gates: GATES, decision: { kind: 'benefit', eligible: true } }) });
+  tools.set('evolution_promote', { execute: async (args) => {
+    if (args.confirmation === true) { promoted = true; return { ok: true, phase: 'canary-observing' }; }
+    return { ok: false, phase: 'awaiting-owner-confirmation', gates: GATES, decision: { kind: 'benefit', eligible: true } };
+  } });
+  tools.set('evolution_canary_observe', { execute: async (args) => {
+    calls.push({ name: 'canary', args });
+    observations += 1;
+    if (args.metricRegression === true) return { ok: false, phase: 'rolled-back', rollback: 'last-known-good' };
+    return { ok: true, phase: 'canary-observing', stable: false };
+  } });
+  tools.set('evolution_revert', { execute: async () => { calls.push({ name: 'revert' }); return { ok: true, runtimeRecovered: true, phase: 'reverted' }; } });
+  const ctx = {
+    logger: { warn() {} },
+    effect() {},
+    agents: { create: async (options) => ({ agent: { id: options.sessionId }, dispose: async () => {} }) },
+    tools: {
+      get(name) {
+        if (name === plan.tool) {
+          if (!candidateVisible) return null;
+          // The trial samples pass; the promoted plugin then returns a wrong
+          // value so the canary observation proves a metric regression.
+          return { execute: async (args) => (promoted ? { characters: 0, lines: 0 } : { characters: args.text.length, lines: args.text.split('\n').length }) };
+        }
+        return tools.get(name) ?? null;
+      },
+    },
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const failed = await waitForState(home, taskId, (value) => value.phase === 'failed');
+  assert.equal(failed.error.code, 'E_DESKTOP_CANARY_REGRESSION');
+  assert.deepEqual(failed.revert, { ok: true, status: 'last-known-good' });
+  assert.equal(calls.filter((call) => call.name === 'revert').length, 0, 'the kernel already rolled back');
+  const regression = calls.filter((call) => call.name === 'canary' && call.args.metricRegression === true);
+  assert.equal(regression.length, 1);
+  assert.equal(regression[0].args.barrier.reached, true, 'the kernel refuses an unreached barrier before it can roll back');
+});
+
+test('a plan with one requested observation still waits for the kernel canary window', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  plan.plan.verification.observations = 1;
+  const kernel = fakeKernel({ facts: factsWriter(home) });
+  // The fake kernel reports stable only on the second observation.
+  const ctx = fakeCtx(kernel, plan);
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.result.stable, true);
+  assert.equal(kernel.calls.filter((call) => call.name === 'evolution_canary_observe').length, 2);
+});
+
+test('disposing the host while awaiting approval attempts a bounded trial cleanup', async (t) => {
+  const { home, plan, kernel, host } = harness(t);
+  const taskId = await submit(home, plan);
+  await host.start();
+  await waitForState(home, taskId, (value) => value.phase === 'awaiting-owner-confirmation');
+  await host.dispose();
+  const state = await waitForState(home, taskId, (value) => value.phase === 'interrupted');
+  assert.equal(state.error.code, 'E_DESKTOP_HOST_STOPPED');
+  assert.equal(kernel.state.reverts, 1, 'a graceful stop must try to hand the runtime back');
+});
+
 test('two requests are executed one at a time in created order', async (t) => {
   const home = temporary(t);
   const planA = planFor(mintTaskId());
