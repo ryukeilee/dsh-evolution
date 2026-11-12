@@ -35,7 +35,7 @@ format, tool-surface shape or authorization source changes.
 - ACP → Desktop 任务协议允许 `proposal.strategy` / `proposal.rootCause` 可选字段，使 ACP 发起的修复同样受既有
   proven-ineffective 策略拒绝规则约束。八项晋升门禁、所有者确认、回滚与跨入口发布语义不变。
 
-发布前独立审核（只读，位于真实仓库与真实宿主之外）关闭三处会误导下一步动作的缺口：
+发布前独立审核（只读，位于真实仓库与真实宿主之外）关闭四处会误导下一步动作的缺口：
 
 - 恢复 `enable` 或扩大 `approvedProfiles` 后、对应 consumer 尚未重启时，陈旧的 `disabled` /
   `skipped-unapproved` 行会被排除在应激活集合外，检查因此返回 inactive/no-action。现在这些行按当前撤销表与批准列表
@@ -45,9 +45,13 @@ format, tool-surface shape or authorization source changes.
   `pending-revalidation`（重启无法清除），动作会点名 profile 与其宿主版本，要求先把入口对齐，或在该宿主上验证同一份
   字节；采用后者时仍会如实让其它版本入口保持 pending，不声称一次重验证能同时覆盖两个版本。
 - stable 检查达到 50 条记录上限被截断时，组合结果标记 `incomplete`，不会以 no-action 结束。
+- 打包宿主（Desktop / ACP / Web 通过 `app.asar` 内的 `@deepseek-ai/dsh-desktop-host` 启动）不再让 doctor 的
+  `promotion.sharing` 把无法解析的宿主记成 `null` 后误报 `host-version-mismatch`：它改用与运行时适用性读取相同的
+  入口/资源规则解析 DSH、Cordis 与 Include；已重验证的记录在真实 Desktop 中由 `degraded` 恢复为 `ok`。
 
-这三处不改变持久化格式、发布记录字段、晋升门禁或已有 revalidate 证据格式；测试在
-`test/self-evolution-review.test.mjs` 中逐条固定。
+这四处不改变持久化格式、发布记录字段、晋升门禁或已有 revalidate 证据格式；测试在
+`test/self-evolution-review.test.mjs`、`test/review-fix-doctor-packaged-host.test.mjs` 与
+`test/promoted-sharing-diagnostics.test.mjs` 中逐条固定。
 
 ## 0.2.7 — 稳定版
 
