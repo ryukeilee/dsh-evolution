@@ -18,6 +18,16 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 未发布（0.2.8 之后的 main）
+
+- **修复 consumer 状态误报。** 同一 profile 中一个在 Include 启动阶段被关闭的短命会话，此前会因自身 Cordis
+  上下文失活连续收到 `INACTIVE_EFFECT`，重试耗尽后把该 profile 的 `consumers/<profile>.json` 覆盖成
+  `failed` / `include-unavailable`，使 self-evolution audit 把仍在另一个运行会话中挂载并可调用的插件判为
+  `host-unavailable` 并建议 `restart-consumer`。现在会话自身 context 已失活时视为启动取消：不重试、不写失败行，
+  dispose 只在上一次有效报告上追加 `disposedAt` / `disposal` 并保留其 rows、`observedIndexUpdatedAt` 与 sessionId。
+  只有会话仍处于活动 context 且三次重试仍失败时才写 `include-unavailable`。发布索引、晋升门禁、宿主集合与
+  工具面不变。
+
 ## 0.2.8 — 稳定版
 
 `0.2.7` 的稳定后继：把显式“自我进化”请求的入口统一为一次只读、可审计的检查，并修复发布前独立审核发现的状态分类与下一步指引缺口。宿主集合、持久化 schema、工具名 / 参数结构、授权来源与八项晋升门禁不变。

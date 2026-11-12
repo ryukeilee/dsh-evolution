@@ -13,6 +13,7 @@ import {
   resolveConsumerProfile,
 } from '../lib/promoted-consumer.js';
 import { fiberIsActive } from '../lib/cordis-compat.js';
+import { readPublishedPluginReview } from '../lib/self-evolution-review.js';
 import { readConsumerState, sharingPaths } from '../lib/promoted-sharing.js';
 
 const RECORD_PREFIX = 'evolution-promoted-';
@@ -737,4 +738,111 @@ test('stop before evaluation preserves an inherited genuine plugin failure', asy
   assert.equal(state.plugins[0].status, 'failed');
   assert.equal(state.plugins[0].reason, 'plugin-apply-failed');
   assert.equal(state.plugins[0].errorCode, 'E_CONSUMER_PLUGIN_APPLY_FAILED');
+});
+
+/**
+ * A short-lived ACP session that shuts down while its consumer entry is still
+ * starting must not replace the activation report of a session that is already
+ * live in the same profile. The running host has one state file per profile, so
+ * an aborted start that publishes `include-unavailable` (or an empty row list)
+ * would make the self-evolution review call a mounted plugin unavailable and
+ * advise a restart that is not needed.
+ */
+async function mountedLiveReport(t, { approvedProfiles = ['acp'] } = {}) {
+  const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
+  const { record, toolName } = await createRecord({ approvedProfiles });
+  await writeIndex([record]);
+  const live = await mountSession(await boot(), dataRoot);
+  assert.equal(live.rows[0].status, 'active');
+  assert.deepEqual((await readConsumerState(paths, 'acp')).state.plugins.map((row) => row.status), ['active']);
+  const baseline = (await readConsumerState(paths, 'acp')).state;
+  return { dataRoot, paths, record, toolName, live, baseline };
+}
+
+async function assertInheritedReportPreserved({ dataRoot, paths, record, baseline }) {
+  const state = (await readConsumerState(paths, 'acp')).state;
+  assert.equal(state.sessionId, baseline.sessionId, 'the aborted session kept ownership of the last published report');
+  assert.equal(state.observedIndexUpdatedAt, baseline.observedIndexUpdatedAt, 'the inherited index observation was replaced');
+  assert.deepEqual(state.plugins, baseline.plugins, 'the aborted session replaced the live activation rows');
+  assert.equal(typeof state.disposedAt, 'string', 'the aborted session disposal was not recorded');
+  assert.deepEqual(state.disposal, { released: true, entries: 0 });
+  // The audit reads the same file: the preserved active row must stay active
+  // and must not produce the unnecessary restart-consumer action.
+  const review = await readPublishedPluginReview({ paths: { dataRoot }, host: { profile: 'acp', ...HOST } });
+  const recordReview = review.records.find((row) => row.id === record.id);
+  assert.equal(recordReview.status, 'active');
+  assert.equal(recordReview.action, null);
+  assert.equal(review.nextActions.some((action) => action.action === 'restart-consumer' && action.recordId === record.id), false);
+  return state;
+}
+
+test('a session whose own context is already inactive cannot overwrite the live activation report', async (t) => {
+  const env = await mountedLiveReport(t);
+  let attempts = 0;
+  const inactiveCtx = { get: () => null, fiber: { uid: null } };
+  const aborted = createConsumerSession({
+    ctx: inactiveCtx,
+    config: { dataRoot: env.dataRoot },
+    profile: 'acp',
+    mountInclude: async () => {
+      attempts += 1;
+      throw Object.assign(new Error('inactive'), { code: 'INACTIVE_EFFECT', consumerRetrySafe: true });
+    },
+  });
+  await aborted.mount();
+  // The claim keeps the inherited rows, but an already-inactive session cannot
+  // reach the Include at all; it must not spend the retry budget or publish.
+  assert.equal(attempts, 0);
+  assert.deepEqual((await readConsumerState(env.paths, 'acp')).state.plugins.map((row) => row.status), ['active']);
+  await aborted.dispose();
+  await assertInheritedReportPreserved(env);
+  await env.live.dispose();
+});
+
+test('a session that goes inactive during the Include mount is cancellation, not include-unavailable', async (t) => {
+  const env = await mountedLiveReport(t);
+  let attempts = 0;
+  const dyingCtx = { get: () => null, fiber: { uid: 1 } };
+  const aborted = createConsumerSession({
+    ctx: dyingCtx,
+    config: { dataRoot: env.dataRoot },
+    profile: 'acp',
+    mountInclude: async () => {
+      attempts += 1;
+      dyingCtx.fiber.uid = null;
+      throw Object.assign(new Error('inactive'), { code: 'INACTIVE_EFFECT', consumerRetrySafe: true });
+    },
+  });
+  await aborted.mount();
+  assert.equal(attempts, 1, 'a dying session must not retry a mount that its own shutdown invalidated');
+  await aborted.dispose();
+  const state = await assertInheritedReportPreserved(env);
+  assert.equal(state.plugins[0].reason, null);
+  assert.equal(state.plugins[0].errorCode, null);
+  await env.live.dispose();
+});
+
+test('disposal during Include startup preserves the inherited activation report', async (t) => {
+  const env = await mountedLiveReport(t);
+  let release, entered;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const started = new Promise((resolve) => { entered = resolve; });
+  const stopping = createConsumerSession({
+    ctx: await boot(),
+    config: { dataRoot: env.dataRoot },
+    profile: 'acp',
+    mountInclude: async () => {
+      entered();
+      await gate;
+      return { dispose: async () => {} };
+    },
+  });
+  const mounting = stopping.mount();
+  await started;
+  const disposal = stopping.dispose();
+  release();
+  await Promise.all([mounting, disposal]);
+  assert.deepEqual(await disposal, { released: true, entries: 0 });
+  await assertInheritedReportPreserved(env);
+  await env.live.dispose();
 });
