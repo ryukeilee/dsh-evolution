@@ -62,7 +62,11 @@ Desktop 是唯一的晋升权威：Trial、measure、promotion、canary 与 roll
 - **操作与撤销。** `dsh-evolution-shared`（`scripts/shared-plugins.mjs`）提供只读 `list`、逐 profile 的
   `disable` / `enable`、清除 sticky 失败的 `reset`，以及在宿主升级后采用真实隔离宿主验证证据的
   `revalidate --evidence <json>`。`disable` 只移除该 profile 的激活资格，Desktop 的 stable 晋升不受影响；
-  `reset` 让下一次启动重试一次；宿主版本变化时记录停在 `pending-revalidation`，不会自动挂载或删除。
+  Include 尚未建立时的 `include-unavailable` 属于宿主可用性失败，不会锁死插件；下次入口启动会重新检查全部门禁。
+  启动内只对官方 `INACTIVE_EFFECT` 且已证明 child 清理（或请求 context 已失活、未创建 child）的情况重试，最多三次尝试，间隔 100 / 200 ms；不会重试插件自身的 apply 失败。
+  持续失败时先用 `list --json` 查看错误码与摘要，修复宿主后重启入口；真实插件失败须查明原因后显式 `reset`，让下一次启动重试一次。
+  每个启动会话使用独立 composition，正常退出且证明清理后删除；崩溃残留不自动删除。状态报告只接受当前会话写入，旧 host 的迟到结果与退出记录不会覆盖新 host。
+  宿主版本变化时记录停在 `pending-revalidation`，不会自动挂载或删除。
 - **生效时机与数据位置。** consumer 只在启动时读索引，因此新的发布在入口下次启动时生效；部署形态同时保持
   宿主 HMR 关闭（见下）。索引、撤销表与各 profile 的消费状态都在
   `$DSH_HOME/storages/evolution/shared-plugins/`；插件源码仍在 `$DSH_HOME/storages/evolution/promoted/`。
