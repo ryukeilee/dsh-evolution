@@ -659,7 +659,7 @@ test('a runtime-busy trial refusal finalizes the task and releases the queue', a
   tools.set('evolution_measure', { execute: async () => ({ ok: true, phase: 'measured', gates: GATES, decision: { kind: 'benefit', eligible: true } }) });
   tools.set('evolution_promote', { execute: async (args) => args.confirmation === true ? { ok: true, phase: 'canary-observing' } : { ok: false, phase: 'awaiting-owner-confirmation', gates: GATES, decision: { kind: 'benefit', eligible: true } } });
   tools.set('evolution_canary_observe', { execute: async () => ({ ok: true, stable: true }) });
-  tools.set('evolution_revert', { execute: async () => { throw new Error('Revert requires a Trial; experiment has no trial'); } });
+  tools.set('evolution_revert', { execute: async () => { throw new Error('experiment exp-runtime-busy is proposed; Revert requires a Trial'); } });
   const ctx = {
     logger: { warn() {} },
     effect() {},
@@ -685,6 +685,39 @@ test('a runtime-busy trial refusal finalizes the task and releases the queue', a
   await approveWhenWaiting(home, secondId);
   const stable = await waitForState(home, secondId, (value) => value.phase === 'stable');
   assert.equal(stable.phase, 'stable');
+});
+
+test('a canary-observing revert refusal stays unproven and keeps retrying', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel();
+  let revertAttempts = 0;
+  let canaryCalls = 0;
+  // The canary observation itself fails (infrastructure error, not a sample
+  // mismatch), so the promotion is still mounted in canary-observing. The kernel
+  // refuses the first revert with its real state-specific wording; the host must
+  // not read that as proof that nothing is mounted.
+  kernel.tools.set('evolution_canary_observe', { execute: async () => {
+    canaryCalls += 1;
+    throw new Error('canary observation storage failed');
+  } });
+  kernel.tools.set('evolution_revert', { execute: async () => {
+    revertAttempts += 1;
+    kernel.state.reverts += 1;
+    if (revertAttempts === 1) throw new Error('experiment exp-desktop-task-1 is canary-observing; Revert requires a Trial');
+    return { ok: true, runtimeRecovered: true, phase: 'reverted' };
+  } });
+  const ctx = fakeCtx(kernel, plan);
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const failed = await waitForState(home, taskId, (value) => value.phase === 'failed', 10_000);
+  assert.equal(canaryCalls >= 1, true);
+  assert.equal(revertAttempts >= 2, true, 'the unproven canary refusal must be retried');
+  assert.deepEqual(failed.revert, { ok: true, status: 'reverted' });
+  assert.equal(failed.cleanupPending, false);
 });
 
 test('two requests are executed one at a time in created order', async (t) => {
