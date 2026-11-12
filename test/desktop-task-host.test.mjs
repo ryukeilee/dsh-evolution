@@ -613,6 +613,80 @@ test('an error after the durable stable commit adopts the stable outcome instead
   assert.equal(state.error, null);
 });
 
+test('a durable stable commit is adopted even when a stop signal is already set', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel();
+  const ctx = fakeCtx(kernel, plan);
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 0, settlePollMs: 1 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = mintTaskId();
+  const state = {
+    schemaVersion: SCHEMA_VERSION,
+    protocol: PROTOCOL_VERSION,
+    taskId,
+    phase: 'canary-observing',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    experimentId: 'exp-aborted-stable',
+    candidateSourceSha256: 'e'.repeat(64),
+  };
+  await factsWriter(home).write('exp-aborted-stable');
+  const adopted = await host.internals.adoptDurableStable(state);
+  assert.ok(adopted, 'durable stable must be adopted regardless of interruption state');
+  assert.equal(adopted.phase, 'stable');
+  assert.equal(adopted.error, null);
+  assert.equal(adopted.publication.id, 'evolution-promoted-abc123abc123');
+});
+
+test('a runtime-busy trial refusal finalizes the task and releases the queue', async (t) => {
+  const home = temporary(t);
+  const first = planFor(mintTaskId());
+  const second = planFor(mintTaskId());
+  let candidate = null;
+  const tools = new Map();
+  tools.set('evolution_runtime_inspect', { execute: async () => ({ components: [], services: [], events: [] }) });
+  tools.set('evolution_propose', { execute: async () => ({ ok: true, experimentId: 'exp-runtime-busy', phase: 'proposed' }) });
+  tools.set('evolution_trial', { execute: async (args) => {
+    if (args.composition?.name === first.plan.composition.name) {
+      const error = new Error('Evolution runtime is busy with another trial');
+      error.code = 'E_EVOLUTION_RUNTIME_BUSY';
+      throw error;
+    }
+    candidate = args.composition?.name;
+    return { ok: true, phase: 'trial' };
+  } });
+  tools.set('evolution_measure', { execute: async () => ({ ok: true, phase: 'measured', gates: GATES, decision: { kind: 'benefit', eligible: true } }) });
+  tools.set('evolution_promote', { execute: async (args) => args.confirmation === true ? { ok: true, phase: 'canary-observing' } : { ok: false, phase: 'awaiting-owner-confirmation', gates: GATES, decision: { kind: 'benefit', eligible: true } } });
+  tools.set('evolution_canary_observe', { execute: async () => ({ ok: true, stable: true }) });
+  tools.set('evolution_revert', { execute: async () => { throw new Error('Revert requires a Trial; experiment has no trial'); } });
+  const ctx = {
+    logger: { warn() {} },
+    effect() {},
+    agents: { create: async (options) => ({ agent: { id: options.sessionId }, dispose: async () => {} }) },
+    tools: {
+      get(name) {
+        if (name === first.tool || name === second.tool) {
+          if (candidate !== name) return null;
+          return { execute: async (args) => ({ characters: args.text.length, lines: args.text.split('\n').length }) };
+        }
+        return tools.get(name) ?? null;
+      },
+    },
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const firstId = await submit(home, first);
+  await host.start();
+  const failed = await waitForState(home, firstId, (value) => value.phase === 'failed');
+  assert.equal(failed.error.code, 'E_EVOLUTION_RUNTIME_BUSY');
+  assert.deepEqual(failed.revert, { ok: true, status: 'experiment-discarded' });
+  const secondId = await submit(home, second);
+  await approveWhenWaiting(home, secondId);
+  const stable = await waitForState(home, secondId, (value) => value.phase === 'stable');
+  assert.equal(stable.phase, 'stable');
+});
+
 test('two requests are executed one at a time in created order', async (t) => {
   const home = temporary(t);
   const planA = planFor(mintTaskId());

@@ -36,7 +36,7 @@ Evolution kernel、八项门禁、canary/stable、任务通道和 fresh ACP 消�
 ## 关键证据（完整 JSON 见同目录 `acp-desktop-control-20261112.json`）
 
 - 验收结果 `ok: true`；tarball SHA-256
-  `95643aa65d84913a02313015e5aba54afe6f8437dbc0e28551fe86a5bb1e8a6a`。
+  `3b9b0753ae06e429bc154e79ddf0a558f9eac9233a6efdc314f04164a4d136b5`。
 - `desktopRecovery`：durable evidence `runtimeRecovered: true`，`recoveryProof.status: "recovered"`，
   恢复前后指纹摘要相同（`2a04c301…`），八项门禁全为 true（`runtimeRecovered` 为 true）。
 - `publication`：`publisherProfile: "desktop"`、`sourceSha256: "1a8a2e1e…"`、`approvedProfiles: ["acp"]`、
@@ -44,10 +44,10 @@ Evolution kernel、八项门禁、canary/stable、任务通道和 fresh ACP 消�
 - `freshConsumer`：工具 `acp_stats_566d…` 的真实输出 `{"characters":11,"lines":2}`；
   `consumer.status: "active"`。
 - `noAutoApproval`：等待 5000 ms 后 phase 仍为 `awaiting-owner-confirmation`。
-- `restart`：instanceId 从 `4a0e1225…` 变为 `c8e8f7e6…`，terminal 任务与发布索引保持不变。
+- `restart`：instanceId 从 `b330a5ce…` 变为 `6bab02e0…`，terminal 任务与发布索引保持不变。
 - 单实例：第二次启动 Desktop 后 live host 的 instanceId/pid 不变。
 - `autoLaunch`：Desktop 未运行时由 ACP 客户端启动官方应用，新 host instanceId
-  `05e68aef…`、profile 为 `desktop`、phase 为 `awaiting-owner-confirmation`，验收实例已停止。
+  `755ddaca…`、profile 为 `desktop`、phase 为 `awaiting-owner-confirmation`，验收实例已停止。
 
 ## 边界
 
