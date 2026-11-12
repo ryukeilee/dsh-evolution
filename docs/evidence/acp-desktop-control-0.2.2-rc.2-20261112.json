@@ -1,0 +1,290 @@
+{
+  "kind": "dsh-evolution-acp-desktop-control",
+  "ok": true,
+  "startedAt": "2026-11-12T14:48:49.314Z",
+  "modelTransport": "deterministic loopback Anthropic responses; actual ACP Agent/tools and actual Desktop app",
+  "scope": "isolated DSH_HOME; production task channel + official Desktop kernel; no formal home, no release publish",
+  "steps": [
+    {
+      "name": "official-desktop-profile-initialized",
+      "at": "2026-11-12T14:48:49.916Z"
+    },
+    {
+      "name": "desktop-task-host-ready",
+      "at": "2026-11-12T14:48:53.801Z"
+    },
+    {
+      "name": "desktop-single-instance-held",
+      "at": "2026-11-12T14:48:58.117Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T14:48:58.749Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T14:48:58.756Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T14:49:00.395Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T14:49:00.397Z"
+    },
+    {
+      "name": "desktop-awaiting-owner-confirmation",
+      "at": "2026-11-12T14:49:00.484Z"
+    },
+    {
+      "name": "desktop-did-not-auto-approve",
+      "at": "2026-11-12T14:49:05.487Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T14:49:06.066Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T14:49:06.072Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T14:49:06.094Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T14:49:06.096Z"
+    },
+    {
+      "name": "desktop-stable-and-published",
+      "at": "2026-11-12T14:49:06.563Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "acp_stats_3825c04f",
+      "at": "2026-11-12T14:49:07.497Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T14:49:07.505Z"
+    },
+    {
+      "name": "fresh-acp-consumed-promoted-plugin",
+      "at": "2026-11-12T14:49:07.556Z"
+    },
+    {
+      "name": "desktop-restart-preserved-durable-facts",
+      "at": "2026-11-12T14:49:09.142Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T14:49:09.981Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T14:49:09.987Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T14:49:15.054Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T14:49:15.058Z"
+    },
+    {
+      "name": "acp-auto-launched-official-desktop",
+      "at": "2026-11-12T14:49:15.120Z"
+    },
+    {
+      "name": "acceptance-launched-desktop-stopped",
+      "at": "2026-11-12T14:49:15.408Z"
+    }
+  ],
+  "desktop": {
+    "binary": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+    "cli": "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh"
+  },
+  "host": {
+    "first": {
+      "instanceId": "063194f5-81a9-4b8f-a0f9-d5f85fe6258c",
+      "pid": 44507,
+      "protocol": 1,
+      "profile": "desktop"
+    },
+    "singleInstance": {
+      "duplicateInstanceId": "063194f5-81a9-4b8f-a0f9-d5f85fe6258c",
+      "secondLaunchPid": 44514
+    }
+  },
+  "candidate": {
+    "tool": "acp_stats_3825c04f",
+    "compositionName": "acp-stats-3825c04f",
+    "sourceSha256": "8a7812ab82e3db6d3dce36e3bb309630291d83a9288ace9641d85751315c6c0d",
+    "experimentId": "exp-mwdnydeu-1-f49c35ac",
+    "gates": {
+      "realBenefit": true,
+      "measuredEvidence": true,
+      "repeatable": true,
+      "regressionTest": true,
+      "reversible": true,
+      "cleanupEvidence": true,
+      "noOrphans": true,
+      "runtimeRecovered": false,
+      "eligible": true
+    },
+    "decision": {
+      "kind": "benefit",
+      "eligible": true,
+      "reasons": [
+        "measured behavior improved and the correctness control stayed stable"
+      ]
+    }
+  },
+  "approval": {
+    "text": "Approved for the isolated DSH 0.2.2-rc.2 acceptance run",
+    "at": "2026-11-12T14:49:05.487Z",
+    "targetProfiles": [
+      "acp"
+    ]
+  },
+  "publication": {
+    "id": "evolution-promoted-6d5df75ac9f4",
+    "publisherProfile": "desktop",
+    "sourceSha256": "974b7f2eada37d93207d0a8d908cd90f041d1b0869296af7ece0b9176cfa6568",
+    "approvedProfiles": [
+      "acp"
+    ],
+    "committedAt": "2026-11-12T14:49:06.355Z"
+  },
+  "freshConsumer": {
+    "tool": "acp_stats_3825c04f",
+    "input": "ACP\nDesktop",
+    "output": {
+      "characters": 11,
+      "lines": 2
+    }
+  },
+  "restart": {
+    "previousInstanceId": "063194f5-81a9-4b8f-a0f9-d5f85fe6258c",
+    "nextInstanceId": "b1fc2974-dc90-47da-9258-1d7b0ca77f0e",
+    "nextPid": 44719,
+    "terminalTaskPreserved": true,
+    "publicationPreserved": true
+  },
+  "install": {
+    "ok": true,
+    "tail": [
+      "+ dsh-evolution 0.2.7",
+      "",
+      "Done in 494ms using pnpm v11.28.5",
+      "web: configured; restart this entry to apply (HMR disabled)"
+    ],
+    "roles": "host enabled on desktop only; client enabled on acp only; web keeps neither"
+  },
+  "noAutoApproval": {
+    "taskId": "desktop-task-mwdnycga-32e18308",
+    "waitedMs": 5000,
+    "phase": "awaiting-owner-confirmation"
+  },
+  "desktopTask": {
+    "taskId": "desktop-task-mwdnycga-32e18308",
+    "phase": "stable",
+    "experimentId": "exp-mwdnydeu-1-f49c35ac",
+    "candidateSourceSha256": "8a7812ab82e3db6d3dce36e3bb309630291d83a9288ace9641d85751315c6c0d",
+    "kernelSourceSha256": "974b7f2eada37d93207d0a8d908cd90f041d1b0869296af7ece0b9176cfa6568",
+    "gates": {
+      "realBenefit": true,
+      "measuredEvidence": true,
+      "repeatable": true,
+      "regressionTest": true,
+      "reversible": true,
+      "cleanupEvidence": true,
+      "noOrphans": true,
+      "runtimeRecovered": true,
+      "eligible": true
+    },
+    "decision": {
+      "version": 1,
+      "kind": "benefit",
+      "source": "canary-passed",
+      "at": "2026-11-12T14:49:06.363Z",
+      "observationAt": "2026-11-12T14:49:00.097Z",
+      "eligible": true,
+      "reasons": [
+        "the measured candidate passed the startup, health, dependency, and metric canary window"
+      ],
+      "gates": {
+        "realBenefit": true,
+        "measuredEvidence": true,
+        "repeatable": true,
+        "regressionTest": true,
+        "reversible": true,
+        "cleanupEvidence": true,
+        "noOrphans": true,
+        "runtimeRecovered": false
+      },
+      "probe": null
+    },
+    "approval": {
+      "experimentId": "exp-mwdnydeu-1-f49c35ac",
+      "sourceSha256": "8a7812ab82e3db6d3dce36e3bb309630291d83a9288ace9641d85751315c6c0d",
+      "targetProfiles": [
+        "acp"
+      ],
+      "confirmedAt": "2026-11-12T14:49:06.075Z",
+      "confirmationTextDigest": "5a78b985aa5b43ce09f062dd4dbff98b066130de72cd3c6877bda22546f83a2b"
+    },
+    "result": {
+      "stable": true,
+      "summary": "Desktop committed the promotion as stable and published it to acp.",
+      "observations": 2
+    }
+  },
+  "desktopRecovery": {
+    "evidenceSha256": "8b77a8889decf4baa3aea67e472f1405d355ba6e7d3d80e93c1dfba4e2ebe493",
+    "runtimeRecovered": true,
+    "gates": {
+      "realBenefit": true,
+      "measuredEvidence": true,
+      "repeatable": true,
+      "regressionTest": true,
+      "reversible": true,
+      "cleanupEvidence": true,
+      "noOrphans": true,
+      "runtimeRecovered": true,
+      "eligible": true
+    },
+    "recoveryProof": {
+      "status": "recovered",
+      "beforeSha256": "f1357a77855d4e5a9ccf292676592c5af2c249448f78b13ba188b7d37adfd00a",
+      "afterSha256": "f1357a77855d4e5a9ccf292676592c5af2c249448f78b13ba188b7d37adfd00a"
+    }
+  },
+  "consumer": {
+    "status": "active",
+    "id": "evolution-promoted-6d5df75ac9f4",
+    "observedIndexUpdatedAt": "2026-11-12T14:49:06.409Z"
+  },
+  "autoLaunch": {
+    "hostInstanceId": "7a017321-cb34-40eb-8d06-fb71ba43911e",
+    "hostPid": 44779,
+    "profile": "desktop",
+    "phase": "awaiting-owner-confirmation",
+    "tool": "acp_stats_e7215da2",
+    "experimentId": "exp-mwdnyool-1-66f3100a",
+    "candidateSourceSha256": "54ee2c04725dd6c5369cee9d3066a19f555255b64af3103df16a8d79c2c4e1e3",
+    "stopped": true
+  },
+  "profilePatchesPreserved": true,
+  "finishedAt": "2026-11-12T14:49:15.409Z",
+  "tarballSha256": "e90d731faf0fdb29befb11f9b9b7ceaa49a1b12c5207faf27abb03eb24931b9b"
+}

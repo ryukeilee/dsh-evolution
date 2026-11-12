@@ -18,11 +18,27 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
-## 未发布 — 本树
+## 0.2.7 — 稳定版
 
-本树没有发布版本，也没有更新 `release/` 固定点。新增内容：
+`0.2.6` 的稳定后继：新增官方宿主 DSH `0.2.2-rc.2` 的真实安装、加载、工具注册、生命周期、
+doctor、经验驱动与跨入口验收，并首次正式发布已合并的 ACP → Desktop 自进化控制链（PR #55 /
+#56）。运行时代码只包含 PR #55 / #56 已合并的改动与版本号、兼容声明、文档更新；不新增持久化
+schema、工具授权来源、晋升门禁或生产批准路径。八项晋升门禁、所有者显式确认、Stable 跨入口
+复用、共享经验与既有持久化数据语义保持不变。
 
-- **ACP 发起的 Desktop 自我进化任务通道（未发布）。** 新增两个可选 bundle entry：
+### 新增
+
+- **官方宿主 DSH `0.2.2-rc.2`。** 以本机实际安装的 Desktop `0.2.2-rc.2`（Electron 44.7.0 /
+  Node 24.21.0）为适配目标，对比官方 `0.2.2-rc.1` -> `0.2.2-rc.2` 的包内容后只扩展已验证的
+  精确版本声明：Cordis `4.1.0`、`cordis-plugin-include` / `cordis-plugin-loader` `1.1.0`
+  与 runtime 包逐字节相同；`dsh-hmr` 也逐字节相同，因此与 `0.2.2-rc.1` 一样只验收关闭宿主
+  HMR 的部署形态。`dsh-tools` 的 guard 拒绝值改为结构化 `{ reason }`（字符串拒绝仍被包装）、
+  `dsh-agent` 移除未被本 bundle 使用的 `parentAgent` / `ownerAgent` / `isOwnedBy` / `roots`，
+  `dsh-agent-loop` 只调整 runtime-context 框架；验收探针移除了已删除的 `parentAgent` 参数。
+  证据：`docs/evidence/dsh-0.2.2-rc.2.json`（25 步，含经验驱动 phase）、
+  `docs/evidence/cross-entry-0.2.2-rc.2.json`（31 步跨入口验收）与
+  `docs/evidence/desktop-version-detection-0.2.2-rc.2.json`（真实 Desktop 版本解析）。
+- **ACP 发起的 Desktop 自我进化任务通道。** 新增两个可选 bundle entry：
   `dsh-evolution/desktop-task-host`（安装器只在 `desktop` profile 启用）与
   `dsh-evolution/desktop-task-client`（只在 `acp` profile 启用）。ACP 会话里的
   `evolution_desktop` 工具把自然语言任务整理成受校验的进化计划并写入

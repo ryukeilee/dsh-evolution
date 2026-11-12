@@ -1,41 +1,35 @@
 {
   "host": "0.2.2-rc.1",
-  "packageVersion": "0.2.5",
-  "tarball": "dist/dsh-evolution-0.2.5.tgz",
-  "tarballSha256": "d4a90e26c19fb36bc4b3b0a2b4ecbb0fc589b1eededc75a2417fdc74aa636492",
-  "contentSha256": "db9fafaf89d50b49e9a8df102e637e5484e16cd52f0190072de95bb4d2122e9e",
+  "packageVersion": "0.2.7",
+  "tarball": "dist/dsh-evolution-0.2.7.tgz",
+  "tarballSha256": "e90d731faf0fdb29befb11f9b9b7ceaa49a1b12c5207faf27abb03eb24931b9b",
+  "contentSha256": "122b42526187bf0d76d2222621715f530fb672c654915f99be19f9baa532a8fc",
   "node": "v26.13.0",
   "platform": "darwin-arm64",
   "work": "<work>",
   "hostLiveApply": "disabled",
-  "startedAt": "2026-11-11T16:53:56.509Z",
+  "startedAt": "2026-11-12T14:48:18.285Z",
   "steps": [
     {
       "name": "host-install",
-      "at": "2026-11-11T16:53:59.759Z",
+      "at": "2026-11-12T14:48:18.287Z",
       "ok": true,
-      "code": 0,
-      "tail": [
-        "│   to run scripts.                                                            │",
-        "│                                                                              │",
-        "╰──────────────────────────────────────────────────────────────────────────────╯",
-        "Done in 3.1s using pnpm v11.26.0"
-      ]
+      "reused": true
     },
     {
       "name": "plugin-add",
-      "at": "2026-11-11T16:54:00.529Z",
+      "at": "2026-11-12T14:48:19.010Z",
       "ok": true,
       "code": 0,
       "tail": [
         "  Virtual store is at:             node_modules/.pnpm",
         "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
-        "Done in 445ms using pnpm v11.26.0"
+        "Done in 442ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "profile-lists-bundle",
-      "at": "2026-11-11T16:54:00.529Z",
+      "at": "2026-11-12T14:48:19.010Z",
       "ok": true,
       "bundles": [
         "@deepseek-ai/dsh-base",
@@ -45,7 +39,7 @@
     },
     {
       "name": "doctor-cli",
-      "at": "2026-11-11T16:54:00.863Z",
+      "at": "2026-11-12T14:48:19.338Z",
       "ok": true,
       "status": "degraded",
       "exitCode": 1,
@@ -56,7 +50,7 @@
     },
     {
       "name": "core-flow",
-      "at": "2026-11-11T16:54:05.674Z",
+      "at": "2026-11-12T14:48:22.065Z",
       "ok": true,
       "toolCount": 12,
       "tools": [
@@ -146,7 +140,7 @@
     },
     {
       "name": "lifecycle-verify",
-      "at": "2026-11-11T16:54:07.198Z",
+      "at": "2026-11-12T14:48:23.377Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -163,7 +157,7 @@
     },
     {
       "name": "lifecycle-disable",
-      "at": "2026-11-11T16:54:08.596Z",
+      "at": "2026-11-12T14:48:24.694Z",
       "ok": true,
       "result": {
         "action": "disable",
@@ -180,7 +174,7 @@
     },
     {
       "name": "lifecycle-enable",
-      "at": "2026-11-11T16:54:10.009Z",
+      "at": "2026-11-12T14:48:25.995Z",
       "ok": true,
       "result": {
         "action": "enable",
@@ -197,7 +191,7 @@
     },
     {
       "name": "lifecycle-verify",
-      "at": "2026-11-11T16:54:11.439Z",
+      "at": "2026-11-12T14:48:27.301Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -214,18 +208,18 @@
     },
     {
       "name": "plugin-remove",
-      "at": "2026-11-11T16:54:11.966Z",
+      "at": "2026-11-12T14:48:27.838Z",
       "ok": true,
       "code": 0,
       "tail": [
         "",
         "Already up to date",
-        "Done in 250ms using pnpm v11.26.0"
+        "Done in 261ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "body-after-uninstall",
-      "at": "2026-11-11T16:54:13.373Z",
+      "at": "2026-11-12T14:48:29.241Z",
       "ok": true,
       "result": {
         "bodyOk": true,
@@ -235,18 +229,18 @@
     },
     {
       "name": "plugin-reinstall",
-      "at": "2026-11-11T16:54:14.110Z",
+      "at": "2026-11-12T14:48:29.978Z",
       "ok": true,
       "code": 0,
       "tail": [
         "  Virtual store is at:             node_modules/.pnpm",
         "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
-        "Done in 441ms using pnpm v11.26.0"
+        "Done in 434ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "core-flow-after-reinstall",
-      "at": "2026-11-11T16:54:16.500Z",
+      "at": "2026-11-12T14:48:32.659Z",
       "ok": true,
       "toolCount": 12,
       "reverted": true,
@@ -257,19 +251,19 @@
     },
     {
       "name": "cli-upgrade",
-      "at": "2026-11-11T16:54:17.537Z",
+      "at": "2026-11-12T14:48:33.694Z",
       "ok": true,
       "code": 0,
-      "installedVersion": "0.2.6",
+      "installedVersion": "0.2.8",
       "tail": [
         "+",
         "Progress: resolved 5, reused 1, downloaded 1, added 1, done",
-        "Done in 334ms using pnpm v11.26.0"
+        "Done in 331ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "host-after-upgrade",
-      "at": "2026-11-11T16:54:18.920Z",
+      "at": "2026-11-12T14:48:35.052Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -286,19 +280,19 @@
     },
     {
       "name": "cli-rollback",
-      "at": "2026-11-11T16:54:19.490Z",
+      "at": "2026-11-12T14:48:35.654Z",
       "ok": true,
       "code": 0,
-      "installedVersion": "0.2.5",
+      "installedVersion": "0.2.7",
       "tail": [
         "+",
         "Progress: resolved 5, reused 2, downloaded 0, added 1, done",
-        "Done in 296ms using pnpm v11.26.0"
+        "Done in 318ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "host-after-rollback",
-      "at": "2026-11-11T16:54:20.825Z",
+      "at": "2026-11-12T14:48:36.967Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -315,7 +309,7 @@
     },
     {
       "name": "promotion-promote",
-      "at": "2026-11-11T16:54:23.199Z",
+      "at": "2026-11-12T14:48:39.615Z",
       "ok": true,
       "steps": [
         {
@@ -362,21 +356,21 @@
         }
       ],
       "committed": {
-        "pluginName": "dsh-evolution-promoted-4b5ecf18d07d",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-4b5ecf18d07d",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-4b5ecf18d07d/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-def6bd7cfff0",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-def6bd7cfff0",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-def6bd7cfff0/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-4b5ecf18d07d",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwcczrh1-1-1d461396.md",
+        "rowId": "evolution-promoted-def6bd7cfff0",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwdnxxgf-1-4616c91b.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-11T16:54:23.074Z",
+        "promotionTimestamp": "2026-11-12T14:48:39.475Z",
         "healthObservationWindow": 2
       }
     },
     {
       "name": "promotion-restart-and-rollback",
-      "at": "2026-11-11T16:54:25.728Z",
+      "at": "2026-11-12T14:48:42.188Z",
       "ok": true,
       "steps": [
         {
@@ -428,21 +422,21 @@
       ],
       "startupPhase": "stable",
       "rolledBack": {
-        "pluginName": "dsh-evolution-promoted-48a460364b30",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-48a460364b30",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-48a460364b30/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-9f50d292e989",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-9f50d292e989",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-9f50d292e989/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-48a460364b30",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwccztds-1-e09189fd.md",
+        "rowId": "evolution-promoted-9f50d292e989",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwdnxze1-1-673c38a5.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-11T16:54:25.557Z",
+        "promotionTimestamp": "2026-11-12T14:48:41.976Z",
         "healthObservationWindow": 2
       }
     },
     {
       "name": "promotion-verify",
-      "at": "2026-11-11T16:54:26.755Z",
+      "at": "2026-11-12T14:48:43.231Z",
       "ok": true,
       "steps": [
         {
@@ -453,20 +447,20 @@
     },
     {
       "name": "cross-entry-publish",
-      "at": "2026-11-11T16:54:32.076Z",
+      "at": "2026-11-12T14:48:48.503Z",
       "ok": true,
       "ids": {
-        "stable": "evolution-promoted-bde6d681b3bf",
-        "desktopOnly": "evolution-promoted-64c975dd26ac",
-        "incompatible": "evolution-promoted-46e9d6f7c571"
+        "stable": "evolution-promoted-d4224f416e0a",
+        "desktopOnly": "evolution-promoted-ccbc0d4aa7e9",
+        "incompatible": "evolution-promoted-ed66b12672c7"
       },
       "approvedProfiles": [
         "acp",
         "web"
       ],
       "stable": {
-        "committedAt": "2026-11-11T16:54:29.143Z",
-        "promotionTimestamp": "2026-11-11T16:54:29.011Z",
+        "committedAt": "2026-11-12T14:48:45.622Z",
+        "promotionTimestamp": "2026-11-12T14:48:45.495Z",
         "decision": "benefit",
         "canary": {
           "healthObservationWindow": 2,
@@ -478,7 +472,7 @@
       "incompatibleRequiredServices": [
         "evolution"
       ],
-      "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
+      "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
       "services": {
         "evolution": true,
         "dynamicCordisRunner": true,
@@ -487,34 +481,34 @@
     },
     {
       "name": "cross-entry-consumer",
-      "at": "2026-11-11T16:54:33.169Z",
+      "at": "2026-11-12T14:48:49.672Z",
       "ok": true,
       "profile": "web",
       "kernelPresent": false,
       "evolutionTools": 0,
-      "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-      "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
+      "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+      "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
       "rows": [
         {
-          "id": "evolution-promoted-bde6d681b3bf",
+          "id": "evolution-promoted-d4224f416e0a",
           "status": "active",
           "reason": null,
-          "activatedAt": "2026-11-11T16:54:33.046Z",
-          "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+          "activatedAt": "2026-11-12T14:48:49.513Z",
+          "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         },
         {
-          "id": "evolution-promoted-46e9d6f7c571",
+          "id": "evolution-promoted-ed66b12672c7",
           "status": "skipped-incompatible",
           "reason": "missing-service",
           "activatedAt": null,
-          "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+          "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         }
       ],
       "markerHits": {
-        "evolution-promoted-bde6d681b3bf": 1,
-        "evolution-promoted-46e9d6f7c571": 0
+        "evolution-promoted-d4224f416e0a": 1,
+        "evolution-promoted-ed66b12672c7": 0
       },
       "services": {
         "evolution": false,
@@ -525,87 +519,87 @@
     },
     {
       "name": "cross-entry-consumer-restart",
-      "at": "2026-11-11T16:54:34.250Z",
+      "at": "2026-11-12T14:48:50.883Z",
       "ok": true,
       "rows": [
         {
-          "id": "evolution-promoted-bde6d681b3bf",
+          "id": "evolution-promoted-d4224f416e0a",
           "status": "active",
           "reason": null,
-          "activatedAt": "2026-11-11T16:54:34.122Z",
-          "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+          "activatedAt": "2026-11-12T14:48:50.767Z",
+          "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         },
         {
-          "id": "evolution-promoted-46e9d6f7c571",
+          "id": "evolution-promoted-ed66b12672c7",
           "status": "skipped-incompatible",
           "reason": "missing-service",
           "activatedAt": null,
-          "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+          "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         }
       ],
       "markerHits": {
-        "evolution-promoted-bde6d681b3bf": 1,
-        "evolution-promoted-46e9d6f7c571": 0
+        "evolution-promoted-d4224f416e0a": 1,
+        "evolution-promoted-ed66b12672c7": 0
       },
-      "firstActivatedAt": "2026-11-11T16:54:33.046Z",
-      "secondActivatedAt": "2026-11-11T16:54:34.122Z"
+      "firstActivatedAt": "2026-11-12T14:48:49.513Z",
+      "secondActivatedAt": "2026-11-12T14:48:50.767Z"
     },
     {
       "name": "cross-entry-consumer-kernel",
-      "at": "2026-11-11T16:54:35.357Z",
+      "at": "2026-11-12T14:48:52.056Z",
       "ok": true,
       "kernelPresent": true,
       "evolutionTools": 12,
       "rows": [
         {
-          "id": "evolution-promoted-bde6d681b3bf",
+          "id": "evolution-promoted-d4224f416e0a",
           "status": "disabled",
           "reason": "publisher-profile",
           "activatedAt": null,
-          "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+          "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         },
         {
-          "id": "evolution-promoted-46e9d6f7c571",
+          "id": "evolution-promoted-ed66b12672c7",
           "status": "disabled",
           "reason": "publisher-profile",
           "activatedAt": null,
-          "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+          "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         }
       ],
       "markerHits": {
-        "evolution-promoted-bde6d681b3bf": 1
+        "evolution-promoted-d4224f416e0a": 1
       }
     },
     {
       "name": "cross-entry-tampered-source",
-      "at": "2026-11-11T16:54:36.441Z",
+      "at": "2026-11-12T14:48:53.340Z",
       "ok": true,
       "rows": [
         {
-          "id": "evolution-promoted-bde6d681b3bf",
+          "id": "evolution-promoted-d4224f416e0a",
           "status": "skipped-invalid",
           "reason": "source-digest-mismatch",
           "activatedAt": null,
-          "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+          "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         },
         {
-          "id": "evolution-promoted-46e9d6f7c571",
+          "id": "evolution-promoted-ed66b12672c7",
           "status": "skipped-incompatible",
           "reason": "missing-service",
           "activatedAt": null,
-          "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+          "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         }
       ]
     },
     {
       "name": "cross-entry-revoke",
-      "at": "2026-11-11T16:54:37.650Z",
+      "at": "2026-11-12T14:48:55.040Z",
       "ok": true,
       "code": 0,
       "tail": [
@@ -616,7 +610,7 @@
     },
     {
       "name": "cross-entry-enable",
-      "at": "2026-11-11T16:54:38.856Z",
+      "at": "2026-11-12T14:48:56.458Z",
       "ok": true,
       "code": 0,
       "tail": [
@@ -627,68 +621,68 @@
     },
     {
       "name": "cross-entry-revalidation",
-      "at": "2026-11-11T16:54:41.022Z",
+      "at": "2026-11-12T14:48:58.731Z",
       "ok": true,
       "rows": [
         {
-          "id": "evolution-promoted-bde6d681b3bf",
+          "id": "evolution-promoted-d4224f416e0a",
           "status": "pending-revalidation",
           "reason": "host-version-mismatch",
           "activatedAt": null,
-          "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+          "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         },
         {
-          "id": "evolution-promoted-46e9d6f7c571",
+          "id": "evolution-promoted-ed66b12672c7",
           "status": "skipped-incompatible",
           "reason": "missing-service",
           "activatedAt": null,
-          "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+          "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         }
       ]
     },
     {
       "name": "cross-entry-acp-install",
-      "at": "2026-11-11T16:54:42.805Z",
+      "at": "2026-11-12T14:49:00.588Z",
       "ok": true,
       "code": 0,
       "tail": [
         "  Virtual store is at:             node_modules/.pnpm",
         "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
-        "Done in 417ms using pnpm v11.26.0"
+        "Done in 460ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "cross-entry-acp-consumer",
-      "at": "2026-11-11T16:54:45.478Z",
+      "at": "2026-11-12T14:49:02.849Z",
       "ok": true,
       "profile": "acp",
       "kernelPresent": false,
       "evolutionTools": 0,
-      "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-      "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
+      "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+      "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
       "rows": [
         {
-          "id": "evolution-promoted-bde6d681b3bf",
+          "id": "evolution-promoted-d4224f416e0a",
           "status": "active",
           "reason": null,
-          "activatedAt": "2026-11-11T16:54:43.856Z",
-          "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+          "activatedAt": "2026-11-12T14:49:01.334Z",
+          "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         },
         {
-          "id": "evolution-promoted-46e9d6f7c571",
+          "id": "evolution-promoted-ed66b12672c7",
           "status": "skipped-incompatible",
           "reason": "missing-service",
           "activatedAt": null,
-          "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+          "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
           "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
         }
       ],
       "markerHits": {
-        "evolution-promoted-bde6d681b3bf": 1,
-        "evolution-promoted-46e9d6f7c571": 0
+        "evolution-promoted-d4224f416e0a": 1,
+        "evolution-promoted-ed66b12672c7": 0
       },
       "services": {
         "evolution": false,
@@ -699,7 +693,7 @@
     },
     {
       "name": "doctor-final",
-      "at": "2026-11-11T16:54:45.786Z",
+      "at": "2026-11-12T14:49:03.156Z",
       "ok": true,
       "status": "healthy",
       "exitCode": 0,
@@ -870,29 +864,29 @@
       }
     ]
   },
-  "memoryShaAfterCore": "6e0a08a0f02befb0b96fa75bf972c7c6be1fb119e94437ed1216182af5c3dc81",
-  "memoryShaBeforeUninstall": "6e0a08a0f02befb0b96fa75bf972c7c6be1fb119e94437ed1216182af5c3dc81",
+  "memoryShaAfterCore": "c55e93be77837327d263dee4a2c483438f0f4d5914b9a489943ae2f3e230e460",
+  "memoryShaBeforeUninstall": "c55e93be77837327d263dee4a2c483438f0f4d5914b9a489943ae2f3e230e460",
   "memoryEntriesAtUninstall": 1,
   "memoryEntriesAfterReinstall": 1,
-  "memoryShaAfterReinstall": "83707d401b391497d7cc4667dea30be38b7df6a2285bf0d905d3624a4ddf172d",
+  "memoryShaAfterReinstall": "48f65c289c6fdd7d0ef37d9cc60b1645f7271fb2f85f3217c872b349dce30c68",
   "upgradeRollback": {
-    "from": "0.2.5",
-    "to": "0.2.6",
+    "from": "0.2.7",
+    "to": "0.2.8",
     "preservedUserData": true
   },
   "promotion": {
     "promote": {
       "ok": true,
       "committed": {
-        "pluginName": "dsh-evolution-promoted-4b5ecf18d07d",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-4b5ecf18d07d",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-4b5ecf18d07d/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-def6bd7cfff0",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-def6bd7cfff0",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-def6bd7cfff0/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-4b5ecf18d07d",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwcczrh1-1-1d461396.md",
+        "rowId": "evolution-promoted-def6bd7cfff0",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwdnxxgf-1-4616c91b.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-11T16:54:23.074Z",
+        "promotionTimestamp": "2026-11-12T14:48:39.475Z",
         "healthObservationWindow": 2
       }
     },
@@ -900,15 +894,15 @@
       "ok": true,
       "startupPhase": "stable",
       "rolledBack": {
-        "pluginName": "dsh-evolution-promoted-48a460364b30",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-48a460364b30",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-48a460364b30/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-9f50d292e989",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-9f50d292e989",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-9f50d292e989/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-48a460364b30",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwccztds-1-e09189fd.md",
+        "rowId": "evolution-promoted-9f50d292e989",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwdnxze1-1-673c38a5.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-11T16:54:25.557Z",
+        "promotionTimestamp": "2026-11-12T14:48:41.976Z",
         "healthObservationWindow": 2
       }
     },
@@ -925,19 +919,19 @@
     },
     "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
     "index": {
-      "updatedAt": "2026-11-11T16:54:32.053Z",
-      "digest": "f952975aa774bec4fc9fc5dc7371b70487c53f104ad28e7936c8e3134eac2b60",
+      "updatedAt": "2026-11-12T14:48:48.478Z",
+      "digest": "0a6641c4c9f5308fc256a2e5cf99aec14b88a5e0aba7a67abdf1078957c150d1",
       "records": [
         {
-          "id": "evolution-promoted-bde6d681b3bf",
+          "id": "evolution-promoted-d4224f416e0a",
           "approvedProfiles": [
             "acp",
             "web"
           ],
-          "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+          "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
           "stable": {
-            "committedAt": "2026-11-11T16:54:29.143Z",
-            "promotionTimestamp": "2026-11-11T16:54:29.011Z",
+            "committedAt": "2026-11-12T14:48:45.622Z",
+            "promotionTimestamp": "2026-11-12T14:48:45.495Z",
             "decision": "benefit",
             "canary": {
               "healthObservationWindow": 2,
@@ -950,19 +944,19 @@
             "cordis": "4.1.0",
             "include": "1.1.0",
             "node": "v26.13.0",
-            "verifiedAt": "2026-11-11T16:54:28.994Z"
+            "verifiedAt": "2026-11-12T14:48:45.477Z"
           }
         },
         {
-          "id": "evolution-promoted-46e9d6f7c571",
+          "id": "evolution-promoted-ed66b12672c7",
           "approvedProfiles": [
             "acp",
             "web"
           ],
-          "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+          "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
           "stable": {
-            "committedAt": "2026-11-11T16:54:31.995Z",
-            "promotionTimestamp": "2026-11-11T16:54:31.871Z",
+            "committedAt": "2026-11-12T14:48:48.423Z",
+            "promotionTimestamp": "2026-11-12T14:48:48.304Z",
             "decision": "benefit",
             "canary": {
               "healthObservationWindow": 2,
@@ -975,7 +969,7 @@
             "cordis": "4.1.0",
             "include": "1.1.0",
             "node": "v26.13.0",
-            "verifiedAt": "2026-11-11T16:54:31.857Z"
+            "verifiedAt": "2026-11-12T14:48:48.288Z"
           }
         }
       ]
@@ -1144,13 +1138,13 @@
       },
       "candidates": {
         "stable": {
-          "experimentId": "exp-mwcczw1s-1-32a38c8d",
-          "id": "evolution-promoted-bde6d681b3bf",
-          "pluginName": "dsh-evolution-promoted-bde6d681b3bf",
+          "experimentId": "exp-mwdny23g-1-c5b10626",
+          "id": "evolution-promoted-d4224f416e0a",
+          "pluginName": "dsh-evolution-promoted-d4224f416e0a",
           "trialPluginName": "cross_entry_probe_stable",
-          "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-bde6d681b3bf/lib/index.js",
-          "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
-          "manifestSha256": "84fb58f74f712440611b7edf18a2a4ac73ad4774a06453d3ca6a3b2b32db2aa7",
+          "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-d4224f416e0a/lib/index.js",
+          "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
+          "manifestSha256": "6e52d2602301620fbadd05064600729454ce90e387e51f8d02c44eabc74c78ae",
           "approvedProfiles": [
             "acp",
             "web"
@@ -1166,11 +1160,11 @@
             "cordis": "4.1.0",
             "include": "1.1.0",
             "node": "v26.13.0",
-            "verifiedAt": "2026-11-11T16:54:28.994Z"
+            "verifiedAt": "2026-11-12T14:48:45.477Z"
           },
           "stable": {
-            "committedAt": "2026-11-11T16:54:29.143Z",
-            "promotionTimestamp": "2026-11-11T16:54:29.011Z",
+            "committedAt": "2026-11-12T14:48:45.622Z",
+            "promotionTimestamp": "2026-11-12T14:48:45.495Z",
             "decision": "benefit",
             "canary": {
               "healthObservationWindow": 2,
@@ -1191,9 +1185,9 @@
           "sharedStatus": "published"
         },
         "desktopOnly": {
-          "experimentId": "exp-mwcczx5r-2-7e14bf0e",
-          "id": "evolution-promoted-64c975dd26ac",
-          "pluginName": "dsh-evolution-promoted-64c975dd26ac",
+          "experimentId": "exp-mwdny377-2-02ff7b72",
+          "id": "evolution-promoted-ccbc0d4aa7e9",
+          "pluginName": "dsh-evolution-promoted-ccbc0d4aa7e9",
           "trialPluginName": "cross_entry_probe_desktop-only",
           "marker": "cross-entry/probe/desktop-only",
           "hits": {
@@ -1204,13 +1198,13 @@
           "published": false
         },
         "incompatible": {
-          "experimentId": "exp-mwcczy9c-3-68c4a278",
-          "id": "evolution-promoted-46e9d6f7c571",
-          "pluginName": "dsh-evolution-promoted-46e9d6f7c571",
+          "experimentId": "exp-mwdny49z-3-30cee050",
+          "id": "evolution-promoted-ed66b12672c7",
+          "pluginName": "dsh-evolution-promoted-ed66b12672c7",
           "trialPluginName": "cross_entry_probe_incompatible",
-          "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-46e9d6f7c571/lib/index.js",
-          "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
-          "manifestSha256": "f8ae133ee2a5bea8862c2cde1a65b49c81de30b435b88173049e88115da43f4b",
+          "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-ed66b12672c7/lib/index.js",
+          "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
+          "manifestSha256": "1071426b76fbdf6fd7cc7d3ef17bfc824ed32543bef93c1a09a30d0d5cffef57",
           "approvedProfiles": [
             "acp",
             "web"
@@ -1228,11 +1222,11 @@
             "cordis": "4.1.0",
             "include": "1.1.0",
             "node": "v26.13.0",
-            "verifiedAt": "2026-11-11T16:54:31.857Z"
+            "verifiedAt": "2026-11-12T14:48:48.288Z"
           },
           "stable": {
-            "committedAt": "2026-11-11T16:54:31.995Z",
-            "promotionTimestamp": "2026-11-11T16:54:31.871Z",
+            "committedAt": "2026-11-12T14:48:48.423Z",
+            "promotionTimestamp": "2026-11-12T14:48:48.304Z",
             "decision": "benefit",
             "canary": {
               "healthObservationWindow": 2,
@@ -1260,14 +1254,14 @@
         "dataRoot": "$DSH_HOME/storages/evolution",
         "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
         "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
-        "startedAt": "2026-11-11T16:54:33.000Z",
-        "consumerStateUpdatedAt": "2026-11-11T16:54:33.046Z",
-        "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexDigest": "f952975aa774bec4fc9fc5dc7371b70487c53f104ad28e7936c8e3134eac2b60",
+        "startedAt": "2026-11-12T14:48:49.454Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:49.513Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexDigest": "0a6641c4c9f5308fc256a2e5cf99aec14b88a5e0aba7a67abdf1078957c150d1",
         "publishedIds": [
-          "evolution-promoted-bde6d681b3bf",
-          "evolution-promoted-46e9d6f7c571"
+          "evolution-promoted-d4224f416e0a",
+          "evolution-promoted-ed66b12672c7"
         ],
         "kernelPresent": false,
         "evolutionTools": 0,
@@ -1288,39 +1282,39 @@
         },
         "rows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:33.046Z",
-            "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+            "activatedAt": "2026-11-12T14:48:49.513Z",
+            "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null,
-            "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+            "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           }
         ],
         "markerHits": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "markerListeners": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "consumerRows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:33.046Z"
+            "activatedAt": "2026-11-12T14:48:49.513Z"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null
@@ -1332,14 +1326,14 @@
         "dataRoot": "$DSH_HOME/storages/evolution",
         "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
         "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
-        "startedAt": "2026-11-11T16:54:34.082Z",
-        "consumerStateUpdatedAt": "2026-11-11T16:54:34.122Z",
-        "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexDigest": "f952975aa774bec4fc9fc5dc7371b70487c53f104ad28e7936c8e3134eac2b60",
+        "startedAt": "2026-11-12T14:48:50.711Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:50.767Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexDigest": "0a6641c4c9f5308fc256a2e5cf99aec14b88a5e0aba7a67abdf1078957c150d1",
         "publishedIds": [
-          "evolution-promoted-bde6d681b3bf",
-          "evolution-promoted-46e9d6f7c571"
+          "evolution-promoted-d4224f416e0a",
+          "evolution-promoted-ed66b12672c7"
         ],
         "kernelPresent": false,
         "evolutionTools": 0,
@@ -1360,39 +1354,39 @@
         },
         "rows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:34.122Z",
-            "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+            "activatedAt": "2026-11-12T14:48:50.767Z",
+            "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null,
-            "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+            "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           }
         ],
         "markerHits": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "markerListeners": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "consumerRows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:34.122Z"
+            "activatedAt": "2026-11-12T14:48:50.767Z"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null
@@ -1404,14 +1398,14 @@
         "dataRoot": "$DSH_HOME/storages/evolution",
         "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
         "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
-        "startedAt": "2026-11-11T16:54:35.189Z",
-        "consumerStateUpdatedAt": "2026-11-11T16:54:35.250Z",
-        "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexDigest": "f952975aa774bec4fc9fc5dc7371b70487c53f104ad28e7936c8e3134eac2b60",
+        "startedAt": "2026-11-12T14:48:51.879Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:51.946Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexDigest": "0a6641c4c9f5308fc256a2e5cf99aec14b88a5e0aba7a67abdf1078957c150d1",
         "publishedIds": [
-          "evolution-promoted-bde6d681b3bf",
-          "evolution-promoted-46e9d6f7c571"
+          "evolution-promoted-d4224f416e0a",
+          "evolution-promoted-ed66b12672c7"
         ],
         "kernelPresent": true,
         "evolutionTools": 12,
@@ -1457,37 +1451,37 @@
         },
         "rows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "disabled",
             "reason": "publisher-profile",
             "activatedAt": null,
-            "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+            "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "disabled",
             "reason": "publisher-profile",
             "activatedAt": null,
-            "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+            "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           }
         ],
         "markerHits": {
-          "evolution-promoted-bde6d681b3bf": 1
+          "evolution-promoted-d4224f416e0a": 1
         },
         "markerListeners": {
-          "evolution-promoted-bde6d681b3bf": 1
+          "evolution-promoted-d4224f416e0a": 1
         },
         "consumerRows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "disabled",
             "reason": "publisher-profile",
             "activatedAt": null
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "disabled",
             "reason": "publisher-profile",
             "activatedAt": null
@@ -1499,14 +1493,14 @@
         "dataRoot": "$DSH_HOME/storages/evolution",
         "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
         "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
-        "startedAt": "2026-11-11T16:54:36.273Z",
-        "consumerStateUpdatedAt": "2026-11-11T16:54:36.318Z",
-        "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexDigest": "f952975aa774bec4fc9fc5dc7371b70487c53f104ad28e7936c8e3134eac2b60",
+        "startedAt": "2026-11-12T14:48:53.168Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:53.224Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexDigest": "0a6641c4c9f5308fc256a2e5cf99aec14b88a5e0aba7a67abdf1078957c150d1",
         "publishedIds": [
-          "evolution-promoted-bde6d681b3bf",
-          "evolution-promoted-46e9d6f7c571"
+          "evolution-promoted-d4224f416e0a",
+          "evolution-promoted-ed66b12672c7"
         ],
         "kernelPresent": false,
         "evolutionTools": 0,
@@ -1527,19 +1521,19 @@
         },
         "rows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "skipped-invalid",
             "reason": "source-digest-mismatch",
             "activatedAt": null,
-            "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+            "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null,
-            "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+            "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           }
         ],
@@ -1547,13 +1541,13 @@
         "markerListeners": {},
         "consumerRows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "skipped-invalid",
             "reason": "source-digest-mismatch",
             "activatedAt": null
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null
@@ -1565,14 +1559,14 @@
         "dataRoot": "$DSH_HOME/storages/evolution",
         "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
         "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
-        "startedAt": "2026-11-11T16:54:37.356Z",
-        "consumerStateUpdatedAt": "2026-11-11T16:54:37.402Z",
-        "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexDigest": "f952975aa774bec4fc9fc5dc7371b70487c53f104ad28e7936c8e3134eac2b60",
+        "startedAt": "2026-11-12T14:48:54.729Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:54.783Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexDigest": "0a6641c4c9f5308fc256a2e5cf99aec14b88a5e0aba7a67abdf1078957c150d1",
         "publishedIds": [
-          "evolution-promoted-bde6d681b3bf",
-          "evolution-promoted-46e9d6f7c571"
+          "evolution-promoted-d4224f416e0a",
+          "evolution-promoted-ed66b12672c7"
         ],
         "kernelPresent": false,
         "evolutionTools": 0,
@@ -1593,39 +1587,39 @@
         },
         "rows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:37.401Z",
-            "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+            "activatedAt": "2026-11-12T14:48:54.782Z",
+            "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null,
-            "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+            "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           }
         ],
         "markerHits": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "markerListeners": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "consumerRows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:37.401Z"
+            "activatedAt": "2026-11-12T14:48:54.782Z"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null
@@ -1637,14 +1631,14 @@
         "dataRoot": "$DSH_HOME/storages/evolution",
         "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
         "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
-        "startedAt": "2026-11-11T16:54:38.562Z",
-        "consumerStateUpdatedAt": "2026-11-11T16:54:38.607Z",
-        "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexDigest": "f952975aa774bec4fc9fc5dc7371b70487c53f104ad28e7936c8e3134eac2b60",
+        "startedAt": "2026-11-12T14:48:56.154Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:56.202Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexDigest": "0a6641c4c9f5308fc256a2e5cf99aec14b88a5e0aba7a67abdf1078957c150d1",
         "publishedIds": [
-          "evolution-promoted-bde6d681b3bf",
-          "evolution-promoted-46e9d6f7c571"
+          "evolution-promoted-d4224f416e0a",
+          "evolution-promoted-ed66b12672c7"
         ],
         "kernelPresent": false,
         "evolutionTools": 0,
@@ -1665,19 +1659,19 @@
         },
         "rows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "disabled",
             "reason": "operator-disabled",
             "activatedAt": null,
-            "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+            "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null,
-            "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+            "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           }
         ],
@@ -1685,13 +1679,13 @@
         "markerListeners": {},
         "consumerRows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "disabled",
             "reason": "operator-disabled",
             "activatedAt": null
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null
@@ -1703,14 +1697,14 @@
         "dataRoot": "$DSH_HOME/storages/evolution",
         "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
         "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
-        "startedAt": "2026-11-11T16:54:39.770Z",
-        "consumerStateUpdatedAt": "2026-11-11T16:54:39.816Z",
-        "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexDigest": "f952975aa774bec4fc9fc5dc7371b70487c53f104ad28e7936c8e3134eac2b60",
+        "startedAt": "2026-11-12T14:48:57.405Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:57.455Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexDigest": "0a6641c4c9f5308fc256a2e5cf99aec14b88a5e0aba7a67abdf1078957c150d1",
         "publishedIds": [
-          "evolution-promoted-bde6d681b3bf",
-          "evolution-promoted-46e9d6f7c571"
+          "evolution-promoted-d4224f416e0a",
+          "evolution-promoted-ed66b12672c7"
         ],
         "kernelPresent": false,
         "evolutionTools": 0,
@@ -1731,39 +1725,39 @@
         },
         "rows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:39.816Z",
-            "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+            "activatedAt": "2026-11-12T14:48:57.455Z",
+            "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null,
-            "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+            "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           }
         ],
         "markerHits": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "markerListeners": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "consumerRows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:39.816Z"
+            "activatedAt": "2026-11-12T14:48:57.455Z"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null
@@ -1775,14 +1769,14 @@
         "dataRoot": "$DSH_HOME/storages/evolution",
         "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
         "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
-        "startedAt": "2026-11-11T16:54:40.853Z",
-        "consumerStateUpdatedAt": "2026-11-11T16:54:40.893Z",
-        "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexDigest": "9421c2d32ca7126e1e01808ffe3bc19dd27a8f2b884a7da07aaf0543b3ebefbf",
+        "startedAt": "2026-11-12T14:48:58.558Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:58.611Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexDigest": "2c0755af5ca19f7a4b7fe5c34d38865e123414db83ff7c1a7499dbdddbf2dd83",
         "publishedIds": [
-          "evolution-promoted-bde6d681b3bf",
-          "evolution-promoted-46e9d6f7c571"
+          "evolution-promoted-d4224f416e0a",
+          "evolution-promoted-ed66b12672c7"
         ],
         "kernelPresent": false,
         "evolutionTools": 0,
@@ -1803,19 +1797,19 @@
         },
         "rows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "pending-revalidation",
             "reason": "host-version-mismatch",
             "activatedAt": null,
-            "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+            "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null,
-            "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+            "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           }
         ],
@@ -1823,13 +1817,13 @@
         "markerListeners": {},
         "consumerRows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "pending-revalidation",
             "reason": "host-version-mismatch",
             "activatedAt": null
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null
@@ -1841,14 +1835,14 @@
         "dataRoot": "$DSH_HOME/storages/evolution",
         "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
         "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
-        "startedAt": "2026-11-11T16:54:41.944Z",
-        "consumerStateUpdatedAt": "2026-11-11T16:54:41.987Z",
-        "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexDigest": "f952975aa774bec4fc9fc5dc7371b70487c53f104ad28e7936c8e3134eac2b60",
+        "startedAt": "2026-11-12T14:48:59.673Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:59.723Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexDigest": "0a6641c4c9f5308fc256a2e5cf99aec14b88a5e0aba7a67abdf1078957c150d1",
         "publishedIds": [
-          "evolution-promoted-bde6d681b3bf",
-          "evolution-promoted-46e9d6f7c571"
+          "evolution-promoted-d4224f416e0a",
+          "evolution-promoted-ed66b12672c7"
         ],
         "kernelPresent": false,
         "evolutionTools": 0,
@@ -1869,39 +1863,39 @@
         },
         "rows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:41.987Z",
-            "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+            "activatedAt": "2026-11-12T14:48:59.723Z",
+            "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null,
-            "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+            "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           }
         ],
         "markerHits": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "markerListeners": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "consumerRows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:41.987Z"
+            "activatedAt": "2026-11-12T14:48:59.723Z"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null
@@ -1912,51 +1906,51 @@
     "preserved": {
       "promotedSources": {
         "stable": {
-          "path": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-bde6d681b3bf/lib/index.js",
-          "sha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67"
+          "path": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-d4224f416e0a/lib/index.js",
+          "sha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1"
         },
         "incompatible": {
-          "path": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-46e9d6f7c571/lib/index.js",
-          "sha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a"
+          "path": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-ed66b12672c7/lib/index.js",
+          "sha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f"
         },
         "desktopOnly": {
-          "path": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-64c975dd26ac/lib/index.js",
-          "sha256": "ac4eaaecdfc4699f81dea58de0c1d1520b8bad7cb8488590651998fc9ab0e7df"
+          "path": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-ccbc0d4aa7e9/lib/index.js",
+          "sha256": "4d892aa170dab242a9e74160dfe9e455ded039fbd5564696e76a7e533cbc3acd"
         }
       },
       "archives": [
         {
-          "experimentId": "exp-mwcczw1s-1-32a38c8d",
+          "experimentId": "exp-mwdny23g-1-c5b10626",
           "archive": true,
           "sidecar": true
         },
         {
-          "experimentId": "exp-mwcczy9c-3-68c4a278",
+          "experimentId": "exp-mwdny49z-3-30cee050",
           "archive": true,
           "sidecar": true
         },
         {
-          "experimentId": "exp-mwcczx5r-2-7e14bf0e",
+          "experimentId": "exp-mwdny377-2-02ff7b72",
           "archive": true,
           "sidecar": true
         }
       ],
       "sharedExperience": {
         "present": true,
-        "sha256": "9d41d52e74c68e5dcd684ef3ea46d49c4f8900c2b2543558a881dd539aa090df"
+        "sha256": "44c0f0edcb63532f2801b4a66a6c0b2a1efb6f2b78ceaf65b81d40e7ec7dbccf"
       },
       "memory": {
         "present": true,
-        "sha256": "6dfd7eec77e87de0de6dd2bc5653d799a2900f1b30b5d4afed7e091d2ddba11f"
+        "sha256": "74bd8eb42407a8068461721774e344a6e80cc5102013e402ebd43be3ea10dd93"
       },
       "after": {
         "promotedSources": {
-          "stable": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
-          "incompatible": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
-          "desktopOnly": "ac4eaaecdfc4699f81dea58de0c1d1520b8bad7cb8488590651998fc9ab0e7df"
+          "stable": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
+          "incompatible": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
+          "desktopOnly": "4d892aa170dab242a9e74160dfe9e455ded039fbd5564696e76a7e533cbc3acd"
         },
-        "sharedExperience": "9d41d52e74c68e5dcd684ef3ea46d49c4f8900c2b2543558a881dd539aa090df",
-        "memory": "6dfd7eec77e87de0de6dd2bc5653d799a2900f1b30b5d4afed7e091d2ddba11f"
+        "sharedExperience": "44c0f0edcb63532f2801b4a66a6c0b2a1efb6f2b78ceaf65b81d40e7ec7dbccf",
+        "memory": "74bd8eb42407a8068461721774e344a6e80cc5102013e402ebd43be3ea10dd93"
       }
     },
     "acp": {
@@ -1969,14 +1963,14 @@
         "dataRoot": "$DSH_HOME/storages/evolution",
         "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
         "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/acp.json",
-        "startedAt": "2026-11-11T16:54:45.283Z",
-        "consumerStateUpdatedAt": "2026-11-11T16:54:43.856Z",
-        "observedIndexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexUpdatedAt": "2026-11-11T16:54:32.053Z",
-        "indexDigest": "f952975aa774bec4fc9fc5dc7371b70487c53f104ad28e7936c8e3134eac2b60",
+        "startedAt": "2026-11-12T14:49:02.756Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:49:01.335Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.478Z",
+        "indexDigest": "0a6641c4c9f5308fc256a2e5cf99aec14b88a5e0aba7a67abdf1078957c150d1",
         "publishedIds": [
-          "evolution-promoted-bde6d681b3bf",
-          "evolution-promoted-46e9d6f7c571"
+          "evolution-promoted-d4224f416e0a",
+          "evolution-promoted-ed66b12672c7"
         ],
         "kernelPresent": false,
         "evolutionTools": 0,
@@ -1997,39 +1991,39 @@
         },
         "rows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:43.856Z",
-            "sourceSha256": "50ff12850dda10329dadb283a7f117f5126b290853dbb24aad0200f392663d67",
+            "activatedAt": "2026-11-12T14:49:01.334Z",
+            "sourceSha256": "6eb565648ce0012c68a48f21d0b14e6f42c7b4fc1987cca9109dbeb543f721e1",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null,
-            "sourceSha256": "b1e1b1eff3542a177a130e8c8fb0ad2b163b67e5a55ac62e5a24405703313f3a",
+            "sourceSha256": "e4397260977bb1ba2e1532ccd560bc12de2a8f08cb4040ccce34af4ccbe2664f",
             "hostDigest": "796420a9e700e4ae5e0bc565fdc6bb2bf66b284c4b134340179e774a73b7e658"
           }
         ],
         "markerHits": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "markerListeners": {
-          "evolution-promoted-bde6d681b3bf": 1,
-          "evolution-promoted-46e9d6f7c571": 0
+          "evolution-promoted-d4224f416e0a": 1,
+          "evolution-promoted-ed66b12672c7": 0
         },
         "consumerRows": [
           {
-            "id": "evolution-promoted-bde6d681b3bf",
+            "id": "evolution-promoted-d4224f416e0a",
             "status": "active",
             "reason": null,
-            "activatedAt": "2026-11-11T16:54:43.856Z"
+            "activatedAt": "2026-11-12T14:49:01.334Z"
           },
           {
-            "id": "evolution-promoted-46e9d6f7c571",
+            "id": "evolution-promoted-ed66b12672c7",
             "status": "skipped-incompatible",
             "reason": "missing-service",
             "activatedAt": null
@@ -2039,5 +2033,5 @@
     }
   },
   "ok": true,
-  "finishedAt": "2026-11-11T16:54:45.786Z"
+  "finishedAt": "2026-11-12T14:49:03.156Z"
 }

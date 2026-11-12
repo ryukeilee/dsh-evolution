@@ -1,0 +1,2037 @@
+{
+  "host": "0.2.2-rc.2",
+  "packageVersion": "0.2.7",
+  "tarball": "dist/dsh-evolution-0.2.7.tgz",
+  "tarballSha256": "e90d731faf0fdb29befb11f9b9b7ceaa49a1b12c5207faf27abb03eb24931b9b",
+  "contentSha256": "122b42526187bf0d76d2222621715f530fb672c654915f99be19f9baa532a8fc",
+  "node": "v26.13.0",
+  "platform": "darwin-arm64",
+  "work": "<work>",
+  "hostLiveApply": "disabled",
+  "startedAt": "2026-11-12T14:48:18.285Z",
+  "steps": [
+    {
+      "name": "host-install",
+      "at": "2026-11-12T14:48:18.287Z",
+      "ok": true,
+      "reused": true
+    },
+    {
+      "name": "plugin-add",
+      "at": "2026-11-12T14:48:19.006Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "  Virtual store is at:             node_modules/.pnpm",
+        "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
+        "Done in 437ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "profile-lists-bundle",
+      "at": "2026-11-12T14:48:19.006Z",
+      "ok": true,
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "dsh-evolution"
+      ]
+    },
+    {
+      "name": "doctor-cli",
+      "at": "2026-11-12T14:48:19.338Z",
+      "ok": true,
+      "status": "degraded",
+      "exitCode": 1,
+      "hostVersion": "0.2.2-rc.2",
+      "verified": true,
+      "degraded": 2,
+      "blocked": 0
+    },
+    {
+      "name": "core-flow",
+      "at": "2026-11-12T14:48:22.076Z",
+      "ok": true,
+      "toolCount": 12,
+      "tools": [
+        "evolution_canary_observe",
+        "evolution_doctor",
+        "evolution_history",
+        "evolution_maintain",
+        "evolution_measure",
+        "evolution_plan",
+        "evolution_probe",
+        "evolution_promote",
+        "evolution_propose",
+        "evolution_revert",
+        "evolution_runtime_inspect",
+        "evolution_trial"
+      ],
+      "steps": [
+        {
+          "name": "runtime-stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_doctor",
+          "ok": true
+        },
+        {
+          "name": "evolution_history",
+          "ok": true
+        },
+        {
+          "name": "evolution_maintain",
+          "ok": true
+        },
+        {
+          "name": "evolution_runtime_inspect",
+          "ok": true
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "experience-recall",
+          "ok": true,
+          "matched": 0,
+          "limits": {
+            "maxEntries": 3,
+            "maxRecords": 12,
+            "maxText": 160,
+            "maxEvidenceRefs": 2,
+            "maxConsidered": 2000
+          }
+        },
+        {
+          "name": "evolution_runtime_inspect",
+          "ok": true
+        },
+        {
+          "name": "pre-trial-host-drift",
+          "ok": true
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "evolution_measure",
+          "ok": true,
+          "phase": "measured"
+        },
+        {
+          "name": "evolution_revert",
+          "ok": true,
+          "phase": "reverted",
+          "runtimeRecovered": true
+        },
+        {
+          "name": "evolution_runtime_inspect",
+          "ok": true
+        }
+      ],
+      "reverted": true,
+      "signatureDiff": {},
+      "memoryPersisted": true
+    },
+    {
+      "name": "lifecycle-verify",
+      "at": "2026-11-12T14:48:23.403Z",
+      "ok": true,
+      "result": {
+        "action": "verify",
+        "application": "applied",
+        "restartReason": null,
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": true,
+        "toolCount": 12,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "lifecycle-disable",
+      "at": "2026-11-12T14:48:24.746Z",
+      "ok": true,
+      "result": {
+        "action": "disable",
+        "application": "restart-required",
+        "restartReason": "no-hmr",
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": false,
+        "toolCount": 12,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "lifecycle-enable",
+      "at": "2026-11-12T14:48:26.067Z",
+      "ok": true,
+      "result": {
+        "action": "enable",
+        "application": "restart-required",
+        "restartReason": "no-hmr",
+        "mountedBefore": false,
+        "mountedAfter": false,
+        "selected": true,
+        "toolCount": 0,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "lifecycle-verify",
+      "at": "2026-11-12T14:48:27.394Z",
+      "ok": true,
+      "result": {
+        "action": "verify",
+        "application": "applied",
+        "restartReason": null,
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": true,
+        "toolCount": 12,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "plugin-remove",
+      "at": "2026-11-12T14:48:27.929Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "",
+        "Already up to date",
+        "Done in 264ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "body-after-uninstall",
+      "at": "2026-11-12T14:48:29.342Z",
+      "ok": true,
+      "result": {
+        "bodyOk": true,
+        "evolutionAbsent": true,
+        "evolutionTools": 0
+      }
+    },
+    {
+      "name": "plugin-reinstall",
+      "at": "2026-11-12T14:48:30.068Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "  Virtual store is at:             node_modules/.pnpm",
+        "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
+        "Done in 448ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "core-flow-after-reinstall",
+      "at": "2026-11-12T14:48:32.763Z",
+      "ok": true,
+      "toolCount": 12,
+      "reverted": true,
+      "memoryEntriesBefore": 1,
+      "memoryEntriesAfter": 1,
+      "existingMemoryRetained": true,
+      "signatureDiff": {}
+    },
+    {
+      "name": "cli-upgrade",
+      "at": "2026-11-12T14:48:33.785Z",
+      "ok": true,
+      "code": 0,
+      "installedVersion": "0.2.8",
+      "tail": [
+        "+",
+        "Progress: resolved 5, reused 1, downloaded 1, added 1, done",
+        "Done in 335ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "host-after-upgrade",
+      "at": "2026-11-12T14:48:35.168Z",
+      "ok": true,
+      "result": {
+        "action": "verify",
+        "application": "applied",
+        "restartReason": null,
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": true,
+        "toolCount": 12,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "cli-rollback",
+      "at": "2026-11-12T14:48:35.769Z",
+      "ok": true,
+      "code": 0,
+      "installedVersion": "0.2.7",
+      "tail": [
+        "+",
+        "Progress: resolved 5, reused 2, downloaded 0, added 1, done",
+        "Done in 314ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "host-after-rollback",
+      "at": "2026-11-12T14:48:37.096Z",
+      "ok": true,
+      "result": {
+        "action": "verify",
+        "application": "applied",
+        "restartReason": null,
+        "mountedBefore": true,
+        "mountedAfter": true,
+        "selected": true,
+        "toolCount": 12,
+        "memoryUnchanged": true,
+        "liveApplyBefore": false,
+        "liveApplyAfter": false
+      }
+    },
+    {
+      "name": "promotion-promote",
+      "at": "2026-11-12T14:48:39.751Z",
+      "ok": true,
+      "steps": [
+        {
+          "name": "runtime-stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "event:promotion_probe_stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_measure",
+          "ok": true,
+          "phase": "measured"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": false,
+          "phase": "awaiting-owner-confirmation"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": true,
+          "phase": "canary-observing"
+        },
+        {
+          "name": "event:promotion_probe_stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_canary_observe",
+          "ok": true,
+          "phase": "canary-observing"
+        }
+      ],
+      "committed": {
+        "pluginName": "dsh-evolution-promoted-c7e05a4c147f",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-c7e05a4c147f",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-c7e05a4c147f/lib/index.js",
+        "adapter": "official-include",
+        "rowId": "evolution-promoted-c7e05a4c147f",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwdnxxk2-1-7851aa26.md",
+        "presetId": "evolution",
+        "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+        "promotionTimestamp": "2026-11-12T14:48:39.624Z",
+        "healthObservationWindow": 2
+      }
+    },
+    {
+      "name": "promotion-restart-and-rollback",
+      "at": "2026-11-12T14:48:42.320Z",
+      "ok": true,
+      "steps": [
+        {
+          "name": "event:promotion_probe_stable",
+          "ok": true
+        },
+        {
+          "name": "runtime-stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "event:promotion_probe_rollback",
+          "ok": true
+        },
+        {
+          "name": "evolution_measure",
+          "ok": true,
+          "phase": "measured"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": false,
+          "phase": "awaiting-owner-confirmation"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": true,
+          "phase": "canary-observing"
+        },
+        {
+          "name": "event:promotion_probe_rollback",
+          "ok": true
+        },
+        {
+          "name": "evolution_canary_observe",
+          "ok": false,
+          "phase": "rolled-back"
+        }
+      ],
+      "startupPhase": "stable",
+      "rolledBack": {
+        "pluginName": "dsh-evolution-promoted-e35224aca4d6",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-e35224aca4d6",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-e35224aca4d6/lib/index.js",
+        "adapter": "official-include",
+        "rowId": "evolution-promoted-e35224aca4d6",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwdnxzhx-1-a2e5cf45.md",
+        "presetId": "evolution",
+        "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+        "promotionTimestamp": "2026-11-12T14:48:42.130Z",
+        "healthObservationWindow": 2
+      }
+    },
+    {
+      "name": "promotion-verify",
+      "at": "2026-11-12T14:48:43.388Z",
+      "ok": true,
+      "steps": [
+        {
+          "name": "event:promotion_probe_stable",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "name": "cross-entry-publish",
+      "at": "2026-11-12T14:48:48.860Z",
+      "ok": true,
+      "ids": {
+        "stable": "evolution-promoted-d63d31ba78e6",
+        "desktopOnly": "evolution-promoted-99217c86f5e0",
+        "incompatible": "evolution-promoted-effb13272ced"
+      },
+      "approvedProfiles": [
+        "acp",
+        "web"
+      ],
+      "stable": {
+        "committedAt": "2026-11-12T14:48:46.021Z",
+        "promotionTimestamp": "2026-11-12T14:48:45.897Z",
+        "decision": "benefit",
+        "canary": {
+          "healthObservationWindow": 2,
+          "observations": 2,
+          "startupVerified": true
+        }
+      },
+      "desktopOnlySharedStatus": "desktop-only",
+      "incompatibleRequiredServices": [
+        "evolution"
+      ],
+      "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+      "services": {
+        "evolution": true,
+        "dynamicCordisRunner": true,
+        "tools": true
+      }
+    },
+    {
+      "name": "cross-entry-consumer",
+      "at": "2026-11-12T14:48:50.150Z",
+      "ok": true,
+      "profile": "web",
+      "kernelPresent": false,
+      "evolutionTools": 0,
+      "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+      "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+      "rows": [
+        {
+          "id": "evolution-promoted-d63d31ba78e6",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-12T14:48:50.027Z",
+          "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        },
+        {
+          "id": "evolution-promoted-effb13272ced",
+          "status": "skipped-incompatible",
+          "reason": "missing-service",
+          "activatedAt": null,
+          "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        }
+      ],
+      "markerHits": {
+        "evolution-promoted-d63d31ba78e6": 1,
+        "evolution-promoted-effb13272ced": 0
+      },
+      "services": {
+        "evolution": false,
+        "dynamicCordisRunner": true,
+        "tools": true,
+        "evolutionExperience": true
+      }
+    },
+    {
+      "name": "cross-entry-consumer-restart",
+      "at": "2026-11-12T14:48:51.314Z",
+      "ok": true,
+      "rows": [
+        {
+          "id": "evolution-promoted-d63d31ba78e6",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-12T14:48:51.198Z",
+          "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        },
+        {
+          "id": "evolution-promoted-effb13272ced",
+          "status": "skipped-incompatible",
+          "reason": "missing-service",
+          "activatedAt": null,
+          "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        }
+      ],
+      "markerHits": {
+        "evolution-promoted-d63d31ba78e6": 1,
+        "evolution-promoted-effb13272ced": 0
+      },
+      "firstActivatedAt": "2026-11-12T14:48:50.027Z",
+      "secondActivatedAt": "2026-11-12T14:48:51.198Z"
+    },
+    {
+      "name": "cross-entry-consumer-kernel",
+      "at": "2026-11-12T14:48:52.512Z",
+      "ok": true,
+      "kernelPresent": true,
+      "evolutionTools": 12,
+      "rows": [
+        {
+          "id": "evolution-promoted-d63d31ba78e6",
+          "status": "disabled",
+          "reason": "publisher-profile",
+          "activatedAt": null,
+          "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        },
+        {
+          "id": "evolution-promoted-effb13272ced",
+          "status": "disabled",
+          "reason": "publisher-profile",
+          "activatedAt": null,
+          "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        }
+      ],
+      "markerHits": {
+        "evolution-promoted-d63d31ba78e6": 1
+      }
+    },
+    {
+      "name": "cross-entry-tampered-source",
+      "at": "2026-11-12T14:48:53.790Z",
+      "ok": true,
+      "rows": [
+        {
+          "id": "evolution-promoted-d63d31ba78e6",
+          "status": "skipped-invalid",
+          "reason": "source-digest-mismatch",
+          "activatedAt": null,
+          "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        },
+        {
+          "id": "evolution-promoted-effb13272ced",
+          "status": "skipped-incompatible",
+          "reason": "missing-service",
+          "activatedAt": null,
+          "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        }
+      ]
+    },
+    {
+      "name": "cross-entry-revoke",
+      "at": "2026-11-12T14:48:55.489Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "    }",
+        "  ]",
+        "}"
+      ]
+    },
+    {
+      "name": "cross-entry-enable",
+      "at": "2026-11-12T14:48:56.869Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "  \"disabled\": false,",
+        "  \"entries\": []",
+        "}"
+      ]
+    },
+    {
+      "name": "cross-entry-revalidation",
+      "at": "2026-11-12T14:48:59.172Z",
+      "ok": true,
+      "rows": [
+        {
+          "id": "evolution-promoted-d63d31ba78e6",
+          "status": "pending-revalidation",
+          "reason": "host-version-mismatch",
+          "activatedAt": null,
+          "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        },
+        {
+          "id": "evolution-promoted-effb13272ced",
+          "status": "skipped-incompatible",
+          "reason": "missing-service",
+          "activatedAt": null,
+          "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        }
+      ]
+    },
+    {
+      "name": "cross-entry-acp-install",
+      "at": "2026-11-12T14:49:01.019Z",
+      "ok": true,
+      "code": 0,
+      "tail": [
+        "  Virtual store is at:             node_modules/.pnpm",
+        "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
+        "Done in 409ms using pnpm v11.26.0"
+      ]
+    },
+    {
+      "name": "cross-entry-acp-consumer",
+      "at": "2026-11-12T14:49:03.274Z",
+      "ok": true,
+      "profile": "acp",
+      "kernelPresent": false,
+      "evolutionTools": 0,
+      "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+      "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+      "rows": [
+        {
+          "id": "evolution-promoted-d63d31ba78e6",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-12T14:49:01.763Z",
+          "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        },
+        {
+          "id": "evolution-promoted-effb13272ced",
+          "status": "skipped-incompatible",
+          "reason": "missing-service",
+          "activatedAt": null,
+          "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+          "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+        }
+      ],
+      "markerHits": {
+        "evolution-promoted-d63d31ba78e6": 1,
+        "evolution-promoted-effb13272ced": 0
+      },
+      "services": {
+        "evolution": false,
+        "dynamicCordisRunner": false,
+        "tools": true,
+        "evolutionExperience": true
+      }
+    },
+    {
+      "name": "doctor-final",
+      "at": "2026-11-12T14:49:03.576Z",
+      "ok": true,
+      "status": "healthy",
+      "exitCode": 0,
+      "findings": [
+        {
+          "id": "runtime.capabilities",
+          "level": "not-evaluated",
+          "summary": "Live Cordis capabilities are not observable outside a running host session."
+        },
+        {
+          "id": "runtime.registration",
+          "level": "not-evaluated",
+          "summary": "Live tool registration is not observable outside a running host session."
+        },
+        {
+          "id": "runtime.internal-api",
+          "level": "not-evaluated",
+          "summary": "Introspection probes were not exercised outside a running host session."
+        }
+      ]
+    }
+  ],
+  "hostVersion": "0.2.2-rc.2",
+  "hostModules": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/cordis-plugin-include": "1.1.0",
+    "@deepseek-ai/cordis-plugin-loader": "1.1.0",
+    "@deepseek-ai/dsh": "0.2.2-rc.2",
+    "js-yaml": "4.3.2",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.2",
+    "@deepseek-ai/dsh-cordis-host-runner": "0.2.2-rc.2",
+    "@deepseek-ai/dsh-storage-domain": "0.2.2-rc.2",
+    "@deepseek-ai/dsh-storage-json": "0.2.2-rc.2"
+  },
+  "doctor": {
+    "status": "degraded",
+    "coverage": {
+      "evaluated": [
+        "plugin.home",
+        "plugin.package",
+        "plugin.patch",
+        "plugin.support-matrix",
+        "host.install",
+        "host.cli",
+        "host.version",
+        "host.modules",
+        "host.composition",
+        "compat.legacy-adapters",
+        "capabilities.known-limits",
+        "data.root",
+        "state.memory",
+        "state.archives",
+        "state.event-bridge",
+        "migration.manifest",
+        "state.domain",
+        "state.ownership",
+        "data.key",
+        "promotion.journal",
+        "promotion.composition",
+        "promotion.pointer",
+        "promotion.sharing"
+      ],
+      "notEvaluated": [
+        {
+          "id": "runtime.capabilities",
+          "reason": "cli mode without a live context"
+        },
+        {
+          "id": "runtime.registration",
+          "reason": "cli mode without a live context"
+        },
+        {
+          "id": "runtime.internal-api",
+          "reason": "cli mode without a live context"
+        },
+        {
+          "id": "state.retention-floor",
+          "reason": "not observable in this mode"
+        }
+      ]
+    },
+    "degradedCapabilities": [
+      {
+        "id": "evaluator-advisory",
+        "impact": "The domain evaluator records a decision and hard-vetoes a detected regression, but promotionGates remains the production authority; independent host baseline/test metrics are not wired in.",
+        "resolution": "Provide a DSH host surface that supplies independent baseline/test metrics for an experiment."
+      },
+      {
+        "id": "continuous-and-governance-not-wired",
+        "impact": "lib/dockyard-domain/continuous and lib/dockyard-domain/governance are pure domain modules covered by unit tests and are not started by the orchestrator live loop.",
+        "resolution": "Wire them into the live loop behind an explicit opt-in once the loop is designed."
+      },
+      {
+        "id": "host-only-promotion",
+        "impact": "Client halves are rejected; promoted host code runs through a cooperative Function(hostCode)() gate that is not a security sandbox.",
+        "resolution": "Requires an approval-aware durable composition contract from the host."
+      },
+      {
+        "id": "legacy-compat-adapters",
+        "impact": "lib/compat/legacy-startup-drift.js and the legacy preset/default-path handling stay present but disabled by default.",
+        "resolution": "Remove once no supported DSH layout publishes the legacy drift engine or preset layout."
+      },
+      {
+        "id": "internal-api-dependency",
+        "impact": "Two introspection surfaces are private to Cordis by its own rule: ctx.events._hooks (no public listener enumeration exists) and the ctx.reflect._getImpl() fallback (used only when the documented ctx.reflect.store + Context.isolate path is absent). FiberState.ACTIVE is not importable (const enum, erased at runtime), so ACTIVE is decided from documented lifecycle fields. The official loader/Include members used for the mounted promoted row (EntryTree.resolve/root, Entry.fiber/options/disabled) are public but undocumented.",
+        "resolution": "Replace ctx.events._hooks once the host publishes a public listener enumeration; every other surface already goes through a documented or explicitly classified path recorded in lib/cordis-compat.js."
+      }
+    ],
+    "levels": {
+      "plugin.home": "ok",
+      "plugin.package": "ok",
+      "plugin.patch": "ok",
+      "plugin.support-matrix": "ok",
+      "host.install": "ok",
+      "host.cli": "ok",
+      "host.version": "ok",
+      "host.modules": "ok",
+      "host.composition": "ok",
+      "runtime.capabilities": "not-evaluated",
+      "runtime.registration": "not-evaluated",
+      "runtime.internal-api": "not-evaluated",
+      "compat.legacy-adapters": "ok",
+      "capabilities.known-limits": "ok",
+      "data.root": "degraded",
+      "state.memory": "ok",
+      "state.archives": "ok",
+      "state.event-bridge": "ok",
+      "migration.manifest": "ok",
+      "state.domain": "ok",
+      "state.retention-floor": "not-evaluated",
+      "state.ownership": "ok",
+      "data.key": "degraded",
+      "promotion.journal": "ok",
+      "promotion.composition": "ok",
+      "promotion.pointer": "ok",
+      "promotion.sharing": "ok"
+    },
+    "findings": [
+      {
+        "id": "runtime.capabilities",
+        "level": "not-evaluated",
+        "summary": "Live Cordis capabilities are not observable outside a running host session."
+      },
+      {
+        "id": "runtime.registration",
+        "level": "not-evaluated",
+        "summary": "Live tool registration is not observable outside a running host session."
+      },
+      {
+        "id": "runtime.internal-api",
+        "level": "not-evaluated",
+        "summary": "Introspection probes were not exercised outside a running host session."
+      },
+      {
+        "id": "data.root",
+        "level": "degraded",
+        "summary": "The Evolution data root is not initialized yet: data root is not initialized yet (created on first run)."
+      },
+      {
+        "id": "state.retention-floor",
+        "level": "not-evaluated",
+        "summary": "Event log retention continuity: domain-unverified."
+      },
+      {
+        "id": "data.key",
+        "level": "degraded",
+        "summary": "The event bridge key is absent; no key-derived MAC is on disk (every artifact is absent or empty), so the next start creates the key, exactly as the runtime does whenever the path is free."
+      }
+    ]
+  },
+  "memoryShaAfterCore": "ebc48013978c45d3a03961b79f96b3809d69fa466c4a61830101ea1f6d9409f1",
+  "memoryShaBeforeUninstall": "ebc48013978c45d3a03961b79f96b3809d69fa466c4a61830101ea1f6d9409f1",
+  "memoryEntriesAtUninstall": 1,
+  "memoryEntriesAfterReinstall": 1,
+  "memoryShaAfterReinstall": "18b48e2e55407df028e29c1b15d8cf3da627eefcc3980354abd501b86c6ac2ad",
+  "upgradeRollback": {
+    "from": "0.2.7",
+    "to": "0.2.8",
+    "preservedUserData": true
+  },
+  "promotion": {
+    "promote": {
+      "ok": true,
+      "committed": {
+        "pluginName": "dsh-evolution-promoted-c7e05a4c147f",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-c7e05a4c147f",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-c7e05a4c147f/lib/index.js",
+        "adapter": "official-include",
+        "rowId": "evolution-promoted-c7e05a4c147f",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwdnxxk2-1-7851aa26.md",
+        "presetId": "evolution",
+        "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+        "promotionTimestamp": "2026-11-12T14:48:39.624Z",
+        "healthObservationWindow": 2
+      }
+    },
+    "restart-and-rollback": {
+      "ok": true,
+      "startupPhase": "stable",
+      "rolledBack": {
+        "pluginName": "dsh-evolution-promoted-e35224aca4d6",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-e35224aca4d6",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-e35224aca4d6/lib/index.js",
+        "adapter": "official-include",
+        "rowId": "evolution-promoted-e35224aca4d6",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwdnxzhx-1-a2e5cf45.md",
+        "presetId": "evolution",
+        "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
+        "promotionTimestamp": "2026-11-12T14:48:42.130Z",
+        "healthObservationWindow": 2
+      }
+    },
+    "verify": {
+      "ok": true
+    }
+  },
+  "crossEntry": {
+    "publisherProfile": "web",
+    "publisherProfileNote": "isolated host acceptance boots the full Evolution kernel on the web profile; no Desktop binary in CI",
+    "markers": {
+      "stable": "cross-entry/probe/stable",
+      "incompatible": "cross-entry/probe/incompatible"
+    },
+    "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+    "index": {
+      "updatedAt": "2026-11-12T14:48:48.834Z",
+      "digest": "c0502333e81300512900d27104ca1a7445f62653512f34a31066b6c4be9292e4",
+      "records": [
+        {
+          "id": "evolution-promoted-d63d31ba78e6",
+          "approvedProfiles": [
+            "acp",
+            "web"
+          ],
+          "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+          "stable": {
+            "committedAt": "2026-11-12T14:48:46.021Z",
+            "promotionTimestamp": "2026-11-12T14:48:45.897Z",
+            "decision": "benefit",
+            "canary": {
+              "healthObservationWindow": 2,
+              "observations": 2,
+              "startupVerified": true
+            }
+          },
+          "host": {
+            "dsh": "0.2.2-rc.2",
+            "cordis": "4.1.0",
+            "include": "1.1.0",
+            "node": "v26.13.0",
+            "verifiedAt": "2026-11-12T14:48:45.876Z"
+          }
+        },
+        {
+          "id": "evolution-promoted-effb13272ced",
+          "approvedProfiles": [
+            "acp",
+            "web"
+          ],
+          "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+          "stable": {
+            "committedAt": "2026-11-12T14:48:48.778Z",
+            "promotionTimestamp": "2026-11-12T14:48:48.661Z",
+            "decision": "benefit",
+            "canary": {
+              "healthObservationWindow": 2,
+              "observations": 2,
+              "startupVerified": true
+            }
+          },
+          "host": {
+            "dsh": "0.2.2-rc.2",
+            "cordis": "4.1.0",
+            "include": "1.1.0",
+            "node": "v26.13.0",
+            "verifiedAt": "2026-11-12T14:48:48.646Z"
+          }
+        }
+      ]
+    },
+    "publish": {
+      "steps": [
+        {
+          "name": "runtime-stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "event:cross-entry/probe/stable",
+          "ok": true,
+          "listeners": 1,
+          "hits": 1
+        },
+        {
+          "name": "evolution_measure",
+          "ok": true,
+          "phase": "measured"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": false,
+          "phase": "awaiting-owner-confirmation"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": true,
+          "phase": "canary-observing"
+        },
+        {
+          "name": "event:cross-entry/probe/stable",
+          "ok": true,
+          "listeners": 1,
+          "hits": 1
+        },
+        {
+          "name": "evolution_canary_observe",
+          "ok": true,
+          "phase": "canary-observing",
+          "stable": false
+        },
+        {
+          "name": "evolution_canary_observe",
+          "ok": true,
+          "phase": "stable",
+          "stable": true
+        },
+        {
+          "name": "runtime-stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "event:cross-entry/probe/desktop-only",
+          "ok": true,
+          "listeners": 1,
+          "hits": 1
+        },
+        {
+          "name": "evolution_measure",
+          "ok": true,
+          "phase": "measured"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": true,
+          "phase": "canary-observing"
+        },
+        {
+          "name": "event:cross-entry/probe/desktop-only",
+          "ok": true,
+          "listeners": 1,
+          "hits": 1
+        },
+        {
+          "name": "evolution_canary_observe",
+          "ok": true,
+          "phase": "canary-observing",
+          "stable": false
+        },
+        {
+          "name": "evolution_canary_observe",
+          "ok": true,
+          "phase": "stable",
+          "stable": true
+        },
+        {
+          "name": "runtime-stable",
+          "ok": true
+        },
+        {
+          "name": "evolution_propose",
+          "ok": true,
+          "phase": "proposed"
+        },
+        {
+          "name": "evolution_trial",
+          "ok": true,
+          "phase": "trial"
+        },
+        {
+          "name": "event:cross-entry/probe/incompatible",
+          "ok": true,
+          "listeners": 1,
+          "hits": 1
+        },
+        {
+          "name": "evolution_measure",
+          "ok": true,
+          "phase": "measured"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": false,
+          "phase": "awaiting-owner-confirmation"
+        },
+        {
+          "name": "evolution_promote",
+          "ok": true,
+          "phase": "canary-observing"
+        },
+        {
+          "name": "event:cross-entry/probe/incompatible",
+          "ok": true,
+          "listeners": 1,
+          "hits": 1
+        },
+        {
+          "name": "evolution_canary_observe",
+          "ok": true,
+          "phase": "canary-observing",
+          "stable": false
+        },
+        {
+          "name": "evolution_canary_observe",
+          "ok": true,
+          "phase": "stable",
+          "stable": true
+        }
+      ],
+      "services": {
+        "evolution": true,
+        "dynamicCordisRunner": true,
+        "tools": true
+      },
+      "candidates": {
+        "stable": {
+          "experimentId": "exp-mwdny2f2-1-525e7fb7",
+          "id": "evolution-promoted-d63d31ba78e6",
+          "pluginName": "dsh-evolution-promoted-d63d31ba78e6",
+          "trialPluginName": "cross_entry_probe_stable",
+          "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-d63d31ba78e6/lib/index.js",
+          "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+          "manifestSha256": "d923cfc2fe70f05f5e6ab0d890039e40307fcead5086edabf1f1b3557757d81b",
+          "approvedProfiles": [
+            "acp",
+            "web"
+          ],
+          "requiredServices": [],
+          "requiredCapabilities": [
+            "fiberLifecycle",
+            "fiberAwait",
+            "include"
+          ],
+          "host": {
+            "dsh": "0.2.2-rc.2",
+            "cordis": "4.1.0",
+            "include": "1.1.0",
+            "node": "v26.13.0",
+            "verifiedAt": "2026-11-12T14:48:45.876Z"
+          },
+          "stable": {
+            "committedAt": "2026-11-12T14:48:46.021Z",
+            "promotionTimestamp": "2026-11-12T14:48:45.897Z",
+            "decision": "benefit",
+            "canary": {
+              "healthObservationWindow": 2,
+              "observations": 2,
+              "startupVerified": true
+            }
+          },
+          "marker": "cross-entry/probe/stable",
+          "hits": {
+            "trial": 1,
+            "promoted": 1
+          },
+          "gates": {
+            "publishedAtConfirmationGate": false,
+            "publishedBeforeCanaryCommit": false,
+            "publishedAfterFirstObservation": false
+          },
+          "sharedStatus": "published"
+        },
+        "desktopOnly": {
+          "experimentId": "exp-mwdny3hy-2-266884c6",
+          "id": "evolution-promoted-99217c86f5e0",
+          "pluginName": "dsh-evolution-promoted-99217c86f5e0",
+          "trialPluginName": "cross_entry_probe_desktop-only",
+          "marker": "cross-entry/probe/desktop-only",
+          "hits": {
+            "trial": 1,
+            "promoted": 1
+          },
+          "sharedStatus": "desktop-only",
+          "published": false
+        },
+        "incompatible": {
+          "experimentId": "exp-mwdny4k5-3-96705593",
+          "id": "evolution-promoted-effb13272ced",
+          "pluginName": "dsh-evolution-promoted-effb13272ced",
+          "trialPluginName": "cross_entry_probe_incompatible",
+          "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-effb13272ced/lib/index.js",
+          "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+          "manifestSha256": "82cf0f2228605fc49243b47b13555ed7640e7c4e79d24f671cfc0ffa6d2d05a3",
+          "approvedProfiles": [
+            "acp",
+            "web"
+          ],
+          "requiredServices": [
+            "evolution"
+          ],
+          "requiredCapabilities": [
+            "fiberLifecycle",
+            "fiberAwait",
+            "include"
+          ],
+          "host": {
+            "dsh": "0.2.2-rc.2",
+            "cordis": "4.1.0",
+            "include": "1.1.0",
+            "node": "v26.13.0",
+            "verifiedAt": "2026-11-12T14:48:48.646Z"
+          },
+          "stable": {
+            "committedAt": "2026-11-12T14:48:48.778Z",
+            "promotionTimestamp": "2026-11-12T14:48:48.661Z",
+            "decision": "benefit",
+            "canary": {
+              "healthObservationWindow": 2,
+              "observations": 2,
+              "startupVerified": true
+            }
+          },
+          "marker": "cross-entry/probe/incompatible",
+          "hits": {
+            "trial": 1,
+            "promoted": 1
+          },
+          "gates": {
+            "publishedAtConfirmationGate": false,
+            "publishedBeforeCanaryCommit": false,
+            "publishedAfterFirstObservation": false
+          },
+          "sharedStatus": "published"
+        }
+      }
+    },
+    "consumer": {
+      "initial": {
+        "profile": "web",
+        "dataRoot": "$DSH_HOME/storages/evolution",
+        "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
+        "startedAt": "2026-11-12T14:48:49.975Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:50.027Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexDigest": "c0502333e81300512900d27104ca1a7445f62653512f34a31066b6c4be9292e4",
+        "publishedIds": [
+          "evolution-promoted-d63d31ba78e6",
+          "evolution-promoted-effb13272ced"
+        ],
+        "kernelPresent": false,
+        "evolutionTools": 0,
+        "evolutionToolNames": [],
+        "kernelOnlyTools": [],
+        "probeInstances": 1,
+        "processVersions": {
+          "node": "26.13.0",
+          "electron": null,
+          "chrome": null
+        },
+        "expectKernel": false,
+        "services": {
+          "evolution": false,
+          "dynamicCordisRunner": true,
+          "tools": true,
+          "evolutionExperience": true
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:48:50.027Z",
+            "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null,
+            "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          }
+        ],
+        "markerHits": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "markerListeners": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:48:50.027Z"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null
+          }
+        ]
+      },
+      "restart": {
+        "profile": "web",
+        "dataRoot": "$DSH_HOME/storages/evolution",
+        "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
+        "startedAt": "2026-11-12T14:48:51.145Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:51.198Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexDigest": "c0502333e81300512900d27104ca1a7445f62653512f34a31066b6c4be9292e4",
+        "publishedIds": [
+          "evolution-promoted-d63d31ba78e6",
+          "evolution-promoted-effb13272ced"
+        ],
+        "kernelPresent": false,
+        "evolutionTools": 0,
+        "evolutionToolNames": [],
+        "kernelOnlyTools": [],
+        "probeInstances": 1,
+        "processVersions": {
+          "node": "26.13.0",
+          "electron": null,
+          "chrome": null
+        },
+        "expectKernel": false,
+        "services": {
+          "evolution": false,
+          "dynamicCordisRunner": true,
+          "tools": true,
+          "evolutionExperience": true
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:48:51.198Z",
+            "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null,
+            "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          }
+        ],
+        "markerHits": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "markerListeners": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:48:51.198Z"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null
+          }
+        ]
+      },
+      "kernelCombined": {
+        "profile": "web",
+        "dataRoot": "$DSH_HOME/storages/evolution",
+        "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
+        "startedAt": "2026-11-12T14:48:52.332Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:52.404Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexDigest": "c0502333e81300512900d27104ca1a7445f62653512f34a31066b6c4be9292e4",
+        "publishedIds": [
+          "evolution-promoted-d63d31ba78e6",
+          "evolution-promoted-effb13272ced"
+        ],
+        "kernelPresent": true,
+        "evolutionTools": 12,
+        "evolutionToolNames": [
+          "evolution_doctor",
+          "evolution_history",
+          "evolution_maintain",
+          "evolution_runtime_inspect",
+          "evolution_plan",
+          "evolution_propose",
+          "evolution_trial",
+          "evolution_probe",
+          "evolution_measure",
+          "evolution_revert",
+          "evolution_promote",
+          "evolution_canary_observe"
+        ],
+        "kernelOnlyTools": [
+          "evolution_doctor",
+          "evolution_maintain",
+          "evolution_runtime_inspect",
+          "evolution_plan",
+          "evolution_propose",
+          "evolution_trial",
+          "evolution_probe",
+          "evolution_measure",
+          "evolution_revert",
+          "evolution_promote",
+          "evolution_canary_observe"
+        ],
+        "probeInstances": 1,
+        "processVersions": {
+          "node": "26.13.0",
+          "electron": null,
+          "chrome": null
+        },
+        "expectKernel": true,
+        "services": {
+          "evolution": true,
+          "dynamicCordisRunner": true,
+          "tools": true,
+          "evolutionExperience": true
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "disabled",
+            "reason": "publisher-profile",
+            "activatedAt": null,
+            "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "disabled",
+            "reason": "publisher-profile",
+            "activatedAt": null,
+            "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          }
+        ],
+        "markerHits": {
+          "evolution-promoted-d63d31ba78e6": 1
+        },
+        "markerListeners": {
+          "evolution-promoted-d63d31ba78e6": 1
+        },
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "disabled",
+            "reason": "publisher-profile",
+            "activatedAt": null
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "disabled",
+            "reason": "publisher-profile",
+            "activatedAt": null
+          }
+        ]
+      },
+      "tampered": {
+        "profile": "web",
+        "dataRoot": "$DSH_HOME/storages/evolution",
+        "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
+        "startedAt": "2026-11-12T14:48:53.609Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:53.673Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexDigest": "c0502333e81300512900d27104ca1a7445f62653512f34a31066b6c4be9292e4",
+        "publishedIds": [
+          "evolution-promoted-d63d31ba78e6",
+          "evolution-promoted-effb13272ced"
+        ],
+        "kernelPresent": false,
+        "evolutionTools": 0,
+        "evolutionToolNames": [],
+        "kernelOnlyTools": [],
+        "probeInstances": 1,
+        "processVersions": {
+          "node": "26.13.0",
+          "electron": null,
+          "chrome": null
+        },
+        "expectKernel": false,
+        "services": {
+          "evolution": false,
+          "dynamicCordisRunner": true,
+          "tools": true,
+          "evolutionExperience": true
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "skipped-invalid",
+            "reason": "source-digest-mismatch",
+            "activatedAt": null,
+            "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null,
+            "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          }
+        ],
+        "markerHits": {},
+        "markerListeners": {},
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "skipped-invalid",
+            "reason": "source-digest-mismatch",
+            "activatedAt": null
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null
+          }
+        ]
+      },
+      "sourceRestored": {
+        "profile": "web",
+        "dataRoot": "$DSH_HOME/storages/evolution",
+        "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
+        "startedAt": "2026-11-12T14:48:55.159Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:55.219Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexDigest": "c0502333e81300512900d27104ca1a7445f62653512f34a31066b6c4be9292e4",
+        "publishedIds": [
+          "evolution-promoted-d63d31ba78e6",
+          "evolution-promoted-effb13272ced"
+        ],
+        "kernelPresent": false,
+        "evolutionTools": 0,
+        "evolutionToolNames": [],
+        "kernelOnlyTools": [],
+        "probeInstances": 1,
+        "processVersions": {
+          "node": "26.13.0",
+          "electron": null,
+          "chrome": null
+        },
+        "expectKernel": false,
+        "services": {
+          "evolution": false,
+          "dynamicCordisRunner": true,
+          "tools": true,
+          "evolutionExperience": true
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:48:55.219Z",
+            "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null,
+            "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          }
+        ],
+        "markerHits": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "markerListeners": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:48:55.219Z"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null
+          }
+        ]
+      },
+      "revoked": {
+        "profile": "web",
+        "dataRoot": "$DSH_HOME/storages/evolution",
+        "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
+        "startedAt": "2026-11-12T14:48:56.571Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:56.625Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexDigest": "c0502333e81300512900d27104ca1a7445f62653512f34a31066b6c4be9292e4",
+        "publishedIds": [
+          "evolution-promoted-d63d31ba78e6",
+          "evolution-promoted-effb13272ced"
+        ],
+        "kernelPresent": false,
+        "evolutionTools": 0,
+        "evolutionToolNames": [],
+        "kernelOnlyTools": [],
+        "probeInstances": 1,
+        "processVersions": {
+          "node": "26.13.0",
+          "electron": null,
+          "chrome": null
+        },
+        "expectKernel": false,
+        "services": {
+          "evolution": false,
+          "dynamicCordisRunner": true,
+          "tools": true,
+          "evolutionExperience": true
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "disabled",
+            "reason": "operator-disabled",
+            "activatedAt": null,
+            "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null,
+            "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          }
+        ],
+        "markerHits": {},
+        "markerListeners": {},
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "disabled",
+            "reason": "operator-disabled",
+            "activatedAt": null
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null
+          }
+        ]
+      },
+      "reenabled": {
+        "profile": "web",
+        "dataRoot": "$DSH_HOME/storages/evolution",
+        "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
+        "startedAt": "2026-11-12T14:48:57.827Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:57.890Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexDigest": "c0502333e81300512900d27104ca1a7445f62653512f34a31066b6c4be9292e4",
+        "publishedIds": [
+          "evolution-promoted-d63d31ba78e6",
+          "evolution-promoted-effb13272ced"
+        ],
+        "kernelPresent": false,
+        "evolutionTools": 0,
+        "evolutionToolNames": [],
+        "kernelOnlyTools": [],
+        "probeInstances": 1,
+        "processVersions": {
+          "node": "26.13.0",
+          "electron": null,
+          "chrome": null
+        },
+        "expectKernel": false,
+        "services": {
+          "evolution": false,
+          "dynamicCordisRunner": true,
+          "tools": true,
+          "evolutionExperience": true
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:48:57.890Z",
+            "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null,
+            "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          }
+        ],
+        "markerHits": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "markerListeners": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:48:57.890Z"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null
+          }
+        ]
+      },
+      "revalidation": {
+        "profile": "web",
+        "dataRoot": "$DSH_HOME/storages/evolution",
+        "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
+        "startedAt": "2026-11-12T14:48:59.002Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:48:59.053Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexDigest": "3f047f103e84d0f5e0f4a2b4b3cfa7753999d2dc8b31b719249badf13abecf8e",
+        "publishedIds": [
+          "evolution-promoted-d63d31ba78e6",
+          "evolution-promoted-effb13272ced"
+        ],
+        "kernelPresent": false,
+        "evolutionTools": 0,
+        "evolutionToolNames": [],
+        "kernelOnlyTools": [],
+        "probeInstances": 1,
+        "processVersions": {
+          "node": "26.13.0",
+          "electron": null,
+          "chrome": null
+        },
+        "expectKernel": false,
+        "services": {
+          "evolution": false,
+          "dynamicCordisRunner": true,
+          "tools": true,
+          "evolutionExperience": true
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "pending-revalidation",
+            "reason": "host-version-mismatch",
+            "activatedAt": null,
+            "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null,
+            "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          }
+        ],
+        "markerHits": {},
+        "markerListeners": {},
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "pending-revalidation",
+            "reason": "host-version-mismatch",
+            "activatedAt": null
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null
+          }
+        ]
+      },
+      "indexRestored": {
+        "profile": "web",
+        "dataRoot": "$DSH_HOME/storages/evolution",
+        "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/web.json",
+        "startedAt": "2026-11-12T14:49:00.120Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:49:00.174Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexDigest": "c0502333e81300512900d27104ca1a7445f62653512f34a31066b6c4be9292e4",
+        "publishedIds": [
+          "evolution-promoted-d63d31ba78e6",
+          "evolution-promoted-effb13272ced"
+        ],
+        "kernelPresent": false,
+        "evolutionTools": 0,
+        "evolutionToolNames": [],
+        "kernelOnlyTools": [],
+        "probeInstances": 1,
+        "processVersions": {
+          "node": "26.13.0",
+          "electron": null,
+          "chrome": null
+        },
+        "expectKernel": false,
+        "services": {
+          "evolution": false,
+          "dynamicCordisRunner": true,
+          "tools": true,
+          "evolutionExperience": true
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:49:00.174Z",
+            "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null,
+            "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          }
+        ],
+        "markerHits": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "markerListeners": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:49:00.174Z"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null
+          }
+        ]
+      }
+    },
+    "preserved": {
+      "promotedSources": {
+        "stable": {
+          "path": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-d63d31ba78e6/lib/index.js",
+          "sha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200"
+        },
+        "incompatible": {
+          "path": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-effb13272ced/lib/index.js",
+          "sha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc"
+        },
+        "desktopOnly": {
+          "path": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-99217c86f5e0/lib/index.js",
+          "sha256": "39d461c3c4d876dce9f3dd526bbed05e7d70cfff6be73ba304559672993dc6bf"
+        }
+      },
+      "archives": [
+        {
+          "experimentId": "exp-mwdny2f2-1-525e7fb7",
+          "archive": true,
+          "sidecar": true
+        },
+        {
+          "experimentId": "exp-mwdny4k5-3-96705593",
+          "archive": true,
+          "sidecar": true
+        },
+        {
+          "experimentId": "exp-mwdny3hy-2-266884c6",
+          "archive": true,
+          "sidecar": true
+        }
+      ],
+      "sharedExperience": {
+        "present": true,
+        "sha256": "465bbca3ffe667a8054ede43095fc97e8fd174a93ab378f527a91eb97664e829"
+      },
+      "memory": {
+        "present": true,
+        "sha256": "97abf166aa821291c6ec4637457586123c529e8f632501d15cb8a908d02f2518"
+      },
+      "after": {
+        "promotedSources": {
+          "stable": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+          "incompatible": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+          "desktopOnly": "39d461c3c4d876dce9f3dd526bbed05e7d70cfff6be73ba304559672993dc6bf"
+        },
+        "sharedExperience": "465bbca3ffe667a8054ede43095fc97e8fd174a93ab378f527a91eb97664e829",
+        "memory": "97abf166aa821291c6ec4637457586123c529e8f632501d15cb8a908d02f2518"
+      }
+    },
+    "acp": {
+      "installedProfile": "acp",
+      "consumerStatePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/acp.json",
+      "consumerStatePresent": true,
+      "result": {
+        "ok": true,
+        "profile": "acp",
+        "dataRoot": "$DSH_HOME/storages/evolution",
+        "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/acp.json",
+        "startedAt": "2026-11-12T14:49:03.180Z",
+        "consumerStateUpdatedAt": "2026-11-12T14:49:01.763Z",
+        "observedIndexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexUpdatedAt": "2026-11-12T14:48:48.834Z",
+        "indexDigest": "c0502333e81300512900d27104ca1a7445f62653512f34a31066b6c4be9292e4",
+        "publishedIds": [
+          "evolution-promoted-d63d31ba78e6",
+          "evolution-promoted-effb13272ced"
+        ],
+        "kernelPresent": false,
+        "evolutionTools": 0,
+        "evolutionToolNames": [],
+        "kernelOnlyTools": [],
+        "probeInstances": 1,
+        "processVersions": {
+          "node": "26.13.0",
+          "electron": null,
+          "chrome": null
+        },
+        "expectKernel": false,
+        "services": {
+          "evolution": false,
+          "dynamicCordisRunner": false,
+          "tools": true,
+          "evolutionExperience": true
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:49:01.763Z",
+            "sourceSha256": "fb319faf0bb30c8075d5fb064df3e82224a4f12c64d331653e002648d0c43200",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null,
+            "sourceSha256": "b26cc6c85543543681533fec93215237dc4c5554186cae3783ad29ab7f228bcc",
+            "hostDigest": "b49d732b828f43b1f91db365e92f5cee01808d708aab12938a8a37ab9097ab61"
+          }
+        ],
+        "markerHits": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "markerListeners": {
+          "evolution-promoted-d63d31ba78e6": 1,
+          "evolution-promoted-effb13272ced": 0
+        },
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-d63d31ba78e6",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T14:49:01.763Z"
+          },
+          {
+            "id": "evolution-promoted-effb13272ced",
+            "status": "skipped-incompatible",
+            "reason": "missing-service",
+            "activatedAt": null
+          }
+        ]
+      }
+    }
+  },
+  "ok": true,
+  "finishedAt": "2026-11-12T14:49:03.576Z"
+}

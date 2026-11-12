@@ -190,7 +190,7 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const overlay = path.join(work, 'acp-transport.yml');
 await fs.writeFile(overlay, `- id: llm-deepseek\n  config:\n    baseURL: http://127.0.0.1:${server.address().port}\n    apiKeyEnv: EVOLUTION_ACCEPTANCE_KEY\n`);
 
-async function createAcp(label) {
+async function createAcp(label, { waitForPromoted = false } = {}) {
   const log = await fs.open(path.join(work, `${label}.stderr.log`), 'w', 0o600);
   const child = launch(cli, ['--profile', 'acp', '--patch', overlay], {
     env: { ...autoLaunchEnv, DSH_HOME: home, EVOLUTION_ACCEPTANCE_KEY: 'local-fixture-only' },
@@ -217,6 +217,24 @@ async function createAcp(label) {
   });
   await rpc('initialize', { protocolVersion: 1, clientCapabilities: {} });
   const session = await rpc('session/new', { cwd: home, mcpServers: [] });
+  if (waitForPromoted) {
+    // The consumer mounts the published plugin from its own startup effect, so
+    // `session/new` can resolve before that effect has registered the tool.
+    // Wait for the durable activation record instead of sampling the first
+    // model request at an arbitrary point in that sequence.
+    const statePath = path.join(home, 'storages', 'evolution', 'shared-plugins', 'consumers', 'acp.json');
+    const deadline = Date.now() + 15_000;
+    for (;;) {
+      const state = await readJson(statePath).catch(() => null);
+      const active = !state?.disposedAt && (state?.plugins ?? []).some((plugin) => plugin.status === 'active');
+      if (active) break;
+      if (Date.now() > deadline) throw new Error('fresh ACP did not record an active promoted consumer');
+      await sleep(100);
+    }
+    // The state is written after the plugin apply; give the ACP transport one
+    // scheduling turn to publish the refreshed tool surface to the session.
+    await sleep(250);
+  }
   return { child, rpc, sessionId: session.sessionId, close: async () => { await stop(child); await log.close(); } };
 }
 
@@ -463,7 +481,7 @@ try {
 
   // 8. a fresh ACP process must mount and call the promoted plugin by itself.
   const indexBytes = await fs.readFile(publishedFile);
-  const fresh = await createAcp('acp-fresh');
+  const fresh = await createAcp('acp-fresh', { waitForPromoted: true });
   let freshRound = 0;
   nextAction = (tools, result) => {
     freshRound += 1;

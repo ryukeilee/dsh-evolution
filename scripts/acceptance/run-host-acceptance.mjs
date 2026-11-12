@@ -67,7 +67,7 @@ const EXPECTED_TOOL_COUNT = 12;
  * executor (`ctx.tools.execute({calls})`) that `0.2.2-rc.1` introduced; the
  * older declared hosts do not have that surface.
  */
-const EXPERIENCE_EVOLUTION_HOST = '0.2.2-rc.1';
+const EXPERIENCE_EVOLUTION_HOSTS = Object.freeze(['0.2.2-rc.1', '0.2.2-rc.2']);
 const EXPERIENCE_EVOLUTION_PHASES = ['seed', 'invalid', 'restart', 'regression'];
 
 function parseArgs(argv) {
@@ -109,13 +109,13 @@ const HELP = `node scripts/acceptance/run-host-acceptance.mjs --host <dsh-versio
                       add the real-host experience-driven experiment acceptance
                       (real failures -> plan -> baseline/candidate probes ->
                       measure -> refuse or promote -> restart recall); only
-                      supported on ${EXPERIENCE_EVOLUTION_HOST}
+                      supported on ${EXPERIENCE_EVOLUTION_HOSTS.join(' or ')}
   --cross-entry       add the real-host cross-entry promotion acceptance: publish
                       a stable promotion with explicit ACP/Web approval from the
                       full-kernel Web entry, then prove the consumer-only Web and
                       headless ACP entries mount it and every fault-isolation,
                       revocation and revalidation case; only supported on
-                      ${EXPERIENCE_EVOLUTION_HOST}
+                      ${EXPERIENCE_EVOLUTION_HOSTS.join(' or ')}
   --keep              keep the scratch directory after the run
 `;
 
@@ -129,12 +129,12 @@ if (!supportedHosts.includes(options.host)) {
   console.error(`refusing to run: ${options.host} is not a declared supported host (${supportedHosts.join(', ')})`);
   process.exit(2);
 }
-if (options.experienceEvolution && options.host !== EXPERIENCE_EVOLUTION_HOST) {
-  console.error(`refusing to run: --experience-evolution needs the official batch tool executor, which only ${EXPERIENCE_EVOLUTION_HOST} of the declared hosts provides`);
+if (options.experienceEvolution && !EXPERIENCE_EVOLUTION_HOSTS.includes(options.host)) {
+  console.error(`refusing to run: --experience-evolution needs the official batch tool executor, which only ${EXPERIENCE_EVOLUTION_HOSTS.join(' or ')} of the declared hosts provides`);
   process.exit(2);
 }
-if (options.crossEntry && options.host !== EXPERIENCE_EVOLUTION_HOST) {
-  console.error(`refusing to run: --cross-entry needs the host surfaces (batch tool executor, official Include consumer) that only ${EXPERIENCE_EVOLUTION_HOST} of the declared hosts provides`);
+if (options.crossEntry && !EXPERIENCE_EVOLUTION_HOSTS.includes(options.host)) {
+  console.error(`refusing to run: --cross-entry needs the host surfaces (batch tool executor, official Include consumer) that only ${EXPERIENCE_EVOLUTION_HOSTS.join(' or ')} of the declared hosts provides`);
   process.exit(2);
 }
 

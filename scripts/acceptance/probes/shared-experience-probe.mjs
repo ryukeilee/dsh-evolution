@@ -26,7 +26,7 @@ export function apply(ctx) {
     const startup = core && process.env.EVOLUTION_ENTRY_PROBE_VERIFY_STARTUP === '1'
       ? await core.verifyStartupCanary(parent.agent) : null;
     if (startup) before = store.stats();
-    const child = await ctx.agents.create({ sessionId: `entry-child-${randomUUID()}`, parentAgent: parent.agent,
+    const child = await ctx.agents.create({ sessionId: `entry-child-${randomUUID()}`,
       meta: { cwd, parentSession: parent.agent.id, origin: 'subagent' },
       setup: agentCtx => { ctx.agentPresets.composeFrom(agentCtx, parent.agent.ctx); } });
     let evidence;

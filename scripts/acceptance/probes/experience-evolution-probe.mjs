@@ -130,7 +130,7 @@ export function apply(ctx) {
   /** The official registry pipeline: one settled real call per entry. */
   async function officialCalls(agent, calls) {
     if (typeof ctx.tools.execute !== 'function') {
-      throw new Error('this host has no official batch tool executor; the experience acceptance requires DSH 0.2.2-rc.1');
+      throw new Error('this host has no official batch tool executor; the experience acceptance requires DSH 0.2.2-rc.1 or 0.2.2-rc.2');
     }
     const outcome = await ctx.tools.execute({
       agent,
