@@ -695,17 +695,18 @@ test('a canary-observing revert refusal stays unproven and keeps retrying', asyn
   let canaryCalls = 0;
   // The canary observation itself fails (infrastructure error, not a sample
   // mismatch), so the promotion is still mounted in canary-observing. The kernel
-  // refuses the first revert with its real state-specific wording; the host must
-  // not read that as proof that nothing is mounted.
+  // refuses every revert with its real state-specific wording; the only path
+  // that can hand the runtime back is the kernel's own regression observation,
+  // which succeeds on the retry.
   kernel.tools.set('evolution_canary_observe', { execute: async () => {
     canaryCalls += 1;
-    throw new Error('canary observation storage failed');
+    if (canaryCalls === 1) throw new Error('canary observation storage failed');
+    return { ok: false, phase: 'rolled-back', rollback: 'last-known-good' };
   } });
   kernel.tools.set('evolution_revert', { execute: async () => {
     revertAttempts += 1;
     kernel.state.reverts += 1;
-    if (revertAttempts === 1) throw new Error('experiment exp-desktop-task-1 is canary-observing; Revert requires a Trial');
-    return { ok: true, runtimeRecovered: true, phase: 'reverted' };
+    throw new Error('experiment exp-desktop-task-1 is canary-observing; Revert requires a Trial');
   } });
   const ctx = fakeCtx(kernel, plan);
   const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
@@ -714,9 +715,9 @@ test('a canary-observing revert refusal stays unproven and keeps retrying', asyn
   await host.start();
   await approveWhenWaiting(home, taskId);
   const failed = await waitForState(home, taskId, (value) => value.phase === 'failed', 10_000);
-  assert.equal(canaryCalls >= 1, true);
-  assert.equal(revertAttempts >= 2, true, 'the unproven canary refusal must be retried');
-  assert.deepEqual(failed.revert, { ok: true, status: 'reverted' });
+  assert.equal(canaryCalls >= 2, true, 'the cleanup must retry the official canary regression path');
+  assert.equal(revertAttempts >= 1, true);
+  assert.deepEqual(failed.revert, { ok: true, status: 'last-known-good' });
   assert.equal(failed.cleanupPending, false);
 });
 
