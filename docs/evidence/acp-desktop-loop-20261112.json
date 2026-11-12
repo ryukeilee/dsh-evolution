@@ -1,0 +1,275 @@
+{
+  "kind": "dsh-evolution-acp-desktop-loop",
+  "ok": true,
+  "startedAt": "2026-11-12T06:58:39.447Z",
+  "modelTransport": "deterministic loopback Anthropic responses; actual ACP Agent/tools",
+  "externalModelCalls": 0,
+  "scope": "isolated fresh Desktop launch via test-only profile probe; no production Desktop task submission API",
+  "steps": [
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "bash",
+      "at": "2026-11-12T06:58:40.019Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T06:58:40.025Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "acp_text_stats_c33953ef",
+      "at": "2026-11-12T07:00:28.582Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T07:00:28.588Z"
+    }
+  ],
+  "sandboxRetry": "single exact command retry after observed Electron EPERM; test permission granted by task/full-stop, no global policy change",
+  "desktop": {
+    "ok": true,
+    "phase": "stable",
+    "experimentId": "exp-mwd75lwx-1-b5c1106e",
+    "sourceSha256": "413bb1d96204489acd527f70687c87e20d62b0735ee4c43bf2f2f775df65c3c0",
+    "toolName": "acp_text_stats_c33953ef",
+    "targetProfiles": [
+      "acp"
+    ],
+    "samples": [
+      {
+        "input": "abc",
+        "result": {
+          "characters": 3,
+          "lines": 1
+        },
+        "renderedValue": {
+          "characters": 3,
+          "lines": 1
+        }
+      },
+      {
+        "input": "a\nb",
+        "result": {
+          "characters": 3,
+          "lines": 2
+        },
+        "renderedValue": {
+          "characters": 3,
+          "lines": 2
+        }
+      }
+    ],
+    "measured": {
+      "phase": "measured",
+      "gates": {
+        "realBenefit": true,
+        "measuredEvidence": true,
+        "repeatable": true,
+        "regressionTest": true,
+        "reversible": true,
+        "cleanupEvidence": true,
+        "noOrphans": true,
+        "runtimeRecovered": false,
+        "eligible": true
+      },
+      "decision": {
+        "kind": "benefit",
+        "eligible": true,
+        "reasons": [
+          "measured behavior improved and the correctness control stayed stable"
+        ]
+      }
+    },
+    "steps": [
+      {
+        "name": "evolution_runtime_inspect",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_runtime_inspect",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_runtime_inspect",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_runtime_inspect",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_runtime_inspect",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_propose",
+        "phase": "proposed",
+        "stable": null
+      },
+      {
+        "name": "evolution_trial",
+        "phase": "trial",
+        "stable": null
+      },
+      {
+        "name": "acp_text_stats_c33953ef",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "acp_text_stats_c33953ef",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_measure",
+        "phase": "measured",
+        "stable": null
+      },
+      {
+        "name": "evolution_promote",
+        "phase": "awaiting-owner-confirmation",
+        "stable": null
+      },
+      {
+        "name": "evolution_promote",
+        "phase": "canary-observing",
+        "stable": null
+      },
+      {
+        "name": "acp_text_stats_c33953ef",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_canary_observe",
+        "phase": "canary-observing",
+        "stable": false
+      },
+      {
+        "name": "acp_text_stats_c33953ef",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_canary_observe",
+        "phase": "stable",
+        "stable": true
+      }
+    ],
+    "runtime": {
+      "electron": "44.7.0",
+      "node": "24.21.0"
+    },
+    "desktopPid": 9612,
+    "record": {
+      "id": "evolution-promoted-d4b73cc98525",
+      "schemaVersion": 1,
+      "experimentId": "exp-mwd75lwx-1-b5c1106e",
+      "pluginName": "dsh-evolution-promoted-d4b73cc98525",
+      "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-d4b73cc98525/lib/index.js",
+      "entry": "lib/index.js",
+      "sourceSha256": "f78aee52fae96ff584c49023ba733f6579d62c82ef6d81afc1bf01c13fbb2221",
+      "manifestSha256": "ddafcf48fe7cab7e68f2ae239875346f2f8f50b0183d7ca3b775adca29851ee7",
+      "publisherProfile": "desktop",
+      "approvedProfiles": [
+        "acp"
+      ],
+      "stable": {
+        "committedAt": "2026-11-12T07:00:27.680Z",
+        "promotionTimestamp": "2026-11-12T07:00:27.559Z",
+        "decision": "benefit",
+        "canary": {
+          "healthObservationWindow": 2,
+          "observations": 2,
+          "startupVerified": true
+        }
+      },
+      "requiredServices": [
+        "tools"
+      ],
+      "serviceMembers": {},
+      "requiredCapabilities": [
+        "fiberLifecycle",
+        "fiberAwait",
+        "include",
+        "toolsRegistry"
+      ],
+      "hostOnly": true,
+      "publicationVerifiedAt": "2026-11-12T07:00:27.559Z",
+      "host": {
+        "dsh": "0.2.2-rc.1",
+        "cordis": "4.1.0",
+        "include": "1.1.0",
+        "node": "v24.21.0",
+        "verifiedAt": "2026-11-12T07:00:27.537Z"
+      },
+      "revalidation": [],
+      "publishedAt": "2026-11-12T07:00:27.737Z"
+    }
+  },
+  "authorization": {
+    "experimentId": "exp-mwd75lwx-1-b5c1106e",
+    "sourceSha256": "413bb1d96204489acd527f70687c87e20d62b0735ee4c43bf2f2f775df65c3c0",
+    "confirmation": true,
+    "targetProfiles": [
+      "acp"
+    ],
+    "authorizationSource": "explicit user approval in parent task on 2026-11-12; corrected renderer candidate; isolated acceptance only"
+  },
+  "injectedConsumerFault": "legacy include-unavailable report, same source and host; published index untouched",
+  "acpToolResult": {
+    "tool": "acp_text_stats_c33953ef",
+    "input": "ACP\nDesktop",
+    "content": "{\"characters\":11,\"lines\":2}"
+  },
+  "consumer": {
+    "schemaVersion": 1,
+    "kind": "dsh-evolution-promoted-consumer",
+    "profile": "acp",
+    "updatedAt": "2026-11-12T07:00:28.544Z",
+    "host": {
+      "profile": "acp",
+      "dsh": "0.2.2-rc.1",
+      "cordis": "4.1.0",
+      "include": "1.1.0",
+      "node": "v24.21.0",
+      "capturedAt": "2026-11-12T07:00:28.526Z"
+    },
+    "observedIndexUpdatedAt": "2026-11-12T07:00:27.737Z",
+    "compositionPath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/acp.6a9fe54a-3645-4058-86c4-ef08ee4c76c4.cordis.yml",
+    "plugins": [
+      {
+        "id": "evolution-promoted-665f82cfe83d",
+        "status": "active",
+        "reason": null,
+        "sourceSha256": "454477bc2009e3d618ea7ecf811a8679011b634825d82955874aa8067711fd4d",
+        "hostDigest": "ee0cb166cc762d5aa45cc63c89f592c42c79f294c935e8bce17fb3da5b9f3149",
+        "activatedAt": "2026-11-12T07:00:28.544Z",
+        "errorCode": null,
+        "errorName": null,
+        "errorDigest": null
+      },
+      {
+        "id": "evolution-promoted-d4b73cc98525",
+        "status": "active",
+        "reason": null,
+        "sourceSha256": "f78aee52fae96ff584c49023ba733f6579d62c82ef6d81afc1bf01c13fbb2221",
+        "hostDigest": "ee0cb166cc762d5aa45cc63c89f592c42c79f294c935e8bce17fb3da5b9f3149",
+        "activatedAt": "2026-11-12T07:00:28.544Z",
+        "errorCode": null,
+        "errorName": null,
+        "errorDigest": null
+      }
+    ],
+    "sessionId": "6a9fe54a-3645-4058-86c4-ef08ee4c76c4"
+  },
+  "profilePatchesPreserved": true,
+  "finishedAt": "2026-11-12T07:00:28.640Z",
+  "tarballSha256": "7db8d37a5d9c741bcf2ffd97158cd7a3d733a6eb5471f2acfedbbc6242302c23"
+}

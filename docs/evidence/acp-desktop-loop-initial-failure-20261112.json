@@ -1,0 +1,23 @@
+{
+  "kind": "dsh-evolution-acp-desktop-loop",
+  "ok": false,
+  "startedAt": "2026-11-12T06:52:41.454Z",
+  "modelTransport": "deterministic loopback Anthropic responses; actual ACP Agent/tools",
+  "externalModelCalls": 0,
+  "scope": "isolated fresh Desktop launch via test-only profile probe; no production Desktop task submission API",
+  "steps": [
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "bash",
+      "at": "2026-11-12T06:52:42.053Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T06:52:42.059Z"
+    }
+  ],
+  "sandboxRetry": "single exact command retry after observed Electron EPERM; test permission granted by task/full-stop, no global policy change",
+  "error": "Desktop failed: unsupported JSON schema: schema.additionalProperties must be explicitly true or false",
+  "finishedAt": "2026-11-12T06:52:46.636Z",
+  "tarballSha256": "7db8d37a5d9c741bcf2ffd97158cd7a3d733a6eb5471f2acfedbbc6242302c23"
+}

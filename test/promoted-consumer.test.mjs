@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { Context, Service } from '@deepseek-ai/cordis';
+import { Context, Service, CordisError } from '@deepseek-ai/cordis';
 import Loader from '@deepseek-ai/cordis-plugin-loader';
 import * as consumerEntry from '../lib/promoted-consumer.js';
 import {
@@ -168,7 +168,10 @@ async function fixture(t) {
     await fs.writeFile(paths.compositionPath(profile), `${JSON.stringify(entries, null, 2)}\n`, { mode: 0o600 });
   };
 
-  const readComposition = async (profile) => JSON.parse(await fs.readFile(paths.compositionPath(profile), 'utf8'));
+  const readComposition = async (profile) => {
+    const { state } = await readConsumerState(paths, profile);
+    return JSON.parse(await fs.readFile(state?.compositionPath ?? paths.compositionPath(profile), 'utf8'));
+  };
 
   return { home, dataRoot, paths, pluginRoot, createRecord, writeIndex, writeDisable, writeComposition, readComposition };
 }
@@ -228,7 +231,7 @@ test('eligible record mounts through the official Include and reports active', a
   assert.equal(state.state.profile, 'acp');
   assert.equal(state.state.kind, 'dsh-evolution-promoted-consumer');
   assert.equal(state.state.observedIndexUpdatedAt, index.updatedAt);
-  assert.equal(state.state.compositionPath, paths.compositionPath('acp'));
+  assert.equal(state.state.compositionPath, session.compositionPath);
   assert.equal(state.state.host.dsh, HOST.dsh);
   assert.deepEqual(state.state.plugins.map((plugin) => plugin.status), ['active']);
 
@@ -559,4 +562,179 @@ test('profile resolution follows config, environment and profileContext preceden
     if (previous === undefined) delete process.env.DSH_PROFILE;
     else process.env.DSH_PROFILE = previous;
   }
+});
+
+
+test('host Include failure does not poison next boot or erase genuine plugin failures', async t => {
+  const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
+  const good = await createRecord();
+  const bad = await createRecord({ source: "export function apply() { throw new Error('persistent'); }", requiredServices: [] });
+  await writeIndex([good.record, bad.record]);
+  const first = await mountSession(await boot(), dataRoot);
+  await first.dispose();
+  const broken = await mountSession(await boot(), dataRoot, { mountInclude: async () => { throw new Error('host not ready'); } });
+  assert.equal(broken.rows[0].reason, 'include-unavailable');
+  assert.equal(broken.rows[1].reason, 'plugin-apply-failed');
+  await broken.dispose();
+  const next = await mountSession(await boot(), dataRoot);
+  assert.deepEqual(next.rows.map(row => row.status), ['active', 'failed']);
+  assert.equal((await readConsumerState(paths, 'acp')).state.plugins[1].errorCode, 'E_CONSUMER_PLUGIN_APPLY_FAILED');
+  await next.dispose();
+});
+
+test('only proven-clean INACTIVE_EFFECT retries, with a fixed three-attempt budget', async t => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  await writeIndex([(await createRecord()).record]);
+  const { mountIncludeTree } = await import('../lib/promotion-include.js');
+  let calls = 0;
+  const recovered = await mountSession(await boot(), dataRoot, { mountInclude: async (...args) => {
+    if (++calls < 3) throw Object.assign(new Error('inactive'), { code: 'INACTIVE_EFFECT', consumerRetrySafe: true });
+    return mountIncludeTree(...args);
+  } });
+  assert.equal(calls, 3);
+  assert.equal(recovered.rows[0].status, 'active');
+  await recovered.dispose();
+  for (const safe of [false, true]) {
+    calls = 0;
+    const failed = await mountSession(await boot(), dataRoot, { mountInclude: async () => {
+      calls++;
+      throw Object.assign(new Error('inactive'), { code: 'INACTIVE_EFFECT', consumerRetrySafe: safe });
+    } });
+    assert.equal(calls, safe ? 3 : 1);
+    assert.equal(failed.rows[0].reason, 'include-unavailable');
+    await failed.dispose();
+  }
+});
+
+test('overlapping hosts use separate compositions; late old mount and disposal cannot overwrite activation', async t => {
+  const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
+  await writeIndex([(await createRecord()).record]);
+  const { mountIncludeTree } = await import('../lib/promotion-include.js');
+  let release, entered;
+  const gate = new Promise(resolve => { release = resolve; });
+  const started = new Promise(resolve => { entered = resolve; });
+  const old = createConsumerSession({ ctx: await boot(), config: { dataRoot }, profile: 'acp', mountInclude: async (...args) => {
+    entered(); await gate; return mountIncludeTree(...args);
+  } });
+  const mounting = old.mount();
+  await started;
+  const current = await mountSession(await boot(), dataRoot);
+  const snapshot = await fs.readFile(paths.statePath('acp'), 'utf8');
+  release(); await mounting;
+  assert.notEqual(old.session.compositionPath, current.compositionPath);
+  await old.dispose();
+  assert.equal(await fs.readFile(paths.statePath('acp'), 'utf8'), snapshot);
+  await current.dispose();
+});
+
+test('stop during Include startup joins mount and cannot publish active after disposal', async t => {
+  const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
+  await writeIndex([(await createRecord()).record]);
+  const { mountIncludeTree } = await import('../lib/promotion-include.js');
+  let release, entered;
+  const gate = new Promise(resolve => { release = resolve; });
+  const started = new Promise(resolve => { entered = resolve; });
+  const created = createConsumerSession({ ctx: await boot(), config: { dataRoot }, profile: 'acp', mountInclude: async (...args) => {
+    entered(); await gate; return mountIncludeTree(...args);
+  } });
+  const mounting = created.mount(); await started;
+  const stopping = created.dispose(); release();
+  await Promise.all([mounting, stopping]);
+  const state = (await readConsumerState(paths, 'acp')).state;
+  assert.equal(state.disposal.released, true);
+  assert.equal(state.plugins.some(row => row.status === 'active'), false);
+  assert.equal(await exists(created.session.compositionPath), false);
+});
+
+test('official Include retry proof requires settled disposal of a failed child', async () => {
+  const { mountIncludeTree } = await import('../lib/promotion-include.js');
+  for (const cleanupFails of [false, true]) {
+    const failure = Object.assign(new Error('startup race'), { code: 'INACTIVE_EFFECT' });
+    const child = {
+      uid: 1,
+      await: async () => { throw failure; },
+      dispose: async () => { if (cleanupFails) throw new Error('cleanup failed'); child.uid = null; },
+    };
+    await assert.rejects(mountIncludeTree({ plugin: () => child }, { path: '/unused/empty.yml' }), error => {
+      assert.equal(error, failure);
+      assert.equal(error.consumerRetrySafe === true, !cleanupFails);
+      return true;
+    });
+  }
+});
+
+
+test('a real Cordis Fiber retains its startup error after cleanup and Include retries once', async t => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const { record, toolName } = await createRecord();
+  await writeIndex([record]);
+  const ctx = await boot();
+  const { mountIncludeTree } = await import('../lib/promotion-include.js');
+  const children = [];
+  let attempts = 0;
+  const session = await mountSession(ctx, dataRoot, { mountInclude: (_ctx, config) => mountIncludeTree({
+    plugin(OfficialInclude, options) {
+      class StartupRaceInclude extends OfficialInclude {
+        constructor(...args) {
+          super(...args);
+          if (++attempts === 1) throw new CordisError('INACTIVE_EFFECT');
+        }
+      }
+      const child = ctx.plugin(StartupRaceInclude, options);
+      children.push(child);
+      return child;
+    },
+  }, config) });
+  assert.equal(attempts, 2);
+  assert.equal(children[0].uid, null);
+  await assert.rejects(children[0].await(), { code: 'INACTIVE_EFFECT' });
+  assert.equal(session.rows[0].status, 'active');
+  assert.deepEqual(ctx.tools.schemas().map(row => row.name), [toolName]);
+  await session.dispose();
+  assert.equal(children[1].uid, null);
+});
+
+test('an old mount delayed in index read cannot reclaim a new host report', async t => {
+  const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
+  await writeIndex([(await createRecord()).record]);
+  const originalRead = fs.readFile;
+  let release, entered;
+  const gate = new Promise(resolve => { release = resolve; });
+  const started = new Promise(resolve => { entered = resolve; });
+  let delayFirst = true;
+  fs.readFile = async (file, ...args) => {
+    if (file === paths.indexPath && delayFirst) {
+      delayFirst = false; entered(); await gate;
+    }
+    return originalRead(file, ...args);
+  };
+  t.after(() => { fs.readFile = originalRead; });
+  const old = createConsumerSession({ ctx: await boot(), config: { dataRoot }, profile: 'acp' });
+  const mounting = old.mount(); await started;
+  const current = await mountSession(await boot(), dataRoot);
+  const snapshot = await originalRead(paths.statePath('acp'), 'utf8');
+  release(); await mounting; await old.dispose();
+  assert.equal(await originalRead(paths.statePath('acp'), 'utf8'), snapshot);
+  await current.dispose();
+});
+
+
+test('stop before evaluation preserves an inherited genuine plugin failure', async t => {
+  const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
+  const bad = await createRecord({ source: "export function apply() { throw new Error('persistent'); }", requiredServices: [] });
+  await writeIndex([bad.record]);
+  const first = await mountSession(await boot(), dataRoot); await first.dispose();
+  let release, entered;
+  const gate = new Promise(resolve => { release = resolve; });
+  const started = new Promise(resolve => { entered = resolve; });
+  const { mountIncludeTree } = await import('../lib/promotion-include.js');
+  const created = createConsumerSession({ ctx: await boot(), config: { dataRoot }, profile: 'acp', mountInclude: async (...args) => {
+    entered(); await gate; return mountIncludeTree(...args);
+  } });
+  const mounting = created.mount(); await started;
+  const stopping = created.dispose(); release(); await Promise.all([mounting, stopping]);
+  const state = (await readConsumerState(paths, 'acp')).state;
+  assert.equal(state.plugins[0].status, 'failed');
+  assert.equal(state.plugins[0].reason, 'plugin-apply-failed');
+  assert.equal(state.plugins[0].errorCode, 'E_CONSUMER_PLUGIN_APPLY_FAILED');
 });
