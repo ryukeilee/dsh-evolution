@@ -846,3 +846,64 @@ test('disposal during Include startup preserves the inherited activation report'
   await assertInheritedReportPreserved(env);
   await env.live.dispose();
 });
+
+/**
+ * The publication liveness question has a second shape than "my own fiber is
+ * disposed": a host shutdown brings the ancestor fibers to UNLOADING before it
+ * reaches this band entry's disposer, so the entry is still LOADING (its own
+ * `uid` is set) while nothing it observes about the Include or the services is
+ * a fact about the profile anymore. Reporting those observations would replace
+ * a live session's activation with `include-unavailable` and make the audit
+ * advise a restart that is not needed.
+ */
+test('a host that is already tearing down cannot publish include-unavailable over the live report', async (t) => {
+  const env = await mountedLiveReport(t);
+  let attempts = 0;
+  const dyingHost = {
+    get: () => null,
+    fiber: { uid: 1, state: 1, parent: { fiber: { uid: 4, state: 5 } } },
+    root: { fiber: { uid: 0, state: 5 } },
+  };
+  const aborted = createConsumerSession({
+    ctx: dyingHost,
+    config: { dataRoot: env.dataRoot },
+    profile: 'acp',
+    mountInclude: async () => {
+      attempts += 1;
+      throw new Error('the Include went away with the host');
+    },
+  });
+  await aborted.mount();
+  assert.equal(attempts, 0, 'an unloading host cannot reach the Include at all');
+  await aborted.dispose();
+  await assertInheritedReportPreserved(env);
+  await env.live.dispose();
+});
+
+/**
+ * The same question on the success path: the mount settles, the shutdown lands
+ * while the capability/service probes and the refresh run, so the computed rows
+ * describe the teardown (`missing-service`, `include-refresh-failed`) instead of
+ * the live profile. Nothing may be published from that session.
+ */
+test('a session that loses its context after a successful mount publishes nothing', async (t) => {
+  const env = await mountedLiveReport(t);
+  const ctx = { get: () => null, fiber: { uid: 1, state: 1 } };
+  const aborted = createConsumerSession({
+    ctx,
+    config: { dataRoot: env.dataRoot },
+    profile: 'acp',
+    mountInclude: async () => ({
+      capabilities: {},
+      refresh: async () => {
+        ctx.fiber.uid = null;
+        throw new Error('the Include refreshed during shutdown');
+      },
+      dispose: async () => {},
+    }),
+  });
+  await aborted.mount();
+  await aborted.dispose();
+  await assertInheritedReportPreserved(env);
+  await env.live.dispose();
+});

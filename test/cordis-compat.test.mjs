@@ -19,7 +19,8 @@ import { Context, Service } from '@deepseek-ai/cordis';
 import Loader from '@deepseek-ai/cordis-plugin-loader';
 
 import {
-  fiberIsActive, serviceImpl, serviceImplSource, probeSurfaces, recordedSurfaces,
+  fiberIsActive, fiberIsShuttingDown, FIBER_STATE_UNLOADING,
+  serviceImpl, serviceImplSource, probeSurfaces, recordedSurfaces,
   registerIsolateKey, currentIsolateKey, publicServiceImplPath,
   SURFACE_PRIVATE, SURFACE_PUBLIC, SURFACE_UNDOCUMENTED,
 } from '../lib/cordis-compat.js';
@@ -145,7 +146,10 @@ test('fiberIsActive equals FiberState.ACTIVE across every lifecycle transition',
   // transition is exact, whereas racing a timer would sample by luck.
   const transitions = [];
   ctx.on('internal/status', (fiber) => {
-    transitions.push({ uid: fiber?.uid, state: fiber?.state, active: fiberIsActive(fiber) });
+    transitions.push({
+      uid: fiber?.uid, state: fiber?.state,
+      active: fiberIsActive(fiber), shuttingDown: fiberIsShuttingDown(fiber),
+    });
   });
 
   class Provider extends Service { constructor(c) { super(c, 'provider'); } }
@@ -184,7 +188,16 @@ test('fiberIsActive equals FiberState.ACTIVE across every lifecycle transition',
       entry.active, entry.state === FIBER_STATE_ACTIVE,
       `fiber uid=${entry.uid}: fiberIsActive=${entry.active} but state=${entry.state}`,
     );
+    // Publication liveness is a different question than activation: a fiber is
+    // no longer able to take effects once its own uid is cleared or an ancestor
+    // reaches UNLOADING (the transition a host enters before its disposers run).
+    assert.equal(
+      entry.shuttingDown, entry.uid === null || entry.state === FIBER_STATE_UNLOADING,
+      `fiber uid=${entry.uid}: fiberIsShuttingDown=${entry.shuttingDown} but state=${entry.state}`,
+    );
   }
+  assert.equal(FIBER_STATE_UNLOADING, 5, 'the UNLOADING state was renumbered by cordis');
+  assert.ok(transitions.some((entry) => entry.shuttingDown), 'no tearing-down transition was observed');
   for (const state of [1, 2, 3, 4, 5]) {
     assert.ok(states.includes(state), `lifecycle state ${state} was never observed; saw ${states}`);
   }
@@ -202,6 +215,12 @@ test('fiberIsActive equals FiberState.ACTIVE across every lifecycle transition',
   // A LOADING fiber already has a store snapshot; the in-flight transition must
   // still make it inactive.
   assert.equal(fiberIsActive({ uid: 1, store: {}, inertia: Promise.resolve() }), false);
+  assert.equal(fiberIsShuttingDown(undefined), false);
+  assert.equal(fiberIsShuttingDown(null), false);
+  assert.equal(fiberIsShuttingDown({ uid: 1, state: 1 }), false, 'LOADING still publishes');
+  assert.equal(fiberIsShuttingDown({ uid: 1, state: 2 }), false);
+  assert.equal(fiberIsShuttingDown({ uid: null, state: 4 }), true, 'a disposed fiber cannot publish');
+  assert.equal(fiberIsShuttingDown({ uid: 4, state: FIBER_STATE_UNLOADING }), true, 'an unloading ancestor cannot publish');
 });
 
 test('no fiber state decision in lib/ is made from a numeric FiberState literal', async () => {
@@ -219,8 +238,10 @@ test('no fiber state decision in lib/ is made from a numeric FiberState literal'
   for (const file of sources) {
     const text = fsSync.readFileSync(file, 'utf8');
     const match = text.match(/\.?\bstate\s*[!=]==?\s*\d/);
-    // Only the compatibility module may mention the numeric value, and only in
-    // prose explaining why it is not trusted.
+    // Only the compatibility module may mention the numeric value, and it does
+    // so either in prose explaining why it is not trusted or through the
+    // exported constant that the lifecycle equivalence test above pins against
+    // the shipped package. A bare literal never decides a state anywhere else.
     if (match) {
       assert.equal(path.relative(repoRoot, file), 'lib/cordis-compat.js', `${path.relative(repoRoot, file)} compares a fiber state to a numeric literal; use fiberIsActive() from lib/cordis-compat.js`);
       assert.match(text.slice(Math.max(0, match.index - 200), match.index + 200), /Verified equal to|not trusted|Published|erased/);
