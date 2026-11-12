@@ -121,6 +121,8 @@ test('request validation rejects unknown, unbounded, and malformed fields', () =
   assert.equal(validateTaskRequest(badPlan((plan) => { plan.verification.samples[0].expected = new Date(); })).ok, false);
   assert.equal(validateTaskRequest(badPlan((plan) => { plan.verification.samples[0].arguments = { value: 1n }; })).ok, false);
   assert.equal(validateTaskRequest(badPlan((plan) => { plan.verification.observations = 0; })).ok, false);
+  assert.equal(validateTaskRequest(badPlan((plan) => { plan.verification.samples[0].tool = 'evolution_promote'; })).ok, false);
+  assert.equal(validateTaskRequest(badPlan((plan) => { plan.verification.targetTool = 'evolution_trial'; })).ok, false);
   assert.equal(validateTaskRequest(badPlan((plan) => { plan.requestedTargetProfiles = ['desktop']; })).ok, false);
   assert.equal(validateTaskRequest(badPlan((plan) => { plan.requestedTargetProfiles = ['acp', 'acp']; })).ok, false);
   assert.equal(validateTaskRequest(badPlan((plan) => { plan.proposal.why = 7; })).ok, false);

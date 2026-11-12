@@ -20,7 +20,9 @@ Desktop 的认证地址并提交任务”没有受支持、可维护的入口，
    状态与结果、把用户明确确认过的晋升授权写回 Desktop。
 3. **跨进程任务通道**：`$DSH_HOME/storages/evolution/desktop-tasks/` 下的原子 JSON 文件。与仓库既有的
    发布索引、撤销表、claim 一样，只支持同一台机器、同一 OS 用户、同一 `DSH_HOME`；所有文件 0600，
-   原子写（临时文件 + fsync + rename），不是第二个服务、没有网络监听、没有定时轮询驱动生命周期。
+   原子写（临时文件 + fsync + rename），不是第二个服务、没有网络监听。Desktop 侧用 `fs.watch` 响应新
+   任务，另有一个低频有界安全重扫（默认 1500 ms，`unref()`）只用于弥补 watcher 丢事件，不承担任何
+   Evolution/晋升生命周期判断。
 4. **启动方式**：Desktop 未运行时，ACP 侧按官方 macOS 应用路径启动正式 DeepSeek Harness 应用
    （Electron 自己的单实例锁保证不会出现第二个 Desktop）。Desktop 已运行但没有本插件时，明确报错并
    要求重启 Desktop 让新 profile 生效。
