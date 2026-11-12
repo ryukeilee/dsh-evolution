@@ -1,0 +1,1209 @@
+{
+  "schemaVersion": 1,
+  "kind": "dsh-evolution-promoted-consumer-shutdown-state",
+  "phase": "fixed",
+  "startedAt": "2026-11-12T22:55:41.500Z",
+  "finishedAt": "2026-11-12T22:55:53.686Z",
+  "result": {
+    "expected": "every shutdown-during-startup attempt preserves the baseline active report and the review still reports active with no restart action",
+    "satisfied": true,
+    "attempts": 8,
+    "destroyedAttempts": 0,
+    "claimFailures": 0,
+    "fixedFailures": 0,
+    "defectReproduced": false,
+    "baselineSessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+    "baselineReviewStatus": "active"
+  },
+  "error": null,
+  "invocation": [
+    "node",
+    "scripts/acceptance/reproduce-consumer-shutdown-state.mjs",
+    "--tarball",
+    "dist/dsh-evolution-0.2.9.tgz",
+    "--out",
+    "docs/evidence/promoted-consumer-shutdown-state-0.2.9-fixed.json",
+    "--phase",
+    "fixed",
+    "--attempts",
+    "8",
+    "--work",
+    "<work>",
+    "--keep"
+  ],
+  "isolation": {
+    "home": "$DSH_HOME",
+    "work": "<work>",
+    "realHomeRefused": true,
+    "workIsTemporary": false
+  },
+  "environment": {
+    "runner": {
+      "node": "v26.13.0",
+      "platform": "darwin-arm64"
+    },
+    "cli": {
+      "path": "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh",
+      "version": "0.2.2-rc.2"
+    },
+    "dsh": "0.2.2-rc.2",
+    "repo": {
+      "root": "<repo>",
+      "head": "c3a24c5269d56825e26645200bcbae53c575fcd0",
+      "branch": "t3/release-stable-e2e",
+      "libDiffFiles": []
+    }
+  },
+  "install": {
+    "tarball": {
+      "name": "dsh-evolution-0.2.9.tgz",
+      "sha256": "2fb6533ae0149e0f80ccc8fe32d4a75fc43bf92abfe933d0ea59c5e41cdb0ce8",
+      "bytes": 747128
+    },
+    "artifact": "$DSH_HOME/storages/evolution-package-cache/2fb6533ae0149e0f80ccc8fe32d4a75fc43bf92abfe933d0ea59c5e41cdb0ce8.tgz",
+    "profile": "acp",
+    "packageVersion": "0.2.9",
+    "packageDir": "$DSH_HOME/profiles/acp/node_modules/dsh-evolution",
+    "dereferencedSymlink": false,
+    "profilePatch": "$DSH_HOME/profiles/acp/cordis.patch.yml",
+    "packageLibDigest": "8db40c7900857ae449705a121c6063a224ed8b80e661d1c7a2358a99aa93c390",
+    "packageLibFileCount": 53
+  },
+  "implementation": {
+    "phase": "fixed",
+    "changedLibFiles": [],
+    "replacements": []
+  },
+  "fixture": {
+    "recordId": "evolution-promoted-603886241a38",
+    "experimentId": "exp-consumer-shutdown-34667edd85df44f4",
+    "pluginName": "dsh-evolution-promoted-603886241a38",
+    "toolName": "consumer_abort_probe_34667e",
+    "markerName": "consumer-abort/34667edd85df44f4/marker",
+    "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917",
+    "manifestSha256": "da42f13b53a0196c17638124369c3211e014b05934d0fc8f309137c69055c624",
+    "pluginDir": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-603886241a38",
+    "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+    "indexUpdatedAt": "2026-11-12T22:55:44.626Z",
+    "calibration": {
+      "host": {
+        "profile": "acp",
+        "dsh": "0.2.2-rc.2",
+        "cordis": "4.1.0",
+        "include": "1.1.0",
+        "node": "v24.21.0",
+        "capturedAt": "2026-11-12T22:55:42.853Z"
+      },
+      "receipt": {
+        "ok": true,
+        "label": "calibration",
+        "expectedProfile": "acp",
+        "profile": "acp",
+        "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/acp.json",
+        "startedAt": "2026-11-12T22:55:44.286Z",
+        "finishedAt": "2026-11-12T22:55:44.294Z",
+        "tools": [
+          "bash",
+          "create_goal",
+          "edit",
+          "evolution_desktop",
+          "evolution_history",
+          "exit_plan_mode",
+          "get_goal",
+          "glob",
+          "grep",
+          "job_kill",
+          "job_list",
+          "job_output",
+          "list_agents",
+          "read",
+          "read_image",
+          "send_message",
+          "skill",
+          "subagent",
+          "subagent_fork",
+          "team_task_create",
+          "team_task_get",
+          "team_task_list",
+          "team_task_update",
+          "todo_write",
+          "update_goal",
+          "wait_agent",
+          "web_fetch",
+          "web_search",
+          "workflow",
+          "working_directory",
+          "write"
+        ],
+        "tool": {
+          "name": "consumer_abort_probe_34667e",
+          "found": false,
+          "hasExecute": false,
+          "schemaHadExecute": false,
+          "executeSource": null,
+          "parameters": null,
+          "execution": {
+            "attempted": false
+          }
+        },
+        "marker": {
+          "name": "consumer-abort/34667edd85df44f4/marker",
+          "listeners": 0,
+          "hits": 0,
+          "error": null
+        },
+        "consumerState": {
+          "status": "ok",
+          "sessionId": "9e1df278-1196-47a9-ad01-83760f57f0fa",
+          "updatedAt": "2026-11-12T22:55:42.861Z",
+          "observedIndexUpdatedAt": null,
+          "disposedAt": null,
+          "rows": []
+        },
+        "versions": {
+          "node": "24.21.0",
+          "electron": "44.7.0",
+          "chrome": "152.0.7977.130"
+        },
+        "probeInstances": 1,
+        "platform": {
+          "platform": "darwin",
+          "arch": "arm64"
+        }
+      },
+      "consumerState": {
+        "sessionId": "9e1df278-1196-47a9-ad01-83760f57f0fa",
+        "updatedAt": "2026-11-12T22:55:42.861Z",
+        "observedIndexUpdatedAt": null,
+        "disposedAt": null,
+        "disposal": null,
+        "host": {
+          "profile": "acp",
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0"
+        },
+        "rows": []
+      }
+    }
+  },
+  "baseline": {
+    "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+    "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+    "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/acp.json",
+    "stateSha256": "086f8524d88685ca86fab0aa553ba6f75a1538a40cc1bb1aedfdcf747bc01321",
+    "state": {
+      "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+      "updatedAt": "2026-11-12T22:55:45.163Z",
+      "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+      "disposedAt": "2026-11-12T22:55:46.702Z",
+      "disposal": {
+        "released": true,
+        "entries": 1
+      },
+      "host": {
+        "profile": "acp",
+        "dsh": "0.2.2-rc.2",
+        "cordis": "4.1.0",
+        "include": "1.1.0",
+        "node": "v24.21.0"
+      },
+      "rows": [
+        {
+          "id": "evolution-promoted-603886241a38",
+          "status": "active",
+          "reason": null,
+          "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917",
+          "activatedAt": "2026-11-12T22:55:45.163Z",
+          "errorCode": null
+        }
+      ]
+    },
+    "indexSha256": "f99f65932cf58feeff169c6d7385e0874c2571a216d89d5abbc219bcfd19cea1",
+    "probeReceipt": {
+      "ok": true,
+      "label": "baseline",
+      "expectedProfile": "acp",
+      "profile": "acp",
+      "statePath": "$DSH_HOME/storages/evolution/shared-plugins/consumers/acp.json",
+      "startedAt": "2026-11-12T22:55:46.577Z",
+      "finishedAt": "2026-11-12T22:55:46.582Z",
+      "tools": [
+        "bash",
+        "consumer_abort_probe_34667e",
+        "create_goal",
+        "edit",
+        "evolution_desktop",
+        "evolution_history",
+        "exit_plan_mode",
+        "get_goal",
+        "glob",
+        "grep",
+        "job_kill",
+        "job_list",
+        "job_output",
+        "list_agents",
+        "read",
+        "read_image",
+        "send_message",
+        "skill",
+        "subagent",
+        "subagent_fork",
+        "team_task_create",
+        "team_task_get",
+        "team_task_list",
+        "team_task_update",
+        "todo_write",
+        "update_goal",
+        "wait_agent",
+        "web_fetch",
+        "web_search",
+        "workflow",
+        "working_directory",
+        "write"
+      ],
+      "tool": {
+        "name": "consumer_abort_probe_34667e",
+        "found": true,
+        "hasExecute": true,
+        "schemaHadExecute": false,
+        "executeSource": "get",
+        "parameters": "{\"type\":\"object\",\"properties\":{}}",
+        "execution": {
+          "attempted": true,
+          "ok": true,
+          "result": {
+            "ok": true,
+            "tool": "consumer_abort_probe_34667e"
+          },
+          "source": "get"
+        }
+      },
+      "marker": {
+        "name": "consumer-abort/34667edd85df44f4/marker",
+        "listeners": 1,
+        "hits": 1,
+        "error": null
+      },
+      "consumerState": {
+        "status": "ok",
+        "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+        "updatedAt": "2026-11-12T22:55:45.163Z",
+        "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+        "disposedAt": null,
+        "rows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:55:45.163Z",
+            "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917"
+          }
+        ]
+      },
+      "versions": {
+        "node": "24.21.0",
+        "electron": "44.7.0",
+        "chrome": "152.0.7977.130"
+      },
+      "probeInstances": 1,
+      "platform": {
+        "platform": "darwin",
+        "arch": "arm64"
+      }
+    },
+    "review": {
+      "status": "active",
+      "action": null,
+      "record": {
+        "id": "evolution-promoted-603886241a38",
+        "experimentId": "exp-consumer-shutdown-34667edd85df44f4",
+        "pluginName": "dsh-evolution-promoted-603886241a38",
+        "approvedProfiles": [
+          "acp"
+        ],
+        "status": "active",
+        "action": null,
+        "source": "verified",
+        "hostCompatible": true,
+        "hostReason": null,
+        "revalidationGenerations": 0,
+        "publishedAt": "2026-11-12T22:55:44.626Z",
+        "host": {
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0",
+          "verifiedAt": null
+        },
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "reasons": []
+      },
+      "nextActions": [],
+      "summary": {
+        "total": 1,
+        "active": 1,
+        "pendingRevalidation": 0,
+        "incompatible": 0,
+        "restartRequired": 0,
+        "hostUnavailable": 0,
+        "inactive": 0,
+        "invalid": 0,
+        "sourceUnusable": 0,
+        "blocked": 0,
+        "verifyHost": 0
+      },
+      "consumers": {
+        "acp": {
+          "status": "ok",
+          "updatedAt": "2026-11-12T22:55:45.163Z",
+          "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+          "needsRestart": false,
+          "rows": [
+            {
+              "id": "evolution-promoted-603886241a38",
+              "status": "active",
+              "reason": null,
+              "activatedAt": "2026-11-12T22:55:45.163Z"
+            }
+          ]
+        },
+        "web": {
+          "status": "absent",
+          "updatedAt": null,
+          "observedIndexUpdatedAt": null,
+          "needsRestart": false,
+          "rows": []
+        }
+      }
+    },
+    "calibrationStateSha256": "3d85d8706600d513b8afa72a428166474f2794734fb49fb95d5a8dc6dd7be41f"
+  },
+  "attempts": [
+    {
+      "index": 1,
+      "label": "attempt-01",
+      "restoredSha256": "086f8524d88685ca86fab0aa553ba6f75a1538a40cc1bb1aedfdcf747bc01321",
+      "baselineSessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+      "observedSessionId": "cf92e16b-8281-4ed4-824f-dda5ddbc452f",
+      "observedAfterMs": 542,
+      "claimNotObserved": false,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "destroyed": false,
+      "finalState": {
+        "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+        "updatedAt": "2026-11-12T22:55:45.163Z",
+        "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+        "disposedAt": "2026-11-12T22:55:47.562Z",
+        "disposal": {
+          "released": true,
+          "entries": 0
+        },
+        "host": {
+          "profile": "acp",
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0"
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917",
+            "activatedAt": "2026-11-12T22:55:45.163Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "finalStateSha256": "2dc6e76f5e530356ae93a70893ee29a907f403d02b57255f46ec4dba383b3b2c",
+      "review": {
+        "status": "active",
+        "recordStatus": "active",
+        "recordAction": null,
+        "recordReasons": [],
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "restartActions": [],
+        "nextActions": [],
+        "summary": {
+          "total": 1,
+          "active": 1,
+          "pendingRevalidation": 0,
+          "incompatible": 0,
+          "restartRequired": 0,
+          "hostUnavailable": 0,
+          "inactive": 0,
+          "invalid": 0,
+          "sourceUnusable": 0,
+          "blocked": 0,
+          "verifyHost": 0
+        },
+        "needsRestart": false,
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:55:45.163Z"
+          }
+        ]
+      },
+      "checks": {
+        "preFixExpectation": false,
+        "fixedExpectation": true,
+        "fixedChecks": {
+          "claimObserved": true,
+          "sessionIdRestored": true,
+          "rowActive": true,
+          "rowUnchanged": true,
+          "observedIndexUnchanged": true,
+          "disposalRecorded": true,
+          "onlyDisposalFieldsChanged": true,
+          "reviewActive": true,
+          "noRestartAction": true
+        },
+        "reviewBad": false,
+        "changedKeys": [
+          "disposal",
+          "disposedAt"
+        ]
+      },
+      "error": null,
+      "logTail": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1,\"agentInfo\":{\"name\":\"deepseek-harness-acp\",\"version\":\"0.0.1\"},\"agentCapabilities\":{\"mcpCapabilities\":{\"http\":true},\"promptCapabilities\":{\"image\":false,\"audio\":false,\"embeddedContext\":false},\"sessionCapabilities\":{\"close\":{},\"list\":{},\"resume\":{}}},\"authMethods\":[]}}\n"
+    },
+    {
+      "index": 2,
+      "label": "attempt-02",
+      "restoredSha256": "086f8524d88685ca86fab0aa553ba6f75a1538a40cc1bb1aedfdcf747bc01321",
+      "baselineSessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+      "observedSessionId": "558db4ed-6d7e-405c-a877-7173b70620fd",
+      "observedAfterMs": 530,
+      "claimNotObserved": false,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "destroyed": false,
+      "finalState": {
+        "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+        "updatedAt": "2026-11-12T22:55:45.163Z",
+        "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+        "disposedAt": "2026-11-12T22:55:48.410Z",
+        "disposal": {
+          "released": true,
+          "entries": 0
+        },
+        "host": {
+          "profile": "acp",
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0"
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917",
+            "activatedAt": "2026-11-12T22:55:45.163Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "finalStateSha256": "23d60164208fb833c5c65c939284e8daf6544118b33f991e34e121918997b8b3",
+      "review": {
+        "status": "active",
+        "recordStatus": "active",
+        "recordAction": null,
+        "recordReasons": [],
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "restartActions": [],
+        "nextActions": [],
+        "summary": {
+          "total": 1,
+          "active": 1,
+          "pendingRevalidation": 0,
+          "incompatible": 0,
+          "restartRequired": 0,
+          "hostUnavailable": 0,
+          "inactive": 0,
+          "invalid": 0,
+          "sourceUnusable": 0,
+          "blocked": 0,
+          "verifyHost": 0
+        },
+        "needsRestart": false,
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:55:45.163Z"
+          }
+        ]
+      },
+      "checks": {
+        "preFixExpectation": false,
+        "fixedExpectation": true,
+        "fixedChecks": {
+          "claimObserved": true,
+          "sessionIdRestored": true,
+          "rowActive": true,
+          "rowUnchanged": true,
+          "observedIndexUnchanged": true,
+          "disposalRecorded": true,
+          "onlyDisposalFieldsChanged": true,
+          "reviewActive": true,
+          "noRestartAction": true
+        },
+        "reviewBad": false,
+        "changedKeys": [
+          "disposal",
+          "disposedAt"
+        ]
+      },
+      "error": null,
+      "logTail": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1,\"agentInfo\":{\"name\":\"deepseek-harness-acp\",\"version\":\"0.0.1\"},\"agentCapabilities\":{\"mcpCapabilities\":{\"http\":true},\"promptCapabilities\":{\"image\":false,\"audio\":false,\"embeddedContext\":false},\"sessionCapabilities\":{\"close\":{},\"list\":{},\"resume\":{}}},\"authMethods\":[]}}\n"
+    },
+    {
+      "index": 3,
+      "label": "attempt-03",
+      "restoredSha256": "086f8524d88685ca86fab0aa553ba6f75a1538a40cc1bb1aedfdcf747bc01321",
+      "baselineSessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+      "observedSessionId": "6a1189bd-af40-4b7b-be3a-48a669d479d5",
+      "observedAfterMs": 514,
+      "claimNotObserved": false,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "destroyed": false,
+      "finalState": {
+        "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+        "updatedAt": "2026-11-12T22:55:45.163Z",
+        "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+        "disposedAt": "2026-11-12T22:55:49.236Z",
+        "disposal": {
+          "released": true,
+          "entries": 0
+        },
+        "host": {
+          "profile": "acp",
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0"
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917",
+            "activatedAt": "2026-11-12T22:55:45.163Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "finalStateSha256": "6c1d467f1562a213de35bf05a5b4f540c7874bc983b08c85ca998fb98fe0b185",
+      "review": {
+        "status": "active",
+        "recordStatus": "active",
+        "recordAction": null,
+        "recordReasons": [],
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "restartActions": [],
+        "nextActions": [],
+        "summary": {
+          "total": 1,
+          "active": 1,
+          "pendingRevalidation": 0,
+          "incompatible": 0,
+          "restartRequired": 0,
+          "hostUnavailable": 0,
+          "inactive": 0,
+          "invalid": 0,
+          "sourceUnusable": 0,
+          "blocked": 0,
+          "verifyHost": 0
+        },
+        "needsRestart": false,
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:55:45.163Z"
+          }
+        ]
+      },
+      "checks": {
+        "preFixExpectation": false,
+        "fixedExpectation": true,
+        "fixedChecks": {
+          "claimObserved": true,
+          "sessionIdRestored": true,
+          "rowActive": true,
+          "rowUnchanged": true,
+          "observedIndexUnchanged": true,
+          "disposalRecorded": true,
+          "onlyDisposalFieldsChanged": true,
+          "reviewActive": true,
+          "noRestartAction": true
+        },
+        "reviewBad": false,
+        "changedKeys": [
+          "disposal",
+          "disposedAt"
+        ]
+      },
+      "error": null,
+      "logTail": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1,\"agentInfo\":{\"name\":\"deepseek-harness-acp\",\"version\":\"0.0.1\"},\"agentCapabilities\":{\"mcpCapabilities\":{\"http\":true},\"promptCapabilities\":{\"image\":false,\"audio\":false,\"embeddedContext\":false},\"sessionCapabilities\":{\"close\":{},\"list\":{},\"resume\":{}}},\"authMethods\":[]}}\n"
+    },
+    {
+      "index": 4,
+      "label": "attempt-04",
+      "restoredSha256": "086f8524d88685ca86fab0aa553ba6f75a1538a40cc1bb1aedfdcf747bc01321",
+      "baselineSessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+      "observedSessionId": "61c7040a-5a7c-49c4-9e2f-63dce6f9371b",
+      "observedAfterMs": 523,
+      "claimNotObserved": false,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "destroyed": false,
+      "finalState": {
+        "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+        "updatedAt": "2026-11-12T22:55:45.163Z",
+        "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+        "disposedAt": "2026-11-12T22:55:50.070Z",
+        "disposal": {
+          "released": true,
+          "entries": 0
+        },
+        "host": {
+          "profile": "acp",
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0"
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917",
+            "activatedAt": "2026-11-12T22:55:45.163Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "finalStateSha256": "2a7ff42f34abe50403621b51e27b8d52ad723a3884b19ce99556d139b446a665",
+      "review": {
+        "status": "active",
+        "recordStatus": "active",
+        "recordAction": null,
+        "recordReasons": [],
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "restartActions": [],
+        "nextActions": [],
+        "summary": {
+          "total": 1,
+          "active": 1,
+          "pendingRevalidation": 0,
+          "incompatible": 0,
+          "restartRequired": 0,
+          "hostUnavailable": 0,
+          "inactive": 0,
+          "invalid": 0,
+          "sourceUnusable": 0,
+          "blocked": 0,
+          "verifyHost": 0
+        },
+        "needsRestart": false,
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:55:45.163Z"
+          }
+        ]
+      },
+      "checks": {
+        "preFixExpectation": false,
+        "fixedExpectation": true,
+        "fixedChecks": {
+          "claimObserved": true,
+          "sessionIdRestored": true,
+          "rowActive": true,
+          "rowUnchanged": true,
+          "observedIndexUnchanged": true,
+          "disposalRecorded": true,
+          "onlyDisposalFieldsChanged": true,
+          "reviewActive": true,
+          "noRestartAction": true
+        },
+        "reviewBad": false,
+        "changedKeys": [
+          "disposal",
+          "disposedAt"
+        ]
+      },
+      "error": null,
+      "logTail": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1,\"agentInfo\":{\"name\":\"deepseek-harness-acp\",\"version\":\"0.0.1\"},\"agentCapabilities\":{\"mcpCapabilities\":{\"http\":true},\"promptCapabilities\":{\"image\":false,\"audio\":false,\"embeddedContext\":false},\"sessionCapabilities\":{\"close\":{},\"list\":{},\"resume\":{}}},\"authMethods\":[]}}\n"
+    },
+    {
+      "index": 5,
+      "label": "attempt-05",
+      "restoredSha256": "086f8524d88685ca86fab0aa553ba6f75a1538a40cc1bb1aedfdcf747bc01321",
+      "baselineSessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+      "observedSessionId": "01c4fa52-ccdf-4d70-91e1-058805b539ce",
+      "observedAfterMs": 519,
+      "claimNotObserved": false,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "destroyed": false,
+      "finalState": {
+        "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+        "updatedAt": "2026-11-12T22:55:45.163Z",
+        "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+        "disposedAt": "2026-11-12T22:55:50.900Z",
+        "disposal": {
+          "released": true,
+          "entries": 0
+        },
+        "host": {
+          "profile": "acp",
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0"
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917",
+            "activatedAt": "2026-11-12T22:55:45.163Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "finalStateSha256": "9797a32abbfe6a1c744d3058cf1fde3fbe7a7e4f3a9eb38ac170d7fcf18836ad",
+      "review": {
+        "status": "active",
+        "recordStatus": "active",
+        "recordAction": null,
+        "recordReasons": [],
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "restartActions": [],
+        "nextActions": [],
+        "summary": {
+          "total": 1,
+          "active": 1,
+          "pendingRevalidation": 0,
+          "incompatible": 0,
+          "restartRequired": 0,
+          "hostUnavailable": 0,
+          "inactive": 0,
+          "invalid": 0,
+          "sourceUnusable": 0,
+          "blocked": 0,
+          "verifyHost": 0
+        },
+        "needsRestart": false,
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:55:45.163Z"
+          }
+        ]
+      },
+      "checks": {
+        "preFixExpectation": false,
+        "fixedExpectation": true,
+        "fixedChecks": {
+          "claimObserved": true,
+          "sessionIdRestored": true,
+          "rowActive": true,
+          "rowUnchanged": true,
+          "observedIndexUnchanged": true,
+          "disposalRecorded": true,
+          "onlyDisposalFieldsChanged": true,
+          "reviewActive": true,
+          "noRestartAction": true
+        },
+        "reviewBad": false,
+        "changedKeys": [
+          "disposal",
+          "disposedAt"
+        ]
+      },
+      "error": null,
+      "logTail": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1,\"agentInfo\":{\"name\":\"deepseek-harness-acp\",\"version\":\"0.0.1\"},\"agentCapabilities\":{\"mcpCapabilities\":{\"http\":true},\"promptCapabilities\":{\"image\":false,\"audio\":false,\"embeddedContext\":false},\"sessionCapabilities\":{\"close\":{},\"list\":{},\"resume\":{}}},\"authMethods\":[]}}\n"
+    },
+    {
+      "index": 6,
+      "label": "attempt-06",
+      "restoredSha256": "086f8524d88685ca86fab0aa553ba6f75a1538a40cc1bb1aedfdcf747bc01321",
+      "baselineSessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+      "observedSessionId": "bc1f1056-12de-4137-ac42-dc927ba50497",
+      "observedAfterMs": 526,
+      "claimNotObserved": false,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "destroyed": false,
+      "finalState": {
+        "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+        "updatedAt": "2026-11-12T22:55:45.163Z",
+        "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+        "disposedAt": "2026-11-12T22:55:51.734Z",
+        "disposal": {
+          "released": true,
+          "entries": 0
+        },
+        "host": {
+          "profile": "acp",
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0"
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917",
+            "activatedAt": "2026-11-12T22:55:45.163Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "finalStateSha256": "ef080ece1c877e2e9623e3bd814f13c96d3d2b625481073a5803ae3dbc94b47a",
+      "review": {
+        "status": "active",
+        "recordStatus": "active",
+        "recordAction": null,
+        "recordReasons": [],
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "restartActions": [],
+        "nextActions": [],
+        "summary": {
+          "total": 1,
+          "active": 1,
+          "pendingRevalidation": 0,
+          "incompatible": 0,
+          "restartRequired": 0,
+          "hostUnavailable": 0,
+          "inactive": 0,
+          "invalid": 0,
+          "sourceUnusable": 0,
+          "blocked": 0,
+          "verifyHost": 0
+        },
+        "needsRestart": false,
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:55:45.163Z"
+          }
+        ]
+      },
+      "checks": {
+        "preFixExpectation": false,
+        "fixedExpectation": true,
+        "fixedChecks": {
+          "claimObserved": true,
+          "sessionIdRestored": true,
+          "rowActive": true,
+          "rowUnchanged": true,
+          "observedIndexUnchanged": true,
+          "disposalRecorded": true,
+          "onlyDisposalFieldsChanged": true,
+          "reviewActive": true,
+          "noRestartAction": true
+        },
+        "reviewBad": false,
+        "changedKeys": [
+          "disposal",
+          "disposedAt"
+        ]
+      },
+      "error": null,
+      "logTail": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1,\"agentInfo\":{\"name\":\"deepseek-harness-acp\",\"version\":\"0.0.1\"},\"agentCapabilities\":{\"mcpCapabilities\":{\"http\":true},\"promptCapabilities\":{\"image\":false,\"audio\":false,\"embeddedContext\":false},\"sessionCapabilities\":{\"close\":{},\"list\":{},\"resume\":{}}},\"authMethods\":[]}}\n"
+    },
+    {
+      "index": 7,
+      "label": "attempt-07",
+      "restoredSha256": "086f8524d88685ca86fab0aa553ba6f75a1538a40cc1bb1aedfdcf747bc01321",
+      "baselineSessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+      "observedSessionId": "8664dc75-eeb8-4d87-bcb5-91aab3ce47fb",
+      "observedAfterMs": 526,
+      "claimNotObserved": false,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "destroyed": false,
+      "finalState": {
+        "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+        "updatedAt": "2026-11-12T22:55:45.163Z",
+        "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+        "disposedAt": "2026-11-12T22:55:52.571Z",
+        "disposal": {
+          "released": true,
+          "entries": 0
+        },
+        "host": {
+          "profile": "acp",
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0"
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917",
+            "activatedAt": "2026-11-12T22:55:45.163Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "finalStateSha256": "fa85601c9620fe74ba185e1b0756ad47fb36278280c6610fb21e49a7f9770623",
+      "review": {
+        "status": "active",
+        "recordStatus": "active",
+        "recordAction": null,
+        "recordReasons": [],
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "restartActions": [],
+        "nextActions": [],
+        "summary": {
+          "total": 1,
+          "active": 1,
+          "pendingRevalidation": 0,
+          "incompatible": 0,
+          "restartRequired": 0,
+          "hostUnavailable": 0,
+          "inactive": 0,
+          "invalid": 0,
+          "sourceUnusable": 0,
+          "blocked": 0,
+          "verifyHost": 0
+        },
+        "needsRestart": false,
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:55:45.163Z"
+          }
+        ]
+      },
+      "checks": {
+        "preFixExpectation": false,
+        "fixedExpectation": true,
+        "fixedChecks": {
+          "claimObserved": true,
+          "sessionIdRestored": true,
+          "rowActive": true,
+          "rowUnchanged": true,
+          "observedIndexUnchanged": true,
+          "disposalRecorded": true,
+          "onlyDisposalFieldsChanged": true,
+          "reviewActive": true,
+          "noRestartAction": true
+        },
+        "reviewBad": false,
+        "changedKeys": [
+          "disposal",
+          "disposedAt"
+        ]
+      },
+      "error": null,
+      "logTail": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1,\"agentInfo\":{\"name\":\"deepseek-harness-acp\",\"version\":\"0.0.1\"},\"agentCapabilities\":{\"mcpCapabilities\":{\"http\":true},\"promptCapabilities\":{\"image\":false,\"audio\":false,\"embeddedContext\":false},\"sessionCapabilities\":{\"close\":{},\"list\":{},\"resume\":{}}},\"authMethods\":[]}}\n"
+    },
+    {
+      "index": 8,
+      "label": "attempt-08",
+      "restoredSha256": "086f8524d88685ca86fab0aa553ba6f75a1538a40cc1bb1aedfdcf747bc01321",
+      "baselineSessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+      "observedSessionId": "16850193-a37b-4403-824d-dda5ea725ccf",
+      "observedAfterMs": 527,
+      "claimNotObserved": false,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "destroyed": false,
+      "finalState": {
+        "sessionId": "5269d0f4-5901-472e-aed7-6dde6dce47e6",
+        "updatedAt": "2026-11-12T22:55:45.163Z",
+        "observedIndexUpdatedAt": "2026-11-12T22:55:44.626Z",
+        "disposedAt": "2026-11-12T22:55:53.399Z",
+        "disposal": {
+          "released": true,
+          "entries": 0
+        },
+        "host": {
+          "profile": "acp",
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0"
+        },
+        "rows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "b12ab89b8cbe6eba2f874281d414db6bfdc9d3f630361d1b9f91d91925529917",
+            "activatedAt": "2026-11-12T22:55:45.163Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "finalStateSha256": "dbc7617e8592cba7d76e250a6d80f214ef8e6cdc2f19e369e10e0e9736884115",
+      "review": {
+        "status": "active",
+        "recordStatus": "active",
+        "recordAction": null,
+        "recordReasons": [],
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "restartActions": [],
+        "nextActions": [],
+        "summary": {
+          "total": 1,
+          "active": 1,
+          "pendingRevalidation": 0,
+          "incompatible": 0,
+          "restartRequired": 0,
+          "hostUnavailable": 0,
+          "inactive": 0,
+          "invalid": 0,
+          "sourceUnusable": 0,
+          "blocked": 0,
+          "verifyHost": 0
+        },
+        "needsRestart": false,
+        "consumerRows": [
+          {
+            "id": "evolution-promoted-603886241a38",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:55:45.163Z"
+          }
+        ]
+      },
+      "checks": {
+        "preFixExpectation": false,
+        "fixedExpectation": true,
+        "fixedChecks": {
+          "claimObserved": true,
+          "sessionIdRestored": true,
+          "rowActive": true,
+          "rowUnchanged": true,
+          "observedIndexUnchanged": true,
+          "disposalRecorded": true,
+          "onlyDisposalFieldsChanged": true,
+          "reviewActive": true,
+          "noRestartAction": true
+        },
+        "reviewBad": false,
+        "changedKeys": [
+          "disposal",
+          "disposedAt"
+        ]
+      },
+      "error": null,
+      "logTail": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1,\"agentInfo\":{\"name\":\"deepseek-harness-acp\",\"version\":\"0.0.1\"},\"agentCapabilities\":{\"mcpCapabilities\":{\"http\":true},\"promptCapabilities\":{\"image\":false,\"audio\":false,\"embeddedContext\":false},\"sessionCapabilities\":{\"close\":{},\"list\":{},\"resume\":{}}},\"authMethods\":[]}}\n"
+    }
+  ],
+  "workDir": "<work>"
+}

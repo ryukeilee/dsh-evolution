@@ -18,15 +18,22 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
-## 未发布（0.2.8 之后的 main）
+## 0.2.9 — 稳定版
+
+`0.2.8` 的稳定后继：修复 ACP 同一 profile 中一个短命会话覆盖仍在运行会话有效 consumer 状态的缺陷，
+使显式 self-evolution 检查不再把已挂载且可调用的 stable 插件误判为 `host-unavailable` / `restart-consumer`。
+相对 `0.2.8` 固定产物，分发内容改 `lib/promoted-consumer.js`、`lib/cordis-compat.js` 与随包文档；宿主集合、
+持久化 schema、工具名 / 参数结构、授权来源、八项晋升门禁与 Cordis 信任根不变。
 
 - **修复 consumer 状态误报。** 同一 profile 中一个在 Include 启动阶段被关闭的短命会话，此前会因自身 Cordis
   上下文失活连续收到 `INACTIVE_EFFECT`，重试耗尽后把该 profile 的 `consumers/<profile>.json` 覆盖成
   `failed` / `include-unavailable`，使 self-evolution audit 把仍在另一个运行会话中挂载并可调用的插件判为
-  `host-unavailable` 并建议 `restart-consumer`。现在会话自身 context 已失活时视为启动取消：不重试、不写失败行，
+  `host-unavailable` 并建议 `restart-consumer`。现在 consumer 在发布任何报告之前先判断本会话是否还能发布：
+  自己的 fiber 已清空 `uid`，或宿主关闭时先进入 UNLOADING 的祖先 fiber（`state === 5`，由
+  `lib/cordis-compat.js#fiberIsShuttingDown` 判定）都表示这次启动已被取消——此时不重试、不写失败行或退化行，
   dispose 只在上一次有效报告上追加 `disposedAt` / `disposal` 并保留其 rows、`observedIndexUpdatedAt` 与 sessionId。
-  只有会话仍处于活动 context 且三次重试仍失败时才写 `include-unavailable`。发布索引、晋升门禁、宿主集合与
-  工具面不变。
+  这条判定同时覆盖「已经挂载成功、但 capability/service 探针在关闭过程中退化」的窗口；只有 context 仍可发布且
+  三次重试仍失败时才写 `include-unavailable`。发布索引、晋升门禁、宿主集合与工具面不变。
 
 ## 0.2.8 — 稳定版
 

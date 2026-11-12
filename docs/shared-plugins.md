@@ -90,7 +90,10 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 会话在 Include 启动阶段被关闭时，其 Cordis context 先于 dispose 失活，`INACTIVE_EFFECT` 表示这次启动已被取消，
 而不是宿主或插件结论：该会话不再重试、不写 `include-unavailable` 失败行；dispose 只在上一次有效报告上追加
 `disposedAt` / `disposal`，保留其 `plugins`、`observedIndexUpdatedAt` 与 `sessionId`。因此短命失败会话不会覆盖
-仍在运行会话的 `active` 报告。只有会话仍处于活动 context 且三次重试仍失败时才写 `include-unavailable`。
+仍在运行会话的 `active` 报告。发布前还会检查本会话是否仍能发布：自己的 fiber `uid` 已清空，或关闭中的宿主先把
+祖先 fiber 置为 UNLOADING（`state === 5`），都按取消处理，因此「挂载已成功、但 capability/service 探针在关闭中
+退化」得到的 `skipped-incompatible` / `include-refresh-failed` 行同样不会被发布。只有会话仍处于可发布 context
+且三次重试仍失败时才写 `include-unavailable`。
 
 索引本身缺失是正常的 Desktop-only 安装；索引不可读或格式错误时视为「没有任何记录被授权」，所有记录都不能
 挂载（doctor 报 `blocked`）。单个记录非法不会丢弃其它合法记录。
