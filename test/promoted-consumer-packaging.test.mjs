@@ -27,14 +27,26 @@ test('bundle patch adds exactly one enabled consumer entry without reordering th
   assert.equal(consumers[0].name, 'dsh-evolution/promoted-consumer');
   // The module itself no-ops outside acp/web, so the bundle row stays enabled.
   assert.equal(consumers[0].disabled, undefined);
-  // Existing rows and their order are untouched; the consumer row is appended.
+  // Existing rows and their order are untouched; the consumer row is followed
+  // by the opt-in ACP -> Desktop task channel rows, which stay disabled until
+  // the installer selects them per profile.
   assert.deepEqual(insert.slice(0, 4).map((row) => row.id), [
     'evolution-experience',
     'evolution-experience-history',
     'evolution-orchestrator',
     'evolution-trust-root-guard',
   ]);
-  assert.equal(insert.at(-1).id, 'evolution-promoted-consumer');
+  assert.deepEqual(insert.slice(4).map((row) => row.id), [
+    'evolution-promoted-consumer',
+    'evolution-desktop-task-host',
+    'evolution-desktop-task-client',
+  ]);
+  const host = insert.find((row) => row?.id === 'evolution-desktop-task-host');
+  const client = insert.find((row) => row?.id === 'evolution-desktop-task-client');
+  assert.equal(host.name, 'dsh-evolution/desktop-task-host');
+  assert.equal(host.disabled, true);
+  assert.equal(client.name, 'dsh-evolution/desktop-task-client');
+  assert.equal(client.disabled, true);
 });
 
 test('managed profile block enables the consumer only on acp and web', () => {

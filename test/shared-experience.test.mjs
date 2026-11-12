@@ -152,9 +152,18 @@ test('setup is idempotent and preserves unrelated profile contents byte for byte
   // including the cross-entry consumer row: it stays enabled for ACP/Web and is
   // disabled on Desktop, which mounts promoted plugins through its own Include.
   const managed = yaml.load(managedPatch('# official stock\n[]\n', 'acp'));
-  assert.deepEqual(managed.map((row) => row.id), ['hmr', 'evolution-experience', 'evolution-experience-history', 'evolution-orchestrator', 'evolution-promoted-consumer']);
+  assert.deepEqual(managed.map((row) => row.id), ['hmr', 'evolution-experience', 'evolution-experience-history', 'evolution-orchestrator', 'evolution-promoted-consumer', 'evolution-desktop-task-host', 'evolution-desktop-task-client']);
   assert.equal(managed.find((row) => row.id === 'evolution-promoted-consumer').disabled, false);
   assert.equal(yaml.load(managedPatch('# official stock\n[]\n', 'desktop')).find((row) => row.id === 'evolution-promoted-consumer').disabled, true);
+  // The task host runs only inside Desktop; the ACP client mounts only on ACP.
+  assert.equal(managed.find((row) => row.id === 'evolution-desktop-task-host').disabled, true);
+  assert.equal(managed.find((row) => row.id === 'evolution-desktop-task-client').disabled, false);
+  const desktop = yaml.load(managedPatch('# official stock\n[]\n', 'desktop'));
+  assert.equal(desktop.find((row) => row.id === 'evolution-desktop-task-host').disabled, false);
+  assert.equal(desktop.find((row) => row.id === 'evolution-desktop-task-client').disabled, true);
+  const web = yaml.load(managedPatch('# official stock\n[]\n', 'web'));
+  assert.equal(web.find((row) => row.id === 'evolution-desktop-task-host').disabled, true);
+  assert.equal(web.find((row) => row.id === 'evolution-desktop-task-client').disabled, true);
 });
 
 test('daily collector configuration leaves manual lifecycle and startup canary hooks intact', () => {
