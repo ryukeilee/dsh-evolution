@@ -72,6 +72,11 @@ test('scripting verbs, inline code, substitutions and newlines stay fail-closed'
     // Command substitution inside an otherwise read-only argument executes code.
     `echo "$(rm -f ${TR}/lib/a.js)" publish`,
     `echo \`rm -f ${TR}/lib/a.js\` publish`,
+    // Process substitution runs a subshell from inside an argument.
+    `cat <(rm -f ${TR}/lib/a.js) publish`,
+    `echo >(${TR}/lib/a.js) publish`,
+    // rg --pre executes a command for every file; its arguments are not data.
+    `rg --pre 'rm -f ${TR}/lib/a.js' publish file`,
     // A newline starts a new shell command; the tokenizer must not treat the
     // following verb as an argument of the read-only one.
     `echo publish\nrm -f ${TR}/lib/a.js`,
