@@ -53,7 +53,7 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 
 | 状态 | 含义 | 动作 |
 | --- | --- | --- |
-| `active` | 所有已批准 profile 在当前宿主上 active，且索引未在 consumer 启动后变化 | `none` |
+| `active` | 所有未被操作者撤销的已批准 profile 在当前宿主上 active，且索引未在 consumer 启动后变化 | `none` |
 | `inactive` | 所有已批准 profile 都被操作者撤销；consumer 行里未批准的陈旧记录也归入此列 | `none` |
 | `pending-revalidation` | 记录宿主与当前 DSH/Cordis/Include/Node 身份不一致 | `revalidate` |
 | `incompatible` | 当前宿主上 consumer 报告缺少能力/服务或 plugin apply 失败 | `repair-stable` |
@@ -82,7 +82,9 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 5. `experience-candidate`（有证据的新机会；存在阻塞项时带 `blockedBy`）；
 6. `no-action`。
 
-同一 `(action, recordId/problemKey/profile)` 只出现一次，输出有界。
+同一 `(action, recordId/problemKey/profile)` 只出现一次，输出有界。stable 动作在截断前先按同一优先级排序，
+因此 `operator-action` / `verify-host` / `revalidate` 不会被索引里靠后的低优先级记录挤掉；被截断的条数由
+`nextActionsDropped` 报告，并令 `selfEvolution.incomplete=true`，模型不能把不完整的 review 当成完整结果。
 
 ## 5. revalidate 路径
 

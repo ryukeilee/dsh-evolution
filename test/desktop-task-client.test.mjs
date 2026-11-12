@@ -790,7 +790,7 @@ test('audit classifies a stable plugin verified on another host as pending-reval
   const revalidate = result.selfEvolution.nextActions[0];
   assert.equal(revalidate.action, 'revalidate');
   assert.equal(revalidate.recordId, record.id);
-  assert.match(revalidate.why, /live host is a different release/);
+  assert.match(revalidate.why, /the live host does not match \(host-version-mismatch\)/);
   assert.match(revalidate.command, /shared-plugins\.mjs/);
   assert.match(revalidate.command, /revalidate --evidence/);
   assert.ok(revalidate.forbidden.includes('edit or regenerate the promoted plugin source'));

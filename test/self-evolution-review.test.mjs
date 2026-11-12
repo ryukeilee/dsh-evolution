@@ -29,6 +29,7 @@ import {
 } from '../lib/promoted-sharing.js';
 import {
   composeSelfEvolutionReview,
+  orderStableActions,
   readPublishedPluginReview,
   reviewExperience,
   REVIEW_ACTIONS,
@@ -551,6 +552,27 @@ test('composition orders operator/revalidate/repair/restart before a new experie
   assert.equal(alone.nextActions[0].blockedBy, undefined);
 });
 
+test('a blocking action is never dropped by the bounded action list', () => {
+  const actions = Array.from({ length: 12 }, (_, index) => ({
+    action: REVIEW_ACTIONS.RESTART,
+    recordId: `evolution-promoted-${String(index).padStart(12, '0')}`,
+    why: 'stale consumer',
+  }));
+  actions.push({ action: REVIEW_ACTIONS.OPERATOR, recordId: 'evolution-promoted-ffffffffffff', why: 'damaged source' });
+
+  const ordered = orderStableActions(actions);
+  assert.equal(ordered[0].action, REVIEW_ACTIONS.OPERATOR, 'the blocking action must sort ahead of the restart actions');
+  assert.equal(ordered.length, 13);
+
+  const composed = composeSelfEvolutionReview({
+    stable: { status: 'blocked', nextActions: ordered.slice(0, 12), nextActionsDropped: 1 },
+    experience: null,
+    versions: CURRENT_HOST,
+  });
+  assert.equal(composed.kind, 'operator-action');
+  assert.equal(composed.incomplete, true, 'dropped actions make the review explicitly incomplete');
+  assert.equal(composed.stable.nextActionsDropped, 1);
+});
 test('revalidation outranks repair, and repair outranks an experience candidate', () => {
   const revalidate = { action: REVIEW_ACTIONS.REVALIDATE, recordId: 'evolution-promoted-aaaaaaaaaaaa', why: 'host changed' };
   const repair = { action: REVIEW_ACTIONS.REPAIR, recordId: 'evolution-promoted-bbbbbbbbbbbb', why: 'apply failed' };

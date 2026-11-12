@@ -864,7 +864,10 @@ async function runCrossEntryAcceptance() {
   assertCross(pendingForbidden.includes('edit or regenerate the promoted plugin source'), `the revalidate next action does not forbid regenerating the source: ${JSON.stringify(pendingForbidden)}`);
   assertCross(pendingForbidden.includes('weaken the recorded host identity'), `the revalidate next action does not protect the recorded host identity: ${JSON.stringify(pendingForbidden)}`);
   assertCross(pendingReviewDocument.selfEvolution?.primary === 'revalidate' && pendingReviewDocument.selfEvolution?.hasBlockingStableIssue === true, `the review did not give the host upgrade priority over other work: ${JSON.stringify({ primary: pendingReviewDocument.selfEvolution?.primary, blocking: pendingReviewDocument.selfEvolution?.hasBlockingStableIssue })}`);
-  assertCross(!pendingReviewActions.some((row) => row.action === 'repair-stable' || row.action === 'experience-candidate'), `the host upgrade was turned into a source change: ${JSON.stringify(pendingReviewActions)}`);
+  // The list is filtered to the upgraded record; only a repair action for that
+  // record would mean the upgrade became a source change (experience actions
+  // have no recordId and are covered by the revalidate-primary assertion).
+  assertCross(!pendingReviewActions.some((row) => row.action === 'repair-stable'), `the host upgrade was turned into a source change: ${JSON.stringify(pendingReviewActions)}`);
   assertCross(pendingReviewReceipt.index.digest === simulatedIndexDigest && pendingReviewReceipt.index.digestAfter === simulatedIndexDigest, 'the review read or wrote an index other than the simulated upgrade index');
   assertCross(fileSha256(publishedPath) === report.index.digest, 'restoring the publication index failed');
   const restoredIndex = await bootWebConsumer('consumer-index-restored', { expect: expectedActive, markers: activeMarkers });

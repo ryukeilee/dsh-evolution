@@ -868,7 +868,11 @@ try {
   assert(pendingForbidden.includes('edit or regenerate the promoted plugin source'), `the revalidate next action does not forbid regenerating the source: ${JSON.stringify(pendingForbidden)}`);
   assert(pendingForbidden.includes('weaken the recorded host identity'), `the revalidate next action does not protect the recorded host identity: ${JSON.stringify(pendingForbidden)}`);
   assert(pendingReviewDocument.selfEvolution?.primary === 'revalidate' && pendingReviewDocument.selfEvolution?.hasBlockingStableIssue === true, `the review did not give the host upgrade priority over other work: ${JSON.stringify({ primary: pendingReviewDocument.selfEvolution?.primary, blocking: pendingReviewDocument.selfEvolution?.hasBlockingStableIssue })}`);
-  assert(!pendingReviewAction.some((row) => row.action === 'repair-stable' || row.action === 'experience-candidate'), `the host upgrade was turned into a source change: ${JSON.stringify(pendingReviewAction)}`);
+  // This list is already filtered to the upgraded record, so only a repair
+  // action for that record would mean the upgrade was turned into a source
+  // change; an experience action never carries a recordId and is covered by the
+  // revalidate-primary assertion above.
+  assert(!pendingReviewAction.some((row) => row.action === 'repair-stable'), `the host upgrade was turned into a source change: ${JSON.stringify(pendingReviewAction)}`);
   assert(pendingReview.index.digest === sha256(modifiedIndexBytes) && pendingReview.index.digest === pendingReview.index.digestAfter, 'the Desktop review read or wrote an index other than the simulated upgrade index');
   rejections.hostVersionMismatch.review = {
     status: pendingReviewStable?.status ?? null,

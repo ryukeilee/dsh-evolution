@@ -78,7 +78,7 @@ async function listFiles(root) {
     for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
       const rel = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
       if (entry.isDirectory()) await walk(path.join(dir, entry.name), rel);
-      else if (entry.isFile()) out.push(rel);
+      else if (entry.isFile()) out.push({ path: rel, sha256: sha(await fs.readFile(path.join(dir, entry.name))) });
     }
   };
   await walk(root, '');
