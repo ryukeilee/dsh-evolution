@@ -721,6 +721,36 @@ test('a canary-observing revert refusal stays unproven and keeps retrying', asyn
   assert.equal(failed.cleanupPending, false);
 });
 
+test('a kernel rollback whose archive write failed is treated as proven cleanup', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel();
+  let canaryCalls = 0;
+  let revertCalls = 0;
+  // The kernel committed the canary regression rollback, then its archive write
+  // threw. The record is already `rolled-back`; revert and observation both
+  // refuse that terminal state. That refusal proves the runtime is free.
+  kernel.tools.set('evolution_canary_observe', { execute: async () => {
+    canaryCalls += 1;
+    throw new Error('promotion archive write failed');
+  } });
+  kernel.tools.set('evolution_revert', { execute: async () => {
+    revertCalls += 1;
+    throw new Error('experiment exp-desktop-task-1 is rolled-back; Revert requires a Trial');
+  } });
+  const ctx = fakeCtx(kernel, plan);
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const failed = await waitForState(home, taskId, (value) => value.phase === 'failed', 10_000);
+  assert.equal(canaryCalls, 1);
+  assert.equal(revertCalls, 1);
+  assert.deepEqual(failed.revert, { ok: true, status: 'last-known-good' });
+  assert.notEqual(failed.cleanupPending, true);
+});
+
 test('two requests are executed one at a time in created order', async (t) => {
   const home = temporary(t);
   const planA = planFor(mintTaskId());
