@@ -1,0 +1,440 @@
+{
+  "schemaVersion": 1,
+  "kind": "dsh-evolution-real-profile-consumer-acceptance",
+  "startedAt": "2026-11-12T22:54:01.099Z",
+  "home": "~/.dsh",
+  "cli": "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh",
+  "officialCliVersion": "0.2.2-rc.2",
+  "pluginVersion": "0.2.9",
+  "installed": {
+    "version": "0.2.9",
+    "dependency": "file:~/.dsh/storages/evolution-package-cache/2fb6533ae0149e0f80ccc8fe32d4a75fc43bf92abfe933d0ea59c5e41cdb0ce8.tgz",
+    "tarballSha256": "2fb6533ae0149e0f80ccc8fe32d4a75fc43bf92abfe933d0ea59c5e41cdb0ce8",
+    "promotedConsumerSha256": "07d4bf645c04499215138ba741ade708a7fec3ff9ac321c7cec7fc9b94a1651e",
+    "cordisCompatSha256": "507ec7a37f2bae7e5149c28d3f0785c140aaed8549305fb1c31e3ee8fb754687"
+  },
+  "steps": [
+    {
+      "name": "state-before",
+      "acp": {
+        "present": true,
+        "sha256": "aa473a93f6dc2fa8ea1e870bef074abec325842c57b9a4d8da705f0b7a140dfe",
+        "sessionId": "9847c40f-9d30-4ff5-885a-7d2a02954e83",
+        "updatedAt": "2026-11-12T22:52:22.746Z",
+        "disposedAt": "2026-11-12T22:52:27.997Z",
+        "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:52:22.745Z",
+            "errorCode": null
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:52:22.746Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "web": {
+        "present": true,
+        "sha256": "85076d3a7d37f12b32c8e26582174d11acda03bd7ad67e06d512a278d9f7c343",
+        "sessionId": "6db0963e-03ff-440f-b9f9-962f39f9e89b",
+        "updatedAt": "2026-11-12T22:51:29.321Z",
+        "disposedAt": "2026-11-12T22:53:49.315Z",
+        "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:51:29.320Z",
+            "errorCode": null
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "skipped-unapproved",
+            "reason": "profile-not-approved",
+            "activatedAt": null,
+            "errorCode": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "live-session",
+      "receipt": {
+        "ok": true,
+        "label": "live-a",
+        "expectedProfile": "acp",
+        "profile": "acp",
+        "statePath": "~/.dsh/storages/evolution/shared-plugins/consumers/acp.json",
+        "startedAt": "2026-11-12T22:54:03.178Z",
+        "finishedAt": "2026-11-12T22:54:03.184Z",
+        "tools": [
+          "create_worktree",
+          "evolution_desktop",
+          "evolution_history",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__context7__query-docs",
+          "mcp__context7__resolve-library-id",
+          "read_mcp_resource",
+          "readonly_git_file",
+          "run_code_diagnose",
+          "team_task_create",
+          "team_task_get",
+          "team_task_list",
+          "team_task_update",
+          "working_directory"
+        ],
+        "tool": {
+          "name": "run_code_diagnose",
+          "found": true,
+          "hasExecute": true,
+          "schemaHadExecute": false,
+          "executeSource": "get",
+          "parameters": "{\"type\":\"object\",\"properties\":{\"occurrences\":{\"type\":\"integer\",\"description\":\"Total recorded run_code observations.\"},\"failures\":{\"type\":\"integer\",\"description\":\"Observations that failed; must not exceed occurrences.\"}},\"required\":[\"occurrences\",\"failures\"]}",
+          "execution": {
+            "attempted": true,
+            "ok": false,
+            "error": "invalid arguments: missing required property \"occurrences\"; missing required property \"failures\"",
+            "code": "INVALID_ARGS",
+            "name": "ToolArgsError",
+            "source": "get"
+          }
+        },
+        "marker": {
+          "name": null,
+          "listeners": null,
+          "hits": null,
+          "error": null
+        },
+        "consumerState": {
+          "status": "ok",
+          "sessionId": "96662e81-6661-4aff-8de3-a4b3c6e8ab6d",
+          "updatedAt": "2026-11-12T22:54:01.918Z",
+          "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+          "disposedAt": null,
+          "rows": [
+            {
+              "id": "evolution-promoted-af973a3eea01",
+              "status": "active",
+              "reason": null,
+              "activatedAt": "2026-11-12T22:54:01.918Z",
+              "sourceSha256": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e"
+            },
+            {
+              "id": "evolution-promoted-e82a216992bb",
+              "status": "active",
+              "reason": null,
+              "activatedAt": "2026-11-12T22:54:01.918Z",
+              "sourceSha256": "7d446ea94e730bd69ec25c38a2d4478d2b6f362f13a3446047e84ad348833230"
+            }
+          ]
+        },
+        "versions": {
+          "node": "24.21.0",
+          "electron": "44.7.0",
+          "chrome": "152.0.7977.130"
+        },
+        "probeInstances": 1,
+        "platform": {
+          "platform": "darwin",
+          "arch": "arm64"
+        }
+      },
+      "acp": {
+        "present": true,
+        "sha256": "2f419144abc2d34ecdef97a4ba4e04041d959acf610af853253cad1638895cec",
+        "sessionId": "96662e81-6661-4aff-8de3-a4b3c6e8ab6d",
+        "updatedAt": "2026-11-12T22:54:01.918Z",
+        "disposedAt": null,
+        "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:54:01.918Z",
+            "errorCode": null
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:54:01.918Z",
+            "errorCode": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "cancel-eof-during-include-mount",
+      "label": "short-eof",
+      "observedAfterMs": 1308,
+      "claimedSessionId": "bfad1a59-ae8a-4de8-926a-476b733b5898",
+      "claimedRows": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-12T22:54:01.918Z",
+          "errorCode": null
+        },
+        {
+          "id": "evolution-promoted-e82a216992bb",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-12T22:54:01.918Z",
+          "errorCode": null
+        }
+      ],
+      "stopped": {
+        "code": 0,
+        "signal": null
+      },
+      "acp": {
+        "present": true,
+        "sha256": "f2ab4a6777543f91491132ff4fb0aca4655f6b572744a124b3eaf7cd84d75af5",
+        "sessionId": "96662e81-6661-4aff-8de3-a4b3c6e8ab6d",
+        "updatedAt": "2026-11-12T22:54:01.918Z",
+        "disposedAt": "2026-11-12T22:54:04.737Z",
+        "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:54:01.918Z",
+            "errorCode": null
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:54:01.918Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "review": {
+        "status": "active",
+        "summary": {
+          "total": 2,
+          "active": 2,
+          "pendingRevalidation": 0,
+          "incompatible": 0,
+          "restartRequired": 0,
+          "hostUnavailable": 0,
+          "inactive": 0,
+          "invalid": 0,
+          "sourceUnusable": 0,
+          "blocked": 0,
+          "verifyHost": 0
+        },
+        "nextActions": [],
+        "acpActions": []
+      }
+    },
+    {
+      "name": "cancel-sigterm-on-claim",
+      "label": "short-term",
+      "observedAfterMs": 1282,
+      "claimedSessionId": "e607d5ee-7c60-4d8a-8c6c-23693f5e4dd2",
+      "claimedRows": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-12T22:54:01.918Z",
+          "errorCode": null
+        },
+        {
+          "id": "evolution-promoted-e82a216992bb",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-12T22:54:01.918Z",
+          "errorCode": null
+        }
+      ],
+      "stopped": {
+        "code": 0,
+        "signal": null
+      },
+      "acp": {
+        "present": true,
+        "sha256": "5fe3fe3ee1c14d744a85439da0c76d9723bbda1fcf1cec659c01568640adfdbe",
+        "sessionId": "e607d5ee-7c60-4d8a-8c6c-23693f5e4dd2",
+        "updatedAt": "2026-11-12T22:54:01.918Z",
+        "disposedAt": "2026-11-12T22:54:04.737Z",
+        "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:54:01.918Z",
+            "errorCode": null
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:54:01.918Z",
+            "errorCode": null
+          }
+        ]
+      },
+      "review": {
+        "status": "active",
+        "summary": {
+          "total": 2,
+          "active": 2,
+          "pendingRevalidation": 0,
+          "incompatible": 0,
+          "restartRequired": 0,
+          "hostUnavailable": 0,
+          "inactive": 0,
+          "invalid": 0,
+          "sourceUnusable": 0,
+          "blocked": 0,
+          "verifyHost": 0
+        },
+        "nextActions": [],
+        "acpActions": []
+      }
+    },
+    {
+      "name": "live-session-stopped",
+      "stopped": {
+        "code": 0,
+        "signal": null
+      },
+      "acp": {
+        "present": true,
+        "sha256": "5fe3fe3ee1c14d744a85439da0c76d9723bbda1fcf1cec659c01568640adfdbe",
+        "sessionId": "e607d5ee-7c60-4d8a-8c6c-23693f5e4dd2",
+        "updatedAt": "2026-11-12T22:54:01.918Z",
+        "disposedAt": "2026-11-12T22:54:04.737Z",
+        "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:54:01.918Z",
+            "errorCode": null
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:54:01.918Z",
+            "errorCode": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "web-consumer",
+      "beforeStop": {
+        "present": true,
+        "sha256": "85076d3a7d37f12b32c8e26582174d11acda03bd7ad67e06d512a278d9f7c343",
+        "sessionId": "6db0963e-03ff-440f-b9f9-962f39f9e89b",
+        "updatedAt": "2026-11-12T22:51:29.321Z",
+        "disposedAt": "2026-11-12T22:53:49.315Z",
+        "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:51:29.320Z",
+            "errorCode": null
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "skipped-unapproved",
+            "reason": "profile-not-approved",
+            "activatedAt": null,
+            "errorCode": null
+          }
+        ]
+      },
+      "stopped": {
+        "code": 0,
+        "signal": null
+      },
+      "afterStop": {
+        "present": true,
+        "sha256": "db84e85a1053aef067ca16d0a163164b15714b9cf23ac975d5bfd064aa2cd3c0",
+        "sessionId": "6db0963e-03ff-440f-b9f9-962f39f9e89b",
+        "updatedAt": "2026-11-12T22:51:29.321Z",
+        "disposedAt": "2026-11-12T22:54:07.897Z",
+        "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-12T22:51:29.320Z",
+            "errorCode": null
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "skipped-unapproved",
+            "reason": "profile-not-approved",
+            "activatedAt": null,
+            "errorCode": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "review-after-all",
+      "status": "active",
+      "summary": {
+        "total": 2,
+        "active": 2,
+        "pendingRevalidation": 0,
+        "incompatible": 0,
+        "restartRequired": 0,
+        "hostUnavailable": 0,
+        "inactive": 0,
+        "invalid": 0,
+        "sourceUnusable": 0,
+        "blocked": 0,
+        "verifyHost": 0
+      },
+      "nextActions": []
+    }
+  ],
+  "checks": {
+    "liveSessionMountedEveryPublishedRecord": true,
+    "promotedToolsRegistered": [
+      "readonly_git_file",
+      "run_code_diagnose"
+    ],
+    "probeToolCallable": true,
+    "eofCancelObservedClaim": true,
+    "eofCancelPreservedActiveRows": true,
+    "eofCancelReviewHasNoAcpAction": true,
+    "termCancelObservedClaim": true,
+    "termCancelPreservedActiveRows": true,
+    "termCancelReviewHasNoAcpAction": true,
+    "webConsumerMountedPublishedRecords": true,
+    "webConsumerReviewClean": true
+  },
+  "ok": true,
+  "error": null,
+  "finishedAt": "2026-11-12T22:54:08.442Z",
+  "redacted": {
+    "home": "~",
+    "note": "every local absolute home path in this record is replaced with ~"
+  }
+}

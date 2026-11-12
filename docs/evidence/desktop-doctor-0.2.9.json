@@ -1,0 +1,718 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-11-12T22:56:46.874Z",
+  "mode": "cli",
+  "plugin": {
+    "name": "dsh-evolution",
+    "version": "0.2.9",
+    "packageRoot": "~/.dsh/profiles/desktop/node_modules/dsh-evolution"
+  },
+  "status": "healthy",
+  "partial": true,
+  "summary": {
+    "ok": 20,
+    "degraded": 0,
+    "blocked": 0,
+    "notEvaluated": 4
+  },
+  "checks": [
+    {
+      "id": "plugin.home",
+      "category": "plugin",
+      "level": "ok",
+      "summary": "Diagnosing DSH home ~/.dsh.",
+      "evidence": {
+        "dshHome": "~/.dsh",
+        "dataRoot": "~/.dsh/storages/evolution",
+        "profile": "desktop"
+      }
+    },
+    {
+      "id": "plugin.package",
+      "category": "plugin",
+      "level": "ok",
+      "summary": "Bundle package dsh-evolution@0.2.9 is complete.",
+      "evidence": {
+        "packageRoot": "~/.dsh/profiles/desktop/node_modules/dsh-evolution",
+        "version": "0.2.9",
+        "files": 14,
+        "engines": {
+          "node": "^22.19.0 || >=24.0.0"
+        }
+      }
+    },
+    {
+      "id": "plugin.patch",
+      "category": "plugin",
+      "level": "ok",
+      "summary": "The bundle patch declares both loader entries.",
+      "evidence": {
+        "patchPath": "~/.dsh/profiles/desktop/node_modules/dsh-evolution/cordis.patch.yml",
+        "entries": [
+          "evolution-experience",
+          "evolution-experience-history",
+          "evolution-orchestrator",
+          "evolution-trust-root-guard",
+          "evolution-promoted-consumer",
+          "evolution-desktop-task-host",
+          "evolution-desktop-task-client"
+        ]
+      }
+    },
+    {
+      "id": "plugin.support-matrix",
+      "category": "plugin",
+      "level": "ok",
+      "summary": "Bundle 0.2.9 supports @deepseek-ai/dsh 0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2 || 0.2.2-rc.1 || 0.2.2-rc.2 and Node \"^22.19.0 || >=24.0.0\".",
+      "evidence": {
+        "bundleVersion": "0.2.9",
+        "supportedDsh": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2 || 0.2.2-rc.1 || 0.2.2-rc.2",
+        "verifiedHosts": [
+          "0.2.0-rc.2",
+          "0.2.1-alpha.1",
+          "0.2.1-rc.2",
+          "0.2.2-rc.1",
+          "0.2.2-rc.2"
+        ],
+        "peers": {
+          "@deepseek-ai/dsh": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2 || 0.2.2-rc.1 || 0.2.2-rc.2",
+          "@deepseek-ai/cordis-plugin-include": "1.0.9 || 1.0.10-alpha.1 || 1.0.10-alpha.2 || 1.0.10 || ~1.1.0",
+          "js-yaml": "^4.2.0",
+          "@deepseek-ai/cordis": "^4.0.1 || 4.0.5-alpha.1 || 4.0.5-alpha.2 || ~4.1.0",
+          "@deepseek-ai/dsh-cordis-host-runner": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2 || 0.2.2-rc.1 || 0.2.2-rc.2",
+          "@deepseek-ai/dsh-tools": "0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-rc.2 || 0.2.2-rc.1 || 0.2.2-rc.2"
+        },
+        "node": "v24.21.0",
+        "platform": "darwin/arm64",
+        "dataRoot": "~/.dsh/storages/evolution",
+        "developmentHost": null
+      }
+    },
+    {
+      "id": "host.install",
+      "category": "host",
+      "level": "ok",
+      "summary": "Profile installs dsh-evolution@0.2.9 and lists it in the bundle chain.",
+      "evidence": {
+        "profileDir": "~/.dsh/profiles/desktop",
+        "installedVersion": "0.2.9",
+        "localVersion": "0.2.9",
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-ai/dsh-web-app",
+          "@deepseek-ai/dsh-experimental-forge-bundle",
+          "dsh-evolution",
+          "dsh-self-evolution-mode",
+          "dsh-context",
+          "@deepseek-ai/dsh-cua-bundle"
+        ]
+      }
+    },
+    {
+      "id": "host.cli",
+      "category": "host",
+      "level": "not-evaluated",
+      "summary": "No DSH CLI was found, so host version and composed profile could not be verified.",
+      "evidence": {
+        "reason": "no DSH CLI candidate resolved to @deepseek-ai/dsh",
+        "candidates": [
+          {
+            "path": "~/.local/bin/dsh",
+            "source": "PATH"
+          }
+        ]
+      },
+      "remediation": "Pass --dsh-cli <path/to/@deepseek-ai/dsh/lib/bin.js> or make `dsh` available on PATH."
+    },
+    {
+      "id": "runtime.capabilities",
+      "category": "runtime",
+      "level": "not-evaluated",
+      "summary": "Live Cordis capabilities are not observable outside a running host session.",
+      "evidence": {
+        "reason": "cli mode without a live context"
+      },
+      "remediation": "Run the evolution_doctor tool inside a session for live capability and registration verification."
+    },
+    {
+      "id": "runtime.registration",
+      "category": "runtime",
+      "level": "not-evaluated",
+      "summary": "Live tool registration is not observable outside a running host session.",
+      "evidence": {
+        "reason": "cli mode without a live context",
+        "expected": [
+          "evolution_runtime_inspect",
+          "evolution_plan",
+          "evolution_propose",
+          "evolution_trial",
+          "evolution_probe",
+          "evolution_measure",
+          "evolution_revert",
+          "evolution_promote",
+          "evolution_canary_observe",
+          "evolution_history",
+          "evolution_maintain",
+          "evolution_doctor"
+        ]
+      },
+      "remediation": "Run the evolution_doctor tool inside a session, or check host.composition for the loader entries."
+    },
+    {
+      "id": "runtime.internal-api",
+      "category": "runtime",
+      "level": "not-evaluated",
+      "summary": "Introspection probes were not exercised outside a running host session.",
+      "evidence": {
+        "reason": "cli mode without a live context"
+      }
+    },
+    {
+      "id": "compat.legacy-adapters",
+      "category": "compat",
+      "level": "ok",
+      "summary": "Legacy adapters are isolated and disabled in the bundle path (startupDrift=false).",
+      "evidence": {
+        "startupDrift": false,
+        "legacyAdapter": "lib/compat/legacy-startup-drift.js",
+        "legacyDefaults": "overridden by storageConfig/resolveEvolutionPaths; only reachable from a standalone caller without configuration",
+        "dataMigrationScript": "scripts/import-evolution-data.mjs (explicit source arguments only)"
+      }
+    },
+    {
+      "id": "capabilities.known-limits",
+      "category": "capabilities",
+      "level": "ok",
+      "summary": "5 documented, non-blocking capability limit(s) apply to this build.",
+      "evidence": {
+        "degradedCapabilities": [
+          "evaluator-advisory",
+          "continuous-and-governance-not-wired",
+          "host-only-promotion",
+          "legacy-compat-adapters",
+          "internal-api-dependency"
+        ]
+      }
+    },
+    {
+      "id": "data.root",
+      "category": "data",
+      "level": "ok",
+      "summary": "Evolution data root is present and writable (700).",
+      "evidence": {
+        "dataRoot": "~/.dsh/storages/evolution",
+        "exists": true,
+        "mode": "700",
+        "symlink": false,
+        "writable": true,
+        "entries": 14,
+        "archiveLock": {
+          "present": false,
+          "kind": "absent",
+          "pid": null,
+          "ownerAlive": false,
+          "malformed": false,
+          "settling": false,
+          "reclaimable": false,
+          "ageMs": 0,
+          "raw": null
+        },
+        "problems": [],
+        "blockingProblems": [],
+        "advisoryProblems": []
+      },
+      "recoverable": false
+    },
+    {
+      "id": "state.memory",
+      "category": "state",
+      "level": "ok",
+      "summary": "Failure memory parses with 6 record(s).",
+      "evidence": {
+        "memoryPath": "~/.dsh/storages/evolution/evolution-memory.json",
+        "bytes": 12251,
+        "schema": 1,
+        "entries": 6,
+        "quarantines": []
+      }
+    },
+    {
+      "id": "state.archives",
+      "category": "state",
+      "level": "ok",
+      "summary": "Cold archive and rotation files are readable (6 experiment file(s)).",
+      "evidence": {
+        "dir": "~/.dsh/storages/evolution/archive/experiments",
+        "archives": 6,
+        "unreadable": [],
+        "malformed": [],
+        "dockyard": {
+          "files": [],
+          "sealTemporaries": [],
+          "state": {
+            "present": false
+          },
+          "jsonl": [],
+          "archiveIntegrity": {
+            "valid": true,
+            "status": "verified",
+            "files": [],
+            "missing": [],
+            "mismatched": [],
+            "stale": [],
+            "indexFile": "~/.dsh/storages/evolution/dockyard/state.json.evolution-archive-index.json",
+            "index": {
+              "state": "absent",
+              "path": "~/.dsh/storages/evolution/dockyard/state.json.evolution-archive-index.json"
+            },
+            "findings": [],
+            "missingIndexTargets": [],
+            "persistedFaults": [],
+            "quarantineFiles": [],
+            "transitions": {
+              "pendingInstall": false,
+              "compaction": [],
+              "kind": null
+            }
+          }
+        },
+        "problems": []
+      },
+      "recoverable": false
+    },
+    {
+      "id": "state.event-bridge",
+      "category": "state",
+      "level": "ok",
+      "summary": "Event bridge verifies: 28 signed event(s), 0 idempotent duplicate(s), verified against the trusted writer `dsh-evolution-orchestrator` (bundle-default).",
+      "evidence": {
+        "eventBridgePath": "~/.dsh/storages/evolution/execution-events.jsonl",
+        "bytes": 54543,
+        "lines": 28,
+        "verifiedEvents": 28,
+        "duplicateRecords": 0,
+        "unverifiable": [],
+        "malformed": [],
+        "conflicts": [],
+        "untrustedWriters": [],
+        "truncatedTail": false,
+        "trustedWriter": "dsh-evolution-orchestrator",
+        "writerSource": "bundle-default",
+        "absorbedRecords": 28,
+        "unabsorbedRecords": 0,
+        "oldestRecordAt": "2026-11-10T14:38:57.024Z",
+        "newestRecordAt": "2026-11-12T20:35:34.236Z"
+      }
+    },
+    {
+      "id": "migration.manifest",
+      "category": "migration",
+      "level": "ok",
+      "summary": "No legacy data import recorded; the data root started empty.",
+      "evidence": {
+        "dataRoot": "~/.dsh/storages/evolution",
+        "manifest": null,
+        "staging": []
+      }
+    },
+    {
+      "id": "state.domain",
+      "category": "state",
+      "level": "ok",
+      "summary": "Domain aggregate schema 1 is valid (28 applied event marker(s)).",
+      "evidence": {
+        "domainGlobalPath": "~/.dsh/storages/evolution_domain.json",
+        "bytes": 113073,
+        "unit": {
+          "name": "evolution_domain",
+          "version": 1
+        },
+        "schema": 1,
+        "applied": 28,
+        "pending": null,
+        "staging": [],
+        "orphanStaging": [],
+        "aggregateVerified": true,
+        "schemaErrors": null,
+        "problems": [],
+        "blockingProblems": [],
+        "advisoryProblems": [],
+        "archiveLock": {
+          "present": false,
+          "kind": "absent",
+          "pid": null,
+          "ownerAlive": false,
+          "malformed": false,
+          "settling": false,
+          "reclaimable": false,
+          "ageMs": 0,
+          "raw": null
+        },
+        "staleLock": false,
+        "lockProblems": [],
+        "migration": null
+      },
+      "recoverable": false
+    },
+    {
+      "id": "state.retention-floor",
+      "category": "state",
+      "level": "ok",
+      "summary": "Event log retention continuity: no-floor.",
+      "evidence": {
+        "status": "no-floor",
+        "floorSource": "none",
+        "eventBridgePath": "~/.dsh/storages/evolution/execution-events.jsonl",
+        "floor": null,
+        "floorProblems": [],
+        "reclaimTemporaries": []
+      },
+      "recoverable": false
+    },
+    {
+      "id": "state.ownership",
+      "category": "state",
+      "level": "ok",
+      "summary": "No target ownership claims exist; no experiment is holding a target.",
+      "evidence": {
+        "ownershipDir": "~/.dsh/storages/evolution/ownership",
+        "kind": "directory",
+        "directoryPresent": true,
+        "claims": [],
+        "states": {},
+        "inProgressClaims": [],
+        "reclaimableClaims": [],
+        "liveClaims": [],
+        "blockingClaims": [],
+        "repairPolicy": "none: the doctor never removes or rewrites a target claim"
+      }
+    },
+    {
+      "id": "data.key",
+      "category": "data",
+      "level": "ok",
+      "summary": "The event bridge key is valid (64 lowercase hex characters); no replacement is needed and none is offered.",
+      "evidence": {
+        "keyPath": "~/.dsh/storages/evolution/event-bridge.key",
+        "state": "valid",
+        "present": true,
+        "bytes": 64,
+        "mode": "600",
+        "regularFile": true,
+        "keyDerivedArtifacts": {
+          "artifacts": {
+            "execution-events.jsonl": {
+              "path": "~/.dsh/storages/evolution/execution-events.jsonl",
+              "state": "mac-bearing",
+              "bytes": 54543,
+              "records": 28
+            },
+            "evolution_domain.json": {
+              "path": "~/.dsh/storages/evolution_domain.json",
+              "state": "mac-bearing",
+              "bytes": 113073,
+              "applied": 28,
+              "pendingApplied": 0
+            },
+            "event-log.checkpoint.json": {
+              "path": "~/.dsh/storages/evolution/event-log.checkpoint.json",
+              "state": "mac-bearing",
+              "bytes": 629,
+              "temporaries": []
+            }
+          },
+          "macBearing": [
+            "execution-events.jsonl",
+            "evolution_domain.json",
+            "event-log.checkpoint.json"
+          ],
+          "unknown": [],
+          "establishedWithoutMac": []
+        },
+        "macBearingArtifacts": [
+          "execution-events.jsonl",
+          "evolution_domain.json",
+          "event-log.checkpoint.json"
+        ],
+        "unknownArtifacts": [],
+        "repairPolicy": "none: the doctor never creates, replaces or deletes the event-bridge key"
+      }
+    },
+    {
+      "id": "promotion.journal",
+      "category": "promotion",
+      "level": "ok",
+      "summary": "No promotion journal: no promotion is in progress.",
+      "evidence": {
+        "promotionStateDir": "~/.dsh/storages/evolution/promotion",
+        "state": "not-executed",
+        "lock": {
+          "present": false
+        }
+      },
+      "recoverable": false
+    },
+    {
+      "id": "promotion.composition",
+      "category": "promotion",
+      "level": "ok",
+      "summary": "Promoted composition mounts 2 durable row(s), all inside the promoted plugin root.",
+      "evidence": {
+        "compositionPath": "~/.dsh/storages/evolution/promoted.cordis.yml",
+        "present": true,
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "name": "file://~/.dsh/storages/evolution/promoted/dsh-evolution-promoted-af973a3eea01/lib/index.js",
+            "disabled": false,
+            "plugin": {
+              "dir": "~/.dsh/storages/evolution/promoted/dsh-evolution-promoted-af973a3eea01",
+              "present": true,
+              "manifest": "dsh-evolution-promoted-af973a3eea01"
+            }
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "name": "file://~/.dsh/storages/evolution/promoted/dsh-evolution-promoted-e82a216992bb/lib/index.js",
+            "disabled": false,
+            "plugin": {
+              "dir": "~/.dsh/storages/evolution/promoted/dsh-evolution-promoted-e82a216992bb",
+              "present": true,
+              "manifest": "dsh-evolution-promoted-e82a216992bb"
+            }
+          }
+        ],
+        "orphanDirs": [],
+        "problems": [],
+        "journalState": "not-executed"
+      },
+      "recoverable": false
+    },
+    {
+      "id": "promotion.pointer",
+      "category": "promotion",
+      "level": "ok",
+      "summary": "The durable capability pointer names row evolution-promoted-e82a216992bb, which the composition mounts.",
+      "evidence": {
+        "evolutionPath": "~/.dsh/storages/evolution/EVOLUTION.md",
+        "pointerRow": "evolution-promoted-e82a216992bb",
+        "knownRow": true,
+        "pointerDir": "~/.dsh/storages/evolution/promoted/dsh-evolution-promoted-e82a216992bb",
+        "outsideCurrentRoot": false,
+        "migrationBoundary": false,
+        "intentionallyInactive": false,
+        "problems": [],
+        "bytes": 1165
+      },
+      "recoverable": false
+    },
+    {
+      "id": "promotion.sharing",
+      "category": "promotion",
+      "level": "ok",
+      "summary": "2 verified stable plugin(s) are published for acp/web.",
+      "evidence": {
+        "indexPath": "~/.dsh/storages/evolution/shared-plugins/published.json",
+        "status": "ok",
+        "disableStatus": "absent",
+        "updatedAt": "2026-11-12T20:35:34.242Z",
+        "records": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "approvedProfiles": [
+              "acp",
+              "web"
+            ],
+            "source": "verified",
+            "stable": {
+              "committedAt": "2026-11-12T05:14:03.990Z",
+              "promotionTimestamp": "2026-11-12T05:12:03.668Z",
+              "decision": "benefit",
+              "canary": {
+                "healthObservationWindow": 2,
+                "observations": 2,
+                "startupVerified": true
+              }
+            },
+            "host": {
+              "dsh": "0.2.2-rc.2",
+              "cordis": "4.1.0",
+              "include": "1.1.0",
+              "node": "v24.21.0",
+              "verifiedAt": "2026-11-12T19:41:40.888Z"
+            },
+            "hostCompatible": true,
+            "revalidation": 1
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "approvedProfiles": [
+              "acp"
+            ],
+            "source": "verified",
+            "stable": {
+              "committedAt": "2026-11-12T20:35:34.171Z",
+              "promotionTimestamp": "2026-11-12T20:35:34.029Z",
+              "decision": "benefit",
+              "canary": {
+                "healthObservationWindow": 2,
+                "observations": 2,
+                "startupVerified": true
+              }
+            },
+            "host": {
+              "dsh": "0.2.2-rc.2",
+              "cordis": "4.1.0",
+              "include": "1.1.0",
+              "node": "v24.21.0",
+              "verifiedAt": "2026-11-12T20:35:34.011Z"
+            },
+            "hostCompatible": true,
+            "revalidation": 0
+          }
+        ],
+        "invalidRecords": [],
+        "disabled": [],
+        "consumers": {
+          "acp": {
+            "status": "ok",
+            "updatedAt": "2026-11-12T22:54:01.918Z",
+            "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+            "active": [
+              "evolution-promoted-af973a3eea01",
+              "evolution-promoted-e82a216992bb"
+            ],
+            "plugins": [
+              {
+                "id": "evolution-promoted-af973a3eea01",
+                "status": "active",
+                "reason": null
+              },
+              {
+                "id": "evolution-promoted-e82a216992bb",
+                "status": "active",
+                "reason": null
+              }
+            ]
+          },
+          "web": {
+            "status": "ok",
+            "updatedAt": "2026-11-12T22:51:29.321Z",
+            "observedIndexUpdatedAt": "2026-11-12T20:35:34.242Z",
+            "active": [
+              "evolution-promoted-af973a3eea01"
+            ],
+            "plugins": [
+              {
+                "id": "evolution-promoted-af973a3eea01",
+                "status": "active",
+                "reason": null
+              },
+              {
+                "id": "evolution-promoted-e82a216992bb",
+                "status": "skipped-unapproved",
+                "reason": "profile-not-approved"
+              }
+            ]
+          }
+        },
+        "problems": [],
+        "pendingRestart": [],
+        "observedHost": {
+          "dsh": "0.2.2-rc.2",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0",
+          "profile": "desktop"
+        }
+      },
+      "recoverable": false
+    }
+  ],
+  "degradedCapabilities": [
+    {
+      "id": "evaluator-advisory",
+      "impact": "The domain evaluator records a decision and hard-vetoes a detected regression, but promotionGates remains the production authority; independent host baseline/test metrics are not wired in.",
+      "resolution": "Provide a DSH host surface that supplies independent baseline/test metrics for an experiment."
+    },
+    {
+      "id": "continuous-and-governance-not-wired",
+      "impact": "lib/dockyard-domain/continuous and lib/dockyard-domain/governance are pure domain modules covered by unit tests and are not started by the orchestrator live loop.",
+      "resolution": "Wire them into the live loop behind an explicit opt-in once the loop is designed."
+    },
+    {
+      "id": "host-only-promotion",
+      "impact": "Client halves are rejected; promoted host code runs through a cooperative Function(hostCode)() gate that is not a security sandbox.",
+      "resolution": "Requires an approval-aware durable composition contract from the host."
+    },
+    {
+      "id": "legacy-compat-adapters",
+      "impact": "lib/compat/legacy-startup-drift.js and the legacy preset/default-path handling stay present but disabled by default.",
+      "resolution": "Remove once no supported DSH layout publishes the legacy drift engine or preset layout."
+    },
+    {
+      "id": "internal-api-dependency",
+      "impact": "Two introspection surfaces are private to Cordis by its own rule: ctx.events._hooks (no public listener enumeration exists) and the ctx.reflect._getImpl() fallback (used only when the documented ctx.reflect.store + Context.isolate path is absent). FiberState.ACTIVE is not importable (const enum, erased at runtime), so ACTIVE is decided from documented lifecycle fields. The official loader/Include members used for the mounted promoted row (EntryTree.resolve/root, Entry.fiber/options/disabled) are public but undocumented.",
+      "resolution": "Replace ctx.events._hooks once the host publishes a public listener enumeration; every other surface already goes through a documented or explicitly classified path recorded in lib/cordis-compat.js."
+    }
+  ],
+  "coverage": {
+    "evaluated": [
+      "plugin.home",
+      "plugin.package",
+      "plugin.patch",
+      "plugin.support-matrix",
+      "host.install",
+      "compat.legacy-adapters",
+      "capabilities.known-limits",
+      "data.root",
+      "state.memory",
+      "state.archives",
+      "state.event-bridge",
+      "migration.manifest",
+      "state.domain",
+      "state.retention-floor",
+      "state.ownership",
+      "data.key",
+      "promotion.journal",
+      "promotion.composition",
+      "promotion.pointer",
+      "promotion.sharing"
+    ],
+    "notEvaluated": [
+      {
+        "id": "host.cli",
+        "reason": "no DSH CLI candidate resolved to @deepseek-ai/dsh"
+      },
+      {
+        "id": "runtime.capabilities",
+        "reason": "cli mode without a live context"
+      },
+      {
+        "id": "runtime.registration",
+        "reason": "cli mode without a live context"
+      },
+      {
+        "id": "runtime.internal-api",
+        "reason": "cli mode without a live context"
+      }
+    ]
+  },
+  "repairs": [],
+  "repairsApplied": [],
+  "detection": {
+    "profile": "desktop",
+    "source": "argument",
+    "candidates": [
+      "acp",
+      "desktop",
+      "headless",
+      "web"
+    ],
+    "withBundle": [
+      "acp",
+      "desktop",
+      "web"
+    ]
+  }
+}
