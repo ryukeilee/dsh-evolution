@@ -18,7 +18,9 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
-## Unreleased
+## 0.2.8 — 稳定版
+
+`0.2.7` 的稳定后继：把显式“自我进化”请求的入口统一为一次只读、可审计的检查，并修复发布前独立审核发现的状态分类与下一步指引缺口。宿主集合、持久化 schema、工具名 / 参数结构、授权来源与八项晋升门禁不变。
 
 用户主动说“自我进化”时，Desktop 与 ACP 现在先做一次统一、只读的检查，再决定是否开始新实验：
 
@@ -32,6 +34,20 @@ format, tool-surface shape or authorization source changes.
   候选并走既有 Trial / Measure / Canary / Stable 流程；没有可执行动作时返回 `no-action` 而不强行生成插件。
 - ACP → Desktop 任务协议允许 `proposal.strategy` / `proposal.rootCause` 可选字段，使 ACP 发起的修复同样受既有
   proven-ineffective 策略拒绝规则约束。八项晋升门禁、所有者确认、回滚与跨入口发布语义不变。
+
+发布前独立审核（只读，位于真实仓库与真实宿主之外）关闭三处会误导下一步动作的缺口：
+
+- 恢复 `enable` 或扩大 `approvedProfiles` 后、对应 consumer 尚未重启时，陈旧的 `disabled` /
+  `skipped-unapproved` 行会被排除在应激活集合外，检查因此返回 inactive/no-action。现在这些行按当前撤销表与批准列表
+  判为 `restart-consumer`；`already-mounted` 与 `publisher-profile` 是重启不会改变的持久状态，仍保持 inactive，
+  `reset` 也仍然只能清除 sticky 失败，不会造成每次检查都要求重启。
+- 同一记录在不同 DSH 版本的入口之间运行时，consumer 自己记录的 host 也参与判定：真实版本不一致时继续保持
+  `pending-revalidation`（重启无法清除），动作会点名 profile 与其宿主版本，要求先把入口对齐，或在该宿主上验证同一份
+  字节；采用后者时仍会如实让其它版本入口保持 pending，不声称一次重验证能同时覆盖两个版本。
+- stable 检查达到 50 条记录上限被截断时，组合结果标记 `incomplete`，不会以 no-action 结束。
+
+这三处不改变持久化格式、发布记录字段、晋升门禁或已有 revalidate 证据格式；测试在
+`test/self-evolution-review.test.mjs` 中逐条固定。
 
 ## 0.2.7 — 稳定版
 
