@@ -113,6 +113,28 @@ Stable、Rollback 仍然只存在于 Desktop 进程**；ACP 侧没有 orchestrat
   awaiting-owner-confirmation 不自动批准、stable、fresh ACP 消费与重启保持）记录在
   [acp-desktop-control-20261112.md](docs/evidence/acp-desktop-control-20261112.md)。
 
+### 用户主动要求自我进化时的统一检查
+
+Desktop 或 ACP 的自我进化模式里，用户直接用自然语言说“自我进化”时，助手第一步不是写新插件，而是做一次只读统一检查：
+Desktop 的 `evolution_plan` 同时返回 `stablePlugins`（已发布 stable 插件对当前宿主的兼容性）与 `selfEvolution`
+（有排序的 `nextActions`）；ACP 用既有 `evolution_desktop` 的只读 `audit` 动作调用同一份分类逻辑。检查同时覆盖两类
+已有事实：旧 stable 记录的可用性，以及共享经验里证据排序后的候选。
+
+1. `revalidate`：记录因宿主升级停在 `pending-revalidation`。先在真实隔离宿主上重新验证，再用现有
+   `dsh-evolution-shared revalidate --evidence <json>` 采纳证据；不修改、不重新生成、不重新晋升插件源码。
+2. `repair-stable`：记录在当前宿主上被证明不兼容或 apply 失败。读取历史经验定位根因，生成最小修复候选，
+   沿用既有 `propose → probe(baseline) → trial → probe(candidate) → measure → promote/revert` 流程；
+   源码变更仍需所有者显式确认。
+3. `restart-consumer`：只是 consumer 启动状态过期；重启入口即可重新校验，不需要源码改动。
+4. `operator-action`：索引、源码摘要或撤销表损坏；按报告恢复现场，不猜测。
+5. `experience-candidate`：没有更优先的 stable 插件问题时，才从有证据的历史候选继续，并沿用
+   proven-ineffective 拒绝规则。
+6. 以上都不存在时返回 `no-action` 并明确结束，不强行生成新插件。
+
+检查完全只读：不写发布索引、不启动 Trial、不创建任务；Desktop 仍是唯一执行与晋升权威，ACP 只负责审计并把
+新计划交给 Desktop。ACP 的 `audit` 不会在本机执行 revalidate，它返回需要操作者执行的证据步骤。设计见
+[统一只读检查](docs/design/self-evolution-review.md)。
+
 ## 它解决什么问题
 
 | 常见问题 | 对应机制 |
@@ -136,7 +158,8 @@ Stable、Rollback 仍然只存在于 Desktop 进程**；ACP 侧没有 orchestrat
 十二个工具按系统提示词规定的生命周期顺序工作：
 
 ```text
-evolution_plan ─────────────── 只读：从共享经验与失败记忆发现证据排序的候选；无可执行候选时返回 none
+evolution_plan ─────────────── 只读：审计旧 stable 插件 + 从共享经验与失败记忆发现候选，给出有序 nextActions；
+                               没有可执行动作时返回 no-action
         ↓
 evolution_runtime_inspect
         ↓
@@ -336,7 +359,7 @@ RSS **−6.8 MiB / −2.0%**；不装 Evolution 时该收益为 −122.8 ms / �
 最短会话闭环：
 
 ```text
-evolution_plan（可选，发现候选）→ evolution_runtime_inspect → evolution_propose
+evolution_plan（旧 stable 插件审计 + 经验候选；无动作则结束）→ evolution_runtime_inspect → evolution_propose
 → evolution_probe(baseline) → evolution_trial → evolution_probe(candidate)
 → evolution_measure → evolution_revert（放弃）
                     或 → evolution_promote → evolution_canary_observe（采纳）

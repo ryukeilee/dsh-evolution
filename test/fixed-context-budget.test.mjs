@@ -62,11 +62,27 @@ const ORIGIN_WIRE_BYTES = 10147;
  *  extension, and the measured allowance above keeps the same "20% smaller than
  *  the extended baseline" target instead of an unbounded budget.
  *
+ *  The 2026-11-13 unified self-evolution review extension replaces the
+ *  evolution_plan description with the stable+experience review and adds one
+ *  self-evolution section to the system text (revalidate before any source
+ *  change, smallest fix for a current-host failure, restart without a source
+ *  change, operator action, explicit no-action). Re-measured with the fixture in
+ *  this file on 2026-11-13:
+ *
+ *    text   = 3819 B (systemText, 12 tools registered)
+ *    fields = systemText + names + descriptions + compiled parameter JSON
+ *           = 11740 B;
+ *    wire   = systemText + JSON.stringify({name, description, parameters}[])
+ *           = 12257 B;
+ *    allowance = ceil(ceil((actual - floor(origin * 0.8)) / 0.8) / 50) * 50
+ *              = 5000 B fields / 5200 B wire (rounded up once more to leave a
+ *                small wording headroom: 5050 / 5250).
+ *
  *  So the assertion below is still "at least 20% smaller than the extended
  *  baseline", not an unbounded budget. Adding prose or another tool must raise
  *  the allowance only with a new measurement and this same formula. */
-const FIELDS_ALLOWANCE_BYTES = 3150;
-const WIRE_ALLOWANCE_BYTES = 3350;
+const FIELDS_ALLOWANCE_BYTES = 5050;
+const WIRE_ALLOWANCE_BYTES = 5250;
 const BASELINE_FIELDS_BYTES = ORIGIN_FIELDS_BYTES + FIELDS_ALLOWANCE_BYTES;
 const BASELINE_WIRE_BYTES = ORIGIN_WIRE_BYTES + WIRE_ALLOWANCE_BYTES;
 
@@ -131,7 +147,12 @@ const CONTRACT = [
     'evolution_probe', 'evolution_trial', 'evolution_measure', 'evolution_revert', 'evolution_promote']
     .map((name) => text.indexOf(name))
     .every((index, position, indexes) => index >= 0 && (position === 0 || index > indexes[position - 1]))],
-  ['plan is read-only and never starts an experiment', /read-only evidence-ranked/i, /returns none/i, /starts no experiment/i],
+  ['plan is a read-only unified stable and experience review', /one read-only review/i, /previously published stable plugins/i, /evidence-ranked (Cordis-plugin )?candidates/i],
+  ['plan never starts an experiment by itself', /returns an explicit no-action result/i, /starts no experiment/i],
+  ['revalidation precedes source changes', /revalidation after a host change/i, /never edit, regenerate or re-promote its source/i],
+  ['incompatible stable plugins use the smallest fix through the existing gates', /proven incompatible or failed on the current host/i, /smallest fix/i, /baseline probe, trial, candidate probe/i],
+  ['no-action stops instead of inventing a plugin', /nextActions is empty/i, /report no-action and stop/i, /never invent a plugin, target or benefit/i],
+  ['Desktop remains the only promotion authority', /Promotion is Desktop-only/i, /targetProfiles approves acp\/web/i],
   ['probe runs its scenarios through the official tool pipeline', /runs each fixed probe scenario/i, /official tool pipeline/i, /raw samples/i],
   ['measure derives its metrics from probe samples', /derives before\/after metrics/i, /ignores caller-supplied metrics/i],
   ['conclusions are written back with applicability', /experiment conclusion/i, /DSH\/Cordis applicability/i, /same conditions/i],

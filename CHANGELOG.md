@@ -18,6 +18,21 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## Unreleased
+
+用户主动说“自我进化”时，Desktop 与 ACP 现在先做一次统一、只读的检查，再决定是否开始新实验：
+
+- `evolution_plan`（Desktop）在原有经验候选之外返回 `stablePlugins`（已发布 stable 插件对当前宿主的分类）与
+  `selfEvolution`（`operator-action` → `revalidate` → `repair-stable` → `restart-consumer` → `experience-candidate`
+  → `no-action` 的有序动作）。工具名与参数结构不变。
+- `evolution_desktop`（ACP）新增只读 `audit` 动作，用同一份分类逻辑审计共享发布索引与共享经验；它不运行 Evolution
+  kernel、不创建任务，也不批准晋升。
+- 因宿主升级停在 `pending-revalidation` 的旧 stable 插件只走既有真实隔离宿主验收与
+  `dsh-evolution-shared revalidate`；检查会明确禁止修改或重新生成插件源码。只有当前宿主上确实不兼容时才生成最小修复
+  候选并走既有 Trial / Measure / Canary / Stable 流程；没有可执行动作时返回 `no-action` 而不强行生成插件。
+- ACP → Desktop 任务协议允许 `proposal.strategy` / `proposal.rootCause` 可选字段，使 ACP 发起的修复同样受既有
+  proven-ineffective 策略拒绝规则约束。八项晋升门禁、所有者确认、回滚与跨入口发布语义不变。
+
 ## 0.2.7 — 稳定版
 
 `0.2.6` 的稳定后继：新增官方宿主 DSH `0.2.2-rc.2` 的真实安装、加载、工具注册、生命周期、

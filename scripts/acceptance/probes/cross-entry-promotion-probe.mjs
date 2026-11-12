@@ -23,10 +23,19 @@
  *      commits stable but is never published;
  *   5. a second plugin that requires a kernel-only service is published too (its
  *      `requiredServices` is what a consumer uses to skip it as incompatible).
+ *   6. the `review-*` phases call the registered `evolution_plan` tool in this
+ *      real kernel and report the unified self-evolution review. The probe
+ *      snapshots the publication index bytes immediately before and after that
+ *      tool call, so "read-only" is observed instead of trusted from the
+ *      review's own `readOnly` flag (which is also asserted).
  *
  * The candidate plugins are real standalone Cordis plugins. The listeners are
  * executed by this probe (`ctx.parallel`) so "promoted and published" is proven
  * by behaviour, not by a file existing.
+ *
+ * Environment:
+ *   EVOLUTION_CROSS_ENTRY_PHASE  `publish` (default) or `review-<suffix>`; any
+ *                                other value is refused.
  */
 import crypto from 'node:crypto';
 import { closeSync, openSync, writeFileSync } from 'node:fs';
@@ -101,7 +110,7 @@ export function apply(ctx) {
   };
   const receive = (message) => {
     if (output || message !== 'run') return;
-    report(runCrossEntryPublish(ctx));
+    report(runCrossEntryPhase(ctx));
   };
   if (!output) {
     ctx.effect(() => {
@@ -124,12 +133,37 @@ export function apply(ctx) {
       if (error?.code !== 'EEXIST') throw error;
     }
     if (!driver) return;
-    const timer = setTimeout(() => report(runCrossEntryPublish(ctx)), 1500);
+    const timer = setTimeout(() => report(runCrossEntryPhase(ctx)), 1500);
     ctx.effect(() => () => clearTimeout(timer));
   }
   // A file-receipt entry (Desktop, ACP) owns no IPC channel: `process.send` there
   // would inject a foreign message into the host's own parent/child protocol.
   if (!output) process.send?.({ ready: true });
+}
+
+/**
+ * Resolve the phase this probe process must run.
+ *
+ * The promotion path keeps the historical `publish` phase. A `review-<suffix>`
+ * phase reads the same durable state and returns the unified review; the suffix
+ * is only an evidence label and never changes the query.
+ */
+export function resolveCrossEntryPhase(env = process.env) {
+  const phase = typeof env?.EVOLUTION_CROSS_ENTRY_PHASE === 'string' && env.EVOLUTION_CROSS_ENTRY_PHASE.trim() !== ''
+    ? env.EVOLUTION_CROSS_ENTRY_PHASE.trim()
+    : 'publish';
+  if (phase !== 'publish' && !/^review(?:-[a-z0-9]+)*$/.test(phase)) {
+    throw new Error(`unknown cross-entry phase ${phase}`);
+  }
+  return phase;
+}
+
+/** Run the phase this process was booted for (promotion or a read-only review). */
+export function runCrossEntryPhase(ctx) {
+  const phase = resolveCrossEntryPhase();
+  return phase === 'publish'
+    ? runCrossEntryPublish(ctx)
+    : runCrossEntryReview(ctx, { phase });
 }
 
 /**
@@ -408,8 +442,7 @@ export async function runCrossEntryPublish(ctx, onStep = () => {}) {
   }
 
   try {
-    const phase = process.env.EVOLUTION_CROSS_ENTRY_PHASE || 'publish';
-    if (phase !== 'publish') throw new Error(`unknown cross-entry phase ${phase}`);
+    const phase = 'publish';
     const extended = process.env.EVOLUTION_CROSS_ENTRY_EXTENDED === '1';
     const output = {
       phase,
@@ -484,6 +517,75 @@ export async function runCrossEntryPublish(ctx, onStep = () => {}) {
       ids: index.plugins.map((row) => row?.id),
     };
     return output;
+  } finally {
+    await handle.dispose();
+  }
+}
+
+/**
+ * The read-only phase: call the registered `evolution_plan` tool in this real
+ * kernel and prove the unified review wrote nothing.
+ *
+ * The publication index bytes are captured immediately before the tool call and
+ * compared immediately after it. The durable review reads the index, the
+ * promoted sources, the consumer state and the revocations through
+ * `promoted-sharing.js`, so any write on that path fails here. The tool is
+ * reached through `ctx.tools.get` exactly as a model request would reach it.
+ */
+export async function runCrossEntryReview(ctx, { phase = 'review' } = {}) {
+  const evolution = ctx.get('evolution');
+  const orchestrator = evolution?.orchestrator;
+  if (!orchestrator) throw new Error('the cross-entry review probe requires the full Evolution kernel');
+  const dataRoot = evolution.dataRoot;
+  if (typeof dataRoot !== 'string' || dataRoot === '') throw new Error('the Evolution service did not expose its data root');
+  const indexPath = path.join(dataRoot, 'shared-plugins', 'published.json');
+  const before = await fs.readFile(indexPath);
+  const handle = await ctx.agents.create({
+    sessionId: `cross-entry-review-${Date.now()}`,
+    meta: { cwd: process.env.EVOLUTION_ACCEPTANCE_CWD || process.cwd() },
+  });
+  const steps = [];
+  try {
+    const agent = handle.agent;
+    const definition = ctx.tools.get('evolution_plan', agent);
+    if (!definition) throw new Error('the official registry cannot resolve evolution_plan');
+    const result = await definition.execute({}, { agent, signal: new AbortController().signal });
+    steps.push({ name: 'evolution_plan', ok: result?.ok !== false });
+    if (result?.ok === false) {
+      throw new Error(`evolution_plan refused: ${JSON.stringify({ phase: result?.phase, reason: result?.reason })}`);
+    }
+    const stablePlugins = result?.stablePlugins ?? null;
+    const selfEvolution = result?.selfEvolution ?? null;
+    if (!stablePlugins || typeof stablePlugins !== 'object' || Array.isArray(stablePlugins)) {
+      throw new Error('the review result has no stablePlugins document');
+    }
+    if (!selfEvolution || typeof selfEvolution !== 'object' || Array.isArray(selfEvolution)) {
+      throw new Error('the review result has no selfEvolution decision');
+    }
+    if (stablePlugins.readOnly !== true || selfEvolution.readOnly !== true) {
+      throw new Error('the review result does not declare itself read-only');
+    }
+    const after = await fs.readFile(indexPath);
+    if (!before.equals(after)) {
+      throw new Error(`the self-evolution review changed the publication index bytes (${sha256(before)} -> ${sha256(after)})`);
+    }
+    let indexUpdatedAt = null;
+    try { indexUpdatedAt = JSON.parse(after.toString('utf8'))?.updatedAt ?? null; } catch { indexUpdatedAt = null; }
+    return {
+      phase,
+      dataRoot,
+      indexPath,
+      tools: ctx.tools.schemas().filter((tool) => tool.name.startsWith('evolution_')).length,
+      hostRuntime: {
+        node: process.versions?.node ?? null,
+        electron: process.versions?.electron ?? null,
+        chrome: process.versions?.chrome ?? null,
+        v8: process.versions?.v8 ?? null,
+      },
+      steps,
+      review: { stablePlugins, selfEvolution },
+      index: { status: 'ok', digest: sha256(before), digestAfter: sha256(after), updatedAt: indexUpdatedAt },
+    };
   } finally {
     await handle.dispose();
   }

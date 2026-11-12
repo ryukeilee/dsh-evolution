@@ -1396,3 +1396,56 @@ test('a proven-ineffective strategy stays blocked after unrelated knowledge outg
   assert.equal(rejection.reason, 'strategy-already-proven-ineffective');
   assert.equal(rejection.prior.decision, 'no-benefit');
 });
+
+// ---------------------------------------------------------------------------
+// Unified self-evolution review (the evolution_plan entry point)
+// ---------------------------------------------------------------------------
+
+test('reviewSelfEvolution composes the read-only stable + experience review without mutating the runtime', async (t) => {
+  const empty = await createHarness(t, 'self-evolution-empty');
+  const emptyReview = await empty.orchestrator.reviewSelfEvolution({ focus: 'edge-cache' }, empty.exec);
+  // The synchronous plan fields survive the async wrapper.
+  assert.equal(emptyReview.ok, true);
+  assert.equal(emptyReview.phase, 'plan');
+  assert.equal(emptyReview.focus, 'edge-cache');
+  assert.deepEqual(emptyReview.candidates, []);
+  assert.equal(emptyReview.selected, null);
+  assert.ok(emptyReview.none);
+  assert.deepEqual(emptyReview.versions, HOST_VERSIONS);
+  // This synthetic root has no publication index: a normal Desktop-only install.
+  assert.equal(emptyReview.stablePlugins.status, 'absent');
+  assert.equal(emptyReview.stablePlugins.readOnly, true);
+  assert.deepEqual(emptyReview.stablePlugins.nextActions, []);
+  // Nothing is wrong and nothing is worth a new experiment: stop explicitly.
+  assert.equal(emptyReview.selfEvolution.kind, 'no-action');
+  assert.equal(emptyReview.selfEvolution.primary, 'none');
+  assert.deepEqual(emptyReview.selfEvolution.nextActions, []);
+  assert.equal(emptyReview.selfEvolution.readOnly, true);
+  assert.deepEqual(emptyReview.selfEvolution.versions, APPLICABILITY);
+
+  const seeded = await createHarness(t, 'self-evolution-seeded');
+  seedFailures(seeded.store, TARGET, 3);
+  const experimentsBefore = seeded.orchestrator.experiments.size;
+  const review = await seeded.orchestrator.reviewSelfEvolution({}, seeded.exec);
+  // The plan still selects the seeded target, and the review exposes it as the
+  // single experience-backed next action.
+  assert.equal(review.ok, true);
+  assert.equal(review.selected.problemKey, PROBLEM_KEY);
+  assert.equal(review.candidates.length, 1);
+  assert.equal(review.stablePlugins.status, 'absent');
+  assert.equal(review.selfEvolution.kind, 'experience-candidate');
+  assert.equal(review.selfEvolution.primary, 'experience-candidate');
+  assert.equal(review.selfEvolution.hasBlockingStableIssue, false);
+  assert.equal(review.selfEvolution.readOnly, true);
+  const experienceAction = review.selfEvolution.nextActions[0];
+  assert.equal(experienceAction.action, 'experience-candidate');
+  assert.equal(experienceAction.problemKey, PROBLEM_KEY);
+  assert.equal(experienceAction.blockedBy, undefined);
+
+  // Read-only: no experiment, Trial, composition or plugin directory appears.
+  assert.equal(seeded.orchestrator.experiments.size, experimentsBefore);
+  assert.equal(seeded.orchestrator.experiments.size, 0);
+  assert.equal(await exists(seeded.paths.compositionPath), false);
+  assert.equal(await exists(seeded.paths.pluginRoot), false);
+  assert.equal(await exists(seeded.paths.promotionStateDir), false);
+});
