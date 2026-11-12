@@ -32,7 +32,7 @@ import path from 'node:path';
 import http from 'node:http';
 import readline from 'node:readline';
 import crypto from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 
@@ -193,7 +193,7 @@ await fs.writeFile(overlay, `- id: llm-deepseek\n  config:\n    baseURL: http://
 async function createAcp(label) {
   const log = await fs.open(path.join(work, `${label}.stderr.log`), 'w', 0o600);
   const child = launch(cli, ['--profile', 'acp', '--patch', overlay], {
-    env: { ...env, DSH_HOME: home, EVOLUTION_ACCEPTANCE_KEY: 'local-fixture-only' },
+    env: { ...autoLaunchEnv, DSH_HOME: home, EVOLUTION_ACCEPTANCE_KEY: 'local-fixture-only' },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   let stderr = '';
@@ -250,7 +250,7 @@ function toolResultValue(result) {
   return JSON.parse(content);
 }
 
-const plan = (() => {
+function makePlan() {
   const suffix = crypto.randomBytes(4).toString('hex');
   const tool = `acp_stats_${suffix}`;
   const compositionName = `acp-stats-${suffix}`;
@@ -280,8 +280,18 @@ const plan = (() => {
       requestedTargetProfiles: ['acp'],
     },
   };
-})();
+}
+const plan = makePlan();
 evidence.candidate = { tool: plan.tool, compositionName: plan.compositionName, sourceSha256: plan.sourceSha256 };
+
+// The client launches the official app binary from DSH_DESKTOP_APP_BINARY when
+// it is set. The acceptance points it at a wrapper that keeps Electron's
+// user-data directory inside the isolated work tree, so auto-launch does not
+// read or write the operator's real Desktop application state.
+const autoLaunchUserData = path.join(work, 'electron-autolaunch');
+const autoLaunchWrapper = path.join(work, 'desktop-autolaunch.sh');
+await fs.writeFile(autoLaunchWrapper, `#!/bin/sh\nexec ${JSON.stringify(binary)} --user-data-dir=${JSON.stringify(autoLaunchUserData)} "$@"\n`, { mode: 0o700 });
+const autoLaunchEnv = { ...env, DSH_DESKTOP_APP_BINARY: autoLaunchWrapper };
 
 let desktop = null;
 let acp = null;
@@ -494,7 +504,52 @@ try {
   evidence.restart.publicationPreserved = true;
   evidence.steps.push({ name: 'desktop-restart-preserved-durable-facts', at: new Date().toISOString() });
 
-  // 10. profile configuration was only changed by the official installer.
+  // 10. auto-launch: with no Desktop host running, a real ACP delegation starts
+  //     the official app through the client and still stops at the owner gate.
+  await stopDesktop(desktop);
+  desktop = null;
+  await waitFor(async () => (await liveHost()) === null, { timeoutMs: 60_000, what: 'script-owned Desktop shutdown' });
+  const autoPlan = makePlan();
+  let autoGate = null;
+  await runPrompt('acp-autolaunch', '当前没有运行中的 Desktop。请用 evolution_desktop 启动官方 Desktop 并提交这个自我进化任务，停在所有者确认前，不要批准。', (tools, result, round) => {
+    assertKernelFree(tools);
+    if (round === 1) return { name: 'evolution_desktop', args: { action: 'delegate', plan: autoPlan.plan, cwd: home } };
+    const value = toolResultValue(result);
+    if (round === 2) {
+      assert(value.phase === 'awaiting-owner-confirmation', `auto-launched Desktop did not reach the gate: ${value.phase} ${value.message ?? ''}`);
+      assert(value.candidateSourceSha256 === autoPlan.sourceSha256, 'auto-launch candidate identity mismatch');
+      autoGate = value;
+      return { name: 'evolution_desktop', args: { action: 'status', taskId: value.taskId } };
+    }
+    assert(value.phase === 'awaiting-owner-confirmation', 'auto-launched status left the owner gate');
+    return null;
+  });
+  assert(autoGate, 'auto-launch delegation never reached the owner gate');
+  const autoReady = await liveHost();
+  assert(autoReady !== null && autoReady.instanceId !== secondReady.instanceId, 'the client did not start a new Desktop host');
+  evidence.autoLaunch = {
+    hostInstanceId: autoReady.instanceId,
+    hostPid: autoReady.pid,
+    profile: autoReady.profile,
+    phase: autoGate.phase,
+    tool: autoPlan.tool,
+    experimentId: autoGate.experimentId,
+    candidateSourceSha256: autoGate.candidateSourceSha256,
+  };
+  evidence.steps.push({ name: 'acp-auto-launched-official-desktop', at: new Date().toISOString() });
+  // Tear down only the application instance this acceptance launched.
+  const ps = spawnSync('ps', ['-axo', 'pid=,command='], { encoding: 'utf8' });
+  for (const line of ps.stdout.split('\n')) {
+    const match = /^\s*(\d+)\s+(.*)$/.exec(line);
+    if (!match) continue;
+    if (!match[2].includes(`--user-data-dir=${autoLaunchUserData}`)) continue;
+    try { process.kill(Number(match[1]), 'SIGTERM'); } catch {}
+  }
+  await waitFor(async () => (await liveHost()) === null, { timeoutMs: 60_000, what: 'auto-launched Desktop shutdown' });
+  evidence.autoLaunch.stopped = true;
+  evidence.steps.push({ name: 'acceptance-launched-desktop-stopped', at: new Date().toISOString() });
+
+  // 11. profile configuration was only changed by the official installer.
   for (const profile of profiles) {
     const current = await fs.readFile(path.join(home, 'profiles', profile, 'cordis.patch.yml'), 'utf8');
     assert(current === patchesBefore[profile], `profile ${profile} patch changed during acceptance`);

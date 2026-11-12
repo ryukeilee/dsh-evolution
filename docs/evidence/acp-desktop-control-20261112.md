@@ -29,6 +29,9 @@ Evolution kernel、八项门禁、canary/stable、任务通道和 fresh ACP 消�
    模型调用晋升出的 `acp_stats_*` 工具，真实返回 `{"characters":11,"lines":2}`（输入 `ACP\nDesktop`），
    consumer 状态 `active`，ACP 没有修改 Desktop 的发布索引。
 8. 重启 Desktop：新的 host instanceId 生效，已 stable 的任务状态与发布索引保持不变，没有被重跑。
+9. 自动启动：完全停掉 Desktop 后，另一个真实 ACP 会话的 `evolution_desktop` delegate 由客户端自动
+   启动正式 DeepSeek Harness 应用（隔离 user-data 目录的 wrapper，通过 `DSH_DESKTOP_APP_BINARY`），
+   新的 host instanceId 就绪并把候选带到 `awaiting-owner-confirmation`；该验收实例随后被精确停止。
 
 ## 关键证据（完整 JSON 见同目录 `acp-desktop-control-20261112.json`）
 
@@ -43,6 +46,8 @@ Evolution kernel、八项门禁、canary/stable、任务通道和 fresh ACP 消�
 - `noAutoApproval`：等待 5000 ms 后 phase 仍为 `awaiting-owner-confirmation`。
 - `restart`：instanceId 从 `3d520559…` 变为 `4ddda4e5…`，terminal 任务与发布索引保持不变。
 - 单实例：第二次启动 Desktop 后 live host 的 instanceId/pid 不变。
+- `autoLaunch`：Desktop 未运行时由 ACP 客户端启动官方应用，新 host instanceId
+  `7b08ec2b…`、profile 为 `desktop`、phase 为 `awaiting-owner-confirmation`，验收实例已停止。
 
 ## 边界
 
