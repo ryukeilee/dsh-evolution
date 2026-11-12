@@ -46,7 +46,9 @@ export function setupPlan({ home, tarball, cli }) {
     const previous = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
     return { profile, file, previous, next: managedPatch(previous, profile),
       command: cli, args: ['plugin', '--profile', profile, 'add', artifact], artifact, sha256,
-      role: profile === 'desktop' ? 'existing manual Evolution + shared collection/recall' : 'shared collection/recall + promoted-plugin consumer' };
+      role: profile === 'desktop' ? 'existing manual Evolution + shared collection/recall + ACP task host'
+        : profile === 'acp' ? 'shared collection/recall + promoted-plugin consumer + ACP control tool'
+          : 'shared collection/recall + promoted-plugin consumer' };
   });
 }
 

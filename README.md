@@ -107,6 +107,9 @@ Stable、Rollback 仍然只存在于 Desktop 进程**；ACP 侧没有 orchestrat
 - **边界。** 只支持同一机器、同一 OS 用户、同一 `DSH_HOME`；任务通道是同一用户可写的传输层，不是安全
   边界或审批替代品。没有跨机器控制、没有新的网络服务、没有 Electron 私有凭据或 `app.asar` 修改。
   设计、文件布局与状态机见 [ACP → Desktop 控制链路](docs/design/acp-desktop-control.md)。
+  隔离真实宿主验收（官方 Desktop 应用 + 真实 Evolution kernel + 真实 ACP，包含
+  awaiting-owner-confirmation 不自动批准、stable、fresh ACP 消费与重启保持）记录在
+  [acp-desktop-control-20261112.md](docs/evidence/acp-desktop-control-20261112.md)。
 
 ## 它解决什么问题
 

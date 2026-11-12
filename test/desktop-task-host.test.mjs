@@ -361,7 +361,7 @@ test('two requests are executed one at a time in created order', async (t) => {
   assert.ok(secondTrialAt > firstStableAt, 'the second task started before the first reached its canary barrier');
 });
 
-test('a claim owned by a live foreign process keeps the task from executing', async (t) => {
+test('a claim owned by a live foreign process keeps the task queued and unexecuted', async (t) => {
   const { home, plan, kernel, host, channel } = harness(t);
   const taskId = mintTaskId();
   await fsp.mkdir(channel.claims, { recursive: true });
@@ -369,9 +369,43 @@ test('a claim owned by a live foreign process keeps the task from executing', as
   await fsp.writeFile(path.join(channel.claims, `${taskId}.lock`), JSON.stringify({ pid: 1, instanceId: 'foreign', at: new Date().toISOString() }));
   await submit(home, plan, taskId);
   await host.start();
-  const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
-  assert.equal(state.error.code, 'E_DESKTOP_TASK_CLAIMED');
+  // The live owner keeps the request pending instead of failing it: a later
+  // scan (here, after the owner disappears) may still execute it.
+  await new Promise((resolve) => { setTimeout(resolve, 120); });
+  let state = null;
+  try { state = JSON.parse(await fsp.readFile(path.join(channel.state, `${taskId}.json`), 'utf8')); } catch {}
+  assert.equal(state, null, 'a live claim must not produce a state document');
   assert.equal(kernel.calls.length, 0);
+  await fsp.unlink(path.join(channel.claims, `${taskId}.lock`));
+  await approveWhenWaiting(home, taskId);
+  const stable = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(stable.phase, 'stable');
+});
+
+test('a live foreign host readiness document prevents this process from draining the queue', async (t) => {
+  const { home, plan, kernel, host, channel } = harness(t);
+  await fsp.mkdir(channel.root, { recursive: true });
+  const ready = {
+    schemaVersion: SCHEMA_VERSION,
+    protocol: PROTOCOL_VERSION,
+    instanceId: 'foreign-live-host',
+    pid: 1,
+    startedAt: new Date().toISOString(),
+    profile: 'desktop',
+  };
+  await fsp.writeFile(path.join(channel.ready), JSON.stringify(ready));
+  const taskId = await submit(home, plan);
+  await host.start();
+  assert.equal(host.foreignHost()?.instanceId, 'foreign-live-host');
+  await new Promise((resolve) => { setTimeout(resolve, 120); });
+  assert.equal(kernel.calls.length, 0);
+  let state = null;
+  try { state = JSON.parse(await fsp.readFile(path.join(channel.state, `${taskId}.json`), 'utf8')); } catch {}
+  assert.equal(state, null);
+  // Disposing the second process must leave the first host's readiness file in place.
+  await host.dispose();
+  const preserved = JSON.parse(await fsp.readFile(path.join(channel.ready), 'utf8'));
+  assert.equal(preserved.instanceId, 'foreign-live-host');
 });
 
 test('a malformed request becomes a durable failed state without executing tools', async (t) => {

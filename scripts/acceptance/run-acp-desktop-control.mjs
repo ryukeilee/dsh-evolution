@@ -131,9 +131,9 @@ async function waitFor(predicate, { timeoutMs, intervalMs = 250, what }) {
     await sleep(intervalMs);
   }
 }
-async function startDesktop(label) {
+async function startDesktop(label, userDataDir = electronInit) {
   const log = await fs.open(path.join(work, `${label}.log`), 'w', 0o600);
-  const child = launch(binary, [`--user-data-dir=${label === 'desktop-live' ? electronLive : electronInit}`], { stdio: ['ignore', log.fd, log.fd] });
+  const child = launch(binary, [`--user-data-dir=${userDataDir}`], { stdio: ['ignore', log.fd, log.fd] });
   child.desktopLog = log;
   return child;
 }
@@ -153,7 +153,6 @@ async function liveHost() {
 // ---------------------------------------------------------------------------
 let nextAction = null;
 let lastToolResult = null;
-let lastToolResultAt = null;
 let fixtureError = null;
 const server = http.createServer(async (request, response) => {
   try {
@@ -161,7 +160,7 @@ const server = http.createServer(async (request, response) => {
     for await (const bytes of request) raw += bytes;
     const input = JSON.parse(raw);
     const result = input.messages.flatMap((message) => Array.isArray(message.content) ? message.content : []).findLast((block) => block.type === 'tool_result');
-    if (result) { lastToolResult = result; lastToolResultAt = Date.now(); }
+    if (result) lastToolResult = result;
     const selected = nextAction?.(input.tools ?? [], result);
     response.writeHead(200, { 'content-type': 'text/event-stream' });
     const send = (type, data) => response.write(`event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`);
@@ -220,6 +219,30 @@ async function createAcp(label) {
   const session = await rpc('session/new', { cwd: home, mcpServers: [] });
   return { child, rpc, sessionId: session.sessionId, close: async () => { await stop(child); await log.close(); } };
 }
+
+/**
+ * Run one real ACP session. `machine(tools, toolResult, round)` decides the
+ * next real tool call; returning null ends the assistant turn. It is a model
+ * fixture, so the only thing it fakes is the model's choice of arguments.
+ */
+async function runPrompt(label, text, machine) {
+  const session = await createAcp(label);
+  acp = session;
+  let round = 0;
+  nextAction = (tools, result) => { round += 1; return machine(tools, result, round); };
+  lastToolResult = null;
+  try {
+    await session.rpc('session/prompt', { sessionId: session.sessionId, prompt: [{ type: 'text', text }] }, 20 * 60 * 1000);
+  } catch (error) {
+    if (fixtureError) throw new Error(`fixture failed: ${fixtureError}`);
+    throw error;
+  } finally {
+    await session.close();
+    if (acp === session) acp = null;
+  }
+  if (fixtureError) throw new Error(`fixture failed: ${fixtureError}`);
+}
+
 function toolResultValue(result) {
   assert(result, 'expected a tool result');
   assert(result.is_error !== true, `tool failed: ${JSON.stringify(result).slice(0, 800)}`);
@@ -262,10 +285,7 @@ evidence.candidate = { tool: plan.tool, compositionName: plan.compositionName, s
 
 let desktop = null;
 let acp = null;
-let promptError = null;
-let promptFinished = false;
 let approvalObserved = null;
-let phaseObserved = null;
 try {
   console.log(`Isolated work: ${work}`);
   evidence.desktop.binary = binary;
@@ -305,7 +325,11 @@ try {
   evidence.steps.push({ name: 'desktop-task-host-ready', at: new Date().toISOString() });
 
   // 4. Electron single-instance: a second launch must not create a second host.
-  const duplicate = await startDesktop('desktop-duplicate');
+  // The duplicate must use the *same* Electron user-data directory as the live
+  // app, which is what the ACP client does in production. Electron's
+  // single-instance lock then focuses the live instance instead of booting a
+  // second Desktop host over the same DSH_HOME.
+  const duplicate = await startDesktop('desktop-duplicate', electronLive);
   await sleep(4_000);
   const afterDuplicate = await liveHost();
   assert(afterDuplicate?.instanceId === firstReady.instanceId && afterDuplicate?.pid === firstReady.pid, 'a duplicate Desktop launch replaced the live host');
@@ -313,18 +337,17 @@ try {
   await stopDesktop(duplicate);
   evidence.steps.push({ name: 'desktop-single-instance-held', at: new Date().toISOString() });
 
-  // 5. real ACP session delegates a natural-language task; the model fixture only
-  //    chooses the real tools, it never fabricates their results.
-  acp = await createAcp('acp-delegate');
-  let round = 0;
-  nextAction = (tools, result) => {
-    round += 1;
+  // 5. a real natural-language ACP session delegates the task and ends its turn
+  //    at the owner gate. The model fixture only chooses the real tools; it
+  //    never fabricates their results.
+  const assertKernelFree = (tools) => {
     const names = tools.map((tool) => tool.name);
     assert(!names.includes('evolution_trial') && !names.includes('evolution_promote'), `ACP loaded the Evolution kernel: ${names.join(', ')}`);
     assert(names.includes('evolution_desktop'), `ACP is missing evolution_desktop: ${names.join(', ')}`);
-    if (round === 1) {
-      return { name: 'evolution_desktop', args: { action: 'delegate', plan: plan.plan, cwd: home } };
-    }
+  };
+  await runPrompt('acp-delegate', '请自我进化：新增一个只读的文本字符数与行数统计工具。用 evolution_desktop 把它作为真实进化任务交给 Desktop；先停在所有者确认前，不要自行批准。', (tools, result, round) => {
+    assertKernelFree(tools);
+    if (round === 1) return { name: 'evolution_desktop', args: { action: 'delegate', plan: plan.plan, cwd: home } };
     const value = toolResultValue(result);
     if (round === 2) {
       assert(value.action === 'delegate', `unexpected delegate result action: ${value.action}`);
@@ -333,41 +356,9 @@ try {
       approvalObserved = { taskId: value.taskId, experimentId: value.experimentId, sourceSha256: value.candidateSourceSha256, gates: value.gates, decision: value.decision };
       return { name: 'evolution_desktop', args: { action: 'status', taskId: value.taskId } };
     }
-    if (round === 3) {
-      assert(value.phase === 'awaiting-owner-confirmation', 'status left the owner gate without approval');
-      phaseObserved = value;
-      if (approveText === null) return null;
-      return {
-        name: 'evolution_desktop',
-        args: {
-          action: 'confirm',
-          taskId: value.taskId,
-          experimentId: value.experimentId,
-          sourceSha256: value.candidateSourceSha256,
-          confirmation: true,
-          confirmationText: approveText,
-          targetProfiles: ['acp'],
-        },
-      };
-    }
-    if (round <= 5) {
-      if (value.phase === 'stable') {
-        evidence.approval = { taskId: value.taskId, experimentId: value.experimentId, sourceSha256: value.candidateSourceSha256, targetProfiles: value.approval?.targetProfiles ?? ['acp'] };
-        return null;
-      }
-      assert(!['failed', 'interrupted', 'cancelled'].includes(value.phase), `task reached ${value.phase}: ${value.error?.message ?? value.message ?? ''}`);
-      assert(round < 5, `task never stabilized: last phase ${value.phase}`);
-      return { name: 'evolution_desktop', args: { action: 'status', taskId: value.taskId, waitMs: 60_000 } };
-    }
+    assert(value.phase === 'awaiting-owner-confirmation', 'status left the owner gate without approval');
     return null;
-  };
-  const promptPromise = acp.rpc('session/prompt', {
-    sessionId: acp.sessionId,
-    prompt: [{ type: 'text', text: '请自我进化：新增一个只读的文本字符数与行数统计工具。用 evolution_desktop 把它作为真实进化任务交给 Desktop，按流程等待确认与 stable 结果。' }],
-  }, 20 * 60 * 1000).then(() => { promptFinished = true; }, (error) => { promptError = error; });
-  await waitFor(() => promptFinished || promptError || approvalObserved, { timeoutMs: 240_000, what: 'ACP delegate round', intervalMs: 250 });
-  if (fixtureError) throw new Error(`fixture failed: ${fixtureError}`);
-  if (promptError) throw promptError;
+  });
   assert(approvalObserved, 'ACP never reached the owner confirmation gate');
   evidence.candidate.experimentId = approvalObserved.experimentId;
   evidence.candidate.gates = approvalObserved.gates;
@@ -386,23 +377,44 @@ try {
   evidence.steps.push({ name: 'desktop-did-not-auto-approve', at: new Date().toISOString() });
 
   if (approveText === null) {
-    await promptPromise.catch(() => {});
-    await acp.close();
-    acp = null;
     evidence.ok = false;
     evidence.blocked = 'no --approve owner confirmation supplied; stopped at awaiting-owner-confirmation and did not promote';
     process.exitCode = 0;
     throw new Error('OWNER_APPROVAL_REQUIRED');
   }
 
-  // 7. relay the bound owner approval and wait for the real kernel to stabilize.
+  // 7. a second real ACP process relays the bound owner approval and waits for
+  //    the real kernel to stabilize.
   evidence.approval = { ...(evidence.approval ?? {}), text: approveText, at: new Date().toISOString() };
-  await waitFor(() => promptFinished || promptError, { timeoutMs: 15 * 60 * 1000, what: 'ACP promotion round' });
-  if (fixtureError) throw new Error(`fixture failed: ${fixtureError}`);
-  if (promptError) throw promptError;
-  assert(promptFinished, 'ACP prompt did not finish');
-  await acp.close();
-  acp = null;
+  await runPrompt('acp-confirm', '所有者已经在对话中明确批准了这次晋升。请用 evolution_desktop 的 confirm 动作写入绑定 experimentId 与 sourceSha256 的确认，然后等待 Desktop 的 stable 结果。', (tools, result, round) => {
+    assertKernelFree(tools);
+    if (round === 1) {
+      return {
+        name: 'evolution_desktop',
+        args: {
+          action: 'confirm',
+          taskId: approvalObserved.taskId,
+          experimentId: approvalObserved.experimentId,
+          sourceSha256: approvalObserved.sourceSha256,
+          confirmation: true,
+          confirmationText: approveText,
+          targetProfiles: ['acp'],
+        },
+      };
+    }
+    const value = toolResultValue(result);
+    if (value.action === 'confirm') {
+      assert(value.ok === true, `confirm failed: ${value.message ?? value.code}`);
+      return { name: 'evolution_desktop', args: { action: 'status', taskId: approvalObserved.taskId, waitMs: 60_000 } };
+    }
+    if (value.phase === 'stable') {
+      evidence.approval = { ...evidence.approval, targetProfiles: value.approval?.targetProfiles ?? ['acp'] };
+      return null;
+    }
+    assert(!['failed', 'interrupted', 'cancelled'].includes(value.phase), `task reached ${value.phase}: ${value.error?.message ?? value.message ?? ''}`);
+    assert(round < 8, `task never stabilized: last phase ${value.phase}`);
+    return { name: 'evolution_desktop', args: { action: 'status', taskId: approvalObserved.taskId, waitMs: 60_000 } };
+  });
 
   const finalState = await readJson(stateFile(approvalObserved.taskId));
   assert(finalState?.phase === 'stable', `task did not reach stable: ${finalState?.phase} ${finalState?.error?.message ?? ''}`);
