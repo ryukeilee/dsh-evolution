@@ -173,6 +173,8 @@ function factsWriter(home) {
         runtimeRecovered: true,
         recoveryProof: { status: 'recovered' },
         gateEvidence: { gates: GATES },
+        decision: { version: 1, kind: 'benefit', source: 'canary-passed', at: new Date().toISOString(), eligible: true },
+        stableCommittedAt: new Date().toISOString(),
         publication: { sourceSha256: 'kernel-source-sha' },
       }));
       await fsp.mkdir(path.join(dataRoot, 'shared-plugins'), { recursive: true });
@@ -474,11 +476,12 @@ test('a transient revert failure keeps the owner and retries cleanup until it is
   const plan = planFor(mintTaskId());
   const kernel = fakeKernel();
   let revertAttempts = 0;
-  // The first revert transiently fails, the interval retry succeeds.
+  // The first revert returns the kernel's "not proven" receipt; the interval
+  // retry then succeeds. An unproven receipt must not release the owner.
   kernel.tools.set('evolution_revert', { execute: async () => {
     revertAttempts += 1;
     kernel.state.reverts += 1;
-    if (revertAttempts === 1) throw new Error('temporary disposer failure');
+    if (revertAttempts === 1) return { ok: false, runtimeRecovered: false, phase: 'revert-failed' };
     return { ok: true, runtimeRecovered: true, phase: 'reverted' };
   } });
   const ctx = fakeCtx(kernel, plan);
@@ -493,6 +496,121 @@ test('a transient revert failure keeps the owner and retries cleanup until it is
   assert.equal(revertAttempts >= 2, true, 'the host retried the failed cleanup');
   assert.equal(failed.revert.ok, true);
   assert.equal(failed.cleanupPending, false);
+});
+
+test('a canary sample that throws is routed through the kernel regression rollback', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  let candidateVisible = false;
+  let promoted = false;
+  const observations = [];
+  const tools = new Map();
+  tools.set('evolution_runtime_inspect', { execute: async () => ({ components: [], services: [], events: [] }) });
+  tools.set('evolution_propose', { execute: async () => ({ ok: true, experimentId: 'exp-canary-throw', phase: 'proposed' }) });
+  tools.set('evolution_trial', { execute: async () => { candidateVisible = true; return { ok: true, phase: 'trial' }; } });
+  tools.set('evolution_measure', { execute: async () => ({ ok: true, phase: 'measured', gates: GATES, decision: { kind: 'benefit', eligible: true } }) });
+  tools.set('evolution_promote', { execute: async (args) => {
+    if (args.confirmation === true) { promoted = true; return { ok: true, phase: 'canary-observing' }; }
+    return { ok: false, phase: 'awaiting-owner-confirmation', gates: GATES, decision: { kind: 'benefit', eligible: true } };
+  } });
+  tools.set('evolution_canary_observe', { execute: async (args) => {
+    observations.push(args);
+    if (args.metricRegression === true) return { ok: false, phase: 'rolled-back', rollback: 'last-known-good' };
+    return { ok: true, phase: 'canary-observing', stable: false };
+  } });
+  tools.set('evolution_revert', { execute: async () => { throw new Error('revert must not run for a canary regression'); } });
+  const ctx = {
+    logger: { warn() {} },
+    effect() {},
+    agents: { create: async (options) => ({ agent: { id: options.sessionId }, dispose: async () => {} }) },
+    tools: {
+      get(name) {
+        if (name === plan.tool) {
+          if (!candidateVisible) return null;
+          if (promoted) return { execute: async () => { throw new Error('promoted tool crashed'); } };
+          return { execute: async (args) => ({ characters: args.text.length, lines: args.text.split('\n').length }) };
+        }
+        return tools.get(name) ?? null;
+      },
+    },
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const failed = await waitForState(home, taskId, (value) => value.phase === 'failed');
+  assert.equal(failed.error.code, 'E_DESKTOP_CANARY_REGRESSION');
+  assert.deepEqual(failed.revert, { ok: true, status: 'last-known-good' });
+  assert.equal(observations.filter((args) => args.metricRegression === true).length, 1);
+});
+
+test('a failed trial whose kernel record was already discarded does not block later tasks', async (t) => {
+  const home = temporary(t);
+  const first = planFor(mintTaskId());
+  const second = planFor(mintTaskId());
+  let candidate = null;
+  const tools = new Map();
+  tools.set('evolution_runtime_inspect', { execute: async () => ({ components: [], services: [], events: [] }) });
+  tools.set('evolution_propose', { execute: async () => ({ ok: true, experimentId: 'exp-bad-candidate', phase: 'proposed' }) });
+  tools.set('evolution_trial', { execute: async (args) => {
+    if (args.composition?.name === first.plan.composition.name) throw new Error('invalid candidate code');
+    candidate = args.composition?.name;
+    return { ok: true, phase: 'trial' };
+  } });
+  tools.set('evolution_measure', { execute: async () => ({ ok: true, phase: 'measured', gates: GATES, decision: { kind: 'benefit', eligible: true } }) });
+  tools.set('evolution_promote', { execute: async (args) => args.confirmation === true ? { ok: true, phase: 'canary-observing' } : { ok: false, phase: 'awaiting-owner-confirmation', gates: GATES, decision: { kind: 'benefit', eligible: true } } });
+  tools.set('evolution_canary_observe', { execute: async () => ({ ok: true, stable: true }) });
+  tools.set('evolution_revert', { execute: async () => { throw new Error('experiment exp-bad-candidate is not known in this session'); } });
+  const ctx = {
+    logger: { warn() {} },
+    effect() {},
+    agents: { create: async (options) => ({ agent: { id: options.sessionId }, dispose: async () => {} }) },
+    tools: {
+      get(name) {
+        if (name === first.tool || name === second.tool) {
+          if (candidate !== name) return null;
+          return { execute: async (args) => ({ characters: args.text.length, lines: args.text.split('\n').length }) };
+        }
+        return tools.get(name) ?? null;
+      },
+    },
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const firstId = await submit(home, first);
+  await host.start();
+  const firstState = await waitForState(home, firstId, (value) => value.phase === 'failed');
+  assert.match(firstState.error.message, /invalid candidate code/);
+  assert.deepEqual(firstState.revert, { ok: true, status: 'experiment-discarded' });
+  const secondId = await submit(home, second);
+  await approveWhenWaiting(home, secondId);
+  const secondState = await waitForState(home, secondId, (value) => value.phase === 'stable');
+  assert.equal(secondState.phase, 'stable');
+});
+
+test('an error after the durable stable commit adopts the stable outcome instead of reverting it', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel({ facts: factsWriter(home) });
+  // The kernel commits stable and writes the durable sidecar, then the post
+  // commit step fails (e.g. archive rendering). The host must treat that as a
+  // stable outcome, not as a failed promotion to revert.
+  kernel.tools.set('evolution_canary_observe', { execute: async () => {
+    await factsWriter(home).write('exp-desktop-task-1');
+    throw new Error('post-commit archive rendering failed');
+  } });
+  kernel.tools.set('evolution_revert', { execute: async () => { throw new Error('revert must not run for a durable stable commit'); } });
+  const ctx = fakeCtx(kernel, plan);
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.kernelSourceSha256, 'kernel-source-sha');
+  assert.equal(state.publication.id, 'evolution-promoted-abc123abc123');
+  assert.equal(state.error, null);
 });
 
 test('two requests are executed one at a time in created order', async (t) => {
