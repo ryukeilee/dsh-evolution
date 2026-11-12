@@ -255,6 +255,37 @@ test('a task runs the real kernel sequence and reaches stable after a bound appr
   }
 });
 
+test('the host forwards optional strategy and rootCause to evolution_propose unchanged', async (t) => {
+  const { home, plan, kernel, host } = harness(t);
+  plan.plan.proposal.strategy = 'fix:timeout-retry';
+  plan.plan.proposal.rootCause = 'the retry counter resets before the observation is persisted';
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  await waitForState(home, taskId, (value) => value.phase === 'stable');
+
+  const propose = kernel.calls.find((call) => call.name === 'evolution_propose');
+  assert.ok(propose, 'evolution_propose was called');
+  assert.equal(propose.args.strategy, 'fix:timeout-retry');
+  assert.equal(propose.args.rootCause, 'the retry counter resets before the observation is persisted');
+  assert.equal(propose.args.why, plan.plan.proposal.why);
+  assert.equal(propose.args.target, plan.plan.proposal.target);
+});
+
+test('the host never synthesizes strategy or rootCause when the plan omits them', async (t) => {
+  const { home, plan, kernel, host } = harness(t);
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  await waitForState(home, taskId, (value) => value.phase === 'stable');
+
+  const propose = kernel.calls.find((call) => call.name === 'evolution_propose');
+  assert.ok(propose, 'evolution_propose was called');
+  assert.deepEqual(Object.keys(propose.args).sort(), ['impactScope', 'successMetrics', 'target', 'why']);
+  assert.equal(Object.hasOwn(propose.args, 'strategy'), false);
+  assert.equal(Object.hasOwn(propose.args, 'rootCause'), false);
+});
+
 test('a promotion that leaves the owner gate is treated as a failure and reverted', async (t) => {
   const { home, plan, kernel, host } = harness(t, { behavior: 'no-gate' });
   const taskId = await submit(home, plan);

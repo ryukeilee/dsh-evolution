@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import {
   SYSTEM_PROMPT_ORDER,
@@ -19,6 +20,8 @@ import {
   TOOL_NAME,
   apply,
 } from '../lib/desktop-task-client.js';
+import { sha256 } from '../lib/promoted-sharing.js';
+import { evolutionPackageVersion } from '../lib/self-evolution-review.js';
 import {
   PROTOCOL_VERSION,
   SCHEMA_VERSION,
@@ -112,11 +115,17 @@ async function writeState(home, state) {
   await writeJson(path.join(taskChannelPaths(home).state, `${state.taskId}.json`), state);
 }
 
-/** Mount the entry with a fake tools registry and a spawn that fails the test if used. */
+/**
+ * Mount the entry with a fake tools registry and a spawn that fails the test if
+ * used. An optional `get` override supplies the live Cordis services the audit
+ * action reads (pluginPackages / profileContext / evolutionExperience).
+ */
 function mount(home, overrides = {}) {
   const tools = new Map();
   const sections = [];
+  const { get: getService, ...config } = overrides;
   const ctx = {
+    ...(typeof getService === 'function' ? { get: getService } : {}),
     tools: {
       register: (definition) => {
         tools.set(definition.name, definition);
@@ -135,9 +144,93 @@ function mount(home, overrides = {}) {
     launchTimeoutMs: 200,
     statePollMs: 10,
     delegateTimeoutMs: 3000,
-    ...overrides,
+    ...config,
   });
   return { tool: tools.get(TOOL_NAME), tools, sections, client };
+}
+
+async function pathExists(file) {
+  try {
+    await fs.access(file);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Recursive path -> bytes map, used to prove the audit writes nothing. */
+async function treeSnapshot(root) {
+  const files = new Map();
+  async function walk(directory) {
+    const entries = await fs.readdir(directory, { withFileTypes: true });
+    for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+      const file = path.join(directory, entry.name);
+      if (entry.isDirectory()) await walk(file);
+      else if (entry.isFile()) files.set(path.relative(root, file), (await fs.readFile(file)).toString('hex'));
+    }
+  }
+  await walk(root);
+  return files;
+}
+
+const LIVE_HOST_VERSIONS = Object.freeze({
+  '@deepseek-ai/dsh': '0.3.0',
+  '@deepseek-ai/cordis': '4.1.2',
+  '@deepseek-ai/cordis-plugin-include': '2.0.3',
+});
+
+function liveHostServices(versions = LIVE_HOST_VERSIONS) {
+  return {
+    pluginPackages: {
+      packageOf: (name) => (Object.hasOwn(versions, name) ? { version: versions[name] } : null),
+    },
+    profileContext: { name: 'acp' },
+  };
+}
+
+/** A complete published record whose source bytes exist under pluginRoot. */
+async function writePublishedRecord(home, overrides = {}) {
+  const dataRoot = path.join(home, 'storages', 'evolution');
+  const id = overrides.id ?? 'evolution-promoted-abc123abc123';
+  const pluginName = `dsh-${id}`;
+  const pluginDir = path.join(dataRoot, 'promoted', pluginName);
+  await fs.mkdir(path.join(pluginDir, 'lib'), { recursive: true });
+  const moduleBytes = 'export const name = "published-fixture";\n';
+  const manifestBytes = `${JSON.stringify({ name: pluginName, version: '1.0.0' })}\n`;
+  await fs.writeFile(path.join(pluginDir, 'lib', 'index.js'), moduleBytes);
+  await fs.writeFile(path.join(pluginDir, 'package.json'), manifestBytes);
+  const record = {
+    schemaVersion: 1,
+    id,
+    experimentId: 'experiment-published-fixture',
+    pluginName,
+    entry: 'lib/index.js',
+    moduleUrl: pathToFileURL(path.join(pluginDir, 'lib', 'index.js')).href,
+    sourceSha256: sha256(moduleBytes),
+    manifestSha256: sha256(manifestBytes),
+    publisherProfile: 'desktop',
+    approvedProfiles: ['acp'],
+    stable: {
+      committedAt: '2026-01-01T00:00:00.000Z',
+      decision: 'benefit',
+      canary: { startupVerified: true, healthObservationWindow: 1, observations: 1 },
+    },
+    requiredServices: [],
+    serviceMembers: {},
+    requiredCapabilities: ['fiberLifecycle', 'fiberAwait', 'include'],
+    hostOnly: true,
+    host: { dsh: '0.2.2', cordis: '4.1.2', include: '2.0.3', node: process.version },
+    publishedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+  await fs.mkdir(path.join(dataRoot, 'shared-plugins'), { recursive: true });
+  await fs.writeFile(path.join(dataRoot, 'shared-plugins', 'published.json'), `${JSON.stringify({
+    schemaVersion: 1,
+    kind: 'dsh-evolution-shared-plugins',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    plugins: [record],
+  })}\n`);
+  return record;
 }
 
 /**
@@ -180,12 +273,20 @@ test('the tool exposes a valid JSON Schema, a text renderer, and one prompt sect
   assert.equal(tool.name, TOOL_NAME);
   assert.equal(tool.parameters.type, 'object');
   assert.deepEqual(tool.parameters.required, ['action']);
-  assert.deepEqual(tool.parameters.properties.action.enum, ['delegate', 'status', 'confirm']);
+  assert.deepEqual(tool.parameters.properties.action.enum, ['audit', 'delegate', 'status', 'confirm']);
   assert.equal(tool.parameters.properties.plan.type, 'object');
   assert.deepEqual(tool.parameters.properties.plan.required, ['proposal', 'composition', 'verification']);
   assert.equal(tool.parameters.properties.plan.properties.composition.required.includes('code'), true);
   assert.equal(tool.parameters.properties.plan.properties.verification.properties.observations.minimum, 1);
   assert.equal(tool.parameters.properties.plan.properties.verification.properties.observations.maximum, 5);
+  const proposal = tool.parameters.properties.plan.properties.proposal;
+  assert.equal(proposal.properties.strategy.maxLength, 4096);
+  assert.equal(proposal.properties.rootCause.maxLength, 2000);
+  assert.equal(proposal.required.includes('strategy'), false);
+  assert.equal(proposal.required.includes('rootCause'), false);
+  assert.equal(tool.parameters.properties.focus.maxLength, 240);
+  assert.equal(tool.parameters.properties.minOccurrences.minimum, 1);
+  assert.equal(tool.parameters.properties.limit.maximum, 5);
   assert.deepEqual(tool.parameters.properties.targetProfiles.items.enum, ['acp', 'web']);
   assert.equal(tool.parameters.properties.waitMs.maximum, 120000);
   assert.deepEqual(tool.output.schema, {});
@@ -199,6 +300,10 @@ test('the tool exposes a valid JSON Schema, a text renderer, and one prompt sect
   assert.match(sections[0].text, /confirmationText/);
   assert.match(sections[0].text, /harness\.defineTool/);
   assert.match(sections[0].text, /never reuse an approval/);
+  assert.match(sections[0].text, /call action "audit"/);
+  assert.match(sections[0].text, /selfEvolution\.nextActions/);
+  assert.match(sections[0].text, /revalidation is not/);
+  assert.match(sections[0].text, /explicit owner confirmation/);
 });
 
 test('delegate writes a validated request and returns after the phase advances', async (t) => {
@@ -394,8 +499,13 @@ test('status waits for a phase change and reports the new phase', async (t) => {
   const taskId = 'desktop-task-status-1';
   const sourceSha256 = candidateSourceDigest('candidate source');
   await writeState(home, makeState(taskId, 'running'));
+  // The timer writes through the real state writer. Keep the promise so the
+  // test never ends (and the temp home is never removed) while that write is
+  // still in flight: an unawaited write used to surface as an ENOENT after the
+  // test finished.
+  let pendingWrite = null;
   const timer = setTimeout(() => {
-    void writeState(home, makeState(taskId, 'awaiting-owner-confirmation', {
+    pendingWrite = writeState(home, makeState(taskId, 'awaiting-owner-confirmation', {
       experimentId: 'experiment-status-1',
       candidateSourceSha256: sourceSha256,
     }));
@@ -404,6 +514,7 @@ test('status waits for a phase change and reports the new phase', async (t) => {
 
   const { tool } = mount(home, { statePollMs: 10 });
   const result = await tool.execute({ action: 'status', taskId, waitMs: 2000 }, {});
+  await pendingWrite?.catch(() => {});
 
   assert.equal(result.ok, true);
   assert.equal(result.action, 'status');
@@ -597,4 +708,174 @@ test('a malformed host-owned state becomes a bounded error, never an exception',
   assert.equal(typeof result.message, 'string');
   assert.ok(result.message.length <= 500);
   assert.equal(result.message.includes('\n'), false);
+});
+
+test('audit without a publication index reports no-action and writes nothing', async (t) => {
+  const home = await tempHome(t);
+  let launched = false;
+  const { tool } = mount(home, {
+    spawn: () => { launched = true; return { unref() {}, on() {} }; },
+  });
+
+  const result = await tool.execute({ action: 'audit' }, {});
+
+  assert.equal(result.ok, true);
+  assert.equal(result.action, 'audit');
+  assert.equal(result.readOnly, true);
+  assert.equal(typeof result.host, 'object');
+  assert.equal(result.stable.status, 'absent');
+  assert.equal(result.stable.reason, 'no published stable plugin');
+  assert.deepEqual(result.stable.nextActions, []);
+  assert.equal(result.experience.available, false);
+  assert.equal(result.experience.none.reason, 'store-unavailable');
+  assert.equal(result.selfEvolution.kind, 'no-action');
+  assert.equal(result.selfEvolution.primary, 'none');
+  assert.deepEqual(result.selfEvolution.nextActions, []);
+  assert.equal(result.selfEvolution.readOnly, true);
+
+  // The review is read-only: no inbox/state/approval document and no storage
+  // directory may appear, and the Desktop application is never launched.
+  assert.deepEqual(await fs.readdir(home), []);
+  assert.equal(await pathExists(taskChannelPaths(home).root), false);
+  assert.equal(await pathExists(path.join(home, 'storages')), false);
+  assert.equal(launched, false);
+});
+
+test('audit classifies a stable plugin verified on another host as pending-revalidation', async (t) => {
+  const home = await tempHome(t);
+  const record = await writePublishedRecord(home);
+  const services = liveHostServices();
+  const calls = [];
+  const { tool } = mount(home, {
+    spawn: () => { throw new Error('audit must not launch the Desktop application'); },
+    get: (serviceName) => {
+      calls.push(serviceName);
+      return services[serviceName] ?? null;
+    },
+  });
+  // Pre-populate the whole Desktop channel with unrelated bytes: the audit
+  // must leave every one of them untouched.
+  const channel = taskChannelPaths(home);
+  await fs.mkdir(channel.inbox, { recursive: true });
+  await fs.mkdir(channel.state, { recursive: true });
+  await fs.mkdir(channel.approvals, { recursive: true });
+  await fs.writeFile(path.join(channel.inbox, 'desktop-task-existing-1.json'), '{"sentinel":"request"}\n');
+  await fs.writeFile(path.join(channel.state, 'desktop-task-existing-1.json'), '{"sentinel":"state"}\n');
+  await fs.writeFile(path.join(channel.approvals, 'desktop-task-existing-1.json'), '{"sentinel":"approval"}\n');
+  const sharedPlugins = path.join(home, 'storages', 'evolution', 'shared-plugins');
+  const before = await treeSnapshot(home);
+  const sharedBefore = await treeSnapshot(sharedPlugins);
+  const channelBefore = await treeSnapshot(channel.root);
+
+  const result = await tool.execute({ action: 'audit' }, {});
+  const after = await treeSnapshot(home);
+  const sharedAfter = await treeSnapshot(sharedPlugins);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.action, 'audit');
+  assert.equal(result.readOnly, true);
+  assert.equal(result.stable.status, 'pending-revalidation');
+  assert.equal(result.stable.summary.pendingRevalidation, 1);
+  assert.equal(result.stable.records.length, 1);
+  assert.equal(result.stable.records[0].id, record.id);
+  assert.equal(result.stable.records[0].status, 'pending-revalidation');
+  assert.equal(result.stable.records[0].action, 'revalidate');
+  assert.equal(result.stable.records[0].hostCompatible, false);
+  assert.equal(result.stable.records[0].hostReason, 'host-version-mismatch');
+
+  assert.equal(result.selfEvolution.kind, 'revalidate');
+  assert.equal(result.selfEvolution.primary, 'revalidate');
+  assert.equal(result.selfEvolution.hasBlockingStableIssue, true);
+  assert.equal(result.selfEvolution.nextActions.length, 1);
+  const revalidate = result.selfEvolution.nextActions[0];
+  assert.equal(revalidate.action, 'revalidate');
+  assert.equal(revalidate.recordId, record.id);
+  assert.match(revalidate.why, /the live host does not match \(host-version-mismatch\)/);
+  assert.match(revalidate.command, /shared-plugins\.mjs/);
+  assert.match(revalidate.command, /revalidate --evidence/);
+  assert.ok(revalidate.forbidden.includes('edit or regenerate the promoted plugin source'));
+  assert.deepEqual(result.selfEvolution.versions, {
+    dsh: LIVE_HOST_VERSIONS['@deepseek-ai/dsh'],
+    cordis: LIVE_HOST_VERSIONS['@deepseek-ai/cordis'],
+    evolution: evolutionPackageVersion(),
+  });
+  // The absent optional service does not stop stable-plugin classification.
+  assert.equal(result.experience.available, false);
+  assert.equal(result.experience.errors[0].errorCode, 'E_EVOLUTION_PLAN_NO_SHARED_STORE');
+
+  // Reading the review leaves every byte on disk untouched: the entire
+  // desktop-tasks channel and the shared-plugins index are byte-identical.
+  assert.deepEqual(after, before);
+  assert.deepEqual(sharedAfter, sharedBefore);
+  assert.deepEqual(await treeSnapshot(channel.root), channelBefore);
+  assert.equal(calls.filter((serviceName) => serviceName === 'evolutionExperience').length, 1);
+});
+
+test('audit obtains the shared experience store lazily and reports its absence honestly', async (t) => {
+  const home = await tempHome(t);
+  const calls = [];
+  const services = liveHostServices();
+  const { tool } = mount(home, {
+    get: (serviceName) => {
+      calls.push(serviceName);
+      return services[serviceName] ?? null;
+    },
+  });
+  // apply() must not resolve the optional service; only execute() may touch it.
+  assert.equal(calls.includes('evolutionExperience'), false);
+
+  const missing = await tool.execute({ action: 'audit' }, {});
+  assert.equal(missing.ok, true);
+  assert.equal(missing.experience.available, false);
+  assert.equal(missing.experience.none.reason, 'store-unavailable');
+  const storeError = missing.experience.errors.find((row) => row.errorCode === 'E_EVOLUTION_PLAN_NO_SHARED_STORE');
+  assert.ok(storeError, 'the missing store is reported as a durable error, not as an empty history');
+  assert.equal(storeError.reason, 'shared-experience-store-unavailable');
+  assert.equal(missing.selfEvolution.experience.available, false);
+  assert.equal(missing.selfEvolution.experience.errors[0].errorCode, 'E_EVOLUTION_PLAN_NO_SHARED_STORE');
+  assert.equal(missing.selfEvolution.kind, 'no-action');
+  assert.equal(calls.filter((serviceName) => serviceName === 'evolutionExperience').length, 1);
+
+  const storeCalls = [];
+  const storeServices = liveHostServices();
+  const store = { discover: () => ({ records: [], truncated: false }) };
+  const { tool: storeTool } = mount(home, {
+    get: (serviceName) => {
+      storeCalls.push(serviceName);
+      if (serviceName === 'evolutionExperience') return { store };
+      return storeServices[serviceName] ?? null;
+    },
+  });
+  const present = await storeTool.execute({ action: 'audit', focus: 'timeout', minOccurrences: 5, limit: 2 }, {});
+  assert.equal(present.ok, true);
+  assert.equal(present.experience.available, true);
+  assert.deepEqual(present.experience.errors, []);
+  assert.equal(present.experience.none.reason, 'no-failure-signal');
+  assert.equal(storeCalls.filter((serviceName) => serviceName === 'evolutionExperience').length, 1);
+  assert.deepEqual(await fs.readdir(home), [], 'audit never creates the channel or approval files');
+});
+
+test('a review that cannot run is reported as a bounded audit failure, never as success', async (t) => {
+  const home = await tempHome(t);
+  const services = liveHostServices();
+  const { tool } = mount(home, {
+    get: (serviceName) => {
+      if (serviceName === 'evolutionExperience') {
+        return {
+          get store() { throw new Error('service exploded at /Users/operator/private/path'); },
+        };
+      }
+      return services[serviceName] ?? null;
+    },
+  });
+
+  const result = await tool.execute({ action: 'audit' }, {});
+
+  assert.equal(result.ok, false);
+  assert.equal(result.action, 'audit');
+  assert.equal(result.code, 'E_DESKTOP_AUDIT_FAILED');
+  assert.match(result.message, /^Self-evolution audit unavailable/);
+  assert.ok(result.message.length <= 500);
+  assert.equal(result.message.includes('/Users/operator/private/path'), false);
+  assert.deepEqual(await fs.readdir(home), []);
 });

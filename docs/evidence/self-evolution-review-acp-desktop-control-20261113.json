@@ -1,0 +1,360 @@
+{
+  "kind": "dsh-evolution-acp-desktop-control",
+  "ok": true,
+  "startedAt": "2026-11-12T18:23:56.193Z",
+  "modelTransport": "deterministic loopback Anthropic responses; actual ACP Agent/tools and actual Desktop app",
+  "scope": "isolated DSH_HOME; production task channel + official Desktop kernel; no formal home, no release publish",
+  "steps": [
+    {
+      "name": "official-desktop-profile-initialized",
+      "at": "2026-11-12T18:23:58.062Z"
+    },
+    {
+      "name": "desktop-task-host-ready",
+      "at": "2026-11-12T18:24:02.423Z"
+    },
+    {
+      "name": "desktop-single-instance-held",
+      "at": "2026-11-12T18:24:06.769Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T18:24:07.436Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T18:24:07.444Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T18:24:09.082Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T18:24:09.086Z"
+    },
+    {
+      "name": "desktop-awaiting-owner-confirmation",
+      "at": "2026-11-12T18:24:09.152Z"
+    },
+    {
+      "name": "desktop-did-not-auto-approve",
+      "at": "2026-11-12T18:24:14.154Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T18:24:14.822Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T18:24:14.829Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T18:24:14.856Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T18:24:14.858Z"
+    },
+    {
+      "name": "desktop-stable-and-published",
+      "at": "2026-11-12T18:24:15.326Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "acp_stats_5a5fa076",
+      "at": "2026-11-12T18:24:16.251Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T18:24:16.259Z"
+    },
+    {
+      "name": "fresh-acp-consumed-promoted-plugin",
+      "at": "2026-11-12T18:24:16.320Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T18:24:16.976Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T18:24:16.984Z"
+    },
+    {
+      "name": "acp-audit-read-only-classification",
+      "at": "2026-11-12T18:24:17.049Z"
+    },
+    {
+      "name": "desktop-restart-preserved-durable-facts",
+      "at": "2026-11-12T18:24:18.924Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T18:24:19.911Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T18:24:19.919Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-12T18:24:24.880Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T18:24:24.885Z"
+    },
+    {
+      "name": "acp-auto-launched-official-desktop",
+      "at": "2026-11-12T18:24:24.957Z"
+    },
+    {
+      "name": "acceptance-launched-desktop-stopped",
+      "at": "2026-11-12T18:24:25.250Z"
+    }
+  ],
+  "desktop": {
+    "binary": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+    "cli": "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh"
+  },
+  "host": {
+    "first": {
+      "instanceId": "0a1de597-984c-4517-bdcc-0c21b2f543aa",
+      "pid": 66573,
+      "protocol": 1,
+      "profile": "desktop"
+    },
+    "singleInstance": {
+      "duplicateInstanceId": "0a1de597-984c-4517-bdcc-0c21b2f543aa",
+      "secondLaunchPid": 66584
+    }
+  },
+  "candidate": {
+    "tool": "acp_stats_5a5fa076",
+    "compositionName": "acp-stats-5a5fa076",
+    "sourceSha256": "a4c5b1b87b683ecabea1ec9241769304bdd5850795e02d54e8b4b5cb8c7436ba",
+    "experimentId": "exp-mwdvn1v1-1-0a8571f9",
+    "gates": {
+      "realBenefit": true,
+      "measuredEvidence": true,
+      "repeatable": true,
+      "regressionTest": true,
+      "reversible": true,
+      "cleanupEvidence": true,
+      "noOrphans": true,
+      "runtimeRecovered": false,
+      "eligible": true
+    },
+    "decision": {
+      "kind": "benefit",
+      "eligible": true,
+      "reasons": [
+        "measured behavior improved and the correctness control stayed stable"
+      ]
+    }
+  },
+  "approval": {
+    "text": "我明确同意在隔离验收环境中晋升该候选。",
+    "at": "2026-11-12T18:24:14.154Z",
+    "targetProfiles": [
+      "acp"
+    ]
+  },
+  "publication": {
+    "id": "evolution-promoted-fd5e2a30e44c",
+    "publisherProfile": "desktop",
+    "sourceSha256": "d95234d4ef9895181b1ad6788c03b90cd64334f76c7e37b80070831a6232a31d",
+    "approvedProfiles": [
+      "acp"
+    ],
+    "committedAt": "2026-11-12T18:24:15.138Z"
+  },
+  "freshConsumer": {
+    "tool": "acp_stats_5a5fa076",
+    "input": "ACP\nDesktop",
+    "output": {
+      "characters": 11,
+      "lines": 2
+    }
+  },
+  "restart": {
+    "previousInstanceId": "0a1de597-984c-4517-bdcc-0c21b2f543aa",
+    "nextInstanceId": "c6591178-ca7c-4578-b50a-622f0d91b953",
+    "nextPid": 66739,
+    "terminalTaskPreserved": true,
+    "publicationPreserved": true
+  },
+  "install": {
+    "ok": true,
+    "tail": [
+      "+ dsh-evolution 0.2.7",
+      "",
+      "Done in 563ms using pnpm v11.28.5",
+      "web: configured; restart this entry to apply (HMR disabled)"
+    ],
+    "roles": "host enabled on desktop only; client enabled on acp only; web keeps neither"
+  },
+  "noAutoApproval": {
+    "taskId": "desktop-task-mwdvn0uv-86eaa5f1",
+    "waitedMs": 5000,
+    "phase": "awaiting-owner-confirmation"
+  },
+  "desktopTask": {
+    "taskId": "desktop-task-mwdvn0uv-86eaa5f1",
+    "phase": "stable",
+    "experimentId": "exp-mwdvn1v1-1-0a8571f9",
+    "candidateSourceSha256": "a4c5b1b87b683ecabea1ec9241769304bdd5850795e02d54e8b4b5cb8c7436ba",
+    "kernelSourceSha256": "d95234d4ef9895181b1ad6788c03b90cd64334f76c7e37b80070831a6232a31d",
+    "gates": {
+      "realBenefit": true,
+      "measuredEvidence": true,
+      "repeatable": true,
+      "regressionTest": true,
+      "reversible": true,
+      "cleanupEvidence": true,
+      "noOrphans": true,
+      "runtimeRecovered": true,
+      "eligible": true
+    },
+    "decision": {
+      "version": 1,
+      "kind": "benefit",
+      "source": "canary-passed",
+      "at": "2026-11-12T18:24:15.147Z",
+      "observationAt": "2026-11-12T18:24:08.855Z",
+      "eligible": true,
+      "reasons": [
+        "the measured candidate passed the startup, health, dependency, and metric canary window"
+      ],
+      "gates": {
+        "realBenefit": true,
+        "measuredEvidence": true,
+        "repeatable": true,
+        "regressionTest": true,
+        "reversible": true,
+        "cleanupEvidence": true,
+        "noOrphans": true,
+        "runtimeRecovered": false
+      },
+      "probe": null
+    },
+    "approval": {
+      "experimentId": "exp-mwdvn1v1-1-0a8571f9",
+      "sourceSha256": "a4c5b1b87b683ecabea1ec9241769304bdd5850795e02d54e8b4b5cb8c7436ba",
+      "targetProfiles": [
+        "acp"
+      ],
+      "confirmedAt": "2026-11-12T18:24:14.834Z",
+      "confirmationTextDigest": "d679812dc990d4813d2a407321d832b5d324c872a7311e8091568fc4d550cec9"
+    },
+    "result": {
+      "stable": true,
+      "summary": "Desktop committed the promotion as stable and published it to acp.",
+      "observations": 2
+    }
+  },
+  "desktopRecovery": {
+    "evidenceSha256": "d01facf033921457e3eca70efe0e4bfba6a169f48a76515347a51e1ec04f6394",
+    "runtimeRecovered": true,
+    "gates": {
+      "realBenefit": true,
+      "measuredEvidence": true,
+      "repeatable": true,
+      "regressionTest": true,
+      "reversible": true,
+      "cleanupEvidence": true,
+      "noOrphans": true,
+      "runtimeRecovered": true,
+      "eligible": true
+    },
+    "recoveryProof": {
+      "status": "recovered",
+      "beforeSha256": "a20153ca59cac9d4b621cbe4477763a29abf757f23ab069411c319574e446ab1",
+      "afterSha256": "a20153ca59cac9d4b621cbe4477763a29abf757f23ab069411c319574e446ab1"
+    }
+  },
+  "consumer": {
+    "status": "active",
+    "id": "evolution-promoted-fd5e2a30e44c",
+    "observedIndexUpdatedAt": "2026-11-12T18:24:15.203Z"
+  },
+  "audit": {
+    "action": "audit",
+    "readOnly": true,
+    "host": {
+      "profile": "acp",
+      "dsh": "0.2.2-rc.2",
+      "cordis": "4.1.0",
+      "include": "1.1.0",
+      "node": "v24.21.0",
+      "capturedAt": "2026-11-12T18:24:16.988Z"
+    },
+    "stableStatus": "active",
+    "indexRecordCount": 1,
+    "indexTruncated": false,
+    "stableRecord": {
+      "id": "evolution-promoted-fd5e2a30e44c",
+      "experimentId": "exp-mwdvn1v1-1-0a8571f9",
+      "pluginName": "dsh-evolution-promoted-fd5e2a30e44c",
+      "approvedProfiles": [
+        "acp"
+      ],
+      "status": "active",
+      "action": null,
+      "source": "verified",
+      "hostCompatible": true,
+      "hostReason": null,
+      "revalidationGenerations": 0,
+      "publishedAt": "2026-11-12T18:24:15.202Z",
+      "host": {
+        "dsh": "0.2.2-rc.2",
+        "cordis": "4.1.0",
+        "include": "1.1.0",
+        "node": "v24.21.0",
+        "verifiedAt": "2026-11-12T18:24:14.953Z"
+      },
+      "profiles": [
+        {
+          "profile": "acp",
+          "status": "active",
+          "reason": null,
+          "current": true
+        }
+      ],
+      "reasons": []
+    },
+    "selfEvolution": {
+      "kind": "no-action",
+      "primary": "none",
+      "hasBlockingStableIssue": false,
+      "incomplete": false,
+      "nextActions": []
+    },
+    "indexDigestBefore": "d74286c69c582f5d86cd322ce96fb356660d4ffac3aa47e296f6012397d942eb",
+    "indexDigestAfter": "d74286c69c582f5d86cd322ce96fb356660d4ffac3aa47e296f6012397d942eb",
+    "taskFilesWritten": false,
+    "desktopLaunched": false
+  },
+  "autoLaunch": {
+    "hostInstanceId": "b87ded05-61fb-40c9-8045-b98c6c6ac0e5",
+    "hostPid": 66798,
+    "profile": "desktop",
+    "phase": "awaiting-owner-confirmation",
+    "tool": "acp_stats_59e0404e",
+    "experimentId": "exp-mwdvndv5-1-2cd2130b",
+    "candidateSourceSha256": "f7c31455c36d5efa22674cdf5cf03c2974d1ef5492fcf785480a94f168e1977e",
+    "stopped": true
+  },
+  "profilePatchesPreserved": true,
+  "finishedAt": "2026-11-12T18:24:25.251Z",
+  "tarballSha256": "4f494e53f4c711bce72471e9bb165cee36a5b8205bae098f507349e54e56ead5"
+}

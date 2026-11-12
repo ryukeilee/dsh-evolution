@@ -244,3 +244,42 @@ test('the client projection stays bounded and never leaks host paths', () => {
   assert.equal(projected.taskId, state.taskId);
   assert.equal(projectTaskState(null), null);
 });
+
+test('optional proposal strategy and rootCause are accepted with bounds', () => {
+  const withBoth = validRequest();
+  withBoth.plan.proposal.strategy = 'fix:timeout-retry';
+  withBoth.plan.proposal.rootCause = 'the retry counter resets before the observation is persisted';
+  assert.deepEqual(validateTaskRequest(withBoth), { ok: true, value: withBoth });
+
+  const onlyRootCause = validRequest();
+  onlyRootCause.plan.proposal.rootCause = 'a dropped listener leaves the probe waiting';
+  assert.equal(validateTaskRequest(onlyRootCause).ok, true);
+
+  const atBounds = validRequest();
+  atBounds.plan.proposal.strategy = 's'.repeat(4096);
+  atBounds.plan.proposal.rootCause = 'r'.repeat(2000);
+  assert.equal(validateTaskRequest(atBounds).ok, true);
+
+  // Existing documents without the optional fields stay valid.
+  const legacy = validRequest();
+  assert.equal(validateTaskRequest(legacy).ok, true);
+  assert.equal(Object.hasOwn(legacy.plan.proposal, 'strategy'), false);
+  assert.equal(Object.hasOwn(legacy.plan.proposal, 'rootCause'), false);
+
+  const badProposal = (mutate) => {
+    const request = validRequest();
+    mutate(request.plan.proposal);
+    return request;
+  };
+  assert.equal(validateTaskRequest(badProposal((proposal) => { proposal.strategy = 7; })).ok, false);
+  assert.equal(validateTaskRequest(badProposal((proposal) => { proposal.strategy = ''; })).ok, false);
+  assert.equal(validateTaskRequest(badProposal((proposal) => { proposal.strategy = 's'.repeat(4097); })).ok, false);
+  assert.equal(validateTaskRequest(badProposal((proposal) => { proposal.rootCause = ['not', 'text']; })).ok, false);
+  assert.equal(validateTaskRequest(badProposal((proposal) => { proposal.rootCause = ''; })).ok, false);
+  assert.equal(validateTaskRequest(badProposal((proposal) => { proposal.rootCause = 'r'.repeat(2001); })).ok, false);
+  // Unknown fields remain rejected even next to the new optional ones.
+  assert.equal(validateTaskRequest(badProposal((proposal) => {
+    proposal.strategy = 'fix:timeout-retry';
+    proposal.evidence = 'unexpected';
+  })).ok, false);
+});

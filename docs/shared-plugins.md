@@ -168,6 +168,14 @@ dsh-evolution-shared revalidate --evidence <evidence.json>
   也不会自动删除任何文件。
 - 没有自动删除路径：索引、撤销表、consumer 状态与 `promoted/` 源码都由操作者处置。
 
+### 6.1 显式“自我进化”请求中的路由
+
+用户在 Desktop / ACP 的自我进化模式里用自然语言说“自我进化”时，`evolution_plan`（Desktop）或
+`evolution_desktop` 的只读 `audit` 动作（ACP）会先做统一检查。停在 `pending-revalidation` 的记录会被列为
+`revalidate` 动作，附带既有 `revalidate` 命令、所需证据说明与禁止项（编辑 / 重新生成 / 重新晋升源码）。
+检查本身只读：不改写索引、不挂载插件、不执行 revalidate。Desktop 或操作者按第 5 节在真实隔离宿主上验证后
+执行 `revalidate`，再由 consumer 启动重新读取索引。该路径不新增审批、门禁或第二套晋升引擎。
+
 ## 7. 诊断
 
 `dsh-evolution-doctor` 与会话内 `evolution_doctor` 共用同一个只读检查 `promotion.sharing`：

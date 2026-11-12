@@ -489,6 +489,27 @@ async function bootWebConsumer(label, { expect, markers, kernel = false }) {
 }
 
 /**
+ * Boot the full Evolution kernel on the Web profile with the promoted-consumer
+ * row disabled, then call the registered `evolution_plan` tool (the unified
+ * read-only review) in that real host.
+ *
+ * The isolated host acceptance has no Desktop binary, so the Web profile is the
+ * publisher stand-in: leaving the promoted consumer enabled would rewrite the
+ * Web activation row as `disabled/publisher-profile` (the publisher profile
+ * never mounts its own publications) before the review reads it. The durable
+ * activation records the real consumer-only boots wrote are the facts the
+ * review must classify, so this boot only disables the consumer row; the kernel,
+ * the tool registry and the tool call are real. The probe snapshots the
+ * publication index bytes around the tool call and fails on any write.
+ */
+async function bootWebReview(label, phase) {
+  return bootProbe(`cross-entry-${label}`, path.join(PROBES, 'cross-entry-promotion-probe.mjs'), {
+    EVOLUTION_CROSS_ENTRY_PHASE: phase,
+    EVOLUTION_ACCEPTANCE_CWD: work,
+  }, { rows: [{ id: 'evolution-promoted-consumer', disabled: true }] });
+}
+
+/**
  * Boot the headless ACP consumer.
  *
  * The ACP entry is a JSON-RPC server, so the runner keeps its stdin open with
@@ -630,6 +651,28 @@ async function runCrossEntryAcceptance() {
   const activeMarkers = {
     [stable.id]: CROSS_ENTRY_MARKERS.stable,
     [incompatible.id]: CROSS_ENTRY_MARKERS.incompatible,
+  };
+  /** A bounded projection of one unified-review receipt for the evidence file. */
+  const reviewSummary = (receipt) => {
+    const review = receipt?.review ?? {};
+    const stablePlugins = review.stablePlugins ?? {};
+    const selfEvolution = review.selfEvolution ?? {};
+    return {
+      phase: receipt?.phase ?? null,
+      readOnly: stablePlugins.readOnly === true && selfEvolution.readOnly === true,
+      status: stablePlugins.status ?? null,
+      indexRecordCount: stablePlugins.indexRecordCount ?? null,
+      truncated: stablePlugins.truncated ?? null,
+      primary: selfEvolution.primary ?? null,
+      kind: selfEvolution.kind ?? null,
+      hasBlockingStableIssue: selfEvolution.hasBlockingStableIssue ?? null,
+      incomplete: selfEvolution.incomplete === true,
+      record: (stablePlugins.records ?? []).find((row) => row.id === stable.id) ?? null,
+      nextActions: selfEvolution.nextActions ?? [],
+      indexDigest: receipt?.index?.digest ?? null,
+      indexDigestAfter: receipt?.index?.digestAfter ?? null,
+      steps: receipt?.steps ?? [],
+    };
   };
 
   // (b) consumer-only boot: same home, same Web profile, kernel row disabled.
@@ -780,8 +823,11 @@ async function runCrossEntryAcceptance() {
   const simulatedRow = simulatedIndex.plugins.find((row) => row?.id === stable.id);
   assertCross(Boolean(simulatedRow), 'the published stable record disappeared before the upgrade simulation');
   simulatedRow.host = { ...simulatedRow.host, dsh: '9.9.9-simulated-upgrade' };
-  fs.writeFileSync(publishedPath, `${JSON.stringify(simulatedIndex, null, 2)}\n`);
+  const simulatedIndexBytes = Buffer.from(`${JSON.stringify(simulatedIndex, null, 2)}\n`);
+  const simulatedIndexDigest = crypto.createHash('sha256').update(simulatedIndexBytes).digest('hex');
+  fs.writeFileSync(publishedPath, simulatedIndexBytes);
   let revalidationResult;
+  let pendingReview;
   try {
     const pending = await bootWebConsumer('consumer-revalidation', {
       expect: {
@@ -792,12 +838,37 @@ async function runCrossEntryAcceptance() {
     });
     if (pending.error) throw new Error(`cross-entry revalidation probe failed: ${pending.error}`);
     revalidationResult = pending.result;
+    // The review runs while the simulated upgrade is the only index on disk, so
+    // it classifies exactly the state the consumer boot just observed.
+    pendingReview = await bootWebReview('review-pending', 'review-pending');
   } finally {
     fs.writeFileSync(publishedPath, indexBytes);
   }
   record('cross-entry-revalidation', { ok: Boolean(revalidationResult), rows: revalidationResult?.rows });
   assertCross(revalidationResult.rows.some((row) => row.id === stable.id && row.status === 'pending-revalidation' && row.reason === 'host-version-mismatch'), `the upgraded-host record is not pending-revalidation: ${JSON.stringify(revalidationResult.rows)}`);
   assertCross(revalidationResult.rows.some((row) => row.id === incompatible.id && row.status === 'skipped-incompatible'), 'the simulated upgrade changed the unrelated record');
+  if (pendingReview.error) throw new Error(`cross-entry pending-revalidation review probe failed: ${pendingReview.error}`);
+  const pendingReviewReceipt = pendingReview.result;
+  const pendingReviewDocument = pendingReviewReceipt?.review ?? {};
+  const pendingReviewStable = (pendingReviewDocument.stablePlugins?.records ?? []).find((row) => row.id === stable.id);
+  const pendingReviewActions = (pendingReviewDocument.selfEvolution?.nextActions ?? []).filter((row) => row.recordId === stable.id);
+  const pendingRevalidate = pendingReviewActions.find((row) => row.action === 'revalidate');
+  record('cross-entry-review-pending-revalidation', { ok: Boolean(pendingReviewReceipt), summary: reviewSummary(pendingReviewReceipt), error: pendingReview.error });
+  assertCross(pendingReviewDocument.stablePlugins?.readOnly === true && pendingReviewDocument.selfEvolution?.readOnly === true, 'the review during the simulated upgrade does not declare itself read-only');
+  assertCross(pendingReviewStable?.status === 'pending-revalidation', `the review did not report the upgraded record as pending-revalidation: ${JSON.stringify(pendingReviewStable)}`);
+  assertCross(pendingReviewStable?.action === 'revalidate', `the upgraded record action is ${pendingReviewStable?.action}, expected revalidate`);
+  assertCross(pendingReviewStable?.hostCompatible === false && pendingReviewStable?.hostReason === 'host-version-mismatch', `the upgraded record host verdict is ${JSON.stringify({ compatible: pendingReviewStable?.hostCompatible, reason: pendingReviewStable?.hostReason })}`);
+  assertCross(pendingRevalidate?.recordId === stable.id, `the revalidate next action does not name the upgraded record: ${JSON.stringify(pendingRevalidate)}`);
+  assertCross(typeof pendingRevalidate.command === 'string' && pendingRevalidate.command.includes('shared-plugins.mjs') && pendingRevalidate.command.includes('revalidate --evidence'), `the revalidate next action has no operator command: ${JSON.stringify(pendingRevalidate.command)}`);
+  const pendingForbidden = Array.isArray(pendingRevalidate.forbidden) ? pendingRevalidate.forbidden : [];
+  assertCross(pendingForbidden.includes('edit or regenerate the promoted plugin source'), `the revalidate next action does not forbid regenerating the source: ${JSON.stringify(pendingForbidden)}`);
+  assertCross(pendingForbidden.includes('weaken the recorded host identity'), `the revalidate next action does not protect the recorded host identity: ${JSON.stringify(pendingForbidden)}`);
+  assertCross(pendingReviewDocument.selfEvolution?.primary === 'revalidate' && pendingReviewDocument.selfEvolution?.hasBlockingStableIssue === true, `the review did not give the host upgrade priority over other work: ${JSON.stringify({ primary: pendingReviewDocument.selfEvolution?.primary, blocking: pendingReviewDocument.selfEvolution?.hasBlockingStableIssue })}`);
+  // The list is filtered to the upgraded record; only a repair action for that
+  // record would mean the upgrade became a source change (experience actions
+  // have no recordId and are covered by the revalidate-primary assertion).
+  assertCross(!pendingReviewActions.some((row) => row.action === 'repair-stable'), `the host upgrade was turned into a source change: ${JSON.stringify(pendingReviewActions)}`);
+  assertCross(pendingReviewReceipt.index.digest === simulatedIndexDigest && pendingReviewReceipt.index.digestAfter === simulatedIndexDigest, 'the review read or wrote an index other than the simulated upgrade index');
   assertCross(fileSha256(publishedPath) === report.index.digest, 'restoring the publication index failed');
   const restoredIndex = await bootWebConsumer('consumer-index-restored', { expect: expectedActive, markers: activeMarkers });
   if (restoredIndex.error) throw new Error(`cross-entry index-restore probe failed: ${restoredIndex.error}`);
@@ -852,7 +923,104 @@ async function runCrossEntryAcceptance() {
     consumerStatePresent: fs.existsSync(consumerStatePath('acp')),
     result: acpResult,
   };
-  log(`cross-entry: stable record ${stable.id}, ACP/Web consumers active, incompatible ${incompatible.id} skipped`);
+
+  // (i) the unified self-evolution review on the healthy, fully consumed record.
+  //     The isolated host has no Desktop binary, so this boot runs the real Web
+  //     kernel with only the promoted-consumer row disabled: the activation
+  //     records the review reads are the durable facts the real consumer boots
+  //     above wrote. The stable record must be active with no action, and the
+  //     deliberately incompatible record must be surfaced for repair.
+  log('cross-entry: running the unified self-evolution review on the healthy record');
+  const activeReview = await bootWebReview('review-active', 'review-active');
+  if (activeReview.error) throw new Error(`cross-entry active review probe failed: ${activeReview.error}`);
+  const activeReviewReceipt = activeReview.result;
+  const activeReviewDocument = activeReviewReceipt?.review ?? {};
+  const activeReviewStable = (activeReviewDocument.stablePlugins?.records ?? []).find((row) => row.id === stable.id);
+  const activeReviewActions = (activeReviewDocument.selfEvolution?.nextActions ?? []).filter((row) => row.recordId === stable.id);
+  record('cross-entry-review-active', { ok: Boolean(activeReviewReceipt), summary: reviewSummary(activeReviewReceipt), error: activeReview.error });
+  assertCross(activeReviewReceipt?.steps?.[0]?.name === 'evolution_plan' && activeReviewReceipt.steps[0].ok === true, 'the review receipt does not prove the evolution_plan tool ran');
+  assertCross(activeReviewDocument.stablePlugins?.readOnly === true && activeReviewDocument.selfEvolution?.readOnly === true, 'the healthy review does not declare itself read-only');
+  assertCross(activeReviewStable?.status === 'active', `the review did not report the healthy stable record as active: ${JSON.stringify(activeReviewStable)}`);
+  assertCross(activeReviewStable?.action === null && activeReviewActions.length === 0, `the review advised an action for the healthy stable record: ${JSON.stringify(activeReviewActions)}`);
+  assertCross((activeReviewDocument.stablePlugins?.records ?? []).some((row) => row.id === incompatible.id && row.status === 'incompatible' && row.action === 'repair-stable'), 'the review did not report the deliberately incompatible record for repair');
+  assertCross(activeReviewReceipt.index.digest === activeReviewReceipt.index.digestAfter && activeReviewReceipt.index.digest === report.index.digest, 'the healthy review changed the publication index');
+
+  // (j) recover from pending-revalidation exactly as an operator would: put the
+  //     simulated upgrade back on disk (the record is still pending-revalidation
+  //     in every consumer), adopt the real evidence on the isolated home through
+  //     the operator command, and keep the adopted index. If adoption fails the
+  //     original index is restored so the home is not left describing a host
+  //     that never verified the record; restoring after success would delete the
+  //     adopted revalidation generation, so the adopted bytes stay.
+  log('cross-entry: adopting the revalidation evidence on the isolated home from the pending state');
+  const webConsumerState = readJsonFile(consumerStatePath('web'));
+  const acpConsumerState = readJsonFile(consumerStatePath('acp'));
+  const consumerRowActive = (state) => (state?.plugins ?? []).some((row) => row?.id === stable.id && row.status === 'active');
+  assertCross(consumerRowActive(webConsumerState) && consumerRowActive(acpConsumerState), 'both consumer entries must be active before revalidation evidence is adopted');
+  assertCross(typeof stable.host?.dsh === 'string' && typeof stable.host?.cordis === 'string' && typeof stable.host?.include === 'string', `the published record has no complete host identity: ${JSON.stringify(stable.host)}`);
+  const reviewEvidencePath = path.join(work, 'cross-entry-review-revalidate-evidence.json');
+  fs.writeFileSync(reviewEvidencePath, `${JSON.stringify({
+    schemaVersion: 1,
+    kind: 'dsh-evolution-cross-entry-evidence',
+    ok: true,
+    host: { dsh: stable.host.dsh, cordis: stable.host.cordis, include: stable.host.include, node: stable.host.node ?? null },
+    plugins: [{ id: stable.id, sourceSha256: stable.sourceSha256, profiles: { web: { active: true }, acp: { active: true } } }],
+  }, null, 2)}\n`);
+  fs.writeFileSync(publishedPath, simulatedIndexBytes);
+  let adopted;
+  try {
+    adopted = await runCommand(process.execPath, [sharedCli, 'revalidate', '--home', home, '--evidence', reviewEvidencePath, '--json'], { env: { DSH_HOME: home } });
+  } catch (error) {
+    fs.writeFileSync(publishedPath, indexBytes);
+    throw error;
+  }
+  if (adopted.code !== 0) fs.writeFileSync(publishedPath, indexBytes);
+  record('cross-entry-revalidate-adopt', { ok: adopted.code === 0, code: adopted.code, adoptedFrom: 'pending-revalidation', tail: adopted.output.trim().slice(-800) });
+  assertCross(adopted.code === 0, `revalidate adoption failed: ${adopted.output.slice(-800)}`);
+  const adoptedIndex = readJsonFile(publishedPath);
+  const adoptedRecord = adoptedIndex?.plugins?.find((row) => row.id === stable.id);
+  assertCross(Array.isArray(adoptedRecord?.revalidation) && adoptedRecord.revalidation.length >= 1, 'the adopted evidence did not add a revalidation generation');
+  assertCross(adoptedRecord.host?.dsh === stable.host.dsh, `the adopted record host ${adoptedRecord.host?.dsh} is not the published host ${stable.host.dsh}`);
+  assertCross(adoptedIndex.updatedAt !== indexUpdatedAt, 'adoption did not advance the publication index');
+  const adoptedConsumer = await bootWebConsumer('consumer-adopted', { expect: expectedActive, markers: activeMarkers });
+  if (adoptedConsumer.error) throw new Error(`cross-entry adopted-index consumer probe failed: ${adoptedConsumer.error}`);
+  const adoptedConsumerResult = adoptedConsumer.result;
+  assertCross(adoptedConsumerResult.observedIndexUpdatedAt === adoptedIndex.updatedAt, `the adopted-index consumer observed index ${adoptedConsumerResult.observedIndexUpdatedAt}, expected ${adoptedIndex.updatedAt}`);
+  assertCross(adoptedConsumerResult.markerHits?.[stable.id] === 1, `the revalidated record did not mount in the consumer: ${JSON.stringify(adoptedConsumerResult.markerHits)}`);
+
+  // (k) review after adoption: the record must no longer be pending-revalidation
+  //     and the review must not advise revalidation. The ACP activation record is
+  //     stale against the advanced index (this stage boots the Web consumer
+  //     only), so the remaining action is a restart, never a source change.
+  log('cross-entry: running the unified self-evolution review after revalidation adoption');
+  const revalidatedReview = await bootWebReview('review-revalidated', 'review-revalidated');
+  if (revalidatedReview.error) throw new Error(`cross-entry revalidated review probe failed: ${revalidatedReview.error}`);
+  const revalidatedReviewReceipt = revalidatedReview.result;
+  const revalidatedReviewDocument = revalidatedReviewReceipt?.review ?? {};
+  const revalidatedReviewStable = (revalidatedReviewDocument.stablePlugins?.records ?? []).find((row) => row.id === stable.id);
+  const revalidatedReviewActions = (revalidatedReviewDocument.selfEvolution?.nextActions ?? []).filter((row) => row.recordId === stable.id);
+  record('cross-entry-review-revalidated', { ok: Boolean(revalidatedReviewReceipt), summary: reviewSummary(revalidatedReviewReceipt), error: revalidatedReview.error });
+  assertCross(revalidatedReviewDocument.stablePlugins?.readOnly === true && revalidatedReviewDocument.selfEvolution?.readOnly === true, 'the post-revalidation review does not declare itself read-only');
+  // The stable record is compatible again and no longer needs revalidation; the ACP activation row is stale against the adopted index because only the Web consumer was booted, so the one remaining action is a restart, never a source change.
+  assertCross(revalidatedReviewStable?.status === 'restart-required' && revalidatedReviewStable?.action === 'restart-consumer', `the post-revalidation review did not report the stale ACP consumer as a restart: ${JSON.stringify(revalidatedReviewStable)}`);
+  assertCross(revalidatedReviewStable?.hostCompatible === true, `the adopted record is still not host-compatible: ${JSON.stringify(revalidatedReviewStable?.hostReason)}`);
+  assertCross(revalidatedReviewStable?.action !== 'revalidate' && !revalidatedReviewActions.some((row) => row.action === 'revalidate'), `the review still advises revalidation after adoption: ${JSON.stringify(revalidatedReviewActions)}`);
+  assertCross(Number.isInteger(revalidatedReviewStable?.revalidationGenerations) && revalidatedReviewStable.revalidationGenerations >= 1, 'the review does not report the adopted revalidation generation');
+  assertCross(revalidatedReviewReceipt.index.digest === revalidatedReviewReceipt.index.digestAfter && revalidatedReviewReceipt.index.digest === fileSha256(publishedPath), 'the post-revalidation review changed the publication index');
+
+  report.review = {
+    active: reviewSummary(activeReviewReceipt),
+    pendingRevalidation: reviewSummary(pendingReviewReceipt),
+    revalidated: reviewSummary(revalidatedReviewReceipt),
+    revalidateAdoption: {
+      code: adopted.code,
+      adoptedFrom: 'pending-revalidation',
+      revalidationGenerations: adoptedRecord.revalidation.length,
+      adoptedIndexDigest: fileSha256(publishedPath),
+      consumerObservedIndexUpdatedAt: adoptedConsumerResult.observedIndexUpdatedAt,
+    },
+  };
+  log(`cross-entry: stable record ${stable.id}, ACP/Web consumers active, incompatible ${incompatible.id} skipped, unified review active -> pending-revalidation -> revalidated`);
 }
 
 // ---------------------------------------------------------------------------

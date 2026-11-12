@@ -12,9 +12,13 @@
  *   5. stop before promotion when the bound owner approval is missing, then
  *      (only with --approve) relay an experiment-bound approval and let the
  *      real Evolution kernel promote and canary the candidate;
- *   6. start a fresh ACP process and verify the promoted plugin is mounted and
+ *   6. run the unified read-only self-evolution audit from a real ACP
+ *      natural-language request: the real tool surface returns the stable-plugin
+ *      and experience classification, writes no task, launches no Desktop
+ *      process and changes no publication bytes;
+ *   7. start a fresh ACP process and verify the promoted plugin is mounted and
  *      callable without touching Desktop;
- *   7. restart Desktop and verify the durable stable fact and task state survive.
+ *   8. restart Desktop and verify the durable stable fact and task state survive.
  *
  * The model transport is a deterministic fixture; the ACP transport, the
  * official Desktop app, the Evolution kernel, its gates and persistence, the
@@ -65,6 +69,24 @@ delete env.ELECTRON_RUN_AS_NODE;
 const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 const sha = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
+/** Sorted relative paths of every regular file under a directory (missing = empty). */
+async function listFiles(root) {
+  const out = [];
+  const walk = async (dir, prefix) => {
+    let entries;
+    try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch (error) { if (error.code === 'ENOENT') return; throw error; }
+    for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+      const rel = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
+      if (entry.isDirectory()) await walk(path.join(dir, entry.name), rel);
+      else if (entry.isFile()) out.push({ path: rel, sha256: sha(await fs.readFile(path.join(dir, entry.name))) });
+    }
+  };
+  await walk(root, '');
+  return out;
+}
+async function pathExists(file) {
+  try { await fs.access(file); return true; } catch { return false; }
+}
 const readJson = async (file) => { try { return JSON.parse(await fs.readFile(file, 'utf8')); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
 const writeJson = async (file, value) => {
   await fs.mkdir(path.dirname(file), { recursive: true });
@@ -308,7 +330,10 @@ evidence.candidate = { tool: plan.tool, compositionName: plan.compositionName, s
 // read or write the operator's real Desktop application state.
 const autoLaunchUserData = path.join(work, 'electron-autolaunch');
 const autoLaunchWrapper = path.join(work, 'desktop-autolaunch.sh');
-await fs.writeFile(autoLaunchWrapper, `#!/bin/sh\nexec ${JSON.stringify(binary)} --user-data-dir=${JSON.stringify(autoLaunchUserData)} "$@"\n`, { mode: 0o700 });
+// The spawn log is the receipt that only the documented auto-launch path (and
+// not the read-only audit) started the application through this wrapper.
+const autoLaunchSpawnLog = path.join(work, 'desktop-autolaunch-spawns.log');
+await fs.writeFile(autoLaunchWrapper, `#!/bin/sh\necho "\$\$" >> ${JSON.stringify(autoLaunchSpawnLog)}\nexec ${JSON.stringify(binary)} --user-data-dir=${JSON.stringify(autoLaunchUserData)} "$@"\n`, { mode: 0o700 });
 const autoLaunchEnv = { ...env, DSH_DESKTOP_APP_BINARY: autoLaunchWrapper };
 
 let desktop = null;
@@ -506,7 +531,79 @@ try {
   await fresh.close();
   evidence.steps.push({ name: 'fresh-acp-consumed-promoted-plugin', at: new Date().toISOString() });
 
-  // 9. restart Desktop: stable facts and terminal task state survive; nothing is re-run.
+  // 9. the unified read-only self-evolution audit is reachable from a real ACP
+  //    natural-language request. The deterministic model only chooses the tool;
+  //    the classification is read from the real durable index by the real ACP
+  //    client. The audit must write no task file, start no Desktop process,
+  //    register no kernel tool and leave the publication bytes untouched.
+  const indexBeforeAudit = await fs.readFile(publishedFile);
+  const inboxBeforeAudit = await listFiles(path.join(channel, 'inbox'));
+  const stateBeforeAudit = await listFiles(path.join(channel, 'state'));
+  const hostBeforeAudit = await liveHost();
+  assert(hostBeforeAudit?.instanceId === firstReady.instanceId, 'the Desktop host changed before the ACP audit');
+  let auditValue = null;
+  await runPrompt('acp-audit', '请先做一次统一的自我进化检查（只读）：审计已经发布的 stable 插件与经验证据，报告分类和下一步。不要提交新的进化任务，也不要启动 Desktop。', (tools, result, round) => {
+    assertKernelFree(tools);
+    if (round === 1) return { name: 'evolution_desktop', args: { action: 'audit' } };
+    const value = toolResultValue(result);
+    assert(value.ok === true, `the ACP audit failed: ${value.code ?? ''} ${value.message ?? ''}`);
+    assert(value.action === 'audit', `unexpected ACP audit action: ${value.action}`);
+    assert(value.readOnly === true, 'the ACP audit does not declare itself read-only');
+    assert(value.taskId === undefined, 'the ACP audit created a task');
+    assert(typeof record.host?.dsh === 'string' && record.host.dsh !== '', 'the published record has no verified host identity');
+    assert(value.stable?.kind === 'dsh-evolution-self-evolution-review', `unexpected stable review kind: ${value.stable?.kind}`);
+    assert(value.stable?.readOnly === true && value.selfEvolution?.readOnly === true, 'the ACP audit classification is not read-only');
+    assert(Array.isArray(value.stable?.records), 'the ACP audit returned no stable-plugin records');
+    assert(Number.isInteger(value.stable?.indexRecordCount) && value.stable.indexRecordCount >= 1, `the ACP audit found no published record: ${JSON.stringify({ count: value.stable?.indexRecordCount, truncated: value.stable?.truncated })}`);
+    assert(typeof value.selfEvolution?.kind === 'string' && Array.isArray(value.selfEvolution?.nextActions), 'the ACP audit returned no ordered decision');
+    const row = (value.stable.records ?? []).find((entry) => entry.id === record.id);
+    assert(row, `the ACP audit did not classify the published record ${record.id}`);
+    // The fresh ACP consumer above mounted this exact record on this host, so a
+    // host-identity fallback failure must surface as pending-revalidation or
+    // verify-host here, never as a silent closed-status pass. The audit must see
+    // the same installed host the publisher verified on, with a complete
+    // identity, and report the record active with no action.
+    assert(row.status === 'active', `the ACP audit did not report the mounted record as active: ${row.status} ${JSON.stringify(row.reasons ?? [])}`);
+    assert(row.action === null, `the active record still carries action ${JSON.stringify(row.action)}`);
+    assert(value.host?.dsh === record.host?.dsh, `the ACP audit host ${JSON.stringify(value.host?.dsh)} is not the verified host ${JSON.stringify(record.host?.dsh)}`);
+    assert(typeof value.host?.cordis === 'string' && value.host.cordis !== '' && typeof value.host?.include === 'string' && value.host.include !== '', `the ACP audit could not prove the host identity: ${JSON.stringify(value.host)}`);
+    assert(value.selfEvolution?.incomplete !== true, 'the ACP audit reports an incomplete review');
+    assert(value.selfEvolution?.kind !== 'verify-host' && value.selfEvolution?.primary !== 'verify-host', `the ACP audit reported an unprovable host identity: ${JSON.stringify({ kind: value.selfEvolution?.kind, primary: value.selfEvolution?.primary })}`);
+    assert(!(value.selfEvolution.nextActions ?? []).some((entry) => entry.recordId === row.id), `the ACP audit advises an action for the active record: ${JSON.stringify(value.selfEvolution.nextActions)}`);
+    auditValue = value;
+    return null;
+  });
+  assert(auditValue, 'the ACP audit never returned a classification');
+  assert((await fs.readFile(publishedFile)).equals(indexBeforeAudit), 'the ACP audit changed the publication index');
+  assert(JSON.stringify(await listFiles(path.join(channel, 'inbox'))) === JSON.stringify(inboxBeforeAudit), 'the ACP audit wrote a task file');
+  assert(JSON.stringify(await listFiles(path.join(channel, 'state'))) === JSON.stringify(stateBeforeAudit), 'the ACP audit wrote a task state');
+  assert(!await pathExists(autoLaunchSpawnLog), 'the ACP audit launched the Desktop application');
+  const hostAfterAudit = await liveHost();
+  assert(hostAfterAudit?.instanceId === hostBeforeAudit.instanceId, 'the ACP audit replaced the Desktop host');
+  const auditedRow = auditValue.stable.records.find((entry) => entry.id === record.id);
+  evidence.audit = {
+    action: auditValue.action,
+    readOnly: auditValue.readOnly,
+    host: auditValue.host,
+    stableStatus: auditValue.stable.status ?? null,
+    indexRecordCount: auditValue.stable.indexRecordCount ?? null,
+    indexTruncated: auditValue.stable.truncated ?? null,
+    stableRecord: auditedRow ?? null,
+    selfEvolution: {
+      kind: auditValue.selfEvolution.kind ?? null,
+      primary: auditValue.selfEvolution.primary ?? null,
+      hasBlockingStableIssue: auditValue.selfEvolution.hasBlockingStableIssue ?? null,
+      incomplete: auditValue.selfEvolution.incomplete === true,
+      nextActions: auditValue.selfEvolution.nextActions ?? [],
+    },
+    indexDigestBefore: sha(indexBeforeAudit),
+    indexDigestAfter: sha(await fs.readFile(publishedFile)),
+    taskFilesWritten: false,
+    desktopLaunched: false,
+  };
+  evidence.steps.push({ name: 'acp-audit-read-only-classification', at: new Date().toISOString() });
+
+  // 10. restart Desktop: stable facts and terminal task state survive; nothing is re-run.
   await stopDesktop(desktop);
   desktop = null;
   desktop = await startDesktop('desktop-live');
@@ -522,7 +619,7 @@ try {
   evidence.restart.publicationPreserved = true;
   evidence.steps.push({ name: 'desktop-restart-preserved-durable-facts', at: new Date().toISOString() });
 
-  // 10. auto-launch: with no Desktop host running, a real ACP delegation starts
+  // 11. auto-launch: with no Desktop host running, a real ACP delegation starts
   //     the official app through the client and still stops at the owner gate.
   await stopDesktop(desktop);
   desktop = null;
@@ -545,6 +642,9 @@ try {
   assert(autoGate, 'auto-launch delegation never reached the owner gate');
   const autoReady = await liveHost();
   assert(autoReady !== null && autoReady.instanceId !== secondReady.instanceId, 'the client did not start a new Desktop host');
+  // The negative control for the audit above: the documented auto-launch path
+  // really does spawn the application through the same wrapper.
+  assert(await pathExists(autoLaunchSpawnLog), 'the auto-launch did not use the isolated wrapper');
   evidence.autoLaunch = {
     hostInstanceId: autoReady.instanceId,
     hostPid: autoReady.pid,
@@ -567,7 +667,7 @@ try {
   evidence.autoLaunch.stopped = true;
   evidence.steps.push({ name: 'acceptance-launched-desktop-stopped', at: new Date().toISOString() });
 
-  // 11. profile configuration was only changed by the official installer.
+  // 12. profile configuration was only changed by the official installer.
   for (const profile of profiles) {
     const current = await fs.readFile(path.join(home, 'profiles', profile, 'cordis.patch.yml'), 'utf8');
     assert(current === patchesBefore[profile], `profile ${profile} patch changed during acceptance`);
