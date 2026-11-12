@@ -77,6 +77,7 @@ test('scripting verbs, inline code, substitutions and newlines stay fail-closed'
     `echo >(${TR}/lib/a.js) publish`,
     // rg --pre executes a command for every file; its arguments are not data.
     `rg --pre 'rm -f ${TR}/lib/a.js' publish file`,
+    `rg --pre=rm publish ${TR}/lib/a.js`,
     // A newline starts a new shell command; the tokenizer must not treat the
     // following verb as an argument of the read-only one.
     `echo publish\nrm -f ${TR}/lib/a.js`,

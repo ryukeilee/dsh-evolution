@@ -670,6 +670,13 @@ test('declared absence is never inferred from a failed registry lookup', async (
     id: 'registry-lookup-failure',
     steps: [{ name: 'probe-dynamic', role: 'target', arguments: { query: 'edge' }, absentInBaseline: true }],
   })), 'E_EVOLUTION_PROBE_SAFETY');
+  // A thrown `null` is a valid rejection value and must not be confused with
+  // "no error" by a sentinel comparison.
+  h.ctx.tools.get = () => { throw null; };
+  await rejectsWithCode(runBaseline(h, experimentId, dynamicScenario({
+    id: 'registry-lookup-null',
+    steps: [{ name: 'probe-dynamic', role: 'target', arguments: { query: 'edge' }, absentInBaseline: true }],
+  })), 'E_EVOLUTION_PROBE_SAFETY');
 });
 
 test('probe contract: declarative scenario limits reject invalid scenarios with E_EVOLUTION_PROBE_SCENARIO', () => {
