@@ -438,6 +438,63 @@ test('disposing the host while awaiting approval attempts a bounded trial cleanu
   assert.equal(kernel.state.reverts, 1, 'a graceful stop must try to hand the runtime back');
 });
 
+test('the host executes tools through the official tools pipeline when the host provides it', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel({ facts: factsWriter(home) });
+  const ctx = fakeCtx(kernel, plan);
+  const pipelineCalls = [];
+  // The production Desktop provides ctx.tools.execute; the host must use it so
+  // argument validation, pre/post policy and guards run. This stub keeps the
+  // same observable contract as the real batch executor.
+  ctx.tools.execute = async (input) => {
+    pipelineCalls.push(input.calls.map((call) => call.name));
+    const results = [];
+    for (const call of input.calls) {
+      const tool = ctx.tools.get(call.name);
+      const value = await tool.execute(JSON.parse(call.arguments ?? '{}'), { agent: input.agent, signal: input.signal });
+      results.push({ callId: call.id, result: { isError: false, value } });
+    }
+    return { results, additionalContexts: [], concluded: false };
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.phase, 'stable');
+  assert.ok(pipelineCalls.some((names) => names.includes('evolution_runtime_inspect')), 'runtime inspection used the pipeline');
+  assert.ok(pipelineCalls.some((names) => names.includes('evolution_trial')), 'trial used the pipeline');
+  assert.ok(pipelineCalls.some((names) => names.includes(plan.tool)), 'candidate samples used the pipeline');
+});
+
+test('a transient revert failure keeps the owner and retries cleanup until it is proven', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel();
+  let revertAttempts = 0;
+  // The first revert transiently fails, the interval retry succeeds.
+  kernel.tools.set('evolution_revert', { execute: async () => {
+    revertAttempts += 1;
+    kernel.state.reverts += 1;
+    if (revertAttempts === 1) throw new Error('temporary disposer failure');
+    return { ok: true, runtimeRecovered: true, phase: 'reverted' };
+  } });
+  const ctx = fakeCtx(kernel, plan);
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  // A mismatched approval fails the task after the trial; the revert then fails once.
+  await approveWhenWaiting(home, taskId, { sourceSha256: 'd'.repeat(64) });
+  const failed = await waitForState(home, taskId, (value) => value.phase === 'failed', 10_000);
+  assert.equal(failed.error.code, 'E_DESKTOP_APPROVAL_MISMATCH');
+  assert.equal(revertAttempts >= 2, true, 'the host retried the failed cleanup');
+  assert.equal(failed.revert.ok, true);
+  assert.equal(failed.cleanupPending, false);
+});
+
 test('two requests are executed one at a time in created order', async (t) => {
   const home = temporary(t);
   const planA = planFor(mintTaskId());

@@ -351,6 +351,16 @@ test('delegate starts the app when no host is live and then reads the task state
   await writeState(home, makeState(taskId, 'stable', {
     result: { summary: 'stable', stable: true, observations: 1 },
   }));
+  // An identical retry is idempotent: the request on disk matches this plan,
+  // so the client returns the existing state instead of starting a new task.
+  await writeJson(path.join(taskChannelPaths(home).inbox, `${taskId}.json`), {
+    schemaVersion: SCHEMA_VERSION,
+    protocol: PROTOCOL_VERSION,
+    taskId,
+    createdAt: new Date().toISOString(),
+    requester: { profile: 'acp' },
+    plan: PLAN,
+  });
 
   const { tool } = mount(home, {
     spawn: fakeSpawn,
@@ -366,6 +376,17 @@ test('delegate starts the app when no host is live and then reads the task state
   assert.equal(result.terminal, true);
   assert.equal(result.result.stable, true);
   assert.equal(spawnCalls, 1);
+});
+
+test('delegate rejects a taskId that already exists with a different request', async (t) => {
+  const home = await tempHome(t);
+  await writeReady(home);
+  const taskId = 'desktop-task-conflict-1';
+  await writeState(home, makeState(taskId, 'awaiting-owner-confirmation', { experimentId: 'exp-old', candidateSourceSha256: 'a'.repeat(64) }));
+  const { tool } = mount(home, { delegateTimeoutMs: 500 });
+  const result = await tool.execute({ action: 'delegate', plan: PLAN, taskId }, {});
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'E_DESKTOP_TASK_ID_CONFLICT');
 });
 
 test('status waits for a phase change and reports the new phase', async (t) => {
