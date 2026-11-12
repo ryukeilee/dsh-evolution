@@ -44,6 +44,17 @@ const EVOLUTION_TOOL_COUNT = 12;
  * entry must register none of them even though `evolution_history` is present.
  */
 const SHARED_EXPERIENCE_TOOL = 'evolution_history';
+/**
+ * A consumer-only profile may also register its own coordination tool: the ACP
+ * profile mounts `dsh-evolution/desktop-task-client`, whose read-only `audit`
+ * action coordinates with Desktop without running the Evolution kernel. It is
+ * not a kernel tool, so the kernel-absence proof below must not treat it as
+ * one; the Web profile has no such entry and allows nothing extra.
+ */
+const COORDINATION_TOOLS = Object.freeze({
+  acp: Object.freeze(['evolution_desktop']),
+  web: Object.freeze([]),
+});
 const KERNEL_ONLY_TOOLS = Object.freeze([
   'evolution_runtime_inspect',
   'evolution_plan',
@@ -205,7 +216,10 @@ export async function runConsumerProbe(ctx) {
   const evolutionTools = ctx.tools.schemas().filter((tool) => tool.name.startsWith('evolution_')).length;
   const evolutionToolNames = ctx.tools.schemas().map((tool) => tool.name).filter((name) => name.startsWith('evolution_'));
   const kernelOnlyTools = evolutionToolNames.filter((name) => KERNEL_ONLY_TOOLS.includes(name));
-  const unexpectedEvolutionTools = evolutionToolNames.filter((name) => !KERNEL_ONLY_TOOLS.includes(name) && name !== SHARED_EXPERIENCE_TOOL);
+  const allowedCoordinationTools = COORDINATION_TOOLS[profile] ?? [];
+  const unexpectedEvolutionTools = evolutionToolNames.filter((name) => !KERNEL_ONLY_TOOLS.includes(name)
+    && name !== SHARED_EXPERIENCE_TOOL
+    && !allowedCoordinationTools.includes(name));
   const kernelPresent = Boolean(ctx.get('evolution'));
   if (expectKernel) {
     if (!kernelPresent) throw new Error('the full-kernel boot unexpectedly has no evolution service');

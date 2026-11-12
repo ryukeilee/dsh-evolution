@@ -642,8 +642,13 @@ try {
 
   // Everything the promotion left behind, before any consumer runs. The
   // consumer's own state directory is the only thing it is allowed to write.
+  // The consumer state CAS legitimately touches the shared publication lock
+  // database (`touched` counter), so that infrastructure file is not a
+  // promotion fact and is excluded from the byte comparison.
   const CONSUMER_STATE = 'shared-plugins/consumers';
-  const evolutionBefore = treeDigest(dataRoot, { exclude: [CONSUMER_STATE] });
+  const PUBLICATION_LOCK = 'shared-plugins/.publish.lock.sqlite';
+  const STATE_WRITES = [CONSUMER_STATE, PUBLICATION_LOCK, `${PUBLICATION_LOCK}-wal`, `${PUBLICATION_LOCK}-shm`];
+  const evolutionBefore = treeDigest(dataRoot, { exclude: STATE_WRITES });
   const experienceBefore = await experienceSnapshot(home);
 
   const expectedActive = {
@@ -664,7 +669,11 @@ try {
     assert(result.probeInstances === 1, `the ${profile} consumer ${label} composed ${result.probeInstances} probe instances`);
     assert(result.kernelPresent === false, `the ${profile} consumer ${label} still runs the Evolution kernel service`);
     assert(JSON.stringify(result.kernelOnlyTools) === '[]', `the ${profile} consumer ${label} registered kernel tools: ${JSON.stringify(result.kernelOnlyTools)}`);
-    assert((result.evolutionToolNames || []).every((name) => name === 'evolution_history'), `the ${profile} consumer ${label} registered unexpected evolution tools: ${JSON.stringify(result.evolutionToolNames)}`);
+    // `evolution_history` is the shared-experience reader. The ACP profile also
+    // mounts the product's `desktop-task-client`, whose coordination tool is not
+    // a kernel tool; the Web profile mounts no coordination entry.
+    const allowedEvolutionTools = profile === 'acp' ? new Set(['evolution_history', 'evolution_desktop']) : new Set(['evolution_history']);
+    assert((result.evolutionToolNames || []).every((name) => allowedEvolutionTools.has(name)), `the ${profile} consumer ${label} registered unexpected evolution tools: ${JSON.stringify(result.evolutionToolNames)}`);
     assert(result.markerListeners?.[stable.id] === 1, `the ${profile} consumer ${label} registered ${result.markerListeners?.[stable.id]} listeners for the stable record`);
     assert(result.markerHits?.[stable.id] === 1, `the ${profile} consumer ${label} executed the promoted listener ${result.markerHits?.[stable.id]} times`);
     assert(result.markerListeners?.[incompatible.id] === 0, `the ${profile} consumer ${label} mounted the incompatible plugin`);
@@ -880,7 +889,7 @@ try {
   // 8. every consumer boot above ran outside the Desktop authority: the
   //    promotion state, promoted sources and the publication index are
   //    byte-identical, and the shared experience rows are all still present.
-  const evolutionAfter = treeDigest(dataRoot, { exclude: [CONSUMER_STATE] });
+  const evolutionAfter = treeDigest(dataRoot, { exclude: STATE_WRITES });
   const changed = Object.keys(evolutionBefore.files).filter((rel) => evolutionBefore.files[rel] !== evolutionAfter.files[rel]);
   const added = Object.keys(evolutionAfter.files).filter((rel) => !(rel in evolutionBefore.files));
   const removed = Object.keys(evolutionBefore.files).filter((rel) => !(rel in evolutionAfter.files));
