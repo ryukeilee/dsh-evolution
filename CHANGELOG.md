@@ -18,6 +18,25 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 未发布 — 本树
+
+本树没有发布版本，也没有更新 `release/` 固定点。新增内容：
+
+- **ACP 发起的 Desktop 自我进化任务通道（未发布）。** 新增两个可选 bundle entry：
+  `dsh-evolution/desktop-task-host`（安装器只在 `desktop` profile 启用）与
+  `dsh-evolution/desktop-task-client`（只在 `acp` profile 启用）。ACP 会话里的
+  `evolution_desktop` 工具把自然语言任务整理成受校验的进化计划并写入
+  `$DSH_HOME/storages/evolution/desktop-tasks/`；Desktop host 只用官方 `agents` /
+  `sessions` / `tools` 服务执行真实 propose / trial / measure / promote / canary，
+  无 confirmation 的 promote 停在 `awaiting-owner-confirmation`，只有与
+  `experimentId + sourceSha256` 完全绑定的用户确认才继续。Evolution kernel、八项门禁、
+  canary/stable/rollback 与共享插件发布仍只由 Desktop 拥有；新的 ACP 进程仍由既有
+  `promoted-consumer` 自动加载 stable 插件。只支持同一机器、同一 OS 用户、同一
+  `DSH_HOME`，不使用 Electron 私有凭据或 `app.asar` 修改。
+- **消费启动可靠性修复（来自 PR #55）。** 空 Include 建立失败不再写成每个晋升插件的永久
+  sticky 失败；只有官方 `INACTIVE_EFFECT` 且清理已证明时在启动内有限重试；每个启动使用
+  独立 composition，旧 host 的迟到报告不能覆盖新 host。
+
 ## 0.2.6 — 稳定版
 
 `0.2.5` 的稳定后继：不新增宿主、持久化格式或授权来源。修复三处让真实候选无法完成测量、

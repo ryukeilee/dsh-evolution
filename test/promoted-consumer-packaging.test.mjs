@@ -27,14 +27,26 @@ test('bundle patch adds exactly one enabled consumer entry without reordering th
   assert.equal(consumers[0].name, 'dsh-evolution/promoted-consumer');
   // The module itself no-ops outside acp/web, so the bundle row stays enabled.
   assert.equal(consumers[0].disabled, undefined);
-  // Existing rows and their order are untouched; the consumer row is appended.
+  // Existing rows and their order are untouched; the consumer row is followed
+  // by the opt-in ACP -> Desktop task channel rows, which stay disabled until
+  // the installer selects them per profile.
   assert.deepEqual(insert.slice(0, 4).map((row) => row.id), [
     'evolution-experience',
     'evolution-experience-history',
     'evolution-orchestrator',
     'evolution-trust-root-guard',
   ]);
-  assert.equal(insert.at(-1).id, 'evolution-promoted-consumer');
+  assert.deepEqual(insert.slice(4).map((row) => row.id), [
+    'evolution-promoted-consumer',
+    'evolution-desktop-task-host',
+    'evolution-desktop-task-client',
+  ]);
+  const host = insert.find((row) => row?.id === 'evolution-desktop-task-host');
+  const client = insert.find((row) => row?.id === 'evolution-desktop-task-client');
+  assert.equal(host.name, 'dsh-evolution/desktop-task-host');
+  assert.equal(host.disabled, true);
+  assert.equal(client.name, 'dsh-evolution/desktop-task-client');
+  assert.equal(client.disabled, true);
 });
 
 test('managed profile block enables the consumer only on acp and web', () => {
@@ -55,7 +67,11 @@ test('managed profile block enables the consumer only on acp and web', () => {
     assert.equal(String(byId.get('evolution-experience').disabled), 'false');
     assert.equal(String(byId.get('evolution-experience-history').disabled), String(profile === 'desktop'));
     assert.equal(String(byId.get('evolution-orchestrator').disabled), String(profile !== 'desktop'));
-    assert.equal(rows.length, 5);
+    assert.equal(rows.length, 7);
+    // The ACP -> Desktop task channel follows the same role selection: the host
+    // only runs inside Desktop, the coordinator only inside ACP.
+    assert.equal(String(byId.get('evolution-desktop-task-host').disabled), String(profile !== 'desktop'));
+    assert.equal(String(byId.get('evolution-desktop-task-client').disabled), String(profile !== 'acp'));
     // Byte-stable block: appending the row is the only change.
     assert.equal(managedPatch(block, profile), block, 'managed block is idempotent');
   }
@@ -70,6 +86,8 @@ test('setup plan reports the promoted-plugin consumer for acp and web', (t) => {
   for (const item of plan) {
     const rows = yaml.load(item.next);
     assert.equal(rows.find((row) => row.id === 'evolution-promoted-consumer').disabled, item.profile === 'desktop');
+    assert.equal(rows.find((row) => row.id === 'evolution-desktop-task-host').disabled, item.profile !== 'desktop');
+    assert.equal(rows.find((row) => row.id === 'evolution-desktop-task-client').disabled, item.profile !== 'acp');
     if (item.profile === 'desktop') {
       assert.doesNotMatch(item.role, /promoted-plugin consumer/);
     } else {

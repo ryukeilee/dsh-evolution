@@ -25,7 +25,11 @@ export function managedPatch(previous, profile) {
   }
   // Official patches replace config wholesale; role selection uses only entry
   // enabled flags, leaving every config (including expressions) intact.
-  const block = `${BEGIN}\n- id: hmr\n  disabled: true\n- id: evolution-experience\n  disabled: false\n- id: evolution-experience-history\n  disabled: ${profile === 'desktop'}\n- id: evolution-orchestrator\n  disabled: ${profile !== 'desktop'}\n- id: evolution-promoted-consumer\n  disabled: ${profile === 'desktop'}\n${END}`;
+  // Desktop owns the single Evolution kernel and the ACP -> Desktop task host;
+  // the ACP profile owns the coordination tool and the promoted-plugin consumer.
+  // The Web profile only consumes shared plugins and deliberately mounts neither
+  // the kernel nor the ACP control surface.
+  const block = `${BEGIN}\n- id: hmr\n  disabled: true\n- id: evolution-experience\n  disabled: false\n- id: evolution-experience-history\n  disabled: ${profile === 'desktop'}\n- id: evolution-orchestrator\n  disabled: ${profile !== 'desktop'}\n- id: evolution-promoted-consumer\n  disabled: ${profile === 'desktop'}\n- id: evolution-desktop-task-host\n  disabled: ${profile !== 'desktop'}\n- id: evolution-desktop-task-client\n  disabled: ${profile !== 'acp'}\n${END}`;
   return begin < 0 ? previous + (previous.endsWith('\n') || !previous ? '' : '\n') + block + '\n'
     : previous.slice(0, begin) + block + previous.slice(end + END.length);
 }
@@ -42,7 +46,9 @@ export function setupPlan({ home, tarball, cli }) {
     const previous = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
     return { profile, file, previous, next: managedPatch(previous, profile),
       command: cli, args: ['plugin', '--profile', profile, 'add', artifact], artifact, sha256,
-      role: profile === 'desktop' ? 'existing manual Evolution + shared collection/recall' : 'shared collection/recall + promoted-plugin consumer' };
+      role: profile === 'desktop' ? 'existing manual Evolution + shared collection/recall + ACP task host'
+        : profile === 'acp' ? 'shared collection/recall + promoted-plugin consumer + ACP control tool'
+          : 'shared collection/recall + promoted-plugin consumer' };
   });
 }
 

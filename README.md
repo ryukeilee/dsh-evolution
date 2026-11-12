@@ -81,6 +81,36 @@ Desktop 是唯一的晋升权威：Trial、measure、promotion、canary 与 roll
 同时覆盖不兼容跳过、源码篡改、撤销 / 恢复与升级重验证；因为 CI 环境没有 Desktop 二进制，该隔离验收用带
 完整 kernel 的 Web profile 充当 publisher，生产安装形态仍只由 Desktop 晋升。
 
+### 从 ACP 发起、由 Desktop 执行的自进化任务
+
+安装器还会在 `desktop` profile 启用 `dsh-evolution/desktop-task-host`，只在 `acp` profile 启用
+`dsh-evolution/desktop-task-client`。两者组成 ACP → Desktop 的任务通道：ACP 会话里的模型把自然语言
+自我进化任务整理成受校验的进化计划（proposal、候选 Host 组合、确定性验证样本），通过
+`evolution_desktop` 工具写入 `$DSH_HOME/storages/evolution/desktop-tasks/`；Desktop 侧的宿主只使用官方
+`agents` / `sessions` / `tools` 服务，按真实 `evolution_propose → evolution_trial →（真实工具样本）→
+evolution_measure → evolution_promote → evolution_canary_observe` 顺序执行。**Evolution kernel、八项晋升门禁、Canary、
+Stable、Rollback 仍然只存在于 Desktop 进程**；ACP 侧没有 orchestrator，也没有 `evolution_trial` /
+`evolution_promote` 工具。
+
+- **Desktop 未运行时自动启动官方应用。** 客户端读取 Desktop host 原子写入的 `host.json`（pid/instanceId/
+  协议版本），未就绪时按官方 macOS 应用路径启动正式 DeepSeek Harness；Electron 单实例锁保证不会出现第二个
+  Desktop。已运行的旧版本 Desktop 没有本插件时，工具返回可操作的错误并要求重启 Desktop，不伪造成功。
+- **所有确认都绑定本次候选。** 无 `confirmation` 的 promote 停在 `awaiting-owner-confirmation`；
+  ACP 必须先在对话中向用户展示 experimentId、候选源码摘要与门禁结果，取得真实明确确认后才调用
+  `evolution_desktop` 的 `confirm`，把用户原话与 `experimentId + sourceSha256` 一起写成授权文件。
+  Desktop 只在该身份与内存中待确认候选完全一致时继续晋升；不匹配或超时就回滚并保留现场，绝不自动批准，
+  绝不复用旧确认。
+- **失败与恢复。** 非终态任务在 Desktop 重启后标记 `interrupted`，不会自动重跑；并发任务在 Desktop 内串行；
+  claim 锁带同机 pid 证明；Trial 之后的失败路径尝试 `evolution_revert` 并如实记录回滚结果。
+- **消费不变。** stable canary 提交后仍由 Desktop 写出共享发布索引；新的 ACP 进程启动时由既有的
+  `promoted-consumer` 通过官方 Include 自动挂载，不需要人工切换到 Desktop。
+- **边界。** 只支持同一机器、同一 OS 用户、同一 `DSH_HOME`；任务通道是同一用户可写的传输层，不是安全
+  边界或审批替代品。没有跨机器控制、没有新的网络服务、没有 Electron 私有凭据或 `app.asar` 修改。
+  设计、文件布局与状态机见 [ACP → Desktop 控制链路](docs/design/acp-desktop-control.md)。
+  隔离真实宿主验收（官方 Desktop 应用 + 真实 Evolution kernel + 真实 ACP，包含
+  awaiting-owner-confirmation 不自动批准、stable、fresh ACP 消费与重启保持）记录在
+  [acp-desktop-control-20261112.md](docs/evidence/acp-desktop-control-20261112.md)。
+
 ## 它解决什么问题
 
 | 常见问题 | 对应机制 |

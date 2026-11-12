@@ -11,3 +11,14 @@
       inject: [tools]
     - id: evolution-promoted-consumer
       name: dsh-evolution/promoted-consumer
+    # ACP -> Desktop evolution task channel. Both rows are disabled by default;
+    # scripts/setup-experience.mjs enables the host on the desktop profile and
+    # the client on the acp profile. The host runs only inside the official
+    # Desktop runtime and stays the single Evolution kernel; the client only
+    # coordinates and never registers evolution_* tools.
+    - id: evolution-desktop-task-host
+      name: dsh-evolution/desktop-task-host
+      disabled: true
+    - id: evolution-desktop-task-client
+      name: dsh-evolution/desktop-task-client
+      disabled: true
