@@ -19,23 +19,18 @@ const TR = '/srv/app/node_modules/@deepseek-ai/cordis';
 
 test('read-only arguments that mention mutation words are not mutations', () => {
   const allowed = [
-    // The three reported false positives.
+    // The reported read-only false positives: a simple read-only command whose
+    // arguments are data.
     'grep -n install test/archive-publish.test.mjs',
     'git show HEAD:test/archive-publish.test.mjs | grep -n install',
-    `node --input-type=module -e 'console.log("publish install")'`,
     // Other read-only verbs whose arguments are data.
     `grep -rn "install publish" ${TR}/lib`,
     `cat ${TR}/package.json`,
-    `sed -n 's/install/publish/p' file`,
-    `awk '{print "publish install"}' file`,
     `jq -r '.publish' file`,
     'git log --grep install',
     'git show HEAD:test/archive-publish.test.mjs',
     'git diff --stat publish',
     'find . -name publish',
-    `python3 -c 'print("publish install")'`,
-    `ruby -e 'puts "deploy"'`,
-    `perl -e 'print "publish"'`,
     'echo "deploy publish"',
     `printf 'publish install\\n'`,
   ];
@@ -59,25 +54,29 @@ test('real irreversible writes keep their deny decisions', () => {
   for (const command of denied) assert.equal(commandMutatesComposition(command), true, command);
 });
 
-test('inline eval code is judged by its writes, not by words in its strings', () => {
-  const allowed = [
-    `node -e 'console.log("publish install")'`,
-    `node --eval 'console.log("deploy publish")'`,
-    `node -e 'console.log(${JSON.stringify(TR)})'`,
-    `node -e 'require("fs").readFileSync(${JSON.stringify(`${TR}/package.json`)})'`,
-    `deno eval 'console.log("publish install")'`,
-    `python3 -c 'print("publish install")'`,
-  ];
-  for (const command of allowed) assert.equal(commandMutatesComposition(command), false, command);
+test('scripting verbs, inline code, substitutions and newlines stay fail-closed', () => {
+  // The mask only covers simple filter verbs. Anything that can execute code
+  // keeps the original text in the blunt fallback, even when the code is
+  // currently only printing a word: the guard has no target-level analysis for
+  // those interpreters, so it cannot prove the argument is data.
   const denied = [
+    `node -e 'console.log("publish install")'`,
+    `python3 -c 'print("publish install")'`,
+    `awk '{print "publish install"}' file`,
     `node -e 'require("fs").writeFileSync("${TR}/lib/a.js","x")'`,
     `node --eval 'require("fs").rmSync("${TR}/lib/a.js")'`,
     `deno eval 'Deno.writeTextFile("${TR}/lib/a.js","x")'`,
-    // The non-JS interpreters have no target-level analysis in this guard: a
-    // write-looking call keeps its text in the blunt fallback (fail-closed).
     `python3 -c 'open("${TR}/lib/a.js","w")' publish`,
     `perl -e 'unlink("${TR}/lib/a.js")' publish`,
     `ruby -e 'File.write("${TR}/lib/a.js","x")' publish`,
+    // Command substitution inside an otherwise read-only argument executes code.
+    `echo "$(rm -f ${TR}/lib/a.js)" publish`,
+    `echo \`rm -f ${TR}/lib/a.js\` publish`,
+    // A newline starts a new shell command; the tokenizer must not treat the
+    // following verb as an argument of the read-only one.
+    `echo publish\nrm -f ${TR}/lib/a.js`,
+    // A scripting verb with a file-writing statement is not a read-only filter.
+    `awk 'BEGIN {print "publish" > "${TR}/lib/a.js"}'`,
   ];
   for (const command of denied) assert.equal(commandMutatesComposition(command), true, command);
 });

@@ -169,7 +169,7 @@ Trial 的恢复基线在首次修改运行时之前同步捕获一次，后续 i
 
 晋升先一次性捕获三份计划文件与回滚基线，把备份持久写入，再以 `prepared` / `committing` 落 journal，然后原子写入并做 Include 校验。成功后持久 Plugin 行与 archive 指针供下一 session 加载。canary 必须由调用方在确定性屏障上报告结果；指标回归由调用方报告，插件不会自行比较指标数值。达到观察条件后提交 stable；启动健康或依赖不成立、或屏障报告指标回归时会自动回滚，而且只回滚新候选。已 stable 并清理 journal 的晋升不能从 evidence sidecar 或 archive 重新打开为 canary。
 
-晋升生成的 Host-only 模块会给 Trial 中的 `harness.defineTool` / `harness.registerTool` 提供真实等价物：`defineTool` 来自本机安装的官方 `@deepseek-ai/dsh-tools`，注册走官方 `tools.register`，所以工具型候选在晋升后与 Trial 中行为一致，也能在 ACP / Web 的 consumer 入口加载执行。其它 runner-only helper（如 `harness.handle`）与裸 `harness` 引用仍被拒绝；这仍是合作式 `Function(hostCode)()` gate，不是安全沙箱。
+晋升生成的 Host-only 模块会给 Trial 中的 `harness.defineTool` / `harness.registerTool` 提供真实等价物：生成源码导入本机安装的官方 runner sandbox helper（与 Trial 使用同一实现：参数规范化、带标记的 defineTool 与 guard 后的注册），所以工具型候选在晋升后与 Trial 中行为一致，也能在 ACP / Web 的 consumer 入口加载执行。其它 runner-only helper（如 `harness.handle`）与裸 `harness` 引用仍被拒绝；这仍是合作式 `Function(hostCode)()` gate，不是安全沙箱。
 
 启动时先恢复中断的晋升事务，再让 Include 加载子项。启动 canary 屏障检查插件健康与依赖，并固定报告 `metricRegression: false`；canary 完成要求启动验证和所需观察屏障都满足。跨 session 推进要求存在活动 canary journal，所有者从持久状态读取；调用者自己的 Agent id 不是 fallback。同一进程内的并发 canary 观察会与 revert / promote 共用操作 claim 串行化，重复并发请求会被拒绝；该 claim 是进程内 Map，不是跨进程锁（跨进程的晋升提交由 `promotion.lock` 保护）。
 

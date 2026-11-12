@@ -33,8 +33,10 @@ async function fixture(t) {
     promotionLockPath: path.join(root, 'promotion.lock'),
     // Unit tests do not run under a profile, so `import.meta.resolve` cannot
     // reach the installation; the resolved URL is the promotion input in
-    // production and an injected immutable module URL here.
-    defineToolUrl: `data:text/javascript,${encodeURIComponent('export const defineTool = (options) => ({ ...options, __materializedByOfficial: true });')}`,
+    // production and an injected immutable module URL here. The stub mimics the
+    // runner sandbox's contract (normalization + guarded registration), which is
+    // exactly what the generated module must call.
+    promotedHarnessUrl: `data:text/javascript,${encodeURIComponent('export const sandboxDefineTool = (options) => ({ ...options, parameters: { ...options.parameters, __sandboxNormalized: true } }); export const sandboxRegisterTool = (ctx, tool) => ctx.tools.register(tool);')}`,
   };
   await fs.writeFile(paths.compositionPath, '[]\n');
   // Unit-level I/O contract only, NOT an official integration substitute.
@@ -84,7 +86,7 @@ test('client half and missing official adapter never write a promotion', async t
   assert.equal(await fs.readFile(paths.compositionPath, 'utf8'), '[]\n');
 });
 
-test('harness-defined tools promote with the official defineTool and register through ctx.tools', async t => {
+test('harness-defined tools promote with the runner sandbox helpers and register through ctx.tools', async t => {
   const { paths, experiment } = await fixture(t);
   const hostCode = [
     'const tool = harness.defineTool({ name: "probe_dynamic_tool", description: "read only", parameters: { file_path: { type: "string", required: true } }, output: { schema: { type: "object" }, render: () => [] }, isConcurrencySafe: () => true, execute: async () => ({ ok: true }) });',
@@ -93,8 +95,8 @@ test('harness-defined tools promote with the official defineTool and register th
   const durable = await writeDurablePromotion({ experiment, paths, packageInspection: { code: { host: hostCode } } });
   const modulePath = path.join(durable.pluginPath, 'lib', 'index.js');
   const content = await fs.readFile(modulePath, 'utf8');
-  assert.match(content, /import \{ defineTool as __dshOfficialDefineTool \} from "data:text\/javascript,/);
-  assert.match(content, /registerTool: \(ctx, tool\) => ctx\.tools\.register\(tool\)/);
+  assert.match(content, /import \{ sandboxDefineTool as __dshSandboxDefineTool, sandboxRegisterTool as __dshSandboxRegisterTool \} from "data:text\/javascript,/);
+  assert.match(content, /defineTool: __dshSandboxDefineTool, registerTool: __dshSandboxRegisterTool/);
 
   const module = await import(pathToFileURL(modulePath).href);
   assert.equal(module.name, 'tool-plugin');
@@ -103,5 +105,5 @@ test('harness-defined tools promote with the official defineTool and register th
   module.apply({ tools: { register: (tool) => { registered.push(tool); return () => {}; } } }, {});
   assert.equal(registered.length, 1);
   assert.equal(registered[0].name, 'probe_dynamic_tool');
-  assert.equal(registered[0].__materializedByOfficial, true);
+  assert.equal(registered[0].parameters.__sandboxNormalized, true);
 });

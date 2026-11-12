@@ -31,18 +31,21 @@ format, tool-surface shape or authorization source changes.
   解析到该工具并满足 `isConcurrencySafe(args) === true`。未声明的未知工具照旧拒绝，收益 /
   回归 / 控制步仍由 orchestrator 从原始样本派生，调用方不能自报。
 - **工具型候选可晋升。** 晋升生成的模块为 Trial 中的 `harness.defineTool` /
-  `harness.registerTool` 提供真实等价物：`defineTool` 是本机安装的官方
-  `@deepseek-ai/dsh-tools`（模块 URL 在晋升时由校验过的宿主解析并写入生成源码），注册转发
-  官方 `tools.register`。其它 runner-only helper（如 `harness.handle`）与裸 `harness` 引用
-  继续被拒绝；这仍是合作式 `Function(hostCode)()` gate，不是安全沙箱。
-- **guard 文本回退不再把只读命令的参数当写操作。** `commandMutatesComposition` 的历史
-  「不可逆词 ∧ 写动词」文本回退对只读命令（grep/rg/cat/git show/log 等）的参数，以及带
-  eval 选项的 node/python 等内联代码（其真实写入仍由代码路径判定）不再计数；真实写动词、
-  重定向、嵌套命令、目标解析与 trust-root 保护路径保持不变。
+  `harness.registerTool` 提供真实等价物：生成源码导入本机安装的官方 runner sandbox
+  helper（与 Trial 同一实现，保留参数 DSL 规范化与带标记的 guarded 注册），因此合法
+  Trial 不会在晋升后因 helper 语义差异而加载失败。模块解析与生成移动到晋升事务的第一次
+  磁盘写入之前；其它 runner-only helper（如 `harness.handle`）与裸 `harness` 引用继续被
+  拒绝。这仍是合作式 `Function(hostCode)()` gate，不是安全沙箱。
+- **guard 文本回退不再把只读过滤命令的参数当写操作。** `commandMutatesComposition` 的
+  历史「不可逆词 ∧ 写动词」文本回退只对简单只读过滤命令（grep/rg/cat/head/echo/find 等）
+  掩码其选项与操作数；sed/awk/perl/node/python/ruby 等可执行代码或写文件的脚本型 verb、
+  内联代码、命令替换（`$(…)`/反引号）、换行分隔的后续命令与 git 的带 `--output` 选项都
+  不掩码（fail-closed）。重定向、嵌套命令、目标解析与 trust-root 保护路径保持不变。
 
 ### 边界
 
-- 生成源码内嵌本机安装的官方 `defineTool` 模块 URL；跨机器复制 `$DSH_HOME` 不在支持范围
+- 生成源码内嵌本机安装的官方 runner sandbox helper 模块 URL；晋升时会先实际导入它并核对
+  导出的两个 helper，失败则不产生任何晋升状态写入。跨机器复制 `$DSH_HOME` 不在支持范围
   （与「跨入口只支持同一机器、同一 OS 用户、同一 `DSH_HOME`」一致）。宿主升级时共享记录
   仍按既有 `pending-revalidation` 流程重新验证。
 

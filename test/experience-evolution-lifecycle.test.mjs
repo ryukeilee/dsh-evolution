@@ -662,6 +662,16 @@ test('declared-absent capability: baseline measures its absence and the mounted 
   })), 'E_EVOLUTION_PROBE_UNSAFE_STEP');
 });
 
+test('declared absence is never inferred from a failed registry lookup', async (t) => {
+  const h = await createHarness(t, 'probe-lookup-error');
+  const experimentId = await proposeExperiment(h);
+  h.ctx.tools.get = () => { throw new Error('registry unavailable'); };
+  await rejectsWithCode(runBaseline(h, experimentId, dynamicScenario({
+    id: 'registry-lookup-failure',
+    steps: [{ name: 'probe-dynamic', role: 'target', arguments: { query: 'edge' }, absentInBaseline: true }],
+  })), 'E_EVOLUTION_PROBE_SAFETY');
+});
+
 test('probe contract: declarative scenario limits reject invalid scenarios with E_EVOLUTION_PROBE_SCENARIO', () => {
   // The declared-absence flag is a boolean on a step and never a free-form value.
   throwsScenarioError(() => normalizeProbeScenario({
