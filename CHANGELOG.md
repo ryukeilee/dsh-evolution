@@ -18,6 +18,37 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.6 — 稳定版
+
+`0.2.5` 的稳定后继：不新增宿主、持久化格式或授权来源。修复三处让真实候选无法完成测量、
+晋升与跨入口复用的边界，同时保留全部 8 项晋升门禁、canary/stable 判定与 owner 确认语义。
+
+### 新增
+
+- **probe 可声明 Trial 新增的能力（`absentInBaseline`）。** 同一配对 scenario 现在可以声明
+  一个由 Trial 注册的 step：baseline 在 `proposed` 状态把它记为一次真实的「能力不存在」错误
+  样本（`E_EVOLUTION_PROBE_CAPABILITY_ABSENT`，不执行、不进入工具管线）；candidate 仍必须
+  解析到该工具并满足 `isConcurrencySafe(args) === true`。未声明的未知工具照旧拒绝，收益 /
+  回归 / 控制步仍由 orchestrator 从原始样本派生，调用方不能自报。
+- **工具型候选可晋升。** 晋升生成的模块为 Trial 中的 `harness.defineTool` /
+  `harness.registerTool` 提供真实等价物：生成源码导入本机安装的官方 runner sandbox
+  helper（与 Trial 同一实现，保留参数 DSL 规范化与带标记的 guarded 注册），因此合法
+  Trial 不会在晋升后因 helper 语义差异而加载失败。模块解析与生成移动到晋升事务的第一次
+  磁盘写入之前；其它 runner-only helper（如 `harness.handle`）与裸 `harness` 引用继续被
+  拒绝。这仍是合作式 `Function(hostCode)()` gate，不是安全沙箱。
+- **guard 文本回退不再把只读过滤命令的参数当写操作。** `commandMutatesComposition` 的
+  历史「不可逆词 ∧ 写动词」文本回退只对简单只读过滤命令（grep/rg/cat/head/echo/find 等）
+  掩码其选项与操作数；sed/awk/perl/node/python/ruby 等可执行代码或写文件的脚本型 verb、
+  内联代码、命令替换（`$(…)`/反引号）、换行分隔的后续命令与 git 的带 `--output` 选项都
+  不掩码（fail-closed）。重定向、嵌套命令、目标解析与 trust-root 保护路径保持不变。
+
+### 边界
+
+- 生成源码内嵌本机安装的官方 runner sandbox helper 模块 URL；晋升时会先实际导入它并核对
+  导出的两个 helper，失败则不产生任何晋升状态写入。跨机器复制 `$DSH_HOME` 不在支持范围
+  （与「跨入口只支持同一机器、同一 OS 用户、同一 `DSH_HOME`」一致）。宿主升级时共享记录
+  仍按既有 `pending-revalidation` 流程重新验证。
+
 ## 0.2.5 — 稳定版
 
 `0.2.4` 的稳定后继：共享经验库事件的永久账本改用 schema 2（完整 SHA-256 身份存为两列 32 字节

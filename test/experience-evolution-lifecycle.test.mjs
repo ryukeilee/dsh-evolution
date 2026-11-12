@@ -65,6 +65,20 @@ function probeScenario(overrides = {}) {
   };
 }
 
+/** A scenario whose target capability only exists after the Trial is mounted.
+ *  `absentInBaseline` is the declaration that makes both phases comparable. */
+function dynamicScenario(overrides = {}) {
+  return {
+    id: 'trial-added-readonly-tool',
+    repetitions: 2,
+    steps: [
+      { name: 'probe-dynamic', role: 'target', arguments: { query: 'edge' }, absentInBaseline: true },
+      { name: 'probe-control', role: 'control', arguments: {} },
+    ],
+    ...overrides,
+  };
+}
+
 /** Minimal cordis-runner facade: define/run/stop/undefine all succeed and the
  *  snapshot stays empty, so the pre-Trial baseline and the post-dispose runtime
  *  compare equal. */
@@ -96,11 +110,13 @@ async function createHarness(t, name, options = {}) {
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const warnings = [];
   const calls = [];
-  const state = { targetFails: true, controlFails: false, controlValue: { ok: true } };
+  const state = { targetFails: true, controlFails: false, controlValue: { ok: true }, dynamicActive: false };
   const execute = async ({ calls: batch }) => {
     const call = batch[0];
     calls.push({ name: call.name, arguments: call.arguments, id: call.id });
-    const result = call.name === 'probe-target'
+    const result = call.name === 'probe-dynamic'
+      ? { isError: false, value: { ok: true } }
+      : call.name === 'probe-target'
       ? state.targetFails
         ? { isError: true, error: { code: 'E_TARGET_FAILED' } }
         : { isError: false, value: { ok: true } }
@@ -121,7 +137,10 @@ async function createHarness(t, name, options = {}) {
     schemas: () => [],
     register() {},
     execute,
-    get: (name) => probeDefinitions.get(name),
+    // A capability the Trial adds is resolvable only once the Trial is mounted;
+    // the declared-absent baseline path must keep working without it.
+    get: (name) => probeDefinitions.get(name)
+      ?? (name === 'probe-dynamic' && state.dynamicActive ? { name: 'probe-dynamic', isConcurrencySafe: () => true } : undefined),
   };
   ctx.dynamicCordisRunner = runner;
   const orchestrator = new EvolutionOrchestrator(ctx, {
@@ -593,7 +612,79 @@ test('probe contract: the candidate must reproduce the baseline scenario digest'
   assert.equal(candidate.comparison.benefit, true);
 });
 
+test('declared-absent capability: baseline measures its absence and the mounted Trial turns it into derived benefit', async (t) => {
+  const h = await createHarness(t, 'probe-absent');
+  const experimentId = await proposeExperiment(h);
+  const baseline = await runBaseline(h, experimentId, dynamicScenario());
+  const baselineTarget = baseline.baseline.perStep.find((step) => step.step === 'probe-dynamic');
+  assert.equal(baselineTarget.executions, 2);
+  assert.equal(baselineTarget.successes, 0);
+  assert.equal(baselineTarget.errors, 2);
+  assert.deepEqual(baselineTarget.codes, ['E_EVOLUTION_PROBE_CAPABILITY_ABSENT']);
+  assert.equal(h.calls.length, 2, 'the absent step never reached the tool pipeline; only the control did');
+
+  await startTrial(h, experimentId);
+  // The candidate keeps the same safety preflight: a declared capability the
+  // Trial never registers is refused instead of being counted as a benefit.
+  await rejectsWithCode(runCandidate(h, experimentId, dynamicScenario()), 'E_EVOLUTION_PROBE_UNSAFE_STEP');
+
+  h.state.dynamicActive = true;
+  const candidate = await runCandidate(h, experimentId, dynamicScenario());
+  assert.equal(candidate.scenarioDigest, baseline.scenarioDigest);
+  assert.equal(candidate.comparison.benefit, true);
+  assert.equal(candidate.comparison.regression, false);
+  assert.equal(candidate.comparison.controlStable, true);
+  assert.deepEqual(candidate.comparison.beforeMetrics, { successRate: 0.5, errorCount: 2 });
+  assert.deepEqual(candidate.comparison.afterMetrics, { successRate: 1, errorCount: 0 });
+
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(measured.gates.measuredEvidence, true);
+  assert.equal(measured.gates.realBenefit, true);
+  assert.equal(measured.observation.probeDerived, true);
+  assert.match(measured.observation.benefitEvidence, /benefit=true/);
+
+  // The flag is part of the paired-experiment identity, and only a declared
+  // step may be absent: an undeclared unknown tool is still refused.
+  const flagged = normalizeProbeScenario(dynamicScenario());
+  const unflagged = normalizeProbeScenario({
+    ...dynamicScenario(),
+    steps: dynamicScenario().steps.map((step) => ({ ...step, absentInBaseline: false })),
+  });
+  assert.equal(flagged.steps[0].absentInBaseline, true);
+  assert.equal(Object.hasOwn(unflagged.steps[0], 'absentInBaseline'), false);
+  assert.notEqual(probeScenarioDigest(flagged, APPLICABILITY), probeScenarioDigest(unflagged, APPLICABILITY));
+
+  const undeclaredHarness = await createHarness(t, 'probe-absent-undeclared');
+  const undeclaredId = await proposeExperiment(undeclaredHarness);
+  await rejectsWithCode(runBaseline(undeclaredHarness, undeclaredId, dynamicScenario({
+    id: 'undeclared-capability',
+    steps: [{ name: 'probe-dynamic', role: 'target', arguments: { query: 'edge' } }],
+  })), 'E_EVOLUTION_PROBE_UNSAFE_STEP');
+});
+
+test('declared absence is never inferred from a failed registry lookup', async (t) => {
+  const h = await createHarness(t, 'probe-lookup-error');
+  const experimentId = await proposeExperiment(h);
+  h.ctx.tools.get = () => { throw new Error('registry unavailable'); };
+  await rejectsWithCode(runBaseline(h, experimentId, dynamicScenario({
+    id: 'registry-lookup-failure',
+    steps: [{ name: 'probe-dynamic', role: 'target', arguments: { query: 'edge' }, absentInBaseline: true }],
+  })), 'E_EVOLUTION_PROBE_SAFETY');
+  // A thrown `null` is a valid rejection value and must not be confused with
+  // "no error" by a sentinel comparison.
+  h.ctx.tools.get = () => { throw null; };
+  await rejectsWithCode(runBaseline(h, experimentId, dynamicScenario({
+    id: 'registry-lookup-null',
+    steps: [{ name: 'probe-dynamic', role: 'target', arguments: { query: 'edge' }, absentInBaseline: true }],
+  })), 'E_EVOLUTION_PROBE_SAFETY');
+});
+
 test('probe contract: declarative scenario limits reject invalid scenarios with E_EVOLUTION_PROBE_SCENARIO', () => {
+  // The declared-absence flag is a boolean on a step and never a free-form value.
+  throwsScenarioError(() => normalizeProbeScenario({
+    id: 'non-boolean-absence',
+    steps: [{ name: 'probe-target', role: 'target', absentInBaseline: 'yes' }],
+  }));
   throwsScenarioError(() => normalizeProbeScenario({
     id: 'too-many-steps',
     steps: Array.from({ length: 9 }, (_, index) => ({ name: `probe-step-${index}`, role: 'target' })),
