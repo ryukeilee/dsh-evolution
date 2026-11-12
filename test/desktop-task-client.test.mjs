@@ -499,8 +499,13 @@ test('status waits for a phase change and reports the new phase', async (t) => {
   const taskId = 'desktop-task-status-1';
   const sourceSha256 = candidateSourceDigest('candidate source');
   await writeState(home, makeState(taskId, 'running'));
+  // The timer writes through the real state writer. Keep the promise so the
+  // test never ends (and the temp home is never removed) while that write is
+  // still in flight: an unawaited write used to surface as an ENOENT after the
+  // test finished.
+  let pendingWrite = null;
   const timer = setTimeout(() => {
-    void writeState(home, makeState(taskId, 'awaiting-owner-confirmation', {
+    pendingWrite = writeState(home, makeState(taskId, 'awaiting-owner-confirmation', {
       experimentId: 'experiment-status-1',
       candidateSourceSha256: sourceSha256,
     }));
@@ -509,6 +514,7 @@ test('status waits for a phase change and reports the new phase', async (t) => {
 
   const { tool } = mount(home, { statePollMs: 10 });
   const result = await tool.execute({ action: 'status', taskId, waitMs: 2000 }, {});
+  await pendingWrite?.catch(() => {});
 
   assert.equal(result.ok, true);
   assert.equal(result.action, 'status');
