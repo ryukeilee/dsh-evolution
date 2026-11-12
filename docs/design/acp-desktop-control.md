@@ -129,3 +129,17 @@ Desktop host 只在以下全部成立时把该确认转成 `evolution_promote({ 
 - 推广仍需真实所有者确认：ACP 工具要求 `confirmation: true` 与用户确认原文；Desktop host 用
   `experimentId + sourceSha256` 绑定本次候选，绝不自动批准，也不把旧确认复用到新候选。
 - 不使用 Electron 私有认证凭据、调试注入、签名绕过或修改 `app.asar`。
+
+## 7. 已知边界
+
+- **硬杀进程没有清理窗口。** 优雅停止（Cordis 卸载、SIGTERM 处理路径）会用独立清理信号尝试一次
+  `evolution_revert`；`SIGKILL` 无法执行清理，但新进程的运行时是全新的，遗留 Trial 随旧进程消失，
+  任务在下次启动时标记 `interrupted`。
+- **暂时性 revert 失败会保留占用者与 claim**，由有界的 interval 重试直到取得恢复证明；确认任务在
+  这期间保持非终态，因此不会用新任务顶掉仍被占用（`revert-failed`）的运行时。
+- **`host.json` 的存活判断依赖同机 pid 证明。** pid 被无关进程复用属于已知边界：此时新 host 会认为
+  已有 host 存活而不接管队列；操作者可以删除陈旧的 `desktop-tasks/host.json` 后重启 Desktop。
+- **安装/升级本插件后需要重启 Desktop 与 ACP 入口**（HMR 关闭）：正在运行的旧进程不会获得新 entry；
+  客户端在旧 Desktop 上会返回要求重启的可操作错误。
+- 任务计划中的候选源码会成为 Trial 与（获批后）stable 插件字节；这是 Evolution 的既有语义，
+  不是本通道新增的信任扩张。任务通道不提供跨用户隔离，也不是审批替代品。
