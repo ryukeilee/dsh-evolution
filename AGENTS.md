@@ -57,12 +57,12 @@
 | 路径 | 职责 |
 | --- | --- |
 | `lib/diagnostics.js`、`scripts/doctor.mjs` | 运行时与 CLI 诊断；`resolveEvolutionPaths()` 是路径解析的唯一来源（doctor 与运行时共用），`runDiagnostics()` 产出全部 check（当前 28 种 check `id`：`plugin.home` 只在传入 home 时加入，找不到宿主 CLI 时 `host.version` / `host.modules` / `host.composition` 不加入，`state.dockyard-legacy` 与 `state.memory-quarantine` 只在对应现场存在时加入；另有 6 个 repair `id` 与 5 个 degradedCapability `id`，三者不要混算）；事件桥与冷历史 JSONL 的行摘要扫描共用 1 MiB 分块字节扫描，不把整份文件解码成一个字符串，`state.archives` 的归档完整性校验仍读取归档与封存段的字节（成本随被校验字节增长），`--repair` 只处理 `recoverable=true` 且带 repair 的项。CLI 报告不得与运行时判断不一致 |
-| `scripts/acceptance/` | `run-host-acceptance.mjs` 真实隔离宿主验收（自包含安装官方 DSH），`probes/{core,lifecycle,body,promotion,retry}-probe.mjs` 是它驱动的宿主内探针；`probes/live-apply-race-probe.mjs`、`probes/hmr-transaction-probe.mjs` 与 `reproduce-hmr-startup.mjs` 复现宿主“实时应用能力”启动竞态与 `0.2.2-rc.1` HMR 事务缺口（诊断用，不属于验收流程） |
+| `scripts/acceptance/` | `run-host-acceptance.mjs` 真实隔离宿主验收（自包含安装官方 DSH），`probes/{core,lifecycle,body,promotion,retry}-probe.mjs` 是它驱动的宿主内探针；`probes/live-apply-race-probe.mjs`、`probes/hmr-transaction-probe.mjs` 与 `reproduce-hmr-startup.mjs` 复现宿主“实时应用能力”启动竞态与 `0.2.2-rc.1` / `0.2.2-rc.2` HMR 事务缺口（诊断用，不属于验收流程） |
 | `scripts/release/` | `pack.mjs`（本地打包）、`verify-package.mjs`（`pack:check`，开发/发布两种语义）、`verify-artifact.mjs`（字节校验与 `--content-only`）、`verify-provenance.mjs`（tag 与来源）、`publish-artifact.mjs`（**写** `release/` 固定点）、`release-lib.mjs` 与 `pin-relation.mjs`（摘要、条目、固定点关系的共享实现） |
 | `scripts/benchmarks/` | 可复现性能基准：domain 写路径/回放/retention、冷档案、事件桥、诊断、经验检索、启动内存等；对应数据与收益边界写在 `docs/performance/` |
 | `scripts/import-evolution-data.mjs` | 旧 preset / Dockyard 快照迁移 |
 | `scripts/migrate-experience-store.mjs` | 共享经验库一次性离线迁移 CLI（bin `dsh-evolution-experience-migrate`）：`--dry-run` / `--json` / `--backup` / `--no-backup` / `--no-vacuum`；退出码 0 成功或无操作、1 拒绝、2 失败 |
-| `.github/workflows/` | `ci.yml`（单测矩阵 22.19.0 / 24.x + package + 四宿主验收，`0.2.2-rc.1` 带 `--no-hmr`）、`codeql.yml`（Code Scanning）、`release.yml`（校验 tag 并创建 **draft** Release，不重建产物） |
+| `.github/workflows/` | `ci.yml`（单测矩阵 22.19.0 / 24.x + package + 五宿主验收，`0.2.2-rc.1` / `0.2.2-rc.2` 带 `--no-hmr`）、`codeql.yml`（Code Scanning）、`release.yml`（校验 tag 并创建 **draft** Release，不重建产物） |
 
 ### 测试与发布数据
 

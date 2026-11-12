@@ -31,7 +31,7 @@ from Web host acceptance and must not be inferred from it.
 
 | Component | Range |
 | --- | --- |
-| DSH | `0.2.0-rc.2`, `0.2.1-alpha.1`, `0.2.1-rc.2` or `0.2.2-rc.1` (exact alternatives, enforced by `peerDependencies`; `0.2.2-rc.1` requires the host `hmr` row disabled, see [The upstream HMR transaction gap](#the-upstream-hmr-transaction-gap-on-022-rc1)) |
+| DSH | `0.2.0-rc.2`, `0.2.1-alpha.1`, `0.2.1-rc.2`, `0.2.2-rc.1` or `0.2.2-rc.2` (exact alternatives, enforced by `peerDependencies`; the last two require the host `hmr` row disabled, see [The upstream HMR transaction gap](#the-upstream-hmr-transaction-gap-on-022-rc1)) |
 | Node | `^22.19.0 || >=24.0.0` |
 | Bundle format | `dsh.bundle.patch` + profile `dsh.profile.bundles` |
 
@@ -49,19 +49,21 @@ npm run release:pack
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
-node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr --experience-evolution
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.2 --no-hmr --experience-evolution
 ```
 
 Evidence: `docs/evidence/dsh-0.2.0-rc.2.json`,
 `docs/evidence/dsh-0.2.1-alpha.1.json`,
-`docs/evidence/dsh-0.2.1-rc.2.json` and
-`docs/evidence/dsh-0.2.2-rc.1.json` (host scratch paths redacted). Each file
+`docs/evidence/dsh-0.2.1-rc.2.json`,
+`docs/evidence/dsh-0.2.2-rc.1.json` and
+`docs/evidence/dsh-0.2.2-rc.2.json` (host scratch paths redacted). Each file
 records the `contentSha256` of the package it installed and the `sha256` of the
 bytes it installed. `npm run pack:check` and `test/release-pin.test.mjs` keep the
 two records apart instead of comparing every file to the pin: a host the pin
 verified must still describe the pinned artifact (content *and* bytes), while a
 host the pin never covered must describe the content this tree builds, because an
-older build's record proves nothing about this one. `0.2.5` pins all four
+older build's record proves nothing about this one. `0.2.7` pins all five
 declared hosts, so no host uses the second lane today; it exists for the next
 host a development tree adds, before the pin that covers it is cut.
 The split is `release/manifest.json#verifiedHosts`, so it moves only when a new
@@ -69,14 +71,17 @@ pin is cut, never when the working tree changes. The harness is self-contained: 
 official host release itself, so a fresh checkout can re-derive every file. CI
 runs the same command per host (`ci.yml` on `ubuntu-latest`).
 
-The `0.2.2-rc.1` run records `hostLiveApply: "disabled"` and passes `--no-hmr`,
+The `0.2.2-rc.1` and `0.2.2-rc.2` runs record `hostLiveApply: "disabled"` and pass `--no-hmr`,
 which adds the ordinary overlay row `- id: hmr` / `disabled: true` to every boot
 and additionally requires each enable/disable to report
 `application: "restart-required"` with `restartReason: "no-hmr"`, to observe no
 HMR capability during the call, and to apply the saved selection on the next
 boot. The reason is the upstream gap documented below, not a workaround of this
 bundle's own checks: the same overlay form is what `@deepseek-ai/dsh-hmr`
-documents for "disabling or omitting HMR applies changes on restart".
+documents for "disabling or omitting HMR applies changes on restart". The two
+releases ship a byte-identical `dsh-hmr/lib/index.js`, and the controlled
+reproduction in `docs/evidence/hmr-022/` gives the same 3/3 diagnostic failure
+with the barrier and 3/3 success once HMR is visible on both hosts.
 
 ### Cross-entry promoted plugin sharing (development tree)
 
@@ -87,11 +92,11 @@ support claim and no new promotion authority. The consumer is a separate lightwe
 `desktop` by `scripts/setup-experience.mjs`; it never runs the Evolution kernel (no orchestrator, Trial/Canary
 state machine, domain storage, tool registration or model call), and it writes only its own per-profile
 state and composition. The Desktop kernel is still the only publisher: only a stable canary commit produces a
-publication record, and records carry the exact host identity the promotion was verified on. The `0.2.5`
+publication record, and records carry the exact host identity the promotion was verified on. The `0.2.7`
 pinned artifact contains this feature. See `docs/shared-plugins.md` and `README.md`.
 
-The isolated host acceptance covers it on `0.2.2-rc.1`: 31/31 steps pass in
-`docs/evidence/cross-entry-0.2.2-rc.1.json` (isolated runtime and `$DSH_HOME`, HMR disabled, marker listener
+The isolated host acceptance covers it on `0.2.2-rc.1` and `0.2.2-rc.2`: 31/31 steps pass in
+`docs/evidence/cross-entry-0.2.2-rc.1.json` and `docs/evidence/cross-entry-0.2.2-rc.2.json` (isolated runtime and `$DSH_HOME`, HMR disabled, marker listener
 executed exactly once per consumer boot, restart without a duplicate mount, incompatible record skipped,
 tampered source skipped as invalid, per-profile revoke/enable, simulated host upgrade to
 `pending-revalidation`, real ACP consumer, and preserved promoted sources/archives/experience data). That
@@ -102,8 +107,8 @@ Reproduce it with:
 
 ```sh
 npm run release:pack
-node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr --cross-entry \
-  --tarball dist/dsh-evolution-0.2.5.tgz --out docs/evidence/cross-entry-0.2.2-rc.1.json
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.2 --no-hmr --cross-entry \
+  --tarball dist/dsh-evolution-0.2.7.tgz --out docs/evidence/cross-entry-0.2.2-rc.2.json
 ```
 
 ### Verified compatibility matrix
@@ -113,9 +118,10 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr --cro
 | `0.2.0-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.0-rc.2.json` (full acceptance, 21/21 steps) |
 | `0.2.1-alpha.1` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.1-alpha.1.json` (full acceptance, 21/21 steps) |
 | `0.2.1-rc.2` | `4.0.5` | `1.0.10` | `1.0.6` | yes — `docs/evidence/dsh-0.2.1-rc.2.json` (full acceptance, 21/21 steps) |
-| `0.2.2-rc.1` | `4.1.0` | `1.1.0` | `1.1.0` | yes — `docs/evidence/dsh-0.2.2-rc.1.json` (full acceptance, 21/21 steps, host `hmr` row disabled); `docs/evidence/experience-evolution-0.2.2-rc.1.json` (experience-driven acceptance, 25/25 steps) |
+| `0.2.2-rc.1` | `4.1.0` | `1.1.0` | `1.1.0` | yes — `docs/evidence/dsh-0.2.2-rc.1.json` (full acceptance, 25/25 steps, host `hmr` row disabled) |
+| `0.2.2-rc.2` | `4.1.0` | `1.1.0` | `1.1.0` | yes — `docs/evidence/dsh-0.2.2-rc.2.json` (full acceptance, 25/25 steps, host `hmr` row disabled); `docs/evidence/cross-entry-0.2.2-rc.2.json` (cross-entry acceptance, 31/31 steps) |
 
-The `0.2.2-rc.1` host additionally runs the experience-driven acceptance
+The `0.2.2-rc.1` and `0.2.2-rc.2` hosts additionally run the experience-driven acceptance
 (`--experience-evolution`, four separate processes over one `$DSH_HOME`): real
 tool failures are recorded by the bundled collector, `evolution_plan` discovers
 the recurring target from that shared experience, a paired baseline/candidate
@@ -143,11 +149,11 @@ applicability triple is resolved from exact official package manifests (the
 sibling `@deepseek-ai/dsh`, the sibling or nested `@deepseek-ai/cordis`, and
 this bundle's own `package.json`), with Electron's official
 `process.resourcesPath` as the packaged-layout fallback; anything unprovable
-stays `unknown`. A read-only real-Desktop Electron run (Electron 44.7.0, Node
-24.21.0) is recorded in
-`docs/evidence/desktop-version-detection-0.2.2-rc.1.json`: it resolved DSH
-`0.2.2-rc.1`, Cordis `4.1.0`, Evolution `0.2.3`, matching the manifests read
-independently from the same install.
+stays `unknown`. Read-only real-Desktop Electron runs (Electron 44.7.0, Node 24.21.0) are
+recorded in `docs/evidence/desktop-version-detection-0.2.2-rc.1.json` and
+`docs/evidence/desktop-version-detection-0.2.2-rc.2.json`: they resolved DSH
+`0.2.2-rc.1` / `0.2.2-rc.2`, Cordis `4.1.0` and the installed Evolution version,
+matching the manifests read independently from the same install.
 
 The unit suite is not run per host: `ci.yml` runs it in a separate job on Node
 `22.19.0` and `24.x`, against the module versions locked in `package-lock.json`
@@ -278,15 +284,35 @@ acceptance boots the real host, asserts the 12-tool surface, and the final
 doctor's `runtime.internal-api` reports each probed surface on the live fiber
 tree. Nothing here is inferred from a type declaration alone.
 
-<a id="the-upstream-hmr-transaction-gap-on-022-rc1"></a>
-### The upstream HMR transaction gap on `0.2.2-rc.1`
+The `0.2.2-rc.1` -> `0.2.2-rc.2` delta needs no adapter; it was accepted by
+comparing the shipped packages and then re-running the full host acceptance:
 
-On this host a profile change started **inside the host's own startup window**
+| Package | `0.2.2-rc.1` -> `0.2.2-rc.2` | Effect on this bundle |
+| --- | --- | --- |
+| `@deepseek-ai/cordis`, `cordis-plugin-include`, `cordis-plugin-loader` | `4.1.0`, `1.1.0`, `1.1.0` in both releases; `lib/index.js` byte-identical | none; the surfaces in `lib/cordis-compat.js` are unchanged, and the live `runtime.internal-api` check passes |
+| `@deepseek-ai/dsh-hmr` | `lib/index.js` byte-identical | none; the upstream startup gap below is unchanged, so `--no-hmr` is required here too |
+| `@deepseek-ai/dsh-tools` | `checkGuards()` now returns a structured denial (`{ reason }`) and wraps a string denial; adds `ToolContextUnavailableError`; `defineTool`, `register`, `schemas`, `get` and the batch executor keep their contracts | none; `lib/guard.js` still returns a string, which the host wraps. Re-verified by the lifecycle and promotion phases |
+| `@deepseek-ai/dsh-agent` | removes the create/resume runtime-owner field (`parentAgent` / `ownerAgent`), `AgentRegistry.isOwnedBy()`, `AgentRegistry.roots()` and the `enter()` owner argument; subagent Activations own runtime tree membership | no runtime use in this bundle; the acceptance probe that created a child Agent no longer passes `parentAgent` (it keeps `meta.parentSession`, the durable lineage) |
+| `@deepseek-ai/dsh-agent-loop` | changes runtime-context/system-prompt framing and turn cancellation; `ctx.systemPrompt.section/assemble`, the Agent loop entry points and the `agent/error` / `tools/result` event modes this bundle observes are unchanged | none; the 25-step experience acceptance exercises real failures, collection, plan/probe/measure and restart recall |
+| `@deepseek-ai/dsh-app-boot` | WSL platform admission and home-layer `.env` route names; bundle patch, loader and shutdown contracts unchanged | none |
+| `@deepseek-ai/dsh-storage-domain`, `dsh-storage-json`, `dsh-cordis-host-runner` | `lib/index.js` byte-identical | none |
+
+The new host is therefore declared only after its own real install, boot,
+12-tool registration, core lifecycle, promotion/canary/rollback, experience
+and cross-entry acceptance runs; the evidence files are listed in the matrix
+above. The unchanged `dsh-hmr` byte is why the HMR deployment form is stated
+for both rc.1 and rc.2 instead of being inferred from the release tag.
+
+<a id="the-upstream-hmr-transaction-gap-on-022-rc1"></a>
+### The upstream HMR transaction gap on `0.2.2-rc.1` / `0.2.2-rc.2`
+
+On these hosts a profile change started **inside the host's own startup window**
 can end as `changed: true` / `application: failed` with
 `HMR profile reconciliation must run inside runExclusive`. It is reproducible
 with the official base bundle only: no Evolution entry, no Evolution dependency,
 no guard change, no patched host. In
-`@deepseek-ai/dsh-plugin-manager@0.2.2-rc.1/lib/index.js`:
+`@deepseek-ai/dsh-plugin-manager@0.2.2-rc.1/lib/index.js` and its `0.2.2-rc.2`
+counterpart the same sequence is present:
 
 1. `configure()` (`:3093`) reads HMR once and runs the operation directly when
    the service is not available yet, without entering `runExclusive`;

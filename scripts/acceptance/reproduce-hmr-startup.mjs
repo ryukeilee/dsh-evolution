@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-/** Official 0.2.2-rc.1 control, without Evolution. Diagnostic success means the
- * upstream guard failure was reproduced (and its absence with HMR disabled), not
- * that host acceptance passed.
+/** Official 0.2.2-rc.1 / 0.2.2-rc.2 control, without Evolution. Diagnostic success
+ * means the upstream guard failure was reproduced (and its absence with HMR
+ * disabled), not that host acceptance passed.
  * Usage: node --max-old-space-size=4096 scripts/acceptance/reproduce-hmr-startup.mjs <runtime> <out.json>
  */
 import { fork } from 'node:child_process';
@@ -17,7 +17,8 @@ const runtime = path.resolve(runtimeArg);
 const out = path.resolve(outArg);
 const modules = path.join(runtime, 'node_modules/@deepseek-ai');
 const version = JSON.parse(fs.readFileSync(path.join(modules, 'dsh/package.json'))).version;
-if (version !== '0.2.2-rc.1') throw new Error(`expected official 0.2.2-rc.1, found ${version}`);
+const SUPPORTED_HOSTS = new Set(['0.2.2-rc.1', '0.2.2-rc.2']);
+if (!SUPPORTED_HOSTS.has(version)) throw new Error(`expected official 0.2.2-rc.1 or 0.2.2-rc.2, found ${version}`);
 const cli = path.join(modules, 'dsh/lib/bin.js');
 const probe = path.join(path.dirname(fileURLToPath(import.meta.url)), 'probes/hmr-transaction-probe.mjs');
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-hmr-022-'));
