@@ -1,0 +1,231 @@
+{
+  "kind": "dsh-evolution-acp-desktop-loop",
+  "ok": false,
+  "startedAt": "2026-11-12T06:55:09.189Z",
+  "modelTransport": "deterministic loopback Anthropic responses; actual ACP Agent/tools",
+  "externalModelCalls": 0,
+  "scope": "isolated fresh Desktop launch via test-only profile probe; no production Desktop task submission API",
+  "steps": [
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "bash",
+      "at": "2026-11-12T06:55:09.761Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T06:55:09.768Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "acp_text_stats_15ed6a85",
+      "at": "2026-11-12T06:57:23.341Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-12T06:57:23.347Z"
+    }
+  ],
+  "sandboxRetry": "single exact command retry after observed Electron EPERM; test permission granted by task/full-stop, no global policy change",
+  "desktop": {
+    "ok": true,
+    "phase": "stable",
+    "experimentId": "exp-mwd713oi-1-8b272623",
+    "sourceSha256": "c295652fbb23f56c3a933e283fd9ed07a73f86d484d90ccade2580351db7d07c",
+    "toolName": "acp_text_stats_15ed6a85",
+    "targetProfiles": [
+      "acp"
+    ],
+    "samples": [
+      {
+        "input": "abc",
+        "result": {
+          "characters": 3,
+          "lines": 1
+        }
+      },
+      {
+        "input": "a\nb",
+        "result": {
+          "characters": 3,
+          "lines": 2
+        }
+      }
+    ],
+    "measured": {
+      "phase": "measured",
+      "gates": {
+        "realBenefit": true,
+        "measuredEvidence": true,
+        "repeatable": true,
+        "regressionTest": true,
+        "reversible": true,
+        "cleanupEvidence": true,
+        "noOrphans": true,
+        "runtimeRecovered": false,
+        "eligible": true
+      },
+      "decision": {
+        "version": 1,
+        "kind": "benefit",
+        "source": "measure",
+        "at": "2026-11-12T06:55:13.971Z",
+        "observationAt": "2026-11-12T06:55:13.968Z",
+        "eligible": true,
+        "reasons": [
+          "measured behavior improved and the correctness control stayed stable"
+        ],
+        "gates": {
+          "realBenefit": true,
+          "measuredEvidence": true,
+          "repeatable": true,
+          "regressionTest": true,
+          "reversible": true,
+          "cleanupEvidence": true,
+          "noOrphans": true,
+          "runtimeRecovered": false
+        },
+        "probe": null
+      }
+    },
+    "steps": [
+      {
+        "name": "evolution_runtime_inspect",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_runtime_inspect",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_runtime_inspect",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_runtime_inspect",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_runtime_inspect",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_propose",
+        "phase": "proposed",
+        "stable": null
+      },
+      {
+        "name": "evolution_trial",
+        "phase": "trial",
+        "stable": null
+      },
+      {
+        "name": "acp_text_stats_15ed6a85",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "acp_text_stats_15ed6a85",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_measure",
+        "phase": "measured",
+        "stable": null
+      },
+      {
+        "name": "evolution_promote",
+        "phase": "awaiting-owner-confirmation",
+        "stable": null
+      },
+      {
+        "name": "evolution_promote",
+        "phase": "canary-observing",
+        "stable": null
+      },
+      {
+        "name": "acp_text_stats_15ed6a85",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_canary_observe",
+        "phase": "canary-observing",
+        "stable": false
+      },
+      {
+        "name": "acp_text_stats_15ed6a85",
+        "phase": null,
+        "stable": null
+      },
+      {
+        "name": "evolution_canary_observe",
+        "phase": "stable",
+        "stable": true
+      }
+    ],
+    "runtime": {
+      "electron": "44.7.0",
+      "node": "24.21.0"
+    },
+    "desktopPid": 6814,
+    "record": {
+      "id": "evolution-promoted-665f82cfe83d",
+      "schemaVersion": 1,
+      "experimentId": "exp-mwd713oi-1-8b272623",
+      "pluginName": "dsh-evolution-promoted-665f82cfe83d",
+      "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-665f82cfe83d/lib/index.js",
+      "entry": "lib/index.js",
+      "sourceSha256": "454477bc2009e3d618ea7ecf811a8679011b634825d82955874aa8067711fd4d",
+      "manifestSha256": "40da88a25767e66951d347ec4643251c7d8fbe76eaab2856e0c5c8f6a9d078bc",
+      "publisherProfile": "desktop",
+      "approvedProfiles": [
+        "acp"
+      ],
+      "stable": {
+        "committedAt": "2026-11-12T06:57:22.462Z",
+        "promotionTimestamp": "2026-11-12T06:57:22.336Z",
+        "decision": "benefit",
+        "canary": {
+          "healthObservationWindow": 2,
+          "observations": 2,
+          "startupVerified": true
+        }
+      },
+      "requiredServices": [
+        "tools"
+      ],
+      "serviceMembers": {},
+      "requiredCapabilities": [
+        "fiberLifecycle",
+        "fiberAwait",
+        "include",
+        "toolsRegistry"
+      ],
+      "hostOnly": true,
+      "publicationVerifiedAt": "2026-11-12T06:57:22.336Z",
+      "host": {
+        "dsh": "0.2.2-rc.1",
+        "cordis": "4.1.0",
+        "include": "1.1.0",
+        "node": "v24.21.0",
+        "verifiedAt": "2026-11-12T06:57:22.322Z"
+      },
+      "revalidation": [],
+      "publishedAt": "2026-11-12T06:57:22.519Z"
+    }
+  },
+  "injectedConsumerFault": "legacy include-unavailable report, same source and host; published index untouched",
+  "error": "Unexpected ACP output: {\"text\":\"ACP\\nDesktop\"}",
+  "finishedAt": "2026-11-12T06:57:23.401Z",
+  "tarballSha256": "7db8d37a5d9c741bcf2ffd97158cd7a3d733a6eb5471f2acfedbbc6242302c23",
+  "candidateFailure": "test candidate used output.render(args) rather than output.render(args,value); actual ACP output was input text, so the loop is failed",
+  "actualAcpOutput": {
+    "text": "ACP\nDesktop"
+  }
+}
