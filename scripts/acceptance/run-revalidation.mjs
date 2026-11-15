@@ -115,6 +115,22 @@ function writeJsonFile(file, value) {
   fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
 }
 
+/** The sidecar that carries adoption proofs, next to the attested evidence. */
+export function adoptionReportPath(evidenceFile) {
+  return evidenceFile.endsWith('.json') ? evidenceFile.slice(0, -'.json'.length) + '.report.json' : evidenceFile + '.report.json';
+}
+
+/**
+ * Write the adoption report without touching the evidence file: the operator
+ * command records the evidence digest in the publication index, so rewriting
+ * that file after adoption would break the only durable provenance link.
+ */
+export function writeAdoptionReport(evidenceFile, document) {
+  const file = adoptionReportPath(evidenceFile);
+  writeJsonFile(file, document);
+  return file;
+}
+
 /**
  * The clone-side index: the same records, with the module URL moved into the
  * clone (a record path outside its own data root is invalid by design) and,
@@ -315,7 +331,7 @@ function rowsById(state) {
   return new Map((state && Array.isArray(state.plugins) ? state.plugins : []).map((row) => [row && row.id, row]));
 }
 
-function redact(value, home, work) {
+export function redact(value, home, work) {
   const json = JSON.stringify(value)
     .split(JSON.stringify(home).slice(1, -1)).join('$DSH_HOME')
     .split(JSON.stringify(work).slice(1, -1)).join('<work>')
@@ -575,12 +591,17 @@ async function main(argv) {
     plugins,
   };
   writeJsonFile(evidenceFile, redact(evidence, sourceHome, work));
+  // The evidence file is the artifact the operator command digests and records
+  // in the publication index, so it must stay byte-identical from here on. The
+  // adoption and post-adoption proofs are written next to it instead.
+  const evidenceSha256 = sha256File(evidenceFile);
 
   // 7. Adopt through the official operator command, then prove a byte-identical
   //    clone of the updated home mounts the records with no eligibility rewrite:
   //    that is the real end state the source home boots into next time.
   let adoption = null;
   let postAdoption = null;
+  let adoptionReportFile = null;
   if (options.apply) {
     const currentBytes = fs.readFileSync(indexPath);
     if (sha256(currentBytes) !== indexDigestBefore) throw new Error('the publication index changed while verification ran; refusing to adopt');
@@ -589,6 +610,9 @@ async function main(argv) {
     const adopted = spawnSync(process.execPath, [sharedScript, 'revalidate', '--home', sourceHome, '--evidence', evidenceFile, '--json'], { encoding: 'utf8', env: Object.assign({}, process.env, { DSH_HOME: sourceHome }) });
     if (adopted.status !== 0) throw new Error('the revalidation was refused: ' + String(adopted.stderr || adopted.stdout).slice(-2000));
     adoption = { command: 'dsh-evolution-shared revalidate --home $DSH_HOME --evidence <this file>', script: sharedScript, result: JSON.parse(adopted.stdout) };
+    if (adoption.result?.evidenceSha256 !== evidenceSha256) {
+      throw new Error('the operator command adopted evidence digest ' + String(adoption.result?.evidenceSha256) + ', the runner wrote ' + evidenceSha256);
+    }
     const updated = readJsonFile(indexPath);
     for (const plugin of plugins) {
       const record = updated.plugins.find((row) => row.id === plugin.id);
@@ -644,15 +668,26 @@ async function main(argv) {
         return [plugin.id, sha256File(path.join(sourceHome, 'storages', 'evolution', 'promoted', record.pluginName, 'lib', 'index.js'))];
       })),
     };
-    evidence.adoption = adoption;
-    evidence.postAdoption = postAdoption;
-    writeJsonFile(evidenceFile, redact(evidence, sourceHome, work));
+    if (sha256File(evidenceFile) !== evidenceSha256) throw new Error('the evidence file changed after it was adopted');
+    adoptionReportFile = writeAdoptionReport(evidenceFile, redact({
+      schemaVersion: 1,
+      kind: 'dsh-evolution-revalidation-report',
+      note: 'adoption and post-adoption proofs for the evidence file this report names; the evidence file itself stays byte-identical to the digest recorded in the publication index',
+      evidenceFile: path.basename(evidenceFile),
+      evidenceSha256,
+      host,
+      adoption,
+      postAdoption,
+      preserved: evidence.preserved,
+    }, sourceHome, work));
   }
 
-  const report = {
+  const summary = {
     ok: true,
     host,
     evidenceFile,
+    evidenceSha256,
+    adoptionReportFile,
     targets: plugins.map((plugin) => ({ id: plugin.id, profiles: Object.keys(plugin.profiles) })),
     adopted: Boolean(adoption),
     postAdoptionVerified: Boolean(postAdoption),
@@ -660,11 +695,12 @@ async function main(argv) {
   };
   if (!options.keep && !options.work) fs.rmSync(work, { recursive: true, force: true });
   if (options.json) {
-    process.stdout.write(JSON.stringify(report) + '\n');
+    process.stdout.write(JSON.stringify(summary) + '\n');
   } else {
     console.log('revalidated ' + plugins.length + ' record(s) on DSH ' + host.dsh);
     for (const plugin of plugins) console.log('  ' + plugin.id + ' -> ' + Object.keys(plugin.profiles).join(', '));
     console.log('evidence: ' + evidenceFile);
+    if (adoptionReportFile) console.log('adoption report: ' + adoptionReportFile);
     console.log(adoption ? 'adopted: yes' : 'adopted: no (pass --apply to adopt)');
     if (postAdoption) console.log('post-adoption consumer boots: active with no eligibility rewrite');
   }

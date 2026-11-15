@@ -156,3 +156,38 @@ test('revalidation runner: the clone keeps relative profile links anchored at th
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+test('revalidation runner: adoption proofs go to a sidecar and leave the evidence bytes alone', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-revalidation-report-'));
+  try {
+    const evidence = path.join(directory, 'evidence.json');
+    const bytes = '{"schemaVersion":1,"kind":"dsh-evolution-cross-entry-evidence"}\n';
+    fs.writeFileSync(evidence, bytes);
+    const digest = runner.sha256File(evidence);
+    assert.equal(runner.adoptionReportPath(evidence), path.join(directory, 'evidence.report.json'));
+    assert.equal(runner.adoptionReportPath('/tmp/no-suffix'), '/tmp/no-suffix.report.json');
+    const reportFile = runner.writeAdoptionReport(evidence, { evidenceSha256: digest, adoption: { ok: true } });
+    assert.equal(reportFile, path.join(directory, 'evidence.report.json'));
+    // The index pins the evidence digest; a post-adoption rewrite would orphan it.
+    assert.equal(fs.readFileSync(evidence, 'utf8'), bytes);
+    assert.equal(runner.sha256File(evidence), digest);
+    assert.deepEqual(JSON.parse(fs.readFileSync(reportFile, 'utf8')), { evidenceSha256: digest, adoption: { ok: true } });
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('revalidation runner: evidence redaction covers the home, the scratch tree and the repository root', () => {
+  const home = path.join(os.tmpdir(), 'redact-home');
+  const work = path.join(os.tmpdir(), 'redact-work');
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const redacted = runner.redact({
+    home,
+    work,
+    probe: path.join(repoRoot, 'scripts', 'acceptance', 'probes', 'cross-entry-consumer-probe.mjs'),
+    texts: [home + '/storages', work + '/logs'],
+  }, home, work);
+  assert.equal(redacted.home, '$DSH_HOME');
+  assert.equal(redacted.work, '<work>');
+  assert.equal(redacted.probe, '<repo>/scripts/acceptance/probes/cross-entry-consumer-probe.mjs');
+  assert.deepEqual(redacted.texts, ['$DSH_HOME/storages', '<work>/logs']);
+});
