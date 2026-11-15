@@ -131,3 +131,28 @@ test('revalidation runner: help documents the operator command and the adoption 
   assert.match(runner.HELP, /--apply/);
   assert.match(runner.HELP, /--evidence/);
 });
+test('revalidation runner: the clone keeps relative profile links anchored at the source home', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-revalidation-links-'));
+  try {
+    const source = path.join(root, 'source');
+    // A real DSH home is <parent>/.dsh, so a four-level relative link from
+    // <parent>/.dsh/profiles/acp/node_modules resolves inside <parent>.
+    const shared = path.join(root, '.local', 'share', 'dsh-plugins', 'thing');
+    fs.mkdirSync(shared, { recursive: true });
+    fs.writeFileSync(path.join(shared, 'package.json'), '{"name":"thing"}');
+    const modules = path.join(source, 'profiles', 'acp', 'node_modules');
+    fs.mkdirSync(modules, { recursive: true });
+    // The source link is anchored four levels above node_modules, i.e. at the
+    // home's parent, exactly like a real linked profile bundle.
+    fs.symlinkSync('../../../../.local/share/dsh-plugins/thing', path.join(modules, 'thing'));
+    const clone = path.join(root, 'clone');
+    runner.cloneHome(source, clone);
+    const link = path.join(clone, 'profiles', 'acp', 'node_modules', 'thing');
+    const target = fs.readlinkSync(link);
+    assert.equal(path.isAbsolute(target), true, 'the clone link must be absolute');
+    assert.equal(target, shared, 'the clone link must point at the source bundle, not inside the clone');
+    assert.equal(fs.existsSync(path.join(target, 'package.json')), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

@@ -170,29 +170,37 @@ export function writeGitFixture(directory) {
   return directory;
 }
 
-function cloneHome(source, destination) {
+export function cloneHome(source, destination) {
   const probe = spawnSync('cp', ['-cR', source, destination], { encoding: 'utf8' });
   if (probe.status !== 0) {
     // Non-APFS filesystems have no clonefile: fall back to a recursive copy.
     fs.cpSync(source, destination, { recursive: true, verbatimSymlinks: true });
   }
-  normalizeSymlinks(destination);
+  normalizeSymlinks(destination, source);
 }
 
-/** Relative profile links would resolve inside the scratch tree, so pin them. */
-function normalizeSymlinks(root) {
+/**
+ * A relative profile link (`dsh-context7-mcp -> ../../../../.local/share/...`)
+ * is anchored at the home's parent, so resolving it inside the clone would
+ * point at the scratch tree and leave the bundle unresolvable. Anchor every
+ * relative link at the same place it resolves to in the source home instead,
+ * which is what a real profile start would load (read-only).
+ */
+export function normalizeSymlinks(root, sourceRoot = root) {
   const entries = fs.readdirSync(root, { withFileTypes: true });
   for (const entry of entries) {
     const file = path.join(root, entry.name);
+    const relative = path.relative(root, file);
     if (entry.isSymbolicLink()) {
       const target = fs.readlinkSync(file);
       if (!path.isAbsolute(target)) {
-        const resolved = path.resolve(path.dirname(file), target);
+        const sourceDirectory = path.dirname(path.join(sourceRoot, relative));
+        const resolved = path.resolve(sourceDirectory, target);
         fs.unlinkSync(file);
         fs.symlinkSync(resolved, file);
       }
     } else if (entry.isDirectory()) {
-      normalizeSymlinks(file);
+      normalizeSymlinks(file, path.join(sourceRoot, relative));
     }
   }
 }
@@ -310,7 +318,8 @@ function rowsById(state) {
 function redact(value, home, work) {
   const json = JSON.stringify(value)
     .split(JSON.stringify(home).slice(1, -1)).join('$DSH_HOME')
-    .split(JSON.stringify(work).slice(1, -1)).join('<work>');
+    .split(JSON.stringify(work).slice(1, -1)).join('<work>')
+    .split(JSON.stringify(REPO_ROOT).slice(1, -1)).join('<repo>');
   return JSON.parse(json);
 }
 
