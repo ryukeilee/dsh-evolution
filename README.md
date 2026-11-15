@@ -61,7 +61,9 @@ Desktop 是唯一的晋升权威：Trial、measure、promotion、canary 与 roll
   一条失败不影响其它记录。
 - **操作与撤销。** `dsh-evolution-shared`（`scripts/shared-plugins.mjs`）提供只读 `list`、逐 profile 的
   `disable` / `enable`、清除 sticky 失败的 `reset`，以及在宿主升级后采用真实隔离宿主验证证据的
-  `revalidate --evidence <json>`。`disable` 只移除该 profile 的激活资格，Desktop 的 stable 晋升不受影响；
+  `revalidate --evidence <json>`。证据不需要手写：仓库内的 `scripts/acceptance/run-revalidation.mjs`
+  会克隆数据根、用当前宿主启动真实 ACP / Web 入口取证，`--apply` 时才通过官方 `revalidate` 采纳
+  （流程与计划见 `docs/revalidation.md`）。`disable` 只移除该 profile 的激活资格，Desktop 的 stable 晋升不受影响；
   Include 尚未建立时的 `include-unavailable` 属于宿主可用性失败，不会锁死插件；下次入口启动会重新检查全部门禁。
   启动内只对官方 `INACTIVE_EFFECT` 且已证明 child 清理（或未创建 child）的情况重试，最多三次尝试，间隔 100 / 200 ms；不会重试插件自身的 apply 失败。
   本会话自身的 fiber 已失活，或宿主关闭时先进入 UNLOADING 的祖先 fiber，都视为本次启动取消（包括已经挂载成功、
@@ -124,8 +126,9 @@ Desktop 的 `evolution_plan` 同时返回 `stablePlugins`（已发布 stable 插
 （有排序的 `nextActions`）；ACP 用既有 `evolution_desktop` 的只读 `audit` 动作调用同一份分类逻辑。检查同时覆盖两类
 已有事实：旧 stable 记录的可用性，以及共享经验里证据排序后的候选。
 
-1. `revalidate`：记录因宿主升级停在 `pending-revalidation`。先在真实隔离宿主上重新验证，再用现有
-   `dsh-evolution-shared revalidate --evidence <json>` 采纳证据；不修改、不重新生成、不重新晋升插件源码。
+1. `revalidate`：记录因宿主升级停在 `pending-revalidation`。`scripts/acceptance/run-revalidation.mjs`
+   在数据根副本上用当前宿主启动真实 ACP / Web 入口重新验证并产出证据，`--apply` 时只通过
+   `dsh-evolution-shared revalidate` 采纳；不修改、不重新生成、不重新晋升插件源码。
 2. `repair-stable`：记录在当前宿主上被证明不兼容或 apply 失败。读取历史经验定位根因，生成最小修复候选，
    沿用既有 `propose → probe(baseline) → trial → probe(candidate) → measure → promote/revert` 流程；
    源码变更仍需所有者显式确认。
@@ -533,6 +536,12 @@ npm run acceptance:host -- --host 0.2.1-rc.2 --out <evidence-path>
 npm run acceptance:host -- --host 0.2.2-rc.1 --no-hmr --experience-evolution --out <evidence-path>
 npm run acceptance:host -- --host 0.2.2-rc.2 --no-hmr --experience-evolution --out <evidence-path>
 npm run acceptance:host -- --host 0.2.2-rc.3 --no-hmr --experience-evolution --out <evidence-path>
+# 跨入口发布 → ACP / Web 消费（真实 Web / ACP 入口）
+npm run acceptance:host -- --host 0.2.2-rc.3 --no-hmr --cross-entry --out <evidence-path>
+
+# 宿主升级后重验证已发布的 stable 记录：默认只取证，--apply 才采纳
+node scripts/acceptance/run-revalidation.mjs --home ~/.dsh
+node scripts/acceptance/run-revalidation.mjs --home ~/.dsh --apply
 ```
 
 `scripts/acceptance/run-host-acceptance.mjs` 按实际记录路径生成 21 个步骤：每个宿主包含官方安装、CLI doctor、核心 Trial / revert、pluginManager 禁用 / 启用、卸载与重装、升级 / 回滚，以及真实 promotion、跨重启 canary 和最终 doctor。固定证据中三个旧宿主为 21/21 步通过，`0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` 为 25/25 步通过，最终诊断均为 `healthy`。`--no-hmr` 额外要求启用 / 禁用报告 `restart-required` / `no-hmr`、期间观测不到 HMR 能力，且保存的选择在下一次启动生效。
@@ -558,6 +567,8 @@ npm run acceptance:host -- --host 0.2.2-rc.3 --no-hmr --experience-evolution --o
 
 - `COMPATIBILITY.md` — 宿主接口审计、兼容矩阵与阻塞依赖
 - `docs/shared-plugins.md` — 跨入口共享已验证晋升插件的记录、状态与操作流程
+- `docs/revalidation.md` — 宿主升级后已发布 stable 记录的取证与采纳流程
+- `docs/design/` — 统一经验存储、经验驱动进化、ACP → Desktop 控制与统一只读检查的设计
 - `RELEASE.md` — 固定产物、验证命令、复现步骤与发布风险
 - `CHANGELOG.md` — 版本变更记录
 - `AGENTS.md` — 仓库开发约定与验证要求
