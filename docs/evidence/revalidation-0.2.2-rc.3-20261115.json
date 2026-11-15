@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "kind": "dsh-evolution-cross-entry-evidence",
+  "runner": {
+    "name": "dsh-evolution-revalidation",
+    "startedAt": "2026-11-15T10:59:14.849Z",
+    "finishedAt": "2026-11-15T10:59:24.294Z",
+    "node": "v26.13.1",
+    "platform": "darwin-arm64",
+    "cli": "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh",
+    "probe": "/Users/ryukeili/GitHub/dsh-evolution/scripts/acceptance/probes/cross-entry-consumer-probe.mjs"
+  },
+  "host": {
+    "dsh": "0.2.2-rc.3",
+    "cordis": "4.1.0",
+    "include": "1.1.0",
+    "node": "v24.21.0"
+  },
+  "source": {
+    "indexPath": "$DSH_HOME/storages/evolution/shared-plugins/published.json",
+    "indexDigestBefore": "ce9d79cf2b54d2fdf49620ad3fd38564cf33b244ed18f054d8151c136beba3a7",
+    "indexUpdatedAt": "2026-11-12T20:35:34.242Z",
+    "recordCount": 2
+  },
+  "verification": {
+    "method": "isolated-clone-current-host-eligibility",
+    "note": "the cloned record host was rewritten to the host facts captured by the baseline consumer boot; the source home was never rewritten",
+    "targetIds": [
+      "evolution-promoted-af973a3eea01",
+      "evolution-promoted-e82a216992bb"
+    ]
+  },
+  "profiles": {
+    "acp": {
+      "consumerStateHost": {
+        "dsh": "0.2.2-rc.3",
+        "cordis": "4.1.0",
+        "include": "1.1.0",
+        "node": "v24.21.0"
+      },
+      "verifiedRows": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-15T10:59:20.609Z",
+          "sourceSha256": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e",
+          "hostDigest": "3313c19bf166ff977de1cb1eee1e502f29244907d556410002eea62fad7371fb"
+        },
+        {
+          "id": "evolution-promoted-e82a216992bb",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-15T10:59:20.609Z",
+          "sourceSha256": "7d446ea94e730bd69ec25c38a2d4478d2b6f362f13a3446047e84ad348833230",
+          "hostDigest": "3313c19bf166ff977de1cb1eee1e502f29244907d556410002eea62fad7371fb"
+        }
+      ],
+      "kernelPresent": false,
+      "evolutionToolNames": [
+        "evolution_desktop",
+        "evolution_history"
+      ],
+      "tools": [
+        "evolution_desktop",
+        "evolution_history",
+        "working_directory",
+        "create_worktree",
+        "readonly_git_file",
+        "run_code_diagnose"
+      ]
+    },
+    "web": {
+      "consumerStateHost": {
+        "dsh": "0.2.2-rc.3",
+        "cordis": "4.1.0",
+        "include": "1.1.0",
+        "node": "v24.21.0"
+      },
+      "verifiedRows": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-15T10:59:22.642Z",
+          "sourceSha256": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e",
+          "hostDigest": "3313c19bf166ff977de1cb1eee1e502f29244907d556410002eea62fad7371fb"
+        }
+      ],
+      "kernelPresent": false,
+      "evolutionToolNames": [
+        "evolution_history"
+      ],
+      "tools": [
+        "evolution_history",
+        "working_directory",
+        "team_task_create",
+        "team_task_list",
+        "team_task_get",
+        "team_task_update",
+        "readonly_git_file"
+      ]
+    }
+  },
+  "plugins": [
+    {
+      "id": "evolution-promoted-af973a3eea01",
+      "experimentId": "exp-mwd39c0i-2-8da498be",
+      "sourceSha256": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e",
+      "approvedProfiles": [
+        "acp",
+        "web"
+      ],
+      "previousHost": {
+        "dsh": "0.2.2-rc.2",
+        "cordis": "4.1.0",
+        "include": "1.1.0",
+        "node": "v24.21.0",
+        "verifiedAt": "2026-11-12T19:41:40.888Z"
+      },
+      "profiles": {
+        "acp": {
+          "active": true,
+          "activatedAt": "2026-11-15T10:59:20.609Z",
+          "hostDigest": "3313c19bf166ff977de1cb1eee1e502f29244907d556410002eea62fad7371fb",
+          "toolNames": [
+            "evolution_desktop",
+            "evolution_history",
+            "working_directory",
+            "create_worktree",
+            "readonly_git_file",
+            "run_code_diagnose"
+          ],
+          "toolCalls": [
+            {
+              "id": "evolution-promoted-af973a3eea01:readonly_git_file",
+              "name": "readonly_git_file",
+              "path": "registry-definition",
+              "isError": false,
+              "code": null,
+              "text": "{\"ok\":true,\"exitCode\":0,\"content\":\"revalidation fixture: readonly_git_file returns this line at HEAD\\n\",\"truncated\":false,\"stderr\":\"\"}"
+            }
+          ]
+        },
+        "web": {
+          "active": true,
+          "activatedAt": "2026-11-15T10:59:22.642Z",
+          "hostDigest": "3313c19bf166ff977de1cb1eee1e502f29244907d556410002eea62fad7371fb",
+          "toolNames": [
+            "evolution_history",
+            "working_directory",
+            "team_task_create",
+            "team_task_list",
+            "team_task_get",
+            "team_task_update",
+            "readonly_git_file"
+          ],
+          "toolCalls": [
+            {
+              "id": "evolution-promoted-af973a3eea01:readonly_git_file",
+              "name": "readonly_git_file",
+              "path": "batch-executor",
+              "isError": false,
+              "code": null,
+              "text": "{\"ok\":true,\"exitCode\":0,\"content\":\"revalidation fixture: readonly_git_file returns this line at HEAD\\n\",\"truncated\":false,\"stderr\":\"\"}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "evolution-promoted-e82a216992bb",
+      "experimentId": "exp-mwe07k7f-4-d95e11ad",
+      "sourceSha256": "7d446ea94e730bd69ec25c38a2d4478d2b6f362f13a3446047e84ad348833230",
+      "approvedProfiles": [
+        "acp"
+      ],
+      "previousHost": {
+        "dsh": "0.2.2-rc.2",
+        "cordis": "4.1.0",
+        "include": "1.1.0",
+        "node": "v24.21.0",
+        "verifiedAt": "2026-11-12T20:35:34.011Z"
+      },
+      "profiles": {
+        "acp": {
+          "active": true,
+          "activatedAt": "2026-11-15T10:59:20.609Z",
+          "hostDigest": "3313c19bf166ff977de1cb1eee1e502f29244907d556410002eea62fad7371fb",
+          "toolNames": [
+            "evolution_desktop",
+            "evolution_history",
+            "working_directory",
+            "create_worktree",
+            "readonly_git_file",
+            "run_code_diagnose"
+          ],
+          "toolCalls": [
+            {
+              "id": "evolution-promoted-e82a216992bb:run_code_diagnose",
+              "name": "run_code_diagnose",
+              "path": "registry-definition",
+              "isError": false,
+              "code": null,
+              "text": "{\"ok\":true,\"occurrences\":73,\"failures\":5,\"successes\":68,\"failureRate\":0.0685,\"status\":\"healthy\"}"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

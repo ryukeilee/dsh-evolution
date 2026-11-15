@@ -19,6 +19,12 @@
  *                                   (the consumer must then skip the record it
  *                                   sees already mounted, and the kernel's 12
  *                                   tools must be present)
+ *   EVOLUTION_CROSS_ENTRY_TOOL_CALLS  JSON [{ id?, name, arguments? }] real
+ *                                   tool calls executed through the official
+ *                                   batch executor after the rows settle. Used by
+ *                                   the revalidation runner to prove a mounted
+ *                                   record's tools are callable, not just
+ *                                   registered.
  *
  * Assertions (all of them fail the probe, never degrade silently):
  *   - the consumer state row for every published record has the expected status;
@@ -299,6 +305,73 @@ export async function runConsumerProbe(ctx) {
     throw new Error(`the consumer observed index ${state.observedIndexUpdatedAt}, the live index is ${indexUpdatedAt}`);
   }
 
+  // Real execution proof for a mounted record: every configured call goes
+  // through the official batch tool executor with a real agent handle, so an
+  // argument rejection, a missing injected service or a throwing plugin body
+  // fails here. An entry that selects a program-only executor (the PTC
+  // `run_code` transport: the executor admits no direct tool call) falls back to
+  // the registry definition under the same agent, which is what the repository's
+  // own acceptance fixtures already do; the report names the path used.
+  async function runToolCalls() {
+    const calls = parseJsonEnv('EVOLUTION_CROSS_ENTRY_TOOL_CALLS', null);
+    if (!calls) return null;
+    if (!Array.isArray(calls) || calls.length === 0) throw new Error('EVOLUTION_CROSS_ENTRY_TOOL_CALLS must be a non-empty array');
+    const agents = typeof ctx.get === 'function' ? ctx.get('agents') : ctx.agents;
+    if (!agents || typeof agents.create !== 'function') throw new Error('tool-call verification needs the agents service');
+    const handle = await agents.create({
+      sessionId: `revalidation-${profile}-${process.pid}-${Date.now()}`,
+      meta: { cwd: process.env.EVOLUTION_ACCEPTANCE_CWD || path.dirname(dataRoot) },
+    });
+    const agent = handle?.agent ?? handle;
+    const signal = new AbortController().signal;
+    const textOf = (result) => {
+      const content = Array.isArray(result?.content) ? result.content : [];
+      return content.filter((block) => block && block.type === 'text').map((block) => block.text).join('');
+    };
+    const registryCall = async (call) => {
+      const definition = typeof ctx.tools.get === 'function' ? ctx.tools.get(call.name, agent) : null;
+      if (!definition || typeof definition.execute !== 'function') throw new Error(`${call.name} is not registered in the ${profile} entry`);
+      const value = await definition.execute(call.arguments ?? {}, { agent, signal });
+      return { isError: false, text: JSON.stringify(value) };
+    };
+    const results = [];
+    for (let index = 0; index < calls.length; index += 1) {
+      const call = calls[index];
+      const id = typeof call.id === 'string' && call.id !== '' ? call.id : `revalidation-${index}`;
+      let path = 'batch-executor';
+      let outcome;
+      if (typeof ctx.tools.execute === 'function') {
+        const executed = await ctx.tools.execute({
+          agent,
+          signal,
+          calls: [{ type: 'tool_call', id, name: call.name, arguments: JSON.stringify(call.arguments ?? {}) }],
+        });
+        const row = Array.isArray(executed?.results) ? executed.results[0]?.result : null;
+        const text = textOf(row);
+        if (row?.isError === true && /only `run_code` is callable directly/i.test(text)) {
+          path = 'registry-definition';
+          outcome = await registryCall(call);
+        } else {
+          outcome = { isError: row?.isError === true, text, code: row?.code ?? row?.error?.info?.code ?? row?.error?.code ?? null };
+        }
+      } else {
+        path = 'registry-definition';
+        outcome = await registryCall(call);
+      }
+      results.push({
+        id,
+        name: call.name,
+        expect: call.expect ?? null,
+        path,
+        isError: outcome.isError === true,
+        code: outcome.code ?? null,
+        text: String(outcome.text).slice(0, 4000),
+      });
+    }
+    return results;
+  }
+  const toolCalls = await runToolCalls();
+
   return {
     profile,
     dataRoot,
@@ -310,6 +383,8 @@ export async function runConsumerProbe(ctx) {
     indexUpdatedAt,
     indexDigest: fs.existsSync(indexPath) ? crypto.createHash('sha256').update(fs.readFileSync(indexPath)).digest('hex') : null,
     publishedIds: records.map((row) => row?.id),
+    toolNames: ctx.tools.schemas().map((tool) => tool.name),
+    toolCalls,
     kernelPresent,
     evolutionTools,
     evolutionToolNames,
