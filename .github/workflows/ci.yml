@@ -136,16 +136,18 @@ jobs:
       matrix:
         # One entry per host release this bundle declares as supported. A
         # version may only appear here (and in peerDependencies) after this job
-        # passes on it. `0.2.2-rc.1` and `0.2.2-rc.2` are accepted only with the
+        # passes on it. `0.2.2-rc.1`, `0.2.2-rc.2` and `0.2.2-rc.3` are accepted only with the
         # host `hmr` row disabled: their startup window has an upstream
         # PluginManager/HMR transaction gap that is independent of this bundle
         # (see COMPATIBILITY.md), and the aspect this job covers is the
         # deployment the operator runs.
-        host: ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-rc.2', '0.2.2-rc.1', '0.2.2-rc.2']
+        host: ['0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-rc.2', '0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3']
         include:
           - host: '0.2.2-rc.1'
             acceptance_args: '--no-hmr --experience-evolution'
           - host: '0.2.2-rc.2'
+            acceptance_args: '--no-hmr --experience-evolution'
+          - host: '0.2.2-rc.3'
             acceptance_args: '--no-hmr --experience-evolution'
     steps:
       - uses: actions/checkout@v7

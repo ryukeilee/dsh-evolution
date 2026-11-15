@@ -1,41 +1,41 @@
 {
   "host": "0.2.0-rc.2",
-  "packageVersion": "0.2.9",
-  "tarball": "dist/dsh-evolution-0.2.9.tgz",
-  "tarballSha256": "2fb6533ae0149e0f80ccc8fe32d4a75fc43bf92abfe933d0ea59c5e41cdb0ce8",
-  "contentSha256": "23e4bc1a11a02dbca138a5ed7b1646107e34137405d6f4118eefc2ccfe94cb37",
-  "node": "v26.13.0",
+  "packageVersion": "0.2.10",
+  "tarball": "dist/dsh-evolution-0.2.10.tgz",
+  "tarballSha256": "98d0e237de5265010b388d3aef85a9620bfea7df2533710a1dc8dc50c1d45802",
+  "contentSha256": "55c9d159386ac3c79f34d87c77fd56d173fda936915ac170f953eb6410fafc25",
+  "node": "v26.13.1",
   "platform": "darwin-arm64",
   "work": "<work>",
   "hostLiveApply": "enabled",
-  "startedAt": "2026-11-12T22:54:22.064Z",
+  "startedAt": "2026-11-15T10:11:31.751Z",
   "steps": [
     {
       "name": "host-install",
-      "at": "2026-11-12T22:54:32.123Z",
+      "at": "2026-11-15T10:11:47.830Z",
       "ok": true,
       "code": 0,
       "tail": [
         "│   to run scripts.                                                            │",
         "│                                                                              │",
         "╰──────────────────────────────────────────────────────────────────────────────╯",
-        "Done in 9.8s using pnpm v11.26.0"
+        "Done in 15.8s using pnpm v11.26.0"
       ]
     },
     {
       "name": "plugin-add",
-      "at": "2026-11-12T22:54:33.225Z",
+      "at": "2026-11-15T10:11:49.332Z",
       "ok": true,
       "code": 0,
       "tail": [
         "  Virtual store is at:             node_modules/.pnpm",
-        "Progress: resolved 4, reused 3, downloaded 1, added 4, done",
-        "Done in 603ms using pnpm v11.26.0"
+        "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
+        "Done in 777ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "profile-lists-bundle",
-      "at": "2026-11-12T22:54:33.225Z",
+      "at": "2026-11-15T10:11:49.332Z",
       "ok": true,
       "bundles": [
         "@deepseek-ai/dsh-base",
@@ -45,7 +45,7 @@
     },
     {
       "name": "doctor-cli",
-      "at": "2026-11-12T22:54:33.623Z",
+      "at": "2026-11-15T10:11:49.819Z",
       "ok": true,
       "status": "degraded",
       "exitCode": 1,
@@ -56,7 +56,7 @@
     },
     {
       "name": "core-flow",
-      "at": "2026-11-12T22:54:37.551Z",
+      "at": "2026-11-15T10:11:54.734Z",
       "ok": true,
       "toolCount": 12,
       "tools": [
@@ -146,7 +146,7 @@
     },
     {
       "name": "lifecycle-verify",
-      "at": "2026-11-12T22:54:38.945Z",
+      "at": "2026-11-15T10:11:56.487Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -163,7 +163,7 @@
     },
     {
       "name": "lifecycle-disable",
-      "at": "2026-11-12T22:54:40.449Z",
+      "at": "2026-11-15T10:11:58.709Z",
       "ok": true,
       "result": {
         "action": "disable",
@@ -180,7 +180,7 @@
     },
     {
       "name": "lifecycle-enable",
-      "at": "2026-11-12T22:54:41.662Z",
+      "at": "2026-11-15T10:12:00.355Z",
       "ok": true,
       "result": {
         "action": "enable",
@@ -197,7 +197,7 @@
     },
     {
       "name": "lifecycle-verify",
-      "at": "2026-11-12T22:54:43.002Z",
+      "at": "2026-11-15T10:12:02.228Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -214,18 +214,18 @@
     },
     {
       "name": "plugin-remove",
-      "at": "2026-11-12T22:54:43.709Z",
+      "at": "2026-11-15T10:12:03.051Z",
       "ok": true,
       "code": 0,
       "tail": [
         "",
         "Already up to date",
-        "Done in 353ms using pnpm v11.26.0"
+        "Done in 428ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "body-after-uninstall",
-      "at": "2026-11-12T22:54:45.378Z",
+      "at": "2026-11-15T10:12:05.177Z",
       "ok": true,
       "result": {
         "bodyOk": true,
@@ -235,18 +235,18 @@
     },
     {
       "name": "plugin-reinstall",
-      "at": "2026-11-12T22:54:46.320Z",
+      "at": "2026-11-15T10:12:06.342Z",
       "ok": true,
       "code": 0,
       "tail": [
         "  Virtual store is at:             node_modules/.pnpm",
         "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
-        "Done in 571ms using pnpm v11.26.0"
+        "Done in 743ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "core-flow-after-reinstall",
-      "at": "2026-11-12T22:54:49.037Z",
+      "at": "2026-11-15T10:12:09.701Z",
       "ok": true,
       "toolCount": 12,
       "reverted": true,
@@ -257,19 +257,19 @@
     },
     {
       "name": "cli-upgrade",
-      "at": "2026-11-12T22:54:50.387Z",
+      "at": "2026-11-15T10:12:11.518Z",
       "ok": true,
       "code": 0,
-      "installedVersion": "0.2.10",
+      "installedVersion": "0.2.11",
       "tail": [
         "+",
         "Progress: resolved 5, reused 1, downloaded 1, added 1, done",
-        "Done in 388ms using pnpm v11.26.0"
+        "Done in 607ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "host-after-upgrade",
-      "at": "2026-11-12T22:54:51.575Z",
+      "at": "2026-11-15T10:12:12.703Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -286,19 +286,19 @@
     },
     {
       "name": "cli-rollback",
-      "at": "2026-11-12T22:54:52.342Z",
+      "at": "2026-11-15T10:12:13.515Z",
       "ok": true,
       "code": 0,
-      "installedVersion": "0.2.9",
+      "installedVersion": "0.2.10",
       "tail": [
         "+",
         "Progress: resolved 5, reused 2, downloaded 0, added 1, done",
-        "Done in 423ms using pnpm v11.26.0"
+        "Done in 485ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "host-after-rollback",
-      "at": "2026-11-12T22:54:53.671Z",
+      "at": "2026-11-15T10:12:15.149Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -315,7 +315,7 @@
     },
     {
       "name": "promotion-promote",
-      "at": "2026-11-12T22:54:56.587Z",
+      "at": "2026-11-15T10:12:18.218Z",
       "ok": true,
       "steps": [
         {
@@ -362,21 +362,21 @@
         }
       ],
       "committed": {
-        "pluginName": "dsh-evolution-promoted-a1883a6c1c2c",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-a1883a6c1c2c",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-a1883a6c1c2c/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-c0bfee554090",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-c0bfee554090",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-c0bfee554090/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-a1883a6c1c2c",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwe5bain-1-14a8e1a5.md",
+        "rowId": "evolution-promoted-c0bfee554090",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwhoe32r-1-ac18ed52.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-12T22:54:56.417Z",
+        "promotionTimestamp": "2026-11-15T10:12:18.016Z",
         "healthObservationWindow": 2
       }
     },
     {
       "name": "promotion-restart-and-rollback",
-      "at": "2026-11-12T22:54:59.228Z",
+      "at": "2026-11-15T10:12:21.490Z",
       "ok": true,
       "steps": [
         {
@@ -428,21 +428,21 @@
       ],
       "startupPhase": "stable",
       "rolledBack": {
-        "pluginName": "dsh-evolution-promoted-ddc5fef96f26",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-ddc5fef96f26",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-ddc5fef96f26/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-2f7f28f96d47",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-2f7f28f96d47",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-2f7f28f96d47/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-ddc5fef96f26",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwe5bckq-1-936f7d00.md",
+        "rowId": "evolution-promoted-2f7f28f96d47",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwhoe5jo-1-051ade4c.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-12T22:54:59.047Z",
+        "promotionTimestamp": "2026-11-15T10:12:21.232Z",
         "healthObservationWindow": 2
       }
     },
     {
       "name": "promotion-verify",
-      "at": "2026-11-12T22:55:00.418Z",
+      "at": "2026-11-15T10:12:22.901Z",
       "ok": true,
       "steps": [
         {
@@ -453,7 +453,7 @@
     },
     {
       "name": "doctor-final",
-      "at": "2026-11-12T22:55:00.789Z",
+      "at": "2026-11-15T10:12:23.242Z",
       "ok": true,
       "status": "healthy",
       "exitCode": 0,
@@ -624,29 +624,29 @@
       }
     ]
   },
-  "memoryShaAfterCore": "204e5b3fbffffa38ad2d1f6a44833ffdc497a474b57b19e70d4428336bca051f",
-  "memoryShaBeforeUninstall": "204e5b3fbffffa38ad2d1f6a44833ffdc497a474b57b19e70d4428336bca051f",
+  "memoryShaAfterCore": "80dbc8d9996ef934c5593ed03284e47d9ba4a53680f280272368292cf31cd241",
+  "memoryShaBeforeUninstall": "80dbc8d9996ef934c5593ed03284e47d9ba4a53680f280272368292cf31cd241",
   "memoryEntriesAtUninstall": 1,
   "memoryEntriesAfterReinstall": 1,
-  "memoryShaAfterReinstall": "da78094857d7cc2d710a225c8d7a349d635f82161250c45105d289b00483fb0c",
+  "memoryShaAfterReinstall": "d7bfb92454ea414c9c9f94bd167c7075fb571b915efe1dbf8f6a938a466bf10d",
   "upgradeRollback": {
-    "from": "0.2.9",
-    "to": "0.2.10",
+    "from": "0.2.10",
+    "to": "0.2.11",
     "preservedUserData": true
   },
   "promotion": {
     "promote": {
       "ok": true,
       "committed": {
-        "pluginName": "dsh-evolution-promoted-a1883a6c1c2c",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-a1883a6c1c2c",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-a1883a6c1c2c/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-c0bfee554090",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-c0bfee554090",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-c0bfee554090/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-a1883a6c1c2c",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwe5bain-1-14a8e1a5.md",
+        "rowId": "evolution-promoted-c0bfee554090",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwhoe32r-1-ac18ed52.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-12T22:54:56.417Z",
+        "promotionTimestamp": "2026-11-15T10:12:18.016Z",
         "healthObservationWindow": 2
       }
     },
@@ -654,15 +654,15 @@
       "ok": true,
       "startupPhase": "stable",
       "rolledBack": {
-        "pluginName": "dsh-evolution-promoted-ddc5fef96f26",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-ddc5fef96f26",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-ddc5fef96f26/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-2f7f28f96d47",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-2f7f28f96d47",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-2f7f28f96d47/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-ddc5fef96f26",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwe5bckq-1-936f7d00.md",
+        "rowId": "evolution-promoted-2f7f28f96d47",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwhoe5jo-1-051ade4c.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-12T22:54:59.047Z",
+        "promotionTimestamp": "2026-11-15T10:12:21.232Z",
         "healthObservationWindow": 2
       }
     },
@@ -671,5 +671,5 @@
     }
   },
   "ok": true,
-  "finishedAt": "2026-11-12T22:55:00.789Z"
+  "finishedAt": "2026-11-15T10:12:23.242Z"
 }

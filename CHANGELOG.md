@@ -18,6 +18,25 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.10 — 稳定版
+
+`0.2.9` 的稳定后继：新增官方宿主 DSH `0.2.2-rc.3`。官方 rc.2 → rc.3 的源码差异只新增可选
+`@deepseek-ai/dsh-deepseek-chat-import` bundle、相关客户端 slot 与官方 bundle 列表项；本 bundle
+使用的 `@deepseek-ai/dsh-tools`、`@deepseek-ai/dsh-cordis-host-runner`、
+`@deepseek-ai/dsh-storage-domain`、`@deepseek-ai/dsh-storage-json` 的 `lib/index.js` 与导出契约
+逐字节相同，Cordis `4.1.0` / Include `1.1.0` / loader `1.1.0` 也仍是同一组包。因此本次不修改
+运行时实现，只把 rc.3 加入 `peerDependencies`、CI 矩阵、验收脚本与随包文档。
+
+- **真实宿主验收。** 六个已声明宿主（`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、
+  `0.2.2-rc.1`、`0.2.2-rc.2`、`0.2.2-rc.3`）针对本版本的固定产物重新运行安装、加载、
+  12 个工具注册、生命周期、promotion / canary / rollback 与基础验收；`0.2.2-rc.1` / `rc.2` /
+  `rc.3` 另跑 `--experience-evolution`，`rc.3` 另跑 `--cross-entry`（35/35 步）。
+- **HMR 部署形态不变。** `dsh-hmr/lib/index.js` 在 rc.1、rc.2、rc.3 之间逐字节相同，上游启动窗口
+  缺口没有变化，所以三个 rc 版本都只验收 `- id: hmr` / `disabled: true` + 重启生效的形态。
+- **不改变已有数据。** 持久化 schema 与 schema 版本、共享经验库、历史归档、工具名 / 参数结构、
+  授权来源、八项晋升门禁、Cordis 信任根、`engines` 与既有宿主兼容性均不变；没有新增功能、依赖升级
+  或无关重构。
+
 ## 0.2.9 — 稳定版
 
 `0.2.8` 的稳定后继：修复 ACP 同一 profile 中一个短命会话覆盖仍在运行会话有效 consumer 状态的缺陷，
