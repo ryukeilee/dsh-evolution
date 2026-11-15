@@ -67,7 +67,7 @@ const EXPECTED_TOOL_COUNT = 12;
  * executor (`ctx.tools.execute({calls})`) that `0.2.2-rc.1` introduced; the
  * older declared hosts do not have that surface.
  */
-const EXPERIENCE_EVOLUTION_HOSTS = Object.freeze(['0.2.2-rc.1', '0.2.2-rc.2']);
+const EXPERIENCE_EVOLUTION_HOSTS = Object.freeze(['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3']);
 const EXPERIENCE_EVOLUTION_PHASES = ['seed', 'invalid', 'restart', 'regression'];
 
 function parseArgs(argv) {
