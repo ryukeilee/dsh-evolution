@@ -19,9 +19,9 @@
 | `lib/registration.js` | 工具注册与系统提示词；`EVOLUTION_TOOLS` 列出工具面（12 个，含 `evolution_plan` / `evolution_probe` 与唯一的回收入口 `evolution_maintain`），`lib/diagnostics.js` 的 `EVOLUTION_TOOL_NAMES` 用它对照实时注册表，两份列表由测试断言一致 |
 | `lib/orchestrator.js` | 实验 / trial / measurement / promotion 生命周期、journal 原子提交、CAS、跨进程锁、target claim、canary、失败学习、`promotionGates`；自主观察者的抑制、环境类推迟与待确认候选按 `strategyFingerprint` 判身份（`observeAutonomous` / `pendingAutonomousCandidate` / `cleanupAutonomousTrial` / `recoverAutonomousOccupancy` / `deferForSession` / `releaseInheritedAutonomousDecision`）；Propose–Probe–Compose 接缝：`plan()` 经验发现、`reviewSelfEvolution()` 只读统一审计（`evolution_plan` 的工具入口，组合 stable 插件分类与经验候选）、`probe()` 官方管线执行 baseline/candidate（只接受官方 `isConcurrencySafe(args) === true` 的工具步骤，拒绝 write/shell/未知/`run_code`/`evolution_*`）、`measure()` 从样本派生指标、`classifyExperimentDecision()` 与 `publishConclusion()` 记录并写回结论；适用版本只从精确官方包清单读取（Desktop 的 `dsh-desktop-host` entry 同级 `@deepseek-ai/dsh`，Electron `process.resourcesPath` 兜底），无法证明时保持 unknown |
 | `lib/promotion-include.js` | 官方 `@deepseek-ai/cordis-plugin-include` 适配：不合成 loader entry、不写 profile `node_modules`，提交/回滚走公开 `refresh()` / `EntryTree.resolve` / `Entry.fiber` |
-| `cordis.patch.yml` | bundle patch：向 profile 的 loader 树 `insert` 两个条目（`evolution-orchestrator` → `dsh-evolution`、`evolution-trust-root-guard` → `dsh-evolution/guard`）。这是插件进入 composition 的唯一入口 |
+| `cordis.patch.yml` | bundle patch：向 profile 的 loader 树 `insert` 七个条目——`evolution-experience` → `dsh-evolution/experience`、`evolution-experience-history` → `dsh-evolution/experience-history`（默认 `disabled: true`）、`evolution-orchestrator` → `dsh-evolution`、`evolution-trust-root-guard` → `dsh-evolution/guard`、`evolution-promoted-consumer` → `dsh-evolution/promoted-consumer`、`evolution-desktop-task-host` 与 `evolution-desktop-task-client`（后两者默认 `disabled: true`）。这是插件进入 composition 的唯一入口；`scripts/setup-experience.mjs` 按 profile 改写这些行的 `disabled` 状态（并关闭 `hmr` 行），不合成新的 loader entry |
 
-`lib/index.js` 的 `inject` 是 `tools` / `dynamicCordisRunner` / `systemPrompt` / `loader` / `storageDomain`（doctor 的 `REQUIRED_RUNTIME_SERVICES` 与本列表一致）；`apply()` 的顺序固定为：解析路径与密钥 → 打开领域存储 → **恢复中断的晋升事务** → 挂载 Include adapter → 注册工具。
+`lib/index.js` 的 `inject` 是 `tools` / `dynamicCordisRunner` / `systemPrompt` / `loader` / `storageDomain` / `evolutionExperience`（doctor 的 `REQUIRED_RUNTIME_SERVICES` 与本列表一致；最后一个服务由 `evolution-experience` 条目提供，orchestrator 用它打开共享经验库）；`apply()` 的顺序固定为：解析路径与密钥 → 打开领域存储 → **恢复中断的晋升事务** → 挂载 Include adapter → 注册工具。
 
 ### 领域与存储
 
@@ -45,32 +45,43 @@
 | `lib/shared-experience.js` | 统一共享经验 SQLite（schema 1/2）：新库创建 schema 2（`events (id BLOB PRIMARY KEY, digest BLOB NOT NULL) STRICT, WITHOUT ROWID`，完整 SHA-256 id/digest 各存 32 字节 BLOB），schema 1 库在普通启动下保持 TEXT 兼容读写且**不迁移**；除 `recordFailure` / `recordEvolution` 外，`recordConclusion` 写入结构化实验结论（target 是归一化问题身份）、`findConclusions` 按同 target + 三项版本 + strategy 指纹做有界查询、`discover` 提供有界发现窗口 |
 | `lib/shared-experience-migration.js` | 显式离线 schema 1→2 迁移：先完整 checkpoint，再在 `BEGIN EXCLUSIVE` 内流式校验并复制事件、比对源/目标事件指纹与 knowledge 前后指纹、`DROP`/`RENAME` 后单事务提交；事务前写原子私有备份，提交后才 checkpoint + `VACUUM`；失败回滚，`inspectSharedExperience()` 提供只读报告 |
 
+### 跨入口、共享经验与任务通道
+
+| 文件 | 职责 |
+| --- | --- |
+| `lib/experience-collector.js`、`lib/experience-history.js` | 轻量入口（`dsh-evolution/experience` 与禁用默认的 `experience-history`）：订阅官方 `agent/error` / `tools/result`，只把有界失败元数据同步写入共享经验库（`COMMIT` 即回执边界，不读取参数、正文或聊天记录），提供 `evolutionExperience` 服务；history 入口按需注册 `evolution_history` 工具 |
+| `lib/promoted-sharing.js`、`lib/promoted-consumer.js` | 跨入口共享的唯一记录实现与 consumer 入口：`promoted-sharing` 无宿主依赖，只从 Desktop 已提交的 stable 事实生成发布索引并给出逐记录兼容判定（记录完整性、源码摘要、显式批准、撤销表、精确宿主身份、所需服务/能力）；`promoted-consumer` 只读索引，经官方 Include 挂载合格记录，只写本 profile 自己的 consumer composition 与 `shared-plugins/consumers/<profile>.json`，不写 Desktop 的晋升 journal、canary、composition 或领域存储，也不在 Desktop profile 生效 |
+| `lib/desktop-task-host.js`、`lib/desktop-task-client.js`、`lib/desktop-task-protocol.js` | ACP → Desktop 任务通道（对应 `cordis.patch.yml` 两条默认禁用行）：host 只在 `desktop` profile 内按真实 `evolution_*` 工具执行任务并独占 `state/` 与 `host.json`，client 只在 `acp` profile 注册 `evolution_desktop`（`audit` / `delegate` / `status` / `confirm`）并只写请求与绑定 `experimentId + sourceSha256` 的确认，protocol 是双方唯一的文件契约与阶段判定；通道是同用户可写传输层，不是授权边界 |
+
 ### 兼容与安全
 
 | 文件 | 职责 |
 | --- | --- |
 | `lib/cordis-compat.js` | 本 bundle 触及的每一个 Cordis / 官方 Include 接口的分类与读取器：`SURFACE_PUBLIC` / `SURFACE_UNDOCUMENTED` / `SURFACE_PRIVATE`、`SURFACES`、`probeSurfaces()`、`recordedSurfaces()`、`registerIsolateKey()`；运行时与 doctor 共用同一张表 |
 | `lib/compat/legacy-startup-drift.js` | legacy 适配器：默认读取 `~/.local/share/dsh-local/dsh-profiles-state.json`，只在找到该 state 与外部 engine 时才 import；默认禁用发生在 `lib/registration.js` 的调用层（传入 `startupDrift: false`），不是模块内部 |
+| `lib/runtime-versions.js` | 进程 / 包清单侧的宿主身份解析：从进程入口与精确官方包清单读取 `dsh` / `cordis` / `include` / `node`（Desktop 取 `dsh-desktop-host` entry 同级包，Electron 用 `process.resourcesPath` 兜底），供适用版本三元组使用；跨入口发布与消费用官方 `pluginPackages.packageOf()` 的 `captureHostFacts()`（Node 取 `process.version`），统一审计在 live 包服务缺失时才回退到 `detectHostIdentity()`；无法证明时保持 `null` / `unknown`，不猜测 |
 | `lib/guard.js` | `dsh-evolution/guard`：只拒绝直接修改 Cordis trust root 与绕过 Cordis 生命周期的明确不可逆操作。**授权字段只取自宿主注入的 `exec.operationContext` / `exec.context`**（`verified` / `transactionType` / `actor` / `ownership` / `operation`），绝不从 `exec.arguments` 读取；目标路径与命令体仍来自 `arguments`，但只作为**被检查的输入**，不能充当证明。路径按文件系统语义逐组件跟随符号链接（先跟随 `hop`，再处理其后的 `..`）；managed 豁免要求目标出现在命令体里，不接受 basename 匹配 |
 
 ### 诊断与工具脚本
 
 | 路径 | 职责 |
 | --- | --- |
-| `lib/diagnostics.js`、`scripts/doctor.mjs` | 运行时与 CLI 诊断；`resolveEvolutionPaths()` 是路径解析的唯一来源（doctor 与运行时共用），`runDiagnostics()` 产出全部 check（当前 28 种 check `id`：`plugin.home` 只在传入 home 时加入，找不到宿主 CLI 时 `host.version` / `host.modules` / `host.composition` 不加入，`state.dockyard-legacy` 与 `state.memory-quarantine` 只在对应现场存在时加入；另有 6 个 repair `id` 与 5 个 degradedCapability `id`，三者不要混算）；事件桥与冷历史 JSONL 的行摘要扫描共用 1 MiB 分块字节扫描，不把整份文件解码成一个字符串，`state.archives` 的归档完整性校验仍读取归档与封存段的字节（成本随被校验字节增长），`--repair` 只处理 `recoverable=true` 且带 repair 的项。CLI 报告不得与运行时判断不一致 |
-| `scripts/acceptance/` | `run-host-acceptance.mjs` 真实隔离宿主验收（自包含安装官方 DSH）；`run-revalidation.mjs` 在宿主升级后为**已发布**的 stable 记录克隆数据根、启动真实 ACP/Web 入口取证并（`--apply`）调用官方 `revalidate` 采纳，`revalidation-plans.json` 是每条记录的一次确定性只读工具调用计划（见 `docs/revalidation.md`）；`probes/{core,lifecycle,body,promotion,retry}-probe.mjs` 是它驱动的宿主内探针；`probes/live-apply-race-probe.mjs`、`probes/hmr-transaction-probe.mjs` 与 `reproduce-hmr-startup.mjs` 复现宿主“实时应用能力”启动竞态与 `0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` HMR 事务缺口（诊断用，不属于验收流程） |
+| `lib/diagnostics.js`、`scripts/doctor.mjs` | 运行时与 CLI 诊断；`resolveEvolutionPaths()` 是路径解析的唯一来源（doctor 与运行时共用），`runDiagnostics()` 产出全部 check（当前 29 种 check `id`：`plugin.home` 只在传入 home 时加入，找不到宿主 CLI 时 `host.version` / `host.modules` / `host.composition` 不加入，`state.dockyard-legacy` 与 `state.memory-quarantine` 只在对应现场存在时加入；另有 6 个 repair `id` 与 5 个 degradedCapability `id`，三者不要混算）；`promotion.sharing` 把发布索引、源码摘要、逐 profile consumer 状态与撤销表合并成一个只读结论；事件桥与冷历史 JSONL 的行摘要扫描共用 1 MiB 分块字节扫描，不把整份文件解码成一个字符串，`state.archives` 的归档完整性校验仍读取归档与封存段的字节（成本随被校验字节增长），`--repair` 只处理 `recoverable=true` 且带 repair 的项。CLI 报告不得与运行时判断不一致 |
+| `scripts/acceptance/` | `run-host-acceptance.mjs` 真实隔离宿主验收（自包含安装官方 DSH；`--no-hmr` / `--experience-evolution` / `--cross-entry` 追加对应覆盖）；`run-cross-entry.mjs`、`run-web-experience.mjs`、`run-acp-experience.mjs`、`run-desktop-experience.mjs`、`run-desktop-task.mjs`、`run-acp-desktop-control.mjs` / `run-acp-desktop-loop.mjs` 分别取证跨入口消费、轻量经验入口、ACP → Desktop 任务通道与控制链路；`run-revalidation.mjs` 在宿主升级后为**已发布**的 stable 记录克隆数据根、启动真实 ACP/Web 入口取证并（`--apply`）调用官方 `revalidate` 采纳，`revalidation-plans.json` 是每条记录的一次确定性只读工具调用计划（见 `docs/revalidation.md`）；`probes/` 是这些 runner 驱动的宿主内探针（`core` / `lifecycle` / `body` / `promotion` / `retry` / `shared-experience` / `experience-evolution` / `cross-entry-promotion` / `cross-entry-consumer` / `acp-desktop-task` / `consumer-abort`），`probes/live-apply-race-probe.mjs`、`probes/hmr-transaction-probe.mjs`、`reproduce-hmr-startup.mjs` 与 `reproduce-consumer-shutdown-state.mjs` 复现宿主“实时应用能力”启动竞态、`0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` HMR 事务缺口与 consumer 关闭窗口（诊断用，不属于验收流程）；`desktop-version-probe.mjs` 只读验证 Desktop 版本身份 |
 | `scripts/release/` | `pack.mjs`（本地打包）、`verify-package.mjs`（`pack:check`，开发/发布两种语义）、`verify-artifact.mjs`（字节校验与 `--content-only`）、`verify-provenance.mjs`（tag 与来源）、`publish-artifact.mjs`（**写** `release/` 固定点）、`release-lib.mjs` 与 `pin-relation.mjs`（摘要、条目、固定点关系的共享实现） |
 | `scripts/benchmarks/` | 可复现性能基准：domain 写路径/回放/retention、冷档案、事件桥、诊断、经验检索、启动内存等；对应数据与收益边界写在 `docs/performance/` |
+| `scripts/setup-experience.mjs` | 多 profile 安装器（bin `dsh-evolution-setup`）：只维护托管标记块，按 profile 启用 experience / history / orchestrator / promoted-consumer / desktop-task 行并保持 HMR 关闭；包以内容摘要缓存后用官方 CLI 安装，失败即停止并报告已完成项（不是原子事务） |
+| `scripts/shared-plugins.mjs` | 跨入口发布记录操作（bin `dsh-evolution-shared`）：只读 `list`、逐 profile `disable` / `enable`、清除 sticky 失败的 `reset`，以及宿主升级后采纳隔离验收证据的 `revalidate --evidence <json>` |
 | `scripts/import-evolution-data.mjs` | 旧 preset / Dockyard 快照迁移 |
 | `scripts/migrate-experience-store.mjs` | 共享经验库一次性离线迁移 CLI（bin `dsh-evolution-experience-migrate`）：`--dry-run` / `--json` / `--backup` / `--no-backup` / `--no-vacuum`；退出码 0 成功或无操作、1 拒绝、2 失败 |
 | `.github/workflows/` | `ci.yml`（单测矩阵 22.19.0 / 24.x + package + 六宿主验收，`0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` 带 `--no-hmr`）、`codeql.yml`（Code Scanning）、`release.yml`（校验 tag 并创建 **draft** Release，不重建产物） |
 
 ### 测试与发布数据
 
-- `test/`：Node 原生测试（`.test.mjs` / `.test.js`，当前 215 个文件）。根目录以 `review-fix-*` 命名保留各轮评审的回归，`test/domain-storage/`、`test/dockyard-domain/`（含 `continuous/`）按层分组，`test/fixtures/` 与各目录的 `*-baseline.js` 是差分等价性基线。
+- `test/`：Node 原生测试（`.test.mjs` / `.test.js`，当前 224 个文件）。根目录以 `review-fix-*` 命名保留各轮评审的回归，`test/domain-storage/`、`test/dockyard-domain/`（含 `continuous/`）按层分组，`test/fixtures/` 与各目录的 `*-baseline.js` 是差分等价性基线。
 - `test/workflows.test.mjs` 断言 CI 形状（作业集合、作业级堆上限、验收矩阵），`test/release-pin.test.mjs` 判定工作树与固定点的关系。
 - `release/`：随仓库固定的发布产物（每个候选一个 tarball，历史候选保留）、`manifest.json`、`SHA256SUMS`。**不要手工编辑这些文件。**
-- `docs/evidence/`：与固定产物对应的验收记录；`docs/performance/`：性能数据与收益边界；`docs/core-reliability.md`：rc.5 时期的恢复边界探索记录，不是当前合同。
+- `docs/evidence/`：与固定产物对应的验收记录；`docs/performance/`：性能数据与收益边界；`docs/shared-plugins.md`：跨入口发布记录与 consumer 状态；`docs/revalidation.md`：宿主升级后已发布 stable 记录的取证与采纳；`docs/design/`：统一经验存储、经验驱动进化、ACP → Desktop 控制与统一只读检查的设计；`docs/core-reliability.md`：rc.5 时期的恢复边界探索记录，不是当前合同。
 - `dist/`：本地产物输出，不入库。
 
 ## 3. 开发约定
@@ -123,9 +134,10 @@ node scripts/release/verify-provenance.mjs --tag vX --require-source-commit
   - 全量回归用 `NODE_OPTIONS=--max-old-space-size=4096 npm test`；单文件用 `node --max-old-space-size=4096 --test <file>`。不得用 `--no-max-old-space-size` 或空 `NODE_OPTIONS` 覆盖该上限。
   - 不得用临时下载的 Node 发行版（如 `/tmp/nodedist/v*/bin/node`）跑全量套件 —— 那正是本次事故的触发方式。多版本验证走 `package.json#engines` 声明的范围，并保留堆上限。
   - 出现 `RangeError: Maximum call stack size exceeded`、正则回溯超时或 RSS 单调增长时立即中止、不要重试；先二分到单文件，并确认 `REDACTION_TEXT_BOUND`（`lib/orchestrator.js`）这类输入边界仍然生效。
-  - 单文件二分**已完成（有界）**：`docs/performance/oom-localization.md` 记录了对 95 个测试文件逐个起独立进程组的复测（`--max-old-space-size=4096`、2 GiB RSS 上限、300 s 超时），全部通过，峰值最高为 `test/dockyard-domain/continuous/continuous.test.js` 的 459 MiB，没有任何文件被上限杀掉（该复测对应当时 95 个测试文件；当前套件为 215 个）；与此同时，事故点名的 8 MiB 病态 `\x` 输入在当前规则表上（绕过 64 KiB `REDACTION_TEXT_BOUND`）只需 27 ms、RSS 增加 9 MiB、不再抛错。结论的边界要说清楚：在本次环境（Node v26.12.0）与当前代码上，那次无界分配与事故点名的 `RangeError` 都无法复现；事故时的 Node 发行版与工作树、以及产生它的中间规则表版本都没有留存，所以这不是对历史根因的定论。「`rpages` ≈ 203 GB」那个具体数值也**未复现**，不要把它当作已被验证的上界。CI 的单元测试作业现在通过作业级 `NODE_OPTIONS` 强制执行同一个上限（`test/workflows.test.mjs` 断言），定位与复测都必须继续在带堆上限的前提下进行。
+  - 单文件二分**已完成（有界）**：`docs/performance/oom-localization.md` 记录了对 95 个测试文件逐个起独立进程组的复测（`--max-old-space-size=4096`、2 GiB RSS 上限、300 s 超时），全部通过，峰值最高为 `test/dockyard-domain/continuous/continuous.test.js` 的 459 MiB，没有任何文件被上限杀掉（该复测对应当时 95 个测试文件；当前套件为 224 个）；与此同时，事故点名的 8 MiB 病态 `\x` 输入在当前规则表上（绕过 64 KiB `REDACTION_TEXT_BOUND`）只需 27 ms、RSS 增加 9 MiB、不再抛错。结论的边界要说清楚：在本次环境（Node v26.12.0）与当前代码上，那次无界分配与事故点名的 `RangeError` 都无法复现；事故时的 Node 发行版与工作树、以及产生它的中间规则表版本都没有留存，所以这不是对历史根因的定论。「`rpages` ≈ 203 GB」那个具体数值也**未复现**，不要把它当作已被验证的上界。CI 的单元测试作业现在通过作业级 `NODE_OPTIONS` 强制执行同一个上限（`test/workflows.test.mjs` 断言），定位与复测都必须继续在带堆上限的前提下进行。
 - 改动 **trial/teardown、跨进程锁、CAS、journal、canary 或重启恢复**时，必须补对应失败路径测试。
 - 真实宿主验收：`npm run acceptance:host -- --host <version> --out <evidence-path>`。它会安装依赖并生成证据，**必须使用隔离 runtime/home**，不得触碰正式 `DSH_HOME`。
+- 跨入口验收：`npm run acceptance:host -- --host 0.2.2-rc.3 --no-hmr --cross-entry --out <evidence-path>`。它在真实 Web / ACP 入口证明 consumer 只挂载一次、不兼容记录被跳过、源码篡改与撤销生效；该覆盖同样只使用隔离 runtime/home。
 - 宿主升级后的 stable 记录重验证：`node scripts/acceptance/run-revalidation.mjs --home ~/.dsh --apply`。它只克隆数据根取证、从不改写插件源码，采纳走 `shared-plugins.mjs revalidate`；证据写到 `docs/evidence/revalidation-<host>-<date>.json`（见 `docs/revalidation.md`）。
 - Desktop 版本身份验证（只读、不安装/重启正式 DSH）：`ELECTRON_RUN_AS_NODE=1 "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness" scripts/acceptance/desktop-version-probe.mjs --out <evidence>`；证据按 `<electron-resources>` 脱敏。
 - 修改任何**分发文件**（`package.json#files` 覆盖的内容）都会改变 `contentSha256`，于是工作树不再是固定点描述的那个包。`pack:check` 默认按开发阶段判定：固定点必须仍然描述它自己记录的 `sourceCommit`（该 commit 在历史中、是 HEAD 的祖先、且发布的内容等于固定内容），工作树要么就是固定点，要么是它的**已提交**后继（逐条点名差异）；未提交的分发改动、浅克隆（缺历史）与“固定点不再描述自己记录的 commit”仍然失败；`pack:check -- --release`（`release.yml` 使用）保持严格语义，工作树不等于固定内容即失败。把漂移转绿的唯一途径是按 `RELEASE.md` 重新构建、重跑宿主验收、再更新固定点，**不手工伪造通过记录**。
