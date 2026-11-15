@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "kind": "dsh-evolution-revalidation-plans",
+  "note": "Deterministic, side-effect-free tool calls used to prove a revalidated record executes on the current host. $WORK expands to the runner's scratch directory. A record without an entry is still verified by mount + activation; its tool is not called.",
+  "plans": {
+    "evolution-promoted-af973a3eea01": {
+      "tool": "readonly_git_file",
+      "arguments": {
+        "workdir": "$WORK/git-fixture",
+        "rev": "HEAD",
+        "path": "README.md"
+      },
+      "expect": {
+        "contains": "revalidation fixture"
+      }
+    },
+    "evolution-promoted-e82a216992bb": {
+      "tool": "run_code_diagnose",
+      "arguments": {
+        "occurrences": 73,
+        "failures": 5
+      },
+      "expect": {
+        "json": {
+          "ok": true,
+          "occurrences": 73,
+          "failures": 5,
+          "successes": 68,
+          "status": "healthy"
+        }
+      }
+    }
+  }
+}
