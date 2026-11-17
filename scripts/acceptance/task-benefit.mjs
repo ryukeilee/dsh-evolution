@@ -119,12 +119,20 @@ function finiteUsage(usage) {
   return true;
 }
 
-function failureProjection(detail) {
-  const text = String(detail ?? '');
+const SAFE_ERROR_CODE = /^E_(?:DESKTOP|ACP|EVOLUTION|DSH|EXPERIENCE)_[A-Z0-9_]{2,63}$/;
+
+/** Only a trusted structured code in an allowlist may reach the evidence. */
+export function safeErrorCode(value) {
+  const code = typeof value === 'string' ? value : value?.code;
+  return typeof code === 'string' && SAFE_ERROR_CODE.test(code) ? code : null;
+}
+
+function failureProjection(error) {
+  const text = String(error?.message ?? error ?? '');
   const stage = /initialize/.test(text) ? 'initialize'
     : /session\/new/.test(text) ? 'session-new'
       : /session\/prompt/.test(text) ? 'prompt' : 'transport';
-  const code = /E_[A-Z0-9_]{2,63}/.exec(text)?.[0] ?? null;
+  const code = safeErrorCode(error);
   return { stage, category: 'acp-failure', code };
 }
 
@@ -273,6 +281,35 @@ export function assertIsolatedHome(home) {
   return canonical;
 }
 
+/** Resolve the nearest existing ancestor and append the missing components. */
+async function realpathOr(target) {
+  const suffix = [];
+  let current = path.resolve(target);
+  for (;;) {
+    try { return path.join(await fs.realpath(current), ...suffix.slice().reverse()); }
+    catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      const parent = path.dirname(current);
+      if (parent === current) return path.resolve(target);
+      suffix.push(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
+/**
+ * Resolve a target and require it to stay inside the already-verified isolated
+ * home. This is applied to the work directory and the artifact parent before
+ * either is created or written.
+ */
+export async function assertIsolatedTarget(target, root, label) {
+  const canonical = await realpathOr(path.resolve(target));
+  if (canonical !== root && !canonical.startsWith(`${root}${path.sep}`)) {
+    throw new Error(`${label} must stay inside the isolated home`);
+  }
+  return canonical;
+}
+
 /** Resolve the versions of the Desktop packages that will run the Trial. */
 export function readDesktopVersions(binary) {
   const resources = path.join(path.dirname(path.dirname(binary)), 'Resources');
@@ -364,7 +401,13 @@ function spawnAcp({ cli, home, overlay, env, cwd }) {
     pending.set(id, (row) => {
       clearTimeout(timer);
       pending.delete(id);
-      row.error ? reject(new Error(`${method}: ${JSON.stringify(row.error)}`)) : resolve(row.result);
+      if (row.error) {
+        const error = new Error(`${method}: ${JSON.stringify(row.error)}`);
+        // Structured code only; a JSON-RPC numeric code is not an E_ code.
+        if (typeof row.error?.data?.code === 'string') error.code = row.error.data.code;
+        else if (typeof row.error?.code === 'string') error.code = row.error.code;
+        reject(error);
+      } else resolve(row.result);
     });
     child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
   });
@@ -379,7 +422,7 @@ function spawnAcp({ cli, home, overlay, env, cwd }) {
 async function runSession({ cli, home, work, overlay, env, bridge, prompt, label, side, expectedTokens, candidateTool }) {
   const startedAt = Date.now();
   const acp = spawnAcp({ cli, home, overlay, env, cwd: home });
-  let promptError = null;
+  let promptFailure = null;
   const before = bridge.turns.length;
   const updates = acp.updates;
   try {
@@ -387,7 +430,7 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
     const session = await acp.rpc('session/new', { cwd: home, mcpServers: [] });
     await acp.rpc('session/prompt', { sessionId: session.sessionId, prompt: [{ type: 'text', text: prompt }] }, DEFAULT_TIMEOUT_MS);
   } catch (error) {
-    promptError = String(error?.message ?? error);
+    promptFailure = error;
   } finally {
     try { acp.child.stdin.end(); } catch {}
     try { acp.child.kill('SIGTERM'); } catch {}
@@ -402,12 +445,12 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
   const failedTurns = turns.filter((turn) => turn.ok !== true).length;
   // The raw transport detail stays on the operator console; the persisted row
   // carries only a stage/category/code projection.
-  if (promptError !== null) console.error(`[task-benefit] ${label} failed: ${promptError.slice(0, 400)}`);
+  if (promptFailure !== null) console.error(`[task-benefit] ${label} failed: ${String(promptFailure?.message ?? promptFailure).slice(0, 400)}`);
   return {
     ...row,
-    ok: promptError === null && failedTurns === 0 && row.turns > 0 && row.usageComplete === true,
+    ok: promptFailure === null && failedTurns === 0 && row.turns > 0 && row.usageComplete === true,
     failedTurns,
-    ...(promptError === null ? {} : { failure: failureProjection(promptError) }),
+    ...(promptFailure === null ? {} : { failure: failureProjection(promptFailure) }),
     assistantCharacters: assistantText.length,
   };
 }
@@ -421,7 +464,7 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
  */
 export async function produceTaskBenefit(options = {}) {
   const home = assertIsolatedHome(options.home);
-  const work = path.resolve(options.work ?? path.join(home, 'task-benefit-work'));
+  const work = await assertIsolatedTarget(options.work ?? path.join(home, 'task-benefit-work'), home, 'work directory');
   const task = normalizeTask(options.task);
   const taskId = options.taskId;
   if (typeof taskId !== 'string' || !TASK_ID.test(taskId)) throw new Error('taskId must match the Desktop task identity rule');
@@ -438,8 +481,14 @@ export async function produceTaskBenefit(options = {}) {
   const cli = options.cli ?? '/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh';
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DSH_')));
   delete env.ELECTRON_RUN_AS_NODE;
+  const outFileTarget = path.resolve(options.outFile ?? path.join(home, 'storages', 'evolution', 'desktop-tasks', 'task-evidence', `${taskId}.json`));
+  const outParent = await assertIsolatedTarget(path.dirname(outFileTarget), home, 'artifact directory');
+  const outFile = path.join(outParent, path.basename(outFileTarget));
   await fs.mkdir(work, { recursive: true });
+  if (await fs.realpath(work) !== work) throw new Error('the work directory resolved to a different path after creation');
   await fs.mkdir(path.join(work, 'bridge-cwd'), { recursive: true });
+  await fs.mkdir(outParent, { recursive: true, mode: 0o700 });
+  if (await fs.realpath(outParent) !== outParent) throw new Error('the artifact directory resolved to a different path after creation');
 
   const previewUrl = pathToFileURL(path.join(work, 'preview-policy.mjs')).href;
   await writePreviewModule(path.join(work, 'preview-policy.mjs'), candidateHost);
@@ -486,8 +535,6 @@ export async function produceTaskBenefit(options = {}) {
       : { sessionsUsingCandidate: 0, sessionsExercised: sessions.candidate.filter((row) => row.exercised).length },
   });
   if (!complete) artifact.complete = false;
-  const outFile = path.resolve(options.outFile ?? path.join(home, 'storages', 'evolution', 'desktop-tasks', 'task-evidence', `${taskId}.json`));
-  await fs.mkdir(path.dirname(outFile), { recursive: true, mode: 0o700 });
   const temporary = `${outFile}.${process.pid}.tmp`;
   await fs.writeFile(temporary, `${JSON.stringify(artifact, null, 2)}\n`, { mode: 0o600 });
   await fs.rename(temporary, outFile);

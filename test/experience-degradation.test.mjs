@@ -208,6 +208,36 @@ test('a below-threshold degradation does not change an ordinary failure candidat
   assert.equal(candidate.score, without.candidates.find((entry) => entry.problemKey === 'tool read').score);
 });
 
+test('a below-threshold degradation does not refresh recency or reopen a resolved target', () => {
+  const now = Date.parse('2026-11-18T00:00:00Z');
+  const errors = [{
+    key: 'knowledge:read-errors', scope: 'tool read', problem: 'official operation failure host operation failure',
+    failureCount: 8, occurrences: 8, lastSeen: '2026-11-08T00:00:00.000Z',
+  }];
+  const truncation = {
+    key: 'knowledge:one-truncation', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
+    occurrences: 1, failureCount: 0, successCount: 0, lastSeen: '2026-11-17T00:00:00.000Z',
+    metrics: { recoverycalls: { sum: 0, count: 1 } },
+  };
+  const withLoss = planEvolutionCandidates({ knowledge: [...errors, truncation], failureMemory: [] }, { minOccurrences: 3, now });
+  const without = planEvolutionCandidates({ knowledge: errors, failureMemory: [] }, { minOccurrences: 3, now });
+  const candidate = withLoss.candidates.find((entry) => entry.problemKey === 'tool read');
+  const baseline = without.candidates.find((entry) => entry.problemKey === 'tool read');
+  assert.equal(candidate.score, baseline.score, 'a below-threshold loss must not refresh the error score');
+  assert.equal(candidate.lastSeen, baseline.lastSeen);
+
+  const resolved = planEvolutionCandidates({
+    knowledge: [
+      { key: 'knowledge:error', scope: 'tool read', problem: 'official operation failure host operation failure', failureCount: 8, occurrences: 8, lastSeen: '2026-11-01T00:00:00.000Z' },
+      { key: 'knowledge:resolved', scope: 'tool read', successCount: 1, occurrences: 1, lastSeen: '2026-11-05T00:00:00.000Z' },
+      { ...truncation, lastSeen: '2026-11-10T00:00:00.000Z' },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3, now });
+  assert.equal(resolved.candidates.some((entry) => entry.problemKey === 'tool read'), false, 'the loss reopened a resolved target');
+  assert.equal(resolved.rejected.find((entry) => entry.problemKey === 'tool read')?.reason, 'already-resolved');
+});
+
 test('the mounted collector defers a degradation to the next call and flushes it at turn end', async (t) => {
   const { Context } = await import('@deepseek-ai/cordis');
   const { apply: applyCollector } = await import('../lib/experience-collector.js');

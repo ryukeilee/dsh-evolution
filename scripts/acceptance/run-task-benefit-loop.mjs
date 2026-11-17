@@ -25,7 +25,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { produceTaskBenefit } from './task-benefit.mjs';
+import { produceTaskBenefit, safeErrorCode } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -234,7 +234,15 @@ async function createAcp(label, { patch, envExtra = {}, waitForPromoted = false,
   const rpc = (method, params, timeout = 60_000) => new Promise((resolve, reject) => {
     const id = ++sequence;
     const timer = setTimeout(() => { pending.delete(id); reject(new Error(method + ' timed out; ' + stderr.slice(-800))); }, timeout);
-    pending.set(id, (row) => { clearTimeout(timer); pending.delete(id); row.error ? reject(new Error(method + ': ' + JSON.stringify(row.error))) : resolve(row.result); });
+    pending.set(id, (row) => {
+      clearTimeout(timer);
+      pending.delete(id);
+      if (!row.error) { resolve(row.result); return; }
+      const error = new Error(method + ': ' + JSON.stringify(row.error));
+      if (typeof row.error?.data?.code === 'string') error.code = row.error.data.code;
+      else if (typeof row.error?.code === 'string') error.code = row.error.code;
+      reject(error);
+    });
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
   });
   child.once('exit', (code, signal) => {
@@ -265,7 +273,11 @@ async function runFixturePrompt(label, text, machine) {
   try {
     await session.rpc('session/prompt', { sessionId: session.sessionId, prompt: [{ type: 'text', text }] }, 30 * 60 * 1000);
   } catch (error) {
-    if (fixtureError) throw new Error('fixture failed: ' + fixtureError);
+    if (fixtureError) {
+      const wrapped = new Error('fixture failed: ' + fixtureError);
+      wrapped.code = error?.code;
+      throw wrapped;
+    }
     throw error;
   } finally {
     await session.close();
@@ -668,7 +680,7 @@ try {
   const stage = /fixture failed/.test(detail) ? 'fixture'
     : /timed out/.test(detail) ? 'timeout'
       : /E_DESKTOP/.test(detail) ? 'desktop-task' : 'acceptance';
-  evidence.error = { stage, category: 'acceptance-failure', code: /E_[A-Z0-9_]{2,63}/.exec(detail)?.[0] ?? null };
+  evidence.error = { stage, category: 'acceptance-failure', code: safeErrorCode(error) };
   if (!['OWNER_APPROVAL_REQUIRED'].includes(detail)) process.exitCode = 1;
 } finally {
   for (const child of children) await stopDesktop(child).catch(() => {});

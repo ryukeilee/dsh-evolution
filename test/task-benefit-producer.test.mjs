@@ -14,10 +14,12 @@ import {
   aggregateSessions,
   answerMatches,
   assertIsolatedHome,
+  assertIsolatedTarget,
   buildTaskBenefitArtifact,
   extractSessionEvidence,
   normalizeTask,
   parseExpectTokens,
+  safeErrorCode,
   writePreviewModule,
 } from '../scripts/acceptance/task-benefit.mjs';
 import { validateTaskBenefit } from '../lib/orchestrator.js';
@@ -211,6 +213,26 @@ test('a temporary symlink into the formal home is rejected before any write', as
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
+});
+
+test('producer work and artifact targets cannot escape the verified home', async () => {
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-home-')));
+  const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-outside-')));
+  try {
+    assert.equal(await assertIsolatedTarget(path.join(home, 'work'), home, 'work'), path.join(home, 'work'));
+    await fs.symlink(outside, path.join(home, 'link'));
+    await assert.rejects(assertIsolatedTarget(path.join(home, 'link', 'nested'), home, 'work'), /isolated home/);
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
+test('only allowlisted structured error codes can reach the evidence', () => {
+  assert.equal(safeErrorCode({ code: 'E_DESKTOP_TASK_EVIDENCE_MISSING' }), 'E_DESKTOP_TASK_EVIDENCE_MISSING');
+  assert.equal(safeErrorCode({ code: 'API_KEY=E_EXAMPLE_PRIVATE_TOKEN' }), null);
+  assert.equal(safeErrorCode({ message: 'API_KEY=E_EXAMPLE_PRIVATE_TOKEN' }), null);
+  assert.equal(safeErrorCode(new Error('E_DESKTOP_TASK_EVIDENCE_MISSING')), null);
 });
 
 test('the preview wrapper mounts the exact Host body through an ESM plugin', async () => {

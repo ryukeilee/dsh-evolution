@@ -160,7 +160,27 @@ owner confirmation 投影、挂载前功能基线与 "planner 已解决" 断言�
 - S11：功能检查先验证结果路径存在（`present`），再比较期望值；删除字段不能满足
   `expected:null`。
 
-## 7. 对日常工作价值的判断
+第三轮审核（同一模型/档位）提出 1 个 blocker、5 个 should、1 个 nit；第四轮修复：
+
+- S4：producer 逐级解析最近存在的祖先再拼接缺失段，`/tmp/alias/new/nested` 这类
+  两级缺失、祖先为符号链接的路径也被拒绝。
+- S6：`bash` 恢复必须拿到 `exitCode === 0` 的结构化回执，排除 `timedOut` /
+  `aborted` / `signal`；非零退出不结清退化。
+- S7：未达门槛的退化不再进入 `failureModes` / 归因 / 评分。
+- S9：runner 顶层失败只存 stage/category/code，原始 RPC/stderr 只进控制台。
+- S11：根结果 `undefined` 判为 `present:false`。
+- S12：`output-capped` 只匹配 `</content>` 前的末尾 footer，正文中的同样文字不再误报。
+
+第四轮审核提出 1 个 blocker、2 个 should；第五轮修复：
+
+- S4：producer 在首次写入前解析并验证 work 与默认 artifact 父目录都留在已校验的
+  isolated home 内，`bridge-cwd` 不会再沿符号链接写到隔离目录外。
+- S7：未达门槛的退化不再刷新普通错误候选的时间/证据，也不能重新打开
+  `already-resolved` 的错误组；回归测试使用不同时间戳。
+- S9：只写入来自可信结构化字段且在允许列表中的 `E_DESKTOP_/E_ACP_/E_EVOLUTION_/E_DSH_/E_EXPERIENCE_`
+  错误码；`API_KEY=E_...` 这类原始文本一律填 `null`。
+
+## 8. 对日常工作价值的判断
 
 这个场景的价值不在“新增一个工具”，而在**把官方 read 的既有损失修好**：模型不需要改变习惯去
 选择一个新工具，只要继续用 read，就能直接拿到完整行，省掉一次 shell 兜底。真实会话里
@@ -168,7 +188,7 @@ owner confirmation 投影、挂载前功能基线与 "planner 已解决" 断言�
 “真实任务上的净收益可以通过现有门禁”的完整路径；更高频的目标（patch 上下文失配、超时）
 现在也有可复用的 producer、functionalCheck 与退化观测入口。
 
-## 8. 复现
+## 9. 复现
 
 ```sh
 npm run release:pack
@@ -180,7 +200,7 @@ node scripts/acceptance/run-task-benefit-loop.mjs dist/dsh-evolution-0.2.11.tgz 
 证据：`docs/evidence/task-benefit-0.2.2-rc.3-20261118.json`（路径已按 `$DSH_HOME` / `<work>` /
 `<repo>` 脱敏；不含 sentinel 明文、会话正文或凭据）。
 
-## 9. 剩余边界
+## 10. 剩余边界
 
 1. 每侧 3 个会话不构成统计置信区间；它证明的是“这组真实任务上可重复的成本方向”。第二轮运行
    用于重复性，不是独立样本量。
