@@ -1,0 +1,70 @@
+{
+  "node": "v26.13.1",
+  "platform": "darwin-arm64",
+  "method": "Identical store file, one DatabaseSync connection, alternating baseline/candidate order, 5 timed samples per side per round, deep-equal output asserted per round. Baseline is the pre-change unconditional scoped count; candidate reads the window first and counts only when full.",
+  "options": {
+    "rows": 10000,
+    "window": 500,
+    "rounds": 7,
+    "samples": 5,
+    "out": "docs/performance/shared-experience-conclusion-scan-10k.json",
+    "keep": false
+  },
+  "samples": [
+    {
+      "round": 0,
+      "order": "baseline,candidate",
+      "baselineMs": 52.833733399999986,
+      "candidateMs": 27.148449799999934
+    },
+    {
+      "round": 1,
+      "order": "candidate,baseline",
+      "baselineMs": 52.44987499999998,
+      "candidateMs": 26.99899179999993
+    },
+    {
+      "round": 2,
+      "order": "baseline,candidate",
+      "baselineMs": 52.337641799999986,
+      "candidateMs": 26.957708000000004
+    },
+    {
+      "round": 3,
+      "order": "candidate,baseline",
+      "baselineMs": 52.40014999999994,
+      "candidateMs": 26.962691599999925
+    },
+    {
+      "round": 4,
+      "order": "baseline,candidate",
+      "baselineMs": 52.318333399999844,
+      "candidateMs": 26.78864999999996
+    },
+    {
+      "round": 5,
+      "order": "candidate,baseline",
+      "baselineMs": 52.26336659999979,
+      "candidateMs": 26.800541800000065
+    },
+    {
+      "round": 6,
+      "order": "baseline,candidate",
+      "baselineMs": 52.369566600000056,
+      "candidateMs": 26.830366800000046
+    }
+  ],
+  "summary": {
+    "rows": 10000,
+    "window": 500,
+    "scopeRows": 1,
+    "baselineMedianMs": 52.369566600000056,
+    "candidateMedianMs": 26.957708000000004,
+    "changePercent": -48.52409567200815
+  },
+  "production": {
+    "considered": 1,
+    "truncated": false,
+    "matches": 0
+  }
+}
