@@ -424,7 +424,6 @@ try {
   const taskId = mintTaskId();
   const producer = await produceTaskBenefit({
     home,
-    work: path.join(work, 'task-benefit'),
     taskId,
     task,
     candidateHost: CANDIDATE_HOST,

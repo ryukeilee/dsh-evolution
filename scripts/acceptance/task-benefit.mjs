@@ -486,26 +486,30 @@ export async function produceTaskBenefit(options = {}) {
   const outFile = path.join(outParent, path.basename(outFileTarget));
   await fs.mkdir(work, { recursive: true });
   if (await fs.realpath(work) !== work) throw new Error('the work directory resolved to a different path after creation');
-  await fs.mkdir(path.join(work, 'bridge-cwd'), { recursive: true });
+  // A fresh run directory under the verified work root: pre-existing
+  // bridge-cwd, preview or overlay symlinks cannot be followed.
+  const runWork = await fs.mkdtemp(path.join(work, 'run-'));
+  if (await fs.realpath(runWork) !== runWork) throw new Error('the fresh run directory resolved to a different path');
+  await fs.mkdir(path.join(runWork, 'bridge-cwd'), { recursive: true });
   await fs.mkdir(outParent, { recursive: true, mode: 0o700 });
   if (await fs.realpath(outParent) !== outParent) throw new Error('the artifact directory resolved to a different path after creation');
 
-  const previewUrl = pathToFileURL(path.join(work, 'preview-policy.mjs')).href;
-  await writePreviewModule(path.join(work, 'preview-policy.mjs'), candidateHost);
-  const bridge = await startModelBridge({ model, cwd: path.join(work, 'bridge-cwd') });
+  const previewUrl = pathToFileURL(path.join(runWork, 'preview-policy.mjs')).href;
+  await writePreviewModule(path.join(runWork, 'preview-policy.mjs'), candidateHost);
+  const bridge = await startModelBridge({ model, cwd: path.join(runWork, 'bridge-cwd') });
   let candidateOverlay;
   let baselineOverlay;
   const sessions = { baseline: [], candidate: [] };
   try {
-    candidateOverlay = path.join(work, 'overlay-candidate.yml');
-    baselineOverlay = path.join(work, 'overlay-baseline.yml');
+    candidateOverlay = path.join(runWork, 'overlay-candidate.yml');
+    baselineOverlay = path.join(runWork, 'overlay-baseline.yml');
     await fs.writeFile(candidateOverlay, overlayText(bridge.baseURL, previewUrl), { mode: 0o600 });
     await fs.writeFile(baselineOverlay, overlayText(bridge.baseURL, null), { mode: 0o600 });
     for (let repetition = 0; repetition < runs; repetition += 1) {
       const order = repetition % 2 === 0 ? ['candidate', 'baseline'] : ['baseline', 'candidate'];
       for (const side of order) {
         const row = await runSession({
-          cli, home, work,
+          cli, home, work: runWork,
           overlay: side === 'candidate' ? candidateOverlay : baselineOverlay,
           env, bridge, prompt: task.prompt,
           label: `${side}-${repetition + 1}`, side,
@@ -535,9 +539,14 @@ export async function produceTaskBenefit(options = {}) {
       : { sessionsUsingCandidate: 0, sessionsExercised: sessions.candidate.filter((row) => row.exercised).length },
   });
   if (!complete) artifact.complete = false;
-  const temporary = `${outFile}.${process.pid}.tmp`;
-  await fs.writeFile(temporary, `${JSON.stringify(artifact, null, 2)}\n`, { mode: 0o600 });
-  await fs.rename(temporary, outFile);
+  const temporary = `${outFile}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+  await fs.writeFile(temporary, `${JSON.stringify(artifact, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
+  try {
+    await fs.rename(temporary, outFile);
+  } catch (error) {
+    await fs.rm(temporary, { force: true }).catch(() => {});
+    throw error;
+  }
   const report = {
     kind: 'dsh-evolution-task-benefit-run',
     ok: complete,

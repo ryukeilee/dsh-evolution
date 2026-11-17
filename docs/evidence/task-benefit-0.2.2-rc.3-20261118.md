@@ -23,15 +23,15 @@ sentinel 位于截断点之后。任务只要求模型用 `read` 读取三个文
 
 | 会话 | 侧 | 正确 | turns | calls | 工具序列 | token | 墙钟 |
 | --- | --- | ---: | ---: | ---: | --- | ---: | ---: |
-| 1 | baseline | 是 | 5 | 4 | read, bash, read, read | 162,452 | 31.8s |
-| 2 | baseline | 是 | 5 | 4 | read, bash, read, read | 162,720 | 39.5s |
-| 3 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,150 | 50.0s |
-| 1 | candidate | 是 | 4 | 3 | read, read, read | 132,693 | 14.9s |
-| 2 | candidate | 是 | 4 | 3 | read, read, read | 132,887 | 24.0s |
-| 3 | candidate | 是 | 4 | 3 | read, read, read | 132,738 | 16.8s |
+| 1 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,011 | 28.4s |
+| 2 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,120 | 39.8s |
+| 3 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,167 | 38.9s |
+| 1 | candidate | 是 | 4 | 3 | read, read, read | 132,733 | 15.3s |
+| 2 | candidate | 是 | 4 | 3 | read, read, read | 132,735 | 16.6s |
+| 3 | candidate | 是 | 4 | 3 | read, read, read | 132,740 | 23.5s |
 
-汇总：baseline 15 turns / 12 calls / 489,322 tokens / 121.3s；candidate 12 / 9 / 398,318 / 55.7s。
-turns -20%、tool calls -25%、token -18.6%、墙钟 -54.1%；两侧 3/3 正确、0 失败，
+汇总：baseline 15 turns / 12 calls / 492,298 tokens / 107.1s；candidate 12 / 9 / 398,208 / 55.3s。
+turns -20%、tool calls -25%、token -19.1%、墙钟 -48.4%；两侧 3/3 正确、0 失败，
 candidate 的 `sessionsExercised = 3`。baseline 的 `read` 结果各 2,216 字符并带
 `line truncated to 2000 chars`；candidate 的 `read` 结果各 3,329 字符且包含完整 sentinel。
 
@@ -73,8 +73,8 @@ baseline 会话把 9 次 `line-truncated` 退化写入隔离共享经验库。De
   `canary-passed`。
 - 无确认时等待 5s 仍为 `awaiting-owner-confirmation`，发布索引不变；绑定
   `experimentId + sourceSha256` 的确认后，canary 两次功能复验都 `matched:true`，
-  stable 并发布到 `acp`（`evolution-promoted-531489137c41`）。
-- fresh ACP consumer：真实模型 4 turns / 3 calls / 132,722 tokens / 17.0s 正确完成；
+  stable 并发布到 `acp`（`evolution-promoted-fd61a380729f`）。
+- fresh ACP consumer：真实模型 4 turns / 3 calls / 132,798 tokens / 18.6s 正确完成；
   三个 `read` 结果都包含完整 sentinel，没有截断；证据只存答案 sha256。
 - 负证据：缺失 artifact → `E_DESKTOP_TASK_EVIDENCE_MISSING`；源码失配 →
   `E_DESKTOP_TASK_EVIDENCE_MISMATCH`；无收益与未采用 → `E_DESKTOP_BENEFIT_UNPROVEN`

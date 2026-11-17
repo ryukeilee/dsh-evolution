@@ -218,6 +218,7 @@ test('a below-threshold degradation does not refresh recency or reopen a resolve
     key: 'knowledge:one-truncation', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
     occurrences: 1, failureCount: 0, successCount: 0, lastSeen: '2026-11-17T00:00:00.000Z',
     metrics: { recoverycalls: { sum: 0, count: 1 } },
+    evidenceRefs: ['observations:deadbeef'], regressionCount: 2,
   };
   const withLoss = planEvolutionCandidates({ knowledge: [...errors, truncation], failureMemory: [] }, { minOccurrences: 3, now });
   const without = planEvolutionCandidates({ knowledge: errors, failureMemory: [] }, { minOccurrences: 3, now });
@@ -225,6 +226,8 @@ test('a below-threshold degradation does not refresh recency or reopen a resolve
   const baseline = without.candidates.find((entry) => entry.problemKey === 'tool read');
   assert.equal(candidate.score, baseline.score, 'a below-threshold loss must not refresh the error score');
   assert.equal(candidate.lastSeen, baseline.lastSeen);
+  assert.deepEqual(candidate.evidenceRefs, baseline.evidenceRefs, 'a below-threshold loss must not add evidence');
+  assert.equal(candidate.regressionCount, baseline.regressionCount, 'a below-threshold loss must not add regressions');
 
   const resolved = planEvolutionCandidates({
     knowledge: [
