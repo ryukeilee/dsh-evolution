@@ -78,11 +78,22 @@ const ORIGIN_WIRE_BYTES = 10147;
  *              = 5000 B fields / 5200 B wire (rounded up once more to leave a
  *                small wording headroom: 5050 / 5250).
  *
+ *  The 2026-11-17 honest-benefit extension adds the optional
+ *  `evolution_propose.benefitModel` (workflow | capability), so a workflow-goal
+ *  proposal can require a probe-proven workflow before/after. Re-measured with
+ *  the fixture in this file on 2026-11-17:
+ *
+ *    text   = 3819 B (unchanged);
+ *    fields = 11902 B;
+ *    wire   = 12419 B;
+ *    allowance = ceil(ceil((actual - floor(origin * 0.8)) / 0.8) / 50) * 50
+ *              = 5200 B fields / 5400 B wire.
+ *
  *  So the assertion below is still "at least 20% smaller than the extended
  *  baseline", not an unbounded budget. Adding prose or another tool must raise
  *  the allowance only with a new measurement and this same formula. */
-const FIELDS_ALLOWANCE_BYTES = 5050;
-const WIRE_ALLOWANCE_BYTES = 5250;
+const FIELDS_ALLOWANCE_BYTES = 5200;
+const WIRE_ALLOWANCE_BYTES = 5400;
 const BASELINE_FIELDS_BYTES = ORIGIN_FIELDS_BYTES + FIELDS_ALLOWANCE_BYTES;
 const BASELINE_WIRE_BYTES = ORIGIN_WIRE_BYTES + WIRE_ALLOWANCE_BYTES;
 
@@ -101,7 +112,7 @@ const EXPECTED_PARAMETER_STRUCTURE = JSON.parse(`{
  "evolution_maintain": {"required":[],"properties":{"dryRun":{"type":"boolean"},"confirmation":{"type":"boolean"},"archives":{"type":"boolean"},"log":{"type":"boolean"},"retainRecords":{"type":"number"}}},
  "evolution_runtime_inspect": {"required":[],"properties":{}},
  "evolution_plan": {"required":[],"properties":{"focus":{"type":"string"},"minOccurrences":{"type":"number"},"limit":{"type":"number"}}},
- "evolution_propose": {"required":["why","target","impactScope","successMetrics"],"properties":{"why":{"type":"string"},"target":{"type":"string"},"impactScope":{"type":"array","items":{"type":"string"}},"successMetrics":{"type":"array","items":{"type":"string"}},"risk":{"type":"string"},"strategy":{"type":"string"},"rootCause":{"type":"string"},"targets":{"type":"object","required":[],"properties":{"components":{"type":"array","items":{"type":"string"}},"plugins":{"type":"array","items":{"type":"string"}},"configurations":{"type":"array","items":{"type":"string"}}}}}},
+ "evolution_propose": {"required":["why","target","impactScope","successMetrics"],"properties":{"why":{"type":"string"},"target":{"type":"string"},"impactScope":{"type":"array","items":{"type":"string"}},"successMetrics":{"type":"array","items":{"type":"string"}},"risk":{"type":"string"},"strategy":{"type":"string"},"rootCause":{"type":"string"},"benefitModel":{"type":"object","required":[],"properties":{"kind":{"type":"string"},"metric":{"type":"string"}}},"targets":{"type":"object","required":[],"properties":{"components":{"type":"array","items":{"type":"string"}},"plugins":{"type":"array","items":{"type":"string"}},"configurations":{"type":"array","items":{"type":"string"}}}}}},
  "evolution_trial": {"required":["experimentId","composition"],"properties":{"experimentId":{"type":"string"},"idPrefix":{"type":"string"},"composition":{"type":"object","required":["name","purpose","code"],"properties":{"name":{"type":"string"},"purpose":{"type":"string"},"code":{"type":"object","required":["host"],"properties":{"host":{"type":"string"},"client":{"type":"string"}}}}}}},
   "evolution_probe": {"required":["experimentId","phase","scenario"],"properties":{"experimentId":{"type":"string"},"phase":{"type":"string"},"scenario":{"type":"object","required":["id","steps"],"properties":{"id":{"type":"string"},"description":{"type":"string"},"repetitions":{"type":"number"},"steps":{"type":"array","items":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"arguments":{"type":"json"},"role":{"type":"string"},"absentInBaseline":{"type":"boolean"}}}}}}}},
  "evolution_measure": {"required":["experimentId","observation"],"properties":{"experimentId":{"type":"string"},"observation":{"type":"object","required":["solvesProblem"],"properties":{"solvesProblem":{"type":"boolean"},"sideEffects":{"type":"array","items":{"type":"string"}},"orphanResources":{"type":"array","items":{"type":"string"}},"performanceChange":{"type":"json"},"errorChange":{"type":"json"},"metrics":{"type":"object"},"beforeMetrics":{"type":"object"},"afterMetrics":{"type":"object"},"observationWindow":{"type":"json"},"sampleCount":{"type":"number"},"benefitEvidence":{"type":"string"},"repeatable":{"type":"boolean"},"regressionPassed":{"type":"boolean"},"reversible":{"type":"boolean"},"cleanupEvidence":{"type":"string"}}}}},

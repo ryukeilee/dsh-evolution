@@ -12,8 +12,10 @@
 
 1. **三个 stable 插件确实"正常运行"，但其中两个在设计上就不可能产生工作流收益。**
    `run_code_diagnose` 是纯算术换算器（输入是调用方自己填的 `occurrences`/`failures`），
-   没有数据源；`run_code_preflight` 是人工前置检查工具，482 个会话 16,817 次工具结果中调用
-   **0 次**，而且它的规则集只覆盖 19 个语法失败程序中的 9 个；`readonly_git_file` 是
+   没有数据源；`run_code_preflight` 是人工前置检查工具，482 个会话 16,817 次工具结果中
+   **用户会话调用 0 次**（验证运行另有失败记录，见
+   [统计口径核对](./2026-11-17-stats-reconciliation.md)），而且它的规则集只覆盖 19 个
+   语法失败程序中的 9 个；`readonly_git_file` 是
    唯一被使用过的（5 次），它本质上是绕过宿主 composition guard 误杀的窄口子。
 2. **`tool run code` 的高频"失败"不是一个仓库内可修的缺陷，而是四类不同事实被同一口径混合：**
    宿主 `dsh-composition-guard` 误杀（32/104，30.8%，**在仓库外**）、嵌套工具的正常失败
@@ -48,6 +50,9 @@ docs/audit/replay/session-evidence.mjs   # 统计工具结果、错误分类、�
 | `run_code_preflight` 调用 | **0** |
 | `run_code_diagnose` 调用 | **0** |
 | `readonly_git_file` 调用 | 5 |
+
+口径与跨来源核对见 [统计口径核对](./2026-11-17-stats-reconciliation.md)：
+同一插件在"用户会话调用"与"验证调用"两个总体里的数字不同，二者不可混用。
 
 **口径问题（关键）**：`bash` 与 `run_code` 的失败次数只差 10，但分母相差 3.7 倍。
 共享经验库只记录失败、不记录尝试，因此它看到的 `tool bash`（95）与 `tool run code`（97）

@@ -46,11 +46,11 @@ test('a specific host code reaches storage as a distinct fact without changing t
 const now = () => new Date().toISOString();
 const failure = (over) => ({ key: 'knowledge:' + Math.random().toString(16).slice(2), scope: 'tool run code', failureCount: 2, occurrences: 2, lastSeen: now(), ...over });
 
-test('the planner rejects a bare tool-failure counter that names no cause', () => {
+test('the planner labels a bare tool-failure counter and withholds the workflow model', () => {
   const planned = planEvolutionCandidates({ knowledge: [failure({ problem: 'official operation failure host operation failure' })], failureMemory: [] }, { minOccurrences: 2 });
-  assert.equal(planned.candidates.length, 0);
-  assert.equal(planned.rejected[0].reason, 'unattributed');
-  assert.equal(planned.none.reason, 'unattributed');
+  assert.equal(planned.candidates.length, 1);
+  assert.equal(planned.candidates[0].attribution, 'unattributed');
+  assert.equal(planned.candidates[0].benefitModel, undefined);
 });
 
 test('a code-derived failure mode or a conclusion root cause makes the target proposable', () => {
@@ -67,4 +67,108 @@ test('a code-derived failure mode or a conclusion root cause makes the target pr
   }, { minOccurrences: 2 });
   assert.equal(concluded.candidates.length, 1);
   assert.equal(concluded.candidates[0].attribution, 'classified');
+});
+test('collector records the success/failure denominator with each failure', async (t) => {
+  const { Context } = await import('@deepseek-ai/cordis');
+  const { apply: applyCollector } = await import('../lib/experience-collector.js');
+  const root = temporary(t);
+  const app = new Context();
+  app.provide('tools', { register() {} });
+  const fiber = app.plugin(applyCollector, { dshHome: root });
+  await fiber.await();
+  try {
+    const agent = { id: 'denominator-agent' };
+    for (let index = 0; index < 3; index += 1) {
+      app.emit('tools/result', { callId: 'ok-' + index, name: 'bash', agent }, { isError: false });
+    }
+    app.emit('tools/result', { callId: 'bad-1', name: 'bash', agent }, {
+      isError: true,
+      error: { message: 'no such file', info: { name: 'BashError', code: 'FS_NOT_FOUND' } },
+    });
+    const store = app.get('evolutionExperience').store;
+    const [record] = store.recall({ problem: 'bash' }).records;
+    assert.equal(record.metrics.attemptssincefailure.sum, 4, 'three successes plus the failure');
+    assert.equal(record.metrics.successessincefailure.sum, 3);
+    assert.match(record.problem, /fs missing/, 'the host code reaches the semantic fact');
+  } finally {
+    await fiber.dispose();
+  }
+});
+
+test('the planner exposes a real denominator, classifies origin and names the benefit model', () => {
+  const measured = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:measured', scope: 'tool run code', problem: 'official operation failure code run failure',
+      failureCount: 10, occurrences: 10, lastSeen: now(),
+      metrics: { attemptssincefailure: { sum: 40, count: 10 }, successessincefailure: { sum: 30, count: 10 } },
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 2 });
+  const candidate = measured.candidates[0];
+  assert.equal(candidate.observedAttempts, 40);
+  assert.equal(candidate.observedSuccesses, 30);
+  assert.equal(candidate.observedFailureRate, 0.25);
+  assert.equal(candidate.rateBasis, 'observed-window');
+  assert.equal(candidate.origin, 'unknown');
+  assert.deepEqual(candidate.benefitModel, { kind: 'workflow', metric: 'failureRate' });
+
+  const caller = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:caller', scope: 'tool apply patch', problem: 'official operation failure fs patch mismatch',
+      failureCount: 5, occurrences: 5, lastSeen: now(),
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 2 });
+  assert.equal(caller.candidates.length, 0);
+  assert.equal(caller.rejected[0].reason, 'caller-input');
+});
+test('the observed rate uses the window denominator, not the all-time count', () => {
+  const planned = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:window', scope: 'tool run code', problem: 'official operation failure code run failure',
+      failureCount: 97, occurrences: 97, lastSeen: now(),
+      metrics: { attemptssincefailure: { sum: 40, count: 10 }, successessincefailure: { sum: 30, count: 10 } },
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 2 });
+  assert.equal(planned.candidates[0].observedAttempts, 40);
+  assert.equal(planned.candidates[0].observedFailureRate, 0.25);
+});
+
+test('normalized failure modes are classified on their stored spelling', () => {
+  const planned = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:edit', scope: 'tool edit', problem: 'official operation failure fs edit missing',
+      failureCount: 4, occurrences: 4, lastSeen: now(),
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 2 });
+  assert.equal(planned.candidates.length, 0);
+  assert.equal(planned.rejected[0].reason, 'caller-input');
+});
+
+test('a host-origin target does not declare a workflow benefit model', () => {
+  const planned = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:host', scope: 'tool bash', problem: 'official operation failure composition guard denied',
+      failureCount: 5, occurrences: 5, lastSeen: now(),
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 2 });
+  assert.equal(planned.candidates[0].origin, 'host');
+  assert.equal(planned.candidates[0].benefitModel, undefined);
+});
+
+test('a __proto__ metric key survives the projection as own data', async () => {
+  const { knowledgeExperienceRecord } = await import('../lib/experience-recall.js');
+  const metrics = Object.fromEntries([['__proto__', { sum: 1, count: 1, last: 1 }]]);
+  const record = knowledgeExperienceRecord({
+    knowledgeKey: 'knowledge:proto-metric',
+    semanticFact: 'official operation failure code run failure',
+    scope: 'tool run code',
+    effectStats: { metrics },
+  });
+  assert.equal(Object.getPrototypeOf(record.metrics), Object.prototype);
+  assert.equal(Object.hasOwn(record.metrics, '__proto__'), true);
+  assert.equal(record.metrics['__proto__'].sum, 1);
 });
