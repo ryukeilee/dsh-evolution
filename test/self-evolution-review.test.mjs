@@ -773,6 +773,8 @@ test('a self-contained plugin with no workflow use becomes a reversible, owner-o
   assert.equal(candidate.reversible, true);
   assert.deepEqual(candidate.profiles, ['acp', 'web']);
   assert.ok(candidate.commands.every((line) => line.includes('disable') && line.includes(RECORD_ID)));
+  assert.ok(candidate.commands.every((line) => line.includes('--plugin ' + JSON.stringify(RECORD_ID))));
+  assert.ok(candidate.commands.every((line) => !line.includes('--id ')), 'the CLI accepts --plugin, not --id');
   assert.match(candidate.reasons.join(' '), /self-contained/);
   assert.equal(record.retirement.candidate, true);
   // Verification traffic must not be counted as workflow usage.
@@ -795,6 +797,25 @@ test('workflow use or evidenced production benefit blocks a retirement recommend
   assert.equal(proven.records[0].value.productionBenefit, true);
   assert.equal(proven.retirementCandidates.length, 0);
   assert.equal(proven.valueSummary.productionBenefit, 1);
+});
+
+test('a missing or null workflow invocation count stays unknown and blocks retirement', async (t) => {
+  const env = await fixture(t, 'value-missing-count');
+  await writeConsumers(env);
+  for (const row of [
+    { capabilityAssessment: 'self-contained' },
+    { workflowInvocations: null, capabilityAssessment: 'self-contained' },
+    { workflowInvocations: 'not-a-count', capabilityAssessment: 'self-contained' },
+  ]) {
+    const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST,
+      usage: { source: 'session-evidence', records: { [RECORD_ID]: row } } });
+    const [record] = result.records;
+    assert.equal(record.value.invoked, null);
+    assert.equal(record.value.workflowInvocations, null);
+    assert.equal(record.value.tier, 'usage-unknown');
+    assert.equal(result.retirementCandidates.length, 0, JSON.stringify(row));
+    assert.match(record.value.reasons.join(' '), /not usable/);
+  }
 });
 
 test('a truncated stable review cannot compose a complete no-action result', () => {
