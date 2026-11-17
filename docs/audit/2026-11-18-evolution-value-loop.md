@@ -131,5 +131,6 @@ node docs/audit/replay/preflight-replay.mjs
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
 | 聚焦回归 | `node --test` 上述 5 个文件 | 56 + 25 项通过，0 失败（分两批执行） |
-| 全量单测 | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 1,864 项：1,862 通过、0 失败、2 skipped |
+| 全量单测 | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 1,865 项：1,863 通过、0 失败、2 skipped |
 | 打包检查 | `npm run pack:check` | 17 项全通过；本树是固定点 `e8c94fc7…` 的已提交后继，发布字节与证据未变 |
+| 独立审核 | sol-loop / GPT-6.1 Sol（high）第 1 轮 | 2 项 should 已修：缺失/null 调用数不再当成 0；生成的停用命令改用 CLI 实际接受的 `--plugin`；见提交 `4e87bd3` |
