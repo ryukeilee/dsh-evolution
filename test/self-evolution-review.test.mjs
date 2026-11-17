@@ -827,3 +827,83 @@ test('a truncated stable review cannot compose a complete no-action result', () 
   assert.equal(composed.kind, 'no-action');
   assert.equal(composed.incomplete, true);
 });
+
+// ---------------------------------------------------------------------------
+// Benefit provenance: the promotion decision alone does not say whether a
+// workflow was ever compared. The durable observation does.
+// ---------------------------------------------------------------------------
+
+async function writeEvidence(env, observation) {
+  const dir = path.join(env.paths.dataRoot, 'archive', 'experiments');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, `${env.record.experimentId}.evidence.json`), `${JSON.stringify({
+    version: 1,
+    capturedAt: '2026-01-01T00:00:00.000Z',
+    latestObservation: observation,
+    observations: [observation],
+    decision: { kind: 'benefit' },
+  }, null, 2)}\n`);
+}
+
+test('a capability self-test is not reported as an experiment benefit', async (t) => {
+  const env = await fixture(t, 'provenance-self-test');
+  await writeConsumers(env);
+  await writeEvidence(env, {
+    solvesProblem: true,
+    probeDerived: true,
+    probe: { comparison: { benefit: true, benefitKind: 'capability-self-test', workflowBenefit: false } },
+    observationWindow: 'probe:complete-line',
+    benefitEvidence: 'the target tool was absent before the trial and every sample matched',
+  });
+  const usage = { source: 'session-evidence', records: { [RECORD_ID]: {
+    workflowInvocations: 0, verificationInvocations: 0, capabilityAssessment: 'self-contained',
+  } } };
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
+  const [record] = result.records;
+  assert.equal(record.value.benefitProvenance, 'capability-self-test');
+  assert.equal(record.value.experimentBenefit, false, 'a self-test cannot satisfy the experiment-benefit rung');
+  assert.equal(record.value.tier, 'installed-only');
+  assert.equal(result.valueSummary.installedOnly, 1);
+  assert.equal(result.valueSummary.experimentBenefit, 0);
+  assert.match(record.value.reasons.join(' '), /capability self-test/);
+  assert.equal(result.retirementCandidates.length, 1, 'an unused, self-tested, self-contained capability is a reversible candidate');
+  assert.equal(result.retirementCandidates[0].evidence.benefitProvenance, 'capability-self-test');
+});
+
+test('a paired workflow comparison stays an experiment benefit', async (t) => {
+  const env = await fixture(t, 'provenance-paired');
+  await writeConsumers(env);
+  await writeEvidence(env, {
+    solvesProblem: true,
+    probeDerived: true,
+    probe: { comparison: { benefit: true, benefitKind: 'workflow', workflowBenefit: true, workload: { id: 'complete-source-line' } } },
+    observationWindow: 'probe:complete-source-line',
+  });
+  const usage = { source: 'session-evidence', records: { [RECORD_ID]: {
+    workflowInvocations: 0, verificationInvocations: 0, capabilityAssessment: 'self-contained',
+  } } };
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
+  const [record] = result.records;
+  assert.equal(record.value.benefitProvenance, 'paired-workflow');
+  assert.equal(record.value.benefitBasis, 'complete-source-line');
+  assert.equal(record.value.experimentBenefit, true);
+  assert.equal(record.value.tier, 'experiment-benefit');
+});
+
+test('the pre-comparison probe shape is a capability self-test, not a workflow benefit', async (t) => {
+  const env = await fixture(t, 'provenance-legacy-probe');
+  await writeConsumers(env);
+  await writeEvidence(env, {
+    solvesProblem: true,
+    probe: { scenarioId: 'readonly-git-file-HEAD-package', baseline: { errors: 2 }, candidate: { errors: 0 } },
+    observationWindow: 'probe:readonly-git-file-HEAD-package',
+    benefitEvidence: 'probe readonly-git-file-HEAD-package: candidate 2/2 vs baseline 0/2',
+  });
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST });
+  const [record] = result.records;
+  assert.equal(record.value.benefitProvenance, 'capability-self-test');
+  assert.equal(record.value.experimentBenefit, false);
+  // No usage row was supplied: the tier must stay unknown rather than assume 0.
+  assert.equal(record.value.tier, 'usage-unknown');
+  assert.equal(result.retirementCandidates.length, 0);
+});
