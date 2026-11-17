@@ -18,6 +18,15 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.11 — 稳定版
+
+`0.2.10` 的稳定后继：把自我进化闭环从“能生成并晋升插件”推进到“基于真实失败分母、可靠归因与可验证收益”。相对 `0.2.10` 固定产物，分发内容改 `lib/experience-collector.js`、`lib/shared-experience.js`、`lib/experience-recall.js`、`lib/experience-plan.js`、`lib/orchestrator.js`、`lib/registration.js`、`lib/guard.js`、`lib/desktop-task-protocol.js`、`lib/desktop-task-host.js`、`lib/desktop-task-client.js` 与 `lib/cordis-compat.js`，加上版本号与随包文档；宿主集合、持久化 schema 与 schema 版本、工具名 / 参数结构、授权来源、八项晋升门禁、Cordis 信任根、`engines` 与 `peerDependencies`（六个宿主）不变。已有三个 stable 插件、历史共享经验与生产数据均不迁移、不下线。
+
+- **真实分母与归因。** 采集器按目标在有界进程内窗口累计 attempts / successes（≤256 个目标，LRU），失败记录附带 `attemptsSinceFailure` / `successesSinceFailure` 后清零；成功不写行。`recordFailure` 接受指标但不改变 frozen schema-1 opener 的 `knowledgeKey`；召回投影有界指标，规划器输出 `observedAttempts` / `observedSuccesses` / `observedFailureRate` / `rateBasis`。失败按 `caller-input` / `capability-gap` / `host` / `environment` / `unknown` 归因，调用方输入错误不再生成候选；无归因工具仍计数但标注 `unattributed`，不声明 workflow 收益模型。
+- **诚实的收益来源。** `compareProbeRuns` 区分 `capability-self-test`（baseline 仅声明能力缺失）与 `workflow`（目标步骤真实执行并失败），新增 `workflowBenefit`。`promotionGates` 只在候选显式声明 `benefitModel.kind = "workflow"` 时要求 `workflowBenefit`，历史实验门禁形状不变；规划器为有归属的工具失败候选声明 workflow 模型。
+- **Desktop 配对工作流证据。** 计划契约与 `evolution_probe` 让既有官方工具与候选工具在同一输入、结果字段和验收条件下交替 A/B、B/A 配对，Trial 前捕获 baseline；正确性、成功 / 失败率、官方分派后耗时与返回字节全部由原始调用派生。样本不足、宿主未知、无收益或超预算的候选不进入审批；主门禁与 advisory evaluator 对已验证成本预算保持一致，原始耗时与历史路径语义保留。Canary 重放同一工作负载，stable 后仍走既有 ACP / Web consumer。Desktop 不再硬编码 `solvesProblem: true` 与伪造的前后错误数，只报告 `capability-self-test` 来源，不可证明时以 `E_DESKTOP_BENEFIT_UNPROVEN` 停在审批之前。
+- **验收与边界。** 六个官方宿主针对本版本固定产物重跑安装、生命周期、promotion / canary / rollback 与基础验收；`0.2.2-rc.1` / `rc.2` / `rc.3` 另跑 `--experience-evolution`。隔离实验只证明配对工具路径的质量收益，不宣称生产收益或真实模型自主规划质量；对照、边界与证据见 `docs/desktop-workflow-benefit.md`、`docs/evidence/desktop-workflow-benefit-20261117.json` 与 `docs/evidence/workflow-host-0.2.2-rc.3-20261117.json`。
+
 ## 0.2.10 — 稳定版
 
 `0.2.9` 的稳定后继：新增官方宿主 DSH `0.2.2-rc.3`。官方 rc.2 → rc.3 的源码差异只新增可选

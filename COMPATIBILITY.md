@@ -65,7 +65,7 @@ bytes it installed. `npm run pack:check` and `test/release-pin.test.mjs` keep th
 two records apart instead of comparing every file to the pin: a host the pin
 verified must still describe the pinned artifact (content *and* bytes), while a
 host the pin never covered must describe the content this tree builds, because an
-older build's record proves nothing about this one. `0.2.10` pins all six
+older build's record proves nothing about this one. `0.2.11` pins all six
 declared hosts, so no host uses the second lane today; it exists for the next
 host a development tree adds, before the pin that covers it is cut.
 The split is `release/manifest.json#verifiedHosts`, so it moves only when a new
@@ -94,7 +94,7 @@ support claim and no new promotion authority. The consumer is a separate lightwe
 `desktop` by `scripts/setup-experience.mjs`; it never runs the Evolution kernel (no orchestrator, Trial/Canary
 state machine, domain storage, tool registration or model call), and it writes only its own per-profile
 state and composition. The Desktop kernel is still the only publisher: only a stable canary commit produces a
-publication record, and records carry the exact host identity the promotion was verified on. The `0.2.10`
+publication record, and records carry the exact host identity the promotion was verified on. The `0.2.11`
 pinned artifact contains this feature. See `docs/shared-plugins.md` and `README.md`.
 
 The isolated host acceptance covers it on `0.2.2-rc.1`, `0.2.2-rc.2` and `0.2.2-rc.3`: 31/31 steps pass in
@@ -111,7 +111,7 @@ Reproduce it with:
 ```sh
 npm run release:pack
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.3 --no-hmr --cross-entry \
-  --tarball dist/dsh-evolution-0.2.10.tgz --out docs/evidence/cross-entry-0.2.2-rc.3.json
+  --tarball dist/dsh-evolution-0.2.11.tgz --out docs/evidence/cross-entry-0.2.2-rc.3.json
 ```
 
 ### Verified compatibility matrix

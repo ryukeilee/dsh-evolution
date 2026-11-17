@@ -6,7 +6,7 @@
 
 | 关键事实 | 当前值 |
 | --- | --- |
-| 版本 | `0.2.10`（稳定版） |
+| 版本 | `0.2.11`（稳定版） |
 | 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1`、`0.2.2-rc.2`、`0.2.2-rc.3`（后三者须关闭宿主 HMR，见下） |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
@@ -14,7 +14,7 @@
 
 ## 30 秒了解
 
-本版本新增 DSH `0.2.2-rc.3` 宿主。官方 rc.2 → rc.3 的源码差异只新增可选的 `@deepseek-ai/dsh-deepseek-chat-import` bundle、官方 bundle 列表项与客户端 slot；本 bundle 使用的 `dsh-tools`、`dsh-cordis-host-runner`、Cordis、Include、loader 与 storage 接口没有变化。因此运行时代码不改，只扩展精确版本声明，并用真实安装、工具注册、Trial、Promotion、经验与跨入口验收固定它。其余行为与 `0.2.9` 相同：Desktop 的 `evolution_plan` 与 ACP 的 `evolution_desktop` 只读 `audit` 先按当前宿主分类已发布的 stable 插件（升级后停在 `pending-revalidation` 的记录给出既有 `dsh-evolution-shared revalidate` 指引与禁止项），再排序共享经验候选，最后给出有序的 `selfEvolution.nextActions`；检查不写发布索引、不启动 Trial、不批准晋升，也不修改或重新生成旧插件源码。`0.2.2-rc.1` / `rc.2` / `rc.3` 需要关闭宿主 HMR，见下文。已有 schema 1 共享经验库在普通启动下继续保持原布局、不会被自动迁移。
+本版本把自我进化收益的判断建立在真实分母与诚实归因上。采集器按目标在有界的进程内窗口累计 attempt / success，失败事件附带分母并明确 `rateBasis: observed-window`；失败按 `caller-input` / `capability-gap` / `host` / `environment` / `unknown` 归因，调用方输入错误不再生成候选。probe 区分 `capability-self-test` 与 `workflow` 两类证据：只有在同一输入上真实执行既有官方工具与候选工具、交替配对并满足正确性、成本预算后，才声明 `workflowBenefit` 并经八项晋升门禁确认；能力自测不再被写成伪造的前后对照，Desktop 遇到不可证明的收益会以 `E_DESKTOP_BENEFIT_UNPROVEN` 停在审批之前。其余行为与 `0.2.10` 相同：Desktop 的 `evolution_plan` 与 ACP 的 `evolution_desktop` 只读 `audit` 先按当前宿主分类已发布的 stable 插件（升级后停在 `pending-revalidation` 的记录给出既有 `dsh-evolution-shared revalidate` 指引与禁止项），再排序共享经验候选，最后给出有序的 `selfEvolution.nextActions`；检查不写发布索引、不启动 Trial、不批准晋升，也不修改或重新生成旧插件源码。三个已发布 stable 插件、已有共享经验与生产数据都保持不变。`0.2.2-rc.1` / `rc.2` / `rc.3` 需要关闭宿主 HMR，见下文。已有 schema 1 共享经验库在普通启动下继续保持原布局、不会被自动迁移。
 
 ### Desktop、ACP、Web 共用经验
 
@@ -28,9 +28,9 @@
 
 ```sh
 # 查看计划，不写 profile
-node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.10.tgz
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.11.tgz
 # 使用官方 CLI 安装并应用计划；可用 --home 指定隔离 DSH_HOME
-node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.10.tgz --apply
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.11.tgz --apply
 ```
 
 安装器只维护标记块，保留其他插件、Skills、T3 工作流与 storage route；HMR 保持关闭。它不会复制或迁移历史，不会启停正在运行的正式应用。待安装包以内容摘要缓存在 `storages/evolution-package-cache`，由官方 CLI 从不可变路径安装，避免同版本本地重建被文件依赖缓存误判为已安装。缓存内容不匹配时拒绝覆盖。每个 profile 的官方安装结果分别报告，途中失败会停止并报告已完成项；多 profile 安装不是原子事务。安装后重启对应入口。非 macOS 或自定义安装可用 `--cli <官方 dsh 可执行文件>` 指定 CLI。
@@ -320,8 +320,8 @@ CLI 退出码：`0` 健康、`1` 存在降级项、`2` 存在阻塞项、`3` 参
 从 GitHub Release 下载 tarball 和校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.10
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.10.tgz" -o dsh-evolution-0.2.10.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.11
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.11.tgz" -o dsh-evolution-0.2.11.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
@@ -329,7 +329,7 @@ sha256sum --check SHA256SUMS
 macOS 可用 `shasum -a 256 -c SHA256SUMS` 校验。也可用 GitHub CLI 下载同一 Release 的 tarball、`SHA256SUMS` 与 `manifest.json`。校验通过后，用官方 CLI 安装：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.10.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.11.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
@@ -562,11 +562,11 @@ node scripts/acceptance/run-revalidation.mjs --home ~/.dsh --apply
 | `0.2.2-rc.2` | `4.1.0` | `1.1.0` | `1.1.0` | 25/25（`--no-hmr --experience-evolution`） | `healthy` |
 | `0.2.2-rc.3` | `4.1.0` | `1.1.0` | `1.1.0` | 25/25（`--no-hmr --experience-evolution`） | `healthy` |
 
-对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.1.json`、`docs/evidence/dsh-0.2.2-rc.2.json` 与 `docs/evidence/dsh-0.2.2-rc.3.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。`0.2.10` 的固定点覆盖全部六个宿主：六份记录都必须描述 `release/` 固定产物的内容与字节，后续工作树修改不会改写它们。固定点之后新增的宿主没有历史记录可核对，它的记录必须描述**本工作树构建的内容**（判定按 `release/manifest.json#verifiedHosts` 分成两条通道），固定点或旧构建的记录不能冒充这份覆盖；当前固定点没有这样的新增宿主。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
+对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.1.json`、`docs/evidence/dsh-0.2.2-rc.2.json` 与 `docs/evidence/dsh-0.2.2-rc.3.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。`0.2.11` 的固定点覆盖全部六个宿主：六份记录都必须描述 `release/` 固定产物的内容与字节，后续工作树修改不会改写它们。固定点之后新增的宿主没有历史记录可核对，它的记录必须描述**本工作树构建的内容**（判定按 `release/manifest.json#verifiedHosts` 分成两条通道），固定点或旧构建的记录不能冒充这份覆盖；当前固定点没有这样的新增宿主。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
 
 `npm run pack:check` 两种模式都执行 17 项检查。开发模式允许工作树是固定点的**已提交**后继（脚本会逐条点名与固定产物不同的文件），但分发文件存在**未提交**改动时一律失败；`--release` 则把“固定点描述自己的提交 / 工作树是固定点或已提交后继”换成更严格的“固定点固定本树内容 / 工作树构建出固定内容”。
 
-源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.10.tgz --content-only`。
+源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.11.tgz --content-only`。
 
 ## 相关文档
 
