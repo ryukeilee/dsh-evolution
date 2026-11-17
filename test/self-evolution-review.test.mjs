@@ -111,9 +111,31 @@ async function fixture(t, name, { recordHost = CURRENT_HOST, experimentId = `exp
   });
   const outcome = await publishSharedRecord(paths, record);
   assert.equal(outcome.status, 'published', 'the fixture must publish one stable record');
+  // The durable promotion evidence is part of a real stable record; write the
+  // paired comparison it would carry so the value classification has a real
+  // basis. Tests that need a self-test or a missing sidecar overwrite/remove it.
+  await writeEvidenceFile(paths.dataRoot, experimentId, {
+    solvesProblem: true,
+    probeDerived: true,
+    probe: { comparison: { benefit: true, benefitKind: 'workflow', workflowBenefit: true, workload: { id: 'fixture-workflow' } } },
+    observationWindow: 'probe:fixture-workflow',
+  });
   const index = await readSharedIndex(paths);
   assert.equal(index.status, 'ok');
   return { root, paths, pluginDir, modulePath, source, durable, experiment, record, index };
+}
+
+/** Write one promotion evidence sidecar into the data root the review reads. */
+async function writeEvidenceFile(dataRoot, experimentId, observation) {
+  const dir = path.join(dataRoot, 'archive', 'experiments');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, `${experimentId}.evidence.json`), `${JSON.stringify({
+    version: 1,
+    capturedAt: '2026-01-01T00:00:00.000Z',
+    latestObservation: observation,
+    observations: [observation],
+    decision: { kind: 'benefit' },
+  }, null, 2)}\n`);
 }
 
 /** Write the consumer activation record every profile would report after one start. */
@@ -834,15 +856,7 @@ test('a truncated stable review cannot compose a complete no-action result', () 
 // ---------------------------------------------------------------------------
 
 async function writeEvidence(env, observation) {
-  const dir = path.join(env.paths.dataRoot, 'archive', 'experiments');
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(path.join(dir, `${env.record.experimentId}.evidence.json`), `${JSON.stringify({
-    version: 1,
-    capturedAt: '2026-01-01T00:00:00.000Z',
-    latestObservation: observation,
-    observations: [observation],
-    decision: { kind: 'benefit' },
-  }, null, 2)}\n`);
+  await writeEvidenceFile(env.paths.dataRoot, env.record.experimentId, observation);
 }
 
 test('a capability self-test is not reported as an experiment benefit', async (t) => {
@@ -938,4 +952,28 @@ test('a pre-comparison probe whose baseline ran and failed is a workflow benefit
   assert.equal(record.value.benefitProvenance, 'paired-workflow');
   assert.equal(record.value.experimentBenefit, true);
   assert.equal(record.value.tier, 'experiment-benefit');
+});
+
+test('a missing promotion sidecar is unknown, never an experiment benefit', async (t) => {
+  const env = await fixture(t, 'provenance-missing');
+  await writeConsumers(env);
+  await fs.rm(path.join(env.paths.dataRoot, 'archive', 'experiments', `${env.record.experimentId}.evidence.json`));
+  const withoutUsage = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST });
+  const [unknown] = withoutUsage.records;
+  assert.equal(unknown.value.benefitProvenance, 'unknown');
+  assert.equal(unknown.value.experimentBenefit, false, 'the recorded decision alone proves nothing');
+  assert.equal(unknown.value.tier, 'usage-unknown');
+  assert.doesNotMatch(unknown.value.reasons.join(' '), /paired workflow comparison is recorded/,
+    'the review must not claim a comparison it could not read');
+
+  const usage = { source: 'session-evidence', records: { [RECORD_ID]: {
+    workflowInvocations: 0, verificationInvocations: 0, capabilityAssessment: 'self-contained',
+  } } };
+  const withUsage = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
+  const [record] = withUsage.records;
+  assert.equal(record.value.tier, 'installed-only');
+  assert.equal(record.value.experimentBenefit, false);
+  assert.equal(withUsage.valueSummary.experimentBenefit, 0);
+  assert.equal(withUsage.retirementCandidates.length, 1);
+  assert.match(withUsage.retirementCandidates[0].reasons.join(' '), /unknown/);
 });

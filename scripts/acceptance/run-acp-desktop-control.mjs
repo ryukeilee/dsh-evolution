@@ -662,6 +662,8 @@ try {
     }
     const wallMs = Date.now() - startedAt;
     const turns = bridge.turns.slice(before);
+    const failedTurns = turns.filter((turn) => turn.ok !== true);
+    assert(failedTurns.length === 0, `${label}: ${failedTurns.length} model turn(s) failed: ${JSON.stringify(failedTurns.slice(0, 2))}`);
     // Auxiliary requests (for example a session-title completion) carry no tool
     // list; they are reported separately so they cannot inflate the paired
     // decision metrics.

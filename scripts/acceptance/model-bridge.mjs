@@ -220,11 +220,24 @@ export async function startModelBridge({ model = DEFAULT_BRIDGE_MODEL, runner = 
         return;
       }
       const parsed = parseDecision(reply.text);
-      const decision = !parsed.ok
-        ? { kind: 'stop', message: 'Model reply was not a decision: ' + parsed.reason }
-        : parsed.value?.stop === true || typeof parsed.value?.tool !== 'string'
-          ? { kind: 'stop', message: bounded(parsed.value?.message ?? reply.text, 2_000) }
-          : { kind: 'tool', tool: parsed.value.tool, arguments: parsed.value.arguments && typeof parsed.value.arguments === 'object' ? parsed.value.arguments : {} };
+      const value = parsed.ok ? parsed.value : null;
+      const isStop = value?.stop === true && typeof value.message === 'string' && value.message.trim() !== '';
+      const isTool = typeof value?.tool === 'string' && value.tool.trim() !== ''
+        && (value.arguments === undefined || (typeof value.arguments === 'object' && value.arguments !== null && !Array.isArray(value.arguments)));
+      if (!isStop && !isTool) {
+        // A reply that is not a decision is a failed turn, not an empty one.
+        // Turning it into `stop` would let an inference or protocol failure look
+        // like "the model chose no tool", which is the exact measurement the
+        // acceptance exists to make.
+        const reason = parsed.ok ? 'decision-shape-invalid' : parsed.reason;
+        turns.push({ round: turns.length, ok: false, reason, wallMs: reply.wallMs, replySample: bounded(reply.text, 400) });
+        response.writeHead(502, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ error: reason }));
+        return;
+      }
+      const decision = isStop
+        ? { kind: 'stop', message: bounded(value.message, 2_000) }
+        : { kind: 'tool', tool: value.tool, arguments: value.arguments ?? {} };
       const record = {
         round, ok: true, decision: decision.kind === 'tool' ? { tool: decision.tool, arguments: decision.arguments } : { stop: true },
         usage: reply.usage ?? null, wallMs: reply.wallMs,

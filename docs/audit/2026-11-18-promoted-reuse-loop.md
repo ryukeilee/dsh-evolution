@@ -30,9 +30,9 @@
 
 | 缺口 | 改动 | 位置 |
 | --- | --- | --- |
-| 收益来源不可分辨 | 从**持久晋升证据**派生 `benefitProvenance`（`paired-workflow` / `capability-self-test` / `unproven` / `unknown`）；自测不成立时不再报 `experiment-benefit` | `lib/self-evolution-review.js` |
-| 用量不可复现 | 只读投影脚本，按固定规则把会话日志折算成评审接受的 `usage` | `docs/audit/replay/capability-usage.mjs` |
-| 自主复用没有真实证据 | 真实模型 + 真实 ACP 宿主的配对会话，自然语言任务，提示词不出现工具名 | `scripts/acceptance/model-bridge.mjs`、`scripts/acceptance/run-acp-desktop-control.mjs` |
+| 收益来源不可分辨 | 从**持久晋升证据**派生 `benefitProvenance`（`paired-workflow` / `capability-self-test` / `unproven` / `unknown`）；只有 `paired-workflow` 才算 `experiment-benefit`，自测与不可读都保持未证明 | `lib/self-evolution-review.js` |
+| 用量不可复现 | 只读投影脚本，按固定规则把会话日志折算成评审接受的 `usage`；扫描不完整时输出 `null` 而非零 | `docs/audit/replay/capability-usage.mjs` |
+| 自主复用没有真实证据 | 真实模型 + 真实 ACP 宿主的配对会话，自然语言任务，提示词不出现工具名；无法解析的模型回复是失败轮次，不是"没有调用" | `scripts/acceptance/model-bridge.mjs`、`scripts/acceptance/run-acp-desktop-control.mjs` |
 
 **验收结论：闭环已跑通，但"可重复的端到端正收益"本轮未达成。** 工作负载级的配对收益成立，
 会话级收益为零，原因是选择阶段比较错了基线（见 §3 与 §4.1）。本轮不通过放宽门禁或制造调用
@@ -66,6 +66,10 @@ node docs/audit/replay/capability-usage.mjs
 `evolution_measure` / `evolution_promote` / `evolution_canary_observe` / `evolution_desktop`）的
 调用记为验证流量，其余才算使用。这与 #69 §3 的"5 次用户会话调用"不同：按这条规则，5 次里有 1 次
 发生在 `evolution_desktop` 会话中，属于验证。**两个口径都在本文里给出，不把较大的那个当收益。**
+
+扫描不完整时脚本不会把缺失四舍五入成零：任何会话日志读不到、解压失败或行解析失败都会把计数输出为
+`null` 并置 `complete: false`（退出码 3），插件源码读不到只让那一条记录未知。`null` 在评审里等于
+`unknown`，因此不完整的扫描无法产生停用建议。本次生产扫描 `complete: true`，493 个会话全部读出。
 
 ### 2.2 统一审计的实际结论
 
