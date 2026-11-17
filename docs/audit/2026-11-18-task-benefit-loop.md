@@ -13,8 +13,8 @@
 2. **一个真实损失场景完成了闭环。** 官方 `read` 把生成配置的 3,147 字符首行截断到 2,000 字符，
    baseline 会话每次都额外调用 `bash` 恢复；候选 context-policy 在
    `tools/post-execute` 中补全该行。真实 paired 结果：
-   turns 15→12（-20%）、tool calls 12→9（-25%）、token 490,850→397,968（-18.9%）、
-   墙钟 103.6s→41.3s（-60.1%），两侧正确率 3/3。早先一轮的 baseline 出现过直接
+   turns 15→12（-20%）、tool calls 12→9（-25%）、token 492,461→398,185（-19.1%）、
+   墙钟 125.6s→89.7s（-28.6%），两侧正确率 3/3。早先一轮的 baseline 出现过直接
    read→read→bash 的更省 token 路径，聚合方向与 turns/tool calls 仍由候选侧胜出；
    单会话方差在 §6 如实保留。
 3. **发现来自真实记录，不是预先写死的场景。** baseline 会话把 9 次 `line-truncated` 退化写入
@@ -63,15 +63,15 @@ live same-process claim、live foreign process、startup recovery re-read 三类
 
 | 会话 | 侧 | 正确 | turns | tool calls | 工具序列 | token | 墙钟 |
 | --- | --- | ---: | ---: | ---: | --- | ---: | ---: |
-| 1 | baseline | 是 | 5 | 4 | read, read, read, bash | 163,971 | 43.9s |
-| 2 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,093 | 25.4s |
-| 3 | baseline | 是 | 5 | 4 | read, bash, read, read | 162,786 | 34.4s |
-| 1 | candidate | 是 | 4 | 3 | read, read, read | 132,595 | 14.4s |
-| 2 | candidate | 是 | 4 | 3 | read, read, read | 132,703 | 12.3s |
-| 3 | candidate | 是 | 4 | 3 | read, read, read | 132,670 | 14.7s |
+| 1 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,287 | 56.8s |
+| 2 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,195 | 37.9s |
+| 3 | baseline | 是 | 5 | 4 | read, read, read, bash | 163,979 | 30.9s |
+| 1 | candidate | 是 | 4 | 3 | read, read, read | 132,728 | 49.9s |
+| 2 | candidate | 是 | 4 | 3 | read, read, read | 132,715 | 18.4s |
+| 3 | candidate | 是 | 4 | 3 | read, read, read | 132,742 | 21.3s |
 
-汇总：baseline 15 turns / 12 calls / 490,850 tokens / 103.6s；
-candidate 12 turns / 9 calls / 397,968 tokens / 41.3s。两侧 failures 均为 0，
+汇总：baseline 15 turns / 12 calls / 492,461 tokens / 125.6s；
+candidate 12 turns / 9 calls / 398,185 tokens / 89.7s。两侧 failures 均为 0，
 candidate 的 `sessionsExercised` 为 3/3。baseline 的三个 `read` 结果各为 2,216 字符并带
 `line truncated to 2000 chars`；candidate 的三个结果各为 3,329 字符且包含完整 sentinel。
 token 来自模型账单（input + output + cache.read），fixture 的 sentinel 每轮随机生成，
@@ -84,16 +84,17 @@ token 来自模型账单（input + output + cache.read），fixture 的 sentinel
   recoverable:true}`，`attribution:classified`，`benefitModel:{kind:'workflow'}`。
   3 次恢复分别来自 baseline-1 的 `grep` 与 baseline-2/3 的 `bash`；投影保留最近一次
   观测到的恢复工具（`bash`），计数来自指标累加，说明恢复成本按真实路径计而不是按固定假设计。
-- **Trial 功能复验**：挂载前同一调用返回截断结果（2,350 字符，`matched:false`），
-  Trial 内返回完整首行（3,639 字符，`matched:true`），两个 canary 观测同样通过；
+- **Trial 功能复验**：挂载前同一调用返回截断结果（2,350 字符，`present:true`、
+  `matched:false`），Trial 内返回完整首行（3,639 字符，`present:true`、
+  `matched:true`），两个 canary 观测同样通过；
   空实现或基线已满足期望值的候选不能通过。
 - **门禁**：stable 后 10 项全为 true（含 `runtimeRecovered`、`workflowBenefit`、
   `taskBenefit`），decision `benefit` / source `canary-passed`；发布记录
-  `evolution-promoted-c48a8efc4a31`，仅 `acp`，源码摘要
-  `51263571616a44c12563d8a796d53dd1163d0bcd2482567b0a23e76c8cd633b5`。
+  `evolution-promoted-96299bbf77b5`，仅 `acp`，源码摘要
+  `84e8786295966dce0e1d0c14f828316d615960f646ae8b5be6f5194a547ac305`。
 - **无确认不晋升**：在 owner gate 等待 5s 后仍是 `awaiting-owner-confirmation`，发布索引字节不变。
-- **fresh consumer**：新 ACP 进程自动挂载，同一真实模型任务 4 turns / 3 calls / 132,587 tokens /
-  15.6s 正确完成；三个 `read` 结果都包含完整 sentinel，没有截断；证据只存答案 sha256，
+- **fresh consumer**：新 ACP 进程自动挂载，同一真实模型任务 4 turns / 3 calls / 132,722 tokens /
+  16.2s 正确完成；三个 `read` 结果都包含完整 sentinel，没有截断；证据只存答案 sha256，
   不存失败时的模型正文。
 - **负证据**：
 
@@ -116,9 +117,10 @@ token、墙钟均低于 baseline，且两侧全对。
 | --- | --- | --- |
 | 第一轮 | 16 / 13 / 525,316 / 101.5s | 12 / 9 / 394,662 / 55.6s |
 | 第二轮 | 15 / 12 / 490,855 / 114.4s | 12 / 9 / 395,397 / 74.1s |
-| 第三轮（提交的证据） | 15 / 12 / 490,850 / 103.6s | 12 / 9 / 397,968 / 41.3s |
+| 第三轮 | 15 / 12 / 490,850 / 103.6s | 12 / 9 / 397,968 / 41.3s |
+| 第四轮（提交的证据） | 15 / 12 / 492,461 / 125.6s | 12 / 9 / 398,185 / 89.7s |
 
-三轮都通过同一组门禁、功能复验、fresh consumer 与四种负证据；第三轮证据包含
+四轮都通过同一组门禁、功能复验、fresh consumer 与四种负证据；第四轮证据包含
 owner confirmation 投影、挂载前功能基线与 "planner 已解决" 断言，写入
 `docs/evidence/task-benefit-0.2.2-rc.3-20261118.json`。
 
@@ -138,6 +140,25 @@ owner confirmation 投影、挂载前功能基线与 "planner 已解决" 断言�
 - S7：错误来源与退化模式分开，`FS_NOT_FOUND` 不再把 9 次截断判成 caller-input 而丢弃。
 - S8/S9：fresh consumer 的 bridge 在 finally 关闭；失败时不把模型正文写入证据。
 - S10：删除未使用的 `--resume` 入口。
+
+第二轮审核（同一模型/档位）提出 1 个 blocker、7 个 should；第三轮修复：
+
+- S2：最终 planner 断言要求 `tool read` 明确出现在 `rejected` 且 reason 为
+  `already-resolved`，同时不在 `candidates`/`selected` 中；证据显示
+  `rejectedReason: already-resolved`、`candidateCount: 0`。
+- S3：所有计费字段按有限数字校验；`input:null`、非法 `cache.read`、空 usage 都使
+  整轮 incomplete，聚合不再把 NaN 记成零。
+- S4：runner 先解析并校验工作根，再创建全新的随机 work 子目录与 home；预置的
+  `work/home` 符号链接无法被使用，`mkdir` 不再先于校验。
+- S5：producer 与 fresh consumer 共用"status 为 completed/success 的 read 回执"判定；
+  `in_progress` 即使带期望值也不构成 adoption 证据。
+- S6：同路径成功重读只结清路径匹配的待处理记录，其余保留；失败的同路径结果不计；
+  一次调用只计一次成本。
+- S7：退化必须自身达到 `minOccurrences`；1 次截断不能再借 8 次 `FS_NOT_FOUND`
+  越过门槛，错误候选仍按来源分类。
+- S9：逐会话失败只存 stage/category/code；原始 ACP 错误只写控制台。
+- S11：功能检查先验证结果路径存在（`present`），再比较期望值；删除字段不能满足
+  `expected:null`。
 
 ## 7. 对日常工作价值的判断
 

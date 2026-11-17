@@ -1077,6 +1077,7 @@ test('a context policy is functionally verified after the Trial mount and on eve
   await host.start();
   await approveWhenWaiting(home, taskId);
   const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.functionalCheck.baseline.present, true);
   assert.equal(state.functionalCheck.baseline.matched, false);
   assert.equal(state.functionalCheck.trial.matched, true);
   assert.ok(state.functionalCheck.canary.length >= 2, 'each canary observation must replay the functional check');
@@ -1096,6 +1097,19 @@ test('a functional check whose baseline already matches is rejected before the T
   const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
   assert.equal(state.error.code, 'E_DESKTOP_FUNCTIONAL_CHECK');
   assert.equal(kernel.calls.some((call) => call.name === 'evolution_trial'), false, 'the Trial must not start when the baseline already satisfies the check');
+  assert.ok(kernel.state.reverts >= 1);
+});
+
+test('a functional check cannot pass by deleting the expected field', async (t) => {
+  const readTool = { execute: async () => ({ path: '/tmp/long.json', offset: 1, lines: [], totalLines: 0 }) };
+  const { home, kernel, host } = harness(t, { extraTools: { read: readTool } });
+  const plan = contextPlanFor();
+  plan.plan.verification.functionalCheck.expected = null;
+  const taskId = await submit(home, plan);
+  await host.start();
+  const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
+  assert.equal(state.error.code, 'E_DESKTOP_FUNCTIONAL_CHECK');
+  assert.ok(kernel.calls.some((call) => call.name === 'evolution_trial'), 'the Trial ran, but the missing field must fail the check');
   assert.ok(kernel.state.reverts >= 1);
 });
 

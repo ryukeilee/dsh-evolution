@@ -60,8 +60,8 @@ test('a session row counts only decision turns and proves the policy was exercis
   const updates = [
     { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
     { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'bash' },
-    { sessionUpdate: 'tool_call_update', toolCallId: 'c1', content: [{ type: 'content', content: { type: 'text', text: '<content>sentinel-a sentinel-b sentinel-c</content>' } }] },
-    { sessionUpdate: 'tool_call_update', toolCallId: 'c2', content: [{ type: 'content', content: { type: 'text', text: 'shell output' } }] },
+    { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<content>sentinel-a sentinel-b sentinel-c</content>' } }] },
+    { sessionUpdate: 'tool_call_update', toolCallId: 'c2', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: 'shell output' } }] },
   ];
   const row = extractSessionEvidence({
     label: 'candidate-1', side: 'candidate', turns, updates,
@@ -84,7 +84,7 @@ test('a read result without the expected value is not proof that the policy ran'
   const turns = turnsWith(['read', null]);
   const updates = [
     { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
-    { sessionUpdate: 'tool_call_update', toolCallId: 'c1', content: [{ type: 'content', content: { type: 'text', text: 'line truncated to 2000 chars' } }] },
+    { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: 'line truncated to 2000 chars' } }] },
   ];
   const row = extractSessionEvidence({
     label: 'candidate-2', side: 'candidate', turns, updates,
@@ -113,6 +113,29 @@ test('missing usage and failed tool results are measured instead of rounded to z
   assert.equal(row.toolFailures, 2);
   assert.equal(row.failures, 2);
   assert.equal(row.exercised, false, 'a failed read result is not proof that the policy ran');
+});
+
+test('invalid billing fields and in-progress reads are not evidence', () => {
+  for (const usage of [{ input: null, output: 1, cache: { read: 2 } }, { input: 1, output: 1, cache: { read: 'x' } }, {}]) {
+    const turns = turnsWith(['read', null]);
+    turns[0].usage = usage;
+    const row = extractSessionEvidence({
+      label: 'candidate-4', side: 'candidate', turns, updates: [],
+      assistantText: 'sentinel-a sentinel-b sentinel-c', expectedTokens: TOKENS, candidateTool: null, durationMs: 1,
+    });
+    assert.equal(row.usageComplete, false, 'invalid usage must not be treated as zero: ' + JSON.stringify(usage));
+    assert.equal(row.tokens, 0);
+  }
+  const turns = turnsWith(['read', null]);
+  const updates = [
+    { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+    { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'in_progress', content: [{ type: 'content', content: { type: 'text', text: 'sentinel-a sentinel-b sentinel-c' } }] },
+  ];
+  const row = extractSessionEvidence({
+    label: 'candidate-5', side: 'candidate', turns, updates,
+    assistantText: 'sentinel-a sentinel-b sentinel-c', expectedTokens: TOKENS, candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.exercised, false, 'an in-progress read cannot prove that the policy ran');
 });
 
 test('aggregation sums measured sessions and counts failed ones', () => {

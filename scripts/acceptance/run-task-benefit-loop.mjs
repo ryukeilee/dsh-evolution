@@ -16,7 +16,6 @@
  * node run-task-benefit-loop.mjs <packed.tgz> <evidence.json> [--work <dir>] [--runs 3] [--approve <text>]
  */
 import fs from 'node:fs/promises';
-import { realpathSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
@@ -51,20 +50,39 @@ const out = path.resolve(outArg);
 const repo = fileURLToPath(new URL('../../', import.meta.url));
 const binary = '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness';
 const cli = '/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh';
-let work = workArg ?? await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-loop-'));
-await fs.mkdir(work, { recursive: true });
-// A path under the temporary directory can still be a symlink into the formal
-// data root. Resolve the real target before any installer or host launch.
-work = await fs.realpath(work);
-const formalHome = await fs.realpath(path.join(os.homedir(), '.dsh')).catch(() => path.join(os.homedir(), '.dsh'));
-if (work === formalHome || work.startsWith(formalHome + path.sep)) throw new Error('refusing to run acceptance against the formal DSH_HOME');
-const temporaryRoots = [...new Set([os.tmpdir(), '/tmp', '/private/tmp'].flatMap((root) => {
-  try { return [path.resolve(root), realpathSync(root)]; } catch { return [path.resolve(root)]; }
-}))];
-if (!temporaryRoots.some((root) => work === root || work.startsWith(root + path.sep))) throw new Error('Acceptance work must be under the temporary directory');
+// Resolve every existing component before creating or launching anything: a
+// temporary-looking path can be a symlink into the formal data root.
+async function realpathOr(target) {
+  const suffix = [];
+  let current = path.resolve(target);
+  for (;;) {
+    try { return path.join(await fs.realpath(current), ...suffix.slice().reverse()); }
+    catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      const parent = path.dirname(current);
+      if (parent === current) return path.resolve(target);
+      suffix.push(path.basename(current));
+      current = parent;
+    }
+  }
+}
+const inside = (target, root) => target === root || target.startsWith(root + path.sep);
+const formalHome = await realpathOr(path.join(os.homedir(), '.dsh'));
+const temporaryRoots = await Promise.all([...new Set([os.tmpdir(), '/tmp', '/private/tmp'])].map((root) => realpathOr(root)));
+const requestedRoot = await realpathOr(workArg ?? os.tmpdir());
+if (inside(requestedRoot, formalHome)) throw new Error('refusing to run acceptance against the formal DSH_HOME');
+if (!temporaryRoots.some((root) => inside(requestedRoot, root))) throw new Error('Acceptance work must be under the temporary directory');
+// Only canonical, verified roots reach mkdir; the actual work directory and
+// home are then created fresh, so a pre-existing home symlink cannot be used.
+await fs.mkdir(requestedRoot, { recursive: true });
+const work = await fs.mkdtemp(path.join(requestedRoot, 'task-benefit-loop-'));
 const home = path.join(work, 'home');
+if (await fs.lstat(home).catch(() => null) !== null) throw new Error('the fresh work directory unexpectedly already has a home path');
+await fs.mkdir(home, { mode: 0o700 });
+const homeReal = await fs.realpath(home);
+if (homeReal !== path.join(await fs.realpath(work), 'home')) throw new Error('the acceptance home is not a real directory under the work root');
+if (inside(homeReal, formalHome) || !temporaryRoots.some((root) => inside(homeReal, root))) throw new Error('the acceptance home is not isolated');
 const electronInit = path.join(work, 'electron-init');
-await fs.mkdir(home, { recursive: true });
 
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DSH_')));
 delete env.ELECTRON_RUN_AS_NODE;
@@ -577,7 +595,9 @@ try {
       if (typeof call.toolCallId === 'string' && typeof name === 'string') consumerNameById.set(call.toolCallId, name);
     });
     const consumerReadResults = consumerUpdates
-      .filter((update) => update.sessionUpdate === 'tool_call_update' && consumerNameById.get(update.toolCallId) === 'read')
+      .filter((update) => update.sessionUpdate === 'tool_call_update'
+        && (update.status === 'completed' || update.status === 'success')
+        && consumerNameById.get(update.toolCallId) === 'read')
       .map(toolUpdateText);
     assert(consumerTurns.every((turn) => turn.ok === true), 'a fresh consumer model turn failed');
     const matchedSentinels = sentinels.filter((sentinel) => consumerText.includes(sentinel)).length;
@@ -619,9 +639,11 @@ try {
   const resolvedReceipt = await waitFor(() => readJson(resolvedReceiptFile), { timeoutMs: 180_000, what: 'resolved plan receipt' });
   assert(resolvedReceipt.ok === true, 'the resolved plan probe failed: ' + resolvedReceipt.error);
   const resolvedPlan = resolvedReceipt.plan ?? {};
+  const rejectedRow = (resolvedPlan.rejected ?? []).find((row) => row.problemKey === selection.problemKey);
   const stillSelected = resolvedPlan.selected?.problemKey === selection.problemKey;
-  const rejected = (resolvedPlan.rejected ?? []).some((row) => row.problemKey === selection.problemKey && row.reason === 'already-resolved');
-  assert(!stillSelected || rejected, 'the planner still proposes the resolved degradation ' + selection.problemKey);
+  const stillCandidate = (resolvedPlan.candidates ?? []).some((row) => row.problemKey === selection.problemKey);
+  assert(rejectedRow?.reason === 'already-resolved', 'the planner did not reject ' + selection.problemKey + ' as already-resolved: ' + JSON.stringify(rejectedRow ?? null));
+  assert(!stillSelected && !stillCandidate, 'the planner still proposes the resolved degradation ' + selection.problemKey);
   evidence.restart = {
     previousInstanceId: firstReady.instanceId,
     nextInstanceId: secondReady.instanceId,
@@ -629,7 +651,9 @@ try {
     publicationPreserved: true,
     plannerResolved: {
       selected: resolvedPlan.selected?.problemKey ?? null,
-      rejected,
+      rejected: true,
+      rejectedReason: rejectedRow.reason,
+      candidateCount: (resolvedPlan.candidates ?? []).length,
       none: resolvedPlan.none?.reason ?? null,
     },
   };

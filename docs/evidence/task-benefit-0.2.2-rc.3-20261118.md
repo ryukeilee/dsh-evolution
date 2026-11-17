@@ -23,15 +23,15 @@ sentinel 位于截断点之后。任务只要求模型用 `read` 读取三个文
 
 | 会话 | 侧 | 正确 | turns | calls | 工具序列 | token | 墙钟 |
 | --- | --- | ---: | ---: | ---: | --- | ---: | ---: |
-| 1 | baseline | 是 | 5 | 4 | read, read, read, bash | 163,971 | 43.9s |
-| 2 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,093 | 25.4s |
-| 3 | baseline | 是 | 5 | 4 | read, bash, read, read | 162,786 | 34.4s |
-| 1 | candidate | 是 | 4 | 3 | read, read, read | 132,595 | 14.4s |
-| 2 | candidate | 是 | 4 | 3 | read, read, read | 132,703 | 12.3s |
-| 3 | candidate | 是 | 4 | 3 | read, read, read | 132,670 | 14.7s |
+| 1 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,287 | 56.8s |
+| 2 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,195 | 37.9s |
+| 3 | baseline | 是 | 5 | 4 | read, read, read, bash | 163,979 | 30.9s |
+| 1 | candidate | 是 | 4 | 3 | read, read, read | 132,728 | 49.9s |
+| 2 | candidate | 是 | 4 | 3 | read, read, read | 132,715 | 18.4s |
+| 3 | candidate | 是 | 4 | 3 | read, read, read | 132,742 | 21.3s |
 
-汇总：baseline 15 turns / 12 calls / 490,850 tokens / 103.6s；candidate 12 / 9 / 397,968 / 41.3s。
-turns -20%、tool calls -25%、token -18.9%、墙钟 -60.1%；两侧 3/3 正确、0 失败，
+汇总：baseline 15 turns / 12 calls / 492,461 tokens / 125.6s；candidate 12 / 9 / 398,185 / 89.7s。
+turns -20%、tool calls -25%、token -19.1%、墙钟 -28.6%；两侧 3/3 正确、0 失败，
 candidate 的 `sessionsExercised = 3`。baseline 的 `read` 结果各 2,216 字符并带
 `line truncated to 2000 chars`；candidate 的 `read` 结果各 3,329 字符且包含完整 sentinel。
 
@@ -63,8 +63,9 @@ baseline 会话把 9 次 `line-truncated` 退化写入隔离共享经验库。De
 
 ## 门禁与功能复验
 
-- 挂载前同一调用返回截断结果（2,350 字符，`matched:false`）；Trial 挂载候选后，
-  `read` 返回完整首行（envelope 3,639 字符，`matched:true`）。这排除了“基线本来
+- 挂载前同一调用返回截断结果（2,350 字符，`present:true`、`matched:false`）；
+  Trial 挂载候选后，`read` 返回完整首行（envelope 3,639 字符，`present:true`、
+  `matched:true`）。结果路径缺失时 `present:false`，不能靠删除字段通过。这排除了“基线本来
   就满足期望值、空实现也能通过”的情况。
 - 门禁：`realBenefit` / `measuredEvidence` / `repeatable` / `regressionTest` /
   `reversible` / `cleanupEvidence` / `noOrphans` / `workflowBenefit` /
@@ -72,16 +73,17 @@ baseline 会话把 9 次 `line-truncated` 退化写入隔离共享经验库。De
   `canary-passed`。
 - 无确认时等待 5s 仍为 `awaiting-owner-confirmation`，发布索引不变；绑定
   `experimentId + sourceSha256` 的确认后，canary 两次功能复验都 `matched:true`，
-  stable 并发布到 `acp`（`evolution-promoted-c48a8efc4a31`）。
-- fresh ACP consumer：真实模型 4 turns / 3 calls / 132,587 tokens / 15.6s 正确完成；
+  stable 并发布到 `acp`（`evolution-promoted-96299bbf77b5`）。
+- fresh ACP consumer：真实模型 4 turns / 3 calls / 132,722 tokens / 16.2s 正确完成；
   三个 `read` 结果都包含完整 sentinel，没有截断；证据只存答案 sha256。
 - 负证据：缺失 artifact → `E_DESKTOP_TASK_EVIDENCE_MISSING`；源码失配 →
   `E_DESKTOP_TASK_EVIDENCE_MISMATCH`；无收益与未采用 → `E_DESKTOP_BENEFIT_UNPROVEN`
   （`realBenefit` / `measuredEvidence` / `workflowBenefit` / `taskBenefit` 为 false）。
   四种都在批准前失败、Trial 回滚成功、没有发布。
 - Desktop 重启后 terminal task 仍为 `stable`，发布索引字节不变；重启后的
-  `evolution_plan` 返回 `selected:null`、`none:already-resolved`、原候选进入
-  `already-resolved` 拒绝列表，证明采纳结论绑定到同一个问题身份。
+  `evolution_plan` 返回 `selected:null`、`none:already-resolved`、原候选以
+  `already-resolved` 进入拒绝列表且不在候选列表中（`candidateCount:0`），证明采纳结论
+  绑定到同一个问题身份。
 
 ## 复现
 

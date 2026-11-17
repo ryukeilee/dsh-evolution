@@ -102,6 +102,32 @@ function toolUpdateText(update) {
   return parts.join('\n');
 }
 
+/** A tool result only proves an effect once the transport reports it complete. */
+function completedToolUpdate(update) {
+  return update?.status === 'completed' || update?.status === 'success';
+}
+
+/** Billing fields must be real finite numbers; optional cache.read defaults to 0. */
+function finiteUsage(usage) {
+  if (!usage || typeof usage !== 'object') return false;
+  if (typeof usage.input !== 'number' || !Number.isFinite(usage.input)) return false;
+  if (typeof usage.output !== 'number' || !Number.isFinite(usage.output)) return false;
+  if (usage.cache !== undefined) {
+    if (!usage.cache || typeof usage.cache !== 'object') return false;
+    if (usage.cache.read !== undefined && (typeof usage.cache.read !== 'number' || !Number.isFinite(usage.cache.read))) return false;
+  }
+  return true;
+}
+
+function failureProjection(detail) {
+  const text = String(detail ?? '');
+  const stage = /initialize/.test(text) ? 'initialize'
+    : /session\/new/.test(text) ? 'session-new'
+      : /session\/prompt/.test(text) ? 'prompt' : 'transport';
+  const code = /E_[A-Z0-9_]{2,63}/.exec(text)?.[0] ?? null;
+  return { stage, category: 'acp-failure', code };
+}
+
 /**
  * Turn one ACP session's transport records into the measured row.
  *
@@ -116,8 +142,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // A decision without a usage record is not a zero-cost turn: the artifact's
   // token budget would then be understated. The session is incomplete and the
   // kernel rejects the whole artifact.
-  const usageComplete = decisionTurns.every((turn) => turn.usage
-    && Number.isFinite(Number(turn.usage.input)) && Number.isFinite(Number(turn.usage.output)));
+  const usageComplete = decisionTurns.every((turn) => finiteUsage(turn.usage));
   const failedModelTurns = (Array.isArray(turns) ? turns : []).filter((turn) => turn.ok !== true).length;
   const failedUpdates = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call_update'
     && (update.status === 'failed' || update.status === 'error' || update.isError === true || update.is_error === true));
@@ -134,7 +159,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const readResults = [];
   for (const update of Array.isArray(updates) ? updates : []) {
     if (update?.sessionUpdate !== 'tool_call_update') continue;
-    if (update.status === 'failed' || update.status === 'error' || update.isError === true || update.is_error === true) continue;
+    if (!completedToolUpdate(update) || update.isError === true || update.is_error === true) continue;
     const name = byId.get(update.toolCallId);
     if (name !== 'read') continue;
     const text = toolUpdateText(update);
@@ -154,10 +179,10 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     toolCalls: toolNames.length,
     toolNames,
     failures,
-    tokens: usage.inputTokens + usage.outputTokens + usage.cacheReadTokens,
-    inputTokens: usage.inputTokens,
-    outputTokens: usage.outputTokens,
-    cacheReadTokens: usage.cacheReadTokens,
+    tokens: usageComplete ? usage.inputTokens + usage.outputTokens + usage.cacheReadTokens : 0,
+    inputTokens: usageComplete ? usage.inputTokens : 0,
+    outputTokens: usageComplete ? usage.outputTokens : 0,
+    cacheReadTokens: usageComplete ? usage.cacheReadTokens : 0,
     durationMs: Number.isFinite(durationMs) ? Math.max(0, Math.round(durationMs)) : 0,
     readResultCount: readResults.length,
     readResultCharacters: readResults.reduce((total, text) => total + text.length, 0),
@@ -359,11 +384,14 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
     .map((update) => update.content.text).join('');
   const row = extractSessionEvidence({ label, side, turns, updates, assistantText, expectedTokens, candidateTool, durationMs });
   const failedTurns = turns.filter((turn) => turn.ok !== true).length;
+  // The raw transport detail stays on the operator console; the persisted row
+  // carries only a stage/category/code projection.
+  if (promptError !== null) console.error(`[task-benefit] ${label} failed: ${promptError.slice(0, 400)}`);
   return {
     ...row,
     ok: promptError === null && failedTurns === 0 && row.turns > 0 && row.usageComplete === true,
     failedTurns,
-    ...(promptError === null ? {} : { error: promptError.slice(0, 500) }),
+    ...(promptError === null ? {} : { failure: failureProjection(promptError) }),
     assistantCharacters: assistantText.length,
   };
 }

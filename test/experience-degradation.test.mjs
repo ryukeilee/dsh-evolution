@@ -161,6 +161,28 @@ test('an unrelated caller-input error does not discard a qualifying degradation'
   assert.equal(pureError.candidates.length, 0);
 });
 
+test('a single degradation cannot borrow unrelated errors to cross the threshold', () => {
+  const now = new Date().toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:one-loss', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
+        occurrences: 1, failureCount: 0, successCount: 0, lastSeen: now,
+        metrics: { recoverycalls: { sum: 1, count: 1 } }, recoveryTool: 'tool:bash',
+      },
+      {
+        key: 'knowledge:errors', scope: 'tool read', problem: 'official operation failure fs not found',
+        failureCount: 8, occurrences: 8, lastSeen: now,
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  assert.equal(planned.candidates.length, 0);
+  const rejected = planned.rejected.find((entry) => entry.problemKey === 'tool read');
+  assert.ok(rejected);
+  assert.equal(rejected.reason, 'caller-input');
+});
+
 test('the mounted collector defers a degradation to the next call and flushes it at turn end', async (t) => {
   const { Context } = await import('@deepseek-ai/cordis');
   const { apply: applyCollector } = await import('../lib/experience-collector.js');
@@ -246,6 +268,30 @@ test('a successful re-read of the same path is an associated recovery', async (t
     const [row] = app.get('evolutionExperience').store.discover().records.filter((record) => record.issueType === 'tool degradation');
     assert.equal(row.occurrences, 1);
     assert.equal(row.metrics.recoverycalls.sum, 1);
+    assert.equal(row.recoveryTool, 'tool:read');
+  } finally {
+    await fiber.dispose();
+  }
+});
+
+test('a re-read settles only its own path and keeps the other loss pending', async (t) => {
+  const { Context } = await import('@deepseek-ai/cordis');
+  const { apply: applyCollector } = await import('../lib/experience-collector.js');
+  const root = temporary(t);
+  const app = new Context();
+  app.provide('tools', { register() {} });
+  const fiber = app.plugin(applyCollector, { dshHome: root });
+  await fiber.await();
+  try {
+    const agent = { id: 'paths-agent' };
+    const truncated = (path) => ({ isError: false, value: { path, offset: 1, lines: [{ number: 1, text: 'x'.repeat(2000) + '... (line truncated to 2000 chars)' }], totalLines: 1 } });
+    app.emit('tools/result', { callId: 'read-a', name: 'read', agent }, truncated('/tmp/a.json'));
+    app.emit('tools/result', { callId: 'read-b', name: 'read', agent }, truncated('/tmp/b.json'));
+    app.emit('tools/result', { callId: 'read-b2', name: 'read', agent }, { isError: false, value: { path: '/tmp/b.json', offset: 1, lines: [{ number: 1, text: 'complete b' }], totalLines: 1 } });
+    app.emit('agent/turn-stopping', { agent });
+    const [row] = app.get('evolutionExperience').store.discover().records.filter((record) => record.issueType === 'tool degradation');
+    assert.equal(row.occurrences, 2);
+    assert.equal(row.metrics.recoverycalls.sum, 1, 'only the matching path is settled; A stays unrecovered');
     assert.equal(row.recoveryTool, 'tool:read');
   } finally {
     await fiber.dispose();
