@@ -475,12 +475,33 @@ try {
       probe: durable?.latestObservation?.probe ?? null });
   }
 
+  // A workflow claim now requires paired real-session evidence. This
+  // deterministic runner does not produce that artifact, so the workload-only
+  // plan must stop at the benefit gate instead of reaching owner confirmation;
+  // the promotion/canary/publication stages below stay for a run that supplies
+  // task evidence (see docs/design/task-coupled-evidence.md).
+  let workloadRejected = null;
   await runPrompt('acp-delegate', '请自我进化：补齐生成配置完整长行读取能力。用 evolution_desktop 把它作为真实进化任务交给 Desktop；先停在所有者确认前，不要自行批准。', (tools, result, round) => {
     assertKernelFree(tools);
     if (round === 1) return { name: 'evolution_desktop', args: { action: 'delegate', plan: plan.plan, cwd: home } };
     const value = toolResultValue(result);
     if (round === 2) {
       assert(value.action === 'delegate', `unexpected delegate result action: ${value.action}`);
+      if (value.phase === 'failed' && value.error?.code === 'E_DESKTOP_BENEFIT_UNPROVEN') {
+        // This plan claims a workflow benefit but carries no paired real-session
+        // evidence. The new gate must be the *only* reason it stopped, otherwise
+        // the script would silently accept an unrelated failure as proof that
+        // the gate works.
+        const gates = value.gates ?? {};
+        assert(gates.taskBenefit === false, 'a rejected workload-only plan did not report taskBenefit=false');
+        for (const key of ['realBenefit', 'measuredEvidence', 'repeatable', 'regressionTest', 'reversible', 'cleanupEvidence', 'noOrphans', 'workflowBenefit']) {
+          assert(gates[key] === true, `the workload-only plan failed an unrelated gate: ${key}=${gates[key]}`);
+        }
+        workloadRejected = value;
+        return null;
+      }
+      assert(plan.plan.verification.task !== undefined,
+        'a workload-only plan reached owner confirmation; the taskBenefit gate did not run');
       assert(value.phase === 'awaiting-owner-confirmation', `delegate did not stop at the owner gate: ${value.phase} ${value.message ?? ''}`);
       assert(value.experimentId && value.candidateSourceSha256 === plan.sourceSha256, 'delegate identity does not match the candidate');
       approvalObserved = { taskId: value.taskId, experimentId: value.experimentId, sourceSha256: value.candidateSourceSha256, gates: value.gates, decision: value.decision };
@@ -489,6 +510,25 @@ try {
     assert(value.phase === 'awaiting-owner-confirmation', 'status left the owner gate without approval');
     return null;
   });
+  if (workloadRejected) {
+    const state = await readJson(stateFile(workloadRejected.taskId));
+    assert(state?.revert?.ok === true, 'a rejected workload-only plan did not prove runtime cleanup');
+    assert(!(await readJson(publishedFile))?.plugins?.some((row) => row.experimentId === workloadRejected.experimentId),
+      'a rejected workload-only candidate was published');
+    evidence.workloadOnlyPromotion = {
+      taskId: workloadRejected.taskId,
+      experimentId: workloadRejected.experimentId,
+      phase: workloadRejected.phase,
+      error: workloadRejected.error,
+      gates: workloadRejected.gates,
+      decision: workloadRejected.decision,
+      revert: state.revert,
+    };
+    evidence.ok = false;
+    evidence.blocked = 'a workload-only workflow claim is rejected: taskBenefit (paired real-session evidence) is required and this deterministic runner does not produce it';
+    process.exitCode = 0;
+    throw new Error('TASK_BENEFIT_REQUIRED');
+  }
   assert(approvalObserved, 'ACP never reached the owner confirmation gate');
   evidence.candidate.experimentId = approvalObserved.experimentId;
   evidence.candidate.gates = approvalObserved.gates;
@@ -880,7 +920,7 @@ try {
   evidence.ok = true;
 } catch (error) {
   evidence.error = String(error?.message ?? error).slice(0, 1500);
-  if (String(error?.message) !== 'OWNER_APPROVAL_REQUIRED') process.exitCode = 1;
+  if (!['OWNER_APPROVAL_REQUIRED', 'TASK_BENEFIT_REQUIRED'].includes(String(error?.message))) process.exitCode = 1;
 } finally {
   // Join any in-flight prompt so its tool call owns its own lifetime.
   if (acp) { try { await acp.close(); } catch {} }

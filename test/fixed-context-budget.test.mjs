@@ -93,11 +93,19 @@ const ORIGIN_WIRE_BYTES = 10147;
  *  Measured 2026-11-17: fields 12122 B / wire 12639 B (text unchanged); the
  *  same formula yields 5450 B fields / 5700 B wire.
  *
+ *  The 2026-11-18 task-coupled verification extension adds
+ *  `evolution_propose.improvement` (tool | context-policy),
+ *  `evolution_measure.taskId`, and `evolution_measure.observation.taskBenefit`
+ *  (the paired real-session artifact a workflow claim is bound to). Measured
+ *  with the fixture in this file on 2026-11-18: text 3819 B (unchanged),
+ *  fields 12427 B, wire 12944 B; the same formula yields 5850 B fields /
+ *  6050 B wire. No prose was added, so the budget is not widened for wording.
+ *
  *  So the assertion below is still "at least 20% smaller than the extended
  *  baseline", not an unbounded budget. Adding prose or another tool must raise
  *  the allowance only with a new measurement and this same formula. */
-const FIELDS_ALLOWANCE_BYTES = 5450;
-const WIRE_ALLOWANCE_BYTES = 5700;
+const FIELDS_ALLOWANCE_BYTES = 5850;
+const WIRE_ALLOWANCE_BYTES = 6050;
 const BASELINE_FIELDS_BYTES = ORIGIN_FIELDS_BYTES + FIELDS_ALLOWANCE_BYTES;
 const BASELINE_WIRE_BYTES = ORIGIN_WIRE_BYTES + WIRE_ALLOWANCE_BYTES;
 
@@ -116,10 +124,10 @@ const EXPECTED_PARAMETER_STRUCTURE = JSON.parse(`{
  "evolution_maintain": {"required":[],"properties":{"dryRun":{"type":"boolean"},"confirmation":{"type":"boolean"},"archives":{"type":"boolean"},"log":{"type":"boolean"},"retainRecords":{"type":"number"}}},
  "evolution_runtime_inspect": {"required":[],"properties":{}},
  "evolution_plan": {"required":[],"properties":{"focus":{"type":"string"},"minOccurrences":{"type":"number"},"limit":{"type":"number"}}},
- "evolution_propose": {"required":["why","target","impactScope","successMetrics"],"properties":{"why":{"type":"string"},"target":{"type":"string"},"impactScope":{"type":"array","items":{"type":"string"}},"successMetrics":{"type":"array","items":{"type":"string"}},"risk":{"type":"string"},"strategy":{"type":"string"},"rootCause":{"type":"string"},"benefitModel":{"type":"object","required":[],"properties":{"kind":{"type":"string"},"metric":{"type":"string"}}},"targets":{"type":"object","required":[],"properties":{"components":{"type":"array","items":{"type":"string"}},"plugins":{"type":"array","items":{"type":"string"}},"configurations":{"type":"array","items":{"type":"string"}}}}}},
+ "evolution_propose": {"required":["why","target","impactScope","successMetrics"],"properties":{"why":{"type":"string"},"target":{"type":"string"},"impactScope":{"type":"array","items":{"type":"string"}},"successMetrics":{"type":"array","items":{"type":"string"}},"risk":{"type":"string"},"strategy":{"type":"string"},"rootCause":{"type":"string"},"benefitModel":{"type":"object","required":[],"properties":{"kind":{"type":"string"},"metric":{"type":"string"}}},"improvement":{"type":"string"},"targets":{"type":"object","required":[],"properties":{"components":{"type":"array","items":{"type":"string"}},"plugins":{"type":"array","items":{"type":"string"}},"configurations":{"type":"array","items":{"type":"string"}}}}}},
  "evolution_trial": {"required":["experimentId","composition"],"properties":{"experimentId":{"type":"string"},"idPrefix":{"type":"string"},"composition":{"type":"object","required":["name","purpose","code"],"properties":{"name":{"type":"string"},"purpose":{"type":"string"},"code":{"type":"object","required":["host"],"properties":{"host":{"type":"string"},"client":{"type":"string"}}}}}}},
   "evolution_probe": {"required":["experimentId","phase","scenario"],"properties":{"experimentId":{"type":"string"},"phase":{"type":"string"},"scenario":{"type":"object","required":["id","steps"],"properties":{"id":{"type":"string"},"description":{"type":"string"},"kind":{"type":"string"},"repetitions":{"type":"number"},"steps":{"type":"array","items":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"arguments":{"type":"json"},"role":{"type":"string"},"absentInBaseline":{"type":"boolean"},"candidateName":{"type":"string"},"resultPath":{"type":"array","items":{"type":"string"}},"expected":{"type":"json"}}}}}}}},
- "evolution_measure": {"required":["experimentId","observation"],"properties":{"experimentId":{"type":"string"},"observation":{"type":"object","required":["solvesProblem"],"properties":{"solvesProblem":{"type":"boolean"},"sideEffects":{"type":"array","items":{"type":"string"}},"orphanResources":{"type":"array","items":{"type":"string"}},"performanceChange":{"type":"json"},"errorChange":{"type":"json"},"metrics":{"type":"object"},"beforeMetrics":{"type":"object"},"afterMetrics":{"type":"object"},"observationWindow":{"type":"json"},"sampleCount":{"type":"number"},"benefitEvidence":{"type":"string"},"repeatable":{"type":"boolean"},"regressionPassed":{"type":"boolean"},"reversible":{"type":"boolean"},"cleanupEvidence":{"type":"string"}}}}},
+ "evolution_measure": {"required":["experimentId","observation"],"properties":{"experimentId":{"type":"string"},"taskId":{"type":"string"},"observation":{"type":"object","required":["solvesProblem"],"properties":{"solvesProblem":{"type":"boolean"},"sideEffects":{"type":"array","items":{"type":"string"}},"orphanResources":{"type":"array","items":{"type":"string"}},"performanceChange":{"type":"json"},"errorChange":{"type":"json"},"metrics":{"type":"object"},"beforeMetrics":{"type":"object"},"afterMetrics":{"type":"object"},"observationWindow":{"type":"json"},"sampleCount":{"type":"number"},"benefitEvidence":{"type":"string"},"repeatable":{"type":"boolean"},"regressionPassed":{"type":"boolean"},"reversible":{"type":"boolean"},"cleanupEvidence":{"type":"string"},"taskBenefit":{"type":"json"}}}}},
  "evolution_revert": {"required":["experimentId"],"properties":{"experimentId":{"type":"string"}}},
  "evolution_promote": {"required":["experimentId"],"properties":{"experimentId":{"type":"string"},"confirmation":{"type":"boolean"},"targetProfiles":{"type":"array","items":{"type":"string"}}}},
  "evolution_canary_observe": {"required":["experimentId","startupVerified","componentHealth","dependenciesPresent","metricRegression","barrier"],"properties":{"experimentId":{"type":"string"},"startupVerified":{"type":"boolean"},"componentHealth":{"type":"string"},"dependenciesPresent":{"type":"boolean"},"metricRegression":{"type":"boolean"},"metrics":{"type":"object"},"evidence":{"type":"object"},"barrier":{"type":"object","required":["id","reached"],"properties":{"id":{"type":"string"},"reached":{"type":"boolean"}}}}}

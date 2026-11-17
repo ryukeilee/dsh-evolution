@@ -929,7 +929,7 @@ test('the pre-comparison probe shape is classified by its baseline failure codes
   assert.equal(result.retirementCandidates.length, 0);
 });
 
-test('a pre-comparison probe whose baseline ran and failed is a workflow benefit', async (t) => {
+test('a pre-comparison probe whose baseline ran and failed is a tool-level benefit, not a workflow', async (t) => {
   const env = await fixture(t, 'provenance-legacy-workflow');
   await writeConsumers(env);
   await writeEvidence(env, {
@@ -949,9 +949,11 @@ test('a pre-comparison probe whose baseline ran and failed is a workflow benefit
   } } };
   const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
   const [record] = result.records;
-  assert.equal(record.value.benefitProvenance, 'paired-workflow');
-  assert.equal(record.value.experimentBenefit, true);
-  assert.equal(record.value.tier, 'experiment-benefit');
+  // The model's surrounding execution path is absent from a plain probe pair,
+  // so the durable evidence cannot claim a workflow benefit.
+  assert.equal(record.value.benefitProvenance, 'unproven');
+  assert.equal(record.value.experimentBenefit, false);
+  assert.equal(record.value.tier, 'installed-only');
 });
 
 test('a missing promotion sidecar is unknown, never an experiment benefit', async (t) => {

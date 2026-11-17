@@ -19,6 +19,7 @@ import {
   SYSTEM_PROMPT_SECTION,
   TOOL_NAME,
   apply,
+  systemText,
 } from '../lib/desktop-task-client.js';
 import { sha256 } from '../lib/promoted-sharing.js';
 import { evolutionPackageVersion } from '../lib/self-evolution-review.js';
@@ -878,4 +879,22 @@ test('a review that cannot run is reported as a bounded audit failure, never as 
   assert.ok(result.message.length <= 500);
   assert.equal(result.message.includes('/Users/operator/private/path'), false);
   assert.deepEqual(await fs.readdir(home), []);
+});
+
+test('the tool schema admits a context-policy plan without tool self-tests', async () => {
+  const home = await fs.mkdtemp(path.join(os.tmpdir(), 'desktop-client-schema-'));
+  try {
+    const { tool } = mount(home);
+    const plan = tool.parameters.properties.plan.properties;
+    assert.ok(plan.proposal.properties.improvement, 'proposal.improvement is missing from the public schema');
+    assert.ok(plan.verification.properties.task, 'verification.task is missing from the public schema');
+    // A context-policy plan declares neither a target tool nor capability
+    // samples; requiring them here made a legal plan unreachable through the
+    // public tool even though the shared protocol accepted it.
+    assert.deepEqual(plan.verification.required, ['observations']);
+    assert.match(systemText, /context-policy/);
+    assert.match(systemText, /verification[.]task/);
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+  }
 });
