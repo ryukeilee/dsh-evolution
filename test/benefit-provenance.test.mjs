@@ -116,3 +116,37 @@ test('a caller-supplied evidenceKind cannot satisfy the workflow gate', () => {
   assert.equal(gates.workflowBenefit, false);
   assert.equal(gates.eligible, false);
 });
+
+test('kernel-derived workflow quality gains use the measured cost budget; legacy metrics retain zero regression', async () => {
+  const { compareWorkflowProbeRuns, normalizeProbeScenario, domainEvaluationEvidence } = await import('../lib/orchestrator.js');
+  const { EvolutionEvaluator } = await import('../lib/dockyard-domain/index.js');
+  const scenario = normalizeProbeScenario({ kind: 'workflow', id: 'quality-cost-budget', repetitions: 5, steps: [
+    { name: 'read', candidateName: 'complete_read', role: 'target', arguments: {}, expected: 'complete' },
+    { name: 'read', role: 'control', arguments: {}, expected: 'unchanged' },
+  ] });
+  const rows = (candidate, durationMs) => Array.from({ length: 5 }, (_, repetition) => scenario.steps.map((step, index) => ({
+    repetition, index, step: candidate ? step.candidateName : step.name, role: step.role,
+    expectedDigest: step.expectedDigest, isError: !candidate && index === 0,
+    code: !candidate && index === 0 ? 'E_EVOLUTION_PROBE_INCORRECT' : null,
+    valueDigest: !candidate && index === 0 ? null : step.expectedDigest,
+    outputBytes: 100, durationMs: index === 0 ? durationMs : 0,
+  }))).flat();
+  const baseline = { samples: rows(false, 1) };
+  for (const [durationMs, eligible] of [[2, true], [12, false]]) {
+    const comparison = compareWorkflowProbeRuns(baseline, { samples: rows(true, durationMs), reference: baseline }, scenario);
+    const observed = { ...observation('workflow'), probeDerived: true,
+      solvesProblem: comparison.benefit, regressionPassed: !comparison.regression,
+      beforeMetrics: comparison.beforeMetrics, afterMetrics: comparison.afterMetrics,
+      probe: { comparison } };
+    const record = { runtimeRecovered: true, proposal: { benefitModel: { kind: 'workflow' } }, latestObservation: observed };
+    assert.equal(comparison.workload.durationAcceptable, eligible);
+    assert.equal(promotionGates(record).eligible, eligible);
+    const evaluator = new EvolutionEvaluator();
+    const advisory = domainEvaluationEvidence(record);
+    assert.equal(evaluator.evaluate(advisory).decision === 'rollback', !eligible);
+    assert.equal(observed.afterMetrics.durationMs, durationMs, 'raw elapsed time remains available');
+    assert.equal(evaluator.evaluate(domainEvaluationEvidence({ ...record, latestObservation: { ...observed, probeDerived: false } })).decision, 'rollback');
+    // The same raw numbers have no special allowance without a kernel probe.
+    assert.equal(promotionGates({ ...record, latestObservation: { ...observed, probeDerived: false } }).eligible, false);
+  }
+});
