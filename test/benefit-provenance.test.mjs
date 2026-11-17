@@ -118,7 +118,8 @@ test('a caller-supplied evidenceKind cannot satisfy the workflow gate', () => {
 });
 
 test('kernel-derived workflow quality gains use the measured cost budget; legacy metrics retain zero regression', async () => {
-  const { compareWorkflowProbeRuns, normalizeProbeScenario } = await import('../lib/orchestrator.js');
+  const { compareWorkflowProbeRuns, normalizeProbeScenario, domainEvaluationEvidence } = await import('../lib/orchestrator.js');
+  const { EvolutionEvaluator } = await import('../lib/dockyard-domain/index.js');
   const scenario = normalizeProbeScenario({ kind: 'workflow', id: 'quality-cost-budget', repetitions: 5, steps: [
     { name: 'read', candidateName: 'complete_read', role: 'target', arguments: {}, expected: 'complete' },
     { name: 'read', role: 'control', arguments: {}, expected: 'unchanged' },
@@ -140,6 +141,11 @@ test('kernel-derived workflow quality gains use the measured cost budget; legacy
     const record = { runtimeRecovered: true, proposal: { benefitModel: { kind: 'workflow' } }, latestObservation: observed };
     assert.equal(comparison.workload.durationAcceptable, eligible);
     assert.equal(promotionGates(record).eligible, eligible);
+    const evaluator = new EvolutionEvaluator();
+    const advisory = domainEvaluationEvidence(record);
+    assert.equal(evaluator.evaluate(advisory).decision === 'rollback', !eligible);
+    assert.equal(observed.afterMetrics.durationMs, durationMs, 'raw elapsed time remains available');
+    assert.equal(evaluator.evaluate(domainEvaluationEvidence({ ...record, latestObservation: { ...observed, probeDerived: false } })).decision, 'rollback');
     // The same raw numbers have no special allowance without a kernel probe.
     assert.equal(promotionGates({ ...record, latestObservation: { ...observed, probeDerived: false } }).eligible, false);
   }
