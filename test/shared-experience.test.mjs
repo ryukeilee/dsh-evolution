@@ -278,3 +278,13 @@ test('setup bin invoked through a symlink runs its argument validation', t => {
   const result = spawnSync(process.execPath, ['--max-old-space-size=4096', link], { encoding: 'utf8' });
   assert.equal(result.status, 1); assert.match(result.stderr, /--tarball is required/);
 });
+test('a metrics-bearing failure keeps the frozen opener replay digest', t => {
+  const root = temporary(t);
+  const store = openSharedExperience(root);
+  t.after(() => store.close());
+  const id = experienceEventId('metrics-replay');
+  assert.equal(store.recordFailure({ id, type: 'tool/error', code: 'ENOENT', target: 'tool:read_file', metrics: { successesSinceFailure: 3, attemptsSinceFailure: 4 } }).duplicate, false);
+  // The frozen schema-1 opener replays the same id without the new field. Its
+  // digest must still match, so it sees a duplicate, never a conflict.
+  assert.equal(store.recordFailure({ id, type: 'tool/error', code: 'ENOENT', target: 'tool:read_file' }).duplicate, true);
+});

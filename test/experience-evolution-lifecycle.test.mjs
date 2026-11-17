@@ -353,7 +353,10 @@ test('benefit loop: plan selects the seeded failure, probe derives the measureme
   // The caller's metric object is unverified input: the derived branch keeps
   // only the probe's own counts, so a forged number cannot reach the gates or
   // the advisory evaluator.
-  assert.deepEqual(observation.metrics, { probeBenefit: 1, probeControlStable: 1 });
+  // The target step really ran and failed in the baseline, so this is a
+  // workflow before/after rather than a capability self-test.
+  assert.deepEqual(observation.metrics, { probeBenefit: 1, probeControlStable: 1, probeWorkflowBenefit: 1 });
+  assert.equal(observation.probe.comparison.benefitKind, 'workflow');
   assert.equal(observation.metrics.probeBenefit, 1);
   assert.equal(measurement.gates.measuredEvidence, true);
   assert.equal(measurement.gates.realBenefit, true);

@@ -31,7 +31,9 @@ test('shell mutation matching retains irreversible, redirect and trust-root deci
   assert.equal('sed -i file'.replace(MUTATION_VERBS_RE, 'blocked'), 'blocked file');
   let guard;
   apply({ tools: { guard: (callback) => { guard = callback; } } });
-  assert.match(guard({ name: 'bash', arguments: { command: 'publish > output' } }), /已被拒绝/);
+  // The deny message now names the rule that matched: an irreversible
+  // operation is not a Cordis trust-root mutation.
+  assert.match(guard({ name: 'bash', arguments: { command: 'publish > output' } }), /不可逆风险/);
   assert.equal(guard({ name: 'bash', arguments: { command: 'publish > /dev/null' } }), undefined);
   assert.match(guard({ name: 'write', arguments: { file_path: '/tmp/.env' } }), /不可逆风险/);
 });
@@ -49,7 +51,7 @@ test('uncontrolled shell input cannot stall the pre-execution guard', () => {
       'sed '.repeat(100000), 'perl '.repeat(100000), 'node '.repeat(100000),
       'sed ' + ' '.repeat(1000000), 'find ' + ' '.repeat(1000000)]) {
       assert.equal(guard({name: 'bash', arguments: {command: 'publish ' + tail}}), undefined);
-      assert.match(guard({name: 'bash', arguments: {command: 'publish ' + tail + '> output'}}), /已被拒绝/);
+      assert.match(guard({name: 'bash', arguments: {command: 'publish ' + tail + '> output'}}), /已被拒绝|不可逆风险/);
     }
   `], { encoding: 'utf8', timeout: 5000 });
   assert.ifError(child.error);
