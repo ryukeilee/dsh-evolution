@@ -179,6 +179,40 @@ test('plan: ordering is deterministic and independent of source order', () => {
   assert.ok(forward.candidates[0].score >= forward.candidates[1].score);
 });
 
+test('plan: an observed failure rate outranks raw all-time frequency', () => {
+  // Same recency, breadth, evidence and saturated frequency by count. The
+  // high-count target now almost always succeeds; the low-count one still
+  // fails on most observed attempts. Ranking by count alone would pick the
+  // first and waste an experiment on an already-working tool.
+  const window = (attempts, successes) => ({
+    attemptssincefailure: { sum: attempts },
+    successessincefailure: { sum: successes },
+  });
+  const knowledge = [
+    record({ key: 'knowledge:bash', scope: 'tool:bash', failureCount: 20, occurrences: 20, failureMode: 'timeout', lastSeen: iso(BASE + 10 * DAY), metrics: window(1000, 999) }),
+    record({ key: 'knowledge:run', scope: 'tool:run_code', failureCount: 6, occurrences: 6, failureMode: 'code-run-failed', lastSeen: iso(BASE + 10 * DAY), metrics: window(8, 2) }),
+  ];
+  const plan = planEvolutionCandidates({ knowledge, versions: VERSIONS }, { now: BASE + 11 * DAY });
+  assert.equal(plan.candidates.length, 2);
+  const top = plan.candidates[0];
+  assert.equal(top.problemKey, 'tool:run_code');
+  assert.equal(top.rateBasis, 'observed-window');
+  assert.equal(top.observedFailureRate, 0.75);
+  assert.ok(top.score > plan.candidates[1].score);
+  assert.equal(plan.candidates[1].observedFailureRate, 0.001);
+});
+
+test('plan: candidates without an observed window keep the historical score', () => {
+  const knowledge = [record({
+    key: 'knowledge:legacy', scope: 'tool:legacy', failureCount: 6, occurrences: 6,
+    failureMode: 'timeout', lastSeen: iso(BASE),
+  })];
+  const plan = planEvolutionCandidates({ knowledge, versions: VERSIONS }, { now: BASE + DAY });
+  assert.equal(plan.candidates[0].rateBasis, 'failure-count-only');
+  // 0.35 frequency + 0.20*(1 - 1/30) recency + 0.15*(1/3) breadth + 0.15*0.5 evidence.
+  assert.equal(plan.candidates[0].score, 0.6683);
+});
+
 test('plan: output is bounded by the declared limits', () => {
   const crowded = record({
     key: 'knowledge:crowded',

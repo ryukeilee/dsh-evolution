@@ -72,6 +72,29 @@ test('tools/result is an emit: the listener returns nothing the registry could u
   assert.equal(JSON.stringify(observed[0].observation).includes(SECRET), false);
 });
 
+test('tools/result observes the official error.info.code, not a legacy top-level code', async () => {
+  const observed = [];
+  const { core, listeners } = fixture({ mode: 'autonomous' });
+  core.observeAutonomous = async (observation) => { observed.push(observation); };
+  const exec = { agent: { id: 'a' }, name: 'bash', callId: 'c-official-code' };
+  // The host publishes ToolFailure { message, info: { name, code } } on `error`.
+  // The same result through experience-collector.js records CODE_RUN_FAILED;
+  // the autonomous observer must not degrade it to TOOL_BASH here.
+  const result = Object.freeze({
+    isError: true,
+    error: Object.freeze({ message: `tool failed password=${SECRET}`, info: Object.freeze({ name: 'CodeRunFailed', code: 'CODE_RUN_FAILED' }) }),
+    content: Object.freeze([]),
+  });
+  assert.equal(listeners.get('tools/result')(exec, result), undefined);
+  await tick();
+  assert.equal(observed.length, 1);
+  assert.equal(observed[0].code, 'CODE_RUN_FAILED');
+  assert.equal(observed[0].message, 'Official operation failed (CODE_RUN_FAILED)');
+  assert.equal(observed[0].target, 'tool:bash');
+  // The raw failure text stays bound by the redaction boundary.
+  assert.equal(JSON.stringify(observed[0]).includes(SECRET), false);
+});
+
 test('tools/result still ignores non-errors and the plugin\'s own tools', async () => {
   const observed = [];
   const { core, listeners } = fixture({ mode: 'autonomous' });

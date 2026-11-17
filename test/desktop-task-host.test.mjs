@@ -895,6 +895,10 @@ test('Desktop workload mounts the official preset, executes baseline before Tria
     { name: 'official_stats', candidateName: plan.tool, role: 'target', arguments: { text: 'abc' }, expected: { characters: 3, lines: 1 } },
     { name: 'official_stats', role: 'control', arguments: { text: 'abc' }, expected: { characters: 3, lines: 1 } },
   ] };
+  // A caller may declare a capability model alongside a real workload. The
+  // workload must win: otherwise the proposal omits workflowBenefit from the
+  // promotion gate and a workflow experiment is judged by a capability self-test.
+  plan.plan.proposal.benefitModel = { kind: 'capability' };
   const kernel = fakeKernel({ facts: factsWriter(home) });
   kernel.tools.set('evolution_probe', { execute: async (args) => {
     kernel.calls.push({ name: 'evolution_probe', args });
@@ -924,7 +928,7 @@ test('Desktop workload mounts the official preset, executes baseline before Tria
   assert.deepEqual(sequence.map((row) => [row.name, row.args.phase ?? null]), [
     ['evolution_propose', null], ['evolution_probe', 'baseline'], ['evolution_trial', null], ['evolution_probe', 'candidate'], ['evolution_measure', null],
   ]);
-  assert.equal(sequence[0].args.benefitModel.kind, 'workflow');
+  assert.deepEqual(sequence[0].args.benefitModel, { kind: 'workflow' }, 'a workload cannot be downgraded by a caller-declared capability model');
   assert.equal(sequence[4].args.observation.evidenceKind, 'comparative-workload');
   assert.equal(state.workload.scenarioDigest, 'sha256:paired');
 });
