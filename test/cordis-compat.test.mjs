@@ -301,6 +301,7 @@ test('every recorded surface is classified and its class matches the shipped pac
     'dynamicCordisRunner.snapshot()',
   ]);
   assert.deepEqual(advisoryUnavailable, [
+    'ctx.agentPresets.resolve()/mount() + agents.create({ setup })',
     "ctx.get('pluginPackages').packageOf() (resolved host packages)",
     "ctx.get('loader').entries() (live loader entries)",
     "ctx.get('cordisInspect').list() (providers)",

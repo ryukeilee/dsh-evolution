@@ -93,13 +93,18 @@ kernel 时挂载插件并执行一次、重启后只挂载一次，同时覆盖�
 
 安装器还会在 `desktop` profile 启用 `dsh-evolution/desktop-task-host`，只在 `acp` profile 启用
 `dsh-evolution/desktop-task-client`。两者组成 ACP → Desktop 的任务通道：ACP 会话里的模型把自然语言
-自我进化任务整理成受校验的进化计划（proposal、候选 Host 组合、确定性验证样本），通过
+自我进化任务整理成受校验的进化计划（proposal、候选 Host 组合、能力样本与可选对照工作负载），通过
 `evolution_desktop` 工具写入 `$DSH_HOME/storages/evolution/desktop-tasks/`；Desktop 侧的宿主只使用官方
 `agents` / `sessions` / `tools` 服务，按真实 `evolution_propose → evolution_trial →（真实工具样本）→
 evolution_measure → evolution_promote → evolution_canary_observe` 顺序执行。**Evolution kernel、八项晋升门禁、Canary、
 Stable、Rollback 仍然只存在于 Desktop 进程**；ACP 侧没有 orchestrator，也没有 `evolution_trial` /
 `evolution_promote` 工具。
 
+- **真实工作负载收益。** `verification.workload` 在 Trial 前执行既有工具路径，在 Trial 内交替执行既有路径与候选路径；
+  两侧共用输入和验收条件。measure 从真实调用派生正确性、成功率、失败率、耗时与返回字节，不采信自报收益。
+  至少五轮、多个用例、稳定 control 与已知宿主身份才有足够证据；无收益、退化或证据不足在请求批准前停止。
+  `samples` 单独只算能力自测。Canary 重放同一工作负载；隔离实验结果不能声明为生产收益。
+  契约、成本预算与证据边界见 [Desktop 工作流对照证据](docs/desktop-workflow-benefit.md)。
 - **Desktop 未运行时自动启动官方应用。** 客户端读取 Desktop host 原子写入的 `host.json`（pid/instanceId/
   协议版本），未就绪时按官方 macOS 应用路径启动正式 DeepSeek Harness；Electron 单实例锁保证不会出现第二个
   Desktop。已运行的旧版本 Desktop 没有本插件时，工具返回可操作的错误并要求重启 Desktop，不伪造成功。

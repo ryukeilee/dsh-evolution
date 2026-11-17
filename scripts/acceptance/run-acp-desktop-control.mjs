@@ -38,7 +38,7 @@ import readline from 'node:readline';
 import crypto from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const argv = process.argv.slice(2);
 const positional = [];
@@ -203,6 +203,7 @@ const server = http.createServer(async (request, response) => {
     response.end();
   } catch (error) {
     fixtureError = String(error?.message ?? error);
+    nextAction = () => null;
     console.error(`Fixture: ${fixtureError}`);
     response.writeHead(500);
     response.end(fixtureError);
@@ -290,39 +291,57 @@ function toolResultValue(result) {
   return JSON.parse(content);
 }
 
-function makePlan() {
+// A generated single-line configuration is a legitimate source-inspection task:
+// the official read tool deliberately truncates long lines. We keep those defaults.
+const shortLine = 'export const answer = 42;';
+const longLine = JSON.stringify({ name: 'generated-config', routes: Array.from({ length: 80 }, (_, i) => ({ path: `/feature/${i}`, enabled: i % 2 === 0 })), sentinel: 'end-of-config' });
+const mediumLine = 'export const settings = ' + JSON.stringify({ route: '/workspace', flags: Array(30).fill('enabled') }) + ';';
+const mediumFile = path.join(home, 'workflow-medium.js');
+await fs.writeFile(mediumFile, mediumLine);
+const shortFile = path.join(home, 'workflow-short.js');
+const longFile = path.join(home, 'workflow-generated.json');
+await fs.writeFile(shortFile, shortLine);
+await fs.writeFile(longFile, longLine);
+function makePlan(variant = 'benefit') {
   const suffix = crypto.randomBytes(4).toString('hex');
-  const tool = `acp_stats_${suffix}`;
-  const compositionName = `acp-stats-${suffix}`;
-  const host = `const tool = harness.defineTool({ name: '${tool}', description: 'Read-only text character and line counts', parameters: { text: { type: 'string', required: true } }, output: { schema: { type: 'object', properties: { characters: { type: 'integer', required: true }, lines: { type: 'integer', required: true } }, additionalProperties: false }, render: (_args, result) => [{ type: 'text', text: JSON.stringify(result) }] }, isConcurrencySafe: () => true, execute: async ({ text }) => ({ characters: text.length, lines: text.split('\\n').length }) }); return { name: '${compositionName}', inject: ['tools'], apply(ctx) { harness.registerTool(ctx, tool); } };`;
-  return {
-    suffix,
-    tool,
-    compositionName,
-    host,
-    sourceSha256: sha(host),
-    plan: {
-      proposal: {
-        why: 'Acceptance: add a deterministic read-only text statistics tool to prove the ACP -> Desktop evolution channel end to end.',
-        target: `plugin:${compositionName}`,
-        impactScope: ['isolated-acceptance-only'],
-        successMetrics: ['both deterministic sample calls return the expected character and line counts'],
-      },
-      composition: { name: compositionName, purpose: 'Read-only text statistics; no filesystem, network, or process access', code: { host } },
-      verification: {
-        targetTool: tool,
-        observations: 2,
-        samples: [
-          { label: 'letters', tool, arguments: { text: 'abc' }, expected: { characters: 3, lines: 1 } },
-          { label: 'lines', tool, arguments: { text: 'a\nb' }, expected: { characters: 3, lines: 2 } },
-        ],
-      },
-      requestedTargetProfiles: ['acp'],
-    },
-  };
+  const tool = `read_complete_line_${suffix}`;
+  const compositionName = `complete-line-${suffix}`;
+  const host = `return { name: '${compositionName}', inject: ['tools', 'fs'], apply(ctx) {
+    const tool = harness.defineTool({ name: '${tool}', description: 'Read complete lines from small UTF-8 source files (64 KiB maximum)',
+      parameters: { file_path: { type: 'string', required: true }, offset: { type: 'number' }, limit: { type: 'number' } },
+      output: { schema: { type: 'object', additionalProperties: false, properties: { path: { type: 'string', required: true }, offset: { type: 'integer', required: true }, lines: { type: 'array', required: true, items: { type: 'object', additionalProperties: false, properties: { number: { type: 'integer', required: true }, text: { type: 'string', required: true } } } }, totalLines: { type: 'integer', required: true } } }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
+      isConcurrencySafe: () => true,
+      execute: async ({ file_path, offset = 1, limit = 1 }, exec) => {
+        if (!Number.isInteger(offset) || offset < 1 || !Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error('invalid bounded line window');
+        const target = await ctx.fs.resolve(file_path, { cwd: exec.agent?.session.header.cwd, signal: exec.signal });
+        const info = await ctx.fs.stat(target, exec.signal);
+        if (!info || info.type !== 'file' || !Number.isInteger(info.size) || info.size > 65536) throw new Error('requires a regular UTF-8 file of at most 64 KiB');
+        const content = await ctx.fs.readText(target, exec.signal);
+        if (content.length > 65536) throw new Error('file grew beyond read bound');
+        const all = content.split('\\n');
+        const lines = all.slice(offset - 1, offset - 1 + limit).map((text, i) => ({ number: offset + i, text: ${variant === 'regression' ? "text.length > 30 ? 'incorrect' : text" : 'text'} }));
+        return { path: target.displayPath, offset, lines, totalLines: all.length };
+      } }); harness.registerTool(ctx, tool);
+  } };`;
+  const targetFile = variant === 'regression' ? mediumFile : variant === 'no-benefit' ? shortFile : longFile;
+  const expected = variant === 'regression' ? mediumLine : variant === 'no-benefit' ? shortLine : longLine;
+  return { suffix, tool, compositionName, host, sourceSha256: sha(host), plan: {
+    proposal: { why: 'A real official read truncated a generated configuration line; inspect the full selected line without a shell or host patch.',
+      target: `plugin:${compositionName}`, impactScope: ['isolated-source-inspection'],
+      successMetrics: ['exact complete line and unchanged short-file control', 'bounded dispatch latency and serialized result bytes'],
+      benefitModel: { kind: 'workflow' }, strategy: `bounded full-line source inspection through the official filesystem service; hypothesis ${variant}` },
+    composition: { name: compositionName, purpose: 'Complete bounded source-line inspection', code: { host } },
+    verification: { targetTool: tool, observations: 2,
+      samples: [{ label: 'short-file capability self-test', tool, arguments: { file_path: shortFile, offset: 1, limit: 1 }, expected: { path: shortFile, offset: 1, lines: [{ number: 1, text: shortLine }], totalLines: 1 } }],
+      workload: { kind: 'workflow', id: `complete-source-line-${variant}`, repetitions: variant === 'insufficient' ? 1 : 5, steps: [
+        { name: 'read', candidateName: tool, role: 'target', arguments: { file_path: targetFile, offset: 1, limit: 1 }, resultPath: ['lines', '0', 'text'], expected },
+        { name: 'read', candidateName: tool, role: 'target', arguments: { file_path: mediumFile, offset: 1, limit: 1 }, resultPath: ['lines', '0', 'text'], expected: mediumLine },
+        { name: 'read', role: 'control', arguments: { file_path: shortFile, offset: 1, limit: 1 }, resultPath: ['lines', '0', 'text'], expected: shortLine },
+      ] },
+    }, requestedTargetProfiles: ['acp', 'web'],
+  } };
 }
-const plan = makePlan();
-evidence.candidate = { tool: plan.tool, compositionName: plan.compositionName, sourceSha256: plan.sourceSha256 };
+let plan = null;
 
 // The client launches the official app binary from DSH_DESKTOP_APP_BINARY when
 // it is set. The acceptance points it at a wrapper that keeps Electron's
@@ -398,7 +417,43 @@ try {
     assert(!names.includes('evolution_trial') && !names.includes('evolution_promote'), `ACP loaded the Evolution kernel: ${names.join(', ')}`);
     assert(names.includes('evolution_desktop'), `ACP is missing evolution_desktop: ${names.join(', ')}`);
   };
-  await runPrompt('acp-delegate', '请自我进化：新增一个只读的文本字符数与行数统计工具。用 evolution_desktop 把它作为真实进化任务交给 Desktop；先停在所有者确认前，不要自行批准。', (tools, result, round) => {
+  await runPrompt('acp-discovery', '用官方 read 读取生成配置的完整第一行，判断末尾 sentinel 是否可见。', (tools, result, round) => {
+    if (round === 1) return { name: 'read', args: { file_path: longFile, offset: 1, limit: 1 } };
+    assert(result?.is_error !== true, 'discovery read failed');
+    const text = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+    assert(text.includes('line truncated') && !text.includes('end-of-config'), 'official read did not reproduce the real long-line limitation');
+    evidence.discovery = { source: 'official read in a real ACP session', issue: 'complete first source line unavailable due to default line truncation',
+      inputSha256: sha(longLine), expectedCharacters: longLine.length, observedResultSha256: sha(text), model: 'deterministic plan-authoring fixture, no live model inference' };
+    plan = makePlan();
+    evidence.candidate = { tool: plan.tool, compositionName: plan.compositionName, sourceSha256: plan.sourceSha256 };
+    return null;
+  });
+
+  evidence.negativeWorkloads = [];
+  for (const variant of ['no-benefit', 'regression', 'insufficient']) {
+    const rejected = makePlan(variant);
+    let outcome;
+    await runPrompt(`acp-${variant}`, `验证 ${variant} 候选，不批准晋升。`, (tools, result, round) => {
+      assertKernelFree(tools);
+      if (round === 1) return { name: 'evolution_desktop', args: { action: 'delegate', plan: rejected.plan, cwd: home } };
+      const value = toolResultValue(result);
+      if (['accepted', 'running'].includes(value.phase)) return { name: 'evolution_desktop', args: { action: 'status', taskId: value.taskId, waitMs: 60000 } };
+      assert(value.phase === 'failed' && value.error?.code === 'E_DESKTOP_BENEFIT_UNPROVEN', `negative ${variant} did not stop before approval: ${JSON.stringify(value)}`);
+      const expected = variant === 'insufficient' ? 'insufficient-evidence' : variant;
+      assert(value.decision?.kind === expected, `negative ${variant} decision was ${value.decision?.kind}`);
+      outcome = value;
+      return null;
+    });
+    const state = await readJson(stateFile(outcome.taskId));
+    const durable = await readJson(path.join(dataRoot, 'archive', 'experiments', `${outcome.experimentId}.evidence.json`));
+    assert(state.revert?.ok === true, 'negative workload did not prove runtime cleanup');
+    assert(!(await readJson(publishedFile))?.plugins?.some((row) => row.experimentId === outcome.experimentId), 'negative candidate was published');
+    evidence.negativeWorkloads.push({ variant, taskId: outcome.taskId, experimentId: outcome.experimentId, phase: outcome.phase,
+      decision: outcome.decision, gates: outcome.gates, revert: state.revert, workload: state.workload,
+      probe: durable?.latestObservation?.probe ?? null });
+  }
+
+  await runPrompt('acp-delegate', '请自我进化：补齐生成配置完整长行读取能力。用 evolution_desktop 把它作为真实进化任务交给 Desktop；先停在所有者确认前，不要自行批准。', (tools, result, round) => {
     assertKernelFree(tools);
     if (round === 1) return { name: 'evolution_desktop', args: { action: 'delegate', plan: plan.plan, cwd: home } };
     const value = toolResultValue(result);
@@ -451,7 +506,7 @@ try {
           sourceSha256: approvalObserved.sourceSha256,
           confirmation: true,
           confirmationText: approveText,
-          targetProfiles: ['acp'],
+          targetProfiles: ['acp', 'web'],
         },
       };
     }
@@ -461,7 +516,7 @@ try {
       return { name: 'evolution_desktop', args: { action: 'status', taskId: approvalObserved.taskId, waitMs: 60_000 } };
     }
     if (value.phase === 'stable') {
-      evidence.approval = { ...evidence.approval, targetProfiles: value.approval?.targetProfiles ?? ['acp'] };
+      evidence.approval = { ...evidence.approval, targetProfiles: value.approval?.targetProfiles ?? ['acp', 'web'] };
       return null;
     }
     assert(!['failed', 'interrupted', 'cancelled'].includes(value.phase), `task reached ${value.phase}: ${value.error?.message ?? value.message ?? ''}`);
@@ -481,6 +536,7 @@ try {
     decision: finalState.decision,
     approval: finalState.approval,
     result: finalState.result,
+    workload: finalState.workload,
   };
 
   const evidencePath = path.join(dataRoot, 'archive', 'experiments', `${finalState.experimentId}.evidence.json`);
@@ -489,6 +545,7 @@ try {
   evidence.desktopRecovery = {
     evidenceSha256: sha(evidenceBytes),
     runtimeRecovered: durable.runtimeRecovered,
+    workflowObservation: durable.latestObservation?.probe ?? durable.observations?.at(-1)?.probe ?? null,
     gates: durable.gateEvidence?.gates,
     recoveryProof: { status: durable.recoveryProof?.status, beforeSha256: sha(JSON.stringify(durable.recoveryProof?.beforeFingerprint ?? null)), afterSha256: sha(JSON.stringify(durable.recoveryProof?.afterFingerprint ?? null)) },
   };
@@ -500,9 +557,32 @@ try {
   assert(record, 'stable promotion was not published to the shared index');
   assert(record.publisherProfile === 'desktop', 'publication was not owned by Desktop');
   assert(record.stable?.committedAt, 'publication record has no stable commit');
-  assert(JSON.stringify(record.approvedProfiles) === JSON.stringify(['acp']), 'publication approval scope differs from the owner approval');
+  assert(JSON.stringify(record.approvedProfiles) === JSON.stringify(['acp', 'web']), 'publication approval scope differs from the owner approval');
   evidence.publication = { id: record.id, publisherProfile: record.publisherProfile, sourceSha256: record.sourceSha256, approvedProfiles: record.approvedProfiles, committedAt: record.stable.committedAt };
   evidence.steps.push({ name: 'desktop-stable-and-published', at: new Date().toISOString() });
+
+  const reuseProfile = async (profile) => {
+    const receipt = path.join(work, `workflow-reuse-${profile}.json`);
+    const probeUrl = pathToFileURL(path.join(repo, 'scripts/acceptance/probes/workflow-reuse-probe.mjs')).href;
+    const addition = `\n- insert:\n    - id: workflow-reuse-${profile}\n      name: '${probeUrl}'\n`;
+    const profilePatch = path.join(home, 'profiles', profile, 'cordis.patch.yml');
+    const overlayFile = path.join(work, `workflow-reuse-${profile}.yml`);
+    if (profile === 'desktop') await fs.writeFile(profilePatch, patchesBefore[profile] + addition);
+    else await fs.writeFile(overlayFile, addition);
+    const log = await fs.open(path.join(work, `workflow-reuse-${profile}.log`), 'w', 0o600);
+    const child = launch(profile === 'desktop' ? binary : cli,
+      profile === 'desktop' ? [`--user-data-dir=${electronLive}`] : ['--profile', 'web', '--patch', overlayFile, '--', '--no-open', '--host', '127.0.0.1', '--port', '0'],
+      { stdio: ['ignore', log.fd, log.fd], env: { ...env, DSH_HOME: home, EVOLUTION_WORKFLOW_RECEIPT: receipt,
+        EVOLUTION_WORKFLOW_TOOL: plan.tool, EVOLUTION_WORKFLOW_FILE: longFile, EVOLUTION_WORKFLOW_SHA: sha(longLine), EVOLUTION_WORKFLOW_PROFILE: profile } });
+    try {
+      const result = await waitFor(() => readJson(receipt), { timeoutMs: 120000, what: `${profile} workflow reuse` });
+      assert(result.ok === true, `${profile} workflow reuse failed: ${result.error}`);
+      evidence[`${profile}Reuse`] = result;
+    } finally {
+      await stop(child); await log.close();
+      if (profile === 'desktop') await fs.writeFile(profilePatch, patchesBefore[profile]);
+    }
+  };
 
   // 8. a fresh ACP process must mount and call the promoted plugin by itself.
   const indexBytes = await fs.readFile(publishedFile);
@@ -514,11 +594,11 @@ try {
     assert(!names.includes('evolution_trial') && !names.includes('evolution_promote'), `fresh ACP loaded the Evolution kernel: ${names.join(', ')}`);
     if (freshRound === 1) {
       assert(names.includes(plan.tool), `fresh ACP did not automatically mount the promoted tool ${plan.tool}: ${names.join(', ')}`);
-      return { name: plan.tool, args: { text: 'ACP\nDesktop' } };
+      return { name: plan.tool, args: { file_path: longFile, offset: 1, limit: 1 } };
     }
     const value = toolResultValue(result);
-    assert(value.characters === 11 && value.lines === 2, `unexpected promoted tool output: ${JSON.stringify(value)}`);
-    evidence.freshConsumer = { tool: plan.tool, input: 'ACP\nDesktop', output: value };
+    assert(value.lines?.[0]?.text === longLine, `unexpected promoted tool output: ${JSON.stringify(value)}`);
+    evidence.freshConsumer = { tool: plan.tool, inputSha256: sha(longLine), outputSha256: sha(value.lines[0].text), complete: true };
     return null;
   };
   await fresh.rpc('session/prompt', { sessionId: fresh.sessionId, prompt: [{ type: 'text', text: '调用 Desktop 已晋升的文本统计工具，输入 ACP 换行 Desktop。' }] }, 120_000);
@@ -530,6 +610,8 @@ try {
   evidence.consumer = { status: consumerRow.status, id: consumerRow.id, observedIndexUpdatedAt: consumer.observedIndexUpdatedAt };
   await fresh.close();
   evidence.steps.push({ name: 'fresh-acp-consumed-promoted-plugin', at: new Date().toISOString() });
+
+  await reuseProfile('web');
 
   // 9. the unified read-only self-evolution audit is reachable from a real ACP
   //    natural-language request. The deterministic model only chooses the tool;
@@ -618,6 +700,11 @@ try {
   evidence.restart.terminalTaskPreserved = true;
   evidence.restart.publicationPreserved = true;
   evidence.steps.push({ name: 'desktop-restart-preserved-durable-facts', at: new Date().toISOString() });
+
+  // New sessions execute the exact published workflow through the official pipeline.
+  await stopDesktop(desktop);
+  desktop = null;
+  await reuseProfile('desktop');
 
   // 11. auto-launch: with no Desktop host running, a real ACP delegation starts
   //     the official app through the client and still stops at the owner gate.

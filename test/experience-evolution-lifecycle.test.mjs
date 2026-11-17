@@ -1452,3 +1452,85 @@ test('reviewSelfEvolution composes the read-only stable + experience review with
   assert.equal(await exists(seeded.paths.pluginRoot), false);
   assert.equal(await exists(seeded.paths.promotionStateDir), false);
 });
+
+function workflowScenario(repetitions = 5) {
+  return { kind: 'workflow', id: 'paired-read-workflow', repetitions, steps: [
+    { name: 'probe-target', candidateName: 'probe-dynamic', role: 'target', arguments: { key: 'edge' }, expected: { ok: true } },
+    { name: 'probe-control', role: 'control', arguments: {}, expected: { ok: true } },
+  ] };
+}
+
+for (const variant of ['benefit', 'no-benefit', 'regression', 'insufficient', 'cost-regression', 'unknown-host']) {
+  test(`paired workflow: ${variant} uses real paths and authoritative outcomes`, async (t) => {
+    const h = await createHarness(t, `workflow-${variant}`, variant === 'unknown-host' ? { versions: {} } : {});
+    const id = await proposeExperiment(h, { benefitModel: { kind: 'workflow' } });
+    const scenario = workflowScenario(variant === 'insufficient' ? 1 : 5);
+    if (['no-benefit', 'regression'].includes(variant)) h.state.targetFails = false;
+    const baseline = await runBaseline(h, id, scenario);
+    assert(h.calls.every((call) => call.name !== 'probe-dynamic'));
+    assert.equal(baseline.baseline.executions, scenario.repetitions * 2);
+    await startTrial(h, id);
+    h.state.dynamicActive = true;
+    const original = h.ctx.tools.execute;
+    h.ctx.tools.execute = async (args) => {
+      if (args.calls[0].name === 'probe-dynamic') {
+        if (variant === 'cost-regression') await new Promise((resolve) => setTimeout(resolve, 15));
+        if (variant === 'regression') return { results: [{ result: { isError: false, value: { ok: false } } }] };
+      }
+      return original(args);
+    };
+    const result = await runCandidate(h, id, scenario);
+    assert.equal(result.referenceSamples.length, scenario.repetitions * 2);
+    assert.equal(result.comparison.workload.pairing.startsWith('alternating AB/BA'), true);
+    const targetCalls = h.calls.filter((call) => call.name === 'probe-target' || call.name === 'probe-dynamic');
+    assert(targetCalls.every((call) => call.arguments === JSON.stringify({ key: 'edge' })));
+    const measured = h.orchestrator.measure({ experimentId: id, observation: measuredObservation({
+      solvesProblem: true, beforeMetrics: { errors: 100 }, afterMetrics: { errors: 0 },
+    }) }, h.exec);
+    const decision = h.orchestrator.requireOwned(id, h.exec.agent).decision;
+    const expected = variant === 'benefit' ? 'benefit' : variant === 'no-benefit' ? 'no-benefit'
+      : variant === 'regression' || variant === 'cost-regression' ? 'regression' : 'insufficient-evidence';
+    assert.equal(decision.kind, expected);
+    assert.equal(measured.gates.eligible, variant === 'benefit');
+    if (variant !== 'benefit') {
+      const gate = await h.orchestrator.promote({ experimentId: id, confirmation: true }, h.exec);
+      assert.notEqual(gate.phase, 'canary-observing');
+    }
+    await h.orchestrator.revert({ experimentId: id, reason: 'test completed' }, h.exec);
+  });
+}
+
+test('paired workflow identity binds candidate, expected value and shared projection', () => {
+  const scenario = workflowScenario();
+  const digest = (value) => probeScenarioDigest(normalizeProbeScenario(value), APPLICABILITY);
+  for (const patch of [{ candidateName: 'other' }, { expected: { ok: false } }, { resultPath: ['ok'] }]) {
+    const changed = structuredClone(scenario);
+    Object.assign(changed.steps[0], patch);
+    assert.notEqual(digest(changed), digest(scenario));
+  }
+  const absent = structuredClone(scenario);
+  absent.steps[0].absentInBaseline = true;
+  assert.throws(() => normalizeProbeScenario(absent), /baseline must execute/);
+});
+
+test('paired workflow can prove execution-cost benefit while both paths are correct', async (t) => {
+  const h = await createHarness(t, 'workflow-cost-benefit');
+  h.state.targetFails = false;
+  const original = h.ctx.tools.execute;
+  h.ctx.tools.execute = async (args) => {
+    if (args.calls[0].name === 'probe-target') await new Promise((resolve) => setTimeout(resolve, 12));
+    return original(args);
+  };
+  const id = await proposeExperiment(h, { benefitModel: { kind: 'workflow' } });
+  const scenario = workflowScenario();
+  await runBaseline(h, id, scenario);
+  await startTrial(h, id);
+  h.state.dynamicActive = true;
+  const candidate = await runCandidate(h, id, scenario);
+  assert.equal(candidate.comparison.workload.quality, false);
+  assert.equal(candidate.comparison.workload.efficiency, true);
+  assert.equal(candidate.comparison.benefit, true);
+  const measured = h.orchestrator.measure({ experimentId: id, observation: measuredObservation() }, h.exec);
+  assert.equal(measured.gates.eligible, true);
+  await h.orchestrator.revert({ experimentId: id, reason: 'cost test completed' }, h.exec);
+});

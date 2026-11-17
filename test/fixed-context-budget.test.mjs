@@ -89,11 +89,15 @@ const ORIGIN_WIRE_BYTES = 10147;
  *    allowance = ceil(ceil((actual - floor(origin * 0.8)) / 0.8) / 50) * 50
  *              = 5200 B fields / 5400 B wire.
  *
+ *  The paired-workload schema adds kind, candidateName, resultPath and expected.
+ *  Measured 2026-11-17: fields 12122 B / wire 12639 B (text unchanged); the
+ *  same formula yields 5450 B fields / 5700 B wire.
+ *
  *  So the assertion below is still "at least 20% smaller than the extended
  *  baseline", not an unbounded budget. Adding prose or another tool must raise
  *  the allowance only with a new measurement and this same formula. */
-const FIELDS_ALLOWANCE_BYTES = 5200;
-const WIRE_ALLOWANCE_BYTES = 5400;
+const FIELDS_ALLOWANCE_BYTES = 5450;
+const WIRE_ALLOWANCE_BYTES = 5700;
 const BASELINE_FIELDS_BYTES = ORIGIN_FIELDS_BYTES + FIELDS_ALLOWANCE_BYTES;
 const BASELINE_WIRE_BYTES = ORIGIN_WIRE_BYTES + WIRE_ALLOWANCE_BYTES;
 
@@ -114,7 +118,7 @@ const EXPECTED_PARAMETER_STRUCTURE = JSON.parse(`{
  "evolution_plan": {"required":[],"properties":{"focus":{"type":"string"},"minOccurrences":{"type":"number"},"limit":{"type":"number"}}},
  "evolution_propose": {"required":["why","target","impactScope","successMetrics"],"properties":{"why":{"type":"string"},"target":{"type":"string"},"impactScope":{"type":"array","items":{"type":"string"}},"successMetrics":{"type":"array","items":{"type":"string"}},"risk":{"type":"string"},"strategy":{"type":"string"},"rootCause":{"type":"string"},"benefitModel":{"type":"object","required":[],"properties":{"kind":{"type":"string"},"metric":{"type":"string"}}},"targets":{"type":"object","required":[],"properties":{"components":{"type":"array","items":{"type":"string"}},"plugins":{"type":"array","items":{"type":"string"}},"configurations":{"type":"array","items":{"type":"string"}}}}}},
  "evolution_trial": {"required":["experimentId","composition"],"properties":{"experimentId":{"type":"string"},"idPrefix":{"type":"string"},"composition":{"type":"object","required":["name","purpose","code"],"properties":{"name":{"type":"string"},"purpose":{"type":"string"},"code":{"type":"object","required":["host"],"properties":{"host":{"type":"string"},"client":{"type":"string"}}}}}}},
-  "evolution_probe": {"required":["experimentId","phase","scenario"],"properties":{"experimentId":{"type":"string"},"phase":{"type":"string"},"scenario":{"type":"object","required":["id","steps"],"properties":{"id":{"type":"string"},"description":{"type":"string"},"repetitions":{"type":"number"},"steps":{"type":"array","items":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"arguments":{"type":"json"},"role":{"type":"string"},"absentInBaseline":{"type":"boolean"}}}}}}}},
+  "evolution_probe": {"required":["experimentId","phase","scenario"],"properties":{"experimentId":{"type":"string"},"phase":{"type":"string"},"scenario":{"type":"object","required":["id","steps"],"properties":{"id":{"type":"string"},"description":{"type":"string"},"kind":{"type":"string"},"repetitions":{"type":"number"},"steps":{"type":"array","items":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"arguments":{"type":"json"},"role":{"type":"string"},"absentInBaseline":{"type":"boolean"},"candidateName":{"type":"string"},"resultPath":{"type":"array","items":{"type":"string"}},"expected":{"type":"json"}}}}}}}},
  "evolution_measure": {"required":["experimentId","observation"],"properties":{"experimentId":{"type":"string"},"observation":{"type":"object","required":["solvesProblem"],"properties":{"solvesProblem":{"type":"boolean"},"sideEffects":{"type":"array","items":{"type":"string"}},"orphanResources":{"type":"array","items":{"type":"string"}},"performanceChange":{"type":"json"},"errorChange":{"type":"json"},"metrics":{"type":"object"},"beforeMetrics":{"type":"object"},"afterMetrics":{"type":"object"},"observationWindow":{"type":"json"},"sampleCount":{"type":"number"},"benefitEvidence":{"type":"string"},"repeatable":{"type":"boolean"},"regressionPassed":{"type":"boolean"},"reversible":{"type":"boolean"},"cleanupEvidence":{"type":"string"}}}}},
  "evolution_revert": {"required":["experimentId"],"properties":{"experimentId":{"type":"string"}}},
  "evolution_promote": {"required":["experimentId"],"properties":{"experimentId":{"type":"string"},"confirmation":{"type":"boolean"},"targetProfiles":{"type":"array","items":{"type":"string"}}}},

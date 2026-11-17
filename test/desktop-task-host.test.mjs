@@ -887,3 +887,44 @@ test('a malformed request becomes a durable failed state without executing tools
   assert.equal(state.error.code, 'E_DESKTOP_TASK_INVALID');
   assert.equal(kernel.calls.length, 0);
 });
+
+test('Desktop workload mounts the official preset, executes baseline before Trial, and replays acceptance in Canary', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  plan.plan.verification.workload = { kind: 'workflow', id: 'paired-stats', repetitions: 5, steps: [
+    { name: 'official_stats', candidateName: plan.tool, role: 'target', arguments: { text: 'abc' }, expected: { characters: 3, lines: 1 } },
+    { name: 'official_stats', role: 'control', arguments: { text: 'abc' }, expected: { characters: 3, lines: 1 } },
+  ] };
+  const kernel = fakeKernel({ facts: factsWriter(home) });
+  kernel.tools.set('evolution_probe', { execute: async (args) => {
+    kernel.calls.push({ name: 'evolution_probe', args });
+    return { scenarioId: 'paired-stats', scenarioDigest: 'sha256:paired', comparison: { benefit: true, workload: { sufficient: true } } };
+  } });
+  let mounted = false;
+  kernel.tools.set('official_stats', { execute: async () => ({ characters: 3, lines: 1 }) });
+  const ctx = fakeCtx(kernel, plan);
+  const scoped = {};
+  ctx.get = (name) => name === 'agentPresets' ? {
+    resolve: async () => ({ id: 'official-default' }),
+    mount: async (agentCtx, id) => { assert.equal(agentCtx, scoped); assert.equal(id, 'official-default'); mounted = true; return { id }; },
+  } : null;
+  ctx.agents.create = async (options) => {
+    assert.equal(options.meta.agentPreset, 'official-default');
+    assert.equal(await options.setup(scoped), undefined, 'setup must not return preset metadata as a setup commit');
+    assert(mounted);
+    return { agent: { id: options.sessionId }, dispose: async () => {} };
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(() => host.dispose());
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const state = await waitForState(home, taskId, (row) => row.phase === 'stable');
+  const sequence = kernel.calls.filter((row) => ['evolution_propose', 'evolution_probe', 'evolution_trial', 'evolution_measure'].includes(row.name));
+  assert.deepEqual(sequence.map((row) => [row.name, row.args.phase ?? null]), [
+    ['evolution_propose', null], ['evolution_probe', 'baseline'], ['evolution_trial', null], ['evolution_probe', 'candidate'], ['evolution_measure', null],
+  ]);
+  assert.equal(sequence[0].args.benefitModel.kind, 'workflow');
+  assert.equal(sequence[4].args.observation.evidenceKind, 'comparative-workload');
+  assert.equal(state.workload.scenarioDigest, 'sha256:paired');
+});
