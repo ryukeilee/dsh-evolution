@@ -209,7 +209,11 @@ test('a second projection over any redacted string changes nothing', () => {
 // ---------------------------------------------------------------------------
 
 test('the value rule is the assignment prefix plus a marker, and the structural-end constants are deleted', () => {
-  const source = fs.readFileSync(path.join(REPO_ROOT, 'lib', 'orchestrator.js'), 'utf8');
+  // The one credential boundary lives in lib/error-boundary.js (shared with the
+  // lightweight experience entry); orchestrator.js re-exports it. Both files are
+  // read as one surface so this stays a check on the package, not on one file.
+  const source = fs.readFileSync(path.join(REPO_ROOT, 'lib', 'orchestrator.js'), 'utf8')
+    + '\n' + fs.readFileSync(path.join(REPO_ROOT, 'lib', 'error-boundary.js'), 'utf8');
   for (const name of [
     'STRUCTURAL_VALUE_END', 'VALUE_TAIL', 'BARE_VALUE', 'DOUBLE_QUOTED_VALUE',
     'SINGLE_QUOTED_VALUE', 'UNTERMINATED_QUOTED_VALUE', 'CONTAINER_VALUE', 'QUOTED_RUN',

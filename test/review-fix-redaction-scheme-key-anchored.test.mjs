@@ -256,7 +256,12 @@ test('the boundary that is still not covered is exactly what the rule documents'
 
   // One credential boundary implementation, one rule table: the fix must not
   // introduce a second scrubber next to the shared one.
-  const source = await fs.readFile(path.join(REPO_ROOT, 'lib/orchestrator.js'), 'utf8');
+  // The one credential boundary lives in lib/error-boundary.js (shared with the
+  // lightweight experience entry); orchestrator.js re-exports it and keeps the
+  // two structural call sites. Both files are read as one surface so the
+  // "exactly one implementation" property is still checked on the package.
+  const source = (await fs.readFile(path.join(REPO_ROOT, 'lib/orchestrator.js'), 'utf8'))
+    + '\n' + (await fs.readFile(path.join(REPO_ROOT, 'lib/error-boundary.js'), 'utf8'));
   const count = (needle) => source.split(needle).length - 1;
   assert.equal(count('const CREDENTIAL_TEXT_PATTERNS = ['), 1, 'there is exactly one pattern table');
   assert.equal(count('function redactCredentialShapes('), 1, 'there is exactly one redaction function');
