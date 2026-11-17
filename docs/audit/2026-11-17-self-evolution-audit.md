@@ -184,7 +184,8 @@ result?.error?.info?.code ?? result?.error?.code ?? result?.code
 
 仍然只读标识符，不读消息、参数或正文。会话日志里可观测到的真实码包括
 `CODE_RUN_FAILED`、`FS_PATCH_MISMATCH`、`INVALID_ARGS`、`FS_NOT_FOUND`、
-`TEAM_INVALID_WRITE_SCOPE` 等（336 次失败中 143 次带码，42.9%）。
+`TEAM_INVALID_WRITE_SCOPE` 等（快照：337 次失败中 144 次带码，约 43%；
+采集器不读取消息，所以 `CODE_RUN_FAILED` 内部的具体原因仍不可见）。
 
 **没有改变存储身份**：`recordFailure` 的事件形状保持原样（不新增 `failureMode` 字段），
 因为 schema 1 冻结 opener 必须与新版本对同一事件算出同一个 `knowledgeKey`
@@ -208,7 +209,7 @@ result?.error?.info?.code ?? result?.error?.code ?? result?.code
 
 | 验证 | 命令 | 结果 |
 | --- | --- | --- |
-| 全量单测 | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 1,835 项：1,832 通过、2 skipped、**1 失败**——`release-pin` 的"工作树未提交"，属预期（提交后复验） |
+| 全量单测（提交后） | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 1,835 项：1,833 通过、0 失败、2 skipped |
 | guard 回归 | `node --test test/guard-*.test.mjs test/security-regression.test.mjs` | 34/34 通过 |
 | 归因回归 | `node --test test/experience-attribution.test.mjs` | 通过 |
 | 经验身份兼容 | `node --test test/shared-experience-v2-verification.test.mjs test/shared-experience.test.mjs` | 通过（冻结 v1 opener 身份不变） |
@@ -232,6 +233,9 @@ result?.error?.info?.code ?? result?.error?.code ?? result?.code
 5. **静态分析不区分代码与字符串内容。** 写入"内容里含有对 Cordis 路径 `writeFileSync` 的测试文件"
    仍可能被仓库 guard 拒绝；需要 JS 解析器才能根治，已知限制。
 6. **共享经验库仍是 schema 1。** 迁移是显式离线操作（`npm run` 之外的 CLI），本次未执行。
+7. **未执行真实隔离宿主验收。** `npm run acceptance:host` 需要安装官方 DSH 与隔离 runtime；
+   本次以只读审计取证跨入口链路（3 条 stable 记录均为 `active`，ACP 3/3、Web 1/1 消费），
+   没有重跑晋升/回滚端到端流程——那会写入用户数据，需要所有者授权。
 
 ## 7. 复现
 
