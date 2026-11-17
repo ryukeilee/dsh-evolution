@@ -37,6 +37,10 @@ test('the collector classifies only a successful read that lost data', () => {
   assert.equal(detectDegradation({ name: 'read' }, { isError: true, error: { message: 'boom' } }), null);
   const capped = { isError: false, content: [{ type: 'text', text: '<content>1: x\n\n(Output capped. Showing lines 1-1. Use offset=2 to continue.)\n</content>' }] };
   assert.deepEqual(detectDegradation({ name: 'read' }, capped), { target: 'tool:read', kind: 'output-capped', path: null });
+  const prose = { isError: false, content: [{ type: 'text', text: '<content>1: prose mentions (Output capped. Showing lines 1-1. Use offset=2 to continue.) but is not a footer\n</content>' }] };
+  assert.equal(detectDegradation({ name: 'read' }, prose), null);
+  const spoofed = { isError: false, content: [{ type: 'text', text: '<content>1: normal\n(Output capped. Showing lines 1-1. Use offset=2 to continue.) extra\n</content>' }] };
+  assert.equal(detectDegradation({ name: 'read' }, spoofed), null);
 });
 
 test('a degradation is a neutral fact with a measured recovery call', (t) => {
@@ -183,6 +187,27 @@ test('a single degradation cannot borrow unrelated errors to cross the threshold
   assert.equal(rejected.reason, 'caller-input');
 });
 
+test('a below-threshold degradation does not change an ordinary failure candidate', () => {
+  const now = new Date().toISOString();
+  const errors = [{
+    key: 'knowledge:read-errors', scope: 'tool read', problem: 'official operation failure host operation failure',
+    failureCount: 8, occurrences: 8, lastSeen: now,
+  }];
+  const truncation = {
+    key: 'knowledge:one-truncation', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
+    occurrences: 1, failureCount: 0, successCount: 0, lastSeen: now,
+    metrics: { recoverycalls: { sum: 0, count: 1 } },
+  };
+  const withLoss = planEvolutionCandidates({ knowledge: [...errors, truncation], failureMemory: [] }, { minOccurrences: 3 });
+  const without = planEvolutionCandidates({ knowledge: errors, failureMemory: [] }, { minOccurrences: 3 });
+  const candidate = withLoss.candidates.find((entry) => entry.problemKey === 'tool read');
+  assert.ok(candidate);
+  assert.equal(candidate.loss, null);
+  assert.equal(candidate.attribution, 'unattributed');
+  assert.equal(candidate.benefitModel, undefined);
+  assert.equal(candidate.score, without.candidates.find((entry) => entry.problemKey === 'tool read').score);
+});
+
 test('the mounted collector defers a degradation to the next call and flushes it at turn end', async (t) => {
   const { Context } = await import('@deepseek-ai/cordis');
   const { apply: applyCollector } = await import('../lib/experience-collector.js');
@@ -194,7 +219,7 @@ test('the mounted collector defers a degradation to the next call and flushes it
   try {
     const agent = { id: 'degradation-agent' };
     app.emit('tools/result', { callId: 'read-1', name: 'read', agent }, truncatedRead);
-    app.emit('tools/result', { callId: 'bash-1', name: 'bash', agent }, { isError: false, value: {} });
+    app.emit('tools/result', { callId: 'bash-1', name: 'bash', agent }, { isError: false, value: { exitCode: 0 } });
     app.emit('tools/result', { callId: 'read-2', name: 'read', agent }, truncatedRead);
     app.emit('agent/turn-stopping', { agent });
     const store = app.get('evolutionExperience').store;
@@ -234,13 +259,38 @@ test('recovery cost counts one successful associated call, not a failure or anot
       isError: false,
       value: { path: '/tmp/c.json', offset: 1, lines: [{ number: 1, text: 'short' }], totalLines: 1 },
     });
-    app.emit('tools/result', { callId: 'bash-ok', name: 'bash', agent }, { isError: false, value: {} });
+    app.emit('tools/result', { callId: 'bash-nonzero', name: 'bash', agent }, { isError: false, value: { exitCode: 1 } });
+    app.emit('tools/result', { callId: 'bash-ok', name: 'bash', agent }, { isError: false, value: { exitCode: 0 } });
     app.emit('agent/turn-stopping', { agent });
     const rows = app.get('evolutionExperience').store.discover().records.filter((record) => record.issueType === 'tool degradation');
     assert.equal(rows.length, 1);
     assert.equal(rows[0].occurrences, 2);
     assert.equal(rows[0].metrics.recoverycalls.sum, 1, 'the failed call and the other-file read are not recoveries');
     assert.equal(rows[0].recoveryTool, 'tool:bash');
+  } finally {
+    await fiber.dispose();
+  }
+});
+
+test('a bash that exits non-zero does not settle a pending degradation', async (t) => {
+  const { Context } = await import('@deepseek-ai/cordis');
+  const { apply: applyCollector } = await import('../lib/experience-collector.js');
+  const root = temporary(t);
+  const app = new Context();
+  app.provide('tools', { register() {} });
+  const fiber = app.plugin(applyCollector, { dshHome: root });
+  await fiber.await();
+  try {
+    const agent = { id: 'nonzero-agent' };
+    app.emit('tools/result', { callId: 'read-1', name: 'read', agent }, {
+      isError: false,
+      value: { path: '/tmp/a.json', offset: 1, lines: [{ number: 1, text: 'x'.repeat(2000) + '... (line truncated to 2000 chars)' }], totalLines: 1 },
+    });
+    app.emit('tools/result', { callId: 'bash-1', name: 'bash', agent }, { isError: false, value: { exitCode: 1 } });
+    app.emit('agent/turn-stopping', { agent });
+    const [row] = app.get('evolutionExperience').store.discover().records.filter((record) => record.issueType === 'tool degradation');
+    assert.equal(row.metrics.recoverycalls.sum, 0, 'a non-zero foreground exit is not a recovery');
+    assert.equal(row.recoveryTool, '');
   } finally {
     await fiber.dispose();
   }

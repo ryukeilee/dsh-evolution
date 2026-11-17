@@ -232,16 +232,32 @@ export function buildTaskBenefitArtifact({ taskId, task, candidateHost, model, h
   };
 }
 
+/**
+ * Resolve the nearest existing ancestor and append the missing components, so
+ * a symlinked ancestor cannot be hidden behind two or more missing segments.
+ */
+function canonicalizeSync(target) {
+  const suffix = [];
+  let current = path.resolve(target);
+  for (;;) {
+    try { return path.join(realpathSync(current), ...suffix.slice().reverse()); }
+    catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      const parent = path.dirname(current);
+      if (parent === current) return path.resolve(target);
+      suffix.push(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
 /** Refuse anything that could be the operator's formal data root. */
 export function assertIsolatedHome(home) {
   if (typeof home !== 'string' || !path.isAbsolute(home)) throw new Error('home must be an absolute isolated path');
   const resolved = path.resolve(home);
   // A path under the temporary directory can still be a symlink into the
   // formal data root. Resolve the real target before any write or launch.
-  let canonical = resolved;
-  try { canonical = realpathSync(resolved); } catch {
-    try { canonical = path.join(realpathSync(path.dirname(resolved)), path.basename(resolved)); } catch { /* not created yet */ }
-  }
+  const canonical = canonicalizeSync(resolved);
   const formal = (() => { try { return realpathSync(path.join(os.homedir(), '.dsh')); } catch { return path.join(os.homedir(), '.dsh'); } })();
   if (canonical === formal || canonical.startsWith(`${formal}${path.sep}`)) {
     throw new Error('refusing to run paired sessions against the formal DSH_HOME');

@@ -661,8 +661,15 @@ try {
 
   evidence.ok = true;
 } catch (error) {
-  evidence.error = String(error?.message ?? error).slice(0, 2000);
-  if (!['OWNER_APPROVAL_REQUIRED'].includes(String(error?.message))) process.exitCode = 1;
+  const detail = String(error?.message ?? error);
+  // Raw transport text can carry ACP stderr or model/tool content; keep it on
+  // the operator console and persist only a controlled projection.
+  console.error('[task-benefit-loop] ' + detail);
+  const stage = /fixture failed/.test(detail) ? 'fixture'
+    : /timed out/.test(detail) ? 'timeout'
+      : /E_DESKTOP/.test(detail) ? 'desktop-task' : 'acceptance';
+  evidence.error = { stage, category: 'acceptance-failure', code: /E_[A-Z0-9_]{2,63}/.exec(detail)?.[0] ?? null };
+  if (!['OWNER_APPROVAL_REQUIRED'].includes(detail)) process.exitCode = 1;
 } finally {
   for (const child of children) await stopDesktop(child).catch(() => {});
   if (desktopPatch !== null && desktopOriginalPatch !== null) {
@@ -675,5 +682,5 @@ try {
   const redacted = JSON.stringify(evidence, null, 2).replaceAll(home, '$DSH_HOME').replaceAll(work, '<work>').replaceAll(repo.replace(/\/$/, ''), '<repo>');
   await fs.mkdir(path.dirname(out), { recursive: true });
   await fs.writeFile(out, redacted + '\n');
-  console.log('Evidence: ' + out + '; ok=' + evidence.ok + (evidence.error ? '; ' + evidence.error : ''));
+  console.log('Evidence: ' + out + '; ok=' + evidence.ok + (evidence.error ? '; ' + JSON.stringify(evidence.error) : ''));
 }

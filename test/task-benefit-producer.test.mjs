@@ -207,6 +207,7 @@ test('a temporary symlink into the formal home is rejected before any write', as
     const link = path.join(root, 'home');
     await fs.symlink(formal, link);
     assert.throws(() => assertIsolatedHome(link), /formal DSH_HOME/);
+    assert.throws(() => assertIsolatedHome(path.join(link, 'new', 'nested')), /formal DSH_HOME/);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
