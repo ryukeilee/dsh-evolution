@@ -888,6 +888,8 @@ test('the tool schema admits a context-policy plan without tool self-tests', asy
     const plan = tool.parameters.properties.plan.properties;
     assert.ok(plan.proposal.properties.improvement, 'proposal.improvement is missing from the public schema');
     assert.ok(plan.verification.properties.task, 'verification.task is missing from the public schema');
+    assert.ok(plan.verification.properties.functionalCheck, 'verification.functionalCheck is missing from the public schema');
+    assert.deepEqual(plan.verification.properties.functionalCheck.properties.tool.enum, ['read', 'glob', 'grep']);
     // A context-policy plan declares neither a target tool nor capability
     // samples; requiring them here made a legal plan unreachable through the
     // public tool even though the shared protocol accepted it.

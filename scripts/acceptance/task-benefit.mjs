@@ -1,0 +1,483 @@
+#!/usr/bin/env node
+/**
+ * Producer for the task-coupled benefit artifact.
+ *
+ * The deterministic probe can replay one tool call with identical arguments,
+ * but a real workflow recovers from a degraded result (for example a read that
+ * truncated a long line) with a different multi-step path. The only admissible
+ * evidence for a workflow claim is therefore two sets of real sessions over the
+ * same natural task and model:
+ *
+ *   - the candidate side runs with the candidate Host plugin mounted;
+ *   - the baseline side runs the same task without it.
+ *
+ * This module owns that run. It starts the real ACP host once per session, sends
+ * the model request through `model-bridge.mjs` (real inference, the host still
+ * executes every tool), records per-session correctness/turns/tool calls/tokens/
+ * wall time, and writes the artifact under the Desktop task channel keyed by the
+ * task id. The kernel validates structure and binding; it cannot prove that this
+ * harness was honest, which is the same trust level as `revalidate --evidence`.
+ *
+ * Correctness is external: the task declares `expect` as a JSON array of strings
+ * (or one string), and every value must appear in the final assistant message.
+ * A model that guesses a value is not distinguishable here, so fixture values
+ * must be random per run; the acceptance runner generates them.
+ *
+ * Deliberate limits:
+ *   - it never touches the formal DSH_HOME; the caller supplies an isolated home
+ *     under the temporary directory;
+ *   - it disables the promoted consumer so the only capability difference is the
+ *     preview candidate (the fresh-consumer proof is a separate acceptance);
+ *   - a failed model turn or an unreadable reply makes the run incomplete, never
+ *     zero;
+ *   - it does not choose a tool for the model and does not retry a failed turn.
+ */
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import readline from 'node:readline';
+import crypto from 'node:crypto';
+import { spawn, spawnSync } from 'node:child_process';
+import { once } from 'node:events';
+import { pathToFileURL } from 'node:url';
+import { DEFAULT_BRIDGE_MODEL, startModelBridge, usageTotals } from './model-bridge.mjs';
+
+export const TASK_BENEFIT_RUNS = Object.freeze({ min: 3, max: 5 });
+export const TASK_BENEFIT_MODEL = DEFAULT_BRIDGE_MODEL;
+const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000;
+const MAX_PROMPT = 2000;
+const MAX_EXPECT = 500;
+const TASK_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+const SCENARIO_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/;
+
+const sha256 = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
+
+/** Bounded task definition validation; returns the normalized task or throws. */
+export function normalizeTask(task) {
+  if (!task || typeof task !== 'object' || Array.isArray(task)) throw new Error('task must be an object');
+  const id = typeof task.id === 'string' ? task.id.trim() : '';
+  if (!SCENARIO_ID.test(id)) throw new Error('task.id must match ^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$');
+  const prompt = typeof task.prompt === 'string' ? task.prompt.trim() : '';
+  if (!prompt || prompt.length > MAX_PROMPT) throw new Error(`task.prompt must be 1-${MAX_PROMPT} characters`);
+  const expect = typeof task.expect === 'string' ? task.expect.trim() : '';
+  if (!expect || expect.length > MAX_EXPECT) throw new Error(`task.expect must be 1-${MAX_EXPECT} characters`);
+  const tokens = parseExpectTokens(expect);
+  if (tokens.length === 0) throw new Error('task.expect declares no expected value');
+  return { id, prompt, expect, tokens };
+}
+
+/**
+ * `expect` is either one literal string or a JSON array of strings. The plan
+ * binds only its sha256, so the array form lets a multi-file task require every
+ * answer without widening the contract.
+ */
+export function parseExpectTokens(expect) {
+  const raw = String(expect ?? '').trim();
+  if (!raw) return [];
+  if (raw.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter((value) => typeof value === 'string' && value.trim() !== '').map((value) => value.trim());
+    } catch { /* treated as one literal below */ }
+  }
+  return [raw];
+}
+
+/** Every declared value must appear in the final assistant text. */
+export function answerMatches(text, tokens) {
+  if (typeof text !== 'string') return false;
+  const list = Array.isArray(tokens) ? tokens : parseExpectTokens(tokens);
+  return list.length > 0 && list.every((token) => text.includes(token));
+}
+
+/** Flatten the text blocks the ACP transport reports for one tool result. */
+function toolUpdateText(update) {
+  const blocks = Array.isArray(update?.content) ? update.content : [];
+  const parts = [];
+  for (const block of blocks) {
+    if (typeof block?.text === 'string') parts.push(block.text);
+    else if (typeof block?.content?.text === 'string') parts.push(block.content.text);
+  }
+  return parts.join('\n');
+}
+
+/**
+ * Turn one ACP session's transport records into the measured row.
+ *
+ * `turns` is the model-bridge slice for this session (`tools` is the live tool
+ * surface of each decision). Version and stop turns are excluded from the
+ * decision metrics exactly like the existing acceptance.
+ */
+export function extractSessionEvidence({ label, side, turns, updates, assistantText, expectedTokens, candidateTool = null, durationMs = 0 }) {
+  const decisionTurns = (Array.isArray(turns) ? turns : []).filter((turn) => (turn?.tools?.length ?? 0) > 0);
+  const toolNames = decisionTurns.flatMap((turn) => (turn.decision?.tool ? [turn.decision.tool] : []));
+  const usage = usageTotals(decisionTurns);
+  const failures = decisionTurns.filter((turn) => turn.ok !== true).length;
+  // Map one `tool_call` update to its model decision by order: ACP reports one
+  // tool call per decision turn, in the same order. The id then joins the
+  // completed result update to the tool name.
+  const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
+  const byId = new Map();
+  calls.forEach((call, index) => {
+    const name = toolNames[index] ?? (typeof call.title === 'string' ? call.title : null);
+    if (typeof call.toolCallId === 'string' && typeof name === 'string') byId.set(call.toolCallId, name);
+  });
+  const readResults = [];
+  for (const update of Array.isArray(updates) ? updates : []) {
+    if (update?.sessionUpdate !== 'tool_call_update') continue;
+    const name = byId.get(update.toolCallId);
+    if (name !== 'read') continue;
+    const text = toolUpdateText(update);
+    if (text) readResults.push(text);
+  }
+  const correct = answerMatches(assistantText, expectedTokens);
+  const exercised = expectedTokens.some((token) => readResults.some((text) => text.includes(token)));
+  return {
+    label,
+    side,
+    correct,
+    exercised,
+    usedCandidate: candidateTool !== null && toolNames.includes(candidateTool),
+    turns: decisionTurns.length,
+    toolCalls: toolNames.length,
+    toolNames,
+    failures,
+    tokens: usage.inputTokens + usage.outputTokens + usage.cacheReadTokens,
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    cacheReadTokens: usage.cacheReadTokens,
+    durationMs: Number.isFinite(durationMs) ? Math.max(0, Math.round(durationMs)) : 0,
+    readResultCount: readResults.length,
+    readResultCharacters: readResults.reduce((total, text) => total + text.length, 0),
+  };
+}
+
+/** Sum the per-session rows; turns/toolCalls/tokens/time are additive. */
+export function aggregateSessions(sessions) {
+  const rows = Array.isArray(sessions) ? sessions : [];
+  const sum = (key) => rows.reduce((total, row) => total + (Number.isFinite(row?.[key]) ? row[key] : 0), 0);
+  return {
+    sessions: rows.length,
+    correct: rows.filter((row) => row.correct === true).length,
+    failures: rows.filter((row) => row.failures > 0).length,
+    turns: sum('turns'),
+    toolCalls: sum('toolCalls'),
+    tokens: sum('tokens'),
+    durationMs: sum('durationMs'),
+  };
+}
+
+/**
+ * Build the artifact the kernel validates. `taskId` is the Desktop task
+ * identity; `candidateHost` is the exact Host source the Trial will mount.
+ */
+export function buildTaskBenefitArtifact({ taskId, task, candidateHost, model, host, runs, baseline, candidate, adoption }) {
+  const baselineSummary = aggregateSessions(baseline);
+  const candidateSummary = aggregateSessions(candidate);
+  return {
+    schemaVersion: 1,
+    kind: 'paired-real-session',
+    complete: true,
+    taskId,
+    task: { id: task.id, promptSha256: sha256(task.prompt), expectSha256: sha256(task.expect) },
+    candidateHostSha256: sha256(candidateHost),
+    model,
+    host: { dsh: host.dsh, cordis: host.cordis },
+    runs: { baseline: runs, candidate: runs },
+    baseline: baselineSummary,
+    candidate: candidateSummary,
+    adoption,
+    // Provenance is intentional and ignored by the validator: it makes the
+    // artifact's token basis auditable without weakening the contract. Raw
+    // transcripts and tool output deliberately stay in the harness report, not
+    // in the channel artifact.
+    tokenBasis: 'model-bill: input + output + cache.read',
+  };
+}
+
+/** Refuse anything that could be the operator's formal data root. */
+export function assertIsolatedHome(home) {
+  if (typeof home !== 'string' || !path.isAbsolute(home)) throw new Error('home must be an absolute isolated path');
+  const resolved = path.resolve(home);
+  const formal = path.join(os.homedir(), '.dsh');
+  if (resolved === formal || resolved.startsWith(`${formal}${path.sep}`)) throw new Error('refusing to run paired sessions against the formal DSH_HOME');
+  // macOS os.tmpdir() is /var/folders/..., while /tmp is the same world through
+  // a symlink. Both are temporary roots; anything else is not an isolated home.
+  const temporaryRoots = [...new Set([os.tmpdir(), '/tmp', '/private/tmp'].map((root) => path.resolve(root)))];
+  if (!temporaryRoots.some((root) => resolved === root || resolved.startsWith(`${root}${path.sep}`))) {
+    throw new Error('the isolated home must live under the temporary directory');
+  }
+  return resolved;
+}
+
+/** Resolve the versions of the Desktop packages that will run the Trial. */
+export function readDesktopVersions(binary) {
+  const resources = path.join(path.dirname(path.dirname(binary)), 'Resources');
+  const anchor = path.join(resources, 'app.asar', 'dsh', 'node_modules', '@deepseek-ai');
+  const script = `
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const read = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
+    const root = process.argv[1];
+    const dsh = read(path.join(root, 'dsh', 'package.json'));
+    const cordis = read(path.join(root, 'cordis', 'package.json'));
+    process.stdout.write(JSON.stringify({ dsh: dsh.version, cordis: cordis.version }));
+  `;
+  const result = spawnSync(binary, ['-e', script, anchor], {
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+    encoding: 'utf8',
+    timeout: 30_000,
+  });
+  if (result.status !== 0) throw new Error(`could not read the Desktop package versions: ${(result.stderr || result.stdout || '').slice(-400)}`);
+  const parsed = JSON.parse(result.stdout);
+  if (typeof parsed?.dsh !== 'string' || typeof parsed?.cordis !== 'string') throw new Error('Desktop package versions are missing');
+  return { dsh: parsed.dsh, cordis: parsed.cordis };
+}
+
+/**
+ * Materialize the candidate Host body as a local preview plugin. The wrapper is
+ * not part of the candidate source hash: the Trial mounts the same `host`
+ * string, and the artifact binds sha256(host), never this file.
+ */
+export async function writePreviewModule(file, candidateHost) {
+  const source = `// Generated by task-benefit.mjs: preview mount of the exact Trial Host body.
+const harness = Object.freeze({
+  defineTool: (definition) => definition,
+  registerTool: (ctx, tool) => ctx.tools.register(tool),
+});
+const plugin = Function("harness", ${JSON.stringify(candidateHost)})(harness);
+export const name = plugin?.name || "task-benefit-preview";
+export const inject = plugin?.inject;
+export const provide = plugin?.provide;
+export function apply(ctx, config) {
+  if (typeof plugin === "function") return plugin(ctx, config);
+  if (plugin && typeof plugin.apply === "function") return plugin.apply(ctx, config);
+  throw new Error("the candidate Host body returned no apply()");
+}
+`;
+  await fs.writeFile(file, source, { mode: 0o600 });
+}
+
+function overlayText(baseURL, previewUrl) {
+  const lines = [
+    '- id: llm-deepseek',
+    '  config:',
+    `    baseURL: ${baseURL}`,
+    '    apiKeyEnv: EVOLUTION_ACCEPTANCE_KEY',
+    // The experiment must compare the candidate with the same otherwise-empty
+    // profile. Promoted plugins from an earlier acceptance would add tools to
+    // one side by accident; the fresh-consumer proof is separate.
+    '- id: evolution-promoted-consumer',
+    '  disabled: true',
+  ];
+  if (previewUrl) lines.push('- insert:', '    - id: task-benefit-preview', `      name: ${JSON.stringify(previewUrl)}`);
+  return `${lines.join('\n')}\n`;
+}
+
+function spawnAcp({ cli, home, overlay, env, cwd }) {
+  const child = spawn(cli, ['--profile', 'acp', '--patch', overlay], {
+    cwd,
+    env: { ...env, DSH_HOME: home, EVOLUTION_ACCEPTANCE_KEY: 'local-fixture-only' },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (bytes) => { stderr = (stderr + bytes).slice(-6000); });
+  child.stdin.on('error', () => { /* a dead child is reported by the exit handler */ });
+  const pending = new Map();
+  const updates = [];
+  let sequence = 0;
+  readline.createInterface({ input: child.stdout }).on('line', (line) => {
+    let row;
+    try { row = JSON.parse(line); } catch { return; }
+    if (row.method === 'session/request_permission') {
+      const option = row.params.options.find((candidate) => candidate.kind === 'allow_once');
+      child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: row.id, result: { outcome: option ? { outcome: 'selected', optionId: option.optionId } : { outcome: 'cancelled' } } })}\n`);
+    } else if (row.id !== undefined) pending.get(row.id)?.(row);
+    else if (row.method === 'session/update') updates.push(row.params?.update ?? {});
+  });
+  const rpc = (method, params, timeout = 60_000) => new Promise((resolve, reject) => {
+    const id = ++sequence;
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error(`${method} timed out; ${stderr.slice(-800)}`)); }, timeout);
+    pending.set(id, (row) => {
+      clearTimeout(timer);
+      pending.delete(id);
+      row.error ? reject(new Error(`${method}: ${JSON.stringify(row.error)}`)) : resolve(row.result);
+    });
+    child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
+  });
+  child.once('exit', (code, signal) => {
+    const detail = `ACP process exited (code ${code}, signal ${signal}); ${stderr.slice(-800)}`;
+    for (const [, settle] of pending) settle({ error: { code: -32000, message: detail } });
+    pending.clear();
+  });
+  return { child, rpc, updates, stderr: () => stderr };
+}
+
+async function runSession({ cli, home, work, overlay, env, bridge, prompt, label, side, expectedTokens, candidateTool }) {
+  const startedAt = Date.now();
+  const acp = spawnAcp({ cli, home, overlay, env, cwd: home });
+  let promptError = null;
+  const before = bridge.turns.length;
+  const updates = acp.updates;
+  try {
+    await acp.rpc('initialize', { protocolVersion: 1, clientCapabilities: {} });
+    const session = await acp.rpc('session/new', { cwd: home, mcpServers: [] });
+    await acp.rpc('session/prompt', { sessionId: session.sessionId, prompt: [{ type: 'text', text: prompt }] }, DEFAULT_TIMEOUT_MS);
+  } catch (error) {
+    promptError = String(error?.message ?? error);
+  } finally {
+    try { acp.child.stdin.end(); } catch {}
+    try { acp.child.kill('SIGTERM'); } catch {}
+    await Promise.race([once(acp.child, 'exit'), new Promise((resolve) => setTimeout(resolve, 5000))]);
+  }
+  const durationMs = Date.now() - startedAt;
+  const turns = bridge.turns.slice(before);
+  const assistantText = updates
+    .filter((update) => update?.sessionUpdate === 'agent_message_chunk' && update.content?.type === 'text')
+    .map((update) => update.content.text).join('');
+  const row = extractSessionEvidence({ label, side, turns, updates, assistantText, expectedTokens, candidateTool, durationMs });
+  const failedTurns = turns.filter((turn) => turn.ok !== true).length;
+  return {
+    ...row,
+    ok: promptError === null && failedTurns === 0 && row.turns > 0,
+    failedTurns,
+    ...(promptError === null ? {} : { error: promptError.slice(0, 500) }),
+    assistantCharacters: assistantText.length,
+  };
+}
+
+/**
+ * Run the complete paired experiment and write the artifact.
+ *
+ * The order alternates candidate-first and baseline-first so a shared cache or
+ * provider warm-up cannot be attributed to one side. Each session is a fresh
+ * ACP process, just like a new production session.
+ */
+export async function produceTaskBenefit(options = {}) {
+  const home = assertIsolatedHome(options.home);
+  const work = path.resolve(options.work ?? path.join(home, 'task-benefit-work'));
+  const task = normalizeTask(options.task);
+  const taskId = options.taskId;
+  if (typeof taskId !== 'string' || !TASK_ID.test(taskId)) throw new Error('taskId must match the Desktop task identity rule');
+  const candidateHost = options.candidateHost;
+  if (typeof candidateHost !== 'string' || candidateHost.trim() === '') throw new Error('candidateHost must be the exact Host body');
+  const improvement = options.improvement ?? 'context-policy';
+  if (!['tool', 'context-policy'].includes(improvement)) throw new Error('improvement must be tool or context-policy');
+  const targetTool = typeof options.targetTool === 'string' ? options.targetTool : null;
+  if (improvement === 'tool' && targetTool === null) throw new Error('a tool-form run needs targetTool');
+  const runs = Number.isInteger(options.runs) ? options.runs : TASK_BENEFIT_RUNS.min;
+  if (runs < TASK_BENEFIT_RUNS.min || runs > TASK_BENEFIT_RUNS.max) throw new Error(`runs must be ${TASK_BENEFIT_RUNS.min}-${TASK_BENEFIT_RUNS.max}`);
+  const model = typeof options.model === 'string' && options.model ? options.model : TASK_BENEFIT_MODEL;
+  const host = options.host ?? readDesktopVersions(options.binary ?? '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness');
+  const cli = options.cli ?? '/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh';
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DSH_')));
+  delete env.ELECTRON_RUN_AS_NODE;
+  await fs.mkdir(work, { recursive: true });
+  await fs.mkdir(path.join(work, 'bridge-cwd'), { recursive: true });
+
+  const previewUrl = pathToFileURL(path.join(work, 'preview-policy.mjs')).href;
+  await writePreviewModule(path.join(work, 'preview-policy.mjs'), candidateHost);
+  const bridge = await startModelBridge({ model, cwd: path.join(work, 'bridge-cwd') });
+  let candidateOverlay;
+  let baselineOverlay;
+  const sessions = { baseline: [], candidate: [] };
+  try {
+    candidateOverlay = path.join(work, 'overlay-candidate.yml');
+    baselineOverlay = path.join(work, 'overlay-baseline.yml');
+    await fs.writeFile(candidateOverlay, overlayText(bridge.baseURL, previewUrl), { mode: 0o600 });
+    await fs.writeFile(baselineOverlay, overlayText(bridge.baseURL, null), { mode: 0o600 });
+    for (let repetition = 0; repetition < runs; repetition += 1) {
+      const order = repetition % 2 === 0 ? ['candidate', 'baseline'] : ['baseline', 'candidate'];
+      for (const side of order) {
+        const row = await runSession({
+          cli, home, work,
+          overlay: side === 'candidate' ? candidateOverlay : baselineOverlay,
+          env, bridge, prompt: task.prompt,
+          label: `${side}-${repetition + 1}`, side,
+          expectedTokens: task.tokens,
+          candidateTool: improvement === 'tool' ? targetTool : null,
+        });
+        sessions[side].push(row);
+        options.log?.(`${side} session ${repetition + 1}: correct=${row.correct} turns=${row.turns} calls=${row.toolCalls} tokens=${row.tokens} exercised=${row.exercised} ms=${row.durationMs}`);
+      }
+    }
+  } finally {
+    await bridge.close();
+  }
+
+  const complete = [...sessions.baseline, ...sessions.candidate].every((row) => row.ok === true);
+  const artifact = buildTaskBenefitArtifact({
+    taskId,
+    task,
+    candidateHost,
+    model,
+    host,
+    runs,
+    baseline: sessions.baseline,
+    candidate: sessions.candidate,
+    adoption: improvement === 'tool'
+      ? { sessionsUsingCandidate: sessions.candidate.filter((row) => row.usedCandidate).length, sessionsExercised: 0 }
+      : { sessionsUsingCandidate: 0, sessionsExercised: sessions.candidate.filter((row) => row.exercised).length },
+  });
+  if (!complete) artifact.complete = false;
+  const outFile = path.resolve(options.outFile ?? path.join(home, 'storages', 'evolution', 'desktop-tasks', 'task-evidence', `${taskId}.json`));
+  await fs.mkdir(path.dirname(outFile), { recursive: true, mode: 0o700 });
+  const temporary = `${outFile}.${process.pid}.tmp`;
+  await fs.writeFile(temporary, `${JSON.stringify(artifact, null, 2)}\n`, { mode: 0o600 });
+  await fs.rename(temporary, outFile);
+  const report = {
+    kind: 'dsh-evolution-task-benefit-run',
+    ok: complete,
+    taskId,
+    task: { id: task.id, promptSha256: sha256(task.prompt), expectSha256: sha256(task.expect) },
+    candidateHostSha256: sha256(candidateHost),
+    improvement,
+    targetTool,
+    model,
+    host,
+    runs,
+    tokenBasis: 'model-bill: input + output + cache.read (opencode reports each decision turn)',
+    artifact: {
+      complete,
+      baseline: artifact.baseline,
+      candidate: artifact.candidate,
+      adoption: artifact.adoption,
+    },
+    sessions,
+    artifactFile: outFile,
+  };
+  return { ok: complete, artifact, report, artifactFile: outFile };
+}
+
+// ---------------------------------------------------------------------------
+// CLI
+// ---------------------------------------------------------------------------
+function argument(name, argv) {
+  const index = argv.indexOf(name);
+  return index === -1 ? null : argv[index + 1] ?? null;
+}
+
+if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
+  const argv = process.argv.slice(2);
+  const home = argument('--home', argv);
+  const taskFile = argument('--task', argv);
+  const hostFile = argument('--candidate-host', argv);
+  if (!home || !taskFile || !hostFile) {
+    throw new Error('usage: task-benefit.mjs --home <isolated-dsh-home> --task <task.json> --candidate-host <host.js> [--task-id <id>] [--runs 3-5] [--out <artifact.json>] [--report <report.json>]');
+  }
+  const task = JSON.parse(await fs.readFile(taskFile, 'utf8'));
+  const candidateHost = await fs.readFile(hostFile, 'utf8');
+  const result = await produceTaskBenefit({
+    home,
+    task,
+    taskId: argument('--task-id', argv) ?? `producer-${Date.now().toString(36)}`,
+    candidateHost,
+    runs: Number(argument('--runs', argv) ?? TASK_BENEFIT_RUNS.min),
+    model: argument('--model', argv) ?? TASK_BENEFIT_MODEL,
+    outFile: argument('--out', argv) ?? undefined,
+    log: (line) => console.log(line),
+  });
+  const reportFile = argument('--report', argv);
+  if (reportFile) await fs.writeFile(path.resolve(reportFile), `${JSON.stringify(result.report, null, 2)}\n`, { mode: 0o600 });
+  console.log(JSON.stringify({ ok: result.ok, artifact: result.artifactFile, baseline: result.artifact.baseline, candidate: result.artifact.candidate }, null, 2));
+}

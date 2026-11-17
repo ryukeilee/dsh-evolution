@@ -1,0 +1,33 @@
+const MAX_FILE_BYTES = 256 * 1024;
+const MAX_LINE_CHARS = 16 * 1024;
+const TRUNCATED = /\.\.\. \(line truncated to \d+ chars\)$/;
+return { name: 'complete-read-line', inject: ['tools', 'fs'], apply(ctx) {
+  ctx.on('tools/post-execute', async (exec, result, next) => {
+    const decision = await next();
+    try {
+      if (!decision || decision.kind !== 'accept') return decision;
+      if (exec?.name !== 'read') return decision;
+      const base = decision.value === undefined ? result?.value : decision.value;
+      if (!base || typeof base !== 'object' || !Array.isArray(base.lines) || typeof base.path !== 'string') return decision;
+      const truncated = new Set(base.lines.filter((line) => typeof line?.text === 'string' && TRUNCATED.test(line.text)).map((line) => line.number));
+      if (truncated.size === 0) return decision;
+      const target = await ctx.fs.resolve(base.path, { cwd: exec.agent?.session?.header?.cwd, signal: exec.signal });
+      const info = await ctx.fs.stat(target, exec.signal);
+      if (!info || info.type !== 'file' || !Number.isInteger(info.size) || info.size > MAX_FILE_BYTES) return decision;
+      const content = await ctx.fs.readText(target, exec.signal);
+      const all = content.split('\n').map((line) => line.endsWith('\r') ? line.slice(0, -1) : line);
+      let changed = false;
+      const lines = base.lines.map((line) => {
+        if (!truncated.has(line.number)) return line;
+        const full = all[line.number - 1];
+        if (typeof full !== 'string' || full.length <= line.text.length || full.length > MAX_LINE_CHARS) return line;
+        changed = true;
+        return { ...line, text: full };
+      });
+      if (!changed) return decision;
+      return { kind: 'accept', value: { ...base, lines } };
+    } catch {
+      return decision;
+    }
+  });
+} };

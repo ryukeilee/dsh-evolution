@@ -1,0 +1,159 @@
+// Non-error degradation observations (2026-11-18).
+//
+// The discovery side used to see only failures, so a read that silently
+// truncated a long line was invisible even though real sessions paid an extra
+// tool call to recover. These tests pin the classifier, the neutral fact family
+// (it must not enter the failure denominator), the recovery cost projection,
+// and the planner's loss-aware ranking.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+
+import { openSharedExperience, experienceEventId } from '../lib/shared-experience.js';
+import { detectDegradation } from '../lib/experience-collector.js';
+import { planEvolutionCandidates } from '../lib/experience-plan.js';
+
+function temporary(t) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'evolution-degradation-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  return root;
+}
+
+const truncatedRead = {
+  isError: false,
+  value: { path: '/tmp/generated.json', offset: 1, lines: [{ number: 1, text: `${'x'.repeat(2000)}... (line truncated to 2000 chars)` }], totalLines: 1 },
+};
+const completeRead = {
+  isError: false,
+  value: { path: '/tmp/generated.json', offset: 1, lines: [{ number: 1, text: 'x'.repeat(3135) }], totalLines: 1 },
+};
+
+test('the collector classifies only a successful read that lost data', () => {
+  assert.deepEqual(detectDegradation({ name: 'read' }, truncatedRead), { target: 'tool:read', kind: 'line-truncated' });
+  assert.equal(detectDegradation({ name: 'read' }, completeRead), null);
+  assert.equal(detectDegradation({ name: 'bash' }, truncatedRead), null);
+  assert.equal(detectDegradation({ name: 'read' }, { isError: true, error: { message: 'boom' } }), null);
+  const capped = { isError: false, content: [{ type: 'text', text: '<content>1: x\n\n(Output capped. Showing lines 1-1. Use offset=2 to continue.)\n</content>' }] };
+  assert.deepEqual(detectDegradation({ name: 'read' }, capped), { target: 'tool:read', kind: 'output-capped' });
+});
+
+test('a degradation is a neutral fact with a measured recovery call', (t) => {
+  const root = temporary(t);
+  const store = openSharedExperience(root);
+  t.after(() => store.close());
+  for (let index = 0; index < 3; index += 1) {
+    store.recordDegradation({
+      id: experienceEventId('degradation', index),
+      target: 'tool:read',
+      kind: 'line-truncated',
+      recoveryTool: 'bash',
+      recoveryCalls: 1,
+    });
+  }
+  const discovered = store.discover();
+  const row = discovered.records.find((record) => record.issueType === 'tool degradation');
+  assert.ok(row, 'the degradation fact must be discoverable');
+  assert.equal(row.failureCount, 0, 'a degradation is not a failure');
+  assert.equal(row.successCount, 0, 'a degradation is not a resolution');
+  assert.equal(row.occurrences, 3);
+  assert.equal(row.failureMode, 'line-truncated');
+  assert.equal(row.recoveryTool, 'tool:bash');
+  assert.equal(row.metrics.recoverycalls.sum, 3);
+  // The error path must still be a separate fact and denominator.
+  store.recordFailure({ id: experienceEventId('failure', 1), type: 'tool/error', code: 'FS_NOT_FOUND', target: 'tool:read' });
+  const after = store.discover();
+  const errorRow = after.records.find((record) => record.failureCount > 0);
+  assert.ok(errorRow, 'the error fact must survive next to the degradation');
+});
+
+test('the planner ranks a degradation by frequency, recovery cost and recoverability', (t) => {
+  const root = temporary(t);
+  const store = openSharedExperience(root);
+  t.after(() => store.close());
+  for (let index = 0; index < 6; index += 1) {
+    store.recordDegradation({
+      id: experienceEventId('degradation-plan', index),
+      target: 'tool:read',
+      kind: 'line-truncated',
+      recoveryTool: index < 4 ? 'bash' : 'run_code',
+      recoveryCalls: 1,
+    });
+  }
+  const planned = planEvolutionCandidates({ knowledge: store.discover().records, failureMemory: [] }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool read');
+  assert.ok(candidate, `no tool read candidate: ${JSON.stringify(planned)}`);
+  assert.equal(candidate.attribution, 'classified');
+  assert.deepEqual(candidate.loss.kinds, ['line-truncated']);
+  assert.equal(candidate.loss.occurrences, 6);
+  assert.equal(candidate.loss.recoveryCalls, 6);
+  assert.equal(candidate.loss.averageRecoveryCalls, 1);
+  assert.equal(candidate.loss.recoverable, true);
+  // The canonical row keeps the most recent observed recovery path; the
+  // per-event recovery count is the metric sum above.
+  assert.ok(candidate.loss.recoveryTools.includes('run_code'));
+  assert.deepEqual(candidate.benefitModel, { kind: 'workflow', metric: 'failureRate' });
+  assert.ok(candidate.acceptanceMetrics.some((metric) => metric.name === 'recoveryCalls' && metric.direction === 'lower'));
+  assert.ok(candidate.score > 0);
+  // The loss-aware score must prefer the more expensive loss when frequency
+  // and recency are equal.
+  const withCost = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:costly', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
+      occurrences: 3, failureCount: 0, successCount: 0, lastSeen: new Date().toISOString(),
+      metrics: { recoverycalls: { sum: 9, count: 3 } }, recoveryTool: 'tool:bash',
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const withNoCost = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:free', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
+      occurrences: 3, failureCount: 0, successCount: 0, lastSeen: new Date().toISOString(),
+      metrics: { recoverycalls: { sum: 0, count: 3 } }, recoveryTool: '',
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  assert.ok(withCost.candidates[0].score > withNoCost.candidates[0].score);
+});
+
+test('a rare degradation stays rejected below the evidence floor', () => {
+  const planned = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:rare', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
+      occurrences: 2, failureCount: 0, successCount: 0, lastSeen: new Date().toISOString(),
+      metrics: { recoverycalls: { sum: 2, count: 2 } },
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  assert.equal(planned.candidates.length, 0);
+  assert.equal(planned.rejected[0].reason, 'insufficient-evidence');
+});
+
+test('the mounted collector defers a degradation to the next call and flushes it at turn end', async (t) => {
+  const { Context } = await import('@deepseek-ai/cordis');
+  const { apply: applyCollector } = await import('../lib/experience-collector.js');
+  const root = temporary(t);
+  const app = new Context();
+  app.provide('tools', { register() {} });
+  const fiber = app.plugin(applyCollector, { dshHome: root });
+  await fiber.await();
+  try {
+    const agent = { id: 'degradation-agent' };
+    app.emit('tools/result', { callId: 'read-1', name: 'read', agent }, truncatedRead);
+    app.emit('tools/result', { callId: 'bash-1', name: 'bash', agent }, { isError: false, value: {} });
+    app.emit('tools/result', { callId: 'read-2', name: 'read', agent }, truncatedRead);
+    app.emit('agent/turn-stopping', { agent });
+    const store = app.get('evolutionExperience').store;
+    // Both events share the same degradation identity, so the canonical row
+    // counts both occurrences; the metric carries the one observed recovery
+    // call while the projected recovery path stays the latest observed one.
+    const rows = store.discover().records.filter((record) => record.issueType === 'tool degradation');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].occurrences, 2);
+    assert.equal(rows[0].recoveryTool, 'tool:bash');
+    assert.equal(rows[0].metrics.recoverycalls.sum, 1);
+  } finally {
+    await fiber.dispose();
+  }
+});

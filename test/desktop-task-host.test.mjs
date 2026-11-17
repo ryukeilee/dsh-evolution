@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 import { createDesktopTaskHost } from '../lib/desktop-task-host.js';
 import {
@@ -94,6 +95,7 @@ function fakeKernel({ behavior = 'stable', facts = null } = {}) {
   tools.set('evolution_canary_observe', { execute: async (args) => {
     record('evolution_canary_observe', args);
     state.observations += 1;
+    if (args.metricRegression === true) return { ok: false, phase: 'rolled-back', rollback: 'last-known-good' };
     if (facts && state.observations >= 2) await facts.write('exp-desktop-task-1');
     return { stable: state.observations >= 2 };
   } });
@@ -101,7 +103,7 @@ function fakeKernel({ behavior = 'stable', facts = null } = {}) {
   return { calls, state, tools };
 }
 
-function fakeCtx(kernel, plan) {
+function fakeCtx(kernel, plan, extraTools = {}) {
   const created = [];
   return {
     created,
@@ -116,6 +118,7 @@ function fakeCtx(kernel, plan) {
     },
     tools: {
       get(name) {
+        if (Object.hasOwn(extraTools, name)) return extraTools[name];
         if (name === plan.tool) return kernel.state.candidateVisible ? { execute: async (args) => ({ characters: args.text.length, lines: args.text.split('\n').length }) } : null;
         return kernel.tools.get(name) ?? null;
       },
@@ -133,7 +136,10 @@ async function waitForState(home, taskId, predicate, timeoutMs = 10_000) {
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
-    if (Date.now() >= deadline) throw new Error(`state for ${taskId} did not reach the expected phase`);
+    if (Date.now() >= deadline) {
+      const latest = await fsp.readFile(file, 'utf8').catch(() => null);
+      throw new Error(`state for ${taskId} did not reach the expected phase${latest ? `; latest: ${latest.slice(0, 1200)}` : ''}`);
+    }
     await new Promise((resolve) => { setTimeout(resolve, 10); });
   }
 }
@@ -142,7 +148,7 @@ function harness(t, options = {}) {
   const home = temporary(t);
   const plan = planFor(mintTaskId());
   const kernel = fakeKernel(options);
-  const ctx = fakeCtx(kernel, plan);
+  const ctx = fakeCtx(kernel, plan, options.extraTools ?? {});
   const host = createDesktopTaskHost(ctx, {
     dshHome: home,
     scanIntervalMs: options.scanIntervalMs ?? 10,
@@ -1003,4 +1009,109 @@ test('startup recovery backs off when another live instance holds the task claim
   await host.start();
   const after = JSON.parse(await fsp.readFile(path.join(channel.state, `${taskId}.json`), 'utf8'));
   assert.equal(after.phase, 'running', 'recovery must not mark a claimed task interrupted');
+});
+function contextPlanFor() {
+  const host = "return { name: 'complete-read-line', inject: ['tools'], apply(ctx) {} };";
+  return {
+    host,
+    plan: {
+      proposal: {
+        why: 'the model recovers from a truncated read line with a shell fallback',
+        target: 'plugin:complete-read-line',
+        impactScope: ['test'],
+        successMetrics: ['fewer tool calls on the same task'],
+        improvement: 'context-policy',
+        benefitModel: { kind: 'workflow' },
+      },
+      composition: { name: 'complete-read-line', purpose: 'Complete a truncated read line before the next step', code: { host } },
+      verification: {
+        observations: 2,
+        task: { id: 'read-long-line', prompt: 'read the long config', expect: 'FULL-LINE', runs: 3 },
+        functionalCheck: {
+          tool: 'read',
+          arguments: { file_path: 'long.json', offset: 1, limit: 1 },
+          resultPath: ['lines', '0', 'text'],
+          expected: 'FULL-LINE',
+        },
+      },
+      requestedTargetProfiles: ['acp'],
+    },
+  };
+}
+
+async function writeTaskEvidence(home, taskId, plan) {
+  const sha = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
+  const task = plan.verification.task;
+  const side = { sessions: 3, correct: 3, failures: 0, turns: 6, toolCalls: 3, tokens: 1000, durationMs: 1000 };
+  const artifact = {
+    schemaVersion: 1,
+    kind: 'paired-real-session',
+    complete: true,
+    taskId,
+    task: { id: task.id, promptSha256: sha(task.prompt), expectSha256: sha(task.expect) },
+    candidateHostSha256: sha(plan.composition.code.host),
+    model: 'test/model',
+    host: { dsh: '0.2.2-rc.3', cordis: '4.1.0' },
+    runs: { baseline: 3, candidate: 3 },
+    baseline: { ...side, turns: 9, toolCalls: 6 },
+    candidate: side,
+    adoption: { sessionsUsingCandidate: 0, sessionsExercised: 3 },
+  };
+  const directory = taskChannelPaths(home).taskEvidence;
+  await fsp.mkdir(directory, { recursive: true });
+  await fsp.writeFile(path.join(directory, `${taskId}.json`), `${JSON.stringify(artifact)}\n`, { mode: 0o600 });
+}
+
+test('a context policy is functionally verified after the Trial mount and on every canary observation', async (t) => {
+  let readCalls = 0;
+  const readTool = { execute: async () => {
+    readCalls += 1;
+    return { path: '/tmp/long.json', offset: 1, lines: [{ number: 1, text: 'FULL-LINE' }], totalLines: 1 };
+  } };
+  const { home, kernel, host } = harness(t, { extraTools: { read: readTool } });
+  const plan = contextPlanFor();
+  const taskId = await submit(home, plan);
+  await writeTaskEvidence(home, taskId, plan.plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.functionalCheck.trial.matched, true);
+  assert.ok(state.functionalCheck.canary.length >= 2, 'each canary observation must replay the functional check');
+  assert.ok(state.functionalCheck.canary.every((check) => check.matched === true));
+  const observations = kernel.calls.filter((call) => call.name === 'evolution_canary_observe');
+  assert.ok(observations.length >= 2);
+  assert.ok(observations.every((call) => call.args.evidence.functionalCheck?.matched === true));
+  assert.equal(readCalls, 1 + observations.length, 'one Trial check plus one check per canary observation');
+});
+
+test('a mounted context policy whose declared effect never happens fails the Trial and is reverted', async (t) => {
+  const readTool = { execute: async () => ({ path: '/tmp/long.json', offset: 1, lines: [{ number: 1, text: 'truncated' }], totalLines: 1 }) };
+  const { home, kernel, host } = harness(t, { extraTools: { read: readTool } });
+  const plan = contextPlanFor();
+  const taskId = await submit(home, plan);
+  await writeTaskEvidence(home, taskId, plan.plan);
+  await host.start();
+  const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
+  assert.equal(state.error.code, 'E_DESKTOP_FUNCTIONAL_CHECK');
+  assert.equal(kernel.state.confirmedPromotions, 0);
+  assert.ok(kernel.state.reverts >= 1, 'an inactive candidate must be disposed before the task fails');
+});
+
+test('a context policy that stops taking effect during canary rolls the promotion back', async (t) => {
+  let readCalls = 0;
+  const readTool = { execute: async () => {
+    readCalls += 1;
+    return { path: '/tmp/long.json', offset: 1, lines: [{ number: 1, text: readCalls === 1 ? 'FULL-LINE' : 'truncated' }], totalLines: 1 };
+  } };
+  const { home, kernel, host } = harness(t, { extraTools: { read: readTool } });
+  const plan = contextPlanFor();
+  const taskId = await submit(home, plan);
+  await writeTaskEvidence(home, taskId, plan.plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
+  assert.equal(state.error.code, 'E_DESKTOP_CANARY_REGRESSION');
+  assert.equal(kernel.state.reverts, 0, 'the kernel rollback owns a canary regression; a second revert must not run');
+  const failedObservation = kernel.calls.filter((call) => call.name === 'evolution_canary_observe').at(-1);
+  assert.equal(failedObservation.args.metricRegression, true);
 });

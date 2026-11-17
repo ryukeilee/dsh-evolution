@@ -1,0 +1,624 @@
+{
+  "kind": "dsh-evolution-task-benefit-loop",
+  "ok": true,
+  "startedAt": "2026-11-17T22:41:51.214Z",
+  "scope": "isolated DSH_HOME; official Desktop + ACP + Evolution kernel; real model inference; no formal home, no release publish",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runs": 3,
+  "steps": [
+    {
+      "name": "official-install",
+      "at": "2026-11-17T22:41:54.596Z"
+    },
+    {
+      "name": "paired-real-sessions-produced",
+      "at": "2026-11-17T22:45:03.233Z"
+    },
+    {
+      "name": "real-loss-discovery",
+      "at": "2026-11-17T22:45:07.014Z"
+    },
+    {
+      "name": "desktop-awaiting-owner-confirmation",
+      "at": "2026-11-17T22:45:09.288Z"
+    },
+    {
+      "name": "stable-with-functional-canary",
+      "at": "2026-11-17T22:45:15.807Z"
+    },
+    {
+      "name": "fresh-consumer-functional-reuse",
+      "at": "2026-11-17T22:45:52.677Z"
+    },
+    {
+      "name": "negative-artifacts-rejected",
+      "at": "2026-11-17T22:46:01.641Z"
+    },
+    {
+      "name": "restart-preserved",
+      "at": "2026-11-17T22:46:02.995Z"
+    }
+  ],
+  "fixtures": [
+    {
+      "name": "a.json",
+      "characters": 3147,
+      "sentinelSha256": "526fcb96f6e8cef092463a4cb9d7c40e2d6bb8e161ab86dad01c492abead3cea"
+    },
+    {
+      "name": "b.json",
+      "characters": 3147,
+      "sentinelSha256": "66823e19235da4a540cd2f9ed2fe86a554b30c2e7f41d1632f0b5045583d4c28"
+    },
+    {
+      "name": "c.json",
+      "characters": 3147,
+      "sentinelSha256": "714a8f1dff9a264f2c29d3fbc730e9c3378e5a10d73d35984fd90dc35e2d67d7"
+    }
+  ],
+  "producer": {
+    "ok": true,
+    "artifactFile": "$DSH_HOME/storages/evolution/desktop-tasks/task-evidence/desktop-task-mwla1spx-602b5d8c.json",
+    "artifact": {
+      "schemaVersion": 1,
+      "kind": "paired-real-session",
+      "complete": true,
+      "taskId": "desktop-task-mwla1spx-602b5d8c",
+      "task": {
+        "id": "read-three-long-lines",
+        "promptSha256": "49bc9881ce0556a8b37fd4c1882bf16373bb61917d6242e5954aa8bc5cc39cfc",
+        "expectSha256": "7a9bc640c285f3f3ff3de8cc77a05255c1b6e151f96f3ed321369d81f4970f38"
+      },
+      "candidateHostSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "host": {
+        "dsh": "0.2.2-rc.3",
+        "cordis": "4.1.0"
+      },
+      "runs": {
+        "baseline": 3,
+        "candidate": 3
+      },
+      "baseline": {
+        "sessions": 3,
+        "correct": 3,
+        "failures": 0,
+        "turns": 15,
+        "toolCalls": 12,
+        "tokens": 490855,
+        "durationMs": 114427
+      },
+      "candidate": {
+        "sessions": 3,
+        "correct": 3,
+        "failures": 0,
+        "turns": 12,
+        "toolCalls": 9,
+        "tokens": 395397,
+        "durationMs": 74115
+      },
+      "adoption": {
+        "sessionsUsingCandidate": 0,
+        "sessionsExercised": 3
+      },
+      "tokenBasis": "model-bill: input + output + cache.read"
+    },
+    "sessions": {
+      "baseline": [
+        {
+          "label": "baseline-1",
+          "side": "baseline",
+          "correct": true,
+          "exercised": false,
+          "usedCandidate": false,
+          "turns": 6,
+          "toolCalls": 5,
+          "toolNames": [
+            "read",
+            "read",
+            "read",
+            "grep",
+            "bash"
+          ],
+          "failures": 0,
+          "tokens": 199035,
+          "inputTokens": 66494,
+          "outputTokens": 317,
+          "cacheReadTokens": 132224,
+          "durationMs": 45966,
+          "readResultCount": 3,
+          "readResultCharacters": 6474,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 302
+        },
+        {
+          "label": "baseline-2",
+          "side": "baseline",
+          "correct": true,
+          "exercised": false,
+          "usedCandidate": false,
+          "turns": 4,
+          "toolCalls": 3,
+          "toolNames": [
+            "read",
+            "read",
+            "bash"
+          ],
+          "failures": 0,
+          "tokens": 128033,
+          "inputTokens": 65313,
+          "outputTokens": 256,
+          "cacheReadTokens": 62464,
+          "durationMs": 35502,
+          "readResultCount": 2,
+          "readResultCharacters": 4316,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 249
+        },
+        {
+          "label": "baseline-3",
+          "side": "baseline",
+          "correct": true,
+          "exercised": false,
+          "usedCandidate": false,
+          "turns": 5,
+          "toolCalls": 4,
+          "toolNames": [
+            "read",
+            "read",
+            "read",
+            "bash"
+          ],
+          "failures": 0,
+          "tokens": 163787,
+          "inputTokens": 72564,
+          "outputTokens": 215,
+          "cacheReadTokens": 91008,
+          "durationMs": 32959,
+          "readResultCount": 3,
+          "readResultCharacters": 6474,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 121
+        }
+      ],
+      "candidate": [
+        {
+          "label": "candidate-1",
+          "side": "candidate",
+          "correct": true,
+          "exercised": true,
+          "usedCandidate": false,
+          "turns": 4,
+          "toolCalls": 3,
+          "toolNames": [
+            "read",
+            "read",
+            "read"
+          ],
+          "failures": 0,
+          "tokens": 131534,
+          "inputTokens": 40005,
+          "outputTokens": 137,
+          "cacheReadTokens": 91392,
+          "durationMs": 24120,
+          "readResultCount": 3,
+          "readResultCharacters": 9813,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 133
+        },
+        {
+          "label": "candidate-2",
+          "side": "candidate",
+          "correct": true,
+          "exercised": true,
+          "usedCandidate": false,
+          "turns": 4,
+          "toolCalls": 3,
+          "toolNames": [
+            "read",
+            "read",
+            "read"
+          ],
+          "failures": 0,
+          "tokens": 131544,
+          "inputTokens": 7621,
+          "outputTokens": 147,
+          "cacheReadTokens": 123776,
+          "durationMs": 15551,
+          "readResultCount": 3,
+          "readResultCharacters": 9813,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 157
+        },
+        {
+          "label": "candidate-3",
+          "side": "candidate",
+          "correct": true,
+          "exercised": true,
+          "usedCandidate": false,
+          "turns": 4,
+          "toolCalls": 3,
+          "toolNames": [
+            "read",
+            "read",
+            "read"
+          ],
+          "failures": 0,
+          "tokens": 132319,
+          "inputTokens": 79703,
+          "outputTokens": 136,
+          "cacheReadTokens": 52480,
+          "durationMs": 34444,
+          "readResultCount": 3,
+          "readResultCharacters": 9813,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 127
+        }
+      ]
+    }
+  },
+  "discovery": {
+    "problemKey": "tool read",
+    "loss": {
+      "kinds": [
+        "line-truncated"
+      ],
+      "occurrences": 8,
+      "recoveryCalls": 3,
+      "averageRecoveryCalls": 0.38,
+      "recoveryTools": [
+        "bash"
+      ],
+      "recoverable": true
+    },
+    "occurrences": 8,
+    "score": 0.825,
+    "benefitModel": {
+      "kind": "workflow",
+      "metric": "failureRate"
+    },
+    "source": "production evolution_plan over the isolated shared experience store after the baseline sessions"
+  },
+  "candidate": {
+    "taskId": "desktop-task-mwla1spx-602b5d8c",
+    "experimentId": "exp-mwla5ypc-1-3153f7c4",
+    "candidateSourceSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
+    "gates": {
+      "realBenefit": true,
+      "measuredEvidence": true,
+      "repeatable": true,
+      "regressionTest": true,
+      "reversible": true,
+      "cleanupEvidence": true,
+      "noOrphans": true,
+      "runtimeRecovered": false,
+      "workflowBenefit": true,
+      "taskBenefit": true,
+      "eligible": true
+    },
+    "decision": {
+      "kind": "benefit",
+      "eligible": true,
+      "reasons": [
+        "measured behavior improved and the correctness control stayed stable"
+      ]
+    },
+    "trialFunctionalCheck": {
+      "label": "trial",
+      "tool": "read",
+      "matched": true,
+      "resultSha256": "013b8cb2498cb00dd04bd058dee175cdb4267bd806f5d89fed78e951135a1dbb",
+      "resultCharacters": 3639
+    }
+  },
+  "approval": {
+    "experimentId": "exp-mwla5ypc-1-3153f7c4",
+    "sourceSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
+    "targetProfiles": [
+      "acp"
+    ],
+    "confirmedAt": "2026-11-17T22:45:14.881Z",
+    "confirmationTextDigest": "3432161cb411e8d36995c03f620c9246c1b2674e7ad257032a555805e95c3fd9"
+  },
+  "task": {
+    "taskId": "desktop-task-mwla1spx-602b5d8c",
+    "experimentId": "exp-mwla5ypc-1-3153f7c4",
+    "phase": "stable",
+    "gates": {
+      "realBenefit": true,
+      "measuredEvidence": true,
+      "repeatable": true,
+      "regressionTest": true,
+      "reversible": true,
+      "cleanupEvidence": true,
+      "noOrphans": true,
+      "runtimeRecovered": true,
+      "workflowBenefit": true,
+      "taskBenefit": true,
+      "eligible": true
+    },
+    "decision": {
+      "version": 1,
+      "kind": "benefit",
+      "source": "canary-passed",
+      "at": "2026-11-17T22:45:15.397Z",
+      "observationAt": "2026-11-17T22:45:09.076Z",
+      "eligible": true,
+      "reasons": [
+        "the measured candidate passed the startup, health, dependency, and metric canary window"
+      ],
+      "gates": {
+        "realBenefit": true,
+        "measuredEvidence": true,
+        "repeatable": true,
+        "regressionTest": true,
+        "reversible": true,
+        "cleanupEvidence": true,
+        "noOrphans": true,
+        "runtimeRecovered": false
+      },
+      "probe": null
+    },
+    "functionalCheck": {
+      "trial": {
+        "label": "trial",
+        "tool": "read",
+        "matched": true,
+        "resultSha256": "013b8cb2498cb00dd04bd058dee175cdb4267bd806f5d89fed78e951135a1dbb",
+        "resultCharacters": 3639
+      },
+      "canary": [
+        {
+          "label": "canary-1",
+          "tool": "read",
+          "matched": true,
+          "resultSha256": "013b8cb2498cb00dd04bd058dee175cdb4267bd806f5d89fed78e951135a1dbb",
+          "resultCharacters": 3639
+        },
+        {
+          "label": "canary-2",
+          "tool": "read",
+          "matched": true,
+          "resultSha256": "013b8cb2498cb00dd04bd058dee175cdb4267bd806f5d89fed78e951135a1dbb",
+          "resultCharacters": 3639
+        }
+      ]
+    },
+    "artifact": {
+      "baseline": {
+        "sessions": 3,
+        "correct": 3,
+        "failures": 0,
+        "turns": 15,
+        "toolCalls": 12,
+        "tokens": 490855,
+        "durationMs": 114427
+      },
+      "candidate": {
+        "sessions": 3,
+        "correct": 3,
+        "failures": 0,
+        "turns": 12,
+        "toolCalls": 9,
+        "tokens": 395397,
+        "durationMs": 74115
+      },
+      "adoption": {
+        "sessionsUsingCandidate": 0,
+        "sessionsExercised": 3
+      }
+    },
+    "publication": {
+      "id": "evolution-promoted-07403462c061",
+      "approvedProfiles": [
+        "acp"
+      ],
+      "sourceSha256": "b4d284e48ed56fce1fe7b3ef175dc7f950a7e20452d4c6f1ee4f359ef1c42940"
+    }
+  },
+  "freshConsumer": {
+    "taskId": "desktop-task-mwla1spx-602b5d8c",
+    "modelTurns": 4,
+    "toolCalls": 3,
+    "tokens": 132574,
+    "wallMs": 36051,
+    "correct": true,
+    "readResultsContainAllSentinels": true,
+    "transport": "real model inference through model-bridge.mjs; the real promoted consumer mounted the policy"
+  },
+  "negatives": [
+    {
+      "variant": "missing",
+      "taskId": "desktop-task-mwla6wf9-8e67ee87",
+      "experimentId": "exp-mwla6xx1-2-4128d39f",
+      "phase": "failed",
+      "error": {
+        "code": "E_DESKTOP_TASK_EVIDENCE_MISSING",
+        "message": "no paired real-session evidence for task desktop-task-mwla6wf9-8e67ee87; a context-policy candidate cannot be measured from capability samples"
+      },
+      "gates": null,
+      "decision": null,
+      "revert": {
+        "ok": true,
+        "status": "reverted"
+      }
+    },
+    {
+      "variant": "mismatch",
+      "taskId": "desktop-task-mwla6y5d-79452277",
+      "experimentId": "exp-mwla6zle-3-60c59ee6",
+      "phase": "failed",
+      "error": {
+        "code": "E_DESKTOP_TASK_EVIDENCE_MISMATCH",
+        "message": "the task evidence does not match the plan: candidate source"
+      },
+      "gates": null,
+      "decision": null,
+      "revert": {
+        "ok": true,
+        "status": "reverted"
+      }
+    },
+    {
+      "variant": "no-benefit",
+      "taskId": "desktop-task-mwla6zvg-547b38d3",
+      "experimentId": "exp-mwla71b8-4-7cb1ae9c",
+      "phase": "failed",
+      "error": {
+        "code": "E_DESKTOP_BENEFIT_UNPROVEN",
+        "message": "the measured evidence is not eligible (missing: realBenefit, measuredEvidence, workflowBenefit, taskBenefit); nothing was promoted"
+      },
+      "gates": {
+        "realBenefit": false,
+        "measuredEvidence": false,
+        "repeatable": true,
+        "regressionTest": true,
+        "reversible": true,
+        "cleanupEvidence": true,
+        "noOrphans": true,
+        "runtimeRecovered": false,
+        "workflowBenefit": false,
+        "taskBenefit": false,
+        "eligible": false
+      },
+      "decision": {
+        "kind": "insufficient-evidence",
+        "eligible": false,
+        "reasons": [
+          "the measurement does not prove a measurable benefit"
+        ]
+      },
+      "revert": {
+        "ok": true,
+        "status": "reverted"
+      }
+    },
+    {
+      "variant": "unadopted",
+      "taskId": "desktop-task-mwla71ly-82a5f8a8",
+      "experimentId": "exp-mwla731q-5-bdc07d73",
+      "phase": "failed",
+      "error": {
+        "code": "E_DESKTOP_BENEFIT_UNPROVEN",
+        "message": "the measured evidence is not eligible (missing: realBenefit, measuredEvidence, workflowBenefit, taskBenefit); nothing was promoted"
+      },
+      "gates": {
+        "realBenefit": false,
+        "measuredEvidence": false,
+        "repeatable": true,
+        "regressionTest": true,
+        "reversible": true,
+        "cleanupEvidence": true,
+        "noOrphans": true,
+        "runtimeRecovered": false,
+        "workflowBenefit": false,
+        "taskBenefit": false,
+        "eligible": false
+      },
+      "decision": {
+        "kind": "insufficient-evidence",
+        "eligible": false,
+        "reasons": [
+          "the measurement does not prove a measurable benefit"
+        ]
+      },
+      "revert": {
+        "ok": true,
+        "status": "reverted"
+      }
+    }
+  ],
+  "restart": {
+    "previousInstanceId": "5c74d67c-60f4-434d-959c-15a28bd9054a",
+    "nextInstanceId": "7ed3689b-dec7-4bad-a35a-59ad8f8efa33",
+    "terminalPreserved": true,
+    "publicationPreserved": true
+  },
+  "install": {
+    "ok": true,
+    "tail": [
+      "+ dsh-evolution 0.2.11",
+      "",
+      "Done in 440ms using pnpm v11.28.5",
+      "web: configured; restart this entry to apply (HMR disabled)"
+    ]
+  },
+  "host": {
+    "instanceId": "5c74d67c-60f4-434d-959c-15a28bd9054a",
+    "pid": 62683,
+    "profile": "desktop"
+  },
+  "noAutoApproval": {
+    "taskId": "desktop-task-mwla1spx-602b5d8c",
+    "waitedMs": 5000,
+    "phase": "awaiting-owner-confirmation"
+  },
+  "durableObservation": {
+    "runtimeRecovered": true,
+    "evidenceKind": "task-coupled",
+    "observationWindow": "task:read-three-long-lines",
+    "sampleCount": 3,
+    "benefitEvidence": "paired real sessions (opencode-go/deepseek-v4.1-flash): baseline 15 turns/12 calls vs candidate 12 turns/9 calls; correct 3/3 vs 3/3",
+    "taskBenefit": {
+      "schemaVersion": 1,
+      "kind": "paired-real-session",
+      "complete": true,
+      "taskId": "desktop-task-mwla1spx-602b5d8c",
+      "task": {
+        "id": "read-three-long-lines",
+        "promptSha256": "49bc9881ce0556a8b37fd4c1882bf16373bb61917d6242e5954aa8bc5cc39cfc",
+        "expectSha256": "7a9bc640c285f3f3ff3de8cc77a05255c1b6e151f96f3ed321369d81f4970f38"
+      },
+      "candidateHostSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "host": {
+        "dsh": "0.2.2-rc.3",
+        "cordis": "4.1.0"
+      },
+      "improvement": "context-policy",
+      "runs": {
+        "baseline": 3,
+        "candidate": 3
+      },
+      "baseline": {
+        "sessions": 3,
+        "correct": 3,
+        "failures": 0,
+        "turns": 15,
+        "toolCalls": 12,
+        "tokens": 490855,
+        "durationMs": 114427
+      },
+      "candidate": {
+        "sessions": 3,
+        "correct": 3,
+        "failures": 0,
+        "turns": 12,
+        "toolCalls": 9,
+        "tokens": 395397,
+        "durationMs": 74115
+      },
+      "adoption": {
+        "sessionsUsingCandidate": 0,
+        "sessionsExercised": 3
+      },
+      "correctness": {
+        "baseline": true,
+        "candidate": true
+      },
+      "improved": true,
+      "regression": false,
+      "mechanismRan": true,
+      "benefit": true,
+      "issues": []
+    }
+  },
+  "finishedAt": "2026-11-17T22:46:03.297Z",
+  "tarballSha256": "cbeeb27708311c833bf55de59f333ffeaf7f90678e6146735ec6432f6bfd43aa"
+}
