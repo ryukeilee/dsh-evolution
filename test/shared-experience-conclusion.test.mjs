@@ -299,6 +299,29 @@ test('a conclusion is still found after unrelated knowledge exceeds the global s
   assert.equal(found.truncated, false, 'the window now covers every conclusion for this target');
 });
 
+test('the scoped total is exact whether or not the window is full', (t) => {
+  const store = open(t);
+  // Three distinct strategies under one target are three canonical rows for the
+  // same scope, so a window of 2 is filled and a wider one is not.
+  for (const [index, approach] of ['prewarm cache', 'warm dependency cache', 'reuse warm cache'].entries()) {
+    store.recordConclusion(conclude({
+      experimentId: `exp-window-${index}`,
+      strategy: approach,
+      strategyFingerprint: String(index).padStart(16, '0'),
+    }), ORIGIN);
+  }
+  const full = store.findConclusions({ target: TARGET, window: 2 });
+  assert.equal(full.scanned, 3);
+  assert.equal(full.considered, 2, 'the window holds the two newest rows for this scope');
+  assert.equal(full.matches.length, 2);
+  assert.equal(full.truncated, true, 'a full window cannot show the third row for this scope');
+  const short = store.findConclusions({ target: TARGET });
+  assert.equal(short.scanned, 3);
+  assert.equal(short.considered, 3, 'an unfilled window is the complete scoped set');
+  assert.equal(short.matches.length, 3);
+  assert.equal(short.truncated, false);
+});
+
 test('the stored conclusion body keeps the canonical scope marker the windowed read uses', (t) => {
   const root = temporary(t);
   const store = openSharedExperience(root);
