@@ -33,6 +33,7 @@
  *   - it does not choose a tool for the model and does not retry a failed turn.
  */
 import fs from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import readline from 'node:readline';
@@ -112,7 +113,15 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const decisionTurns = (Array.isArray(turns) ? turns : []).filter((turn) => (turn?.tools?.length ?? 0) > 0);
   const toolNames = decisionTurns.flatMap((turn) => (turn.decision?.tool ? [turn.decision.tool] : []));
   const usage = usageTotals(decisionTurns);
-  const failures = decisionTurns.filter((turn) => turn.ok !== true).length;
+  // A decision without a usage record is not a zero-cost turn: the artifact's
+  // token budget would then be understated. The session is incomplete and the
+  // kernel rejects the whole artifact.
+  const usageComplete = decisionTurns.every((turn) => turn.usage
+    && Number.isFinite(Number(turn.usage.input)) && Number.isFinite(Number(turn.usage.output)));
+  const failedModelTurns = (Array.isArray(turns) ? turns : []).filter((turn) => turn.ok !== true).length;
+  const failedUpdates = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call_update'
+    && (update.status === 'failed' || update.status === 'error' || update.isError === true || update.is_error === true));
+  const failures = failedModelTurns + failedUpdates.length;
   // Map one `tool_call` update to its model decision by order: ACP reports one
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name.
@@ -125,6 +134,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const readResults = [];
   for (const update of Array.isArray(updates) ? updates : []) {
     if (update?.sessionUpdate !== 'tool_call_update') continue;
+    if (update.status === 'failed' || update.status === 'error' || update.isError === true || update.is_error === true) continue;
     const name = byId.get(update.toolCallId);
     if (name !== 'read') continue;
     const text = toolUpdateText(update);
@@ -138,6 +148,8 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     correct,
     exercised,
     usedCandidate: candidateTool !== null && toolNames.includes(candidateTool),
+    usageComplete,
+    toolFailures: failedUpdates.length,
     turns: decisionTurns.length,
     toolCalls: toolNames.length,
     toolNames,
@@ -199,15 +211,25 @@ export function buildTaskBenefitArtifact({ taskId, task, candidateHost, model, h
 export function assertIsolatedHome(home) {
   if (typeof home !== 'string' || !path.isAbsolute(home)) throw new Error('home must be an absolute isolated path');
   const resolved = path.resolve(home);
-  const formal = path.join(os.homedir(), '.dsh');
-  if (resolved === formal || resolved.startsWith(`${formal}${path.sep}`)) throw new Error('refusing to run paired sessions against the formal DSH_HOME');
+  // A path under the temporary directory can still be a symlink into the
+  // formal data root. Resolve the real target before any write or launch.
+  let canonical = resolved;
+  try { canonical = realpathSync(resolved); } catch {
+    try { canonical = path.join(realpathSync(path.dirname(resolved)), path.basename(resolved)); } catch { /* not created yet */ }
+  }
+  const formal = (() => { try { return realpathSync(path.join(os.homedir(), '.dsh')); } catch { return path.join(os.homedir(), '.dsh'); } })();
+  if (canonical === formal || canonical.startsWith(`${formal}${path.sep}`)) {
+    throw new Error('refusing to run paired sessions against the formal DSH_HOME');
+  }
   // macOS os.tmpdir() is /var/folders/..., while /tmp is the same world through
   // a symlink. Both are temporary roots; anything else is not an isolated home.
-  const temporaryRoots = [...new Set([os.tmpdir(), '/tmp', '/private/tmp'].map((root) => path.resolve(root)))];
-  if (!temporaryRoots.some((root) => resolved === root || resolved.startsWith(`${root}${path.sep}`))) {
+  const temporaryRoots = [...new Set([os.tmpdir(), '/tmp', '/private/tmp'].flatMap((root) => {
+    try { return [path.resolve(root), realpathSync(root)]; } catch { return [path.resolve(root)]; }
+  }))];
+  if (!temporaryRoots.some((root) => canonical === root || canonical.startsWith(`${root}${path.sep}`))) {
     throw new Error('the isolated home must live under the temporary directory');
   }
-  return resolved;
+  return canonical;
 }
 
 /** Resolve the versions of the Desktop packages that will run the Trial. */
@@ -339,7 +361,7 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
   const failedTurns = turns.filter((turn) => turn.ok !== true).length;
   return {
     ...row,
-    ok: promptError === null && failedTurns === 0 && row.turns > 0,
+    ok: promptError === null && failedTurns === 0 && row.turns > 0 && row.usageComplete === true,
     failedTurns,
     ...(promptError === null ? {} : { error: promptError.slice(0, 500) }),
     assistantCharacters: assistantText.length,

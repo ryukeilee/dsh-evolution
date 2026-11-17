@@ -1066,7 +1066,9 @@ test('a context policy is functionally verified after the Trial mount and on eve
   let readCalls = 0;
   const readTool = { execute: async () => {
     readCalls += 1;
-    return { path: '/tmp/long.json', offset: 1, lines: [{ number: 1, text: 'FULL-LINE' }], totalLines: 1 };
+    // Before the Trial the official read still truncates; after the mount the
+    // candidate must replace the line, or the functional check proves nothing.
+    return { path: '/tmp/long.json', offset: 1, lines: [{ number: 1, text: kernel.state.candidateVisible ? 'FULL-LINE' : 'truncated' }], totalLines: 1 };
   } };
   const { home, kernel, host } = harness(t, { extraTools: { read: readTool } });
   const plan = contextPlanFor();
@@ -1075,13 +1077,26 @@ test('a context policy is functionally verified after the Trial mount and on eve
   await host.start();
   await approveWhenWaiting(home, taskId);
   const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.functionalCheck.baseline.matched, false);
   assert.equal(state.functionalCheck.trial.matched, true);
   assert.ok(state.functionalCheck.canary.length >= 2, 'each canary observation must replay the functional check');
   assert.ok(state.functionalCheck.canary.every((check) => check.matched === true));
   const observations = kernel.calls.filter((call) => call.name === 'evolution_canary_observe');
   assert.ok(observations.length >= 2);
   assert.ok(observations.every((call) => call.args.evidence.functionalCheck?.matched === true));
-  assert.equal(readCalls, 1 + observations.length, 'one Trial check plus one check per canary observation');
+  assert.equal(readCalls, 2 + observations.length, 'one baseline, one Trial and one check per canary observation');
+});
+
+test('a functional check whose baseline already matches is rejected before the Trial', async (t) => {
+  const readTool = { execute: async () => ({ path: '/tmp/long.json', offset: 1, lines: [{ number: 1, text: 'FULL-LINE' }], totalLines: 1 }) };
+  const { home, kernel, host } = harness(t, { extraTools: { read: readTool } });
+  const plan = contextPlanFor();
+  const taskId = await submit(home, plan);
+  await host.start();
+  const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
+  assert.equal(state.error.code, 'E_DESKTOP_FUNCTIONAL_CHECK');
+  assert.equal(kernel.calls.some((call) => call.name === 'evolution_trial'), false, 'the Trial must not start when the baseline already satisfies the check');
+  assert.ok(kernel.state.reverts >= 1);
 });
 
 test('a mounted context policy whose declared effect never happens fails the Trial and is reverted', async (t) => {
@@ -1101,7 +1116,8 @@ test('a context policy that stops taking effect during canary rolls the promotio
   let readCalls = 0;
   const readTool = { execute: async () => {
     readCalls += 1;
-    return { path: '/tmp/long.json', offset: 1, lines: [{ number: 1, text: readCalls === 1 ? 'FULL-LINE' : 'truncated' }], totalLines: 1 };
+    // baseline -> truncated, Trial -> complete, canary -> truncated.
+    return { path: '/tmp/long.json', offset: 1, lines: [{ number: 1, text: readCalls === 2 ? 'FULL-LINE' : 'truncated' }], totalLines: 1 };
   } };
   const { home, kernel, host } = harness(t, { extraTools: { read: readTool } });
   const plan = contextPlanFor();

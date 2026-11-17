@@ -4,6 +4,7 @@
 // must stay rejected; they do not call a real model.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { existsSync, realpathSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -94,6 +95,26 @@ test('a read result without the expected value is not proof that the policy ran'
   assert.equal(row.correct, true);
 });
 
+test('missing usage and failed tool results are measured instead of rounded to zero', () => {
+  const turns = turnsWith(['read', null]);
+  turns[0].usage = undefined;
+  const updates = [
+    { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+    { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'bash' },
+    { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'failed', content: [{ type: 'content', content: { type: 'text', text: 'sentinel-a' } }] },
+    { sessionUpdate: 'tool_call_update', toolCallId: 'c2', status: 'failed', content: [] },
+  ];
+  const row = extractSessionEvidence({
+    label: 'candidate-3', side: 'candidate', turns, updates,
+    assistantText: 'sentinel-a sentinel-b sentinel-c',
+    expectedTokens: TOKENS, candidateTool: null, durationMs: 10,
+  });
+  assert.equal(row.usageComplete, false, 'a decision without usage cannot be counted as a zero-cost turn');
+  assert.equal(row.toolFailures, 2);
+  assert.equal(row.failures, 2);
+  assert.equal(row.exercised, false, 'a failed read result is not proof that the policy ran');
+});
+
 test('aggregation sums measured sessions and counts failed ones', () => {
   const rows = [
     sessionRow({ side: 'baseline', turns: 9, toolCalls: 6, tokens: 10000, durationMs: 30000 }),
@@ -149,10 +170,23 @@ test('a produced artifact satisfies the real taskBenefit validator and its negat
 test('the producer refuses the formal DSH_HOME and non-temporary roots', () => {
   assert.throws(() => assertIsolatedHome(path.join(os.homedir(), '.dsh')), /formal DSH_HOME/);
   assert.throws(() => assertIsolatedHome(path.join(os.homedir(), 'work', 'home')), /temporary directory/);
-  assert.equal(assertIsolatedHome(path.join(os.tmpdir(), 'isolated-home')), path.join(os.tmpdir(), 'isolated-home'));
+  assert.equal(assertIsolatedHome(path.join(os.tmpdir(), 'isolated-home')), path.join(realpathSync(os.tmpdir()), 'isolated-home'));
   // macOS os.tmpdir() and /tmp name the same temporary world; the acceptance
   // work directory is commonly created under /tmp.
-  assert.equal(assertIsolatedHome('/tmp/task-benefit-home'), '/tmp/task-benefit-home');
+  assert.equal(assertIsolatedHome('/tmp/task-benefit-home'), path.join(realpathSync('/tmp'), 'task-benefit-home'));
+});
+
+test('a temporary symlink into the formal home is rejected before any write', async () => {
+  const formal = path.join(os.homedir(), '.dsh');
+  if (!existsSync(formal)) return;
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-symlink-'));
+  try {
+    const link = path.join(root, 'home');
+    await fs.symlink(formal, link);
+    assert.throws(() => assertIsolatedHome(link), /formal DSH_HOME/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });
 
 test('the preview wrapper mounts the exact Host body through an ESM plugin', async () => {

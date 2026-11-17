@@ -31,12 +31,12 @@ const completeRead = {
 };
 
 test('the collector classifies only a successful read that lost data', () => {
-  assert.deepEqual(detectDegradation({ name: 'read' }, truncatedRead), { target: 'tool:read', kind: 'line-truncated' });
+  assert.deepEqual(detectDegradation({ name: 'read' }, truncatedRead), { target: 'tool:read', kind: 'line-truncated', path: '/tmp/generated.json' });
   assert.equal(detectDegradation({ name: 'read' }, completeRead), null);
   assert.equal(detectDegradation({ name: 'bash' }, truncatedRead), null);
   assert.equal(detectDegradation({ name: 'read' }, { isError: true, error: { message: 'boom' } }), null);
   const capped = { isError: false, content: [{ type: 'text', text: '<content>1: x\n\n(Output capped. Showing lines 1-1. Use offset=2 to continue.)\n</content>' }] };
-  assert.deepEqual(detectDegradation({ name: 'read' }, capped), { target: 'tool:read', kind: 'output-capped' });
+  assert.deepEqual(detectDegradation({ name: 'read' }, capped), { target: 'tool:read', kind: 'output-capped', path: null });
 });
 
 test('a degradation is a neutral fact with a measured recovery call', (t) => {
@@ -130,6 +130,37 @@ test('a rare degradation stays rejected below the evidence floor', () => {
   assert.equal(planned.rejected[0].reason, 'insufficient-evidence');
 });
 
+test('an unrelated caller-input error does not discard a qualifying degradation', () => {
+  const now = new Date().toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:loss', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
+        occurrences: 8, failureCount: 0, successCount: 0, lastSeen: now,
+        metrics: { recoverycalls: { sum: 3, count: 8 } }, recoveryTool: 'tool:bash',
+      },
+      {
+        key: 'knowledge:error', scope: 'tool read', problem: 'official operation failure fs not found',
+        failureCount: 1, occurrences: 1, lastSeen: now,
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool read');
+  assert.ok(candidate, `the degradation was discarded: ${JSON.stringify(planned.rejected)}`);
+  assert.ok(candidate.loss);
+  assert.notEqual(candidate.origin, 'caller-input');
+  // The same caller-input signal without any degradation still stays rejected.
+  const pureError = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:patch', scope: 'tool apply patch', problem: 'official operation failure fs patch mismatch',
+      failureCount: 5, occurrences: 5, lastSeen: now,
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  assert.equal(pureError.candidates.length, 0);
+});
+
 test('the mounted collector defers a degradation to the next call and flushes it at turn end', async (t) => {
   const { Context } = await import('@deepseek-ai/cordis');
   const { apply: applyCollector } = await import('../lib/experience-collector.js');
@@ -153,6 +184,69 @@ test('the mounted collector defers a degradation to the next call and flushes it
     assert.equal(rows[0].occurrences, 2);
     assert.equal(rows[0].recoveryTool, 'tool:bash');
     assert.equal(rows[0].metrics.recoverycalls.sum, 1);
+  } finally {
+    await fiber.dispose();
+  }
+});
+
+test('recovery cost counts one successful associated call, not a failure or another file', async (t) => {
+  const { Context } = await import('@deepseek-ai/cordis');
+  const { apply: applyCollector } = await import('../lib/experience-collector.js');
+  const root = temporary(t);
+  const app = new Context();
+  app.provide('tools', { register() {} });
+  const fiber = app.plugin(applyCollector, { dshHome: root });
+  await fiber.await();
+  try {
+    const agent = { id: 'recovery-agent' };
+    app.emit('tools/result', { callId: 'read-a', name: 'read', agent }, {
+      isError: false,
+      value: { path: '/tmp/a.json', offset: 1, lines: [{ number: 1, text: 'x'.repeat(2000) + '... (line truncated to 2000 chars)' }], totalLines: 1 },
+    });
+    app.emit('tools/result', { callId: 'bash-failed', name: 'bash', agent }, { isError: true, error: { message: 'failed' } });
+    app.emit('tools/result', { callId: 'read-b', name: 'read', agent }, {
+      isError: false,
+      value: { path: '/tmp/b.json', offset: 1, lines: [{ number: 1, text: 'x'.repeat(2000) + '... (line truncated to 2000 chars)' }], totalLines: 1 },
+    });
+    app.emit('tools/result', { callId: 'read-c', name: 'read', agent }, {
+      isError: false,
+      value: { path: '/tmp/c.json', offset: 1, lines: [{ number: 1, text: 'short' }], totalLines: 1 },
+    });
+    app.emit('tools/result', { callId: 'bash-ok', name: 'bash', agent }, { isError: false, value: {} });
+    app.emit('agent/turn-stopping', { agent });
+    const rows = app.get('evolutionExperience').store.discover().records.filter((record) => record.issueType === 'tool degradation');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].occurrences, 2);
+    assert.equal(rows[0].metrics.recoverycalls.sum, 1, 'the failed call and the other-file read are not recoveries');
+    assert.equal(rows[0].recoveryTool, 'tool:bash');
+  } finally {
+    await fiber.dispose();
+  }
+});
+
+test('a successful re-read of the same path is an associated recovery', async (t) => {
+  const { Context } = await import('@deepseek-ai/cordis');
+  const { apply: applyCollector } = await import('../lib/experience-collector.js');
+  const root = temporary(t);
+  const app = new Context();
+  app.provide('tools', { register() {} });
+  const fiber = app.plugin(applyCollector, { dshHome: root });
+  await fiber.await();
+  try {
+    const agent = { id: 'reread-agent' };
+    app.emit('tools/result', { callId: 'read-1', name: 'read', agent }, {
+      isError: false,
+      value: { path: '/tmp/a.json', offset: 1, lines: [{ number: 1, text: 'x'.repeat(2000) + '... (line truncated to 2000 chars)' }], totalLines: 1 },
+    });
+    app.emit('tools/result', { callId: 'read-2', name: 'read', agent }, {
+      isError: false,
+      value: { path: '/tmp/a.json', offset: 1, lines: [{ number: 1, text: 'complete line' }], totalLines: 1 },
+    });
+    app.emit('agent/turn-stopping', { agent });
+    const [row] = app.get('evolutionExperience').store.discover().records.filter((record) => record.issueType === 'tool degradation');
+    assert.equal(row.occurrences, 1);
+    assert.equal(row.metrics.recoverycalls.sum, 1);
+    assert.equal(row.recoveryTool, 'tool:read');
   } finally {
     await fiber.dispose();
   }

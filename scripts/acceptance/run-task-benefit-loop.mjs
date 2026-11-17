@@ -16,6 +16,7 @@
  * node run-task-benefit-loop.mjs <packed.tgz> <evidence.json> [--work <dir>] [--runs 3] [--approve <text>]
  */
 import fs from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
@@ -34,26 +35,32 @@ let workArg = null;
 let approveText = null;
 let runs = 3;
 let model = DEFAULT_BRIDGE_MODEL;
-let resumeArg = null;
 for (let index = 0; index < argv.length; index += 1) {
   const arg = argv[index];
   if (arg === '--work' && argv[index + 1]) workArg = path.resolve(argv[++index]);
   else if (arg === '--approve' && argv[index + 1]) approveText = argv[++index];
   else if (arg === '--runs' && argv[index + 1]) runs = Number(argv[++index]);
   else if (arg === '--model' && argv[index + 1]) model = argv[++index];
-  else if (arg === '--resume' && argv[index + 1]) resumeArg = path.resolve(argv[++index]);
   else positional.push(arg);
 }
 const [tarballArg, outArg] = positional;
-if (!tarballArg || !outArg) throw new Error('Usage: run-task-benefit-loop.mjs <packed.tgz> <evidence.json> [--work <dir>] [--runs 3] [--resume <prior-evidence.json>] [--approve <owner confirmation text>]');
+if (!tarballArg || !outArg) throw new Error('Usage: run-task-benefit-loop.mjs <packed.tgz> <evidence.json> [--work <dir>] [--runs 3] [--approve <owner confirmation text>]');
 if (!Number.isInteger(runs) || runs < 3 || runs > 5) throw new Error('--runs must be 3 through 5');
 const tarball = path.resolve(tarballArg);
 const out = path.resolve(outArg);
 const repo = fileURLToPath(new URL('../../', import.meta.url));
 const binary = '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness';
 const cli = '/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh';
-const work = workArg ?? await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-loop-'));
-const temporaryRoots = [...new Set([os.tmpdir(), '/tmp', '/private/tmp'].map((root) => path.resolve(root)))];
+let work = workArg ?? await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-loop-'));
+await fs.mkdir(work, { recursive: true });
+// A path under the temporary directory can still be a symlink into the formal
+// data root. Resolve the real target before any installer or host launch.
+work = await fs.realpath(work);
+const formalHome = await fs.realpath(path.join(os.homedir(), '.dsh')).catch(() => path.join(os.homedir(), '.dsh'));
+if (work === formalHome || work.startsWith(formalHome + path.sep)) throw new Error('refusing to run acceptance against the formal DSH_HOME');
+const temporaryRoots = [...new Set([os.tmpdir(), '/tmp', '/private/tmp'].flatMap((root) => {
+  try { return [path.resolve(root), realpathSync(root)]; } catch { return [path.resolve(root)]; }
+}))];
 if (!temporaryRoots.some((root) => work === root || work.startsWith(root + path.sep))) throw new Error('Acceptance work must be under the temporary directory');
 const home = path.join(work, 'home');
 const electronInit = path.join(work, 'electron-init');
@@ -271,19 +278,14 @@ const CANDIDATE_HOST = await fs.readFile(path.join(repo, 'scripts/acceptance/fix
 let files = [];
 let task = null;
 let sentinels = [];
-async function prepareFixtures({ resume = false } = {}) {
+async function prepareFixtures() {
   files = [];
   for (const name of ['a', 'b', 'c']) {
     const file = name + '.json';
-    let line;
-    if (resume) {
-      line = await fs.readFile(path.join(home, file), 'utf8');
-    } else {
-      const sentinel = 'sentinel-' + name + '-' + crypto.randomBytes(6).toString('hex');
-      line = JSON.stringify({ name: 'generated-config-' + name, routes: Array.from({ length: 80 }, (_, index) => ({ path: '/feature/' + index, enabled: index % 2 === 0 })), sentinel });
-      await fs.writeFile(path.join(home, file), line);
-      evidence.fixtures.push({ name: file, characters: line.length, sentinelSha256: sha(sentinel) });
-    }
+    const sentinel = 'sentinel-' + name + '-' + crypto.randomBytes(6).toString('hex');
+    const line = JSON.stringify({ name: 'generated-config-' + name, routes: Array.from({ length: 80 }, (_, index) => ({ path: '/feature/' + index, enabled: index % 2 === 0 })), sentinel });
+    await fs.writeFile(path.join(home, file), line);
+    evidence.fixtures.push({ name: file, characters: line.length, sentinelSha256: sha(sentinel) });
     const parsed = JSON.parse(line);
     files.push({ name: file, line, sentinel: parsed.sentinel });
   }
@@ -299,7 +301,7 @@ async function prepareFixtures({ resume = false } = {}) {
 function planFor(options = {}) {
   const proposal = {
       why: 'The official read tool truncates the first line of these generated configs; a real session then spends a shell call to recover the value.',
-      target: 'plugin:complete-read-line',
+      target: options.target ?? 'tool read',
       impactScope: ['acp', 'desktop'],
       successMetrics: ['fewer turns and tool calls on the same three-file task', 'all three sentinels answered correctly'],
       improvement: 'context-policy',
@@ -327,6 +329,47 @@ function planFor(options = {}) {
   };
 }
 
+/**
+ * Negative evidence controls. They run before the positive promotion so the
+ * same candidate is not already globally mounted by a previous stable commit:
+ * otherwise the pre-Trial baseline check would see the promoted policy and the
+ * control would fail for the wrong reason.
+ */
+async function runNegativeControls({ artifact, planTarget }) {
+  const results = [];
+  const variants = [
+    { label: 'missing', artifact: null, code: 'E_DESKTOP_TASK_EVIDENCE_MISSING' },
+    { label: 'mismatch', artifact: (copy) => { copy.candidateHostSha256 = 'd'.repeat(64); }, code: 'E_DESKTOP_TASK_EVIDENCE_MISMATCH' },
+    { label: 'no-benefit', artifact: (copy) => { copy.candidate.turns = copy.baseline.turns; copy.candidate.toolCalls = copy.baseline.toolCalls; }, code: 'E_DESKTOP_BENEFIT_UNPROVEN' },
+    { label: 'unadopted', artifact: (copy) => { copy.adoption.sessionsExercised = 0; }, code: 'E_DESKTOP_BENEFIT_UNPROVEN' },
+  ];
+  for (const variant of variants) {
+    const negativeTaskId = mintTaskId();
+    if (variant.label !== 'missing') {
+      const negativeArtifact = JSON.parse(JSON.stringify(artifact));
+      negativeArtifact.taskId = negativeTaskId;
+      variant.artifact(negativeArtifact);
+      await writeJson(path.join(channel.taskEvidence, negativeTaskId + '.json'), negativeArtifact);
+    }
+    let negative = null;
+    await runFixturePrompt('acp-negative-' + variant.label, '验证一个负向证据候选；不要批准晋升。', (tools, result, round) => {
+      if (round === 1) return { name: 'evolution_desktop', args: { action: 'delegate', plan: planFor({ target: planTarget, strategy: null }), cwd: home, taskId: negativeTaskId } };
+      const value = toolResultValue(result);
+      if (['accepted', 'running'].includes(value.phase)) return { name: 'evolution_desktop', args: { action: 'status', taskId: negativeTaskId, waitMs: 60_000 } };
+      assert(value.phase === 'failed', 'negative ' + variant.label + ' reached ' + value.phase);
+      assert(value.error?.code === variant.code, 'negative ' + variant.label + ' stopped with ' + value.error?.code + ', expected ' + variant.code);
+      if (variant.code === 'E_DESKTOP_BENEFIT_UNPROVEN') assert(value.gates?.taskBenefit === false, 'the no-benefit artifact did not fail taskBenefit');
+      negative = value;
+      return null;
+    });
+    const negativeState = await readJson(stateFile(negativeTaskId));
+    assert(negativeState?.revert?.ok === true, 'negative ' + variant.label + ' did not prove trial cleanup');
+    assert(!(await readJson(publishedFile))?.plugins?.some((row) => row.experimentId === negative.experimentId), 'negative ' + variant.label + ' was published');
+    results.push({ variant: variant.label, taskId: negativeTaskId, experimentId: negative.experimentId, phase: negative.phase, error: negative.error, gates: negative.gates, decision: negative.decision, revert: negativeState.revert });
+  }
+  return results;
+}
+
 let desktop = null;
 let desktopOriginalPatch = null;
 let desktopPatch = null;
@@ -347,38 +390,21 @@ try {
   desktopPatch = path.join(home, 'profiles', 'desktop', 'cordis.patch.yml');
   desktopOriginalPatch = await fs.readFile(desktopPatch, 'utf8');
 
-  let taskId;
-  let producer;
-  if (resumeArg !== null) {
-    const prior = await readJson(resumeArg);
-    assert(prior?.producer?.artifact?.candidate, 'the resume evidence has no produced artifact');
-    evidence.resume = { from: path.basename(resumeArg), producerArtifactFile: prior.producer.artifactFile ?? null };
-    await prepareFixtures({ resume: true });
-    evidence.fixtures = prior.fixtures ?? evidence.fixtures;
-    taskId = prior.producer.artifact.taskId;
-    producer = {
-      ok: prior.producer.ok === true,
-      artifact: prior.producer.artifact,
-      artifactFile: prior.producer.artifactFile,
-      report: { sessions: prior.producer.sessions },
-    };
-  } else {
-    await prepareFixtures();
-    taskId = mintTaskId();
-    producer = await produceTaskBenefit({
-      home,
-      work: path.join(work, 'task-benefit'),
-      taskId,
-      task,
-      candidateHost: CANDIDATE_HOST,
-      improvement: 'context-policy',
-      runs,
-      model,
-      binary,
-      cli,
-      log: (line) => console.log(line),
-    });
-  }
+  await prepareFixtures();
+  const taskId = mintTaskId();
+  const producer = await produceTaskBenefit({
+    home,
+    work: path.join(work, 'task-benefit'),
+    taskId,
+    task,
+    candidateHost: CANDIDATE_HOST,
+    improvement: 'context-policy',
+    runs,
+    model,
+    binary,
+    cli,
+    log: (line) => console.log(line),
+  });
   evidence.producer = { ok: producer.ok, artifactFile: producer.artifactFile, artifact: producer.artifact, sessions: producer.report.sessions };
   evidence.steps.push({ name: 'paired-real-sessions-produced', at: new Date().toISOString() });
   assert(producer.ok === true, 'the producer did not complete every session: ' + JSON.stringify(producer.artifact, null, 2).slice(0, 1200));
@@ -414,7 +440,11 @@ try {
   };
   evidence.steps.push({ name: 'real-loss-discovery', at: new Date().toISOString() });
 
-  const plan = planFor();
+  const planTarget = selection.problemKey;
+  evidence.negatives = await runNegativeControls({ artifact: producer.artifact, planTarget });
+  evidence.steps.push({ name: 'negative-artifacts-rejected', at: new Date().toISOString() });
+
+  const plan = planFor({ target: planTarget });
   let approvalObserved = null;
   let positiveFailure = null;
   await runFixturePrompt('acp-delegate', '请把这次上下文策略改进交给 Desktop 执行，先停在所有者确认前，不要自行批准。', (tools, result, round) => {
@@ -521,88 +551,62 @@ try {
   evidence.steps.push({ name: 'stable-with-functional-canary', at: new Date().toISOString() });
 
   const bridge = await startModelBridge({ model, cwd: path.join(work, 'bridge-cwd') });
-  const bridgeOverlay = path.join(work, 'bridge-transport.yml');
-  await fs.writeFile(bridgeOverlay, '- id: llm-deepseek\n  config:\n    baseURL: ' + bridge.baseURL + '\n    apiKeyEnv: EVOLUTION_ACCEPTANCE_KEY\n', { mode: 0o600 });
-  const consumerUpdates = [];
-  const fresh = await createAcp('acp-fresh', { patch: bridgeOverlay, waitForPromoted: true, collect: consumerUpdates });
-  const consumerStarted = Date.now();
-  const consumerBefore = bridge.turns.length;
   try {
-    await fresh.rpc('session/prompt', { sessionId: fresh.sessionId, prompt: [{ type: 'text', text: task.prompt }] }, 30 * 60 * 1000);
-  } finally {
-    await fresh.close();
-  }
-  const consumerTurns = bridge.turns.slice(consumerBefore);
-  const consumerWall = Date.now() - consumerStarted;
-  const consumerText = consumerUpdates.filter((update) => update.sessionUpdate === 'agent_message_chunk' && update.content?.type === 'text').map((update) => update.content.text).join('');
-  // Bind each completed result to the decision that produced it, so the proof
-  // is a *read* result carrying the complete line, not a shell fallback that
-  // happened to print the same value.
-  const consumerCalls = consumerUpdates.filter((update) => update.sessionUpdate === 'tool_call');
-  const consumerDecisions = consumerTurns.filter((turn) => (turn.tools?.length ?? 0) > 0).map((turn) => turn.decision?.tool ?? null).filter(Boolean);
-  const consumerNameById = new Map();
-  consumerCalls.forEach((call, index) => {
-    const name = consumerDecisions[index] ?? call.title;
-    if (typeof call.toolCallId === 'string' && typeof name === 'string') consumerNameById.set(call.toolCallId, name);
-  });
-  const consumerReadResults = consumerUpdates
-    .filter((update) => update.sessionUpdate === 'tool_call_update' && consumerNameById.get(update.toolCallId) === 'read')
-    .map(toolUpdateText);
-  assert(consumerTurns.every((turn) => turn.ok === true), 'a fresh consumer model turn failed');
-  assert(answerMatches(consumerText, sentinels), 'the fresh consumer did not answer all sentinels: ' + consumerText.slice(-400));
-  assert(consumerReadResults.length >= 1, 'the fresh consumer never used the read tool');
-  assert(sentinels.every((sentinel) => consumerReadResults.some((text) => text.includes(sentinel))), 'the promoted policy did not deliver the complete read line in the fresh consumer');
-  assert(!consumerReadResults.some((text) => text.includes('line truncated')), 'a fresh consumer read result was still truncated');
-  const consumerUsage = usageTotals(consumerTurns);
-  evidence.freshConsumer = {
-    taskId,
-    modelTurns: consumerTurns.filter((turn) => (turn.tools?.length ?? 0) > 0).length,
-    toolCalls: consumerTurns.filter((turn) => turn.decision?.tool).length,
-    tokens: consumerUsage.inputTokens + consumerUsage.outputTokens + consumerUsage.cacheReadTokens,
-    wallMs: consumerWall,
-    correct: true,
-    readResultsContainAllSentinels: true,
-    transport: 'real model inference through model-bridge.mjs; the real promoted consumer mounted the policy',
-  };
-  await bridge.close();
-  evidence.steps.push({ name: 'fresh-consumer-functional-reuse', at: new Date().toISOString() });
-
-  const negativeVariants = [
-    { label: 'missing', artifact: null, code: 'E_DESKTOP_TASK_EVIDENCE_MISSING' },
-    { label: 'mismatch', artifact: (copy) => { copy.candidateHostSha256 = 'd'.repeat(64); }, code: 'E_DESKTOP_TASK_EVIDENCE_MISMATCH' },
-    { label: 'no-benefit', artifact: (copy) => { copy.candidate.turns = copy.baseline.turns; copy.candidate.toolCalls = copy.baseline.toolCalls; }, code: 'E_DESKTOP_BENEFIT_UNPROVEN' },
-    { label: 'unadopted', artifact: (copy) => { copy.adoption.sessionsExercised = 0; }, code: 'E_DESKTOP_BENEFIT_UNPROVEN' },
-  ];
-  for (const variant of negativeVariants) {
-    const negativeTaskId = mintTaskId();
-    if (variant.label !== 'missing') {
-      const negativeArtifact = JSON.parse(JSON.stringify(producer.artifact));
-      negativeArtifact.taskId = negativeTaskId;
-      variant.artifact(negativeArtifact);
-      await writeJson(path.join(channel.taskEvidence, negativeTaskId + '.json'), negativeArtifact);
+    const bridgeOverlay = path.join(work, 'bridge-transport.yml');
+    await fs.writeFile(bridgeOverlay, '- id: llm-deepseek\n  config:\n    baseURL: ' + bridge.baseURL + '\n    apiKeyEnv: EVOLUTION_ACCEPTANCE_KEY\n', { mode: 0o600 });
+    const consumerUpdates = [];
+    const fresh = await createAcp('acp-fresh', { patch: bridgeOverlay, waitForPromoted: true, collect: consumerUpdates });
+    const consumerStarted = Date.now();
+    const consumerBefore = bridge.turns.length;
+    try {
+      await fresh.rpc('session/prompt', { sessionId: fresh.sessionId, prompt: [{ type: 'text', text: task.prompt }] }, 30 * 60 * 1000);
+    } finally {
+      await fresh.close();
     }
-    let negative = null;
-    await runFixturePrompt('acp-negative-' + variant.label, '验证一个负向证据候选；不要批准晋升。', (tools, result, round) => {
-      if (round === 1) return { name: 'evolution_desktop', args: { action: 'delegate', plan: planFor({ strategy: null }), cwd: home, taskId: negativeTaskId } };
-      const value = toolResultValue(result);
-      if (['accepted', 'running'].includes(value.phase)) return { name: 'evolution_desktop', args: { action: 'status', taskId: negativeTaskId, waitMs: 60_000 } };
-      assert(value.phase === 'failed', 'negative ' + variant.label + ' reached ' + value.phase);
-      assert(value.error?.code === variant.code, 'negative ' + variant.label + ' stopped with ' + value.error?.code + ', expected ' + variant.code);
-      if (variant.code === 'E_DESKTOP_BENEFIT_UNPROVEN') assert(value.gates?.taskBenefit === false, 'the no-benefit artifact did not fail taskBenefit');
-      negative = value;
-      return null;
+    const consumerTurns = bridge.turns.slice(consumerBefore);
+    const consumerWall = Date.now() - consumerStarted;
+    const consumerText = consumerUpdates.filter((update) => update.sessionUpdate === 'agent_message_chunk' && update.content?.type === 'text').map((update) => update.content.text).join('');
+    // Bind each completed result to the decision that produced it, so the proof
+    // is a *read* result carrying the complete line, not a shell fallback that
+    // happened to print the same value.
+    const consumerCalls = consumerUpdates.filter((update) => update.sessionUpdate === 'tool_call');
+    const consumerDecisions = consumerTurns.filter((turn) => (turn.tools?.length ?? 0) > 0).map((turn) => turn.decision?.tool ?? null).filter(Boolean);
+    const consumerNameById = new Map();
+    consumerCalls.forEach((call, index) => {
+      const name = consumerDecisions[index] ?? call.title;
+      if (typeof call.toolCallId === 'string' && typeof name === 'string') consumerNameById.set(call.toolCallId, name);
     });
-    const negativeState = await readJson(stateFile(negativeTaskId));
-    assert(negativeState?.revert?.ok === true, 'negative ' + variant.label + ' did not prove trial cleanup');
-    assert(!(await readJson(publishedFile))?.plugins?.some((row) => row.experimentId === negative.experimentId), 'negative ' + variant.label + ' was published');
-    evidence.negatives.push({ variant: variant.label, taskId: negativeTaskId, experimentId: negative.experimentId, phase: negative.phase, error: negative.error, gates: negative.gates, decision: negative.decision, revert: negativeState.revert });
+    const consumerReadResults = consumerUpdates
+      .filter((update) => update.sessionUpdate === 'tool_call_update' && consumerNameById.get(update.toolCallId) === 'read')
+      .map(toolUpdateText);
+    assert(consumerTurns.every((turn) => turn.ok === true), 'a fresh consumer model turn failed');
+    const matchedSentinels = sentinels.filter((sentinel) => consumerText.includes(sentinel)).length;
+    assert(matchedSentinels === sentinels.length, 'the fresh consumer answered ' + matchedSentinels + '/' + sentinels.length + ' expected values');
+    assert(consumerReadResults.length >= 1, 'the fresh consumer never used the read tool');
+    assert(sentinels.every((sentinel) => consumerReadResults.some((text) => text.includes(sentinel))), 'the promoted policy did not deliver the complete read line in the fresh consumer');
+    assert(!consumerReadResults.some((text) => text.includes('line truncated')), 'a fresh consumer read result was still truncated');
+    const consumerUsage = usageTotals(consumerTurns);
+    evidence.freshConsumer = {
+      taskId,
+      modelTurns: consumerTurns.filter((turn) => (turn.tools?.length ?? 0) > 0).length,
+      toolCalls: consumerTurns.filter((turn) => turn.decision?.tool).length,
+      tokens: consumerUsage.inputTokens + consumerUsage.outputTokens + consumerUsage.cacheReadTokens,
+      wallMs: consumerWall,
+      correct: true,
+      readResultsContainAllSentinels: true,
+      answerSha256: sha(consumerText),
+      transport: 'real model inference through model-bridge.mjs; the real promoted consumer mounted the policy',
+    };
+  } finally {
+    await bridge.close();
   }
-  evidence.steps.push({ name: 'negative-artifacts-rejected', at: new Date().toISOString() });
+  evidence.steps.push({ name: 'fresh-consumer-functional-reuse', at: new Date().toISOString() });
 
   await stopDesktop(desktop);
   desktop = null;
   const beforeRestartIndex = await readJson(publishedFile);
-  desktop = await startDesktop('desktop-live', electronInit, { TASK_BENEFIT_PLAN_RECEIPT: receiptFile });
+  const resolvedReceiptFile = path.join(work, 'plan-resolved.json');
+  desktop = await startDesktop('desktop-live', electronInit, { TASK_BENEFIT_PLAN_RECEIPT: resolvedReceiptFile });
   const secondReady = await waitFor(async () => {
     const ready = await liveHost();
     return ready !== null && ready.instanceId !== firstReady.instanceId ? ready : null;
@@ -610,8 +614,26 @@ try {
   const afterRestart = await readJson(stateFile(taskId));
   assert(afterRestart?.phase === 'stable', 'terminal state changed after restart: ' + afterRestart?.phase);
   assert(JSON.stringify(await readJson(publishedFile)) === JSON.stringify(beforeRestartIndex), 'publication changed after restart');
-  evidence.restart = { previousInstanceId: firstReady.instanceId, nextInstanceId: secondReady.instanceId, terminalPreserved: true, publicationPreserved: true };
-  evidence.steps.push({ name: 'restart-preserved', at: new Date().toISOString() });
+  // The adopted conclusion must name the same problem identity the plan
+  // proposed, or the next planner run would still propose the fixed loss.
+  const resolvedReceipt = await waitFor(() => readJson(resolvedReceiptFile), { timeoutMs: 180_000, what: 'resolved plan receipt' });
+  assert(resolvedReceipt.ok === true, 'the resolved plan probe failed: ' + resolvedReceipt.error);
+  const resolvedPlan = resolvedReceipt.plan ?? {};
+  const stillSelected = resolvedPlan.selected?.problemKey === selection.problemKey;
+  const rejected = (resolvedPlan.rejected ?? []).some((row) => row.problemKey === selection.problemKey && row.reason === 'already-resolved');
+  assert(!stillSelected || rejected, 'the planner still proposes the resolved degradation ' + selection.problemKey);
+  evidence.restart = {
+    previousInstanceId: firstReady.instanceId,
+    nextInstanceId: secondReady.instanceId,
+    terminalPreserved: true,
+    publicationPreserved: true,
+    plannerResolved: {
+      selected: resolvedPlan.selected?.problemKey ?? null,
+      rejected,
+      none: resolvedPlan.none?.reason ?? null,
+    },
+  };
+  evidence.steps.push({ name: 'restart-preserved-and-planner-resolved', at: new Date().toISOString() });
 
   evidence.ok = true;
 } catch (error) {

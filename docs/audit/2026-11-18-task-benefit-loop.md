@@ -13,14 +13,14 @@
 2. **一个真实损失场景完成了闭环。** 官方 `read` 把生成配置的 3,147 字符首行截断到 2,000 字符，
    baseline 会话每次都额外调用 `bash` 恢复；候选 context-policy 在
    `tools/post-execute` 中补全该行。真实 paired 结果：
-   turns 15→12（-20%）、tool calls 12→9（-25%）、token 490,855→395,397（-19.4%）、
-   墙钟 114.4s→74.1s（-35.2%），两侧正确率 3/3。单侧会话仍有方差：第二轮 baseline-2
-   直接走 read→read→bash，token 128,033，低于 candidate-2 的 131,544；聚合方向与
-   turns/tool calls 仍由候选侧胜出。
-3. **发现来自真实记录，不是预先写死的场景。** baseline 会话把 8 次 `line-truncated` 退化写入
+   turns 15→12（-20%）、tool calls 12→9（-25%）、token 490,850→397,968（-18.9%）、
+   墙钟 103.6s→41.3s（-60.1%），两侧正确率 3/3。早先一轮的 baseline 出现过直接
+   read→read→bash 的更省 token 路径，聚合方向与 turns/tool calls 仍由候选侧胜出；
+   单会话方差在 §6 如实保留。
+3. **发现来自真实记录，不是预先写死的场景。** baseline 会话把 9 次 `line-truncated` 退化写入
    隔离共享经验库；Desktop 内的只读探针调用生产 `evolution_plan`，返回
-   `tool read`、loss `line-truncated`、8 次损失、3 次恢复调用、平均 0.38 次、可恢复，
-   score 0.825，并自动要求 workflow 证据。
+   `tool read`、loss `line-truncated`、9 次损失、3 次恢复调用、平均 0.33 次、可恢复，
+   score 0.8222，并自动要求 workflow 证据。
 4. **门禁、功能复验与负证据都按预期工作。** Trial 挂载后 `functionalCheck` 通过；
    `taskBenefit`/workflowBenefit 等门禁通过；无确认不晋升；绑定确认后 canary 的两次功能复验
    都通过并 stable、发布到 `acp`；新 ACP 进程自动挂载并用真实模型再次完成同一任务。
@@ -63,15 +63,15 @@ live same-process claim、live foreign process、startup recovery re-read 三类
 
 | 会话 | 侧 | 正确 | turns | tool calls | 工具序列 | token | 墙钟 |
 | --- | --- | ---: | ---: | ---: | --- | ---: | ---: |
-| 1 | baseline | 是 | 6 | 5 | read, read, read, grep, bash | 199,035 | 46.0s |
-| 2 | baseline | 是 | 4 | 3 | read, read, bash | 128,033 | 35.5s |
-| 3 | baseline | 是 | 5 | 4 | read, read, read, bash | 163,787 | 33.0s |
-| 1 | candidate | 是 | 4 | 3 | read, read, read | 131,534 | 24.1s |
-| 2 | candidate | 是 | 4 | 3 | read, read, read | 131,544 | 15.6s |
-| 3 | candidate | 是 | 4 | 3 | read, read, read | 132,319 | 34.4s |
+| 1 | baseline | 是 | 5 | 4 | read, read, read, bash | 163,971 | 43.9s |
+| 2 | baseline | 是 | 5 | 4 | read, read, read, bash | 164,093 | 25.4s |
+| 3 | baseline | 是 | 5 | 4 | read, bash, read, read | 162,786 | 34.4s |
+| 1 | candidate | 是 | 4 | 3 | read, read, read | 132,595 | 14.4s |
+| 2 | candidate | 是 | 4 | 3 | read, read, read | 132,703 | 12.3s |
+| 3 | candidate | 是 | 4 | 3 | read, read, read | 132,670 | 14.7s |
 
-汇总：baseline 15 turns / 12 calls / 490,855 tokens / 114.4s；
-candidate 12 turns / 9 calls / 395,397 tokens / 74.1s。两侧 failures 均为 0，
+汇总：baseline 15 turns / 12 calls / 490,850 tokens / 103.6s；
+candidate 12 turns / 9 calls / 397,968 tokens / 41.3s。两侧 failures 均为 0，
 candidate 的 `sessionsExercised` 为 3/3。baseline 的三个 `read` 结果各为 2,216 字符并带
 `line truncated to 2000 chars`；candidate 的三个结果各为 3,329 字符且包含完整 sentinel。
 token 来自模型账单（input + output + cache.read），fixture 的 sentinel 每轮随机生成，
@@ -80,19 +80,21 @@ token 来自模型账单（input + output + cache.read），fixture 的 sentinel
 ## 5. 发现、门禁与负证据
 
 - **发现**：生产 `evolution_plan` 选中 `tool read`，loss `{kinds:['line-truncated'],
-  occurrences:8, recoveryCalls:3, averageRecoveryCalls:0.38, recoveryTools:['bash'],
+  occurrences:9, recoveryCalls:3, averageRecoveryCalls:0.33, recoveryTools:['bash'],
   recoverable:true}`，`attribution:classified`，`benefitModel:{kind:'workflow'}`。
   3 次恢复分别来自 baseline-1 的 `grep` 与 baseline-2/3 的 `bash`；投影保留最近一次
   观测到的恢复工具（`bash`），计数来自指标累加，说明恢复成本按真实路径计而不是按固定假设计。
-- **Trial 功能复验**：`read` 在 Trial 内返回完整首行（3,639 字符的 envelope），
-  `matched:true`；两个 canary 观测同样通过。
+- **Trial 功能复验**：挂载前同一调用返回截断结果（2,350 字符，`matched:false`），
+  Trial 内返回完整首行（3,639 字符，`matched:true`），两个 canary 观测同样通过；
+  空实现或基线已满足期望值的候选不能通过。
 - **门禁**：stable 后 10 项全为 true（含 `runtimeRecovered`、`workflowBenefit`、
   `taskBenefit`），decision `benefit` / source `canary-passed`；发布记录
-  `evolution-promoted-07403462c061`，仅 `acp`，源码摘要
-  `b4d284e48ed56fce1fe7b3ef175dc7f950a7e20452d4c6f1ee4f359ef1c42940`。
+  `evolution-promoted-c48a8efc4a31`，仅 `acp`，源码摘要
+  `51263571616a44c12563d8a796d53dd1163d0bcd2482567b0a23e76c8cd633b5`。
 - **无确认不晋升**：在 owner gate 等待 5s 后仍是 `awaiting-owner-confirmation`，发布索引字节不变。
-- **fresh consumer**：新 ACP 进程自动挂载，同一真实模型任务 4 turns / 3 calls / 132,574 tokens /
-  36.1s 正确完成；三个 `read` 结果都包含完整 sentinel，没有截断。
+- **fresh consumer**：新 ACP 进程自动挂载，同一真实模型任务 4 turns / 3 calls / 132,587 tokens /
+  15.6s 正确完成；三个 `read` 结果都包含完整 sentinel，没有截断；证据只存答案 sha256，
+  不存失败时的模型正文。
 - **负证据**：
 
 | 变体 | 结果 | 错误码 | Trial 回滚 | 发布 |
@@ -113,10 +115,29 @@ token、墙钟均低于 baseline，且两侧全对。
 | 运行 | baseline turns/calls/tokens/时间 | candidate turns/calls/tokens/时间 |
 | --- | --- | --- |
 | 第一轮 | 16 / 13 / 525,316 / 101.5s | 12 / 9 / 394,662 / 55.6s |
-| 第二轮（提交的证据） | 15 / 12 / 490,855 / 114.4s | 12 / 9 / 395,397 / 74.1s |
+| 第二轮 | 15 / 12 / 490,855 / 114.4s | 12 / 9 / 395,397 / 74.1s |
+| 第三轮（提交的证据） | 15 / 12 / 490,850 / 103.6s | 12 / 9 / 397,968 / 41.3s |
 
-两轮都通过同一组门禁、功能复验、fresh consumer 与四种负证据；第二轮证据包含 owner
-confirmation 投影，写入 `docs/evidence/task-benefit-0.2.2-rc.3-20261118.json`。
+三轮都通过同一组门禁、功能复验、fresh consumer 与四种负证据；第三轮证据包含
+owner confirmation 投影、挂载前功能基线与 "planner 已解决" 断言，写入
+`docs/evidence/task-benefit-0.2.2-rc.3-20261118.json`。
+
+## 7. 独立审核后的修复
+
+第一轮 GPT-6.2 Sol（High）审核提出 4 个 blocker、5 个 should、1 个 nit；本轮逐项修复并补回归：
+
+- S1：功能复验新增挂载前基线，要求同一调用在候选挂载前**不**满足期望值；否则拒绝 Trial。
+- S2：提案目标改为 planner 发现的问题身份 `tool read`（插件名保持独立）；晋升后重启 Desktop
+  再跑 planner，断言原候选已 `already-resolved`。
+- S3：任一决策轮缺少真实 usage 时整轮 incomplete，不能把缺失账单记为零。
+- S4：runner 与 producer 都先解析真实路径再检查隔离，拒绝临时目录中指向正式 `DSH_HOME`
+  的符号链接。
+- S5：按 ACP 最终状态统计工具失败；只有成功的 `read` 结果算 adoption 证据。
+- S6：恢复成本只关联成功的同路径 re-read 或成功的 bash/run_code/grep；失败调用、其他文件
+  的普通 read 与非数据工具不计；每轮只记一次。
+- S7：错误来源与退化模式分开，`FS_NOT_FOUND` 不再把 9 次截断判成 caller-input 而丢弃。
+- S8/S9：fresh consumer 的 bridge 在 finally 关闭；失败时不把模型正文写入证据。
+- S10：删除未使用的 `--resume` 入口。
 
 ## 7. 对日常工作价值的判断
 
