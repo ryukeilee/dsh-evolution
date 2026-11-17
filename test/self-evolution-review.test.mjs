@@ -890,20 +890,52 @@ test('a paired workflow comparison stays an experiment benefit', async (t) => {
   assert.equal(record.value.tier, 'experiment-benefit');
 });
 
-test('the pre-comparison probe shape is a capability self-test, not a workflow benefit', async (t) => {
+test('the pre-comparison probe shape is classified by its baseline failure codes', async (t) => {
   const env = await fixture(t, 'provenance-legacy-probe');
   await writeConsumers(env);
   await writeEvidence(env, {
     solvesProblem: true,
-    probe: { scenarioId: 'readonly-git-file-HEAD-package', baseline: { errors: 2 }, candidate: { errors: 0 } },
+    probe: {
+      scenarioId: 'readonly-git-file-HEAD-package',
+      comparison: {
+        benefit: true,
+        before: { executions: 2, successes: 0, perStep: [{ index: 0, step: 'readonly_git_file', role: 'target', codes: ['E_EVOLUTION_PROBE_CAPABILITY_ABSENT'] }] },
+        after: { executions: 2, successes: 2, perStep: [{ index: 0, step: 'readonly_git_file', role: 'target', codes: [] }] },
+      },
+    },
     observationWindow: 'probe:readonly-git-file-HEAD-package',
     benefitEvidence: 'probe readonly-git-file-HEAD-package: candidate 2/2 vs baseline 0/2',
   });
   const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST });
   const [record] = result.records;
-  assert.equal(record.value.benefitProvenance, 'capability-self-test');
+  assert.equal(record.value.benefitProvenance, 'capability-self-test', 'the baseline only recorded that the tool was absent');
   assert.equal(record.value.experimentBenefit, false);
   // No usage row was supplied: the tier must stay unknown rather than assume 0.
   assert.equal(record.value.tier, 'usage-unknown');
   assert.equal(result.retirementCandidates.length, 0);
+});
+
+test('a pre-comparison probe whose baseline ran and failed is a workflow benefit', async (t) => {
+  const env = await fixture(t, 'provenance-legacy-workflow');
+  await writeConsumers(env);
+  await writeEvidence(env, {
+    solvesProblem: true,
+    probe: {
+      scenarioId: 'read-complete-line',
+      comparison: {
+        benefit: true,
+        before: { executions: 3, successes: 1, perStep: [{ index: 0, step: 'read', role: 'target', codes: ['E_EVOLUTION_PROBE_INCORRECT'] }] },
+        after: { executions: 3, successes: 3, perStep: [{ index: 0, step: 'read', role: 'target', codes: [] }] },
+      },
+    },
+    observationWindow: 'probe:read-complete-line',
+  });
+  const usage = { source: 'session-evidence', records: { [RECORD_ID]: {
+    workflowInvocations: 0, verificationInvocations: 0, capabilityAssessment: 'self-contained',
+  } } };
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
+  const [record] = result.records;
+  assert.equal(record.value.benefitProvenance, 'paired-workflow');
+  assert.equal(record.value.experimentBenefit, true);
+  assert.equal(record.value.tier, 'experiment-benefit');
 });
