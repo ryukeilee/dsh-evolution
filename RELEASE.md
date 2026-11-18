@@ -2,7 +2,7 @@
 
 本文件记录 `dsh-evolution` 当前稳定版的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前版本：`0.2.12`——`0.2.11` 的稳定后继：把自我进化从“要求真实成对会话证据”推进到“在真实宿主与真实模型上产生、批准并复用可复核的任务收益”。相对 `0.2.11` 固定产物的分发内容改 `lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/error-boundary.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/experience-recall.js`、`lib/orchestrator.js`、`lib/registration.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`，加上版本号与随包文档；宿主集合、持久化 schema 与 schema 版本、工具名、授权来源、八项晋升门禁的既有判定、Cordis 信任根、`engines` 与 `peerDependencies`（六个宿主）不变，工具参数只新增可选字段（`evolution_propose.improvement`、`evolution_measure.taskId`、observation 的 `taskBenefit`、context-policy 计划的 `verification.functionalCheck`）。已有三个 stable 插件、历史共享经验与生产数据不迁移、不下线。六个官方宿主针对本版本的固定产物重新验收并重新固定；真实 taskBenefit 闭环只在隔离 `DSH_HOME`、真实 Desktop/ACP 宿主与真实模型上取证，不写正式数据。`0.2.2-rc.1` / `rc.2` / `rc.3` 仍须关闭宿主 HMR，因为 `dsh-hmr/lib/index.js` 在三个版本间逐字节相同，上游启动窗口缺口没有变化。
+当前版本：`0.2.12`——`0.2.11` 的稳定后继：把自我进化从“要求真实成对会话证据”推进到“在真实宿主与真实模型上产生、批准并复用可复核的任务收益”。相对 `0.2.11` 固定产物的分发内容改 `lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/error-boundary.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/experience-recall.js`、`lib/orchestrator.js`、`lib/registration.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`，加上版本号与随包文档；宿主集合、持久化 schema 与 schema 版本、工具名、授权来源、八项晋升门禁的既有判定、Cordis 信任根、`engines` 与 `peerDependencies`（六个宿主）不变，工具参数新增 `evolution_propose.improvement`、`evolution_measure.taskId` 与 observation 的 `taskBenefit` 三个可选字段；context-policy 计划的 `verification.functionalCheck` 是必填项，workflow 与 context-policy 晋升都必须提交成对真实会话的 `taskBenefit` 证据。已有三个 stable 插件、历史共享经验与生产数据不迁移、不下线。六个官方宿主针对本版本的固定产物重新验收并重新固定；真实 taskBenefit 闭环只在隔离 `DSH_HOME`、真实 Desktop/ACP 宿主与真实模型上取证，不写正式数据。`0.2.2-rc.1` / `rc.2` / `rc.3` 仍须关闭宿主 HMR，因为 `dsh-hmr/lib/index.js` 在三个版本间逐字节相同，上游启动窗口缺口没有变化。
 
 `0.2.11` 是 `0.2.10` 的稳定后继：把自我进化收益判断建立在真实失败分母、可靠归因与可验证收益上。相对 `0.2.10` 固定产物的分发内容改 `lib/experience-collector.js`、`lib/shared-experience.js`、`lib/experience-recall.js`、`lib/experience-plan.js`、`lib/orchestrator.js`、`lib/registration.js`、`lib/guard.js`、`lib/desktop-task-protocol.js`、`lib/desktop-task-host.js`、`lib/desktop-task-client.js` 与 `lib/cordis-compat.js`，加上版本号与随包文档；持久化 schema 与 schema 版本、工具名 / 参数结构、授权来源、八项晋升门禁、Cordis 信任根、`engines` 与 `peerDependencies`（六个宿主）不变。已有三个 stable 插件、历史共享经验与生产数据不迁移、不下线。六个官方宿主针对本版本的固定产物重新验收并重新固定。`0.2.2-rc.1` / `rc.2` / `rc.3` 仍须关闭宿主 HMR，因为 `dsh-hmr/lib/index.js` 在三个版本间逐字节相同，上游启动窗口缺口没有变化。
 
@@ -45,7 +45,7 @@
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
 
-`v0.2.12` 是 `v0.2.11` 的稳定后继：分发内容把统一失败归因、可降级收益门禁、真实失败率排序、stable 插件价值维度、taskBenefit 门禁与 producer、context-policy 功能复验、非错误退化观测固定下来，六个宿主针对它的固定产物重新验收，Release 以正式版（非 Draft、非 Pre-release、Latest）公开；`v0.2.11` 的 tag、Release 与附件原样保留、未被覆盖。
+`v0.2.12` 是 `v0.2.11` 的稳定后继：分发内容把统一失败归因、修复后的 workflow 收益门禁（Desktop 配对 workload 不再能被调用方的 `capability` 声明覆盖）、真实失败率排序、stable 插件价值维度、taskBenefit 门禁、context-policy 功能复验与非错误退化观测固定下来；producer 与闭环 runner 属于源码仓库的隔离验收脚本，不随 tarball 分发。六个宿主针对它的固定产物重新验收；正式 Release 在合并后由 tag 触发并以正式版（非 Draft、非 Pre-release、Latest）公开，本 PR 只固定字节与验收证据。`v0.2.11` 的 tag、Release 与附件原样保留、未被覆盖。
 
 `v0.2.11` 是 `v0.2.10` 的稳定后继：分发内容把真实分母、失败归因、诚实收益来源与 Desktop 配对工作流证据固定下来，六个宿主针对它的固定产物重新验收，Release 以正式版（非 Draft、非 Pre-release、Latest）公开；`v0.2.10` 的 tag、Release 与附件原样保留、未被覆盖。
 
@@ -166,6 +166,8 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.3 --no-hmr --exp
 ### 4.1 已执行的验收记录
 
 六个官方宿主针对 `0.2.12` 固定产物完成验收（`0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` 为 `--no-hmr --experience-evolution`，各 25/25；其余各 21/21），最终 doctor 均为 `healthy`、退出码为 0。固定点的宿主验收记录保存在上列六个 `docs/evidence/dsh-<host>.json` 文件中（`0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` 为 `--no-hmr`）。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
+
+`0.2.12` 的 task-coupled 收益闭环在隔离 `DSH_HOME`、真实 Desktop / ACP 宿主与真实模型上用本版本固定产物复跑，证据写入 `docs/evidence/task-benefit-0.2.12-20261118.json`；它不写正式数据，也不替代六宿主安装验收。
 
 `0.2.9` 还在**正式**（非隔离）ACP profile 上做了多会话验收：一个 live 会话挂载两个已发布 stable 插件（探针回执证明工具注册与可调用），一个在 Include 启动/挂载窗口被关闭的短命会话不得覆盖它的 `active` 报告，read-side review 不产生 `restart-consumer`；记录见 `docs/evidence/promoted-consumer-real-acp-0.2.9.json`（本地 home 路径已脱敏）。它只读隔离验收的同一条 consumer 代码路径，不替代五宿主验收。
 

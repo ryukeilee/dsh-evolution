@@ -14,7 +14,7 @@
 
 ## 30 秒了解
 
-本版本把自我进化收益的判断推进到真实任务：workflow 收益必须有同一任务、同一模型、无候选 vs 有候选各 ≥3 次的真实会话证据（`taskBenefit` 门禁），并绑定候选 Host 源码摘要与 DSH/Cordis 版本；`scripts/acceptance/task-benefit.mjs` 在隔离 home 中用真实 ACP 宿主与真实模型生产该证据，`run-task-benefit-loop.mjs` 跑完整闭环并在 fresh consumer 上验证自动复用。probe 继续区分 `capability-self-test` 与 `workflow`：单工具前后对照只算 `tool-improvement`，只有成对真实会话或 paired workload 才算 workflow；context-policy 计划必须声明可重放的 `verification.functionalCheck`（`read` / `glob` / `grep`），安装成功本身不算生效。collector 另外记录 `line-truncated` / `output-capped` 这类非错误退化（只认官方 footer），planner 按损失频率、恢复成本与可恢复性排序。Desktop 的 `evolution_plan` 与 ACP 的 `evolution_desktop` 只读 `audit` 仍先分类已发布 stable 插件、再排序经验候选、最后给出有序 `selfEvolution.nextActions`；检查不写发布索引、不启动 Trial、不批准晋升。三个已发布 stable 插件、已有共享经验与生产数据都保持不变。`0.2.2-rc.1` / `rc.2` / `rc.3` 需要关闭宿主 HMR，见下文。已有 schema 1 共享经验库在普通启动下继续保持原布局、不会被自动迁移。
+本版本把自我进化收益的判断推进到真实任务：workflow 收益必须有同一任务、同一模型、无候选 vs 有候选各 ≥3 次的真实会话证据（`taskBenefit` 门禁），并绑定候选 Host 源码摘要与 DSH/Cordis 版本；`scripts/acceptance/task-benefit.mjs` 在隔离 home 中用真实 ACP 宿主与真实模型生产该证据（源码仓库脚本，不随 tarball 分发），`run-task-benefit-loop.mjs` 跑完整闭环并在 fresh consumer 上验证自动复用。probe 继续区分 `capability-self-test` 与 `workflow`：单工具前后对照只算 `tool-improvement`；paired workload 只提供 `workflowBenefit` 证据，workflow 与 context-policy 晋升还必须通过 `taskBenefit`（同一任务、同一模型的成对真实会话）；context-policy 计划必须声明可重放的 `verification.functionalCheck`（`read` / `glob` / `grep`），安装成功本身不算生效。collector 另外记录 `line-truncated` / `output-capped` 这类非错误退化（只认官方 footer），planner 按损失频率、恢复成本与可恢复性排序。Desktop 的 `evolution_plan` 与 ACP 的 `evolution_desktop` 只读 `audit` 仍先分类已发布 stable 插件、再排序经验候选、最后给出有序 `selfEvolution.nextActions`；检查不写发布索引、不启动 Trial、不批准晋升。三个已发布 stable 插件、已有共享经验与生产数据都保持不变。`0.2.2-rc.1` / `rc.2` / `rc.3` 需要关闭宿主 HMR，见下文。已有 schema 1 共享经验库在普通启动下继续保持原布局、不会被自动迁移。
 
 ### Desktop、ACP、Web 共用经验
 
