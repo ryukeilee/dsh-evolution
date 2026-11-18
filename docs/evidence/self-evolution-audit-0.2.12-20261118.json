@@ -1,0 +1,679 @@
+{
+  "ok": true,
+  "action": "audit",
+  "readOnly": true,
+  "host": {
+    "profile": "acp",
+    "dsh": "0.2.2-rc.3",
+    "cordis": "4.1.0",
+    "include": "1.1.0",
+    "node": "v24.21.0",
+    "capturedAt": "2026-11-18T00:55:25.982Z"
+  },
+  "stable": {
+    "kind": "dsh-evolution-self-evolution-review",
+    "readOnly": true,
+    "indexStatus": "ok",
+    "indexUpdatedAt": "2026-11-15T11:20:33.394Z",
+    "disableStatus": "absent",
+    "indexRecordCount": 3,
+    "truncated": false,
+    "host": {
+      "profile": "acp",
+      "dsh": "0.2.2-rc.3",
+      "cordis": "4.1.0",
+      "include": "1.1.0",
+      "node": "v24.21.0"
+    },
+    "records": [
+      {
+        "id": "evolution-promoted-af973a3eea01",
+        "experimentId": "exp-mwd39c0i-2-8da498be",
+        "pluginName": "dsh-evolution-promoted-af973a3eea01",
+        "approvedProfiles": [
+          "acp",
+          "web"
+        ],
+        "status": "active",
+        "action": null,
+        "source": "verified",
+        "hostCompatible": true,
+        "hostReason": null,
+        "revalidationGenerations": 2,
+        "publishedAt": "2026-11-12T05:14:04.083Z",
+        "host": {
+          "dsh": "0.2.2-rc.3",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0",
+          "verifiedAt": "2026-11-15T10:59:24.407Z"
+        },
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          },
+          {
+            "profile": "web",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "reasons": []
+      },
+      {
+        "id": "evolution-promoted-e82a216992bb",
+        "experimentId": "exp-mwe07k7f-4-d95e11ad",
+        "pluginName": "dsh-evolution-promoted-e82a216992bb",
+        "approvedProfiles": [
+          "acp"
+        ],
+        "status": "active",
+        "action": null,
+        "source": "verified",
+        "hostCompatible": true,
+        "hostReason": null,
+        "revalidationGenerations": 1,
+        "publishedAt": "2026-11-12T20:35:34.241Z",
+        "host": {
+          "dsh": "0.2.2-rc.3",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0",
+          "verifiedAt": "2026-11-15T10:59:24.419Z"
+        },
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "reasons": []
+      },
+      {
+        "id": "evolution-promoted-2794ab16d2b3",
+        "experimentId": "exp-mwhq9zod-1-398ad801",
+        "pluginName": "dsh-evolution-promoted-2794ab16d2b3",
+        "approvedProfiles": [
+          "acp"
+        ],
+        "status": "active",
+        "action": null,
+        "source": "verified",
+        "hostCompatible": true,
+        "hostReason": null,
+        "revalidationGenerations": 0,
+        "publishedAt": "2026-11-15T11:20:33.393Z",
+        "host": {
+          "dsh": "0.2.2-rc.3",
+          "cordis": "4.1.0",
+          "include": "1.1.0",
+          "node": "v24.21.0",
+          "verifiedAt": "2026-11-15T11:20:33.134Z"
+        },
+        "profiles": [
+          {
+            "profile": "acp",
+            "status": "active",
+            "reason": null,
+            "current": true
+          }
+        ],
+        "reasons": []
+      }
+    ],
+    "invalidRecords": [],
+    "consumers": {
+      "acp": {
+        "status": "ok",
+        "updatedAt": "2026-11-18T00:44:51.165Z",
+        "observedIndexUpdatedAt": "2026-11-15T11:20:33.394Z",
+        "needsRestart": false,
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-18T00:44:51.164Z"
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-18T00:44:51.165Z"
+          },
+          {
+            "id": "evolution-promoted-2794ab16d2b3",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-18T00:44:51.165Z"
+          }
+        ]
+      },
+      "web": {
+        "status": "ok",
+        "updatedAt": "2026-11-15T11:21:20.233Z",
+        "observedIndexUpdatedAt": "2026-11-15T11:20:33.394Z",
+        "needsRestart": false,
+        "rows": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "activatedAt": "2026-11-15T11:21:20.233Z"
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "skipped-unapproved",
+            "reason": "profile-not-approved",
+            "activatedAt": null
+          },
+          {
+            "id": "evolution-promoted-2794ab16d2b3",
+            "status": "skipped-unapproved",
+            "reason": "profile-not-approved",
+            "activatedAt": null
+          }
+        ]
+      }
+    },
+    "summary": {
+      "total": 3,
+      "active": 3,
+      "pendingRevalidation": 0,
+      "incompatible": 0,
+      "restartRequired": 0,
+      "hostUnavailable": 0,
+      "inactive": 0,
+      "invalid": 0,
+      "sourceUnusable": 0,
+      "blocked": 0,
+      "verifyHost": 0
+    },
+    "nextActions": [],
+    "nextActionsDropped": 0,
+    "status": "active"
+  },
+  "experience": {
+    "available": true,
+    "applicability": {
+      "dsh": "0.2.2-rc.3",
+      "cordis": "4.1.0",
+      "evolution": "0.2.12"
+    },
+    "applicabilityVerified": true,
+    "selected": {
+      "problemKey": "tool run code",
+      "problem": "tool run code",
+      "occurrences": 129,
+      "failureModes": [
+        "code run failure"
+      ],
+      "attribution": "classified",
+      "origin": "unknown",
+      "observedAttempts": 739,
+      "observedSuccesses": 717,
+      "observedFailureRate": 0.0298,
+      "rateBasis": "observed-window",
+      "benefitModel": {
+        "kind": "workflow",
+        "metric": "failureRate"
+      },
+      "regressionCount": 0,
+      "firstSeen": "2026-11-12T15:46:51.347Z",
+      "lastSeen": "2026-11-18T00:50:30.287Z",
+      "evidenceRefs": [
+        "observations:2d83dc491b255883620948c1e6a0e46bd27d5b624482f093a7264234fca71c7c",
+        "observations:3b729a6adca4b8e421c495195c8820a886687305e5228023bcd04c20f05531d9",
+        "observations:6c7fd34eb3838546628b6a7d3650c000805e93bdbfe687e8e2e48054069c7547"
+      ],
+      "priorAttempts": [],
+      "provenIneffective": [],
+      "knownResolution": null,
+      "applicability": {
+        "dsh": "0.2.2-rc.3",
+        "cordis": "4.1.0",
+        "evolution": "0.2.12"
+      },
+      "applicabilityVerified": true,
+      "requiresNewHypothesis": false,
+      "risk": "low",
+      "whyCordisPlugin": "通过官方 Cordis 工具注册补齐缺失能力，再以隔离 Trial 验证。",
+      "expectedImprovement": "提高 tool run code 的 successRate 并降低 errorCount；probeControlStable 对照不得回归。",
+      "acceptanceMetrics": [
+        {
+          "name": "successRate",
+          "direction": "higher"
+        },
+        {
+          "name": "errorCount",
+          "direction": "lower"
+        },
+        {
+          "name": "probeControlStable",
+          "direction": "stable"
+        }
+      ],
+      "rollbackConditions": [
+        "任一 acceptance metric 相比基线变差时回滚 tool run code 的变更",
+        "probeControlStable 出现回归时立即回滚",
+        "dispose 后运行时恢复校验未通过时回滚并保留现场"
+      ],
+      "score": 0.75
+    },
+    "candidates": [
+      {
+        "problemKey": "tool run code",
+        "problem": "tool run code",
+        "occurrences": 129,
+        "failureModes": [
+          "code run failure"
+        ],
+        "attribution": "classified",
+        "origin": "unknown",
+        "observedAttempts": 739,
+        "observedSuccesses": 717,
+        "observedFailureRate": 0.0298,
+        "rateBasis": "observed-window",
+        "benefitModel": {
+          "kind": "workflow",
+          "metric": "failureRate"
+        },
+        "regressionCount": 0,
+        "firstSeen": "2026-11-12T15:46:51.347Z",
+        "lastSeen": "2026-11-18T00:50:30.287Z",
+        "evidenceRefs": [
+          "observations:2d83dc491b255883620948c1e6a0e46bd27d5b624482f093a7264234fca71c7c",
+          "observations:3b729a6adca4b8e421c495195c8820a886687305e5228023bcd04c20f05531d9",
+          "observations:6c7fd34eb3838546628b6a7d3650c000805e93bdbfe687e8e2e48054069c7547"
+        ],
+        "priorAttempts": [],
+        "provenIneffective": [],
+        "knownResolution": null,
+        "applicability": {
+          "dsh": "0.2.2-rc.3",
+          "cordis": "4.1.0",
+          "evolution": "0.2.12"
+        },
+        "applicabilityVerified": true,
+        "requiresNewHypothesis": false,
+        "risk": "low",
+        "whyCordisPlugin": "通过官方 Cordis 工具注册补齐缺失能力，再以隔离 Trial 验证。",
+        "expectedImprovement": "提高 tool run code 的 successRate 并降低 errorCount；probeControlStable 对照不得回归。",
+        "acceptanceMetrics": [
+          {
+            "name": "successRate",
+            "direction": "higher"
+          },
+          {
+            "name": "errorCount",
+            "direction": "lower"
+          },
+          {
+            "name": "probeControlStable",
+            "direction": "stable"
+          }
+        ],
+        "rollbackConditions": [
+          "任一 acceptance metric 相比基线变差时回滚 tool run code 的变更",
+          "probeControlStable 出现回归时立即回滚",
+          "dispose 后运行时恢复校验未通过时回滚并保留现场"
+        ],
+        "score": 0.75
+      },
+      {
+        "problemKey": "tool bash",
+        "problem": "tool bash",
+        "occurrences": 97,
+        "failureModes": [
+          "aborted"
+        ],
+        "attribution": "classified",
+        "origin": "environment",
+        "observedAttempts": 90,
+        "observedSuccesses": 88,
+        "observedFailureRate": 0.0222,
+        "rateBasis": "observed-window",
+        "benefitModel": {
+          "kind": "workflow",
+          "metric": "failureRate"
+        },
+        "regressionCount": 0,
+        "firstSeen": "2026-11-10T18:46:16.966Z",
+        "lastSeen": "2026-11-17T22:35:09.282Z",
+        "evidenceRefs": [
+          "observations:9fb33ccc2bb3ff4706819c3004bc7cce0318dc0872fcee86e0bd0b6244901604",
+          "observations:25a0f3b6e3acca29995743d0920e70cd9e41be37e8339a9e1454940cbbccf536",
+          "observations:e45bdc86ba79e9010844e4e493fa2cd168ad5b4e5bed0cbf1046f30cba23be72"
+        ],
+        "priorAttempts": [],
+        "provenIneffective": [],
+        "knownResolution": null,
+        "applicability": {
+          "dsh": "0.2.2-rc.3",
+          "cordis": "4.1.0",
+          "evolution": "0.2.12"
+        },
+        "applicabilityVerified": true,
+        "requiresNewHypothesis": false,
+        "risk": "low",
+        "whyCordisPlugin": "通过官方 Cordis 工具注册补齐缺失能力，再以隔离 Trial 验证。",
+        "expectedImprovement": "提高 tool bash 的 successRate 并降低 errorCount；probeControlStable 对照不得回归。",
+        "acceptanceMetrics": [
+          {
+            "name": "successRate",
+            "direction": "higher"
+          },
+          {
+            "name": "errorCount",
+            "direction": "lower"
+          },
+          {
+            "name": "probeControlStable",
+            "direction": "stable"
+          }
+        ],
+        "rollbackConditions": [
+          "任一 acceptance metric 相比基线变差时回滚 tool bash 的变更",
+          "probeControlStable 出现回归时立即回滚",
+          "dispose 后运行时恢复校验未通过时回滚并保留现场"
+        ],
+        "score": 0.7494
+      },
+      {
+        "problemKey": "tool wait agent",
+        "problem": "tool wait agent",
+        "occurrences": 7,
+        "failureModes": [],
+        "attribution": "unattributed",
+        "origin": "unknown",
+        "observedAttempts": 0,
+        "observedSuccesses": 0,
+        "observedFailureRate": null,
+        "rateBasis": "failure-count-only",
+        "regressionCount": 0,
+        "firstSeen": "2026-11-12T18:00:01.448Z",
+        "lastSeen": "2026-11-17T13:40:33.231Z",
+        "evidenceRefs": [
+          "observations:3ebe3b53ae20b9bc965545b951b76d0c954c8eaeb30ae7f57ab438385fe9ee13",
+          "observations:fd5079b41462f19cfc94219cd34c60711c85a253fc6afab4d3b7e3d70b381c6c",
+          "observations:e16832a8df1dabe1cfa0ec854d2f11d117fbc8b4abb7ffc92e6f581073ec6f4a"
+        ],
+        "priorAttempts": [],
+        "provenIneffective": [],
+        "knownResolution": null,
+        "applicability": {
+          "dsh": "0.2.2-rc.3",
+          "cordis": "4.1.0",
+          "evolution": "0.2.12"
+        },
+        "applicabilityVerified": true,
+        "requiresNewHypothesis": false,
+        "risk": "low",
+        "whyCordisPlugin": "通过官方 Cordis 工具注册补齐缺失能力，再以隔离 Trial 验证。",
+        "expectedImprovement": "提高 tool wait agent 的 successRate 并降低 errorCount；probeControlStable 对照不得回归。",
+        "acceptanceMetrics": [
+          {
+            "name": "successRate",
+            "direction": "higher"
+          },
+          {
+            "name": "errorCount",
+            "direction": "lower"
+          },
+          {
+            "name": "probeControlStable",
+            "direction": "stable"
+          }
+        ],
+        "rollbackConditions": [
+          "任一 acceptance metric 相比基线变差时回滚 tool wait agent 的变更",
+          "probeControlStable 出现回归时立即回滚",
+          "dispose 后运行时恢复校验未通过时回滚并保留现场"
+        ],
+        "score": 0.6969
+      },
+      {
+        "problemKey": "tool edit",
+        "problem": "tool edit",
+        "occurrences": 7,
+        "failureModes": [],
+        "attribution": "unattributed",
+        "origin": "unknown",
+        "observedAttempts": 0,
+        "observedSuccesses": 0,
+        "observedFailureRate": null,
+        "rateBasis": "failure-count-only",
+        "regressionCount": 0,
+        "firstSeen": "2026-11-10T21:54:03.990Z",
+        "lastSeen": "2026-11-17T01:34:13.763Z",
+        "evidenceRefs": [
+          "observations:a6741adcd9578ce0c5c427e571d43ccc5dab7919366ddb60530ae217ff9117ec",
+          "observations:d6593e5116372edee12f0531607401124e5d5ee3255d81e2292d67268861a7ff",
+          "observations:1eddd2b70dd9c5fddb4010e93c923f9352ce7c548a81dbac13c74be163403ff2"
+        ],
+        "priorAttempts": [],
+        "provenIneffective": [],
+        "knownResolution": null,
+        "applicability": {
+          "dsh": "0.2.2-rc.3",
+          "cordis": "4.1.0",
+          "evolution": "0.2.12"
+        },
+        "applicabilityVerified": true,
+        "requiresNewHypothesis": false,
+        "risk": "low",
+        "whyCordisPlugin": "通过官方 Cordis 工具注册补齐缺失能力，再以隔离 Trial 验证。",
+        "expectedImprovement": "提高 tool edit 的 successRate 并降低 errorCount；probeControlStable 对照不得回归。",
+        "acceptanceMetrics": [
+          {
+            "name": "successRate",
+            "direction": "higher"
+          },
+          {
+            "name": "errorCount",
+            "direction": "lower"
+          },
+          {
+            "name": "probeControlStable",
+            "direction": "stable"
+          }
+        ],
+        "rollbackConditions": [
+          "任一 acceptance metric 相比基线变差时回滚 tool edit 的变更",
+          "probeControlStable 出现回归时立即回滚",
+          "dispose 后运行时恢复校验未通过时回滚并保留现场"
+        ],
+        "score": 0.6935
+      },
+      {
+        "problemKey": "tool mcp t3-code delegate task",
+        "problem": "tool mcp t3-code delegate task",
+        "occurrences": 10,
+        "failureModes": [],
+        "attribution": "unattributed",
+        "origin": "unknown",
+        "observedAttempts": 0,
+        "observedSuccesses": 0,
+        "observedFailureRate": null,
+        "rateBasis": "failure-count-only",
+        "regressionCount": 0,
+        "firstSeen": "2026-11-11T07:46:29.694Z",
+        "lastSeen": "2026-11-12T05:00:19.255Z",
+        "evidenceRefs": [
+          "observations:b0273112da8112ccfa738f2fa69bd7e3990dc604dc22518475689ab965047c34",
+          "observations:84c5e22abe7099749f42c88fdb3b278a34d590259efc7f716d52b446568ee0dc",
+          "observations:318aa6546f737994a316beb2e03fe873bdc52d7d977bf5b5636df4b9c5b5acbd"
+        ],
+        "priorAttempts": [],
+        "provenIneffective": [],
+        "knownResolution": null,
+        "applicability": {
+          "dsh": "0.2.2-rc.3",
+          "cordis": "4.1.0",
+          "evolution": "0.2.12"
+        },
+        "applicabilityVerified": true,
+        "requiresNewHypothesis": false,
+        "risk": "low",
+        "whyCordisPlugin": "通过官方 Cordis 工具注册补齐缺失能力，再以隔离 Trial 验证。",
+        "expectedImprovement": "提高 tool mcp t3-code delegate task 的 successRate 并降低 errorCount；probeControlStable 对照不得回归。",
+        "acceptanceMetrics": [
+          {
+            "name": "successRate",
+            "direction": "higher"
+          },
+          {
+            "name": "errorCount",
+            "direction": "lower"
+          },
+          {
+            "name": "probeControlStable",
+            "direction": "stable"
+          }
+        ],
+        "rollbackConditions": [
+          "任一 acceptance metric 相比基线变差时回滚 tool mcp t3-code delegate task 的变更",
+          "probeControlStable 出现回归时立即回滚",
+          "dispose 后运行时恢复校验未通过时回滚并保留现场"
+        ],
+        "score": 0.6611
+      }
+    ],
+    "none": null,
+    "rejected": [
+      {
+        "problemKey": "tool apply patch",
+        "reason": "caller-input",
+        "occurrences": 38,
+        "lastSeen": "2026-11-17T23:16:08.307Z",
+        "detail": "the recorded failure modes are caller input (arguments, edit context or unknown tool), not a capability gap"
+      },
+      {
+        "problemKey": "tool glob",
+        "reason": "insufficient-evidence",
+        "occurrences": 1,
+        "lastSeen": "2026-11-12T20:29:07.249Z",
+        "detail": "occurrences 1 < 3"
+      },
+      {
+        "problemKey": "tool job output",
+        "reason": "insufficient-evidence",
+        "occurrences": 2,
+        "lastSeen": "2026-11-13T05:01:33.327Z",
+        "detail": "occurrences 2 < 3"
+      },
+      {
+        "problemKey": "tool mcp t3-code link pull request",
+        "reason": "insufficient-evidence",
+        "occurrences": 1,
+        "lastSeen": "2026-11-12T04:34:25.251Z",
+        "detail": "occurrences 1 < 3"
+      },
+      {
+        "problemKey": "tool mcp t3-code preview open",
+        "reason": "insufficient-evidence",
+        "occurrences": 1,
+        "lastSeen": "2026-11-12T15:26:02.614Z",
+        "detail": "occurrences 1 < 3"
+      },
+      {
+        "problemKey": "tool mcp t3-code preview status",
+        "reason": "insufficient-evidence",
+        "occurrences": 1,
+        "lastSeen": "2026-11-12T16:07:23.063Z",
+        "detail": "occurrences 1 < 3"
+      },
+      {
+        "problemKey": "tool mcp t3-code t3 thread read",
+        "reason": "insufficient-evidence",
+        "occurrences": 1,
+        "lastSeen": "2026-11-12T05:43:34.496Z",
+        "detail": "occurrences 1 < 3"
+      },
+      {
+        "problemKey": "tool plugin manager",
+        "reason": "insufficient-evidence",
+        "occurrences": 1,
+        "lastSeen": "2026-11-14T08:07:46.691Z",
+        "detail": "occurrences 1 < 3"
+      },
+      {
+        "problemKey": "tool read",
+        "reason": "caller-input",
+        "occurrences": 23,
+        "lastSeen": "2026-11-17T22:13:32.233Z",
+        "detail": "the recorded failure modes are caller input (arguments, edit context or unknown tool), not a capability gap"
+      },
+      {
+        "problemKey": "tool readonly git file",
+        "reason": "insufficient-evidence",
+        "occurrences": 1,
+        "lastSeen": "2026-11-15T11:00:27.229Z",
+        "detail": "occurrences 1 < 3"
+      }
+    ],
+    "sources": {
+      "shared": 35,
+      "failureMemory": 0,
+      "truncated": false
+    },
+    "errors": []
+  },
+  "selfEvolution": {
+    "kind": "experience-candidate",
+    "primary": "experience-candidate",
+    "hasBlockingStableIssue": false,
+    "nextActions": [
+      {
+        "action": "experience-candidate",
+        "problemKey": "tool run code",
+        "why": "129 recorded occurrence(s); expected: 提高 tool run code 的 successRate 并降低 errorCount；probeControlStable 对照不得回归。",
+        "requiresNewHypothesis": false
+      }
+    ],
+    "stable": {
+      "status": "active",
+      "summary": {
+        "total": 3,
+        "active": 3,
+        "pendingRevalidation": 0,
+        "incompatible": 0,
+        "restartRequired": 0,
+        "hostUnavailable": 0,
+        "inactive": 0,
+        "invalid": 0,
+        "sourceUnusable": 0,
+        "blocked": 0,
+        "verifyHost": 0
+      },
+      "nextActions": 0,
+      "nextActionsDropped": 0
+    },
+    "experience": {
+      "available": true,
+      "selected": {
+        "problemKey": "tool run code",
+        "occurrences": 129,
+        "requiresNewHypothesis": false,
+        "provenIneffective": 0
+      },
+      "none": null,
+      "candidateCount": 5,
+      "errors": []
+    },
+    "versions": {
+      "dsh": "0.2.2-rc.3",
+      "cordis": "4.1.0",
+      "evolution": "0.2.12"
+    },
+    "applicabilityVerified": true,
+    "incomplete": false,
+    "readOnly": true
+  }
+}
