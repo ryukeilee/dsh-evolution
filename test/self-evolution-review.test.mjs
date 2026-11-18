@@ -727,6 +727,97 @@ test('a consumer that still runs another host keeps the revalidation action', as
   assert.equal(composed.kind, 'revalidate');
 });
 
+test('value assessment stays honest when no usage projection is supplied', async (t) => {
+  const env = await fixture(t, 'value-unknown');
+  await writeConsumers(env);
+  const result = await review(env);
+  const [record] = result.records;
+  assert.equal(record.value.tier, 'usage-unknown');
+  assert.equal(record.value.installed, true);
+  assert.equal(record.value.invoked, null);
+  assert.equal(record.value.workflowInvocations, null);
+  assert.equal(record.value.experimentBenefit, true, 'the publication record still proves an experiment benefit');
+  assert.equal(record.value.productionBenefit, false);
+  assert.equal(result.retirementCandidates.length, 0, 'missing usage data is never a retirement reason');
+  assert.equal(result.valueSummary.unknown, 1);
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.stable.valueSummary.unknown, 1);
+  assert.equal(composed.stable.retirementCandidates, 0);
+});
+
+test('a self-contained plugin with no workflow use becomes a reversible, owner-only retirement candidate', async (t) => {
+  const env = await fixture(t, 'value-retire');
+  await writeConsumers(env);
+  const usage = {
+    source: 'session-evidence',
+    capturedAt: '2026-11-18T00:00:00.000Z',
+    records: {
+      [RECORD_ID]: {
+        workflowInvocations: 0,
+        verificationInvocations: 1,
+        capabilityAssessment: 'self-contained',
+      },
+    },
+  };
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
+  const [record] = result.records;
+  assert.equal(record.value.invoked, false);
+  assert.equal(record.value.workflowInvocations, 0);
+  assert.equal(record.value.verificationInvocations, 1);
+  assert.equal(record.value.tier, 'experiment-benefit');
+  assert.equal(result.valueSummary.experimentBenefit, 1);
+  assert.equal(result.retirementCandidates.length, 1);
+  const [candidate] = result.retirementCandidates;
+  assert.equal(candidate.recordId, RECORD_ID);
+  assert.equal(candidate.requiresOwnerAuthorization, true);
+  assert.equal(candidate.reversible, true);
+  assert.deepEqual(candidate.profiles, ['acp', 'web']);
+  assert.ok(candidate.commands.every((line) => line.includes('disable') && line.includes(RECORD_ID)));
+  assert.ok(candidate.commands.every((line) => line.includes('--plugin ' + JSON.stringify(RECORD_ID))));
+  assert.ok(candidate.commands.every((line) => !line.includes('--id ')), 'the CLI accepts --plugin, not --id');
+  assert.match(candidate.reasons.join(' '), /self-contained/);
+  assert.equal(record.retirement.candidate, true);
+  // Verification traffic must not be counted as workflow usage.
+  assert.notEqual(record.value.invoked, true);
+});
+
+test('workflow use or evidenced production benefit blocks a retirement recommendation', async (t) => {
+  const env = await fixture(t, 'value-keep');
+  await writeConsumers(env);
+  const base = { source: 'session-evidence', records: { [RECORD_ID]: { verificationInvocations: 1, capabilityAssessment: 'self-contained' } } };
+  const inUse = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST,
+    usage: { ...base, records: { [RECORD_ID]: { ...base.records[RECORD_ID], workflowInvocations: 5 } } } });
+  assert.equal(inUse.records[0].value.invoked, true);
+  assert.equal(inUse.records[0].value.workflowInvocations, 5);
+  assert.equal(inUse.retirementCandidates.length, 0);
+  assert.equal(inUse.valueSummary.inUse, 1, 'a used plugin is reported as in-use even though a benefit decision also exists');
+  const proven = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST,
+    usage: { ...base, records: { [RECORD_ID]: { ...base.records[RECORD_ID], productionBenefit: { evidenced: true, summary: 'measured in daily sessions' } } } } });
+  assert.equal(proven.records[0].value.tier, 'production-benefit');
+  assert.equal(proven.records[0].value.productionBenefit, true);
+  assert.equal(proven.retirementCandidates.length, 0);
+  assert.equal(proven.valueSummary.productionBenefit, 1);
+});
+
+test('a missing or null workflow invocation count stays unknown and blocks retirement', async (t) => {
+  const env = await fixture(t, 'value-missing-count');
+  await writeConsumers(env);
+  for (const row of [
+    { capabilityAssessment: 'self-contained' },
+    { workflowInvocations: null, capabilityAssessment: 'self-contained' },
+    { workflowInvocations: 'not-a-count', capabilityAssessment: 'self-contained' },
+  ]) {
+    const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST,
+      usage: { source: 'session-evidence', records: { [RECORD_ID]: row } } });
+    const [record] = result.records;
+    assert.equal(record.value.invoked, null);
+    assert.equal(record.value.workflowInvocations, null);
+    assert.equal(record.value.tier, 'usage-unknown');
+    assert.equal(result.retirementCandidates.length, 0, JSON.stringify(row));
+    assert.match(record.value.reasons.join(' '), /not usable/);
+  }
+});
+
 test('a truncated stable review cannot compose a complete no-action result', () => {
   const composed = composeSelfEvolutionReview({
     stable: { status: 'active', truncated: true, nextActions: [], nextActionsDropped: 0, summary: { total: 50 } },
