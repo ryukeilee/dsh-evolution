@@ -1,7 +1,9 @@
 # Task-coupled evidence（成对真实会话收益证据）
 
-状态：契约与门禁已实现（2026-11-18）；**producer 尚未实现**，因此本文的端到端流程还没有
-一次真实运行记录。本文是下一步实现的唯一契约来源，也是 `promotionGates.taskBenefit` 的说明。
+状态：契约、门禁与 **producer** 已实现（2026-11-18）；端到端隔离验收由
+`scripts/acceptance/run-task-benefit-loop.mjs` 执行，证据见
+`docs/evidence/task-benefit-0.2.2-rc.3-20261118.json`。本文是 `promotionGates.taskBenefit`
+与 producer 的契约来源。
 
 ## 1. 为什么需要它
 
@@ -26,10 +28,10 @@
   "candidateHostSha256": "<sha256(composition.code.host)>",
   "model": "opencode-go/deepseek-v4.1-flash",
   "host": { "dsh": "0.2.2-rc.3", "cordis": "4.1.0" },
-  "runs": { "baseline": 5, "candidate": 5 },
-  "baseline":  { "sessions": 5, "correct": 5, "failures": 0, "turns": 20, "toolCalls": 30, "tokens": 100000, "durationMs": 60000 },
-  "candidate": { "sessions": 5, "correct": 5, "failures": 0, "turns": 15, "toolCalls": 20, "tokens":  70000, "durationMs": 50000 },
-  "adoption": { "sessionsUsingCandidate": 0, "sessionsExercised": 5 }
+  "runs": { "baseline": 3, "candidate": 3 },
+  "baseline":  { "sessions": 3, "correct": 3, "failures": 0, "turns": 16, "toolCalls": 13, "tokens": 514935, "durationMs": 122492 },
+  "candidate": { "sessions": 3, "correct": 3, "failures": 0, "turns": 12, "toolCalls": 9,  "tokens": 390933, "durationMs": 47572 },
+  "adoption": { "sessionsUsingCandidate": 0, "sessionsExercised": 3 }
 }
 ```
 
@@ -42,37 +44,62 @@
 - 无实质回归：failures 不增加；tokens ≤ `max(baseline*1.05, baseline+2000)`；
   durationMs ≤ `max(baseline*1.25, baseline+60000)`。
 - 绑定：`candidateHostSha256` 必须等于 Trial 记录的 `record.composition.hostSha256`；
-  `host.dsh` 必须等于当前宿主；`taskId` 必须等于本次 Desktop 任务。
+  `host.dsh`/`host.cordis` 必须等于当前宿主；`taskId` 必须等于本次 Desktop 任务。
 
-## 3. Producer 的职责（未实现）
+`tokens` 是模型账单，不是 DSH 原生计量：producer 把每个决策轮的
+`input + output + cache.read` 相加（`model-bridge.mjs` 转发给 `opencode run`，模型与生产 ACP
+profile 相同）。artifact 里的 `tokenBasis` 记录这一点，校验器忽略该只读字段。
 
-一个只读的验收 harness（建议 `scripts/acceptance/task-benefit.mjs`）必须：
+## 3. Producer
 
-1. 在**隔离** runtime/home 中准备同一份 DSH 宿主与 ACP profile，绝不触碰正式 `DSH_HOME`。
-2. 用与计划完全相同的`composition.code.host` 安装一个 preview 包（不经过 Trial，也尚未发布），
-   并对同一自然语言任务跑 `runs` 个**候选侧**会话；每个会话由真实模型（`model-bridge.mjs`）
-   驱动，工具由真实宿主执行。
-3. 卸载 preview，对同一任务跑 `runs` 个**基线侧**会话；两侧的 cwd、model、host 版本必须一致。
-4. 逐会话判定正确性（由任务声明的 `expect` 决定，而不是由模型自述），统计 turns、tool calls、
-   token（bridge 报告的真实计费）、墙钟与失败数；对 `context-policy` 记录组件实际变换了几次
-   步骤，对 `tool` 记录模型是否选择了候选工具。
-5. 只有全部会话完成且正确性可判定时才写 `complete: true`；任何未完成都写 `complete: false`
-   并让它被拒绝（缺失不能四舍五入成零）。
-6. 把 artifact 写到 `$DSH_HOME/storages/evolution/desktop-tasks/task-evidence/<taskId>.json`
-   （`0600`），再由 ACP 侧以同一 `taskId` 提交带 `verification.task` 的计划。宿主只按
-   taskId 读这个固定名字，计划里不携带任意路径。
+`scripts/acceptance/task-benefit.mjs` 实现生产方：
 
-## 4. 信任边界
+1. 只在 `$TMPDIR`（含 `/tmp`）下的隔离 home 运行，拒绝正式 `~/.dsh`。
+2. 把计划里的 `composition.code.host` 原样写成 preview 插件（不经过 Trial），在隔离 ACP
+   profile 中通过 `--patch` overlay 挂载；baseline 侧使用同一 overlay 但不插入该条目，并禁用
+   promoted consumer，保证唯一差异是候选。
+3. 每侧跑 `runs` 个新 ACP 进程；每个会话由真实模型（`model-bridge.mjs`）驱动，工具由真实宿主执行。
+   candidate-first / baseline-first 交替，避免 provider 缓存把差异归给一侧。
+4. 正确性由任务声明的 `expect` 外部判定：`expect` 是 JSON 字符串数组（或单个字符串），每个值都必须
+   出现在最终 assistant 文本里。fixture 的 sentinel 每轮随机生成，猜中不构成正确。
+5. 逐会话记录 turns、tool calls、token、墙钟、失败数与 adoption。context-policy 的
+   `sessionsExercised` 只在某次 `read` 结果确实包含期望值时记 1；tool 形式只在模型选择候选工具时记 1。
+6. 任何模型轮失败、无法解析的回复或空会话都令 `complete=false`，不把未知四舍五入成零。
+7. 把 artifact 原子写到
+   `$DSH_HOME/storages/evolution/desktop-tasks/task-evidence/<taskId>.json`（`0600`）。宿主只按
+   taskId 读固定名字，计划不携带任意路径。
+
+## 4. context-policy 的功能复验
+
+`verification.task` 证明收益来自真实会话，但“插件被安装”不等于“它真的生效”。context-policy
+计划因此还必须声明 `verification.functionalCheck`：
+
+```json
+{
+  "tool": "read",
+  "arguments": { "file_path": "a.json", "offset": 1, "limit": 1 },
+  "resultPath": ["lines", "0", "text"],
+  "expected": "<the complete line>"
+}
+```
+
+- 只允许 `read` / `glob` / `grep`，参数与期望值都是有界、无损 JSON；工具面不允许 `evolution_*`、写、
+  shell 或 `run_code`。
+- 宿主在 Trial 挂载候选之后执行一次；不一致就以 `E_DESKTOP_FUNCTIONAL_CHECK` 失败并回滚 Trial。
+- 每次 canary 观测都重放；失败按 `metricRegression` 交给内核 rollback。
+- 状态投影只保留 label/tool/matched/结果 sha256/长度，不保留工具输出正文。
+
+## 5. 信任边界
 
 通道是同一 OS 用户可写的传输层，不是授权边界（与 `desktop-tasks` 其余文件相同）。
 kernel 只验证结构、绑定与内部一致性，不能证明 harness 的诚实性；这与
 `shared-plugins.mjs revalidate --evidence <file>` 处于同一信任级别。真正的晋升权威仍然是
 8+ 项门禁与所有者显式确认；taskBenefit 只让“workflow 声明”不再能靠自测通过。
 
-## 5. 尚未回答的问题
+## 6. 仍然未知
 
-- preview 安装与 Trial 安装必须是同一份源码；用 `candidateHostSha256` 绑定，但 preview 的宿主
-  与 Desktop Trial 的宿主是否为同一版本需要 harness 明确记录并校验。
-- `context-policy` 的 canary 目前没有功能检查；producer 落地后应补一次任务复验，而不是只看
-  运行时健康。
-- 会话级 token 来自 bridge 的真实计费；宿主原生计量未暴露，不能用估算值替代。
+- 三个或五个会话仍不构成统计置信区间；它证明的是“在这组真实任务上可重复的成本方向”，不是长期使用率。
+- token 差异包含 provider 提示缓存命中状态；producer 记录的是真实账单，不是因果分解。
+- `functionalCheck` 只能检查可观察的输出变换；纯 prompt 注入型 context policy 若无法用只读工具
+  观察到效果，就不能通过该契约晋升（这是有意的边界）。
+- 真实宿主验收只覆盖本机 macOS Desktop 0.2.2-rc.3；其他宿主需要各自重跑。

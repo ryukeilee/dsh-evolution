@@ -218,6 +218,10 @@ function contextPlan(overrides = {}) {
       verification: {
         observations: 5,
         task: { id: 'read-long-line', prompt: 'read the config and report the sentinel value', expect: 'sentinel-7', runs: 5 },
+        // A context policy registers no tool, so its deterministic effect is
+        // observed through an existing read-only tool. Without this the plan
+        // would only be able to prove that the plugin was installed.
+        functionalCheck: { tool: 'read', arguments: { file_path: 'config.json', offset: 1, limit: 1 }, resultPath: ['lines', '0', 'text'], expected: 'sentinel-7' },
       },
       requestedTargetProfiles: ['acp'],
       ...overrides,
@@ -242,6 +246,38 @@ test('the plan protocol refuses the tool-form verification on a context policy',
   const capability = validateTaskRequest(contextPlan({ proposal: { ...contextPlan().plan.proposal, benefitModel: { kind: 'capability' } } }));
   assert.equal(capability.ok, false);
   assert.match(capability.issues.join(' '), /must declare benefitModel.kind = "workflow"/);
+});
+
+test('a context policy plan must declare a bounded functional check on a read-only tool', () => {
+  const missing = validateTaskRequest(contextPlan({
+    verification: { observations: 5, task: { id: 't', prompt: 'p', expect: 'e' } },
+  }));
+  assert.equal(missing.ok, false);
+  assert.match(missing.issues.join(' '), /must declare verification.functionalCheck/);
+
+  for (const tool of ['bash', 'write', 'evolution_promote', 'run_code']) {
+    const result = validateTaskRequest(contextPlan({
+      verification: {
+        observations: 5,
+        task: { id: 't', prompt: 'p', expect: 'e' },
+        functionalCheck: { tool, arguments: {}, expected: 1 },
+      },
+    }));
+    assert.equal(result.ok, false, `${tool} was accepted as a functional check`);
+    assert.match(result.issues.join(' '), /functionalCheck\.tool must be one of/);
+  }
+
+  const onToolPlan = validateTaskRequest(contextPlan({
+    proposal: { ...contextPlan().plan.proposal, improvement: 'tool' },
+    verification: {
+      observations: 2,
+      targetTool: 'candidate_tool',
+      samples: [{ label: 'a', tool: 'candidate_tool', arguments: {}, expected: 1 }],
+      functionalCheck: { tool: 'read', arguments: {}, expected: 1 },
+    },
+  }));
+  assert.equal(onToolPlan.ok, false);
+  assert.match(onToolPlan.issues.join(' '), /only valid for a context-policy improvement/);
 });
 
 test('task-coupled token growth inside its budget is not vetoed by the advisory evaluator', async () => {
