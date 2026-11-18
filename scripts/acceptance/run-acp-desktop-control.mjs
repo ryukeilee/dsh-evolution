@@ -39,6 +39,7 @@ import crypto from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { startModelBridge, usageTotals } from './model-bridge.mjs';
 
 const argv = process.argv.slice(2);
 const positional = [];
@@ -106,7 +107,7 @@ const evidence = {
   kind: 'dsh-evolution-acp-desktop-control',
   ok: false,
   startedAt: new Date().toISOString(),
-  modelTransport: 'deterministic loopback Anthropic responses; actual ACP Agent/tools and actual Desktop app',
+  modelTransport: 'deterministic loopback Anthropic responses for plan authoring and mounting; the autonomous-reuse pair uses real model inference through scripts/acceptance/model-bridge.mjs; actual ACP Agent/tools and actual Desktop app',
   scope: 'isolated DSH_HOME; production task channel + official Desktop kernel; no formal home, no release publish',
   steps: [],
   desktop: {},
@@ -213,14 +214,15 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const overlay = path.join(work, 'acp-transport.yml');
 await fs.writeFile(overlay, `- id: llm-deepseek\n  config:\n    baseURL: http://127.0.0.1:${server.address().port}\n    apiKeyEnv: EVOLUTION_ACCEPTANCE_KEY\n`);
 
-async function createAcp(label, { waitForPromoted = false } = {}) {
+async function createAcp(label, { waitForPromoted = false, patch = overlay, collect = null } = {}) {
   const log = await fs.open(path.join(work, `${label}.stderr.log`), 'w', 0o600);
-  const child = launch(cli, ['--profile', 'acp', '--patch', overlay], {
+  const child = launch(cli, ['--profile', 'acp', '--patch', patch], {
     env: { ...autoLaunchEnv, DSH_HOME: home, EVOLUTION_ACCEPTANCE_KEY: 'local-fixture-only' },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   let stderr = '';
   child.stderr.on('data', (bytes) => { stderr = (stderr + bytes).slice(-4000); });
+  child.stdin.on('error', () => { /* a dead child is reported by the exit handler */ });
   const pending = new Map();
   let sequence = 0;
   readline.createInterface({ input: child.stdout }).on('line', (line) => {
@@ -230,13 +232,23 @@ async function createAcp(label, { waitForPromoted = false } = {}) {
       const option = row.params.options.find((candidate) => candidate.kind === 'allow_once');
       child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: row.id, result: { outcome: option ? { outcome: 'selected', optionId: option.optionId } : { outcome: 'cancelled' } } })}\n`);
     } else if (row.id !== undefined) pending.get(row.id)?.(row);
-    else if (row.method === 'session/update' && row.params?.update?.sessionUpdate === 'tool_call') evidence.steps.push({ name: 'real-acp-tool-call', at: new Date().toISOString() });
+    else if (row.method === 'session/update') {
+      if (collect) collect.push(row.params?.update ?? {});
+      if (row.params?.update?.sessionUpdate === 'tool_call') evidence.steps.push({ name: 'real-acp-tool-call', at: new Date().toISOString() });
+    }
   });
   const rpc = (method, params, timeout = 60_000) => new Promise((resolve, reject) => {
     const id = ++sequence;
     const timer = setTimeout(() => { pending.delete(id); reject(new Error(`${method} timed out; ${stderr.slice(-800)}`)); }, timeout);
     pending.set(id, (row) => { clearTimeout(timer); pending.delete(id); row.error ? reject(new Error(`${method}: ${JSON.stringify(row.error)}`)) : resolve(row.result); });
     child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
+  });
+  // A child that dies mid-request must fail the request instead of leaving the
+  // caller parked until its own timeout with no diagnosis.
+  child.once('exit', (code, signal) => {
+    const detail = `ACP process exited (code ${code}, signal ${signal}); ${stderr.slice(-800)}`;
+    for (const [, settle] of pending) settle({ error: { code: -32000, message: detail } });
+    pending.clear();
   });
   await rpc('initialize', { protocolVersion: 1, clientCapabilities: {} });
   const session = await rpc('session/new', { cwd: home, mcpServers: [] });
@@ -302,12 +314,22 @@ const shortFile = path.join(home, 'workflow-short.js');
 const longFile = path.join(home, 'workflow-generated.json');
 await fs.writeFile(shortFile, shortLine);
 await fs.writeFile(longFile, longLine);
-function makePlan(variant = 'benefit') {
+function makePlan(variant = 'benefit', { cleanName = false } = {}) {
   const suffix = crypto.randomBytes(4).toString('hex');
-  const tool = `read_complete_line_${suffix}`;
+  // The first paired run used the harness's default opaque, suffixed name and a
+  // description that only said what the tool *is*. A real model that had just
+  // been truncated by `read` still chose `bash`, so the benefit case now names
+  // the trigger the capability exists for. Only the model-facing name and
+  // description change; the code, inputs and workload stay identical. A second
+  // plan in the same home must keep the suffix, because the first one is already
+  // mounted as a stable plugin.
+  const tool = cleanName ? 'read_complete_line' : `read_complete_line_${suffix}`;
   const compositionName = `complete-line-${suffix}`;
+  const description = variant === 'benefit'
+    ? 'Read complete lines from small UTF-8 source files (64 KiB maximum). Use this instead of read when read reports a truncated line and the full line text is needed.'
+    : 'Read complete lines from small UTF-8 source files (64 KiB maximum)';
   const host = `return { name: '${compositionName}', inject: ['tools', 'fs'], apply(ctx) {
-    const tool = harness.defineTool({ name: '${tool}', description: 'Read complete lines from small UTF-8 source files (64 KiB maximum)',
+    const tool = harness.defineTool({ name: '${tool}', description: ${JSON.stringify(description)},
       parameters: { file_path: { type: 'string', required: true }, offset: { type: 'number' }, limit: { type: 'number' } },
       output: { schema: { type: 'object', additionalProperties: false, properties: { path: { type: 'string', required: true }, offset: { type: 'integer', required: true }, lines: { type: 'array', required: true, items: { type: 'object', additionalProperties: false, properties: { number: { type: 'integer', required: true }, text: { type: 'string', required: true } } } }, totalLines: { type: 'integer', required: true } } }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
       isConcurrencySafe: () => true,
@@ -424,7 +446,7 @@ try {
     assert(text.includes('line truncated') && !text.includes('end-of-config'), 'official read did not reproduce the real long-line limitation');
     evidence.discovery = { source: 'official read in a real ACP session', issue: 'complete first source line unavailable due to default line truncation',
       inputSha256: sha(longLine), expectedCharacters: longLine.length, observedResultSha256: sha(text), model: 'deterministic plan-authoring fixture, no live model inference' };
-    plan = makePlan();
+    plan = makePlan('benefit', { cleanName: true });
     evidence.candidate = { tool: plan.tool, compositionName: plan.compositionName, sourceSha256: plan.sourceSha256 };
     return null;
   });
@@ -610,6 +632,101 @@ try {
   evidence.consumer = { status: consumerRow.status, id: consumerRow.id, observedIndexUpdatedAt: consumer.observedIndexUpdatedAt };
   await fresh.close();
   evidence.steps.push({ name: 'fresh-acp-consumed-promoted-plugin', at: new Date().toISOString() });
+
+  // 8b. Autonomous reuse, measured against a paired baseline.
+  //
+  // The steps above prove the tool is mounted and callable. They also hand the
+  // model the exact tool and arguments, which is not evidence that a model
+  // would choose it later. Here a real model answers real ACP requests through
+  // the bridge (scripts/acceptance/model-bridge.mjs) with a natural task and
+  // the live tool surface; the prompt never names the promoted tool. The
+  // baseline session runs the same task and the same model with the capability
+  // revoked for this profile, so the only difference is the capability.
+  const bridge = await startModelBridge({ cwd: path.join(work, 'bridge-cwd') });
+  const bridgeOverlay = path.join(work, 'acp-bridge-transport.yml');
+  await fs.writeFile(bridgeOverlay, `- id: llm-deepseek\n  config:\n    baseURL: ${bridge.baseURL}\n    apiKeyEnv: EVOLUTION_ACCEPTANCE_KEY\n`);
+  const naturalTask = '读取 workflow-generated.json 的第一行，告诉我该文件 sentinel 字段的值。';
+  const runRealModelTask = async (label, { expectMounted }) => {
+    const updates = [];
+    const session = await createAcp(`acp-real-${label}`, {
+      patch: bridgeOverlay,
+      waitForPromoted: expectMounted,
+      collect: updates,
+    });
+    const before = bridge.turns.length;
+    const startedAt = Date.now();
+    try {
+      await session.rpc('session/prompt', { sessionId: session.sessionId, prompt: [{ type: 'text', text: naturalTask }] }, 30 * 60 * 1000);
+    } finally {
+      await session.close();
+    }
+    const wallMs = Date.now() - startedAt;
+    const turns = bridge.turns.slice(before);
+    const failedTurns = turns.filter((turn) => turn.ok !== true);
+    assert(failedTurns.length === 0, `${label}: ${failedTurns.length} model turn(s) failed: ${JSON.stringify(failedTurns.slice(0, 2))}`);
+    // Auxiliary requests (for example a session-title completion) carry no tool
+    // list; they are reported separately so they cannot inflate the paired
+    // decision metrics.
+    const decisionTurns = turns.filter((turn) => (turn.tools?.length ?? 0) > 0);
+    const assistantText = updates
+      .filter((update) => update.sessionUpdate === 'agent_message_chunk' && update.content?.type === 'text')
+      .map((update) => update.content.text).join('');
+    const toolNames = decisionTurns.flatMap((turn) => turn.decision?.tool ? [turn.decision.tool] : []);
+    return {
+      label,
+      expectMounted,
+      wallMs,
+      modelTurns: decisionTurns.length,
+      auxiliaryTurns: turns.length - decisionTurns.length,
+      toolCalls: toolNames,
+      usedPromotedTool: toolNames.includes(plan.tool),
+      usage: usageTotals(decisionTurns),
+      answeredSentinel: /end-of-config/.test(assistantText),
+      answerSha256: sha(assistantText),
+      answerCharacters: assistantText.length,
+      transport: 'real model inference (opencode run, same provider/model as the ACP profile) executed by the real ACP host; token counts are the model bill for each decision turn',
+    };
+  };
+
+  evidence.realModelReuse = { task: naturalTask, model: 'opencode-go/deepseek-v4.1-flash', candidate: null, baseline: null, comparison: null };
+  evidence.realModelReuse.candidate = await runRealModelTask('candidate', { expectMounted: true });
+  evidence.steps.push({ name: 'real-model-autonomous-reuse', at: new Date().toISOString() });
+
+  // Paired baseline: revoke this record for the acp profile, then run the same
+  // task with the same model in a fresh process. The revocation is reverted
+  // afterwards so the isolated home keeps the state the promotion produced.
+  await command(process.execPath, [path.join(repo, 'scripts/shared-plugins.mjs'), 'disable',
+    '--plugin', record.id, '--profile', 'acp', '--home', home, '--reason', 'acceptance paired baseline']);
+  evidence.realModelReuse.baseline = await runRealModelTask('baseline', { expectMounted: false });
+  await command(process.execPath, [path.join(repo, 'scripts/shared-plugins.mjs'), 'enable',
+    '--plugin', record.id, '--profile', 'acp', '--home', home]);
+  evidence.steps.push({ name: 'real-model-paired-baseline', at: new Date().toISOString() });
+
+  const candidateRun = evidence.realModelReuse.candidate;
+  const baselineRun = evidence.realModelReuse.baseline;
+  evidence.realModelReuse.comparison = {
+    sameTask: true,
+    sameModel: true,
+    onlyCapabilityDiffers: !baselineRun.usedPromotedTool,
+    candidateAnswered: candidateRun.answeredSentinel,
+    baselineAnswered: baselineRun.answeredSentinel,
+    candidateTurns: candidateRun.modelTurns,
+    baselineTurns: baselineRun.modelTurns,
+    candidateToolCalls: candidateRun.toolCalls.length,
+    baselineToolCalls: baselineRun.toolCalls.length,
+    candidateInputTokens: candidateRun.usage.inputTokens,
+    baselineInputTokens: baselineRun.usage.inputTokens,
+    candidateOutputTokens: candidateRun.usage.outputTokens,
+    baselineOutputTokens: baselineRun.usage.outputTokens,
+    candidateWallMs: candidateRun.wallMs,
+    baselineWallMs: baselineRun.wallMs,
+    unknown: [
+      'DSH-native token accounting is not exposed by the host; token counts are the real model bill measured by the transport',
+      'one paired run per condition is not a statistical confidence interval',
+    ],
+  };
+  assert(candidateRun.modelTurns > 0 && baselineRun.modelTurns > 0, 'a real-model session produced no model turns');
+  await bridge.close();
 
   await reuseProfile('web');
 
