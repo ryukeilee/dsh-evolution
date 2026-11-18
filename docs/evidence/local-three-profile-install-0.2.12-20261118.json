@@ -1,0 +1,148 @@
+{
+  "kind": "dsh-evolution-local-three-profile-install",
+  "recordedAt": "2026-11-18T01:22:10.258Z",
+  "scope": "formal DSH_HOME (<home>/.dsh, path redacted); official CLI install via scripts/setup-experience.mjs; the task-benefit loop and audit used isolated homes only",
+  "release": {
+    "version": "0.2.12",
+    "tarballSha256": "60f6fb6ad7f50a4636efdda06dc7089bf868a026388350c51cca482cc6ef5126",
+    "contentSha256": "be8a8bb82ec26a8427c8037a211e0e8398fdc66323e4a4ed1993a69f04bd1a77"
+  },
+  "profiles": {
+    "desktop": {
+      "installedVersion": "0.2.12",
+      "kernelEnabled": true,
+      "consumerEnabled": false,
+      "restartRequired": true,
+      "note": "profile is managed exclusively by the Electron application; the running app keeps the previously loaded bundle until its next start"
+    },
+    "acp": {
+      "installedVersion": "0.2.12",
+      "kernelEnabled": false,
+      "consumerEnabled": true,
+      "restartRequired": true,
+      "note": "fresh cold start mounted 3 published stable rows as active"
+    },
+    "web": {
+      "installedVersion": "0.2.12",
+      "kernelEnabled": false,
+      "consumerEnabled": true,
+      "restartRequired": true,
+      "note": "fresh cold start mounted 1 approved row active and 2 unapproved rows skipped"
+    }
+  },
+  "freshConsumerBoot": {
+    "acp": {
+      "rows": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "status": "active",
+          "reason": null,
+          "sourceSha256": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e",
+          "hostDigest": "3313c19bf166ff977de1cb1eee1e502f29244907d556410002eea62fad7371fb"
+        },
+        {
+          "id": "evolution-promoted-e82a216992bb",
+          "status": "active",
+          "reason": null,
+          "sourceSha256": "7d446ea94e730bd69ec25c38a2d4478d2b6f362f13a3446047e84ad348833230",
+          "hostDigest": "3313c19bf166ff977de1cb1eee1e502f29244907d556410002eea62fad7371fb"
+        },
+        {
+          "id": "evolution-promoted-2794ab16d2b3",
+          "status": "active",
+          "reason": null,
+          "sourceSha256": "88d915e702b205ed09d84f1f5b025fdfb45216b1601a097345d30dda44b01e5d",
+          "hostDigest": "3313c19bf166ff977de1cb1eee1e502f29244907d556410002eea62fad7371fb"
+        }
+      ]
+    },
+    "web": {
+      "rows": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "status": "active"
+        },
+        {
+          "id": "evolution-promoted-e82a216992bb",
+          "status": "skipped-unapproved",
+          "reason": "profile-not-approved"
+        },
+        {
+          "id": "evolution-promoted-2794ab16d2b3",
+          "status": "skipped-unapproved",
+          "reason": "profile-not-approved"
+        }
+      ]
+    }
+  },
+  "desktopAudit": {
+    "host": {
+      "profile": "acp",
+      "dsh": "0.2.2-rc.3",
+      "cordis": "4.1.0",
+      "include": "1.1.0",
+      "node": "v24.21.0",
+      "capturedAt": "2026-11-18T00:55:25.982Z"
+    },
+    "stableSummary": {
+      "total": 3,
+      "active": 3,
+      "pendingRevalidation": 0,
+      "incompatible": 0,
+      "restartRequired": 0,
+      "hostUnavailable": 0,
+      "inactive": 0,
+      "invalid": 0,
+      "sourceUnusable": 0,
+      "blocked": 0,
+      "verifyHost": 0
+    },
+    "nextActions": [],
+    "experience": {
+      "available": true,
+      "candidates": [
+        {
+          "problem": "tool run code",
+          "occurrences": 129,
+          "score": 0.75
+        },
+        {
+          "problem": "tool bash",
+          "occurrences": 97,
+          "score": 0.7494
+        },
+        {
+          "problem": "tool wait agent",
+          "occurrences": 7,
+          "score": 0.6969
+        }
+      ],
+      "selfEvolutionActions": [
+        {
+          "action": "experience-candidate",
+          "problemKey": "tool run code",
+          "why": "129 recorded occurrence(s); expected: 提高 tool run code 的 successRate 并降低 errorCount；probeControlStable 对照不得回归。",
+          "requiresNewHypothesis": false
+        }
+      ]
+    },
+    "note": "read-only audit executed by the Desktop kernel through the ACP control channel; the running process loaded the previous bundle, so its reported applicability version comes from the installed package metadata"
+  },
+  "taskBenefitLoop": {
+    "evidence": "docs/evidence/task-benefit-0.2.12-20261118.json",
+    "ok": true,
+    "tarballSha256": "60f6fb6ad7f50a4636efdda06dc7089bf868a026388350c51cca482cc6ef5126",
+    "publication": "evolution-promoted-81d0e1fd481e",
+    "freshConsumerCorrect": true,
+    "deltas": {
+      "turns": "-25%",
+      "toolCalls": "-30.8%",
+      "tokens": "-24.5%",
+      "durationMs": "-38.9%"
+    }
+  },
+  "doctorCaveat": {
+    "hostComposition": "the CLI doctor requires the evolution-orchestrator entry to be enabled; consumer-only profiles intentionally disable it, and the desktop profile is Electron-managed, so `--profile desktop` composition cannot be probed by the CLI. Both are pre-existing profile-shape limits, not 0.2.12 regressions.",
+    "observedHost": "when the doctor binary is run from the source checkout it resolves the checkout's node_modules host; the audit above reports the real running host instead."
+  }
+}
