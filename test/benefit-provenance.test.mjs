@@ -28,16 +28,17 @@ test('an improved target that only existed after the trial is a capability self-
   assert.equal(comparison.workflowBenefit, false);
 });
 
-test('an improved target that really ran and failed in the baseline is a workflow benefit', () => {
+test('an improved target that really ran and failed in the baseline is a tool-level benefit', () => {
   const baseline = run([...control, { step: 't', role: 'target', error: 'TOOL_ERROR' }]);
   const candidate = run([...control, { step: 't', role: 'target', error: undefined }]);
   const comparison = compareProbeRuns(baseline, candidate);
   assert.equal(comparison.benefit, true);
-  assert.equal(comparison.benefitKind, 'workflow');
-  assert.equal(comparison.workflowBenefit, true);
+  // The model's surrounding path is absent, so this cannot claim a workflow.
+  assert.equal(comparison.benefitKind, 'tool-improvement');
+  assert.equal(comparison.workflowBenefit, false);
 });
 
-function observation(probeKind) {
+function observation(probeKind, taskBenefit = null) {
   return {
     solvesProblem: true,
     beforeMetrics: { successRate: 0.5, errorCount: 1 },
@@ -50,6 +51,7 @@ function observation(probeKind) {
     cleanupEvidence: 'disposed',
     orphanResources: [],
     probe: { comparison: { benefitKind: probeKind } },
+    ...(taskBenefit === null ? {} : { taskBenefit }),
   };
 }
 
@@ -61,8 +63,11 @@ test('the workflow gate is opt-in and rejects a capability self-test', () => {
   const workflow = promotionGates({ ...base, proposal: { benefitModel: { kind: 'workflow' } } });
   assert.equal(workflow.workflowBenefit, false);
   assert.equal(workflow.eligible, false);
-  const proven = promotionGates({ ...base, latestObservation: observation('workflow'), proposal: { benefitModel: { kind: 'workflow' } } });
+  // A workflow claim now also needs a paired real-session artifact; the probe
+  // comparison alone only proves the tool call it replaced.
+  const proven = promotionGates({ ...base, latestObservation: observation('workflow', { benefit: true }), proposal: { benefitModel: { kind: 'workflow' } } });
   assert.equal(proven.workflowBenefit, true);
+  assert.equal(proven.taskBenefit, true);
   assert.equal(proven.eligible, true);
 });
 
@@ -137,7 +142,7 @@ test('kernel-derived workflow quality gains use the measured cost budget; legacy
     const observed = { ...observation('workflow'), probeDerived: true,
       solvesProblem: comparison.benefit, regressionPassed: !comparison.regression,
       beforeMetrics: comparison.beforeMetrics, afterMetrics: comparison.afterMetrics,
-      probe: { comparison } };
+      probe: { comparison }, taskBenefit: { benefit: true } };
     const record = { runtimeRecovered: true, proposal: { benefitModel: { kind: 'workflow' } }, latestObservation: observed };
     assert.equal(comparison.workload.durationAcceptable, eligible);
     assert.equal(promotionGates(record).eligible, eligible);

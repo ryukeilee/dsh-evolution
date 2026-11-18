@@ -231,6 +231,28 @@ function measuredObservation(overrides = {}) {
   };
 }
 
+/** A paired real-session artifact bound to this experiment's Trial source. */
+function taskEvidenceFor(h, experimentId, overrides = {}) {
+  const record = h.orchestrator.requireOwned(experimentId, h.exec.agent);
+  assert.equal(typeof record.composition?.hostSha256, 'string', 'the Trial must bind its Host source');
+  return {
+    schemaVersion: 1,
+    kind: 'paired-real-session',
+    complete: true,
+    taskId: 'task-workflow',
+    task: { id: 'paired-read-workflow', promptSha256: sha256('prompt'), expectSha256: sha256('expect') },
+    candidateHostSha256: record.composition.hostSha256,
+    model: 'test-model',
+    host: { dsh: HOST_VERSIONS.host, cordis: HOST_VERSIONS.cordis },
+    runs: { baseline: 5, candidate: 5 },
+    baseline: { sessions: 5, correct: 5, failures: 1, turns: 20, toolCalls: 30, tokens: 100000, durationMs: 60000 },
+    candidate: { sessions: 5, correct: 5, failures: 1, turns: 15, toolCalls: 20, tokens: 70000, durationMs: 50000 },
+    // The historical form is a tool: the artifact must show the model chose it.
+    adoption: { sessionsUsingCandidate: 3, sessionsExercised: 0 },
+    ...overrides,
+  };
+}
+
 async function rejectsWithCode(promise, code) {
   await assert.rejects(promise, (error) => {
     assert.equal(error?.code, code, `expected ${code}, got ${error?.code}: ${error?.message}`);
@@ -353,10 +375,11 @@ test('benefit loop: plan selects the seeded failure, probe derives the measureme
   // The caller's metric object is unverified input: the derived branch keeps
   // only the probe's own counts, so a forged number cannot reach the gates or
   // the advisory evaluator.
-  // The target step really ran and failed in the baseline, so this is a
-  // workflow before/after rather than a capability self-test.
-  assert.deepEqual(observation.metrics, { probeBenefit: 1, probeControlStable: 1, probeWorkflowBenefit: 1 });
-  assert.equal(observation.probe.comparison.benefitKind, 'workflow');
+  // The target step really ran and failed in the baseline, but a plain probe
+  // pair only replaces one tool call: it is a tool-level before/after, not a
+  // workflow. Only a paired workload or task evidence may claim that.
+  assert.deepEqual(observation.metrics, { probeBenefit: 1, probeControlStable: 1, probeWorkflowBenefit: 0 });
+  assert.equal(observation.probe.comparison.benefitKind, 'tool-improvement');
   assert.equal(observation.metrics.probeBenefit, 1);
   assert.equal(measurement.gates.measuredEvidence, true);
   assert.equal(measurement.gates.realBenefit, true);
@@ -1484,8 +1507,11 @@ for (const variant of ['benefit', 'no-benefit', 'regression', 'insufficient', 'c
     assert.equal(result.comparison.workload.pairing.startsWith('alternating AB/BA'), true);
     const targetCalls = h.calls.filter((call) => call.name === 'probe-target' || call.name === 'probe-dynamic');
     assert(targetCalls.every((call) => call.arguments === JSON.stringify({ key: 'edge' })));
+    // A workflow claim now also needs the paired real-session artifact; only
+    // the benefit variant carries one, so the others stay ineligible.
     const measured = h.orchestrator.measure({ experimentId: id, observation: measuredObservation({
       solvesProblem: true, beforeMetrics: { errors: 100 }, afterMetrics: { errors: 0 },
+      ...(variant === 'benefit' ? { taskBenefit: taskEvidenceFor(h, id) } : {}),
     }) }, h.exec);
     const decision = h.orchestrator.requireOwned(id, h.exec.agent).decision;
     const expected = variant === 'benefit' ? 'benefit' : variant === 'no-benefit' ? 'no-benefit'
@@ -1530,7 +1556,9 @@ test('paired workflow can prove execution-cost benefit while both paths are corr
   assert.equal(candidate.comparison.workload.quality, false);
   assert.equal(candidate.comparison.workload.efficiency, true);
   assert.equal(candidate.comparison.benefit, true);
-  const measured = h.orchestrator.measure({ experimentId: id, observation: measuredObservation() }, h.exec);
+  const measured = h.orchestrator.measure({ experimentId: id, observation: measuredObservation({
+    taskBenefit: taskEvidenceFor(h, id),
+  }) }, h.exec);
   assert.equal(measured.gates.eligible, true);
   await h.orchestrator.revert({ experimentId: id, reason: 'cost test completed' }, h.exec);
 });

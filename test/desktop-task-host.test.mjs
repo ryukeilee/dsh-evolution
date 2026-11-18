@@ -10,8 +10,10 @@ import {
   PROTOCOL_VERSION,
   SCHEMA_VERSION,
   candidateSourceDigest,
+  createTaskState,
   mintTaskId,
   taskChannelPaths,
+  transitionTaskState,
 } from '../lib/desktop-task-protocol.js';
 
 const GATES = Object.freeze({
@@ -931,4 +933,74 @@ test('Desktop workload mounts the official preset, executes baseline before Tria
   assert.deepEqual(sequence[0].args.benefitModel, { kind: 'workflow' }, 'a workload cannot be downgraded by a caller-declared capability model');
   assert.equal(sequence[4].args.observation.evidenceKind, 'comparative-workload');
   assert.equal(state.workload.scenarioDigest, 'sha256:paired');
+});
+
+test('a request whose body taskId differs from its filename is rejected before execution', async (t) => {
+  const { home, kernel, host, channel } = harness(t);
+  const filenameId = mintTaskId();
+  const bodyId = mintTaskId();
+  const request = requestFor(bodyId, planFor(bodyId).plan);
+  await fsp.mkdir(channel.inbox, { recursive: true });
+  await fsp.writeFile(path.join(channel.inbox, `${filenameId}.json`), `${JSON.stringify(request, null, 2)}\n`, { mode: 0o600 });
+  await host.start();
+  const state = await waitForState(home, filenameId, (value) => value.phase === 'failed');
+  assert.equal(state.error.code, 'E_DESKTOP_TASK_ID_MISMATCH');
+  assert.equal(kernel.calls.length, 0, 'a mismatched request must not reach the kernel');
+  // A later scan must not rewrite the terminal state: the pending check comes
+  // before every branch that writes a failed state.
+  const file = path.join(channel.state, `${filenameId}.json`);
+  const bytes = await fsp.readFile(file, 'utf8');
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  assert.equal(await fsp.readFile(file, 'utf8'), bytes);
+});
+
+test('another live instance in the same process keeps its claim and gets no failed state', async (t) => {
+  const { home, host, channel } = harness(t);
+  const taskId = mintTaskId();
+  await fsp.mkdir(channel.inbox, { recursive: true });
+  await fsp.mkdir(channel.claims, { recursive: true });
+  await fsp.writeFile(path.join(channel.inbox, `${taskId}.json`), '{"broken":');
+  const claimFile = path.join(channel.claims, `${taskId}.lock`);
+  const claimBytes = `${JSON.stringify({ pid: process.pid, instanceId: 'other-live-instance', at: new Date().toISOString(), request: `${taskId}.json` })}\n`;
+  await fsp.writeFile(claimFile, claimBytes, { mode: 0o600 });
+  await host.start();
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  // The contending scan must not reclaim a claim held by a live same-pid
+  // instance, and must not write a failed state for the malformed request.
+  assert.equal(await fsp.readFile(claimFile, 'utf8'), claimBytes);
+  await assert.rejects(fsp.readFile(path.join(channel.state, `${taskId}.json`)));
+});
+
+test('startup recovery leaves a task owned by another live same-process instance alone', async (t) => {
+  const { home, host, channel } = harness(t);
+  const taskId = mintTaskId();
+  await fsp.mkdir(channel.state, { recursive: true });
+  await fsp.mkdir(channel.claims, { recursive: true });
+  let state = createTaskState({ taskId, host: { pid: process.pid, instanceId: 'other-live-instance' } });
+  state = transitionTaskState(state, 'running', {}, new Date().toISOString());
+  await fsp.writeFile(path.join(channel.state, `${taskId}.json`), `${JSON.stringify(state)}\n`);
+  await fsp.writeFile(path.join(channel.claims, `${taskId}.lock`), `${JSON.stringify({
+    pid: process.pid, instanceId: 'other-live-instance', at: new Date().toISOString(), request: `${taskId}.json`,
+  })}\n`, { mode: 0o600 });
+  await host.start();
+  const after = JSON.parse(await fsp.readFile(path.join(channel.state, `${taskId}.json`), 'utf8'));
+  assert.equal(after.phase, 'running', 'another live instance still owns the running task');
+});
+
+test('startup recovery backs off when another live instance holds the task claim', async (t) => {
+  const { home, host, channel } = harness(t);
+  const taskId = mintTaskId();
+  await fsp.mkdir(channel.state, { recursive: true });
+  await fsp.mkdir(channel.claims, { recursive: true });
+  // The state names a dead owner, so the pid check cannot protect the task;
+  // only the live claim (a different instance in this same process) can.
+  let state = createTaskState({ taskId, host: { pid: 999999, instanceId: 'dead-owner' } });
+  state = transitionTaskState(state, 'running', {}, new Date().toISOString());
+  await fsp.writeFile(path.join(channel.state, `${taskId}.json`), `${JSON.stringify(state)}\n`);
+  await fsp.writeFile(path.join(channel.claims, `${taskId}.lock`), `${JSON.stringify({
+    pid: process.pid, instanceId: 'other-live-instance', at: new Date().toISOString(), request: `${taskId}.json`,
+  })}\n`, { mode: 0o600 });
+  await host.start();
+  const after = JSON.parse(await fsp.readFile(path.join(channel.state, `${taskId}.json`), 'utf8'));
+  assert.equal(after.phase, 'running', 'recovery must not mark a claimed task interrupted');
 });
