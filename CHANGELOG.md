@@ -18,6 +18,20 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.12 — 稳定版
+
+`0.2.11` 的稳定后继：把自我进化从“要求真实成对会话证据”推进到“在真实宿主与真实模型上产生、批准并复用可复核的任务收益”。相对 `0.2.11` 固定产物，分发内容改 `lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/error-boundary.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/experience-recall.js`、`lib/orchestrator.js`、`lib/registration.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`，加上版本号与随包文档；宿主集合、持久化 schema 与 schema 版本、工具名、授权来源、八项晋升门禁的既有判定、Cordis 信任根、`engines` 与 `peerDependencies`（六个宿主）不变，工具参数只新增可选字段（`evolution_propose.improvement`、`evolution_measure.taskId`、observation 的 `taskBenefit`、context-policy 计划的 `verification.functionalCheck`）。已有三个 stable 插件、历史共享经验与生产数据不迁移、不下线。
+
+- **统一失败归因。** 自主观察入口与经验采集器共用 `lib/error-boundary.js` 的 `error.info.code` 读取器，同一失败不再得到两套归因。
+- **收益门禁不能被降级。** Desktop 配对工作负载存在时，收益模型由 workload 决定，调用方声明的 `capability` 不能覆盖强制的 workflow 模型。
+- **候选按真实失败率排序。** 只有 ≥5 次观测尝试的窗口才用 `observedFailureRate` 替换频率项；无窗口的历史记录评分逐字节不变。
+- **stable 插件价值可见。** 统一审计新增只读、有界的价值维度（installed-only / in-use / 实验收益 / 已证明生产收益），只对“明确零调用 + 能力自包含 + 无生产收益证据”给出可恢复、需所有者授权的停用建议；审计不执行停用、不改 profile、不清经验。
+- **收益来源从证据派生。** `readPublishedPluginReview` 读取晋升证据并输出 `benefitProvenance`（`paired-workflow` / `capability-self-test` / `unproven` / `unknown`）；能力自测不再满足 `experimentBenefit`。
+- **用量可复现。** 新增 `docs/audit/replay/capability-usage.mjs`，按固定规则把持久会话日志折算成评审接受的 `usage` 投影；扫描不完整时输出 `null` 而不是零。
+- **taskBenefit 门禁与 producer。** workflow 声明必须有同一任务、同一模型、无候选 vs 有候选各 ≥3 次的真实会话证据，并绑定候选 Host 源码 sha256 与 DSH/Cordis 版本；`scripts/acceptance/task-benefit.mjs` 在隔离 home 中用真实 ACP 宿主与真实模型生产 artifact，`scripts/acceptance/run-task-benefit-loop.mjs` 跑完整闭环（发现 → Trial 功能复验 → 门禁 → 确认 → canary → stable → fresh consumer → 四类负证据 → 重启）。
+- **context-policy 功能复验。** `verification.functionalCheck` 只允许 `read` / `glob` / `grep`；挂载前必须不满足期望，Trial 与每次 canary 必须满足。
+- **非错误退化观测。** collector 记录 `line-truncated` / `output-capped`（只认官方 footer），恢复成本只关联成功的同路径 re-read 或 `bash` / `run_code` / `grep`；planner 按损失频率、恢复成本与可恢复性排序，未达门槛的退化不影响普通错误候选的既有评分。
+- **真实结果。** 隔离真实 Desktop / ACP / 模型闭环 run10：baseline 3 会话（15 turns / 12 calls / 492,298 tokens / 107.1 s）对 candidate（12 turns / 9 calls / 398,208 tokens / 55.3 s），两侧 3/3 正确；fresh ACP consumer 用真实模型 4 turns / 3 calls 正确完成。四类负证据（缺失、源码失配、无收益、未采用）都在批准前失败并回滚、无发布；重启后 planner 返回 `already-resolved`。PR #70 的三次真实模型配对显示模型 0/6 次主动选择新工具、但都以 shell 兜底正确完成，会话级收益为零的负结果保留在 `docs/audit/2026-11-18-promoted-reuse-loop.md`。
 ## 0.2.11 — 稳定版
 
 `0.2.10` 的稳定后继：把自我进化闭环从“能生成并晋升插件”推进到“基于真实失败分母、可靠归因与可验证收益”。相对 `0.2.10` 固定产物，分发内容改 `lib/experience-collector.js`、`lib/shared-experience.js`、`lib/experience-recall.js`、`lib/experience-plan.js`、`lib/orchestrator.js`、`lib/registration.js`、`lib/guard.js`、`lib/desktop-task-protocol.js`、`lib/desktop-task-host.js`、`lib/desktop-task-client.js` 与 `lib/cordis-compat.js`，加上版本号与随包文档；宿主集合、持久化 schema 与 schema 版本、工具名 / 参数结构、授权来源、八项晋升门禁、Cordis 信任根、`engines` 与 `peerDependencies`（六个宿主）不变。已有三个 stable 插件、历史共享经验与生产数据均不迁移、不下线。
