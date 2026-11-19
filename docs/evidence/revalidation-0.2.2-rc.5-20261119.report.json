@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "kind": "dsh-evolution-revalidation-report",
+  "note": "adoption and post-adoption proofs for the evidence file this report names; the evidence file itself stays byte-identical to the digest recorded in the publication index",
+  "evidenceFile": "revalidation-0.2.2-rc.5-20261119.json",
+  "evidenceSha256": "c9304f5f68aea76f91e5de791d8984775918a73969dd20b73f5e9f5ff6cbaace",
+  "host": {
+    "dsh": "0.2.2-rc.5",
+    "cordis": "4.1.0",
+    "include": "1.1.0",
+    "node": "v24.21.0"
+  },
+  "adoption": {
+    "command": "dsh-evolution-shared revalidate --home $DSH_HOME --evidence <this file>",
+    "script": "$DSH_HOME/profiles/acp/node_modules/dsh-evolution/scripts/shared-plugins.mjs",
+    "result": {
+      "ok": true,
+      "adopted": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "profiles": [
+            "acp",
+            "web"
+          ],
+          "status": "updated"
+        },
+        {
+          "id": "evolution-promoted-e82a216992bb",
+          "profiles": [
+            "acp"
+          ],
+          "status": "updated"
+        },
+        {
+          "id": "evolution-promoted-2794ab16d2b3",
+          "profiles": [
+            "acp"
+          ],
+          "status": "updated"
+        }
+      ],
+      "host": {
+        "dsh": "0.2.2-rc.5",
+        "cordis": "4.1.0",
+        "include": "1.1.0",
+        "node": "v24.21.0"
+      },
+      "evidenceSha256": "c9304f5f68aea76f91e5de791d8984775918a73969dd20b73f5e9f5ff6cbaace"
+    }
+  },
+  "postAdoption": {
+    "acp": {
+      "rows": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-19T05:50:51.129Z",
+          "sourceSha256": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e",
+          "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d"
+        },
+        {
+          "id": "evolution-promoted-e82a216992bb",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-19T05:50:51.129Z",
+          "sourceSha256": "7d446ea94e730bd69ec25c38a2d4478d2b6f362f13a3446047e84ad348833230",
+          "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d"
+        },
+        {
+          "id": "evolution-promoted-2794ab16d2b3",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-19T05:50:51.129Z",
+          "sourceSha256": "88d915e702b205ed09d84f1f5b025fdfb45216b1601a097345d30dda44b01e5d",
+          "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d"
+        }
+      ],
+      "toolCalls": [
+        {
+          "id": "evolution-promoted-af973a3eea01:readonly_git_file",
+          "name": "readonly_git_file",
+          "expect": {
+            "contains": "revalidation fixture"
+          },
+          "path": "registry-definition",
+          "isError": false,
+          "code": null,
+          "text": "{\"ok\":true,\"exitCode\":0,\"content\":\"revalidation fixture: readonly_git_file returns this line at HEAD\\n\",\"truncated\":false,\"stderr\":\"\"}"
+        },
+        {
+          "id": "evolution-promoted-e82a216992bb:run_code_diagnose",
+          "name": "run_code_diagnose",
+          "expect": {
+            "json": {
+              "ok": true,
+              "occurrences": 73,
+              "failures": 5,
+              "successes": 68,
+              "status": "healthy"
+            }
+          },
+          "path": "registry-definition",
+          "isError": false,
+          "code": null,
+          "text": "{\"ok\":true,\"occurrences\":73,\"failures\":5,\"successes\":68,\"failureRate\":0.0685,\"status\":\"healthy\"}"
+        }
+      ]
+    },
+    "web": {
+      "rows": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "status": "active",
+          "reason": null,
+          "activatedAt": "2026-11-19T05:50:53.348Z",
+          "sourceSha256": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e",
+          "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d"
+        }
+      ],
+      "toolCalls": [
+        {
+          "id": "evolution-promoted-af973a3eea01:readonly_git_file",
+          "name": "readonly_git_file",
+          "expect": {
+            "contains": "revalidation fixture"
+          },
+          "path": "batch-executor",
+          "isError": false,
+          "code": null,
+          "text": "{\"ok\":true,\"exitCode\":0,\"content\":\"revalidation fixture: readonly_git_file returns this line at HEAD\\n\",\"truncated\":false,\"stderr\":\"\"}"
+        }
+      ]
+    }
+  },
+  "preserved": {
+    "evolutionTreeDigestBefore": "df4d293f971e2bac6d9668be7e68641295a7e8f7118ec90a56c99940afbaa4c4",
+    "evolutionTreeDigestAfter": "df4d293f971e2bac6d9668be7e68641295a7e8f7118ec90a56c99940afbaa4c4",
+    "experienceBefore": {
+      "events": 363,
+      "knowledge": 36,
+      "clock": 1
+    },
+    "experienceAfter": {
+      "events": 363,
+      "knowledge": 36,
+      "clock": 1
+    },
+    "promotedSources": {
+      "evolution-promoted-af973a3eea01": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e",
+      "evolution-promoted-e82a216992bb": "7d446ea94e730bd69ec25c38a2d4478d2b6f362f13a3446047e84ad348833230",
+      "evolution-promoted-2794ab16d2b3": "88d915e702b205ed09d84f1f5b025fdfb45216b1601a097345d30dda44b01e5d"
+    }
+  }
+}

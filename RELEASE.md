@@ -129,15 +129,17 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr --experience-evolution
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.2 --no-hmr --experience-evolution
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.3 --no-hmr --experience-evolution
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.4 --no-hmr --experience-evolution
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.5 --no-hmr --experience-evolution
 ```
 
 `--no-hmr` 在每个引导进程的官方 overlay 里加上 `- id: hmr` / `disabled: true`，并要求启用 / 禁用
 报告 `application: "restart-required"` / `restartReason: "no-hmr"`、调用期间观测不到 HMR 能力、
-保存的选择在下一次启动生效。`0.2.2-rc.1`、`0.2.2-rc.2` 与 `0.2.2-rc.3` 上的 profile 变更在 HMR 可用前开始时会命中一个属于上游的
+保存的选择在下一次启动生效。`0.2.2-rc.1` 至 `0.2.2-rc.5` 上的 profile 变更在 HMR 可用前开始时会命中一个属于上游的
 `PluginManager` / HMR 事务缺口（只用官方 bundle 就能复现），所以这两个版本只验收这个部署形态；
-根因、复现与证据范围见 `COMPATIBILITY.md` 的 “The upstream HMR transaction gap on 0.2.2-rc.1 / 0.2.2-rc.2 / 0.2.2-rc.3”。
+根因、复现与证据范围见 `COMPATIBILITY.md` 的 “The upstream HMR transaction gap on 0.2.2-rc.1 through 0.2.2-rc.5”。
 
-脚本是自包含的：它在一个临时目录里用 pnpm 安装指定版本的官方 `@deepseek-ai/dsh`，在全新的 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步（`--experience-evolution` 在 `0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` 上再加 4 个独立进程 phase，共 25 步）：
+脚本是自包含的：它在一个临时目录里用 pnpm 安装指定版本的官方 `@deepseek-ai/dsh`，在全新的 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步（`--experience-evolution` 在 `0.2.2-rc.1` 至 `0.2.2-rc.5` 上再加 4 个独立进程 phase，共 25 步）：
 
 1. 官方 CLI 只读诊断（`host.version` 必须是 `verified: true`，状态不得为 `blocked`）
 2. 核心流程：`runtime_inspect → propose → trial → measure → revert`，要求 `runtimeRecovered: true`，以及 12 个工具全部注册
@@ -148,7 +150,7 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.3 --no-hmr --exp
 7. 真实 promotion：`propose → trial → measure → 二次确认门 → promote → canary 观察`，监听器可被真实触发并跨进程重启存活
 8. 重启后 startup canary 提交为 `stable`；新候选注入 `metricRegression` 触发 canary 回滚，且只回滚新候选、保留已提交候选
 9. 再次重启后已提交候选仍存活、被回滚候选未复活，最终诊断 `healthy`
-10. （仅 `0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3`，`--experience-evolution`）经验驱动实验：真实工具失败入库 → `evolution_plan` 发现候选 → baseline/candidate probe → measure 派生指标 → 收益候选经确认晋升并跨重启存活 / 无效候选被门禁拒绝并回滚 / 回归候选被回归门禁拒绝并恢复 → 结构化结论跨重启可检索；旧宿主没有官方 batch tool executor，脚本明确拒绝该开关
+10. （仅 `0.2.2-rc.1` 至 `0.2.2-rc.5`，`--experience-evolution`）经验驱动实验：真实工具失败入库 → `evolution_plan` 发现候选 → baseline/candidate probe → measure 派生指标 → 收益候选经确认晋升并跨重启存活 / 无效候选被门禁拒绝并回滚 / 回归候选被回归门禁拒绝并恢复 → 结构化结论跨重启可检索；旧宿主没有官方 batch tool executor，脚本明确拒绝该开关
 
 验收证据（每次运行由脚本重写，本地路径脱敏为 `<work>` / `$DSH_HOME`）：
 
@@ -158,8 +160,12 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.3 --no-hmr --exp
 - `docs/evidence/dsh-0.2.2-rc.1.json`（`hostLiveApply: "disabled"`，25/25 步）
 - `docs/evidence/dsh-0.2.2-rc.2.json`（`hostLiveApply: "disabled"`，25/25 步，含 `--experience-evolution`）
 - `docs/evidence/dsh-0.2.2-rc.3.json`（`hostLiveApply: "disabled"`，25/25 步，含 `--experience-evolution`）
+- `docs/evidence/dsh-0.2.2-rc.4.json`（`hostLiveApply: "disabled"`，25/25 步，含 `--experience-evolution`）
+- `docs/evidence/dsh-0.2.2-rc.5.json`（`hostLiveApply: "disabled"`，25/25 步，含 `--experience-evolution`）
 - `docs/evidence/cross-entry-0.2.2-rc.2.json`（同一宿主、`--cross-entry`，31/31 步）
 - `docs/evidence/cross-entry-0.2.2-rc.3.json`（同一宿主、`--cross-entry`，35/35 步）
+- `docs/evidence/cross-entry-0.2.2-rc.4.json`（同一宿主、`--cross-entry`，35/35 步）
+- `docs/evidence/cross-entry-0.2.2-rc.5.json`（同一宿主、`--cross-entry`，35/35 步）
 
 证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 按宿主分两条通道核对：固定点验收过的宿主核对**发布固定点**，固定点之后新增的宿主核对**本树构建的内容**（`npm pack` 字节随 npm 版本变化，候选没有可核对的固定产物，所以新增宿主只核对内容摘要）。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容：固定点覆盖的宿主在重新固定时重跑，新增宿主的记录则必须立即重跑才能通过 `pack:check`。开发阶段的判定差别见第 6 节第 16 条。
 
@@ -171,14 +177,14 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.3 --no-hmr --exp
 
 `0.2.9` 还在**正式**（非隔离）ACP profile 上做了多会话验收：一个 live 会话挂载两个已发布 stable 插件（探针回执证明工具注册与可调用），一个在 Include 启动/挂载窗口被关闭的短命会话不得覆盖它的 `active` 报告，read-side review 不产生 `restart-consumer`；记录见 `docs/evidence/promoted-consumer-real-acp-0.2.9.json`（本地 home 路径已脱敏）。它只读隔离验收的同一条 consumer 代码路径，不替代五宿主验收。
 
-固定点与工作树仍是两条通道：固定点自己的 `verifiedHosts` 这一段覆盖六个宿主，它们的记录按固定产物的内容与字节核对；固定点之后新增的宿主（当前没有）只核对本树构建的内容。两条通道的分配由固定点自己的 `verifiedHosts` 决定，不随工作树改写，所以既有历史证据不可变，新增宿主的记录也不会被误当作发布验收。重新固定的流程是：把 `peerDependencies` 与 `release/manifest.json` 的 `verifiedHosts` / `evidence` 对齐、`sourceCommit` 指向本次提交，再对固定产物重跑全部宿主的验收并 `npm run release:publish -- --force`。
+固定点与工作树仍是两条通道：固定点自己的 `verifiedHosts` 这一段覆盖六个宿主，它们的记录按固定产物的内容与字节核对；固定点之后新增的宿主（当前为 `0.2.2-rc.4` / `0.2.2-rc.5`）只核对本树构建的内容。两条通道的分配由固定点自己的 `verifiedHosts` 决定，不随工作树改写，所以既有历史证据不可变，新增宿主的记录也不会被误当作发布验收。重新固定的流程是：把 `peerDependencies` 与 `release/manifest.json` 的 `verifiedHosts` / `evidence` 对齐、`sourceCommit` 指向本次提交，再对固定产物重跑全部宿主的验收并 `npm run release:publish -- --force`。
 
 ## 5. CI 与发布链
 
 - `.github/workflows/ci.yml`
   - `test`：Node `22.19.0` 与 `24.x`，`npm ci --ignore-scripts`，`npm test`；作业级 `env: NODE_OPTIONS=--max-old-space-size=4096`（`AGENTS.md` 第 5 节要求的堆上限，由 `test/workflows.test.mjs` 断言，安装步骤与 runner 起的每个子进程都带同一个上限）
   - `package`：`pack:check`（开发阶段判定：工作树是固定点，或是它的已提交后继并逐条列出差异）、对固定产物的 `release:verify`、本机重建的 `--content-only --tree` 校验（证明本机打包复现的就是工作树内容；发布字节仍由 `release/` 固定）、从**发布 tarball** 解包后在没有任何 `node_modules` 的情况下启动 doctor、`sha256sum --check`
-  - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1` / `0.2.1-rc.2` / `0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3`（后三者带 `--no-hmr`），用真实官方宿主执行第 4 节的全部步骤，并证明记录的 `contentSha256` 等于**本树**内容（与固定点的比较在 `package` job）
+  - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1` / `0.2.1-rc.2` / `0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` / `0.2.2-rc.4` / `0.2.2-rc.5`（后五者带 `--no-hmr`），用真实官方宿主执行第 4 节的全部步骤，并证明记录的 `contentSha256` 等于**本树**内容（与固定点的比较在 `package` job）
 - `.github/workflows/codeql.yml`：对 `javascript-typescript` 在 `main`、pull request 与每周运行 CodeQL，并把 SARIF 上传到 GitHub code scanning（job 权限仅 `security-events: write` + 只读内容）
 - `.github/workflows/release.yml`：tag push 或 `workflow_dispatch` 时
   1. 校验 tag 形如 `v*`，并核对 tag 版本、checkout 到的 commit、`release/manifest.json` 的 `sourceCommit`（新版本必须有，必须是 tag 历史中的祖先，并从 git 对象计算其实际包内容摘要）与工作树内容摘要（`scripts/release/verify-provenance.mjs`）
@@ -218,7 +224,7 @@ rc.18 没有改变 CI job 集、宿主矩阵或 publish 顺序。随候选新增
     - 这一段的判定要读 git 对象，因此检出必须带历史：`actions/checkout` 默认只取一个 commit，会让“固定点的 `sourceCommit` 不在历史中”成立并让两项判定失败。`ci.yml` 的 `test` 与 `package` 作业（以及 `npm test` 里的 `test/release-pin.test.mjs`）显式使用 `fetch-depth: 0`，`test/workflows.test.mjs` 断言这条：凡是运行 `npm test` 或 `pack:check` 的作业，检出的 `fetch-depth` 必须是 `0`。浅克隆下报错信息会点明“shallow checkout: fetch the full history”，而不是把缺失历史说成“固定点漂移”。
     - **发布阶段**（`npm run pack:check -- --release`，`release.yml` 用这一条）。保持原来的严格语义：`release/manifest.json pins this tree content` 与 `the working tree still builds the pinned content`，工作树只要不等于固定内容就失败并点名文件。
     - 发布链因此是**双保险**：`release.yml` 第一步的 `verify-provenance.mjs` 独立拒绝“tag 的工作树内容 ≠ 固定点”的 tag，所以即使有人把 `--release` 去掉，漂移的树也发布不了；而 `npm run release:publish -- --force` 是把漂移转绿的唯一途径（新版本替换固定点必须显式 `--force`）。
-    - 重新固定的流程不变：**重新构建 → 重跑全部已声明宿主的验收（当前六个，`0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` 带 `--no-hmr`）→ `npm run release:publish -- --force`**，之后两段判定同时转绿。rc.15 在发布前正是这样做的（工作树曾因 rc.14 之后积压的一轮修复漂移，`pack:check` 13 绿 3 红），rc.16 也一样（`7cd5453` 改了三个分发文件）：两次都在重新固定后 16 项全绿。
+    - 重新固定的流程不变：**重新构建 → 重跑全部已声明宿主的验收（当前八个，`0.2.2-rc.1` 至 `0.2.2-rc.5` 带 `--no-hmr`）→ `npm run release:publish -- --force`**，之后两段判定同时转绿。rc.15 在发布前正是这样做的（工作树曾因 rc.14 之后积压的一轮修复漂移，`pack:check` 13 绿 3 红），rc.16 也一样（`7cd5453` 改了三个分发文件）：两次都在重新固定后 16 项全绿。
     - 代价与它换来的东西要说清。本条以前把“工作树必须等于固定点”当成唯一判据，代价是：任何一个分发文件的提交只要没伴随重新固定，`npm test` 的两项 pin 断言与 `pack:check` 的三项门禁就必定红，红成为常态而不是信号——rc.16 之后的两轮性能优化（`e185525`、`5381299`）正落在这个状态：失败项与本轮改动是否正确无关。现在这条区别显式进判定：`test/release-pin.test.mjs` 与 `pack:check` 共用同一张判定表（`scripts/release/pin-relation.mjs`），并用 `the shipping gate refuses a tree that does not build the pin` 断言 `--release` 在这种树上**必须**失败，所以“开发阶段如实报告”不可能变成“发布阶段放松”。rc.17 正是按这套判据收口的：`e185525` / `5381299` / `84cbe3a` 之后工作树被如实报为 `ahead`（16 项全绿，点名 `lib/dockyard-domain/memory.js`、`lib/domain-storage.js`、`README.md`、`RELEASE.md`），重新固定后回到 `pinned`。仍未改变的一点：开发阶段的容忍只针对**已提交**的分发改动，且 `ahead` 从不声称任何宿主验收或发布发生过。
 17. **冷档案的残尾是隔离保留，不是自动清理。** 活动档案文件若不以换行结尾（上一次追加被中断、或进程在写入中途死亡），下一次追加前会先把残片**逐字节**追加进同目录的 `state.json.<collection>quarantine-archive.jsonl`，再用临时文件 + `rename` 原子重写活动档案，只保留完整行（`test/memory-integrity-cold-archive.test.mjs` 的 `P1-1` 断言残片逐字节保留、档案只剩完整行、重启后新旧记录都还在且第二个残尾仍追加到同一文件）。该隔离文件是 append-only 现场保留，**不会被插件自动删除**；它会被 doctor 的 `state.archives` 扫描到（它按 `*.jsonl` 扫整个 `dockyard/` 目录），残片本身通常不是完整 JSON，于是报为“`N unparsable line(s)`”的 `degraded` 项，`recoverable: false`。处置需人工：确认残片不再需要后自行移走或归档。
 18. **冷档案的不可解析字节不再静默丢弃，代价是这种档案上 `reconcile()` 会拒绝执行。** 活动档案中段或 sealed 段文件里无法解析的行现在会记成 `archiveIntegrity()` 可读到的分类故障（`invalid-line` / `unreadable`；活动文件未终止的最后一行是 `torn-tail`，写入失败是 `deferred-write`），不再被当作“没有这一行”。`verifyConsistency()` 把 `invalid-line` / `unreadable` 判为硬降级，结果 `valid: false`，`reasons` 含 `archive_bytes_unreadable`；`reconcile()` 在写回后再跑一次 `verifyConsistency()`，因此在这种档案上会以 `Evolution reconciliation verifier failed` 抛出并回滚它自己刚刚做的改动（`reconciliationRollback` 记录 `rolled_back` 或 `rollback_failed`）。这是刻意的“不静默合并损坏状态”，不是 regression：但这也意味着拥有这种档案的数据根不能用 `reconcile()` 修正其它不一致，必须先人工处置。注意 `archiveIntegrity()` 是 `EvolutionMemory` 实例上的公开方法，`evolution_runtime_inspect` 与 doctor **都不输出**它；operator 通过 doctor 看到的是 `state.archives` 的降级项。
