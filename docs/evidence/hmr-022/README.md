@@ -39,6 +39,15 @@ HMR 打开时存在一个属于上游的启动事务缺口，本仓库不修、�
 - 紧接着第二次启动同一个 home：`ctx.get('webStartup')` 为 `true`、选中的 bundle 包含
   `@deepseek-ai/dsh-web-app`，即第一次启动保存的选择确实在重启后生效。
 
+## 0.2.2-rc.4 / 0.2.2-rc.5 复核（2026-11-19）
+
+rc.3 → rc.4 与 rc.4 → rc.5 的 `dsh-plugin-manager/lib/index.js`（`33cbad2b…`）与
+`dsh-hmr/lib/index.js`（`d4990a34…`）逐字节不变。用同一受控探针在两个新宿主上各跑
+9 组：HMR 可见前的 3 次 `barrier` 全部复现 `HMR profile reconciliation must run inside runExclusive`，
+HMR 可见后的 3 次 `stable` 全部成功，关闭 `hmr` 的 3 组全部报告 `restart-required` / `no-hmr`
+并在下一次启动应用保存的选择。原始结果见 `official-control-0.2.2-rc.4.json` 与
+`official-control-0.2.2-rc.5.json`；因此新宿主继续只验收关闭 HMR 的部署形态。
+
 该分组的 overlay 在运行后从磁盘复核：三个 no-HMR 引导的 patch 文件都以 `- id: hmr` / `disabled: true`
 开头，barrier / stable 分组的没有这一行。第一版脚本把模式从父进程环境读取，导致 no-HMR 分组实际上仍
 开着 HMR 却仍报 9/9；现在驱动把 `mode` 显式传给 overlay 生成、并在写盘后校验这一行，缺行直接抛错。

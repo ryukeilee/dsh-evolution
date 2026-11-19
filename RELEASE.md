@@ -129,15 +129,17 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr --experience-evolution
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.2 --no-hmr --experience-evolution
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.3 --no-hmr --experience-evolution
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.4 --no-hmr --experience-evolution
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.5 --no-hmr --experience-evolution
 ```
 
 `--no-hmr` 在每个引导进程的官方 overlay 里加上 `- id: hmr` / `disabled: true`，并要求启用 / 禁用
 报告 `application: "restart-required"` / `restartReason: "no-hmr"`、调用期间观测不到 HMR 能力、
-保存的选择在下一次启动生效。`0.2.2-rc.1`、`0.2.2-rc.2` 与 `0.2.2-rc.3` 上的 profile 变更在 HMR 可用前开始时会命中一个属于上游的
+保存的选择在下一次启动生效。`0.2.2-rc.1` 至 `0.2.2-rc.5` 上的 profile 变更在 HMR 可用前开始时会命中一个属于上游的
 `PluginManager` / HMR 事务缺口（只用官方 bundle 就能复现），所以这两个版本只验收这个部署形态；
-根因、复现与证据范围见 `COMPATIBILITY.md` 的 “The upstream HMR transaction gap on 0.2.2-rc.1 / 0.2.2-rc.2 / 0.2.2-rc.3”。
+根因、复现与证据范围见 `COMPATIBILITY.md` 的 “The upstream HMR transaction gap on 0.2.2-rc.1 through 0.2.2-rc.5”。
 
-脚本是自包含的：它在一个临时目录里用 pnpm 安装指定版本的官方 `@deepseek-ai/dsh`，在全新的 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步（`--experience-evolution` 在 `0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` 上再加 4 个独立进程 phase，共 25 步）：
+脚本是自包含的：它在一个临时目录里用 pnpm 安装指定版本的官方 `@deepseek-ai/dsh`，在全新的 `$DSH_HOME` 里用官方 `dsh plugin --profile web add` 安装 tarball，然后驱动真实宿主完成 21 步（`--experience-evolution` 在 `0.2.2-rc.1` 至 `0.2.2-rc.5` 上再加 4 个独立进程 phase，共 25 步）：
 
 1. 官方 CLI 只读诊断（`host.version` 必须是 `verified: true`，状态不得为 `blocked`）
 2. 核心流程：`runtime_inspect → propose → trial → measure → revert`，要求 `runtimeRecovered: true`，以及 12 个工具全部注册
@@ -158,8 +160,12 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.3 --no-hmr --exp
 - `docs/evidence/dsh-0.2.2-rc.1.json`（`hostLiveApply: "disabled"`，25/25 步）
 - `docs/evidence/dsh-0.2.2-rc.2.json`（`hostLiveApply: "disabled"`，25/25 步，含 `--experience-evolution`）
 - `docs/evidence/dsh-0.2.2-rc.3.json`（`hostLiveApply: "disabled"`，25/25 步，含 `--experience-evolution`）
+- `docs/evidence/dsh-0.2.2-rc.4.json`（`hostLiveApply: "disabled"`，25/25 步，含 `--experience-evolution`）
+- `docs/evidence/dsh-0.2.2-rc.5.json`（`hostLiveApply: "disabled"`，25/25 步，含 `--experience-evolution`）
 - `docs/evidence/cross-entry-0.2.2-rc.2.json`（同一宿主、`--cross-entry`，31/31 步）
 - `docs/evidence/cross-entry-0.2.2-rc.3.json`（同一宿主、`--cross-entry`，35/35 步）
+- `docs/evidence/cross-entry-0.2.2-rc.4.json`（同一宿主、`--cross-entry`，35/35 步）
+- `docs/evidence/cross-entry-0.2.2-rc.5.json`（同一宿主、`--cross-entry`，35/35 步）
 
 证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 按宿主分两条通道核对：固定点验收过的宿主核对**发布固定点**，固定点之后新增的宿主核对**本树构建的内容**（`npm pack` 字节随 npm 版本变化，候选没有可核对的固定产物，所以新增宿主只核对内容摘要）。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容：固定点覆盖的宿主在重新固定时重跑，新增宿主的记录则必须立即重跑才能通过 `pack:check`。开发阶段的判定差别见第 6 节第 16 条。
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Official 0.2.2-rc.1 / 0.2.2-rc.2 control, without Evolution. Diagnostic success
+/** Official 0.2.2-rc.1 through 0.2.2-rc.5 control, without Evolution. Diagnostic success
  * means the upstream guard failure was reproduced (and its absence with HMR
  * disabled), not that host acceptance passed.
  * Usage: node --max-old-space-size=4096 scripts/acceptance/reproduce-hmr-startup.mjs <runtime> <out.json>
@@ -17,8 +17,8 @@ const runtime = path.resolve(runtimeArg);
 const out = path.resolve(outArg);
 const modules = path.join(runtime, 'node_modules/@deepseek-ai');
 const version = JSON.parse(fs.readFileSync(path.join(modules, 'dsh/package.json'))).version;
-const SUPPORTED_HOSTS = new Set(['0.2.2-rc.1', '0.2.2-rc.2']);
-if (!SUPPORTED_HOSTS.has(version)) throw new Error(`expected official 0.2.2-rc.1 or 0.2.2-rc.2, found ${version}`);
+const SUPPORTED_HOSTS = new Set(['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3', '0.2.2-rc.4', '0.2.2-rc.5']);
+if (!SUPPORTED_HOSTS.has(version)) throw new Error(`expected official 0.2.2-rc.1 through 0.2.2-rc.5, found ${version}`);
 const cli = path.join(modules, 'dsh/lib/bin.js');
 const probe = path.join(path.dirname(fileURLToPath(import.meta.url)), 'probes/hmr-transaction-probe.mjs');
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-hmr-022-'));
@@ -27,9 +27,19 @@ const work = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-hmr-022-'));
 const standaloneProbe = path.join(work, 'hmr-transaction-probe.mjs');
 fs.copyFileSync(probe, standaloneProbe);
 const sha256 = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+/** Resolve a source file through the host's real package layout. pnpm links
+ *  only the host at the top level, so the packages it depends on are siblings
+ *  of the real `dsh` directory inside `.pnpm`, not direct top-level symlinks. */
+function sourcePath(file) {
+  const direct = path.join(modules, file);
+  if (fs.existsSync(direct)) return direct;
+  const sibling = path.join(path.dirname(fs.realpathSync(path.join(modules, 'dsh'))), file);
+  if (fs.existsSync(sibling)) return sibling;
+  throw new Error(`cannot resolve ${file} from the installed host runtime`);
+}
 const sources = ['dsh-plugin-manager/lib/index.js', 'dsh-hmr/lib/index.js', 'cordis/lib/index.js'];
 const report = { host: version, node: process.version, work, diagnosticOnly: true,
-  sources: Object.fromEntries(sources.map(file => [file, sha256(path.join(modules, file))])), runs: [] };
+  sources: Object.fromEntries(sources.map(file => [file, sha256(sourcePath(file))])), runs: [] };
 
 /** Create the disposable profile only when it does not exist yet, so the second
  * boot of a no-HMR pair sees the selection the first boot saved. `mode` is an
@@ -133,5 +143,5 @@ for (let index = 0; index < 3; index += 1) {
   console.log(`no-hmr: ${expected ? 'expected diagnostic outcome' : 'UNEXPECTED'}`);
 }
 
-if (sources.some(file => report.sources[file] !== sha256(path.join(modules, file)))) throw new Error('official source changed during reproduction');
+if (sources.some(file => report.sources[file] !== sha256(sourcePath(file)))) throw new Error('official source changed during reproduction');
 if (report.runs.some(run => !run.expected)) process.exitCode = 1;
