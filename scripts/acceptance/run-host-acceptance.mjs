@@ -520,7 +520,8 @@ async function bootWebReview(label, phase) {
 function bootAcpConsumer(label, { expect, markers }) {
   const probeFile = path.join(PROBES, 'cross-entry-consumer-probe.mjs');
   const patchFile = path.join(work, `cross-entry-${label}.patch.yml`);
-  fs.writeFileSync(patchFile, `- id: evolution-orchestrator\n  disabled: true\n- insert:\n    - id: evolution-acceptance-${label}\n      name: '${pathToFileURL(probeFile).href}'\n`);
+  const hmrRow = options.noHmr ? '- id: hmr\n  disabled: true\n' : '';
+  fs.writeFileSync(patchFile, `${hmrRow}- id: evolution-orchestrator\n  disabled: true\n- insert:\n    - id: evolution-acceptance-${label}\n      name: '${pathToFileURL(probeFile).href}'\n`);
   const receipt = path.join(work, `cross-entry-${label}.receipt.json`);
   const bootAfter = new Date().toISOString();
   return new Promise((resolve) => {

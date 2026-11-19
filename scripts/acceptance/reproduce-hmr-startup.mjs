@@ -31,10 +31,10 @@ const sha256 = file => crypto.createHash('sha256').update(fs.readFileSync(file))
  *  only the host at the top level, so the packages it depends on are siblings
  *  of the real `dsh` directory inside `.pnpm`, not direct top-level symlinks. */
 function sourcePath(file) {
-  const direct = path.join(modules, file);
-  if (fs.existsSync(direct)) return direct;
   const sibling = path.join(path.dirname(fs.realpathSync(path.join(modules, 'dsh'))), file);
   if (fs.existsSync(sibling)) return sibling;
+  const direct = path.join(modules, file);
+  if (fs.existsSync(direct)) return direct;
   throw new Error(`cannot resolve ${file} from the installed host runtime`);
 }
 const sources = ['dsh-plugin-manager/lib/index.js', 'dsh-hmr/lib/index.js', 'cordis/lib/index.js'];

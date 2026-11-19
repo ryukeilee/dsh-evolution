@@ -84,9 +84,10 @@ and additionally requires each enable/disable to report
 HMR capability during the call, and to apply the saved selection on the next
 boot. The reason is the upstream gap documented below, not a workaround of this
 bundle's own checks: the same overlay form is what `@deepseek-ai/dsh-hmr`
-documents for "disabling or omitting HMR applies changes on restart". The five
-releases ship a byte-identical `dsh-hmr/lib/index.js` and
-`dsh-plugin-manager/lib/index.js`, and the controlled
+documents for "disabling or omitting HMR applies changes on restart". All five
+releases ship a byte-identical `dsh-hmr/lib/index.js`; `dsh-plugin-manager/lib/index.js`
+is byte-identical from rc.2 through rc.5 (`33cbad2b…`) and differs in rc.1
+(`6f0fdc6a…`), where the same sequence is present. The controlled
 reproduction in `docs/evidence/hmr-022/` gives the same 3/3 diagnostic failure
 with the barrier and 3/3 success once HMR is visible; the rc.5 control is
 `docs/evidence/hmr-022/official-control-0.2.2-rc.5.json`.

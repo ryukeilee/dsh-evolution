@@ -12,6 +12,8 @@
 | 分发 | GitHub Release tarball；不发布 npm 包 |
 | 许可证 | MIT |
 
+> `0.2.2-rc.4` 与 `0.2.2-rc.5` 是本开发树新增的验收宿主，尚未进入 `v0.2.12` 固定产物。从本树安装时先运行 `npm run release:pack`，再安装 `dist/dsh-evolution-0.2.12.tgz`；GitHub Release 上的 `v0.2.12` tarball 仍只声明到 `0.2.2-rc.3`。
+
 ## 30 秒了解
 
 本版本把自我进化收益的判断推进到真实任务：workflow 收益必须有同一任务、同一模型、无候选 vs 有候选各 ≥3 次的真实会话证据（`taskBenefit` 门禁），并绑定候选 Host 源码摘要与 DSH/Cordis 版本；`scripts/acceptance/task-benefit.mjs` 在隔离 home 中用真实 ACP 宿主与真实模型生产该证据（源码仓库脚本，不随 tarball 分发），`run-task-benefit-loop.mjs` 跑完整闭环并在 fresh consumer 上验证自动复用。probe 继续区分 `capability-self-test` 与 `workflow`：单工具前后对照只算 `tool-improvement`；paired workload 只提供 `workflowBenefit` 证据，workflow 与 context-policy 晋升还必须通过 `taskBenefit`（同一任务、同一模型的成对真实会话）；context-policy 计划必须声明可重放的 `verification.functionalCheck`（`read` / `glob` / `grep`），安装成功本身不算生效。collector 另外记录 `line-truncated` / `output-capped` 这类非错误退化（只认官方 footer），planner 按损失频率、恢复成本与可恢复性排序。Desktop 的 `evolution_plan` 与 ACP 的 `evolution_desktop` 只读 `audit` 仍先分类已发布 stable 插件、再排序经验候选、最后给出有序 `selfEvolution.nextActions`；检查不写发布索引、不启动 Trial、不批准晋升。三个已发布 stable 插件、已有共享经验与生产数据都保持不变。开发树新增 DSH `0.2.2-rc.4` / `rc.5`：官方 rc.3 → rc.4 只改 DSH 升级说明与依赖固定；rc.4 → rc.5 只改 DSH 文档与 `dsh-base` 的 `cordis.patch.yml`（移除固定 `web.searchProvider`，改由 dsh-web 按模型路由选择），本 bundle 使用的运行时包逐字节相同，因此只扩展精确宿主声明并用真实宿主验收固定。`0.2.2-rc.1` 至 `rc.5` 需要关闭宿主 HMR，见下文。已有 schema 1 共享经验库在普通启动下继续保持原布局、不会被自动迁移。
@@ -88,7 +90,8 @@ Desktop 是唯一的晋升权威：Trial、measure、promotion、canary 与 roll
 kernel 时挂载插件并执行一次、重启后只挂载一次，同时覆盖不兼容跳过、源码篡改、撤销 / 恢复与升级重验证；
 因为 CI 环境没有 Desktop 二进制，该隔离验收用带完整 kernel 的 Web profile 充当 publisher，生产安装形态仍
 只由 Desktop 晋升。本机真实 Desktop 应用的 ACP → Desktop 控制链另有
-`docs/evidence/acp-desktop-control-0.2.2-rc.5-20261119.json`；rc.5 克隆数据根上的 stable 重验证见
+`docs/evidence/acp-desktop-control-0.2.2-rc.5-20261119.json`（该确定性运行按设计停在 `TASK_BENEFIT_REQUIRED` 门禁；真实模型的正向闭环见
+`docs/evidence/task-benefit-0.2.2-rc.5-20261119.json`）；rc.5 克隆数据根上的 stable 重验证见
 `docs/evidence/revalidation-0.2.2-rc.5-20261119.json`。
 
 ### 从 ACP 发起、由 Desktop 执行的自进化任务
@@ -335,6 +338,8 @@ DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.12.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
+> 上面的 `v0.2.12` Release tarball 声明的宿主到 `0.2.2-rc.3`。要在本开发树新增的 `0.2.2-rc.4` / `0.2.2-rc.5` 上运行，先在本仓库执行 `npm run release:pack`，再安装 `dist/dsh-evolution-0.2.12.tgz`；该构建目前不是已发布产物。
+
 安装后 bundle 会登记在官方 profile 的 `dsh.profile.bundles`，随 profile 加载，无需每个 session 手工挂载 preset。下面用 `$DSH_HOME/profiles/web` 指代 `web` profile 的安装目录。首次诊断：
 
 ```sh
@@ -351,7 +356,7 @@ node "$DSH_HOME/profiles/web/node_modules/dsh-evolution/scripts/doctor.mjs" --ho
 这与本 bundle 无关：只用官方 bundle、不装 Evolution 也能复现（见 `COMPATIBILITY.md`）。
 
 官方为这种情况准备了明确的配置：**关闭 `hmr` 行，profile 变更按重启生效**。这不是绕过官方保护，
-也不改宿主源码；五个宿主的 `dsh-hmr` `lib/index.js` 与 `dsh-plugin-manager` `lib/index.js` 逐字节相同，受控复现也相同；`PluginManager.configure()` 直接执行操作、`reload()` 只重组已保存的 profile，
+也不改宿主源码；五个宿主的 `dsh-hmr` `lib/index.js` 逐字节相同，`dsh-plugin-manager` 在 rc.2 至 rc.5 逐字节相同（rc.1 是另一版本，但同一序列仍在），受控复现也相同；`PluginManager.configure()` 直接执行操作、`reload()` 只重组已保存的 profile，
 并报告 `application: "restart-required"` / `restartReason: "no-hmr"`。在 `$DSH_HOME/profiles/web/cordis.patch.yml`
 （你的 profile patch 层）里追加：
 
@@ -523,7 +528,7 @@ node scripts/migrate-experience-store.mjs --root "$DSH_HOME/storages/evolution-e
 16. **执行事件日志与领域标记表随历史单调增长；回收是显式 owner 操作，不自动运行。** `execution-events.jsonl` 每个执行事件一行（含 measurement / promotion / canary 事实），领域文档的 `applied` 每个去重身份一个 64 位十六进制 MAC（上限 9 类事件 × experiment 数）。代价是：启动时按日志字节线性读取并逐条验签，`flush()` 每个 pass 读取并 HMAC 整份已提交前缀并对整张标记表重算摘要，领域文档随标记数增长。retention/compact 规划按行读取历史并转移行所有权（`#retentionPlan({ materialize })`），`dryRun` 只计算报告、不物化会被丢弃的输出，峰值内存因此随历史规模增长更慢；实测与唯一负项见 `docs/performance/retention-plan-streaming.md`。`evolution_maintain` 是唯一的回收入口：`dryRun` 只报告字节与记录数，`confirmation: true` 才执行。归档侧沿用既有语义压缩（终态记录折叠为聚合行），被替换的 sealed 段以 `pending.files` 的 `removed` 条目在同一事务里发布，**只有新文件全部安装成功之后才删除**；日志侧先把被丢弃记录携带的 promotion / measurement 事实写进 evidence sidecar（`*.evidence.json`，hydration 链中优先级高于事件桥），再提交裁剪后的 marker 与 `retention` floor（被裁 marker 的 keyed 链、累计的裁剪数与被丢弃字节/记录数、原文件摘要 `prior`、保留尾部摘要 `tail`），最后才截断那些已证明被吸收的字节。顺序是安全论证的一部分：**先提交 floor、后截断**。floor 记录计划时整份日志的摘要（`prior`）与截断后保留前缀的摘要（`tail`），所以“floor 已提交、截断未发生或被打断”是一个可以由下一次 replay 幂等完成的已提交事务（先核对 `prior` 再重写，再核对 `tail`），不会变成永久拒绝；反过来（先截断、后提交）会让 floor 描述已经不存在的字节，第二次回收崩溃后无法恢复。replay 只信任 floor 描述的字节：日志必须要么以保留尾部开头（`continuation`），要么**恰好**是 floor 记录的 `prior` 文件（此时先幂等完成那次已提交的截断）。两者都不是时以 `E_DOMAIN_EVENT_LOG_FLOOR_MISMATCH` 拒绝吸收，而不是重放可能已裁剪 marker 的记录——空文件也一样：空日志不能证明保留字节没有丢，而接受它会让下一次追加造出永远对不上 floor 的头部，所以这里直接失败、把现场留给操作者（恢复那段保留字节，或换一个数据根）。
 
 回收后的已知边界：领域文档带 `retention` 键，旧版本插件的严格 schema 会拒绝它，所以**回收后不要降级到旧版本**（先回滚再回收，或回收后不要回滚）；被裁 marker 的 eventId 不再参与重放冲突检测：同一身份重新发出时领域 ledger 以新 MAC 重新吸收，而内存 marker 窗口仍按 id 把它当重复，记录效果不会重复应用（不再抛冲突）；段目录里 `.tmp` 形状的 seal 残件会被保留、不进事务；doctor 的 `state.retention-floor` 与运行时共用只读分类，检查已提交（含 pending）的 floor：正常保留尾部为 ok、待截断原文件为 degraded，缺失或摘要不匹配为 blocked，不提供猜测式 repair；floor 自身不自洽（有被裁 marker 却没有链、链与零被裁数矛盾、累计丢弃字节小于最后一次丢弃、`prior` 与 `tail` 摘要相同）或 pending floor 落后于已提交 floor 时先报 `floor-inconsistent`（blocked，附 `floorProblems`），并在证据里给出 floor 计数器投影、floor 来源与仅报告不删除的回收临时残件。seal 临时残件由 `state.archives` 报告为 degraded 并保留。二次回收必须先补完上一轮已提交截断并验证保留尾部；**已补完的 floor 不需要 append lock**，所以无关的并发写者不会让启动重放或回收失败，只有确实需要补完时 append lock 竞争才以 `E_DOMAIN_EVENT_LOG_BUSY`（可重试）拒绝推进新 floor，dry run 则只读报告 `pending-truncation`；截断自身的其它失败保留原来的错误码，不会被伪装成锁竞争。没有任何定时器或后台任务调用回收；诊断仍由 `state.event-bridge` 报告 `bytes`、`lines`、`verifiedEvents`、`absorbedRecords`、`unabsorbedRecords`、`oldestRecordAt`、`newestRecordAt` 让操作者先看增长与“已吸收 / 未吸收”的分布。实测数字、修复前三个阻塞的复核与收益边界分别见 `docs/performance/capacity-reclaim-20261027.md`、`docs/performance/retention-reclaim-blockers.md` 与 `docs/performance/capacity-reclaim-evaluation.md`。
-17. **`0.2.2-rc.1` 至 `0.2.2-rc.5` 只验收了关闭宿主 HMR 的形态，且该缺口属于上游。** 在这五个宿主上，`hmr` 行启用时，**宿主启动窗口内**的 profile 变更可能以 `application: failed` + `HMR profile reconciliation must run inside runExclusive` 结束（选择已保存、未应用）。用纯官方 bundle 可复现，所以本 bundle 不声称修复它，也不绕过官方事务保护；已验收的部署形态是 `- id: hmr / disabled: true` + 重启生效。Evolution 自己的试用、测量、回滚与晋升在两种形态下都通过，因为晋升走自己的官方 Include，不经过宿主 HMR 队列。复现与证据见 `COMPATIBILITY.md` 与 `docs/evidence/hmr-022/`。
+17. **`0.2.2-rc.1` 至 `0.2.2-rc.5` 只验收了关闭宿主 HMR 的形态，且该缺口属于上游。** 在这五个宿主上，`hmr` 行启用时，**宿主启动窗口内**的 profile 变更可能以 `application: failed` + `HMR profile reconciliation must run inside runExclusive` 结束（选择已保存、未应用）。用纯官方 bundle 可复现，所以本 bundle 不声称修复它，也不绕过官方事务保护；已验收的部署形态是 `- id: hmr / disabled: true` + 重启生效。Evolution 自己的试用、测量、回滚与晋升在关闭 HMR 的验收形态下通过；晋升走自己的官方 Include，不经过宿主 HMR 队列。新宿主的 HMR 开启组只是纯官方对照，不加载 Evolution。复现与证据见 `COMPATIBILITY.md` 与 `docs/evidence/hmr-022/`。
 
 18. **共享经验库的空间回收是显式离线操作，日常写入不触发维护。** schema 1 的永久去重账本按原 TEXT 布局保留，只有显式运行 `dsh-evolution-experience-migrate` 才转换为 schema 2（32 字节 BLOB + `STRICT` + `WITHOUT ROWID`）并回收空闲页与 WAL；转换要求 Desktop / ACP / Web 已退出，默认留下完整 schema 1 备份，失败回滚且不删除任何事件、知识或结论。迁移后旧版本插件拒绝打开该库（未知 `user_version`），仍在运行的旧版本进程的 TEXT 写入会被 `STRICT` 拒绝，不会静默混写；日常事件写入路径没有 `VACUUM`、全库重建、后台清理服务或定时器。体积与延迟证据见 `docs/performance/shared-experience-storage.md`。
 

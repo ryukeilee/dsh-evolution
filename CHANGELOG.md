@@ -22,7 +22,7 @@ format, tool-surface shape or authorization source changes.
 
 本开发树把官方 DSH `0.2.2-rc.4` 与 `0.2.2-rc.5` 加入精确宿主声明、验收矩阵与随包文档；`0.2.12` 的固定产物、tag、Release 附件与六份历史验收记录保持不变，本轮不重新固定、不发布新版本。官方 rc.3 → rc.4 只新增 DSH 自身升级说明（内容拒绝错误码）并移动依赖固定；rc.4 → rc.5 只改 DSH 文档与 `dsh-base` 的 `cordis.patch.yml`（移除固定 `web.searchProvider`，改由 dsh-web 按模型路由选择）。本 bundle 导入或消费的 Cordis、Include、loader、`dsh-tools`、`dsh-cordis-host-runner`、storage、`dsh-hmr` 与 `dsh-plugin-manager` 源文件逐字节不变，因此运行时代码、持久化格式、工具面、授权边界与八项晋升门禁均未改动。
 
-- **真实宿主验收。** `0.2.2-rc.4` 与 `0.2.2-rc.5` 各跑 `--no-hmr --experience-evolution`（25/25 步）和 `--no-hmr --cross-entry`（35/35 步）；最终 doctor 均为 `healthy`。
+- **真实宿主验收。** `0.2.2-rc.4` 与 `0.2.2-rc.5` 各跑 `--no-hmr --experience-evolution`（25/25 步，最终 doctor `healthy`）和 `--no-hmr --cross-entry`（35/35 步，最终 doctor `degraded` / 退出码 1：`promotion.sharing` 报告已发布记录、0 兼容问题与 0 失败激活；验收脚本按既有规则只拒绝 `blocked`）。
 - **HMR 部署形态不变。** `dsh-hmr` 与 `dsh-plugin-manager` 的 `lib/index.js` 在 rc.3 至 rc.5 间逐字节相同；rc.5 的受控复现仍给出同一上游事务缺口，因此继续只验收 `- id: hmr` / `disabled: true` + 重启生效。
 - **stable 重验证。** 用当前 Desktop `0.2.2-rc.5` 对已发布 stable 记录的克隆数据根运行 `run-revalidation.mjs --apply`，证明 `pending-revalidation → active`、真实 ACP/Web 入口可调用且历史数据不变；正式 `$DSH_HOME` 未被改写。
 
