@@ -46,15 +46,18 @@ alongside it:
 
 ```sh
 npm run release:pack
-node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2
-node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1
-node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2
-node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr --experience-evolution
-node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.2 --no-hmr --experience-evolution
-node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.3 --no-hmr --experience-evolution
-node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.4 --no-hmr --experience-evolution
-node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.5 --no-hmr --experience-evolution
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.0-rc.2 --out /tmp/dsh-acceptance-0.2.0-rc.2.json
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-alpha.1 --out /tmp/dsh-acceptance-0.2.1-alpha.1.json
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.1-rc.2 --out /tmp/dsh-acceptance-0.2.1-rc.2.json
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.1 --no-hmr --experience-evolution --out /tmp/dsh-acceptance-0.2.2-rc.1.json
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.2 --no-hmr --experience-evolution --out /tmp/dsh-acceptance-0.2.2-rc.2.json
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.3 --no-hmr --experience-evolution --out /tmp/dsh-acceptance-0.2.2-rc.3.json
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.4 --no-hmr --experience-evolution --out /tmp/dsh-acceptance-0.2.2-rc.4.json
+node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.5 --no-hmr --experience-evolution --out /tmp/dsh-acceptance-0.2.2-rc.5.json
 ```
+
+These explicit `--out` paths keep the committed `docs/evidence/` files intact.
+Only a pin refresh intentionally rewrites the evidence the pin records.
 
 Evidence: `docs/evidence/dsh-0.2.0-rc.2.json`,
 `docs/evidence/dsh-0.2.1-alpha.1.json`,
@@ -418,11 +421,13 @@ node --max-old-space-size=4096 scripts/acceptance/reproduce-hmr-startup.mjs \
 
 Evolution's own operations do not use that path: a promotion writes its own
 `promoted.cordis.yml` and applies it through its own official Include
-(`lib/promotion-include.js`), so trial, measurement, revert, promotion and
-restart recovery behave identically with HMR enabled or disabled. The
-difference is only in the host's own profile changes, which is why the accepted
-deployment for this host disables HMR and reports every such change as
-`restart-required`.
+(`lib/promotion-include.js`), independently of the host HMR queue. That is why
+the accepted trial, measurement, revert, promotion and restart-recovery results
+were all recorded with HMR disabled. The HMR-enabled group on rc.4/rc.5 is the
+official-only control used to show the upstream sequence is unchanged; this tree
+does not claim Evolution lifecycle coverage in that mode. The difference is only
+in the host's own profile changes, which is why the accepted deployment for
+these hosts disables HMR and reports every such change as `restart-required`.
 
 Notable findings from the audit, all fixed in this release:
 

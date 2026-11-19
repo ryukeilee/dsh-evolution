@@ -177,14 +177,14 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.5 --no-hmr --exp
 
 `0.2.9` 还在**正式**（非隔离）ACP profile 上做了多会话验收：一个 live 会话挂载两个已发布 stable 插件（探针回执证明工具注册与可调用），一个在 Include 启动/挂载窗口被关闭的短命会话不得覆盖它的 `active` 报告，read-side review 不产生 `restart-consumer`；记录见 `docs/evidence/promoted-consumer-real-acp-0.2.9.json`（本地 home 路径已脱敏）。它只读隔离验收的同一条 consumer 代码路径，不替代五宿主验收。
 
-固定点与工作树仍是两条通道：固定点自己的 `verifiedHosts` 这一段覆盖六个宿主，它们的记录按固定产物的内容与字节核对；固定点之后新增的宿主（当前没有）只核对本树构建的内容。两条通道的分配由固定点自己的 `verifiedHosts` 决定，不随工作树改写，所以既有历史证据不可变，新增宿主的记录也不会被误当作发布验收。重新固定的流程是：把 `peerDependencies` 与 `release/manifest.json` 的 `verifiedHosts` / `evidence` 对齐、`sourceCommit` 指向本次提交，再对固定产物重跑全部宿主的验收并 `npm run release:publish -- --force`。
+固定点与工作树仍是两条通道：固定点自己的 `verifiedHosts` 这一段覆盖六个宿主，它们的记录按固定产物的内容与字节核对；固定点之后新增的宿主（当前为 `0.2.2-rc.4` / `0.2.2-rc.5`）只核对本树构建的内容。两条通道的分配由固定点自己的 `verifiedHosts` 决定，不随工作树改写，所以既有历史证据不可变，新增宿主的记录也不会被误当作发布验收。重新固定的流程是：把 `peerDependencies` 与 `release/manifest.json` 的 `verifiedHosts` / `evidence` 对齐、`sourceCommit` 指向本次提交，再对固定产物重跑全部宿主的验收并 `npm run release:publish -- --force`。
 
 ## 5. CI 与发布链
 
 - `.github/workflows/ci.yml`
   - `test`：Node `22.19.0` 与 `24.x`，`npm ci --ignore-scripts`，`npm test`；作业级 `env: NODE_OPTIONS=--max-old-space-size=4096`（`AGENTS.md` 第 5 节要求的堆上限，由 `test/workflows.test.mjs` 断言，安装步骤与 runner 起的每个子进程都带同一个上限）
   - `package`：`pack:check`（开发阶段判定：工作树是固定点，或是它的已提交后继并逐条列出差异）、对固定产物的 `release:verify`、本机重建的 `--content-only --tree` 校验（证明本机打包复现的就是工作树内容；发布字节仍由 `release/` 固定）、从**发布 tarball** 解包后在没有任何 `node_modules` 的情况下启动 doctor、`sha256sum --check`
-  - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1` / `0.2.1-rc.2` / `0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3`（后三者带 `--no-hmr`），用真实官方宿主执行第 4 节的全部步骤，并证明记录的 `contentSha256` 等于**本树**内容（与固定点的比较在 `package` job）
+  - `host-acceptance`：矩阵 `0.2.0-rc.2` / `0.2.1-alpha.1` / `0.2.1-rc.2` / `0.2.2-rc.1` / `0.2.2-rc.2` / `0.2.2-rc.3` / `0.2.2-rc.4` / `0.2.2-rc.5`（后五者带 `--no-hmr`），用真实官方宿主执行第 4 节的全部步骤，并证明记录的 `contentSha256` 等于**本树**内容（与固定点的比较在 `package` job）
 - `.github/workflows/codeql.yml`：对 `javascript-typescript` 在 `main`、pull request 与每周运行 CodeQL，并把 SARIF 上传到 GitHub code scanning（job 权限仅 `security-events: write` + 只读内容）
 - `.github/workflows/release.yml`：tag push 或 `workflow_dispatch` 时
   1. 校验 tag 形如 `v*`，并核对 tag 版本、checkout 到的 commit、`release/manifest.json` 的 `sourceCommit`（新版本必须有，必须是 tag 历史中的祖先，并从 git 对象计算其实际包内容摘要）与工作树内容摘要（`scripts/release/verify-provenance.mjs`）

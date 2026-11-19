@@ -1,73 +1,73 @@
 {
   "kind": "dsh-evolution-task-benefit-loop",
   "ok": true,
-  "startedAt": "2026-11-19T06:10:18.526Z",
+  "startedAt": "2026-11-19T06:33:30.637Z",
   "scope": "isolated DSH_HOME; official Desktop + ACP + Evolution kernel; real model inference; no formal home, no release publish",
   "model": "opencode-go/deepseek-v4.1-flash",
   "runs": 3,
   "steps": [
     {
       "name": "official-install",
-      "at": "2026-11-19T06:10:21.889Z"
+      "at": "2026-11-19T06:33:33.973Z"
     },
     {
       "name": "paired-real-sessions-produced",
-      "at": "2026-11-19T06:13:14.630Z"
+      "at": "2026-11-19T06:36:49.204Z"
     },
     {
       "name": "real-loss-discovery",
-      "at": "2026-11-19T06:13:18.414Z"
+      "at": "2026-11-19T06:36:52.988Z"
     },
     {
       "name": "negative-artifacts-rejected",
-      "at": "2026-11-19T06:13:27.450Z"
+      "at": "2026-11-19T06:37:02.015Z"
     },
     {
       "name": "desktop-awaiting-owner-confirmation",
-      "at": "2026-11-19T06:13:29.698Z"
+      "at": "2026-11-19T06:37:04.287Z"
     },
     {
       "name": "stable-with-functional-canary",
-      "at": "2026-11-19T06:13:36.213Z"
+      "at": "2026-11-19T06:37:10.804Z"
     },
     {
       "name": "fresh-consumer-functional-reuse",
-      "at": "2026-11-19T06:14:00.059Z"
+      "at": "2026-11-19T06:37:30.424Z"
     },
     {
       "name": "restart-preserved-and-planner-resolved",
-      "at": "2026-11-19T06:14:03.700Z"
+      "at": "2026-11-19T06:37:34.061Z"
     }
   ],
   "fixtures": [
     {
       "name": "a.json",
       "characters": 3147,
-      "sentinelSha256": "22a2aa77246e186998a0a8baa5a4f6f3bca435d15c06f0412fa010ff90ef0d01"
+      "sentinelSha256": "33a3d0eab0d84bda90ed0fb852c7a73007f7f74d6bf06949ad759986705121e0"
     },
     {
       "name": "b.json",
       "characters": 3147,
-      "sentinelSha256": "b2e943259fa51f5031b3f854c68e5f80529a914b28fed2e71795ee1fb3fcee64"
+      "sentinelSha256": "afa30766245bcd6f1de49a40bf19e5f3fc67cbb97dbfed258010a796732ae43c"
     },
     {
       "name": "c.json",
       "characters": 3147,
-      "sentinelSha256": "4a7d442dbe8682b13674d4a38fd5f6af11f0778de65a22e62eadd2578647bec3"
+      "sentinelSha256": "5aac06a8fc4fc88288ae059cb8923f5645ce22fe65dadedffe94272cfa51ac3d"
     }
   ],
   "producer": {
     "ok": true,
-    "artifactFile": "$DSH_HOME/storages/evolution/desktop-tasks/task-evidence/desktop-task-mwn5id6r-22db6883.json",
+    "artifactFile": "$DSH_HOME/storages/evolution/desktop-tasks/task-evidence/desktop-task-mwn6c7bq-42b674f4.json",
     "artifact": {
       "schemaVersion": 1,
       "kind": "paired-real-session",
       "complete": true,
-      "taskId": "desktop-task-mwn5id6r-22db6883",
+      "taskId": "desktop-task-mwn6c7bq-42b674f4",
       "task": {
         "id": "read-three-long-lines",
         "promptSha256": "49bc9881ce0556a8b37fd4c1882bf16373bb61917d6242e5954aa8bc5cc39cfc",
-        "expectSha256": "5a59679d1e9492d70f2f3031fa2041d4f39eae3dd45a32dbdc5aa1704ab561f3"
+        "expectSha256": "ab87314cada6af9aa491bd35cded9ffd820900d39aa61bd0596e9398f9777cf7"
       },
       "candidateHostSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
       "model": "opencode-go/deepseek-v4.1-flash",
@@ -85,8 +85,8 @@
         "failures": 0,
         "turns": 16,
         "toolCalls": 13,
-        "tokens": 528739,
-        "durationMs": 109328
+        "tokens": 529953,
+        "durationMs": 121512
       },
       "candidate": {
         "sessions": 3,
@@ -94,8 +94,8 @@
         "failures": 0,
         "turns": 12,
         "toolCalls": 9,
-        "tokens": 398090,
-        "durationMs": 63317
+        "tokens": 398046,
+        "durationMs": 73627
       },
       "adoption": {
         "sessionsUsingCandidate": 0,
@@ -113,35 +113,6 @@
           "usedCandidate": false,
           "usageComplete": true,
           "toolFailures": 0,
-          "turns": 6,
-          "toolCalls": 5,
-          "toolNames": [
-            "read",
-            "read",
-            "grep",
-            "bash",
-            "read"
-          ],
-          "failures": 0,
-          "tokens": 200659,
-          "inputTokens": 41859,
-          "outputTokens": 336,
-          "cacheReadTokens": 158464,
-          "durationMs": 51124,
-          "readResultCount": 3,
-          "readResultCharacters": 6684,
-          "ok": true,
-          "failedTurns": 0,
-          "assistantCharacters": 271
-        },
-        {
-          "label": "baseline-2",
-          "side": "baseline",
-          "correct": true,
-          "exercised": false,
-          "usedCandidate": false,
-          "usageComplete": true,
-          "toolFailures": 0,
           "turns": 5,
           "toolCalls": 4,
           "toolNames": [
@@ -151,16 +122,45 @@
             "bash"
           ],
           "failures": 0,
-          "tokens": 163974,
-          "inputTokens": 65055,
-          "outputTokens": 231,
-          "cacheReadTokens": 98688,
-          "durationMs": 27677,
+          "tokens": 164061,
+          "inputTokens": 9530,
+          "outputTokens": 291,
+          "cacheReadTokens": 154240,
+          "durationMs": 29224,
           "readResultCount": 3,
           "readResultCharacters": 6684,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 164
+          "assistantCharacters": 216
+        },
+        {
+          "label": "baseline-2",
+          "side": "baseline",
+          "correct": true,
+          "exercised": false,
+          "usedCandidate": false,
+          "usageComplete": true,
+          "toolFailures": 0,
+          "turns": 6,
+          "toolCalls": 5,
+          "toolNames": [
+            "read",
+            "grep",
+            "read",
+            "read",
+            "bash"
+          ],
+          "failures": 0,
+          "tokens": 201886,
+          "inputTokens": 40936,
+          "outputTokens": 310,
+          "cacheReadTokens": 160640,
+          "durationMs": 56684,
+          "readResultCount": 3,
+          "readResultCharacters": 6684,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 260
         },
         {
           "label": "baseline-3",
@@ -179,16 +179,16 @@
             "bash"
           ],
           "failures": 0,
-          "tokens": 164106,
-          "inputTokens": 3284,
-          "outputTokens": 310,
-          "cacheReadTokens": 160512,
-          "durationMs": 30527,
+          "tokens": 164006,
+          "inputTokens": 33176,
+          "outputTokens": 270,
+          "cacheReadTokens": 130560,
+          "durationMs": 35604,
           "readResultCount": 3,
           "readResultCharacters": 6684,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 253
+          "assistantCharacters": 247
         }
       ],
       "candidate": [
@@ -208,16 +208,16 @@
             "read"
           ],
           "failures": 0,
-          "tokens": 132699,
-          "inputTokens": 35644,
-          "outputTokens": 159,
-          "cacheReadTokens": 96896,
-          "durationMs": 19701,
+          "tokens": 132649,
+          "inputTokens": 7098,
+          "outputTokens": 111,
+          "cacheReadTokens": 125440,
+          "durationMs": 15144,
           "readResultCount": 3,
           "readResultCharacters": 10023,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 160
+          "assistantCharacters": 95
         },
         {
           "label": "candidate-2",
@@ -235,16 +235,16 @@
             "read"
           ],
           "failures": 0,
-          "tokens": 132705,
-          "inputTokens": 4926,
-          "outputTokens": 163,
-          "cacheReadTokens": 127616,
-          "durationMs": 16723,
+          "tokens": 132670,
+          "inputTokens": 6970,
+          "outputTokens": 132,
+          "cacheReadTokens": 125568,
+          "durationMs": 20408,
           "readResultCount": 3,
           "readResultCharacters": 10023,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 182
+          "assistantCharacters": 127
         },
         {
           "label": "candidate-3",
@@ -262,16 +262,16 @@
             "read"
           ],
           "failures": 0,
-          "tokens": 132686,
-          "inputTokens": 37692,
-          "outputTokens": 146,
-          "cacheReadTokens": 94848,
-          "durationMs": 26893,
+          "tokens": 132727,
+          "inputTokens": 67514,
+          "outputTokens": 189,
+          "cacheReadTokens": 65024,
+          "durationMs": 38075,
           "readResultCount": 3,
           "readResultCharacters": 10023,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 145
+          "assistantCharacters": 235
         }
       ]
     }
@@ -283,15 +283,15 @@
         "line-truncated"
       ],
       "occurrences": 9,
-      "recoveryCalls": 3,
-      "averageRecoveryCalls": 0.33,
+      "recoveryCalls": 4,
+      "averageRecoveryCalls": 0.44,
       "recoveryTools": [
         "bash"
       ],
       "recoverable": true
     },
     "occurrences": 9,
-    "score": 0.8222,
+    "score": 0.8296,
     "benefitModel": {
       "kind": "workflow",
       "metric": "failureRate"
@@ -299,8 +299,8 @@
     "source": "production evolution_plan over the isolated shared experience store after the baseline sessions"
   },
   "candidate": {
-    "taskId": "desktop-task-mwn5id6r-22db6883",
-    "experimentId": "exp-mwn5mdrw-5-df1ea332",
+    "taskId": "desktop-task-mwn6c7bq-42b674f4",
+    "experimentId": "exp-mwn6gp9x-5-7a9247ac",
     "candidateSourceSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
     "gates": {
       "realBenefit": true,
@@ -327,22 +327,22 @@
       "tool": "read",
       "present": true,
       "matched": true,
-      "resultSha256": "4a85dcdba15166e2c11652cba66dd89993d3c9ae7ea95ee588f45b644eb104c7",
+      "resultSha256": "a130dee610a831589b59a2a2fde51030c033f39e7f4978ec1bc03295d514d8fe",
       "resultCharacters": 3639
     }
   },
   "approval": {
-    "experimentId": "exp-mwn5mdrw-5-df1ea332",
+    "experimentId": "exp-mwn6gp9x-5-7a9247ac",
     "sourceSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
     "targetProfiles": [
       "acp"
     ],
-    "confirmedAt": "2026-11-19T06:13:35.281Z",
+    "confirmedAt": "2026-11-19T06:37:09.875Z",
     "confirmationTextDigest": "87f08d381aae7464f3bc1d915008d50ed5ed628d8648a367146a2c5a8151cf33"
   },
   "task": {
-    "taskId": "desktop-task-mwn5id6r-22db6883",
-    "experimentId": "exp-mwn5mdrw-5-df1ea332",
+    "taskId": "desktop-task-mwn6c7bq-42b674f4",
+    "experimentId": "exp-mwn6gp9x-5-7a9247ac",
     "phase": "stable",
     "gates": {
       "realBenefit": true,
@@ -361,8 +361,8 @@
       "version": 1,
       "kind": "benefit",
       "source": "canary-passed",
-      "at": "2026-11-19T06:13:35.664Z",
-      "observationAt": "2026-11-19T06:13:29.381Z",
+      "at": "2026-11-19T06:37:10.247Z",
+      "observationAt": "2026-11-19T06:37:03.960Z",
       "eligible": true,
       "reasons": [
         "the measured candidate passed the startup, health, dependency, and metric canary window"
@@ -393,7 +393,7 @@
         "tool": "read",
         "present": true,
         "matched": true,
-        "resultSha256": "4a85dcdba15166e2c11652cba66dd89993d3c9ae7ea95ee588f45b644eb104c7",
+        "resultSha256": "a130dee610a831589b59a2a2fde51030c033f39e7f4978ec1bc03295d514d8fe",
         "resultCharacters": 3639
       },
       "canary": [
@@ -402,7 +402,7 @@
           "tool": "read",
           "present": true,
           "matched": true,
-          "resultSha256": "4a85dcdba15166e2c11652cba66dd89993d3c9ae7ea95ee588f45b644eb104c7",
+          "resultSha256": "a130dee610a831589b59a2a2fde51030c033f39e7f4978ec1bc03295d514d8fe",
           "resultCharacters": 3639
         },
         {
@@ -410,7 +410,7 @@
           "tool": "read",
           "present": true,
           "matched": true,
-          "resultSha256": "4a85dcdba15166e2c11652cba66dd89993d3c9ae7ea95ee588f45b644eb104c7",
+          "resultSha256": "a130dee610a831589b59a2a2fde51030c033f39e7f4978ec1bc03295d514d8fe",
           "resultCharacters": 3639
         }
       ]
@@ -422,8 +422,8 @@
         "failures": 0,
         "turns": 16,
         "toolCalls": 13,
-        "tokens": 528739,
-        "durationMs": 109328
+        "tokens": 529953,
+        "durationMs": 121512
       },
       "candidate": {
         "sessions": 3,
@@ -431,8 +431,8 @@
         "failures": 0,
         "turns": 12,
         "toolCalls": 9,
-        "tokens": 398090,
-        "durationMs": 63317
+        "tokens": 398046,
+        "durationMs": 73627
       },
       "adoption": {
         "sessionsUsingCandidate": 0,
@@ -440,33 +440,33 @@
       }
     },
     "publication": {
-      "id": "evolution-promoted-2ac336948fab",
+      "id": "evolution-promoted-d3aaefc2cab2",
       "approvedProfiles": [
         "acp"
       ],
-      "sourceSha256": "7d41a8b83bdb522ac6f9fc69881c30a92450881d077c080dc3529f0e1236768a"
+      "sourceSha256": "32a08dae28536f151c5ff4157b8de94a6c12d37f1ee38f21db543625c1fea1d1"
     }
   },
   "freshConsumer": {
-    "taskId": "desktop-task-mwn5id6r-22db6883",
+    "taskId": "desktop-task-mwn6c7bq-42b674f4",
     "modelTurns": 4,
     "toolCalls": 3,
-    "tokens": 132695,
-    "wallMs": 22933,
+    "tokens": 132675,
+    "wallMs": 18811,
     "correct": true,
     "readResultsContainAllSentinels": true,
-    "answerSha256": "f53137748f1e3d94670ef08a2bf792fdd609a88f0ef6cdfa4642cacd2af0110b",
+    "answerSha256": "d24142915a58d1701bca99d6e01e3ec2aa2073b297c141911e2d09205db48621",
     "transport": "real model inference through model-bridge.mjs; the real promoted consumer mounted the policy"
   },
   "negatives": [
     {
       "variant": "missing",
-      "taskId": "desktop-task-mwn5m5e7-2d6ea5e6",
-      "experimentId": "exp-mwn5m6us-1-e1703dc3",
+      "taskId": "desktop-task-mwn6ggvx-ef55b22d",
+      "experimentId": "exp-mwn6gibo-1-d7a2284c",
       "phase": "failed",
       "error": {
         "code": "E_DESKTOP_TASK_EVIDENCE_MISSING",
-        "message": "no paired real-session evidence for task desktop-task-mwn5m5e7-2d6ea5e6; a context-policy candidate cannot be measured from capability samples"
+        "message": "no paired real-session evidence for task desktop-task-mwn6ggvx-ef55b22d; a context-policy candidate cannot be measured from capability samples"
       },
       "gates": null,
       "decision": null,
@@ -477,8 +477,8 @@
     },
     {
       "variant": "mismatch",
-      "taskId": "desktop-task-mwn5m75g-1d40caf8",
-      "experimentId": "exp-mwn5m8kn-2-1fd72c16",
+      "taskId": "desktop-task-mwn6gimu-fa220800",
+      "experimentId": "exp-mwn6gk1u-2-892bcf55",
       "phase": "failed",
       "error": {
         "code": "E_DESKTOP_TASK_EVIDENCE_MISMATCH",
@@ -493,8 +493,8 @@
     },
     {
       "variant": "no-benefit",
-      "taskId": "desktop-task-mwn5m8vs-b8250f37",
-      "experimentId": "exp-mwn5maad-3-c99360fc",
+      "taskId": "desktop-task-mwn6gkd0-2d22328e",
+      "experimentId": "exp-mwn6glsa-3-5f6c488b",
       "phase": "failed",
       "error": {
         "code": "E_DESKTOP_BENEFIT_UNPROVEN",
@@ -527,8 +527,8 @@
     },
     {
       "variant": "unadopted",
-      "taskId": "desktop-task-mwn5mam0-7f31140f",
-      "experimentId": "exp-mwn5mc22-4-563cfdd4",
+      "taskId": "desktop-task-mwn6gm39-2463d363",
+      "experimentId": "exp-mwn6gnis-4-8d9577ea",
       "phase": "failed",
       "error": {
         "code": "E_DESKTOP_BENEFIT_UNPROVEN",
@@ -561,8 +561,8 @@
     }
   ],
   "restart": {
-    "previousInstanceId": "875daa48-b810-41b9-8615-c4903ba06856",
-    "nextInstanceId": "b2924bb7-aa6d-4467-b4d5-2f27dd73c136",
+    "previousInstanceId": "724b5571-4ecc-46c9-bd59-add824dad869",
+    "nextInstanceId": "2bf3b648-5e27-422d-a3b5-438d846e7c29",
     "terminalPreserved": true,
     "publicationPreserved": true,
     "plannerResolved": {
@@ -578,17 +578,17 @@
     "tail": [
       "+ dsh-evolution 0.2.12",
       "",
-      "Done in 451ms using pnpm v11.28.5",
+      "Done in 443ms using pnpm v11.28.5",
       "web: configured; restart this entry to apply (HMR disabled)"
     ]
   },
   "host": {
-    "instanceId": "875daa48-b810-41b9-8615-c4903ba06856",
-    "pid": 118,
+    "instanceId": "724b5571-4ecc-46c9-bd59-add824dad869",
+    "pid": 29927,
     "profile": "desktop"
   },
   "noAutoApproval": {
-    "taskId": "desktop-task-mwn5id6r-22db6883",
+    "taskId": "desktop-task-mwn6c7bq-42b674f4",
     "waitedMs": 5000,
     "phase": "awaiting-owner-confirmation"
   },
@@ -602,11 +602,11 @@
       "schemaVersion": 1,
       "kind": "paired-real-session",
       "complete": true,
-      "taskId": "desktop-task-mwn5id6r-22db6883",
+      "taskId": "desktop-task-mwn6c7bq-42b674f4",
       "task": {
         "id": "read-three-long-lines",
         "promptSha256": "49bc9881ce0556a8b37fd4c1882bf16373bb61917d6242e5954aa8bc5cc39cfc",
-        "expectSha256": "5a59679d1e9492d70f2f3031fa2041d4f39eae3dd45a32dbdc5aa1704ab561f3"
+        "expectSha256": "ab87314cada6af9aa491bd35cded9ffd820900d39aa61bd0596e9398f9777cf7"
       },
       "candidateHostSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
       "model": "opencode-go/deepseek-v4.1-flash",
@@ -625,8 +625,8 @@
         "failures": 0,
         "turns": 16,
         "toolCalls": 13,
-        "tokens": 528739,
-        "durationMs": 109328
+        "tokens": 529953,
+        "durationMs": 121512
       },
       "candidate": {
         "sessions": 3,
@@ -634,8 +634,8 @@
         "failures": 0,
         "turns": 12,
         "toolCalls": 9,
-        "tokens": 398090,
-        "durationMs": 63317
+        "tokens": 398046,
+        "durationMs": 73627
       },
       "adoption": {
         "sessionsUsingCandidate": 0,
@@ -652,6 +652,6 @@
       "issues": []
     }
   },
-  "finishedAt": "2026-11-19T06:14:04.038Z",
-  "tarballSha256": "75f14c051635da66091acf18bd631b23a13149dbb778efd4731a9cc5ef1440d3"
+  "finishedAt": "2026-11-19T06:37:34.399Z",
+  "tarballSha256": "f1aaa516aaa0de88ac9efb27e77b647a3be3f88b5fcfb78f3ef3fc87c02054a8"
 }
