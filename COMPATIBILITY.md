@@ -122,7 +122,7 @@ Reproduce it with:
 ```sh
 npm run release:pack
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.5 --no-hmr --cross-entry \
-  --tarball dist/dsh-evolution-0.2.12.tgz --out docs/evidence/cross-entry-0.2.2-rc.5.json
+  --tarball dist/dsh-evolution-0.2.12.tgz --out /tmp/dsh-cross-entry-0.2.2-rc.5.json
 ```
 
 ### Verified compatibility matrix
