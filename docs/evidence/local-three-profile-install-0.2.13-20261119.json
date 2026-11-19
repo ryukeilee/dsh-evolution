@@ -1,0 +1,135 @@
+{
+  "kind": "dsh-evolution-local-three-profile-install",
+  "recordedAt": "2026-11-19T08:15:13.404Z",
+  "scope": "formal DSH_HOME (<home>/.dsh, path redacted); official CLI install via scripts/setup-experience.mjs from the published GitHub Release asset; stable revalidation cloned the data root and adopted only through scripts/shared-plugins.mjs revalidate; promoted sources, archives and shared experience were not rewritten",
+  "release": {
+    "version": "0.2.13",
+    "tag": "v0.2.13",
+    "mergeCommit": "2d91de1b877272d1218a229a46d2a91d174dd35b",
+    "releaseUrl": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.13",
+    "tarballSha256": "d356aa83c99fe895ef6825a940b3c23cb3cca00733025bf5cf4936c6cd0eeb4d",
+    "contentSha256": "ba0c86af0674aecc65b7dc6bd5e712074bf0fbd054b01fc73ae2b74dc719cf72",
+    "publicAssetVerified": "downloaded anonymously; shasum -a 256 -c SHA256SUMS and verify-artifact matched release/manifest.json"
+  },
+  "profiles": {
+    "desktop": {
+      "installedVersion": "0.2.13",
+      "dependency": "storages/evolution-package-cache/d356aa83c99fe895ef6825a940b3c23cb3cca00733025bf5cf4936c6cd0eeb4d.tgz",
+      "kernelEnabled": true,
+      "consumerEnabled": false,
+      "restartRequired": true,
+      "note": "the Electron application was restarted after the install and its host (cwd profiles/desktop, DSH 0.2.2-rc.5) opened the shared experience database and started a desktop session; the shipped lib bytes are identical to 0.2.12, whose task-benefit evidence is retained"
+    },
+    "acp": {
+      "installedVersion": "0.2.13",
+      "kernelEnabled": false,
+      "consumerEnabled": true,
+      "restartRequired": true,
+      "note": "fresh cold start on DSH 0.2.2-rc.5 mounted all 3 published stable rows as active"
+    },
+    "web": {
+      "installedVersion": "0.2.13",
+      "kernelEnabled": false,
+      "consumerEnabled": true,
+      "restartRequired": true,
+      "note": "fresh cold start on DSH 0.2.2-rc.5 mounted 1 approved row active; 2 records were skipped as profile-not-approved"
+    }
+  },
+  "freshConsumerBoot": {
+    "host": {
+      "dsh": "0.2.2-rc.5",
+      "cordis": "4.1.0",
+      "include": "1.1.0",
+      "node": "v24.21.0"
+    },
+    "acp": {
+      "rows": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "status": "active",
+          "reason": null,
+          "sourceSha256": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e",
+          "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d"
+        },
+        {
+          "id": "evolution-promoted-e82a216992bb",
+          "status": "active",
+          "reason": null,
+          "sourceSha256": "7d446ea94e730bd69ec25c38a2d4478d2b6f362f13a3446047e84ad348833230",
+          "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d"
+        },
+        {
+          "id": "evolution-promoted-2794ab16d2b3",
+          "status": "active",
+          "reason": null,
+          "sourceSha256": "88d915e702b205ed09d84f1f5b025fdfb45216b1601a097345d30dda44b01e5d",
+          "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d"
+        }
+      ]
+    },
+    "web": {
+      "rows": [
+        {
+          "id": "evolution-promoted-af973a3eea01",
+          "status": "active",
+          "reason": null
+        },
+        {
+          "id": "evolution-promoted-e82a216992bb",
+          "status": "skipped-unapproved",
+          "reason": "profile-not-approved"
+        },
+        {
+          "id": "evolution-promoted-2794ab16d2b3",
+          "status": "skipped-unapproved",
+          "reason": "profile-not-approved"
+        }
+      ]
+    }
+  },
+  "revalidation": {
+    "evidence": "docs/evidence/revalidation-0.2.2-rc.5-20261119-formal.json",
+    "evidenceSha256": "a5f76f944205c3dfd0bc553e3b5dc4f7b2b0d4d53753b28b4475dfe11853b4fd",
+    "report": "docs/evidence/revalidation-0.2.2-rc.5-20261119-formal.report.json",
+    "host": {
+      "dsh": "0.2.2-rc.5",
+      "cordis": "4.1.0",
+      "include": "1.1.0",
+      "node": "v24.21.0"
+    },
+    "adopted": [
+      "evolution-promoted-af973a3eea01",
+      "evolution-promoted-e82a216992bb",
+      "evolution-promoted-2794ab16d2b3"
+    ],
+    "postAdoption": "both consumer boots active with no eligibility rewrite; the publication index records the rc.5 revalidation generation for all three records"
+  },
+  "preservation": {
+    "promotedSources": "identical to the pre-install backup (recursive diff)",
+    "promotedCompositionSha256": "a92bc05f0bd85ed73d198f0cfb1259257aa3ba7ca055a263390e7dd1b02531ad",
+    "experimentArchives": "12 before and 12 after",
+    "sharedExperience": {
+      "events": 363,
+      "knowledge": 36,
+      "clock": 1,
+      "unchanged": true
+    },
+    "backup": "pre-install clone of storages/evolution, storages/evolution-experience, evolution_domain.json and the three profile manifests, with SHA256SUMS"
+  },
+  "desktopIsolatedBoot": {
+    "evidence": "docs/evidence/desktop-experience-0.2.13-verified.json",
+    "evidenceSha256": "065c84efacbaf1824f155832b54c0c56d342ab1e2330a4e91ec043a72d8a12cc",
+    "ok": true,
+    "node": "v24.21.0",
+    "corePresent": true,
+    "historyTools": 1,
+    "sharedRecallRecords": 3,
+    "promotedTool": "readonly_git_file",
+    "externalModelCalls": 0,
+    "note": "official Desktop application on an APFS clone of the formal home with an isolated Electron user-data dir; clone-only writes"
+  },
+  "notes": [
+    "The long-running ACP host that T3 Code started before the install keeps the previously loaded 0.2.12 bundle in memory until T3 restarts that host; every fresh ACP cold start loads 0.2.13 (verified above). HMR stays disabled.",
+    "Desktop GUI interaction and a fresh real-model task-benefit loop were not re-run: 0.2.13 changes only version, host declarations and docs, and the shipped lib bytes are byte-identical to 0.2.12. The 0.2.12 task-benefit artifact and the rc.5 task-benefit artifact remain the evidence for that chain."
+  ]
+}
