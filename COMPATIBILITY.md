@@ -9,9 +9,9 @@ none of them is hidden behind an implicit patch.
 
 ### Unified experience development boundary
 
-The development tree adds a runner-independent collector and a dedicated local
-SQLite experience adapter, using Node's built-in `node:sqlite`. The pinned 0.2.3
-artifact is unchanged. Desktop retains the complete manual Evolution flow;
+The bundle includes a runner-independent collector and a dedicated local
+SQLite experience adapter, using Node's built-in `node:sqlite`. The `0.2.13`
+pinned artifact contains it. Desktop retains the complete manual Evolution flow;
 ACP and Web are configured for collection and shared recall only. CLI/TUI is
 outside this task. Profile installation does not prove runtime compatibility.
 
@@ -72,9 +72,9 @@ bytes it installed. `npm run pack:check` and `test/release-pin.test.mjs` keep th
 two records apart instead of comparing every file to the pin: a host the pin
 verified must still describe the pinned artifact (content *and* bytes), while a
 host the pin never covered must describe the content this tree builds, because an
-older build's record proves nothing about this one. `0.2.12` pins six declared
-hosts; this development tree adds `0.2.2-rc.4` and `0.2.2-rc.5`, so those two
-records use the second lane until a new pin covers them.
+older build's record proves nothing about this one. `0.2.13` pins all eight
+declared hosts, so no host uses the second lane today; it exists for the next
+host a development tree adds, before the pin that covers it is cut.
 The split is `release/manifest.json#verifiedHosts`, so it moves only when a new
 pin is cut, never when the working tree changes. The harness is self-contained: it installs the
 official host release itself, so a fresh checkout can re-derive every file. CI
@@ -95,16 +95,16 @@ reproduction in `docs/evidence/hmr-022/` gives the same 3/3 diagnostic failure
 with the barrier and 3/3 success once HMR is visible; the rc.5 control is
 `docs/evidence/hmr-022/official-control-0.2.2-rc.5.json`.
 
-### Cross-entry promoted plugin sharing (development tree)
+### Cross-entry promoted plugin sharing
 
-The development tree adds an opt-in cross-entry feature: a Desktop promotion that the owner explicitly approved
+The bundle includes an opt-in cross-entry feature: a Desktop promotion that the owner explicitly approved
 for `acp` / `web` can be mounted by those profiles after it commits stable. It adds no DSH version, no new host
 support claim and no new promotion authority. The consumer is a separate lightweight bundle entry
 (`dsh-evolution/promoted-consumer`, `lib/promoted-consumer.js`) that is enabled for `acp` / `web` and disabled on
 `desktop` by `scripts/setup-experience.mjs`; it never runs the Evolution kernel (no orchestrator, Trial/Canary
 state machine, domain storage, tool registration or model call), and it writes only its own per-profile
 state and composition. The Desktop kernel is still the only publisher: only a stable canary commit produces a
-publication record, and records carry the exact host identity the promotion was verified on. The `0.2.12`
+publication record, and records carry the exact host identity the promotion was verified on. The `0.2.13`
 pinned artifact contains this feature. See `docs/shared-plugins.md` and `README.md`.
 
 The isolated host acceptance covers it on `0.2.2-rc.1` through `0.2.2-rc.5`: 31/31 steps pass in
@@ -122,7 +122,7 @@ Reproduce it with:
 ```sh
 npm run release:pack
 node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.5 --no-hmr --cross-entry \
-  --tarball dist/dsh-evolution-0.2.12.tgz --out /tmp/dsh-cross-entry-0.2.2-rc.5.json
+  --tarball dist/dsh-evolution-0.2.13.tgz --out /tmp/dsh-cross-entry-0.2.2-rc.5.json
 ```
 
 ### Verified compatibility matrix
@@ -596,7 +596,7 @@ Evidence and the exact official references used during migration are kept in
 the private migration workspace; they are not part of this package. See the
 plugin `README.md` for the supported-version contract.
 
-## Cross-entry shared plugin state (development tree)
+## Cross-entry shared plugin state
 
 The cross-entry feature adds one durable tree, all under the existing data root
 `$DSH_HOME/storages/evolution/shared-plugins/`. Plugin source is **not**
