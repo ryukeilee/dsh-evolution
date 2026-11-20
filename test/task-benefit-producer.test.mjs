@@ -26,6 +26,7 @@ import {
   parseExpectTokens,
   prepareArtifactDirectory,
   resolveArtifactTarget,
+  resolveFilesystemPath,
   safeErrorCode,
   writeArtifactFile,
   writePreviewModule,
@@ -519,7 +520,73 @@ test('the report is written to the exact path the boundary check approved', asyn
   }
 });
 
-test('the isolated storage roots are pinned to the isolated home before any session', async () => {
+test('a missing component before .. is refused instead of folded into the channel', async () => {
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-fold-home-')));
+  const channel = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-fold-channel-')));
+  const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-fold-outside-')));
+  try {
+    const target = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: channel });
+    const existing = path.join(channel, 'storages', 'existing.json');
+    await fs.mkdir(path.dirname(existing), { recursive: true });
+    await fs.writeFile(existing, '{"keep":true}');
+    await fs.symlink(path.join(channel, 'storages'), path.join(outside, 'alias'));
+    // The filesystem fails `missing/../alias/existing.json`; folding it would name
+    // the existing file inside the channel.
+    await assert.rejects(
+      assertReportOutsideEvidence(`${outside}/missing/../alias/existing.json`, target),
+      /parent reference below a missing directory/,
+    );
+    assert.equal(await fs.readFile(existing, 'utf8'), '{"keep":true}');
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(channel, { recursive: true, force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
+test('a relative report path is resolved from the working directory without folding', async () => {
+  const cliModule = pathToFileURL(fileURLToPath(new URL('../scripts/acceptance/task-benefit.mjs', import.meta.url))).href;
+  const root = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-relative-')));
+  const here = path.join(root, 'here');
+  const other = path.join(root, 'other');
+  try {
+    await fs.mkdir(here);
+    await fs.mkdir(other);
+    await fs.writeFile(path.join(other, 'report.json'), '{}');
+    await fs.symlink(other, path.join(here, 'hop'));
+    const script = 'import { resolveFilesystemPath } from ' + JSON.stringify(cliModule) + ';' + String.fromCharCode(10) + "process.stdout.write(await resolveFilesystemPath('hop/../report.json'));";
+    const run = spawnSync(process.execPath, ['--input-type=module', '-e', script], { cwd: here, encoding: 'utf8' });
+    assert.equal(run.status, 0, run.stderr);
+    assert.equal(run.stdout, path.join(root, 'report.json'));
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('an absolute channel spelling resolves through the filesystem, not lexically', async () => {
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-channel-home-')));
+  const root = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-channel-root-')));
+  try {
+    const deeper = path.join(root, 'a', 'b');
+    await fs.mkdir(deeper, { recursive: true });
+    const sibling = path.join(root, 'a', 'two');
+    await fs.mkdir(sibling);
+    // The lexically folded spelling names this one, but the filesystem does not.
+    await fs.mkdir(path.join(root, 'two'));
+    await fs.mkdir(path.join(root, 'absent'));
+    await fs.symlink(deeper, path.join(root, 'hop'));
+    const target = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: `${root}/hop/../two` });
+    assert.equal(target.channel, sibling);
+    assert.notEqual(target.channel, path.join(root, 'two'));
+    // The same spelling whose real destination is missing is refused, even though
+    // the folded spelling exists.
+    await assert.rejects(resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: `${root}/hop/../absent` }), /existing directory/);
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+ test('the isolated storage roots are pinned to the isolated home before any session', async () => {
   const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-storage-home-')));
   const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-storage-outside-')));
   try {

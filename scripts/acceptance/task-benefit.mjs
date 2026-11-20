@@ -335,7 +335,13 @@ export async function resolveArtifactTarget({ home, taskId, channelHome, outFile
   }
   if (typeof channelHome !== 'string' || !path.isAbsolute(channelHome)) throw new Error('channelHome must be an absolute channel root');
   if (outFile !== undefined && outFile !== null) throw new Error('a channel home and an explicit artifact file are two different artifact authorities');
-  const root = await realpathOr(path.resolve(channelHome));
+  // Resolve the operator's spelling with the filesystem, not lexically: `hop/..`
+  // must follow `hop` before applying `..`, or the evidence would be delivered to
+  // whatever directory the folded spelling names.
+  const root = await fs.realpath(channelHome).catch((error) => {
+    if (error.code === 'ENOENT') throw new Error('the channel home must be an existing directory');
+    throw error;
+  });
   const info = await fs.stat(root).catch(() => null);
   if (info === null || info.isDirectory() !== true) throw new Error('the channel home must be an existing directory');
   if (root === home || root.startsWith(`${home}${path.sep}`)) throw new Error('the channel home must not be the isolated home');
@@ -424,9 +430,11 @@ async function assertRealDirectory(target, message) {
  * files. Missing components have nothing below them, so their remaining parts are
  * appended literally.
  */
-async function resolveFilesystemPath(targetPath, depth = 0) {
+export async function resolveFilesystemPath(targetPath, depth = 0) {
   if (depth > 32) throw new Error('the report path follows too many symbolic links');
-  const absolute = path.isAbsolute(targetPath) ? targetPath : path.resolve(targetPath);
+  // A relative path is joined to the working directory as raw text: resolving it
+  // lexically would collapse `hop/..` before `hop` was ever followed.
+  const absolute = path.isAbsolute(targetPath) ? targetPath : `${process.cwd()}${path.sep}${targetPath}`;
   const root = path.parse(absolute).root;
   const parts = absolute.slice(root.length).split(path.sep).filter((part) => part !== '' && part !== '.');
   let resolved = root;
@@ -439,7 +447,14 @@ async function resolveFilesystemPath(targetPath, depth = 0) {
     }
     const next = path.join(resolved, part);
     const info = await fs.lstat(next).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
-    if (info === null) return path.join(next, ...parts.slice(index + 1));
+    if (info === null) {
+      // Nothing exists below a missing component, and the filesystem would fail
+      // the whole path for a later `..`: refuse instead of folding the path into
+      // one that does resolve.
+      const remainder = parts.slice(index + 1);
+      if (remainder.includes('..')) throw new Error('the report path has a parent reference below a missing directory');
+      return path.join(next, ...remainder);
+    }
     if (info.isSymbolicLink()) {
       const link = await fs.readlink(next);
       const remainder = parts.slice(index + 1).join(path.sep);
