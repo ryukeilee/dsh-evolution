@@ -1,0 +1,1666 @@
+{
+  "kind": "dsh-evolution-acp-desktop-control",
+  "ok": false,
+  "startedAt": "2026-11-20T11:51:25.778Z",
+  "modelTransport": "deterministic loopback Anthropic responses for plan authoring and mounting; the autonomous-reuse pair uses real model inference through scripts/acceptance/model-bridge.mjs; actual ACP Agent/tools and actual Desktop app",
+  "scope": "isolated DSH_HOME; production task channel + official Desktop kernel; no formal home, no release publish",
+  "steps": [
+    {
+      "name": "official-desktop-profile-initialized",
+      "at": "2026-11-20T11:51:27.056Z"
+    },
+    {
+      "name": "ptc-self-evolution-preset-mounted",
+      "at": "2026-11-20T11:51:29.160Z"
+    },
+    {
+      "name": "desktop-task-host-ready",
+      "at": "2026-11-20T11:51:30.421Z"
+    },
+    {
+      "name": "desktop-single-instance-held",
+      "at": "2026-11-20T11:51:34.795Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "read",
+      "at": "2026-11-20T11:51:35.344Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-20T11:51:35.351Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-20T11:51:35.950Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-20T11:51:35.957Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-20T11:51:47.833Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-20T11:51:47.839Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-20T11:51:59.349Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-20T11:51:59.355Z"
+    },
+    {
+      "name": "real-acp-model-tool-request",
+      "tool": "evolution_desktop",
+      "at": "2026-11-20T11:52:06.457Z"
+    },
+    {
+      "name": "real-acp-tool-call",
+      "at": "2026-11-20T11:52:06.463Z"
+    }
+  ],
+  "desktop": {
+    "binary": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+    "cli": "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh"
+  },
+  "host": {
+    "first": {
+      "instanceId": "1a1f3437-8e85-4c28-8cd6-e455732b5c03",
+      "pid": 75593,
+      "protocol": 1,
+      "profile": "desktop"
+    },
+    "singleInstance": {
+      "duplicateInstanceId": "1a1f3437-8e85-4c28-8cd6-e455732b5c03",
+      "secondLaunchPid": 75597
+    }
+  },
+  "candidate": {
+    "tool": "read_complete_line",
+    "compositionName": "complete-line-c8a1cb9a",
+    "sourceSha256": "90bad9d94fae8b9a5cbb7ffec55fdec573bb128767ba2ba628665d91a70e60b0"
+  },
+  "ptc": {
+    "enabled": true,
+    "preset": {
+      "source": "scripts/acceptance/fixtures/self-evolution-preset.cordis.patch.yml",
+      "sha256": "9a1dca8e03d0cd6d3a48b12e07189a6c4df7359850c838bd3e23a029e9779177"
+    },
+    "selectedDefault": "self-evolution"
+  },
+  "approval": null,
+  "publication": null,
+  "freshConsumer": null,
+  "restart": {},
+  "install": {
+    "ok": true,
+    "tail": [
+      "+ dsh-evolution 0.2.15",
+      "",
+      "Done in 446ms using pnpm v11.28.5",
+      "web: configured; restart this entry to apply (HMR disabled)"
+    ],
+    "roles": "host enabled on desktop only; client enabled on acp only; web keeps neither"
+  },
+  "discovery": {
+    "source": "official read in a real ACP session",
+    "issue": "complete first source line unavailable due to default line truncation",
+    "inputSha256": "56b7fa4745981c556e2bb3991a4e9aed272adc69c43288c0496314da34aa638e",
+    "expectedCharacters": 3135,
+    "observedResultSha256": "2291b13e95e9b589ab9484f429685529328cf1c2c7a63b9adcc819ae7cf0b795",
+    "model": "deterministic plan-authoring fixture, no live model inference"
+  },
+  "negativeWorkloads": [
+    {
+      "variant": "no-benefit",
+      "taskId": "desktop-task-mwox51qx-09c41afd",
+      "experimentId": "exp-mwox54g6-1-61c70340",
+      "phase": "failed",
+      "decision": {
+        "kind": "no-benefit",
+        "eligible": false,
+        "reasons": [
+          "no verified correctness or repeatable execution-cost improvement"
+        ]
+      },
+      "gates": {
+        "realBenefit": false,
+        "measuredEvidence": false,
+        "repeatable": true,
+        "regressionTest": true,
+        "reversible": true,
+        "cleanupEvidence": true,
+        "noOrphans": true,
+        "runtimeRecovered": false,
+        "workflowBenefit": false,
+        "taskBenefit": false,
+        "eligible": false
+      },
+      "revert": {
+        "ok": true,
+        "status": "reverted"
+      },
+      "workload": {
+        "scenarioId": "complete-source-line-no-benefit",
+        "scenarioDigest": "sha256:2f4e3436cb5ac51dd94bfb7dec045b6693b638d17893557fe869219a8188e551",
+        "versions": {
+          "dsh": "0.2.2-rc.5",
+          "cordis": "4.1.0",
+          "evolution": "0.2.15"
+        },
+        "comparison": {
+          "benefit": false,
+          "benefitKind": null,
+          "workflowBenefit": false,
+          "improvedAbsentTargets": 0,
+          "improvedMeasuredTargets": 0,
+          "regression": false,
+          "controlStable": true,
+          "repeatable": true,
+          "transportFailed": false,
+          "targetImproved": 0,
+          "before": {
+            "executions": 15,
+            "successes": 15,
+            "errors": 0,
+            "successRate": 1,
+            "transports": {
+              "direct": 0,
+              "run_code": 15
+            },
+            "transportFailed": false,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "read",
+                "role": "target",
+                "executions": 5,
+                "successes": 5,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:5068af1352d4f3a9065f4908c2b7329a531471094c6a957e63036c64cabe035f"
+                ]
+              },
+              {
+                "index": 1,
+                "step": "read",
+                "role": "target",
+                "executions": 5,
+                "successes": 5,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:3a0a3bca0467c539093a4e494a477892081dd3322f6e2b7f8fd3a47a78d72860"
+                ]
+              },
+              {
+                "index": 2,
+                "step": "read",
+                "role": "control",
+                "executions": 5,
+                "successes": 5,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:5068af1352d4f3a9065f4908c2b7329a531471094c6a957e63036c64cabe035f"
+                ]
+              }
+            ]
+          },
+          "after": {
+            "executions": 15,
+            "successes": 15,
+            "errors": 0,
+            "successRate": 1,
+            "transports": {
+              "direct": 0,
+              "run_code": 15
+            },
+            "transportFailed": false,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "read_complete_line_9c75deb7",
+                "role": "target",
+                "executions": 5,
+                "successes": 5,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:5068af1352d4f3a9065f4908c2b7329a531471094c6a957e63036c64cabe035f"
+                ]
+              },
+              {
+                "index": 1,
+                "step": "read_complete_line_9c75deb7",
+                "role": "target",
+                "executions": 5,
+                "successes": 5,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:3a0a3bca0467c539093a4e494a477892081dd3322f6e2b7f8fd3a47a78d72860"
+                ]
+              },
+              {
+                "index": 2,
+                "step": "read",
+                "role": "control",
+                "executions": 5,
+                "successes": 5,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:5068af1352d4f3a9065f4908c2b7329a531471094c6a957e63036c64cabe035f"
+                ]
+              }
+            ]
+          },
+          "steps": [
+            {
+              "index": 0,
+              "step": "read",
+              "role": "target",
+              "executions": 5,
+              "baselineSuccesses": 5,
+              "candidateSuccesses": 5
+            },
+            {
+              "index": 1,
+              "step": "read",
+              "role": "target",
+              "executions": 5,
+              "baselineSuccesses": 5,
+              "candidateSuccesses": 5
+            },
+            {
+              "index": 2,
+              "step": "read",
+              "role": "control",
+              "executions": 5,
+              "baselineSuccesses": 5,
+              "candidateSuccesses": 5
+            }
+          ],
+          "reasons": [
+            "no verified correctness or repeatable execution-cost improvement"
+          ],
+          "beforeMetrics": {
+            "successRate": 1,
+            "errorCount": 0,
+            "failureRate": 0,
+            "durationMs": 382
+          },
+          "afterMetrics": {
+            "successRate": 1,
+            "errorCount": 0,
+            "failureRate": 0,
+            "durationMs": 382
+          },
+          "sampleDigest": {
+            "baseline": "sha256:44d590298532b3ecd1bf6366c7b6d6f1c911ce805abddb8d2b82637ad3adfc96",
+            "candidate": "sha256:dfc7434cd6ce2961a73c033a674dfa1499f968587fe0e0f351160f05ae44afd0",
+            "beforeTrialBaseline": "sha256:c50e4e7a58ff4123c41e20b4f1643a0dbe1def83a783dd8ba5679aebeaf815e4"
+          },
+          "workload": {
+            "evidenceKind": "experimental-workflow",
+            "sufficient": true,
+            "comparable": true,
+            "quality": false,
+            "efficiency": false,
+            "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
+            "beforeCost": {
+              "calls": 15,
+              "medianDurationMs": 382,
+              "totalDurationMs": 1911,
+              "outputBytes": 5010,
+              "perRepetitionMs": [
+                382,
+                382,
+                381,
+                382,
+                384
+              ]
+            },
+            "afterCost": {
+              "calls": 15,
+              "medianDurationMs": 382,
+              "totalDurationMs": 1929,
+              "outputBytes": 4930,
+              "perRepetitionMs": [
+                397,
+                382,
+                391,
+                380,
+                379
+              ]
+            },
+            "durationAcceptable": true,
+            "outputAcceptable": true,
+            "pairing": "alternating AB/BA in the active Trial; baseline also captured before Trial",
+            "baselineMetricSource": "reference samples; outcomes verified against pre-Trial baseline",
+            "baselineTransports": {
+              "direct": 0,
+              "run_code": 15
+            },
+            "transportFailed": false,
+            "validationDurationMs": 2222
+          }
+        }
+      },
+      "transport": {
+        "groups": {
+          "baseline": {
+            "direct": 0,
+            "run_code": 15
+          },
+          "reference": {
+            "direct": 0,
+            "run_code": 15
+          },
+          "candidate": {
+            "direct": 0,
+            "run_code": 15
+          }
+        },
+        "archived": {
+          "baseline": {
+            "rows": 8,
+            "transport": "bounded-in-archive"
+          },
+          "reference": {
+            "rows": 8,
+            "transport": "bounded-in-archive"
+          },
+          "candidate": {
+            "rows": 8,
+            "transport": "bounded-in-archive"
+          }
+        }
+      },
+      "probe": {
+        "scenarioId": "complete-source-line-no-benefit",
+        "scenarioDigest": "sha256:2f4e3436cb5ac51dd94bfb7dec045b6693b638d17893557fe869219a8188e551",
+        "versions": {
+          "dsh": "0.2.2-rc.5",
+          "cordis": "4.1.0",
+          "evolution": "0.2.15"
+        },
+        "safety": {
+          "checked": true,
+          "policy": "official-concurrency-safe",
+          "steps": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "absent": []
+        },
+        "comparison": {
+          "benefit": false,
+          "benefitKind": null,
+          "workflowBenefit": false,
+          "regression": false,
+          "controlStable": true,
+          "repeatable": true,
+          "targetImproved": 0,
+          "before": {
+            "executions": 15,
+            "successes": 15,
+            "errors": 0,
+            "successRate": 1,
+            "transports": "[compacted]",
+            "transportFailed": false,
+            "perStep": "[compacted]"
+          },
+          "after": {
+            "executions": 15,
+            "successes": 15,
+            "errors": 0,
+            "successRate": 1,
+            "transports": "[compacted]",
+            "transportFailed": false,
+            "perStep": "[compacted]"
+          },
+          "beforeMetrics": {
+            "successRate": 1,
+            "errorCount": 0,
+            "failureRate": 0,
+            "durationMs": 382
+          },
+          "afterMetrics": {
+            "successRate": 1,
+            "errorCount": 0,
+            "failureRate": 0,
+            "durationMs": 382
+          },
+          "sampleDigest": {
+            "baseline": "sha256:44d590298532b3ecd1bf6366c7b6d6f1c911ce805abddb8d2b82637ad3adfc96",
+            "candidate": "sha256:dfc7434cd6ce2961a73c033a674dfa1499f968587fe0e0f351160f05ae44afd0",
+            "beforeTrialBaseline": "sha256:c50e4e7a58ff4123c41e20b4f1643a0dbe1def83a783dd8ba5679aebeaf815e4"
+          },
+          "reasons": [
+            "no verified correctness or repeatable execution-cost improvement"
+          ],
+          "steps": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "workload": {
+            "evidenceKind": "experimental-workflow",
+            "sufficient": true,
+            "comparable": true,
+            "quality": false,
+            "efficiency": false,
+            "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
+            "beforeCost": "[compacted]",
+            "afterCost": "[compacted]",
+            "durationAcceptable": true,
+            "outputAcceptable": true,
+            "pairing": "alternating AB/BA in the active Trial; baseline also captured before Trial",
+            "baselineMetricSource": "reference samples; outcomes verified against pre-Trial baseline",
+            "baselineTransports": "[compacted]",
+            "transportFailed": false,
+            "validationDurationMs": 2222
+          }
+        },
+        "samples": {
+          "baseline": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "candidate": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "reference": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ]
+        }
+      }
+    },
+    {
+      "variant": "regression",
+      "taskId": "desktop-task-mwox5ax6-3686227e",
+      "experimentId": "exp-mwox5dj9-2-d936f055",
+      "phase": "failed",
+      "decision": {
+        "kind": "regression",
+        "eligible": false,
+        "reasons": [
+          "read: candidate succeeded 0/5 vs baseline 5/5",
+          "read: candidate succeeded 0/5 vs baseline 5/5",
+          "no verified correctness or repeatable execution-cost improvement"
+        ]
+      },
+      "gates": {
+        "realBenefit": false,
+        "measuredEvidence": false,
+        "repeatable": true,
+        "regressionTest": false,
+        "reversible": true,
+        "cleanupEvidence": true,
+        "noOrphans": true,
+        "runtimeRecovered": false,
+        "workflowBenefit": false,
+        "taskBenefit": false,
+        "eligible": false
+      },
+      "revert": {
+        "ok": true,
+        "status": "reverted"
+      },
+      "workload": {
+        "scenarioId": "complete-source-line-regression",
+        "scenarioDigest": "sha256:19cb284616b841d0f4ddf8e95c2ee808c7d074aea18e0989e78c311dc230aa0f",
+        "versions": {
+          "dsh": "0.2.2-rc.5",
+          "cordis": "4.1.0",
+          "evolution": "0.2.15"
+        },
+        "comparison": {
+          "benefit": false,
+          "benefitKind": null,
+          "workflowBenefit": false,
+          "improvedAbsentTargets": 0,
+          "improvedMeasuredTargets": 0,
+          "regression": true,
+          "controlStable": true,
+          "repeatable": true,
+          "transportFailed": false,
+          "targetImproved": 0,
+          "before": {
+            "executions": 15,
+            "successes": 15,
+            "errors": 0,
+            "successRate": 1,
+            "transports": {
+              "direct": 0,
+              "run_code": 15
+            },
+            "transportFailed": false,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "read",
+                "role": "target",
+                "executions": 5,
+                "successes": 5,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:3a0a3bca0467c539093a4e494a477892081dd3322f6e2b7f8fd3a47a78d72860"
+                ]
+              },
+              {
+                "index": 1,
+                "step": "read",
+                "role": "target",
+                "executions": 5,
+                "successes": 5,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:3a0a3bca0467c539093a4e494a477892081dd3322f6e2b7f8fd3a47a78d72860"
+                ]
+              },
+              {
+                "index": 2,
+                "step": "read",
+                "role": "control",
+                "executions": 5,
+                "successes": 5,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:5068af1352d4f3a9065f4908c2b7329a531471094c6a957e63036c64cabe035f"
+                ]
+              }
+            ]
+          },
+          "after": {
+            "executions": 15,
+            "successes": 5,
+            "errors": 10,
+            "successRate": 0.3333,
+            "transports": {
+              "direct": 0,
+              "run_code": 15
+            },
+            "transportFailed": false,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "read_complete_line_92290427",
+                "role": "target",
+                "executions": 5,
+                "successes": 0,
+                "errors": 5,
+                "codes": [
+                  "E_EVOLUTION_PROBE_INCORRECT"
+                ],
+                "digests": []
+              },
+              {
+                "index": 1,
+                "step": "read_complete_line_92290427",
+                "role": "target",
+                "executions": 5,
+                "successes": 0,
+                "errors": 5,
+                "codes": [
+                  "E_EVOLUTION_PROBE_INCORRECT"
+                ],
+                "digests": []
+              },
+              {
+                "index": 2,
+                "step": "read",
+                "role": "control",
+                "executions": 5,
+                "successes": 5,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:5068af1352d4f3a9065f4908c2b7329a531471094c6a957e63036c64cabe035f"
+                ]
+              }
+            ]
+          },
+          "steps": [
+            {
+              "index": 0,
+              "step": "read",
+              "role": "target",
+              "executions": 5,
+              "baselineSuccesses": 5,
+              "candidateSuccesses": 0
+            },
+            {
+              "index": 1,
+              "step": "read",
+              "role": "target",
+              "executions": 5,
+              "baselineSuccesses": 5,
+              "candidateSuccesses": 0
+            },
+            {
+              "index": 2,
+              "step": "read",
+              "role": "control",
+              "executions": 5,
+              "baselineSuccesses": 5,
+              "candidateSuccesses": 5
+            }
+          ],
+          "reasons": [
+            "read: candidate succeeded 0/5 vs baseline 5/5",
+            "read: candidate succeeded 0/5 vs baseline 5/5",
+            "no verified correctness or repeatable execution-cost improvement"
+          ],
+          "beforeMetrics": {
+            "successRate": 1,
+            "errorCount": 0,
+            "failureRate": 0,
+            "durationMs": 381
+          },
+          "afterMetrics": {
+            "successRate": 0.3333,
+            "errorCount": 10,
+            "failureRate": 0.6667,
+            "durationMs": 381
+          },
+          "sampleDigest": {
+            "baseline": "sha256:4fa91971793a6e6b191b18bda5b4a19e0263b01f1a961bae23e3ad9617921991",
+            "candidate": "sha256:834c51828e0084dc0fecefa8d6b52ca0e81bbac90769fee060d9ccf5ddd76fd7",
+            "beforeTrialBaseline": "sha256:73a8206832c811b30af965ab33141abe02fc9dcd402d77a908bc95998d38d63f"
+          },
+          "workload": {
+            "evidenceKind": "experimental-workflow",
+            "sufficient": true,
+            "comparable": true,
+            "quality": false,
+            "efficiency": false,
+            "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
+            "beforeCost": {
+              "calls": 15,
+              "medianDurationMs": 381,
+              "totalDurationMs": 1904,
+              "outputBytes": 7005,
+              "perRepetitionMs": [
+                381,
+                380,
+                383,
+                382,
+                378
+              ]
+            },
+            "afterCost": {
+              "calls": 15,
+              "medianDurationMs": 381,
+              "totalDurationMs": 1909,
+              "outputBytes": 2785,
+              "perRepetitionMs": [
+                381,
+                386,
+                379,
+                381,
+                382
+              ]
+            },
+            "durationAcceptable": true,
+            "outputAcceptable": true,
+            "pairing": "alternating AB/BA in the active Trial; baseline also captured before Trial",
+            "baselineMetricSource": "reference samples; outcomes verified against pre-Trial baseline",
+            "baselineTransports": {
+              "direct": 0,
+              "run_code": 15
+            },
+            "transportFailed": false,
+            "validationDurationMs": 1891
+          }
+        }
+      },
+      "transport": {
+        "groups": {
+          "baseline": {
+            "direct": 0,
+            "run_code": 15
+          },
+          "reference": {
+            "direct": 0,
+            "run_code": 15
+          },
+          "candidate": {
+            "direct": 0,
+            "run_code": 15
+          }
+        },
+        "archived": {
+          "baseline": {
+            "rows": 8,
+            "transport": "bounded-in-archive"
+          },
+          "reference": {
+            "rows": 8,
+            "transport": "bounded-in-archive"
+          },
+          "candidate": {
+            "rows": 8,
+            "transport": "bounded-in-archive"
+          }
+        }
+      },
+      "probe": {
+        "scenarioId": "complete-source-line-regression",
+        "scenarioDigest": "sha256:19cb284616b841d0f4ddf8e95c2ee808c7d074aea18e0989e78c311dc230aa0f",
+        "versions": {
+          "dsh": "0.2.2-rc.5",
+          "cordis": "4.1.0",
+          "evolution": "0.2.15"
+        },
+        "safety": {
+          "checked": true,
+          "policy": "official-concurrency-safe",
+          "steps": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "absent": []
+        },
+        "comparison": {
+          "benefit": false,
+          "benefitKind": null,
+          "workflowBenefit": false,
+          "regression": true,
+          "controlStable": true,
+          "repeatable": true,
+          "targetImproved": 0,
+          "before": {
+            "executions": 15,
+            "successes": 15,
+            "errors": 0,
+            "successRate": 1,
+            "transports": "[compacted]",
+            "transportFailed": false,
+            "perStep": "[compacted]"
+          },
+          "after": {
+            "executions": 15,
+            "successes": 5,
+            "errors": 10,
+            "successRate": 0.3333,
+            "transports": "[compacted]",
+            "transportFailed": false,
+            "perStep": "[compacted]"
+          },
+          "beforeMetrics": {
+            "successRate": 1,
+            "errorCount": 0,
+            "failureRate": 0,
+            "durationMs": 381
+          },
+          "afterMetrics": {
+            "successRate": 0.3333,
+            "errorCount": 10,
+            "failureRate": 0.6667,
+            "durationMs": 381
+          },
+          "sampleDigest": {
+            "baseline": "sha256:4fa91971793a6e6b191b18bda5b4a19e0263b01f1a961bae23e3ad9617921991",
+            "candidate": "sha256:834c51828e0084dc0fecefa8d6b52ca0e81bbac90769fee060d9ccf5ddd76fd7",
+            "beforeTrialBaseline": "sha256:73a8206832c811b30af965ab33141abe02fc9dcd402d77a908bc95998d38d63f"
+          },
+          "reasons": [
+            "read: candidate succeeded 0/5 vs baseline 5/5",
+            "read: candidate succeeded 0/5 vs baseline 5/5",
+            "no verified correctness or repeatable execution-cost improvement"
+          ],
+          "steps": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "workload": {
+            "evidenceKind": "experimental-workflow",
+            "sufficient": true,
+            "comparable": true,
+            "quality": false,
+            "efficiency": false,
+            "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
+            "beforeCost": "[compacted]",
+            "afterCost": "[compacted]",
+            "durationAcceptable": true,
+            "outputAcceptable": true,
+            "pairing": "alternating AB/BA in the active Trial; baseline also captured before Trial",
+            "baselineMetricSource": "reference samples; outcomes verified against pre-Trial baseline",
+            "baselineTransports": "[compacted]",
+            "transportFailed": false,
+            "validationDurationMs": 1891
+          }
+        },
+        "samples": {
+          "baseline": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "candidate": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "reference": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ]
+        }
+      }
+    },
+    {
+      "variant": "insufficient",
+      "taskId": "desktop-task-mwox5jsw-3e61a503",
+      "experimentId": "exp-mwox5mga-3-6c0b70ea",
+      "phase": "failed",
+      "decision": {
+        "kind": "insufficient-evidence",
+        "eligible": false,
+        "reasons": [
+          "insufficient evidence: need five complete, consistent repetitions, multiple cases and a stable correctness control"
+        ]
+      },
+      "gates": {
+        "realBenefit": false,
+        "measuredEvidence": false,
+        "repeatable": false,
+        "regressionTest": true,
+        "reversible": true,
+        "cleanupEvidence": true,
+        "noOrphans": true,
+        "runtimeRecovered": false,
+        "workflowBenefit": false,
+        "taskBenefit": false,
+        "eligible": false
+      },
+      "revert": {
+        "ok": true,
+        "status": "reverted"
+      },
+      "workload": {
+        "scenarioId": "complete-source-line-insufficient",
+        "scenarioDigest": "sha256:6e9ed93ced37c9eee66c78c4361ccb96d8614077b9c2c2b56129c00871e41e1a",
+        "versions": {
+          "dsh": "0.2.2-rc.5",
+          "cordis": "4.1.0",
+          "evolution": "0.2.15"
+        },
+        "comparison": {
+          "benefit": false,
+          "benefitKind": null,
+          "workflowBenefit": false,
+          "improvedAbsentTargets": 0,
+          "improvedMeasuredTargets": 1,
+          "regression": false,
+          "controlStable": true,
+          "repeatable": false,
+          "transportFailed": false,
+          "targetImproved": 1,
+          "before": {
+            "executions": 3,
+            "successes": 2,
+            "errors": 1,
+            "successRate": 0.6667,
+            "transports": {
+              "direct": 0,
+              "run_code": 3
+            },
+            "transportFailed": false,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "read",
+                "role": "target",
+                "executions": 1,
+                "successes": 0,
+                "errors": 1,
+                "codes": [
+                  "E_EVOLUTION_PROBE_INCORRECT"
+                ],
+                "digests": []
+              },
+              {
+                "index": 1,
+                "step": "read",
+                "role": "target",
+                "executions": 1,
+                "successes": 1,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:3a0a3bca0467c539093a4e494a477892081dd3322f6e2b7f8fd3a47a78d72860"
+                ]
+              },
+              {
+                "index": 2,
+                "step": "read",
+                "role": "control",
+                "executions": 1,
+                "successes": 1,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:5068af1352d4f3a9065f4908c2b7329a531471094c6a957e63036c64cabe035f"
+                ]
+              }
+            ]
+          },
+          "after": {
+            "executions": 3,
+            "successes": 3,
+            "errors": 0,
+            "successRate": 1,
+            "transports": {
+              "direct": 0,
+              "run_code": 3
+            },
+            "transportFailed": false,
+            "perStep": [
+              {
+                "index": 0,
+                "step": "read_complete_line_e327e8b1",
+                "role": "target",
+                "executions": 1,
+                "successes": 1,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:00e7f293124502ccbbaeef82164660855af807a8b4046973bdb243f73d17323e"
+                ]
+              },
+              {
+                "index": 1,
+                "step": "read_complete_line_e327e8b1",
+                "role": "target",
+                "executions": 1,
+                "successes": 1,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:3a0a3bca0467c539093a4e494a477892081dd3322f6e2b7f8fd3a47a78d72860"
+                ]
+              },
+              {
+                "index": 2,
+                "step": "read",
+                "role": "control",
+                "executions": 1,
+                "successes": 1,
+                "errors": 0,
+                "codes": [],
+                "digests": [
+                  "sha256:5068af1352d4f3a9065f4908c2b7329a531471094c6a957e63036c64cabe035f"
+                ]
+              }
+            ]
+          },
+          "steps": [
+            {
+              "index": 0,
+              "step": "read",
+              "role": "target",
+              "executions": 1,
+              "baselineSuccesses": 0,
+              "candidateSuccesses": 1
+            },
+            {
+              "index": 1,
+              "step": "read",
+              "role": "target",
+              "executions": 1,
+              "baselineSuccesses": 1,
+              "candidateSuccesses": 1
+            },
+            {
+              "index": 2,
+              "step": "read",
+              "role": "control",
+              "executions": 1,
+              "baselineSuccesses": 1,
+              "candidateSuccesses": 1
+            }
+          ],
+          "reasons": [
+            "insufficient evidence: need five complete, consistent repetitions, multiple cases and a stable correctness control"
+          ],
+          "beforeMetrics": {
+            "successRate": 0.6667,
+            "errorCount": 1,
+            "failureRate": 0.3333,
+            "durationMs": 386
+          },
+          "afterMetrics": {
+            "successRate": 1,
+            "errorCount": 0,
+            "failureRate": 0,
+            "durationMs": 394
+          },
+          "sampleDigest": {
+            "baseline": "sha256:5b9f20060846d6c836ade18a3aa24c90f17dd24e746b61f226dd7cb3c599ea34",
+            "candidate": "sha256:8d09a030b807f2bcbc1e1b5a1dbce1c8bad8e0f78adbe5655b62a19a067c05f0",
+            "beforeTrialBaseline": "sha256:b11c7711d39edfd0b6fc26ada09c08a3806c93af159aec05450a4d5e5747d52a"
+          },
+          "workload": {
+            "evidenceKind": "experimental-workflow",
+            "sufficient": false,
+            "comparable": true,
+            "quality": true,
+            "efficiency": false,
+            "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
+            "beforeCost": {
+              "calls": 3,
+              "medianDurationMs": 386,
+              "totalDurationMs": 386,
+              "outputBytes": 3332,
+              "perRepetitionMs": [
+                386
+              ]
+            },
+            "afterCost": {
+              "calls": 3,
+              "medianDurationMs": 394,
+              "totalDurationMs": 394,
+              "outputBytes": 4592,
+              "perRepetitionMs": [
+                394
+              ]
+            },
+            "durationAcceptable": true,
+            "outputAcceptable": true,
+            "pairing": "alternating AB/BA in the active Trial; baseline also captured before Trial",
+            "baselineMetricSource": "reference samples; outcomes verified against pre-Trial baseline",
+            "baselineTransports": {
+              "direct": 0,
+              "run_code": 3
+            },
+            "transportFailed": false,
+            "validationDurationMs": 409
+          }
+        }
+      },
+      "transport": {
+        "groups": {
+          "baseline": {
+            "direct": 0,
+            "run_code": 3
+          },
+          "reference": {
+            "direct": 0,
+            "run_code": 3
+          },
+          "candidate": {
+            "direct": 0,
+            "run_code": 3
+          }
+        },
+        "archived": {
+          "baseline": {
+            "rows": 3,
+            "transport": "bounded-in-archive"
+          },
+          "reference": {
+            "rows": 3,
+            "transport": "bounded-in-archive"
+          },
+          "candidate": {
+            "rows": 3,
+            "transport": "bounded-in-archive"
+          }
+        }
+      },
+      "probe": {
+        "scenarioId": "complete-source-line-insufficient",
+        "scenarioDigest": "sha256:6e9ed93ced37c9eee66c78c4361ccb96d8614077b9c2c2b56129c00871e41e1a",
+        "versions": {
+          "dsh": "0.2.2-rc.5",
+          "cordis": "4.1.0",
+          "evolution": "0.2.15"
+        },
+        "safety": {
+          "checked": true,
+          "policy": "official-concurrency-safe",
+          "steps": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "absent": []
+        },
+        "comparison": {
+          "benefit": false,
+          "benefitKind": null,
+          "workflowBenefit": false,
+          "regression": false,
+          "controlStable": true,
+          "repeatable": false,
+          "targetImproved": 1,
+          "before": {
+            "executions": 3,
+            "successes": 2,
+            "errors": 1,
+            "successRate": 0.6667,
+            "transports": "[compacted]",
+            "transportFailed": false,
+            "perStep": "[compacted]"
+          },
+          "after": {
+            "executions": 3,
+            "successes": 3,
+            "errors": 0,
+            "successRate": 1,
+            "transports": "[compacted]",
+            "transportFailed": false,
+            "perStep": "[compacted]"
+          },
+          "beforeMetrics": {
+            "successRate": 0.6667,
+            "errorCount": 1,
+            "failureRate": 0.3333,
+            "durationMs": 386
+          },
+          "afterMetrics": {
+            "successRate": 1,
+            "errorCount": 0,
+            "failureRate": 0,
+            "durationMs": 394
+          },
+          "sampleDigest": {
+            "baseline": "sha256:5b9f20060846d6c836ade18a3aa24c90f17dd24e746b61f226dd7cb3c599ea34",
+            "candidate": "sha256:8d09a030b807f2bcbc1e1b5a1dbce1c8bad8e0f78adbe5655b62a19a067c05f0",
+            "beforeTrialBaseline": "sha256:b11c7711d39edfd0b6fc26ada09c08a3806c93af159aec05450a4d5e5747d52a"
+          },
+          "reasons": [
+            "insufficient evidence: need five complete, consistent repetitions, multiple cases and a stable correctness control"
+          ],
+          "steps": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "workload": {
+            "evidenceKind": "experimental-workflow",
+            "sufficient": false,
+            "comparable": true,
+            "quality": true,
+            "efficiency": false,
+            "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
+            "beforeCost": "[compacted]",
+            "afterCost": "[compacted]",
+            "durationAcceptable": true,
+            "outputAcceptable": true,
+            "pairing": "alternating AB/BA in the active Trial; baseline also captured before Trial",
+            "baselineMetricSource": "reference samples; outcomes verified against pre-Trial baseline",
+            "baselineTransports": "[compacted]",
+            "transportFailed": false,
+            "validationDurationMs": 409
+          }
+        },
+        "samples": {
+          "baseline": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "candidate": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ],
+          "reference": [
+            "[compacted]",
+            "[compacted]",
+            "[compacted]"
+          ]
+        }
+      }
+    }
+  ],
+  "workloadOnlyPromotion": {
+    "taskId": "desktop-task-mwox5pac-e33acea6",
+    "experimentId": "exp-mwox5rxj-4-ab091fd6",
+    "phase": "failed",
+    "error": {
+      "code": "E_DESKTOP_BENEFIT_UNPROVEN",
+      "message": "the measured evidence is not eligible (missing: taskBenefit); nothing was promoted"
+    },
+    "gates": {
+      "realBenefit": true,
+      "measuredEvidence": true,
+      "repeatable": true,
+      "regressionTest": true,
+      "reversible": true,
+      "cleanupEvidence": true,
+      "noOrphans": true,
+      "runtimeRecovered": false,
+      "workflowBenefit": true,
+      "taskBenefit": false,
+      "eligible": false
+    },
+    "decision": {
+      "kind": "insufficient-evidence",
+      "eligible": false,
+      "reasons": [
+        "measured behavior improved and the correctness control stayed stable",
+        "at least one promotion gate has no supporting evidence"
+      ]
+    },
+    "revert": {
+      "ok": true,
+      "status": "reverted"
+    },
+    "workload": {
+      "scenarioId": "complete-source-line-benefit",
+      "scenarioDigest": "sha256:0a04959a3408736cd5d067f68dc0726593cd38e983d0219b5ed7a34607aa1fce",
+      "versions": {
+        "dsh": "0.2.2-rc.5",
+        "cordis": "4.1.0",
+        "evolution": "0.2.15"
+      },
+      "comparison": {
+        "benefit": true,
+        "benefitKind": "workflow",
+        "workflowBenefit": true,
+        "improvedAbsentTargets": 0,
+        "improvedMeasuredTargets": 1,
+        "regression": false,
+        "controlStable": true,
+        "repeatable": true,
+        "transportFailed": false,
+        "targetImproved": 1,
+        "before": {
+          "executions": 15,
+          "successes": 10,
+          "errors": 5,
+          "successRate": 0.6667,
+          "transports": {
+            "direct": 0,
+            "run_code": 15
+          },
+          "transportFailed": false,
+          "perStep": [
+            {
+              "index": 0,
+              "step": "read",
+              "role": "target",
+              "executions": 5,
+              "successes": 0,
+              "errors": 5,
+              "codes": [
+                "E_EVOLUTION_PROBE_INCORRECT"
+              ],
+              "digests": []
+            },
+            {
+              "index": 1,
+              "step": "read",
+              "role": "target",
+              "executions": 5,
+              "successes": 5,
+              "errors": 0,
+              "codes": [],
+              "digests": [
+                "sha256:3a0a3bca0467c539093a4e494a477892081dd3322f6e2b7f8fd3a47a78d72860"
+              ]
+            },
+            {
+              "index": 2,
+              "step": "read",
+              "role": "control",
+              "executions": 5,
+              "successes": 5,
+              "errors": 0,
+              "codes": [],
+              "digests": [
+                "sha256:5068af1352d4f3a9065f4908c2b7329a531471094c6a957e63036c64cabe035f"
+              ]
+            }
+          ]
+        },
+        "after": {
+          "executions": 15,
+          "successes": 15,
+          "errors": 0,
+          "successRate": 1,
+          "transports": {
+            "direct": 0,
+            "run_code": 15
+          },
+          "transportFailed": false,
+          "perStep": [
+            {
+              "index": 0,
+              "step": "read_complete_line",
+              "role": "target",
+              "executions": 5,
+              "successes": 5,
+              "errors": 0,
+              "codes": [],
+              "digests": [
+                "sha256:00e7f293124502ccbbaeef82164660855af807a8b4046973bdb243f73d17323e"
+              ]
+            },
+            {
+              "index": 1,
+              "step": "read_complete_line",
+              "role": "target",
+              "executions": 5,
+              "successes": 5,
+              "errors": 0,
+              "codes": [],
+              "digests": [
+                "sha256:3a0a3bca0467c539093a4e494a477892081dd3322f6e2b7f8fd3a47a78d72860"
+              ]
+            },
+            {
+              "index": 2,
+              "step": "read",
+              "role": "control",
+              "executions": 5,
+              "successes": 5,
+              "errors": 0,
+              "codes": [],
+              "digests": [
+                "sha256:5068af1352d4f3a9065f4908c2b7329a531471094c6a957e63036c64cabe035f"
+              ]
+            }
+          ]
+        },
+        "steps": [
+          {
+            "index": 0,
+            "step": "read",
+            "role": "target",
+            "executions": 5,
+            "baselineSuccesses": 0,
+            "candidateSuccesses": 5
+          },
+          {
+            "index": 1,
+            "step": "read",
+            "role": "target",
+            "executions": 5,
+            "baselineSuccesses": 5,
+            "candidateSuccesses": 5
+          },
+          {
+            "index": 2,
+            "step": "read",
+            "role": "control",
+            "executions": 5,
+            "baselineSuccesses": 5,
+            "candidateSuccesses": 5
+          }
+        ],
+        "reasons": [],
+        "beforeMetrics": {
+          "successRate": 0.6667,
+          "errorCount": 5,
+          "failureRate": 0.3333,
+          "durationMs": 383
+        },
+        "afterMetrics": {
+          "successRate": 1,
+          "errorCount": 0,
+          "failureRate": 0,
+          "durationMs": 384
+        },
+        "sampleDigest": {
+          "baseline": "sha256:dcb2c030510dd21753f1c8169ddfada914793ac7a17f9f4cbd0957f764addba5",
+          "candidate": "sha256:714dbb3de556b8f1f29635a339485682955db8c34d02f875f5050196c3ac65af",
+          "beforeTrialBaseline": "sha256:a95bdec4a6014a1ed969b6dd24110fe1df879347a57c42ba101e528750a368da"
+        },
+        "workload": {
+          "evidenceKind": "experimental-workflow",
+          "sufficient": true,
+          "comparable": true,
+          "quality": true,
+          "efficiency": false,
+          "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
+          "beforeCost": {
+            "calls": 15,
+            "medianDurationMs": 383,
+            "totalDurationMs": 1923,
+            "outputBytes": 16660,
+            "perRepetitionMs": [
+              383,
+              391,
+              384,
+              382,
+              383
+            ]
+          },
+          "afterCost": {
+            "calls": 15,
+            "medianDurationMs": 384,
+            "totalDurationMs": 1923,
+            "outputBytes": 22960,
+            "perRepetitionMs": [
+              389,
+              383,
+              382,
+              384,
+              385
+            ]
+          },
+          "durationAcceptable": true,
+          "outputAcceptable": true,
+          "pairing": "alternating AB/BA in the active Trial; baseline also captured before Trial",
+          "baselineMetricSource": "reference samples; outcomes verified against pre-Trial baseline",
+          "baselineTransports": {
+            "direct": 0,
+            "run_code": 15
+          },
+          "transportFailed": false,
+          "validationDurationMs": 1921
+        }
+      }
+    },
+    "transport": {
+      "groups": {
+        "baseline": {
+          "direct": 0,
+          "run_code": 15
+        },
+        "reference": {
+          "direct": 0,
+          "run_code": 15
+        },
+        "candidate": {
+          "direct": 0,
+          "run_code": 15
+        }
+      },
+      "archived": {
+        "baseline": {
+          "rows": 8,
+          "transport": "bounded-in-archive"
+        },
+        "reference": {
+          "rows": 8,
+          "transport": "bounded-in-archive"
+        },
+        "candidate": {
+          "rows": 8,
+          "transport": "bounded-in-archive"
+        }
+      }
+    },
+    "probe": {
+      "scenarioId": "complete-source-line-benefit",
+      "scenarioDigest": "sha256:0a04959a3408736cd5d067f68dc0726593cd38e983d0219b5ed7a34607aa1fce",
+      "versions": {
+        "dsh": "0.2.2-rc.5",
+        "cordis": "4.1.0",
+        "evolution": "0.2.15"
+      },
+      "safety": {
+        "checked": true,
+        "policy": "official-concurrency-safe",
+        "steps": [
+          "[compacted]",
+          "[compacted]",
+          "[compacted]"
+        ],
+        "absent": []
+      },
+      "comparison": {
+        "benefit": true,
+        "benefitKind": "workflow",
+        "workflowBenefit": true,
+        "regression": false,
+        "controlStable": true,
+        "repeatable": true,
+        "targetImproved": 1,
+        "before": {
+          "executions": 15,
+          "successes": 10,
+          "errors": 5,
+          "successRate": 0.6667,
+          "transports": "[compacted]",
+          "transportFailed": false,
+          "perStep": "[compacted]"
+        },
+        "after": {
+          "executions": 15,
+          "successes": 15,
+          "errors": 0,
+          "successRate": 1,
+          "transports": "[compacted]",
+          "transportFailed": false,
+          "perStep": "[compacted]"
+        },
+        "beforeMetrics": {
+          "successRate": 0.6667,
+          "errorCount": 5,
+          "failureRate": 0.3333,
+          "durationMs": 383
+        },
+        "afterMetrics": {
+          "successRate": 1,
+          "errorCount": 0,
+          "failureRate": 0,
+          "durationMs": 384
+        },
+        "sampleDigest": {
+          "baseline": "sha256:dcb2c030510dd21753f1c8169ddfada914793ac7a17f9f4cbd0957f764addba5",
+          "candidate": "sha256:714dbb3de556b8f1f29635a339485682955db8c34d02f875f5050196c3ac65af",
+          "beforeTrialBaseline": "sha256:a95bdec4a6014a1ed969b6dd24110fe1df879347a57c42ba101e528750a368da"
+        },
+        "reasons": [],
+        "steps": [
+          "[compacted]",
+          "[compacted]",
+          "[compacted]"
+        ],
+        "workload": {
+          "evidenceKind": "experimental-workflow",
+          "sufficient": true,
+          "comparable": true,
+          "quality": true,
+          "efficiency": false,
+          "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
+          "beforeCost": "[compacted]",
+          "afterCost": "[compacted]",
+          "durationAcceptable": true,
+          "outputAcceptable": true,
+          "pairing": "alternating AB/BA in the active Trial; baseline also captured before Trial",
+          "baselineMetricSource": "reference samples; outcomes verified against pre-Trial baseline",
+          "baselineTransports": "[compacted]",
+          "transportFailed": false,
+          "validationDurationMs": 1921
+        }
+      },
+      "samples": {
+        "baseline": [
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]"
+        ],
+        "candidate": [
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]"
+        ],
+        "reference": [
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]",
+          "[compacted]"
+        ]
+      }
+    }
+  },
+  "blocked": "a workload-only workflow claim is rejected: taskBenefit (paired real-session evidence) is required and this deterministic runner does not produce it",
+  "error": "TASK_BENEFIT_REQUIRED",
+  "finishedAt": "2026-11-20T11:52:17.506Z",
+  "tarballSha256": "9c64ec0f5e30fe22284c4bf1a50013f05e77d0776190131d8680d93163050725"
+}
