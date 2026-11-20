@@ -18,6 +18,29 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.15 — 稳定版
+
+`0.2.14` 的稳定后继：彻底修复 PTC（Programmatic Tool Calling）self-evolution preset 下 `evolution_probe` 执行 `verification.workload` 仍直接调用 `ctx.tools.execute` 被官方执行器拒绝的问题。`0.2.14` 只把 Desktop task host **外层**的 kernel 调用改走官方 `run_code` 传输；probe 内部每个 workload step 仍是直连调用，PTC 执行器在 policy 和工具体之前就以 “only `run_code` is callable directly” 拒绝，于是 baseline/candidate 的每个步骤都记成失败、control 不稳定、`workflowBenefit` 永远为 false，工具型自我进化实验无法完成真实 workload 收益验证。相对 `0.2.14` 固定产物，分发内容改 `lib/orchestrator.js`、`lib/desktop-task-host.js`、新增 `lib/ptc-transport.js`，加上版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改动。
+
+- **共享 PTC 传输原语。** 新增 `lib/ptc-transport.js`，把拒绝判定（`only \`run_code\` is callable directly`）、sentinel 与 `{ logs, result? }` 信封解包收敛成一份实现；Desktop task host 与 probe 使用同一份判定，不再各写一套。task host 的既有语义保持：嵌套工具失败仍然让 kernel 调用失败并保留 `CODE_RUN_FAILED`。
+- **取消与超时也不参与收益。** PTC 执行在产生工具结果前被取消（`ABORTED` / `ABORTED_BEFORE_DISPATCH`）或超时，会保留原有错误码，但同时标记 `unmeasured: true`；该配对同样为证据不足。这样一次被取消的基线不会变成候选的成功。
+- **无效配对不写策略结论。** 传输失败或未测量的配对统一归为 `insufficient-evidence`：不会因为候选侧传输失败而记录 `regression`，也不会因为基线侧传输失败而记录 `no-benefit`，避免共享经验里的错误结论阻止同一策略再次提案。`measurementInvalid` 同时进入比较、observation 与决策。
+- **异常不等于已测量。** 官方 PTC SDK 对子调用的参数校验失败、策略拒绝与工具体失败都只抛出不带内部分类的 `ToolCallError`；程序无法证明工具体已经执行，因此捕获到的工具异常仍记录为 `E_EVOLUTION_PROBE_TOOL_ERROR`，但同时标记 `unmeasured: true`，不参与收益/回归判定。真正执行并返回错误值的步骤仍通过期望值摘要作为已测量结果比较。
+- **无效配对也不写策略失败。** 确认晋升在门禁处拒绝无效配对时，归档保留诊断性 failure 块，但以 `learn: false` 跳过失败记忆与 `failure-learned` 事件，`experiment-rejected` 也不携带持久失败指纹；成功 `revert` 同样以 `learn: false` 归档，因此回滚前后本地失败记忆都不新增条目。否则共享经验会同时记录 `insufficient-evidence` 与 `experiment-failed`/`dontRepeat`，互相矛盾。
+- **无效配对不进入 advisory evaluator。** `measure` 判为 `insufficient-evidence` 后，`promote` 不再把无效配对的错误计数交给领域 evaluator 作回归硬否决；晋升门禁分支与随后的 `revert` 都保持 `insufficient-evidence`，不会在共享经验里发布 `regression` 结论（新增 `measure → promote → revert` 回归用例）。
+- **三阶段汇总一致。** `compareWorkflowProbeRuns` 的顶层 `transportFailed` / `unmeasured` / `measurementInvalid` 现在覆盖 Trial 前 baseline、reference 与 candidate 三个阶段，与 `workload.*` 字段一致。
+- **准备阶段失败属于传输失败。** wrapper 先解析参数并检查 SDK 绑定，再进入工具调用；参数异常或绑定缺失从未进入工具体，会以程序失败（`CODE_RUN_FAILED`）走传输失败路径，而不是被记成一次工具失败。
+- **传输失败不是收益。** 任何阶段（Trial 前 baseline、配对 reference 或 candidate）出现 `E_EVOLUTION_PROBE_TRANSPORT` 都使该配对证据不足：`workload.sufficient=false`、`transportFailed=true`、benefit 不成立；普通 probe 也不能把一次传输失败后的成功当成能力收益。内层工具失败与错误输出仍按原比较语义处理。
+- **拒绝判定绑定工具名与结构分类。** 共享判定器要求官方拒绝消息精确命名当前工具，并在结构化 `error.info` 存在时要求 `ToolNotFoundError` / `UNKNOWN_TOOL`；普通工具或策略错误即使引用“only `run_code` is callable directly”也保持原路径，不会被误送到 `run_code`。
+- **传输错误码统一。** PTC 传输失败统一记录为 `E_EVOLUTION_PROBE_TRANSPORT`，宿主自身分类保存在有界的 `transportCode`（例如 `CODE_RUN_FAILED`、`MALFORMED_ENVELOPE`、`EXECUTION_FAILED`）；本地超时与取消继续保留既有 `E_EVOLUTION_PROBE_TIMEOUT` / abort 分类。`tools.execute` 在 PTC 路线上直接抛出时也按传输失败归类。
+- **wrapper 只回传失败标记。** 程序捕获内层工具失败时只返回 `ok:false`，不再把原始错误文本放进成功的 `run_code` 返回值；宿主生成固定的有界分类，避免原文进入证据、外层模型内容或 `outputBytes`。
+- **probe 的 workload step 经官方 `run_code` 执行。** 直连调用返回该拒绝时（拒绝发生在 policy 与工具体之前，重试不会产生第二次副作用），probe 用同一份参数在 `run_code` 程序里调用目标工具，并用共享 sentinel 解包。参数以 JSON 文本传入并在程序内 `JSON.parse`，保留自有 `__proto__` 键的语义；成功值进入原有 `probeResultRow` 摘要/期望值比较路径。
+- **错误不会被伪装成功。** 被 `run_code` 捕获的内层工具失败记录为 `E_EVOLUTION_PROBE_TOOL_ERROR`；传输本身失败（程序异常、运行时退出、无 sentinel 或非法信封）记录为 `E_EVOLUTION_PROBE_TRANSPORT` 或传输自身的分类码；超时/取消仍走原有 `E_EVOLUTION_PROBE_TIMEOUT` / abort 路径。不能把传输失败读成一次成功步骤。
+- **证据可复核。** 每个 sample 记录 `transport`（`direct` / `run_code`），每个 phase 的 summary 增加 `transports: { direct, run_code }` 计数，随 `comparison` 进入 `measure` 与 Desktop task state，因此验收可以直接断言真实的调用路线，而不是从耗时推断。
+- **门禁不变。** workload 只提供 workflow 证据；workflow 与 context-policy 晋升仍要求同一任务、同一模型的成对真实会话 `taskBenefit`。PTC 下正向 workload-only 计划仍以 `E_DESKTOP_BENEFIT_UNPROVEN`（missing: taskBenefit）停在所有者审批之前并回滚，没有放宽任何一项晋升门禁。
+- **真实 PTC 验收。** 在隔离 `DSH_HOME` 中，用真实官方 Desktop 应用与 `self-evolution` PTC preset 运行 `run-acp-desktop-control.mjs --ptc`：三个负向 workload（no-benefit / regression / insufficient）分别得到正确 decision，两阶段各 15/15（insufficient 为 3/3）样本均为 `run_code`；正向 workload 的 `benefit=true`、`workload.sufficient=true`、`workflowBenefit=true`，而 `taskBenefit=false` 使其按既有门禁被拒绝并回滚。同一脚本的 native 模式给出相同 decision，全部样本为 `direct`，证明非 PTC 路径未退化。PTC self-evolution preset 下的真实模型成对 taskBenefit 闭环仍按 `run-task-benefit-loop.mjs --ptc` 单独取证，不替代本项。
+- **宿主验收。** 八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR。已有 stable 插件、历史共享经验与生产数据不迁移、不下线。
+
 ## 0.2.14 — 稳定版
 
 `0.2.13` 的稳定后继：修复 PTC（Programmatic Tool Calling）self-evolution preset 下 Desktop task host 直接调用 `ctx.tools.execute` 被官方执行器拒绝，导致真实 Desktop 自我进化任务在 `evolution_runtime_inspect` 第一步失败的问题。相对 `0.2.13` 固定产物，分发内容只改 `lib/desktop-task-host.js`、新增 `test/desktop-task-host.test.mjs` 用例，以及版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；宿主集合、持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies` 均未改动。

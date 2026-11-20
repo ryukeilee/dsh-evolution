@@ -29,6 +29,7 @@ import {
 } from '../lib/orchestrator.js';
 import { openSharedExperience } from '../lib/shared-experience.js';
 import { strategyFingerprint } from '../lib/experience-plan.js';
+import { PTC_WRAPPED_VALUE } from '../lib/ptc-transport.js';
 import {
   execFor,
   exists,
@@ -110,19 +111,51 @@ async function createHarness(t, name, options = {}) {
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const warnings = [];
   const calls = [];
-  const state = { targetFails: true, controlFails: false, controlValue: { ok: true }, dynamicActive: false };
+  const state = { targetFails: true, targetWrongValue: false, controlFails: false, controlValue: { ok: true }, dynamicActive: false };
+  const runStep = (call) => call.name === 'probe-dynamic'
+    ? { isError: false, value: { ok: true } }
+    : call.name === 'probe-target'
+    ? state.targetWrongValue
+      ? { isError: false, value: { ok: false } }
+      : state.targetFails
+        ? { isError: true, error: { code: 'E_TARGET_FAILED' } }
+        : { isError: false, value: { ok: true } }
+    : state.controlFails
+      ? { isError: true, error: { code: 'E_CONTROL_FAILED' } }
+      : { isError: false, value: structuredClone(state.controlValue) };
+  // A PTC preset refuses every direct call except run_code and exposes the rest
+  // only as SDK bindings inside a program. The fake parses the same wrapper the
+  // producer builds and maps a thrown inner call to the program's caught shape.
+  const runProgram = (call) => {
+    const program = JSON.parse(call.arguments).code;
+    const binding = /if \(typeof tools\[("(?:[^"\\]|\\.)*")\] !== "function"\)/.exec(program);
+    const parsed = /const args = JSON\.parse\(("(?:[^"\\]|\\.)*")\);/.exec(program);
+    assert.ok(binding && parsed, 'the probe wrapper prepares the binding and arguments before the tool call');
+    const name = JSON.parse(binding[1]);
+    const args = JSON.parse(JSON.parse(parsed[1]));
+    const inner = runStep({ name, arguments: JSON.stringify(args), id: call.id + ':inner' });
+    const wrapped = inner.isError === true
+      ? { [PTC_WRAPPED_VALUE]: true, ok: false }
+      : { [PTC_WRAPPED_VALUE]: true, ok: true, value: inner.value };
+    return { logs: [], result: wrapped };
+  };
   const execute = async ({ calls: batch }) => {
     const call = batch[0];
     calls.push({ name: call.name, arguments: call.arguments, id: call.id });
-    const result = call.name === 'probe-dynamic'
-      ? { isError: false, value: { ok: true } }
-      : call.name === 'probe-target'
-      ? state.targetFails
-        ? { isError: true, error: { code: 'E_TARGET_FAILED' } }
-        : { isError: false, value: { ok: true } }
-      : state.controlFails
-        ? { isError: true, error: { code: 'E_CONTROL_FAILED' } }
-        : { isError: false, value: structuredClone(state.controlValue) };
+    if (options.ptc === true && call.name !== 'run_code') {
+      return { results: [{ callId: call.id, result: { isError: true, error: {
+        message: 'unknown tool "' + call.name + '": only \u0060run_code\u0060 is callable directly \u2014 call \u0060' + call.name + '\u0060 from inside a \u0060run_code\u0060 program instead',
+        info: { name: 'ToolNotFoundError', code: 'UNKNOWN_TOOL' },
+      } } }] };
+    }
+    if (options.ptc === true && call.name === 'run_code' && options.ptcRunCodeError === true) {
+      return { results: [{ callId: call.id, result: { isError: true, error: { message: 'code run failed', info: { name: 'CodeRunFailedError', code: 'CODE_RUN_FAILED' } } } }] };
+    }
+    const result = options.ptc === true
+      ? { isError: false, value: options.ptcBroken === true
+        ? { logs: [], result: { unrelated: true } }
+        : runProgram(call) }
+      : runStep(call);
     return { results: [{ callId: call.id, result }] };
   };
   const runner = fakeRunner();
@@ -324,6 +357,7 @@ test('benefit loop: plan selects the seeded failure, probe derives the measureme
   assert.equal(baseline.baseline.executions, 4);
   assert.equal(baseline.baseline.successes, 2);
   assert.equal(baseline.baseline.errors, 2);
+  assert.deepEqual(baseline.baseline.transports, { direct: 4, run_code: 0 });
   assert.deepEqual(baseline.versions, APPLICABILITY);
   assert.match(baseline.scenarioDigest, /^sha256:[a-f0-9]{64}$/);
   assert.equal(h.calls.length, 4);
@@ -425,6 +459,325 @@ test('benefit loop: plan selects the seeded failure, probe derives the measureme
   assert.match(archive, /"kind": "benefit"/);
   assert.match(archive, /"probeDerived": true/);
   assert.match(archive, /"scenarioId": "edge-cache-first-read"/);
+});
+
+// ---------------------------------------------------------------------------
+// 1b. PTC: the executor refuses a direct step call, so the same step must run
+//     through the official run_code transport and still derive the measurement.
+// ---------------------------------------------------------------------------
+
+test('a PTC preset carries a measured workflow step through run_code and keeps the benefit', async (t) => {
+  const h = await createHarness(t, 'ptc-probe', { ptc: true });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h, { benefitModel: { kind: 'workflow' } });
+  const scenario = workflowScenario(5);
+  // The baseline and reference target calls really run and return a wrong value:
+  // the measured outcome is a digest mismatch, not an exception, so it stays
+  // comparable under the unmeasured-exception rule.
+  h.state.targetWrongValue = true;
+  const baseline = await runBaseline(h, experimentId, scenario);
+  assert.equal(baseline.baseline.errors, 5);
+  assert.deepEqual(baseline.baseline.transports, { direct: 0, run_code: 10 });
+  assert.equal(baseline.baseline.transportFailed, false);
+  assert.equal(baseline.baseline.unmeasured, false);
+  assert.deepEqual([...new Set(baseline.samples.map((row) => row.transport))], ['run_code']);
+  const targetCodes = baseline.samples.filter((row) => row.role === 'target').map((row) => row.code);
+  assert.ok(targetCodes.every((code) => code === 'E_EVOLUTION_PROBE_INCORRECT'), `unexpected target codes: ${targetCodes.join(', ')}`);
+  assert.ok(!targetCodes.includes('UNKNOWN_TOOL'));
+
+  await startTrial(h, experimentId);
+  h.state.dynamicActive = true;
+  const candidate = await runCandidate(h, experimentId, scenario);
+  assert.equal(candidate.comparison.benefit, true);
+  assert.equal(candidate.comparison.workflowBenefit, true);
+  assert.equal(candidate.comparison.measurementInvalid, false);
+  assert.equal(candidate.comparison.controlStable, true);
+  assert.equal(candidate.comparison.regression, false);
+  assert.deepEqual(candidate.comparison.before.transports, { direct: 0, run_code: 10 });
+  assert.deepEqual(candidate.comparison.after.transports, { direct: 0, run_code: 10 });
+  assert.ok(candidate.samples.every((row) => row.transport === 'run_code'));
+
+  const measurement = h.orchestrator.measure({ experimentId, observation: measuredObservation({ taskBenefit: taskEvidenceFor(h, experimentId) }) }, h.exec);
+  assert.equal(measurement.gates.eligible, true);
+  assert.equal(measurement.observation.probeDerived, true);
+  assert.equal(measurement.observation.probe.comparison.benefit, true);
+  assert.ok(measurement.observation.probe.samples.baseline.every((row) => row.transport === 'run_code'));
+  assert.ok(measurement.observation.probe.samples.candidate.every((row) => row.transport === 'run_code'));
+});
+
+test('a malformed PTC wrapper is reported as a transport failure, never as a successful step', async (t) => {
+  const h = await createHarness(t, 'ptc-transport-failure', { ptc: true, ptcBroken: true });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  const baseline = await runBaseline(h, experimentId);
+  assert.equal(baseline.baseline.successes, 0);
+  assert.equal(baseline.baseline.errors, 4);
+  assert.equal(baseline.baseline.transportFailed, true);
+  assert.ok(baseline.samples.every((row) => row.transport === 'run_code'));
+  assert.ok(baseline.samples.every((row) => row.code === 'E_EVOLUTION_PROBE_TRANSPORT'));
+  assert.ok(baseline.samples.every((row) => row.transportCode === 'MALFORMED_ENVELOPE'));
+
+  await startTrial(h, experimentId);
+  h.state.targetFails = false;
+  const candidate = await runCandidate(h, experimentId);
+  assert.equal(candidate.comparison.benefit, false);
+  assert.equal(candidate.comparison.controlStable, false);
+});
+
+test('a structured run_code failure keeps the uniform transport code and the host code', async (t) => {
+  const h = await createHarness(t, 'ptc-run-code-error', { ptc: true, ptcRunCodeError: true });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  const baseline = await runBaseline(h, experimentId);
+  assert.equal(baseline.baseline.successes, 0);
+  assert.ok(baseline.samples.every((row) => row.code === 'E_EVOLUTION_PROBE_TRANSPORT'));
+  assert.ok(baseline.samples.every((row) => row.transportCode === 'CODE_RUN_FAILED'));
+  // Argument parsing and the SDK binding check are outside the tool-call try, so
+  // a pre-dispatch rejection fails the program instead of looking like a tool
+  // outcome that was measured.
+  const program = JSON.parse(h.calls.find((call) => call.name === 'run_code').arguments).code;
+  assert.ok(program.indexOf('const args = JSON.parse') < program.indexOf('try {'));
+  assert.ok(program.indexOf('typeof tools[') < program.indexOf('try {'));
+});
+
+test('a thrown pipeline failure on the PTC route is classified as a transport failure', async (t) => {
+  const h = await createHarness(t, 'ptc-thrown-transport', { ptc: true });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  const original = h.ctx.tools.execute;
+  h.ctx.tools.execute = async (args) => {
+    if (args.calls[0].name === 'run_code') throw new Error('pipeline exploded');
+    return original(args);
+  };
+  const baseline = await runBaseline(h, experimentId);
+  assert.equal(baseline.baseline.successes, 0);
+  assert.ok(baseline.samples.every((row) => row.code === 'E_EVOLUTION_PROBE_TRANSPORT'));
+  assert.ok(baseline.samples.every((row) => row.transportCode === 'EXECUTION_FAILED'));
+});
+
+test('paired workflow: an aborted PTC execution is unmeasured, not a candidate benefit', async (t) => {
+  const h = await createHarness(t, 'workflow-ptc-unmeasured', { ptc: true });
+  const experimentId = await proposeExperiment(h, { benefitModel: { kind: 'workflow' } });
+  const scenario = workflowScenario(5);
+  const original = h.ctx.tools.execute;
+  // The target's run_code execution is aborted before it measures the tool; the
+  // control still measures normally. The abort keeps its own error code but must
+  // not serve as the baseline failure a later candidate success improves on.
+  h.ctx.tools.execute = async (args) => {
+    const call = args.calls[0];
+    if (call.name === 'run_code') {
+      const program = JSON.parse(call.arguments).code;
+      if (program.includes('"probe-target"')) {
+        return { results: [{ callId: call.id, result: { isError: true, error: { message: 'aborted', info: { code: 'ABORTED_BEFORE_DISPATCH' } } } }] };
+      }
+    }
+    return original(args);
+  };
+  const baseline = await runBaseline(h, experimentId, scenario);
+  assert.equal(baseline.baseline.unmeasured, true);
+  assert.equal(baseline.baseline.transportFailed, false);
+  h.ctx.tools.execute = original;
+  await startTrial(h, experimentId);
+  h.state.dynamicActive = true;
+  const candidate = await runCandidate(h, experimentId, scenario);
+  assert.equal(candidate.comparison.benefit, false);
+  assert.equal(candidate.comparison.measurementInvalid, true);
+  assert.equal(candidate.comparison.workload.sufficient, false);
+  assert.equal(candidate.comparison.workload.unmeasured, true);
+  assert.equal(candidate.comparison.unmeasured, true);
+  assert.equal(candidate.comparison.transportFailed, false);
+  assert.equal(candidate.comparison.regression, false);
+  assert.ok(candidate.comparison.reasons.some((reason) => /not measured/.test(reason)));
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(h.orchestrator.requireOwned(experimentId, h.exec.agent).decision.kind, 'insufficient-evidence');
+  await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
+});
+
+test('a thrown PTC tool error is unmeasured, never a baseline failure a candidate improves on', async (t) => {
+  const h = await createHarness(t, 'ptc-tool-error-unmeasured', { ptc: true });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  const scenario = probeScenario();
+  // The program-facing ToolCallError cannot prove the tool body ran (argument
+  // validation and policy refusal throw the same way), so it is unmeasured.
+  const baseline = await runBaseline(h, experimentId, scenario);
+  assert.equal(baseline.baseline.unmeasured, true);
+  assert.equal(baseline.baseline.transportFailed, false);
+  const targetRows = baseline.samples.filter((row) => row.role === 'target');
+  assert.ok(targetRows.every((row) => row.code === 'E_EVOLUTION_PROBE_TOOL_ERROR' && row.unmeasured === true));
+  await startTrial(h, experimentId);
+  h.state.targetFails = false;
+  const candidate = await runCandidate(h, experimentId, scenario);
+  assert.equal(candidate.comparison.benefit, false);
+  assert.equal(candidate.comparison.measurementInvalid, true);
+  assert.equal(candidate.comparison.regression, false);
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(h.orchestrator.requireOwned(experimentId, h.exec.agent).decision.kind, 'insufficient-evidence');
+  await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
+});
+
+test('an invalid probe pair stays insufficient and never writes a strategy failure', async (t) => {
+  const evaluations = [];
+  const events = [];
+  const h = await createHarness(t, 'ptc-promotion-invalid', { ptc: true, config: {
+    // A stub that would roll back if it were consulted: the guard is proven by
+    // the call count, not by an evaluator that happens to agree.
+    domainStorage: { evaluate: (evidence) => { evaluations.push(evidence); return { decision: 'rollback', reason: 'stub regression' }; } },
+    eventBridge: { emit: (type, record, payload) => { events.push({ type, learn: payload?.learn }); return { audit: { at: new Date().toISOString() } }; } },
+  } });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  const scenario = probeScenario();
+  // The baseline succeeds, so the invalid candidate's raw counts would look
+  // like a real regression to the evaluator.
+  h.state.targetFails = false;
+  await runBaseline(h, experimentId, scenario);
+  await startTrial(h, experimentId);
+  const original = h.ctx.tools.execute;
+  h.ctx.tools.execute = async (args) => {
+    const call = args.calls[0];
+    if (call.name === 'run_code') {
+      const program = JSON.parse(call.arguments).code;
+      if (program.includes('"probe-target"')) {
+        return { results: [{ callId: call.id, result: { isError: false, value: { logs: [], result: { unrelated: true } } } }] };
+      }
+    }
+    return original(args);
+  };
+  await runCandidate(h, experimentId, scenario);
+  h.ctx.tools.execute = original;
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(measured.decision.kind, 'insufficient-evidence');
+  assert.equal(evaluations.length, 0, 'measurement must not consult the advisory evaluator');
+  const promotion = await h.orchestrator.promote({ experimentId, confirmation: true }, h.exec);
+  assert.equal(promotion.ok, false);
+  assert.equal(promotion.reason, 'promotion-gate');
+  assert.equal(promotion.decision.kind, 'insufficient-evidence');
+  assert.equal(promotion.domainEvaluation, undefined, 'the advisory evaluator must not judge an invalid pair');
+  assert.equal(evaluations.length, 0, 'an invalid pair must not reach the advisory evaluator');
+  assert.ok(!events.some((event) => event.type === 'failure-learned'), 'an invalid pair must not emit failure-learned');
+  const rejected = events.find((event) => event.type === 'experiment-rejected');
+  assert.equal(rejected?.learn, false, 'the rejection event must suppress the durable failure fingerprint');
+  // The promotion-gate archive keeps the diagnostic failure block but records no
+  // memory signature, so the same invalidity cannot become a "do not repeat".
+  const archive = await fs.readFile(h.orchestrator.requireOwned(experimentId, h.exec.agent).archivePath, 'utf8');
+  assert.match(archive, /not recorded \(environment failure, not a strategy verdict\)/);
+  assert.equal(h.orchestrator.memory.data.entries.length, 0, 'the promotion gate must not write local failure memory');
+  const reverted = await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
+  assert.equal(h.orchestrator.memory.data.entries.length, 0, 'a successful revert of an invalid pair must not write failure memory');
+  const found = h.store.findConclusions({ target: TARGET, applicability: APPLICABILITY, strategyFingerprint: strategyFingerprint(TARGET, STRATEGY) });
+  assert.equal(found.best.decision, 'insufficient-evidence');
+  assert.ok(!events.some((event) => event.type === 'failure-learned'), 'revert must not turn the invalid pair into a learned failure');
+  // The same pair must not appear as a failed approach in experience recall.
+  const recall = h.orchestrator.recallExperience({ target: TARGET, why: 'invalid pair recall' });
+  assert.ok(recall, 'experience recall should still answer after an invalid revert');
+  assert.equal((recall.records ?? []).filter((entry) => entry.source === 'failure-memory').length, 0);
+});
+
+test('a plain probe with a candidate transport failure stays insufficient, not a regression', async (t) => {
+  const h = await createHarness(t, 'plain-ptc-candidate-invalid', { ptc: true });
+  const experimentId = await proposeExperiment(h);
+  const scenario = probeScenario();
+  const baseline = await runBaseline(h, experimentId, scenario);
+  assert.equal(baseline.baseline.transportFailed, false);
+  await startTrial(h, experimentId);
+  // The reference target succeeds and the candidate target's transport fails:
+  // the raw counts would look like a regression, but the pair did not measure
+  // the candidate tool.
+  h.state.targetFails = false;
+  const original = h.ctx.tools.execute;
+  h.ctx.tools.execute = async (args) => {
+    const call = args.calls[0];
+    if (call.name === 'run_code') {
+      const program = JSON.parse(call.arguments).code;
+      if (program.includes('"probe-target"')) {
+        return { results: [{ callId: call.id, result: { isError: false, value: { logs: [], result: { unrelated: true } } } }] };
+      }
+    }
+    return original(args);
+  };
+  const candidate = await runCandidate(h, experimentId, scenario);
+  assert.equal(candidate.comparison.transportFailed, true);
+  assert.equal(candidate.comparison.measurementInvalid, true);
+  assert.equal(candidate.comparison.regression, false);
+  assert.equal(candidate.comparison.benefit, false);
+  h.ctx.tools.execute = original;
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(h.orchestrator.requireOwned(experimentId, h.exec.agent).decision.kind, 'insufficient-evidence');
+  await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
+});
+
+test('a plain probe with a baseline transport failure stays insufficient, not no-benefit', async (t) => {
+  const h = await createHarness(t, 'plain-ptc-baseline-invalid', { ptc: true });
+  const experimentId = await proposeExperiment(h);
+  const scenario = probeScenario();
+  const original = h.ctx.tools.execute;
+  h.ctx.tools.execute = async (args) => {
+    const call = args.calls[0];
+    if (call.name === 'run_code') {
+      const program = JSON.parse(call.arguments).code;
+      if (program.includes('"probe-target"')) {
+        return { results: [{ callId: call.id, result: { isError: false, value: { logs: [], result: { unrelated: true } } } }] };
+      }
+    }
+    return original(args);
+  };
+  await runBaseline(h, experimentId, scenario);
+  h.ctx.tools.execute = original;
+  await startTrial(h, experimentId);
+  // Without the guard the baseline transport failure plus a candidate success
+  // would be a benefit; with it the pair is unmeasured and insufficient.
+  h.state.targetFails = false;
+  const candidate = await runCandidate(h, experimentId, scenario);
+  assert.equal(candidate.comparison.benefit, false);
+  assert.equal(candidate.comparison.measurementInvalid, true);
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(h.orchestrator.requireOwned(experimentId, h.exec.agent).decision.kind, 'insufficient-evidence');
+  await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
+});
+
+test('paired workflow: a PTC transport failure is insufficient evidence, not a candidate benefit', async (t) => {
+  const h = await createHarness(t, 'workflow-ptc-transport', { ptc: true });
+  const experimentId = await proposeExperiment(h, { benefitModel: { kind: 'workflow' } });
+  const scenario = workflowScenario(5);
+  const original = h.ctx.tools.execute;
+  // Only the target step's transport fails during the pre-Trial baseline. The
+  // control still measures normally, so without the transport guard the later
+  // candidate success would look like a correctness benefit.
+  h.ctx.tools.execute = async (args) => {
+    const call = args.calls[0];
+    if (call.name === 'probe-target') {
+      return { results: [{ callId: call.id, result: { isError: true, error: {
+        message: 'unknown tool "probe-target": only \u0060run_code\u0060 is callable directly \u2014 call \u0060probe-target\u0060 from inside a \u0060run_code\u0060 program instead',
+        info: { name: 'ToolNotFoundError', code: 'UNKNOWN_TOOL' },
+      } } }] };
+    }
+    if (call.name === 'run_code') {
+      const program = JSON.parse(call.arguments).code;
+      if (program.includes('"probe-target"')) {
+        return { results: [{ callId: call.id, result: { isError: false, value: { logs: [], result: { unrelated: true } } } }] };
+      }
+    }
+    return original(args);
+  };
+  const baseline = await runBaseline(h, experimentId, scenario);
+  assert.equal(baseline.baseline.transportFailed, true);
+  assert.equal(baseline.baseline.transports.run_code, scenario.repetitions * 2);
+  h.ctx.tools.execute = original;
+  await startTrial(h, experimentId);
+  h.state.dynamicActive = true;
+  const candidate = await runCandidate(h, experimentId, scenario);
+  assert.equal(candidate.comparison.benefit, false);
+  assert.equal(candidate.comparison.workflowBenefit, false);
+  assert.equal(candidate.comparison.workload.sufficient, false);
+  assert.equal(candidate.comparison.workload.transportFailed, true);
+  assert.equal(candidate.comparison.measurementInvalid, true);
+  assert.equal(candidate.comparison.regression, false);
+  assert.ok(candidate.comparison.reasons.some((reason) => /PTC transport/.test(reason)));
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(measured.gates.eligible, false);
+  assert.equal(h.orchestrator.requireOwned(experimentId, h.exec.agent).decision.kind, 'insufficient-evidence');
+  await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
 });
 
 // ---------------------------------------------------------------------------
