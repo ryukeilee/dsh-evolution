@@ -350,12 +350,17 @@ export async function resolveArtifactTarget({ home, taskId, channelHome, outFile
 export async function assertResolvedArtifactTarget(target, { home, taskId } = {}) {
   if (!target || typeof target !== 'object' || Array.isArray(target)) throw new Error('the artifact target must be a resolved target');
   if (target.taskId !== taskId) throw new Error('the artifact target belongs to a different task id');
-  if (typeof target.outFile !== 'string' || path.basename(target.outFile) !== `${taskId}.json`) throw new Error('the artifact target does not name this task');
   if (target.channel === null) {
     await assertIsolatedTarget(path.dirname(target.outFile), home, 'artifact directory');
     return target;
   }
   if (typeof target.channel !== 'string' || !path.isAbsolute(target.channel)) throw new Error('the artifact target channel must be an absolute path');
+  // A shared target must still satisfy the separation rule: a channel inside the
+  // isolated home would let the sessions write into the channel they deliver to.
+  if (target.channel === home || target.channel.startsWith(`${home}${path.sep}`)) {
+    throw new Error('the channel home must not be the isolated home');
+  }
+  if (typeof target.outFile !== 'string' || path.basename(target.outFile) !== `${taskId}.json`) throw new Error('the artifact target does not name this task');
   if (target.outFile !== path.join(target.channel, ...ARTIFACT_SEGMENTS, `${taskId}.json`)) throw new Error('the artifact target does not match its channel');
   if (await realpathOr(target.channel) !== target.channel) throw new Error('the artifact target channel is not a canonical path');
   return target;
@@ -416,16 +421,24 @@ async function assertRealDirectory(target, message) {
  * their spelling: a supported alias of the channel root, a parent-directory
  * alias, or a report symlink that points at the artifact must all be refused.
  */
+async function resolveReportDestination(targetPath, depth = 0) {
+  if (depth > 16) throw new Error('the report path follows too many symbolic links');
+  const resolved = path.resolve(targetPath);
+  // A relative symlink resolves from the directory that really contains the
+  // link, which is not always the directory its spelled path names.
+  const directory = await realpathOr(path.dirname(resolved));
+  const candidate = path.join(directory, path.basename(resolved));
+  const info = await fs.lstat(candidate).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
+  if (info === null || info.isSymbolicLink() !== true) return candidate;
+  const link = await fs.readlink(candidate);
+  // Follow the whole chain: a dangling link still has a destination that
+  // writeFile would create after this check passed.
+  return resolveReportDestination(path.resolve(directory, link), depth + 1);
+}
+
 export async function assertReportOutsideEvidence(reportFile, artifactTarget) {
-  const reportPath = path.resolve(reportFile);
   const artifact = await realpathOr(artifactTarget.outFile);
-  const entry = await fs.lstat(reportPath).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
-  // A dangling report symlink has no resolved path yet, and writeFile would
-  // follow it only after this check passed: resolve the link itself so its
-  // destination is still compared against the boundary.
-  const report = entry !== null && entry.isSymbolicLink()
-    ? await realpathOr(path.resolve(path.dirname(reportPath), await fs.readlink(reportPath)))
-    : await realpathOr(reportPath);
+  const report = await resolveReportDestination(reportFile);
   if (artifactTarget.channel === null) {
     if (report === artifact) throw new Error('the report must not be written over the task evidence');
     return;

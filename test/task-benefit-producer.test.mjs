@@ -358,8 +358,11 @@ test('a symlinked parent of the channel root is refused before anything is creat
     // walk must compare the resolved path of the root, not just lstat it.
     await fs.rename(parent, `${parent}.old`);
     await fs.symlink(outside, parent);
+    // The swapped-away tree keeps a same-named channel: lstat then still sees a
+    // directory, so only the canonical-path check can refuse the write.
+    await fs.mkdir(path.join(outside, 'channel'));
     await assert.rejects(prepareArtifactDirectory(target), /channel home resolved to a different path|channel home must be a directory/);
-    assert.deepEqual(await fs.readdir(outside), []);
+    assert.deepEqual(await fs.readdir(path.join(outside, 'channel')), [], 'the swapped tree must stay empty');
   } finally {
     await fs.rm(home, { recursive: true, force: true });
     await fs.rm(parent, { recursive: true, force: true });
@@ -385,6 +388,17 @@ test('a shared artifact target is re-verified before the producer uses it', asyn
     await assert.rejects(assertResolvedArtifactTarget({ ...target, outFile: path.join(channel, 'desktop-task-proof.json') }, { home, taskId: 'desktop-task-proof' }), /does not match its channel/);
     const escaped = { taskId: 'desktop-task-proof', channel: null, outFile: path.join(outside, 'desktop-task-proof.json') };
     await assert.rejects(assertResolvedArtifactTarget(escaped, { home, taskId: 'desktop-task-proof' }), /isolated home/);
+    // A target resolved against one home must not become a channel inside another.
+    const otherHome = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-shared-other-')));
+    await fs.mkdir(path.join(otherHome, 'channel'));
+    const nested = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: path.join(otherHome, 'channel') });
+    await assert.rejects(assertResolvedArtifactTarget(nested, { home: otherHome, taskId: 'desktop-task-proof' }), /must not be the isolated home/);
+    await fs.rm(otherHome, { recursive: true, force: true });
+    // The legacy isolated `--out` may keep its own file name; only channel
+    // delivery requires <taskId>.json.
+    const legacy = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', outFile: path.join(home, 'artifact.json') });
+    assert.equal(legacy.outFile, path.join(home, 'artifact.json'));
+    await assertResolvedArtifactTarget(legacy, { home, taskId: 'desktop-task-proof' });
   } finally {
     await fs.rm(home, { recursive: true, force: true });
     await fs.rm(channel, { recursive: true, force: true });
@@ -420,6 +434,15 @@ test('the operator report is compared after resolving every alias of the target'
     const dangling = path.join(outside, 'report-dangling.json');
     await fs.symlink(path.join(channel, 'storages', 'report.json'), dangling);
     await assert.rejects(assertReportOutsideEvidence(dangling, target), /must stay outside the channel home/);
+    assert.equal(existsSync(path.join(channel, 'storages', 'report.json')), false);
+    // Relative link targets resolve from the directory that really contains the
+    // link, not from the alias the operator spelled.
+    const deep = path.join(outside, 'deep', 'real');
+    await fs.mkdir(deep, { recursive: true });
+    await fs.symlink(path.join(channel, 'storages'), path.join(outside, 'inside'));
+    await fs.symlink(deep, path.join(outside, 'alias'));
+    await fs.symlink(path.join('..', '..', 'inside', 'report.json'), path.join(deep, 'report.json'));
+    await assert.rejects(assertReportOutsideEvidence(path.join(outside, 'alias', 'report.json'), target), /must stay outside the channel home/);
     assert.equal(existsSync(path.join(channel, 'storages', 'report.json')), false);
     await assertReportOutsideEvidence(path.join(outside, 'report.json'), target);
 
