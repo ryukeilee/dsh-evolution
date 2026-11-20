@@ -2,7 +2,9 @@
 
 本文件记录 `dsh-evolution` 当前稳定版的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前版本：`0.2.13`——`0.2.12` 的稳定后继：把官方 DSH `0.2.2-rc.4` 与 `0.2.2-rc.5` 加入精确宿主声明并固定进发布产物。相对 `0.2.12` 固定产物的分发内容只改 `package.json` 的版本与 `peerDependencies`（新增两个精确宿主）以及随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；`lib/`、持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根与 `engines` 不变。八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR，因为 `dsh-hmr/lib/index.js` 在五个版本间逐字节相同，上游启动窗口缺口没有变化。已有三个 stable 插件、历史共享经验与生产数据不迁移、不下线。
+当前版本：`0.2.14`——`0.2.13` 的稳定后继：修复 PTC self-evolution preset 下 Desktop task host 直接调用 `ctx.tools.execute` 被官方执行器拒绝的问题。相对 `0.2.13` 固定产物，分发内容只改 `lib/desktop-task-host.js`、新增 `test/desktop-task-host.test.mjs` 用例，以及版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；宿主集合、持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies` 均未改动。PTC 预设只允许直接调用 `run_code`；host 现在识别该拒绝，经官方 `run_code` 程序调用目标工具，并用单一 sentinel 包装解包 `{ logs, result? }` 信封；非 PTC 宿主仍走原有直连路径。PTC 嵌套工具失败由官方 `run_code` 包装为 `CODE_RUN_FAILED`，原始消息保留；回退程序按 self-evolution preset 的 TypeScript flavor 生成，Python PTC flavor 不在本修复范围。八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR。已有四个 stable 插件、历史共享经验与生产数据不迁移、不下线。
+
+`0.2.13` 是 `0.2.12` 的稳定后继：把官方 DSH `0.2.2-rc.4` 与 `0.2.2-rc.5` 加入精确宿主声明并固定进发布产物。相对 `0.2.12` 固定产物的分发内容只改 `package.json` 的版本与 `peerDependencies`（新增两个精确宿主）以及随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；`lib/`、持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根与 `engines` 不变。八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR，因为 `dsh-hmr/lib/index.js` 在五个版本间逐字节相同，上游启动窗口缺口没有变化。已有三个 stable 插件、历史共享经验与生产数据不迁移、不下线。
 
 `0.2.12` 是 `0.2.11` 的稳定后继：把自我进化从“要求真实成对会话证据”推进到“在真实宿主与真实模型上产生、批准并复用可复核的任务收益”。相对 `0.2.11` 固定产物的分发内容改 `lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/error-boundary.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/experience-recall.js`、`lib/orchestrator.js`、`lib/registration.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`，加上版本号与随包文档；宿主集合、持久化 schema 与 schema 版本、工具名、授权来源、八项晋升门禁的既有判定、Cordis 信任根、`engines` 与 `peerDependencies`（六个宿主）不变，工具参数新增 `evolution_propose.improvement`、`evolution_measure.taskId` 与 observation 的 `taskBenefit` 三个可选字段；context-policy 计划的 `verification.functionalCheck` 是必填项，workflow 与 context-policy 晋升都必须提交成对真实会话的 `taskBenefit` 证据。已有三个 stable 插件、历史共享经验与生产数据不迁移、不下线。六个官方宿主针对本版本的固定产物重新验收并重新固定；真实 taskBenefit 闭环只在隔离 `DSH_HOME`、真实 Desktop/ACP 宿主与真实模型上取证，不写正式数据。`0.2.2-rc.1` / `rc.2` / `rc.3` 仍须关闭宿主 HMR，因为 `dsh-hmr/lib/index.js` 在三个版本间逐字节相同，上游启动窗口缺口没有变化。
 
@@ -42,10 +44,12 @@
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.13.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.14.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
+
+`v0.2.14` 是 `v0.2.13` 的稳定后继：分发内容只改 `lib/desktop-task-host.js`（PTC 官方 `run_code` 传输兼容）与其单元测试，加上版本号与随包文档；宿主集合、schema、工具名 / 参数、授权来源、八项门禁、Cordis 信任根、`engines` 与 `peerDependencies` 均不变；八个宿主针对它的固定产物重新验收，Release 以正式版（非 Draft、非 Pre-release、Latest）公开；`v0.2.13` 的 tag、Release 与附件原样保留、未被覆盖。
 
 `v0.2.13` 是 `v0.2.12` 的稳定后继：分发内容只扩展 DSH `0.2.2-rc.4` / `0.2.2-rc.5` 的精确版本声明与随包文档，`lib/` 与其它分发行为不变；八个宿主针对它的固定产物重新验收，Release 以正式版（非 Draft、非 Pre-release、Latest）公开；`v0.2.12` 的 tag、Release 与附件原样保留、未被覆盖。
 
@@ -93,16 +97,16 @@ rc.18 发布之前，最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.13，仓库内容）
+# 当前本地候选（0.2.14，仓库内容）
 npm run pack:check                              # 开发阶段：打包稳定性、白名单、权限、锁文件、文档一致性 + 工作树/固定点关系
 npm run pack:check -- --release                 # 发布阶段：另外要求工作树就是固定内容（release.yml 用这一条）
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
 # 发布后：验证 tag -> commit -> 固定点 -> 工作树（发布前在同一 commit 上也能跑）
-node scripts/release/verify-provenance.mjs --tag v0.2.13 --require-source-commit
+node scripts/release/verify-provenance.mjs --tag v0.2.14 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.13，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.14，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz
@@ -170,14 +174,15 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.5 --no-hmr --exp
 - `docs/evidence/cross-entry-0.2.2-rc.3.json`（同一宿主、`--cross-entry`，35/35 步）
 - `docs/evidence/cross-entry-0.2.2-rc.4.json`（同一宿主、`--cross-entry`，35/35 步）
 - `docs/evidence/cross-entry-0.2.2-rc.5.json`（同一宿主、`--cross-entry`，35/35 步）
+- `docs/evidence/task-benefit-0.2.2-rc.5-ptc-20261120.json`（隔离 PTC self-evolution preset，真实模型成对会话 + owner gate + canary + fresh consumer + 重启，8/8 步）
 
 证据同时记录 `contentSha256`（内容）与 `tarballSha256`（实际安装的字节）。`pack:check` 与 `test/release-pin.test.mjs` 按宿主分两条通道核对：固定点验收过的宿主核对**发布固定点**，固定点之后新增的宿主核对**本树构建的内容**（`npm pack` 字节随 npm 版本变化，候选没有可核对的固定产物，所以新增宿主只核对内容摘要）。任何被发布文件的变化都会改变**下一次**固定点将要记录的内容：固定点覆盖的宿主在重新固定时重跑，新增宿主的记录则必须立即重跑才能通过 `pack:check`。开发阶段的判定差别见第 6 节第 16 条。
 
 ### 4.1 已执行的验收记录
 
-八个官方宿主针对 `0.2.13` 固定产物完成验收（`0.2.2-rc.1` 至 `0.2.2-rc.5` 为 `--no-hmr --experience-evolution`，各 25/25；其余三个各 21/21），最终 doctor 均为 `healthy`、退出码为 0。固定点的宿主验收记录保存在上列八个 `docs/evidence/dsh-<host>.json` 文件中（`0.2.2-rc.1` 至 `0.2.2-rc.5` 为 `--no-hmr`）。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
+八个官方宿主针对 `0.2.14` 固定产物完成验收（`0.2.2-rc.1` 至 `0.2.2-rc.5` 为 `--no-hmr --experience-evolution`，各 25/25；其余三个各 21/21），最终 doctor 均为 `healthy`、退出码为 0。固定点的宿主验收记录保存在上列八个 `docs/evidence/dsh-<host>.json` 文件中（`0.2.2-rc.1` 至 `0.2.2-rc.5` 为 `--no-hmr`）。每份记录的内容摘要和 tarball 字节摘要都必须与 `release/manifest.json` 一致；实际结果以这些证据文件为准。历史轮次证据保留在 `docs/evidence/`，不能代替当前固定点验收。
 
-`0.2.13` 的运行时代码与 `0.2.12` 相同（分发内容只差版本、宿主声明与文档），因此 task-coupled 收益闭环沿用 `0.2.12` 固定产物的证据 `docs/evidence/task-benefit-0.2.12-20261118.json`；`0.2.2-rc.5` 上的真实模型闭环证据为 `docs/evidence/task-benefit-0.2.2-rc.5-20261119.json`。两者都不写正式数据，也不替代八宿主安装验收。
+`0.2.14` 的运行时代码只改 `lib/desktop-task-host.js` 的 PTC 官方 `run_code` 传输；八宿主安装验收已按新固定产物重跑。PTC self-evolution preset 下的真实 Desktop 闭环（真实模型、成对会话、owner gate、canary、fresh consumer、重启与 planner resolved）证据为 `docs/evidence/task-benefit-0.2.2-rc.5-ptc-20261120.json`；它使用隔离 `DSH_HOME`，不写正式数据，也不替代八宿主安装验收。历史 `0.2.13` 证据保留在 `docs/evidence/task-benefit-0.2.2-rc.5-20261119.json`，不替代本版本验收。
 
 `0.2.9` 还在**正式**（非隔离）ACP profile 上做了多会话验收：一个 live 会话挂载两个已发布 stable 插件（探针回执证明工具注册与可调用），一个在 Include 启动/挂载窗口被关闭的短命会话不得覆盖它的 `active` 报告，read-side review 不产生 `restart-consumer`；记录见 `docs/evidence/promoted-consumer-real-acp-0.2.9.json`（本地 home 路径已脱敏）。它只读隔离验收的同一条 consumer 代码路径，不替代五宿主验收。
 
@@ -200,13 +205,13 @@ node scripts/acceptance/run-host-acceptance.mjs --host 0.2.2-rc.5 --no-hmr --exp
 - 所有 action 均运行在 Node 24 运行时（`actions/checkout@v7`、`actions/setup-node@v7`、`actions/upload-artifact@v7`、`pnpm/action-setup@v6`、`github/codeql-action/*@v4`），不再出现 `Node.js 20 is deprecated` 警告。
 - `test/workflows.test.mjs` 解析全部 workflow，锁定 CI job 集、可接受宿主矩阵、发布不可覆盖与不可重建、action 运行时与 major 版本；`test/release-provenance.test.mjs` 覆盖 provenance 判定表。
 
-rc.18 没有改变 CI job 集、宿主矩阵或 publish 顺序。随候选新增的 doctor check `state.ownership` 只改变诊断报告面；它不增加 repair，也不改变 release workflow 的固定点与 provenance 校验。rc.20 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的项数（仍为 28 个 check `id`、6 个 repair `id`、5 个 degradedCapability `id`）。`0.2.0` 相对 rc.20 也没有改变这三者；唯一与看到“候选”二字时会预期的差异是**版本号的形状**：`0.2.0` 不再带 pre-release 后缀，所以 `release.yml` 会把它的 draft Release 建成正式版（`--prerelease` 只用于带 pre-release 组件的 tag）。相应地，`pack:check` 的版本检查从“必须是 pre-release”改为“必须是可被 release tag 文法命中的 semver 版本”，`test/release-pin.test.mjs` 的 pin 版本断言同步改成同一形状；这两处改动只是允许稳定版本，没有放宽任何其它门禁。`0.2.1` 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的项数，也没有放宽任何门禁；它把 `0.2.2-rc.1` 纳入固定点的 `verifiedHosts`，所以四个宿主现在都按固定产物核对。`0.2.2` 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的 check / repair / degradedCapability 项数（check id、repair id 与工具名集合与 `0.2.1` 逐项相同，已用 `git show v0.2.1:lib/diagnostics.js` 与当前树比对），也没有放宽任何门禁；本轮改动集中在 `lib/` 的性能路径与随包文档，`peerDependencies` 与四个宿主不变。`0.2.3` 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的 check / repair / degradedCapability 项数，也没有放宽任何门禁；它只改 `lib/guard.js` 的写动词边界，`peerDependencies` 与四个宿主不变。`0.2.4` 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的 check / repair / degradedCapability 项数，也没有放宽任何门禁；它把统一经验采集、Propose–Probe–Compose 自我进化、stable 插件跨入口共享与 ACP/Web 轻量消费者固定为四个宿主的稳定版，并收入发布前可靠性审查的四项修复；`peerDependencies` 与四个宿主不变。`0.2.5` 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的 check / repair / degradedCapability 项数，也没有放宽任何门禁；它新增共享经验库 schema 2 与显式离线迁移，普通启动不迁移已有 schema 1 库，`peerDependencies` 与四个宿主不变。`0.2.9` 只改 consumer 的发布存活判定（`lib/promoted-consumer.js` 与 `lib/cordis-compat.js` 的只读生命周期判定）与 dispose 状态合并，CI job 集、宿主矩阵、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 与五个宿主不变。`0.2.10` 只把 DSH `0.2.2-rc.3` 加入精确宿主声明与 CI 矩阵，运行时代码、CI job 集、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 从五个宿主扩展为六个。`0.2.11` 只改自我进化收益口径与 Desktop 配对工作流证据的实现和随包文档，CI job 集、宿主矩阵、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 仍是六个宿主。`0.2.12` 只改自我进化收益证据、taskBenefit 门禁与 producer、context-policy 功能复验、非错误退化观测的实现和随包文档，CI job 集、宿主矩阵、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 仍是六个宿主。`0.2.13` 只扩展 DSH `0.2.2-rc.4` / `0.2.2-rc.5` 的精确宿主声明与随包文档，运行时代码、CI job 集、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 从六个宿主扩展为八个。
+rc.18 没有改变 CI job 集、宿主矩阵或 publish 顺序。随候选新增的 doctor check `state.ownership` 只改变诊断报告面；它不增加 repair，也不改变 release workflow 的固定点与 provenance 校验。rc.20 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的项数（仍为 28 个 check `id`、6 个 repair `id`、5 个 degradedCapability `id`）。`0.2.0` 相对 rc.20 也没有改变这三者；唯一与看到“候选”二字时会预期的差异是**版本号的形状**：`0.2.0` 不再带 pre-release 后缀，所以 `release.yml` 会把它的 draft Release 建成正式版（`--prerelease` 只用于带 pre-release 组件的 tag）。相应地，`pack:check` 的版本检查从“必须是 pre-release”改为“必须是可被 release tag 文法命中的 semver 版本”，`test/release-pin.test.mjs` 的 pin 版本断言同步改成同一形状；这两处改动只是允许稳定版本，没有放宽任何其它门禁。`0.2.1` 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的项数，也没有放宽任何门禁；它把 `0.2.2-rc.1` 纳入固定点的 `verifiedHosts`，所以四个宿主现在都按固定产物核对。`0.2.2` 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的 check / repair / degradedCapability 项数（check id、repair id 与工具名集合与 `0.2.1` 逐项相同，已用 `git show v0.2.1:lib/diagnostics.js` 与当前树比对），也没有放宽任何门禁；本轮改动集中在 `lib/` 的性能路径与随包文档，`peerDependencies` 与四个宿主不变。`0.2.3` 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的 check / repair / degradedCapability 项数，也没有放宽任何门禁；它只改 `lib/guard.js` 的写动词边界，`peerDependencies` 与四个宿主不变。`0.2.4` 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的 check / repair / degradedCapability 项数，也没有放宽任何门禁；它把统一经验采集、Propose–Probe–Compose 自我进化、stable 插件跨入口共享与 ACP/Web 轻量消费者固定为四个宿主的稳定版，并收入发布前可靠性审查的四项修复；`peerDependencies` 与四个宿主不变。`0.2.5` 同样没有改变 CI job 集、宿主矩阵、publish 顺序或 doctor 的 check / repair / degradedCapability 项数，也没有放宽任何门禁；它新增共享经验库 schema 2 与显式离线迁移，普通启动不迁移已有 schema 1 库，`peerDependencies` 与四个宿主不变。`0.2.9` 只改 consumer 的发布存活判定（`lib/promoted-consumer.js` 与 `lib/cordis-compat.js` 的只读生命周期判定）与 dispose 状态合并，CI job 集、宿主矩阵、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 与五个宿主不变。`0.2.10` 只把 DSH `0.2.2-rc.3` 加入精确宿主声明与 CI 矩阵，运行时代码、CI job 集、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 从五个宿主扩展为六个。`0.2.11` 只改自我进化收益口径与 Desktop 配对工作流证据的实现和随包文档，CI job 集、宿主矩阵、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 仍是六个宿主。`0.2.12` 只改自我进化收益证据、taskBenefit 门禁与 producer、context-policy 功能复验、非错误退化观测的实现和随包文档，CI job 集、宿主矩阵、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 仍是六个宿主。`0.2.13` 只扩展 DSH `0.2.2-rc.4` / `0.2.2-rc.5` 的精确宿主声明与随包文档，运行时代码、CI job 集、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 从六个宿主扩展为八个。`0.2.14` 只改 `lib/desktop-task-host.js` 的 PTC 官方 `run_code` 传输与其测试/文档，CI job 集、宿主矩阵、publish 顺序与 doctor 的 check / repair / degradedCapability 项数都不变，`peerDependencies` 仍为八个宿主。
 
 ## 6. 发布状态与剩余风险
 
 仓库已设为 public，`v0.2.0-rc.1` 的 tarball、`SHA256SUMS` 与 `manifest.json` 可由无仓库权限的用户直接下载。此前“私有仓库导致 Release 资产无法匿名下载”的限制已解除。
 
-以下条目是仍未消除的边界与风险（第 1–14、16–50 条）；第 15 条已关闭，保留在原编号位置只为让旧说明不再误导。第 30–31 条记录 rc.17 的边界；第 25 条按 rc.18 的尾记录协议更新，仍描述事件桥的残余边界；第 32–37 条记录 rc.18 新增或明确的限制；第 38–42 条记录 rc.20 新增或改写的边界；第 43–50 条记录 `0.2.2` 新增或改写的边界；第 51–54 条记录 `0.2.12` 新增或明确的边界；`0.2.0` 没有新增边界条目，只是把 rc.20 之后的修复固定为正式版；`0.2.1` 同样没有新增风险条目，把 `0.2.2-rc.1` 适配、自主观察者修复与 canonical knowledge 热窗口上限固定为四个宿主的稳定版；`0.2.3` 同样没有新增风险条目，只在第 3 条补充了写动词边界的现状（`0.2.4` 不新增风险条目，边界记录在 `CHANGELOG.md` 的“可靠性收口”一节；`0.2.5` 不新增这类边界条目，schema 2 与一次性迁移的边界记录在 `README.md` 的「共享经验库 schema 2 与一次性迁移」与 `CHANGELOG.md` 的 `0.2.5` 一节；`0.2.9` 的 consumer 启动取消边界记录在 `docs/evidence/promoted-consumer-shutdown-state-20261113.md`；`0.2.10` 不新增风险条目，只把 rc.3 兼容声明固定下来；`0.2.11` 不新增风险条目，只把真实分母、失败归因、诚实收益来源与 Desktop 配对工作流证据固定下来，隔离配对实验只证明质量收益、不宣称生产收益；`0.2.13` 不新增风险条目，只把 `0.2.2-rc.4` / `rc.5` 的精确宿主声明与八宿主验收固定进发布产物）：
+以下条目是仍未消除的边界与风险（第 1–14、16–50 条）；第 15 条已关闭，保留在原编号位置只为让旧说明不再误导。第 30–31 条记录 rc.17 的边界；第 25 条按 rc.18 的尾记录协议更新，仍描述事件桥的残余边界；第 32–37 条记录 rc.18 新增或明确的限制；第 38–42 条记录 rc.20 新增或改写的边界；第 43–50 条记录 `0.2.2` 新增或改写的边界；第 51–54 条记录 `0.2.12` 新增或明确的边界；`0.2.0` 没有新增边界条目，只是把 rc.20 之后的修复固定为正式版；`0.2.1` 同样没有新增风险条目，把 `0.2.2-rc.1` 适配、自主观察者修复与 canonical knowledge 热窗口上限固定为四个宿主的稳定版；`0.2.3` 同样没有新增风险条目，只在第 3 条补充了写动词边界的现状（`0.2.4` 不新增风险条目，边界记录在 `CHANGELOG.md` 的“可靠性收口”一节；`0.2.5` 不新增这类边界条目，schema 2 与一次性迁移的边界记录在 `README.md` 的「共享经验库 schema 2 与一次性迁移」与 `CHANGELOG.md` 的 `0.2.5` 一节；`0.2.9` 的 consumer 启动取消边界记录在 `docs/evidence/promoted-consumer-shutdown-state-20261113.md`；`0.2.10` 不新增风险条目，只把 rc.3 兼容声明固定下来；`0.2.11` 不新增风险条目，只把真实分母、失败归因、诚实收益来源与 Desktop 配对工作流证据固定下来，隔离配对实验只证明质量收益、不宣称生产收益；`0.2.13` 不新增风险条目，只把 `0.2.2-rc.4` / `rc.5` 的精确宿主声明与八宿主验收固定进发布产物；`0.2.14` 不新增风险条目，只把 PTC 官方 `run_code` 传输与真实 Desktop 闭环固定进发布产物）：
 
 1. **发布字节由人工固定的 `release/` 决定，而不是由 CI 重新构建。** 这是刻意的（见第 1 节），但它意味着：如果 `release/` 里的 tarball 被替换而 `release/manifest.json` 未同步，两者会不一致——`pack:check`、`release:verify` 和 `test/release-pin.test.mjs` 都会失败，因此只可能被“同时改对”而无法静默漂移。
 2. **`v0.2.0-rc.1` 的 tag 与同名 Release 的已发布字节不一致。** tag 指向 `98a6425`，该 commit 固定的产物是 `d24f5e52…`（内容 `5bf862ec…`）；而 Release 上实际可下载的是 `fc41f0e0…`（内容 `763707ab…`），来自后续的 `4c87c99`（`git show 4c87c99:release/manifest.json` 可复现该固定点）。加固后的 workflow 现在会在这种 tag/manifest/产物不一致时**明确失败**。要修复历史 Release 需要移动 tag 或覆盖附件，两者都被本次目标禁止，因此它作为已知风险记录在此，而不是被修复。这也是 `release/` 只固定当前版本、旧版本只能靠 tag/commit 历史或 Release 附件校验的原因。
