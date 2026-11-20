@@ -662,10 +662,16 @@ test('an invalid probe pair stays insufficient and never writes a strategy failu
   // memory signature, so the same invalidity cannot become a "do not repeat".
   const archive = await fs.readFile(h.orchestrator.requireOwned(experimentId, h.exec.agent).archivePath, 'utf8');
   assert.match(archive, /not recorded \(environment failure, not a strategy verdict\)/);
+  assert.equal(h.orchestrator.memory.data.entries.length, 0, 'the promotion gate must not write local failure memory');
   const reverted = await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
+  assert.equal(h.orchestrator.memory.data.entries.length, 0, 'a successful revert of an invalid pair must not write failure memory');
   const found = h.store.findConclusions({ target: TARGET, applicability: APPLICABILITY, strategyFingerprint: strategyFingerprint(TARGET, STRATEGY) });
   assert.equal(found.best.decision, 'insufficient-evidence');
   assert.ok(!events.some((event) => event.type === 'failure-learned'), 'revert must not turn the invalid pair into a learned failure');
+  // The same pair must not appear as a failed approach in experience recall.
+  const recall = h.orchestrator.recallExperience({ target: TARGET, why: 'invalid pair recall' });
+  assert.ok(recall, 'experience recall should still answer after an invalid revert');
+  assert.equal((recall.records ?? []).filter((entry) => entry.source === 'failure-memory').length, 0);
 });
 
 test('a plain probe with a candidate transport failure stays insufficient, not a regression', async (t) => {
