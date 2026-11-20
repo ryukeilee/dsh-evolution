@@ -41,7 +41,10 @@ so an ordinary tool error that quotes the sentence keeps its own path. A pair
 containing a transport failure, or a PTC execution cancelled or timed out before
 it measured the tool, is insufficient evidence: it records neither a benefit nor
 a regression/no-benefit conclusion. Program preparation failures (unparsable
-arguments or a missing SDK binding) fail the program as transport failures. Both call sites
+arguments or a missing SDK binding) fail the program as transport failures, and
+a caught `ToolCallError` is marked `unmeasured` because that interface cannot
+prove the tool body ran. An invalid pair is also kept out of the advisory
+evaluator, so `measure`/`promote`/`revert` all stay `insufficient-evidence`. Both call sites
 depend on the pinned `dsh-tools` PTC refusal text
 (``only `run_code` is callable directly``) and the `run_code`
 `{ logs, result? }` envelope shape; a host change to either surfaces as a

@@ -25,6 +25,9 @@ format, tool-surface shape or authorization source changes.
 - **共享 PTC 传输原语。** 新增 `lib/ptc-transport.js`，把拒绝判定（`only \`run_code\` is callable directly`）、sentinel 与 `{ logs, result? }` 信封解包收敛成一份实现；Desktop task host 与 probe 使用同一份判定，不再各写一套。task host 的既有语义保持：嵌套工具失败仍然让 kernel 调用失败并保留 `CODE_RUN_FAILED`。
 - **取消与超时也不参与收益。** PTC 执行在产生工具结果前被取消（`ABORTED` / `ABORTED_BEFORE_DISPATCH`）或超时，会保留原有错误码，但同时标记 `unmeasured: true`；该配对同样为证据不足。这样一次被取消的基线不会变成候选的成功。
 - **无效配对不写策略结论。** 传输失败或未测量的配对统一归为 `insufficient-evidence`：不会因为候选侧传输失败而记录 `regression`，也不会因为基线侧传输失败而记录 `no-benefit`，避免共享经验里的错误结论阻止同一策略再次提案。`measurementInvalid` 同时进入比较、observation 与决策。
+- **异常不等于已测量。** 官方 PTC SDK 对子调用的参数校验失败、策略拒绝与工具体失败都只抛出不带内部分类的 `ToolCallError`；程序无法证明工具体已经执行，因此捕获到的工具异常仍记录为 `E_EVOLUTION_PROBE_TOOL_ERROR`，但同时标记 `unmeasured: true`，不参与收益/回归判定。真正执行并返回错误值的步骤仍通过期望值摘要作为已测量结果比较。
+- **无效配对不进入 advisory evaluator。** `measure` 判为 `insufficient-evidence` 后，`promote` 不再把无效配对的错误计数交给领域 evaluator 作回归硬否决；晋升门禁分支与随后的 `revert` 都保持 `insufficient-evidence`，不会在共享经验里发布 `regression` 结论（新增 `measure → promote → revert` 回归用例）。
+- **三阶段汇总一致。** `compareWorkflowProbeRuns` 的顶层 `transportFailed` / `unmeasured` / `measurementInvalid` 现在覆盖 Trial 前 baseline、reference 与 candidate 三个阶段，与 `workload.*` 字段一致。
 - **准备阶段失败属于传输失败。** wrapper 先解析参数并检查 SDK 绑定，再进入工具调用；参数异常或绑定缺失从未进入工具体，会以程序失败（`CODE_RUN_FAILED`）走传输失败路径，而不是被记成一次工具失败。
 - **传输失败不是收益。** 任何阶段（Trial 前 baseline、配对 reference 或 candidate）出现 `E_EVOLUTION_PROBE_TRANSPORT` 都使该配对证据不足：`workload.sufficient=false`、`transportFailed=true`、benefit 不成立；普通 probe 也不能把一次传输失败后的成功当成能力收益。内层工具失败与错误输出仍按原比较语义处理。
 - **拒绝判定绑定工具名与结构分类。** 共享判定器要求官方拒绝消息精确命名当前工具，并在结构化 `error.info` 存在时要求 `ToolNotFoundError` / `UNKNOWN_TOOL`；普通工具或策略错误即使引用“only `run_code` is callable directly”也保持原路径，不会被误送到 `run_code`。
