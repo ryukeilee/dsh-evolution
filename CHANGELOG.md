@@ -18,6 +18,18 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.15 — 稳定版
+
+`0.2.14` 的稳定后继：彻底修复 PTC（Programmatic Tool Calling）self-evolution preset 下 `evolution_probe` 执行 `verification.workload` 仍直接调用 `ctx.tools.execute` 被官方执行器拒绝的问题。`0.2.14` 只把 Desktop task host **外层**的 kernel 调用改走官方 `run_code` 传输；probe 内部每个 workload step 仍是直连调用，PTC 执行器在 policy 和工具体之前就以 “only `run_code` is callable directly” 拒绝，于是 baseline/candidate 的每个步骤都记成失败、control 不稳定、`workflowBenefit` 永远为 false，工具型自我进化实验无法完成真实 workload 收益验证。相对 `0.2.14` 固定产物，分发内容改 `lib/orchestrator.js`、`lib/desktop-task-host.js`、新增 `lib/ptc-transport.js`，加上版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改动。
+
+- **共享 PTC 传输原语。** 新增 `lib/ptc-transport.js`，把拒绝判定（`only \`run_code\` is callable directly`）、sentinel 与 `{ logs, result? }` 信封解包收敛成一份实现；Desktop task host 与 probe 使用同一份判定，不再各写一套。task host 的既有语义保持：嵌套工具失败仍然让 kernel 调用失败并保留 `CODE_RUN_FAILED`。
+- **probe 的 workload step 经官方 `run_code` 执行。** 直连调用返回该拒绝时（拒绝发生在 policy 与工具体之前，重试不会产生第二次副作用），probe 用同一份参数在 `run_code` 程序里调用目标工具，并用共享 sentinel 解包。参数以 JSON 文本传入并在程序内 `JSON.parse`，保留自有 `__proto__` 键的语义；成功值进入原有 `probeResultRow` 摘要/期望值比较路径。
+- **错误不会被伪装成功。** 被 `run_code` 捕获的内层工具失败记录为 `E_EVOLUTION_PROBE_TOOL_ERROR`；传输本身失败（程序异常、运行时退出、无 sentinel 或非法信封）记录为 `E_EVOLUTION_PROBE_TRANSPORT` 或传输自身的分类码；超时/取消仍走原有 `E_EVOLUTION_PROBE_TIMEOUT` / abort 路径。不能把传输失败读成一次成功步骤。
+- **证据可复核。** 每个 sample 记录 `transport`（`direct` / `run_code`），每个 phase 的 summary 增加 `transports: { direct, run_code }` 计数，随 `comparison` 进入 `measure` 与 Desktop task state，因此验收可以直接断言真实的调用路线，而不是从耗时推断。
+- **门禁不变。** workload 只提供 workflow 证据；workflow 与 context-policy 晋升仍要求同一任务、同一模型的成对真实会话 `taskBenefit`。PTC 下正向 workload-only 计划仍以 `E_DESKTOP_BENEFIT_UNPROVEN`（missing: taskBenefit）停在所有者审批之前并回滚，没有放宽任何一项晋升门禁。
+- **真实 PTC 验收。** 在隔离 `DSH_HOME` 中，用真实官方 Desktop 应用与 `self-evolution` PTC preset 运行 `run-acp-desktop-control.mjs --ptc`：三个负向 workload（no-benefit / regression / insufficient）分别得到正确 decision，两阶段各 15/15（insufficient 为 3/3）样本均为 `run_code`；正向 workload 的 `benefit=true`、`workload.sufficient=true`、`workflowBenefit=true`，而 `taskBenefit=false` 使其按既有门禁被拒绝并回滚。同一脚本的 native 模式给出相同 decision，全部样本为 `direct`，证明非 PTC 路径未退化。PTC self-evolution preset 下的真实模型成对 taskBenefit 闭环仍按 `run-task-benefit-loop.mjs --ptc` 单独取证，不替代本项。
+- **宿主验收。** 八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR。已有 stable 插件、历史共享经验与生产数据不迁移、不下线。
+
 ## 0.2.14 — 稳定版
 
 `0.2.13` 的稳定后继：修复 PTC（Programmatic Tool Calling）self-evolution preset 下 Desktop task host 直接调用 `ctx.tools.execute` 被官方执行器拒绝，导致真实 Desktop 自我进化任务在 `evolution_runtime_inspect` 第一步失败的问题。相对 `0.2.13` 固定产物，分发内容只改 `lib/desktop-task-host.js`、新增 `test/desktop-task-host.test.mjs` 用例，以及版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；宿主集合、持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies` 均未改动。

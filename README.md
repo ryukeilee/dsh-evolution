@@ -6,7 +6,7 @@
 
 | 关键事实 | 当前值 |
 | --- | --- |
-| 版本 | `0.2.14`（稳定版） |
+| 版本 | `0.2.15`（稳定版） |
 | 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1`、`0.2.2-rc.2`、`0.2.2-rc.3`、`0.2.2-rc.4`、`0.2.2-rc.5`（后五者须关闭宿主 HMR，见下） |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
@@ -16,7 +16,7 @@
 
 ## 30 秒了解
 
-本版本（`0.2.14`）修复 PTC self-evolution preset 下 Desktop task host 的官方 `run_code` 传输兼容性：kernel 工具调用不再因“only `run_code` is callable directly”在第一步失败，且不改变非 PTC 路径、权限或门禁。其余能力与 `0.2.13` 相同。
+本版本（`0.2.15`）彻底修复 PTC self-evolution preset 下 `evolution_probe` 的 workload 兼容性：`0.2.14` 已把 Desktop task host 的外层 kernel 调用改走官方 `run_code`，但 probe 内部每个 workload step 仍直连 `ctx.tools.execute`，被 PTC 执行器以“only `run_code` is callable directly”拒绝，导致两阶段步骤全部失败、`workflowBenefit` 永远为 false。现在 probe 与 task host 共用同一份 PTC 拒绝判定、sentinel 与信封解包（`lib/ptc-transport.js`）：被拒绝的 step 会以相同参数在官方 `run_code` 程序中执行，内层工具错误记录为 `E_EVOLUTION_PROBE_TOOL_ERROR`，传输失败记录为 `E_EVOLUTION_PROBE_TRANSPORT`，不会伪装成功；sample 与 phase summary 记录实际 `transport`。非 PTC 路径、权限、超时取消、错误码与八项晋升门禁均未改动，workload-only 计划仍在 `taskBenefit` 门禁处停止并回滚。其余能力与 `0.2.14` 相同。
 
 本版本把自我进化收益的判断推进到真实任务：workflow 收益必须有同一任务、同一模型、无候选 vs 有候选各 ≥3 次的真实会话证据（`taskBenefit` 门禁），并绑定候选 Host 源码摘要与 DSH/Cordis 版本；`scripts/acceptance/task-benefit.mjs` 在隔离 home 中用真实 ACP 宿主与真实模型生产该证据（源码仓库脚本，不随 tarball 分发），`run-task-benefit-loop.mjs` 跑完整闭环并在 fresh consumer 上验证自动复用。probe 继续区分 `capability-self-test` 与 `workflow`：单工具前后对照只算 `tool-improvement`；paired workload 只提供 `workflowBenefit` 证据，workflow 与 context-policy 晋升还必须通过 `taskBenefit`（同一任务、同一模型的成对真实会话）；context-policy 计划必须声明可重放的 `verification.functionalCheck`（`read` / `glob` / `grep`），安装成功本身不算生效。collector 另外记录 `line-truncated` / `output-capped` 这类非错误退化（只认官方 footer），planner 按损失频率、恢复成本与可恢复性排序。Desktop 的 `evolution_plan` 与 ACP 的 `evolution_desktop` 只读 `audit` 仍先分类已发布 stable 插件、再排序经验候选、最后给出有序 `selfEvolution.nextActions`；检查不写发布索引、不启动 Trial、不批准晋升。四个已发布 stable 插件、已有共享经验与生产数据都保持不变。本版本新增 DSH `0.2.2-rc.4` / `rc.5`：官方 rc.3 → rc.4 只改 DSH 升级说明与依赖固定；rc.4 → rc.5 只改 DSH 文档与 `dsh-base` 的 `cordis.patch.yml`（移除固定 `web.searchProvider`，改由 dsh-web 按模型路由选择），本 bundle 使用的运行时包逐字节相同，因此只扩展精确宿主声明，并用真实宿主验收后固定进发布产物。`0.2.2-rc.1` 至 `rc.5` 需要关闭宿主 HMR，见下文。已有 schema 1 共享经验库在普通启动下继续保持原布局、不会被自动迁移。
 
@@ -32,9 +32,9 @@
 
 ```sh
 # 查看计划，不写 profile
-node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.14.tgz
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.15.tgz
 # 使用官方 CLI 安装并应用计划；可用 --home 指定隔离 DSH_HOME
-node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.14.tgz --apply
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.15.tgz --apply
 ```
 
 安装器只维护标记块，保留其他插件、Skills、T3 工作流与 storage route；HMR 保持关闭。它不会复制或迁移历史，不会启停正在运行的正式应用。待安装包以内容摘要缓存在 `storages/evolution-package-cache`，由官方 CLI 从不可变路径安装，避免同版本本地重建被文件依赖缓存误判为已安装。缓存内容不匹配时拒绝覆盖。每个 profile 的官方安装结果分别报告，途中失败会停止并报告已完成项；多 profile 安装不是原子事务。安装后重启对应入口。非 macOS 或自定义安装可用 `--cli <官方 dsh 可执行文件>` 指定 CLI。
@@ -93,7 +93,10 @@ kernel 时挂载插件并执行一次、重启后只挂载一次，同时覆盖�
 因为 CI 环境没有 Desktop 二进制，该隔离验收用带完整 kernel 的 Web profile 充当 publisher，生产安装形态仍
 只由 Desktop 晋升。本机真实 Desktop 应用的 ACP → Desktop 控制链另有
 `docs/evidence/acp-desktop-control-0.2.2-rc.5-20261119.json`（该确定性运行按设计停在 `TASK_BENEFIT_REQUIRED` 门禁；真实模型的正向闭环见
-`docs/evidence/task-benefit-0.2.2-rc.5-20261119.json`）；rc.5 克隆数据根上的 stable 重验证见
+`docs/evidence/task-benefit-0.2.2-rc.5-20261119.json`）；`0.2.15` 的 PTC workload 验收见
+`docs/evidence/acp-desktop-control-ptc-workload-0.2.15-20261120.json`，native 对照见
+`docs/evidence/acp-desktop-control-native-workload-0.2.15-20261120.json`，PTC 真实模型闭环见
+`docs/evidence/task-benefit-0.2.2-rc.5-ptc-0.2.15-20261120.json`；rc.5 克隆数据根上的 stable 重验证见
 `docs/evidence/revalidation-0.2.2-rc.5-20261119.json`。
 
 ### 从 ACP 发起、由 Desktop 执行的自进化任务
@@ -327,8 +330,8 @@ CLI 退出码：`0` 健康、`1` 存在降级项、`2` 存在阻塞项、`3` 参
 从 GitHub Release 下载 tarball 和校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.14
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.14.tgz" -o dsh-evolution-0.2.14.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.15
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.15.tgz" -o dsh-evolution-0.2.15.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
@@ -336,11 +339,11 @@ sha256sum --check SHA256SUMS
 macOS 可用 `shasum -a 256 -c SHA256SUMS` 校验。也可用 GitHub CLI 下载同一 Release 的 tarball、`SHA256SUMS` 与 `manifest.json`。校验通过后，用官方 CLI 安装：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.14.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.15.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
-> 上面的 `v0.2.14` Release tarball 声明并验收了全部八个宿主（`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1` 至 `0.2.2-rc.5`）；`0.2.2-rc.1` 至 `0.2.2-rc.5` 必须按下一节关闭宿主 HMR。
+> 上面的 `v0.2.15` Release tarball 声明并验收了全部八个宿主（`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1` 至 `0.2.2-rc.5`）；`0.2.2-rc.1` 至 `0.2.2-rc.5` 必须按下一节关闭宿主 HMR。
 
 安装后 bundle 会登记在官方 profile 的 `dsh.profile.bundles`，随 profile 加载，无需每个 session 手工挂载 preset。下面用 `$DSH_HOME/profiles/web` 指代 `web` profile 的安装目录。首次诊断：
 
@@ -575,11 +578,11 @@ node scripts/acceptance/run-revalidation.mjs --home ~/.dsh --apply
 | `0.2.2-rc.4` | `4.1.0` | `1.1.0` | `1.1.0` | 25/25（`--no-hmr --experience-evolution`） | `healthy` |
 | `0.2.2-rc.5` | `4.1.0` | `1.1.0` | `1.1.0` | 25/25（`--no-hmr --experience-evolution`） | `healthy` |
 
-对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.1.json`、`docs/evidence/dsh-0.2.2-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.3.json`、`docs/evidence/dsh-0.2.2-rc.4.json` 与 `docs/evidence/dsh-0.2.2-rc.5.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。`0.2.14` 的固定点覆盖全部八个宿主：这八份记录必须描述 `release/` 固定产物的内容与字节，后续工作树修改不会改写它们。当前固定点没有新增宿主；`release/manifest.json#verifiedHosts` 之后的第二条通道（固定点之后新增的宿主只核对本树构建的内容）保留给下一次宿主扩展。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
+对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.1.json`、`docs/evidence/dsh-0.2.2-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.3.json`、`docs/evidence/dsh-0.2.2-rc.4.json` 与 `docs/evidence/dsh-0.2.2-rc.5.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。`0.2.15` 的固定点覆盖全部八个宿主：这八份记录必须描述 `release/` 固定产物的内容与字节，后续工作树修改不会改写它们。当前固定点没有新增宿主；`release/manifest.json#verifiedHosts` 之后的第二条通道（固定点之后新增的宿主只核对本树构建的内容）保留给下一次宿主扩展。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
 
 `npm run pack:check` 两种模式都执行 17 项检查。开发模式允许工作树是固定点的**已提交**后继（脚本会逐条点名与固定产物不同的文件），但分发文件存在**未提交**改动时一律失败；`--release` 则把“固定点描述自己的提交 / 工作树是固定点或已提交后继”换成更严格的“固定点固定本树内容 / 工作树构建出固定内容”。
 
-源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.14.tgz --content-only`。
+源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.15.tgz --content-only`。
 
 ## 相关文档
 

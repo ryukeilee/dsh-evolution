@@ -26,9 +26,15 @@
  * formal `$DSH_HOME`, never reads production credentials and never publishes a
  * release.
  *
- * node scripts/acceptance/run-acp-desktop-control.mjs <packed.tgz> <evidence.json> [--work <dir>] [--approve <text>]
+ * node scripts/acceptance/run-acp-desktop-control.mjs <packed.tgz> <evidence.json> [--work <dir>] [--approve <text>] [--ptc]
  * Without --approve the run stops at awaiting-owner-confirmation and reports the
  * bound identity instead of promoting.
+ *
+ * --ptc mounts the same PTC self-evolution preset the formal Desktop profile
+ * uses on the isolated Desktop profile. The workload steps then have to run
+ * through the official run_code transport; the archived sample rows record
+ * which route carried each call, so a silent fall back to the native path is a
+ * failed acceptance rather than a passing one.
  */
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -45,14 +51,16 @@ const argv = process.argv.slice(2);
 const positional = [];
 let workArg = null;
 let approveText = null;
+let ptc = false;
 for (let index = 0; index < argv.length; index += 1) {
   const arg = argv[index];
   if (arg === '--work' && argv[index + 1]) workArg = path.resolve(argv[++index]);
   else if (arg === '--approve' && argv[index + 1]) approveText = argv[++index];
+  else if (arg === '--ptc') ptc = true;
   else positional.push(arg);
 }
 const [tarballArg, outArg] = positional;
-if (!tarballArg || !outArg) throw new Error('Usage: run-acp-desktop-control.mjs <packed.tgz> <evidence.json> [--work <dir>] [--approve <owner confirmation text>]');
+if (!tarballArg || !outArg) throw new Error('Usage: run-acp-desktop-control.mjs <packed.tgz> <evidence.json> [--work <dir>] [--approve <owner confirmation text>] [--ptc]');
 const tarball = path.resolve(tarballArg);
 const out = path.resolve(outArg);
 const repo = fileURLToPath(new URL('../../', import.meta.url));
@@ -103,6 +111,23 @@ const stateFile = (taskId) => path.join(channel, 'state', `${taskId}.json`);
 const publishedFile = path.join(dataRoot, 'shared-plugins', 'published.json');
 const consumerFile = path.join(dataRoot, 'shared-plugins', 'consumers', 'acp.json');
 
+/**
+ * Assert both workload phases took the official route the mode requires. The
+ * kernel records the per-phase transport counters in the comparison the task
+ * state keeps, so a silent fall back to the native path is a failed acceptance
+ * instead of something inferred from timings or a compacted archive row.
+ */
+function assertWorkloadTransport(comparison, expected) {
+  const other = expected === 'run_code' ? 'direct' : 'run_code';
+  for (const phase of ['before', 'after']) {
+    const counts = comparison?.[phase]?.transports;
+    assert(counts && typeof counts === 'object', `the workload comparison has no ${phase} transport counters`);
+    assert(Number.isInteger(counts[expected]) && counts[expected] > 0, `the ${phase} workload did not run through ${expected}`);
+    assert(counts[other] === 0, `the ${phase} workload used ${counts[other]} ${other} call(s)`);
+  }
+  return { before: comparison.before.transports, after: comparison.after.transports };
+}
+
 const evidence = {
   kind: 'dsh-evolution-acp-desktop-control',
   ok: false,
@@ -113,6 +138,7 @@ const evidence = {
   desktop: {},
   host: {},
   candidate: {},
+  ptc: { enabled: ptc },
   approval: null,
   publication: null,
   freshConsumer: null,
@@ -411,6 +437,26 @@ try {
   }
   evidence.install.roles = 'host enabled on desktop only; client enabled on acp only; web keeps neither';
 
+  // 2b. --ptc mounts the same preset the formal Desktop profile uses. Everything
+  //     else stays the installer's output; the expected patch is recorded so the
+  //     final "profiles changed only as declared" check can tell the two apart.
+  const livePatches = { ...patchesBefore };
+  if (ptc) {
+    const presetFile = path.join(repo, 'scripts', 'acceptance', 'fixtures', 'self-evolution-preset.cordis.patch.yml');
+    const presetPatch = await fs.readFile(presetFile, 'utf8');
+    // The task host resolves the Desktop default preset; select self-evolution
+    // exactly as the formal profile does instead of mounting it by hand.
+    const presetConfig = '\n- id: agent-preset-registry\n  config:\n    default: standard\n    selectedDefault: self-evolution\n';
+    livePatches.desktop = patchesBefore.desktop + presetPatch + presetConfig;
+    await fs.writeFile(path.join(home, 'profiles', 'desktop', 'cordis.patch.yml'), livePatches.desktop);
+    evidence.ptc = {
+      enabled: true,
+      preset: { source: path.relative(repo, presetFile), sha256: sha(presetPatch) },
+      selectedDefault: 'self-evolution',
+    };
+    evidence.steps.push({ name: 'ptc-self-evolution-preset-mounted', at: new Date().toISOString() });
+  }
+
   // 3. the real official Desktop app boots the configured profile.
   desktop = await startDesktop('desktop-live');
   const firstReady = await waitFor(liveHost, { timeoutMs: 180_000, what: 'Desktop task host readiness' });
@@ -467,12 +513,12 @@ try {
       return null;
     });
     const state = await readJson(stateFile(outcome.taskId));
-    const durable = await readJson(path.join(dataRoot, 'archive', 'experiments', `${outcome.experimentId}.evidence.json`));
+    const transport = assertWorkloadTransport(state?.workload?.comparison, ptc ? 'run_code' : 'direct');
     assert(state.revert?.ok === true, 'negative workload did not prove runtime cleanup');
     assert(!(await readJson(publishedFile))?.plugins?.some((row) => row.experimentId === outcome.experimentId), 'negative candidate was published');
     evidence.negativeWorkloads.push({ variant, taskId: outcome.taskId, experimentId: outcome.experimentId, phase: outcome.phase,
       decision: outcome.decision, gates: outcome.gates, revert: state.revert, workload: state.workload,
-      probe: durable?.latestObservation?.probe ?? null });
+      transport });
   }
 
   // A workflow claim now requires paired real-session evidence. This
@@ -515,6 +561,15 @@ try {
     assert(state?.revert?.ok === true, 'a rejected workload-only plan did not prove runtime cleanup');
     assert(!(await readJson(publishedFile))?.plugins?.some((row) => row.experimentId === workloadRejected.experimentId),
       'a rejected workload-only candidate was published');
+    // The workflow gate is the only missing evidence: the paired workload must
+    // have run through the mode's official route and produced a complete,
+    // sufficient comparison whose target improved over the baseline.
+    const comparison = state?.workload?.comparison;
+    const transport = assertWorkloadTransport(comparison, ptc ? 'run_code' : 'direct');
+    assert(comparison?.benefit === true, `the workload-only plan reported no benefit: ${JSON.stringify(comparison?.reasons ?? null).slice(0, 400)}`);
+    assert(comparison?.workload?.sufficient === true, 'the workload-only plan did not complete five consistent repetitions');
+    assert(comparison?.before?.errors > 0 || comparison?.workload?.efficiency === true,
+      'the workload benefit is neither a correctness improvement nor a repeated execution-cost improvement');
     evidence.workloadOnlyPromotion = {
       taskId: workloadRejected.taskId,
       experimentId: workloadRejected.experimentId,
@@ -523,6 +578,8 @@ try {
       gates: workloadRejected.gates,
       decision: workloadRejected.decision,
       revert: state.revert,
+      workload: state.workload,
+      transport,
     };
     evidence.ok = false;
     evidence.blocked = 'a workload-only workflow claim is rejected: taskBenefit (paired real-session evidence) is required and this deterministic runner does not produce it';
@@ -629,7 +686,7 @@ try {
     const addition = `\n- insert:\n    - id: workflow-reuse-${profile}\n      name: '${probeUrl}'\n`;
     const profilePatch = path.join(home, 'profiles', profile, 'cordis.patch.yml');
     const overlayFile = path.join(work, `workflow-reuse-${profile}.yml`);
-    if (profile === 'desktop') await fs.writeFile(profilePatch, patchesBefore[profile] + addition);
+    if (profile === 'desktop') await fs.writeFile(profilePatch, livePatches[profile] + addition);
     else await fs.writeFile(overlayFile, addition);
     const log = await fs.open(path.join(work, `workflow-reuse-${profile}.log`), 'w', 0o600);
     const child = launch(profile === 'desktop' ? binary : cli,
@@ -642,7 +699,7 @@ try {
       evidence[`${profile}Reuse`] = result;
     } finally {
       await stop(child); await log.close();
-      if (profile === 'desktop') await fs.writeFile(profilePatch, patchesBefore[profile]);
+      if (profile === 'desktop') await fs.writeFile(profilePatch, livePatches[profile]);
     }
   };
 
@@ -914,7 +971,7 @@ try {
   // 12. profile configuration was only changed by the official installer.
   for (const profile of profiles) {
     const current = await fs.readFile(path.join(home, 'profiles', profile, 'cordis.patch.yml'), 'utf8');
-    assert(current === patchesBefore[profile], `profile ${profile} patch changed during acceptance`);
+    assert(current === livePatches[profile], `profile ${profile} patch changed during acceptance`);
   }
   evidence.profilePatchesPreserved = true;
   evidence.ok = true;
