@@ -11,6 +11,37 @@ export const inject = ['tools', 'agents'];
 
 const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
+/**
+ * Call the production planner through the official pipeline. A PTC preset
+ * exposes only run_code directly, so the probe retries through the same
+ * transport the Desktop task host uses; the receipt still comes from the real
+ * evolution_plan result.
+ */
+async function callPlan(ctx, agent) {
+  const direct = await ctx.tools.execute({
+    agent,
+    signal: AbortSignal.timeout(120_000),
+    calls: [{ type: 'tool_call', id: 'plan', name: 'evolution_plan', arguments: JSON.stringify({ limit: 5 }) }],
+  });
+  const result = direct.results?.find((row) => row.callId === 'plan')?.result;
+  const message = String(result?.error?.message ?? result?.error?.info?.message ?? '');
+  if (result?.isError && /only `?run_code`? is callable directly/i.test(message)) {
+    const program = 'return { __plan: await tools["evolution_plan"]({ limit: 5 }) };';
+    const wrapped = await ctx.tools.execute({
+      agent,
+      signal: AbortSignal.timeout(120_000),
+      calls: [{ type: 'tool_call', id: 'plan-wrapper', name: 'run_code', arguments: JSON.stringify({ code: program, description: 'acceptance plan probe' }) }],
+    });
+    const wrappedResult = wrapped.results?.find((row) => row.callId === 'plan-wrapper')?.result;
+    if (!wrappedResult || wrappedResult.isError) {
+      throw new Error(`evolution_plan failed through run_code: ${JSON.stringify(wrappedResult?.error ?? null).slice(0, 400)}`);
+    }
+    return wrappedResult.value?.result?.__plan;
+  }
+  if (!result || result.isError) throw new Error(`evolution_plan failed: ${JSON.stringify(result?.error ?? null).slice(0, 400)}`);
+  return result.value;
+}
+
 export function apply(ctx) {
   const receipt = process.env.TASK_BENEFIT_PLAN_RECEIPT;
   if (!receipt) return;
@@ -24,14 +55,7 @@ export function apply(ctx) {
       if (ctx.tools.get('evolution_plan') === undefined) throw new Error('evolution_plan is not registered');
       handle = await ctx.agents.create({ sessionId: `task-benefit-plan-${Date.now()}`, meta: { cwd: process.env.DSH_HOME } });
       const agent = handle.agent ?? handle;
-      const batch = await ctx.tools.execute({
-        agent,
-        signal: AbortSignal.timeout(120_000),
-        calls: [{ type: 'tool_call', id: 'plan', name: 'evolution_plan', arguments: JSON.stringify({ limit: 5 }) }],
-      });
-      const result = batch.results?.find((row) => row.callId === 'plan')?.result;
-      if (!result || result.isError) throw new Error(`evolution_plan failed: ${JSON.stringify(result?.error ?? null).slice(0, 400)}`);
-      fs.writeFileSync(receipt, JSON.stringify({ ok: true, plan: result.value }));
+      fs.writeFileSync(receipt, JSON.stringify({ ok: true, plan: await callPlan(ctx, agent) }));
     } catch (error) {
       fs.writeFileSync(receipt, JSON.stringify({ ok: false, error: String(error?.message ?? error).slice(0, 600) }));
     } finally {
