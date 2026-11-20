@@ -467,16 +467,46 @@ export async function assertReportOutsideEvidence(reportFile, artifactTarget) {
     ]);
     return left !== null && right !== null && left.dev === right.dev && left.ino === right.ino;
   };
-  if (artifactTarget.channel === null) {
-    if (report === artifact || await sameFile()) throw new Error('the report must not be written over the task evidence');
-    return;
-  }
+  if (report === artifact || await sameFile()) throw new Error('the report must not be written over the task evidence');
+  if (artifactTarget.channel === null) return report;
   const channel = await realpathOr(artifactTarget.channel);
   // The whole channel root belongs to the profile that reads the evidence: a
-  // report anywhere inside it would be a second write into that profile.
-  if (report === channel || report.startsWith(`${channel}${path.sep}`)) {
+  // report anywhere inside it would be a second write into that profile. The
+  // directory identity check also covers a case-variant spelling of an existing
+  // channel directory on a case-insensitive filesystem.
+  if (report === channel || report.startsWith(`${channel}${path.sep}`) || await isUnderIdentity(report, channel)) {
     throw new Error('the report must stay outside the channel home');
   }
+  return report;
+}
+
+async function directoryIdentity(target) {
+  const info = await fs.stat(target).catch(() => null);
+  return info === null ? null : `${info.dev}:${info.ino}`;
+}
+
+/** Walk the existing ancestors of `candidatePath` and compare their identity. */
+async function isUnderIdentity(candidatePath, directoryPath) {
+  const wanted = await directoryIdentity(directoryPath);
+  if (wanted === null) return false;
+  let current = path.dirname(candidatePath);
+  for (;;) {
+    if (await directoryIdentity(current) === wanted) return true;
+    const parent = path.dirname(current);
+    if (parent === current) return false;
+    current = parent;
+  }
+}
+
+/**
+ * Write the operator report to the exact path the boundary check approved. Using
+ * one value for the decision and the write keeps a lexical spelling such as
+ * `hop/../<taskId>.json` from being collapsed into the evidence after the check.
+ */
+export async function writeReportFile(reportFile, artifactTarget, report) {
+  const destination = await assertReportOutsideEvidence(reportFile, artifactTarget);
+  await fs.writeFile(destination, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
+  return destination;
 }
 
 /**
@@ -868,8 +898,8 @@ if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
   if (reportFile) {
     // Re-check after the long run: the paths may have been re-pointed while the
     // sessions ran, and the report must not overwrite the delivered evidence.
-    await assertReportOutsideEvidence(reportFile, artifactTarget);
-    await fs.writeFile(path.resolve(reportFile), `${JSON.stringify(result.report, null, 2)}\n`, { mode: 0o600 });
+    // The write goes to the exact path that check approved.
+    await writeReportFile(reportFile, artifactTarget, result.report);
   }
   console.log(JSON.stringify({ ok: result.ok, artifact: result.artifactFile, baseline: result.artifact.baseline, candidate: result.artifact.candidate }, null, 2));
 }

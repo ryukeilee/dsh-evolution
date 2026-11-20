@@ -29,6 +29,7 @@ import {
   safeErrorCode,
   writeArtifactFile,
   writePreviewModule,
+  writeReportFile,
 } from '../scripts/acceptance/task-benefit.mjs';
 import { validateTaskBenefit } from '../lib/orchestrator.js';
 
@@ -421,14 +422,14 @@ test('the operator report is compared after resolving every alias of the target'
       path.join(channel, 'report.json'),
       path.join(alias, 'storages', 'evolution', 'desktop-tasks', 'task-evidence', 'desktop-task-proof.json'),
     ]) {
-      await assert.rejects(assertReportOutsideEvidence(reportPath, target), /must stay outside the channel home/);
+      await assert.rejects(assertReportOutsideEvidence(reportPath, target), /must not be written over the task evidence|must stay outside the channel home/);
     }
     // A report symlink that points at the artifact is refused once the target exists.
     await fs.mkdir(path.dirname(target.outFile), { recursive: true });
     await fs.writeFile(target.outFile, '{}');
     const link = path.join(outside, 'report-link.json');
     await fs.symlink(target.outFile, link);
-    await assert.rejects(assertReportOutsideEvidence(link, target), /must stay outside the channel home/);
+    await assert.rejects(assertReportOutsideEvidence(link, target), /must not be written over the task evidence|must stay outside the channel home/);
     // A dangling report symlink has no resolved path yet; its destination is
     // still inside the channel, so it is refused before writeFile follows it.
     const dangling = path.join(outside, 'report-dangling.json');
@@ -476,6 +477,48 @@ test('the operator report is compared after resolving every alias of the target'
   }
 });
 
+test('the report is written to the exact path the boundary check approved', async () => {
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-write-report-home-')));
+  const root = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-write-report-root-')));
+  const outside = path.join(root, 'outside');
+  const other = path.join(root, 'other');
+  await fs.mkdir(outside);
+  await fs.mkdir(other);
+  try {
+    const channel = path.join(root, 'channel');
+    await fs.mkdir(channel);
+    const target = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: channel });
+    await fs.mkdir(path.dirname(target.outFile), { recursive: true });
+    await fs.writeFile(target.outFile, '{"evidence":true}');
+    // \`hop\` points outside the channel: the filesystem resolves the link first and
+    // then applies \`..\`, so the write lands next to hop's target, not next to the
+    // link. Lexical folding would name a file beside the artifact.
+    await fs.symlink(other, path.join(outside, 'hop'));
+    const report = path.join(outside, 'report.json');
+    await fs.symlink('hop/../report.json', report);
+    const destination = await assertReportOutsideEvidence(report, target);
+    assert.equal(destination, path.join(root, 'report.json'));
+    const written = await writeReportFile(report, target, { ok: true });
+    assert.equal(written, destination);
+    assert.deepEqual(JSON.parse(await fs.readFile(destination, 'utf8')), { ok: true });
+    assert.equal(JSON.parse(await fs.readFile(target.outFile, 'utf8')).evidence, true);
+    // The link still names that destination; no second file was created beside the
+    // link by a lexical fold.
+    assert.equal(await fs.realpath(report), destination);
+
+    // A case-variant spelling of the channel directory is the same directory on a
+    // case-insensitive filesystem, so the report is still inside the channel.
+    const upperChannel = path.join(path.dirname(channel), path.basename(channel).toUpperCase());
+    const caseInsensitive = await fs.stat(upperChannel).then((info) => info.isDirectory()).catch(() => false);
+    if (caseInsensitive) {
+      await assert.rejects(assertReportOutsideEvidence(path.join(upperChannel, 'report.json'), target), /must stay outside the channel home/);
+    }
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
 test('the isolated storage roots are pinned to the isolated home before any session', async () => {
   const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-storage-home-')));
   const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-storage-outside-')));
@@ -506,7 +549,7 @@ test('the command line refuses a valueless --channel-home and a report over the 
     const evidence = path.join(channel, 'storages', 'evolution', 'desktop-tasks', 'task-evidence', 'desktop-task-proof.json');
     const overwrite = spawnSync(process.execPath, [...base, '--channel-home', channel, '--task-id', 'desktop-task-proof', '--report', evidence], { encoding: 'utf8' });
     assert.notEqual(overwrite.status, 0);
-    assert.match(overwrite.stderr, /must stay outside the channel home/);
+    assert.match(overwrite.stderr, /must not be written over the task evidence|must stay outside the channel home/);
     assert.equal(existsSync(evidence), false);
     const beside = spawnSync(process.execPath, [...base, '--channel-home', channel, '--task-id', 'desktop-task-proof', '--report', path.join(path.dirname(evidence), 'report.json')], { encoding: 'utf8' });
     assert.notEqual(beside.status, 0);
