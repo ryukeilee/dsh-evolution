@@ -5,18 +5,21 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { existsSync, realpathSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   aggregateSessions,
   answerMatches,
   assertIsolatedHome,
+  assertIsolatedStorageRoots,
   assertIsolatedTarget,
   buildTaskBenefitArtifact,
   extractSessionEvidence,
+  inspectArtifactTarget,
   normalizeTask,
   parseExpectTokens,
   prepareArtifactDirectory,
@@ -270,6 +273,9 @@ test('the designated channel receives one atomic 0600 artifact and no temporary 
   const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-write-outside-')));
   try {
     const target = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: channel });
+    await inspectArtifactTarget(target);
+    // The preflight only reads: it must not create the artifact directory.
+    assert.equal(await fs.stat(path.dirname(target.outFile)).catch(() => null), null);
     const parent = await prepareArtifactDirectory(target);
     assert.equal(parent, path.dirname(target.outFile));
     assert.equal(await fs.stat(target.outFile).catch(() => null), null);
@@ -280,14 +286,16 @@ test('the designated channel receives one atomic 0600 artifact and no temporary 
     assert.deepEqual((await fs.readdir(parent)).filter((name) => name.endsWith('.tmp')), []);
 
     // A channel component that resolves outside the channel root is not that
-    // channel: the artifact directory is refused instead of being written.
+    // channel: the target is refused before anything is created outside it.
     const escaped = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-write-escape-')));
     try {
       const escapedChannel = path.join(escaped, 'channel');
       await fs.mkdir(escapedChannel);
       await fs.symlink(outside, path.join(escapedChannel, 'storages'));
       const escapedTarget = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: escapedChannel });
+      await assert.rejects(inspectArtifactTarget(escapedTarget), /inside the channel home/);
       await assert.rejects(prepareArtifactDirectory(escapedTarget), /inside the channel home/);
+      assert.deepEqual(await fs.readdir(outside), [], 'a refused target must not create directories outside the channel');
     } finally {
       await fs.rm(escaped, { recursive: true, force: true });
     }
@@ -295,6 +303,62 @@ test('the designated channel receives one atomic 0600 artifact and no temporary 
     await fs.rm(home, { recursive: true, force: true });
     await fs.rm(channel, { recursive: true, force: true });
     await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
+test('a channel swapped after the preflight is re-validated before the artifact is written', async () => {
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-swap-home-')));
+  const channel = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-swap-channel-')));
+  const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-swap-outside-')));
+  try {
+    const target = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: channel });
+    await inspectArtifactTarget(target);
+    // The target may change while the paired sessions run.
+    await fs.symlink(outside, path.join(channel, 'storages'));
+    await assert.rejects(prepareArtifactDirectory(target), /inside the channel home/);
+    assert.deepEqual(await fs.readdir(outside), []);
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(channel, { recursive: true, force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
+test('the isolated storage roots are pinned to the isolated home before any session', async () => {
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-storage-home-')));
+  const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-storage-outside-')));
+  try {
+    await assertIsolatedStorageRoots(home);
+    await fs.mkdir(path.join(home, 'storages'));
+    await fs.symlink(outside, path.join(home, 'storages', 'evolution'));
+    await assert.rejects(assertIsolatedStorageRoots(home), /isolated storages\/evolution must stay inside the isolated home/);
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
+test('the command line refuses a valueless --channel-home and a report over the evidence', async () => {
+  const cli = fileURLToPath(new URL('../scripts/acceptance/task-benefit.mjs', import.meta.url));
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-cli-home-')));
+  const channel = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-cli-channel-')));
+  try {
+    const taskFile = path.join(home, 'task.json');
+    const hostFile = path.join(home, 'host.js');
+    await fs.writeFile(taskFile, JSON.stringify({ id: 'read-long-line', prompt: 'read it', expect: 'sentinel' }));
+    await fs.writeFile(hostFile, 'return { name: "cli-fixture", inject: ["tools"], apply() {} };');
+    const base = [cli, '--home', home, '--task', taskFile, '--candidate-host', hostFile];
+    const dropped = spawnSync(process.execPath, [...base, '--channel-home'], { encoding: 'utf8' });
+    assert.notEqual(dropped.status, 0);
+    assert.match(dropped.stderr, /--channel-home needs a value/);
+    const evidence = path.join(channel, 'storages', 'evolution', 'desktop-tasks', 'task-evidence', 'desktop-task-proof.json');
+    const overwrite = spawnSync(process.execPath, [...base, '--channel-home', channel, '--task-id', 'desktop-task-proof', '--report', evidence], { encoding: 'utf8' });
+    assert.notEqual(overwrite.status, 0);
+    assert.match(overwrite.stderr, /must not be written over the task evidence/);
+    assert.equal(existsSync(evidence), false);
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(channel, { recursive: true, force: true });
   }
 });
 

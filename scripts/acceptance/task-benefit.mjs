@@ -342,23 +342,89 @@ export async function resolveArtifactTarget({ home, taskId, channelHome, outFile
   return { outFile: path.join(root, ...ARTIFACT_SEGMENTS, `${taskId}.json`), channel: root };
 }
 
-/** Create the artifact directory and pin it to the root that owns it. */
-export async function prepareArtifactDirectory(target) {
+/**
+ * Walk the artifact path under a designated channel root one component at a
+ * time. A recursive mkdir would follow a swapped symlink and create directories
+ * outside the channel before the escape is noticed, so existing components are
+ * inspected first and only then are missing components created from the root
+ * downwards. Returns the verified directory, or null when `create` is false and
+ * a component is still missing.
+ */
+async function resolveChannelDirectory(root, { create }) {
+  let current = root;
+  for (const segment of ARTIFACT_SEGMENTS) {
+    const next = path.join(current, segment);
+    const info = await fs.lstat(next).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
+    if (info === null) {
+      if (!create) return null;
+      await fs.mkdir(next, { mode: 0o700 });
+      current = next;
+      continue;
+    }
+    if (info.isSymbolicLink()) {
+      // A component may be an operator-managed symlink only while it stays in
+      // the channel it was given; the artifact never leaves that channel.
+      const resolved = await fs.realpath(next);
+      if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
+        throw new Error('the artifact directory must stay inside the channel home');
+      }
+      current = resolved;
+      continue;
+    }
+    if (info.isDirectory() !== true) throw new Error('the artifact path under the channel home must be a directory');
+    current = next;
+  }
+  return current;
+}
+
+/**
+ * Read-only preflight, run before any session starts: refuse a target that can
+ * never be published into (a channel component that leaves the channel, or a
+ * non-directory component) without creating anything outside it first.
+ */
+export async function inspectArtifactTarget(target) {
+  if (target.channel !== null) {
+    await resolveChannelDirectory(target.channel, { create: false });
+    return;
+  }
   const parent = path.dirname(target.outFile);
-  await fs.mkdir(parent, { recursive: true, mode: 0o700 });
-  const resolved = await fs.realpath(parent);
+  const resolved = await realpathOr(parent);
+  if (resolved !== parent) throw new Error('the artifact directory resolved to a different path');
+}
+
+/**
+ * Publish-time preparation: re-validate the target after the long run, create
+ * only the directories that are missing under the already-verified root, and
+ * return the directory the artifact is written into.
+ */
+export async function prepareArtifactDirectory(target) {
   if (target.channel === null) {
+    const parent = path.dirname(target.outFile);
+    await fs.mkdir(parent, { recursive: true, mode: 0o700 });
+    const resolved = await fs.realpath(parent);
     // The isolated path keeps the historical strict check: no component may
     // redirect the artifact outside the verified home.
     if (resolved !== parent) throw new Error('the artifact directory resolved to a different path after creation');
     return parent;
   }
-  // A designated channel may sit behind an operator-managed symlink, but a
-  // component that resolves outside that channel is not this channel.
+  const directory = await resolveChannelDirectory(target.channel, { create: true });
+  const resolved = await fs.realpath(directory);
   if (resolved !== target.channel && !resolved.startsWith(`${target.channel}${path.sep}`)) {
     throw new Error('the artifact directory must stay inside the channel home');
   }
-  return parent;
+  return directory;
+}
+
+/**
+ * The paired sessions write their own state under the isolated home. A storage
+ * component that redirects outside it would leak session data into the channel
+ * this run is about to deliver evidence to, so the storage roots are pinned to
+ * the verified home in both output modes, before any session starts.
+ */
+export async function assertIsolatedStorageRoots(home) {
+  for (const relative of [['storages'], ['storages', 'evolution'], ['storages', 'evolution-experience']]) {
+    await assertIsolatedTarget(path.join(home, ...relative), home, `isolated ${relative.join('/')}`);
+  }
 }
 
 /** Write the artifact atomically; `0600`, and a failed rename leaves no temporary file. */
@@ -530,7 +596,6 @@ export async function produceTaskBenefit(options = {}) {
   const work = await assertIsolatedTarget(options.work ?? path.join(home, 'task-benefit-work'), home, 'work directory');
   const task = normalizeTask(options.task);
   const taskId = options.taskId;
-  if (typeof taskId !== 'string' || !TASK_ID.test(taskId)) throw new Error('taskId must match the Desktop task identity rule');
   const candidateHost = options.candidateHost;
   if (typeof candidateHost !== 'string' || candidateHost.trim() === '') throw new Error('candidateHost must be the exact Host body');
   const improvement = options.improvement ?? 'context-policy';
@@ -540,17 +605,21 @@ export async function produceTaskBenefit(options = {}) {
   const runs = Number.isInteger(options.runs) ? options.runs : TASK_BENEFIT_RUNS.min;
   if (runs < TASK_BENEFIT_RUNS.min || runs > TASK_BENEFIT_RUNS.max) throw new Error(`runs must be ${TASK_BENEFIT_RUNS.min}-${TASK_BENEFIT_RUNS.max}`);
   const model = typeof options.model === 'string' && options.model ? options.model : TASK_BENEFIT_MODEL;
-  const host = options.host ?? readDesktopVersions(options.binary ?? '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness');
-  const cli = options.cli ?? '/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh';
-  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DSH_')));
-  delete env.ELECTRON_RUN_AS_NODE;
+  // The target decides the artifact identity, so it is resolved (and the
+  // isolated storage roots are pinned) before the Desktop binary is even read.
   const artifactTarget = await resolveArtifactTarget({
     home,
     taskId,
     channelHome: options.channelHome,
     outFile: options.outFile,
   });
+  await assertIsolatedStorageRoots(home);
+  await inspectArtifactTarget(artifactTarget);
   const outFile = artifactTarget.outFile;
+  const host = options.host ?? readDesktopVersions(options.binary ?? '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness');
+  const cli = options.cli ?? '/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh';
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DSH_')));
+  delete env.ELECTRON_RUN_AS_NODE;
   await fs.mkdir(work, { recursive: true });
   if (await fs.realpath(work) !== work) throw new Error('the work directory resolved to a different path after creation');
   // A fresh run directory under the verified work root: pre-existing
@@ -558,7 +627,7 @@ export async function produceTaskBenefit(options = {}) {
   const runWork = await fs.mkdtemp(path.join(work, 'run-'));
   if (await fs.realpath(runWork) !== runWork) throw new Error('the fresh run directory resolved to a different path');
   await fs.mkdir(path.join(runWork, 'bridge-cwd'), { recursive: true });
-  await prepareArtifactDirectory(artifactTarget);
+  await inspectArtifactTarget(artifactTarget);
 
   const previewUrl = pathToFileURL(path.join(runWork, 'preview-policy.mjs')).href;
   await writePreviewModule(path.join(runWork, 'preview-policy.mjs'), candidateHost);
@@ -605,7 +674,10 @@ export async function produceTaskBenefit(options = {}) {
       : { sessionsUsingCandidate: 0, sessionsExercised: sessions.candidate.filter((row) => row.exercised).length },
   });
   if (!complete) artifact.complete = false;
-  await writeArtifactFile(outFile, artifact);
+  // Re-validate after the long run and write through the directory the
+  // publish-time check proved: the target may have changed while sessions ran.
+  const artifactDirectory = await prepareArtifactDirectory(artifactTarget);
+  await writeArtifactFile(path.join(artifactDirectory, path.basename(outFile)), artifact);
   const report = {
     kind: 'dsh-evolution-task-benefit-run',
     ok: complete,
@@ -646,20 +718,43 @@ if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
   if (!home || !taskFile || !hostFile) {
     throw new Error('usage: task-benefit.mjs --home <isolated-dsh-home> --task <task.json> --candidate-host <host.js> [--task-id <id>] [--runs 3-5] [--out <artifact.json>] [--report <report.json>] [--channel-home <dsh-home-that-reads-the-evidence>]');
   }
+  // An option that is present but has no value must not silently fall back to
+  // the default: `--channel-home` at the end of the command would otherwise run
+  // the paired sessions and deliver nothing.
+  const option = (name) => {
+    if (!argv.includes(name)) return undefined;
+    const value = argument(name, argv);
+    if (value === null || value.startsWith('--')) throw new Error(`${name} needs a value`);
+    return value;
+  };
+  const channelHome = option('--channel-home');
+  const taskId = option('--task-id') ?? `producer-${Date.now().toString(36)}`;
+  const outFile = option('--out');
+  const reportFile = option('--report');
+  // The report is operator output, not evidence: it must never overwrite the
+  // artifact the Desktop host reads for this task.
+  if (reportFile !== undefined) {
+    const artifactTarget = await resolveArtifactTarget({
+      home: assertIsolatedHome(home),
+      taskId,
+      channelHome,
+      outFile,
+    });
+    if (path.resolve(reportFile) === artifactTarget.outFile) throw new Error('the report must not be written over the task evidence');
+  }
   const task = JSON.parse(await fs.readFile(taskFile, 'utf8'));
   const candidateHost = await fs.readFile(hostFile, 'utf8');
   const result = await produceTaskBenefit({
     home,
     task,
-    taskId: argument('--task-id', argv) ?? `producer-${Date.now().toString(36)}`,
+    taskId,
     candidateHost,
     runs: Number(argument('--runs', argv) ?? TASK_BENEFIT_RUNS.min),
     model: argument('--model', argv) ?? TASK_BENEFIT_MODEL,
-    outFile: argument('--out', argv) ?? undefined,
-    channelHome: argument('--channel-home', argv) ?? undefined,
+    outFile,
+    channelHome,
     log: (line) => console.log(line),
   });
-  const reportFile = argument('--report', argv);
   if (reportFile) await fs.writeFile(path.resolve(reportFile), `${JSON.stringify(result.report, null, 2)}\n`, { mode: 0o600 });
   console.log(JSON.stringify({ ok: result.ok, artifact: result.artifactFile, baseline: result.artifact.baseline, candidate: result.artifact.candidate }, null, 2));
 }

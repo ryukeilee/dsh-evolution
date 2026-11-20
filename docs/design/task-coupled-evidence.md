@@ -86,7 +86,8 @@ profile 相同）。artifact 里的 `tokenBasis` 记录这一点，校验器忽�
   `runs`、宿主版本与两侧正确性。会话隔离被保住，操作者为“这次运行就是它声明的运行”负责——这与
   `revalidate --evidence` 处于同一信任级别，见 §5。
 - 只有能缩短真实路径（轮次或工具调用下降）的能力才可能通过 `taskBenefit`；纯粹的“预防一次非法
-  调用”在没有减少轮次/调用时不构成收益，producer 会如实给出 `benefit: false`。
+  调用”在没有减少轮次/调用时不构成收益。producer 只写入测量事实，收益判定由校验器
+  （`validateTaskBenefit`）给出。
 
 ## 4. context-policy 的功能复验
 
