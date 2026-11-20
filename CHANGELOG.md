@@ -22,7 +22,7 @@ format, tool-surface shape or authorization source changes.
 
 `0.2.13` 的稳定后继：修复 PTC（Programmatic Tool Calling）self-evolution preset 下 Desktop task host 直接调用 `ctx.tools.execute` 被官方执行器拒绝，导致真实 Desktop 自我进化任务在 `evolution_runtime_inspect` 第一步失败的问题。相对 `0.2.13` 固定产物，分发内容只改 `lib/desktop-task-host.js`、新增 `test/desktop-task-host.test.mjs` 用例，以及版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；宿主集合、持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies` 均未改动。
 
-- **PTC 官方传输。** PTC 预设只允许直接调用 `run_code`；host 现在识别该拒绝，经官方 `run_code` 程序调用目标工具，并用单一 sentinel 包装解包 `{ logs, result? }` 信封，避免工具值里的 `logs` 被误认为传输信封。非 PTC 宿主仍走原有 `ctx.tools.execute` 直连路径；错误码、超时、取消、工具安全策略与门禁不变。
+- **PTC 官方传输。** PTC 预设只允许直接调用 `run_code`；host 现在识别该拒绝，经官方 `run_code` 程序调用目标工具，并用单一 sentinel 包装解包 `{ logs, result? }` 信封，避免工具值里的 `logs` 被误认为传输信封。非 PTC 宿主仍走原有 `ctx.tools.execute` 直连路径，其错误码、超时、取消、工具安全策略与门禁不变；PTC 嵌套工具失败由官方 `run_code` 包装为 `CODE_RUN_FAILED`，原始消息保留，晋升门禁不读取该包装码。回退程序按 self-evolution preset 的 TypeScript flavor 生成；Python PTC flavor 不在本修复范围。
 - **真实任务验收。** 在 `0.2.2-rc.5` 的 PTC self-evolution Desktop profile 上完成真实模型自我进化任务；`complete-read-line` 的 taskBenefit、workflowBenefit、canary、runtimeRecovered 与 owner gate 均保持有效。
 - **既有成果保留。** 不修改已晋升的 `complete-read-line` 或其他 stable 插件源码，不迁移、不下线共享经验与生产数据。
 

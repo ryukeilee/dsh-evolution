@@ -450,9 +450,10 @@ try {
   // profile uses, so the task host exercises the run_code transport instead of
   // the direct ctx.tools.execute path. The isolated profile otherwise stays the
   // standard preset and does not touch formal data.
-  const presetPatch = ptc
-    ? await fs.readFile(path.join(os.homedir(), '.local/share/dsh-plugins/dsh-self-evolution-mode/cordis.patch.yml'), 'utf8')
-    : '';
+  const presetFile = path.join(repo, 'scripts/acceptance/fixtures/self-evolution-preset.cordis.patch.yml');
+  const presetPatch = ptc ? await fs.readFile(presetFile, 'utf8') : '';
+  const presetSha256 = ptc ? crypto.createHash('sha256').update(presetPatch).digest('hex') : null;
+  evidence.ptc = ptc ? { enabled: true, preset: { source: path.relative(repo, presetFile), sha256: presetSha256 } } : { enabled: false };
   const presetConfig = ptc
     ? '\n- id: agent-preset-registry\n  config:\n    default: standard\n    selectedDefault: self-evolution\n'
     : '';
@@ -463,6 +464,7 @@ try {
   evidence.host = { instanceId: firstReady.instanceId, pid: firstReady.pid, profile: firstReady.profile };
   planReceipt = await waitFor(() => readJson(receiptFile), { timeoutMs: 180_000, what: 'read-only plan receipt' });
   assert(planReceipt.ok === true, 'the discovery probe failed: ' + planReceipt.error);
+  if (ptc) assert(planReceipt.transport === 'run_code', 'the PTC acceptance did not exercise the official run_code transport');
   const selection = planReceipt.plan?.selected;
   assert(selection, 'the production planner selected no candidate from the real losses: ' + JSON.stringify(planReceipt.plan?.none ?? null).slice(0, 800));
   assert(selection.problemKey === 'tool read', 'the planner selected ' + JSON.stringify(selection.problemKey) + ', not the observed read loss');
@@ -478,6 +480,7 @@ try {
     score: selection.score,
     benefitModel: selection.benefitModel,
     source: 'production evolution_plan over the isolated shared experience store after the baseline sessions',
+    transport: planReceipt.transport,
   };
   evidence.steps.push({ name: 'real-loss-discovery', at: new Date().toISOString() });
 

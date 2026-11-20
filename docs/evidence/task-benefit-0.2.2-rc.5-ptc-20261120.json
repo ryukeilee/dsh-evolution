@@ -1,73 +1,73 @@
 {
   "kind": "dsh-evolution-task-benefit-loop",
   "ok": true,
-  "startedAt": "2026-11-20T08:56:03.045Z",
+  "startedAt": "2026-11-20T09:39:53.467Z",
   "scope": "isolated DSH_HOME; official Desktop + ACP + Evolution kernel; real model inference; no formal home, no release publish",
   "model": "opencode-go/deepseek-v4.1-flash",
   "runs": 3,
   "steps": [
     {
       "name": "official-install",
-      "at": "2026-11-20T08:56:06.633Z"
+      "at": "2026-11-20T09:39:56.818Z"
     },
     {
       "name": "paired-real-sessions-produced",
-      "at": "2026-11-20T08:59:24.761Z"
+      "at": "2026-11-20T09:42:48.526Z"
     },
     {
       "name": "real-loss-discovery",
-      "at": "2026-11-20T08:59:28.541Z"
+      "at": "2026-11-20T09:42:52.312Z"
     },
     {
       "name": "negative-artifacts-rejected",
-      "at": "2026-11-20T08:59:52.110Z"
+      "at": "2026-11-20T09:43:14.593Z"
     },
     {
       "name": "desktop-awaiting-owner-confirmation",
-      "at": "2026-11-20T08:59:57.593Z"
+      "at": "2026-11-20T09:43:20.064Z"
     },
     {
       "name": "stable-with-functional-canary",
-      "at": "2026-11-20T09:00:04.514Z"
+      "at": "2026-11-20T09:43:26.982Z"
     },
     {
       "name": "fresh-consumer-functional-reuse",
-      "at": "2026-11-20T09:00:22.997Z"
+      "at": "2026-11-20T09:43:48.100Z"
     },
     {
       "name": "restart-preserved-and-planner-resolved",
-      "at": "2026-11-20T09:00:26.911Z"
+      "at": "2026-11-20T09:43:51.984Z"
     }
   ],
   "fixtures": [
     {
       "name": "a.json",
       "characters": 3147,
-      "sentinelSha256": "9ffeb571ca0f399fc33deed8793a3e616ae3d42ef8c397d82caa71f6d4c0826f"
+      "sentinelSha256": "9c6c4aa4b1652aa2e31f7f373a94acfa0497263d6d32466b1fe4feea8ecbf375"
     },
     {
       "name": "b.json",
       "characters": 3147,
-      "sentinelSha256": "e79346f1ea73c83c99cbcb3f3f20b28606a8aa0325e63d49806691c930805902"
+      "sentinelSha256": "aff04f9c60f1a57fec5ea2c94a3c2fdc674187cd11dab4ad60a43029932a2340"
     },
     {
       "name": "c.json",
       "characters": 3147,
-      "sentinelSha256": "5e07e80d17cf2f2dd5eeb0b99250c0ad32df2b65012fbeb80eb6c229b6976aad"
+      "sentinelSha256": "6519eed702828549f8a7945f3800d25d531fb4896958c9e641c3d3e684345483"
     }
   ],
   "producer": {
     "ok": true,
-    "artifactFile": "$DSH_HOME/storages/evolution/desktop-tasks/task-evidence/desktop-task-mwoqvd9n-36954cf5.json",
+    "artifactFile": "$DSH_HOME/storages/evolution/desktop-tasks/task-evidence/desktop-task-mwosfqqb-b56dd1b1.json",
     "artifact": {
       "schemaVersion": 1,
       "kind": "paired-real-session",
       "complete": true,
-      "taskId": "desktop-task-mwoqvd9n-36954cf5",
+      "taskId": "desktop-task-mwosfqqb-b56dd1b1",
       "task": {
         "id": "read-three-long-lines",
         "promptSha256": "49bc9881ce0556a8b37fd4c1882bf16373bb61917d6242e5954aa8bc5cc39cfc",
-        "expectSha256": "54f98b8a51bced8fdb3c0497c540a2c7d46b42b90477b7c1206762390910dd75"
+        "expectSha256": "729beb1a1e56be098da6c21f55cf6bc0a53eef6d5a6cbe27f0d06ef25d7064fb"
       },
       "candidateHostSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
       "model": "opencode-go/deepseek-v4.1-flash",
@@ -85,8 +85,8 @@
         "failures": 0,
         "turns": 15,
         "toolCalls": 12,
-        "tokens": 488223,
-        "durationMs": 134317
+        "tokens": 489725,
+        "durationMs": 106988
       },
       "candidate": {
         "sessions": 3,
@@ -94,8 +94,8 @@
         "failures": 0,
         "turns": 12,
         "toolCalls": 9,
-        "tokens": 396315,
-        "durationMs": 63697
+        "tokens": 396308,
+        "durationMs": 64623
       },
       "adoption": {
         "sessionsUsingCandidate": 0,
@@ -118,20 +118,20 @@
           "toolNames": [
             "read",
             "read",
-            "bash",
-            "read"
+            "read",
+            "bash"
           ],
           "failures": 0,
-          "tokens": 162475,
-          "inputTokens": 36250,
-          "outputTokens": 273,
-          "cacheReadTokens": 125952,
-          "durationMs": 46995,
+          "tokens": 163321,
+          "inputTokens": 8925,
+          "outputTokens": 284,
+          "cacheReadTokens": 154112,
+          "durationMs": 29928,
           "readResultCount": 3,
           "readResultCharacters": 6564,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 236
+          "assistantCharacters": 212
         },
         {
           "label": "baseline-2",
@@ -145,21 +145,21 @@
           "toolCalls": 4,
           "toolNames": [
             "read",
-            "bash",
             "read",
-            "read"
+            "read",
+            "bash"
           ],
           "failures": 0,
-          "tokens": 162221,
-          "inputTokens": 67937,
-          "outputTokens": 460,
-          "cacheReadTokens": 93824,
-          "durationMs": 44020,
+          "tokens": 163152,
+          "inputTokens": 6643,
+          "outputTokens": 221,
+          "cacheReadTokens": 156288,
+          "durationMs": 33003,
           "readResultCount": 3,
           "readResultCharacters": 6564,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 349
+          "assistantCharacters": 205
         },
         {
           "label": "baseline-3",
@@ -178,16 +178,16 @@
             "bash"
           ],
           "failures": 0,
-          "tokens": 163527,
-          "inputTokens": 7704,
-          "outputTokens": 431,
-          "cacheReadTokens": 155392,
-          "durationMs": 43302,
+          "tokens": 163252,
+          "inputTokens": 4877,
+          "outputTokens": 295,
+          "cacheReadTokens": 158080,
+          "durationMs": 44057,
           "readResultCount": 3,
           "readResultCharacters": 6564,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 310
+          "assistantCharacters": 276
         }
       ],
       "candidate": [
@@ -207,16 +207,16 @@
             "read"
           ],
           "failures": 0,
-          "tokens": 132094,
-          "inputTokens": 12672,
-          "outputTokens": 126,
-          "cacheReadTokens": 119296,
-          "durationMs": 20974,
+          "tokens": 132065,
+          "inputTokens": 7659,
+          "outputTokens": 118,
+          "cacheReadTokens": 124288,
+          "durationMs": 18182,
           "readResultCount": 3,
           "readResultCharacters": 9903,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 124
+          "assistantCharacters": 112
         },
         {
           "label": "candidate-2",
@@ -235,15 +235,15 @@
           ],
           "failures": 0,
           "tokens": 132114,
-          "inputTokens": 39554,
-          "outputTokens": 144,
-          "cacheReadTokens": 92416,
-          "durationMs": 25201,
+          "inputTokens": 6891,
+          "outputTokens": 167,
+          "cacheReadTokens": 125056,
+          "durationMs": 17974,
           "readResultCount": 3,
           "readResultCharacters": 9903,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 139
+          "assistantCharacters": 197
         },
         {
           "label": "candidate-3",
@@ -261,16 +261,16 @@
             "read"
           ],
           "failures": 0,
-          "tokens": 132107,
-          "inputTokens": 2946,
-          "outputTokens": 137,
-          "cacheReadTokens": 129024,
-          "durationMs": 17522,
+          "tokens": 132129,
+          "inputTokens": 38123,
+          "outputTokens": 182,
+          "cacheReadTokens": 93824,
+          "durationMs": 28467,
           "readResultCount": 3,
           "readResultCharacters": 9903,
           "ok": true,
           "failedTurns": 0,
-          "assistantCharacters": 127
+          "assistantCharacters": 224
         }
       ]
     }
@@ -295,11 +295,12 @@
       "kind": "workflow",
       "metric": "failureRate"
     },
-    "source": "production evolution_plan over the isolated shared experience store after the baseline sessions"
+    "source": "production evolution_plan over the isolated shared experience store after the baseline sessions",
+    "transport": "run_code"
   },
   "candidate": {
-    "taskId": "desktop-task-mwoqvd9n-36954cf5",
-    "experimentId": "exp-mwor0ad0-5-7e6d3b88",
+    "taskId": "desktop-task-mwosfqqb-b56dd1b1",
+    "experimentId": "exp-mwosk2dw-5-25247ed7",
     "candidateSourceSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
     "gates": {
       "realBenefit": true,
@@ -326,22 +327,22 @@
       "tool": "read",
       "present": true,
       "matched": true,
-      "resultSha256": "eccf708df32f597487a24670c2ca22a3dc73f0eac912a30a604a60de616e6876",
+      "resultSha256": "b9dd636e552d14120af3e4e21468fd65f99942f1364060dd95e850aa2705ea1a",
       "resultCharacters": 3639
     }
   },
   "approval": {
-    "experimentId": "exp-mwor0ad0-5-7e6d3b88",
+    "experimentId": "exp-mwosk2dw-5-25247ed7",
     "sourceSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
     "targetProfiles": [
       "acp"
     ],
-    "confirmedAt": "2026-11-20T09:00:03.184Z",
+    "confirmedAt": "2026-11-20T09:43:25.642Z",
     "confirmationTextDigest": "8eb9e59f6fce6c15af3312f7c73abb2972c55f1f8308a8abba090b2872aa1878"
   },
   "task": {
-    "taskId": "desktop-task-mwoqvd9n-36954cf5",
-    "experimentId": "exp-mwor0ad0-5-7e6d3b88",
+    "taskId": "desktop-task-mwosfqqb-b56dd1b1",
+    "experimentId": "exp-mwosk2dw-5-25247ed7",
     "phase": "stable",
     "gates": {
       "realBenefit": true,
@@ -360,8 +361,8 @@
       "version": 1,
       "kind": "benefit",
       "source": "canary-passed",
-      "at": "2026-11-20T09:00:04.294Z",
-      "observationAt": "2026-11-20T08:59:57.080Z",
+      "at": "2026-11-20T09:43:26.627Z",
+      "observationAt": "2026-11-20T09:43:19.432Z",
       "eligible": true,
       "reasons": [
         "the measured candidate passed the startup, health, dependency, and metric canary window"
@@ -392,7 +393,7 @@
         "tool": "read",
         "present": true,
         "matched": true,
-        "resultSha256": "eccf708df32f597487a24670c2ca22a3dc73f0eac912a30a604a60de616e6876",
+        "resultSha256": "b9dd636e552d14120af3e4e21468fd65f99942f1364060dd95e850aa2705ea1a",
         "resultCharacters": 3639
       },
       "canary": [
@@ -401,7 +402,7 @@
           "tool": "read",
           "present": true,
           "matched": true,
-          "resultSha256": "eccf708df32f597487a24670c2ca22a3dc73f0eac912a30a604a60de616e6876",
+          "resultSha256": "b9dd636e552d14120af3e4e21468fd65f99942f1364060dd95e850aa2705ea1a",
           "resultCharacters": 3639
         },
         {
@@ -409,7 +410,7 @@
           "tool": "read",
           "present": true,
           "matched": true,
-          "resultSha256": "eccf708df32f597487a24670c2ca22a3dc73f0eac912a30a604a60de616e6876",
+          "resultSha256": "b9dd636e552d14120af3e4e21468fd65f99942f1364060dd95e850aa2705ea1a",
           "resultCharacters": 3639
         }
       ]
@@ -421,8 +422,8 @@
         "failures": 0,
         "turns": 15,
         "toolCalls": 12,
-        "tokens": 488223,
-        "durationMs": 134317
+        "tokens": 489725,
+        "durationMs": 106988
       },
       "candidate": {
         "sessions": 3,
@@ -430,8 +431,8 @@
         "failures": 0,
         "turns": 12,
         "toolCalls": 9,
-        "tokens": 396315,
-        "durationMs": 63697
+        "tokens": 396308,
+        "durationMs": 64623
       },
       "adoption": {
         "sessionsUsingCandidate": 0,
@@ -439,33 +440,33 @@
       }
     },
     "publication": {
-      "id": "evolution-promoted-7e058a7ca345",
+      "id": "evolution-promoted-b4df35f1b5bd",
       "approvedProfiles": [
         "acp"
       ],
-      "sourceSha256": "87c3f657e1b3568a82a753978aabf23c653d66b57286aadfa0d92efc32a49f02"
+      "sourceSha256": "54da07b312a8fa9ce684e84351ebd6cfdb26598446590f44564daed6d8b1a8a6"
     }
   },
   "freshConsumer": {
-    "taskId": "desktop-task-mwoqvd9n-36954cf5",
+    "taskId": "desktop-task-mwosfqqb-b56dd1b1",
     "modelTurns": 4,
     "toolCalls": 3,
-    "tokens": 132112,
-    "wallMs": 17561,
+    "tokens": 132111,
+    "wallMs": 20308,
     "correct": true,
     "readResultsContainAllSentinels": true,
-    "answerSha256": "ffcb281695494d03297a5c12715142a6465ef0b5b7fd215ceb0977380f95fcd6",
+    "answerSha256": "cc5fd57ebc0cf881a950df4ed4527ce4e10af49927c105dd208d7085ce4c5b10",
     "transport": "real model inference through model-bridge.mjs; the real promoted consumer mounted the policy"
   },
   "negatives": [
     {
       "variant": "missing",
-      "taskId": "desktop-task-mwoqzp25-dda2d3d7",
-      "experimentId": "exp-mwoqzs7m-1-9df79359",
+      "taskId": "desktop-task-mwosji55-b21fb400",
+      "experimentId": "exp-mwosjl78-1-54ef76be",
       "phase": "failed",
       "error": {
         "code": "E_DESKTOP_TASK_EVIDENCE_MISSING",
-        "message": "no paired real-session evidence for task desktop-task-mwoqzp25-dda2d3d7; a context-policy candidate cannot be measured from capability samples"
+        "message": "no paired real-session evidence for task desktop-task-mwosji55-b21fb400; a context-policy candidate cannot be measured from capability samples"
       },
       "gates": null,
       "decision": null,
@@ -476,8 +477,8 @@
     },
     {
       "variant": "mismatch",
-      "taskId": "desktop-task-mwoqztab-289cf2ac",
-      "experimentId": "exp-mwoqzwdj-2-1624f6c9",
+      "taskId": "desktop-task-mwosjmda-dcbf9dcd",
+      "experimentId": "exp-mwosjpfu-2-3593b127",
       "phase": "failed",
       "error": {
         "code": "E_DESKTOP_TASK_EVIDENCE_MISMATCH",
@@ -492,8 +493,8 @@
     },
     {
       "variant": "no-benefit",
-      "taskId": "desktop-task-mwoqzxhu-230c32ac",
-      "experimentId": "exp-mwor018h-3-91249986",
+      "taskId": "desktop-task-mwosjql3-4a0461ec",
+      "experimentId": "exp-mwosjtnh-3-17506a45",
       "phase": "failed",
       "error": {
         "code": "E_DESKTOP_BENEFIT_UNPROVEN",
@@ -526,8 +527,8 @@
     },
     {
       "variant": "unadopted",
-      "taskId": "desktop-task-mwor02q5-c3cf7c2f",
-      "experimentId": "exp-mwor05sy-4-abc47ce0",
+      "taskId": "desktop-task-mwosjut0-53dafc04",
+      "experimentId": "exp-mwosjxvg-4-5fd8b2d2",
       "phase": "failed",
       "error": {
         "code": "E_DESKTOP_BENEFIT_UNPROVEN",
@@ -560,8 +561,8 @@
     }
   ],
   "restart": {
-    "previousInstanceId": "9fdd7483-7b7e-4ba1-ad02-24ec54b3ce7b",
-    "nextInstanceId": "12d035e4-8fce-49b3-b4e4-66f12978ad39",
+    "previousInstanceId": "f56a3412-b468-4c4a-9cc8-c5aa59ffb195",
+    "nextInstanceId": "d4338f77-ba80-4e7c-8202-ac10819fb6c2",
     "terminalPreserved": true,
     "publicationPreserved": true,
     "plannerResolved": {
@@ -577,17 +578,24 @@
     "tail": [
       "+ dsh-evolution 0.2.14",
       "",
-      "Done in 465ms using pnpm v11.28.5",
+      "Done in 434ms using pnpm v11.28.5",
       "web: configured; restart this entry to apply (HMR disabled)"
     ]
   },
+  "ptc": {
+    "enabled": true,
+    "preset": {
+      "source": "scripts/acceptance/fixtures/self-evolution-preset.cordis.patch.yml",
+      "sha256": "9a1dca8e03d0cd6d3a48b12e07189a6c4df7359850c838bd3e23a029e9779177"
+    }
+  },
   "host": {
-    "instanceId": "9fdd7483-7b7e-4ba1-ad02-24ec54b3ce7b",
-    "pid": 52982,
+    "instanceId": "f56a3412-b468-4c4a-9cc8-c5aa59ffb195",
+    "pid": 79780,
     "profile": "desktop"
   },
   "noAutoApproval": {
-    "taskId": "desktop-task-mwoqvd9n-36954cf5",
+    "taskId": "desktop-task-mwosfqqb-b56dd1b1",
     "waitedMs": 5000,
     "phase": "awaiting-owner-confirmation"
   },
@@ -601,11 +609,11 @@
       "schemaVersion": 1,
       "kind": "paired-real-session",
       "complete": true,
-      "taskId": "desktop-task-mwoqvd9n-36954cf5",
+      "taskId": "desktop-task-mwosfqqb-b56dd1b1",
       "task": {
         "id": "read-three-long-lines",
         "promptSha256": "49bc9881ce0556a8b37fd4c1882bf16373bb61917d6242e5954aa8bc5cc39cfc",
-        "expectSha256": "54f98b8a51bced8fdb3c0497c540a2c7d46b42b90477b7c1206762390910dd75"
+        "expectSha256": "729beb1a1e56be098da6c21f55cf6bc0a53eef6d5a6cbe27f0d06ef25d7064fb"
       },
       "candidateHostSha256": "7a18a9ee7c72ec8f4c6fad4b2f0c630ab16e8a1b9b2dec98a6c000e11699202d",
       "model": "opencode-go/deepseek-v4.1-flash",
@@ -624,8 +632,8 @@
         "failures": 0,
         "turns": 15,
         "toolCalls": 12,
-        "tokens": 488223,
-        "durationMs": 134317
+        "tokens": 489725,
+        "durationMs": 106988
       },
       "candidate": {
         "sessions": 3,
@@ -633,8 +641,8 @@
         "failures": 0,
         "turns": 12,
         "toolCalls": 9,
-        "tokens": 396315,
-        "durationMs": 63697
+        "tokens": 396308,
+        "durationMs": 64623
       },
       "adoption": {
         "sessionsUsingCandidate": 0,
@@ -651,6 +659,6 @@
       "issues": []
     }
   },
-  "finishedAt": "2026-11-20T09:00:27.373Z",
-  "tarballSha256": "de7b7e2c87cf9bc2821502777d456e674ab2ebe34572041754e681225ff1d05d"
+  "finishedAt": "2026-11-20T09:43:52.305Z",
+  "tarballSha256": "dde493b67e24bf4a477b3ce5455e96b120e230bf945625bab84d7d91dafcb158"
 }

@@ -29,6 +29,13 @@ transport; it does not inject simulated host events. Its synthetic provider
 usage is not a billing-token measurement. Desktop UI acceptance is separate
 from Web host acceptance and must not be inferred from it.
 
+The Desktop task host now uses the official `run_code` transport when the
+selected agent preset is PTC. This depends on the pinned `dsh-tools` PTC
+refusal text (``only `run_code` is callable directly``) and the `run_code`
+`{ logs, result? }` envelope shape; a host change to either surfaces as a
+failed task, not a silent native fallback. The wrapper program is TypeScript,
+matching the self-evolution preset; a Python PTC flavor is outside this fix.
+
 | Component | Range |
 | --- | --- |
 | DSH | `0.2.0-rc.2`, `0.2.1-alpha.1`, `0.2.1-rc.2`, `0.2.2-rc.1`, `0.2.2-rc.2`, `0.2.2-rc.3`, `0.2.2-rc.4` or `0.2.2-rc.5` (exact alternatives, enforced by `peerDependencies`; the last five require the host `hmr` row disabled, see [The upstream HMR transaction gap](#the-upstream-hmr-transaction-gap-on-022-rc1)) |

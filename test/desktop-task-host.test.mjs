@@ -555,6 +555,66 @@ test('a PTC preset routes kernel calls through the official run_code transport',
   assert.ok(kernel.calls.some((call) => call.name === 'evolution_measure'), 'the kernel received the measurement through the wrapper');
 });
 
+test('a run_code transport failure is surfaced with the kernel error code', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel();
+  const ctx = fakeCtx(kernel, plan, { run_code: { execute: async () => ({}) } });
+  ctx.tools.execute = async (input) => {
+    const call = input.calls[0];
+    if (call.name === 'run_code') {
+      return { results: [{ callId: call.id, result: { isError: true, error: { code: 'E_EVOLUTION_INNER', message: 'inner kernel failure' } } }] };
+    }
+    return { results: [{ callId: call.id, result: { isError: true, error: { message: 'runtime inspection refused: unknown tool "evolution_runtime_inspect": only `run_code` is callable directly' } } }] };
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
+  assert.equal(state.error.code, 'E_EVOLUTION_INNER');
+});
+
+test('a run_code result without the sentinel fails instead of being read as the tool value', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel();
+  const ctx = fakeCtx(kernel, plan, { run_code: { execute: async () => ({}) } });
+  ctx.tools.execute = async (input) => {
+    const call = input.calls[0];
+    if (call.name === 'run_code') {
+      return { results: [{ callId: call.id, result: { isError: false, value: { logs: [], result: { unrelated: true } } } }] };
+    }
+    return { results: [{ callId: call.id, result: { isError: true, error: { message: 'only `run_code` is callable directly' } } }] };
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
+  assert.equal(state.error.code, 'E_DESKTOP_TOOL_RESULT');
+});
+
+test('a non-PTC pipeline error keeps the original code and never retries through run_code', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel();
+  const ctx = fakeCtx(kernel, plan, { run_code: { execute: async () => ({}) } });
+  let runCodeCalls = 0;
+  ctx.tools.execute = async (input) => {
+    const call = input.calls[0];
+    if (call.name === 'run_code') runCodeCalls += 1;
+    return { results: [{ callId: call.id, result: { isError: true, error: { code: 'E_DESKTOP_TOOL_FAILED', message: 'ordinary tool failure' } } }] };
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
+  assert.equal(state.error.code, 'E_DESKTOP_TOOL_FAILED');
+  assert.equal(runCodeCalls, 0);
+});
+
 test('a transient revert failure keeps the owner and retries cleanup until it is proven', async (t) => {
   const home = temporary(t);
   const plan = planFor(mintTaskId());

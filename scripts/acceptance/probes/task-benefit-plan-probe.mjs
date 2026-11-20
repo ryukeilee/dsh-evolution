@@ -7,7 +7,7 @@
 // from a fixture the harness chose in advance. It never proposes or promotes.
 import fs from 'node:fs';
 
-export const inject = ['tools', 'agents'];
+export const inject = ['tools', 'agents', 'agentPresets'];
 
 const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
@@ -15,7 +15,7 @@ const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
  * Call the production planner through the official pipeline. A PTC preset
  * exposes only run_code directly, so the probe retries through the same
  * transport the Desktop task host uses; the receipt still comes from the real
- * evolution_plan result.
+ * evolution_plan result and records which transport was used.
  */
 async function callPlan(ctx, agent) {
   const direct = await ctx.tools.execute({
@@ -36,10 +36,10 @@ async function callPlan(ctx, agent) {
     if (!wrappedResult || wrappedResult.isError) {
       throw new Error(`evolution_plan failed through run_code: ${JSON.stringify(wrappedResult?.error ?? null).slice(0, 400)}`);
     }
-    return wrappedResult.value?.result?.__plan;
+    return { value: wrappedResult.value?.result?.__plan, transport: 'run_code' };
   }
   if (!result || result.isError) throw new Error(`evolution_plan failed: ${JSON.stringify(result?.error ?? null).slice(0, 400)}`);
-  return result.value;
+  return { value: result.value, transport: 'direct' };
 }
 
 export function apply(ctx) {
@@ -53,9 +53,19 @@ export function apply(ctx) {
         await sleep(500);
       }
       if (ctx.tools.get('evolution_plan') === undefined) throw new Error('evolution_plan is not registered');
-      handle = await ctx.agents.create({ sessionId: `task-benefit-plan-${Date.now()}`, meta: { cwd: process.env.DSH_HOME } });
+      // The task host mounts the selected preset on its agent. The probe must
+      // do the same, otherwise a PTC acceptance would silently exercise the
+      // native path and the transport marker below would be meaningless.
+      const presets = ctx.get('agentPresets');
+      const preset = presets ? await presets.resolve() : null;
+      handle = await ctx.agents.create({
+        sessionId: `task-benefit-plan-${Date.now()}`,
+        meta: { cwd: process.env.DSH_HOME, ...(preset ? { agentPreset: preset.id } : {}) },
+        ...(preset ? { setup: async (agentCtx) => { await presets.mount(agentCtx, preset.id); } } : {}),
+      });
       const agent = handle.agent ?? handle;
-      fs.writeFileSync(receipt, JSON.stringify({ ok: true, plan: await callPlan(ctx, agent) }));
+      const outcome = await callPlan(ctx, agent);
+      fs.writeFileSync(receipt, JSON.stringify({ ok: true, plan: outcome.value, transport: outcome.transport }));
     } catch (error) {
       fs.writeFileSync(receipt, JSON.stringify({ ok: false, error: String(error?.message ?? error).slice(0, 600) }));
     } finally {
