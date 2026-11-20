@@ -331,7 +331,7 @@ export async function resolveArtifactTarget({ home, taskId, channelHome, outFile
   if (channelHome === undefined || channelHome === null) {
     const target = path.resolve(outFile ?? path.join(defaultParent, `${taskId}.json`));
     const parent = await assertIsolatedTarget(path.dirname(target), home, 'artifact directory');
-    return { outFile: path.join(parent, path.basename(target)), channel: null };
+    return { taskId, outFile: path.join(parent, path.basename(target)), channel: null };
   }
   if (typeof channelHome !== 'string' || !path.isAbsolute(channelHome)) throw new Error('channelHome must be an absolute channel root');
   if (outFile !== undefined && outFile !== null) throw new Error('a channel home and an explicit artifact file are two different artifact authorities');
@@ -339,7 +339,26 @@ export async function resolveArtifactTarget({ home, taskId, channelHome, outFile
   const info = await fs.stat(root).catch(() => null);
   if (info === null || info.isDirectory() !== true) throw new Error('the channel home must be an existing directory');
   if (root === home || root.startsWith(`${home}${path.sep}`)) throw new Error('the channel home must not be the isolated home');
-  return { outFile: path.join(root, ...ARTIFACT_SEGMENTS, `${taskId}.json`), channel: root };
+  return { taskId, outFile: path.join(root, ...ARTIFACT_SEGMENTS, `${taskId}.json`), channel: root };
+}
+
+/**
+ * A target may be resolved once by the caller and shared with the producer, so
+ * the evidence delivery and the operator-report checks cannot disagree about
+ * which channel they mean. The shared target is re-verified against its inputs.
+ */
+export async function assertResolvedArtifactTarget(target, { home, taskId } = {}) {
+  if (!target || typeof target !== 'object' || Array.isArray(target)) throw new Error('the artifact target must be a resolved target');
+  if (target.taskId !== taskId) throw new Error('the artifact target belongs to a different task id');
+  if (typeof target.outFile !== 'string' || path.basename(target.outFile) !== `${taskId}.json`) throw new Error('the artifact target does not name this task');
+  if (target.channel === null) {
+    await assertIsolatedTarget(path.dirname(target.outFile), home, 'artifact directory');
+    return target;
+  }
+  if (typeof target.channel !== 'string' || !path.isAbsolute(target.channel)) throw new Error('the artifact target channel must be an absolute path');
+  if (target.outFile !== path.join(target.channel, ...ARTIFACT_SEGMENTS, `${taskId}.json`)) throw new Error('the artifact target does not match its channel');
+  if (await realpathOr(target.channel) !== target.channel) throw new Error('the artifact target channel is not a canonical path');
+  return target;
 }
 
 /**
@@ -355,6 +374,9 @@ async function resolveChannelDirectory(root, { create }) {
   // swapped while the sessions run. A symlinked root must be refused before any
   // mkdir, otherwise the first missing component is created through the link.
   await assertRealDirectory(root, 'the channel home must be a directory');
+  // A symlinked *parent* of the root keeps lstat(root) looking like a directory
+  // while the path now names another tree: require the canonical path to hold.
+  if (await realpathOr(root) !== root) throw new Error('the channel home resolved to a different path');
   let current = root;
   for (const segment of ARTIFACT_SEGMENTS) {
     const next = path.join(current, segment);
@@ -362,6 +384,7 @@ async function resolveChannelDirectory(root, { create }) {
     if (info === null) {
       if (!create) return null;
       await assertRealDirectory(current, 'the artifact directory must stay inside the channel home');
+      if (await realpathOr(current) !== current) throw new Error('the artifact directory must stay inside the channel home');
       await fs.mkdir(next, { mode: 0o700 });
       current = next;
       continue;
@@ -394,8 +417,15 @@ async function assertRealDirectory(target, message) {
  * alias, or a report symlink that points at the artifact must all be refused.
  */
 export async function assertReportOutsideEvidence(reportFile, artifactTarget) {
-  const report = await realpathOr(path.resolve(reportFile));
+  const reportPath = path.resolve(reportFile);
   const artifact = await realpathOr(artifactTarget.outFile);
+  const entry = await fs.lstat(reportPath).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
+  // A dangling report symlink has no resolved path yet, and writeFile would
+  // follow it only after this check passed: resolve the link itself so its
+  // destination is still compared against the boundary.
+  const report = entry !== null && entry.isSymbolicLink()
+    ? await realpathOr(path.resolve(path.dirname(reportPath), await fs.readlink(reportPath)))
+    : await realpathOr(reportPath);
   if (artifactTarget.channel === null) {
     if (report === artifact) throw new Error('the report must not be written over the task evidence');
     return;
@@ -638,12 +668,18 @@ export async function produceTaskBenefit(options = {}) {
   const model = typeof options.model === 'string' && options.model ? options.model : TASK_BENEFIT_MODEL;
   // The target decides the artifact identity, so it is resolved (and the
   // isolated storage roots are pinned) before the Desktop binary is even read.
-  const artifactTarget = await resolveArtifactTarget({
-    home,
-    taskId,
-    channelHome: options.channelHome,
-    outFile: options.outFile,
-  });
+  // A caller may share one resolved target with the producer, so the evidence
+  // delivery and any other check of the same run agree on the channel even when
+  // an alias is re-pointed between their resolutions.
+  const artifactTarget = await assertResolvedArtifactTarget(
+    options.artifactTarget ?? await resolveArtifactTarget({
+      home,
+      taskId,
+      channelHome: options.channelHome,
+      outFile: options.outFile,
+    }),
+    { home, taskId },
+  );
   await assertIsolatedStorageRoots(home);
   await inspectArtifactTarget(artifactTarget);
   const outFile = artifactTarget.outFile;
@@ -783,8 +819,9 @@ if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
     candidateHost,
     runs: Number(argument('--runs', argv) ?? TASK_BENEFIT_RUNS.min),
     model: argument('--model', argv) ?? TASK_BENEFIT_MODEL,
-    outFile,
-    channelHome,
+    // The report preflight, the evidence delivery and the report re-check share
+    // this one resolved target.
+    ...(artifactTarget === null ? { outFile, channelHome } : { artifactTarget }),
     log: (line) => console.log(line),
   });
   if (reportFile) {
