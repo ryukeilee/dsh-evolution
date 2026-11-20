@@ -17,6 +17,7 @@ import {
   assertIsolatedHome,
   assertIsolatedStorageRoots,
   assertIsolatedTarget,
+  assertReportOutsideEvidence,
   buildTaskBenefitArtifact,
   extractSessionEvidence,
   inspectArtifactTarget,
@@ -324,6 +325,61 @@ test('a channel swapped after the preflight is re-validated before the artifact 
   }
 });
 
+test('a channel root replaced after the preflight is refused before anything is created outside it', async () => {
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-root-home-')));
+  const channel = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-root-channel-')));
+  const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-root-outside-')));
+  try {
+    const target = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: channel });
+    await inspectArtifactTarget(target);
+    // The canonical channel root itself can be swapped while the sessions run.
+    await fs.rm(channel, { recursive: true, force: true });
+    await fs.symlink(outside, channel);
+    await assert.rejects(prepareArtifactDirectory(target), /channel home must be a directory/);
+    assert.deepEqual(await fs.readdir(outside), []);
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(channel, { recursive: true, force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
+test('the operator report is compared after resolving every alias of the target', async () => {
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-report-home-')));
+  const channel = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-report-channel-')));
+  const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-report-outside-')));
+  try {
+    const target = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: channel });
+    const alias = path.join(outside, 'channel-alias');
+    await fs.symlink(channel, alias);
+    // Any write inside the channel is a second write into the profile that reads
+    // the evidence, whatever spelling or symlink the operator used.
+    for (const reportPath of [
+      target.outFile,
+      path.join(channel, 'report.json'),
+      path.join(alias, 'storages', 'evolution', 'desktop-tasks', 'task-evidence', 'desktop-task-proof.json'),
+    ]) {
+      await assert.rejects(assertReportOutsideEvidence(reportPath, target), /must stay outside the channel home/);
+    }
+    // A report symlink that points at the artifact is refused once the target exists.
+    await fs.mkdir(path.dirname(target.outFile), { recursive: true });
+    await fs.writeFile(target.outFile, '{}');
+    const link = path.join(outside, 'report-link.json');
+    await fs.symlink(target.outFile, link);
+    await assert.rejects(assertReportOutsideEvidence(link, target), /must stay outside the channel home/);
+    await assertReportOutsideEvidence(path.join(outside, 'report.json'), target);
+
+    // The isolated mode only refuses the artifact itself.
+    const isolated = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof' });
+    await assert.rejects(assertReportOutsideEvidence(isolated.outFile, isolated), /must not be written over the task evidence/);
+    await assertReportOutsideEvidence(path.join(outside, 'ok.json'), isolated);
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(channel, { recursive: true, force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
 test('the isolated storage roots are pinned to the isolated home before any session', async () => {
   const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-storage-home-')));
   const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-storage-outside-')));
@@ -354,12 +410,16 @@ test('the command line refuses a valueless --channel-home and a report over the 
     const evidence = path.join(channel, 'storages', 'evolution', 'desktop-tasks', 'task-evidence', 'desktop-task-proof.json');
     const overwrite = spawnSync(process.execPath, [...base, '--channel-home', channel, '--task-id', 'desktop-task-proof', '--report', evidence], { encoding: 'utf8' });
     assert.notEqual(overwrite.status, 0);
-    assert.match(overwrite.stderr, /must not be written over the task evidence/);
+    assert.match(overwrite.stderr, /must stay outside the channel home/);
     assert.equal(existsSync(evidence), false);
     const beside = spawnSync(process.execPath, [...base, '--channel-home', channel, '--task-id', 'desktop-task-proof', '--report', path.join(path.dirname(evidence), 'report.json')], { encoding: 'utf8' });
     assert.notEqual(beside.status, 0);
-    assert.match(beside.stderr, /must not be written over the task evidence/);
+    assert.match(beside.stderr, /must stay outside the channel home/);
     assert.equal(existsSync(path.join(path.dirname(evidence), 'report.json')), false);
+    const atRoot = spawnSync(process.execPath, [...base, '--channel-home', channel, '--task-id', 'desktop-task-proof', '--report', path.join(channel, 'report.json')], { encoding: 'utf8' });
+    assert.notEqual(atRoot.status, 0);
+    assert.match(atRoot.stderr, /must stay outside the channel home/);
+    assert.equal(existsSync(path.join(channel, 'report.json')), false);
   } finally {
     await fs.rm(home, { recursive: true, force: true });
     await fs.rm(channel, { recursive: true, force: true });

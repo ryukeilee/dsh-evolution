@@ -351,12 +351,17 @@ export async function resolveArtifactTarget({ home, taskId, channelHome, outFile
  * a component is still missing.
  */
 async function resolveChannelDirectory(root, { create }) {
+  // The channel root was canonical when the target was resolved, but it can be
+  // swapped while the sessions run. A symlinked root must be refused before any
+  // mkdir, otherwise the first missing component is created through the link.
+  await assertRealDirectory(root, 'the channel home must be a directory');
   let current = root;
   for (const segment of ARTIFACT_SEGMENTS) {
     const next = path.join(current, segment);
     const info = await fs.lstat(next).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
     if (info === null) {
       if (!create) return null;
+      await assertRealDirectory(current, 'the artifact directory must stay inside the channel home');
       await fs.mkdir(next, { mode: 0o700 });
       current = next;
       continue;
@@ -375,6 +380,32 @@ async function resolveChannelDirectory(root, { create }) {
     current = next;
   }
   return current;
+}
+
+/** `lstat` a real directory (a symlink is not one) or throw the given message. */
+async function assertRealDirectory(target, message) {
+  const info = await fs.lstat(target).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
+  if (info === null || info.isDirectory() !== true) throw new Error(message);
+}
+
+/**
+ * The report is operator output, never evidence. Compare the resolved paths, not
+ * their spelling: a supported alias of the channel root, a parent-directory
+ * alias, or a report symlink that points at the artifact must all be refused.
+ */
+export async function assertReportOutsideEvidence(reportFile, artifactTarget) {
+  const report = await realpathOr(path.resolve(reportFile));
+  const artifact = await realpathOr(artifactTarget.outFile);
+  if (artifactTarget.channel === null) {
+    if (report === artifact) throw new Error('the report must not be written over the task evidence');
+    return;
+  }
+  const channel = await realpathOr(artifactTarget.channel);
+  // The whole channel root belongs to the profile that reads the evidence: a
+  // report anywhere inside it would be a second write into that profile.
+  if (report === channel || report.startsWith(`${channel}${path.sep}`)) {
+    throw new Error('the report must stay outside the channel home');
+  }
 }
 
 /**
@@ -733,21 +764,15 @@ if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
   const reportFile = option('--report');
   // The report is operator output, not evidence: it must never overwrite the
   // artifact the Desktop host reads for this task.
+  let artifactTarget = null;
   if (reportFile !== undefined) {
-    const artifactTarget = await resolveArtifactTarget({
+    artifactTarget = await resolveArtifactTarget({
       home: assertIsolatedHome(home),
       taskId,
       channelHome,
       outFile,
     });
-    const reportPath = path.resolve(reportFile);
-    const evidenceDirectory = path.dirname(artifactTarget.outFile);
-    // In a designated channel the evidence directory belongs to the profile
-    // that reads it: the operator report stays outside that directory.
-    if (reportPath === artifactTarget.outFile
-      || (artifactTarget.channel !== null && (reportPath === evidenceDirectory || reportPath.startsWith(`${evidenceDirectory}${path.sep}`)))) {
-      throw new Error('the report must not be written over the task evidence');
-    }
+    await assertReportOutsideEvidence(reportFile, artifactTarget);
   }
   const task = JSON.parse(await fs.readFile(taskFile, 'utf8'));
   const candidateHost = await fs.readFile(hostFile, 'utf8');
@@ -762,6 +787,11 @@ if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
     channelHome,
     log: (line) => console.log(line),
   });
-  if (reportFile) await fs.writeFile(path.resolve(reportFile), `${JSON.stringify(result.report, null, 2)}\n`, { mode: 0o600 });
+  if (reportFile) {
+    // Re-check after the long run: the paths may have been re-pointed while the
+    // sessions ran, and the report must not overwrite the delivered evidence.
+    await assertReportOutsideEvidence(reportFile, artifactTarget);
+    await fs.writeFile(path.resolve(reportFile), `${JSON.stringify(result.report, null, 2)}\n`, { mode: 0o600 });
+  }
   console.log(JSON.stringify({ ok: result.ok, artifact: result.artifactFile, baseline: result.artifact.baseline, candidate: result.artifact.candidate }, null, 2));
 }
