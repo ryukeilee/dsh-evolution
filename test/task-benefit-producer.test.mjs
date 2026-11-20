@@ -444,12 +444,31 @@ test('the operator report is compared after resolving every alias of the target'
     await fs.symlink(path.join('..', '..', 'inside', 'report.json'), path.join(deep, 'report.json'));
     await assert.rejects(assertReportOutsideEvidence(path.join(outside, 'alias', 'report.json'), target), /must stay outside the channel home/);
     assert.equal(existsSync(path.join(channel, 'storages', 'report.json')), false);
+
+    // \`hop/..\` must follow \`hop\` before applying \`..\`: lexical folding names a file
+    // outside the channel while the filesystem names one inside it.
+    const hop = path.join(outside, 'hop');
+    await fs.symlink(path.join(channel, 'storages'), hop);
+    const hopReport = path.join(outside, 'hop-report.json');
+    // Kept as a literal: path.join would collapse \`hop/..\` before the link exists.
+    await fs.symlink('hop/../report.json', hopReport);
+    await assert.rejects(assertReportOutsideEvidence(hopReport, target), /must stay outside the channel home/);
+    assert.equal(existsSync(path.join(channel, 'report.json')), false);
     await assertReportOutsideEvidence(path.join(outside, 'report.json'), target);
 
     // The isolated mode only refuses the artifact itself.
     const isolated = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof' });
     await assert.rejects(assertReportOutsideEvidence(isolated.outFile, isolated), /must not be written over the task evidence/);
     await assertReportOutsideEvidence(path.join(outside, 'ok.json'), isolated);
+    // On a case-insensitive filesystem a case variant is the same file: it must
+    // be refused by identity, not by spelling.
+    await fs.mkdir(path.dirname(isolated.outFile), { recursive: true });
+    await fs.writeFile(isolated.outFile, '{}');
+    const upper = isolated.outFile.replace(/desktop-task-proof\.json$/, 'DESKTOP-TASK-PROOF.json');
+    const caseInsensitive = await fs.stat(upper).then(() => true).catch(() => false);
+    if (caseInsensitive) {
+      await assert.rejects(assertReportOutsideEvidence(upper, isolated), /must not be written over the task evidence/);
+    }
   } finally {
     await fs.rm(home, { recursive: true, force: true });
     await fs.rm(channel, { recursive: true, force: true });

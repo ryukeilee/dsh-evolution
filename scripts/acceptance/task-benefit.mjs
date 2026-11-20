@@ -417,30 +417,58 @@ async function assertRealDirectory(target, message) {
 }
 
 /**
- * The report is operator output, never evidence. Compare the resolved paths, not
- * their spelling: a supported alias of the channel root, a parent-directory
- * alias, or a report symlink that points at the artifact must all be refused.
+ * Resolve a path the way the filesystem does: each component is appended to the
+ * already-resolved prefix, so a symlinked component is followed before any later
+ * `..` is applied. Lexical folding (`path.resolve`) would instead collapse
+ * `hop/..` before following `hop`, and the two spellings can name different
+ * files. Missing components have nothing below them, so their remaining parts are
+ * appended literally.
  */
-async function resolveReportDestination(targetPath, depth = 0) {
-  if (depth > 16) throw new Error('the report path follows too many symbolic links');
-  const resolved = path.resolve(targetPath);
-  // A relative symlink resolves from the directory that really contains the
-  // link, which is not always the directory its spelled path names.
-  const directory = await realpathOr(path.dirname(resolved));
-  const candidate = path.join(directory, path.basename(resolved));
-  const info = await fs.lstat(candidate).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
-  if (info === null || info.isSymbolicLink() !== true) return candidate;
-  const link = await fs.readlink(candidate);
-  // Follow the whole chain: a dangling link still has a destination that
-  // writeFile would create after this check passed.
-  return resolveReportDestination(path.resolve(directory, link), depth + 1);
+async function resolveFilesystemPath(targetPath, depth = 0) {
+  if (depth > 32) throw new Error('the report path follows too many symbolic links');
+  const absolute = path.isAbsolute(targetPath) ? targetPath : path.resolve(targetPath);
+  const root = path.parse(absolute).root;
+  const parts = absolute.slice(root.length).split(path.sep).filter((part) => part !== '' && part !== '.');
+  let resolved = root;
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index];
+    if (part === '..') {
+      // The prefix is already resolved, so its parent is the filesystem parent.
+      resolved = path.dirname(resolved);
+      continue;
+    }
+    const next = path.join(resolved, part);
+    const info = await fs.lstat(next).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
+    if (info === null) return path.join(next, ...parts.slice(index + 1));
+    if (info.isSymbolicLink()) {
+      const link = await fs.readlink(next);
+      const remainder = parts.slice(index + 1).join(path.sep);
+      const joined = path.isAbsolute(link) ? link : `${resolved}${path.sep}${link}`;
+      return resolveFilesystemPath(remainder === '' ? joined : `${joined}${path.sep}${remainder}`, depth + 1);
+    }
+    resolved = next;
+  }
+  return resolved;
 }
 
+/**
+ * The report is operator output, never evidence. Compare where a write would
+ * actually land, not the spelled path: aliases and symlinks are resolved, and an
+ * existing target is compared by identity so a case-variant spelling on a
+ * case-insensitive filesystem cannot overwrite the artifact either.
+ */
 export async function assertReportOutsideEvidence(reportFile, artifactTarget) {
-  const artifact = await realpathOr(artifactTarget.outFile);
-  const report = await resolveReportDestination(reportFile);
+  const artifact = await resolveFilesystemPath(artifactTarget.outFile);
+  const report = await resolveFilesystemPath(reportFile);
+  const sameFile = async () => {
+    const [left, right] = await Promise.all([
+      fs.stat(report).catch(() => null),
+      fs.stat(artifact).catch(() => null),
+    ]);
+    return left !== null && right !== null && left.dev === right.dev && left.ino === right.ino;
+  };
   if (artifactTarget.channel === null) {
-    if (report === artifact) throw new Error('the report must not be written over the task evidence');
+    if (report === artifact || await sameFile()) throw new Error('the report must not be written over the task evidence');
     return;
   }
   const channel = await realpathOr(artifactTarget.channel);
