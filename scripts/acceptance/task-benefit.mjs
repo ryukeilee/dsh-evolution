@@ -24,8 +24,11 @@
  * must be random per run; the acceptance runner generates them.
  *
  * Deliberate limits:
- *   - it never touches the formal DSH_HOME; the caller supplies an isolated home
- *     under the temporary directory;
+ *   - it never runs paired sessions against the formal DSH_HOME; the caller
+ *     supplies an isolated home under the temporary directory. An operator may
+ *     designate the channel root of the profile that will read the evidence
+ *     (`channelHome`), and only that final artifact write leaves the isolated
+ *     home;
  *   - it disables the promoted consumer so the only capability difference is the
  *     preview candidate (the fresh-consumer proof is a separate acceptance);
  *   - a failed model turn or an unreadable reply makes the run incomplete, never
@@ -310,6 +313,291 @@ export async function assertIsolatedTarget(target, root, label) {
   return canonical;
 }
 
+const ARTIFACT_SEGMENTS = Object.freeze(['storages', 'evolution', 'desktop-tasks', 'task-evidence']);
+
+/**
+ * Resolve where the artifact is written.
+ *
+ * The acceptance path keeps the artifact inside the verified isolated home. An
+ * operator may instead designate the channel root of the profile that will read
+ * the evidence (`channelHome`): the paired sessions still run against the
+ * isolated home, and only the final artifact write crosses into that channel.
+ * The kernel validates structure and binding, never provenance, so this opt-in
+ * is the operator's own statement that the run is the one it claims to be.
+ */
+export async function resolveArtifactTarget({ home, taskId, channelHome, outFile } = {}) {
+  if (typeof taskId !== 'string' || !TASK_ID.test(taskId)) throw new Error('taskId must match the Desktop task identity rule');
+  const defaultParent = path.join(home, ...ARTIFACT_SEGMENTS);
+  if (channelHome === undefined || channelHome === null) {
+    const target = path.resolve(outFile ?? path.join(defaultParent, `${taskId}.json`));
+    const parent = await assertIsolatedTarget(path.dirname(target), home, 'artifact directory');
+    return { taskId, outFile: path.join(parent, path.basename(target)), channel: null };
+  }
+  if (typeof channelHome !== 'string' || !path.isAbsolute(channelHome)) throw new Error('channelHome must be an absolute channel root');
+  if (outFile !== undefined && outFile !== null) throw new Error('a channel home and an explicit artifact file are two different artifact authorities');
+  // Resolve the operator's spelling with the filesystem, not lexically: `hop/..`
+  // must follow `hop` before applying `..`, or the evidence would be delivered to
+  // whatever directory the folded spelling names.
+  const root = await fs.realpath(channelHome).catch((error) => {
+    if (error.code === 'ENOENT') throw new Error('the channel home must be an existing directory');
+    throw error;
+  });
+  const info = await fs.stat(root).catch(() => null);
+  if (info === null || info.isDirectory() !== true) throw new Error('the channel home must be an existing directory');
+  if (root === home || root.startsWith(`${home}${path.sep}`)) throw new Error('the channel home must not be the isolated home');
+  return { taskId, outFile: path.join(root, ...ARTIFACT_SEGMENTS, `${taskId}.json`), channel: root };
+}
+
+/**
+ * A target may be resolved once by the caller and shared with the producer, so
+ * the evidence delivery and the operator-report checks cannot disagree about
+ * which channel they mean. The shared target is re-verified against its inputs.
+ */
+export async function assertResolvedArtifactTarget(target, { home, taskId } = {}) {
+  if (!target || typeof target !== 'object' || Array.isArray(target)) throw new Error('the artifact target must be a resolved target');
+  if (target.taskId !== taskId) throw new Error('the artifact target belongs to a different task id');
+  if (target.channel === null) {
+    await assertIsolatedTarget(path.dirname(target.outFile), home, 'artifact directory');
+    return target;
+  }
+  if (typeof target.channel !== 'string' || !path.isAbsolute(target.channel)) throw new Error('the artifact target channel must be an absolute path');
+  // A shared target must still satisfy the separation rule: a channel inside the
+  // isolated home would let the sessions write into the channel they deliver to.
+  if (target.channel === home || target.channel.startsWith(`${home}${path.sep}`)) {
+    throw new Error('the channel home must not be the isolated home');
+  }
+  if (typeof target.outFile !== 'string' || path.basename(target.outFile) !== `${taskId}.json`) throw new Error('the artifact target does not name this task');
+  if (target.outFile !== path.join(target.channel, ...ARTIFACT_SEGMENTS, `${taskId}.json`)) throw new Error('the artifact target does not match its channel');
+  if (await realpathOr(target.channel) !== target.channel) throw new Error('the artifact target channel is not a canonical path');
+  return target;
+}
+
+/**
+ * Walk the artifact path under a designated channel root one component at a
+ * time. A recursive mkdir would follow a swapped symlink and create directories
+ * outside the channel before the escape is noticed, so existing components are
+ * inspected first and only then are missing components created from the root
+ * downwards. Returns the verified directory, or null when `create` is false and
+ * a component is still missing.
+ */
+async function resolveChannelDirectory(root, { create }) {
+  // The channel root was canonical when the target was resolved, but it can be
+  // swapped while the sessions run. A symlinked root must be refused before any
+  // mkdir, otherwise the first missing component is created through the link.
+  await assertRealDirectory(root, 'the channel home must be a directory');
+  // A symlinked *parent* of the root keeps lstat(root) looking like a directory
+  // while the path now names another tree: require the canonical path to hold.
+  if (await realpathOr(root) !== root) throw new Error('the channel home resolved to a different path');
+  let current = root;
+  for (const segment of ARTIFACT_SEGMENTS) {
+    const next = path.join(current, segment);
+    const info = await fs.lstat(next).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
+    if (info === null) {
+      if (!create) return null;
+      await assertRealDirectory(current, 'the artifact directory must stay inside the channel home');
+      if (await realpathOr(current) !== current) throw new Error('the artifact directory must stay inside the channel home');
+      await fs.mkdir(next, { mode: 0o700 });
+      current = next;
+      continue;
+    }
+    if (info.isSymbolicLink()) {
+      // A component may be an operator-managed symlink only while it stays in
+      // the channel it was given; the artifact never leaves that channel.
+      const resolved = await fs.realpath(next);
+      if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
+        throw new Error('the artifact directory must stay inside the channel home');
+      }
+      current = resolved;
+      continue;
+    }
+    if (info.isDirectory() !== true) throw new Error('the artifact path under the channel home must be a directory');
+    current = next;
+  }
+  return current;
+}
+
+/** `lstat` a real directory (a symlink is not one) or throw the given message. */
+async function assertRealDirectory(target, message) {
+  const info = await fs.lstat(target).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
+  if (info === null || info.isDirectory() !== true) throw new Error(message);
+}
+
+/**
+ * Resolve a path the way the filesystem does: each component is appended to the
+ * already-resolved prefix, so a symlinked component is followed before any later
+ * `..` is applied. Lexical folding (`path.resolve`) would instead collapse
+ * `hop/..` before following `hop`, and the two spellings can name different
+ * files. Missing components have nothing below them, so their remaining parts are
+ * appended literally.
+ */
+export async function resolveFilesystemPath(targetPath, depth = 0) {
+  if (depth > 32) throw new Error('the report path follows too many symbolic links');
+  // A relative path is joined to the working directory as raw text: resolving it
+  // lexically would collapse `hop/..` before `hop` was ever followed.
+  const absolute = path.isAbsolute(targetPath) ? targetPath : `${process.cwd()}${path.sep}${targetPath}`;
+  const root = path.parse(absolute).root;
+  const parts = absolute.slice(root.length).split(path.sep).filter((part) => part !== '' && part !== '.');
+  // `a/.\` and a trailing separator ask for a directory; dropping them silently
+  // would let a path the filesystem rejects name a file instead.
+  const wantsDirectory = absolute.endsWith(path.sep) || path.basename(absolute) === '.';
+  let resolved = root;
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index];
+    if (part === '..') {
+      // The prefix is already resolved, so its parent is the filesystem parent.
+      resolved = path.dirname(resolved);
+      continue;
+    }
+    const next = path.join(resolved, part);
+    const info = await fs.lstat(next).catch((error) => (error.code === 'ENOENT' ? null : Promise.reject(error)));
+    if (info === null) {
+      // Nothing exists below a missing component, and the filesystem would fail
+      // the whole path for a later `..`: refuse instead of folding the path into
+      // one that does resolve.
+      const remainder = parts.slice(index + 1);
+      if (remainder.includes('..')) throw new Error('the report path has a parent reference below a missing directory');
+      return path.join(next, ...remainder);
+    }
+    if (info.isSymbolicLink()) {
+      const link = await fs.readlink(next);
+      const remainder = parts.slice(index + 1).join(path.sep);
+      const joined = path.isAbsolute(link) ? link : `${resolved}${path.sep}${link}`;
+      return resolveFilesystemPath(remainder === '' ? joined : `${joined}${path.sep}${remainder}`, depth + 1);
+    }
+    if (info.isDirectory() !== true && index < parts.length - 1) {
+      // A non-directory cannot be traversed: the filesystem fails the whole path
+      // (ENOTDIR), and folding `file/..` would name another file.
+      throw new Error('the report path passes through a non-directory');
+    }
+    resolved = next;
+  }
+  if (wantsDirectory) {
+    const info = await fs.lstat(resolved).catch(() => null);
+    if (info === null || info.isDirectory() !== true) throw new Error('the report path must name a directory');
+  }
+  return resolved;
+}
+
+/**
+ * The report is operator output, never evidence. Compare where a write would
+ * actually land, not the spelled path: aliases and symlinks are resolved, and an
+ * existing target is compared by identity so a case-variant spelling on a
+ * case-insensitive filesystem cannot overwrite the artifact either.
+ */
+export async function assertReportOutsideEvidence(reportFile, artifactTarget) {
+  const artifact = await resolveFilesystemPath(artifactTarget.outFile);
+  const report = await resolveFilesystemPath(reportFile);
+  const sameFile = async () => {
+    const [left, right] = await Promise.all([
+      fs.stat(report).catch(() => null),
+      fs.stat(artifact).catch(() => null),
+    ]);
+    return left !== null && right !== null && left.dev === right.dev && left.ino === right.ino;
+  };
+  if (report === artifact || await sameFile()) throw new Error('the report must not be written over the task evidence');
+  if (artifactTarget.channel === null) return report;
+  const channel = await realpathOr(artifactTarget.channel);
+  // The whole channel root belongs to the profile that reads the evidence: a
+  // report anywhere inside it would be a second write into that profile. The
+  // directory identity check also covers a case-variant spelling of an existing
+  // channel directory on a case-insensitive filesystem.
+  if (report === channel || report.startsWith(`${channel}${path.sep}`) || await isUnderIdentity(report, channel)) {
+    throw new Error('the report must stay outside the channel home');
+  }
+  return report;
+}
+
+async function directoryIdentity(target) {
+  const info = await fs.stat(target).catch(() => null);
+  return info === null ? null : `${info.dev}:${info.ino}`;
+}
+
+/** Walk the existing ancestors of `candidatePath` and compare their identity. */
+async function isUnderIdentity(candidatePath, directoryPath) {
+  const wanted = await directoryIdentity(directoryPath);
+  if (wanted === null) return false;
+  let current = path.dirname(candidatePath);
+  for (;;) {
+    if (await directoryIdentity(current) === wanted) return true;
+    const parent = path.dirname(current);
+    if (parent === current) return false;
+    current = parent;
+  }
+}
+
+/**
+ * Write the operator report to the exact path the boundary check approved. Using
+ * one value for the decision and the write keeps a lexical spelling such as
+ * `hop/../<taskId>.json` from being collapsed into the evidence after the check.
+ */
+export async function writeReportFile(reportFile, artifactTarget, report) {
+  const destination = await assertReportOutsideEvidence(reportFile, artifactTarget);
+  await fs.writeFile(destination, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
+  return destination;
+}
+
+/**
+ * Read-only preflight, run before any session starts: refuse a target that can
+ * never be published into (a channel component that leaves the channel, or a
+ * non-directory component) without creating anything outside it first.
+ */
+export async function inspectArtifactTarget(target) {
+  if (target.channel !== null) {
+    await resolveChannelDirectory(target.channel, { create: false });
+    return;
+  }
+  const parent = path.dirname(target.outFile);
+  const resolved = await realpathOr(parent);
+  if (resolved !== parent) throw new Error('the artifact directory resolved to a different path');
+}
+
+/**
+ * Publish-time preparation: re-validate the target after the long run, create
+ * only the directories that are missing under the already-verified root, and
+ * return the directory the artifact is written into.
+ */
+export async function prepareArtifactDirectory(target) {
+  if (target.channel === null) {
+    const parent = path.dirname(target.outFile);
+    await fs.mkdir(parent, { recursive: true, mode: 0o700 });
+    const resolved = await fs.realpath(parent);
+    // The isolated path keeps the historical strict check: no component may
+    // redirect the artifact outside the verified home.
+    if (resolved !== parent) throw new Error('the artifact directory resolved to a different path after creation');
+    return parent;
+  }
+  const directory = await resolveChannelDirectory(target.channel, { create: true });
+  const resolved = await fs.realpath(directory);
+  if (resolved !== target.channel && !resolved.startsWith(`${target.channel}${path.sep}`)) {
+    throw new Error('the artifact directory must stay inside the channel home');
+  }
+  return directory;
+}
+
+/**
+ * The paired sessions write their own state under the isolated home. A storage
+ * component that redirects outside it would leak session data into the channel
+ * this run is about to deliver evidence to, so the storage roots are pinned to
+ * the verified home in both output modes, before any session starts.
+ */
+export async function assertIsolatedStorageRoots(home) {
+  for (const relative of [['storages'], ['storages', 'evolution'], ['storages', 'evolution-experience']]) {
+    await assertIsolatedTarget(path.join(home, ...relative), home, `isolated ${relative.join('/')}`);
+  }
+}
+
+/** Write the artifact atomically; `0600`, and a failed rename leaves no temporary file. */
+export async function writeArtifactFile(outFile, artifact) {
+  const temporary = `${outFile}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+  await fs.writeFile(temporary, `${JSON.stringify(artifact, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
+  try {
+    await fs.rename(temporary, outFile);
+  } catch (error) {
+    await fs.rm(temporary, { force: true }).catch(() => {});
+    throw error;
+  }
+}
+
 /** Resolve the versions of the Desktop packages that will run the Trial. */
 export function readDesktopVersions(binary) {
   const resources = path.join(path.dirname(path.dirname(binary)), 'Resources');
@@ -467,7 +755,6 @@ export async function produceTaskBenefit(options = {}) {
   const work = await assertIsolatedTarget(options.work ?? path.join(home, 'task-benefit-work'), home, 'work directory');
   const task = normalizeTask(options.task);
   const taskId = options.taskId;
-  if (typeof taskId !== 'string' || !TASK_ID.test(taskId)) throw new Error('taskId must match the Desktop task identity rule');
   const candidateHost = options.candidateHost;
   if (typeof candidateHost !== 'string' || candidateHost.trim() === '') throw new Error('candidateHost must be the exact Host body');
   const improvement = options.improvement ?? 'context-policy';
@@ -477,13 +764,27 @@ export async function produceTaskBenefit(options = {}) {
   const runs = Number.isInteger(options.runs) ? options.runs : TASK_BENEFIT_RUNS.min;
   if (runs < TASK_BENEFIT_RUNS.min || runs > TASK_BENEFIT_RUNS.max) throw new Error(`runs must be ${TASK_BENEFIT_RUNS.min}-${TASK_BENEFIT_RUNS.max}`);
   const model = typeof options.model === 'string' && options.model ? options.model : TASK_BENEFIT_MODEL;
+  // The target decides the artifact identity, so it is resolved (and the
+  // isolated storage roots are pinned) before the Desktop binary is even read.
+  // A caller may share one resolved target with the producer, so the evidence
+  // delivery and any other check of the same run agree on the channel even when
+  // an alias is re-pointed between their resolutions.
+  const artifactTarget = await assertResolvedArtifactTarget(
+    options.artifactTarget ?? await resolveArtifactTarget({
+      home,
+      taskId,
+      channelHome: options.channelHome,
+      outFile: options.outFile,
+    }),
+    { home, taskId },
+  );
+  await assertIsolatedStorageRoots(home);
+  await inspectArtifactTarget(artifactTarget);
+  const outFile = artifactTarget.outFile;
   const host = options.host ?? readDesktopVersions(options.binary ?? '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness');
   const cli = options.cli ?? '/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh';
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('DSH_')));
   delete env.ELECTRON_RUN_AS_NODE;
-  const outFileTarget = path.resolve(options.outFile ?? path.join(home, 'storages', 'evolution', 'desktop-tasks', 'task-evidence', `${taskId}.json`));
-  const outParent = await assertIsolatedTarget(path.dirname(outFileTarget), home, 'artifact directory');
-  const outFile = path.join(outParent, path.basename(outFileTarget));
   await fs.mkdir(work, { recursive: true });
   if (await fs.realpath(work) !== work) throw new Error('the work directory resolved to a different path after creation');
   // A fresh run directory under the verified work root: pre-existing
@@ -491,8 +792,7 @@ export async function produceTaskBenefit(options = {}) {
   const runWork = await fs.mkdtemp(path.join(work, 'run-'));
   if (await fs.realpath(runWork) !== runWork) throw new Error('the fresh run directory resolved to a different path');
   await fs.mkdir(path.join(runWork, 'bridge-cwd'), { recursive: true });
-  await fs.mkdir(outParent, { recursive: true, mode: 0o700 });
-  if (await fs.realpath(outParent) !== outParent) throw new Error('the artifact directory resolved to a different path after creation');
+  await inspectArtifactTarget(artifactTarget);
 
   const previewUrl = pathToFileURL(path.join(runWork, 'preview-policy.mjs')).href;
   await writePreviewModule(path.join(runWork, 'preview-policy.mjs'), candidateHost);
@@ -539,14 +839,10 @@ export async function produceTaskBenefit(options = {}) {
       : { sessionsUsingCandidate: 0, sessionsExercised: sessions.candidate.filter((row) => row.exercised).length },
   });
   if (!complete) artifact.complete = false;
-  const temporary = `${outFile}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
-  await fs.writeFile(temporary, `${JSON.stringify(artifact, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
-  try {
-    await fs.rename(temporary, outFile);
-  } catch (error) {
-    await fs.rm(temporary, { force: true }).catch(() => {});
-    throw error;
-  }
+  // Re-validate after the long run and write through the directory the
+  // publish-time check proved: the target may have changed while sessions ran.
+  const artifactDirectory = await prepareArtifactDirectory(artifactTarget);
+  await writeArtifactFile(path.join(artifactDirectory, path.basename(outFile)), artifact);
   const report = {
     kind: 'dsh-evolution-task-benefit-run',
     ok: complete,
@@ -585,21 +881,52 @@ if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
   const taskFile = argument('--task', argv);
   const hostFile = argument('--candidate-host', argv);
   if (!home || !taskFile || !hostFile) {
-    throw new Error('usage: task-benefit.mjs --home <isolated-dsh-home> --task <task.json> --candidate-host <host.js> [--task-id <id>] [--runs 3-5] [--out <artifact.json>] [--report <report.json>]');
+    throw new Error('usage: task-benefit.mjs --home <isolated-dsh-home> --task <task.json> --candidate-host <host.js> [--task-id <id>] [--runs 3-5] [--out <artifact.json>] [--report <report.json>] [--channel-home <dsh-home-that-reads-the-evidence>]');
+  }
+  // An option that is present but has no value must not silently fall back to
+  // the default: `--channel-home` at the end of the command would otherwise run
+  // the paired sessions and deliver nothing.
+  const option = (name) => {
+    if (!argv.includes(name)) return undefined;
+    const value = argument(name, argv);
+    if (value === null || value.startsWith('--')) throw new Error(`${name} needs a value`);
+    return value;
+  };
+  const channelHome = option('--channel-home');
+  const taskId = option('--task-id') ?? `producer-${Date.now().toString(36)}`;
+  const outFile = option('--out');
+  const reportFile = option('--report');
+  // The report is operator output, not evidence: it must never overwrite the
+  // artifact the Desktop host reads for this task.
+  let artifactTarget = null;
+  if (reportFile !== undefined) {
+    artifactTarget = await resolveArtifactTarget({
+      home: assertIsolatedHome(home),
+      taskId,
+      channelHome,
+      outFile,
+    });
+    await assertReportOutsideEvidence(reportFile, artifactTarget);
   }
   const task = JSON.parse(await fs.readFile(taskFile, 'utf8'));
   const candidateHost = await fs.readFile(hostFile, 'utf8');
   const result = await produceTaskBenefit({
     home,
     task,
-    taskId: argument('--task-id', argv) ?? `producer-${Date.now().toString(36)}`,
+    taskId,
     candidateHost,
     runs: Number(argument('--runs', argv) ?? TASK_BENEFIT_RUNS.min),
     model: argument('--model', argv) ?? TASK_BENEFIT_MODEL,
-    outFile: argument('--out', argv) ?? undefined,
+    // The report preflight, the evidence delivery and the report re-check share
+    // this one resolved target.
+    ...(artifactTarget === null ? { outFile, channelHome } : { artifactTarget }),
     log: (line) => console.log(line),
   });
-  const reportFile = argument('--report', argv);
-  if (reportFile) await fs.writeFile(path.resolve(reportFile), `${JSON.stringify(result.report, null, 2)}\n`, { mode: 0o600 });
+  if (reportFile) {
+    // Re-check after the long run: the paths may have been re-pointed while the
+    // sessions ran, and the report must not overwrite the delivered evidence.
+    // The write goes to the exact path that check approved.
+    await writeReportFile(reportFile, artifactTarget, result.report);
+  }
   console.log(JSON.stringify({ ok: result.ok, artifact: result.artifactFile, baseline: result.artifact.baseline, candidate: result.artifact.candidate }, null, 2));
 }
