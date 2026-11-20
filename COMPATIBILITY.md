@@ -38,7 +38,10 @@ and a transport failure is recorded as an error sample with the uniform
 `transportCode`). The shared refusal predicate binds the exact tool name and
 the executor's `ToolNotFoundError` / `UNKNOWN_TOOL` classification when present,
 so an ordinary tool error that quotes the sentence keeps its own path. A pair
-containing a transport failure is insufficient evidence, never a benefit. Both call sites
+containing a transport failure, or a PTC execution cancelled or timed out before
+it measured the tool, is insufficient evidence: it records neither a benefit nor
+a regression/no-benefit conclusion. Program preparation failures (unparsable
+arguments or a missing SDK binding) fail the program as transport failures. Both call sites
 depend on the pinned `dsh-tools` PTC refusal text
 (``only `run_code` is callable directly``) and the `run_code`
 `{ logs, result? }` envelope shape; a host change to either surfaces as a

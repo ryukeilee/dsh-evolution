@@ -143,8 +143,11 @@ function assertWorkloadTransport(comparison, archivedProbe, expected) {
     assert(counts[other] === 0, `the ${group} workload used ${counts[other]} ${other} call(s)`);
   }
   assert(comparison?.workload?.transportFailed !== true, 'the workload comparison records a transport failure');
+  assert(comparison?.workload?.measurementInvalid !== true, 'the workload comparison is invalid (transport/cancel/timeout)');
   assert(comparison?.before?.transportFailed !== true && comparison?.after?.transportFailed !== true,
     'a workload phase summary records a transport failure');
+  assert(comparison?.before?.unmeasured !== true && comparison?.after?.unmeasured !== true,
+    'a workload phase summary records an unmeasured PTC execution');
   const archived = { baseline: null, reference: null, candidate: null };
   const samples = archivedProbe?.samples;
   for (const group of Object.keys(archived)) {

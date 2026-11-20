@@ -126,10 +126,11 @@ async function createHarness(t, name, options = {}) {
   // producer builds and maps a thrown inner call to the program's caught shape.
   const runProgram = (call) => {
     const program = JSON.parse(call.arguments).code;
-    const match = /await tools\[("(?:[^"\\]|\\.)*")\]\(JSON\.parse\(("(?:[^"\\]|\\.)*")\)\)/.exec(program);
-    assert.ok(match, 'the probe wrapper calls the step through the SDK');
-    const name = JSON.parse(match[1]);
-    const args = JSON.parse(JSON.parse(match[2]));
+    const binding = /if \(typeof tools\[("(?:[^"\\]|\\.)*")\] !== "function"\)/.exec(program);
+    const parsed = /const args = JSON\.parse\(("(?:[^"\\]|\\.)*")\);/.exec(program);
+    assert.ok(binding && parsed, 'the probe wrapper prepares the binding and arguments before the tool call');
+    const name = JSON.parse(binding[1]);
+    const args = JSON.parse(JSON.parse(parsed[1]));
     const inner = runStep({ name, arguments: JSON.stringify(args), id: call.id + ':inner' });
     const wrapped = inner.isError === true
       ? { [PTC_WRAPPED_VALUE]: true, ok: false }
@@ -540,6 +541,104 @@ test('a thrown pipeline failure on the PTC route is classified as a transport fa
   assert.ok(baseline.samples.every((row) => row.transportCode === 'EXECUTION_FAILED'));
 });
 
+test('paired workflow: an aborted PTC execution is unmeasured, not a candidate benefit', async (t) => {
+  const h = await createHarness(t, 'workflow-ptc-unmeasured', { ptc: true });
+  const experimentId = await proposeExperiment(h, { benefitModel: { kind: 'workflow' } });
+  const scenario = workflowScenario(5);
+  const original = h.ctx.tools.execute;
+  // The target's run_code execution is aborted before it measures the tool; the
+  // control still measures normally. The abort keeps its own error code but must
+  // not serve as the baseline failure a later candidate success improves on.
+  h.ctx.tools.execute = async (args) => {
+    const call = args.calls[0];
+    if (call.name === 'run_code') {
+      const program = JSON.parse(call.arguments).code;
+      if (program.includes('"probe-target"')) {
+        return { results: [{ callId: call.id, result: { isError: true, error: { message: 'aborted', info: { code: 'ABORTED_BEFORE_DISPATCH' } } } }] };
+      }
+    }
+    return original(args);
+  };
+  const baseline = await runBaseline(h, experimentId, scenario);
+  assert.equal(baseline.baseline.unmeasured, true);
+  assert.equal(baseline.baseline.transportFailed, false);
+  h.ctx.tools.execute = original;
+  await startTrial(h, experimentId);
+  h.state.dynamicActive = true;
+  const candidate = await runCandidate(h, experimentId, scenario);
+  assert.equal(candidate.comparison.benefit, false);
+  assert.equal(candidate.comparison.measurementInvalid, true);
+  assert.equal(candidate.comparison.workload.sufficient, false);
+  assert.equal(candidate.comparison.workload.unmeasured, true);
+  assert.equal(candidate.comparison.regression, false);
+  assert.ok(candidate.comparison.reasons.some((reason) => /not measured/.test(reason)));
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(h.orchestrator.requireOwned(experimentId, h.exec.agent).decision.kind, 'insufficient-evidence');
+  await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
+});
+
+test('a plain probe with a candidate transport failure stays insufficient, not a regression', async (t) => {
+  const h = await createHarness(t, 'plain-ptc-candidate-invalid', { ptc: true });
+  const experimentId = await proposeExperiment(h);
+  const scenario = probeScenario();
+  const baseline = await runBaseline(h, experimentId, scenario);
+  assert.equal(baseline.baseline.transportFailed, false);
+  await startTrial(h, experimentId);
+  // The reference target succeeds and the candidate target's transport fails:
+  // the raw counts would look like a regression, but the pair did not measure
+  // the candidate tool.
+  h.state.targetFails = false;
+  const original = h.ctx.tools.execute;
+  h.ctx.tools.execute = async (args) => {
+    const call = args.calls[0];
+    if (call.name === 'run_code') {
+      const program = JSON.parse(call.arguments).code;
+      if (program.includes('"probe-target"')) {
+        return { results: [{ callId: call.id, result: { isError: false, value: { logs: [], result: { unrelated: true } } } }] };
+      }
+    }
+    return original(args);
+  };
+  const candidate = await runCandidate(h, experimentId, scenario);
+  assert.equal(candidate.comparison.transportFailed, true);
+  assert.equal(candidate.comparison.measurementInvalid, true);
+  assert.equal(candidate.comparison.regression, false);
+  assert.equal(candidate.comparison.benefit, false);
+  h.ctx.tools.execute = original;
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(h.orchestrator.requireOwned(experimentId, h.exec.agent).decision.kind, 'insufficient-evidence');
+  await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
+});
+
+test('a plain probe with a baseline transport failure stays insufficient, not no-benefit', async (t) => {
+  const h = await createHarness(t, 'plain-ptc-baseline-invalid', { ptc: true });
+  const experimentId = await proposeExperiment(h);
+  const scenario = probeScenario();
+  const original = h.ctx.tools.execute;
+  h.ctx.tools.execute = async (args) => {
+    const call = args.calls[0];
+    if (call.name === 'run_code') {
+      const program = JSON.parse(call.arguments).code;
+      if (program.includes('"probe-target"')) {
+        return { results: [{ callId: call.id, result: { isError: false, value: { logs: [], result: { unrelated: true } } } }] };
+      }
+    }
+    return original(args);
+  };
+  await runBaseline(h, experimentId, scenario);
+  h.ctx.tools.execute = original;
+  await startTrial(h, experimentId);
+  // Without the guard the baseline transport failure plus a candidate success
+  // would be a benefit; with it the pair is unmeasured and insufficient.
+  h.state.targetFails = false;
+  const candidate = await runCandidate(h, experimentId, scenario);
+  assert.equal(candidate.comparison.benefit, false);
+  assert.equal(candidate.comparison.measurementInvalid, true);
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(h.orchestrator.requireOwned(experimentId, h.exec.agent).decision.kind, 'insufficient-evidence');
+  await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
+});
+
 test('paired workflow: a PTC transport failure is insufficient evidence, not a candidate benefit', async (t) => {
   const h = await createHarness(t, 'workflow-ptc-transport', { ptc: true });
   const experimentId = await proposeExperiment(h, { benefitModel: { kind: 'workflow' } });
@@ -575,6 +674,8 @@ test('paired workflow: a PTC transport failure is insufficient evidence, not a c
   assert.equal(candidate.comparison.workflowBenefit, false);
   assert.equal(candidate.comparison.workload.sufficient, false);
   assert.equal(candidate.comparison.workload.transportFailed, true);
+  assert.equal(candidate.comparison.measurementInvalid, true);
+  assert.equal(candidate.comparison.regression, false);
   assert.ok(candidate.comparison.reasons.some((reason) => /PTC transport/.test(reason)));
   const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
   assert.equal(measured.gates.eligible, false);
