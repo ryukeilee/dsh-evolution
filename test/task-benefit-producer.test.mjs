@@ -563,7 +563,21 @@ test('a relative report path is resolved from the working directory without fold
   }
 });
 
-test('an absolute channel spelling resolves through the filesystem, not lexically', async () => {
+test('the report resolver keeps directory semantics for trailing separators and dots', async () => {
+  const root = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-semantics-')));
+  try {
+    const file = path.join(root, 'report.json');
+    await fs.writeFile(file, '{}');
+    assert.equal(await resolveFilesystemPath(file), file);
+    // The filesystem answers ENOTDIR for these; folding them would name the file.
+    await assert.rejects(resolveFilesystemPath(`${file}/`), /must name a directory/);
+    await assert.rejects(resolveFilesystemPath(`${file}/.`), /must name a directory/);
+    await assert.rejects(resolveFilesystemPath(`${file}/../other.json`), /passes through a non-directory/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+ test('an absolute channel spelling resolves through the filesystem, not lexically', async () => {
   const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-channel-home-')));
   const root = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-channel-root-')));
   try {

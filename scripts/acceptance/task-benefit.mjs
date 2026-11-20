@@ -437,6 +437,9 @@ export async function resolveFilesystemPath(targetPath, depth = 0) {
   const absolute = path.isAbsolute(targetPath) ? targetPath : `${process.cwd()}${path.sep}${targetPath}`;
   const root = path.parse(absolute).root;
   const parts = absolute.slice(root.length).split(path.sep).filter((part) => part !== '' && part !== '.');
+  // `a/.\` and a trailing separator ask for a directory; dropping them silently
+  // would let a path the filesystem rejects name a file instead.
+  const wantsDirectory = absolute.endsWith(path.sep) || path.basename(absolute) === '.';
   let resolved = root;
   for (let index = 0; index < parts.length; index += 1) {
     const part = parts[index];
@@ -461,7 +464,16 @@ export async function resolveFilesystemPath(targetPath, depth = 0) {
       const joined = path.isAbsolute(link) ? link : `${resolved}${path.sep}${link}`;
       return resolveFilesystemPath(remainder === '' ? joined : `${joined}${path.sep}${remainder}`, depth + 1);
     }
+    if (info.isDirectory() !== true && index < parts.length - 1) {
+      // A non-directory cannot be traversed: the filesystem fails the whole path
+      // (ENOTDIR), and folding `file/..` would name another file.
+      throw new Error('the report path passes through a non-directory');
+    }
     resolved = next;
+  }
+  if (wantsDirectory) {
+    const info = await fs.lstat(resolved).catch(() => null);
+    if (info === null || info.isDirectory() !== true) throw new Error('the report path must name a directory');
   }
   return resolved;
 }
