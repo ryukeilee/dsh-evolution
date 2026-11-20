@@ -356,6 +356,10 @@ test('the command line refuses a valueless --channel-home and a report over the 
     assert.notEqual(overwrite.status, 0);
     assert.match(overwrite.stderr, /must not be written over the task evidence/);
     assert.equal(existsSync(evidence), false);
+    const beside = spawnSync(process.execPath, [...base, '--channel-home', channel, '--task-id', 'desktop-task-proof', '--report', path.join(path.dirname(evidence), 'report.json')], { encoding: 'utf8' });
+    assert.notEqual(beside.status, 0);
+    assert.match(beside.stderr, /must not be written over the task evidence/);
+    assert.equal(existsSync(path.join(path.dirname(evidence), 'report.json')), false);
   } finally {
     await fs.rm(home, { recursive: true, force: true });
     await fs.rm(channel, { recursive: true, force: true });

@@ -740,7 +740,14 @@ if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
       channelHome,
       outFile,
     });
-    if (path.resolve(reportFile) === artifactTarget.outFile) throw new Error('the report must not be written over the task evidence');
+    const reportPath = path.resolve(reportFile);
+    const evidenceDirectory = path.dirname(artifactTarget.outFile);
+    // In a designated channel the evidence directory belongs to the profile
+    // that reads it: the operator report stays outside that directory.
+    if (reportPath === artifactTarget.outFile
+      || (artifactTarget.channel !== null && (reportPath === evidenceDirectory || reportPath.startsWith(`${evidenceDirectory}${path.sep}`)))) {
+      throw new Error('the report must not be written over the task evidence');
+    }
   }
   const task = JSON.parse(await fs.readFile(taskFile, 'utf8'));
   const candidateHost = await fs.readFile(hostFile, 'utf8');
