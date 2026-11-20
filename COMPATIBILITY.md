@@ -33,8 +33,12 @@ The Desktop task host uses the official `run_code` transport when the
 selected agent preset is PTC, and `evolution_probe`'s workload steps use the
 same shared bridge (`lib/ptc-transport.js`): a direct step call refused by the
 executor is re-issued inside a `run_code` program with the same JSON arguments,
-and a transport failure is recorded as an error sample
-(`E_EVOLUTION_PROBE_TRANSPORT`) instead of a successful step. Both call sites
+and a transport failure is recorded as an error sample with the uniform
+`E_EVOLUTION_PROBE_TRANSPORT` code (the host classification is kept in
+`transportCode`). The shared refusal predicate binds the exact tool name and
+the executor's `ToolNotFoundError` / `UNKNOWN_TOOL` classification when present,
+so an ordinary tool error that quotes the sentence keeps its own path. A pair
+containing a transport failure is insufficient evidence, never a benefit. Both call sites
 depend on the pinned `dsh-tools` PTC refusal text
 (``only `run_code` is callable directly``) and the `run_code`
 `{ logs, result? }` envelope shape; a host change to either surfaces as a

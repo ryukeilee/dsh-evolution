@@ -132,7 +132,7 @@ async function createHarness(t, name, options = {}) {
     const args = JSON.parse(JSON.parse(match[2]));
     const inner = runStep({ name, arguments: JSON.stringify(args), id: call.id + ':inner' });
     const wrapped = inner.isError === true
-      ? { [PTC_WRAPPED_VALUE]: true, ok: false, message: inner.error?.code ?? 'tool error' }
+      ? { [PTC_WRAPPED_VALUE]: true, ok: false }
       : { [PTC_WRAPPED_VALUE]: true, ok: true, value: inner.value };
     return { logs: [], result: wrapped };
   };
@@ -141,8 +141,12 @@ async function createHarness(t, name, options = {}) {
     calls.push({ name: call.name, arguments: call.arguments, id: call.id });
     if (options.ptc === true && call.name !== 'run_code') {
       return { results: [{ callId: call.id, result: { isError: true, error: {
-        message: 'runtime inspection refused: unknown tool "' + call.name + '": only \u0060run_code\u0060 is callable directly',
+        message: 'unknown tool "' + call.name + '": only \u0060run_code\u0060 is callable directly \u2014 call \u0060' + call.name + '\u0060 from inside a \u0060run_code\u0060 program instead',
+        info: { name: 'ToolNotFoundError', code: 'UNKNOWN_TOOL' },
       } } }] };
+    }
+    if (options.ptc === true && call.name === 'run_code' && options.ptcRunCodeError === true) {
+      return { results: [{ callId: call.id, result: { isError: true, error: { message: 'code run failed', info: { name: 'CodeRunFailedError', code: 'CODE_RUN_FAILED' } } } }] };
     }
     const result = options.ptc === true
       ? { isError: false, value: options.ptcBroken === true
@@ -499,14 +503,83 @@ test('a malformed PTC wrapper is reported as a transport failure, never as a suc
   const baseline = await runBaseline(h, experimentId);
   assert.equal(baseline.baseline.successes, 0);
   assert.equal(baseline.baseline.errors, 4);
+  assert.equal(baseline.baseline.transportFailed, true);
   assert.ok(baseline.samples.every((row) => row.transport === 'run_code'));
   assert.ok(baseline.samples.every((row) => row.code === 'E_EVOLUTION_PROBE_TRANSPORT'));
+  assert.ok(baseline.samples.every((row) => row.transportCode === 'MALFORMED_ENVELOPE'));
 
   await startTrial(h, experimentId);
   h.state.targetFails = false;
   const candidate = await runCandidate(h, experimentId);
   assert.equal(candidate.comparison.benefit, false);
   assert.equal(candidate.comparison.controlStable, false);
+});
+
+test('a structured run_code failure keeps the uniform transport code and the host code', async (t) => {
+  const h = await createHarness(t, 'ptc-run-code-error', { ptc: true, ptcRunCodeError: true });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  const baseline = await runBaseline(h, experimentId);
+  assert.equal(baseline.baseline.successes, 0);
+  assert.ok(baseline.samples.every((row) => row.code === 'E_EVOLUTION_PROBE_TRANSPORT'));
+  assert.ok(baseline.samples.every((row) => row.transportCode === 'CODE_RUN_FAILED'));
+});
+
+test('a thrown pipeline failure on the PTC route is classified as a transport failure', async (t) => {
+  const h = await createHarness(t, 'ptc-thrown-transport', { ptc: true });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  const original = h.ctx.tools.execute;
+  h.ctx.tools.execute = async (args) => {
+    if (args.calls[0].name === 'run_code') throw new Error('pipeline exploded');
+    return original(args);
+  };
+  const baseline = await runBaseline(h, experimentId);
+  assert.equal(baseline.baseline.successes, 0);
+  assert.ok(baseline.samples.every((row) => row.code === 'E_EVOLUTION_PROBE_TRANSPORT'));
+  assert.ok(baseline.samples.every((row) => row.transportCode === 'EXECUTION_FAILED'));
+});
+
+test('paired workflow: a PTC transport failure is insufficient evidence, not a candidate benefit', async (t) => {
+  const h = await createHarness(t, 'workflow-ptc-transport', { ptc: true });
+  const experimentId = await proposeExperiment(h, { benefitModel: { kind: 'workflow' } });
+  const scenario = workflowScenario(5);
+  const original = h.ctx.tools.execute;
+  // Only the target step's transport fails during the pre-Trial baseline. The
+  // control still measures normally, so without the transport guard the later
+  // candidate success would look like a correctness benefit.
+  h.ctx.tools.execute = async (args) => {
+    const call = args.calls[0];
+    if (call.name === 'probe-target') {
+      return { results: [{ callId: call.id, result: { isError: true, error: {
+        message: 'unknown tool "probe-target": only \u0060run_code\u0060 is callable directly \u2014 call \u0060probe-target\u0060 from inside a \u0060run_code\u0060 program instead',
+        info: { name: 'ToolNotFoundError', code: 'UNKNOWN_TOOL' },
+      } } }] };
+    }
+    if (call.name === 'run_code') {
+      const program = JSON.parse(call.arguments).code;
+      if (program.includes('"probe-target"')) {
+        return { results: [{ callId: call.id, result: { isError: false, value: { logs: [], result: { unrelated: true } } } }] };
+      }
+    }
+    return original(args);
+  };
+  const baseline = await runBaseline(h, experimentId, scenario);
+  assert.equal(baseline.baseline.transportFailed, true);
+  assert.equal(baseline.baseline.transports.run_code, scenario.repetitions * 2);
+  h.ctx.tools.execute = original;
+  await startTrial(h, experimentId);
+  h.state.dynamicActive = true;
+  const candidate = await runCandidate(h, experimentId, scenario);
+  assert.equal(candidate.comparison.benefit, false);
+  assert.equal(candidate.comparison.workflowBenefit, false);
+  assert.equal(candidate.comparison.workload.sufficient, false);
+  assert.equal(candidate.comparison.workload.transportFailed, true);
+  assert.ok(candidate.comparison.reasons.some((reason) => /PTC transport/.test(reason)));
+  const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(measured.gates.eligible, false);
+  assert.equal(h.orchestrator.requireOwned(experimentId, h.exec.agent).decision.kind, 'insufficient-evidence');
+  await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
 });
 
 // ---------------------------------------------------------------------------

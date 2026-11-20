@@ -112,20 +112,51 @@ const publishedFile = path.join(dataRoot, 'shared-plugins', 'published.json');
 const consumerFile = path.join(dataRoot, 'shared-plugins', 'consumers', 'acp.json');
 
 /**
- * Assert both workload phases took the official route the mode requires. The
- * kernel records the per-phase transport counters in the comparison the task
- * state keeps, so a silent fall back to the native path is a failed acceptance
- * instead of something inferred from timings or a compacted archive row.
+ * Read the durable probe measurement from an experiment archive. A task that
+ * stops before promotion has no evidence sidecar, so `exp-*.md` is the only
+ * durable record of the raw sample rows the kernel compared.
  */
-function assertWorkloadTransport(comparison, expected) {
+async function readArchivedMeasurement(experimentId) {
+  const file = path.join(dataRoot, 'archive', 'experiments', `${experimentId}.md`);
+  const text = await fs.readFile(file, 'utf8');
+  const marker = '## Latest measurement\n```json\n';
+  const start = text.indexOf(marker);
+  assert(start >= 0, `the experiment archive has no latest measurement: ${experimentId}`);
+  const end = text.indexOf('\n```', start + marker.length);
+  assert(end >= 0, `the experiment archive measurement is unterminated: ${experimentId}`);
+  return JSON.parse(text.slice(start + marker.length, end));
+}
+
+/**
+ * Assert all three workload groups (pre-Trial baseline, in-Trial reference and
+ * candidate) took the official route the mode requires. The task state keeps
+ * the authoritative counters; the archived rows are checked too when the
+ * existing bounded evidence projection preserved them, and their absence is
+ * recorded instead of being read as a pass.
+ */
+function assertWorkloadTransport(comparison, archivedProbe, expected) {
   const other = expected === 'run_code' ? 'direct' : 'run_code';
-  for (const phase of ['before', 'after']) {
-    const counts = comparison?.[phase]?.transports;
-    assert(counts && typeof counts === 'object', `the workload comparison has no ${phase} transport counters`);
-    assert(Number.isInteger(counts[expected]) && counts[expected] > 0, `the ${phase} workload did not run through ${expected}`);
-    assert(counts[other] === 0, `the ${phase} workload used ${counts[other]} ${other} call(s)`);
+  const groups = { baseline: comparison?.workload?.baselineTransports, reference: comparison?.before?.transports, candidate: comparison?.after?.transports };
+  for (const [group, counts] of Object.entries(groups)) {
+    assert(counts && typeof counts === 'object', `the workload comparison has no ${group} transport counters`);
+    assert(Number.isInteger(counts[expected]) && counts[expected] > 0, `the ${group} workload did not run through ${expected}`);
+    assert(counts[other] === 0, `the ${group} workload used ${counts[other]} ${other} call(s)`);
   }
-  return { before: comparison.before.transports, after: comparison.after.transports };
+  assert(comparison?.workload?.transportFailed !== true, 'the workload comparison records a transport failure');
+  assert(comparison?.before?.transportFailed !== true && comparison?.after?.transportFailed !== true,
+    'a workload phase summary records a transport failure');
+  const archived = { baseline: null, reference: null, candidate: null };
+  const samples = archivedProbe?.samples;
+  for (const group of Object.keys(archived)) {
+    const rows = Array.isArray(samples?.[group]) ? samples[group] : [];
+    const usable = rows.filter((row) => row && typeof row === 'object' && typeof row.transport === 'string');
+    for (const row of usable) {
+      assert(row.transport === expected, `archived ${group} sample ${row.step} used ${row.transport}, expected ${expected}`);
+      assert(row.code !== 'UNKNOWN_TOOL', `archived ${group} sample ${row.step} carries a direct PTC refusal`);
+    }
+    archived[group] = usable.length > 0 ? { rows: usable.length, transport: expected } : { rows: rows.length, transport: 'bounded-in-archive' };
+  }
+  return { groups, archived };
 }
 
 const evidence = {
@@ -513,12 +544,13 @@ try {
       return null;
     });
     const state = await readJson(stateFile(outcome.taskId));
-    const transport = assertWorkloadTransport(state?.workload?.comparison, ptc ? 'run_code' : 'direct');
+    const measurement = await readArchivedMeasurement(outcome.experimentId);
+    const transport = assertWorkloadTransport(state?.workload?.comparison, measurement.probe, ptc ? 'run_code' : 'direct');
     assert(state.revert?.ok === true, 'negative workload did not prove runtime cleanup');
     assert(!(await readJson(publishedFile))?.plugins?.some((row) => row.experimentId === outcome.experimentId), 'negative candidate was published');
     evidence.negativeWorkloads.push({ variant, taskId: outcome.taskId, experimentId: outcome.experimentId, phase: outcome.phase,
       decision: outcome.decision, gates: outcome.gates, revert: state.revert, workload: state.workload,
-      transport });
+      transport, probe: measurement.probe });
   }
 
   // A workflow claim now requires paired real-session evidence. This
@@ -565,7 +597,8 @@ try {
     // have run through the mode's official route and produced a complete,
     // sufficient comparison whose target improved over the baseline.
     const comparison = state?.workload?.comparison;
-    const transport = assertWorkloadTransport(comparison, ptc ? 'run_code' : 'direct');
+    const measurement = await readArchivedMeasurement(workloadRejected.experimentId);
+    const transport = assertWorkloadTransport(comparison, measurement.probe, ptc ? 'run_code' : 'direct');
     assert(comparison?.benefit === true, `the workload-only plan reported no benefit: ${JSON.stringify(comparison?.reasons ?? null).slice(0, 400)}`);
     assert(comparison?.workload?.sufficient === true, 'the workload-only plan did not complete five consistent repetitions');
     assert(comparison?.before?.errors > 0 || comparison?.workload?.efficiency === true,
@@ -580,6 +613,7 @@ try {
       revert: state.revert,
       workload: state.workload,
       transport,
+      probe: measurement.probe,
     };
     evidence.ok = false;
     evidence.blocked = 'a workload-only workflow claim is rejected: taskBenefit (paired real-session evidence) is required and this deterministic runner does not produce it';

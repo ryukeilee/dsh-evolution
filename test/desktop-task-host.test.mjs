@@ -527,7 +527,10 @@ test('a PTC preset routes kernel calls through the official run_code transport',
       transportCalls.push(call.name);
       if (call.name !== 'run_code') {
         // This is the exact refusal a PTC preset returns for a direct call.
-        results.push({ callId: call.id, result: { isError: true, error: { message: `runtime inspection refused: unknown tool "${call.name}": only \`run_code\` is callable directly — call \`${call.name}\` from inside a \`run_code\` program instead` } } });
+        results.push({ callId: call.id, result: { isError: true, error: {
+          message: `unknown tool "${call.name}": only \`run_code\` is callable directly — call \`${call.name}\` from inside a \`run_code\` program instead`,
+          info: { name: 'ToolNotFoundError', code: 'UNKNOWN_TOOL' },
+        } } });
         continue;
       }
       const parsed = JSON.parse(call.arguments);
@@ -565,7 +568,10 @@ test('a run_code transport failure is surfaced with the kernel error code', asyn
     if (call.name === 'run_code') {
       return { results: [{ callId: call.id, result: { isError: true, error: { code: 'E_EVOLUTION_INNER', message: 'inner kernel failure' } } }] };
     }
-    return { results: [{ callId: call.id, result: { isError: true, error: { message: 'runtime inspection refused: unknown tool "evolution_runtime_inspect": only `run_code` is callable directly' } } }] };
+    return { results: [{ callId: call.id, result: { isError: true, error: {
+      message: 'unknown tool "evolution_runtime_inspect": only `run_code` is callable directly — call `evolution_runtime_inspect` from inside a `run_code` program instead',
+      info: { name: 'ToolNotFoundError', code: 'UNKNOWN_TOOL' },
+    } } }] };
   };
   const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
   t.after(async () => { await host.dispose(); });
@@ -585,7 +591,10 @@ test('a run_code result without the sentinel fails instead of being read as the 
     if (call.name === 'run_code') {
       return { results: [{ callId: call.id, result: { isError: false, value: { logs: [], result: { unrelated: true } } } }] };
     }
-    return { results: [{ callId: call.id, result: { isError: true, error: { message: 'only `run_code` is callable directly' } } }] };
+    return { results: [{ callId: call.id, result: { isError: true, error: {
+      message: 'unknown tool "evolution_runtime_inspect": only `run_code` is callable directly — call `evolution_runtime_inspect` from inside a `run_code` program instead',
+      info: { name: 'ToolNotFoundError', code: 'UNKNOWN_TOOL' },
+    } } }] };
   };
   const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
   t.after(async () => { await host.dispose(); });
@@ -612,6 +621,31 @@ test('a non-PTC pipeline error keeps the original code and never retries through
   await host.start();
   const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
   assert.equal(state.error.code, 'E_DESKTOP_TOOL_FAILED');
+  assert.equal(runCodeCalls, 0);
+});
+
+test('an ordinary tool error that quotes the refusal phrase keeps its own path', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel();
+  const ctx = fakeCtx(kernel, plan, { run_code: { execute: async () => ({}) } });
+  let runCodeCalls = 0;
+  ctx.tools.execute = async (input) => {
+    const call = input.calls[0];
+    if (call.name === 'run_code') runCodeCalls += 1;
+    // Same sentence, wrong tool name and no executor classification: a native
+    // tool or policy error must not be mistaken for the PTC direct-call refusal.
+    return { results: [{ callId: call.id, result: { isError: true, error: {
+      code: 'E_QUOTED_POLICY',
+      message: 'policy refused a different tool: only `run_code` is callable directly',
+    } } }] };
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
+  assert.equal(state.error.code, 'E_QUOTED_POLICY');
   assert.equal(runCodeCalls, 0);
 });
 
