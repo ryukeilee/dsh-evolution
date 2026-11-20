@@ -616,19 +616,24 @@ test('a thrown PTC tool error is unmeasured, never a baseline failure a candidat
   await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
 });
 
-test('an invalid probe pair cannot be reclassified as regression by promotion', async (t) => {
-  const h = await createHarness(t, 'ptc-promotion-invalid', { ptc: true });
+test('an invalid probe pair stays insufficient and never writes a strategy failure', async (t) => {
+  const evaluations = [];
+  const events = [];
+  const h = await createHarness(t, 'ptc-promotion-invalid', { ptc: true, config: {
+    // A stub that would roll back if it were consulted: the guard is proven by
+    // the call count, not by an evaluator that happens to agree.
+    domainStorage: { evaluate: (evidence) => { evaluations.push(evidence); return { decision: 'rollback', reason: 'stub regression' }; } },
+    eventBridge: { emit: (type, record, payload) => { events.push({ type, learn: payload?.learn }); return { audit: { at: new Date().toISOString() } }; } },
+  } });
   seedFailures(h.store, TARGET, 3);
   const experimentId = await proposeExperiment(h);
   const scenario = probeScenario();
+  // The baseline succeeds, so the invalid candidate's raw counts would look
+  // like a real regression to the evaluator.
+  h.state.targetFails = false;
   await runBaseline(h, experimentId, scenario);
   await startTrial(h, experimentId);
-  h.state.targetFails = false;
   const original = h.ctx.tools.execute;
-  // The candidate's target transport fails while the reference target succeeds:
-  // the raw error counts look like a regression, but the pair never measured the
-  // candidate tool. Promotion must not let the advisory evaluator turn that into
-  // a regression conclusion in shared experience.
   h.ctx.tools.execute = async (args) => {
     const call = args.calls[0];
     if (call.name === 'run_code') {
@@ -643,14 +648,24 @@ test('an invalid probe pair cannot be reclassified as regression by promotion', 
   h.ctx.tools.execute = original;
   const measured = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
   assert.equal(measured.decision.kind, 'insufficient-evidence');
+  assert.equal(evaluations.length, 0, 'measurement must not consult the advisory evaluator');
   const promotion = await h.orchestrator.promote({ experimentId, confirmation: true }, h.exec);
   assert.equal(promotion.ok, false);
   assert.equal(promotion.reason, 'promotion-gate');
   assert.equal(promotion.decision.kind, 'insufficient-evidence');
   assert.equal(promotion.domainEvaluation, undefined, 'the advisory evaluator must not judge an invalid pair');
+  assert.equal(evaluations.length, 0, 'an invalid pair must not reach the advisory evaluator');
+  assert.ok(!events.some((event) => event.type === 'failure-learned'), 'an invalid pair must not emit failure-learned');
+  const rejected = events.find((event) => event.type === 'experiment-rejected');
+  assert.equal(rejected?.learn, false, 'the rejection event must suppress the durable failure fingerprint');
+  // The promotion-gate archive keeps the diagnostic failure block but records no
+  // memory signature, so the same invalidity cannot become a "do not repeat".
+  const archive = await fs.readFile(h.orchestrator.requireOwned(experimentId, h.exec.agent).archivePath, 'utf8');
+  assert.match(archive, /not recorded \(environment failure, not a strategy verdict\)/);
   const reverted = await h.orchestrator.revert({ experimentId, reason: 'test completed' }, h.exec);
   const found = h.store.findConclusions({ target: TARGET, applicability: APPLICABILITY, strategyFingerprint: strategyFingerprint(TARGET, STRATEGY) });
   assert.equal(found.best.decision, 'insufficient-evidence');
+  assert.ok(!events.some((event) => event.type === 'failure-learned'), 'revert must not turn the invalid pair into a learned failure');
 });
 
 test('a plain probe with a candidate transport failure stays insufficient, not a regression', async (t) => {
