@@ -2,7 +2,9 @@
 
 本文件记录 `dsh-evolution` 当前稳定版的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前版本：`0.2.13`——`0.2.12` 的稳定后继：把官方 DSH `0.2.2-rc.4` 与 `0.2.2-rc.5` 加入精确宿主声明并固定进发布产物。相对 `0.2.12` 固定产物的分发内容只改 `package.json` 的版本与 `peerDependencies`（新增两个精确宿主）以及随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；`lib/`、持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根与 `engines` 不变。八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR，因为 `dsh-hmr/lib/index.js` 在五个版本间逐字节相同，上游启动窗口缺口没有变化。已有三个 stable 插件、历史共享经验与生产数据不迁移、不下线。
+当前版本：`0.2.14`——`0.2.13` 的稳定后继：修复 PTC self-evolution preset 下 Desktop task host 直接调用 `ctx.tools.execute` 被官方执行器拒绝的问题。相对 `0.2.13` 固定产物，分发内容只改 `lib/desktop-task-host.js`、新增 `test/desktop-task-host.test.mjs` 用例，以及版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；宿主集合、持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies` 均未改动。PTC 预设只允许直接调用 `run_code`；host 现在识别该拒绝，经官方 `run_code` 程序调用目标工具，并用单一 sentinel 包装解包 `{ logs, result? }` 信封；非 PTC 宿主仍走原有直连路径。八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR。已有四个 stable 插件、历史共享经验与生产数据不迁移、不下线。
+
+`0.2.13` 是 `0.2.12` 的稳定后继：把官方 DSH `0.2.2-rc.4` 与 `0.2.2-rc.5` 加入精确宿主声明并固定进发布产物。相对 `0.2.12` 固定产物的分发内容只改 `package.json` 的版本与 `peerDependencies`（新增两个精确宿主）以及随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；`lib/`、持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根与 `engines` 不变。八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR，因为 `dsh-hmr/lib/index.js` 在五个版本间逐字节相同，上游启动窗口缺口没有变化。已有三个 stable 插件、历史共享经验与生产数据不迁移、不下线。
 
 `0.2.12` 是 `0.2.11` 的稳定后继：把自我进化从“要求真实成对会话证据”推进到“在真实宿主与真实模型上产生、批准并复用可复核的任务收益”。相对 `0.2.11` 固定产物的分发内容改 `lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/error-boundary.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/experience-recall.js`、`lib/orchestrator.js`、`lib/registration.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`，加上版本号与随包文档；宿主集合、持久化 schema 与 schema 版本、工具名、授权来源、八项晋升门禁的既有判定、Cordis 信任根、`engines` 与 `peerDependencies`（六个宿主）不变，工具参数新增 `evolution_propose.improvement`、`evolution_measure.taskId` 与 observation 的 `taskBenefit` 三个可选字段；context-policy 计划的 `verification.functionalCheck` 是必填项，workflow 与 context-policy 晋升都必须提交成对真实会话的 `taskBenefit` 证据。已有三个 stable 插件、历史共享经验与生产数据不迁移、不下线。六个官方宿主针对本版本的固定产物重新验收并重新固定；真实 taskBenefit 闭环只在隔离 `DSH_HOME`、真实 Desktop/ACP 宿主与真实模型上取证，不写正式数据。`0.2.2-rc.1` / `rc.2` / `rc.3` 仍须关闭宿主 HMR，因为 `dsh-hmr/lib/index.js` 在三个版本间逐字节相同，上游启动窗口缺口没有变化。
 
@@ -42,10 +44,12 @@
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.13.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.14.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
+
+`v0.2.14` 是 `v0.2.13` 的稳定后继：分发内容只改 `lib/desktop-task-host.js`（PTC 官方 `run_code` 传输兼容）与其单元测试，加上版本号与随包文档；宿主集合、schema、工具名 / 参数、授权来源、八项门禁、Cordis 信任根、`engines` 与 `peerDependencies` 均不变；八个宿主针对它的固定产物重新验收，Release 以正式版（非 Draft、非 Pre-release、Latest）公开；`v0.2.13` 的 tag、Release 与附件原样保留、未被覆盖。
 
 `v0.2.13` 是 `v0.2.12` 的稳定后继：分发内容只扩展 DSH `0.2.2-rc.4` / `0.2.2-rc.5` 的精确版本声明与随包文档，`lib/` 与其它分发行为不变；八个宿主针对它的固定产物重新验收，Release 以正式版（非 Draft、非 Pre-release、Latest）公开；`v0.2.12` 的 tag、Release 与附件原样保留、未被覆盖。
 
@@ -93,16 +97,16 @@ rc.18 发布之前，最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.13，仓库内容）
+# 当前本地候选（0.2.14，仓库内容）
 npm run pack:check                              # 开发阶段：打包稳定性、白名单、权限、锁文件、文档一致性 + 工作树/固定点关系
 npm run pack:check -- --release                 # 发布阶段：另外要求工作树就是固定内容（release.yml 用这一条）
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
 # 发布后：验证 tag -> commit -> 固定点 -> 工作树（发布前在同一 commit 上也能跑）
-node scripts/release/verify-provenance.mjs --tag v0.2.13 --require-source-commit
+node scripts/release/verify-provenance.mjs --tag v0.2.14 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
-# 本仓库的 release/ 已改为固定 0.2.13，不再覆盖旧版本）
+# 本仓库的 release/ 已改为固定 0.2.14，不再覆盖旧版本）
 BASE=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.0-rc.1
 curl -fL "$BASE/SHA256SUMS" -o SHA256SUMS
 curl -fL "$BASE/dsh-evolution-0.2.0-rc.1.tgz" -o dsh-evolution-0.2.0-rc.1.tgz

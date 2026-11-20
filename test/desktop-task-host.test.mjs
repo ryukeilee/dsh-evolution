@@ -510,6 +510,51 @@ test('the host executes tools through the official tools pipeline when the host 
   assert.ok(pipelineCalls.some((names) => names.includes(plan.tool)), 'candidate samples used the pipeline');
 });
 
+test('a PTC preset routes kernel calls through the official run_code transport', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel({ facts: factsWriter(home) });
+  const ctx = fakeCtx(kernel, plan, {
+    // The PTC executor exposes run_code as the only directly callable tool; the
+    // host only needs the descriptor to exist, every call goes through the
+    // pipeline stub below.
+    run_code: { execute: async () => { throw new Error('run_code must be dispatched through the tools pipeline'); } },
+  });
+  const transportCalls = [];
+  ctx.tools.execute = async (input) => {
+    const results = [];
+    for (const call of input.calls) {
+      transportCalls.push(call.name);
+      if (call.name !== 'run_code') {
+        // This is the exact refusal a PTC preset returns for a direct call.
+        results.push({ callId: call.id, result: { isError: true, error: { message: `runtime inspection refused: unknown tool "${call.name}": only \`run_code\` is callable directly — call \`${call.name}\` from inside a \`run_code\` program instead` } } });
+        continue;
+      }
+      const parsed = JSON.parse(call.arguments);
+      const match = /tools\[("(?:[^"\\]|\\.)*")\]\(([\s\S]*)\)/.exec(parsed.code);
+      assert.ok(match, 'the wrapper program calls the kernel tool through the SDK');
+      const name = JSON.parse(match[1]);
+      const args = JSON.parse(match[2]);
+      const tool = ctx.tools.get(name);
+      assert.ok(tool, `the wrapper names a registered tool: ${name}`);
+      const value = await tool.execute(args, { agent: input.agent, signal: input.signal });
+      results.push({ callId: call.id, result: { isError: false, value: { logs: [], result: { __dshEvolutionKernelValue: value } } } });
+    }
+    return { results, additionalContexts: [], concluded: false };
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.phase, 'stable');
+  assert.ok(transportCalls.includes('run_code'), 'the PTC transport was used');
+  assert.ok(kernel.calls.some((call) => call.name === 'evolution_propose'), 'the kernel received the proposal through the wrapper');
+  assert.ok(kernel.calls.some((call) => call.name === 'evolution_trial'), 'the kernel received the trial through the wrapper');
+  assert.ok(kernel.calls.some((call) => call.name === 'evolution_measure'), 'the kernel received the measurement through the wrapper');
+});
+
 test('a transient revert failure keeps the owner and retries cleanup until it is proven', async (t) => {
   const home = temporary(t);
   const plan = planFor(mintTaskId());
