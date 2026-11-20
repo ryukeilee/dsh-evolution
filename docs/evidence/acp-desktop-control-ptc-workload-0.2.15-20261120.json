@@ -1,70 +1,70 @@
 {
   "kind": "dsh-evolution-acp-desktop-control",
   "ok": false,
-  "startedAt": "2026-11-20T12:27:53.894Z",
+  "startedAt": "2026-11-20T12:41:16.047Z",
   "modelTransport": "deterministic loopback Anthropic responses for plan authoring and mounting; the autonomous-reuse pair uses real model inference through scripts/acceptance/model-bridge.mjs; actual ACP Agent/tools and actual Desktop app",
   "scope": "isolated DSH_HOME; production task channel + official Desktop kernel; no formal home, no release publish",
   "steps": [
     {
       "name": "official-desktop-profile-initialized",
-      "at": "2026-11-20T12:27:55.194Z"
+      "at": "2026-11-20T12:41:16.714Z"
     },
     {
       "name": "ptc-self-evolution-preset-mounted",
-      "at": "2026-11-20T12:27:57.318Z"
+      "at": "2026-11-20T12:41:18.925Z"
     },
     {
       "name": "desktop-task-host-ready",
-      "at": "2026-11-20T12:27:58.579Z"
+      "at": "2026-11-20T12:41:20.186Z"
     },
     {
       "name": "desktop-single-instance-held",
-      "at": "2026-11-20T12:28:02.951Z"
+      "at": "2026-11-20T12:41:24.546Z"
     },
     {
       "name": "real-acp-model-tool-request",
       "tool": "read",
-      "at": "2026-11-20T12:28:03.529Z"
+      "at": "2026-11-20T12:41:25.093Z"
     },
     {
       "name": "real-acp-tool-call",
-      "at": "2026-11-20T12:28:03.536Z"
+      "at": "2026-11-20T12:41:25.099Z"
     },
     {
       "name": "real-acp-model-tool-request",
       "tool": "evolution_desktop",
-      "at": "2026-11-20T12:28:04.132Z"
+      "at": "2026-11-20T12:41:25.696Z"
     },
     {
       "name": "real-acp-tool-call",
-      "at": "2026-11-20T12:28:04.138Z"
+      "at": "2026-11-20T12:41:25.702Z"
     },
     {
       "name": "real-acp-model-tool-request",
       "tool": "evolution_desktop",
-      "at": "2026-11-20T12:28:15.612Z"
+      "at": "2026-11-20T12:41:37.212Z"
     },
     {
       "name": "real-acp-tool-call",
-      "at": "2026-11-20T12:28:15.618Z"
+      "at": "2026-11-20T12:41:37.218Z"
     },
     {
       "name": "real-acp-model-tool-request",
       "tool": "evolution_desktop",
-      "at": "2026-11-20T12:28:27.116Z"
+      "at": "2026-11-20T12:41:48.678Z"
     },
     {
       "name": "real-acp-tool-call",
-      "at": "2026-11-20T12:28:27.122Z"
+      "at": "2026-11-20T12:41:48.685Z"
     },
     {
       "name": "real-acp-model-tool-request",
       "tool": "evolution_desktop",
-      "at": "2026-11-20T12:28:34.200Z"
+      "at": "2026-11-20T12:41:55.769Z"
     },
     {
       "name": "real-acp-tool-call",
-      "at": "2026-11-20T12:28:34.206Z"
+      "at": "2026-11-20T12:41:55.776Z"
     }
   ],
   "desktop": {
@@ -73,20 +73,20 @@
   },
   "host": {
     "first": {
-      "instanceId": "4691ee51-5934-4001-8420-9c9c6aea725b",
-      "pid": 33148,
+      "instanceId": "796d5c48-4c93-408d-b2e0-12cfaacdcbbb",
+      "pid": 55758,
       "protocol": 1,
       "profile": "desktop"
     },
     "singleInstance": {
-      "duplicateInstanceId": "4691ee51-5934-4001-8420-9c9c6aea725b",
-      "secondLaunchPid": 33152
+      "duplicateInstanceId": "796d5c48-4c93-408d-b2e0-12cfaacdcbbb",
+      "secondLaunchPid": 55762
     }
   },
   "candidate": {
     "tool": "read_complete_line",
-    "compositionName": "complete-line-dc1ff8bf",
-    "sourceSha256": "7c35144c60f839ecf618bd295f9c73beaf4b2387e5652d9765772ce7d7599982"
+    "compositionName": "complete-line-406b6180",
+    "sourceSha256": "730a5fb9338dc384a4b30d37c322c30edb3b9dad0b03fb5e140facabe83172ff"
   },
   "ptc": {
     "enabled": true,
@@ -105,7 +105,7 @@
     "tail": [
       "+ dsh-evolution 0.2.15",
       "",
-      "Done in 440ms using pnpm v11.28.5",
+      "Done in 453ms using pnpm v11.28.5",
       "web: configured; restart this entry to apply (HMR disabled)"
     ],
     "roles": "host enabled on desktop only; client enabled on acp only; web keeps neither"
@@ -115,14 +115,14 @@
     "issue": "complete first source line unavailable due to default line truncation",
     "inputSha256": "56b7fa4745981c556e2bb3991a4e9aed272adc69c43288c0496314da34aa638e",
     "expectedCharacters": 3135,
-    "observedResultSha256": "c2a0c65fe8ebaaf555a118d2cf7728fcc81cf3877ab2dcf135217082e791d165",
+    "observedResultSha256": "5cc25ac2ce1bc8a1a6f4e187ba025452b75f954ab51868baf31d1dc99555755e",
     "model": "deterministic plan-authoring fixture, no live model inference"
   },
   "negativeWorkloads": [
     {
       "variant": "no-benefit",
-      "taskId": "desktop-task-mwoyfy5r-a7349cc8",
-      "experimentId": "exp-mwoyg0vd-1-452199f0",
+      "taskId": "desktop-task-mwoyx4nf-72c37d37",
+      "experimentId": "exp-mwoyx7cb-1-3bf7fe0b",
       "phase": "failed",
       "decision": {
         "kind": "no-benefit",
@@ -150,7 +150,7 @@
       },
       "workload": {
         "scenarioId": "complete-source-line-no-benefit",
-        "scenarioDigest": "sha256:885d8bb514efb78528499d49eadca4ac4085c1dd0ad9f0c7b2f3f5cbacb02d4d",
+        "scenarioDigest": "sha256:b0f114a40004840fd734ebf9aa56dc03b504c37ec3741a7e53a8245a3bad8fb3",
         "versions": {
           "dsh": "0.2.2-rc.5",
           "cordis": "4.1.0",
@@ -233,7 +233,7 @@
             "perStep": [
               {
                 "index": 0,
-                "step": "read_complete_line_8799cd2d",
+                "step": "read_complete_line_a503c3ef",
                 "role": "target",
                 "executions": 5,
                 "successes": 5,
@@ -245,7 +245,7 @@
               },
               {
                 "index": 1,
-                "step": "read_complete_line_8799cd2d",
+                "step": "read_complete_line_a503c3ef",
                 "role": "target",
                 "executions": 5,
                 "successes": 5,
@@ -302,7 +302,7 @@
             "successRate": 1,
             "errorCount": 0,
             "failureRate": 0,
-            "durationMs": 379
+            "durationMs": 381
           },
           "afterMetrics": {
             "successRate": 1,
@@ -311,9 +311,9 @@
             "durationMs": 381
           },
           "sampleDigest": {
-            "baseline": "sha256:0e0d1a0391f20fbcf5561a7276057c6a524aed95372a42b148abf2854cb2fcbb",
-            "candidate": "sha256:9df5be6219c0a19ff3b7643a36774dfc517da3ec90dd6a103f253aa21412c444",
-            "beforeTrialBaseline": "sha256:2eee681d61372628f0c3b80dc7f84ea73a46edb17ff898d296853c2bcec1b5de"
+            "baseline": "sha256:1f15cc189d78f44608e852b5c384238a2c3f78ce784c37018b36492624a45cc8",
+            "candidate": "sha256:06336ce7d901a78dc1b7d5a1fda5d6a2db00415d6c6229ea181659ba48c18fdf",
+            "beforeTrialBaseline": "sha256:b174b56fa298bce81f49fd44338127bd6a4de7d68064b079e274b3c3395f0544"
           },
           "workload": {
             "evidenceKind": "experimental-workflow",
@@ -324,28 +324,28 @@
             "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
             "beforeCost": {
               "calls": 15,
-              "medianDurationMs": 379,
-              "totalDurationMs": 1898,
+              "medianDurationMs": 381,
+              "totalDurationMs": 1907,
               "outputBytes": 5010,
               "perRepetitionMs": [
-                376,
-                379,
+                380,
                 381,
                 383,
-                379
+                382,
+                381
               ]
             },
             "afterCost": {
               "calls": 15,
               "medianDurationMs": 381,
-              "totalDurationMs": 1909,
+              "totalDurationMs": 1901,
               "outputBytes": 4930,
               "perRepetitionMs": [
-                381,
+                377,
                 382,
-                380,
-                379,
-                387
+                382,
+                381,
+                379
               ]
             },
             "durationAcceptable": true,
@@ -359,7 +359,7 @@
             "transportFailed": false,
             "unmeasured": false,
             "measurementInvalid": false,
-            "validationDurationMs": 1902
+            "validationDurationMs": 1912
           }
         }
       },
@@ -395,7 +395,7 @@
       },
       "probe": {
         "scenarioId": "complete-source-line-no-benefit",
-        "scenarioDigest": "sha256:885d8bb514efb78528499d49eadca4ac4085c1dd0ad9f0c7b2f3f5cbacb02d4d",
+        "scenarioDigest": "sha256:b0f114a40004840fd734ebf9aa56dc03b504c37ec3741a7e53a8245a3bad8fb3",
         "versions": {
           "dsh": "0.2.2-rc.5",
           "cordis": "4.1.0",
@@ -446,7 +446,7 @@
             "successRate": 1,
             "errorCount": 0,
             "failureRate": 0,
-            "durationMs": 379
+            "durationMs": 381
           },
           "afterMetrics": {
             "successRate": 1,
@@ -455,9 +455,9 @@
             "durationMs": 381
           },
           "sampleDigest": {
-            "baseline": "sha256:0e0d1a0391f20fbcf5561a7276057c6a524aed95372a42b148abf2854cb2fcbb",
-            "candidate": "sha256:9df5be6219c0a19ff3b7643a36774dfc517da3ec90dd6a103f253aa21412c444",
-            "beforeTrialBaseline": "sha256:2eee681d61372628f0c3b80dc7f84ea73a46edb17ff898d296853c2bcec1b5de"
+            "baseline": "sha256:1f15cc189d78f44608e852b5c384238a2c3f78ce784c37018b36492624a45cc8",
+            "candidate": "sha256:06336ce7d901a78dc1b7d5a1fda5d6a2db00415d6c6229ea181659ba48c18fdf",
+            "beforeTrialBaseline": "sha256:b174b56fa298bce81f49fd44338127bd6a4de7d68064b079e274b3c3395f0544"
           },
           "reasons": [
             "no verified correctness or repeatable execution-cost improvement"
@@ -484,7 +484,7 @@
             "transportFailed": false,
             "unmeasured": false,
             "measurementInvalid": false,
-            "validationDurationMs": 1902
+            "validationDurationMs": 1912
           }
         },
         "samples": {
@@ -523,8 +523,8 @@
     },
     {
       "variant": "regression",
-      "taskId": "desktop-task-mwoyg70n-f770dd53",
-      "experimentId": "exp-mwoyg9n6-2-1a51eec7",
+      "taskId": "desktop-task-mwoyxdjb-5bfb0603",
+      "experimentId": "exp-mwoyxg8n-2-ec4e557a",
       "phase": "failed",
       "decision": {
         "kind": "regression",
@@ -554,7 +554,7 @@
       },
       "workload": {
         "scenarioId": "complete-source-line-regression",
-        "scenarioDigest": "sha256:17684feb39c5fd9e571fb320c9c8d926c336427eb04440341d11f48d14cfec16",
+        "scenarioDigest": "sha256:7fc4f3caa241499d28dec62ab0c42ae5762910ba3964c075a4df794022f5caee",
         "versions": {
           "dsh": "0.2.2-rc.5",
           "cordis": "4.1.0",
@@ -637,7 +637,7 @@
             "perStep": [
               {
                 "index": 0,
-                "step": "read_complete_line_1e1622f2",
+                "step": "read_complete_line_404f59b5",
                 "role": "target",
                 "executions": 5,
                 "successes": 0,
@@ -649,7 +649,7 @@
               },
               {
                 "index": 1,
-                "step": "read_complete_line_1e1622f2",
+                "step": "read_complete_line_404f59b5",
                 "role": "target",
                 "executions": 5,
                 "successes": 0,
@@ -708,18 +708,18 @@
             "successRate": 1,
             "errorCount": 0,
             "failureRate": 0,
-            "durationMs": 380
+            "durationMs": 384
           },
           "afterMetrics": {
             "successRate": 0.3333,
             "errorCount": 10,
             "failureRate": 0.6667,
-            "durationMs": 379
+            "durationMs": 382
           },
           "sampleDigest": {
-            "baseline": "sha256:41f28bd3df94469e66f509ba9222af23e7c60b3815aa875a464ce3e572b4aad5",
-            "candidate": "sha256:4cd56024ea72d300f497204546e4d677f01a13c71d34fc4cb6aa656c3eb856db",
-            "beforeTrialBaseline": "sha256:b81e5e79976a3307ec1d48d4de79babb0f07f2a97c79a172927aa4b79ac7dd9d"
+            "baseline": "sha256:2b94012810422dd7531fc55452a5da07114cc130dfcf0195134ea3ae82dc8e71",
+            "candidate": "sha256:9d0d291dab3d94b10c1d30cd8ba73e3ef4e25114f6eb4bae2753153d1f33ac65",
+            "beforeTrialBaseline": "sha256:400b065cb0281d2b08f943ca970af5a7564b0e06f20e455a8db242b2f97e09a0"
           },
           "workload": {
             "evidenceKind": "experimental-workflow",
@@ -730,28 +730,28 @@
             "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
             "beforeCost": {
               "calls": 15,
-              "medianDurationMs": 380,
-              "totalDurationMs": 1906,
+              "medianDurationMs": 384,
+              "totalDurationMs": 1917,
               "outputBytes": 7005,
               "perRepetitionMs": [
-                382,
-                380,
-                380,
+                386,
                 384,
-                380
+                382,
+                381,
+                384
               ]
             },
             "afterCost": {
               "calls": 15,
-              "medianDurationMs": 379,
-              "totalDurationMs": 1898,
+              "medianDurationMs": 382,
+              "totalDurationMs": 1911,
               "outputBytes": 2785,
               "perRepetitionMs": [
+                385,
+                384,
+                381,
                 379,
-                382,
-                380,
-                379,
-                378
+                382
               ]
             },
             "durationAcceptable": true,
@@ -765,7 +765,7 @@
             "transportFailed": false,
             "unmeasured": false,
             "measurementInvalid": false,
-            "validationDurationMs": 1904
+            "validationDurationMs": 1919
           }
         }
       },
@@ -801,7 +801,7 @@
       },
       "probe": {
         "scenarioId": "complete-source-line-regression",
-        "scenarioDigest": "sha256:17684feb39c5fd9e571fb320c9c8d926c336427eb04440341d11f48d14cfec16",
+        "scenarioDigest": "sha256:7fc4f3caa241499d28dec62ab0c42ae5762910ba3964c075a4df794022f5caee",
         "versions": {
           "dsh": "0.2.2-rc.5",
           "cordis": "4.1.0",
@@ -852,18 +852,18 @@
             "successRate": 1,
             "errorCount": 0,
             "failureRate": 0,
-            "durationMs": 380
+            "durationMs": 384
           },
           "afterMetrics": {
             "successRate": 0.3333,
             "errorCount": 10,
             "failureRate": 0.6667,
-            "durationMs": 379
+            "durationMs": 382
           },
           "sampleDigest": {
-            "baseline": "sha256:41f28bd3df94469e66f509ba9222af23e7c60b3815aa875a464ce3e572b4aad5",
-            "candidate": "sha256:4cd56024ea72d300f497204546e4d677f01a13c71d34fc4cb6aa656c3eb856db",
-            "beforeTrialBaseline": "sha256:b81e5e79976a3307ec1d48d4de79babb0f07f2a97c79a172927aa4b79ac7dd9d"
+            "baseline": "sha256:2b94012810422dd7531fc55452a5da07114cc130dfcf0195134ea3ae82dc8e71",
+            "candidate": "sha256:9d0d291dab3d94b10c1d30cd8ba73e3ef4e25114f6eb4bae2753153d1f33ac65",
+            "beforeTrialBaseline": "sha256:400b065cb0281d2b08f943ca970af5a7564b0e06f20e455a8db242b2f97e09a0"
           },
           "reasons": [
             "read: candidate succeeded 0/5 vs baseline 5/5",
@@ -892,7 +892,7 @@
             "transportFailed": false,
             "unmeasured": false,
             "measurementInvalid": false,
-            "validationDurationMs": 1904
+            "validationDurationMs": 1919
           }
         },
         "samples": {
@@ -931,8 +931,8 @@
     },
     {
       "variant": "insufficient",
-      "taskId": "desktop-task-mwoygfw7-5a8811c5",
-      "experimentId": "exp-mwoygiih-3-f7352ee2",
+      "taskId": "desktop-task-mwoyxmdt-817e6090",
+      "experimentId": "exp-mwoyxp19-3-b6975ab1",
       "phase": "failed",
       "decision": {
         "kind": "insufficient-evidence",
@@ -960,7 +960,7 @@
       },
       "workload": {
         "scenarioId": "complete-source-line-insufficient",
-        "scenarioDigest": "sha256:849ef474e5847563b7be9b0d209b528d48cd04b3d7cee7542efb7249d37c73a0",
+        "scenarioDigest": "sha256:7ea7a3dcfc4ea06a35f8e5929098778932a01f02813337a3ca159246b6897afd",
         "versions": {
           "dsh": "0.2.2-rc.5",
           "cordis": "4.1.0",
@@ -1043,7 +1043,7 @@
             "perStep": [
               {
                 "index": 0,
-                "step": "read_complete_line_8c01d3d4",
+                "step": "read_complete_line_474b476b",
                 "role": "target",
                 "executions": 1,
                 "successes": 1,
@@ -1055,7 +1055,7 @@
               },
               {
                 "index": 1,
-                "step": "read_complete_line_8c01d3d4",
+                "step": "read_complete_line_474b476b",
                 "role": "target",
                 "executions": 1,
                 "successes": 1,
@@ -1112,18 +1112,18 @@
             "successRate": 0.6667,
             "errorCount": 1,
             "failureRate": 0.3333,
-            "durationMs": 382
+            "durationMs": 386
           },
           "afterMetrics": {
             "successRate": 1,
             "errorCount": 0,
             "failureRate": 0,
-            "durationMs": 375
+            "durationMs": 382
           },
           "sampleDigest": {
-            "baseline": "sha256:5ef1f171fa6ef41fa95f96fba7ea181cac77ef2aaded17cee17d15f5b10eab2d",
-            "candidate": "sha256:0da5ce22455ffa195884d29f35a61a8bf842dd3ee7b760176409c5fe2edeb381",
-            "beforeTrialBaseline": "sha256:f91509c6baa3c035c66cde0f8bd045ba2f55f1cfab366adf40affad2e02abc7d"
+            "baseline": "sha256:1c6027c47b1291ed87cc83e8efb6b8ff73f60abbde37993c41378e35a67d2a08",
+            "candidate": "sha256:86c35b3738a6ac725414cacc91e2801bce77e2eee71cbffdf16b85315bcfc468",
+            "beforeTrialBaseline": "sha256:11528719815b798e7b0ade309768adf6227e55f5786de8ed02def130f15fc4c8"
           },
           "workload": {
             "evidenceKind": "experimental-workflow",
@@ -1134,20 +1134,20 @@
             "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
             "beforeCost": {
               "calls": 3,
-              "medianDurationMs": 382,
-              "totalDurationMs": 382,
+              "medianDurationMs": 386,
+              "totalDurationMs": 386,
               "outputBytes": 3332,
               "perRepetitionMs": [
-                382
+                386
               ]
             },
             "afterCost": {
               "calls": 3,
-              "medianDurationMs": 375,
-              "totalDurationMs": 375,
+              "medianDurationMs": 382,
+              "totalDurationMs": 382,
               "outputBytes": 4592,
               "perRepetitionMs": [
-                375
+                382
               ]
             },
             "durationAcceptable": true,
@@ -1161,7 +1161,7 @@
             "transportFailed": false,
             "unmeasured": false,
             "measurementInvalid": false,
-            "validationDurationMs": 379
+            "validationDurationMs": 385
           }
         }
       },
@@ -1197,7 +1197,7 @@
       },
       "probe": {
         "scenarioId": "complete-source-line-insufficient",
-        "scenarioDigest": "sha256:849ef474e5847563b7be9b0d209b528d48cd04b3d7cee7542efb7249d37c73a0",
+        "scenarioDigest": "sha256:7ea7a3dcfc4ea06a35f8e5929098778932a01f02813337a3ca159246b6897afd",
         "versions": {
           "dsh": "0.2.2-rc.5",
           "cordis": "4.1.0",
@@ -1248,18 +1248,18 @@
             "successRate": 0.6667,
             "errorCount": 1,
             "failureRate": 0.3333,
-            "durationMs": 382
+            "durationMs": 386
           },
           "afterMetrics": {
             "successRate": 1,
             "errorCount": 0,
             "failureRate": 0,
-            "durationMs": 375
+            "durationMs": 382
           },
           "sampleDigest": {
-            "baseline": "sha256:5ef1f171fa6ef41fa95f96fba7ea181cac77ef2aaded17cee17d15f5b10eab2d",
-            "candidate": "sha256:0da5ce22455ffa195884d29f35a61a8bf842dd3ee7b760176409c5fe2edeb381",
-            "beforeTrialBaseline": "sha256:f91509c6baa3c035c66cde0f8bd045ba2f55f1cfab366adf40affad2e02abc7d"
+            "baseline": "sha256:1c6027c47b1291ed87cc83e8efb6b8ff73f60abbde37993c41378e35a67d2a08",
+            "candidate": "sha256:86c35b3738a6ac725414cacc91e2801bce77e2eee71cbffdf16b85315bcfc468",
+            "beforeTrialBaseline": "sha256:11528719815b798e7b0ade309768adf6227e55f5786de8ed02def130f15fc4c8"
           },
           "reasons": [
             "insufficient evidence: need five complete, consistent repetitions, multiple cases and a stable correctness control"
@@ -1286,7 +1286,7 @@
             "transportFailed": false,
             "unmeasured": false,
             "measurementInvalid": false,
-            "validationDurationMs": 379
+            "validationDurationMs": 385
           }
         },
         "samples": {
@@ -1310,8 +1310,8 @@
     }
   ],
   "workloadOnlyPromotion": {
-    "taskId": "desktop-task-mwoyglcz-6e9d1e2b",
-    "experimentId": "exp-mwoygnzn-4-7021dd82",
+    "taskId": "desktop-task-mwoyxrus-5d7bee00",
+    "experimentId": "exp-mwoyxui5-4-630df4c3",
     "phase": "failed",
     "error": {
       "code": "E_DESKTOP_BENEFIT_UNPROVEN",
@@ -1344,7 +1344,7 @@
     },
     "workload": {
       "scenarioId": "complete-source-line-benefit",
-      "scenarioDigest": "sha256:807758969d3eb2f7e60f5340737c99abd05fd9131c09fd373a3c976076e0269b",
+      "scenarioDigest": "sha256:c799cce3df0f8f500201e86c81052e05e8c974ebe100a81e34cffb3dc97b4b4b",
       "versions": {
         "dsh": "0.2.2-rc.5",
         "cordis": "4.1.0",
@@ -1494,7 +1494,7 @@
           "successRate": 0.6667,
           "errorCount": 5,
           "failureRate": 0.3333,
-          "durationMs": 382
+          "durationMs": 385
         },
         "afterMetrics": {
           "successRate": 1,
@@ -1503,9 +1503,9 @@
           "durationMs": 382
         },
         "sampleDigest": {
-          "baseline": "sha256:4122a0e68de9e86478ff171bffcef1636bab63b7fb89d94c94452ff12076a366",
-          "candidate": "sha256:073992ba4c63b685e5b6552a426141e7db9f6f32a47370ffd68cb139a515c4f3",
-          "beforeTrialBaseline": "sha256:7d927a944a7dff1a53f5f5deea165beb61c0d0d2e9361b268f50cdecda8147ce"
+          "baseline": "sha256:77620fa3921733d2e5bcb29f7b0e8efef61ac820d4cae61825f7f4458f458b0b",
+          "candidate": "sha256:eaa0f63de5e41c171677f75e6f938804636b23f037b833ad0414e5cfeca77c18",
+          "beforeTrialBaseline": "sha256:8fd26b6f2e2c6b62e1c4d043492b6ab298797b72bf53861cd956e52c0916b56a"
         },
         "workload": {
           "evidenceKind": "experimental-workflow",
@@ -1516,15 +1516,15 @@
           "metricSource": "official tools.execute; expected-result digests; wall-clock including dispatch and result projection; serialized result bytes",
           "beforeCost": {
             "calls": 15,
-            "medianDurationMs": 382,
-            "totalDurationMs": 1914,
+            "medianDurationMs": 385,
+            "totalDurationMs": 1933,
             "outputBytes": 16660,
             "perRepetitionMs": [
-              382,
-              381,
-              382,
+              384,
+              387,
+              395,
               385,
-              384
+              382
             ]
           },
           "afterCost": {
@@ -1533,11 +1533,11 @@
             "totalDurationMs": 1911,
             "outputBytes": 22960,
             "perRepetitionMs": [
-              386,
-              380,
-              383,
+              378,
               382,
-              380
+              387,
+              380,
+              384
             ]
           },
           "durationAcceptable": true,
@@ -1551,7 +1551,7 @@
           "transportFailed": false,
           "unmeasured": false,
           "measurementInvalid": false,
-          "validationDurationMs": 1914
+          "validationDurationMs": 1907
         }
       }
     },
@@ -1587,7 +1587,7 @@
     },
     "probe": {
       "scenarioId": "complete-source-line-benefit",
-      "scenarioDigest": "sha256:807758969d3eb2f7e60f5340737c99abd05fd9131c09fd373a3c976076e0269b",
+      "scenarioDigest": "sha256:c799cce3df0f8f500201e86c81052e05e8c974ebe100a81e34cffb3dc97b4b4b",
       "versions": {
         "dsh": "0.2.2-rc.5",
         "cordis": "4.1.0",
@@ -1638,7 +1638,7 @@
           "successRate": 0.6667,
           "errorCount": 5,
           "failureRate": 0.3333,
-          "durationMs": 382
+          "durationMs": 385
         },
         "afterMetrics": {
           "successRate": 1,
@@ -1647,9 +1647,9 @@
           "durationMs": 382
         },
         "sampleDigest": {
-          "baseline": "sha256:4122a0e68de9e86478ff171bffcef1636bab63b7fb89d94c94452ff12076a366",
-          "candidate": "sha256:073992ba4c63b685e5b6552a426141e7db9f6f32a47370ffd68cb139a515c4f3",
-          "beforeTrialBaseline": "sha256:7d927a944a7dff1a53f5f5deea165beb61c0d0d2e9361b268f50cdecda8147ce"
+          "baseline": "sha256:77620fa3921733d2e5bcb29f7b0e8efef61ac820d4cae61825f7f4458f458b0b",
+          "candidate": "sha256:eaa0f63de5e41c171677f75e6f938804636b23f037b833ad0414e5cfeca77c18",
+          "beforeTrialBaseline": "sha256:8fd26b6f2e2c6b62e1c4d043492b6ab298797b72bf53861cd956e52c0916b56a"
         },
         "reasons": [],
         "steps": [
@@ -1674,7 +1674,7 @@
           "transportFailed": false,
           "unmeasured": false,
           "measurementInvalid": false,
-          "validationDurationMs": 1914
+          "validationDurationMs": 1907
         }
       },
       "samples": {
@@ -1713,6 +1713,6 @@
   },
   "blocked": "a workload-only workflow claim is rejected: taskBenefit (paired real-session evidence) is required and this deterministic runner does not produce it",
   "error": "TASK_BENEFIT_REQUIRED",
-  "finishedAt": "2026-11-20T12:28:45.260Z",
-  "tarballSha256": "a39e3f59dc62c62852b32387438204284f9c2c5d94f6bb923018025daf16044c"
+  "finishedAt": "2026-11-20T12:42:06.820Z",
+  "tarballSha256": "bec9685674b537d30cdfdb3aeedcc9a64200e9c1ce7529736769919e375352cc"
 }
