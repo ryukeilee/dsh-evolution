@@ -19,7 +19,10 @@ import {
   extractSessionEvidence,
   normalizeTask,
   parseExpectTokens,
+  prepareArtifactDirectory,
+  resolveArtifactTarget,
   safeErrorCode,
+  writeArtifactFile,
   writePreviewModule,
 } from '../scripts/acceptance/task-benefit.mjs';
 import { validateTaskBenefit } from '../lib/orchestrator.js';
@@ -224,6 +227,73 @@ test('producer work and artifact targets cannot escape the verified home', async
     await assert.rejects(assertIsolatedTarget(path.join(home, 'link', 'nested'), home, 'work'), /isolated home/);
   } finally {
     await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
+test('the artifact target stays in the isolated home unless an operator designates a channel root', async () => {
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-target-home-')));
+  const channel = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-target-channel-')));
+  const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-target-outside-')));
+  try {
+    const segments = ['storages', 'evolution', 'desktop-tasks', 'task-evidence', 'desktop-task-proof.json'];
+    const inside = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof' });
+    assert.equal(inside.channel, null);
+    assert.equal(inside.outFile, path.join(home, ...segments));
+
+    const delivered = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: channel });
+    assert.equal(delivered.channel, channel);
+    assert.equal(delivered.outFile, path.join(channel, ...segments));
+    // A designated channel may itself be a symlink; the artifact follows its canonical root.
+    const link = path.join(outside, 'channel-link');
+    await fs.symlink(channel, link);
+    assert.equal((await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: link })).outFile, delivered.outFile);
+
+    await assert.rejects(resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: 'relative/channel' }), /absolute channel root/);
+    await assert.rejects(resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: path.join(channel, 'missing') }), /existing directory/);
+    await assert.rejects(resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: home }), /must not be the isolated home/);
+    await fs.mkdir(path.join(home, 'channel'));
+    await assert.rejects(resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: path.join(home, 'channel') }), /must not be the isolated home/);
+    await assert.rejects(resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: channel, outFile: path.join(home, 'a.json') }), /two different artifact authorities/);
+    await assert.rejects(resolveArtifactTarget({ home, taskId: 'has space', channelHome: channel }), /task identity rule/);
+    await assert.rejects(resolveArtifactTarget({ home, taskId: 'desktop-task-proof', outFile: path.join(outside, 'a.json') }), /isolated home/);
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(channel, { recursive: true, force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
+test('the designated channel receives one atomic 0600 artifact and no temporary file', async () => {
+  const home = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-write-home-')));
+  const channel = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-write-channel-')));
+  const outside = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-write-outside-')));
+  try {
+    const target = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: channel });
+    const parent = await prepareArtifactDirectory(target);
+    assert.equal(parent, path.dirname(target.outFile));
+    assert.equal(await fs.stat(target.outFile).catch(() => null), null);
+    const artifact = { schemaVersion: 1, kind: 'paired-real-session', taskId: 'desktop-task-proof', complete: true };
+    await writeArtifactFile(target.outFile, artifact);
+    assert.deepEqual(JSON.parse(await fs.readFile(target.outFile, 'utf8')), artifact);
+    assert.equal((await fs.stat(target.outFile)).mode & 0o777, 0o600);
+    assert.deepEqual((await fs.readdir(parent)).filter((name) => name.endsWith('.tmp')), []);
+
+    // A channel component that resolves outside the channel root is not that
+    // channel: the artifact directory is refused instead of being written.
+    const escaped = realpathSync(await fs.mkdtemp(path.join(os.tmpdir(), 'task-benefit-write-escape-')));
+    try {
+      const escapedChannel = path.join(escaped, 'channel');
+      await fs.mkdir(escapedChannel);
+      await fs.symlink(outside, path.join(escapedChannel, 'storages'));
+      const escapedTarget = await resolveArtifactTarget({ home, taskId: 'desktop-task-proof', channelHome: escapedChannel });
+      await assert.rejects(prepareArtifactDirectory(escapedTarget), /inside the channel home/);
+    } finally {
+      await fs.rm(escaped, { recursive: true, force: true });
+    }
+  } finally {
+    await fs.rm(home, { recursive: true, force: true });
+    await fs.rm(channel, { recursive: true, force: true });
     await fs.rm(outside, { recursive: true, force: true });
   }
 });

@@ -66,8 +66,27 @@ profile 相同）。artifact 里的 `tokenBasis` 记录这一点，校验器忽�
    `sessionsExercised` 只在某次 `read` 结果确实包含期望值时记 1；tool 形式只在模型选择候选工具时记 1。
 6. 任何模型轮失败、无法解析的回复或空会话都令 `complete=false`，不把未知四舍五入成零。
 7. 把 artifact 原子写到
-   `$DSH_HOME/storages/evolution/desktop-tasks/task-evidence/<taskId>.json`（`0600`）。宿主只按
-   taskId 读固定名字，计划不携带任意路径。
+   `$DSH_HOME/storages/evolution/desktop-tasks/task-evidence/<taskId>.json`（`0600`）。默认写入
+   隔离 home 自身；操作者可以用 `--channel-home <dir>` 指定“读取该证据的 profile 的 home”，此时
+   会话仍然只在隔离 home 运行，**只有最后一次 artifact 写入**跨到那个 channel。宿主只按 taskId 读
+   固定名字，计划不携带任意路径。
+
+### 3.1 为已存在的 profile 生成证据（`--channel-home`）
+
+正式/长期 profile 的 Desktop 宿主只从自己的 channel 读证据，而 producer 拒绝把会话跑在正式 home。
+`--channel-home` 是显式的操作者选择：会话继续在隔离 home 中真实运行（候选对 baseline 的唯一差异
+不变），artifact 直接原子写进 `<channel-home>/storages/evolution/desktop-tasks/task-evidence/<taskId>.json`。
+
+- 通道根必须是**已存在的目录**，且不能是、也不能位于隔离 home 内；`--out` 与该选项互斥（两个
+  artifact 权威）。通道内的 `storages/...` 若解析到通道根之外则拒绝写入。
+- 操作顺序：先取一个桌面任务 id，用同一 `taskId` 与同一 `composition.code.host` 跑 producer
+  （`--channel-home` 指向目标 profile 的 home），再把带同一 `taskId`、同一 `verification.task`
+  （`id`/`prompt`/`expect`/`runs`）与同一候选源码的计划交给该 profile 的 Desktop 宿主。
+- 绑定不变：内核仍逐项校验 `taskId`、`candidateHostSha256`、`task.id`、prompt/expect 摘要、
+  `runs`、宿主版本与两侧正确性。会话隔离被保住，操作者为“这次运行就是它声明的运行”负责——这与
+  `revalidate --evidence` 处于同一信任级别，见 §5。
+- 只有能缩短真实路径（轮次或工具调用下降）的能力才可能通过 `taskBenefit`；纯粹的“预防一次非法
+  调用”在没有减少轮次/调用时不构成收益，producer 会如实给出 `benefit: false`。
 
 ## 4. context-policy 的功能复验
 
