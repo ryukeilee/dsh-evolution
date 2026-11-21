@@ -18,6 +18,15 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.16 — 稳定版
+
+`0.2.15` 的稳定后继：把验证流量与日常经验隔离，并修正 PTC 读取退化的恢复调用归因。相对 `0.2.15` 固定产物，分发内容改 `lib/cordis-compat.js`、`lib/desktop-task-host.js`、`lib/experience-collector.js`、`lib/orchestrator.js`、`lib/registration.js`，新增 `lib/verification-call.js`，加上版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改动。
+
+- **验证调用隔离（PR #79）。** Desktop 任务宿主或 `evolution_probe` 发出的验证工具调用由 `lib/verification-call.js` 的显式标记经 `lib/cordis-compat.js` 识别，采集时按验证身份写入，不再进入日常失败、非错误退化与恢复统计；普通工具入口发出的手工诊断调用仍按宿主身份采集，已有历史记录保留。隔离对照中 Desktop PTC 工作负载的 148 次验证失败、12 次验证长行截断与 12 次记给验证退化的恢复调用全部降为 0，而同一对照中 ACP 普通会话的 1 次真实长行截断仍保留；context-policy 功能复验的 `read` 验证失败与截断也降为 0。新增验收条件会在基线包上拒绝污染。
+- **PTC 读取恢复归因（PR #80）。** 退化的 `read` 只把同一 PTC 根调用内 `bash` / `grep` 的成功结果或同一路径的成功重读记为恢复；外层 `run_code` 的成功回执、跨 PTC 根的后续 shell 调用不再被当作原读取的恢复。原生回退的相关性不变。隔离宿主配对执行中误记恢复从 3 降到 0，四次读取截断均保留，唯一一次真实同根回退各记一次恢复，`evolution_plan` 的 `tool read` 得分从 0.7167 降到 0.6667。
+- **证据可复核。** 对照与安全边界见 `docs/evidence/verification-experience-isolation-20261121.md` 与 `docs/evidence/ptc-read-recovery-attribution-20261121.md`，两者都使用隔离 `DSH_HOME`，未连接生产经验库，未重算已有生产经验。
+- **宿主验收。** 八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR。已有 stable 插件、历史共享经验与生产数据不迁移、不下线。
+
 ## 0.2.15 — 稳定版
 
 `0.2.14` 的稳定后继：彻底修复 PTC（Programmatic Tool Calling）self-evolution preset 下 `evolution_probe` 执行 `verification.workload` 仍直接调用 `ctx.tools.execute` 被官方执行器拒绝的问题。`0.2.14` 只把 Desktop task host **外层**的 kernel 调用改走官方 `run_code` 传输；probe 内部每个 workload step 仍是直连调用，PTC 执行器在 policy 和工具体之前就以 “only `run_code` is callable directly” 拒绝，于是 baseline/candidate 的每个步骤都记成失败、control 不稳定、`workflowBenefit` 永远为 false，工具型自我进化实验无法完成真实 workload 收益验证。相对 `0.2.14` 固定产物，分发内容改 `lib/orchestrator.js`、`lib/desktop-task-host.js`、新增 `lib/ptc-transport.js`，加上版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改动。
