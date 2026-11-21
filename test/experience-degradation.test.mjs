@@ -384,6 +384,40 @@ test('a bash that exits non-zero does not settle a pending degradation', async (
   }
 });
 
+test('PTC envelopes and unrelated roots do not claim read recovery', async (t) => {
+  const app = new Context();
+  app.provide('tools', { register() {} });
+  const fiber = app.plugin(applyCollector, { dshHome: temporary(t) });
+  await fiber.await();
+  try {
+    const agent = { id: 'ptc-agent' };
+    const emit = (name, callId, rootCallId, result) =>
+      app.emit('tools/result', { agent, name, callId, rootCallId }, result);
+    const store = app.get('evolutionExperience').store;
+    emit('read', 'ptc-read', 'ptc-root', truncatedRead);
+    emit('run_code', 'ptc-root', undefined, { isError: false });
+    emit('bash', 'unrelated-bash', 'other-root', { isError: false, value: { exitCode: 0 } });
+    emit('run_code', 'other-root', undefined, { isError: false });
+    assert.equal(store.stats().events, 0);
+    app.emit('agent/turn-stopping', { agent });
+    const [unrecovered] = store.discover().records;
+    assert.equal(unrecovered.occurrences, 1);
+    assert.equal(unrecovered.metrics.recoverycalls.sum, 0);
+    assert.equal(unrecovered.recoveryTool, '');
+
+    emit('read', 'second-read', 'second-root', truncatedRead);
+    emit('bash', 'fallback-bash', 'second-root', { isError: false, value: { exitCode: 0 } });
+    emit('run_code', 'second-root', undefined, { isError: false });
+    app.emit('agent/turn-stopping', { agent });
+    const [recovered] = store.discover().records;
+    assert.equal(recovered.occurrences, 2);
+    assert.equal(recovered.metrics.recoverycalls.sum, 1);
+    assert.equal(recovered.recoveryTool, 'tool:bash');
+  } finally {
+    await fiber.dispose();
+  }
+});
+
 test('a successful re-read of the same path is an associated recovery', async (t) => {
   const { Context } = await import('@deepseek-ai/cordis');
   const { apply: applyCollector } = await import('../lib/experience-collector.js');
