@@ -7,6 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 import { createDesktopTaskHost } from '../lib/desktop-task-host.js';
+import { isVerificationCall } from '../lib/verification-call.js';
 import {
   PROTOCOL_VERSION,
   SCHEMA_VERSION,
@@ -525,6 +526,7 @@ test('a PTC preset routes kernel calls through the official run_code transport',
     const results = [];
     for (const call of input.calls) {
       transportCalls.push(call.name);
+      assert.equal(isVerificationCall({ agent: input.agent, callId: call.id }), true);
       if (call.name !== 'run_code') {
         // This is the exact refusal a PTC preset returns for a direct call.
         results.push({ callId: call.id, result: { isError: true, error: {
@@ -540,6 +542,7 @@ test('a PTC preset routes kernel calls through the official run_code transport',
       const args = JSON.parse(match[2]);
       const tool = ctx.tools.get(name);
       assert.ok(tool, `the wrapper names a registered tool: ${name}`);
+      assert.equal(isVerificationCall({ agent: input.agent, rootCallId: call.id, callId: 'nested' }), true);
       const value = await tool.execute(args, { agent: input.agent, signal: input.signal });
       results.push({ callId: call.id, result: { isError: false, value: { logs: [], result: { __dshEvolutionKernelValue: value } } } });
     }

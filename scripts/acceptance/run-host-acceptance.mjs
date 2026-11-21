@@ -237,6 +237,10 @@ function crossCheckExperiencePhase(phase, result) {
   const candidate = countProbeSamples(result.probes?.candidate?.samples);
   const checks = {};
   if (phase === 'seed') {
+    const seededFailures = result.store?.seededFailures;
+    checks.verificationExcluded = result.store?.baselineWorkflowEvents === 0;
+    checks.workflowFailuresPreserved = Number.isInteger(seededFailures) && seededFailures > 0
+      && result.plan?.occurrences === seededFailures && result.store?.occurrencesAfterBaseline === seededFailures;
     checks.safetyPreflight = result.probes?.baseline?.safety?.policy === 'official-concurrency-safe'
       && result.probes?.candidate?.safety?.policy === 'official-concurrency-safe';
     checks.baselineTargetFailed = baseline.target.total > 0 && baseline.target.errors === baseline.target.total;
@@ -277,14 +281,14 @@ function crossCheckExperiencePhase(phase, result) {
 
 /** The evidence projection of one phase; raw samples stay bounded and free of
  *  tool error text (only codes, roles and timestamps cross this boundary). */
-function selectExperienceEvidence(phase, result) {
+function selectExperienceEvidence(phase, result, ok) {
   const probes = {};
   for (const name of ['baseline', 'candidate']) {
     const part = result?.probes?.[name];
     if (part) probes[name] = { scenarioDigest: part.scenarioDigest ?? null, safety: part.safety ?? null, samples: part.samples ?? [], summary: countProbeSamples(part.samples) };
   }
   return {
-    ok: true,
+    ok,
     phase,
     experimentId: result?.experimentId ?? null,
     toolCount: result?.toolCount ?? null,
@@ -1322,10 +1326,10 @@ async function main() {
       if (!result || result.ok === false || result.phase !== phase) {
         throw new Error(`experience-evolution ${phase} did not report a successful ${phase} phase`);
       }
+      evidence.experienceEvolution[phase] = selectExperienceEvidence(phase, result, phaseOk);
       if (!crossCheck.ok) {
         throw new Error(`experience-evolution ${phase} evidence did not cross-check: ${JSON.stringify(crossCheck)}`);
       }
-      evidence.experienceEvolution[phase] = selectExperienceEvidence(phase, result);
     }
   }
 

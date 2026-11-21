@@ -390,7 +390,11 @@ export function apply(ctx) {
       { name: HEALTH_TOOL, arguments: {}, role: 'target' },
       { name: CONTROL_TOOL, arguments: {}, role: 'control' },
     ]);
+    const beforeBaseline = store.stats().events;
     const baseline = await recordBaseline(call, proposed.experimentId, scenario);
+    const baselineWorkflowEvents = store.stats().events - beforeBaseline;
+    const afterBaseline = await call('evolution_plan', { focus: `tool:${HEALTH_TOOL}`, minOccurrences: 3, limit: 5 });
+    const occurrencesAfterBaseline = afterBaseline.selected?.occurrences ?? null;
     if (baseline.summary.target.total < 1 || baseline.summary.target.errors !== baseline.summary.target.total) {
       throw new Error(`the baseline target did not fail on every sample: ${JSON.stringify(baseline.summary)}`);
     }
@@ -494,7 +498,7 @@ export function apply(ctx) {
       ok: true,
       phase: 'seed',
       toolCount: evolutionTools().length,
-      store: { before, after: stats.after, seededFailures: failures.length },
+      store: { before, after: stats.after, seededFailures: failures.length, baselineWorkflowEvents, occurrencesAfterBaseline },
       plan: {
         selected: plan.selected ?? null,
         problemKey: String(problemKey),

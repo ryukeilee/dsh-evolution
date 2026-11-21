@@ -302,6 +302,7 @@ test('every recorded surface is classified and its class matches the shipped pac
   ]);
   assert.deepEqual(advisoryUnavailable, [
     'ctx.agentPresets.resolve()/mount() + agents.create({ setup })',
+    'ctx.tools.execute() / tools/result ToolExecution.rootCallId',
     "ctx.get('pluginPackages').packageOf() (resolved host packages)",
     "ctx.get('loader').entries() (live loader entries)",
     "ctx.get('cordisInspect').list() (providers)",
