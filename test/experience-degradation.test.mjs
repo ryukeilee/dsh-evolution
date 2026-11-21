@@ -10,10 +10,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { Context } from '@deepseek-ai/cordis';
 
 import { openSharedExperience, experienceEventId } from '../lib/shared-experience.js';
-import { detectDegradation } from '../lib/experience-collector.js';
+import { apply as applyCollector, detectDegradation } from '../lib/experience-collector.js';
 import { planEvolutionCandidates } from '../lib/experience-plan.js';
+import { withVerificationCall } from '../lib/verification-call.js';
 
 function temporary(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'evolution-degradation-'));
@@ -41,6 +43,59 @@ test('the collector classifies only a successful read that lost data', () => {
   assert.equal(detectDegradation({ name: 'read' }, prose), null);
   const spoofed = { isError: false, content: [{ type: 'text', text: '<content>1: normal\n(Output capped. Showing lines 1-1. Use offset=2 to continue.) extra\n</content>' }] };
   assert.equal(detectDegradation({ name: 'read' }, spoofed), null);
+});
+
+test('verification roots cannot create or recover workflow losses on the same agent', async (t) => {
+  const app = new Context();
+  app.provide('tools', { register() {} });
+  const fiber = app.plugin(applyCollector, { dshHome: temporary(t) });
+  await fiber.await();
+  t.after(() => fiber.dispose());
+  const agent = { id: 'shared-agent' };
+  const emit = (name, callId, result, identity = {}) => app.emit('tools/result', { agent, name, callId, ...identity }, result);
+  const error = { isError: true, error: { info: { code: 'UNKNOWN_TOOL' } } };
+  const success = { isError: false };
+  const { promise: hold, resolve: release } = Promise.withResolvers();
+  const { promise: started, resolve: start } = Promise.withResolvers();
+  const probe = withVerificationCall(agent, 'verification-a', async () => {
+    emit('read', 'verification-a', error);
+    emit('read', 'inner-a', truncatedRead, { rootCallId: 'verification-a' });
+    start();
+    await hold;
+    emit('grep', 'inner-recovery', success, { rootCallId: 'verification-a' });
+    emit('read', undefined, error, { rootCallId: 'verification-a' });
+  });
+  await started;
+  await assert.rejects(withVerificationCall(agent, 'verification-b', async () => {
+    emit('read', 'inner-b', truncatedRead, { rootCallId: 'verification-b' });
+    throw new Error('verification failed');
+  }), /verification failed/);
+
+  emit('read', 'ordinary-truncated', truncatedRead, { rootCallId: 'ordinary-ptc' });
+  // A rejected batch releases its ID; normal results can omit root metadata.
+  emit('grep', 'verification-b', error);
+  release();
+  await probe;
+  emit('read', 'verification-a', completeRead);
+  emit('read', undefined, { isError: false, content: [{
+    type: 'text', text: '<content>1: x\n(Output capped. Showing lines 1-1. Use offset=2 to continue.)\n</content>',
+  }] });
+  emit('grep', 'ordinary-recovery-2', success);
+
+  const store = app.get('evolutionExperience').store;
+  assert.equal(store.stats().events, 3);
+  const { records } = store.discover();
+  const losses = records.filter((row) => row.issueType === 'tool degradation');
+  assert.deepEqual(losses.map((row) => [row.failureMode, row.occurrences, row.recoveryTool, row.metrics.recoverycalls.sum]), [
+    ['line-truncated', 1, 'tool:read', 1],
+    ['output-capped', 1, 'tool:grep', 1],
+  ]);
+  const failure = records.find((row) => row.failureCount > 0);
+  assert.equal(failure.scope, 'tool grep');
+  assert.equal(failure.metrics.attemptssincefailure.sum, 1);
+  const plan = planEvolutionCandidates({ knowledge: records });
+  assert.equal(plan.selected, null);
+  assert.equal(plan.rejected.find((row) => row.problemKey === 'tool read').occurrences, 2);
 });
 
 test('a degradation is a neutral fact with a measured recovery call', (t) => {

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { apply } from '../lib/registration.js';
+import { withVerificationCall } from '../lib/verification-call.js';
 
 function fixture(config = {}) {
   const listeners = new Map();
@@ -104,6 +105,23 @@ test('tools/result still ignores non-errors and the plugin\'s own tools', async 
   listeners.get('tools/result')({ ...exec, name: 'evolution_propose' }, frozenToolResult());
   await tick();
   assert.equal(observed.length, 0);
+});
+
+test('autonomous observation ignores only the active verification root', async () => {
+  const observed = [];
+  const { core, listeners } = fixture({ mode: 'autonomous' });
+  core.observeAutonomous = async (_observation, { agent }) => { observed.push(agent); };
+  const agent = { id: 'a' };
+  const otherAgent = { id: 'b' };
+  const result = listeners.get('tools/result');
+  await withVerificationCall(agent, 'verification', async () => {
+    await tick();
+    result({ agent, name: 'read', callId: 'child', rootCallId: 'verification' }, frozenToolResult());
+    result({ agent, name: 'read', callId: 'ordinary' }, frozenToolResult());
+    result({ agent: otherAgent, name: 'read', callId: 'verification' }, frozenToolResult());
+  });
+  await tick();
+  assert.deepEqual(observed, [agent, otherAgent]);
 });
 
 test('a throwing tools/result domain write is contained, redacted, and still short-circuits', async () => {

@@ -55,6 +55,7 @@ test('the experience collector closure is the shared store and the boundary only
     'experience-plan.js',
     'experience-recall.js',
     'shared-experience.js',
+    'verification-call.js',
   ]);
 });
 
