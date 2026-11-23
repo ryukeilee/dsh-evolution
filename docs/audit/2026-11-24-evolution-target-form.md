@@ -34,9 +34,12 @@ patch 类还被规划器按 `caller-input` 拒绝；把它们改成候选会制�
 ## 3. 改动
 
 1. `lib/experience-plan.js`：候选新增 `improvement`（`tool` / `context-policy`）、`hook`、
-   `baselinePath`（观测到的恢复工具、调用数与损失类型）、`verificationKind` 与 `improvementReason`。
-   只有达到证据门槛、**有观测恢复调用且记录了恢复工具**的退化才推荐 `context-policy`；普通能力缺失仍是
-   `tool`；无恢复路径的退化不会被升级成策略钩子。保留旧字段与评分，不改变已发布记录或历史数据。
+   `baselinePath`（观测到的恢复工具、累计调用数及其口径）、`verificationKind` 与 `improvementReason`。
+   只有达到证据门槛、属于工具作用域、**已有 `workflow` 收益声明**、有观测恢复调用且恢复工具是合法工具名
+   的退化才推荐 `context-policy`；普通能力缺失仍是 `tool`；无恢复路径或非工具作用域的退化不会被升级成
+   策略钩子。累计恢复调用数与知识行记录的单个恢复工具分别标注，不把累计数归给某一个工具。
+   `verificationKind` 从既有 `benefitModel` 派生，避免工具形态的 workflow 声明与探针验证冲突。
+   保留旧字段与评分，不改变已发布记录或历史数据。
 2. `lib/self-evolution-review.js`：`experience-candidate` 动作携带同一形态、验证契约与恢复基线；未知形态
    不进入提案契约。
 3. `scripts/acceptance/run-task-benefit-loop.mjs`：计划由 `evolution_plan` 选出的 `improvementReason`、
@@ -46,40 +49,41 @@ patch 类还被规划器按 `caller-input` 拒绝；把它们改成候选会制�
 ## 4. 验证
 
 聚焦测试：`test/experience-degradation.test.mjs`、`test/experience-plan.test.mjs`、
-`test/experience-plan-real-capture.test.mjs`、`test/self-evolution-review.test.mjs`（71 项通过）。
-新增用例覆盖：有恢复的退化→context-policy、能力缺失→tool、无恢复退化→tool、评审动作透传与未知形态拒绝。
+`test/experience-plan-real-capture.test.mjs`、`test/self-evolution-review.test.mjs`（73 项通过）。
+新增用例覆盖：有恢复的退化→context-policy、能力缺失→tool、无恢复退化→tool、累计恢复次数与单个工具
+分开归因、非工具作用域/非法恢复工具名→tool、评审动作透传与未知形态拒绝。
 
 隔离真实宿主 + 真实模型 + 自然语言任务：本树打包（`dist/dsh-evolution-0.2.16.tgz`，sha256
-`64e419a8b4ee45e03414efab3972b644e1889608b0219e2385c1eaaffb1b3413`），官方 Desktop `0.2.2-rc.5`
+`be2ed068518c14e201343b9b51b582cc643c0e4f8230559043e5201c7904ac6e`），官方 Desktop `0.2.2-rc.5`
 + ACP，隔离 runtime/home，模型 `opencode-go/deepseek-v4.1-flash`：
 
 ```sh
 node scripts/acceptance/run-task-benefit-loop.mjs dist/dsh-evolution-0.2.16.tgz \
-  docs/evidence/task-benefit-0.2.16-plan-driven-form-20261124.json --runs 3 \
+  docs/evidence/task-benefit-0.2.16-plan-driven-form-final-20261124.json --runs 3 \
   --approve "<owner confirmation for the isolated plan-driven context-policy validation>"
 ```
 
-证据：`docs/evidence/task-benefit-0.2.16-plan-driven-form-20261124.json`，`ok: true`。规划器从 baseline
-会话写出的 8 次 `line-truncated`（恢复 3 次、工具 `bash`）生成 `improvement: "context-policy"`、
+证据：`docs/evidence/task-benefit-0.2.16-plan-driven-form-final-20261124.json`，`ok: true`。规划器从 baseline
+会话写出的 9 次 `line-truncated`（累计恢复 3 次、记录工具 `bash`）生成 `improvement: "context-policy"`、
 `hook: "tools/post-execute"`、`verificationKind: "paired-real-session"` 与上述 `baselinePath`。
 
-| 侧 | 会话 | 正确 | turns | tool calls | tokens | 墙钟 | 机制运行 | 模型选择 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| baseline | 3 | 3/3 | 14 | 11 | 456,286 | 132.9 s | 0 | 0 |
-| candidate | 3 | 3/3 | 12 | 9 | 398,356 | 69.5 s | 3 | 0 |
+| 侧 | 会话 | 正确 | 失败工具结果 | turns | tool calls | tokens | 墙钟 | 机制运行 | 模型选择 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| baseline | 3 | 3/3 | 1 | 16 | 13 | 524,088 | 95.0 s | 0 | 0 |
+| candidate | 3 | 3/3 | 0 | 12 | 9 | 398,436 | 71.9 s | 3 | 0 |
 
-差值：turns −14.3%、tool calls −18.2%、tokens −12.7%、墙钟 −47.7%，正确率不变。机制运行 3/3 而模型
-主动选择 0 次，再次区分了“自动生效”与“被模型选中”。8 项门禁 + `workflowBenefit` + `taskBenefit` 均为
-`true`；四种负向证据（缺失、哈希不匹配、无收益、机制未运行）仍分别在所有者确认前被拒绝；新的 ACP
-consumer 在同一任务上正确完成（4 turns / 3 calls / 132,822 tokens，读结果包含全部 sentinel）；重启后该
+差值：turns −25%、tool calls −30.8%、tokens −24.0%、墙钟 −24.3%，正确率不变，候选侧失败工具结果更少。
+机制运行 3/3 而模型主动选择 0 次，再次区分了“自动生效”与“被模型选中”。8 项门禁 + `workflowBenefit`
++ `taskBenefit` 均为 `true`；四种负向证据（缺失、哈希不匹配、无收益、机制未运行）仍分别在所有者确认前
+被拒绝；新的 ACP consumer 在同一任务上正确完成（4 turns / 3 calls，读结果包含全部 sentinel）；重启后该
 问题被判定为 `already-resolved`。
 
 ## 5. 边界
 
 - 收益只属于这条三文件长行任务与这次模型/宿主组合，不是所有工作流的普遍收益；token 来自模型账单而非
   DSH 原生计量，单会话仍有路径方差。
-- `baselinePath.recoveryTools` 来自知识行的 canonical 投影，只保留最近观测到的恢复工具；它足以防止
-  “新增工具默认更好”的结论，但不是完整恢复序列。
+- `baselinePath.recoveryTools` 来自知识行的 canonical 投影，可能只保留最近一次记录的恢复工具；
+  `recoveryCalls` 是跨观测累计值，两者口径分别标注，不构成完整恢复序列。
 - 规划器只能根据已记录的事实推荐形态，不能证明任意失败可自动修复；patch 上下文、run_code 语法等仍需
   各自的证据与风险评估，本轮没有为它们生成候选或放宽门禁。
 - 没有修改晋升门禁、确认、canary、回滚、跨入口共享或历史数据；没有发布正式版本、没有安装生产环境。
