@@ -384,6 +384,35 @@ test('a smaller generic memory failure is not hidden by a larger classified one'
   assert.equal(planned.rejected.find((entry) => entry.problemKey === 'tool run code')?.reason, 'already-resolved');
 });
 
+test('unclassified failure conclusions stay historical, not actionable occurrences', () => {
+  const now = new Date().toISOString();
+  const versions = { dsh: '1', cordis: '2', evolution: '3' };
+  const strategy = JSON.stringify({ kind: 'cordis-plugin', approach: 'retry the same strategy', fingerprint: 'abcdef0123456789', ...versions });
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:code', scope: 'tool run code',
+        problem: 'official operation failure code run failure',
+        failureCount: 4, occurrences: 4, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 10, count: 4 }, successessincefailure: { sum: 6, count: 4 } },
+      },
+      ...Array.from({ length: 10 }, (_, index) => ({
+        key: 'knowledge:verdict-' + index, scope: 'tool run code',
+        problem: 'host operation failure', strategy,
+        decision: 'no-benefit', lastOutcome: 'failure',
+        occurrences: 10, failureCount: 0, lastSeen: now,
+      })),
+    ],
+    failureMemory: [],
+    versions,
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(candidate, JSON.stringify(planned.rejected));
+  assert.equal(candidate.occurrences, 4, 'the ten unclassified verdicts do not count as actionable occurrences');
+  assert.equal(candidate.provenIneffective.length, 5, 'the bounded prior attempts remain available');
+  assert.equal(candidate.requiresNewHypothesis, true);
+});
+
 test('one caller-input mode does not discard a tool target with actionable failures', () => {
   const now = new Date().toISOString();
   const planned = planEvolutionCandidates({

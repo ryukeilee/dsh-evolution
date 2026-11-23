@@ -123,7 +123,12 @@ export function answerMatches(text, tokens) {
  */
 export function readPathMatches(actual, expected, cwd = null) {
   if (typeof actual !== 'string' || typeof expected !== 'string') return false;
-  const normalize = (value) => value.replace(/\\/g, '/').replace(/^\.\//, '');
+  const normalize = (value) => {
+    let textValue = value.replace(/\\/g, '/');
+    if (textValue.startsWith('./')) textValue = textValue.slice(2);
+    const normalized = path.posix.normalize(textValue);
+    return normalized === '.' ? '' : normalized;
+  };
   const left = normalize(actual);
   const right = normalize(expected);
   if (!left || !right) return false;
@@ -142,7 +147,7 @@ export function readPathMatches(actual, expected, cwd = null) {
  * decision, its arguments are not trusted (the order is not reliable), but the
  * call identity still comes from the title.
  */
-export function toolCallDescriptor(call, index, toolTurns, toolNames) {
+export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null) {
   const title = typeof call?.title === 'string' && call.title.trim() !== '' ? call.title.trim() : null;
   const decision = toolTurns?.[index]?.decision;
   const decisionName = typeof toolNames?.[index] === 'string' ? toolNames[index] : null;
@@ -163,17 +168,24 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames) {
   const name = titleIsTool ? title : null;
   const rawFile = rawInput && typeof rawInput.file_path === 'string' && rawInput.file_path.trim() !== '';
   const decisionFile = decisionArguments && typeof decisionArguments.file_path === 'string' && decisionArguments.file_path.trim() !== '';
+  const rawHasOffset = Number.isInteger(rawInput?.offset) && rawInput.offset > 0;
   let argumentsValue = {};
   let inputKnown = false;
   if (name === 'read') {
     // An empty/partial rawInput must not erase an explicit offset in the
     // uniquely aligned decision. A rawInput that names the same file is merged
     // over the decision so its own offset wins but a missing offset is kept.
-    if (rawFile) {
-      argumentsValue = positionTrusted && decisionFile && readPathMatches(rawInput.file_path, decisionArguments.file_path)
-        ? { ...decisionArguments, ...rawInput }
-        : rawInput;
+    const sameFile = rawFile && positionTrusted && decisionFile
+      && (readPathMatches(rawInput.file_path, decisionArguments.file_path, cwd)
+        || readPathMatches(decisionArguments.file_path, rawInput.file_path, cwd));
+    if (sameFile) {
+      argumentsValue = { ...decisionArguments, ...rawInput };
       inputKnown = true;
+    } else if (rawFile) {
+      argumentsValue = rawInput;
+      // File identity alone does not prove the start line when the decision
+      // position is ambiguous; only an explicit offset or a unique match does.
+      inputKnown = rawHasOffset;
     } else if (positionTrusted) {
       argumentsValue = { ...(decisionArguments ?? {}), ...(rawInput ?? {}) };
       inputKnown = true;
@@ -345,7 +357,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const seenCallIds = new Set();
   let attributionComplete = calls.length === toolTurns.length;
   calls.forEach((call, index) => {
-    const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames);
+    const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames, cwd);
     if (typeof call.toolCallId !== 'string' || seenCallIds.has(call.toolCallId)) attributionComplete = false;
     if (typeof call.toolCallId === 'string') seenCallIds.add(call.toolCallId);
     if (typeof descriptor.name !== 'string') attributionComplete = false;

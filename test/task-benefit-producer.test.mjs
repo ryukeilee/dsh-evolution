@@ -190,7 +190,7 @@ test('a value read from another file cannot prove the mechanism ran', () => {
     usage: { input: 1000, output: 10, cache: { read: 50 } },
     round: index,
   }));
-  const calls = paths.map((_, index) => ({ sessionUpdate: 'tool_call', toolCallId: 'c' + (index + 1), title: 'read', rawInput: { file_path: paths[index] } }));
+  const calls = paths.map((_, index) => ({ sessionUpdate: 'tool_call', toolCallId: 'c' + (index + 1), title: 'read', rawInput: { file_path: paths[index], offset: 1 } }));
   const result = (id, text) => ({
     sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
     content: [{ type: 'content', content: { type: 'text', text } }],
@@ -251,8 +251,8 @@ test('ACP rawInput and result path decide attribution, not the decision order', 
   const reordered = extractSessionEvidence({
     label: 'candidate-1', side: 'candidate', turns,
     updates: [
-      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/b.txt' } },
-      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/b.txt', offset: 1 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt', offset: 1 } },
       result('c1', '<path>/home/b.txt</path>\n<content>sentinel-b</content>'),
       result('c2', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
     ],
@@ -551,17 +551,38 @@ test('an empty rawInput cannot erase an explicit offset from a unique decision',
   assert.equal(tail.exercised, false, 'the tail read must keep its explicit offset');
 
   const withPathOnly = extractSessionEvidence({
-    label: 'candidate-1', side: 'candidate', turns,
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/work',
     updates: [
-      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
-      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/work/a.txt' } },
+      result('c1', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
     ],
     assistantText: 'sentinel-a',
     expectedTokens: ['sentinel-a'],
-    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    expectedReads: [{ path: '/work/a.txt', token: 'sentinel-a' }],
     candidateTool: null, durationMs: 1,
   });
   assert.equal(withPathOnly.exercised, false, 'a rawInput path must keep the uniquely aligned offset');
+
+  const ambiguousPathOnly = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [
+      { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: 'a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 0 },
+      { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: 'b.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 1 },
+    ],
+    cwd: '/work',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/work/a.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/work/b.txt' } },
+      result('c1', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/work/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/work/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(ambiguousPathOnly.attributionComplete, false);
+  assert.equal(ambiguousPathOnly.exercised, false, 'an ambiguous path-only input cannot prove offset 1');
 
   const start = extractSessionEvidence({
     label: 'candidate-1', side: 'candidate',
@@ -624,6 +645,18 @@ test('relative and absolute requests for one file share the first-read key', () 
     assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
   });
   assert.equal(row.exercised, false, 'the later absolute path is the same first request, not a new first read');
+
+  const dotPath = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/work',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: 'a.txt', offset: 600 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/work/a.txt', offset: 1 } },
+      result('c1', '<path>/work/./a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(dotPath.exercised, false, 'internal dot segments must normalize to the same first request');
 });
 
 test('a per-file binding must cover every expected token', () => {

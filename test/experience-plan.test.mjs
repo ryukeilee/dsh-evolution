@@ -116,7 +116,7 @@ test('plan: a resolution at least as new as the latest failure excludes the targ
 
 test('plan: same-version ineffective conclusions require a new hypothesis', () => {
   const knowledge = [
-    record({ key: 'knowledge:f1', scope: 'plugin:edge-cache', failureCount: 2, occurrences: 2, failureMode: 'timeout', lastSeen: iso(BASE + 4 * DAY) }),
+    record({ key: 'knowledge:f1', scope: 'plugin:edge-cache', failureCount: 3, occurrences: 3, failureMode: 'timeout', lastSeen: iso(BASE + 4 * DAY) }),
     conclusionRecord({ suffix: 'nb', lastSeen: iso(BASE + 6 * DAY), decision: 'no-benefit' }),
     conclusionRecord({ suffix: 'rg', lastSeen: iso(BASE + 7 * DAY), decision: 'regression', state: 'REGRESSED', regressionCount: 1 }),
   ];
@@ -134,7 +134,7 @@ test('plan: same-version ineffective conclusions require a new hypothesis', () =
 
 test('plan: cross-version attempts are recorded but never verified', () => {
   const knowledge = [
-    record({ key: 'knowledge:f1', scope: 'plugin:edge-cache', failureCount: 2, occurrences: 2, failureMode: 'timeout', lastSeen: iso(BASE + 4 * DAY) }),
+    record({ key: 'knowledge:f1', scope: 'plugin:edge-cache', failureCount: 3, occurrences: 3, failureMode: 'timeout', lastSeen: iso(BASE + 4 * DAY) }),
     conclusionRecord({ suffix: 'nb', lastSeen: iso(BASE + 6 * DAY), decision: 'no-benefit' }),
   ];
   const other = planEvolutionCandidates({ knowledge, versions: { dsh: '4.0.0', cordis: '0.2.5', evolution: '0.2.3' } }, { now: BASE + 10 * DAY });

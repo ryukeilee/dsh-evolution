@@ -725,11 +725,14 @@ try {
     // shift a later call's arguments onto another id.
     const consumerDecisions = consumerTurns
       .filter((turn) => (turn.tools?.length ?? 0) > 0 && typeof turn.decision?.tool === 'string' && turn.decision.tool.trim() !== '');
-    let consumerAttributionComplete = consumerCalls.length === consumerDecisions.length;
+    const consumerCallIds = consumerCalls.map((call) => call.toolCallId);
+    let consumerAttributionComplete = consumerCalls.length === consumerDecisions.length
+      && consumerCallIds.every((id) => typeof id === 'string')
+      && new Set(consumerCallIds).size === consumerCallIds.length;
     const consumerToolNames = consumerDecisions.map((turn) => turn.decision.tool);
     const consumerCallById = new Map();
     consumerCalls.forEach((call, index) => {
-      const descriptor = toolCallDescriptor(call, index, consumerDecisions, consumerToolNames);
+      const descriptor = toolCallDescriptor(call, index, consumerDecisions, consumerToolNames, home);
       if (typeof call.toolCallId === 'string' && typeof descriptor.name === 'string') {
         consumerCallById.set(call.toolCallId, descriptor);
       } else {
