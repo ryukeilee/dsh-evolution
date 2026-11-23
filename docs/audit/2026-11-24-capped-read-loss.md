@@ -263,10 +263,11 @@ run6 的 producer 已经干净，但 Trial 功能复验仍在 `E_DESKTOP_FUNCTIO
    的工具；`rawInput` 决定参数；结果 `<path>` 决定读取的文件。没有 `title`、描述性标题、
    同名多次调用却没有 `rawInput`、重复调用 ID、读取路径缺失、结果路径与请求路径冲突、或调用
    数与工具决策数不一致时，该会话都不作机制证据；任何无法识别的调用都会阻止后续首读冒充。
-   工具采用与调用数也只统计已验证的 ACP 调用，归因不完整的会话不进入有效收益样本。记录的
-   candidate 行有 3 次 read、每次 3 个完整文件结果（`readResultCharacters` 206,610，fixtures
-   合计 195,840，其余是宿主信封），与逐文件判定一致；但本轮没有重跑真实模型来重新生成
-   artifact，报告不把「新判定已在真实会话上重跑」写成已执行事实。
+   工具采用与调用数也只统计已验证的 ACP 调用，调用数与工具决策数不一致同样视为归因不完整，
+   不进入有效收益样本。记录的 candidate 行有 3 次 read、每次 3 个完整文件结果
+   （`readResultCharacters` 206,610，fixtures 合计 195,840，其余是宿主信封），与逐文件判定
+   一致；但本轮没有重跑真实模型来重新生成 artifact，报告不把「新判定已在真实会话上重跑」
+   写成已执行事实。
 2. **多 step 的 usage 必须相加。** 实测一次 `opencode run` 的两个 `step_finish` 分别报告
    input 9,621/output 39/cache.read 512 与 input 89/output 7/cache.read 10,112；旧实现只保留
    最后一步。现在按 step 相加，任一 step 缺计费字段或整个 `tokens` 对象则该轮 unknown。该修复
@@ -294,7 +295,8 @@ run6 的 producer 已经干净，但 Trial 功能复验仍在 `E_DESKTOP_FUNCTIO
    `rootCause` 也不会把可行动目标的验收指标从成功率改成延迟。新的 caller-input 失败同样不会
    重开已经由可行动证据解决的目标。同一知识键的重复记录在累加全组与来源计数之前去重，
    不会再让可行动窗口从 10 次膨胀到 110 次；没有模式也没有根因的通用计数不会进入混合目标的
-   门槛、失败率或分数，纯通用目标仍以 `unattributed` 形式输出。
+   门槛、失败率或分数，`rootCause` 只归因到携带它的记录，纯通用目标仍以 `unattributed`
+   形式输出（real-capture 规划测试已按这个语义更新）。
 7. **同一条成功判定与宿主工具失败判定。** producer 与 fresh consumer 共用
    `successfulToolResult`：`completed` 或 `success` 之外，还要求 `isError` / `is_error` 不为真。
    宿主工具失败同时从 `tool_call` 与 `tool_call_update` 两类通知按调用 ID 合并，初始

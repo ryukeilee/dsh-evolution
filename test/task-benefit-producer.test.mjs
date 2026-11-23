@@ -455,12 +455,13 @@ test('a call/decision count mismatch is not attributed to the policy', () => {
   const row = extractSessionEvidence({
     label: 'candidate-1', side: 'candidate', turns,
     updates: [
-      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/work/a.txt' } },
       update('c1', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
     ],
     assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
   });
   assert.equal(row.toolCalls, 1);
+  assert.equal(row.attributionComplete, false, 'two tool decisions but one call is an incomplete sample');
   assert.equal(row.exercised, false, 'two decisions but one reported call cannot be joined by position');
 });
 

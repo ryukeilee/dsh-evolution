@@ -298,7 +298,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const attributionAligned = calls.length === toolTurns.length;
   const byId = new Map();
   const seenCallIds = new Set();
-  let attributionComplete = true;
+  let attributionComplete = calls.length === toolTurns.length;
   calls.forEach((call, index) => {
     const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames);
     if (typeof call.toolCallId !== 'string' || seenCallIds.has(call.toolCallId)) attributionComplete = false;

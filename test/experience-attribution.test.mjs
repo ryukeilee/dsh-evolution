@@ -332,6 +332,30 @@ test('generic untriaged counters cannot lift one actionable failure over the flo
   assert.equal(rejected?.occurrences, 1, 'the 100 generic counters are not actionable evidence');
 });
 
+test('a rootCause on one record does not attribute 100 generic counters', () => {
+  const now = new Date().toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:root', scope: 'tool run code',
+        problem: 'host operation failure', rootCause: 'timeout waiting for the sandbox',
+        failureCount: 1, occurrences: 1, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 10, count: 1 }, successessincefailure: { sum: 6, count: 1 } },
+      },
+      {
+        key: 'knowledge:generic', scope: 'tool run code',
+        problem: 'host operation failure',
+        failureCount: 100, occurrences: 100, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 100, count: 100 }, successessincefailure: { sum: 0, count: 100 } },
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const rejected = planned.rejected.find((entry) => entry.problemKey === 'tool run code');
+  assert.equal(rejected?.reason, 'insufficient-evidence');
+  assert.equal(rejected?.occurrences, 1, 'the rootCause applies only to its own record');
+});
+
 test('one caller-input mode does not discard a tool target with actionable failures', () => {
   const now = new Date().toISOString();
   const planned = planEvolutionCandidates({

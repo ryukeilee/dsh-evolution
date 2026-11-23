@@ -88,32 +88,29 @@ function plan(discovered, versions = fixture.host) {
   }, { now: Date.now(), minOccurrences: 3, maxCandidates: 5 });
 }
 
-test('observed history: the recurring unexplained failure is selected with real evidence', () => {
+test('observed history: the recurring unattributed counter is selected; verdict targets need actionable evidence', () => {
   const { store, discovered } = replay();
   try {
     assert.ok(discovered.records.length >= 8, `expected the observed rows, got ${discovered.records.length}`);
     const planned = plan(discovered);
     assert.equal(planned.ok, true);
     assert.ok(planned.selected, 'a candidate must be selected from the observed failures');
-    // The two unresolved targets that carry experiment verdicts are selected;
-    // the adopted and resolved targets are rejected instead.
-    assert.ok(['tool probe invalid fix', 'tool probe regression fix'].includes(planned.selected.problemKey),
-      `unexpected selected target ${planned.selected.problemKey}`);
+    // The observed failures in this fixture carry no mode/rootCause; they are a
+    // real recurring unattributed counter, not actionable workflow evidence.
+    assert.equal(planned.selected.problemKey, 'tool probe control');
+    assert.equal(planned.selected.attribution, 'unattributed');
     assert.ok(planned.selected.occurrences >= 3);
-    assert.ok(planned.selected.evidenceRefs.length > 0, 'the candidate cites recorded evidence');
     assert.equal(planned.selected.applicabilityVerified, true);
     assert.equal(planned.selected.applicability.dsh, '0.2.2-rc.1');
     assert.equal(planned.selected.applicability.cordis, '4.1.0');
-    const noBenefit = planned.candidates.find((candidate) => candidate.problemKey === 'tool probe invalid fix');
-    assert.ok(noBenefit, 'the no-benefit target stays a candidate until a new hypothesis is tried');
-    assert.equal(noBenefit.provenIneffective.length, 1, 'the no-benefit verdict is attached to the candidate');
-    assert.equal(noBenefit.provenIneffective[0].decision, 'no-benefit');
-    assert.equal(noBenefit.provenIneffective[0].fingerprint, 'd387e503e0f6ebd2');
-    assert.equal(noBenefit.requiresNewHypothesis, true);
-    // A regression verdict is surfaced for the regression target as well.
-    const regression = planned.candidates.find((candidate) => candidate.problemKey === 'tool probe regression fix');
-    assert.ok(regression, 'the regression target stays a candidate until a new hypothesis is tried');
-    assert.equal(regression.provenIneffective[0]?.decision, 'regression');
+    // The conclusion-only targets have one actionable occurrence each; the
+    // generic counters beside them must not lift them over the floor.
+    for (const target of ['tool probe invalid fix', 'tool probe regression fix']) {
+      const rejected = planned.rejected.find((entry) => entry.problemKey === target);
+      assert.ok(rejected, `${target} must be reported, not silently dropped`);
+      assert.equal(rejected.reason, 'insufficient-evidence');
+      assert.equal(rejected.occurrences, 1);
+    }
   } finally {
     store.close();
   }
