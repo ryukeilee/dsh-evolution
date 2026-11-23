@@ -155,8 +155,8 @@ test('the planner ranks a degradation by frequency, recovery cost and recoverabi
   assert.deepEqual(candidate.benefitModel, { kind: 'workflow', metric: 'failureRate' });
   assert.ok(candidate.acceptanceMetrics.some((metric) => metric.name === 'recoveryCalls' && metric.direction === 'lower'));
   assert.ok(candidate.score > 0);
-  // The loss-aware score must prefer the more expensive loss when frequency
-  // and recency are equal.
+  // A more expensive loss must outrank a cheaper one when frequency and
+  // recency are equal: the recovery calls it cost are part of `volumeUnits`.
   const withCost = planEvolutionCandidates({
     knowledge: [{
       key: 'knowledge:costly', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',

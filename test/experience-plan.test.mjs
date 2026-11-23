@@ -202,15 +202,19 @@ test('plan: an observed failure rate outranks raw all-time frequency', () => {
   assert.equal(plan.candidates[1].observedFailureRate, 0.001);
 });
 
-test('plan: candidates without an observed window keep the historical score', () => {
+test('plan: the score documents one formula for both candidate kinds', () => {
   const knowledge = [record({
     key: 'knowledge:legacy', scope: 'tool:legacy', failureCount: 6, occurrences: 6,
     failureMode: 'timeout', lastSeen: iso(BASE),
   })];
   const plan = planEvolutionCandidates({ knowledge, versions: VERSIONS }, { now: BASE + DAY });
   assert.equal(plan.candidates[0].rateBasis, 'failure-count-only');
-  // 0.35 frequency + 0.20*(1 - 1/30) recency + 0.15*(1/3) breadth + 0.15*0.5 evidence.
-  assert.equal(plan.candidates[0].score, 0.6683);
+  // No observed window, so the frequency term contributes nothing (a missing
+  // window is not a health claim) and the all-time count only reaches `volume`
+  // relative to the plan's own largest loss, which here is itself:
+  // 0.35 volume + 0.20*(1 - 1/30) recency + 0.10*(1/3) breadth
+  // + 0.10*0 regression + 0.05*0.5 evidence.
+  assert.equal(plan.candidates[0].score, 0.6017);
 });
 
 test('plan: output is bounded by the declared limits', () => {
@@ -268,6 +272,51 @@ test('plan: failure memory occurrences are not summed with knowledge occurrences
   })];
   const plan = planEvolutionCandidates({ knowledge, failureMemory, versions: VERSIONS }, { now: BASE });
   assert.equal(plan.candidates[0].occurrences, 5);
+});
+
+test('plan: recorded loss orders the queue, not sample size', () => {
+  const window = (attempts, successes) => ({
+    attemptssincefailure: { sum: attempts },
+    successessincefailure: { sum: successes },
+  });
+  const knowledge = [
+    // 60 failures recorded inside a window of 1,000 attempts.
+    record({ key: 'knowledge:big', scope: 'tool:big', failureCount: 60, occurrences: 60, failureMode: 'code-run-failed', lastSeen: iso(BASE + 9 * DAY), metrics: window(1000, 940) }),
+    // Four failures out of five attempts: a perfect rate on a tiny sample.
+    record({ key: 'knowledge:tiny', scope: 'tool:tiny', failureCount: 4, occurrences: 4, failureMode: 'timeout', lastSeen: iso(BASE + 9 * DAY), metrics: window(5, 1) }),
+  ];
+  const plan = planEvolutionCandidates({ knowledge, versions: VERSIONS }, { now: BASE + 10 * DAY });
+  assert.equal(plan.candidates.length, 2);
+  assert.equal(plan.candidates[0].problemKey, 'tool:big');
+  assert.equal(plan.candidates[0].volumeUnits, 60);
+  assert.equal(plan.candidates[1].problemKey, 'tool:tiny');
+  assert.ok(plan.candidates[0].score > plan.candidates[1].score);
+});
+
+test('plan: a recording loss and an error loss are ranked on one scale', () => {
+  const knowledge = [
+    // Five truncations that each cost one recovery call: ten lost turns.
+    record({
+      key: 'knowledge:loss', scope: 'tool:read', issueType: 'tool degradation', failureMode: 'line-truncated',
+      occurrences: 5, failureCount: 0, successCount: 0, lastSeen: iso(BASE + 9 * DAY),
+      metrics: { recoverycalls: { sum: 5, count: 5 } }, recoveryTool: 'tool:bash',
+    }),
+    // Sixty failures of another target recorded in its observed window.
+    record({
+      key: 'knowledge:errors', scope: 'tool:heavy', failureCount: 60, occurrences: 60,
+      failureMode: 'code-run-failed', lastSeen: iso(BASE + 9 * DAY),
+      metrics: { attemptssincefailure: { sum: 1000 }, successessincefailure: { sum: 940 } },
+    }),
+  ];
+  const plan = planEvolutionCandidates({ knowledge, versions: VERSIONS }, { now: BASE + 10 * DAY });
+  const loss = plan.candidates.find((entry) => entry.problemKey === 'tool:read');
+  const errors = plan.candidates.find((entry) => entry.problemKey === 'tool:heavy');
+  assert.ok(loss && errors);
+  assert.equal(loss.loss.recoveryCalls, 5);
+  assert.equal(loss.volumeUnits, 10);
+  assert.equal(errors.volumeUnits, 60);
+  assert.equal(plan.candidates[0].problemKey, 'tool:heavy');
+  assert.ok(errors.score > loss.score);
 });
 
 test('planner helpers: strategy fingerprint and conclusion parsing', () => {

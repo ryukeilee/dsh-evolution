@@ -34,7 +34,7 @@
 - `sharedExperience.discover()`：统一共享经验里最近的 canonical knowledge 行（失败事实、已解决事实、实验结论），有界窗口并如实报告 `truncated`；
 - 本地 durable failure memory（`collectFailureMemoryExperience` 同源投影）。
 
-`planEvolutionCandidates()` 按问题身份（`scope`，即 target）分组：反复出现且未被更新解决覆盖的失败才是候选；已解决目标进入 `rejected: already-resolved`；证据不足进入 `rejected: insufficient-evidence`。候选按频率、时效、失败面广度、回归计数、证据引用五个归一化项确定性评分，并给出：
+`planEvolutionCandidates()` 按问题身份（`scope`，即 target）分组：反复出现且未被更新解决覆盖的失败才是候选；已解决目标进入 `rejected: already-resolved`；证据不足进入 `rejected: insufficient-evidence`。候选按六个归一化项确定性评分：**记录损失量**（`volumeUnits`：观测窗口内的失败数，没有窗口时用历史失败数，加上非错误退化实际付出的恢复调用数）、**失败率**（同一窗口的真实分母，样本不足时向中性值收缩，没有窗口时不计入）、时效、失败面广度、回归计数、证据引用。两种候选（工具错误与非错误退化）用同一套公式，所以排序反映记录到的损失，而不是候选恰好由哪个公式产生。候选给出：
 
 - 问题与证据（occurrences、first/last seen、failureModes、evidenceRefs）；
 - 已知根因或“需要新假设”标记（同条件下的 `no-benefit` / `regression` 结论进入 `provenIneffective` / `requiresNewHypothesis`）；
@@ -43,6 +43,8 @@
 - 失败与回滚条件、维护风险。
 
 没有可靠候选时返回 `none` 与原因，不创建实验。`focus` 只收紧范围，`minOccurrences` 只能提高，`limit` 只能收紧。模型仍负责把候选写成具体插件方案（`evolution_propose` 的 `strategy` / `rootCause`）。
+
+失败归因按**每个失败形状**判定，而不是把一个目标的全部模式拼在一起判定：`caller-input`（参数、编辑上下文、陈旧 revision）只有在它是该目标记录到的最多成因时才使目标进入 `rejected: caller-input`，并在 `detail` 里点名被隐藏的成因计数；任何有记录的失败形状都不足以单独否决整个目标。候选与这条拒绝都带 `originCounts`（`caller-input` / `host` / `capability-gap` / `environment` / `unknown` 各多少条）。`rejected` 按记录损失降序，所以有界截断不会把最大的一条藏掉；`none.reason` 在证据达标但全部被拒绝时给出真实原因（`already-resolved` / `caller-input`），不再一律报 `insufficient-evidence`。
 
 ## Probe：真实对照实验
 

@@ -159,6 +159,60 @@ test('a host-origin target does not declare a workflow benefit model', () => {
   assert.equal(planned.candidates[0].benefitModel, undefined);
 });
 
+test('one caller-input shape does not discard a target dominated by other causes', () => {
+  // Production 2026-11-23: `tool run code` held 111 unattributed plus 54
+  // `code run failure` occurrences and 2 `invalid args` ones. Joining every
+  // mode and testing the union classified the whole target as caller input, so
+  // the largest recorded loss disappeared from `candidates` *and* from the
+  // bounded `rejected` list.
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      { key: 'knowledge:a', scope: 'tool run code', problem: 'official operation failure host operation failure', failureCount: 111, occurrences: 111, lastSeen: now() },
+      { key: 'knowledge:b', scope: 'tool run code', problem: 'official operation failure code run failure', failureCount: 54, occurrences: 54, lastSeen: now() },
+      { key: 'knowledge:c', scope: 'tool run code', problem: 'official operation failure invalid args', failureCount: 2, occurrences: 2, lastSeen: now() },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 2 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(candidate, `the largest loss was discarded: ${JSON.stringify(planned.rejected)}`);
+  assert.equal(candidate.occurrences, 167);
+  assert.equal(candidate.origin, 'unknown');
+  assert.deepEqual(candidate.originCounts, { unknown: 165, 'caller-input': 2 });
+});
+
+test('a target dominated by caller input stays rejected and names what it hid', () => {
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      { key: 'knowledge:a', scope: 'tool apply patch', problem: 'official operation failure fs patch mismatch', failureCount: 9, occurrences: 9, lastSeen: now() },
+      { key: 'knowledge:b', scope: 'tool apply patch', problem: 'official operation failure host operation failure', failureCount: 4, occurrences: 4, lastSeen: now() },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 2 });
+  assert.equal(planned.candidates.length, 0);
+  assert.equal(planned.rejected[0].reason, 'caller-input');
+  assert.deepEqual(planned.rejected[0].origins, { 'caller-input': 9, unknown: 4 });
+  assert.match(planned.rejected[0].detail, /9 of 13/);
+  assert.match(planned.rejected[0].detail, /fs patch mismatch/);
+  assert.equal(planned.none.reason, 'caller-input');
+});
+
+test('rejections are ordered by recorded loss so the cap cannot hide the biggest one', () => {
+  const nowIso = now();
+  const thin = Array.from({ length: 12 }, (_, index) => ({
+    key: `knowledge:thin-${index}`,
+    scope: `tool thin-${String(index).padStart(2, '0')}`,
+    problem: 'official operation failure timeout',
+    failureCount: 1,
+    occurrences: 1,
+    lastSeen: nowIso,
+  }));
+  const big = { key: 'knowledge:big', scope: 'tool zzz-big', problem: 'official operation failure fs patch mismatch', failureCount: 43, occurrences: 43, lastSeen: nowIso };
+  const planned = planEvolutionCandidates({ knowledge: [...thin, big], failureMemory: [] }, { minOccurrences: 2 });
+  assert.equal(planned.candidates.length, 0);
+  assert.equal(planned.rejected[0].problemKey, 'tool zzz-big');
+  assert.ok(planned.rejected.length <= 10);
+});
+
 test('a __proto__ metric key survives the projection as own data', async () => {
   const { knowledgeExperienceRecord } = await import('../lib/experience-recall.js');
   const metrics = Object.fromEntries([['__proto__', { sum: 1, count: 1, last: 1 }]]);
