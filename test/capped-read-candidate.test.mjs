@@ -494,6 +494,38 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(badFooterDecision.value, undefined, 'a footer that disagrees with the returned window is not extended');
 
+  const nestedFooter = '(Output capped. Showing lines 9-9. Use offset=10 to continue.)';
+  const nestedFile = '/isolated/nested-footer.txt';
+  const nestedRows = [nestedFooter, 'bbbb', 'cccc', 'dddd', 'eeee'];
+  const nestedListener = mount({ [nestedFile]: nestedRows.join('\n') + '\n' });
+  const nestedDecision = await nestedListener(
+    { name: 'read', callId: 'nested-footer', arguments: { file_path: 'nested-footer.txt', limit: 5 }, agent: {}, signal: null },
+    readResult({
+      lines: [{ number: 1, text: nestedFooter }, { number: 2, text: 'bbbb' }],
+      totalLines: 5,
+      path: nestedFile,
+      content: nestedFooter + '\nbbbb\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)',
+    }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(nestedDecision.value.lines.length, 5, 'the trailing footer, not a body literal, is checked');
+  assert.equal(nestedDecision.value.lines.at(-1).number, 5);
+
+  const execWindowExec = { name: 'read', callId: 'exec-window', arguments: { file_path: 'exec-window.txt', limit: 5 }, agent: {}, signal: null };
+  const execWindowFile = '/isolated/exec-window.txt';
+  const execWindowListener = mount({ [execWindowFile]: raceRows.join('\n') + '\n' }, {
+    // A downstream pre-execute hook narrows the request the tool actually runs
+    // with; the post-execute phase sees the original 5 again.
+    preNext: async () => { execWindowExec.arguments.limit = 3; return { kind: 'accept' }; },
+  });
+  const execWindowDecision = await execWindowListener(
+    execWindowExec,
+    readResult({ lines: raceRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })), totalLines: 5, path: execWindowFile, content: 'aaaa\nbbbb\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }),
+    async () => { execWindowExec.arguments.limit = 5; return { kind: 'accept' }; },
+  );
+  assert.equal(execWindowDecision.value.lines.length, 3, 'the append is bounded by the executed window, not the entry request');
+  assert.equal(execWindowDecision.value.lines.at(-1).number, 3);
+
   const sepPrefix = 'a\u2028bc';
   const sepMarker = sepPrefix + '... (line truncated to 4 chars)';
   const sepFile = '/isolated/sep-marker.txt';

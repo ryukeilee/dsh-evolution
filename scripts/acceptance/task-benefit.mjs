@@ -330,41 +330,34 @@ function parseToolResultText(text) {
 
 /**
  * Merge ACP call input from the initial tool_call and later tool_call_update
- * notifications. A terminal notification locks the known path/offset; later
- * updates may fill a missing field but may not rewrite a locked one.
+ * notifications. The first terminal notification freezes the whole input: a
+ * later update may not add, remove or change any field, and a field that was
+ * missing at the terminal stays missing (the matched decision supplies it).
  */
 export function mergeAcpInputs(calls, updates, cwd = null) {
   const inputs = new Map();
-  const locked = new Set();
+  const frozen = new Map();
   let conflict = false;
   const terminal = (update) => update?.status === 'completed' || update?.status === 'success'
     || update?.status === 'failed' || update?.status === 'error'
     || update?.isError === true || update?.is_error === true;
+  const sameValue = (left, right) => JSON.stringify(left) === JSON.stringify(right);
   const merge = (id, rawInput) => {
     if (typeof id !== 'string' || !rawInput || typeof rawInput !== 'object' || Array.isArray(rawInput)) return;
-    const current = inputs.get(id) ?? {};
-    const next = { ...current, ...rawInput };
-    if (locked.has(id)) {
-      // Presence matters, not truthiness: an explicit `null`/wrong path after
-      // the terminal result is a rewrite attempt, not a missing field.
-      if ('file_path' in rawInput) {
-        const reported = rawInput.file_path;
-        if (typeof reported !== 'string' || reported === '' || typeof current.file_path !== 'string'
-          || !readPathMatches(reported, current.file_path, cwd)) conflict = true;
-      }
-      if ('offset' in rawInput) {
-        const reported = rawInput.offset;
-        if (current.offset === undefined) {
-          if (!(Number.isInteger(reported) && reported > 0)) conflict = true;
-        } else if (!Number.isInteger(reported) || reported !== current.offset) {
+    if (frozen.has(id)) {
+      const snapshot = frozen.get(id);
+      // Presence matters, not truthiness: an explicit null, a wrong value or a
+      // field that only appears after the terminal result is a rewrite attempt,
+      // not a missing field.
+      for (const key of Object.keys(rawInput)) {
+        if (!Object.prototype.hasOwnProperty.call(snapshot, key) || !sameValue(snapshot[key], rawInput[key])) {
           conflict = true;
         }
       }
-      for (const key of ['file_path', 'offset']) {
-        if (current[key] !== undefined) next[key] = current[key];
-      }
+      inputs.set(id, { ...snapshot });
+      return;
     }
-    inputs.set(id, next);
+    inputs.set(id, { ...(inputs.get(id) ?? {}), ...rawInput });
   };
   const known = new Set();
   for (const update of Array.isArray(updates) ? updates : []) {
@@ -381,7 +374,7 @@ export function mergeAcpInputs(calls, updates, cwd = null) {
       continue;
     }
     merge(id, update.rawInput);
-    if (terminal(update)) locked.add(id);
+    if (terminal(update)) frozen.set(id, { ...(inputs.get(id) ?? {}) });
   }
   return { inputs, conflict };
 }
@@ -549,6 +542,7 @@ export function scenarioBaselineOf(selection, kind) {
       ...(selection?.baselinePath ?? {}),
       kind: 'observed-recovery',
       lossKinds: [row.kind],
+      occurrences: row.occurrences,
       recoveryTools: recoveryTools.slice(0, 3),
       recoveryCalls: row.recoveryCalls,
     },

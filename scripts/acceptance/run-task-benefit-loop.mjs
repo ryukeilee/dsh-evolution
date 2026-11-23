@@ -394,17 +394,29 @@ function planFor(options = {}) {
   const selected = options.selection;
   assert(selected?.improvement === 'context-policy', 'the plan-driven proposal needs the planner context-policy form');
   const baseline = selected.baselinePath;
+  assert(baseline?.kind === 'observed-recovery' && Array.isArray(baseline.lossKinds) && baseline.lossKinds.length > 0,
+    'the proposal needs the scenario baseline, not the merged target');
+  const scenarioKinds = baseline.lossKinds;
+  const scenarioTools = Array.isArray(baseline.recoveryTools) ? baseline.recoveryTools : [];
   const capped = SCENARIO.name === 'capped';
+  // Both the positive and the negative proposals are built from the scenario
+  // row alone: a merged target can be recoverable through another loss kind,
+  // so its wording must not leak into this scenario's basis.
+  const why = '已观测到 ' + scenarioKinds.join('/') + ' 退化'
+    + (Number.isInteger(baseline.occurrences) ? '（本场景发生 ' + baseline.occurrences + ' 次）' : '')
+    + '，累计恢复调用 ' + baseline.recoveryCalls + ' 次，记录到的恢复工具：' + scenarioTools.join('/')
+    + '；新工具要求模型主动选择，改由官方 tools/post-execute 变换既有结果，并以成对真实会话验证。'
+    + (capped
+      ? ' The generated files are larger than the official read byte cap, so the sentinel sits in the continuation tail.'
+      : ' The generated configs put the sentinel beyond the read truncation point.');
   const proposal = {
-      why: selected.improvementReason + (capped
-        ? ' The generated files are larger than the official read byte cap, so the sentinel sits in the continuation tail.'
-        : ' The generated configs put the sentinel beyond the read truncation point.'),
+      why,
       target: options.target ?? selected.problemKey,
       impactScope: ['acp', 'desktop'],
       successMetrics: ['fewer turns and tool calls on the same three-file task', 'all three sentinels answered correctly'],
       improvement: selected.improvement,
       benefitModel: { kind: 'workflow' },
-      rootCause: 'observed ' + baseline.lossKinds.join('/') + ' recovered by ' + baseline.recoveryTools.join('/') + '; the sentinel is outside the first model-visible read result',
+      rootCause: 'observed ' + scenarioKinds.join('/') + ' recovered by ' + scenarioTools.join('/') + '; the sentinel is outside the first model-visible read result',
   };
   // A negative control must not be blocked by the no-benefit conclusion an
   // earlier negative published for the same strategy fingerprint; the strategy
@@ -566,6 +578,7 @@ try {
     'the ' + SCENARIO.lossKind + ' loss reports no recovery tool: ' + JSON.stringify(scenario.row));
   const scenarioRecoveryTools = scenario.recoveryTools;
   const scenarioBaseline = scenario.baseline;
+  const scenarioSelection = { ...selection, baselinePath: scenarioBaseline };
   assert(selection.loss.recoverable === true, 'the selected loss has no observed recovery cost');
   assert(selection.loss.recoveryCalls >= 1, 'the selected loss reports no recovery calls');
   assert(selection.attribution === 'classified', 'the selected loss is unattributed: ' + JSON.stringify(selection.attribution));
@@ -600,10 +613,10 @@ try {
   evidence.steps.push({ name: 'real-loss-discovery', at: new Date().toISOString() });
 
   const planTarget = selection.problemKey;
-  evidence.negatives = await runNegativeControls({ artifact: producer.artifact, planTarget, selection });
+  evidence.negatives = await runNegativeControls({ artifact: producer.artifact, planTarget, selection: scenarioSelection });
   evidence.steps.push({ name: 'negative-artifacts-rejected', at: new Date().toISOString() });
 
-  const plan = planFor({ target: planTarget, selection: { ...selection, baselinePath: scenarioBaseline } });
+  const plan = planFor({ target: planTarget, selection: scenarioSelection });
   let approvalObserved = null;
   let positiveFailure = null;
   await runFixturePrompt('acp-delegate', '请把这次上下文策略改进交给 Desktop 执行，先停在所有者确认前，不要自行批准。', (tools, result, round) => {

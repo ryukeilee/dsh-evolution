@@ -1341,11 +1341,56 @@ test('a scenario baseline comes from its own loss kind, not the merged target', 
   assert.deepEqual(capped.baseline.lossKinds, ['output-capped'], 'the proposal root cause names only the scenario kind');
   assert.deepEqual(capped.baseline.recoveryTools, []);
   assert.equal(capped.baseline.recoveryCalls, 0);
+  assert.equal(capped.baseline.occurrences, 3, 'the scenario row keeps its own occurrences');
   // The merged target must not lend its grep recovery to the capped scenario.
   assert.equal(selection.loss.recoveryCalls, 7);
   const line = scenarioBaselineOf(selection, 'line-truncated');
   assert.deepEqual(line.baseline.recoveryTools, ['grep']);
   assert.deepEqual(scenarioBaselineOf(selection, 'missing').row, null);
+});
+
+test('a post-terminal limit change or a late offset is a frozen-input conflict', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt', offset: 40 } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/w/a.txt</path>\n<content>sentinel-a</content>' } }] };
+  const base = {
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  };
+  for (const late of [{ limit: null }, { limit: 5 }, { offset: 1 }]) {
+    const row = extractSessionEvidence({
+      ...base,
+      updates: [
+        { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt', offset: 40 } },
+        result,
+        { sessionUpdate: 'tool_call_update', toolCallId: 'c1', rawInput: late },
+      ],
+    });
+    assert.equal(row.attributionComplete, false, 'a post-terminal ' + JSON.stringify(late) + ' is not evidence');
+    assert.equal(row.exercised, false);
+  }
+  // The matched decision still supplies an offset that the terminal input
+  // never carried; a later update may not fill that missing field.
+  const decisionOffset = [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } } }];
+  const filled = extractSessionEvidence({
+    ...base, turns: decisionOffset,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt' } },
+      result,
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', rawInput: { offset: 1 } },
+    ],
+  });
+  assert.equal(filled.attributionComplete, false);
+  const decided = extractSessionEvidence({
+    ...base, turns: decisionOffset,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt' } },
+      result,
+    ],
+  });
+  assert.equal(decided.attributionComplete, true, 'the matched decision resolves the missing offset');
+  assert.equal(decided.exercised, true);
 });
 
 test('a per-file binding must cover every expected token', () => {

@@ -20,12 +20,6 @@ const DEFAULT_LINE_CHARS = 2000;
 // here made the hook throw and silently return the unmodified result, which is
 // exactly what the Trial functional check caught.
 const encoder = new TextEncoder();
-// The official renderer's exact cap footer. Different host paths hand the
-// waterfall either the raw rendered text or the same text inside the
-// `<path>/<content>` envelope, so both endings are accepted; file text
-// elsewhere cannot match because the footer must be at the end. Normal file
-// text may contain the words anywhere else.
-const OUTPUT_CAPPED = /\(Output capped\. Showing lines \d+-\d+\. Use offset=\d+ to continue\.\)(?:\n<\/content>)?\s*$/;
 
 function contentText(result) {
   const parts = [];
@@ -72,12 +66,12 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
   // same file version.
   const versions = new Map();
   ctx.on('tools/pre-execute', async (exec, next) => {
+    const callId = typeof exec?.callId === 'string' ? exec.callId : null;
     try {
-      if (exec?.name === 'read' && typeof exec.callId === 'string'
-        && typeof exec.arguments?.file_path === 'string') {
+      if (exec?.name === 'read' && callId !== null
+        && typeof exec?.arguments?.file_path === 'string') {
         // Capture the caller's request before any await: a hook/stat callback
         // may mutate exec.arguments while the file checks are pending.
-        const callId = exec.callId;
         const filePath = exec.arguments.file_path;
         const limit = Number(exec.arguments?.limit);
         const offset = Number(exec.arguments?.offset);
@@ -98,7 +92,21 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
         }
       }
     } catch { /* no snapshot means the post-execute hook declines */ }
-    return next();
+    const outcome = await next();
+    // Downstream pre-execute hooks may narrow the arguments the tool actually
+    // runs with; that executed window is the real bound, so capture it after
+    // the waterfall instead of trusting the entry request.
+    if (callId !== null) {
+      try {
+        const stored = versions.get(callId);
+        if (stored) {
+          stored.execPath = typeof exec?.arguments?.file_path === 'string' ? exec.arguments.file_path : null;
+          stored.execOffset = readOffsetOf(exec?.arguments?.offset);
+          stored.execLimit = readLimitOf(exec?.arguments?.limit);
+        }
+      } catch { /* keep the entry snapshot; the post hook declines without exec proof */ }
+    }
+    return outcome;
   });
   ctx.on('tools/post-execute', async (exec, result, next) => {
     // Non-read calls take the original chain untouched, before any snapshot or
@@ -172,7 +180,13 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
         if (!currentWindow || !sameReadWindow(currentWindow, originalWindow)) return decision;
       }
       const text = originalContent;
-      const footer = text.length > 0 && OUTPUT_CAPPED.test(text.length > 8192 ? text.slice(-8192) : text);
+      // Identify the footer with the same anchored match that extracts its
+      // numbers: a file may contain footer-like text earlier in its body, and
+      // the real footer is the one at the end.
+      const footerMatch = text.length > 0
+        ? /\(Output capped\. Showing lines (\d+)-(\d+)\. Use offset=(\d+) to continue\.\)(?:\n<\/content>)?\s*$/u.exec(text.length > 8192 ? text.slice(-8192) : text)
+        : null;
+      const footer = footerMatch !== null;
       if (!originalWindow) return decision;
       const base = decision.value === undefined ? originalValue : decision.value;
       if (!base || typeof base !== 'object' || !Array.isArray(base.lines) || typeof base.path !== 'string') return decision;
@@ -192,8 +206,17 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // tail below (and the footer remains the precise signal elsewhere).
       const pre = callId === null ? undefined : versions.get(callId);
       if (!pre || typeof pre.version !== 'string') return decision;
-      const requestedLimit = pre.limit;
-      const hasExplicitLimit = Number.isInteger(requestedLimit) && requestedLimit > 0;
+      // The bound must be the window the tool actually executed with. A
+      // downstream pre-execute hook can narrow the request after this policy
+      // saw it, so both the entry request and the post-waterfall arguments are
+      // required, and the narrower one is the real ceiling.
+      const entryLimit = pre.limit;
+      const execLimit = Number.isInteger(pre.execLimit) && pre.execLimit > 0 ? pre.execLimit : null;
+      if (!(Number.isInteger(entryLimit) && entryLimit > 0) || execLimit === null) return decision;
+      if (pre.execPath !== pre.filePath) return decision;
+      if (readOffsetOf(pre.execOffset) !== readOffsetOf(pre.offset)) return decision;
+      const requestedLimit = Math.min(entryLimit, execLimit);
+      const hasExplicitLimit = requestedLimit > 0;
       const snapshotOffset = Number.isInteger(pre.offset) && pre.offset > 0 ? pre.offset : 1;
       if (Number.isInteger(base.offset) && base.offset !== snapshotOffset) return decision;
       const effectiveLimit = effectiveLimitSnapshot;
@@ -209,13 +232,9 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       for (let index = 0; index < base.lines.length; index += 1) {
         if (base.lines[index]?.number !== snapshotOffset + index) return decision;
       }
-      const footerMatch = /\(Output capped\. Showing lines (\d+)-(\d+)\. Use offset=(\d+) to continue\.\)/u.exec(text);
-      if (footerMatch) {
-        const footerStart = Number(footerMatch[1]);
-        const footerEnd = Number(footerMatch[2]);
-        const footerNext = Number(footerMatch[3]);
-        if (footerStart !== snapshotOffset || footerEnd !== end || footerNext !== end + 1) return decision;
-      }
+      if (footerMatch
+        && (Number(footerMatch[1]) !== snapshotOffset
+          || Number(footerMatch[2]) !== end || Number(footerMatch[3]) !== end + 1)) return decision;
       // Only the no-rendered-content path may fall back to structure, and only
       // when the caller declared an explicit limit: otherwise a deployment's
       // smaller default line window would look like a byte cap. When content is
