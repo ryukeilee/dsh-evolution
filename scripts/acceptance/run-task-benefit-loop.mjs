@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { failedToolCallIds, mergeAcpInputs, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, terminalNotificationMissingId, terminalToolResults, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
+import { failedToolCallIds, hasParentSegment, mergeAcpInputs, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, terminalNotificationMissingId, terminalToolResults, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -824,7 +824,7 @@ try {
         ? meta.arguments.offset : (meta.inputKnown ? 1 : null);
       if (!meta.inputKnown) consumerAttributionComplete = false;
       const path = consumerResultById.get(call.toolCallId)?.path ?? argumentPath ?? null;
-      if (typeof path !== 'string' || path === '') consumerAttributionComplete = false;
+      if (typeof path !== 'string' || path === '' || hasParentSegment(path)) consumerAttributionComplete = false;
       consumerReadRequests.push({ callId: call.toolCallId, path, offset });
     }
     assert(consumerAttributionComplete, 'the fresh consumer read attribution is incomplete');

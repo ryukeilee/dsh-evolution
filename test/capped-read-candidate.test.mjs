@@ -14,7 +14,7 @@ const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 's
 const body = fs.readFileSync(fixture, 'utf8');
 const CAP_FOOTER = '(Output capped. Showing lines 1-620. Use offset=621 to continue.)';
 
-function mount(files, { versions = null, preNext = null } = {}) {
+function mount(files, { versions = null, preNext = null, onStat = null } = {}) {
   // The real Trial runs this body in a `node:vm` sandbox that provides neither
   // Buffer nor process (only TextEncoder/TextDecoder/btoa/atob). A plain
   // `new Function` would still expose Node's globals and let a Buffer
@@ -39,6 +39,7 @@ function mount(files, { versions = null, preNext = null } = {}) {
         return match ?? file;
       },
       stat: async (file) => {
+        onStat?.(file);
         const sequence = versions?.[file];
         const version = Array.isArray(sequence) ? (sequence[statCall] ?? sequence.at(-1)) : (sequence ?? 'v1');
         statCall += 1;
@@ -363,6 +364,27 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
     async () => ({ kind: 'accept' }),
   );
   assert.equal(markerDecision.value, undefined, 'a truncated marker proves only its prefix width');
+
+  const nonReadExec = { name: 'bash', arguments: { limit: { toString() { throw new Error('boom'); } } }, agent: {}, signal: null };
+  const nonReadDecision = await listener(nonReadExec, { value: {}, content: [] }, async () => ({ kind: 'accept' }));
+  assert.equal(nonReadDecision.kind, 'accept', 'non-read calls pass through before any snapshot/coercion');
+
+  const raceRows = ['one', 'two', 'three', 'four', 'five'];
+  const raceFile = '/isolated/race.txt';
+  const raceValue = { path: raceFile, offset: 1, totalLines: 5, lines: raceRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })) };
+  let statCalls = 0;
+  const raceListener = mount({ [raceFile]: raceRows.join('\n') + '\n' }, {
+    onStat: () => {
+      statCalls += 1;
+      if (statCalls === 2) raceValue.lines = [raceValue.lines[0]];
+    },
+  });
+  const raceDecision = await raceListener(
+    { name: 'read', arguments: { file_path: 'race.txt', limit: 5 }, agent: {}, signal: null },
+    { value: raceValue, content: [{ type: 'text', text: 'one\ntwo\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }] },
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(raceDecision.value, undefined, 'a window mutated during the async checks is not appended');
 
   const sepPrefix = 'a\u2028bc';
   const sepMarker = sepPrefix + '... (line truncated to 4 chars)';

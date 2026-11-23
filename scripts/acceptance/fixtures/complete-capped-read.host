@@ -87,18 +87,30 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
     return next();
   });
   ctx.on('tools/post-execute', async (exec, result, next) => {
+    // Non-read calls take the original chain untouched, before any snapshot or
+    // argument coercion can throw.
+    if (exec?.name !== 'read') return next();
     // Snapshot before awaiting downstream hooks: they may mutate result.content
-    // or result.value in place.
-    const originalContent = contentText(result);
-    const originalContentJson = JSON.stringify(result?.content ?? null);
-    const originalValue = result?.value;
-    const originalWindow = snapshotWindow(originalValue);
-    const effectiveLimitSnapshot = Number(exec?.arguments?.limit);
+    // or result.value in place. If the snapshot itself cannot be taken, keep the
+    // original chain running.
+    let originalContent;
+    let originalContentJson;
+    let originalValue;
+    let originalWindow;
+    let effectiveLimitSnapshot;
+    try {
+      originalContent = contentText(result);
+      originalContentJson = JSON.stringify(result?.content ?? null);
+      originalValue = result?.value;
+      originalWindow = snapshotWindow(originalValue);
+      effectiveLimitSnapshot = Number(exec?.arguments?.limit);
+    } catch {
+      return next();
+    }
     const decision = await next();
     const callId = typeof exec?.callId === 'string' ? exec.callId : null;
     try {
       if (!decision || decision.kind !== 'accept') return decision;
-      if (exec?.name !== 'read') return decision;
       // A downstream hook may replace or mutate the model-visible content.
       if (contentText(result) !== originalContent) return decision;
       // A downstream decision that owns or inherits the content property (even
@@ -170,6 +182,16 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // keep the original result.
       const after = await ctx.fs.stat(target, exec.signal);
       if (!after || after.type !== 'file' || after.version !== pre.version) return decision;
+      // Revalidate after the last await: the hook may have mutated content or
+      // the value while the file checks were pending. Only then append
+      // synchronously.
+      if (contentText(result) !== originalContent) return decision;
+      if (JSON.stringify(result?.content ?? null) !== originalContentJson) return decision;
+      if (originalWindow) {
+        const currentWindow = snapshotWindow(result?.value);
+        if (!currentWindow || !sameReadWindow(currentWindow, originalWindow)) return decision;
+        if (decision.value !== undefined && !sameReadWindow(decision.value, originalWindow)) return decision;
+      }
       const all = content.split('\n').map((line) => line.endsWith('\r') ? line.slice(0, -1) : line);
       // The official line counter does not count the empty segment after a
       // trailing newline; drop only that one, never a real empty last line.

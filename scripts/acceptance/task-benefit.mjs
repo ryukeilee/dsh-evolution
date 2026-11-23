@@ -121,7 +121,7 @@ export function answerMatches(text, tokens) {
  * `/home/a.txt` but not `/home/sub/a.txt`; without a cwd it is accepted only as
  * a suffix, and two absolute paths must be identical.
  */
-function hasParentSegment(value) {
+export function hasParentSegment(value) {
   return typeof value === 'string' && value.split('/').includes('..');
 }
 
@@ -250,6 +250,9 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
     // integer. An explicit null/0/fraction/string is not evidence.
     if (inputKnown && Object.prototype.hasOwnProperty.call(argumentsValue, 'offset')
       && !(Number.isInteger(argumentsValue.offset) && argumentsValue.offset > 0)) {
+      inputKnown = false;
+    }
+    if (typeof argumentsValue.file_path === 'string' && hasParentSegment(argumentsValue.file_path)) {
       inputKnown = false;
     }
   } else {
@@ -683,7 +686,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     const offset = meta.inputKnown && Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0
       ? meta.arguments.offset : (meta.inputKnown ? 1 : null);
     const path = readResults.get(call.toolCallId)?.path ?? argumentPath ?? null;
-    if (typeof path !== 'string' || path === '') attributionComplete = false;
+    if (typeof path !== 'string' || path === '' || hasParentSegment(path)) attributionComplete = false;
     // The result path is authoritative when it exists; the requested path is the
     // fallback for a transport that does not render it. An untrusted input has
     // no provable offset, so it can never be a first-read proof.
