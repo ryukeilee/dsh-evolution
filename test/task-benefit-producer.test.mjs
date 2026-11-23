@@ -856,6 +856,59 @@ test('terminal paths that normalize to the same file are not a conflict', () => 
   assert.equal(row.exercised, true);
 });
 
+test('two terminal results for one id must not carry different bodies', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (text) => ({ sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('<path>/home/a.txt</path>\n<content>truncated</content>'),
+      result('<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a terminal notification without a matching tool_call is not evidence', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      result('ghost', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+});
+
+test('two relative terminal paths resolving to one file are not a conflict', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: './a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (path) => ({ sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: `<path>${path}</path>\n<content>sentinel-a</content>` } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: './a.txt' } },
+      result('a.txt'),
+      result('../w/a.txt'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, true);
+  assert.equal(row.exercised, true);
+});
+
 test('a per-file binding must cover every expected token', () => {
   const base = { id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' };
   const task = normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] });

@@ -131,11 +131,14 @@ export function readPathMatches(actual, expected, cwd = null) {
   const left = normalize(actual);
   const right = normalize(expected);
   if (!left || !right) return false;
+  if (typeof cwd === 'string' && path.isAbsolute(cwd)) {
+    const resolve = (value) => path.posix.normalize(path.posix.join(normalize(cwd), value));
+    const absoluteLeft = path.isAbsolute(left) ? path.posix.normalize(left) : resolve(left);
+    const absoluteRight = path.isAbsolute(right) ? path.posix.normalize(right) : resolve(right);
+    return absoluteLeft === absoluteRight;
+  }
   if (left === right) return true;
   if (path.isAbsolute(left) || !path.isAbsolute(right)) return false;
-  if (typeof cwd === 'string' && path.isAbsolute(cwd)) {
-    return path.posix.normalize(path.posix.join(normalize(cwd), left)) === path.posix.normalize(right);
-  }
   return right.endsWith('/' + left);
 }
 
@@ -282,8 +285,10 @@ export function successfulToolResult(update) {
   return completedToolUpdate(update) && update?.isError !== true && update?.is_error !== true;
 }
 
-export function terminalToolResultPaths(updates, cwd = null) {
+export function terminalToolResults(updates, cwd = null) {
   const paths = new Map();
+  const texts = new Map();
+  const bodies = new Map();
   const conflicts = new Set();
   for (const update of Array.isArray(updates) ? updates : []) {
     if (update?.sessionUpdate !== 'tool_call_update' || !successfulToolResult(update)) continue;
@@ -291,14 +296,24 @@ export function terminalToolResultPaths(updates, cwd = null) {
     if (id === null) continue;
     const text = toolUpdateText(update);
     const path = text ? /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null : null;
-    if (!path) continue;
-    if (paths.has(id) && paths.get(id) !== path
-      && !readPathMatches(path, paths.get(id), cwd) && !readPathMatches(paths.get(id), path, cwd)) {
-      conflicts.add(id);
+    const body = text ? text.replace(/<path>[^<]*<\/path>\s*/u, '') : '';
+    if (texts.has(id)) {
+      if (bodies.get(id) !== body) conflicts.add(id);
+      if (path && paths.has(id) && paths.get(id) !== path
+        && !readPathMatches(path, paths.get(id), cwd) && !readPathMatches(paths.get(id), path, cwd)) {
+        conflicts.add(id);
+      }
     } else {
-      paths.set(id, path);
+      texts.set(id, text);
+      bodies.set(id, body);
+      if (path) paths.set(id, path);
     }
   }
+  return { paths, texts, conflicts };
+}
+
+export function terminalToolResultPaths(updates, cwd = null) {
+  const { paths, conflicts } = terminalToolResults(updates, cwd);
   return { paths, conflicts };
 }
 
@@ -459,7 +474,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name and the arguments the model chose.
   const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
-  const terminalPaths = terminalToolResultPaths(updates, cwd);
+  const terminalPaths = terminalToolResults(updates, cwd);
   const resultPathByCall = terminalPaths.paths;
   const hasRawOffset = (call) => Number.isInteger(call?.rawInput?.offset) && call.rawInput.offset > 0;
   const orderedCalls = calls.map((call, index) => ({ call, index }))
@@ -481,6 +496,8 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   });
   const callNames = calls.map((call) => byId.get(call.toolCallId)?.name)
     .filter((name) => typeof name === 'string');
+  const callIdSet = new Set(calls.map((call) => call.toolCallId).filter((id) => typeof id === 'string'));
+  for (const id of terminalIds) if (!callIdSet.has(id)) attributionComplete = false;
   const attributionAligned = calls.length === toolTurns.length
     && callNames.length === calls.length
     && toolNameCountsMatch(toolNames, callNames);
@@ -505,10 +522,11 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     if (terminalPaths.conflicts.has(update.toolCallId)) continue;
     if (failedUpdates.ids.has(update.toolCallId)) continue;
     if (!successfulToolResult(update)) continue;
+    if (readResults.has(update.toolCallId)) continue;
     const call = byId.get(update.toolCallId);
     if (call?.name !== 'read') continue;
-    const text = toolUpdateText(update);
-    if (!text) { attributionComplete = false; continue; }
+    const text = terminalPaths.texts.get(update.toolCallId);
+    if (!text) continue;
     const renderedPath = /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null;
     const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
       ? call.arguments.file_path : null;

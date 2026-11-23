@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { failedToolCallIds, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, terminalToolResultPaths, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
+import { failedToolCallIds, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, terminalToolResults, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -731,9 +731,9 @@ try {
       && new Set(consumerCallIds).size === consumerCallIds.length
       && missingTerminalToolCalls(consumerUpdates) === 0;
     const consumerToolNames = consumerDecisions.map((turn) => turn.decision.tool);
-    const consumerTerminalPaths = terminalToolResultPaths(consumerUpdates, home);
-    if (consumerTerminalPaths.conflicts.size > 0) consumerAttributionComplete = false;
-    const consumerResultPathById = consumerTerminalPaths.paths;
+    const consumerTerminal = terminalToolResults(consumerUpdates, home);
+    if (consumerTerminal.conflicts.size > 0) consumerAttributionComplete = false;
+    const consumerResultPathById = consumerTerminal.paths;
     const consumerHasOffset = (call) => Number.isInteger(call?.rawInput?.offset) && call.rawInput.offset > 0;
     const consumerOrderedCalls = consumerCalls.map((call, index) => ({ call, index }))
       .sort((left, right) => Number(consumerHasOffset(right.call)) - Number(consumerHasOffset(left.call)));
@@ -750,6 +750,16 @@ try {
     });
     const consumerCallNames = consumerCalls.map((call) => consumerCallById.get(call.toolCallId)?.name)
       .filter((name) => typeof name === 'string');
+    const consumerCallIdSet = new Set(consumerCalls.map((call) => call.toolCallId).filter((id) => typeof id === 'string'));
+    for (const update of consumerUpdates) {
+      if (update?.sessionUpdate !== 'tool_call' && update?.sessionUpdate !== 'tool_call_update') continue;
+      if (!(update.status === 'completed' || update.status === 'success'
+        || update.status === 'failed' || update.status === 'error'
+        || update.isError === true || update.is_error === true)) continue;
+      if (typeof update.toolCallId === 'string' && !consumerCallIdSet.has(update.toolCallId)) {
+        consumerAttributionComplete = false;
+      }
+    }
     assert(consumerCalls.length === consumerDecisions.length
       && consumerCallNames.length === consumerCalls.length
       && toolNameCountsMatch(consumerToolNames, consumerCallNames),
@@ -758,12 +768,13 @@ try {
     const consumerFailed = failedToolCallIds(consumerUpdates);
     for (const update of consumerUpdates) {
       if (update.sessionUpdate !== 'tool_call_update') continue;
-      if (consumerTerminalPaths.conflicts.has(update.toolCallId)) continue;
+      if (consumerTerminal.conflicts.has(update.toolCallId)) continue;
       if (consumerFailed.ids.has(update.toolCallId)) continue;
       if (!successfulToolResult(update)) continue;
+      if (consumerResultById.has(update.toolCallId)) continue;
       const call = consumerCallById.get(update.toolCallId);
       if (call?.name !== 'read') continue;
-      const text = toolUpdateText(update);
+      const text = consumerTerminal.texts.get(update.toolCallId);
       if (!text) { consumerAttributionComplete = false; continue; }
       const renderedPath = /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null;
       const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''

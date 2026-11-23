@@ -72,7 +72,12 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
         });
         const info = await ctx.fs.stat(target, exec.signal);
         if (info?.type === 'file' && typeof info.version === 'string') {
-          versions.set(exec.callId, { target, version: info.version });
+          const limit = Number(exec.arguments?.limit);
+          versions.set(exec.callId, {
+            target,
+            version: info.version,
+            limit: Number.isInteger(limit) && limit > 0 ? limit : null,
+          });
           while (versions.size > 32) versions.delete(versions.keys().next().value);
         }
       }
@@ -84,7 +89,6 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
     // or result.value in place.
     const originalContent = contentText(result);
     const originalWindow = snapshotWindow(result?.value);
-    const requestedLimitSnapshot = Number(exec?.arguments?.limit);
     const decision = await next();
     const callId = typeof exec?.callId === 'string' ? exec.callId : null;
     try {
@@ -100,6 +104,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       }
       const text = originalContent;
       const footer = text.length > 0 && OUTPUT_CAPPED.test(text.length > 8192 ? text.slice(-8192) : text);
+      if (!originalWindow) return decision;
       const base = decision.value === undefined ? originalWindow : decision.value;
       if (!base || typeof base !== 'object' || !Array.isArray(base.lines) || typeof base.path !== 'string') return decision;
       // A downstream post-execute hook may have rewritten the window. The cap
@@ -116,7 +121,9 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // 2000 lines; a deployment that configured a smaller default is not
       // distinguished here, so this path never widens more than the bounded
       // tail below (and the footer remains the precise signal elsewhere).
-      const requestedLimit = requestedLimitSnapshot;
+      const pre = callId === null ? undefined : versions.get(callId);
+      if (!pre || typeof pre.version !== 'string') return decision;
+      const requestedLimit = pre.limit;
       const hasExplicitLimit = Number.isInteger(requestedLimit) && requestedLimit > 0;
       // Only the no-rendered-content path may fall back to structure, and only
       // when the caller declared an explicit limit: otherwise a deployment's
@@ -137,10 +144,6 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       const windowEnd = Math.min(total, offset - 1 + requestedLimit);
       const missing = windowEnd - end;
       if (missing < 1 || missing > MAX_TAIL_LINES) return decision;
-      const pre = callId === null ? undefined : versions.get(callId);
-      if (!pre || typeof pre.version !== 'string') {
-        return decision;
-      }
       const prePath = typeof pre.target === 'string' ? pre.target : pre.target?.displayPath;
       if (typeof prePath === 'string' && base.path !== prePath) return decision;
       const target = pre.target;

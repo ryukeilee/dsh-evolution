@@ -14,7 +14,7 @@ const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 's
 const body = fs.readFileSync(fixture, 'utf8');
 const CAP_FOOTER = '(Output capped. Showing lines 1-620. Use offset=621 to continue.)';
 
-function mount(files, { versions = null } = {}) {
+function mount(files, { versions = null, preNext = null } = {}) {
   // The real Trial runs this body in a `node:vm` sandbox that provides neither
   // Buffer nor process (only TextEncoder/TextDecoder/btoa/atob). A plain
   // `new Function` would still expose Node's globals and let a Buffer
@@ -52,7 +52,7 @@ function mount(files, { versions = null } = {}) {
   assert.equal(postListeners.length, 1);
   return async (exec, result, next) => {
     const withId = typeof exec?.callId === 'string' ? exec : { ...exec, callId: 'test-call' };
-    await preListeners[0](withId, async () => ({ kind: 'accept' }));
+    await preListeners[0](withId, preNext ?? (async () => ({ kind: 'accept' })));
     return postListeners[0](withId, result, next);
   };
 }
@@ -236,6 +236,13 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   assert.equal(inPlaceWindowDecision.value, undefined, 'an implicit shortened window is preserved');
   assert.equal(inPlaceWindow.value.lines.length, 1);
 
+  const noOriginal = await downstream(
+    { name: 'read', arguments: { file_path: 'downstream.txt', limit: 5 }, agent: {}, signal: null },
+    { content: [{ type: 'text', text: 'one\ntwo\nthree\n(Output capped. Showing lines 1-3. Use offset=4 to continue.)' }] },
+    async () => ({ kind: 'accept', value: { path: downstreamFile, offset: 1, lines: [originalLines[0]], totalLines: 5 } }),
+  );
+  assert.equal(noOriginal.value.lines.length, 1, 'a downstream value without an original window is never widened');
+
   // A downstream mutation of the requested limit must not widen the append.
   const limitRows = Array.from({ length: 30 }, (_, index) => 'line ' + index);
   const limitFile = '/isolated/limit.txt';
@@ -248,6 +255,20 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
     async () => { limitExec.arguments.limit = 30; return { kind: 'accept' }; },
   );
   assert.equal(limitDecision.value.lines.length, 26, 'the append uses the limit captured before downstream hooks');
+
+  const limitRows2 = ['one', 'two', 'three', 'four', 'five'];
+  const limitFile2 = '/isolated/limit-pre.txt';
+  const limitExec2 = { name: 'read', arguments: { file_path: 'limit-pre.txt', limit: 2 }, agent: {}, signal: null };
+  const limitListener2 = mount({ [limitFile2]: limitRows2.join('\n') + '\n' }, {
+    preNext: async () => { limitExec2.arguments.limit = 3; return { kind: 'accept' }; },
+  });
+  const limitFirst2 = [{ number: 1, text: 'one' }];
+  const limitDecision2 = await limitListener2(
+    limitExec2,
+    readResult({ lines: limitFirst2, totalLines: 5, path: limitFile2, content: 'one\n(Output capped. Showing lines 1-1. Use offset=2 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(limitDecision2.value.lines.length, 2, 'a pre-execute limit mutation cannot widen the caller request');
 
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
