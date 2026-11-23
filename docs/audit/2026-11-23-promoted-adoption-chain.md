@@ -133,6 +133,11 @@ baseline 的工具序列是 `read, read, bash, read`（截断后用 `bash` 补�
 fresh consumer 在同一真实任务上复现了同一效果（4 turns / 3 calls / 132,840 tokens / 15.1 s，
 正确且 sentinel 完整），证明能力能在**新进程的 ACP/consumer 路径**上被发现、挂载并执行。
 
+标准真实宿主验收也在本树上通过：
+`npm run acceptance:host -- --host 0.2.2-rc.5 --no-hmr --experience-evolution` → **25/25 steps**
+（`docs/evidence/host-acceptance-0.2.16-adoption-chain-0.2.2-rc.5.json`），从同一 tarball
+（sha256 `73c4a1720c142296…`）安装并覆盖安装、生命周期、晋升、doctor 与经验演化路径。
+
 `evolution_plan` 的发现阶段也来自真实数据：baseline 会话写出 9 次 `line-truncated` 退化，
 探针读回 `problemKey: "tool read"`、`occurrences: 9`、`recoveryTools: ["bash"]`、
 `recoverable: true`、`score: 0.8222`。
