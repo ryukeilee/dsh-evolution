@@ -188,7 +188,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
         tail.push({ number, text: value });
       }
       if (tail.length === 0) return decision;
-      return { kind: 'accept', value: { ...base, lines: [...base.lines, ...tail] } };
+      return { ...decision, value: { ...base, lines: [...base.lines, ...tail] } };
     } catch {
       return decision;
     } finally {

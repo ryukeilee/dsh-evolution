@@ -326,6 +326,14 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   assert.equal(hostDecision.value.lines[0].tag, 'keep-0');
   assert.equal(hostDecision.value.lines.length, 5);
 
+  const context = [{ source: 'downstream', content: [{ type: 'text', text: 'keep me' }] }];
+  const contextDecision = await hostListener(
+    { name: 'read', arguments: { file_path: 'host-value.txt', limit: 5 }, agent: {}, signal: null },
+    { value: { path: hostFile, offset: 1, totalLines: 5, lines: hostRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })) }, content: [{ type: 'text', text: 'one\ntwo\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }] },
+    async () => ({ kind: 'accept', additionalContexts: context }),
+  );
+  assert.deepEqual(contextDecision.additionalContexts, context);
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(

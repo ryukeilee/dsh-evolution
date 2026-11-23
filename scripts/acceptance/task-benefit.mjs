@@ -289,6 +289,9 @@ function parseToolResultText(text) {
   const pathMatch = /^\s*<path>([^<]*)<\/path>\s*/u.exec(value);
   const path = pathMatch ? pathMatch[1].trim() || null : null;
   let body = pathMatch ? value.slice(pathMatch[0].length) : value;
+  // The official envelope may carry an optional <type>file</type> between the
+  // path and the content.
+  body = body.replace(/^\s*<type>[^<]*<\/type>\s*/u, '');
   const contentMatch = /^\s*<content>([\s\S]*)<\/content>\s*$/u.exec(body);
   if (contentMatch) body = contentMatch[1];
   body = body.trim();
