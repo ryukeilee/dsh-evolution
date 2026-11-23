@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { failedToolCallIds, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
+import { failedToolCallIds, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, terminalToolResultPaths, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -731,13 +731,9 @@ try {
       && new Set(consumerCallIds).size === consumerCallIds.length
       && missingTerminalToolCalls(consumerUpdates) === 0;
     const consumerToolNames = consumerDecisions.map((turn) => turn.decision.tool);
-    const consumerResultPathById = new Map();
-    for (const update of consumerUpdates) {
-      if (update.sessionUpdate !== 'tool_call_update') continue;
-      const text = toolUpdateText(update);
-      const path = text ? /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() : null;
-      if (typeof update.toolCallId === 'string' && path) consumerResultPathById.set(update.toolCallId, path);
-    }
+    const consumerTerminalPaths = terminalToolResultPaths(consumerUpdates, home);
+    if (consumerTerminalPaths.conflicts.size > 0) consumerAttributionComplete = false;
+    const consumerResultPathById = consumerTerminalPaths.paths;
     const consumerHasOffset = (call) => Number.isInteger(call?.rawInput?.offset) && call.rawInput.offset > 0;
     const consumerOrderedCalls = consumerCalls.map((call, index) => ({ call, index }))
       .sort((left, right) => Number(consumerHasOffset(right.call)) - Number(consumerHasOffset(left.call)));
@@ -762,6 +758,7 @@ try {
     const consumerFailed = failedToolCallIds(consumerUpdates);
     for (const update of consumerUpdates) {
       if (update.sessionUpdate !== 'tool_call_update') continue;
+      if (consumerTerminalPaths.conflicts.has(update.toolCallId)) continue;
       if (consumerFailed.ids.has(update.toolCallId)) continue;
       if (!successfulToolResult(update)) continue;
       const call = consumerCallById.get(update.toolCallId);
@@ -782,6 +779,11 @@ try {
       }
       const offset = Number.isInteger(call.arguments.offset) && call.arguments.offset > 0 ? call.arguments.offset : 1;
       consumerResultById.set(update.toolCallId, { text, path: renderedPath ?? argumentPath, offset });
+    }
+    for (const call of consumerCalls) {
+      if (consumerCallById.get(call.toolCallId)?.name !== 'read') continue;
+      if (consumerFailed.ids.has(call.toolCallId)) continue;
+      if (!consumerResultById.has(call.toolCallId)) consumerAttributionComplete = false;
     }
     const consumerReadResults = [...consumerResultById.values()];
     const consumerReadRequests = [];

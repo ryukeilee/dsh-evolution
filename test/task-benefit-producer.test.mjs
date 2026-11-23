@@ -821,6 +821,41 @@ test('a default-offset start read and an explicit continuation both claim one de
   assert.equal(row.exercised, true);
 });
 
+test('a positional decision cannot accept a conflicting explicit offset', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { offset: 601 } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { offset: 1 } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('terminal paths that normalize to the same file are not a conflict', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: './a.txt' } },
+      result('c1', '<path>./a.txt</path>\n<content>sentinel-a</content>'),
+      result('c1', '<path>/w/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, true);
+  assert.equal(row.exercised, true);
+});
+
 test('a per-file binding must cover every expected token', () => {
   const base = { id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' };
   const task = normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] });

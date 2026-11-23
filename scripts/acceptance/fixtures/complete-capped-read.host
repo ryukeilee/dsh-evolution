@@ -84,6 +84,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
     // or result.value in place.
     const originalContent = contentText(result);
     const originalWindow = snapshotWindow(result?.value);
+    const requestedLimitSnapshot = Number(exec?.arguments?.limit);
     const decision = await next();
     const callId = typeof exec?.callId === 'string' ? exec.callId : null;
     try {
@@ -93,6 +94,10 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       if (contentText(result) !== originalContent) return decision;
       if (decision.content !== undefined
         && JSON.stringify(decision.content) !== JSON.stringify(result?.content)) return decision;
+      if (originalWindow) {
+        const currentWindow = snapshotWindow(result?.value);
+        if (!currentWindow || !sameReadWindow(currentWindow, originalWindow)) return decision;
+      }
       const text = originalContent;
       const footer = text.length > 0 && OUTPUT_CAPPED.test(text.length > 8192 ? text.slice(-8192) : text);
       const base = decision.value === undefined ? originalWindow : decision.value;
@@ -111,7 +116,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // 2000 lines; a deployment that configured a smaller default is not
       // distinguished here, so this path never widens more than the bounded
       // tail below (and the footer remains the precise signal elsewhere).
-      const requestedLimit = Number(exec?.arguments?.limit);
+      const requestedLimit = requestedLimitSnapshot;
       const hasExplicitLimit = Number.isInteger(requestedLimit) && requestedLimit > 0;
       // Only the no-rendered-content path may fall back to structure, and only
       // when the caller declared an explicit limit: otherwise a deployment's

@@ -210,13 +210,24 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
     } else if (positionTrusted) {
       alignedDecision = decision;
     }
+    let offsetConflict = false;
+    if (alignedDecision && rawOffsetValid) {
+      const value = alignedDecision.arguments?.offset;
+      const normalized = value === undefined ? 1 : (Number.isInteger(value) && value > 0 ? value : NaN);
+      if (normalized !== rawInput.offset) {
+        alignedDecision = null;
+        offsetConflict = true;
+      }
+    }
     if (alignedDecision && usedDecisions) {
       if (usedDecisions.has(alignedDecision)) alignedDecision = null;
       else usedDecisions.add(alignedDecision);
     }
     const alignedArguments = alignedDecision?.arguments && typeof alignedDecision.arguments === 'object'
       && !Array.isArray(alignedDecision.arguments) ? alignedDecision.arguments : null;
-    if (effectivePath && alignedDecision === null) {
+    if (offsetConflict) {
+      inputKnown = false;
+    } else if (effectivePath && alignedDecision === null) {
       inputKnown = false;
     } else if (rawOffsetValid) {
       argumentsValue = rawInput;
@@ -271,7 +282,7 @@ export function successfulToolResult(update) {
   return completedToolUpdate(update) && update?.isError !== true && update?.is_error !== true;
 }
 
-export function terminalToolResultPaths(updates) {
+export function terminalToolResultPaths(updates, cwd = null) {
   const paths = new Map();
   const conflicts = new Set();
   for (const update of Array.isArray(updates) ? updates : []) {
@@ -281,8 +292,12 @@ export function terminalToolResultPaths(updates) {
     const text = toolUpdateText(update);
     const path = text ? /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null : null;
     if (!path) continue;
-    if (paths.has(id) && paths.get(id) !== path) conflicts.add(id);
-    else paths.set(id, path);
+    if (paths.has(id) && paths.get(id) !== path
+      && !readPathMatches(path, paths.get(id), cwd) && !readPathMatches(paths.get(id), path, cwd)) {
+      conflicts.add(id);
+    } else {
+      paths.set(id, path);
+    }
   }
   return { paths, conflicts };
 }
@@ -444,7 +459,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name and the arguments the model chose.
   const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
-  const terminalPaths = terminalToolResultPaths(updates);
+  const terminalPaths = terminalToolResultPaths(updates, cwd);
   const resultPathByCall = terminalPaths.paths;
   const hasRawOffset = (call) => Number.isInteger(call?.rawInput?.offset) && call.rawInput.offset > 0;
   const orderedCalls = calls.map((call, index) => ({ call, index }))

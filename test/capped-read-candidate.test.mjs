@@ -224,6 +224,31 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(inPlaceDecision.value.lines.length, 3, 'an in-place content clear is not a structural cap signal');
 
+  const inPlaceWindow = readResult({ lines: originalLines, totalLines: 5, path: downstreamFile, content: 'one\ntwo\nthree\n(Output capped. Showing lines 1-3. Use offset=4 to continue.)' });
+  const inPlaceWindowDecision = await downstream(
+    { name: 'read', arguments: { file_path: 'downstream.txt', limit: 5 }, agent: {}, signal: null },
+    inPlaceWindow,
+    async () => {
+      inPlaceWindow.value.lines = [originalLines[0]];
+      return { kind: 'accept' };
+    },
+  );
+  assert.equal(inPlaceWindowDecision.value, undefined, 'an implicit shortened window is preserved');
+  assert.equal(inPlaceWindow.value.lines.length, 1);
+
+  // A downstream mutation of the requested limit must not widen the append.
+  const limitRows = Array.from({ length: 30 }, (_, index) => 'line ' + index);
+  const limitFile = '/isolated/limit.txt';
+  const limitListener = mount({ [limitFile]: limitRows.join('\n') + '\n' });
+  const limitFirst = limitRows.slice(0, 20).map((value, index) => ({ number: index + 1, text: value }));
+  const limitExec = { name: 'read', arguments: { file_path: 'limit.txt', limit: 26 }, agent: {}, signal: null };
+  const limitDecision = await limitListener(
+    limitExec,
+    readResult({ lines: limitFirst, totalLines: limitRows.length, path: limitFile, content: limitFirst.map((line) => line.text).join('\n') + '\n(Output capped. Showing lines 1-20. Use offset=21 to continue.)' }),
+    async () => { limitExec.arguments.limit = 30; return { kind: 'accept' }; },
+  );
+  assert.equal(limitDecision.value.lines.length, 26, 'the append uses the limit captured before downstream hooks');
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(
