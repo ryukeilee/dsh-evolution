@@ -75,6 +75,11 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
     try {
       if (!decision || decision.kind !== 'accept') return decision;
       if (exec?.name !== 'read') return decision;
+      // A downstream hook may replace the model-visible content instead of the
+      // structured value. Its rendered window is authoritative; never re-render
+      // the original lines over it.
+      if (decision.content !== undefined
+        && JSON.stringify(decision.content) !== JSON.stringify(result?.content)) return decision;
       const text = contentText(result);
       const footer = text.length > 0 && OUTPUT_CAPPED.test(text.length > 8192 ? text.slice(-8192) : text);
       const base = decision.value === undefined ? result?.value : decision.value;

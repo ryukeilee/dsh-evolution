@@ -146,7 +146,7 @@ export function readPathMatches(actual, expected, cwd = null) {
  * decision, its arguments are not trusted (the order is not reliable), but the
  * call identity still comes from the title.
  */
-export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null, usedDecisions = null) {
+export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null, usedDecisions = null, reportedPath = null) {
   const title = typeof call?.title === 'string' && call.title.trim() !== '' ? call.title.trim() : null;
   const decision = toolTurns?.[index]?.decision;
   const decisionName = typeof toolNames?.[index] === 'string' ? toolNames[index] : null;
@@ -166,24 +166,27 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
   const positionTrusted = !ambiguous && title !== null && title === decisionName;
   const name = titleIsTool ? title : null;
   const rawFile = rawInput && typeof rawInput.file_path === 'string' && rawInput.file_path.trim() !== '';
+  const effectivePath = rawFile ? rawInput.file_path
+    : (typeof reportedPath === 'string' && reportedPath.trim() !== '' ? reportedPath : null);
   const rawOffsetValid = Number.isInteger(rawInput?.offset) && rawInput.offset > 0;
   let argumentsValue = {};
   let inputKnown = false;
   if (name === 'read') {
-    // Resolve same-name decisions by path: a rawInput path that matches exactly
-    // one read decision identifies that decision even when several reads are in
-    // flight. A path shared by two decisions (different offsets) stays
-    // ambiguous and needs an explicit valid offset.
+    // Resolve same-name decisions by path. The result path can supply the file
+    // when ACP only echoed an offset. Unclaimed decisions are considered so an
+    // explicit continuation claims first and the earlier default-offset read
+    // can then match the remaining decision.
     const sameTool = (Array.isArray(toolTurns) ? toolTurns : [])
       .filter((turn) => turn?.decision?.tool === 'read');
-    let candidates = rawFile ? sameTool.filter((turn) => {
+    let candidates = effectivePath ? sameTool.filter((turn) => {
       const path = turn?.decision?.arguments?.file_path;
       return typeof path === 'string' && path.trim() !== ''
-        && (readPathMatches(rawInput.file_path, path, cwd) || readPathMatches(path, rawInput.file_path, cwd));
+        && (readPathMatches(effectivePath, path, cwd) || readPathMatches(path, effectivePath, cwd));
     }) : [];
+    if (usedDecisions) candidates = candidates.filter((turn) => !usedDecisions.has(turn.decision));
     // Multiple decisions for one path are disambiguated by an explicit offset,
     // but only when exactly one decision carries that offset.
-    if (rawFile && candidates.length > 1 && rawOffsetValid) {
+    if (effectivePath && candidates.length > 1 && rawOffsetValid) {
       const byOffset = candidates.filter((turn) => turn?.decision?.arguments?.offset === rawInput.offset);
       if (byOffset.length === 1) candidates = byOffset;
     }
@@ -191,8 +194,14 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
     // when ACP supplied its own offset. This keeps repeated calls from reusing
     // one decision or borrowing another file's offset.
     let alignedDecision = null;
-    if (rawFile) {
+    if (effectivePath) {
       if (candidates.length === 1) alignedDecision = candidates[0].decision;
+      else if (candidates.length === 0 && positionTrusted
+        && !(decisionArguments && typeof decisionArguments.file_path === 'string' && decisionArguments.file_path.trim() !== '')) {
+        // The decision did not name a file; the result path is the only path
+        // evidence, and the unique positional decision cannot contradict it.
+        alignedDecision = decision;
+      }
     } else if (positionTrusted) {
       alignedDecision = decision;
     }
@@ -202,7 +211,7 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
     }
     const alignedArguments = alignedDecision?.arguments && typeof alignedDecision.arguments === 'object'
       && !Array.isArray(alignedDecision.arguments) ? alignedDecision.arguments : null;
-    if (rawFile && alignedDecision === null) {
+    if (effectivePath && alignedDecision === null) {
       inputKnown = false;
     } else if (rawOffsetValid) {
       argumentsValue = rawInput;
@@ -404,12 +413,23 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name and the arguments the model chose.
   const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
+  const resultPathByCall = new Map();
+  for (const update of Array.isArray(updates) ? updates : []) {
+    if (update?.sessionUpdate !== 'tool_call_update') continue;
+    const text = toolUpdateText(update);
+    const path = text ? /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() : null;
+    if (typeof update.toolCallId === 'string' && path) resultPathByCall.set(update.toolCallId, path);
+  }
+  const hasRawOffset = (call) => Number.isInteger(call?.rawInput?.offset) && call.rawInput.offset > 0;
+  const orderedCalls = calls.map((call, index) => ({ call, index }))
+    .sort((left, right) => Number(hasRawOffset(right.call)) - Number(hasRawOffset(left.call)));
   const byId = new Map();
   const seenCallIds = new Set();
   let attributionComplete = calls.length === toolTurns.length && missingTerminals === 0;
   const usedReadDecisions = new Set();
-  calls.forEach((call, index) => {
-    const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames, cwd, usedReadDecisions);
+  orderedCalls.forEach(({ call, index }) => {
+    const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames, cwd, usedReadDecisions,
+      resultPathByCall.get(call.toolCallId) ?? null);
     if (typeof call.toolCallId !== 'string' || seenCallIds.has(call.toolCallId)) attributionComplete = false;
     if (typeof call.toolCallId === 'string') seenCallIds.add(call.toolCallId);
     if (typeof descriptor.name !== 'string') attributionComplete = false;

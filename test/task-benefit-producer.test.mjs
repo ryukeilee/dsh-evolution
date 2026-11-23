@@ -777,6 +777,50 @@ test('a failed call that later looks completed is excluded from first-read evide
   assert.equal(row.exercised, false, 'a failed call id cannot become a successful first read');
 });
 
+test('an offset-only ACP report still claims a path decision one-to-one', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/b.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { offset: 1 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { offset: 1 } },
+      result('c1', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/b.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a default-offset start read and an explicit continuation both claim one decision', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 601 } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt', offset: 601 } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/a.txt</path>\n<content>tail</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, true);
+  assert.equal(row.exercised, true);
+});
+
 test('a per-file binding must cover every expected token', () => {
   const base = { id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' };
   const task = normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] });

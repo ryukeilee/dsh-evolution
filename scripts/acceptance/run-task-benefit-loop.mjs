@@ -731,10 +731,21 @@ try {
       && new Set(consumerCallIds).size === consumerCallIds.length
       && missingTerminalToolCalls(consumerUpdates) === 0;
     const consumerToolNames = consumerDecisions.map((turn) => turn.decision.tool);
+    const consumerResultPathById = new Map();
+    for (const update of consumerUpdates) {
+      if (update.sessionUpdate !== 'tool_call_update') continue;
+      const text = toolUpdateText(update);
+      const path = text ? /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() : null;
+      if (typeof update.toolCallId === 'string' && path) consumerResultPathById.set(update.toolCallId, path);
+    }
+    const consumerHasOffset = (call) => Number.isInteger(call?.rawInput?.offset) && call.rawInput.offset > 0;
+    const consumerOrderedCalls = consumerCalls.map((call, index) => ({ call, index }))
+      .sort((left, right) => Number(consumerHasOffset(right.call)) - Number(consumerHasOffset(left.call)));
     const consumerCallById = new Map();
     const consumerUsedDecisions = new Set();
-    consumerCalls.forEach((call, index) => {
-      const descriptor = toolCallDescriptor(call, index, consumerDecisions, consumerToolNames, home, consumerUsedDecisions);
+    consumerOrderedCalls.forEach(({ call, index }) => {
+      const descriptor = toolCallDescriptor(call, index, consumerDecisions, consumerToolNames, home, consumerUsedDecisions,
+        consumerResultPathById.get(call.toolCallId) ?? null);
       if (typeof call.toolCallId === 'string' && typeof descriptor.name === 'string') {
         consumerCallById.set(call.toolCallId, descriptor);
       } else {

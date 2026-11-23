@@ -200,6 +200,14 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(downstreamDecision.value.lines.length, 1, 'a downstream rewrite keeps its own window');
 
+  const contentDecision = await downstream(
+    { name: 'read', arguments: { file_path: 'downstream.txt', limit: 5 }, agent: {}, signal: null },
+    readResult({ lines: originalLines, totalLines: 5, path: downstreamFile, content: '' }),
+    async () => ({ kind: 'accept', value: { path: downstreamFile, offset: 1, lines: originalLines, totalLines: 5 }, content: [{ type: 'text', text: 'downstream content' }] }),
+  );
+  assert.equal(contentDecision.content[0].text, 'downstream content', 'a downstream content rewrite is preserved');
+  assert.equal(contentDecision.value.lines.length, 3, 'the candidate does not re-render over rewritten content');
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(
