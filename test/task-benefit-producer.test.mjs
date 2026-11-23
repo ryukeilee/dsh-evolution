@@ -1239,6 +1239,23 @@ test('a tool update before its tool_call is incomplete', () => {
   assert.equal(row.exercised, false);
 });
 
+test('an envelope after a diagnostic prefix is not bare text', () => {
+  const text = 'diagnostic\n<path>/work/a.txt</path>\n<content>first</content>\n<path>/work/b.txt</path>\n<content>sentinel-b</content>';
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/work/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/work',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/work/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] },
+    ],
+    assistantText: 'sentinel-b', expectedTokens: ['sentinel-b'],
+    expectedReads: [{ path: '/work/a.txt', token: 'sentinel-b' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
 test('a per-file binding must cover every expected token', () => {
   const base = { id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' };
   const task = normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] });

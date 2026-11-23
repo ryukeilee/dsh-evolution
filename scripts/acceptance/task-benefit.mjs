@@ -303,8 +303,13 @@ export function successfulToolResult(update) {
 
 function parseToolResultText(text) {
   const value = typeof text === 'string' ? text : '';
-  const hasEnvelope = /^\s*<path>/u.test(value);
-  if (!hasEnvelope) return { path: null, body: value.trim(), invalid: false };
+  const startsWithPath = /^\s*<path>/u.test(value);
+  const hasEnvelopeTag = /<\/?path>|<\/?content>/u.test(value);
+  // Only text without any envelope structure may use the bare-text path.
+  if (!startsWithPath) {
+    if (hasEnvelopeTag) return { path: null, body: '', invalid: true };
+    return { path: null, body: value.trim(), invalid: false };
+  }
   const pathMatch = /^\s*<path>([\s\S]*?)<\/path>[ \t]*(?:\r?\n|$)/u.exec(value);
   if (!pathMatch) return { path: null, body: '', invalid: true };
   const path = pathMatch[1].trim() || null;
