@@ -761,6 +761,12 @@ try {
         consumerAttributionComplete = false;
       }
     }
+    for (const update of consumerUpdates) {
+      if (update?.sessionUpdate !== 'tool_call_update') continue;
+      if (typeof update.toolCallId !== 'string' || !consumerCallIdSet.has(update.toolCallId)) {
+        consumerAttributionComplete = false;
+      }
+    }
     assert(consumerCalls.length === consumerDecisions.length
       && consumerCallNames.length === consumerCalls.length
       && toolNameCountsMatch(consumerToolNames, consumerCallNames),

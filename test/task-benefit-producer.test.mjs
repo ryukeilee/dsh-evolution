@@ -983,6 +983,40 @@ test('a path-only terminal beside a valid read is a missing result', () => {
   assert.equal(row.toolFailures, 1);
 });
 
+test('empty and whitespace content envelopes are missing read bodies', () => {
+  for (const body of ['', '   \n  ']) {
+    const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+    const row = extractSessionEvidence({
+      label: 'candidate-1', side: 'candidate', turns,
+      updates: [
+        { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+        { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: `<path>/home/a.txt</path>\n<content>${body}</content>` } }] },
+      ],
+      assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+      expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+      candidateTool: null, durationMs: 1,
+    });
+    assert.equal(row.attributionComplete, false);
+    assert.equal(row.toolFailures, 1);
+  }
+});
+
+test('an in-progress update for an unknown call id is incomplete evidence', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a</content>' } }] },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'ghost', status: 'in_progress' },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+});
+
 test('a per-file binding must cover every expected token', () => {
   const base = { id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' };
   const task = normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] });

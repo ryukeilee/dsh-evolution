@@ -310,6 +310,22 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(deleteDecision.value, undefined, 'a missing effective limit cannot be inferred as a byte cap');
 
+  const hostRows = ['one', 'two', 'three', 'four', 'five'];
+  const hostFile = '/isolated/host-value.txt';
+  const hostListener = mount({ [hostFile]: hostRows.join('\n') + '\n' });
+  const hostValue = {
+    path: hostFile, offset: 1, totalLines: 5, hostValue: 'keep',
+    lines: hostRows.slice(0, 2).map((text, index) => ({ number: index + 1, text, tag: 'keep-' + index })),
+  };
+  const hostDecision = await hostListener(
+    { name: 'read', arguments: { file_path: 'host-value.txt', limit: 5 }, agent: {}, signal: null },
+    { value: hostValue, content: [{ type: 'text', text: 'one\ntwo\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }] },
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(hostDecision.value.hostValue, 'keep');
+  assert.equal(hostDecision.value.lines[0].tag, 'keep-0');
+  assert.equal(hostDecision.value.lines.length, 5);
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(

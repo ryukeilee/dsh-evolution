@@ -90,7 +90,8 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
     // Snapshot before awaiting downstream hooks: they may mutate result.content
     // or result.value in place.
     const originalContent = contentText(result);
-    const originalWindow = snapshotWindow(result?.value);
+    const originalValue = result?.value;
+    const originalWindow = snapshotWindow(originalValue);
     const effectiveLimitSnapshot = Number(exec?.arguments?.limit);
     const decision = await next();
     const callId = typeof exec?.callId === 'string' ? exec.callId : null;
@@ -108,7 +109,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       const text = originalContent;
       const footer = text.length > 0 && OUTPUT_CAPPED.test(text.length > 8192 ? text.slice(-8192) : text);
       if (!originalWindow) return decision;
-      const base = decision.value === undefined ? originalWindow : decision.value;
+      const base = decision.value === undefined ? originalValue : decision.value;
       if (!base || typeof base !== 'object' || !Array.isArray(base.lines) || typeof base.path !== 'string') return decision;
       // A downstream post-execute hook may have rewritten the window. The cap
       // signal belongs to the original host result; if the final value is a

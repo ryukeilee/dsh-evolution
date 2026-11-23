@@ -286,9 +286,13 @@ export function successfulToolResult(update) {
 
 function parseToolResultText(text) {
   const value = typeof text === 'string' ? text : '';
-  const match = /^\s*<path>([^<]*)<\/path>\s*/u.exec(value);
-  if (!match) return { path: null, body: value };
-  return { path: match[1].trim() || null, body: value.slice(match[0].length) };
+  const pathMatch = /^\s*<path>([^<]*)<\/path>\s*/u.exec(value);
+  const path = pathMatch ? pathMatch[1].trim() || null : null;
+  let body = pathMatch ? value.slice(pathMatch[0].length) : value;
+  const contentMatch = /^\s*<content>([\s\S]*)<\/content>\s*$/u.exec(body);
+  if (contentMatch) body = contentMatch[1];
+  body = body.trim();
+  return { path, body };
 }
 
 export function terminalNotificationMissingId(updates) {
@@ -521,6 +525,10 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     .filter((name) => typeof name === 'string');
   const callIdSet = new Set(calls.map((call) => call.toolCallId).filter((id) => typeof id === 'string'));
   for (const id of terminalIds) if (!callIdSet.has(id)) attributionComplete = false;
+  for (const update of Array.isArray(updates) ? updates : []) {
+    if (update?.sessionUpdate !== 'tool_call_update') continue;
+    if (typeof update.toolCallId !== 'string' || !callIdSet.has(update.toolCallId)) attributionComplete = false;
+  }
   const attributionAligned = calls.length === toolTurns.length
     && callNames.length === calls.length
     && toolNameCountsMatch(toolNames, callNames);
