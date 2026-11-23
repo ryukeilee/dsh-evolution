@@ -1579,9 +1579,62 @@ test('a timed-out probe step aborts its official call and waits for it to settle
   for (const sample of baseline.samples) {
     assert.equal(sample.isError, true);
     assert.equal(sample.code, 'E_EVOLUTION_PROBE_TIMEOUT');
+    // A direct timeout never measured the tool, so it must not be read as a
+    // real failure a candidate could "fix".
+    assert.equal(sample.unmeasured, true);
   }
   // A settled rejection must not surface as an unhandled rejection later.
   await Promise.allSettled(pending);
+});
+
+test('a direct probe timeout cannot become a benefit or a regression', () => {
+  const timedOut = { samples: Array.from({ length: 2 }, () => ({
+    index: 0, step: 'probe-target', role: 'target', isError: true,
+    code: 'E_EVOLUTION_PROBE_TIMEOUT', transport: 'direct',
+  })) };
+  const succeeded = { samples: Array.from({ length: 2 }, () => ({
+    index: 0, step: 'probe-target', role: 'target', isError: false,
+    valueDigest: `sha256:${'a'.repeat(64)}`, transport: 'direct',
+  })) };
+  assert.equal(probeSummary(timedOut).unmeasured, true);
+  const forward = compareProbeRuns(timedOut, succeeded);
+  assert.equal(forward.measurementInvalid, true);
+  assert.equal(forward.benefit, false, 'a timed-out baseline is not a measured failure');
+  const reverse = compareProbeRuns(succeeded, timedOut);
+  assert.equal(reverse.measurementInvalid, true);
+  assert.equal(reverse.regression, false, 'a timed-out candidate is not a measured regression');
+});
+
+test('an empty official result batch is not a measured success', async (t) => {
+  const h = await createHarness(t, 'probe-empty-batch');
+  const experimentId = await proposeExperiment(h);
+  // No row for this call means the official pipeline never returned a result.
+  // The old fallback read the bare update (`{}`) as a successful measurement.
+  h.ctx.tools.execute = () => ({ results: [] });
+  const baseline = await runBaseline(h, experimentId);
+  assert.equal(baseline.samples.length > 0, true);
+  for (const sample of baseline.samples) {
+    assert.equal(sample.isError, true);
+    assert.equal(sample.code, 'PROBE_NO_RESULT');
+  }
+  assert.equal(probeSummary(baseline).unmeasured, true);
+  const comparison = compareProbeRuns(baseline, baseline);
+  assert.equal(comparison.measurementInvalid, true);
+  assert.equal(comparison.benefit, false);
+});
+
+test('plan and review report a truncated discovery window', async (t) => {
+  const h = await createHarness(t, 'truncated-discovery');
+  const original = h.orchestrator.sharedExperience;
+  h.orchestrator.sharedExperience = { ...original, discover: () => ({ records: [], truncated: true }) };
+  try {
+    const plan = h.orchestrator.plan({}, h.exec);
+    assert.equal(plan.sources.truncated, true, 'plan must carry the withheld-window fact');
+    const review = await h.orchestrator.reviewSelfEvolution({}, h.exec);
+    assert.equal(review.selfEvolution.incomplete, true, 'a review over withheld evidence is not complete');
+  } finally {
+    h.orchestrator.sharedExperience = original;
+  }
 });
 
 test('the strategy fingerprint uses the canonical problem identity', async (t) => {

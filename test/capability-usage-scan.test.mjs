@@ -365,6 +365,17 @@ test('an older projection without the unattributed bucket is still readable', as
   assert.equal(partial.usage.recordsComplete, false);
 });
 
+test('the README-documented usage projection producer ships in the package', t => {
+  // `evolution_plan` and the ACP audit read `<dataRoot>/shared-plugins/usage.json`,
+  // but an installed user can only produce that file with this CLI. If the
+  // allow-list drops it, every production record stays `usage-unknown` and the
+  // review-retirement action is unreachable outside this repository.
+  const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const producer = 'docs/audit/replay/capability-usage.mjs';
+  assert.ok(pkg.files.includes(producer), 'the producer referenced by README must be distributed');
+  assert.ok(fs.existsSync(SCRIPT), 'the referenced producer must exist at that path');
+});
+
 test('the scanner output is reproducible directly, without the CLI', async (t) => {
   const env = scratch(t);
   writeRecord(env, { source: WIDGET_SOURCE });

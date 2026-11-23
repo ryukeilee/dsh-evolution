@@ -343,6 +343,29 @@ test('same-scope failure rows cannot crowd an older proven-ineffective conclusio
   assert.equal(found.truncated, false);
 });
 
+test('a fingerprinted read is not crowded by newer conclusions for other strategies', (t) => {
+  const store = open(t);
+  const proven = 'aaaaaaaaaaaaaaaa';
+  store.recordConclusion(conclude({ experimentId: 'exp-proven', decision: 'no-benefit',
+    strategyFingerprint: proven, strategy: 'proven strategy', rootCause: 'proven cause', occurredAt: at(1) }), ORIGIN);
+  assert.equal(store.findConclusions({ target: TARGET, applicability: VERSIONS, strategyFingerprint: proven }).best?.decision, 'no-benefit');
+
+  // Many newer conclusions for other strategies under the same scope used to
+  // fill the bounded window before the JS-side fingerprint filter ran, so the
+  // hard `priorIneffectiveConclusion` gate saw `matches: []` on a truncated
+  // answer and proposed the already-proven-ineffective strategy again.
+  for (let index = 0; index < 40; index += 1) {
+    store.recordConclusion(conclude({ experimentId: `exp-other-${index}`, decision: 'adopted',
+      strategyFingerprint: (index + 1).toString(16).padStart(16, '0'), strategy: `other strategy ${index}`,
+      rootCause: `other cause ${index}`, occurredAt: at(2 + (index % 20)) }), ORIGIN);
+  }
+  const found = store.findConclusions({ target: TARGET, applicability: VERSIONS, strategyFingerprint: proven, window: 3 });
+  assert.equal(found.matches.length, 1, 'the matching fingerprint stays inside the window');
+  assert.equal(found.best?.decision, 'no-benefit');
+  assert.equal(found.scoped, 1, 'only rows that can match the fingerprint count for this read');
+  assert.equal(found.truncated, false);
+});
+
 test('the stored conclusion body keeps the canonical scope marker the windowed read uses', (t) => {
   const root = temporary(t);
   const store = openSharedExperience(root);

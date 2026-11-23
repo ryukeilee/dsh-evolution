@@ -288,3 +288,33 @@ test('a metrics-bearing failure keeps the frozen opener replay digest', t => {
   // digest must still match, so it sees a duplicate, never a conflict.
   assert.equal(store.recordFailure({ id, type: 'tool/error', code: 'ENOENT', target: 'tool:read_file' }).duplicate, true);
 });
+
+test('promotion facts accept the canonical problem identity evolution_plan emits', t => {
+  const root = temporary(t);
+  const store = openSharedExperience(path.join(root, 'shared'));
+  t.after(() => store.close());
+  const file = path.join(root, 'bridge.jsonl');
+  // plan() emits the canonical scope as the problem key (`tool:read` -> `tool
+  // read`), and the closed-loop acceptance feeds that string back as
+  // proposal.target. A public promotion fact under that identity must reach
+  // shared experience; dropping it silently erases the resolved-problem signal
+  // the next review depends on.
+  const bridge = new EvolutionEventBridge({ file, key: 'd'.repeat(64),
+    onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
+  bridge.emit('promotion-succeeded', { id: 'promo-canonical', proposal: { target: 'tool read' },
+    durable: { adapter: 'official-include', rowId: 'canonical-row' } });
+  assert.equal(store.stats().events, 1, 'a canonical target must not be silently ignored');
+  assert.equal(store.recall({ target: 'tool read' }).records[0].state, 'KNOWN');
+});
+
+test('recordEvolution bounds canonical targets but still refuses blank ones', t => {
+  const root = temporary(t);
+  const store = openSharedExperience(root);
+  t.after(() => store.close());
+  const at = new Date().toISOString();
+  assert.equal(store.recordEvolution({ eventType: 'canary-passed', eventId: 'canary-space',
+    target: 'agent pattern recovery', audit: { at } }, 'origin', { sequence: 1, writer: 'w' }).committed, true);
+  assert.equal(store.recordEvolution({ eventType: 'canary-passed', eventId: 'canary-blank',
+    target: '   ', audit: { at } }, 'origin', { sequence: 2, writer: 'w' }).ignored, true);
+  assert.equal(store.recall({ problem: 'agent pattern recovery' }).records.length, 1);
+});

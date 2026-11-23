@@ -57,6 +57,7 @@ test('consumer module stays lightweight: exactly the sharing contract and the In
     './cordis-compat.js',
     './promoted-sharing.js',
     './promotion-include.js',
+    './runtime-versions.js',
     'node:crypto',
     'node:fs/promises',
     'node:os',
