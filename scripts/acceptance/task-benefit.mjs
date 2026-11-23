@@ -154,24 +154,24 @@ export function readPathMatches(actual, expected, cwd = null) {
  * call identity still comes from the title.
  */
 export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null, usedDecisions = null, reportedPath = null) {
+  const structuredName = typeof call?.name === 'string' && call.name.trim() !== '' ? call.name.trim() : null;
   const title = typeof call?.title === 'string' && call.title.trim() !== '' ? call.title.trim() : null;
+  const label = structuredName ?? title;
   const decision = toolTurns?.[index]?.decision;
   const decisionName = typeof toolNames?.[index] === 'string' ? toolNames[index] : null;
   const offered = Array.isArray(toolTurns?.[index]?.tools) ? toolTurns[index].tools : [];
-  // The ACP title is the only verifiable tool identity. Without it (or with a
-  // descriptive title that is not one of the offered tools) the executed tool
-  // cannot be named, even if the positional decision looks plausible.
-  const titleIsTool = title !== null && (title === decisionName || offered.includes(title));
+  // ACP's structured name is authoritative; title is the human-facing fallback.
+  const labelIsTool = label !== null && (label === decisionName || offered.includes(label));
   const rawInput = call?.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput)
     ? call.rawInput : null;
   const decisionArguments = decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
     ? decision.arguments : null;
-  // Position is only trustworthy when the title names the decision's tool and
+  // Position is only trustworthy when the label names the decision's tool and
   // that tool appears once. With two same-name calls, a reversed transport order
   // would otherwise lend a tail read the start read's offset.
   const ambiguous = decisionName !== null && toolNames.filter((name) => name === decisionName).length > 1;
-  const positionTrusted = !ambiguous && title !== null && title === decisionName;
-  const name = titleIsTool ? title : null;
+  const positionTrusted = !ambiguous && label !== null && label === decisionName;
+  const name = labelIsTool ? label : null;
   const rawFile = rawInput && typeof rawInput.file_path === 'string' && rawInput.file_path.trim() !== '';
   const effectivePath = rawFile ? rawInput.file_path
     : (typeof reportedPath === 'string' && reportedPath.trim() !== '' ? reportedPath : null);
@@ -293,20 +293,17 @@ export function successfulToolResult(update) {
 
 function parseToolResultText(text) {
   const value = typeof text === 'string' ? text : '';
+  const hasEnvelope = /^\s*<path>/u.test(value);
+  if (!hasEnvelope) return { path: null, body: value.trim(), invalid: false };
   const pathMatch = /^\s*<path>([\s\S]*?)<\/path>[ \t]*(?:\r?\n|$)/u.exec(value);
-  if (/^\s*<path>/u.test(value) && !pathMatch) return { path: null, body: '', invalid: true };
-  const path = pathMatch ? pathMatch[1].trim() || null : null;
-  let body = pathMatch ? value.slice(pathMatch[0].length) : value;
-  // The official envelope may carry an optional <type>file</type> between the
-  // path and the content.
+  if (!pathMatch) return { path: null, body: '', invalid: true };
+  const path = pathMatch[1].trim() || null;
+  if (!path) return { path: null, body: '', invalid: true };
+  let body = value.slice(pathMatch[0].length);
   body = body.replace(/^\s*<type>[^<]*<\/type>\s*/u, '');
-  if (/<\/?content>/u.test(body)) {
-    const contentMatch = /^\s*<content>([\s\S]*)<\/content>\s*$/u.exec(body);
-    if (!contentMatch) return { path, body: '', invalid: true };
-    body = contentMatch[1];
-  }
-  body = body.trim();
-  return { path, body, invalid: false };
+  const contentMatch = /^\s*<content>([\s\S]*)<\/content>\s*$/u.exec(body);
+  if (!contentMatch) return { path, body: '', invalid: true };
+  return { path, body: contentMatch[1].trim(), invalid: false };
 }
 
 export function terminalNotificationMissingId(updates) {
@@ -326,10 +323,15 @@ export function terminalToolResults(updates, cwd = null) {
   const bodies = new Map();
   const conflicts = new Set();
   for (const update of Array.isArray(updates) ? updates : []) {
-    if (update?.sessionUpdate !== 'tool_call_update' || !successfulToolResult(update)) continue;
+    const kind = update?.sessionUpdate;
+    if (kind !== 'tool_call' && kind !== 'tool_call_update') continue;
+    if (!successfulToolResult(update)) continue;
     const id = typeof update.toolCallId === 'string' && update.toolCallId !== '' ? update.toolCallId : null;
     if (id === null) continue;
     const text = toolUpdateText(update);
+    // An initial completed tool_call without content is only a status, not a
+    // result; a later update may carry the actual body.
+    if (kind === 'tool_call' && !text) continue;
     const parsed = parseToolResultText(text);
     const path = parsed.path;
     const body = parsed.body;
@@ -506,7 +508,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     if (update.status === 'completed' || update.status === 'success'
       || update.status === 'failed' || update.status === 'error'
       || update.isError === true || update.is_error === true) terminalIds.add(id);
-    if (update.sessionUpdate === 'tool_call_update' && successfulToolResult(update)) {
+    if ((update.sessionUpdate === 'tool_call' || update.sessionUpdate === 'tool_call_update') && successfulToolResult(update)) {
       const parsed = parseToolResultText(toolUpdateText(update));
       if (parsed.body) resultTextIds.add(id);
     }
@@ -515,9 +517,27 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name and the arguments the model chose.
   const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
+  const inputByCall = new Map();
+  for (const call of calls) {
+    if (typeof call.toolCallId !== 'string') continue;
+    if (call.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput)) {
+      inputByCall.set(call.toolCallId, { ...call.rawInput });
+    }
+  }
+  for (const update of Array.isArray(updates) ? updates : []) {
+    if (update?.sessionUpdate !== 'tool_call_update') continue;
+    const id = typeof update.toolCallId === 'string' ? update.toolCallId : null;
+    if (id === null) continue;
+    const reported = update.rawInput && typeof update.rawInput === 'object' && !Array.isArray(update.rawInput)
+      ? update.rawInput : null;
+    if (reported) inputByCall.set(id, { ...(inputByCall.get(id) ?? {}), ...reported });
+  }
   const terminalPaths = terminalToolResults(updates, cwd);
   const resultPathByCall = terminalPaths.paths;
-  const hasRawOffset = (call) => Number.isInteger(call?.rawInput?.offset) && call.rawInput.offset > 0;
+  const hasRawOffset = (call) => {
+    const input = inputByCall.get(call?.toolCallId) ?? call?.rawInput;
+    return Number.isInteger(input?.offset) && input.offset > 0;
+  };
   const orderedCalls = calls.map((call, index) => ({ call, index }))
     .sort((left, right) => Number(hasRawOffset(right.call)) - Number(hasRawOffset(left.call)));
   const byId = new Map();
@@ -526,7 +546,10 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     && !missingTerminalId && terminalPaths.conflicts.size === 0;
   const usedReadDecisions = new Set();
   orderedCalls.forEach(({ call, index }) => {
-    const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames, cwd, usedReadDecisions,
+    const effectiveCall = typeof call.toolCallId === 'string' && inputByCall.has(call.toolCallId)
+      ? { ...call, rawInput: inputByCall.get(call.toolCallId) }
+      : call;
+    const descriptor = toolCallDescriptor(effectiveCall, index, toolTurns, toolNames, cwd, usedReadDecisions,
       resultPathByCall.get(call.toolCallId) ?? null);
     if (typeof call.toolCallId !== 'string' || seenCallIds.has(call.toolCallId)) attributionComplete = false;
     if (typeof call.toolCallId === 'string') seenCallIds.add(call.toolCallId);
@@ -563,7 +586,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // first request followed by a start reread is not mechanism proof.
   const readResults = new Map();
   for (const update of Array.isArray(updates) ? updates : []) {
-    if (update?.sessionUpdate !== 'tool_call_update') continue;
+    if (update?.sessionUpdate !== 'tool_call' && update?.sessionUpdate !== 'tool_call_update') continue;
     if (terminalPaths.conflicts.has(update.toolCallId)) continue;
     if (failedUpdates.ids.has(update.toolCallId)) continue;
     if (!successfulToolResult(update)) continue;

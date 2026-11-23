@@ -735,13 +735,34 @@ try {
     const consumerTerminal = terminalToolResults(consumerUpdates, home);
     if (consumerTerminal.conflicts.size > 0) consumerAttributionComplete = false;
     const consumerResultPathById = consumerTerminal.paths;
-    const consumerHasOffset = (call) => Number.isInteger(call?.rawInput?.offset) && call.rawInput.offset > 0;
+    const consumerInputByCall = new Map();
+    for (const call of consumerCalls) {
+      if (typeof call.toolCallId !== 'string') continue;
+      if (call.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput)) {
+        consumerInputByCall.set(call.toolCallId, { ...call.rawInput });
+      }
+    }
+    for (const update of consumerUpdates) {
+      if (update?.sessionUpdate !== 'tool_call_update') continue;
+      const id = typeof update.toolCallId === 'string' ? update.toolCallId : null;
+      if (id === null) continue;
+      const reported = update.rawInput && typeof update.rawInput === 'object' && !Array.isArray(update.rawInput)
+        ? update.rawInput : null;
+      if (reported) consumerInputByCall.set(id, { ...(consumerInputByCall.get(id) ?? {}), ...reported });
+    }
+    const consumerHasOffset = (call) => {
+      const input = consumerInputByCall.get(call?.toolCallId) ?? call?.rawInput;
+      return Number.isInteger(input?.offset) && input.offset > 0;
+    };
     const consumerOrderedCalls = consumerCalls.map((call, index) => ({ call, index }))
       .sort((left, right) => Number(consumerHasOffset(right.call)) - Number(consumerHasOffset(left.call)));
     const consumerCallById = new Map();
     const consumerUsedDecisions = new Set();
     consumerOrderedCalls.forEach(({ call, index }) => {
-      const descriptor = toolCallDescriptor(call, index, consumerDecisions, consumerToolNames, home, consumerUsedDecisions,
+      const effectiveCall = consumerInputByCall.has(call.toolCallId)
+        ? { ...call, rawInput: consumerInputByCall.get(call.toolCallId) }
+        : call;
+      const descriptor = toolCallDescriptor(effectiveCall, index, consumerDecisions, consumerToolNames, home, consumerUsedDecisions,
         consumerResultPathById.get(call.toolCallId) ?? null);
       if (typeof call.toolCallId === 'string' && typeof descriptor.name === 'string') {
         consumerCallById.set(call.toolCallId, descriptor);
@@ -774,7 +795,7 @@ try {
     const consumerResultById = new Map();
     const consumerFailed = failedToolCallIds(consumerUpdates);
     for (const update of consumerUpdates) {
-      if (update.sessionUpdate !== 'tool_call_update') continue;
+      if (update.sessionUpdate !== 'tool_call' && update.sessionUpdate !== 'tool_call_update') continue;
       if (consumerTerminal.conflicts.has(update.toolCallId)) continue;
       if (consumerFailed.ids.has(update.toolCallId)) continue;
       if (!successfulToolResult(update)) continue;
