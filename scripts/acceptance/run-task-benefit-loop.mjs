@@ -482,7 +482,10 @@ try {
   assert(selection.hook === 'tools/post-execute', 'the planner did not name the official hook');
   assert(selection.verificationKind === 'paired-real-session', 'the planner did not require paired real-session evidence');
   assert(selection.baselinePath?.kind === 'observed-recovery', 'the planner did not record the observed recovery baseline');
-  assert(selection.baselinePath.recoveryTools.includes('bash'), 'the planner lost the observed bash recovery path');
+  // The collector also accepts grep and a successful same-path re-read; the
+  // concrete recovery tool is an observed fact, not a harness requirement.
+  assert(selection.baselinePath.recoveryTools.some((tool) => ['bash', 'grep', 'read'].includes(tool)),
+    'the planner lost the observed recovery path: ' + JSON.stringify(selection.baselinePath.recoveryTools));
   evidence.discovery = {
     problemKey: selection.problemKey,
     loss: selection.loss,

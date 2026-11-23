@@ -594,7 +594,12 @@ test('the review carries the planner capability form and observed baseline', () 
   // An unknown form is not silently promoted into a proposal contract.
   const unknown = composeSelfEvolutionReview({
     stable: { nextActions: [] },
-    experience: plannedExperience({ selected: { problemKey: 'tool read', occurrences: 3, improvement: 'unknown-form' } }),
+    experience: plannedExperience({
+      selected: {
+        problemKey: 'tool read', occurrences: 3, improvement: 'unknown-form',
+        baselinePath: { kind: 'observed-recovery', recoveryTools: ['bash'] },
+      },
+    }),
     versions: CURRENT_HOST,
   });
   assert.equal(unknown.nextActions[0].improvement, undefined);
