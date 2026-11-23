@@ -356,6 +356,31 @@ test('a decision reservation whose release failed is retried by the next observa
   assert.equal(reservations.has(identity), true, 'the new Trial took its own reservation');
 });
 
+test('concurrent observations attempt a failed release only once per cooldown', async (t) => {
+  let releaseCalls = 0;
+  const domainStorage = {
+    observe: async () => {},
+    reserveAutonomousDecision: async (identity) => { reservations.add(identity); return true; },
+    autonomousDecisions: async () => [],
+    // A slow, failing storage queue: without the per-identity mutex, two
+    // observations entering before the first retry completes both enqueue one.
+    releaseAutonomousDecision: () => {
+      releaseCalls += 1;
+      return new Promise((_, reject) => setTimeout(() => reject(new Error('storage busy')), 10));
+    },
+  };
+  const reservations = new Set();
+  const h = await session(t, { domainStorage, transientRetryCooldownMs: 1000 });
+  await belowThreshold(h.observe, 'AGENT_ERROR');
+  const pending = await h.observe('AGENT_ERROR');
+  await h.core.revert({ experimentId: pending.experimentId }, h.exec);
+  assert.equal(releaseCalls, 1, 'the revert attempted the release once');
+
+  const [first, second] = await Promise.all([h.observe('AGENT_ERROR'), h.observe('AGENT_ERROR')]);
+  assert.deepEqual([first.phase, second.phase].sort(), ['experiment-deferred', 'observing']);
+  assert.equal(releaseCalls, 2, 'only one observation may retry in the same window');
+});
+
 test('a persistently failing decision release is deferred, never learned as a strategy failure', async (t) => {
   const reservations = new Set();
   const domainStorage = {
