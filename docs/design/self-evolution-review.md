@@ -79,12 +79,33 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 2. `revalidate`（宿主升级，无需改源码）；
 3. `repair-stable`（当前宿主已证明不兼容）；
 4. `restart-consumer`（只是启动状态过期）；
-5. `experience-candidate`（有证据的新机会；存在阻塞项时带 `blockedBy`）；
-6. `no-action`。
+5. `review-retirement`（已安装、但可证明未被日常工作流调用且没有工作流收益的自我封闭能力；只给可逆建议）；
+6. `experience-candidate`（有证据的新机会；存在阻塞项时带 `blockedBy`）；
+7. `no-action`。
 
 同一 `(action, recordId/problemKey/profile)` 只出现一次，输出有界。stable 动作在截断前先按同一优先级排序，
 因此 `operator-action` / `verify-host` / `revalidate` 不会被索引里靠后的低优先级记录挤掉；被截断的条数由
 `nextActionsDropped` 报告，并令 `selfEvolution.incomplete=true`，模型不能把不完整的 review 当成完整结果。
+
+### 4.1 价值证据：用量投影
+
+`readPublishedPluginReview()` 接受一个可选的 `usage` 投影，把每条记录分为 `production-benefit` /
+`experiment-benefit` / `in-use` / `installed-only` / `usage-unknown`。唯一的生产者是一次显式的离线扫描
+（`docs/audit/replay/capability-usage.mjs`，实现在 `lib/capability-usage.js`）：
+
+- 扫描只读取会话日志里的 `tool/call` / `tool/result` 类型与工具名，按发布记录的工具名计数；不输出正文、参数或结果；
+- **归因是因果的**：只有在一个晋升生命周期调用（`evolution_probe`/`trial`/`measure`/`promote`/
+  `canary_observe`/`desktop`）尚未返回时发生的调用才算验证流量。同一会话里先前调用过 `evolution_probe` 不影响
+  之后的真实使用；
+- 生命周期调用没有返回（日志截断、进程崩溃）时，其下的调用记为 `unattributedInvocations`，既不算使用也不算验证；
+- 工具名只从 `defineTool` / `registerTool` / `tools.register` 的定义处提取，不把源码里其他 `name: "…"` 字段当成工具；
+- 同一条工具名属于多条发布记录时，对每条记录都记为不可归因，不静默归给最后一条；
+- 任一会话、源码不可读，或出现无法解析的日志行时，受影响的计数为 `null`，投影 `complete: false`。
+
+扫描结果通过 `--write` 写到 `<dataRoot>/shared-plugins/usage.json`。运行时（Desktop 的 `evolution_plan` 与 ACP 的
+`audit`）只在显式检查时读取这一份有大小上限的小文件：不扫描会话、不写盘、无定时器。投影缺失、损坏或超过 30 天
+时零调用按未知处理（正数调用仍是事实），因此不会因为一份陈旧快照给出停用建议。停用建议还要求
+`capabilityAssessment: "self-contained"` 由操作者显式给出——脚本从不猜测能力是否自足。
 
 ## 5. revalidate 路径
 
@@ -113,6 +134,7 @@ revalidate 不是新的晋升，也不改变八项门禁、所有者确认或授
 
 没有 stable 插件问题、没有达到证据门槛的经验候选时，`selfEvolution.kind` 为 `no-action`。
 系统提示词要求模型报告这个结果并结束，不强行提出新插件；这与“只读、只由用户显式触发”的既有边界一致。
+`review-retirement` 不是自动停用：它只报告证据、可逆命令与所有者授权要求，实际停用仍需所有者明确同意后由操作者执行。
 
 ## 8. 边界与已知限制
 
@@ -120,6 +142,8 @@ revalidate 不是新的晋升，也不改变八项门禁、所有者确认或授
 - consumer 的 `hostDigest` 是上一次启动时捕获的事实；索引在其后变化时只报告 `restart-required`，不推断当前运行状态。
 - 当前宿主身份优先来自官方 `PluginPackages.packageOf`；ACP 等 profile 缺少该服务时回退到进程/包布局的精确解析（`lib/runtime-versions.js`），仍读不到时记录为 `verify-host`，绝不按“兼容”处理。
 - ACP 的 `audit` 使用同机共享数据根与共享经验库；它不能替代真实隔离宿主验证，也不会在本机执行 revalidate。
+- 用量投影是操作者产出的只读事实，不是第二个经验库：它只包含记录 id、计数与能力标注，运行时只读且不修改它；
+  投影缺失、损坏或不完整都不会让检查失败，只会让对应记录保持 `usage-unknown`。
 - 检查不引入后台扫描、定时器或启动时自动修复；只有用户显式触发工具调用时运行。
 
 ## 9. 验证

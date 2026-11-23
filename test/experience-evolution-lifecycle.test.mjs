@@ -1829,8 +1829,77 @@ test('reviewSelfEvolution composes the read-only stable + experience review with
   assert.equal(await exists(seeded.paths.promotionStateDir), false);
 });
 
-function workflowScenario(repetitions = 5) {
-  return { kind: 'workflow', id: 'paired-read-workflow', repetitions, steps: [
+test('reviewSelfEvolution consumes the persisted usage projection instead of scanning sessions', async (t) => {
+  const h = await createHarness(t, 'self-evolution-usage');
+  const id = 'evolution-promoted-aaaaaaaaaaaa';
+  const pluginName = `dsh-${id}`;
+  const dataRoot = h.orchestrator.paths.dataRoot ?? h.orchestrator.paths.presetDir;
+  const modulePath = path.join(dataRoot, 'promoted', pluginName, 'lib', 'index.js');
+  await fs.mkdir(path.dirname(modulePath), { recursive: true });
+  const source = 'const tool = harness.defineTool({ name: "widget_tool", description: "widget" });\n';
+  await fs.writeFile(modulePath, source);
+  await fs.writeFile(path.join(path.dirname(path.dirname(modulePath)), 'package.json'), '{"name":"dsh-fixture","version":"1.0.0"}\n');
+  const digests = {
+    sourceSha256: crypto.createHash('sha256').update(source).digest('hex'),
+    manifestSha256: crypto.createHash('sha256').update('{"name":"dsh-fixture","version":"1.0.0"}\n').digest('hex'),
+  };
+  await fs.mkdir(path.join(dataRoot, 'shared-plugins'), { recursive: true });
+  await fs.writeFile(path.join(dataRoot, 'shared-plugins', 'published.json'), `${JSON.stringify({
+    schemaVersion: 1,
+    kind: 'dsh-evolution-shared-plugins',
+    updatedAt: '2026-11-20T00:00:00.000Z',
+    plugins: [{
+      schemaVersion: 1,
+      id,
+      experimentId: 'experiment-usage-fixture',
+      pluginName,
+      entry: 'lib/index.js',
+      moduleUrl: `file://${modulePath}`,
+      ...digests,
+      publisherProfile: 'desktop',
+      approvedProfiles: ['acp'],
+      stable: { committedAt: '2026-11-20T00:00:00.000Z', decision: 'benefit', canary: { startupVerified: true, healthObservationWindow: 1, observations: 1 } },
+      requiredServices: [],
+      serviceMembers: {},
+      requiredCapabilities: ['fiberLifecycle', 'fiberAwait', 'include'],
+      hostOnly: true,
+      host: { dsh: '0.2.2-rc.5', cordis: '4.1.0', include: '2.0.3', node: process.version },
+      publishedAt: '2026-11-20T00:00:00.000Z',
+    }],
+  })}\n`);
+
+  // No projection yet: honest `usage-unknown`, never a guessed zero.
+  const before = await h.orchestrator.reviewSelfEvolution({}, h.exec);
+  assert.equal(before.stablePlugins.usageEvidence.status, 'absent');
+  assert.equal(before.stablePlugins.records[0].value.tier, 'usage-unknown');
+  assert.equal(before.stablePlugins.retirementCandidates.length, 0);
+
+  await fs.writeFile(path.join(dataRoot, 'shared-plugins', 'usage.json'), `${JSON.stringify({
+    kind: 'dsh-evolution-capability-usage',
+    schemaVersion: 1,
+    source: 'session-evidence',
+    complete: true,
+    capturedAt: new Date().toISOString(),
+    records: { [id]: { workflowInvocations: 3, verificationInvocations: 1, unattributedInvocations: 0, capabilityAssessment: 'self-contained' } },
+  })}\n`);
+  const after = await h.orchestrator.reviewSelfEvolution({}, h.exec);
+  assert.equal(after.stablePlugins.usageEvidence.status, 'ok');
+  assert.equal(after.stablePlugins.usageEvidence.complete, true);
+  assert.equal(after.stablePlugins.usageEvidence.stale, false);
+  assert.equal(after.stablePlugins.records[0].value.tier, 'in-use');
+  assert.equal(after.stablePlugins.records[0].value.workflowInvocations, 3);
+  assert.equal(after.stablePlugins.records[0].value.verificationInvocations, 1);
+  assert.equal(after.stablePlugins.retirementCandidates.length, 0);
+
+  // A damaged projection must not fail the audit; it reports why it is unused.
+  await fs.writeFile(path.join(dataRoot, 'shared-plugins', 'usage.json'), '{not json');
+  const damaged = await h.orchestrator.reviewSelfEvolution({}, h.exec);
+  assert.equal(damaged.ok, true);
+  assert.equal(damaged.stablePlugins.usageEvidence.status, 'invalid');
+  assert.equal(damaged.stablePlugins.records[0].value.tier, 'usage-unknown');
+});
+
+function workflowScenario(repetitions = 5) {  return { kind: 'workflow', id: 'paired-read-workflow', repetitions, steps: [
     { name: 'probe-target', candidateName: 'probe-dynamic', role: 'target', arguments: { key: 'edge' }, expected: { ok: true } },
     { name: 'probe-control', role: 'control', arguments: {}, expected: { ok: true } },
   ] };

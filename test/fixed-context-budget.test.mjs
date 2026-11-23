@@ -101,11 +101,22 @@ const ORIGIN_WIRE_BYTES = 10147;
  *  fields 12427 B, wire 12944 B; the same formula yields 5850 B fields /
  *  6050 B wire. No prose was added, so the budget is not widened for wording.
  *
+ *  The 2026-11-23 usage-evidence extension adds one sentence to the system text:
+ *  a `review-retirement` action names the evidence and the reversible command and
+ *  waits for the owner; the agent never disables a published plugin itself.
+ *  Measured with the fixture in this file on 2026-11-23:
+ *
+ *    text   = 4077 B (systemText, 12 tools registered);
+ *    fields = 12685 B;
+ *    wire   = 13202 B;
+ *    allowance = ceil(ceil((actual - floor(origin * 0.8)) / 0.8) / 50) * 50
+ *              = 6150 B fields / 6400 B wire.
+ *
  *  So the assertion below is still "at least 20% smaller than the extended
  *  baseline", not an unbounded budget. Adding prose or another tool must raise
  *  the allowance only with a new measurement and this same formula. */
-const FIELDS_ALLOWANCE_BYTES = 5850;
-const WIRE_ALLOWANCE_BYTES = 6050;
+const FIELDS_ALLOWANCE_BYTES = 6150;
+const WIRE_ALLOWANCE_BYTES = 6400;
 const BASELINE_FIELDS_BYTES = ORIGIN_FIELDS_BYTES + FIELDS_ALLOWANCE_BYTES;
 const BASELINE_WIRE_BYTES = ORIGIN_WIRE_BYTES + WIRE_ALLOWANCE_BYTES;
 

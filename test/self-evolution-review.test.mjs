@@ -801,6 +801,51 @@ test('a self-contained plugin with no workflow use becomes a reversible, owner-o
   assert.equal(record.retirement.candidate, true);
   // Verification traffic must not be counted as workflow usage.
   assert.notEqual(record.value.invoked, true);
+  // The verdict must reach the ordered decision, not just sit in a side table.
+  const retirementAction = result.nextActions.find((row) => row.action === 'review-retirement');
+  assert.ok(retirementAction, 'an unused self-contained plugin is a next action');
+  assert.equal(retirementAction.recordId, RECORD_ID);
+  assert.equal(retirementAction.requiresOwnerAuthorization, true);
+  assert.equal(retirementAction.reversible, true);
+  assert.equal(retirementAction.evidence.workflowInvocations, 0);
+  assert.ok(retirementAction.commands.every((line) => line.startsWith('node ')));
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'review-retirement');
+  assert.equal(composed.primary, 'review-retirement');
+  assert.equal(composed.hasBlockingStableIssue, false, 'retirement is not a blocking repair');
+  assert.equal(composed.stable.retirementCandidates, 1);
+});
+
+test('an incomplete or stale projection cannot produce a retirement recommendation', async (t) => {
+  const env = await fixture(t, 'value-untrusted-zero');
+  await writeConsumers(env);
+  const row = { workflowInvocations: 0, verificationInvocations: 0, capabilityAssessment: 'self-contained' };
+  for (const flags of [{ complete: false }, { stale: true }, { complete: false, stale: true }]) {
+    const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST,
+      usage: { source: 'session-evidence', capturedAt: '2026-11-20T00:00:00.000Z', ...flags, records: { [RECORD_ID]: row } } });
+    assert.equal(result.records[0].value.invoked, null, JSON.stringify(flags));
+    assert.equal(result.records[0].value.tier, 'usage-unknown');
+    assert.equal(result.retirementCandidates.length, 0, JSON.stringify(flags));
+    assert.equal(result.nextActions.some((action) => action.action === 'review-retirement'), false);
+    assert.equal(result.usageEvidence.complete, flags.complete !== false);
+    assert.equal(result.usageEvidence.stale, flags.stale === true);
+  }
+});
+
+test('an unattributable call keeps "zero workflow usage" unknown', async (t) => {
+  const env = await fixture(t, 'value-unattributed');
+  await writeConsumers(env);
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST,
+    usage: { source: 'session-evidence', capturedAt: '2026-11-20T00:00:00.000Z', complete: true, records: { [RECORD_ID]: {
+      workflowInvocations: 0,
+      verificationInvocations: 0,
+      unattributedInvocations: 1,
+      capabilityAssessment: 'self-contained',
+    } } } });
+  assert.equal(result.records[0].value.invoked, null);
+  assert.equal(result.records[0].value.unattributedInvocations, 1);
+  assert.match(result.records[0].value.reasons.join(' '), /could not be attributed/);
+  assert.equal(result.retirementCandidates.length, 0);
 });
 
 test('workflow use or evidenced production benefit blocks a retirement recommendation', async (t) => {
