@@ -259,6 +259,24 @@ test('streaming keeps early own-tool and step events beyond the diagnostic sampl
   assert.deepEqual(result.usage, { input: 14, output: 3, cache: { read: 8 } });
 });
 
+test('a tool event written after the child exits is still counted before classification', async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-late-stdout-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await fs.writeFile(path.join(dir, 'opencode'),
+    '#!/bin/sh\n'
+    + '( sleep 0.25; printf \'%s\\n\' \'{"type":"tool","part":{"tool":"read"}}\' ) &\n'
+    + 'exit 1\n',
+    { mode: 0o755 });
+  const result = await runOpencodeTurn('prompt', {
+    model: 'test/model',
+    cwd: dir,
+    env: { ...process.env, PATH: dir + path.delimiter + (process.env.PATH ?? '') },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'model-process-failed');
+  assert.equal(result.ownToolCalls, 1, 'stdout was drained before the turn was classified');
+});
+
 test('a real decision is streamed back with its measured usage', async (t) => {
   const runner = async () => ({ ok: true, text: '{"tool":"read","arguments":{"file_path":"workflow-generated.json"}}', usage: { input: 11, output: 4, cache: { read: 2 } }, wallMs: 7 });
   const bridge = await startModelBridge({ runner });

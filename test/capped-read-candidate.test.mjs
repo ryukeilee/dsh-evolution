@@ -14,7 +14,7 @@ const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 's
 const body = fs.readFileSync(fixture, 'utf8');
 const CAP_FOOTER = '(Output capped. Showing lines 1-620. Use offset=621 to continue.)';
 
-function mount(files) {
+function mount(files, { versions = null } = {}) {
   // The real Trial runs this body in a `node:vm` sandbox that provides neither
   // Buffer nor process (only TextEncoder/TextDecoder/btoa/atob). A plain
   // `new Function` would still expose Node's globals and let a Buffer
@@ -23,18 +23,33 @@ function mount(files) {
   assert.equal(vm.runInNewContext('typeof Buffer', sandbox), 'undefined');
   assert.equal(vm.runInNewContext('typeof process', sandbox), 'undefined');
   const plugin = vm.runInNewContext(`(function(){${body}})()`, sandbox, { filename: 'complete-capped-read.host' });
-  const listeners = [];
+  const preListeners = [];
+  const postListeners = [];
+  let statCall = 0;
   const ctx = {
-    on: (event, listener) => { if (event === 'tools/post-execute') listeners.push(listener); },
+    on: (event, listener) => {
+      if (event === 'tools/pre-execute') preListeners.push(listener);
+      if (event === 'tools/post-execute') postListeners.push(listener);
+    },
     fs: {
       resolve: async (file) => file,
-      stat: async (file) => ({ type: 'file', size: Buffer.byteLength(files[file] ?? '') }),
+      stat: async (file) => {
+        const sequence = versions?.[file];
+        const version = Array.isArray(sequence) ? (sequence[statCall] ?? sequence.at(-1)) : (sequence ?? 'v1');
+        statCall += 1;
+        return { type: 'file', size: Buffer.byteLength(files[file] ?? ''), version };
+      },
       readText: async (file) => files[file],
     },
   };
   plugin.apply(ctx);
-  assert.equal(listeners.length, 1);
-  return listeners[0];
+  assert.equal(preListeners.length, 1);
+  assert.equal(postListeners.length, 1);
+  return async (exec, result, next) => {
+    const withId = typeof exec?.callId === 'string' ? exec : { ...exec, callId: 'test-call' };
+    await preListeners[0](withId, async () => ({ kind: 'accept' }));
+    return postListeners[0](withId, result, next);
+  };
 }
 
 function readResult({ lines, totalLines, path: filePath, content }) {
@@ -157,6 +172,20 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
     async () => ({ kind: 'accept' }),
   );
   assert.equal(replaced.value, undefined);
+
+  // Same head and total, only the tail replaced: the freshness token is the
+  // only proof, and it must decline when it changed.
+  const tailFile = '/isolated/tail-only.txt';
+  const tailOld = [...deep.slice(0, 620), 'sentinel-old'];
+  const tailNew = [...deep.slice(0, 620), 'sentinel-new'];
+  const tailListener = mount({ [tailFile]: tailNew.join('\n') + '\n' }, { versions: { [tailFile]: ['v1', 'v2'] } });
+  const tailFirst = tailOld.slice(0, 620).map((value, index) => ({ number: index + 1, text: value }));
+  const tailReplaced = await tailListener(
+    { name: 'read', arguments: { file_path: 'tail-only.txt', limit: 2000 }, agent: {}, signal: null },
+    readResult({ lines: tailFirst, totalLines: tailOld.length, path: tailFile, content: tailFirst.map((line) => line.text).join('\n') + '\n(Output capped. Showing lines 1-620. Use offset=621 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(tailReplaced.value, undefined, 'a changed freshness token must keep the original result');
 
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.

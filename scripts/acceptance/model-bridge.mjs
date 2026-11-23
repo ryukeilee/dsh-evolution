@@ -220,7 +220,10 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
     let settled = false;
     const settle = (value, name) => { if (!settled) { settled = true; resolve([value, name]); } };
     child.once('error', () => settle('spawn-error', null));
-    child.once('exit', (value, name) => settle(value, name));
+    // Wait for `close`, not `exit`: `exit` fires before stdio is drained, so a
+    // detached grandchild still holding stdout could write a tool event after
+    // the turn was classified.
+    child.once('close', (value, name) => settle(value, name));
   });
   clearTimeout(timeout);
   if (pending.length > 0) handleLine(pending.toString('utf8'));

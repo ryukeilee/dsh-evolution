@@ -280,6 +280,34 @@ test('a caller-input rootCause does not choose the actionable acceptance metric'
   assert.equal(candidate.acceptanceMetrics.some((metric) => metric.name === 'successRate'), true);
 });
 
+test('a duplicated knowledge key cannot inflate the actionable window', () => {
+  const now = new Date().toISOString();
+  const caller = {
+    key: 'knowledge:args', scope: 'tool run code',
+    problem: 'official operation failure invalid args',
+    failureCount: 100, occurrences: 100, lastSeen: now,
+    metrics: { attemptssincefailure: { sum: 100, count: 100 }, successessincefailure: { sum: 0, count: 100 } },
+  };
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      caller,
+      { ...caller },
+      {
+        key: 'knowledge:code', scope: 'tool run code',
+        problem: 'official operation failure code run failure',
+        failureCount: 4, occurrences: 4, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 10, count: 4 }, successessincefailure: { sum: 6, count: 4 } },
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(candidate, JSON.stringify(planned.rejected));
+  assert.equal(candidate.occurrences, 4);
+  assert.equal(candidate.observedAttempts, 10);
+  assert.equal(candidate.observedFailureRate, 0.4);
+});
+
 test('one caller-input mode does not discard a tool target with actionable failures', () => {
   const now = new Date().toISOString();
   const planned = planEvolutionCandidates({

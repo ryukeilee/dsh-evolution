@@ -734,6 +734,8 @@ try {
         consumerCallById.set(call.toolCallId, descriptor);
       }
     });
+    assert(consumerCalls.every((call) => consumerCallById.get(call.toolCallId)?.name),
+      'the fresh consumer reported a tool call without a verifiable identity');
     const consumerResultById = new Map();
     for (const update of consumerUpdates) {
       if (update.sessionUpdate !== 'tool_call_update') continue;

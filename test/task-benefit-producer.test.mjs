@@ -345,6 +345,52 @@ test('same-name calls without rawInput and descriptive titles cannot borrow an o
   assert.equal(descriptive.exercised, false, 'a descriptive title is not a tool identity');
 });
 
+test('a missing title or an unidentified first call blocks first-read attribution', () => {
+  const turns = [
+    { ok: true, tools: ['read', 'bash'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read', 'bash'], decision: { tool: 'bash', arguments: { command: 'cat a.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const noTitle = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2' },
+      result('c1', 'sentinel-a\n'),
+      result('c2', '<path>/home/a.txt</path>\n<content>first window</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(noTitle.exercised, false, 'a title is required to name the executed tool');
+
+  // The first (tail) read has a descriptive title and cannot be identified; a
+  // later start read must not replace it as the first read.
+  const descriptiveFirst = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [
+      { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 0 },
+      { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+    ],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'Read the config' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(descriptiveFirst.exercised, false);
+});
+
 test('a call/decision count mismatch is not attributed to the policy', () => {
   const turns = turnsWith(['read', 'read']).map((turn, index) => ({
     ...turn,
@@ -403,6 +449,21 @@ test('a completed result marked as an error is not a successful read', () => {
   assert.equal(successfulToolResult({ status: 'completed', isError: true }), false);
   assert.equal(successfulToolResult({ status: 'completed', is_error: true }), false);
   assert.equal(successfulToolResult({ status: 'in_progress' }), false);
+});
+
+test('a failed initial tool_call is a host tool failure even without an update', () => {
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: turnsWith(['read', 'read']),
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', status: 'failed' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', status: 'failed' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c2', status: 'failed' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', status: 'failed' },
+    ],
+    assistantText: 'no value', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.toolFailures, 2, 'the same failed call id is counted once, and both notifications are merged');
 });
 
 test('a per-file binding must cover every expected token', () => {

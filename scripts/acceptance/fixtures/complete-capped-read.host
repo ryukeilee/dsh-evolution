@@ -37,8 +37,31 @@ function contentText(result) {
 }
 
 return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
+  // A pre-execute freshness token proves the file did not change between the
+  // host's read and this policy's re-read. The host read result does not expose
+  // a version, so without this snapshot the tail cannot be attributed to the
+  // same file version.
+  const versions = new Map();
+  ctx.on('tools/pre-execute', async (exec, next) => {
+    try {
+      if (exec?.name === 'read' && typeof exec.callId === 'string'
+        && typeof exec.arguments?.file_path === 'string') {
+        const target = await ctx.fs.resolve(exec.arguments.file_path, {
+          cwd: exec.agent?.session?.header?.cwd,
+          signal: exec.signal,
+        });
+        const info = await ctx.fs.stat(target, exec.signal);
+        if (info?.type === 'file' && typeof info.version === 'string') {
+          versions.set(exec.callId, info.version);
+          while (versions.size > 32) versions.delete(versions.keys().next().value);
+        }
+      }
+    } catch { /* no snapshot means the post-execute hook declines */ }
+    return next();
+  });
   ctx.on('tools/post-execute', async (exec, result, next) => {
     const decision = await next();
+    const callId = typeof exec?.callId === 'string' ? exec.callId : null;
     try {
       if (!decision || decision.kind !== 'accept') return decision;
       if (exec?.name !== 'read') return decision;
@@ -77,10 +100,18 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       const windowEnd = Math.min(total, offset - 1 + requestedLimit);
       const missing = windowEnd - end;
       if (missing < 1 || missing > MAX_TAIL_LINES) return decision;
+      const preVersion = callId === null ? undefined : versions.get(callId);
+      if (typeof preVersion !== 'string') return decision;
       const target = await ctx.fs.resolve(base.path, { cwd: exec.agent?.session?.header?.cwd, signal: exec.signal });
       const info = await ctx.fs.stat(target, exec.signal);
-      if (!info || info.type !== 'file' || !Number.isInteger(info.size) || info.size > MAX_FILE_BYTES) return decision;
+      if (!info || info.type !== 'file' || info.version !== preVersion
+        || !Number.isInteger(info.size) || info.size > MAX_FILE_BYTES) return decision;
       const content = await ctx.fs.readText(target, exec.signal);
+      // Reading is only safe while the freshness token is unchanged. A write
+      // between the host read and this re-read, or during the re-read, must
+      // keep the original result.
+      const after = await ctx.fs.stat(target, exec.signal);
+      if (!after || after.type !== 'file' || after.version !== preVersion) return decision;
       const all = content.split('\n').map((line) => line.endsWith('\r') ? line.slice(0, -1) : line);
       // The official line counter does not count the empty segment after a
       // trailing newline; drop only that one, never a real empty last line.
@@ -106,6 +137,8 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       return { kind: 'accept', value: { ...base, lines: [...base.lines, ...tail] } };
     } catch {
       return decision;
+    } finally {
+      if (callId !== null) versions.delete(callId);
     }
   });
 } };

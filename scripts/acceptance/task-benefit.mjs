@@ -147,6 +147,9 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames) {
   const decision = toolTurns?.[index]?.decision;
   const decisionName = typeof toolNames?.[index] === 'string' ? toolNames[index] : null;
   const offered = Array.isArray(toolTurns?.[index]?.tools) ? toolTurns[index].tools : [];
+  // The ACP title is the only verifiable tool identity. Without it (or with a
+  // descriptive title that is not one of the offered tools) the executed tool
+  // cannot be named, even if the positional decision looks plausible.
   const titleIsTool = title !== null && (title === decisionName || offered.includes(title));
   const rawInput = call?.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput)
     ? call.rawInput : null;
@@ -156,11 +159,9 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames) {
   // that tool appears once. With two same-name calls, a reversed transport order
   // would otherwise lend a tail read the start read's offset.
   const ambiguous = decisionName !== null && toolNames.filter((name) => name === decisionName).length > 1;
-  const positionTrusted = !ambiguous && (title === null || title === decisionName);
+  const positionTrusted = !ambiguous && title !== null && title === decisionName;
   return {
-    // A descriptive title that is not one of the offered tools cannot identify
-    // the executed tool; do not fall back to a position that may be reordered.
-    name: titleIsTool ? title : (title === null ? decisionName : null),
+    name: titleIsTool ? title : null,
     arguments: rawInput ?? (positionTrusted ? decisionArguments : null) ?? {},
     inputKnown: rawInput !== null || positionTrusted,
   };
@@ -184,6 +185,25 @@ function completedToolUpdate(update) {
 /** A completed result that the transport did not also mark as an error. */
 export function successfulToolResult(update) {
   return completedToolUpdate(update) && update?.isError !== true && update?.is_error !== true;
+}
+
+/**
+ * Count failed host tool calls from both notifications. ACP may mark the
+ * initial `tool_call` as failed and never send a `tool_call_update`; counting
+ * only updates would let a whole-session retry hide that product failure. The
+ * same call id seen in both notifications is one failure.
+ */
+function failedToolCalls(updates) {
+  const ids = new Set();
+  let anonymous = 0;
+  for (const update of Array.isArray(updates) ? updates : []) {
+    if (update?.sessionUpdate !== 'tool_call' && update?.sessionUpdate !== 'tool_call_update') continue;
+    if (!(update.status === 'failed' || update.status === 'error'
+      || update.isError === true || update.is_error === true)) continue;
+    if (typeof update.toolCallId === 'string') ids.add(update.toolCallId);
+    else anonymous += 1;
+  }
+  return ids.size + anonymous;
 }
 
 /** Billing fields must be real finite numbers; optional cache.read defaults to 0. */
@@ -266,9 +286,8 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // kernel rejects the whole artifact.
   const usageComplete = decisionTurns.every((turn) => finiteUsage(turn.usage));
   const failedModelTurns = (Array.isArray(turns) ? turns : []).filter((turn) => turn.ok !== true).length;
-  const failedUpdates = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call_update'
-    && (update.status === 'failed' || update.status === 'error' || update.isError === true || update.is_error === true));
-  const failures = failedModelTurns + failedUpdates.length;
+  const failedUpdates = failedToolCalls(updates);
+  const failures = failedModelTurns + failedUpdates;
   // Map one `tool_call` update to its model decision by order: ACP reports one
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name and the arguments the model chose.
@@ -344,7 +363,12 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     const result = request ? readResults.get(request.callId) : null;
     return Boolean(request && request.offset === 1 && result && result.text.includes(expected.token));
   });
-  const exercised = attributionAligned && expectedTokens.length > 0 && (reads.length > 0
+  // Every call must have a verifiable identity. An unidentified call could be
+  // the first read of a path, so its presence makes any later start read an
+  // unreliable substitute.
+  const attributionComplete = calls.every((call) => typeof call.toolCallId === 'string'
+    && typeof byId.get(call.toolCallId)?.name === 'string');
+  const exercised = attributionAligned && attributionComplete && expectedTokens.length > 0 && (reads.length > 0
     ? boundReads.every(Boolean)
     : expectedTokens.every((token) => firstReads.some((text) => text.includes(token))));
   return {
@@ -354,7 +378,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     exercised,
     usedCandidate: candidateTool !== null && toolNames.includes(candidateTool),
     usageComplete,
-    toolFailures: failedUpdates.length,
+    toolFailures: failedUpdates,
     turns: decisionTurns.length,
     toolCalls: toolNames.length,
     toolNames,

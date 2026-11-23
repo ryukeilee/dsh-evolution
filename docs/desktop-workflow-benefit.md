@@ -39,7 +39,7 @@ Desktop 先通过官方 preset 的公开 `resolve` / `mount` API 配置 owner �
 
 ## 第二种读取损失
 
-`output-capped` 使用同一份 `context-policy` 契约，不新增证据类型：候选只允许在官方 footer 证明是字节上限、剩余行数 ≤ 200 且剩余字节 ≤ 16 KiB、文件 ≤ 256 KiB 时补齐尾部；只在调用方显式 `limit` 的窗口内补齐，没有显式 `limit` 时保留原结果，追加行也遵守官方默认的 2,000 字符单行上限；重读文件与原窗口不一致时保留原结果。验收入口是 `run-task-benefit-loop.mjs --scenario capped`，它让任务显式请求 `limit=2000`，并把被测模型的工具结果渲染上限提高，使模型看到宿主真实的 50 KiB 结果而不是测试传输层的截断。尾部超过预算时策略放弃变换，仍走原有 `offset` 路径。两种场景的发现、提案、Trial 功能复验、taskBenefit 门禁、确认、canary、stable、fresh consumer 与重启判定完全共用。收益判定的首次读取按文件绑定（`task.reads`），一个文件的值不能被另一个文件的首读顶替；pilot 的多个 provider step 计费相加，缺字段时记为 unknown，桥接失败只持久化固定原因码。
+`output-capped` 使用同一份 `context-policy` 契约，不新增证据类型：候选只允许在官方 footer 证明是字节上限、剩余行数 ≤ 200 且剩余字节 ≤ 16 KiB、文件 ≤ 256 KiB 时补齐尾部；只在调用方显式 `limit` 的窗口内补齐，没有显式 `limit` 时保留原结果，追加行也遵守官方默认的 2,000 字符单行上限；重读前后核对宿主文件版本令牌与原窗口，无法证明同一版本时保留原结果。验收入口是 `run-task-benefit-loop.mjs --scenario capped`，它让任务显式请求 `limit=2000`，并把被测模型的工具结果渲染上限提高，使模型看到宿主真实的 50 KiB 结果而不是测试传输层的截断。尾部超过预算时策略放弃变换，仍走原有 `offset` 路径。两种场景的发现、提案、Trial 功能复验、taskBenefit 门禁、确认、canary、stable、fresh consumer 与重启判定完全共用。收益判定的首次读取按文件绑定（`task.reads`），一个文件的值不能被另一个文件的首读顶替；pilot 的多个 provider step 计费相加，缺字段时记为 unknown，桥接失败只持久化固定原因码。
 
 ## 门槛与指标
 
