@@ -900,7 +900,7 @@ test('two relative terminal paths resolving to one file are not a conflict', () 
     updates: [
       { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: './a.txt' } },
       result('a.txt'),
-      result('../w/a.txt'),
+      result('./a.txt'),
     ],
     assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
     expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
@@ -1065,6 +1065,38 @@ test('a file path containing < is still an envelope, not body text', () => {
   });
   assert.equal(row.attributionComplete, false);
   assert.equal(row.exercised, false);
+});
+
+test('a malformed content envelope is not body evidence', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('an unresolved parent segment cannot prove a first read', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/hop/../a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/w/a.txt</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(readPathMatches('/w/hop/../a.txt', '/w/a.txt', '/w'), false);
+  assert.equal(row.attributionComplete, false);
 });
 
 test('a per-file binding must cover every expected token', () => {

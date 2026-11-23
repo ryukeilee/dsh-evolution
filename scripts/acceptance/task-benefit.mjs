@@ -121,8 +121,13 @@ export function answerMatches(text, tokens) {
  * `/home/a.txt` but not `/home/sub/a.txt`; without a cwd it is accepted only as
  * a suffix, and two absolute paths must be identical.
  */
+function hasParentSegment(value) {
+  return typeof value === 'string' && value.split('/').includes('..');
+}
+
 export function readPathMatches(actual, expected, cwd = null) {
   if (typeof actual !== 'string' || typeof expected !== 'string') return false;
+  if (hasParentSegment(actual) || hasParentSegment(expected)) return false;
   const normalize = (value) => {
     const normalized = path.posix.normalize(value);
     return normalized === '.' ? '' : normalized;
@@ -174,13 +179,14 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
   let argumentsValue = {};
   let inputKnown = false;
   if (name === 'read') {
+    const unresolvedPath = effectivePath !== null && hasParentSegment(effectivePath);
     // Resolve same-name decisions by path. The result path can supply the file
     // when ACP only echoed an offset. Unclaimed decisions are considered so an
     // explicit continuation claims first and the earlier default-offset read
     // can then match the remaining decision.
     const sameTool = (Array.isArray(toolTurns) ? toolTurns : [])
       .filter((turn) => turn?.decision?.tool === 'read');
-    let candidates = effectivePath ? sameTool.filter((turn) => {
+    let candidates = effectivePath && !unresolvedPath ? sameTool.filter((turn) => {
       const path = turn?.decision?.arguments?.file_path;
       return typeof path === 'string' && path.trim() !== ''
         && (readPathMatches(effectivePath, path, cwd) || readPathMatches(path, effectivePath, cwd));
@@ -229,7 +235,7 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
       && !Array.isArray(alignedDecision.arguments) ? alignedDecision.arguments : null;
     if (offsetConflict) {
       inputKnown = false;
-    } else if (effectivePath && alignedDecision === null) {
+    } else if (unresolvedPath || (effectivePath && alignedDecision === null)) {
       inputKnown = false;
     } else if (rawOffsetValid) {
       argumentsValue = rawInput;
@@ -258,6 +264,7 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
 }
 function normalizeReadPath(value, cwd) {
   if (typeof value !== 'string' || value === '') return value;
+  if (hasParentSegment(value)) return value;
   const normalized = value;
   if (path.isAbsolute(normalized)) return path.normalize(normalized);
   return typeof cwd === 'string' && path.isAbsolute(cwd) ? path.resolve(cwd, normalized) : normalized;
@@ -293,8 +300,11 @@ function parseToolResultText(text) {
   // The official envelope may carry an optional <type>file</type> between the
   // path and the content.
   body = body.replace(/^\s*<type>[^<]*<\/type>\s*/u, '');
-  const contentMatch = /^\s*<content>([\s\S]*)<\/content>\s*$/u.exec(body);
-  if (contentMatch) body = contentMatch[1];
+  if (/<\/?content>/u.test(body)) {
+    const contentMatch = /^\s*<content>([\s\S]*)<\/content>\s*$/u.exec(body);
+    if (!contentMatch) return { path, body: '', invalid: true };
+    body = contentMatch[1];
+  }
   body = body.trim();
   return { path, body, invalid: false };
 }

@@ -364,6 +364,35 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(markerDecision.value, undefined, 'a truncated marker proves only its prefix width');
 
+  const sepPrefix = 'a\u2028bc';
+  const sepMarker = sepPrefix + '... (line truncated to 4 chars)';
+  const sepFile = '/isolated/sep-marker.txt';
+  const sepListener = mount({ [sepFile]: sepMarker + '\n12345\n' });
+  const sepDecision = await sepListener(
+    { name: 'read', arguments: { file_path: 'sep-marker.txt', limit: 2 }, agent: {}, signal: null },
+    readResult({ lines: [{ number: 1, text: sepMarker }], totalLines: 2, path: sepFile, content: sepMarker + '\n(Output capped. Showing lines 1-1. Use offset=2 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(sepDecision.value, undefined, 'U+2028 before the marker still proves only the prefix');
+
+  const imageBlocks = [{ type: 'text', text: 'one\ntwo\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }];
+  const imageResult = { value: { path: hostFile, offset: 1, totalLines: 5, lines: hostRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })) }, content: imageBlocks };
+  const imageDecision = await hostListener(
+    { name: 'read', arguments: { file_path: 'host-value.txt', limit: 5 }, agent: {}, signal: null },
+    imageResult,
+    async () => { imageBlocks.push({ type: 'image', data: 'keep' }); return { kind: 'accept' }; },
+  );
+  assert.equal(imageDecision.value, undefined, 'an in-place image block is preserved');
+
+  const inherited = Object.create({ content: [{ type: 'text', text: 'inherited' }] });
+  inherited.kind = 'accept';
+  const inheritedDecision = await hostListener(
+    { name: 'read', arguments: { file_path: 'host-value.txt', limit: 5 }, agent: {}, signal: null },
+    { value: { path: hostFile, offset: 1, totalLines: 5, lines: hostRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })) }, content: [{ type: 'text', text: 'one\ntwo\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }] },
+    async () => inherited,
+  );
+  assert.equal(inheritedDecision.value, undefined, 'inherited content is authoritative');
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(
