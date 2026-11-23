@@ -6,7 +6,7 @@
 // proposal that claims a workflow goal must satisfy the extra gate.
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { compareProbeRuns, normalizeBenefitModel, promotionGates, probeSummary } from '../lib/orchestrator.js';
+import { compareProbeRuns, mergeMeasurement, normalizeBenefitModel, promotionGates, probeSummary } from '../lib/orchestrator.js';
 
 const ABSENT = 'E_EVOLUTION_PROBE_CAPABILITY_ABSENT';
 function run(rows) {
@@ -190,4 +190,48 @@ test('a measurement merge preserves probeDerived, so a budgeted workflow gain is
   assert.equal(merged.probeDerived, true, 'the authoritative comparison marker survives the merge');
   assert.equal(gatesOf({ ...record, latestObservation: merged }).eligible, true);
   assert.equal(new EvolutionEvaluator().evaluate(domainEvaluationEvidence({ ...record, latestObservation: merged })).decision === 'rollback', false);
+});
+
+// 2026-11-24 reliability round: durable snapshot merging must preserve every
+// distinct string fact and must not let an older durable metric overwrite a
+// known current measurement.
+test('durable merge keeps distinct side effects and orphan resources', () => {
+  const current = {
+    sideEffects: ['A', 'B', 'C'],
+    orphanResources: ['orphan-A', 'orphan-B'],
+    metrics: { successRate: 0.9 },
+  };
+  const durable = {
+    sideEffects: ['A', 'B', 'C'],
+    orphanResources: ['orphan-A', 'orphan-B', 'orphan-C'],
+    metrics: { successRate: 0.1 },
+  };
+  const merged = mergeMeasurement(structuredClone(current), durable);
+  assert.deepEqual(merged.sideEffects, ['A', 'B', 'C']);
+  assert.deepEqual(merged.orphanResources, ['orphan-A', 'orphan-B', 'orphan-C']);
+  // Current wins on a shared metric key; the durable value is a floor only.
+  assert.deepEqual(merged.metrics, { successRate: 0.9 });
+  // A missing current metric field still falls back to the durable floor.
+  const partial = mergeMeasurement({ metrics: {} }, { metrics: { successRate: 0.4, errCount: 2 } });
+  assert.deepEqual(partial.metrics, { successRate: 0.4, errCount: 2 });
+});
+
+
+test('metric merge preserves an own __proto__ key without polluting the prototype', () => {
+  const current = { metrics: Object.fromEntries([['__proto__', { status: 'payload' }], ['ok', 1]]) };
+  const merged = mergeMeasurement(current, { metrics: { floor: 2 } });
+  assert.equal(Object.getPrototypeOf(merged.metrics), Object.prototype);
+  assert.equal(Object.hasOwn(merged.metrics, '__proto__'), true);
+  assert.deepEqual(merged.metrics.__proto__, { status: 'payload' });
+  assert.equal(merged.metrics.ok, 1);
+  assert.equal(merged.metrics.floor, 2);
+});
+
+test('metric merge keeps an own empty-valued key instead of replacing it from the floor', () => {
+  const current = { metrics: Object.fromEntries([['__proto__', {}], ['ok', 1]]) };
+  const merged = mergeMeasurement(current, { metrics: { __proto__: { forged: true }, floor: 2 } });
+  assert.equal(Object.getPrototypeOf(merged.metrics), Object.prototype);
+  assert.equal(Object.hasOwn(merged.metrics, '__proto__'), true);
+  assert.deepEqual(merged.metrics.__proto__, {});
+  assert.equal(merged.metrics.floor, 2);
 });

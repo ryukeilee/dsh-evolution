@@ -1217,3 +1217,43 @@ test('a missing promotion sidecar is unknown, never an experiment benefit', asyn
   assert.equal(withUsage.retirementCandidates.length, 1);
   assert.match(withUsage.retirementCandidates[0].reasons.join(' '), /unknown/);
 });
+
+// 2026-11-24 reliability round: the same consumer-host mismatch behind a stale
+// `failed` row must not be reported as restart-required. Restarting a consumer
+// that still runs another host can never mount the record.
+test('a stale failure row on another host asks for revalidation, not a restart', async (t) => {
+  const env = await fixture(t, 'consumer-host-mismatch-failed');
+  const staleDigest = hostDigest(PREVIOUS_HOST);
+  await writeConsumers(env, {
+    host: PREVIOUS_HOST,
+    rows: {
+      acp: [{ id: env.record.id, status: 'failed', reason: 'plugin-apply-failed', hostDigest: staleDigest, activatedAt: null }],
+      web: [{ id: env.record.id, status: 'failed', reason: 'plugin-apply-failed', hostDigest: staleDigest, activatedAt: null }],
+    },
+  });
+
+  const result = await review(env);
+  const [record] = result.records;
+  assert.equal(record.status, 'pending-revalidation', JSON.stringify(record.profiles));
+  assert.equal(record.action, REVIEW_ACTIONS.REVALIDATE);
+  assert.equal(result.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART), false);
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'revalidate');
+});
+
+test('a compatible consumer patch still reports a real apply failure, not a restart loop', async (t) => {
+  const env = await fixture(t, 'consumer-compatible-patch');
+  const consumerHost = { ...CURRENT_HOST, cordis: '4.1.1' };
+  await writeConsumers(env, {
+    host: consumerHost,
+    rows: {
+      acp: [{ id: env.record.id, status: 'failed', reason: 'plugin-apply-failed', hostDigest: hostDigest(consumerHost), activatedAt: null }],
+      web: [{ id: env.record.id, status: 'active', reason: null, hostDigest: hostDigest(CURRENT_HOST), activatedAt: null }],
+    },
+  });
+  const result = await review(env);
+  const [record] = result.records;
+  assert.equal(record.status, 'incompatible');
+  assert.equal(record.action, REVIEW_ACTIONS.REPAIR);
+  assert.equal(result.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART), false);
+});

@@ -439,3 +439,75 @@ test('a measured candidate awaiting its owner is not treated as an unproven clea
   assert.equal(record.state, 'measured');
   assert.equal(h.core.targetOwners.get('plugin:fix-a'), record.id);
 });
+
+// 2026-11-24 reliability round: explicit proposals keep a full inspect()
+// baseline each, so an unattended call loop must not grow the experiment map
+// without bound.
+test('explicit proposals are bounded without dropping the newest record', async (t) => {
+  const h = await session(t);
+  let last = null;
+  for (let index = 0; index < 205; index += 1) {
+    last = h.core.propose({
+      why: `proposal ${index}`, target: 'tool:read', impactScope: ['runtime'], successMetrics: ['failure rate decreases'],
+    }, h.exec);
+  }
+  assert.ok(last?.experimentId);
+  assert.ok(h.core.experiments.size <= 200, `unbounded proposals: ${h.core.experiments.size}`);
+  assert.equal(h.core.experiments.get(last.experimentId)?.state, 'proposed');
+});
+
+// A `reverted` record whose post-cleanup claim release lost a cross-process
+// lock race used to report `recovered` and skip the release retry forever.
+test('a reverted record with a residual claim retries the release before reporting recovered', async (t) => {
+  const h = await session(t);
+  const proposed = h.core.propose({
+    why: 'seed', target: 'tool:read', impactScope: ['runtime'], successMetrics: ['failure rate decreases'],
+  }, h.exec);
+  const record = h.core.experiments.get(proposed.experimentId);
+  record.state = 'reverted';
+  record.targetsAcquired = true;
+  record.autonomous = { patternKey: 'p:1', strategyFingerprint: 's:1', idPrefix: 'x' };
+  let attempts = 0;
+  h.core.releaseTargets = (target) => {
+    attempts += 1;
+    if (attempts === 1) return;
+    target.targetsAcquired = false;
+  };
+  const first = await h.core.cleanupAutonomousTrial(record.id, h.exec);
+  assert.equal(first.status, 'not-recovered');
+  assert.equal(record.targetsAcquired, true);
+  const second = await h.core.cleanupAutonomousTrial(record.id, h.exec);
+  assert.equal(second.status, 'recovered');
+  assert.equal(record.targetsAcquired, false);
+  assert.equal(attempts, 2);
+});
+
+test('an autonomous proposal does not consume the explicit proposal quota', async (t) => {
+  const h = await session(t);
+  for (let index = 0; index < 200; index += 1) {
+    h.core.propose({ why: `explicit ${index}`, target: 'tool:read', impactScope: ['runtime'], successMetrics: ['failure rate decreases'] }, h.exec);
+  }
+  const internal = h.core.propose({ why: 'observer', target: 'tool:read', impactScope: ['runtime'], successMetrics: ['failure rate decreases'] }, h.exec, { internal: true });
+  assert.equal(h.core.experiments.size, 201);
+  assert.equal(h.core.experiments.get(internal.experimentId)?.proposalSource, 'autonomous');
+  const explicit = [...h.core.experiments.values()].filter((record) => record.proposalSource === 'explicit');
+  assert.equal(explicit.length, 200);
+});
+
+test('a residual claim keeps its recovery cooldown and reports an actionable next step', async (t) => {
+  const h = await session(t, { cooldown: 30_000 });
+  const proposed = h.core.propose({ why: 'seed', target: 'tool:read', impactScope: ['runtime'], successMetrics: ['failure rate decreases'] }, h.exec);
+  const record = h.core.experiments.get(proposed.experimentId);
+  record.state = 'reverted';
+  record.targetsAcquired = true;
+  record.autonomous = { patternKey: 'p:2', strategyFingerprint: 's:2', idPrefix: 'x' };
+  h.core.releaseTargets = () => {}; // the claim stays held
+  const first = await h.core.recoverAutonomousOccupancy(h.exec);
+  assert.equal(first.status, 'unproven');
+  assert.equal(first.attempts, 1);
+  assert.match(first.next, /later observation/);
+  assert.match(first.next, /cannot act on an already reverted record/);
+  const second = await h.core.recoverAutonomousOccupancy(h.exec);
+  assert.equal(second.status, 'cooling-down');
+  assert.equal(second.attempts, 1);
+});

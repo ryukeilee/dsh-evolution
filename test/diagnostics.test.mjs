@@ -90,6 +90,7 @@ function writeComposition(paths, rows) {
  * bundle (`# == dsh-evolution, patched by <path>` then `# == dsh-evolution`).
  */
 function composedDump({ writer = null, patchTitle = null, includeOrchestrator = true, includeGuard = true } = {}) {
+  const experience = ['- id: evolution-experience', '  name: dsh-evolution/experience'];
   const orchestrator = [];
   if (includeOrchestrator) {
     orchestrator.push('- id: evolution-orchestrator', '  name: dsh-evolution');
@@ -97,8 +98,8 @@ function composedDump({ writer = null, patchTitle = null, includeOrchestrator = 
   }
   const guard = includeGuard ? ['- id: evolution-trust-root-guard', '  name: dsh-evolution/guard', '  inject:', '    - tools'] : [];
   const lines = patchTitle
-    ? [`# == ${patchTitle}`, ...orchestrator, '# == dsh-evolution', ...guard]
-    : ['# == dsh-evolution', ...orchestrator, ...guard];
+    ? [`# == ${patchTitle}`, ...experience, ...orchestrator, '# == dsh-evolution', ...guard]
+    : ['# == dsh-evolution', ...experience, ...orchestrator, ...guard];
   lines.push('');
   return lines.join('\n');
 }
@@ -1014,6 +1015,7 @@ test('a composed profile missing the bundle entries is blocked', async () => {
   assert.equal(levelOf(report, 'host.composition'), 'blocked');
   assert.deepEqual(checkOf(report, 'host.composition').evidence.problems, [
     'evolution-orchestrator entry is absent',
+    'evolution-experience entry is absent',
     'evolution-trust-root-guard entry is absent',
   ]);
 });
@@ -1038,14 +1040,43 @@ test('a profile that cannot compose is blocked with the CLI stderr tail', async 
   assert.deepEqual(checkOf(report, 'host.composition').evidence.stderr, ['Error: Cannot find module', '  at x']);
 });
 
-test('a disabled bundle entry is blocked', async () => {
-  const { home } = freshHome('composition-disabled');
+test('a consumer-role profile with the kernel disabled and the consumer enabled is ok', async () => {
+  const { home } = freshHome('composition-consumer-role');
   const report = await collectDiagnostics(baseOptions(home, {
-    profile: 'web',
-    probe: { runDumpConfig: () => ({ status: 0, stdout: '# == dsh-evolution\n- id: evolution-orchestrator\n  name: dsh-evolution\n  disabled: true\n- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n', stderr: '' }) },
+    profile: 'acp',
+    probe: { runDumpConfig: () => ({ status: 0, stdout: '# == dsh-evolution\n- id: evolution-experience\n  name: dsh-evolution/experience\n- id: evolution-orchestrator\n  name: dsh-evolution\n  disabled: true\n- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n- id: evolution-promoted-consumer\n  name: dsh-evolution/promoted-consumer\n', stderr: '' }) },
   }));
-  assert.equal(levelOf(report, 'host.composition'), 'blocked');
-  assert.ok(checkOf(report, 'host.composition').evidence.problems.some((problem) => problem.includes('disabled')));
+  const check = checkOf(report, 'host.composition');
+  assert.equal(check.level, 'ok', JSON.stringify(check.evidence.problems));
+  assert.equal(check.evidence.role, 'promoted-consumer');
+});
+
+test('a consumer-role profile without a promoted consumer is blocked', async () => {
+  const { home } = freshHome('composition-consumer-missing');
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'acp',
+    probe: { runDumpConfig: () => ({ status: 0, stdout: '# == dsh-evolution\n- id: evolution-experience\n  name: dsh-evolution/experience\n- id: evolution-orchestrator\n  name: dsh-evolution\n  disabled: true\n- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n', stderr: '' }) },
+  }));
+  const check = checkOf(report, 'host.composition');
+  assert.equal(check.level, 'blocked');
+  assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-promoted-consumer')));
+});
+
+test('the bundle patch must declare every loader entry, not only the kernel and guard', async () => {
+  const { home } = freshHome('patch-missing-entry');
+  const patch = fs.readFileSync(path.join(repoRoot, 'cordis.patch.yml'), 'utf8');
+  const trimmed = patch.replace('    - id: evolution-experience\n      name: dsh-evolution/experience\n', '');
+  assert.notEqual(trimmed, patch);
+  // Point at a temporary package root with the edited patch; the shipped patch
+  // itself stays untouched.
+  const tmp = scratch('patch-root');
+  fs.mkdirSync(path.join(tmp, 'lib'), { recursive: true });
+  fs.writeFileSync(path.join(tmp, 'package.json'), fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+  fs.writeFileSync(path.join(tmp, 'cordis.patch.yml'), trimmed);
+  const report = await collectDiagnostics(baseOptions(home, { packageRoot: tmp, profileCandidates: [] }));
+  const check = checkOf(report, 'plugin.patch');
+  assert.equal(check.level, 'blocked');
+  assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-experience')));
 });
 
 // The official CLI splits a bundle into two sections when a profile patch
@@ -1057,7 +1088,7 @@ test('a profile patched by the user keeps one merged dsh-evolution layer and sta
   const parsed = parseComposedProfile(stdout);
   assert.deepEqual(parsed.titles, ['dsh-evolution, patched by /tmp/x/cordis.patch.yml', 'dsh-evolution']);
   const section = parsed.sections.get('dsh-evolution');
-  assert.equal(section.entries.length, 2, 'both sections merge into one layer');
+  assert.equal(section.entries.length, 3, 'both sections merge into one layer');
   assert.deepEqual(section.rawTitles, ['dsh-evolution, patched by /tmp/x/cordis.patch.yml', 'dsh-evolution']);
   assert.equal(section.patched, true);
   assert.deepEqual(composedEventBridgeWriter(parsed), { writer: 'custom-writer', unreadable: false });
@@ -1522,4 +1553,31 @@ test('the doctor CLI is reachable through a symlinked path', () => {
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.schema, 1);
   assert.ok(parsed.checks.some((check) => check.id === 'data.root'));
+});
+
+test('a non-consumer profile with a disabled kernel stays blocked even with a consumer entry', async () => {
+  const { home } = freshHome('composition-desktop-disabled-kernel');
+  const stdout = '# == dsh-evolution\n- id: evolution-experience\n  name: dsh-evolution/experience\n'
+    + '- id: evolution-orchestrator\n  name: dsh-evolution\n  disabled: true\n'
+    + '- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n'
+    + '- id: evolution-promoted-consumer\n  name: dsh-evolution/promoted-consumer\n';
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'desktop',
+    probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) },
+  }));
+  const check = checkOf(report, 'host.composition');
+  assert.equal(check.level, 'blocked');
+  assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-orchestrator is disabled')));
+});
+
+test('an experience loader entry mounted by another module is blocked', async () => {
+  const { home } = freshHome('composition-experience-wrong-name');
+  const stdout = composedDump().replace('name: dsh-evolution/experience', 'name: something-else');
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'desktop',
+    probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) },
+  }));
+  const check = checkOf(report, 'host.composition');
+  assert.equal(check.level, 'blocked');
+  assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-experience mounts')));
 });
