@@ -100,8 +100,10 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       if (exec?.name !== 'read') return decision;
       // A downstream hook may replace or mutate the model-visible content.
       if (contentText(result) !== originalContent) return decision;
-      if (decision.content !== undefined
-        && JSON.stringify(decision.content) !== JSON.stringify(result?.content)) return decision;
+      // A downstream decision that owns rendered content must be returned
+      // as-is; the official postExecute rejects a decision with both content and
+      // a rebuilt value.
+      if (decision.content !== undefined) return decision;
       if (originalWindow) {
         const currentWindow = snapshotWindow(result?.value);
         if (!currentWindow || !sameReadWindow(currentWindow, originalWindow)) return decision;
@@ -180,9 +182,15 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       }
       const tail = [];
       let bytes = 0;
+      const maxOriginalLine = base.lines.reduce((max, line) => (
+        typeof line?.text === 'string' ? Math.max(max, line.text.length) : max
+      ), 0);
       for (let number = end + 1; number <= windowEnd; number += 1) {
         const value = all[number - 1];
         if (typeof value !== 'string' || value.length > DEFAULT_LINE_CHARS) return decision;
+        // Without a proven host per-line cap, a tail line longer than every
+        // returned line could bypass a configured smaller readMaxLineLength.
+        if (value.length > maxOriginalLine) return decision;
         bytes += encoder.encode(value).length + 1;
         if (bytes > MAX_TAIL_BYTES) return decision;
         tail.push({ number, text: value });

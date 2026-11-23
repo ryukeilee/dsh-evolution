@@ -310,7 +310,18 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(deleteDecision.value, undefined, 'a missing effective limit cannot be inferred as a byte cap');
 
-  const hostRows = ['one', 'two', 'three', 'four', 'five'];
+  const shortRows = ['one', 'two', 'x'.repeat(30)];
+  const shortFile = '/isolated/short-lines.txt';
+  const shortListener = mount({ [shortFile]: shortRows.join('\n') + '\n' });
+  const shortFirst = shortRows.slice(0, 2).map((text, index) => ({ number: index + 1, text }));
+  const shortDecision = await shortListener(
+    { name: 'read', arguments: { file_path: 'short-lines.txt', limit: 3 }, agent: {}, signal: null },
+    readResult({ lines: shortFirst, totalLines: 3, path: shortFile, content: 'one\ntwo\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(shortDecision.value, undefined, 'a tail longer than every proven line cannot bypass a smaller cap');
+
+  const hostRows = ['one'.padEnd(60, 'x'), 'two'.padEnd(60, 'x'), 'three', 'four', 'five'];
   const hostFile = '/isolated/host-value.txt';
   const hostListener = mount({ [hostFile]: hostRows.join('\n') + '\n' });
   const hostValue = {

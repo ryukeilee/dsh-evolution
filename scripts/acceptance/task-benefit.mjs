@@ -286,7 +286,8 @@ export function successfulToolResult(update) {
 
 function parseToolResultText(text) {
   const value = typeof text === 'string' ? text : '';
-  const pathMatch = /^\s*<path>([^<]*)<\/path>\s*/u.exec(value);
+  const pathMatch = /^\s*<path>([\s\S]*?)<\/path>[ \t]*(?:\r?\n|$)/u.exec(value);
+  if (/^\s*<path>/u.test(value) && !pathMatch) return { path: null, body: '', invalid: true };
   const path = pathMatch ? pathMatch[1].trim() || null : null;
   let body = pathMatch ? value.slice(pathMatch[0].length) : value;
   // The official envelope may carry an optional <type>file</type> between the
@@ -295,7 +296,7 @@ function parseToolResultText(text) {
   const contentMatch = /^\s*<content>([\s\S]*)<\/content>\s*$/u.exec(body);
   if (contentMatch) body = contentMatch[1];
   body = body.trim();
-  return { path, body };
+  return { path, body, invalid: false };
 }
 
 export function terminalNotificationMissingId(updates) {
