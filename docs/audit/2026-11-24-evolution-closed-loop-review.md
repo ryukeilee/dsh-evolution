@@ -137,4 +137,22 @@ NODE_OPTIONS=--max-old-space-size=4096 node --test \
 npm pack --dry-run --ignore-scripts --json
 ```
 
-（全量结果与隔离宿主验收结果见本轮最终报告。）
+本轮实际结果（本地提交 `22b58bc`，分发内容摘要 `b9d8dc98…`）：
+
+| 检查 | 命令 | 结果 |
+| --- | --- | --- |
+| 全量单测 | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 2,094 项：2,092 通过、0 失败、2 skipped |
+| 打包检查 | `npm run pack:check` | 17 项全过；本树是固定点 `e4dd6ac` 的已提交后继，固定产物与 8 宿主证据未变 |
+| 本地构建 | `npm run release:pack` | 两次打包字节一致，内容摘要 `b9d8dc98…`，72 个条目（含新分发的用量生产者） |
+| 聚焦回归 | `node --test` 对上述 5 个测试文件 | 55/55、95/95、68/68、18/18、16/16；consumer 轻量闭包 32/32 |
+
+| 隔离宿主验收 | `npm run acceptance:host -- --host 0.2.2-rc.5 --no-hmr --experience-evolution --cross-entry --tarball dist/dsh-evolution-0.2.17.tgz --work <isolated> --out <isolated>/acceptance-rc5.json` | **39/39 步 `ok: true`**；证据 `…/evo-loop-acceptance/acceptance-rc5.json`，tarball sha256 `44ba71b4…`、内容摘要 `b9d8dc98…`（即本树构建） |
+
+隔离验收的关键三入口证据：
+
+- `experiment-seed` / `invalid` / `restart` / `regression` 四阶段均 ok：真实宿主上的经验采集 → plan → baseline/candidate probe → measure → 拒绝/晋升 → 重启召回闭环连通。
+- `cross-entry-publish` → `cross-entry-consumer` → `cross-entry-consumer-restart` → `cross-entry-tampered-source` → `cross-entry-revoke` → `cross-entry-enable` → `cross-entry-revalidation` 全 ok：Desktop 发布的 stable 记录在 ACP/Web consumer 上挂载、重启复用、篡改/撤销生效。
+- `cross-entry-acp-install` / `cross-entry-acp-consumer` ok，`cross-entry-review-active` → `cross-entry-review-pending-revalidation` → `cross-entry-revalidate-adopt` → `cross-entry-review-revalidated` ok：统一只读审查在真实 ACP 入口上给出的 active→待重验证→重验证 状态转换与既有行为一致，没有非预期退化。
+- `doctor-final` ok：安装后的官方组合仍通过诊断。
+
+证据边界：本轮隔离验收使用真实官方 DSH `0.2.2-rc.5` 与隔离 runtime/home，不读取也不修改正式 `DSH_HOME`。其它七个宿主版本未在本轮重跑，沿用固定产物中已提交的验收证据；本树未执行 `release:publish`、未创建 tag、未推送、未安装正式环境。真实模型配对会话（`taskBenefit`）的生产者仍是源码仓库的验收 harness，本轮未重跑真实模型闭环，相关收益结论只引用已提交证据。
