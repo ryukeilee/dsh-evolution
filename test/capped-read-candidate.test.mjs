@@ -369,9 +369,11 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   const nonReadDecision = await listener(nonReadExec, { value: {}, content: [] }, async () => ({ kind: 'accept' }));
   assert.equal(nonReadDecision.kind, 'accept', 'non-read calls pass through before any snapshot/coercion');
 
-  const raceRows = ['one', 'two', 'three', 'four', 'five'];
+  const raceRows = ['aaaa', 'bbbb', 'cccc', 'dddd', 'eeee'];
   const raceFile = '/isolated/race.txt';
-  const raceValue = { path: raceFile, offset: 1, totalLines: 5, lines: raceRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })) };
+  const raceContent = 'aaaa\nbbbb\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)';
+  const makeRaceValue = () => ({ path: raceFile, offset: 1, totalLines: 5, lines: raceRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })) });
+  const raceValue = makeRaceValue();
   let statCalls = 0;
   const raceListener = mount({ [raceFile]: raceRows.join('\n') + '\n' }, {
     onStat: () => {
@@ -381,10 +383,42 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   });
   const raceDecision = await raceListener(
     { name: 'read', arguments: { file_path: 'race.txt', limit: 5 }, agent: {}, signal: null },
-    { value: raceValue, content: [{ type: 'text', text: 'one\ntwo\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }] },
+    { value: raceValue, content: [{ type: 'text', text: raceContent }] },
     async () => ({ kind: 'accept' }),
   );
   assert.equal(raceDecision.value, undefined, 'a window mutated during the async checks is not appended');
+
+  const controlDecision = await mount({ [raceFile]: raceRows.join('\n') + '\n' })(
+    { name: 'read', arguments: { file_path: 'race.txt', limit: 5 }, agent: {}, signal: null },
+    { value: makeRaceValue(), content: [{ type: 'text', text: raceContent }] },
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(controlDecision.value.lines.length, 5, 'the equal-width control is appendable');
+
+  const contentTarget = { kind: 'accept' };
+  let contentStat = 0;
+  const contentRace = mount({ [raceFile]: raceRows.join('\n') + '\n' }, {
+    onStat: () => { contentStat += 1; if (contentStat === 2) contentTarget.content = [{ type: 'text', text: 'late' }]; },
+  });
+  const contentRaceDecision = await contentRace(
+    { name: 'read', arguments: { file_path: 'race.txt', limit: 5 }, agent: {}, signal: null },
+    { value: makeRaceValue(), content: [{ type: 'text', text: raceContent }] },
+    async () => contentTarget,
+  );
+  assert.equal(Object.hasOwn(contentRaceDecision, 'content'), true);
+  assert.equal(contentRaceDecision.value, undefined, 'late decision content is not overwritten by a rebuilt value');
+
+  const pathTarget = makeRaceValue();
+  let pathStat = 0;
+  const pathRace = mount({ [raceFile]: raceRows.join('\n') + '\n' }, {
+    onStat: () => { pathStat += 1; if (pathStat === 2) pathTarget.path = '/isolated/wrong.txt'; },
+  });
+  const pathRaceDecision = await pathRace(
+    { name: 'read', arguments: { file_path: 'race.txt', limit: 5 }, agent: {}, signal: null },
+    { value: pathTarget, content: [{ type: 'text', text: raceContent }] },
+    async () => ({ kind: 'accept', value: pathTarget }),
+  );
+  assert.equal(pathRaceDecision.value.lines.length, 2, 'a value path mutated during the async checks is not appended');
 
   const sepPrefix = 'a\u2028bc';
   const sepMarker = sepPrefix + '... (line truncated to 4 chars)';

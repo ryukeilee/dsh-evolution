@@ -187,10 +187,14 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // synchronously.
       if (contentText(result) !== originalContent) return decision;
       if (JSON.stringify(result?.content ?? null) !== originalContentJson) return decision;
+      if (!decision || decision.kind !== 'accept') return decision;
+      if ('content' in decision) return decision;
+      const finalBase = decision.value === undefined ? result?.value : decision.value;
+      if (!finalBase || typeof finalBase !== 'object' || !Array.isArray(finalBase.lines) || typeof finalBase.path !== 'string') return decision;
       if (originalWindow) {
         const currentWindow = snapshotWindow(result?.value);
         if (!currentWindow || !sameReadWindow(currentWindow, originalWindow)) return decision;
-        if (decision.value !== undefined && !sameReadWindow(decision.value, originalWindow)) return decision;
+        if (!sameReadWindow(finalBase, originalWindow)) return decision;
       }
       const all = content.split('\n').map((line) => line.endsWith('\r') ? line.slice(0, -1) : line);
       // The official line counter does not count the empty segment after a
@@ -200,13 +204,13 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // returned. Re-reading is only safe when every returned line (and the
       // total line count) still matches; otherwise keep the original result.
       if (all.length !== total) return decision;
-      for (const line of base.lines) {
+      for (const line of finalBase.lines) {
         if (!Number.isInteger(line?.number) || typeof line?.text !== 'string') continue;
         if (all[line.number - 1] !== line.text) return decision;
       }
       const tail = [];
       let bytes = 0;
-      const maxOriginalLine = base.lines.reduce((max, line) => {
+      const maxOriginalLine = finalBase.lines.reduce((max, line) => {
         if (typeof line?.text !== 'string') return max;
         const truncated = /\.\.\. \(line truncated to (\d+) chars\)$/u.exec(line.text);
         if (truncated) {
@@ -226,7 +230,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
         tail.push({ number, text: value });
       }
       if (tail.length === 0) return decision;
-      return { ...decision, value: { ...base, lines: [...base.lines, ...tail] } };
+      return { ...decision, value: { ...finalBase, lines: [...finalBase.lines, ...tail] } };
     } catch {
       return decision;
     } finally {
