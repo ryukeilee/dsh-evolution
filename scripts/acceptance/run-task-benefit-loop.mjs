@@ -726,12 +726,15 @@ try {
     const consumerDecisions = consumerTurns
       .filter((turn) => (turn.tools?.length ?? 0) > 0 && typeof turn.decision?.tool === 'string' && turn.decision.tool.trim() !== '');
     assert(consumerCalls.length === consumerDecisions.length, 'the fresh consumer model decisions and ACP calls do not align');
+    let consumerAttributionComplete = new Set(consumerCalls.map((call) => call.toolCallId)).size === consumerCalls.length;
     const consumerToolNames = consumerDecisions.map((turn) => turn.decision.tool);
     const consumerCallById = new Map();
     consumerCalls.forEach((call, index) => {
       const descriptor = toolCallDescriptor(call, index, consumerDecisions, consumerToolNames);
       if (typeof call.toolCallId === 'string' && typeof descriptor.name === 'string') {
         consumerCallById.set(call.toolCallId, descriptor);
+      } else {
+        consumerAttributionComplete = false;
       }
     });
     assert(consumerCalls.every((call) => consumerCallById.get(call.toolCallId)?.name),
@@ -743,15 +746,19 @@ try {
       const call = consumerCallById.get(update.toolCallId);
       if (call?.name !== 'read') continue;
       const text = toolUpdateText(update);
-      if (!text) continue;
+      if (!text) { consumerAttributionComplete = false; continue; }
       const renderedPath = /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null;
       const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
         ? call.arguments.file_path : null;
+      if (!renderedPath && !argumentPath) { consumerAttributionComplete = false; continue; }
       // The result names the file the host actually read; a disagreement with
       // the request proves neither file's effect and is not evidence.
       if (renderedPath && argumentPath
         && !readPathMatches(argumentPath, renderedPath, home)
-        && !readPathMatches(renderedPath, argumentPath, home)) continue;
+        && !readPathMatches(renderedPath, argumentPath, home)) {
+        consumerAttributionComplete = false;
+        continue;
+      }
       const offset = Number.isInteger(call.arguments.offset) && call.arguments.offset > 0 ? call.arguments.offset : 1;
       consumerResultById.set(update.toolCallId, { text, path: renderedPath ?? argumentPath, offset });
     }
@@ -764,8 +771,12 @@ try {
         ? meta.arguments.file_path : null;
       const offset = meta.inputKnown && Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0
         ? meta.arguments.offset : (meta.inputKnown ? 1 : null);
-      consumerReadRequests.push({ callId: call.toolCallId, path: consumerResultById.get(call.toolCallId)?.path ?? argumentPath ?? null, offset });
+      if (!meta.inputKnown) consumerAttributionComplete = false;
+      const path = consumerResultById.get(call.toolCallId)?.path ?? argumentPath ?? null;
+      if (typeof path !== 'string' || path === '') consumerAttributionComplete = false;
+      consumerReadRequests.push({ callId: call.toolCallId, path, offset });
     }
+    assert(consumerAttributionComplete, 'the fresh consumer read attribution is incomplete');
     assert(consumerTurns.every((turn) => turn.ok === true), 'a fresh consumer model turn failed');
     const matchedSentinels = sentinels.filter((sentinel) => consumerText.includes(sentinel)).length;
     assert(matchedSentinels === sentinels.length, 'the fresh consumer answered ' + matchedSentinels + '/' + sentinels.length + ' expected values');

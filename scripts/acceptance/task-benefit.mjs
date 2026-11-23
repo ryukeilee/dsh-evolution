@@ -240,7 +240,7 @@ export function pilotTransportRetryable(turns) {
 
 /** Keep only fixed reason codes in a persisted row; raw exception text stays out. */
 export function pilotFailureReasons(turns) {
-  const known = new Set([...PILOT_RETRYABLE_REASONS, 'pilot-used-own-tools']);
+  const known = new Set([...PILOT_RETRYABLE_REASONS, 'pilot-used-own-tools', 'pilot-transport-incomplete']);
   return [...new Set((Array.isArray(turns) ? turns : [])
     .filter((turn) => turn?.ok !== true)
     .map((turn) => (typeof turn.reason === 'string' && known.has(turn.reason) ? turn.reason : 'pilot-transport-error')))].slice(0, 4);
@@ -297,8 +297,13 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // rows, but never claim the mechanism ran for this session.
   const attributionAligned = calls.length === toolTurns.length;
   const byId = new Map();
+  const seenCallIds = new Set();
+  let attributionComplete = true;
   calls.forEach((call, index) => {
     const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames);
+    if (typeof call.toolCallId !== 'string' || seenCallIds.has(call.toolCallId)) attributionComplete = false;
+    if (typeof call.toolCallId === 'string') seenCallIds.add(call.toolCallId);
+    if (typeof descriptor.name !== 'string') attributionComplete = false;
     if (typeof call.toolCallId === 'string' && typeof descriptor.name === 'string') {
       byId.set(call.toolCallId, descriptor);
     }
@@ -314,15 +319,19 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     const call = byId.get(update.toolCallId);
     if (call?.name !== 'read') continue;
     const text = toolUpdateText(update);
-    if (!text) continue;
+    if (!text) { attributionComplete = false; continue; }
     const renderedPath = /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null;
     const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
       ? call.arguments.file_path : null;
+    if (!renderedPath && !argumentPath) { attributionComplete = false; continue; }
     // The rendered result names the file the host actually read. If it
     // disagrees with the request, this call cannot prove either file's effect.
     if (renderedPath && argumentPath
       && !readPathMatches(argumentPath, renderedPath, cwd)
-      && !readPathMatches(renderedPath, argumentPath, cwd)) continue;
+      && !readPathMatches(renderedPath, argumentPath, cwd)) {
+      attributionComplete = false;
+      continue;
+    }
     const requestedOffset = Number.isInteger(call.arguments.offset) && call.arguments.offset > 0
       ? call.arguments.offset : 1;
     readResults.set(update.toolCallId, { text, path: renderedPath ?? argumentPath, offset: requestedOffset });
@@ -333,12 +342,15 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     if (meta?.name !== 'read') continue;
     const argumentPath = typeof meta.arguments.file_path === 'string' && meta.arguments.file_path.trim() !== ''
       ? meta.arguments.file_path : null;
+    if (!meta.inputKnown) attributionComplete = false;
     const offset = meta.inputKnown && Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0
       ? meta.arguments.offset : (meta.inputKnown ? 1 : null);
+    const path = readResults.get(call.toolCallId)?.path ?? argumentPath ?? null;
+    if (typeof path !== 'string' || path === '') attributionComplete = false;
     // The result path is authoritative when it exists; the requested path is the
     // fallback for a transport that does not render it. An untrusted input has
     // no provable offset, so it can never be a first-read proof.
-    readRequests.push({ callId: call.toolCallId, path: readResults.get(call.toolCallId)?.path ?? argumentPath ?? null, offset });
+    readRequests.push({ callId: call.toolCallId, path, offset });
   }
   const correct = answerMatches(assistantText, expectedTokens);
   const firstRequestByPath = new Map();
@@ -363,11 +375,11 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     const result = request ? readResults.get(request.callId) : null;
     return Boolean(request && request.offset === 1 && result && result.text.includes(expected.token));
   });
-  // Every call must have a verifiable identity. An unidentified call could be
-  // the first read of a path, so its presence makes any later start read an
-  // unreliable substitute.
-  const attributionComplete = calls.every((call) => typeof call.toolCallId === 'string'
-    && typeof byId.get(call.toolCallId)?.name === 'string');
+  // Every call must have a verifiable identity and a read must have a usable
+  // path. An unidentified or pathless call could be the first read of a path,
+  // so its presence makes any later start read an unreliable substitute.
+  const verifiedToolNames = calls.map((call) => byId.get(call.toolCallId)?.name)
+    .filter((name) => typeof name === 'string');
   const exercised = attributionAligned && attributionComplete && expectedTokens.length > 0 && (reads.length > 0
     ? boundReads.every(Boolean)
     : expectedTokens.every((token) => firstReads.some((text) => text.includes(token))));
@@ -376,12 +388,13 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     side,
     correct,
     exercised,
-    usedCandidate: candidateTool !== null && toolNames.includes(candidateTool),
+    attributionComplete,
+    usedCandidate: candidateTool !== null && verifiedToolNames.includes(candidateTool),
     usageComplete,
     toolFailures: failedUpdates,
     turns: decisionTurns.length,
-    toolCalls: toolNames.length,
-    toolNames,
+    toolCalls: verifiedToolNames.length,
+    toolNames: verifiedToolNames,
     failures,
     tokens: usageComplete ? usage.inputTokens + usage.outputTokens + usage.cacheReadTokens : 0,
     inputTokens: usageComplete ? usage.inputTokens : 0,
@@ -930,7 +943,7 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
   if (promptFailure !== null) console.error(`[task-benefit] ${label} failed: ${String(promptFailure?.message ?? promptFailure).slice(0, 400)}`);
   return {
     ...row,
-    ok: promptFailure === null && failedTurns === 0 && row.turns > 0 && row.usageComplete === true,
+    ok: promptFailure === null && failedTurns === 0 && row.turns > 0 && row.usageComplete === true && row.attributionComplete === true,
     failedTurns,
     retryableTransportFailure: promptFailure === null && pilotTransportRetryable(turns),
     ...(failureReasons.length > 0 ? { failureReasons } : {}),

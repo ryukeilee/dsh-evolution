@@ -49,6 +49,7 @@ const PILOT_REASON_CODES = new Set([
   'reply-object-unterminated',
   'decision-shape-invalid',
   'pilot-used-own-tools',
+  'pilot-transport-incomplete',
 ]);
 
 function pilotReasonCode(reason) {
@@ -216,18 +217,32 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   });
   child.stderr.on('data', (bytes) => { stderr = (stderr + bytes).slice(-20_000); });
   const timeout = setTimeout(() => { try { child.kill('SIGKILL'); } catch {} }, timeoutMs);
+  const closed = new Promise((resolve) => child.once('close', () => resolve(true)));
   const [code, signal] = await new Promise((resolve) => {
     let settled = false;
     const settle = (value, name) => { if (!settled) { settled = true; resolve([value, name]); } };
     child.once('error', () => settle('spawn-error', null));
-    // Wait for `close`, not `exit`: `exit` fires before stdio is drained, so a
-    // detached grandchild still holding stdout could write a tool event after
-    // the turn was classified.
-    child.once('close', (value, name) => settle(value, name));
+    // Wait for the process to exit, then separately for stdio to drain. `close`
+    // alone can wait forever when a detached descendant still holds the pipe.
+    child.once('exit', (value, name) => settle(value, name));
   });
+  const drainDeadline = Math.min(2_000, timeoutMs);
+  const drained = code === 'spawn-error' ? true : await Promise.race([
+    closed,
+    new Promise((resolve) => setTimeout(() => resolve(false), drainDeadline)),
+  ]);
   clearTimeout(timeout);
-  if (pending.length > 0) handleLine(pending.toString('utf8'));
   const wallMs = Date.now() - startedAt;
+  if (!drained) {
+    try { child.stdout.destroy(); } catch {}
+    try { child.stderr.destroy(); } catch {}
+    try { child.kill('SIGKILL'); } catch {}
+    return {
+      ok: false, reason: 'pilot-transport-incomplete', code, signal, ownToolCalls, wallMs,
+      stderr: bounded(stderr, 1_000), stdout: bounded(stdoutSample, 1_000),
+    };
+  }
+  if (pending.length > 0) handleLine(pending.toString('utf8'));
   if (!usageComplete) usage = null;
   // A non-zero exit or a signal is a process failure even when partial text was
   // written: that text may be a truncated reply, and the caller's correctness

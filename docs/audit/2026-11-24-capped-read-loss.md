@@ -261,11 +261,12 @@ run6 的 producer 已经干净，但 Trial 功能复验仍在 `E_DESKTOP_FUNCTIO
 1. **首次读取必须按文件与调用身份绑定。** `task.reads` 按绝对路径绑定 token，`exercised`
    要求每个文件自己的首读包含自己的值。工具身份只能来自 ACP 的 `title`，而且它必须是本次提供
    的工具；`rawInput` 决定参数；结果 `<path>` 决定读取的文件。没有 `title`、描述性标题、
-   同名多次调用却没有 `rawInput`、结果路径与请求路径不一致、或调用数与工具决策数不一致时，
-   该会话都不作机制证据；任何无法识别的调用都会阻止后续首读冒充。记录的 candidate 行有
-   3 次 read、每次 3 个完整文件结果（`readResultCharacters` 206,610，fixtures 合计 195,840，
-   其余是宿主信封），与逐文件判定一致；但本轮没有重跑真实模型来重新生成 artifact，报告不把
-   「新判定已在真实会话上重跑」写成已执行事实。
+   同名多次调用却没有 `rawInput`、重复调用 ID、读取路径缺失、结果路径与请求路径冲突、或调用
+   数与工具决策数不一致时，该会话都不作机制证据；任何无法识别的调用都会阻止后续首读冒充。
+   工具采用与调用数也只统计已验证的 ACP 调用，归因不完整的会话不进入有效收益样本。记录的
+   candidate 行有 3 次 read、每次 3 个完整文件结果（`readResultCharacters` 206,610，fixtures
+   合计 195,840，其余是宿主信封），与逐文件判定一致；但本轮没有重跑真实模型来重新生成
+   artifact，报告不把「新判定已在真实会话上重跑」写成已执行事实。
 2. **多 step 的 usage 必须相加。** 实测一次 `opencode run` 的两个 `step_finish` 分别报告
    input 9,621/output 39/cache.read 512 与 input 89/output 7/cache.read 10,112；旧实现只保留
    最后一步。现在按 step 相加，任一 step 缺计费字段或整个 `tokens` 对象则该轮 unknown。该修复
@@ -283,19 +284,22 @@ run6 的 producer 已经干净，但 Trial 功能复验仍在 `E_DESKTOP_FUNCTIO
    并要求宿主工具零失败；`pilot-used-own-tools`（包括先调用自有工具再非零退出的轮次）留在
    失败行，artifact 保持不完整。桥接边界只生成固定原因码：失败轮次、HTTP 错误响应和
    ACP 控制验收看到的内容都不含失败回复正文或原始异常文本；未知异常投影为
-   `pilot-transport-error`。CLI 输出按完整 JSON 行流式解析，并在子进程 `close`（stdio 排空）
-   后才分类，早期或稍后写出的自有工具与 `step_finish` 事件都不会被丢弃。
+   `pilot-transport-error`。CLI 输出按完整 JSON 行流式解析，子进程退出后等待 stdio 排空，
+   但排空有硬截止；后代进程长时间持有管道时关闭本地管道并把该轮标为
+   `pilot-transport-incomplete`（不可重试），不会把未完整观测的回合当成成功。
 6. **混合失败的证据门槛与评分只算可处理失败。** 100 次 `invalid args` 不能再把 1 次
    `code run failure` 抬过 `minOccurrences`，也不再进入可处理目标的失败率、时效、回归、
    证据引用和故障模式宽度；caller-input 模式保留在 `excludedModes` 中。只有 `rootCause` 的
    无模式失败按可行动失败保留，不会被一条 caller-input 记录整体拒绝；caller-input 的
    `rootCause` 也不会把可行动目标的验收指标从成功率改成延迟。新的 caller-input 失败同样不会
    重开已经由可行动证据解决的目标。同一知识键的重复记录在累加全组与来源计数之前去重，
-   不会再让可行动窗口从 10 次膨胀到 110 次。
+   不会再让可行动窗口从 10 次膨胀到 110 次；没有模式也没有根因的通用计数不会进入混合目标的
+   门槛、失败率或分数，纯通用目标仍以 `unattributed` 形式输出。
 7. **同一条成功判定与宿主工具失败判定。** producer 与 fresh consumer 共用
    `successfulToolResult`：`completed` 或 `success` 之外，还要求 `isError` / `is_error` 不为真。
    宿主工具失败同时从 `tool_call` 与 `tool_call_update` 两类通知按调用 ID 合并，初始
-   `tool_call` 已失败而没有后续更新时也会阻止整会话替换。
+   `tool_call` 已失败而没有后续更新时也会阻止整会话替换；归因不完整的会话不满足
+   `runSession` 的完成条件。
 
 另外把候选测试的挂载方式从 `new Function` 改成 `node:vm`（只注入
 `TextEncoder`/`TextDecoder`/`btoa`/`atob`），这样再次出现 `Buffer`/`process` 依赖时测试会先

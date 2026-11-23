@@ -391,6 +391,58 @@ test('a missing title or an unidentified first call blocks first-read attributio
   assert.equal(descriptiveFirst.exercised, false);
 });
 
+test('a pathless first read or a duplicate call id blocks first-read attribution', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: {} }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const pathless = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', 'a tail with no path'),
+      result('c2', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(pathless.exercised, false, 'a pathless first read cannot be replaced by a later start read');
+
+  const duplicate = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ...turns[1] }],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt', offset: 600 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(duplicate.exercised, false, 'a duplicate call id cannot be joined unambiguously');
+});
+
+test('tool adoption and call counts come from verified ACP calls, not decisions', () => {
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }],
+    updates: [{ sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'Read the config file' }],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: 'read', durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.usedCandidate, false, 'an unverified decision is not tool adoption');
+  assert.equal(row.toolCalls, 0);
+});
+
 test('a call/decision count mismatch is not attributed to the policy', () => {
   const turns = turnsWith(['read', 'read']).map((turn, index) => ({
     ...turn,
@@ -408,7 +460,7 @@ test('a call/decision count mismatch is not attributed to the policy', () => {
     ],
     assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
   });
-  assert.equal(row.toolCalls, 2);
+  assert.equal(row.toolCalls, 1);
   assert.equal(row.exercised, false, 'two decisions but one reported call cannot be joined by position');
 });
 
