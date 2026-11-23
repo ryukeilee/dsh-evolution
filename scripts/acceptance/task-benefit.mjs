@@ -146,13 +146,15 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames) {
   const title = typeof call?.title === 'string' && call.title.trim() !== '' ? call.title.trim() : null;
   const decision = toolTurns?.[index]?.decision;
   const decisionName = typeof toolNames?.[index] === 'string' ? toolNames[index] : null;
+  const offered = Array.isArray(toolTurns?.[index]?.tools) ? toolTurns[index].tools : [];
+  const titleIsTool = title !== null && (title === decisionName || offered.includes(title));
   const rawInput = call?.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput)
     ? call.rawInput : null;
   const decisionArguments = decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
     ? decision.arguments : null;
   const positionTrusted = title === null || title === decisionName;
   return {
-    name: title ?? decisionName,
+    name: titleIsTool ? title : (decisionName ?? title),
     arguments: rawInput ?? (positionTrusted ? decisionArguments : null) ?? {},
     inputKnown: rawInput !== null || positionTrusted,
   };
