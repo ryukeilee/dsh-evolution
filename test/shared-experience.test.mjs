@@ -141,6 +141,23 @@ test('only completed Evolution promotion facts become successful knowledge', t =
   assert.ok(final.advice.every(line => !line.includes('reusing') && !line.includes('reuse the recorded')));
 });
 
+test('promotion facts accept the normalized problem identity with spaces', t => {
+  const root = temporary(t); const store = openSharedExperience(root); t.after(() => store.close());
+  const receipt = sequence => ({ writer: 'dsh-evolution-orchestrator', sequence });
+  // `evolution_plan` reports this exact scope, and the acceptance loop passes it
+  // straight back as the experiment target. It must not be silently ignored.
+  const written = store.recordEvolution({
+    eventType: 'promotion-succeeded', target: 'tool read', eventId: 'evolution:promotion-succeeded:exp-space',
+  }, 'core-a', receipt(1));
+  assert.equal(written.committed, true);
+  const discovered = store.discover({ window: 500 });
+  assert.ok(discovered.records.some(row => row.problem === 'tool read' && row.successCount === 1));
+  assert.deepEqual(
+    store.recordEvolution({ eventType: 'canary-passed', target: '   ', eventId: 'evolution:canary-passed:exp-blank' }, 'core-a', receipt(2)),
+    { ignored: true },
+  );
+});
+
 test('setup is idempotent and preserves unrelated profile contents byte for byte', () => {
   const user = '- id: tstack-skills\n  config:\n    customSkillDirs: []\n';
   const next = managedPatch(user, 'acp');

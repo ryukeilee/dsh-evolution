@@ -21,6 +21,17 @@ import { readPublishedPluginReview } from '../lib/self-evolution-review.js';
 
 const SCRIPT = fileURLToPath(new URL('../docs/audit/replay/capability-usage.mjs', import.meta.url));
 
+test('the documented usage producer ships with the tarball', () => {
+  const manifest = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'));
+  const declared = manifest.files ?? [];
+  assert.ok(declared.includes('docs/audit/replay/capability-usage.mjs'),
+    'README instructs installed users to run the producer, so it must be distributed');
+  assert.ok(declared.includes('lib'), 'the shared scanner implementation must be distributed too');
+  const source = fs.readFileSync(SCRIPT, 'utf8');
+  assert.match(source, /from\s+['"](\.\.\/){3}lib\/capability-usage\.js['"]/,
+    'the producer must import the shipped scanner through its relative package path');
+});
+
 const RECORD_ID = 'evolution-promoted-aaaaaaaaaaaa';
 const SECOND_ID = 'evolution-promoted-bbbbbbbbbbbb';
 const HOST = Object.freeze({ dsh: '0.2.2-rc.5', cordis: '4.1.0', include: '2.0.3', node: process.version });

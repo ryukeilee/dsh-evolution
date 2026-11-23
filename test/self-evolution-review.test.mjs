@@ -655,6 +655,17 @@ test('a blocking action is never dropped by the bounded action list', () => {
   assert.equal(composed.incomplete, true, 'dropped actions make the review explicitly incomplete');
   assert.equal(composed.stable.nextActionsDropped, 1);
 });
+
+test('experience discovery truncation marks the composed review incomplete', () => {
+  const composed = composeSelfEvolutionReview({
+    stable: { status: 'ok', nextActions: [] },
+    experience: { available: true, sources: { shared: 500, failureMemory: 0, truncated: true } },
+    versions: CURRENT_HOST,
+  });
+  assert.equal(composed.incomplete, true);
+  assert.equal(composed.kind, 'no-action');
+});
+
 test('revalidation outranks repair, and repair outranks an experience candidate', () => {
   const revalidate = { action: REVIEW_ACTIONS.REVALIDATE, recordId: 'evolution-promoted-aaaaaaaaaaaa', why: 'host changed' };
   const repair = { action: REVIEW_ACTIONS.REPAIR, recordId: 'evolution-promoted-bbbbbbbbbbbb', why: 'apply failed' };

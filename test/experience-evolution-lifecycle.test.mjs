@@ -887,6 +887,55 @@ for (const [label, mutate] of [
   });
 }
 
+test('a promotion-gate rejection records a regression conclusion without a later revert', async (t) => {
+  const h = await createHarness(t, 'regression-conclusion-without-revert');
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  await runBaseline(h, experimentId);
+  await startTrial(h, experimentId);
+
+  h.state.targetFails = false; // the target improved, but the control regressed
+  h.state.controlFails = true;
+  const candidate = await runCandidate(h, experimentId);
+  assert.equal(candidate.comparison.regression, true);
+
+  const measurement = h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  assert.equal(measurement.decision.kind, 'regression');
+
+  // The owner does not revert (or the process ends here). The gate rejection
+  // itself is the terminal event, so it must publish the regression verdict.
+  const promotion = await h.orchestrator.promote({ experimentId, confirmation: true }, h.exec);
+  assert.equal(promotion.ok, false);
+  assert.equal(promotion.reason, 'promotion-gate');
+
+  const found = h.store.findConclusions({
+    target: TARGET,
+    applicability: APPLICABILITY,
+    strategyFingerprint: strategyFingerprint(TARGET, STRATEGY),
+  });
+  assert.equal(found.best.decision, 'regression');
+});
+
+test('a truncated discovery window is reported, not hidden by an empty plan', async (t) => {
+  const h = await createHarness(t, 'truncated-discovery');
+  const realStore = h.orchestrator.sharedExperience;
+  h.orchestrator.sharedExperience = {
+    ...realStore,
+    discover: () => ({ records: [], truncated: true }),
+  };
+  try {
+    const planned = h.orchestrator.plan({}, h.exec);
+    assert.equal(planned.ok, true);
+    assert.equal(planned.sources.truncated, true);
+
+    const reviewed = await h.orchestrator.reviewSelfEvolution({}, h.exec);
+    assert.equal(reviewed.selfEvolution.incomplete, true,
+      'a bounded discovery window must not be presented as a complete review');
+  } finally {
+    h.orchestrator.sharedExperience = realStore;
+  }
+});
+
 // ---------------------------------------------------------------------------
 // 4. Insufficient evidence: a baseline without a candidate is explicitly
 //    unproven, while the legacy no-probe path keeps its old behaviour.

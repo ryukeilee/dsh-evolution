@@ -43,7 +43,7 @@ test('consumer data root resolves exactly like diagnostics.resolveEvolutionPaths
   }
 });
 
-test('consumer module stays lightweight: exactly the sharing contract and the Include helper', async () => {
+test('consumer module stays lightweight: sharing contract, Include helper and pure host identity', async () => {
   const module = await import('../lib/promoted-consumer.js');
   assert.equal(module.name, 'dsh-evolution-promoted-consumer');
   assert.deepEqual(module.inject, ['tools']);
@@ -57,6 +57,9 @@ test('consumer module stays lightweight: exactly the sharing contract and the In
     './cordis-compat.js',
     './promoted-sharing.js',
     './promotion-include.js',
+    // Pure exact host identity reader: fs/path/url only, no kernel. Needed for
+    // the packaged-host fallback the review and doctor already use.
+    './runtime-versions.js',
     'node:crypto',
     'node:fs/promises',
     'node:os',
