@@ -195,24 +195,33 @@ test('an unreadable plugin source invalidates only that record', (t) => {
 test('one record without registered tools does not distrust another record\'s measured zero', async (t) => {
   const env = scratch(t);
   // A context-policy plugin registers no tool: its call count cannot describe
-  // its use, so that row stays unknown.
+  // its use, so that row stays unknown — but the scan did read its source, so it
+  // must not make the whole projection look damaged.
   writeRecord(env, { id: SECOND_ID, source: 'return { name: "context-policy", apply() {} };\n' });
   writeRecord(env, { source: WIDGET_SOURCE });
   writeSession(env.root, 'one', [call('bash', 'c1')]);
   const assessments = path.join(env.root, 'assessments.json');
   fs.writeFileSync(assessments, JSON.stringify({ [RECORD_ID]: 'self-contained' }));
-  const { projection } = run(env.root, ['--write', '--assessments', assessments]);
+  const { status, projection } = run(env.root, ['--write', '--assessments', assessments]);
+  assert.equal(status, 0, 'a capability with no call surface is not a damaged scan');
   assert.equal(projection.complete, true);
-  assert.equal(projection.recordsComplete, false);
+  assert.equal(projection.recordsComplete, true);
+  assert.deepEqual(projection.uncountableRecords, [{ id: SECOND_ID, reason: 'no-tool-surface' }]);
+  assert.deepEqual(projection.failures, undefined, 'no failure is manufactured');
   assert.equal(projection.records[SECOND_ID].workflowInvocations, null, 'no tool means no call count');
+  assert.equal(projection.records[SECOND_ID].measurement, 'no-tool-surface');
   assert.equal(projection.records[RECORD_ID].workflowInvocations, 0);
+  assert.equal(projection.records[RECORD_ID].measurement, undefined);
   const loaded = await readUsageProjection({ dataRoot: env.dataRoot });
+  assert.equal(loaded.usage.recordsComplete, true, 'an uncountable row is not an invalid row');
+  assert.equal(loaded.usage.records[SECOND_ID].measurement, 'no-tool-surface');
   const review = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: loaded.usage, usageStatus: 'ok' });
   const used = review.records.find((row) => row.id === RECORD_ID);
   const unmeasured = review.records.find((row) => row.id === SECOND_ID);
   assert.equal(used.value.invoked, false, 'a measured zero stays usable');
   assert.equal(used.value.workflowInvocations, 0);
   assert.equal(unmeasured.value.invoked, null);
+  assert.equal(unmeasured.value.measurement, 'no-tool-surface');
   assert.equal(review.retirementCandidates.some((row) => row.recordId === SECOND_ID), false);
 });
 
