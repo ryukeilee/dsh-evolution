@@ -1,0 +1,135 @@
+{
+  "identity": {
+    "node": "v26.13.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "baselineTree": "/tmp/dsh-evo-baseline",
+    "currentLib": "3bff57a9b73eb720822b387047767fd7b2a53a59efb5ed027c0f5f630419d4c9"
+  },
+  "audit": {
+    "withoutProjection": {
+      "medianMs": 0.762,
+      "status": "verify-host",
+      "usageEvidence": {
+        "source": null,
+        "capturedAt": null,
+        "status": "absent",
+        "complete": null,
+        "recordsComplete": null,
+        "stale": null,
+        "recordCount": 0
+      },
+      "tier": "usage-unknown",
+      "invoked": null,
+      "workflowInvocations": null,
+      "retirementCandidates": 0,
+      "nextActions": [
+        "verify-host"
+      ],
+      "primary": "verify-host"
+    },
+    "withZeroUsage": {
+      "medianMs": 0.516,
+      "status": "verify-host",
+      "usageEvidence": {
+        "source": "session-evidence",
+        "capturedAt": "2026-11-23T00:39:10.607Z",
+        "status": "ok",
+        "complete": true,
+        "recordsComplete": true,
+        "stale": false,
+        "recordCount": 1
+      },
+      "tier": "usage-unknown",
+      "invoked": false,
+      "workflowInvocations": 0,
+      "retirementCandidates": 0,
+      "nextActions": [
+        "verify-host"
+      ],
+      "primary": "verify-host"
+    },
+    "withUsage": {
+      "medianMs": 0.386,
+      "status": "verify-host",
+      "usageEvidence": {
+        "source": "session-evidence",
+        "capturedAt": "2026-11-23T00:39:10.611Z",
+        "status": "ok",
+        "complete": true,
+        "recordsComplete": true,
+        "stale": false,
+        "recordCount": 1
+      },
+      "tier": "in-use",
+      "invoked": true,
+      "workflowInvocations": 3,
+      "retirementCandidates": 0,
+      "nextActions": [
+        "verify-host"
+      ],
+      "primary": "verify-host"
+    },
+    "baseline": {
+      "medianMs": 0.416,
+      "status": "verify-host",
+      "usageEvidence": {
+        "source": null,
+        "capturedAt": null,
+        "recordCount": 0
+      },
+      "tier": "usage-unknown",
+      "invoked": null,
+      "workflowInvocations": null,
+      "retirementCandidates": 0,
+      "nextActions": [
+        "verify-host"
+      ],
+      "primary": "verify-host"
+    }
+  },
+  "review": {
+    "baseline": {
+      "tier": "in-use",
+      "invoked": true,
+      "workflowInvocations": 3,
+      "retirementCandidates": 0,
+      "nextActions": []
+    },
+    "baselineZeroUsage": {
+      "tier": "installed-only",
+      "invoked": false,
+      "workflowInvocations": 0,
+      "retirementCandidates": 1,
+      "nextActions": []
+    },
+    "current": {
+      "tier": "in-use",
+      "invoked": true,
+      "workflowInvocations": 3,
+      "retirementCandidates": 0,
+      "nextActions": []
+    },
+    "currentZeroUsage": {
+      "tier": "installed-only",
+      "invoked": false,
+      "workflowInvocations": 0,
+      "retirementCandidates": 1,
+      "nextActions": [
+        "review-retirement"
+      ]
+    }
+  },
+  "scan": {
+    "sessions": 200,
+    "linesPerSession": 2000,
+    "scannedSessions": 200,
+    "scannedToolCalls": 380000,
+    "complete": true,
+    "workflowInvocations": 0,
+    "verificationInvocations": 120000,
+    "medianMs": 311.637,
+    "bytesOnDisk": 787567,
+    "rssDeltaMiB": 75.5
+  }
+}

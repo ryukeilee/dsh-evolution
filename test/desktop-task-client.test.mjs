@@ -812,6 +812,43 @@ test('audit classifies a stable plugin verified on another host as pending-reval
   assert.equal(calls.filter((serviceName) => serviceName === 'evolutionExperience').length, 1);
 });
 
+test('audit reads the persisted usage projection and reports its provenance', async (t) => {
+  const home = await tempHome(t);
+  const record = await writePublishedRecord(home);
+  const { tool } = mount(home, { spawn: () => { throw new Error('audit must not launch the Desktop application'); } });
+
+  const absent = await tool.execute({ action: 'audit' }, {});
+  assert.equal(absent.stable.usageEvidence.status, 'absent');
+  assert.equal(absent.stable.usageEvidence.complete, null);
+  assert.equal(absent.stable.records[0].value.tier, 'usage-unknown');
+  assert.deepEqual(absent.stable.retirementCandidates, []);
+
+  const usageFile = path.join(home, 'storages', 'evolution', 'shared-plugins', 'usage.json');
+  await fs.mkdir(path.dirname(usageFile), { recursive: true });
+  await fs.writeFile(usageFile, `${JSON.stringify({
+    kind: 'dsh-evolution-capability-usage',
+    schemaVersion: 1,
+    source: 'session-evidence',
+    complete: true,
+    capturedAt: new Date().toISOString(),
+    records: { [record.id]: { workflowInvocations: 2, verificationInvocations: 0, unattributedInvocations: 0, capabilityAssessment: 'workflow-relevant' } },
+  })}\n`);
+
+  const used = await tool.execute({ action: 'audit' }, {});
+  assert.equal(used.stable.usageEvidence.status, 'ok');
+  assert.equal(used.stable.usageEvidence.complete, true);
+  assert.equal(used.stable.usageEvidence.stale, false);
+  assert.equal(used.stable.records[0].value.tier, 'in-use');
+  assert.equal(used.stable.records[0].value.workflowInvocations, 2);
+  assert.equal(used.stable.retirementCandidates.length, 0);
+
+  await fs.writeFile(usageFile, '{"records":');
+  const damaged = await tool.execute({ action: 'audit' }, {});
+  assert.equal(damaged.ok, true);
+  assert.equal(damaged.stable.usageEvidence.status, 'invalid');
+  assert.equal(damaged.stable.records[0].value.tier, 'usage-unknown');
+});
+
 test('audit obtains the shared experience store lazily and reports its absence honestly', async (t) => {
   const home = await tempHome(t);
   const calls = [];

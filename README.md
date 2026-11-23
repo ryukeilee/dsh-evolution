@@ -150,9 +150,23 @@ Desktop 的 `evolution_plan` 同时返回 `stablePlugins`（已发布 stable 插
    源码变更仍需所有者显式确认。
 3. `restart-consumer`：只是 consumer 启动状态过期；重启入口即可重新校验，不需要源码改动。
 4. `operator-action`：索引、源码摘要或撤销表损坏；按报告恢复现场，不猜测。
-5. `experience-candidate`：没有更优先的 stable 插件问题时，才从有证据的历史候选继续，并沿用
+5. `review-retirement`：插件已安装、但只读用量投影里没有工作流调用、也没有工作流收益证据，且能力被明确标注为
+   `self-contained`（输入完全由调用方提供）。建议只包含证据、可逆的停用命令与 `requiresOwnerAuthorization: true`；
+   检查不会自行停用或删除任何记录。
+6. `experience-candidate`：没有更优先的 stable 插件问题时，才从有证据的历史候选继续，并沿用
    proven-ineffective 拒绝规则。
-6. 以上都不存在时返回 `no-action` 并明确结束，不强行生成新插件。
+7. 以上都不存在时返回 `no-action` 并明确结束，不强行生成新插件。
+
+用量证据来自一次显式、离线的只读扫描，运行时不会扫描会话日志：
+
+```sh
+node docs/audit/replay/capability-usage.mjs --assessments assessments.json --write
+```
+
+扫描只统计工具名与次数（不输出正文、参数或结果），把结果投影写入
+`<DSH_HOME>/storages/evolution/shared-plugins/usage.json`；`evolution_plan` 与 ACP 的 `audit` 只在显式调用时读取
+这一份小文件。只有“同一会话里晋升生命周期调用尚未返回时”发生的调用才算验证流量；调用无法归因（日志截断、
+同名工具属于多条记录）或投影不完整、超过 30 天时，零调用按未知处理，不能触发停用建议。
 
 检查完全只读：不写发布索引、不启动 Trial、不创建任务；Desktop 仍是唯一执行与晋升权威，ACP 只负责审计并把
 新计划交给 Desktop。ACP 的 `audit` 不会在本机执行 revalidate，它返回需要操作者执行的证据步骤。设计见
