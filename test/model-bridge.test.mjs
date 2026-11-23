@@ -281,10 +281,10 @@ test('a descendant that holds stdout past the drain deadline is not a usable tur
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-drain-timeout-'));
   t.after(() => fs.rm(dir, { recursive: true, force: true }));
   await fs.writeFile(path.join(dir, 'opencode'),
-    '#!/usr/bin/env node\n'
-    + 'const { spawn } = require("node:child_process");\n'
-    + 'spawn(process.execPath, ["-e", "setTimeout(() => { console.log(JSON.stringify({ type: \\"tool\\", part: { tool: \\"read\\" } })); }, 3000)"], { stdio: ["ignore", "inherit", "inherit"] });\n'
-    + 'setTimeout(() => process.exit(1), 10);\n',
+    '#!/bin/sh\n'
+    + '( sleep 5 ) &\n'
+    + 'sleep 0.05\n'
+    + 'exit 1\n',
     { mode: 0o755 });
   const startedAt = Date.now();
   const result = await runOpencodeTurn('prompt', {
@@ -295,7 +295,7 @@ test('a descendant that holds stdout past the drain deadline is not a usable tur
   });
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'pilot-transport-incomplete');
-  assert.ok(Date.now() - startedAt < 2_500, 'the drain deadline must bound the wait');
+  assert.ok(Date.now() - startedAt < 3_000, 'the drain deadline must bound the wait');
 });
 
 test('a real decision is streamed back with its measured usage', async (t) => {

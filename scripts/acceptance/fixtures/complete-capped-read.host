@@ -91,6 +91,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
     // or result.value in place.
     const originalContent = contentText(result);
     const originalWindow = snapshotWindow(result?.value);
+    const effectiveLimitSnapshot = Number(exec?.arguments?.limit);
     const decision = await next();
     const callId = typeof exec?.callId === 'string' ? exec.callId : null;
     try {
@@ -129,9 +130,10 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       const hasExplicitLimit = Number.isInteger(requestedLimit) && requestedLimit > 0;
       const snapshotOffset = Number.isInteger(pre.offset) && pre.offset > 0 ? pre.offset : 1;
       if (Number.isInteger(base.offset) && base.offset !== snapshotOffset) return decision;
-      const effectiveLimit = Number(exec?.arguments?.limit);
+      const effectiveLimit = effectiveLimitSnapshot;
       const effectiveValid = Number.isInteger(effectiveLimit) && effectiveLimit > 0 ? effectiveLimit : null;
-      const windowLimit = effectiveValid === null ? requestedLimit : Math.min(requestedLimit, effectiveValid);
+      if (effectiveValid === null) return decision;
+      const windowLimit = Math.min(requestedLimit, effectiveValid);
       // Only the no-rendered-content path may fall back to structure, and only
       // when the caller declared an explicit limit: otherwise a deployment's
       // smaller default line window would look like a byte cap. When content is

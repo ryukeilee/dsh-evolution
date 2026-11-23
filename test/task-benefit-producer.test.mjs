@@ -474,6 +474,7 @@ test('read path binding accepts relative/canonical aliases but not a different p
   assert.equal(readPathMatches('/iso/home/a.txt', '/iso/home/b.txt', '/iso/home'), false);
   assert.equal(readPathMatches('/iso/home/sub/a.txt', '/iso/home/a.txt', '/iso/home'), false);
   assert.equal(readPathMatches('a.txt', '/iso/home/sub/a.txt', '/iso/home'), false);
+  assert.equal(readPathMatches('/w/a\\b', '/w/a/b', '/w'), false);
 });
 
 test('only a pilot transport failure can replace a whole session', () => {
@@ -943,6 +944,21 @@ test('an anonymous terminal notification is incomplete evidence', () => {
   });
   assert.equal(row.attributionComplete, false);
   assert.equal(row.exercised, false);
+});
+
+test('a path tag is metadata, not read content', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>sentinel-a</path>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.exercised, false, 'a path tag cannot prove the read body');
 });
 
 test('a per-file binding must cover every expected token', () => {

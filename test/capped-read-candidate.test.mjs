@@ -297,6 +297,19 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(shrinkDecision.value, undefined, 'a downstream-shrunk effective window is not a byte cap');
 
+  const deleteExec = { name: 'read', arguments: { file_path: 'delete.txt', limit: 5 }, agent: {}, signal: null };
+  const deleteFile = '/isolated/delete.txt';
+  const deleteListener = mount({ [deleteFile]: offsetRows.join('\n') + '\n' }, {
+    preNext: async () => { delete deleteExec.arguments.limit; return { kind: 'accept' }; },
+  });
+  const deleteFirst = offsetRows.slice(0, 3).map((value, index) => ({ number: index + 1, text: value }));
+  const deleteDecision = await deleteListener(
+    deleteExec,
+    readResult({ lines: deleteFirst, totalLines: 5, path: deleteFile, content: '' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(deleteDecision.value, undefined, 'a missing effective limit cannot be inferred as a byte cap');
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(

@@ -413,6 +413,28 @@ test('unclassified failure conclusions stay historical, not actionable occurrenc
   assert.equal(candidate.requiresNewHypothesis, true);
 });
 
+test('a mixed candidate reports the actionable firstSeen, not an excluded failure', () => {
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:jan', scope: 'tool run code',
+        problem: 'official operation failure invalid args',
+        failureCount: 100, occurrences: 100, firstSeen: '2026-01-01T00:00:00.000Z', lastSeen: '2026-01-02T00:00:00.000Z',
+      },
+      {
+        key: 'knowledge:nov', scope: 'tool run code',
+        problem: 'official operation failure code run failure',
+        failureCount: 4, occurrences: 4, firstSeen: '2026-11-01T00:00:00.000Z', lastSeen: '2026-11-02T00:00:00.000Z',
+        metrics: { attemptssincefailure: { sum: 10, count: 4 }, successessincefailure: { sum: 6, count: 4 } },
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(candidate, JSON.stringify(planned.rejected));
+  assert.equal(candidate.firstSeen, '2026-11-01T00:00:00.000Z');
+});
+
 test('one caller-input mode does not discard a tool target with actionable failures', () => {
   const now = new Date().toISOString();
   const planned = planEvolutionCandidates({

@@ -124,8 +124,7 @@ export function answerMatches(text, tokens) {
 export function readPathMatches(actual, expected, cwd = null) {
   if (typeof actual !== 'string' || typeof expected !== 'string') return false;
   const normalize = (value) => {
-    const textValue = value.replace(/\\/g, '/');
-    const normalized = path.posix.normalize(textValue);
+    const normalized = path.posix.normalize(value);
     return normalized === '.' ? '' : normalized;
   };
   const left = normalize(actual);
@@ -259,7 +258,7 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
 }
 function normalizeReadPath(value, cwd) {
   if (typeof value !== 'string' || value === '') return value;
-  const normalized = value.replace(/\\/g, '/');
+  const normalized = value;
   if (path.isAbsolute(normalized)) return path.normalize(normalized);
   return typeof cwd === 'string' && path.isAbsolute(cwd) ? path.resolve(cwd, normalized) : normalized;
 }
@@ -285,6 +284,13 @@ export function successfulToolResult(update) {
   return completedToolUpdate(update) && update?.isError !== true && update?.is_error !== true;
 }
 
+function parseToolResultText(text) {
+  const value = typeof text === 'string' ? text : '';
+  const match = /^\s*<path>([^<]*)<\/path>\s*/u.exec(value);
+  if (!match) return { path: null, body: value };
+  return { path: match[1].trim() || null, body: value.slice(match[0].length) };
+}
+
 export function terminalNotificationMissingId(updates) {
   for (const update of Array.isArray(updates) ? updates : []) {
     if (update?.sessionUpdate !== 'tool_call' && update?.sessionUpdate !== 'tool_call_update') continue;
@@ -306,8 +312,9 @@ export function terminalToolResults(updates, cwd = null) {
     const id = typeof update.toolCallId === 'string' && update.toolCallId !== '' ? update.toolCallId : null;
     if (id === null) continue;
     const text = toolUpdateText(update);
-    const path = text ? /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null : null;
-    const body = text ? text.replace(/<path>[^<]*<\/path>\s*/u, '') : '';
+    const parsed = parseToolResultText(text);
+    const path = parsed.path;
+    const body = parsed.body;
     if (texts.has(id)) {
       if (bodies.get(id) !== body) conflicts.add(id);
       if (path) {
@@ -318,7 +325,7 @@ export function terminalToolResults(updates, cwd = null) {
         }
       }
     } else {
-      texts.set(id, text);
+      texts.set(id, body);
       bodies.set(id, body);
       if (path) paths.set(id, path);
     }
@@ -543,7 +550,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     const text = terminalPaths.texts.get(update.toolCallId);
     if (!text) continue;
     const mergedPath = terminalPaths.paths.get(update.toolCallId) ?? null;
-    const renderedPath = mergedPath ?? (/<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null);
+    const renderedPath = mergedPath;
     const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
       ? call.arguments.file_path : null;
     if (!renderedPath && !argumentPath) { attributionComplete = false; continue; }

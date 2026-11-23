@@ -778,7 +778,7 @@ try {
       const text = consumerTerminal.texts.get(update.toolCallId);
       if (!text) { consumerAttributionComplete = false; continue; }
       const mergedPath = consumerTerminal.paths.get(update.toolCallId) ?? null;
-      const renderedPath = mergedPath ?? (/<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null);
+      const renderedPath = mergedPath;
       const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
         ? call.arguments.file_path : null;
       if (!renderedPath && !argumentPath) { consumerAttributionComplete = false; continue; }
