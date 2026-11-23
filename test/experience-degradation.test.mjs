@@ -152,6 +152,18 @@ test('the planner ranks a degradation by frequency, recovery cost and recoverabi
   // The canonical row keeps the most recent observed recovery path; the
   // per-event recovery count is the metric sum above.
   assert.ok(candidate.loss.recoveryTools.includes('run_code'));
+  // The observed recovery path decides the capability *form*: a new tool would
+  // require the model to abandon its bash/run_code fallback by choice.
+  assert.equal(candidate.improvement, 'context-policy');
+  assert.equal(candidate.hook, 'tools/post-execute');
+  assert.equal(candidate.verificationKind, 'paired-real-session');
+  assert.deepEqual(candidate.baselinePath, {
+    kind: 'observed-recovery',
+    lossKinds: ['line-truncated'],
+    recoveryTools: ['run_code'],
+    recoveryCalls: 6,
+  });
+  assert.match(candidate.improvementReason, /run_code/);
   assert.deepEqual(candidate.benefitModel, { kind: 'workflow', metric: 'failureRate' });
   assert.ok(candidate.acceptanceMetrics.some((metric) => metric.name === 'recoveryCalls' && metric.direction === 'lower'));
   assert.ok(candidate.score > 0);
@@ -174,6 +186,39 @@ test('the planner ranks a degradation by frequency, recovery cost and recoverabi
     failureMemory: [],
   }, { minOccurrences: 3 });
   assert.ok(withCost.candidates[0].score > withNoCost.candidates[0].score);
+});
+
+test('an ordinary capability failure still recommends a tool, not a policy hook', () => {
+  const planned = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:missing-capability', scope: 'tool edge-cache',
+      problem: 'official operation failure unknown tool not registered',
+      failureCount: 5, occurrences: 5, lastSeen: new Date().toISOString(),
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates[0];
+  assert.ok(candidate);
+  assert.equal(candidate.improvement, 'tool');
+  assert.equal(candidate.hook, null);
+  assert.equal(candidate.baselinePath, null);
+  assert.equal(candidate.verificationKind, 'capability-probe');
+});
+
+test('a loss without an observed recovery path is not promoted to a policy hook', () => {
+  const planned = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:no-recovery', scope: 'tool read', issueType: 'tool degradation', failureMode: 'output-capped',
+      occurrences: 5, failureCount: 0, successCount: 0, lastSeen: new Date().toISOString(),
+      metrics: { recoverycalls: { sum: 0, count: 5 } },
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates[0];
+  assert.ok(candidate);
+  assert.equal(candidate.loss.recoverable, false);
+  assert.equal(candidate.improvement, 'tool');
+  assert.equal(candidate.baselinePath, null);
 });
 
 test('a rare degradation stays rejected below the evidence floor', () => {
