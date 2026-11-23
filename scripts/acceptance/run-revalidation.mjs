@@ -37,7 +37,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { hostCompatible, hostDigest } from '../../lib/promoted-sharing.js';
+import { hostCompatible, hostDigest, isDisabledForProfile, readDisableState } from '../../lib/promoted-sharing.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
@@ -442,10 +442,18 @@ async function main(argv) {
 
   // 3. Every record a consumer reports as pending-revalidation on this host is a
   //    revalidation target. Anything else is reported, never silently adopted.
+  //    A record revoked on every approved profile is out of scope: it can never
+  //    be a live revalidation target, but its host mismatch must not abort the
+  //    evidence run for the records that are still active.
+  const disable = await readDisableState({ dataRoot: cloneDataRoot });
+  const skippedRevokedIds = records.filter((record) => record.approvedProfiles.length > 0
+    && record.approvedProfiles.every((profile) => isDisabledForProfile(disable, record.id, profile)))
+    .map((record) => record.id);
+  const activeRecords = records.filter((record) => !skippedRevokedIds.includes(record.id));
   const pending = new Map();
   for (const profile of PROFILES) {
     const rows = rowsById(readJsonFile(path.join(clone, CONSUMER_STATE, profile + '.json')));
-    for (const record of records) {
+    for (const record of activeRecords) {
       const row = rows.get(record.id);
       if (!row) continue;
       // A consumer marks a record pending-revalidation when its own host facts
@@ -458,7 +466,7 @@ async function main(argv) {
       }
     }
   }
-  for (const record of records) {
+  for (const record of activeRecords) {
     if (pending.has(record.id)) continue;
     const current = hostCompatible(record.host, host);
     if (current.ok) continue;
@@ -577,6 +585,7 @@ async function main(argv) {
       indexDigestBefore,
       indexUpdatedAt: index.updatedAt || null,
       recordCount: records.length,
+      skippedRevokedIds,
     },
     // The clone is the only place the record recorded host is replaced by the
     // current one; every activation below is a real boot of the real entry.

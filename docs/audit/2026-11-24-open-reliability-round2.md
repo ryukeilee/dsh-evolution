@@ -122,3 +122,15 @@ GPT-6.2 Sol（High）返回 `CHANGES`：1 blocker、4 should。逐条复核并�
 | S8 should | 接受：runner 只认 `host-version-mismatch`，Cordis/Include/Node 不匹配时无法生成证据 | runner 按 `pending-revalidation` 状态选取目标，保留源码摘要、激活证明与采纳门禁 |
 
 新增回归：guard 模块名、撤销后仍挂载的 review 动作；现有一致性用例随语义更新。
+
+## 10. 独立反方复审（sol-loop 第 5 轮，预算上限）
+
+GPT-6.2 Sol（High）返回 `CHANGES`：2 should。复核后均接受并修复：
+
+| id | 结论 | 处理 |
+| --- | --- | --- |
+| S1 should | 接受：只撤销单个 profile 时，该 consumer 仍 active，review 报 active 且无动作 | 逐 profile 检查撤销后的 active 行，产出 restart-consumer；已撤销且已卸载仍为 inactive |
+| S2 should | 接受：全部获批 profile 均已撤销的记录仍因宿主不匹配中止 runner，阻塞同批真正待重验证的记录 | runner 依撤销表跳过全撤销记录并在证据中列出 skippedRevokedIds；其余源码摘要、真实挂载证明与采纳门禁不变 |
+
+sol-loop 预算（5 轮）已用尽。第 5 轮的两项均已在预算内修复并有针对性用例；不再发起第 6 轮。
+本轮没有未解决的高置信度 blocker/should；剩余候选为低收益边缘情况，按任务约束不继续扩大范围。

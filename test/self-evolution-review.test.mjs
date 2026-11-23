@@ -369,24 +369,22 @@ test('operator-disabled for every approved profile is inactive with no next acti
   assert.equal(composed.kind, 'no-action');
 });
 
-test('a record disabled for one profile stays active where it is still enabled', async (t) => {
+test('a record disabled for one profile needs a restart while that consumer still mounts it', async (t) => {
   const env = await fixture(t, 'partial-disabled');
   await writeConsumers(env);
   const outcome = await setDisabledForProfile(env.paths, { pluginId: RECORD_ID, profile: 'acp', disabled: true, reason: 'operator test' });
   assert.equal(outcome.ok, true);
 
   const result = await review(env);
-  assert.equal(result.status, 'active');
-  assert.equal(result.summary.active, 1);
-  assert.deepEqual(result.nextActions, []);
+  assert.equal(result.status, 'restart-required');
+  assert.equal(result.nextActions.length, 1);
+  assert.equal(result.nextActions[0].action, REVIEW_ACTIONS.RESTART);
 
   const [record] = result.records;
-  assert.equal(record.status, 'active');
-  assert.equal(record.action, null);
-  assert.deepEqual(record.profiles.map((row) => row.status).sort(), ['active', 'disabled']);
+  assert.deepEqual(record.profiles.map((row) => row.status).sort(), ['active', 'restart-required']);
 
   const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
-  assert.equal(composed.kind, 'no-action');
+  assert.equal(composed.kind, 'restart-consumer');
 });
 
 test('an invalid published record surfaces an operator action instead of a silent no-action', async (t) => {
