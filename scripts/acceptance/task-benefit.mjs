@@ -285,6 +285,17 @@ export function successfulToolResult(update) {
   return completedToolUpdate(update) && update?.isError !== true && update?.is_error !== true;
 }
 
+export function terminalNotificationMissingId(updates) {
+  for (const update of Array.isArray(updates) ? updates : []) {
+    if (update?.sessionUpdate !== 'tool_call' && update?.sessionUpdate !== 'tool_call_update') continue;
+    const terminal = update.status === 'completed' || update.status === 'success'
+      || update.status === 'failed' || update.status === 'error'
+      || update.isError === true || update.is_error === true;
+    if (terminal && (typeof update.toolCallId !== 'string' || update.toolCallId === '')) return true;
+  }
+  return false;
+}
+
 export function terminalToolResults(updates, cwd = null) {
   const paths = new Map();
   const texts = new Map();
@@ -292,16 +303,19 @@ export function terminalToolResults(updates, cwd = null) {
   const conflicts = new Set();
   for (const update of Array.isArray(updates) ? updates : []) {
     if (update?.sessionUpdate !== 'tool_call_update' || !successfulToolResult(update)) continue;
-    const id = typeof update.toolCallId === 'string' ? update.toolCallId : null;
+    const id = typeof update.toolCallId === 'string' && update.toolCallId !== '' ? update.toolCallId : null;
     if (id === null) continue;
     const text = toolUpdateText(update);
     const path = text ? /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null : null;
     const body = text ? text.replace(/<path>[^<]*<\/path>\s*/u, '') : '';
     if (texts.has(id)) {
       if (bodies.get(id) !== body) conflicts.add(id);
-      if (path && paths.has(id) && paths.get(id) !== path
-        && !readPathMatches(path, paths.get(id), cwd) && !readPathMatches(paths.get(id), path, cwd)) {
-        conflicts.add(id);
+      if (path) {
+        if (!paths.has(id)) paths.set(id, path);
+        else if (paths.get(id) !== path
+          && !readPathMatches(path, paths.get(id), cwd) && !readPathMatches(paths.get(id), path, cwd)) {
+          conflicts.add(id);
+        }
       }
     } else {
       texts.set(id, text);
@@ -458,6 +472,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const failedModelTurns = (Array.isArray(turns) ? turns : []).filter((turn) => turn.ok !== true).length;
   const failedUpdates = failedToolCallIds(updates);
   const missingTerminals = missingTerminalToolCalls(updates);
+  const missingTerminalId = terminalNotificationMissingId(updates);
   const terminalIds = new Set();
   const resultTextIds = new Set();
   for (const update of Array.isArray(updates) ? updates : []) {
@@ -482,7 +497,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const byId = new Map();
   const seenCallIds = new Set();
   let attributionComplete = calls.length === toolTurns.length && missingTerminals === 0
-    && terminalPaths.conflicts.size === 0;
+    && !missingTerminalId && terminalPaths.conflicts.size === 0;
   const usedReadDecisions = new Set();
   orderedCalls.forEach(({ call, index }) => {
     const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames, cwd, usedReadDecisions,
@@ -527,7 +542,8 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     if (call?.name !== 'read') continue;
     const text = terminalPaths.texts.get(update.toolCallId);
     if (!text) continue;
-    const renderedPath = /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null;
+    const mergedPath = terminalPaths.paths.get(update.toolCallId) ?? null;
+    const renderedPath = mergedPath ?? (/<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null);
     const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
       ? call.arguments.file_path : null;
     if (!renderedPath && !argumentPath) { attributionComplete = false; continue; }

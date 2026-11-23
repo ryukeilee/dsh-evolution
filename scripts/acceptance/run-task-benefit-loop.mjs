@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { failedToolCallIds, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, terminalToolResults, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
+import { failedToolCallIds, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, terminalNotificationMissingId, terminalToolResults, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -729,7 +729,8 @@ try {
     let consumerAttributionComplete = consumerCalls.length === consumerDecisions.length
       && consumerCallIds.every((id) => typeof id === 'string')
       && new Set(consumerCallIds).size === consumerCallIds.length
-      && missingTerminalToolCalls(consumerUpdates) === 0;
+      && missingTerminalToolCalls(consumerUpdates) === 0
+      && !terminalNotificationMissingId(consumerUpdates);
     const consumerToolNames = consumerDecisions.map((turn) => turn.decision.tool);
     const consumerTerminal = terminalToolResults(consumerUpdates, home);
     if (consumerTerminal.conflicts.size > 0) consumerAttributionComplete = false;
@@ -776,7 +777,8 @@ try {
       if (call?.name !== 'read') continue;
       const text = consumerTerminal.texts.get(update.toolCallId);
       if (!text) { consumerAttributionComplete = false; continue; }
-      const renderedPath = /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null;
+      const mergedPath = consumerTerminal.paths.get(update.toolCallId) ?? null;
+      const renderedPath = mergedPath ?? (/<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null);
       const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
         ? call.arguments.file_path : null;
       if (!renderedPath && !argumentPath) { consumerAttributionComplete = false; continue; }

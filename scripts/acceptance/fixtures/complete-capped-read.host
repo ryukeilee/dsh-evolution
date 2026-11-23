@@ -73,10 +73,12 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
         const info = await ctx.fs.stat(target, exec.signal);
         if (info?.type === 'file' && typeof info.version === 'string') {
           const limit = Number(exec.arguments?.limit);
+          const offset = Number(exec.arguments?.offset);
           versions.set(exec.callId, {
             target,
             version: info.version,
             limit: Number.isInteger(limit) && limit > 0 ? limit : null,
+            offset: Number.isInteger(offset) && offset > 0 ? offset : null,
           });
           while (versions.size > 32) versions.delete(versions.keys().next().value);
         }
@@ -125,12 +127,17 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       if (!pre || typeof pre.version !== 'string') return decision;
       const requestedLimit = pre.limit;
       const hasExplicitLimit = Number.isInteger(requestedLimit) && requestedLimit > 0;
+      const snapshotOffset = Number.isInteger(pre.offset) && pre.offset > 0 ? pre.offset : 1;
+      if (Number.isInteger(base.offset) && base.offset !== snapshotOffset) return decision;
+      const effectiveLimit = Number(exec?.arguments?.limit);
+      const effectiveValid = Number.isInteger(effectiveLimit) && effectiveLimit > 0 ? effectiveLimit : null;
+      const windowLimit = effectiveValid === null ? requestedLimit : Math.min(requestedLimit, effectiveValid);
       // Only the no-rendered-content path may fall back to structure, and only
       // when the caller declared an explicit limit: otherwise a deployment's
       // smaller default line window would look like a byte cap. When content is
       // present its footer is the precise signal and an ordinary "Showing lines
       // …" footer must not be widened.
-      const structuralByteCap = text.length === 0 && hasExplicitLimit && base.lines.length < requestedLimit;
+      const structuralByteCap = text.length === 0 && hasExplicitLimit && base.lines.length < windowLimit;
       if (!footer && !structuralByteCap) return decision;
       // The footer only says where this byte-capped window ended; it does not
       // reveal a deployment's configured line window (`readLimit`). Without an
@@ -140,8 +147,8 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // Never read past the window the caller asked for: an explicit `limit`
       // is a request boundary even when the byte cap stopped the first window
       // early.
-      const offset = Number.isInteger(base.offset) && base.offset > 0 ? base.offset : 1;
-      const windowEnd = Math.min(total, offset - 1 + requestedLimit);
+      const offset = snapshotOffset;
+      const windowEnd = Math.min(total, offset - 1 + windowLimit);
       const missing = windowEnd - end;
       if (missing < 1 || missing > MAX_TAIL_LINES) return decision;
       const prePath = typeof pre.target === 'string' ? pre.target : pre.target?.displayPath;

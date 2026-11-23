@@ -270,6 +270,33 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(limitDecision2.value.lines.length, 2, 'a pre-execute limit mutation cannot widen the caller request');
 
+  const offsetExec = { name: 'read', arguments: { file_path: 'offset-pre.txt', offset: 1, limit: 2 }, agent: {}, signal: null };
+  const offsetFile = '/isolated/offset-pre.txt';
+  const offsetRows = ['one', 'two', 'three', 'four', 'five'];
+  const offsetListener = mount({ [offsetFile]: offsetRows.join('\n') + '\n' }, {
+    preNext: async () => { offsetExec.arguments.offset = 3; return { kind: 'accept' }; },
+  });
+  const offsetFirst = [{ number: 3, text: 'three' }];
+  const offsetDecision = await offsetListener(
+    offsetExec,
+    { value: { path: offsetFile, offset: 3, lines: offsetFirst, totalLines: 5 }, content: [{ type: 'text', text: 'three\n(Output capped. Showing lines 1-3. Use offset=4 to continue.)' }] },
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(offsetDecision.value, undefined, 'a pre-execute offset mutation cannot be appended');
+
+  const shrinkExec = { name: 'read', arguments: { file_path: 'shrink.txt', limit: 5 }, agent: {}, signal: null };
+  const shrinkFile = '/isolated/shrink.txt';
+  const shrinkListener = mount({ [shrinkFile]: offsetRows.join('\n') + '\n' }, {
+    preNext: async () => { shrinkExec.arguments.limit = 3; return { kind: 'accept' }; },
+  });
+  const shrinkFirst = offsetRows.slice(0, 3).map((value, index) => ({ number: index + 1, text: value }));
+  const shrinkDecision = await shrinkListener(
+    shrinkExec,
+    readResult({ lines: shrinkFirst, totalLines: 5, path: shrinkFile, content: '' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(shrinkDecision.value, undefined, 'a downstream-shrunk effective window is not a byte cap');
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(
