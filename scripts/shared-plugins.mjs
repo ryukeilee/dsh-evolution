@@ -160,12 +160,9 @@ async function commandReset(options) {
   const paths = pathsFor(options);
   requireConsumerProfile(options);
   const pluginId = pluginIdOf(options);
-  const state = await readConsumerState(paths, options.profile);
-  if (state.status === 'absent') return { ok: true, pluginId, profile: options.profile, cleared: false, detail: 'no consumer state' };
-  if (state.status !== 'ok') throw new Error(`consumer state is ${state.status}; refusing to rewrite it`);
-  const plugins = state.state.plugins.map((row) => (row.id === pluginId ? { id: row.id, status: 'pending-restart', reason: 'operator-reset', sourceSha256: row.sourceSha256 ?? null } : row));
-  const next = { ...state.state, updatedAt: new Date().toISOString(), plugins };
-  await writeConsumerState(paths, options.profile, next);
+  const { resetConsumerPluginState } = await import('../lib/promoted-sharing.js');
+  const result = await resetConsumerPluginState(paths, options.profile, pluginId);
+  if (!result.cleared) return { ok: true, pluginId, profile: options.profile, cleared: false, detail: 'no consumer state' };
   return { ok: true, pluginId, profile: options.profile, cleared: true };
 }
 
