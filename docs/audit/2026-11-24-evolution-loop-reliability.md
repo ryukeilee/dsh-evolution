@@ -62,9 +62,10 @@
 | 基线全量单测（改动前） | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 2088 项：2086 通过 / 2 skipped / 0 失败 |
 | 聚焦回归 | 对每个改动测试文件单独 `node --test`（共 12 个文件） | 全绿；其中 6 条新增用例在修复前实测失败（promotion 双故障、probeDerived 合并、重启决策、advisory veto 结论、同 scope 失败挤占、并发撤销） |
 | 修复前最小复现 | 独立脚本（系统临时目录，fake runner / 临时 SQLite） | promotion 双故障后 `state:promotion-failed` + claim 保留 + revert 抛错 + 第二次 Trial 被拒；修复后同脚本路径可重试并释放 |
-| 全量单测（提交后） | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 2096 项：**2094 通过 / 2 skipped / 0 失败**（Node v26.13.1，堆上限 4096 MB） |
+| 全量单测（最终提交 `ee1fcd2`） | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 2100 项：**2098 通过 / 2 skipped / 0 失败**（Node v26.13.1，堆上限 4096 MB；基线为 2086 通过） |
 | 打包检查 | `npm run pack:check` | 17/17 通过；本树是固定点 0.2.17 的已提交后继，固定产物与证据未改 |
-| 本地打包 | `npm run release:pack` | 两次打包字节一致；content digest `54a332ef…`（仅开发验证，未发布、未改固定点） |
-| 隔离真实宿主验收 | `npm run acceptance:host -- --host 0.2.2-rc.5 --no-hmr --experience-evolution --cross-entry --out <temp>` | **`ok: true`，39/39 步通过**：安装/升级/回滚、晋升与 canary 回滚、真实失败→plan→invalid/restart/regression、发布→消费→重启→篡改→撤销→重验证→ACP 消费→统一检查→最终 doctor（隔离 runtime/home，未触碰正式 `DSH_HOME`） |
+| 本地打包 | `npm run release:pack` | 两次打包字节一致；仅开发验证，未发布、未改固定点 |
+| 隔离真实宿主验收（最终提交） | `npm run acceptance:host -- --host 0.2.2-rc.5 --no-hmr --experience-evolution --cross-entry --out <temp>` | **`ok: true`，39/39 步通过**：安装/升级/回滚、晋升与 canary 回滚、真实失败→plan→invalid/restart/regression、发布→消费→重启→篡改→撤销→重验证→ACP 消费→统一检查→最终 doctor（隔离 runtime/home，未触碰正式 `DSH_HOME`） |
+| 独立复审 | sol-loop / GPT-6.2 Sol High，4 轮 | 第 1 轮 2 should + 2 nit；第 2 轮确认 S1/S4 已解决、S3 接受、S2 仍未解决；第 3 轮确认 S2 生产契约修复后又发现并发重试缺口；第 4 轮对最终行为 diff **APPROVE**，无未解决 blocker/should |
 
 以上只列本轮实际执行的检查。对未修复项（第 4 节）没有伪造验收数字；advisory veto、probeDerived 合并、并发撤销等属于正确性修复，收益体现为故障从"可复现"变为"回归用例钉住"，不宣称量化性能提升。
