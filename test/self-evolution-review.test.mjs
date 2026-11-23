@@ -955,6 +955,15 @@ test('a truncated stable review cannot compose a complete no-action result', () 
   assert.equal(composed.incomplete, true);
 });
 
+test('withheld discovery evidence cannot compose a complete review', () => {
+  const composed = composeSelfEvolutionReview({
+    stable: { status: 'active', nextActions: [], nextActionsDropped: 0, summary: { total: 0 } },
+    experience: { available: true, candidates: [], sources: { truncated: true } },
+    versions: CURRENT_HOST,
+  });
+  assert.equal(composed.incomplete, true);
+});
+
 // ---------------------------------------------------------------------------
 // Benefit provenance: the promotion decision alone does not say whether a
 // workflow was ever compared. The durable observation does.

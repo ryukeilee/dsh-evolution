@@ -250,6 +250,25 @@ test('eligible record mounts through the official Include and reports active', a
   assert.deepEqual(disposed.state.disposal, { released: true, entries: 1 });
 });
 
+test('a packaged entry without the official package service still mounts a compatible record', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  // A packaged ACP/Web entry can boot without a Node-resolvable pluginPackages
+  // service. Without the shared host-identity fallback, captureHostFacts left
+  // every host field null and hostCompatible reported a version mismatch for
+  // every published record, so nothing was ever mounted.
+  const ctx = new Context();
+  await ctx.plugin(Loader, { baseUrl: BASE_URL });
+  await ctx.plugin(FakeTools);
+  const { record, toolName } = await createRecord();
+  await writeIndex([record]);
+
+  const session = await mountSession(ctx, dataRoot, { detectHost: () => HOST });
+  assert.equal(session.host.dsh, HOST.dsh);
+  assert.deepEqual(session.rows.map((row) => [row.status, row.reason]), [['active', null]]);
+  assert.deepEqual(ctx.tools.schemas().map((definition) => definition.name), [toolName]);
+  await session.dispose();
+});
+
 test('unapproved profile is skipped and nothing is mounted', async (t) => {
   const { dataRoot, createRecord, writeIndex, readComposition } = await fixture(t);
   const ctx = await boot();

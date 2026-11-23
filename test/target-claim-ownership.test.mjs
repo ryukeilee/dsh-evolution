@@ -257,6 +257,57 @@ test('a reclaim is retried exactly once, never twice', () => {
   } finally { fs.rmSync = realRmSync; }
 });
 
+test('the target lock uses the shared cross-process mutex and leaves no residue', () => {
+  const { paths } = initializedHome('lock-wrapper');
+  const target = 'plugin:lock-wrapper';
+  fs.mkdirSync(paths.ownershipDir, { recursive: true, mode: 0o700 });
+  const lockDir = path.join(paths.ownershipDir, sha256(target) + '.json.claim-lock-target.append.lock');
+  runtimeFor(paths).withTargetClaimLock(paths.ownershipDir, target, () => {
+    assert.equal(fs.statSync(lockDir).isDirectory(), true);
+  });
+  assert.equal(fs.existsSync(lockDir), false, 'the shared lock is released after the section');
+});
+
+test('a release blocked by lock contention keeps the claim for retry', () => {
+  const { paths } = initializedHome('release-contended');
+  const target = 'plugin:release-contended';
+  const file = writeClaim(paths, target, { schema: 1, target, experimentId: 'exp-own', ownerId: 'owner',
+    pid: process.pid, hostname: os.hostname(), acquiredAt: new Date().toISOString() });
+  const lockDir = path.join(paths.ownershipDir, sha256(target) + '.json.claim-lock-target.append.lock');
+  fs.mkdirSync(lockDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(lockDir, 'owner'), JSON.stringify({ token: 'other', pid: process.pid,
+    hostname: os.hostname(), acquiredAt: Date.now() }));
+  const record = { id: 'exp-own', targets: [target], targetsAcquired: true };
+  runtimeFor(paths).releaseTargets(record);
+  assert.equal(record.targetsAcquired, true, 'a failed release must stay retryable');
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).experimentId, 'exp-own', 'the claim is not deleted');
+  fs.rmSync(lockDir, { recursive: true, force: true });
+});
+
+test('two acquirers of the same stale claim cannot both own the target', () => {
+  const { paths } = initializedHome('reclaim-race');
+  const target = 'plugin:reclaim-race';
+  const file = writeClaim(paths, target, { schema: 1, target, experimentId: 'exp-dead', ownerId: 'owner',
+    pid: deadPid(), hostname: os.hostname(), acquiredAt: new Date().toISOString() });
+  const record1 = { id: 'exp-P1', ownerId: 'owner', targets: [target] };
+  const record2 = { id: 'exp-P2', ownerId: 'owner', targets: [target] };
+
+  // Both start from the same dead claim. The per-target lock serializes the
+  // read-classify-replace window, so only the first can reclaim it; the second
+  // then sees the first's live claim and refuses.
+  runtimeFor(paths).acquireTargets(record1);
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).experimentId, 'exp-P1');
+  assert.equal(record1.targetsAcquired, true);
+
+  assert.throws(
+    () => runtimeFor(paths).acquireTargets(record2),
+    /unsafe parallel experiment conflicts on plugin:reclaim-race \(owned by exp-P1\)/,
+  );
+  assert.notEqual(record2.targetsAcquired, true, 'the second acquirer must not own the target');
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).experimentId, 'exp-P1', 'the live claim is untouched');
+  assert.deepEqual(fs.readdirSync(paths.ownershipDir).sort(), [path.basename(file)], 'the lock leaves no residue');
+});
+
 // ---------------------------------------------------------------------------
 // the acquisition in isolation: errors and survivors
 // ---------------------------------------------------------------------------

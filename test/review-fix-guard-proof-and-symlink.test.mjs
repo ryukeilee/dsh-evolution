@@ -47,6 +47,42 @@ test('a host-injected managed-transaction proof still exempts its own bookkeepin
   assert.equal(guard(exec), undefined);
 });
 
+test('a proof without a bound target cannot exempt a managed-target write', async (t) => {
+  const root = await scratch(t, 'unbound-proof');
+  const guard = captureGuard();
+  const target = path.join(root, '.task-ledger', 'credentials');
+  const { target: _unused, ...unbound } = forged(target);
+  const exec = { name: 'write', arguments: { file_path: target, content: 'x' }, operationContext: unbound };
+  assert.match(guard(exec), /必须通过经验证的可回滚事务/);
+});
+
+test('a managed proof bound to one path cannot exempt a different irreversible path', async (t) => {
+  const root = await scratch(t, 'proof-binding');
+  const guard = captureGuard();
+  const bound = path.join(root, '.task-ledger', 'credentials');
+  const actual = path.join(root, '.task-ledger', 'secrets');
+  // The host proof is genuine but bound to `bound`. The tool writes `actual`.
+  // Comparing the proof binding against the argument path (rather than the
+  // host-provided target) used to make this self-matching and exempt it.
+  const exec = { name: 'write', arguments: { file_path: actual, content: 'x' }, operationContext: forged(bound) };
+  assert.match(guard(exec), /必须通过经验证的可回滚事务/);
+});
+
+test('a host-injected context.target cannot mask the real argument target', async (t) => {
+  const root = await scratch(t, 'masked-target');
+  const guard = captureGuard();
+  const realTarget = path.join(root, '.env');
+  const benign = path.join(root, '.task-ledger', 'notes');
+  // The context is the only trusted source for the *proof*, but its `target`
+  // is not evidence about what the tool is actually about to write. A benign
+  // value there used to short-circuit the irreversible-target check and let
+  // the `.env` write through with no proof at all.
+  for (const key of ['operationContext', 'context']) {
+    const exec = { name: 'write', arguments: { file_path: realTarget, content: 'x' }, [key]: forged(benign) };
+    assert.match(guard(exec), /不可逆风险目标/, `${key} must not hide the argument target`);
+  }
+});
+
 test('a symlink alias cannot hide a Cordis trust-root write', async (t) => {
   const root = await scratch(t, 'symlink');
   const packageDir = path.join(root, 'node_modules', '@deepseek-ai', 'cordis', 'lib');
