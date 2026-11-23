@@ -106,3 +106,5 @@ node docs/audit/replay/plan-from-store.mjs --store /tmp/experience.sqlite \
 3. **归因依赖宿主发布的 code。** 没有 `error.info.code` 的失败仍然是 `unknown`（生产库里 34 条 `apply patch`、95 条 `bash` 属于这一类）。本轮只让它们不再被单条模式否决，并把这个事实显式报告出来；要真正归因仍需宿主侧的结构化失败码。
 4. **退化观测仍只覆盖 `read`。** `line-truncated` / `output-capped` 之外的非错误损失（例如 `apply_patch` 的上下文失配重读）仍只能作为错误计数进入队列。
 5. **排序权重是判断，不是测量。** 六项权重换一组数字会得到另一份顺序；本轮能证明的是：修改前的顺序存在两类可复现的错误（整类目标被静默丢弃、两套公式不可比），修改后同一份数据上最大损失排在最前。ffprobe 式的“最优权重”没有证据，不做。
+
+跨来源归因计数的去重修正见 [2026-11-23-attribution-dedup.md](./2026-11-23-attribution-dedup.md)。

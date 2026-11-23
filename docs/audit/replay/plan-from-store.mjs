@@ -4,12 +4,13 @@
  *
  * The script never opens the source store: it copies the SQLite file into a
  * temporary directory first, then reads the same bounded knowledge rows
- * `evolution_plan` reads and runs the same pure planner. It is read-only with
- * respect to the data root, starts no host, and writes nothing except the
- * report you ask for.
+ * `evolution_plan` reads, projects the local failure memory if one is named, and
+ * runs the same pure planner. It is read-only with respect to the data root,
+ * starts no host, and writes nothing except the report you ask for.
  *
  * Usage:
  *   node docs/audit/replay/plan-from-store.mjs --store <experience.sqlite>
+ *     [--memory <evolution-memory.json>]
  *     [--limit 5] [--min-occurrences 3] [--focus <text>]
  *     [--now <ISO>] [--versions <dsh,cordis,evolution>]
  *     [--module <experience-plan.js>] [--json]
@@ -18,7 +19,8 @@
  * planner from another revision, for example
  *
  *   git show origin/main:lib/experience-plan.js > /tmp/baseline-plan.js
- *   node docs/audit/replay/plan-from-store.mjs --store <copy> --module /tmp/baseline-plan.js
+ *   node docs/audit/replay/plan-from-store.mjs --store <copy> \
+ *     --memory <evolution-memory.json> --module /tmp/baseline-plan.js
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -40,7 +42,14 @@ function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--store') { options.store = path.resolve(valueOf(argv, index, arg)); index += 1; }
-    else if (arg === '--home') { options.store = path.join(path.resolve(valueOf(argv, index, arg)), 'storages', 'evolution-experience', 'experience.sqlite'); index += 1; }
+    else if (arg === '--home') {
+      const home = path.resolve(valueOf(argv, index, arg));
+      options.store = path.join(home, 'storages', 'evolution-experience', 'experience.sqlite');
+      const memory = path.join(home, 'storages', 'evolution', 'evolution-memory.json');
+      if (!options.memory && fs.existsSync(memory)) options.memory = memory;
+      index += 1;
+    }
+    else if (arg === '--memory') { options.memory = path.resolve(valueOf(argv, index, arg)); index += 1; }
     else if (arg === '--limit') { options.limit = Number(valueOf(argv, index, arg)); index += 1; }
     else if (arg === '--min-occurrences') { options.minOccurrences = Number(valueOf(argv, index, arg)); index += 1; }
     else if (arg === '--focus') { options.focus = valueOf(argv, index, arg); index += 1; }
@@ -60,7 +69,8 @@ export const HELP = `dsh-evolution plan replay
 
 Options:
   --store <file>          experience.sqlite to copy and replay
-  --home <dir>            DSH home; resolves <home>/storages/evolution-experience
+  --home <dir>            DSH home; resolves the experience store and local failure memory
+  --memory <file>         evolution-memory.json to project as failureMemory
   --limit <n>             candidate limit (default 5)
   --min-occurrences <n>   evidence floor (default 3)
   --focus <text>          planner focus filter
@@ -77,7 +87,7 @@ async function main(argv) {
   const recallPath = path.join(REPO_ROOT, 'lib', 'experience-recall.js');
   if (!fs.existsSync(plannerPath)) throw new Error(`no planner at ${plannerPath}`);
   const { planEvolutionCandidates } = await import(pathToFileURL(plannerPath).href);
-  const { knowledgeExperienceRecord } = await import(pathToFileURL(recallPath).href);
+  const { knowledgeExperienceRecord, failureMemoryExperienceRecord } = await import(pathToFileURL(recallPath).href);
 
   // Copy first: a read-only replay must not be able to lock or touch the source.
   // A live store is in WAL mode, so the snapshot is only complete with the
@@ -100,10 +110,23 @@ async function main(argv) {
     const record = knowledgeExperienceRecord(entry, { maxText: 400, maxEvidenceRefs: 3 });
     if (record) records.push(record);
   }
+  // The local durable failure memory is a second source in the same plan. It has
+  // to be replayed too, because the two sources can name the same target and the
+  // planner de-duplicates their occurrence totals; omitting it hides exactly the
+  // cross-source attribution this replay is used to check.
+  const failureMemory = [];
+  if (options.memory) {
+    const stored = JSON.parse(fs.readFileSync(options.memory, 'utf8'));
+    if (!Array.isArray(stored?.entries)) throw new Error(`no entries array in ${options.memory}`);
+    for (const entry of stored.entries) {
+      const record = failureMemoryExperienceRecord(entry, { maxText: 400, maxEvidenceRefs: 3 });
+      if (record) failureMemory.push(record);
+    }
+  }
   const versions = options.versions
     ? Object.fromEntries(['dsh', 'cordis', 'evolution'].map((key, index) => [key, options.versions.split(',')[index] ?? 'unknown']))
     : null;
-  const plan = planEvolutionCandidates({ knowledge: records, failureMemory: [], versions }, {
+  const plan = planEvolutionCandidates({ knowledge: records, failureMemory, versions }, {
     now: options.now ? Date.parse(options.now) : Date.now(),
     maxCandidates: options.limit,
     minOccurrences: options.minOccurrences,
@@ -113,7 +136,9 @@ async function main(argv) {
   const summary = {
     planner: path.relative(REPO_ROOT, plannerPath) || plannerPath,
     store: options.store,
+    memory: options.memory ? path.relative(REPO_ROOT, options.memory) || options.memory : null,
     knowledgeRows: records.length,
+    memoryRows: failureMemory.length,
     candidates: plan.candidates.map((candidate) => ({
       problemKey: candidate.problemKey,
       score: candidate.score,

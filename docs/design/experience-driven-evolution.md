@@ -44,7 +44,7 @@
 
 没有可靠候选时返回 `none` 与原因，不创建实验。`focus` 只收紧范围，`minOccurrences` 只能提高，`limit` 只能收紧。模型仍负责把候选写成具体插件方案（`evolution_propose` 的 `strategy` / `rootCause`）。
 
-失败归因按**每个失败形状**判定，而不是把一个目标的全部模式拼在一起判定：`caller-input`（参数、编辑上下文、陈旧 revision）只有在它是该目标记录到的最多成因时才使目标进入 `rejected: caller-input`，并在 `detail` 里点名被隐藏的成因计数；任何有记录的失败形状都不足以单独否决整个目标。候选与这条拒绝都带 `originCounts`（`caller-input` / `host` / `capability-gap` / `environment` / `unknown` 各多少条）。`rejected` 按记录损失降序，所以有界截断不会把最大的一条藏掉；`none.reason` 在证据达标但全部被拒绝时给出真实原因（`already-resolved` / `caller-input`），不再一律报 `insufficient-evidence`。
+失败归因按**每个失败形状**判定，而不是把一个目标的全部模式拼在一起判定：`caller-input`（参数、编辑上下文、陈旧 revision）只有在它是该目标记录到的最多成因时才使目标进入 `rejected: caller-input`，并在 `detail` 里点名被隐藏的成因计数；任何有记录的失败形状都不足以单独否决整个目标。候选与这条拒绝都带 `originCounts`（`caller-input` / `host` / `capability-gap` / `environment` / `unknown` 各多少条）。这条计数沿用失败总数的跨来源去重规则：知识行按条累加，失败记忆的多个快照按条取最大，跨来源再按成因取最大，因此同一次执行被两个来源各记一次不会把归因翻倍；两个来源记录不同形状时，各形状都保留，拒绝说明用去重后成因之和作份额分母。`rejected` 按记录损失降序，所以有界截断不会把最大的一条藏掉；`none.reason` 在证据达标但全部被拒绝时给出真实原因（`already-resolved` / `caller-input`），不再一律报 `insufficient-evidence`。
 
 ## Probe：真实对照实验
 

@@ -196,6 +196,97 @@ test('a target dominated by caller input stays rejected and names what it hid', 
   assert.equal(planned.none.reason, 'caller-input');
 });
 
+test('the same failure from knowledge and failure memory is attributed once', () => {
+  // Both sources describe the same execution: the planner already takes the
+  // maximum of their occurrence totals instead of adding them. The origin tally
+  // must follow that rule, or a five-failure target reports ten attributed
+  // failures and a duplicated cause can win by being stored twice.
+  const problem = 'official operation failure host operation failure';
+  const planned = planEvolutionCandidates({
+    knowledge: [{ key: 'knowledge:a', scope: 'tool bash', problem, failureCount: 5, occurrences: 5, lastSeen: now() }],
+    failureMemory: [{
+      key: 'sig-a', scope: 'tool bash', problem, failureMode: 'host operation failure',
+      failureCount: 5, occurrences: 5, decision: 'failed', lastSeen: now(),
+    }],
+  }, { minOccurrences: 2 });
+  assert.equal(planned.candidates.length, 1);
+  assert.equal(planned.candidates[0].occurrences, 5);
+  assert.equal(planned.candidates[0].origin, 'unknown');
+  assert.deepEqual(planned.candidates[0].originCounts, { unknown: 5 });
+});
+
+test('a duplicated caller-input memory shape cannot veto a target it does not dominate', () => {
+  const unknown = 'official operation failure host operation failure';
+  const caller = 'official operation failure fs patch mismatch';
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      { key: 'knowledge:a', scope: 'tool bash', problem: unknown, failureCount: 5, occurrences: 5, lastSeen: now() },
+      { key: 'knowledge:b', scope: 'tool bash', problem: caller, failureCount: 3, occurrences: 3, lastSeen: now() },
+    ],
+    failureMemory: [{
+      key: 'sig-a', scope: 'tool bash', problem: caller, failureMode: 'fs patch mismatch',
+      failureCount: 3, occurrences: 3, decision: 'failed', lastSeen: now(),
+    }],
+  }, { minOccurrences: 2 });
+  // The knowledge plurality is unknown (5 vs 3); the memory copy of the same
+  // caller-input observations must not turn it into a 6-vs-5 majority.
+  assert.equal(planned.candidates.length, 1);
+  assert.equal(planned.candidates[0].origin, 'unknown');
+  assert.deepEqual(planned.candidates[0].originCounts, { unknown: 5, 'caller-input': 3 });
+});
+
+test('a duplicated unattributed memory shape cannot hide a caller-input majority', () => {
+  const unknown = 'official operation failure host operation failure';
+  const caller = 'official operation failure fs patch mismatch';
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      { key: 'knowledge:a', scope: 'tool apply patch', problem: caller, failureCount: 5, occurrences: 5, lastSeen: now() },
+      { key: 'knowledge:b', scope: 'tool apply patch', problem: unknown, failureCount: 3, occurrences: 3, lastSeen: now() },
+    ],
+    failureMemory: [{
+      key: 'sig-a', scope: 'tool apply patch', problem: unknown, failureMode: 'host operation failure',
+      failureCount: 3, occurrences: 3, decision: 'failed', lastSeen: now(),
+    }],
+  }, { minOccurrences: 2 });
+  // The knowledge plurality is caller input (5 vs 3); a memory copy of the
+  // unattributed shape must not create a 6-vs-5 unknown majority.
+  assert.equal(planned.candidates.length, 0);
+  assert.equal(planned.rejected[0].reason, 'caller-input');
+  assert.deepEqual(planned.rejected[0].origins, { 'caller-input': 5, unknown: 3 });
+  assert.match(planned.rejected[0].detail, /5 of 8/);
+});
+
+test('different shapes from both sources stay visible without being summed', () => {
+  const unknown = 'official operation failure host operation failure';
+  const caller = 'official operation failure fs patch mismatch';
+  const planned = planEvolutionCandidates({
+    knowledge: [{ key: 'knowledge:a', scope: 'tool edit', problem: unknown, failureCount: 6, occurrences: 6, lastSeen: now() }],
+    failureMemory: [{
+      key: 'sig-a', scope: 'tool edit', problem: caller, failureMode: 'fs patch mismatch',
+      failureCount: 3, occurrences: 3, decision: 'failed', lastSeen: now(),
+    }],
+  }, { minOccurrences: 2 });
+  assert.equal(planned.candidates.length, 1);
+  assert.equal(planned.candidates[0].occurrences, 6);
+  assert.equal(planned.candidates[0].origin, 'unknown');
+  assert.deepEqual(planned.candidates[0].originCounts, { unknown: 6, 'caller-input': 3 });
+});
+
+test('repeated failure-memory snapshots contribute their maximum, not their sum', () => {
+  const caller = 'official operation failure fs patch mismatch';
+  const planned = planEvolutionCandidates({
+    knowledge: [],
+    failureMemory: [
+      { key: 'sig-a', scope: 'tool apply patch', problem: caller, failureMode: 'fs patch mismatch', failureCount: 9, occurrences: 9, decision: 'failed', lastSeen: now() },
+      { key: 'sig-b', scope: 'tool apply patch', problem: caller, failureMode: 'fs patch mismatch', failureCount: 4, occurrences: 4, decision: 'failed', lastSeen: now() },
+    ],
+  }, { minOccurrences: 2 });
+  assert.equal(planned.rejected[0].reason, 'caller-input');
+  assert.equal(planned.rejected[0].occurrences, 9);
+  assert.deepEqual(planned.rejected[0].origins, { 'caller-input': 9 });
+  assert.match(planned.rejected[0].detail, /9 of 9/);
+});
+
 test('rejections are ordered by recorded loss so the cap cannot hide the biggest one', () => {
   const nowIso = now();
   const thin = Array.from({ length: 12 }, (_, index) => ({
