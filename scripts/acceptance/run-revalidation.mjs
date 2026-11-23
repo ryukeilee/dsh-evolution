@@ -448,7 +448,11 @@ async function main(argv) {
     for (const record of records) {
       const row = rows.get(record.id);
       if (!row) continue;
-      if (row.status === 'pending-revalidation' && row.reason === 'host-version-mismatch') {
+      // A consumer marks a record pending-revalidation when its own host facts
+      // do not match the record, whatever the specific mismatching component
+      // (DSH, Cordis, Include or Node). Accept the status itself; the source
+      // digest, activation proof and adoption gates below stay unchanged.
+      if (row.status === 'pending-revalidation') {
         if (!pending.has(record.id)) pending.set(record.id, {});
         pending.get(record.id)[profile] = { status: row.status, reason: row.reason, hostDigest: row.hostDigest || null };
       }

@@ -1596,3 +1596,15 @@ test('a nested config.disabled does not disable a loader entry', async () => {
   }));
   assert.equal(levelOf(report, 'host.composition'), 'ok', JSON.stringify(checkOf(report, 'host.composition').evidence.problems));
 });
+
+test('a trust-root guard mounted by another module is blocked', async () => {
+  const { home } = freshHome('composition-guard-wrong-name');
+  const stdout = composedDump().replace('name: dsh-evolution/guard', 'name: dsh-evolution/experience');
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'desktop',
+    probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) },
+  }));
+  const check = checkOf(report, 'host.composition');
+  assert.equal(check.level, 'blocked');
+  assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-trust-root-guard mounts')));
+});

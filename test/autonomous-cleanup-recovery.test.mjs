@@ -506,7 +506,7 @@ test('a residual claim keeps its recovery cooldown and reports an actionable nex
   assert.equal(first.status, 'unproven');
   assert.equal(first.attempts, 1);
   assert.match(first.next, /later observation/);
-  assert.match(first.next, /cannot act on an already reverted record/);
+  assert.match(first.next, /cannot release a claim on a terminal record/);
   const second = await h.core.recoverAutonomousOccupancy(h.exec);
   assert.equal(second.status, 'cooling-down');
   assert.equal(second.attempts, 1);

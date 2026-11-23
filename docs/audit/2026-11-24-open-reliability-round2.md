@@ -108,3 +108,17 @@ GPT-6.2 Sol（High）返回 `CHANGES`：1 blocker、4 should。逐条复核并�
 | S8 should | 接受：Cordis 不兼容的前置条件/证据说明仍只写 DSH 版本 | 前置条件与证据说明改用完整 host facts |
 
 补充回归：嵌套 disabled 不停用条目、已撤销但仍挂载触发重启。
+
+## 9. 独立反方复审（sol-loop 第 4 轮）
+
+GPT-6.2 Sol（High）返回 `CHANGES`：1 blocker、4 should。逐条复核并修复：
+
+| id | 结论 | 处理 |
+| --- | --- | --- |
+| S1 should | 接受：guard 条目只验存在与启用，未验模块名 | 与 experience/consumer 一致校验 guard 的 name |
+| S2 blocker | 接受：包仅暴露 ESM 主入口时，布局回退可能采纳同级官方包，与 doctor 分叉 | 布局查找按「实际依赖位置优先」重排：命中的依赖 manifest 名不符即返回 unknown，不回退到其它位置 |
+| S5 should | 接受：`trial-failed` 终态释放 claim 竞争后同样需要冷却 | 所有仍持 claim 的自主终态都保留冷却，提示改为可执行的「后续观测重试」 |
+| S7 should | 接受：已撤销但仍 active 的记录，doctor 报待重启而 review 报 inactive | readPublishedPluginReview 检测 active-after-revocation 并给出 restart-consumer；无活动挂载仍为 inactive/no-action |
+| S8 should | 接受：runner 只认 `host-version-mismatch`，Cordis/Include/Node 不匹配时无法生成证据 | runner 按 `pending-revalidation` 状态选取目标，保留源码摘要、激活证明与采纳门禁 |
+
+新增回归：guard 模块名、撤销后仍挂载的 review 动作；现有一致性用例随语义更新。
