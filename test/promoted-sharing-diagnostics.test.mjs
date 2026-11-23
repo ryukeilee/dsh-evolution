@@ -175,3 +175,20 @@ test('a revoked profile does not keep a stale failed consumer row degraded', asy
   assert.equal(check.level, 'ok', JSON.stringify(check.evidence));
   assert.deepEqual(check.evidence.deadConsumers ?? [], []);
 });
+
+test('a revoked record still mounted by a consumer needs a restart', async (t) => {
+  const env = await home(t);
+  const host = await observedHostOf(env.dshHome);
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const index = JSON.parse(await fs.readFile(path.join(env.paths.dataRoot, 'shared-plugins', 'published.json'), 'utf8'));
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [{ id: pluginId, status: 'active', reason: null }],
+  }));
+  await setDisabledForProfile(env.paths, { pluginId, profile: 'acp', disabled: true });
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
+  assert.ok(check.evidence.pendingRestart.includes('acp'));
+});

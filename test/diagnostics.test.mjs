@@ -1581,3 +1581,18 @@ test('an experience loader entry mounted by another module is blocked', async ()
   assert.equal(check.level, 'blocked');
   assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-experience mounts')));
 });
+
+test('a nested config.disabled does not disable a loader entry', async () => {
+  const stdout = '# == dsh-evolution\n- id: evolution-experience\n  name: dsh-evolution/experience\n'
+    + '- id: evolution-orchestrator\n  name: dsh-evolution\n  config:\n    disabled: true\n'
+    + '- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n';
+  const parsed = parseComposedProfile(stdout);
+  const orchestrator = parsed.sections.get('dsh-evolution').entries.find((entry) => entry.id === 'evolution-orchestrator');
+  assert.equal(orchestrator.disabled, null);
+  const { home } = freshHome('nested-disabled');
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'desktop',
+    probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) },
+  }));
+  assert.equal(levelOf(report, 'host.composition'), 'ok', JSON.stringify(checkOf(report, 'host.composition').evidence.problems));
+});

@@ -94,3 +94,17 @@ GPT-6.2 Sol（High）返回 `CHANGES`：1 blocker、7 should（S6 关闭）。�
 | S9 should | 接受：兼容 patch 差异导致 hostDigest 不同，真实 apply 失败被误报 stale-failure → restart | 复用 `hostCompatible` 判据：宿主族兼容时按 apply-failed/incompatible 处理，走 repair 而非重启 |
 
 第 3 轮复审确认以上修复后收束；所有行为变更均有针对性回归用例，未放宽任何门禁。
+
+## 8. 独立反方复审（sol-loop 第 3 轮）
+
+GPT-6.2 Sol（High）返回 `CHANGES`：1 blocker、4 should。逐条复核并修复：
+
+| id | 结论 | 处理 |
+| --- | --- | --- |
+| S1 should | 接受：composed profile 解析器把嵌套 `config.disabled` 当成条目自身停用 | `name`/`disabled` 只取与条目同缩进的直属键 |
+| S2 blocker | 接受：包通过 `exports` 隐藏 `package.json` 时，运行时回退到同级官方包，与 doctor 的拒绝结论分叉 | 解析主入口后向上定位实际所属 manifest 并校验 name；只有无法定位依赖才回退布局 |
+| S5 should | 接受：冷却期内的观测返回 cooling-down 后，Trial 检查又绕过同一冷却重试 claim 释放 | Trial 的终端 claim 释放复用 `cleanupRecoveryAttempts` 冷却门禁，显式路径不受影响 |
+| S7 should | 接受：撤销只改 disabled.json，索引时间戳不变，已挂载记录未被标为待重启 | 单独检测「已撤销但仍 active」的挂载并计入 pendingRestart |
+| S8 should | 接受：Cordis 不兼容的前置条件/证据说明仍只写 DSH 版本 | 前置条件与证据说明改用完整 host facts |
+
+补充回归：嵌套 disabled 不停用条目、已撤销但仍挂载触发重启。
