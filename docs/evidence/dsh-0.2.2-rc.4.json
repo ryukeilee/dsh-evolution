@@ -1,41 +1,41 @@
 {
   "host": "0.2.2-rc.4",
-  "packageVersion": "0.2.16",
-  "tarball": "release/dsh-evolution-0.2.16.tgz",
-  "tarballSha256": "77c751354bf689fa9538b19549ed1d18a25f34a8eb808fd454eb5eed7dd50260",
-  "contentSha256": "57ae759e97d5bc9c5e0b51cd522b51c8280fca704cf6f1cd694a8e41b881ecb4",
+  "packageVersion": "0.2.17",
+  "tarball": "dist/dsh-evolution-0.2.17.tgz",
+  "tarballSha256": "e0f4dbc1d9060d01a4092d75488b6631b2cf8efded72feaa38b423602ec05924",
+  "contentSha256": "dbe4598f2d8db1703a92391e249fc1bf44b4f6718a15d7d9be7fab8cf323f26b",
   "node": "v26.13.1",
   "platform": "darwin-arm64",
   "work": "<work>",
   "hostLiveApply": "disabled",
-  "startedAt": "2026-11-21T12:58:28.960Z",
+  "startedAt": "2026-11-23T17:16:15.970Z",
   "steps": [
     {
       "name": "host-install",
-      "at": "2026-11-21T12:58:40.581Z",
+      "at": "2026-11-23T17:16:19.546Z",
       "ok": true,
       "code": 0,
       "tail": [
         "│   to run scripts.                                                            │",
         "│                                                                              │",
         "╰──────────────────────────────────────────────────────────────────────────────╯",
-        "Done in 11.4s using pnpm v11.26.0"
+        "Done in 3.4s using pnpm v11.26.0"
       ]
     },
     {
       "name": "plugin-add",
-      "at": "2026-11-21T12:58:41.761Z",
+      "at": "2026-11-23T17:16:20.279Z",
       "ok": true,
       "code": 0,
       "tail": [
         "  Virtual store is at:             node_modules/.pnpm",
         "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
-        "Done in 747ms using pnpm v11.26.0"
+        "Done in 425ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "profile-lists-bundle",
-      "at": "2026-11-21T12:58:41.761Z",
+      "at": "2026-11-23T17:16:20.279Z",
       "ok": true,
       "bundles": [
         "@deepseek-ai/dsh-base",
@@ -45,7 +45,7 @@
     },
     {
       "name": "doctor-cli",
-      "at": "2026-11-21T12:58:42.196Z",
+      "at": "2026-11-23T17:16:20.605Z",
       "ok": true,
       "status": "degraded",
       "exitCode": 1,
@@ -56,7 +56,7 @@
     },
     {
       "name": "core-flow",
-      "at": "2026-11-21T12:58:45.796Z",
+      "at": "2026-11-23T17:16:23.544Z",
       "ok": true,
       "toolCount": 12,
       "tools": [
@@ -146,7 +146,7 @@
     },
     {
       "name": "lifecycle-verify",
-      "at": "2026-11-21T12:58:47.617Z",
+      "at": "2026-11-23T17:16:25.078Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -163,7 +163,7 @@
     },
     {
       "name": "lifecycle-disable",
-      "at": "2026-11-21T12:58:49.322Z",
+      "at": "2026-11-23T17:16:26.445Z",
       "ok": true,
       "result": {
         "action": "disable",
@@ -180,7 +180,7 @@
     },
     {
       "name": "lifecycle-enable",
-      "at": "2026-11-21T12:58:51.013Z",
+      "at": "2026-11-23T17:16:27.808Z",
       "ok": true,
       "result": {
         "action": "enable",
@@ -197,7 +197,7 @@
     },
     {
       "name": "lifecycle-verify",
-      "at": "2026-11-21T12:58:52.629Z",
+      "at": "2026-11-23T17:16:29.181Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -214,18 +214,18 @@
     },
     {
       "name": "plugin-remove",
-      "at": "2026-11-21T12:58:53.325Z",
+      "at": "2026-11-23T17:16:29.699Z",
       "ok": true,
       "code": 0,
       "tail": [
         "",
         "Already up to date",
-        "Done in 334ms using pnpm v11.26.0"
+        "Done in 243ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "body-after-uninstall",
-      "at": "2026-11-21T12:58:54.910Z",
+      "at": "2026-11-23T17:16:31.118Z",
       "ok": true,
       "result": {
         "bodyOk": true,
@@ -235,18 +235,18 @@
     },
     {
       "name": "plugin-reinstall",
-      "at": "2026-11-21T12:58:55.840Z",
+      "at": "2026-11-23T17:16:31.831Z",
       "ok": true,
       "code": 0,
       "tail": [
         "  Virtual store is at:             node_modules/.pnpm",
         "Progress: resolved 4, reused 4, downloaded 0, added 4, done",
-        "Done in 597ms using pnpm v11.26.0"
+        "Done in 420ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "core-flow-after-reinstall",
-      "at": "2026-11-21T12:58:58.770Z",
+      "at": "2026-11-23T17:16:34.558Z",
       "ok": true,
       "toolCount": 12,
       "reverted": true,
@@ -257,19 +257,19 @@
     },
     {
       "name": "cli-upgrade",
-      "at": "2026-11-21T12:58:59.906Z",
+      "at": "2026-11-23T17:16:35.563Z",
       "ok": true,
       "code": 0,
-      "installedVersion": "0.2.17",
+      "installedVersion": "0.2.18",
       "tail": [
         "+",
         "Progress: resolved 5, reused 1, downloaded 1, added 1, done",
-        "Done in 369ms using pnpm v11.26.0"
+        "Done in 317ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "host-after-upgrade",
-      "at": "2026-11-21T12:59:01.517Z",
+      "at": "2026-11-23T17:16:36.916Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -286,19 +286,19 @@
     },
     {
       "name": "cli-rollback",
-      "at": "2026-11-21T12:59:02.220Z",
+      "at": "2026-11-23T17:16:37.496Z",
       "ok": true,
       "code": 0,
-      "installedVersion": "0.2.16",
+      "installedVersion": "0.2.17",
       "tail": [
         "+",
         "Progress: resolved 5, reused 2, downloaded 0, added 1, done",
-        "Done in 360ms using pnpm v11.26.0"
+        "Done in 303ms using pnpm v11.26.0"
       ]
     },
     {
       "name": "host-after-rollback",
-      "at": "2026-11-21T12:59:03.781Z",
+      "at": "2026-11-23T17:16:38.853Z",
       "ok": true,
       "result": {
         "action": "verify",
@@ -315,7 +315,7 @@
     },
     {
       "name": "promotion-promote",
-      "at": "2026-11-21T12:59:06.778Z",
+      "at": "2026-11-23T17:16:41.498Z",
       "ok": true,
       "steps": [
         {
@@ -362,21 +362,21 @@
         }
       ],
       "committed": {
-        "pluginName": "dsh-evolution-promoted-064cc546da58",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-064cc546da58",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-064cc546da58/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-0ae952473e49",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-0ae952473e49",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-0ae952473e49/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-064cc546da58",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwqezppn-1-356e5241.md",
+        "rowId": "evolution-promoted-0ae952473e49",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwtj2o45-1-152b0019.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-21T12:59:06.534Z",
+        "promotionTimestamp": "2026-11-23T17:16:41.381Z",
         "healthObservationWindow": 2
       }
     },
     {
       "name": "promotion-restart-and-rollback",
-      "at": "2026-11-21T12:59:09.846Z",
+      "at": "2026-11-23T17:16:44.045Z",
       "ok": true,
       "steps": [
         {
@@ -428,21 +428,21 @@
       ],
       "startupPhase": "stable",
       "rolledBack": {
-        "pluginName": "dsh-evolution-promoted-cb49e138df71",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-cb49e138df71",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-cb49e138df71/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-1384254fb538",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-1384254fb538",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-1384254fb538/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-cb49e138df71",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwqezryp-1-e881f797.md",
+        "rowId": "evolution-promoted-1384254fb538",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwtj2q11-1-d3270c52.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-21T12:59:09.481Z",
+        "promotionTimestamp": "2026-11-23T17:16:43.864Z",
         "healthObservationWindow": 2
       }
     },
     {
       "name": "promotion-verify",
-      "at": "2026-11-21T12:59:11.140Z",
+      "at": "2026-11-23T17:16:45.100Z",
       "ok": true,
       "steps": [
         {
@@ -453,10 +453,10 @@
     },
     {
       "name": "experiment-seed",
-      "at": "2026-11-21T12:59:15.076Z",
+      "at": "2026-11-23T17:16:48.480Z",
       "ok": true,
       "phase": "seed",
-      "experimentId": "exp-mwqezvyn-1-beb73b4c",
+      "experimentId": "exp-mwtj2tff-1-dcbb8965",
       "toolCount": 12,
       "crossCheck": {
         "ok": true,
@@ -500,10 +500,10 @@
     },
     {
       "name": "experiment-invalid",
-      "at": "2026-11-21T12:59:18.809Z",
+      "at": "2026-11-23T17:16:51.839Z",
       "ok": true,
       "phase": "invalid",
-      "experimentId": "exp-mwqezyzg-1-779b78c3",
+      "experimentId": "exp-mwtj2w11-1-5331bc95",
       "toolCount": 12,
       "crossCheck": {
         "ok": true,
@@ -545,10 +545,10 @@
     },
     {
       "name": "experiment-restart",
-      "at": "2026-11-21T12:59:20.213Z",
+      "at": "2026-11-23T17:16:53.195Z",
       "ok": true,
       "phase": "restart",
-      "experimentId": "exp-mwqezvyn-1-beb73b4c",
+      "experimentId": "exp-mwtj2tff-1-dcbb8965",
       "toolCount": 12,
       "crossCheck": {
         "ok": true,
@@ -564,10 +564,10 @@
     },
     {
       "name": "experiment-regression",
-      "at": "2026-11-21T12:59:23.759Z",
+      "at": "2026-11-23T17:16:56.529Z",
       "ok": true,
       "phase": "regression",
-      "experimentId": "exp-mwqf02xr-1-c9cde9fa",
+      "experimentId": "exp-mwtj2zrs-1-d7bcad38",
       "toolCount": 12,
       "crossCheck": {
         "ok": true,
@@ -609,7 +609,7 @@
     },
     {
       "name": "doctor-final",
-      "at": "2026-11-21T12:59:24.150Z",
+      "at": "2026-11-23T17:16:56.845Z",
       "ok": true,
       "status": "healthy",
       "exitCode": 0,
@@ -636,7 +636,7 @@
     "seed": {
       "ok": true,
       "phase": "seed",
-      "experimentId": "exp-mwqezvyn-1-beb73b4c",
+      "experimentId": "exp-mwtj2tff-1-dcbb8965",
       "toolCount": 12,
       "store": {
         "before": {
@@ -664,13 +664,18 @@
           "observedFailureRate": 1,
           "rateBasis": "observed-window",
           "loss": null,
+          "improvement": "tool",
+          "hook": null,
+          "baselinePath": null,
+          "verificationKind": "capability-probe",
+          "improvementReason": "未观测到可替代的恢复路径；通过官方工具注册补齐能力，并以隔离 Trial 验证。",
           "regressionCount": 0,
-          "firstSeen": "2026-11-21T12:59:12.509Z",
-          "lastSeen": "2026-11-21T12:59:12.514Z",
+          "firstSeen": "2026-11-23T17:16:46.178Z",
+          "lastSeen": "2026-11-23T17:16:46.182Z",
           "evidenceRefs": [
-            "observations:d6af44c2c752e8c79608c2c732ab7c8dba480de25a60ef55f040aaaf216343a8",
-            "observations:bb274b334f6b9d0a659faec728fb5bc51630e719ed04ec7be531b6dbd27f9ce5",
-            "observations:d8d9f3ebfe7c866212116fb93e90c8a2d1946974edf1f4cbb6ee81c02257e5af"
+            "observations:658f2706d7acec45fd7124ecb4101cf118d964cf408705f84b5ddf5e9e785232",
+            "observations:ee315ef7608963853a6f3eaca5b6e36fbd9675ab0692ef0707c0c885d994f913",
+            "observations:66ffc076f21ae299a6f600e3cbe2ca4d01597b5fc79118e7fe5e298608edc88a"
           ],
           "priorAttempts": [],
           "provenIneffective": [],
@@ -678,7 +683,7 @@
           "applicability": {
             "dsh": "0.2.2-rc.4",
             "cordis": "4.1.0",
-            "evolution": "0.2.16"
+            "evolution": "0.2.17"
           },
           "applicabilityVerified": true,
           "requiresNewHypothesis": false,
@@ -733,11 +738,11 @@
                 "fitnessMean": null,
                 "regressionCount": 0,
                 "occurrences": 4,
-                "firstSeen": "2026-11-21T12:59:12.509Z",
-                "lastSeen": "2026-11-21T12:59:12.514Z",
+                "firstSeen": "2026-11-23T17:16:46.178Z",
+                "lastSeen": "2026-11-23T17:16:46.182Z",
                 "evidenceRefs": [
-                  "observations:d6af44c2c752e8c79608c2c732ab7c8dba480de25a60ef55f040aaaf216343a8",
-                  "observations:bb274b334f6b9d0a659faec728fb5bc51630e719ed04ec7be531b6dbd27f9ce5"
+                  "observations:658f2706d7acec45fd7124ecb4101cf118d964cf408705f84b5ddf5e9e785232",
+                  "observations:ee315ef7608963853a6f3eaca5b6e36fbd9675ab0692ef0707c0c885d994f913"
                 ],
                 "prevention": "",
                 "coverage": 1,
@@ -801,7 +806,7 @@
         "versions": {
           "host": "0.2.2-rc.4",
           "cordis": "4.1.0",
-          "evolution": "0.2.16"
+          "evolution": "0.2.17"
         },
         "sources": {
           "shared": 7,
@@ -811,7 +816,7 @@
       },
       "probes": {
         "baseline": {
-          "scenarioDigest": "sha256:e7a6c95ad6e5d0c5572730829f2097d7332d9b52a5710a5d1824af1cf5cca43c",
+          "scenarioDigest": "sha256:bb83539753c6fcb2fa548269dcf0f35814c1ad568ff37622eec3f4f8d2d26fe0",
           "safety": {
             "checked": true,
             "policy": "official-concurrency-safe",
@@ -909,7 +914,7 @@
           }
         },
         "candidate": {
-          "scenarioDigest": "sha256:e7a6c95ad6e5d0c5572730829f2097d7332d9b52a5710a5d1824af1cf5cca43c",
+          "scenarioDigest": "sha256:bb83539753c6fcb2fa548269dcf0f35814c1ad568ff37622eec3f4f8d2d26fe0",
           "safety": {
             "checked": true,
             "policy": "official-concurrency-safe",
@@ -1023,8 +1028,8 @@
           "version": 1,
           "kind": "benefit",
           "source": "measure",
-          "at": "2026-11-21T12:59:14.577Z",
-          "observationAt": "2026-11-21T12:59:14.572Z",
+          "at": "2026-11-23T17:16:48.211Z",
+          "observationAt": "2026-11-23T17:16:48.207Z",
           "eligible": true,
           "reasons": [
             "measured behavior improved and the correctness control stayed stable"
@@ -1046,10 +1051,10 @@
             "repeatable": true,
             "targetImproved": 1,
             "scenarioId": "experience-evolution-seed-v1",
-            "scenarioDigest": "sha256:e7a6c95ad6e5d0c5572730829f2097d7332d9b52a5710a5d1824af1cf5cca43c",
+            "scenarioDigest": "sha256:bb83539753c6fcb2fa548269dcf0f35814c1ad568ff37622eec3f4f8d2d26fe0",
             "sampleDigest": {
-              "baseline": "sha256:9b1e8b88f60d064eba254d3912ebe86c015d6dc3f4856499f10ac65d5cb3af0c",
-              "candidate": "sha256:5df4a0e9516289718db5a6a6969276de6346b7630c1389f7a0a0ececc4ba1350"
+              "baseline": "sha256:45a8d04c06567c82e162da1bf4d15bfbe6c4b16c6d33371c10f69dcc484ff1de",
+              "candidate": "sha256:473a86027aa5e624316d121558dc9e6c0e8814961e7bf6e6c691c86967f02f58"
             }
           }
         },
@@ -1157,8 +1162,8 @@
             "errorCount": 0
           },
           "sampleDigest": {
-            "baseline": "sha256:9b1e8b88f60d064eba254d3912ebe86c015d6dc3f4856499f10ac65d5cb3af0c",
-            "candidate": "sha256:5df4a0e9516289718db5a6a6969276de6346b7630c1389f7a0a0ececc4ba1350"
+            "baseline": "sha256:45a8d04c06567c82e162da1bf4d15bfbe6c4b16c6d33371c10f69dcc484ff1de",
+            "candidate": "sha256:473a86027aa5e624316d121558dc9e6c0e8814961e7bf6e6c691c86967f02f58"
           },
           "reasons": [],
           "steps": [
@@ -1201,7 +1206,7 @@
     "invalid": {
       "ok": true,
       "phase": "invalid",
-      "experimentId": "exp-mwqezyzg-1-779b78c3",
+      "experimentId": "exp-mwtj2w11-1-5331bc95",
       "toolCount": 12,
       "store": {
         "before": {
@@ -1217,7 +1222,7 @@
       "plan": null,
       "probes": {
         "baseline": {
-          "scenarioDigest": "sha256:6c2cfa9e50af60b6344ac0dba7d6daaf44564fecbf8585699c53e0727c46cb71",
+          "scenarioDigest": "sha256:bc7f54c71bce74ce77a77ac2014b170d246749490b1500e8ac0e839fa7fbd673",
           "safety": {
             "checked": true,
             "policy": "official-concurrency-safe",
@@ -1315,7 +1320,7 @@
           }
         },
         "candidate": {
-          "scenarioDigest": "sha256:6c2cfa9e50af60b6344ac0dba7d6daaf44564fecbf8585699c53e0727c46cb71",
+          "scenarioDigest": "sha256:bc7f54c71bce74ce77a77ac2014b170d246749490b1500e8ac0e839fa7fbd673",
           "safety": {
             "checked": true,
             "policy": "official-concurrency-safe",
@@ -1429,8 +1434,8 @@
           "version": 1,
           "kind": "no-benefit",
           "source": "measure",
-          "at": "2026-11-21T12:59:18.465Z",
-          "observationAt": "2026-11-21T12:59:18.461Z",
+          "at": "2026-11-23T17:16:51.589Z",
+          "observationAt": "2026-11-23T17:16:51.584Z",
           "eligible": false,
           "reasons": [
             "candidate did not improve any target step over the baseline"
@@ -1452,10 +1457,10 @@
             "repeatable": true,
             "targetImproved": 0,
             "scenarioId": "experience-evolution-invalid-v1",
-            "scenarioDigest": "sha256:6c2cfa9e50af60b6344ac0dba7d6daaf44564fecbf8585699c53e0727c46cb71",
+            "scenarioDigest": "sha256:bc7f54c71bce74ce77a77ac2014b170d246749490b1500e8ac0e839fa7fbd673",
             "sampleDigest": {
-              "baseline": "sha256:c3524ae5acb4c63c4c7ace9df575e147746018636743e433ed1980ba19b71125",
-              "candidate": "sha256:b6033c9fea85110ca0c3787d1c6e7a2fd4ead8639d3d7ce97cb8fd5211cb3662"
+              "baseline": "sha256:6410186665b5c7c10b5b8098f0524c9560bd7b411f90e31431af556496f119d2",
+              "candidate": "sha256:7b857e1cf7325320e41492d1cb44d0c90d654082b67897ca73453615e611c7ed"
             }
           }
         },
@@ -1555,8 +1560,8 @@
             "errorCount": 3
           },
           "sampleDigest": {
-            "baseline": "sha256:c3524ae5acb4c63c4c7ace9df575e147746018636743e433ed1980ba19b71125",
-            "candidate": "sha256:b6033c9fea85110ca0c3787d1c6e7a2fd4ead8639d3d7ce97cb8fd5211cb3662"
+            "baseline": "sha256:6410186665b5c7c10b5b8098f0524c9560bd7b411f90e31431af556496f119d2",
+            "candidate": "sha256:7b857e1cf7325320e41492d1cb44d0c90d654082b67897ca73453615e611c7ed"
           },
           "reasons": [
             "candidate did not improve any target step over the baseline"
@@ -1610,7 +1615,7 @@
     "restart": {
       "ok": true,
       "phase": "restart",
-      "experimentId": "exp-mwqezvyn-1-beb73b4c",
+      "experimentId": "exp-mwtj2tff-1-dcbb8965",
       "toolCount": 12,
       "store": null,
       "plan": {
@@ -1659,7 +1664,7 @@
     "regression": {
       "ok": true,
       "phase": "regression",
-      "experimentId": "exp-mwqf02xr-1-c9cde9fa",
+      "experimentId": "exp-mwtj2zrs-1-d7bcad38",
       "toolCount": 12,
       "store": {
         "before": {
@@ -1675,7 +1680,7 @@
       "plan": null,
       "probes": {
         "baseline": {
-          "scenarioDigest": "sha256:43850f980ea0e9ed4cf747d11739a2a2e7d5e83246a83e1807930993532f24e1",
+          "scenarioDigest": "sha256:dd0c592c30027b63dc934f8c558a3429507ffa7cdcdc6bef881ecb57377d540c",
           "safety": {
             "checked": true,
             "policy": "official-concurrency-safe",
@@ -1773,7 +1778,7 @@
           }
         },
         "candidate": {
-          "scenarioDigest": "sha256:43850f980ea0e9ed4cf747d11739a2a2e7d5e83246a83e1807930993532f24e1",
+          "scenarioDigest": "sha256:dd0c592c30027b63dc934f8c558a3429507ffa7cdcdc6bef881ecb57377d540c",
           "safety": {
             "checked": true,
             "policy": "official-concurrency-safe",
@@ -1887,8 +1892,8 @@
           "version": 1,
           "kind": "regression",
           "source": "measure",
-          "at": "2026-11-21T12:59:23.613Z",
-          "observationAt": "2026-11-21T12:59:23.608Z",
+          "at": "2026-11-23T17:16:56.429Z",
+          "observationAt": "2026-11-23T17:16:56.425Z",
           "eligible": false,
           "reasons": [
             "probe_control: candidate succeeded 0/3 vs baseline 3/3",
@@ -1911,10 +1916,10 @@
             "repeatable": true,
             "targetImproved": 1,
             "scenarioId": "experience-evolution-regression-v1",
-            "scenarioDigest": "sha256:43850f980ea0e9ed4cf747d11739a2a2e7d5e83246a83e1807930993532f24e1",
+            "scenarioDigest": "sha256:dd0c592c30027b63dc934f8c558a3429507ffa7cdcdc6bef881ecb57377d540c",
             "sampleDigest": {
-              "baseline": "sha256:adb1275bc0677226e1b1de78fcf41760335c9d7773e202ad68f4f7aeee7b8e90",
-              "candidate": "sha256:f83190fa72fe494c866453040fad580d312ca3ec3ed2957bba8e4b25ea45a3e3"
+              "baseline": "sha256:8ef0998cc85420fb76c57d9ada4b25e8210ae709e643dfd7b20a2d42dbbbdd4e",
+              "candidate": "sha256:e9ae82f01ee7f5432345d6f2358d84e02e766ae20933fe2edc001530d795b177"
             }
           }
         },
@@ -2014,8 +2019,8 @@
             "errorCount": 3
           },
           "sampleDigest": {
-            "baseline": "sha256:adb1275bc0677226e1b1de78fcf41760335c9d7773e202ad68f4f7aeee7b8e90",
-            "candidate": "sha256:f83190fa72fe494c866453040fad580d312ca3ec3ed2957bba8e4b25ea45a3e3"
+            "baseline": "sha256:8ef0998cc85420fb76c57d9ada4b25e8210ae709e643dfd7b20a2d42dbbbdd4e",
+            "candidate": "sha256:e9ae82f01ee7f5432345d6f2358d84e02e766ae20933fe2edc001530d795b177"
           },
           "reasons": [
             "probe_control: candidate succeeded 0/3 vs baseline 3/3",
@@ -2213,29 +2218,29 @@
       }
     ]
   },
-  "memoryShaAfterCore": "9038fa1643c1faf2cd3afa3c1afd3d6f57fb3e833ddf7ea45ba8d06ea12c26c4",
-  "memoryShaBeforeUninstall": "9038fa1643c1faf2cd3afa3c1afd3d6f57fb3e833ddf7ea45ba8d06ea12c26c4",
+  "memoryShaAfterCore": "073cb10af9e08ec7790071aed6c90695a0a8969d7d5cec7ce1f771b4d03c0dd0",
+  "memoryShaBeforeUninstall": "073cb10af9e08ec7790071aed6c90695a0a8969d7d5cec7ce1f771b4d03c0dd0",
   "memoryEntriesAtUninstall": 1,
   "memoryEntriesAfterReinstall": 1,
-  "memoryShaAfterReinstall": "523e2fc98c32bf159bb015f1f400a7d2b205deb62eb31a698bc662be713019ac",
+  "memoryShaAfterReinstall": "340f5addb99fb120ff94d29216eff7a721cabe204411433ba6b39dc1ecf95930",
   "upgradeRollback": {
-    "from": "0.2.16",
-    "to": "0.2.17",
+    "from": "0.2.17",
+    "to": "0.2.18",
     "preservedUserData": true
   },
   "promotion": {
     "promote": {
       "ok": true,
       "committed": {
-        "pluginName": "dsh-evolution-promoted-064cc546da58",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-064cc546da58",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-064cc546da58/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-0ae952473e49",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-0ae952473e49",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-0ae952473e49/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-064cc546da58",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwqezppn-1-356e5241.md",
+        "rowId": "evolution-promoted-0ae952473e49",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwtj2o45-1-152b0019.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-21T12:59:06.534Z",
+        "promotionTimestamp": "2026-11-23T17:16:41.381Z",
         "healthObservationWindow": 2
       }
     },
@@ -2243,15 +2248,15 @@
       "ok": true,
       "startupPhase": "stable",
       "rolledBack": {
-        "pluginName": "dsh-evolution-promoted-cb49e138df71",
-        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-cb49e138df71",
-        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-cb49e138df71/lib/index.js",
+        "pluginName": "dsh-evolution-promoted-1384254fb538",
+        "pluginPath": "$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-1384254fb538",
+        "moduleUrl": "file://$DSH_HOME/storages/evolution/promoted/dsh-evolution-promoted-1384254fb538/lib/index.js",
         "adapter": "official-include",
-        "rowId": "evolution-promoted-cb49e138df71",
-        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwqezryp-1-e881f797.md",
+        "rowId": "evolution-promoted-1384254fb538",
+        "archivePath": "$DSH_HOME/storages/evolution/archive/experiments/exp-mwtj2q11-1-d3270c52.md",
         "presetId": "evolution",
         "journalPath": "$DSH_HOME/storages/evolution/promotion/journal.json",
-        "promotionTimestamp": "2026-11-21T12:59:09.481Z",
+        "promotionTimestamp": "2026-11-23T17:16:43.864Z",
         "healthObservationWindow": 2
       }
     },
@@ -2260,5 +2265,5 @@
     }
   },
   "ok": true,
-  "finishedAt": "2026-11-21T12:59:24.150Z"
+  "finishedAt": "2026-11-23T17:16:56.845Z"
 }
