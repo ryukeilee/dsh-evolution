@@ -93,9 +93,9 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       }
     } catch { /* no snapshot means the post-execute hook declines */ }
     const outcome = await next();
-    // Downstream pre-execute hooks may narrow the arguments the tool actually
-    // runs with; that executed window is the real bound, so capture it after
-    // the waterfall instead of trusting the entry request.
+    // Downstream pre-execute hooks may replace exec.arguments after this
+    // listener returns and before dispatch. This snapshot is a lower bound; the
+    // tools/execute stage below records the arguments the body actually reads.
     if (callId !== null) {
       try {
         const stored = versions.get(callId);
@@ -107,6 +107,21 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       } catch { /* keep the entry snapshot; the post hook declines without exec proof */ }
     }
     return outcome;
+  });
+  // The pre-execute waterfall completes before dispatch, so tools/execute is
+  // the last official point before the tool body reads its arguments. Only an
+  // executed window recorded here can bound the tail.
+  ctx.on('tools/execute', async (exec, next) => {
+    const stored = typeof exec?.callId === 'string' ? versions.get(exec.callId) : undefined;
+    if (stored) {
+      try {
+        stored.execPath = typeof exec?.arguments?.file_path === 'string' ? exec.arguments.file_path : null;
+        stored.execOffset = readOffsetOf(exec?.arguments?.offset);
+        stored.execLimit = readLimitOf(exec?.arguments?.limit);
+        stored.execStaged = true;
+      } catch { /* leave the earlier snapshot; the post hook then declines */ }
+    }
+    return next();
   });
   ctx.on('tools/post-execute', async (exec, result, next) => {
     // Non-read calls take the original chain untouched, before any snapshot or
@@ -212,7 +227,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // required, and the narrower one is the real ceiling.
       const entryLimit = pre.limit;
       const execLimit = Number.isInteger(pre.execLimit) && pre.execLimit > 0 ? pre.execLimit : null;
-      if (!(Number.isInteger(entryLimit) && entryLimit > 0) || execLimit === null) return decision;
+      if (pre.execStaged !== true || !(Number.isInteger(entryLimit) && entryLimit > 0) || execLimit === null) return decision;
       if (pre.execPath !== pre.filePath) return decision;
       if (readOffsetOf(pre.execOffset) !== readOffsetOf(pre.offset)) return decision;
       const requestedLimit = Math.min(entryLimit, execLimit);

@@ -14,7 +14,7 @@ const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 's
 const body = fs.readFileSync(fixture, 'utf8');
 const CAP_FOOTER = '(Output capped. Showing lines 1-620. Use offset=621 to continue.)';
 
-function mount(files, { versions = null, preNext = null, onStat = null } = {}) {
+function mount(files, { versions = null, preNext = null, onStat = null, afterPre = null, beforePost = null } = {}) {
   // The real Trial runs this body in a `node:vm` sandbox that provides neither
   // Buffer nor process (only TextEncoder/TextDecoder/btoa/atob). A plain
   // `new Function` would still expose Node's globals and let a Buffer
@@ -24,11 +24,13 @@ function mount(files, { versions = null, preNext = null, onStat = null } = {}) {
   assert.equal(vm.runInNewContext('typeof process', sandbox), 'undefined');
   const plugin = vm.runInNewContext(`(function(){${body}})()`, sandbox, { filename: 'complete-capped-read.host' });
   const preListeners = [];
+  const executeListeners = [];
   const postListeners = [];
   let statCall = 0;
   const ctx = {
     on: (event, listener) => {
       if (event === 'tools/pre-execute') preListeners.push(listener);
+      if (event === 'tools/execute') executeListeners.push(listener);
       if (event === 'tools/post-execute') postListeners.push(listener);
     },
     fs: {
@@ -50,10 +52,17 @@ function mount(files, { versions = null, preNext = null, onStat = null } = {}) {
   };
   plugin.apply(ctx);
   assert.equal(preListeners.length, 1);
+  assert.equal(executeListeners.length, 1);
   assert.equal(postListeners.length, 1);
   return async (exec, result, next) => {
     const withId = typeof exec?.callId === 'string' ? exec : { ...exec, callId: 'test-call' };
     await preListeners[0](withId, preNext ?? (async () => ({ kind: 'accept' })));
+    // The host completes the pre-execute waterfall, then dispatches through the
+    // tools/execute waterfall, so an outer pre-execute hook can still replace
+    // the arguments before the body reads them.
+    afterPre?.(withId);
+    await executeListeners[0](withId, async () => ({ kind: 'accept' }));
+    beforePost?.(withId);
     return postListeners[0](withId, result, next);
   };
 }
@@ -514,14 +523,15 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   const execWindowExec = { name: 'read', callId: 'exec-window', arguments: { file_path: 'exec-window.txt', limit: 5 }, agent: {}, signal: null };
   const execWindowFile = '/isolated/exec-window.txt';
   const execWindowListener = mount({ [execWindowFile]: raceRows.join('\n') + '\n' }, {
-    // A downstream pre-execute hook narrows the request the tool actually runs
-    // with; the post-execute phase sees the original 5 again.
-    preNext: async () => { execWindowExec.arguments.limit = 3; return { kind: 'accept' }; },
+    // An outer pre-execute hook replaces the arguments after this policy's
+    // listener returns; the post-execute phase then sees the original 5 again.
+    afterPre: (exec) => { exec.arguments = { ...exec.arguments, limit: 3 }; },
+    beforePost: (exec) => { exec.arguments = { ...exec.arguments, limit: 5 }; },
   });
   const execWindowDecision = await execWindowListener(
     execWindowExec,
     readResult({ lines: raceRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })), totalLines: 5, path: execWindowFile, content: 'aaaa\nbbbb\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }),
-    async () => { execWindowExec.arguments.limit = 5; return { kind: 'accept' }; },
+    async () => ({ kind: 'accept' }),
   );
   assert.equal(execWindowDecision.value.lines.length, 3, 'the append is bounded by the executed window, not the entry request');
   assert.equal(execWindowDecision.value.lines.at(-1).number, 3);

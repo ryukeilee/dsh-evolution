@@ -172,8 +172,13 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
   const ambiguous = decisionName !== null && toolNames.filter((name) => name === decisionName).length > 1;
   const positionTrusted = !ambiguous && label !== null && label === decisionName;
   const name = labelIsTool ? label : null;
-  const rawFile = rawInput && typeof rawInput.file_path === 'string' && rawInput.file_path.trim() !== '';
-  const effectivePath = rawFile ? rawInput.file_path
+  // A field is missing when it is absent; an explicit null/empty/number is an
+  // invalid value that must not be replaced by the result path or a decision.
+  const rawFilePresent = rawInput !== null && Object.prototype.hasOwnProperty.call(rawInput, 'file_path');
+  const rawFileValid = rawFilePresent && typeof rawInput.file_path === 'string' && rawInput.file_path.trim() !== '';
+  const rawFileInvalid = rawFilePresent && !rawFileValid;
+  const effectivePath = rawFilePresent
+    ? (rawFileValid ? rawInput.file_path : null)
     : (typeof reportedPath === 'string' && reportedPath.trim() !== '' ? reportedPath : null);
   const rawOffsetValid = Number.isInteger(rawInput?.offset) && rawInput.offset > 0;
   let argumentsValue = {};
@@ -255,6 +260,9 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
     if (typeof argumentsValue.file_path === 'string' && hasParentSegment(argumentsValue.file_path)) {
       inputKnown = false;
     }
+    // An explicitly invalid raw path is not a missing field: neither the
+    // decision nor the result envelope may supply the path for it.
+    if (rawFileInvalid) inputKnown = false;
   } else {
     argumentsValue = rawInput ?? (positionTrusted ? decisionArguments : null) ?? {};
     inputKnown = rawInput !== null || positionTrusted;
@@ -408,8 +416,16 @@ export function terminalToolResults(updates, cwd = null) {
     const parsedBlocks = blocks.map((text) => parseToolResultText(text));
     // Multiple complete envelopes in one notification are separate results,
     // not one concatenated body. Bare text blocks of one result may still be
-    // joined.
-    const hasEnvelope = parsedBlocks.some((parsed) => parsed.path !== null || parsed.invalid === true);
+    // joined. One notification can describe only one result for one call id:
+    // two envelopes (even identical) leave no way to tell which one is the
+    // call's own output, so the call is unproven.
+    const envelopes = parsedBlocks.filter((parsed) => parsed.path !== null && parsed.invalid !== true);
+    if (envelopes.length > 1) {
+      conflicts.add(id);
+      continue;
+    }
+    const hasEnvelope = envelopes.length === 1
+      || parsedBlocks.some((parsed) => parsed.invalid === true);
     const results = hasEnvelope
       ? parsedBlocks
       : [{ path: null, body: blocks.join('\n').trim(), invalid: false }];

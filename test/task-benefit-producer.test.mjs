@@ -1393,6 +1393,41 @@ test('a post-terminal limit change or a late offset is a frozen-input conflict',
   assert.equal(decided.exercised, true);
 });
 
+test('two identical result envelopes in one notification are unproven', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const envelope = { type: 'content', content: { type: 'text', text: '<path>/w/a.txt</path>\n<content>sentinel-a</content>' } };
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [envelope, envelope] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('an explicitly invalid raw path is not replaced by the result path', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 0 }];
+  for (const filePath of [null, '', 5]) {
+    const row = extractSessionEvidence({
+      label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+      updates: [
+        { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: filePath, offset: 1 } },
+        { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/w/a.txt</path>\n<content>sentinel-a</content>' } }] },
+      ],
+      assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+      expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+      candidateTool: null, durationMs: 1,
+    });
+    assert.equal(row.attributionComplete, false, 'raw path ' + JSON.stringify(filePath) + ' is not missing evidence');
+    assert.equal(row.exercised, false);
+  }
+});
+
 test('a per-file binding must cover every expected token', () => {
   const base = { id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' };
   const task = normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] });
