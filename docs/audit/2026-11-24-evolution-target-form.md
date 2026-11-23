@@ -35,10 +35,11 @@ patch 类还被规划器按 `caller-input` 拒绝；把它们改成候选会制�
 
 1. `lib/experience-plan.js`：候选新增 `improvement`（`tool` / `context-policy`）、`hook`、
    `baselinePath`（观测到的恢复工具、累计调用数及其口径）、`verificationKind` 与 `improvementReason`。
-   只有达到证据门槛、属于工具作用域、**已有 `workflow` 收益声明**、有观测恢复调用且恢复工具是合法工具名
-   的退化才推荐 `context-policy`；普通能力缺失仍是 `tool`；无恢复路径或非工具作用域的退化不会被升级成
-   策略钩子。累计恢复调用数与知识行记录的单个恢复工具分别标注，不把累计数归给某一个工具。
-   `verificationKind` 从既有 `benefitModel` 派生，避免工具形态的 workflow 声明与探针验证冲突。
+   只有达到证据门槛、属于工具作用域、**已有 `workflow` 收益声明**、有观测恢复调用且恢复原因带有
+   `tool:` 前缀、`observed` 状态与合法工具名的退化才推荐 `context-policy`；普通能力缺失仍是 `tool`；
+   无恢复路径、失败状态、自由文本原因或非工具作用域的退化不会被升级成策略钩子。累计恢复调用数与知识行
+   记录的恢复工具分别标注，不把累计数归给某一个工具。`verificationKind` 从既有 `benefitModel` 派生，
+   `whyCordisPlugin` 从已选形态派生，避免同一候选的行动指引互相矛盾。
    保留旧字段与评分，不改变已发布记录或历史数据。
 2. `lib/self-evolution-review.js`：`experience-candidate` 动作携带同一形态、验证契约与恢复基线；未知形态
    不进入提案契约。
@@ -51,10 +52,11 @@ patch 类还被规划器按 `caller-input` 拒绝；把它们改成候选会制�
 聚焦测试：`test/experience-degradation.test.mjs`、`test/experience-plan.test.mjs`、
 `test/experience-plan-real-capture.test.mjs`、`test/self-evolution-review.test.mjs`（73 项通过）。
 新增用例覆盖：有恢复的退化→context-policy、能力缺失→tool、无恢复退化→tool、累计恢复次数与单个工具
-分开归因、非工具作用域/非法恢复工具名→tool、评审动作透传与未知形态拒绝。
+分开归因、非工具作用域/非法恢复工具名/失败状态/自由文本原因→tool、行动指引与已选形态一致、评审动作
+透传与未知形态拒绝。
 
 隔离真实宿主 + 真实模型 + 自然语言任务：本树打包（`dist/dsh-evolution-0.2.16.tgz`，sha256
-`be2ed068518c14e201343b9b51b582cc643c0e4f8230559043e5201c7904ac6e`），官方 Desktop `0.2.2-rc.5`
+`236a304439a260ce3fe7a1243f1313a3ff96eefbc765557fcd2e879fc17e03f1`），官方 Desktop `0.2.2-rc.5`
 + ACP，隔离 runtime/home，模型 `opencode-go/deepseek-v4.1-flash`：
 
 ```sh
@@ -69,11 +71,11 @@ node scripts/acceptance/run-task-benefit-loop.mjs dist/dsh-evolution-0.2.16.tgz 
 
 | 侧 | 会话 | 正确 | 失败工具结果 | turns | tool calls | tokens | 墙钟 | 机制运行 | 模型选择 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| baseline | 3 | 3/3 | 1 | 16 | 13 | 524,088 | 95.0 s | 0 | 0 |
-| candidate | 3 | 3/3 | 0 | 12 | 9 | 398,436 | 71.9 s | 3 | 0 |
+| baseline | 3 | 3/3 | 0 | 15 | 12 | 489,261 | 85.7 s | 0 | 0 |
+| candidate | 3 | 3/3 | 0 | 12 | 9 | 398,462 | 72.8 s | 3 | 0 |
 
-差值：turns −25%、tool calls −30.8%、tokens −24.0%、墙钟 −24.3%，正确率不变，候选侧失败工具结果更少。
-机制运行 3/3 而模型主动选择 0 次，再次区分了“自动生效”与“被模型选中”。8 项门禁 + `workflowBenefit`
+差值：turns −20%、tool calls −25%、tokens −18.6%、墙钟 −15.0%，正确率与失败工具结果均不变。机制运行
+3/3 而模型主动选择 0 次，再次区分了“自动生效”与“被模型选中”。8 项门禁 + `workflowBenefit`
 + `taskBenefit` 均为 `true`；四种负向证据（缺失、哈希不匹配、无收益、机制未运行）仍分别在所有者确认前
 被拒绝；新的 ACP consumer 在同一任务上正确完成（4 turns / 3 calls，读结果包含全部 sentinel）；重启后该
 问题被判定为 `already-resolved`。
