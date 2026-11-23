@@ -199,9 +199,10 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   if (!usageComplete) usage = null;
   // A non-zero exit or a signal is a process failure even when partial text was
   // written: that text may be a truncated reply, and the caller's correctness
-  // (and its single retry) must not treat it as a parseable decision.
+  // (and its single retry) must not treat it as a parseable decision. Own-tool
+  // evidence survives the failure so a bypass cannot be retried as transport.
   if (code !== 0 || signal !== null) {
-    return { ok: false, reason: 'model-process-failed', code, signal, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdout, 1_000) };
+    return { ok: false, reason: 'model-process-failed', code, signal, ownToolCalls, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdout, 1_000) };
   }
   return { ok: true, text, usage, wallMs, ownToolCalls };
 }
@@ -286,8 +287,9 @@ export async function startModelBridge({
         if (!reply.ok) {
           // A process failure is a transport fact, not a formatting slip, and
           // an own-tool call means the answer may come from outside the host
-          // transcript. Neither may be retried into a clean-looking decision.
-          failureReason = reply.reason;
+          // transcript. Neither may be retried into a clean-looking decision;
+          // own-tool evidence wins over the process-failure classification.
+          failureReason = (reply.ownToolCalls ?? 0) > 0 ? 'pilot-used-own-tools' : reply.reason;
           break;
         }
         if ((reply.ownToolCalls ?? 0) > 0) {

@@ -11,12 +11,10 @@
 const MAX_FILE_BYTES = 256 * 1024;
 const MAX_TAIL_LINES = 200;
 const MAX_TAIL_BYTES = 16 * 1024;
-const MAX_LINE_CHARS = 16 * 1024;
-// The official read tool's default line window for the supported hosts. When
-// the caller declares no `limit`, the request still ends at this window, so a
-// byte-capped window must not be widened past it (a 2,090-line file caps at
-// line 1,896 but the default request stops at 2,000, not EOF).
-const DEFAULT_LINE_WINDOW = 2000;
+// The host's default single-line truncation for the supported versions. A
+// tail line longer than this would bypass the renderer's own per-line cap, so
+// the policy declines instead of appending it.
+const DEFAULT_LINE_CHARS = 2000;
 // The dynamic-package host half runs in a `node:vm` sandbox where `Buffer` and
 // `process` are absent (the sandbox provides TextEncoder instead). Using Buffer
 // here made the hook throw and silently return the unmodified result, which is
@@ -67,11 +65,16 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // …" footer must not be widened.
       const structuralByteCap = text.length === 0 && hasExplicitLimit && base.lines.length < requestedLimit;
       if (!footer && !structuralByteCap) return decision;
-      // Never read past the window the caller asked for. An explicit `limit`
+      // The footer only says where this byte-capped window ended; it does not
+      // reveal a deployment's configured line window (`readLimit`). Without an
+      // explicit caller limit there is no provable boundary, so keep the
+      // original result instead of widening it to EOF or to a guessed default.
+      if (!hasExplicitLimit) return decision;
+      // Never read past the window the caller asked for: an explicit `limit`
       // is a request boundary even when the byte cap stopped the first window
-      // early; without one, the official default line window is the boundary.
+      // early.
       const offset = Number.isInteger(base.offset) && base.offset > 0 ? base.offset : 1;
-      const windowEnd = Math.min(total, offset - 1 + (hasExplicitLimit ? requestedLimit : DEFAULT_LINE_WINDOW));
+      const windowEnd = Math.min(total, offset - 1 + requestedLimit);
       const missing = windowEnd - end;
       if (missing < 1 || missing > MAX_TAIL_LINES) return decision;
       const target = await ctx.fs.resolve(base.path, { cwd: exec.agent?.session?.header?.cwd, signal: exec.signal });
@@ -87,7 +90,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       let bytes = 0;
       for (let number = end + 1; number <= windowEnd; number += 1) {
         const value = all[number - 1];
-        if (typeof value !== 'string' || value.length > MAX_LINE_CHARS) return decision;
+        if (typeof value !== 'string' || value.length > DEFAULT_LINE_CHARS) return decision;
         bytes += encoder.encode(value).length + 1;
         if (bytes > MAX_TAIL_BYTES) return decision;
         tail.push({ number, text: value });

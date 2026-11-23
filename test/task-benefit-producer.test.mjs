@@ -24,12 +24,15 @@ import {
   inspectArtifactTarget,
   normalizeTask,
   parseExpectTokens,
+  pilotFailureReasons,
   pilotTransportRetryable,
   prepareArtifactDirectory,
   readPathMatches,
+  retryableSession,
   resolveArtifactTarget,
   resolveFilesystemPath,
   safeErrorCode,
+  toolCallDescriptor,
   writeArtifactFile,
   writePreviewModule,
   writeReportFile,
@@ -274,6 +277,32 @@ test('ACP rawInput and result path decide attribution, not the decision order', 
   assert.equal(conflicting.exercised, false, 'a result path that disagrees with the request cannot prove a read');
 });
 
+test('a reordered bash/read reply cannot make bash output count as a read', () => {
+  const turns = [
+    { ok: true, tools: ['read', 'bash'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read', 'bash'], decision: { tool: 'bash', arguments: { command: 'cat a.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  // ACP reports bash first and read second, the opposite of the decisions.
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'bash', rawInput: { command: 'cat a.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', 'sentinel-a\n'),
+      result('c2', '<path>/home/a.txt</path>\n<content>first window</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.exercised, false, 'the value came from bash, not from the first read');
+});
+
 test('a call/decision count mismatch is not attributed to the policy', () => {
   const turns = turnsWith(['read', 'read']).map((turn, index) => ({
     ...turn,
@@ -312,6 +341,18 @@ test('only a pilot transport failure can replace a whole session', () => {
   assert.equal(pilotTransportRetryable([{ ok: false, reason: 'pilot-used-own-tools' }, { ok: false, reason: 'reply-has-no-object' }]), false);
   assert.equal(pilotTransportRetryable([{ ok: false }]), false);
   assert.equal(pilotTransportRetryable([]), false);
+  // A product tool failure is never hidden by a retry, even when a pilot turn
+  // also failed with a retryable reason.
+  assert.equal(retryableSession({ toolFailures: 1, retryableTransportFailure: true }), false);
+  assert.equal(retryableSession({ toolFailures: 0, retryableTransportFailure: true }), true);
+  assert.equal(retryableSession({ toolFailures: 0, retryableTransportFailure: false }), false);
+});
+
+test('persisted pilot failure reasons are fixed codes, not raw exception text', () => {
+  assert.deepEqual(pilotFailureReasons([{ ok: false, reason: 'decision-shape-invalid' }]), ['decision-shape-invalid']);
+  assert.deepEqual(pilotFailureReasons([{ ok: false, reason: 'pilot-used-own-tools' }]), ['pilot-used-own-tools']);
+  assert.deepEqual(pilotFailureReasons([{ ok: false, reason: 'Unexpected token < in JSON: {"private":"body"}' }]), ['pilot-transport-error']);
+  assert.deepEqual(pilotFailureReasons([{ ok: true, reason: 'whatever' }]), []);
 });
 
 test('a per-file binding must cover every expected token', () => {

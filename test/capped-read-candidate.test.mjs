@@ -58,7 +58,7 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   const listener = mount({ [file]: text });
   const first = rows.slice(0, 620).map((value, index) => ({ number: index + 1, text: value }));
   const decision = await listener(
-    { name: 'read', arguments: { file_path: 'a.txt' }, agent: { session: { header: { cwd: '/isolated' } } }, signal: null },
+    { name: 'read', arguments: { file_path: 'a.txt', limit: 2000 }, agent: { session: { header: { cwd: '/isolated' } } }, signal: null },
     readResult({ lines: first, totalLines: rows.length, path: file, content: first.map((line) => line.text).join('\n') + '\n' + CAP_FOOTER }),
     async () => ({ kind: 'accept' }),
   );
@@ -70,7 +70,7 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   // which shape the waterfall sees depends on the host path, and the policy
   // must not silently be a no-op on one of them.
   const enveloped = await listener(
-    { name: 'read', arguments: { file_path: 'a.txt' }, agent: { session: { header: { cwd: '/isolated' } } }, signal: null },
+    { name: 'read', arguments: { file_path: 'a.txt', limit: 2000 }, agent: { session: { header: { cwd: '/isolated' } } }, signal: null },
     readResult({ lines: first, totalLines: rows.length, path: file, content: first.map((line) => line.text).join('\n') + '\n' + CAP_FOOTER + '\n</content>' }),
     async () => ({ kind: 'accept' }),
   );
@@ -106,19 +106,42 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(boundedStructural.value.lines.length, 600);
 
-  // Without an explicit limit the request still ends at the host's default
-  // 2,000-line window: a byte cap at 1,896 must not be widened to EOF (2,090).
+  // Without an explicit limit the footer does not reveal the deployment's line
+  // window, so the policy must keep the original result rather than widening it
+  // to EOF or to a guessed default.
   const deep = Array.from({ length: 2090 }, (_, index) => 'row ' + index + ' ' + 'z'.repeat(40));
   const deepFile = '/isolated/deep.txt';
   const deepListener = mount({ [deepFile]: deep.join('\n') + '\n' });
   const deepFirst = deep.slice(0, 1896).map((value, index) => ({ number: index + 1, text: value }));
-  const defaultWindow = await deepListener(
+  const noProvableWindow = await deepListener(
     { name: 'read', arguments: { file_path: 'deep.txt' }, agent: {}, signal: null },
     readResult({ lines: deepFirst, totalLines: deep.length, path: deepFile, content: deepFirst.map((line) => line.text).join('\n') + '\n(Output capped. Showing lines 1-1896. Use offset=1897 to continue.)' }),
     async () => ({ kind: 'accept' }),
   );
-  assert.equal(defaultWindow.value.lines.length, 2000);
-  assert.equal(defaultWindow.value.lines.at(-1).number, 2000);
+  assert.equal(noProvableWindow.value, undefined);
+
+  // A caller-declared window is provable even when the deployment's default is
+  // smaller: 1,896 returned of a requested 2,000 stops at 2,000, not EOF.
+  const declaredWindow = await deepListener(
+    { name: 'read', arguments: { file_path: 'deep.txt', limit: 2000 }, agent: {}, signal: null },
+    readResult({ lines: deepFirst, totalLines: deep.length, path: deepFile, content: deepFirst.map((line) => line.text).join('\n') + '\n(Output capped. Showing lines 1-1896. Use offset=1897 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(declaredWindow.value.lines.length, 2000);
+  assert.equal(declaredWindow.value.lines.at(-1).number, 2000);
+
+  // A tail line longer than the renderer's per-line cap would be delivered
+  // without that cap, so the policy declines instead of appending it.
+  const longTail = [...deep.slice(0, 620), 'x'.repeat(3000)];
+  const longFile = '/isolated/long-tail.txt';
+  const longListener = mount({ [longFile]: longTail.join('\n') + '\n' });
+  const longFirst = longTail.slice(0, 620).map((value, index) => ({ number: index + 1, text: value }));
+  const longDeclined = await longListener(
+    { name: 'read', arguments: { file_path: 'long-tail.txt', limit: 2000 }, agent: {}, signal: null },
+    readResult({ lines: longFirst, totalLines: longTail.length, path: longFile, content: longFirst.map((line) => line.text).join('\n') + '\n(Output capped. Showing lines 1-620. Use offset=621 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(longDeclined.value, undefined);
 
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.

@@ -175,6 +175,60 @@ test('a mixed target reports actionable occurrences and frequency, not the calle
   assert.equal(candidate.mixedOrigin, true);
 });
 
+test('a newer caller-input failure does not reopen an actionable resolved target', () => {
+  const now = Date.now();
+  const iso = (days) => new Date(now - days * 86_400_000).toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:code', scope: 'tool run code',
+        problem: 'official operation failure code run failure',
+        failureCount: 4, occurrences: 4, lastSeen: iso(10),
+        metrics: { attemptssincefailure: { sum: 10, count: 4 }, successessincefailure: { sum: 6, count: 4 } },
+      },
+      {
+        key: 'knowledge:fixed', scope: 'tool run code',
+        problem: 'official operation failure code run failure',
+        successCount: 3, occurrences: 3, lastSeen: iso(5),
+      },
+      {
+        key: 'knowledge:args', scope: 'tool run code',
+        problem: 'official operation failure invalid args',
+        failureCount: 100, occurrences: 100, lastSeen: iso(0),
+        metrics: { attemptssincefailure: { sum: 100, count: 100 }, successessincefailure: { sum: 0, count: 100 } },
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  assert.equal(planned.candidates.length, 0);
+  assert.equal(planned.rejected.find((entry) => entry.problemKey === 'tool run code')?.reason, 'already-resolved');
+});
+
+test('caller-input recency, regressions and refs do not raise a mixed target score', () => {
+  const iso = (days) => new Date(Date.now() - days * 86_400_000).toISOString();
+  const actionable = {
+    key: 'knowledge:code', scope: 'tool run code',
+    problem: 'official operation failure code run failure',
+    failureCount: 4, occurrences: 4, lastSeen: iso(10),
+    metrics: { attemptssincefailure: { sum: 10, count: 4 }, successessincefailure: { sum: 6, count: 4 } },
+  };
+  const plan = (extra) => planEvolutionCandidates({ knowledge: [actionable, ...extra], failureMemory: [] }, { minOccurrences: 3 });
+  const clean = plan([]).candidates.find((entry) => entry.problemKey === 'tool run code');
+  const noisy = plan([{
+    key: 'knowledge:args', scope: 'tool run code',
+    problem: 'official operation failure invalid args',
+    failureCount: 100, occurrences: 100, lastSeen: iso(0), regressionCount: 5,
+    evidenceRefs: ['knowledge:args'], evidence: 'noisy',
+    metrics: { attemptssincefailure: { sum: 100, count: 100 }, successessincefailure: { sum: 0, count: 100 } },
+  }]).candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(clean && noisy, 'both plans should keep the actionable target');
+  assert.equal(noisy.lastSeen, actionable.lastSeen);
+  assert.equal(noisy.regressionCount, 0);
+  assert.deepEqual(noisy.failureModes, ['code run failure']);
+  assert.match(noisy.excludedModes.join(' '), /invalid args/);
+  assert.ok(Math.abs(noisy.score - clean.score) < 0.0002, `caller evidence changed the score: ${clean.score} vs ${noisy.score}`);
+});
+
 test('one caller-input mode does not discard a tool target with actionable failures', () => {
   const now = new Date().toISOString();
   const planned = planEvolutionCandidates({

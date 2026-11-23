@@ -184,6 +184,40 @@ test('pilot tool isolation denies every action in the build agent config', async
   assert.equal(bridge.turns.length, 1);
 });
 
+test('a process failure that used an own tool is reported as a bypass', async (t) => {
+  let calls = 0;
+  const bridge = await startModelBridge({
+    runner: async () => {
+      calls += 1;
+      return { ok: false, reason: 'model-process-failed', ownToolCalls: 1, wallMs: 2 };
+    },
+  });
+  t.after(() => bridge.close());
+  const result = await post(bridge);
+  assert.equal(result.status, 502);
+  assert.match(result.text, /pilot-used-own-tools/);
+  assert.equal(calls, 1);
+  assert.equal(bridge.turns[0].reason, 'pilot-used-own-tools');
+});
+
+test('a non-zero exit after an own tool call keeps the bypass evidence', async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-own-tool-exit-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await fs.writeFile(path.join(dir, 'opencode'),
+    '#!/bin/sh\n'
+    + 'printf \'%s\\n\' \'{"type":"tool","part":{"tool":"read"}}\'\n'
+    + 'exit 1\n',
+    { mode: 0o755 });
+  const result = await runOpencodeTurn('prompt', {
+    model: 'test/model',
+    cwd: dir,
+    env: { ...process.env, PATH: dir + path.delimiter + (process.env.PATH ?? '') },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'model-process-failed');
+  assert.equal(result.ownToolCalls, 1);
+});
+
 test('a real decision is streamed back with its measured usage', async (t) => {
   const runner = async () => ({ ok: true, text: '{"tool":"read","arguments":{"file_path":"workflow-generated.json"}}', usage: { input: 11, output: 4, cache: { read: 2 } }, wallMs: 7 });
   const bridge = await startModelBridge({ runner });

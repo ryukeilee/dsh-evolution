@@ -135,6 +135,28 @@ export function readPathMatches(actual, expected, cwd = null) {
   return right.endsWith('/' + left);
 }
 
+/**
+ * Identify the tool ACP actually executed for one `tool_call` update. The
+ * `title` and `rawInput` belong to that call id; the model decision is only a
+ * positional fallback. If the title disagrees with the positionally joined
+ * decision, its arguments are not trusted (the order is not reliable), but the
+ * call identity still comes from the title.
+ */
+export function toolCallDescriptor(call, index, toolTurns, toolNames) {
+  const title = typeof call?.title === 'string' && call.title.trim() !== '' ? call.title.trim() : null;
+  const decision = toolTurns?.[index]?.decision;
+  const decisionName = typeof toolNames?.[index] === 'string' ? toolNames[index] : null;
+  const rawInput = call?.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput)
+    ? call.rawInput : null;
+  const decisionArguments = decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
+    ? decision.arguments : null;
+  const positionTrusted = title === null || title === decisionName;
+  return {
+    name: title ?? decisionName,
+    arguments: rawInput ?? (positionTrusted ? decisionArguments : null) ?? {},
+    inputKnown: rawInput !== null || positionTrusted,
+  };
+}
 /** Flatten the text blocks the ACP transport reports for one tool result. */
 function toolUpdateText(update) {
   const blocks = Array.isArray(update?.content) ? update.content : [];
@@ -181,6 +203,19 @@ const PILOT_RETRYABLE_REASONS = new Set([
 export function pilotTransportRetryable(turns) {
   const failed = (Array.isArray(turns) ? turns : []).filter((turn) => turn?.ok !== true);
   return failed.length > 0 && failed.every((turn) => typeof turn.reason === 'string' && PILOT_RETRYABLE_REASONS.has(turn.reason));
+}
+
+/** Keep only fixed reason codes in a persisted row; raw exception text stays out. */
+export function pilotFailureReasons(turns) {
+  const known = new Set([...PILOT_RETRYABLE_REASONS, 'pilot-used-own-tools']);
+  return [...new Set((Array.isArray(turns) ? turns : [])
+    .filter((turn) => turn?.ok !== true)
+    .map((turn) => (typeof turn.reason === 'string' && known.has(turn.reason) ? turn.reason : 'pilot-transport-error')))].slice(0, 4);
+}
+
+/** A whole-session replacement needs a retryable pilot failure and no product tool failure. */
+export function retryableSession(row) {
+  return row?.toolFailures === 0 && row?.retryableTransportFailure === true;
 }
 
 /** Only a trusted structured code in an allowlist may reach the evidence. */
@@ -231,17 +266,9 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const attributionAligned = calls.length === toolTurns.length;
   const byId = new Map();
   calls.forEach((call, index) => {
-    const decision = toolTurns[index]?.decision;
-    const name = toolNames[index] ?? (typeof call.title === 'string' ? call.title : null);
-    if (typeof call.toolCallId === 'string' && typeof name === 'string') {
-      // ACP echoes the executed call's own input as `rawInput`; prefer it over
-      // the model decision joined by position. When it is absent, the decision
-      // is still tied to this call by the one-call-per-tool-turn order above.
-      const rawInput = call.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput)
-        ? call.rawInput : null;
-      const decisionArguments = decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
-        ? decision.arguments : null;
-      byId.set(call.toolCallId, { name, arguments: rawInput ?? decisionArguments ?? {} });
+    const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames);
+    if (typeof call.toolCallId === 'string' && typeof descriptor.name === 'string') {
+      byId.set(call.toolCallId, descriptor);
     }
   });
   // A read is a *request* before it is a result. Register the first request of
@@ -274,9 +301,11 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     if (meta?.name !== 'read') continue;
     const argumentPath = typeof meta.arguments.file_path === 'string' && meta.arguments.file_path.trim() !== ''
       ? meta.arguments.file_path : null;
-    const offset = Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0 ? meta.arguments.offset : 1;
+    const offset = meta.inputKnown && Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0
+      ? meta.arguments.offset : (meta.inputKnown ? 1 : null);
     // The result path is authoritative when it exists; the requested path is the
-    // fallback for a transport that does not render it.
+    // fallback for a transport that does not render it. An untrusted input has
+    // no provable offset, so it can never be a first-read proof.
     readRequests.push({ callId: call.toolCallId, path: readResults.get(call.toolCallId)?.path ?? argumentPath ?? null, offset });
   }
   const correct = answerMatches(assistantText, expectedTokens);
@@ -858,8 +887,7 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
     .map((update) => update.content.text).join('');
   const row = extractSessionEvidence({ label, side, turns, updates, assistantText, expectedTokens, expectedReads, cwd: home, candidateTool, durationMs });
   const failedTurns = turns.filter((turn) => turn.ok !== true).length;
-  const failureReasons = [...new Set(turns.filter((turn) => turn.ok !== true)
-    .map((turn) => typeof turn.reason === 'string' ? turn.reason : null).filter(Boolean))].slice(0, 4);
+  const failureReasons = pilotFailureReasons(turns);
   // The raw transport detail stays on the operator console; the persisted row
   // carries only a stage/category/code projection.
   if (promptFailure !== null) console.error(`[task-benefit] ${label} failed: ${String(promptFailure?.message ?? promptFailure).slice(0, 400)}`);
@@ -967,7 +995,7 @@ export async function produceTaskBenefit(options = {}) {
         })];
         // Only a confirmed pilot transport failure is replaced; a product tool
         // failure or an own-tool bypass keeps its row and invalidates the artifact.
-        if (!attempts[0].ok && attempts[0].retryableTransportFailure === true) {
+        if (retryableSession(attempts[0])) {
           const retried = await runSession({
             cli, home, work: runWork,
             overlay: side === 'candidate' ? candidateOverlay : baselineOverlay,

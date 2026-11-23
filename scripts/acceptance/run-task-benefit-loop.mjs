@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { produceTaskBenefit, readPathMatches, safeErrorCode } from './task-benefit.mjs';
+import { produceTaskBenefit, readPathMatches, safeErrorCode, toolCallDescriptor } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -376,7 +376,7 @@ async function prepareFixtures() {
   task = SCENARIO.name === 'capped'
     ? {
       id: 'read-three-capped-tails',
-      prompt: '请用 read 工具从第一行开始读取 a.txt、b.txt、c.txt，然后分别告诉我这三个文件最后一行里 sentinel 的值。',
+      prompt: '请用 read 工具从第一行开始读取 a.txt、b.txt、c.txt（每次读取都使用 limit=2000），然后分别告诉我这三个文件最后一行里 sentinel 的值。',
       expect: JSON.stringify(files.map((file) => file.sentinel)),
       reads: files.map((file) => ({ path: path.join(home, file.name), token: file.sentinel })),
     }
@@ -726,15 +726,12 @@ try {
     const consumerDecisions = consumerTurns
       .filter((turn) => (turn.tools?.length ?? 0) > 0 && typeof turn.decision?.tool === 'string' && turn.decision.tool.trim() !== '');
     assert(consumerCalls.length === consumerDecisions.length, 'the fresh consumer model decisions and ACP calls do not align');
+    const consumerToolNames = consumerDecisions.map((turn) => turn.decision.tool);
     const consumerCallById = new Map();
     consumerCalls.forEach((call, index) => {
-      const decision = consumerDecisions[index]?.decision;
-      const name = decision?.tool ?? call.title;
-      if (typeof call.toolCallId === 'string' && typeof name === 'string') {
-        const rawInput = call.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput) ? call.rawInput : null;
-        const decisionArguments = decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
-          ? decision.arguments : null;
-        consumerCallById.set(call.toolCallId, { name, arguments: rawInput ?? decisionArguments ?? {} });
+      const descriptor = toolCallDescriptor(call, index, consumerDecisions, consumerToolNames);
+      if (typeof call.toolCallId === 'string' && typeof descriptor.name === 'string') {
+        consumerCallById.set(call.toolCallId, descriptor);
       }
     });
     const consumerResultById = new Map();
@@ -763,7 +760,8 @@ try {
       if (meta?.name !== 'read') continue;
       const argumentPath = typeof meta.arguments.file_path === 'string' && meta.arguments.file_path.trim() !== ''
         ? meta.arguments.file_path : null;
-      const offset = Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0 ? meta.arguments.offset : 1;
+      const offset = meta.inputKnown && Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0
+        ? meta.arguments.offset : (meta.inputKnown ? 1 : null);
       consumerReadRequests.push({ callId: call.toolCallId, path: consumerResultById.get(call.toolCallId)?.path ?? argumentPath ?? null, offset });
     }
     assert(consumerTurns.every((turn) => turn.ok === true), 'a fresh consumer model turn failed');
