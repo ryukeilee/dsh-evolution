@@ -309,6 +309,10 @@ function parseToolResultText(text) {
   if (!pathMatch) return { path: null, body: '', invalid: true };
   const path = pathMatch[1].trim() || null;
   if (!path) return { path: null, body: '', invalid: true };
+  const pathTags = (value.match(/<path>/gu) ?? []).length;
+  const openTags = (value.match(/<content>/gu) ?? []).length;
+  const closeTags = (value.match(/<\/content>/gu) ?? []).length;
+  if (pathTags !== 1 || openTags !== 1 || closeTags !== 1) return { path, body: '', invalid: true };
   let body = value.slice(pathMatch[0].length);
   body = body.replace(/^\s*<type>[^<]*<\/type>\s*/u, '');
   const contentMatch = /^\s*<content>([\s\S]*)<\/content>\s*$/u.exec(body);
@@ -346,16 +350,20 @@ export function mergeAcpInputs(calls, updates, cwd = null) {
     }
     inputs.set(id, next);
   };
-  for (const call of Array.isArray(calls) ? calls : []) {
-    const id = typeof call?.toolCallId === 'string' ? call.toolCallId : null;
-    if (id === null) continue;
-    merge(id, call.rawInput);
-    if (terminal(call)) locked.add(id);
-  }
+  const known = new Set();
   for (const update of Array.isArray(updates) ? updates : []) {
-    if (update?.sessionUpdate !== 'tool_call_update') continue;
+    const kind = update?.sessionUpdate;
+    if (kind !== 'tool_call' && kind !== 'tool_call_update') continue;
     const id = typeof update.toolCallId === 'string' ? update.toolCallId : null;
     if (id === null) continue;
+    if (kind === 'tool_call') {
+      known.add(id);
+    } else if (!known.has(id)) {
+      // A tool_call_update that arrives before its tool_call cannot be
+      // attributed to a future call.
+      conflict = true;
+      continue;
+    }
     merge(id, update.rawInput);
     if (terminal(update)) locked.add(id);
   }
