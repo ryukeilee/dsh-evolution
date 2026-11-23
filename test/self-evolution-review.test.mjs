@@ -949,6 +949,65 @@ test('a paired workflow comparison stays an experiment benefit', async (t) => {
   assert.equal(record.value.tier, 'experiment-benefit');
 });
 
+test('a context-policy capability reports its paired workflow benefit instead of usage-unknown', async (t) => {
+  const env = await fixture(t, 'provenance-no-tool-surface');
+  await writeConsumers(env);
+  // The shape `recordTaskBenefit` writes: a real paired-session artifact whose
+  // `adoption` counts sessions where the model *selected* the candidate (zero, by
+  // construction for a context policy) and sessions where it ran.
+  await writeEvidence(env, {
+    solvesProblem: true,
+    observationWindow: 'task:read-long-config-line',
+    taskBenefit: {
+      schemaVersion: 1,
+      kind: 'paired-real-session',
+      complete: true,
+      improvement: 'context-policy',
+      mechanismRan: true,
+      benefit: true,
+      adoption: { sessionsUsingCandidate: 0, sessionsExercised: 3 },
+    },
+  });
+  const usage = { source: 'session-evidence', complete: true, recordsComplete: true, records: { [RECORD_ID]: {
+    workflowInvocations: null, verificationInvocations: null, unattributedInvocations: null,
+    measurement: 'no-tool-surface', capabilityAssessment: 'unknown',
+  } } };
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
+  const [record] = result.records;
+  assert.equal(record.value.benefitProvenance, 'paired-workflow');
+  assert.equal(record.value.experimentBenefit, true);
+  assert.equal(record.value.measurement, 'no-tool-surface');
+  assert.equal(record.value.invoked, null, 'a count that does not apply is not a measured zero');
+  assert.equal(record.value.tier, 'experiment-benefit', 'a proven workflow benefit is not hidden behind an inapplicable count');
+  assert.equal(result.valueSummary.experimentBenefit, 1);
+  assert.equal(result.valueSummary.unknown, 0);
+  assert.equal(result.retirementCandidates.length, 0);
+  const reasons = record.value.reasons.join(' ');
+  assert.match(reasons, /registers no tool/);
+  assert.match(reasons, /mechanism ran in 3 session\(s\), with the model selecting it in 0 session\(s\)/);
+});
+
+test('a no-tool-surface capability without paired evidence is unknown, never a retirement candidate', async (t) => {
+  const env = await fixture(t, 'provenance-no-tool-surface-unproven');
+  await writeConsumers(env);
+  await writeEvidence(env, {
+    solvesProblem: true,
+    probeDerived: false,
+    observationWindow: 'a mounted context policy',
+    benefitEvidence: 'the candidate changed every read result in the trial',
+  });
+  const usage = { source: 'session-evidence', complete: true, recordsComplete: true, records: { [RECORD_ID]: {
+    workflowInvocations: null, verificationInvocations: null, unattributedInvocations: null,
+    measurement: 'no-tool-surface', capabilityAssessment: 'self-contained',
+  } } };
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
+  const [record] = result.records;
+  assert.equal(record.value.tier, 'installed-only');
+  assert.equal(record.value.invoked, null);
+  assert.equal(result.retirementCandidates.length, 0, 'an inapplicable count never unlocks retirement');
+  assert.match(record.value.reasons.join(' '), /mounted but its effect is unproven/);
+});
+
 test('the pre-comparison probe shape is classified by its baseline failure codes', async (t) => {
   const env = await fixture(t, 'provenance-legacy-probe');
   await writeConsumers(env);

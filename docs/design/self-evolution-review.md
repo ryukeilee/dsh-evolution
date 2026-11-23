@@ -102,6 +102,14 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 - 同一条工具名属于多条发布记录时，对每条记录都记为不可归因，不静默归给最后一条；
 - 任一会话、源码不可读，或出现无法解析的日志行时，受影响的计数为 `null`，投影 `complete: false`。
 
+**“数不到”不是“读不到”。** context-policy 形态的插件（监听官方 `tools/post-execute`，改写既有工具的结果）
+不注册任何工具，因此没有可计数的调用。这类记录的行带 `measurement: "no-tool-surface"`、计数为 `null`，
+并在投影顶层的 `uncountableRecords` 中列出；它属于能力形态，不是扫描失败，所以不会把 `recordsComplete`
+拉成 `false`。评审对它保持 `invoked: null`（永远不会等于“实测 0”，因此永不产生停用建议），
+并在有配对工作流证据时把 tier 落到 `experiment-benefit`：采用事实取自持久 artifact 的
+`taskBenefit.adoption`（`sessionsExercised` 是机制运行的会话数，`sessionsUsingCandidate` 是模型主动
+选择的会话数，对 context-policy 按定义恒为 0），而不是从工具调用数推断。
+
 扫描结果通过 `--write` 写到 `<dataRoot>/shared-plugins/usage.json`。运行时（Desktop 的 `evolution_plan` 与 ACP 的
 `audit`）只在显式检查时读取这一份有大小上限的小文件：不扫描会话、不写盘、无定时器。投影缺失、损坏或超过 30 天
 时零调用按未知处理（正数调用仍是事实），因此不会因为一份陈旧快照给出停用建议。停用建议还要求
@@ -142,8 +150,9 @@ revalidate 不是新的晋升，也不改变八项门禁、所有者确认或授
 - consumer 的 `hostDigest` 是上一次启动时捕获的事实；索引在其后变化时只报告 `restart-required`，不推断当前运行状态。
 - 当前宿主身份优先来自官方 `PluginPackages.packageOf`；ACP 等 profile 缺少该服务时回退到进程/包布局的精确解析（`lib/runtime-versions.js`），仍读不到时记录为 `verify-host`，绝不按“兼容”处理。
 - ACP 的 `audit` 使用同机共享数据根与共享经验库；它不能替代真实隔离宿主验证，也不会在本机执行 revalidate。
-- 用量投影是操作者产出的只读事实，不是第二个经验库：它只包含记录 id、计数与能力标注，运行时只读且不修改它；
-  投影缺失、损坏或不完整都不会让检查失败，只会让对应记录保持 `usage-unknown`。
+- 用量投影是操作者产出的只读事实，不是第二个经验库：它只包含记录 id、计数、`measurement` 与能力标注，
+  运行时只读且不修改它；投影缺失、损坏或不完整都不会让检查失败，只会让对应记录保持 `usage-unknown`
+  （结构上无法计数的记录是 `no-tool-surface`，见 §4.1）。
 - 检查不引入后台扫描、定时器或启动时自动修复；只有用户显式触发工具调用时运行。
 
 ## 9. 验证
