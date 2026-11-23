@@ -331,14 +331,17 @@ async function prepareFixtures() {
 }
 
 function planFor(options = {}) {
+  const selected = options.selection;
+  assert(selected?.improvement === 'context-policy', 'the plan-driven proposal needs the planner context-policy form');
+  const baseline = selected.baselinePath;
   const proposal = {
-      why: 'The official read tool truncates the first line of these generated configs; a real session then spends a shell call to recover the value.',
-      target: options.target ?? 'tool read',
+      why: selected.improvementReason + ' The generated configs put the sentinel beyond the read truncation point.',
+      target: options.target ?? selected.problemKey,
       impactScope: ['acp', 'desktop'],
       successMetrics: ['fewer turns and tool calls on the same three-file task', 'all three sentinels answered correctly'],
-      improvement: 'context-policy',
+      improvement: selected.improvement,
       benefitModel: { kind: 'workflow' },
-      rootCause: 'the read tool caps one line at 2000 characters, so the sentinel is outside the model-visible result and the model falls back to a shell call',
+      rootCause: 'observed ' + baseline.lossKinds.join('/') + ' recovered by ' + baseline.recoveryTools.join('/') + '; the sentinel is outside the model-visible read result',
   };
   // A negative control must not be blocked by the no-benefit conclusion an
   // earlier negative published for the same strategy fingerprint; the strategy
@@ -367,7 +370,7 @@ function planFor(options = {}) {
  * otherwise the pre-Trial baseline check would see the promoted policy and the
  * control would fail for the wrong reason.
  */
-async function runNegativeControls({ artifact, planTarget }) {
+async function runNegativeControls({ artifact, planTarget, selection }) {
   const results = [];
   const variants = [
     { label: 'missing', artifact: null, code: 'E_DESKTOP_TASK_EVIDENCE_MISSING' },
@@ -385,7 +388,7 @@ async function runNegativeControls({ artifact, planTarget }) {
     }
     let negative = null;
     await runFixturePrompt('acp-negative-' + variant.label, '验证一个负向证据候选；不要批准晋升。', (tools, result, round) => {
-      if (round === 1) return { name: 'evolution_desktop', args: { action: 'delegate', plan: planFor({ target: planTarget, strategy: null }), cwd: home, taskId: negativeTaskId } };
+      if (round === 1) return { name: 'evolution_desktop', args: { action: 'delegate', plan: planFor({ target: planTarget, strategy: null, selection }), cwd: home, taskId: negativeTaskId } };
       const value = toolResultValue(result);
       if (['accepted', 'running'].includes(value.phase)) return { name: 'evolution_desktop', args: { action: 'status', taskId: negativeTaskId, waitMs: 60_000 } };
       assert(value.phase === 'failed', 'negative ' + variant.label + ' reached ' + value.phase);
@@ -473,22 +476,37 @@ try {
   assert(selection.loss.recoveryCalls >= 1, 'the selected loss reports no recovery calls');
   assert(selection.attribution === 'classified', 'the selected loss is unattributed: ' + JSON.stringify(selection.attribution));
   assert(selection.benefitModel?.kind === 'workflow', 'the selected candidate does not require workflow evidence');
+  // The proposal below is built from the planner's form and observed baseline;
+  // no capability shape is hard-coded in the harness.
+  assert(selection.improvement === 'context-policy', 'the planner did not recommend the auto-effective form: ' + JSON.stringify(selection.improvement));
+  assert(selection.hook === 'tools/post-execute', 'the planner did not name the official hook');
+  assert(selection.verificationKind === 'paired-real-session', 'the planner did not require paired real-session evidence');
+  assert(selection.baselinePath?.kind === 'observed-recovery', 'the planner did not record the observed recovery baseline');
+  // The collector also accepts grep and a successful same-path re-read; the
+  // concrete recovery tool is an observed fact, not a harness requirement.
+  assert(selection.baselinePath.recoveryTools.some((tool) => ['bash', 'grep', 'read'].includes(tool)),
+    'the planner lost the observed recovery path: ' + JSON.stringify(selection.baselinePath.recoveryTools));
   evidence.discovery = {
     problemKey: selection.problemKey,
     loss: selection.loss,
     occurrences: selection.occurrences,
     score: selection.score,
     benefitModel: selection.benefitModel,
+    improvement: selection.improvement,
+    hook: selection.hook,
+    verificationKind: selection.verificationKind,
+    improvementReason: selection.improvementReason,
+    baselinePath: selection.baselinePath,
     source: 'production evolution_plan over the isolated shared experience store after the baseline sessions',
     transport: planReceipt.transport,
   };
   evidence.steps.push({ name: 'real-loss-discovery', at: new Date().toISOString() });
 
   const planTarget = selection.problemKey;
-  evidence.negatives = await runNegativeControls({ artifact: producer.artifact, planTarget });
+  evidence.negatives = await runNegativeControls({ artifact: producer.artifact, planTarget, selection });
   evidence.steps.push({ name: 'negative-artifacts-rejected', at: new Date().toISOString() });
 
-  const plan = planFor({ target: planTarget });
+  const plan = planFor({ target: planTarget, selection });
   let approvalObserved = null;
   let positiveFailure = null;
   await runFixturePrompt('acp-delegate', '请把这次上下文策略改进交给 Desktop 执行，先停在所有者确认前，不要自行批准。', (tools, result, round) => {

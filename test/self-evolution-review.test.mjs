@@ -574,6 +574,38 @@ test('composition orders operator/revalidate/repair/restart before a new experie
   assert.equal(alone.nextActions[0].blockedBy, undefined);
 });
 
+test('the review carries the planner capability form and observed baseline', () => {
+  const experience = plannedExperience({
+    selected: {
+      problemKey: 'tool read',
+      occurrences: 9,
+      expectedImprovement: 'fewer recovery calls',
+      improvement: 'context-policy',
+      verificationKind: 'paired-real-session',
+      baselinePath: { kind: 'observed-recovery', recoveryTools: ['bash', 'run_code'], recoveryCalls: 3 },
+    },
+  });
+  const composed = composeSelfEvolutionReview({ stable: { nextActions: [] }, experience, versions: CURRENT_HOST });
+  const [action] = composed.nextActions;
+  assert.equal(action.improvement, 'context-policy');
+  assert.equal(action.verificationKind, 'paired-real-session');
+  assert.deepEqual(action.baselineRecoveryTools, ['bash', 'run_code']);
+
+  // An unknown form is not silently promoted into a proposal contract.
+  const unknown = composeSelfEvolutionReview({
+    stable: { nextActions: [] },
+    experience: plannedExperience({
+      selected: {
+        problemKey: 'tool read', occurrences: 3, improvement: 'unknown-form',
+        baselinePath: { kind: 'observed-recovery', recoveryTools: ['bash'] },
+      },
+    }),
+    versions: CURRENT_HOST,
+  });
+  assert.equal(unknown.nextActions[0].improvement, undefined);
+  assert.equal(unknown.nextActions[0].baselineRecoveryTools, undefined);
+});
+
 test('a blocking action is never dropped by the bounded action list', () => {
   const actions = Array.from({ length: 12 }, (_, index) => ({
     action: REVIEW_ACTIONS.RESTART,
