@@ -18,6 +18,16 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.18 — 稳定版
+
+`0.2.17` 的稳定后继：把跨阶段闭环可靠性与共享经验 / 跨入口复用的事实一致性收口（PR #87、#88 与 #89）。相对 `0.2.17` 固定产物，分发内容改 `lib/desktop-task-host.js`、`lib/event-log-checkpoint.js`、`lib/experience-recall.js`、`lib/guard.js`、`lib/orchestrator.js`、`lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/ptc-transport.js`、`lib/self-evolution-review.js`、`lib/shared-experience.js`、`scripts/shared-plugins.mjs`，并把 `docs/audit/replay/capability-usage.mjs` 加入分发白名单，加上版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改动。
+
+- **自主循环的跨阶段事实收口（PR #87）。** 目标身份、抑制与环境类推迟共用同一套 `strategyFingerprint`；未证实的自主清理在抑制与推迟判定之前经同一 `revert` 重试，只有释放证明成立才交还运行时；终态实验记录只在既不持有 target claim 也没有操作中时回收，session 抑制、环境类推迟表、终态记录与按模式的观察窗口共用 `AUTONOMOUS_PATTERN_CAP`。环境类失败按 `transientRetryCooldownMs` 过期后由后续观测重新尝试同一假设，真实策略失败仍进入持久失败记忆，不因为一次暂时性占用就停掉整个 session。
+- **评审追加的可靠性缺口（PR #88）。** 失败决策释放的重试在同一身份互斥下序列化，避免并发观测重复排队；恢复抛错时清除 `autonomousPlanning` 守卫，目标释放失败时保留 proposed 记录；发布锁、结论指纹窗口与 canary 恢复的证明边界统一到既有互斥与身份判定，没有为方便而放宽门禁。
+- **跨进程 claim 与证明绑定（PR #89）。** `recordEvolution()` 的目标与 `findConclusions()` 的指纹过滤统一为规范化问题身份，避免 `tool:read` → `tool read` 这类身份漂移让晋升 / canary / 失败学习事实静默丢失，也避免新结论把已证明无效的结论挤出有界窗口。陈旧 target claim 的读取、删除、获取失败回滚与释放复用跨进程互斥原语，只有可证明的身份与所有权才回收或释放；guard 的风险判定取参数路径、证明绑定取宿主注入的 target，不再让良性 target 遮蔽真实敏感路径。`promoted-sharing` 统一宿主身份回退，打包的 ACP / Web consumer 在缺少 `pluginPackages` 服务时不再把全部记录判为版本不兼容；`discover().truncated` 进入发现与统一检查的完整性判定；probe 的超时、取消、空结果批与未测量异常统一标为 `unmeasured`，不伪造收益，也不写入跨会话不可撤销的假 regression。
+- **分发一致性。** README 的安装与检索命令改用已进入 `package.json#files` 白名单的 `docs/audit/replay/capability-usage.mjs`。没有改变持久化格式、工具签名、授权来源、八项门禁、Cordis 信任根或宿主支持范围。
+- **宿主验收。** 八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR。已有 stable 插件、历史共享经验与生产数据不迁移、不下线。PR #89 独立复审提到的宿主检测器字段混合属于 review / doctor 既有共用实现，本轮未改动，留作后续风险。
+
 ## 0.2.17 — 稳定版
 
 `0.2.16` 的稳定后继：把已发布 stable 插件的真实调用事实接入统一自我进化检查，把候选形态绑定到观测到的恢复路径，并补齐 `read` 字节上限损失这一第二类真实损失。相对 `0.2.16` 固定产物，分发内容改 `lib/desktop-task-client.js`、`lib/experience-plan.js`、`lib/orchestrator.js`、`lib/promoted-sharing.js`、`lib/registration.js`、`lib/self-evolution-review.js`，新增 `lib/capability-usage.js`，加上版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改动。

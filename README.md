@@ -6,7 +6,7 @@
 
 | 关键事实 | 当前值 |
 | --- | --- |
-| 版本 | `0.2.17`（稳定版） |
+| 版本 | `0.2.18`（稳定版） |
 | 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1`、`0.2.2-rc.2`、`0.2.2-rc.3`、`0.2.2-rc.4`、`0.2.2-rc.5`（后五者须关闭宿主 HMR，见下） |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
@@ -16,7 +16,9 @@
 
 ## 30 秒了解
 
-本版本（`0.2.17`）把已发布 stable 插件的真实调用事实接入统一自我进化检查，并让候选形态跟随观测到的恢复路径。`evolution_plan` 与 ACP `evolution_desktop` 的只读 `audit` 在显式审计时读取 `<dataRoot>/shared-plugins/usage.json` 这份 ≤512 KiB 的投影（由 `docs/audit/replay/capability-usage.mjs --write` 生成），返回 `usageEvidence`；归因只在晋升生命周期调用尚未返回时把发布工具调用算作验证流量，生命周期调用从未返回时记为 `unattributedInvocations`，不注册工具的能力则通过配对会话证据证明 `experiment-benefit`。工具作用域退化一旦有观测恢复与 workflow 收益声明，planner 直接给出 `context-policy`、`tools/post-execute` 与恢复基线；新增的 `review-retirement` 动作只报告证据与可逆的停用命令，等待所有者授权，检查本身从不执行停用。`read` 的字节上限损失（`Output capped`）现在由同一套发现与晋升机制处理：候选只在官方 footer 或结构化证据证明窗口被截断时追加有界尾部（≤200 行、≤16 KiB、文件 ≤256 KiB），不注册工具。`exercised` 只认对同一路径从第 1 行开始并以期望值成功的第一次请求。持久化 schema、工具名与参数、授权来源、八项晋升门禁、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变；已有 stable 插件、共享经验与生产数据不迁移、不下线。
+本版本（`0.2.18`）是 `0.2.17` 的稳定性后继，把自我进化闭环的跨阶段可靠性事实收口（PR #87、#88 与 #89）：晋升、canary、失败学习与结论检索现在对同一问题身份使用统一投影；陈旧结论不会被同 scope 的新结论挤出有界检索窗口；target claim 的获取、释放与回滚失败复用同一套跨进程互斥原语，未证实的清理不再释放运行时；guard 的风险判定取参数路径、证明绑定取宿主注入的 target；缺失 `pluginPackages` 服务时跨入口 consumer 沿用既有宿主身份回退，不再把全部记录判为不兼容；`discover().truncated` 进入发现与统一检查的完整性判定；probe 的超时、取消与空结果批统一记为 `unmeasured`，不会据此产出假收益或写入不可撤销的 regression；README 的安装命令改用已进入分发白名单的 `docs/audit/replay/capability-usage.mjs`。持久化 schema、工具名与参数、授权来源、八项晋升门禁、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变；已有 stable 插件、共享经验与生产数据不迁移、不下线。
+
+`0.2.17` 引入的能力全部保留：`evolution_plan` 与 ACP `evolution_desktop` 的只读 `audit` 在显式审计时读取 `<dataRoot>/shared-plugins/usage.json` 这份 ≤512 KiB 的投影（由 `docs/audit/replay/capability-usage.mjs --write` 生成），返回 `usageEvidence`；归因只在晋升生命周期调用尚未返回时把发布工具调用算作验证流量，生命周期调用从未返回时记为 `unattributedInvocations`，不注册工具的能力则通过配对会话证据证明 `experiment-benefit`。工具作用域退化一旦有观测恢复与 workflow 收益声明，planner 直接给出 `context-policy`、`tools/post-execute` 与恢复基线；`review-retirement` 动作只报告证据与可逆的停用命令，等待所有者授权，检查本身从不执行停用。`read` 的字节上限损失（`Output capped`）由同一套发现与晋升机制处理：候选只在官方 footer 或结构化证据证明窗口被截断时追加有界尾部（≤200 行、≤16 KiB、文件 ≤256 KiB），不注册工具；`exercised` 只认对同一路径从第 1 行开始并以期望值成功的第一次请求。
 
 本版本把自我进化收益的判断推进到真实任务：workflow 收益必须有同一任务、同一模型、无候选 vs 有候选各 ≥3 次的真实会话证据（`taskBenefit` 门禁），并绑定候选 Host 源码摘要与 DSH/Cordis 版本；`scripts/acceptance/task-benefit.mjs` 在隔离 home 中用真实 ACP 宿主与真实模型生产该证据（源码仓库脚本，不随 tarball 分发），`run-task-benefit-loop.mjs` 跑完整闭环并在 fresh consumer 上验证自动复用。probe 继续区分 `capability-self-test` 与 `workflow`：单工具前后对照只算 `tool-improvement`；paired workload 只提供 `workflowBenefit` 证据，workflow 与 context-policy 晋升还必须通过 `taskBenefit`（同一任务、同一模型的成对真实会话）；context-policy 计划必须声明可重放的 `verification.functionalCheck`（`read` / `glob` / `grep`），安装成功本身不算生效。collector 另外记录 `line-truncated` / `output-capped` 这类非错误退化（只认官方 footer），planner 按损失频率、恢复成本与可恢复性排序。Desktop 的 `evolution_plan` 与 ACP 的 `evolution_desktop` 只读 `audit` 仍先分类已发布 stable 插件、再排序经验候选、最后给出有序 `selfEvolution.nextActions`；检查不写发布索引、不启动 Trial、不批准晋升。四个已发布 stable 插件、已有共享经验与生产数据都保持不变。本版本新增 DSH `0.2.2-rc.4` / `rc.5`：官方 rc.3 → rc.4 只改 DSH 升级说明与依赖固定；rc.4 → rc.5 只改 DSH 文档与 `dsh-base` 的 `cordis.patch.yml`（移除固定 `web.searchProvider`，改由 dsh-web 按模型路由选择），本 bundle 使用的运行时包逐字节相同，因此只扩展精确宿主声明，并用真实宿主验收后固定进发布产物。`0.2.2-rc.1` 至 `rc.5` 需要关闭宿主 HMR，见下文。已有 schema 1 共享经验库在普通启动下继续保持原布局、不会被自动迁移。
 
@@ -32,9 +34,9 @@
 
 ```sh
 # 查看计划，不写 profile
-node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.17.tgz
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.18.tgz
 # 使用官方 CLI 安装并应用计划；可用 --home 指定隔离 DSH_HOME
-node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.17.tgz --apply
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.18.tgz --apply
 ```
 
 安装器只维护标记块，保留其他插件、Skills、T3 工作流与 storage route；HMR 保持关闭。它不会复制或迁移历史，不会启停正在运行的正式应用。待安装包以内容摘要缓存在 `storages/evolution-package-cache`，由官方 CLI 从不可变路径安装，避免同版本本地重建被文件依赖缓存误判为已安装。缓存内容不匹配时拒绝覆盖。每个 profile 的官方安装结果分别报告，途中失败会停止并报告已完成项；多 profile 安装不是原子事务。安装后重启对应入口。非 macOS 或自定义安装可用 `--cli <官方 dsh 可执行文件>` 指定 CLI。
@@ -100,7 +102,9 @@ kernel 时挂载插件并执行一次、重启后只挂载一次，同时覆盖�
 `docs/evidence/verification-experience-isolation-20261121.md` 与 `docs/evidence/ptc-read-recovery-attribution-20261121.md`；
 `0.2.17` 的 capped read 闭环与 planner 形态证据见
 `docs/evidence/task-benefit-0.2.16-capped-tail-20261124.json` 与
-`docs/evidence/task-benefit-0.2.16-plan-driven-form-final-20261124.json`。rc.5 克隆数据根上的 stable 重验证见
+`docs/evidence/task-benefit-0.2.16-plan-driven-form-final-20261124.json`；`0.2.18` 的跨入口闭环证据见
+`docs/evidence/cross-entry-0.2.2-rc.5.json`，跨进程 target claim 的互斥与释放边界见
+`test/target-claim-ownership.test.mjs`。rc.5 克隆数据根上的 stable 重验证见
 `docs/evidence/revalidation-0.2.2-rc.5-20261119.json`。
 
 ### 从 ACP 发起、由 Desktop 执行的自进化任务
@@ -348,8 +352,8 @@ CLI 退出码：`0` 健康、`1` 存在降级项、`2` 存在阻塞项、`3` 参
 从 GitHub Release 下载 tarball 和校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.17
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.17.tgz" -o dsh-evolution-0.2.17.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.18
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.18.tgz" -o dsh-evolution-0.2.18.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
@@ -357,11 +361,11 @@ sha256sum --check SHA256SUMS
 macOS 可用 `shasum -a 256 -c SHA256SUMS` 校验。也可用 GitHub CLI 下载同一 Release 的 tarball、`SHA256SUMS` 与 `manifest.json`。校验通过后，用官方 CLI 安装：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.17.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.18.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
-> 上面的 `v0.2.17` Release tarball 声明并验收了全部八个宿主（`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1` 至 `0.2.2-rc.5`）；`0.2.2-rc.1` 至 `0.2.2-rc.5` 必须按下一节关闭宿主 HMR。
+> 上面的 `v0.2.18` Release tarball 声明并验收了全部八个宿主（`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1` 至 `0.2.2-rc.5`）；`0.2.2-rc.1` 至 `0.2.2-rc.5` 必须按下一节关闭宿主 HMR。
 
 安装后 bundle 会登记在官方 profile 的 `dsh.profile.bundles`，随 profile 加载，无需每个 session 手工挂载 preset。下面用 `$DSH_HOME/profiles/web` 指代 `web` profile 的安装目录。首次诊断：
 
@@ -596,11 +600,11 @@ node scripts/acceptance/run-revalidation.mjs --home ~/.dsh --apply
 | `0.2.2-rc.4` | `4.1.0` | `1.1.0` | `1.1.0` | 25/25（`--no-hmr --experience-evolution`） | `healthy` |
 | `0.2.2-rc.5` | `4.1.0` | `1.1.0` | `1.1.0` | 25/25（`--no-hmr --experience-evolution`） | `healthy` |
 
-对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.1.json`、`docs/evidence/dsh-0.2.2-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.3.json`、`docs/evidence/dsh-0.2.2-rc.4.json` 与 `docs/evidence/dsh-0.2.2-rc.5.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。`0.2.17` 的固定点覆盖全部八个宿主：这八份记录必须描述 `release/` 固定产物的内容与字节，后续工作树修改不会改写它们。当前固定点没有新增宿主；`release/manifest.json#verifiedHosts` 之后的第二条通道（固定点之后新增的宿主只核对本树构建的内容）保留给下一次宿主扩展。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
+对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.1.json`、`docs/evidence/dsh-0.2.2-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.3.json`、`docs/evidence/dsh-0.2.2-rc.4.json` 与 `docs/evidence/dsh-0.2.2-rc.5.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。`0.2.18` 的固定点覆盖全部八个宿主：这八份记录必须描述 `release/` 固定产物的内容与字节，后续工作树修改不会改写它们。当前固定点没有新增宿主；`release/manifest.json#verifiedHosts` 之后的第二条通道（固定点之后新增的宿主只核对本树构建的内容）保留给下一次宿主扩展。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
 
 `npm run pack:check` 两种模式都执行 17 项检查。开发模式允许工作树是固定点的**已提交**后继（脚本会逐条点名与固定产物不同的文件），但分发文件存在**未提交**改动时一律失败；`--release` 则把“固定点描述自己的提交 / 工作树是固定点或已提交后继”换成更严格的“固定点固定本树内容 / 工作树构建出固定内容”。
 
-源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.17.tgz --content-only`。
+源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.18.tgz --content-only`。
 
 ## 相关文档
 
