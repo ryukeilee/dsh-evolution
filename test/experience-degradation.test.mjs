@@ -167,6 +167,8 @@ test('the planner ranks a degradation by frequency, recovery cost and recoverabi
   });
   assert.match(candidate.improvementReason, /累计恢复调用 6 次/);
   assert.match(candidate.improvementReason, /run_code/);
+  assert.match(candidate.whyCordisPlugin, /tools\/post-execute/);
+  assert.doesNotMatch(candidate.whyCordisPlugin, /工具注册/);
   assert.deepEqual(candidate.benefitModel, { kind: 'workflow', metric: 'failureRate' });
   assert.ok(candidate.acceptanceMetrics.some((metric) => metric.name === 'recoveryCalls' && metric.direction === 'lower'));
   assert.ok(candidate.score > 0);
@@ -242,6 +244,27 @@ test('a degradation outside the tool hook scope keeps the tool form and its exis
     failureMemory: [],
   }, { minOccurrences: 3 });
   assert.equal(invalidTool.candidates[0].improvement, 'tool');
+
+  const failedRecovery = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:failed-recovery', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
+      occurrences: 5, failureCount: 0, successCount: 0, lastSeen: new Date().toISOString(),
+      metrics: { recoverycalls: { sum: 3, count: 5 } }, recoveryStatus: 'failed', recoveryTool: 'tool:timeout',
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  assert.equal(failedRecovery.candidates[0].improvement, 'tool');
+  assert.equal(failedRecovery.candidates[0].baselinePath, null);
+
+  const bareReason = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:bare-reason', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
+      occurrences: 5, failureCount: 0, successCount: 0, lastSeen: new Date().toISOString(),
+      metrics: { recoverycalls: { sum: 3, count: 5 } }, recoveryStatus: 'observed', recoveryTool: 'timeout',
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  assert.equal(bareReason.candidates[0].improvement, 'tool');
 });
 
 test('an ordinary capability failure still recommends a tool, not a policy hook', () => {
@@ -261,6 +284,7 @@ test('an ordinary capability failure still recommends a tool, not a policy hook'
   // The pre-existing workflow declaration still requires paired evidence.
   assert.deepEqual(candidate.benefitModel, { kind: 'workflow', metric: 'failureRate' });
   assert.equal(candidate.verificationKind, 'paired-real-session');
+  assert.match(candidate.whyCordisPlugin, /官方 Cordis 工具注册/);
 });
 
 test('a loss without an observed recovery path is not promoted to a policy hook', () => {
