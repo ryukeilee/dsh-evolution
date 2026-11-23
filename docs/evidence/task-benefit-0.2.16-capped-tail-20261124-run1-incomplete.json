@@ -1,0 +1,287 @@
+{
+  "kind": "dsh-evolution-task-benefit-loop",
+  "ok": false,
+  "startedAt": "2026-11-23T03:38:45.902Z",
+  "scope": "isolated DSH_HOME; official Desktop + ACP + Evolution kernel; real model inference; no formal home, no release publish",
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "runs": 3,
+  "scenario": "capped",
+  "steps": [
+    {
+      "name": "official-install",
+      "at": "2026-11-23T03:38:49.695Z"
+    },
+    {
+      "name": "paired-real-sessions-produced",
+      "at": "2026-11-23T03:47:30.084Z"
+    }
+  ],
+  "fixtures": [
+    {
+      "name": "a.txt",
+      "characters": 65280,
+      "lines": 700,
+      "sentinelSha256": "7036edf9e896ff84ed197f038bf41302da6122e988bf15cf0127eba971295184"
+    },
+    {
+      "name": "b.txt",
+      "characters": 65280,
+      "lines": 700,
+      "sentinelSha256": "7ae42a75d3feab0910a7ebabfbe877fdef60dce51d371660a0044fb8255e3c00"
+    },
+    {
+      "name": "c.txt",
+      "characters": 65280,
+      "lines": 700,
+      "sentinelSha256": "f2fcaa166e830e09ebc302df8cb045c1c8c044a85c66af7a865dd7c2f50ac416"
+    }
+  ],
+  "producer": {
+    "ok": false,
+    "artifactFile": "$DSH_HOME/storages/evolution/desktop-tasks/task-evidence/desktop-task-mwspuw9v-1303dbf0.json",
+    "artifact": {
+      "schemaVersion": 1,
+      "kind": "paired-real-session",
+      "complete": false,
+      "taskId": "desktop-task-mwspuw9v-1303dbf0",
+      "task": {
+        "id": "read-three-capped-tails",
+        "promptSha256": "b2ae395c8183a56806559a039bb29429d4a0cbfff25e1f96b91928b50c6c7e13",
+        "expectSha256": "bca822f025ad45122de5752ba4a61a21067a1ed92f35f17a4d0978366458d5cc"
+      },
+      "candidateHostSha256": "3de878a36213d467e0298a6baa0913500eb81c12d91af51a67bc5bb36952a777",
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "host": {
+        "dsh": "0.2.2-rc.5",
+        "cordis": "4.1.0"
+      },
+      "runs": {
+        "baseline": 3,
+        "candidate": 3
+      },
+      "baseline": {
+        "sessions": 3,
+        "correct": 3,
+        "failures": 0,
+        "turns": 21,
+        "toolCalls": 18,
+        "tokens": 1405094,
+        "durationMs": 265254
+      },
+      "candidate": {
+        "sessions": 3,
+        "correct": 3,
+        "failures": 1,
+        "turns": 12,
+        "toolCalls": 9,
+        "tokens": 768816,
+        "durationMs": 255035
+      },
+      "adoption": {
+        "sessionsUsingCandidate": 0,
+        "sessionsExercised": 3
+      },
+      "tokenBasis": "model-bill: input + output + cache.read"
+    },
+    "sessions": {
+      "baseline": [
+        {
+          "label": "baseline-1",
+          "side": "baseline",
+          "correct": true,
+          "exercised": false,
+          "usedCandidate": false,
+          "usageComplete": true,
+          "toolFailures": 0,
+          "turns": 7,
+          "toolCalls": 6,
+          "toolNames": [
+            "read",
+            "read",
+            "read",
+            "read",
+            "read",
+            "read"
+          ],
+          "failures": 0,
+          "tokens": 468273,
+          "inputTokens": 393945,
+          "outputTokens": 216,
+          "cacheReadTokens": 74112,
+          "durationMs": 95094,
+          "readResultCount": 6,
+          "readResultCharacters": 207306,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 188
+        },
+        {
+          "label": "baseline-2",
+          "side": "baseline",
+          "correct": true,
+          "exercised": false,
+          "usedCandidate": false,
+          "usageComplete": true,
+          "toolFailures": 0,
+          "turns": 7,
+          "toolCalls": 6,
+          "toolNames": [
+            "read",
+            "read",
+            "read",
+            "read",
+            "read",
+            "read"
+          ],
+          "failures": 0,
+          "tokens": 468383,
+          "inputTokens": 405360,
+          "outputTokens": 175,
+          "cacheReadTokens": 62848,
+          "durationMs": 103481,
+          "readResultCount": 6,
+          "readResultCharacters": 207306,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 134
+        },
+        {
+          "label": "baseline-3",
+          "side": "baseline",
+          "correct": true,
+          "exercised": false,
+          "usedCandidate": false,
+          "usageComplete": true,
+          "toolFailures": 0,
+          "turns": 7,
+          "toolCalls": 6,
+          "toolNames": [
+            "read",
+            "read",
+            "read",
+            "read",
+            "read",
+            "read"
+          ],
+          "failures": 0,
+          "tokens": 468438,
+          "inputTokens": 166640,
+          "outputTokens": 230,
+          "cacheReadTokens": 301568,
+          "durationMs": 66679,
+          "readResultCount": 6,
+          "readResultCharacters": 207306,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 205
+        }
+      ],
+      "candidate": [
+        {
+          "label": "candidate-1",
+          "side": "candidate",
+          "correct": true,
+          "exercised": true,
+          "usedCandidate": false,
+          "usageComplete": true,
+          "toolFailures": 0,
+          "turns": 4,
+          "toolCalls": 3,
+          "toolNames": [
+            "read",
+            "read",
+            "read"
+          ],
+          "failures": 0,
+          "tokens": 256092,
+          "inputTokens": 253245,
+          "outputTokens": 159,
+          "cacheReadTokens": 2688,
+          "durationMs": 52654,
+          "readResultCount": 3,
+          "readResultCharacters": 206610,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 168
+        },
+        {
+          "label": "candidate-2",
+          "side": "candidate",
+          "correct": true,
+          "exercised": true,
+          "usedCandidate": false,
+          "usageComplete": true,
+          "toolFailures": 0,
+          "turns": 4,
+          "toolCalls": 3,
+          "toolNames": [
+            "read",
+            "read",
+            "read"
+          ],
+          "failures": 0,
+          "tokens": 256394,
+          "inputTokens": 182740,
+          "outputTokens": 182,
+          "cacheReadTokens": 73472,
+          "durationMs": 64679,
+          "readResultCount": 3,
+          "readResultCharacters": 206610,
+          "ok": true,
+          "failedTurns": 0,
+          "assistantCharacters": 175
+        },
+        {
+          "label": "candidate-3",
+          "side": "candidate",
+          "correct": true,
+          "exercised": true,
+          "usedCandidate": false,
+          "usageComplete": true,
+          "toolFailures": 0,
+          "turns": 4,
+          "toolCalls": 3,
+          "toolNames": [
+            "read",
+            "read",
+            "read"
+          ],
+          "failures": 1,
+          "tokens": 256330,
+          "inputTokens": 252196,
+          "outputTokens": 166,
+          "cacheReadTokens": 3968,
+          "durationMs": 137702,
+          "readResultCount": 3,
+          "readResultCharacters": 206610,
+          "ok": false,
+          "failedTurns": 1,
+          "assistantCharacters": 188
+        }
+      ]
+    }
+  },
+  "discovery": null,
+  "candidate": null,
+  "approval": null,
+  "task": null,
+  "freshConsumer": null,
+  "negatives": [],
+  "restart": null,
+  "install": {
+    "ok": true,
+    "tail": [
+      "+ dsh-evolution 0.2.16",
+      "",
+      "Done in 457ms using pnpm v11.28.5",
+      "web: configured; restart this entry to apply (HMR disabled)"
+    ]
+  },
+  "error": {
+    "stage": "acceptance",
+    "category": "acceptance-failure",
+    "code": null
+  },
+  "finishedAt": "2026-11-23T03:47:30.084Z",
+  "tarballSha256": "8a2bdc494eb207401b95bd55617f42e40a5ac3a8e3c1c6c2afc86f4a17d523a8"
+}

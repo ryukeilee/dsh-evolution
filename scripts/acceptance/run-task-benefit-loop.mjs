@@ -3,8 +3,8 @@
  * End-to-end acceptance for task-coupled evidence and the context-policy form.
  *
  * It initializes an isolated DSH_HOME, installs the built tarball, generates
- * three long-line fixtures with random sentinels, runs the real-model paired
- * sessions through task-benefit.mjs, proves the target came from the production
+ * three fixtures with random sentinels, runs the real-model paired sessions
+ * through task-benefit.mjs, proves the target came from the production
  * evolution_plan over the baseline read degradations, then delegates the
  * context-policy plan. The real Trial must pass the deterministic functional
  * check, the produced artifact must satisfy the taskBenefit gate, no approval
@@ -13,7 +13,11 @@
  * task. Missing, mis-bound, no-benefit and unadopted artifacts must all stop
  * before approval with no publication.
  *
- * node run-task-benefit-loop.mjs <packed.tgz> <evidence.json> [--work <dir>] [--runs 3] [--approve <text>]
+ * Scenarios (`--scenario`):
+ *   line  (default) a line longer than the per-line cap (`line-truncated`)
+ *   capped           a file over the byte cap with a small tail (`output-capped`)
+ *
+ * node run-task-benefit-loop.mjs <packed.tgz> <evidence.json> [--work <dir>] [--runs 3] [--scenario line|capped] [--approve <text>]
  */
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -25,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { produceTaskBenefit, safeErrorCode } from './task-benefit.mjs';
+import { failedToolCallIds, hasParentSegment, mergeAcpInputs, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, scenarioBaselineOf, successfulToolResult, terminalNotificationMissingId, terminalToolResults, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -35,23 +39,56 @@ let approveText = null;
 let runs = 3;
 let model = DEFAULT_BRIDGE_MODEL;
 let ptc = false;
+let scenarioName = 'line';
 for (let index = 0; index < argv.length; index += 1) {
   const arg = argv[index];
   if (arg === '--work' && argv[index + 1]) workArg = path.resolve(argv[++index]);
   else if (arg === '--approve' && argv[index + 1]) approveText = argv[++index];
   else if (arg === '--runs' && argv[index + 1]) runs = Number(argv[++index]);
   else if (arg === '--model' && argv[index + 1]) model = argv[++index];
+  else if (arg === '--scenario' && argv[index + 1]) scenarioName = argv[++index];
   else if (arg === '--ptc') ptc = true;
   else positional.push(arg);
 }
+if (!['line', 'capped'].includes(scenarioName)) throw new Error('--scenario must be "line" or "capped"');
 const [tarballArg, outArg] = positional;
-if (!tarballArg || !outArg) throw new Error('Usage: run-task-benefit-loop.mjs <packed.tgz> <evidence.json> [--work <dir>] [--runs 3] [--approve <owner confirmation text>] [--ptc]');
+if (!tarballArg || !outArg) throw new Error('Usage: run-task-benefit-loop.mjs <packed.tgz> <evidence.json> [--work <dir>] [--runs 3] [--scenario line|capped] [--approve <owner confirmation text>] [--ptc]');
 if (!Number.isInteger(runs) || runs < 3 || runs > 5) throw new Error('--runs must be 3 through 5');
 const tarball = path.resolve(tarballArg);
 const out = path.resolve(outArg);
 const repo = fileURLToPath(new URL('../../', import.meta.url));
 const binary = '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness';
 const cli = '/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh';
+
+/**
+ * Two real `read` losses share the official tools/post-execute hook:
+ *
+ *   - `line`: a single line longer than the per-line cap (the 2026-11-24 form).
+ *   - `capped`: a file larger than the byte cap whose remaining tail is small;
+ *     the model must spend another turn on `offset` for content it is about to
+ *     read anyway (observed 10 times across 578 production sessions).
+ *
+ * The capped scenario raises the pilot model's transcript bound: the production
+ * read result is 50 KiB and the bridge's 4 KiB default would truncate the very
+ * footer the model has to react to. The host still enforces its own cap; only
+ * the test transport's rendering bound changes.
+ */
+const SCENARIO = scenarioName === 'capped'
+  ? {
+    name: 'capped',
+    candidateHostFile: 'complete-capped-read.host',
+    lossKind: 'output-capped',
+    forbiddenReadText: 'Output capped',
+    maxToolText: 72_000,
+  }
+  : {
+    name: 'line',
+    candidateHostFile: 'complete-read-line.host',
+    lossKind: 'line-truncated',
+    forbiddenReadText: 'line truncated',
+    maxToolText: undefined,
+  };
+const CANDIDATE_HOST = await fs.readFile(path.join(repo, 'scripts/acceptance/fixtures', SCENARIO.candidateHostFile), 'utf8');
 // Resolve every existing component before creating or launching anything: a
 // temporary-looking path can be a symlink into the formal data root.
 async function realpathOr(target) {
@@ -112,6 +149,7 @@ const evidence = {
   scope: 'isolated DSH_HOME; official Desktop + ACP + Evolution kernel; real model inference; no formal home, no release publish',
   model,
   runs,
+  scenario: SCENARIO.name,
   steps: [],
   fixtures: [],
   producer: null,
@@ -305,7 +343,6 @@ function answerMatches(text, tokens) {
   return tokens.every((token) => text.includes(token));
 }
 
-const CANDIDATE_HOST = await fs.readFile(path.join(repo, 'scripts/acceptance/fixtures/complete-read-line.host'), 'utf8');
 
 let files = [];
 let task = null;
@@ -313,19 +350,42 @@ let sentinels = [];
 async function prepareFixtures() {
   files = [];
   for (const name of ['a', 'b', 'c']) {
-    const file = name + '.json';
     const sentinel = 'sentinel-' + name + '-' + crypto.randomBytes(6).toString('hex');
+    if (SCENARIO.name === 'capped') {
+      // Just over the official 50 KiB read cap: the first window stops with the
+      // "Output capped" footer, and the last line (with the sentinel) is in a
+      // tail small enough for the candidate to append within its own budget.
+      const file = name + '.txt';
+      const lines = Array.from({ length: 699 }, (_, index) => 'route ' + String(index + 1).padStart(3, '0')
+        + ' enabled=' + (index % 2 === 0) + ' target=/feature/' + index + ' note=generated-config-' + name
+        + ' checksum=' + crypto.createHash('sha256').update(name + ':' + index).digest('hex').slice(0, 16));
+      lines.push('sentinel: ' + sentinel);
+      const text = lines.join('\n') + '\n';
+      await fs.writeFile(path.join(home, file), text);
+      evidence.fixtures.push({ name: file, characters: text.length, lines: lines.length, sentinelSha256: sha(sentinel) });
+      files.push({ name: file, lines, lastLine: lines.at(-1), sentinel });
+      continue;
+    }
+    const file = name + '.json';
     const line = JSON.stringify({ name: 'generated-config-' + name, routes: Array.from({ length: 80 }, (_, index) => ({ path: '/feature/' + index, enabled: index % 2 === 0 })), sentinel });
     await fs.writeFile(path.join(home, file), line);
     evidence.fixtures.push({ name: file, characters: line.length, sentinelSha256: sha(sentinel) });
     const parsed = JSON.parse(line);
     files.push({ name: file, line, sentinel: parsed.sentinel });
   }
-  task = {
-    id: 'read-three-long-lines',
-    prompt: '请依次用 read 工具读取 a.json、b.json、c.json 的第一行，然后告诉我这三个文件各自的 sentinel 字段值。',
-    expect: JSON.stringify(files.map((file) => file.sentinel)),
-  };
+  task = SCENARIO.name === 'capped'
+    ? {
+      id: 'read-three-capped-tails',
+      prompt: '请用 read 工具从第一行开始读取 a.txt、b.txt、c.txt（每次读取都使用 limit=2000），然后分别告诉我这三个文件最后一行里 sentinel 的值。',
+      expect: JSON.stringify(files.map((file) => file.sentinel)),
+      reads: files.map((file) => ({ path: path.join(home, file.name), token: file.sentinel })),
+    }
+    : {
+      id: 'read-three-long-lines',
+      prompt: '请依次用 read 工具读取 a.json、b.json、c.json 的第一行，然后告诉我这三个文件各自的 sentinel 字段值。',
+      expect: JSON.stringify(files.map((file) => file.sentinel)),
+      reads: files.map((file) => ({ path: path.join(home, file.name), token: file.sentinel })),
+    };
   sentinels = files.map((file) => file.sentinel);
   assert(task.expect.length <= 500, 'the fixture sentinels exceed the task contract');
 }
@@ -334,31 +394,57 @@ function planFor(options = {}) {
   const selected = options.selection;
   assert(selected?.improvement === 'context-policy', 'the plan-driven proposal needs the planner context-policy form');
   const baseline = selected.baselinePath;
+  assert(baseline?.kind === 'observed-recovery' && Array.isArray(baseline.lossKinds) && baseline.lossKinds.length > 0,
+    'the proposal needs the scenario baseline, not the merged target');
+  const scenarioKinds = baseline.lossKinds;
+  const scenarioTools = Array.isArray(baseline.recoveryTools) ? baseline.recoveryTools : [];
+  const capped = SCENARIO.name === 'capped';
+  // Both the positive and the negative proposals are built from the scenario
+  // row alone: a merged target can be recoverable through another loss kind,
+  // so its wording must not leak into this scenario's basis.
+  const why = '已观测到 ' + scenarioKinds.join('/') + ' 退化'
+    + (Number.isInteger(baseline.occurrences) ? '（本场景发生 ' + baseline.occurrences + ' 次）' : '')
+    + '，累计恢复调用 ' + baseline.recoveryCalls + ' 次，记录到的恢复工具：' + scenarioTools.join('/')
+    + '；新工具要求模型主动选择，改由官方 tools/post-execute 变换既有结果，并以成对真实会话验证。'
+    + (capped
+      ? ' The generated files are larger than the official read byte cap, so the sentinel sits in the continuation tail.'
+      : ' The generated configs put the sentinel beyond the read truncation point.');
   const proposal = {
-      why: selected.improvementReason + ' The generated configs put the sentinel beyond the read truncation point.',
+      why,
       target: options.target ?? selected.problemKey,
       impactScope: ['acp', 'desktop'],
       successMetrics: ['fewer turns and tool calls on the same three-file task', 'all three sentinels answered correctly'],
       improvement: selected.improvement,
       benefitModel: { kind: 'workflow' },
-      rootCause: 'observed ' + baseline.lossKinds.join('/') + ' recovered by ' + baseline.recoveryTools.join('/') + '; the sentinel is outside the model-visible read result',
+      rootCause: 'observed ' + scenarioKinds.join('/') + ' recovered by ' + scenarioTools.join('/') + '; the sentinel is outside the first model-visible read result',
   };
   // A negative control must not be blocked by the no-benefit conclusion an
   // earlier negative published for the same strategy fingerprint; the strategy
   // is optional in the proposal contract, so the controls omit it.
-  if (options.strategy !== null) proposal.strategy = options.strategy ?? 'complete the truncated read line through the official tools/post-execute waterfall';
+  if (options.strategy !== null) proposal.strategy = options.strategy ?? (capped
+    ? 'complete a small capped read tail through the official tools/post-execute waterfall'
+    : 'complete the truncated read line through the official tools/post-execute waterfall');
   return {
     proposal,
-    composition: { name: 'complete-read-line', purpose: 'Complete a truncated read line before the next model step', code: { host: CANDIDATE_HOST } },
+    composition: capped
+      ? { name: 'complete-capped-read', purpose: 'Append a small capped read tail before the next model step', code: { host: CANDIDATE_HOST } }
+      : { name: 'complete-read-line', purpose: 'Complete a truncated read line before the next model step', code: { host: CANDIDATE_HOST } },
     verification: {
       observations: 2,
       task: { id: task.id, prompt: task.prompt, expect: task.expect, runs },
-      functionalCheck: {
-        tool: 'read',
-        arguments: { file_path: 'a.json', offset: 1, limit: 1 },
-        resultPath: ['lines', '0', 'text'],
-        expected: files[0].line,
-      },
+      functionalCheck: capped
+        ? {
+          tool: 'read',
+          arguments: { file_path: 'a.txt', offset: 1, limit: 2000 },
+          resultPath: ['lines', '699', 'text'],
+          expected: files[0].lastLine,
+        }
+        : {
+          tool: 'read',
+          arguments: { file_path: 'a.json', offset: 1, limit: 1 },
+          resultPath: ['lines', '0', 'text'],
+          expected: files[0].line,
+        },
     },
     requestedTargetProfiles: ['acp'],
   };
@@ -437,9 +523,10 @@ try {
     model,
     binary,
     cli,
+    ...(SCENARIO.maxToolText ? { maxToolText: SCENARIO.maxToolText } : {}),
     log: (line) => console.log(line),
   });
-  evidence.producer = { ok: producer.ok, artifactFile: producer.artifactFile, artifact: producer.artifact, sessions: producer.report.sessions };
+  evidence.producer = { ok: producer.ok, artifactFile: producer.artifactFile, artifact: producer.artifact, sessions: producer.report.sessions, retries: producer.report.retries };
   evidence.steps.push({ name: 'paired-real-sessions-produced', at: new Date().toISOString() });
   assert(producer.ok === true, 'the producer did not complete every session: ' + JSON.stringify(producer.artifact, null, 2).slice(0, 1200));
   assert(producer.artifact.candidate.correct === runs, 'the candidate side did not answer every session correctly');
@@ -471,7 +558,27 @@ try {
   const selection = planReceipt.plan?.selected;
   assert(selection, 'the production planner selected no candidate from the real losses: ' + JSON.stringify(planReceipt.plan?.none ?? null).slice(0, 800));
   assert(selection.problemKey === 'tool read', 'the planner selected ' + JSON.stringify(selection.problemKey) + ', not the observed read loss');
-  assert(selection.loss && selection.loss.kinds.includes('line-truncated'), 'the selected candidate does not carry the truncation loss: ' + JSON.stringify(selection.loss));
+  assert(selection.loss && selection.loss.kinds.includes(SCENARIO.lossKind),
+    'the selected candidate does not carry the observed ' + SCENARIO.lossKind + ' loss: ' + JSON.stringify(selection.loss));
+  // The per-kind projection is what keeps a merged target's several losses
+  // distinguishable; the selected loss must carry the same kind with its own
+  // occurrence and recovery evidence.
+  const lossKind = (selection.loss.breakdown ?? []).find((row) => row.kind === SCENARIO.lossKind);
+  assert(lossKind && lossKind.occurrences >= runs,
+    'the planner did not report the per-kind evidence for ' + SCENARIO.lossKind + ': ' + JSON.stringify(selection.loss.breakdown ?? null));
+  // The merged `loss` may be satisfied by another kind (for example a line
+  // truncation recovered by grep), so the scenario's own row must carry the
+  // occurrence, recovery and tool evidence this acceptance builds a proposal on.
+  const scenario = scenarioBaselineOf(selection, SCENARIO.lossKind);
+  assert(scenario.row && scenario.row.occurrences >= runs,
+    'the scenario row does not cover the baseline sessions: ' + JSON.stringify(scenario.row));
+  assert(scenario.row.recoveryCalls >= 1,
+    'the ' + SCENARIO.lossKind + ' loss reports no recovery calls: ' + JSON.stringify(scenario.row));
+  assert(scenario.recoveryTools.length >= 1,
+    'the ' + SCENARIO.lossKind + ' loss reports no recovery tool: ' + JSON.stringify(scenario.row));
+  const scenarioRecoveryTools = scenario.recoveryTools;
+  const scenarioBaseline = scenario.baseline;
+  const scenarioSelection = { ...selection, baselinePath: scenarioBaseline };
   assert(selection.loss.recoverable === true, 'the selected loss has no observed recovery cost');
   assert(selection.loss.recoveryCalls >= 1, 'the selected loss reports no recovery calls');
   assert(selection.attribution === 'classified', 'the selected loss is unattributed: ' + JSON.stringify(selection.attribution));
@@ -484,11 +591,14 @@ try {
   assert(selection.baselinePath?.kind === 'observed-recovery', 'the planner did not record the observed recovery baseline');
   // The collector also accepts grep and a successful same-path re-read; the
   // concrete recovery tool is an observed fact, not a harness requirement.
-  assert(selection.baselinePath.recoveryTools.some((tool) => ['bash', 'grep', 'read'].includes(tool)),
-    'the planner lost the observed recovery path: ' + JSON.stringify(selection.baselinePath.recoveryTools));
+  assert(scenarioRecoveryTools.some((tool) => ['bash', 'grep', 'read'].includes(tool)),
+    'the scenario recovery path is not an observed tool: ' + JSON.stringify(scenarioRecoveryTools));
   evidence.discovery = {
+    scenario: SCENARIO.name,
     problemKey: selection.problemKey,
     loss: selection.loss,
+    scenarioLoss: lossKind,
+    lossKindsBreakdown: selection.loss.breakdown ?? null,
     occurrences: selection.occurrences,
     score: selection.score,
     benefitModel: selection.benefitModel,
@@ -496,17 +606,17 @@ try {
     hook: selection.hook,
     verificationKind: selection.verificationKind,
     improvementReason: selection.improvementReason,
-    baselinePath: selection.baselinePath,
+    baselinePath: scenarioBaseline,
     source: 'production evolution_plan over the isolated shared experience store after the baseline sessions',
     transport: planReceipt.transport,
   };
   evidence.steps.push({ name: 'real-loss-discovery', at: new Date().toISOString() });
 
   const planTarget = selection.problemKey;
-  evidence.negatives = await runNegativeControls({ artifact: producer.artifact, planTarget, selection });
+  evidence.negatives = await runNegativeControls({ artifact: producer.artifact, planTarget, selection: scenarioSelection });
   evidence.steps.push({ name: 'negative-artifacts-rejected', at: new Date().toISOString() });
 
-  const plan = planFor({ target: planTarget, selection });
+  const plan = planFor({ target: planTarget, selection: scenarioSelection });
   let approvalObserved = null;
   let positiveFailure = null;
   await runFixturePrompt('acp-delegate', '请把这次上下文策略改进交给 Desktop 执行，先停在所有者确认前，不要自行批准。', (tools, result, round) => {
@@ -612,7 +722,12 @@ try {
   };
   evidence.steps.push({ name: 'stable-with-functional-canary', at: new Date().toISOString() });
 
-  const bridge = await startModelBridge({ model, cwd: path.join(work, 'bridge-cwd') });
+  const bridge = await startModelBridge({
+    model,
+    cwd: path.join(work, 'bridge-cwd'),
+    isolatePilotTools: true,
+    ...(SCENARIO.maxToolText ? { maxToolText: SCENARIO.maxToolText } : {}),
+  });
   try {
     const bridgeOverlay = path.join(work, 'bridge-transport.yml');
     await fs.writeFile(bridgeOverlay, '- id: llm-deepseek\n  config:\n    baseURL: ' + bridge.baseURL + '\n    apiKeyEnv: EVOLUTION_ACCEPTANCE_KEY\n', { mode: 0o600 });
@@ -632,29 +747,141 @@ try {
     // is a *read* result carrying the complete line, not a shell fallback that
     // happened to print the same value.
     const consumerCalls = consumerUpdates.filter((update) => update.sessionUpdate === 'tool_call');
-    const consumerDecisions = consumerTurns.filter((turn) => (turn.tools?.length ?? 0) > 0).map((turn) => turn.decision?.tool ?? null).filter(Boolean);
-    const consumerNameById = new Map();
-    consumerCalls.forEach((call, index) => {
-      const name = consumerDecisions[index] ?? call.title;
-      if (typeof call.toolCallId === 'string' && typeof name === 'string') consumerNameById.set(call.toolCallId, name);
+    // Only decisions that chose a tool have a call; a trailing stop must not
+    // shift a later call's arguments onto another id.
+    const consumerDecisions = consumerTurns
+      .filter((turn) => (turn.tools?.length ?? 0) > 0 && typeof turn.decision?.tool === 'string' && turn.decision.tool.trim() !== '');
+    const consumerCallIds = consumerCalls.map((call) => call.toolCallId);
+    let consumerAttributionComplete = consumerCalls.length === consumerDecisions.length
+      && consumerCallIds.every((id) => typeof id === 'string')
+      && new Set(consumerCallIds).size === consumerCallIds.length
+      && missingTerminalToolCalls(consumerUpdates) === 0
+      && !terminalNotificationMissingId(consumerUpdates);
+    const consumerToolNames = consumerDecisions.map((turn) => turn.decision.tool);
+    const consumerTerminal = terminalToolResults(consumerUpdates, home);
+    if (consumerTerminal.conflicts.size > 0) consumerAttributionComplete = false;
+    const consumerResultPathById = consumerTerminal.paths;
+    const consumerMergedInputs = mergeAcpInputs(consumerCalls, consumerUpdates, home);
+    if (consumerMergedInputs.conflict) consumerAttributionComplete = false;
+    const consumerInputByCall = consumerMergedInputs.inputs;
+    const consumerHasOffset = (call) => {
+      const input = consumerInputByCall.get(call?.toolCallId) ?? call?.rawInput;
+      return Number.isInteger(input?.offset) && input.offset > 0;
+    };
+    const consumerOrderedCalls = consumerCalls.map((call, index) => ({ call, index }))
+      .sort((left, right) => Number(consumerHasOffset(right.call)) - Number(consumerHasOffset(left.call)));
+    const consumerCallById = new Map();
+    const consumerUsedDecisions = new Set();
+    consumerOrderedCalls.forEach(({ call, index }) => {
+      const effectiveCall = consumerInputByCall.has(call.toolCallId)
+        ? { ...call, rawInput: consumerInputByCall.get(call.toolCallId) }
+        : call;
+      const descriptor = toolCallDescriptor(effectiveCall, index, consumerDecisions, consumerToolNames, home, consumerUsedDecisions,
+        consumerResultPathById.get(call.toolCallId) ?? null);
+      if (typeof call.toolCallId === 'string' && typeof descriptor.name === 'string') {
+        consumerCallById.set(call.toolCallId, descriptor);
+      } else {
+        consumerAttributionComplete = false;
+      }
     });
-    const consumerReadResults = consumerUpdates
-      .filter((update) => update.sessionUpdate === 'tool_call_update'
-        && (update.status === 'completed' || update.status === 'success')
-        && consumerNameById.get(update.toolCallId) === 'read')
-      .map(toolUpdateText);
+    const consumerCallNames = consumerCalls.map((call) => consumerCallById.get(call.toolCallId)?.name)
+      .filter((name) => typeof name === 'string');
+    const consumerCallIdSet = new Set(consumerCalls.map((call) => call.toolCallId).filter((id) => typeof id === 'string'));
+    for (const update of consumerUpdates) {
+      if (update?.sessionUpdate !== 'tool_call' && update?.sessionUpdate !== 'tool_call_update') continue;
+      if (!(update.status === 'completed' || update.status === 'success'
+        || update.status === 'failed' || update.status === 'error'
+        || update.isError === true || update.is_error === true)) continue;
+      if (typeof update.toolCallId === 'string' && !consumerCallIdSet.has(update.toolCallId)) {
+        consumerAttributionComplete = false;
+      }
+    }
+    for (const update of consumerUpdates) {
+      if (update?.sessionUpdate !== 'tool_call_update') continue;
+      if (typeof update.toolCallId !== 'string' || !consumerCallIdSet.has(update.toolCallId)) {
+        consumerAttributionComplete = false;
+      }
+    }
+    assert(consumerCalls.length === consumerDecisions.length
+      && consumerCallNames.length === consumerCalls.length
+      && toolNameCountsMatch(consumerToolNames, consumerCallNames),
+    'the fresh consumer model decisions and ACP calls do not align by tool identity');
+    const consumerResultById = new Map();
+    const consumerFailed = failedToolCallIds(consumerUpdates);
+    for (const update of consumerUpdates) {
+      if (update.sessionUpdate !== 'tool_call' && update.sessionUpdate !== 'tool_call_update') continue;
+      if (consumerTerminal.conflicts.has(update.toolCallId)) continue;
+      if (consumerFailed.ids.has(update.toolCallId)) continue;
+      if (!successfulToolResult(update)) continue;
+      if (consumerResultById.has(update.toolCallId)) continue;
+      const call = consumerCallById.get(update.toolCallId);
+      if (call?.name !== 'read') continue;
+      const text = consumerTerminal.texts.get(update.toolCallId);
+      if (!text) { consumerAttributionComplete = false; continue; }
+      const mergedPath = consumerTerminal.paths.get(update.toolCallId) ?? null;
+      const renderedPath = mergedPath;
+      const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
+        ? call.arguments.file_path : null;
+      if (!renderedPath && !argumentPath) { consumerAttributionComplete = false; continue; }
+      // The result names the file the host actually read; a disagreement with
+      // the request proves neither file's effect and is not evidence.
+      if (renderedPath && argumentPath
+        && !readPathMatches(argumentPath, renderedPath, home)
+        && !readPathMatches(renderedPath, argumentPath, home)) {
+        consumerAttributionComplete = false;
+        continue;
+      }
+      const offset = Number.isInteger(call.arguments.offset) && call.arguments.offset > 0 ? call.arguments.offset : 1;
+      consumerResultById.set(update.toolCallId, { text, path: renderedPath ?? argumentPath, offset });
+    }
+    for (const call of consumerCalls) {
+      if (consumerCallById.get(call.toolCallId)?.name !== 'read') continue;
+      if (consumerFailed.ids.has(call.toolCallId)) continue;
+      if (!consumerResultById.has(call.toolCallId)) consumerAttributionComplete = false;
+    }
+    const consumerReadResults = [...consumerResultById.values()];
+    const consumerReadRequests = [];
+    for (const call of consumerCalls) {
+      const meta = consumerCallById.get(call.toolCallId);
+      if (meta?.name !== 'read') continue;
+      const argumentPath = typeof meta.arguments.file_path === 'string' && meta.arguments.file_path.trim() !== ''
+        ? meta.arguments.file_path : null;
+      const offset = meta.inputKnown && Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0
+        ? meta.arguments.offset : (meta.inputKnown ? 1 : null);
+      if (!meta.inputKnown) consumerAttributionComplete = false;
+      const path = consumerResultById.get(call.toolCallId)?.path ?? argumentPath ?? null;
+      if (typeof path !== 'string' || path === '' || hasParentSegment(path)) consumerAttributionComplete = false;
+      consumerReadRequests.push({ callId: call.toolCallId, path, offset });
+    }
+    assert(consumerAttributionComplete, 'the fresh consumer read attribution is incomplete');
     assert(consumerTurns.every((turn) => turn.ok === true), 'a fresh consumer model turn failed');
     const matchedSentinels = sentinels.filter((sentinel) => consumerText.includes(sentinel)).length;
     assert(matchedSentinels === sentinels.length, 'the fresh consumer answered ' + matchedSentinels + '/' + sentinels.length + ' expected values');
     assert(consumerReadResults.length >= 1, 'the fresh consumer never used the read tool');
-    assert(sentinels.every((sentinel) => consumerReadResults.some((text) => text.includes(sentinel))), 'the promoted policy did not deliver the complete read line in the fresh consumer');
-    assert(!consumerReadResults.some((text) => text.includes('line truncated')), 'a fresh consumer read result was still truncated');
+    assert(sentinels.every((sentinel) => consumerReadResults.some((result) => result.text.includes(sentinel))), 'the promoted policy did not deliver the complete read result in the fresh consumer');
+    assert(!consumerReadResults.some((result) => result.text.includes(SCENARIO.forbiddenReadText)),
+      'a fresh consumer read result still carried "' + SCENARIO.forbiddenReadText + '"');
+    // The first *request* of each file must start at line 1 and return that
+    // file's own sentinel: a tail-first or failed first request followed by a
+    // later start read is the cost the policy exists to remove, not proof that
+    // it ran. The value is bound to its path, so one file's content cannot
+    // stand in for another's.
+    for (const file of files) {
+      const expectedPath = path.join(home, file.name);
+      const request = consumerReadRequests.find((candidate) => readPathMatches(candidate.path, expectedPath, home));
+      assert(request && request.offset === 1, 'the fresh consumer did not take a start read of ' + file.name);
+      const result = consumerResultById.get(request.callId);
+      assert(result && result.text.includes(file.sentinel),
+        'the promoted policy did not complete the first start read of ' + file.name);
+    }
     const consumerUsage = usageTotals(consumerTurns);
     evidence.freshConsumer = {
       taskId,
       modelTurns: consumerTurns.filter((turn) => (turn.tools?.length ?? 0) > 0).length,
       toolCalls: consumerTurns.filter((turn) => turn.decision?.tool).length,
-      tokens: consumerUsage.inputTokens + consumerUsage.outputTokens + consumerUsage.cacheReadTokens,
+      tokens: consumerUsage.unknownTurns === 0
+        ? consumerUsage.inputTokens + consumerUsage.outputTokens + consumerUsage.cacheReadTokens : null,
+      usageUnknownTurns: consumerUsage.unknownTurns,
       wallMs: consumerWall,
       correct: true,
       readResultsContainAllSentinels: true,

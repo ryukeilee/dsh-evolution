@@ -1,0 +1,350 @@
+// Candidate source submitted through the real kernel by the capped-read
+// acceptance. It is not installed by this repository: the Trial mounts it, the
+// promotion gate decides, and the evidence records whether it ran.
+//
+// The official `read` tool stops a window at its byte cap and tells the model to
+// continue with `offset`. When the remaining tail is small, that continuation is
+// a whole extra model turn and tool call for content the model is about to read
+// anyway. This policy appends that bounded tail to the existing result through
+// the official `tools/post-execute` waterfall; it registers no tool, so the
+// model does not have to choose it.
+const MAX_FILE_BYTES = 256 * 1024;
+const MAX_TAIL_LINES = 200;
+const MAX_TAIL_BYTES = 16 * 1024;
+// The host's default single-line truncation for the supported versions. A
+// tail line longer than this would bypass the renderer's own per-line cap, so
+// the policy declines instead of appending it.
+const DEFAULT_LINE_CHARS = 2000;
+// The dynamic-package host half runs in a `node:vm` sandbox where `Buffer` and
+// `process` are absent (the sandbox provides TextEncoder instead). Using Buffer
+// here made the hook throw and silently return the unmodified result, which is
+// exactly what the Trial functional check caught.
+const encoder = new TextEncoder();
+
+function contentText(result) {
+  const parts = [];
+  for (const block of Array.isArray(result?.content) ? result.content : []) {
+    if (typeof block?.text === 'string') parts.push(block.text);
+    else if (typeof block?.content?.text === 'string') parts.push(block.content.text);
+  }
+  return parts.join('\n');
+}
+
+function snapshotWindow(value) {
+  if (!value || typeof value !== 'object' || !Array.isArray(value.lines)) return null;
+  return {
+    path: typeof value.path === 'string' ? value.path : null,
+    offset: value.offset,
+    totalLines: value.totalLines,
+    lines: value.lines.map((line) => ({ number: line?.number, text: line?.text })),
+  };
+}
+
+function sameReadWindow(left, right) {
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object') return false;
+  if (left.path !== right.path || left.offset !== right.offset || left.totalLines !== right.totalLines) return false;
+  if (!Array.isArray(left.lines) || !Array.isArray(right.lines) || left.lines.length !== right.lines.length) return false;
+  for (let index = 0; index < left.lines.length; index += 1) {
+    if (left.lines[index]?.number !== right.lines[index]?.number || left.lines[index]?.text !== right.lines[index]?.text) return false;
+  }
+  return true;
+}
+
+const readOffsetOf = (value) => {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0 ? number : 1;
+};
+const readLimitOf = (value) => {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0 ? number : null;
+};
+
+return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
+  // A pre-execute freshness token proves the file did not change between the
+  // host's read and this policy's re-read. The host read result does not expose
+  // a version, so without this snapshot the tail cannot be attributed to the
+  // same file version.
+  const versions = new Map();
+  ctx.on('tools/pre-execute', async (exec, next) => {
+    const callId = typeof exec?.callId === 'string' ? exec.callId : null;
+    try {
+      if (exec?.name === 'read' && callId !== null
+        && typeof exec?.arguments?.file_path === 'string') {
+        // Capture the caller's request before any await: a hook/stat callback
+        // may mutate exec.arguments while the file checks are pending.
+        const filePath = exec.arguments.file_path;
+        const limit = Number(exec.arguments?.limit);
+        const offset = Number(exec.arguments?.offset);
+        const target = await ctx.fs.resolve(filePath, {
+          cwd: exec.agent?.session?.header?.cwd,
+          signal: exec.signal,
+        });
+        const info = await ctx.fs.stat(target, exec.signal);
+        if (info?.type === 'file' && typeof info.version === 'string') {
+          versions.set(callId, {
+            target,
+            filePath,
+            version: info.version,
+            limit: Number.isInteger(limit) && limit > 0 ? limit : null,
+            offset: Number.isInteger(offset) && offset > 0 ? offset : null,
+          });
+          while (versions.size > 32) versions.delete(versions.keys().next().value);
+        }
+      }
+    } catch { /* no snapshot means the post-execute hook declines */ }
+    const outcome = await next();
+    // Downstream pre-execute hooks may replace exec.arguments after this
+    // listener returns and before dispatch. This snapshot is a lower bound; the
+    // tools/execute stage below records the arguments the body actually reads.
+    if (callId !== null) {
+      try {
+        const stored = versions.get(callId);
+        if (stored) {
+          stored.execPath = typeof exec?.arguments?.file_path === 'string' ? exec.arguments.file_path : null;
+          stored.execOffset = readOffsetOf(exec?.arguments?.offset);
+          stored.execLimit = readLimitOf(exec?.arguments?.limit);
+        }
+      } catch { /* keep the entry snapshot; the post hook declines without exec proof */ }
+    }
+    return outcome;
+  });
+  // The pre-execute waterfall completes before dispatch, so tools/execute is
+  // the last official point before the tool body reads its arguments. Only an
+  // executed window recorded here can bound the tail.
+  ctx.on('tools/execute', async (exec, next) => {
+    const stored = typeof exec?.callId === 'string' ? versions.get(exec.callId) : undefined;
+    if (stored) {
+      try {
+        stored.execPath = typeof exec?.arguments?.file_path === 'string' ? exec.arguments.file_path : null;
+        stored.execOffset = readOffsetOf(exec?.arguments?.offset);
+        stored.execLimit = readLimitOf(exec?.arguments?.limit);
+        stored.execStaged = true;
+      } catch { /* leave the earlier snapshot; the post hook then declines */ }
+    }
+    return next();
+  });
+  ctx.on('tools/post-execute', async (exec, result, next) => {
+    // Non-read calls take the original chain untouched, before any snapshot or
+    // argument coercion can throw.
+    if (exec?.name !== 'read') return next();
+    // Snapshot before awaiting downstream hooks: they may mutate result.content
+    // or result.value in place. If the snapshot itself cannot be taken, keep the
+    // original chain running.
+    let originalContent;
+    let originalContentJson;
+    let originalValue;
+    let originalWindow;
+    let effectiveLimitSnapshot;
+    try {
+      originalContent = contentText(result);
+      originalContentJson = JSON.stringify(result?.content ?? null);
+      originalValue = result?.value;
+      originalWindow = snapshotWindow(originalValue);
+      effectiveLimitSnapshot = Number(exec?.arguments?.limit);
+    } catch {
+      return next();
+    }
+    // Capture the caller's request before the waterfall: a downstream hook or a
+    // stat callback may mutate the arguments while the checks are pending. Every
+    // await below revalidates this request, so a path/offset/limit drift cannot
+    // append the tail requested by a different call.
+    const callId = typeof exec?.callId === 'string' ? exec.callId : null;
+    const requestPath = typeof exec?.arguments?.file_path === 'string' ? exec.arguments.file_path : null;
+    const requestOffset = readOffsetOf(exec?.arguments?.offset);
+    const requestLimit = readLimitOf(exec?.arguments?.limit);
+    const requestIntact = () => typeof callId === 'string'
+      && exec?.name === 'read'
+      && exec.callId === callId
+      && requestPath !== null
+      && exec.arguments?.file_path === requestPath
+      && readOffsetOf(exec.arguments?.offset) === requestOffset
+      // A later widening is bounded by the captured window; a narrowing or a
+      // missing limit means the window this tail was computed for is gone.
+      && (requestLimit === null
+        ? readLimitOf(exec.arguments?.limit) !== null
+        : (readLimitOf(exec.arguments?.limit) ?? 0) >= requestLimit);
+    // The original result may be mutated by a hook or a fs callback while an
+    // await is pending; the tail (and the content it is appended beside) must
+    // still describe the same result.
+    const resultUnchanged = () => {
+      try {
+        if (contentText(result) !== originalContent) return false;
+        if (JSON.stringify(result?.content ?? null) !== originalContentJson) return false;
+        if (originalWindow) {
+          const current = snapshotWindow(result?.value);
+          if (!current || !sameReadWindow(current, originalWindow)) return false;
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const decision = await next();
+    if (!requestIntact() || !resultUnchanged()) return decision;
+    try {
+      if (!decision || decision.kind !== 'accept') return decision;
+      // A downstream hook may replace or mutate the model-visible content.
+      if (contentText(result) !== originalContent) return decision;
+      // A downstream decision that owns or inherits the content property (even
+      // as undefined) must be returned as-is; the official postExecute rejects a
+      // decision with both content and a rebuilt value.
+      if (decision && 'content' in decision) return decision;
+      if (JSON.stringify(result?.content ?? null) !== originalContentJson) return decision;
+      if (originalWindow) {
+        const currentWindow = snapshotWindow(result?.value);
+        if (!currentWindow || !sameReadWindow(currentWindow, originalWindow)) return decision;
+      }
+      const text = originalContent;
+      // Identify the footer with the same anchored match that extracts its
+      // numbers: a file may contain footer-like text earlier in its body, and
+      // the real footer is the one at the end.
+      const footerMatch = text.length > 0
+        ? /\(Output capped\. Showing lines (\d+)-(\d+)\. Use offset=(\d+) to continue\.\)(?:\n<\/content>)?\s*$/u.exec(text.length > 8192 ? text.slice(-8192) : text)
+        : null;
+      const footer = footerMatch !== null;
+      if (!originalWindow) return decision;
+      const base = decision.value === undefined ? originalValue : decision.value;
+      if (!base || typeof base !== 'object' || !Array.isArray(base.lines) || typeof base.path !== 'string') return decision;
+      // A downstream post-execute hook may have rewritten the window. The cap
+      // signal belongs to the original host result; if the final value is a
+      // different window, keep the downstream result untouched.
+      if (decision.value !== undefined && originalWindow && !sameReadWindow(decision.value, originalWindow)) return decision;
+      const total = base.totalLines;
+      const end = base.lines.at(-1)?.number ?? (Number.isInteger(base.offset) ? base.offset - 1 : 0);
+      if (!Number.isInteger(total) || !Number.isInteger(end) || end < 0 || end >= total) return decision;
+      // The Trial's functional check invokes `ctx.tools.execute` directly, and
+      // on that path the waterfall can receive a result without rendered
+      // content. A window that stops before the requested line count and EOF
+      // can only have stopped at the byte cap. The official read default is
+      // 2000 lines; a deployment that configured a smaller default is not
+      // distinguished here, so this path never widens more than the bounded
+      // tail below (and the footer remains the precise signal elsewhere).
+      const pre = callId === null ? undefined : versions.get(callId);
+      if (!pre || typeof pre.version !== 'string') return decision;
+      // The bound must be the window the tool actually executed with. A
+      // downstream pre-execute hook can narrow the request after this policy
+      // saw it, so both the entry request and the post-waterfall arguments are
+      // required, and the narrower one is the real ceiling.
+      const entryLimit = pre.limit;
+      const execLimit = Number.isInteger(pre.execLimit) && pre.execLimit > 0 ? pre.execLimit : null;
+      if (pre.execStaged !== true || !(Number.isInteger(entryLimit) && entryLimit > 0) || execLimit === null) return decision;
+      if (pre.execPath !== pre.filePath) return decision;
+      if (readOffsetOf(pre.execOffset) !== readOffsetOf(pre.offset)) return decision;
+      const requestedLimit = Math.min(entryLimit, execLimit);
+      const hasExplicitLimit = requestedLimit > 0;
+      const snapshotOffset = Number.isInteger(pre.offset) && pre.offset > 0 ? pre.offset : 1;
+      if (Number.isInteger(base.offset) && base.offset !== snapshotOffset) return decision;
+      const effectiveLimit = effectiveLimitSnapshot;
+      const effectiveValid = Number.isInteger(effectiveLimit) && effectiveLimit > 0 ? effectiveLimit : null;
+      if (effectiveValid === null) return decision;
+      const windowLimit = Math.min(requestedLimit, effectiveValid);
+      // The returned window must actually start at the requested offset and be
+      // consecutive; a result that claims offset 3 but returns line 1 cannot be
+      // extended across the request start.
+      if (base.lines.length === 0) return decision;
+      const firstNumber = base.lines[0]?.number;
+      if (!Number.isInteger(firstNumber) || firstNumber !== snapshotOffset) return decision;
+      for (let index = 0; index < base.lines.length; index += 1) {
+        if (base.lines[index]?.number !== snapshotOffset + index) return decision;
+      }
+      if (footerMatch
+        && (Number(footerMatch[1]) !== snapshotOffset
+          || Number(footerMatch[2]) !== end || Number(footerMatch[3]) !== end + 1)) return decision;
+      // Only the no-rendered-content path may fall back to structure, and only
+      // when the caller declared an explicit limit: otherwise a deployment's
+      // smaller default line window would look like a byte cap. When content is
+      // present its footer is the precise signal and an ordinary "Showing lines
+      // …" footer must not be widened.
+      const structuralByteCap = text.length === 0 && hasExplicitLimit && base.lines.length < windowLimit;
+      if (!footer && !structuralByteCap) return decision;
+      // The footer only says where this byte-capped window ended; it does not
+      // reveal a deployment's configured line window (`readLimit`). Without an
+      // explicit caller limit there is no provable boundary, so keep the
+      // original result instead of widening it to EOF or to a guessed default.
+      if (!hasExplicitLimit) return decision;
+      // Never read past the window the caller asked for: an explicit `limit`
+      // is a request boundary even when the byte cap stopped the first window
+      // early.
+      const offset = snapshotOffset;
+      const windowEnd = Math.min(total, offset - 1 + windowLimit);
+      const missing = windowEnd - end;
+      if (missing < 1 || missing > MAX_TAIL_LINES) return decision;
+      const prePath = typeof pre.target === 'string' ? pre.target : pre.target?.displayPath;
+      if (typeof prePath === 'string' && base.path !== prePath) return decision;
+      // A path changed between pre-execute and now already invalidates the
+      // snapshot this tail would use.
+      if (typeof pre.filePath === 'string' && requestPath !== pre.filePath) return decision;
+      const target = pre.target;
+      const info = await ctx.fs.stat(target, exec.signal);
+      if (!requestIntact() || !resultUnchanged()) return decision;
+      if (!info || info.type !== 'file' || info.version !== pre.version
+        || !Number.isInteger(info.size) || info.size > MAX_FILE_BYTES) return decision;
+      const content = await ctx.fs.readText(target, exec.signal);
+      if (!requestIntact() || !resultUnchanged()) return decision;
+      // Reading is only safe while the freshness token is unchanged. A write
+      // between the host read and this re-read, or during the re-read, must
+      // keep the original result.
+      const after = await ctx.fs.stat(target, exec.signal);
+      if (!requestIntact() || !resultUnchanged()) return decision;
+      if (!after || after.type !== 'file' || after.version !== pre.version) return decision;
+      // Revalidate after the last await: the hook may have mutated content or
+      // the value while the file checks were pending. Only then append
+      // synchronously.
+      if (contentText(result) !== originalContent) return decision;
+      if (JSON.stringify(result?.content ?? null) !== originalContentJson) return decision;
+      const currentLimit = Number(exec?.arguments?.limit);
+      const currentOffsetRaw = Number(exec?.arguments?.offset);
+      const currentOffset = Number.isInteger(currentOffsetRaw) && currentOffsetRaw > 0 ? currentOffsetRaw : 1;
+      if (!Number.isInteger(currentLimit) || currentLimit <= 0 || currentLimit < effectiveLimitSnapshot
+        || currentOffset !== snapshotOffset) return decision;
+      if (!decision || decision.kind !== 'accept') return decision;
+      if ('content' in decision) return decision;
+      const finalBase = decision.value === undefined ? result?.value : decision.value;
+      if (!finalBase || typeof finalBase !== 'object' || !Array.isArray(finalBase.lines) || typeof finalBase.path !== 'string') return decision;
+      if (originalWindow) {
+        const currentWindow = snapshotWindow(result?.value);
+        if (!currentWindow || !sameReadWindow(currentWindow, originalWindow)) return decision;
+        if (!sameReadWindow(finalBase, originalWindow)) return decision;
+      }
+      const all = content.split('\n').map((line) => line.endsWith('\r') ? line.slice(0, -1) : line);
+      // The official line counter does not count the empty segment after a
+      // trailing newline; drop only that one, never a real empty last line.
+      if (all.length > 0 && all.at(-1) === '' && content.endsWith('\n')) all.pop();
+      // The tail must come from the same snapshot as the window the host
+      // returned. Re-reading is only safe when every returned line (and the
+      // total line count) still matches; otherwise keep the original result.
+      if (all.length !== total) return decision;
+      for (const line of finalBase.lines) {
+        if (!Number.isInteger(line?.number) || typeof line?.text !== 'string') continue;
+        if (all[line.number - 1] !== line.text) return decision;
+      }
+      const tail = [];
+      let bytes = 0;
+      const maxOriginalLine = finalBase.lines.reduce((max, line) => {
+        if (typeof line?.text !== 'string') return max;
+        const truncated = /\.\.\. \(line truncated to (\d+) chars\)$/u.exec(line.text);
+        if (truncated) {
+          // The suffix proves the host line width, not the marker's length.
+          return Math.max(max, line.text.slice(0, truncated.index).length);
+        }
+        return Math.max(max, line.text.length);
+      }, 0);
+      for (let number = end + 1; number <= windowEnd; number += 1) {
+        const value = all[number - 1];
+        if (typeof value !== 'string' || value.length > DEFAULT_LINE_CHARS) return decision;
+        // Without a proven host per-line cap, a tail line longer than every
+        // returned line could bypass a configured smaller readMaxLineLength.
+        if (value.length > maxOriginalLine) return decision;
+        bytes += encoder.encode(value).length + 1;
+        if (bytes > MAX_TAIL_BYTES) return decision;
+        tail.push({ number, text: value });
+      }
+      if (tail.length === 0) return decision;
+      return { ...decision, value: { ...finalBase, lines: [...finalBase.lines, ...tail] } };
+    } catch {
+      return decision;
+    } finally {
+      if (callId !== null) versions.delete(callId);
+    }
+  });
+} };

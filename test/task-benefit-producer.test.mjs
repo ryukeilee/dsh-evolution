@@ -15,6 +15,7 @@ import {
   aggregateSessions,
   answerMatches,
   assertIsolatedHome,
+  assertReadBinding,
   assertIsolatedStorageRoots,
   assertIsolatedTarget,
   assertReportOutsideEvidence,
@@ -24,10 +25,17 @@ import {
   inspectArtifactTarget,
   normalizeTask,
   parseExpectTokens,
+  pilotFailureReasons,
+  pilotTransportRetryable,
   prepareArtifactDirectory,
+  readPathMatches,
+  retryableSession,
   resolveArtifactTarget,
   resolveFilesystemPath,
   safeErrorCode,
+  scenarioBaselineOf,
+  successfulToolResult,
+  toolCallDescriptor,
   writeArtifactFile,
   writePreviewModule,
   writeReportFile,
@@ -72,7 +80,7 @@ test('a session row counts only decision turns and proves the policy was exercis
   const updates = [
     { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
     { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'bash' },
-    { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<content>sentinel-a sentinel-b sentinel-c</content>' } }] },
+    { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/work/a.json</path>\n<content>sentinel-a sentinel-b sentinel-c</content>' } }] },
     { sessionUpdate: 'tool_call_update', toolCallId: 'c2', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: 'shell output' } }] },
   ];
   const row = extractSessionEvidence({
@@ -90,6 +98,1343 @@ test('a session row counts only decision turns and proves the policy was exercis
   assert.equal(row.correct, true);
   assert.equal(row.exercised, true);
   assert.equal(row.usedCandidate, false);
+});
+
+test('a follow-up read of the same file cannot stand in for the policy effect', () => {
+  const turns = turnsWith(['read', 'read', null]);
+  const call = (id) => ({ sessionUpdate: 'tool_call', toolCallId: id, title: 'read' });
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  // Baseline shape: the capped first window lacks the sentinel, and the model
+  // recovers with a second read of the same path that carries it.
+  const split = extractSessionEvidence({
+    label: 'baseline-1', side: 'baseline', turns,
+    updates: [
+      call('c1'), call('c2'),
+      result('c1', '<path>/home/a.json</path>\n<content>\nfirst window\n(Output capped. Showing lines 1-37. Use offset=38 to continue.)\n</content>'),
+      result('c2', '<path>/home/a.json</path>\n<content>\nsentinel-a\n(End of file - total 42 lines)\n</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 5,
+  });
+  assert.equal(split.correct, true);
+  assert.equal(split.exercised, false, 'the recover-by-reread path is not the policy completing the first read');
+  // Candidate shape: the first window already carries the value.
+  const whole = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns: turnsWith(['read', null]),
+    updates: [
+      call('c1'),
+      result('c1', '<path>/home/a.json</path>\n<content>\nfirst window\nsentinel-a\n(End of file - total 42 lines)\n</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 5,
+  });
+  assert.equal(whole.exercised, true);
+});
+
+test('a first read that jumps to the tail or has no identifiable path is not mechanism proof', () => {
+  const call = { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' };
+  const result = (text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const baseTurn = turnsWith(['read', 'read'])[0];
+  const second = { ...turnsWith(['read', 'read'])[1], decision: { tool: 'read', arguments: { file_path: '/work/a.json' } } };
+  const turns = [{ ...baseTurn, decision: { tool: 'read', arguments: { file_path: '/work/a.json', offset: 600 } } }, second];
+  const tail = extractSessionEvidence({
+    label: 'candidate-tail', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/work/a.json</path>\n<content>tail</content>' } }] },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c2', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/work/a.json</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(tail.exercised, false, 'a start reread after a tail-first read does not prove the policy completed the start window');
+
+  const failedTail = extractSessionEvidence({
+    label: 'candidate-failed-tail', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'failed', content: [{ type: 'content', content: { type: 'text', text: 'read failed' } }] },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c2', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/work/a.json</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(failedTail.exercised, false, 'a failed first request cannot be replaced by a later start read');
+
+  const start = extractSessionEvidence({
+    label: 'candidate-start', side: 'candidate',
+    turns: [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/work/a.json' } } }],
+    updates: [call, result('<path>/work/a.json</path>\n<content>sentinel-a</content>')],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(start.exercised, true);
+
+  const noPath = extractSessionEvidence({
+    label: 'candidate-nopath', side: 'candidate',
+    turns: [{ ...turns[0], decision: { tool: 'read', arguments: {} } }],
+    updates: [call, result('<content>sentinel-a</content>')],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(noPath.exercised, false, 'a result with no identifiable path cannot be deduplicated');
+});
+
+test('a value read from another file cannot prove the mechanism ran', () => {
+  const paths = ['/home/a.txt', '/home/b.txt', '/home/c.txt'];
+  const turns = ['read', 'read', 'read'].map((tool, index) => ({
+    ok: true,
+    tools: ['read', 'bash'],
+    decision: { tool, arguments: { file_path: paths[index] } },
+    usage: { input: 1000, output: 10, cache: { read: 50 } },
+    round: index,
+  }));
+  const calls = paths.map((_, index) => ({ sessionUpdate: 'tool_call', toolCallId: 'c' + (index + 1), title: 'read', rawInput: { file_path: paths[index], offset: 1 } }));
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  // a's first read wrongly carries b's sentinel; b's own first read does not.
+  const updates = [
+    ...calls,
+    result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a sentinel-b</content>'),
+    result('c2', '<path>/home/b.txt</path>\n<content>no value here</content>'),
+    result('c3', '<path>/home/c.txt</path>\n<content>sentinel-c</content>'),
+  ];
+  const expectedReads = [
+    { path: '/home/a.txt', token: 'sentinel-a' },
+    { path: '/home/b.txt', token: 'sentinel-b' },
+    { path: '/home/c.txt', token: 'sentinel-c' },
+  ];
+  const bound = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, updates,
+    assistantText: 'sentinel-a sentinel-b sentinel-c',
+    expectedTokens: TOKENS, expectedReads, candidateTool: null, durationMs: 1,
+  });
+  assert.equal(bound.correct, true);
+  assert.equal(bound.exercised, false, "b's sentinel was delivered by a's read, not by b's first read");
+  // The same shape without a per-file binding is what the earlier check
+  // accepted; keep this assertion so the reason for the binding stays visible.
+  const unbound = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, updates,
+    assistantText: 'sentinel-a sentinel-b sentinel-c',
+    expectedTokens: TOKENS, candidateTool: null, durationMs: 1,
+  });
+  assert.equal(unbound.exercised, true);
+
+  // The bound check still passes when each file's own first read carries its
+  // own value.
+  const complete = updates.map((update, index) => index < 3 ? update
+    : result('c' + (index - 2), '<path>' + paths[index - 3] + '</path>\n<content>' + TOKENS[index - 3] + '</content>'));
+  const boundComplete = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, updates: complete,
+    assistantText: 'sentinel-a sentinel-b sentinel-c',
+    expectedTokens: TOKENS, expectedReads, candidateTool: null, durationMs: 1,
+  });
+  assert.equal(boundComplete.exercised, true);
+});
+
+test('ACP rawInput and result path decide attribution, not the decision order', () => {
+  const turns = ['read', 'read'].map((tool, index) => ({
+    ok: true,
+    tools: ['read'],
+    decision: { tool, arguments: { file_path: index === 0 ? '/home/a.txt' : '/home/b.txt' } },
+    usage: { input: 1, output: 1, cache: { read: 0 } },
+    round: index,
+  }));
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  // The model said a then b, but ACP reports the executed calls as b then a.
+  const reordered = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/b.txt', offset: 1 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt', offset: 1 } },
+      result('c1', '<path>/home/b.txt</path>\n<content>sentinel-b</content>'),
+      result('c2', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a sentinel-b',
+    expectedTokens: ['sentinel-a', 'sentinel-b'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }, { path: '/home/b.txt', token: 'sentinel-b' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(reordered.exercised, true, 'the executed call input and result path win over the decision order');
+
+  // A request for a that returns b's path is not proof for either file.
+  const conflicting = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } } }],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(conflicting.exercised, false, 'a result path that disagrees with the request cannot prove a read');
+});
+
+test('a reordered bash/read reply cannot make bash output count as a read', () => {
+  const turns = [
+    { ok: true, tools: ['read', 'bash'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read', 'bash'], decision: { tool: 'bash', arguments: { command: 'cat a.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  // ACP reports bash first and read second, the opposite of the decisions.
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'bash', rawInput: { command: 'cat a.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', 'sentinel-a\n'),
+      result('c2', '<path>/home/a.txt</path>\n<content>first window</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.exercised, false, 'the value came from bash, not from the first read');
+});
+
+test('same-name calls without rawInput and descriptive titles cannot borrow an offset', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  // Transport order is the tail read first, but both calls are named read and
+  // carry no rawInput: position cannot prove which offset belongs to which id.
+  const ambiguous = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read' },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/a.txt</path>\n<content>first window</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(ambiguous.exercised, false);
+
+  const descriptive = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ...turns[0] }],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'Read the config file' },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(descriptive.exercised, false, 'a descriptive title is not a tool identity');
+});
+
+test('a missing title or an unidentified first call blocks first-read attribution', () => {
+  const turns = [
+    { ok: true, tools: ['read', 'bash'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read', 'bash'], decision: { tool: 'bash', arguments: { command: 'cat a.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const noTitle = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2' },
+      result('c1', 'sentinel-a\n'),
+      result('c2', '<path>/home/a.txt</path>\n<content>first window</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(noTitle.exercised, false, 'a title is required to name the executed tool');
+
+  // The first (tail) read has a descriptive title and cannot be identified; a
+  // later start read must not replace it as the first read.
+  const descriptiveFirst = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [
+      { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 0 },
+      { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+    ],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'Read the config' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(descriptiveFirst.exercised, false);
+});
+
+test('a pathless first read or a duplicate call id blocks first-read attribution', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: {} }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const pathless = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', 'a tail with no path'),
+      result('c2', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(pathless.exercised, false, 'a pathless first read cannot be replaced by a later start read');
+
+  const duplicate = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ...turns[1] }],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt', offset: 600 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(duplicate.exercised, false, 'a duplicate call id cannot be joined unambiguously');
+});
+
+test('tool adoption and call counts come from verified ACP calls, not decisions', () => {
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }],
+    updates: [{ sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'Read the config file' }],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: 'read', durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.usedCandidate, false, 'an unverified decision is not tool adoption');
+  assert.equal(row.toolCalls, 0);
+});
+
+test('a call/decision count mismatch is not attributed to the policy', () => {
+  const turns = turnsWith(['read', 'read']).map((turn, index) => ({
+    ...turn,
+    decision: { tool: 'read', arguments: { file_path: index === 0 ? '/work/a.txt' : '/work/b.txt' } },
+  }));
+  const update = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/work/a.txt' } },
+      update('c1', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.toolCalls, 1);
+  assert.equal(row.attributionComplete, false, 'two tool decisions but one call is an incomplete sample');
+  assert.equal(row.exercised, false, 'two decisions but one reported call cannot be joined by position');
+});
+
+test('read path binding accepts relative/canonical aliases but not a different path', () => {
+  assert.equal(readPathMatches('/iso/home/a.txt', '/iso/home/a.txt', '/iso/home'), true);
+  assert.equal(readPathMatches('a.txt', '/iso/home/a.txt', '/iso/home'), true);
+  assert.equal(readPathMatches('./a.txt', '/iso/home/a.txt', '/iso/home'), true);
+  assert.equal(readPathMatches('sub/a.txt', '/iso/home/sub/a.txt', '/iso/home'), true);
+  assert.equal(readPathMatches('/iso/home/a.txt', '/iso/home/b.txt', '/iso/home'), false);
+  assert.equal(readPathMatches('/iso/home/sub/a.txt', '/iso/home/a.txt', '/iso/home'), false);
+  assert.equal(readPathMatches('a.txt', '/iso/home/sub/a.txt', '/iso/home'), false);
+  assert.equal(readPathMatches('/w/a\\b', '/w/a/b', '/w'), false);
+});
+
+test('only a pilot transport failure can replace a whole session', () => {
+  assert.equal(pilotTransportRetryable([{ ok: false, reason: 'decision-shape-invalid' }]), true);
+  assert.equal(pilotTransportRetryable([{ ok: false, reason: 'model-process-failed' }]), true);
+  assert.equal(pilotTransportRetryable([{ ok: false, reason: 'pilot-used-own-tools' }]), false);
+  assert.equal(pilotTransportRetryable([{ ok: false, reason: 'pilot-used-own-tools' }, { ok: false, reason: 'reply-has-no-object' }]), false);
+  assert.equal(pilotTransportRetryable([{ ok: false }]), false);
+  assert.equal(pilotTransportRetryable([]), false);
+  // A product tool failure is never hidden by a retry, even when a pilot turn
+  // also failed with a retryable reason.
+  assert.equal(retryableSession({ toolFailures: 1, retryableTransportFailure: true }), false);
+  assert.equal(retryableSession({ toolFailures: 0, attributionComplete: true, retryableTransportFailure: true }), true);
+  assert.equal(retryableSession({ toolFailures: 0, attributionComplete: false, retryableTransportFailure: true }), false);
+  assert.equal(retryableSession({ toolFailures: 0, attributionComplete: true, retryableTransportFailure: false }), false);
+});
+
+test('persisted pilot failure reasons are fixed codes, not raw exception text', () => {
+  assert.deepEqual(pilotFailureReasons([{ ok: false, reason: 'decision-shape-invalid' }]), ['decision-shape-invalid']);
+  assert.deepEqual(pilotFailureReasons([{ ok: false, reason: 'pilot-used-own-tools' }]), ['pilot-used-own-tools']);
+  assert.deepEqual(pilotFailureReasons([{ ok: false, reason: 'Unexpected token < in JSON: {"private":"body"}' }]), ['pilot-transport-error']);
+  assert.deepEqual(pilotFailureReasons([{ ok: true, reason: 'whatever' }]), []);
+});
+
+test('a completed result marked as an error is not a successful read', () => {
+  assert.equal(successfulToolResult({ status: 'completed' }), true);
+  assert.equal(successfulToolResult({ status: 'success' }), true);
+  assert.equal(successfulToolResult({ status: 'completed', isError: true }), false);
+  assert.equal(successfulToolResult({ status: 'completed', is_error: true }), false);
+  assert.equal(successfulToolResult({ status: 'in_progress' }), false);
+});
+
+test('a failed initial tool_call is a host tool failure even without an update', () => {
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: turnsWith(['read', 'read']),
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', status: 'failed' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', status: 'failed' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c2', status: 'failed' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', status: 'failed' },
+    ],
+    assistantText: 'no value', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.toolFailures, 2, 'the same failed call id is counted once, and both notifications are merged');
+});
+
+test('multi-file context-policy evidence requires a complete read mapping', () => {
+  const task = normalizeTask({ id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' });
+  assert.throws(() => assertReadBinding('context-policy', task), /task\.reads/);
+  assert.doesNotThrow(() => assertReadBinding('context-policy', { ...task, reads: [
+    { path: '/home/a.txt', token: 'sentinel-a' }, { path: '/home/b.txt', token: 'sentinel-b' },
+  ] }));
+  assert.doesNotThrow(() => assertReadBinding('tool', task));
+});
+
+test('an empty rawInput cannot erase an explicit offset from a unique decision', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 0 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const tail = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: {} },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(tail.exercised, false, 'the tail read must keep its explicit offset');
+
+  const withPathOnly = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/work',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/work/a.txt' } },
+      result('c1', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/work/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(withPathOnly.exercised, false, 'a rawInput path must keep the uniquely aligned offset');
+
+  const invalidOffset = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 600 } } }],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt', offset: null } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(invalidOffset.attributionComplete, false);
+  assert.equal(invalidOffset.exercised, false, 'an explicitly invalid offset is not a start read');
+
+  for (const decisionOffset of [null, 600.5, '600']) {
+    const invalidDecision = extractSessionEvidence({
+      label: 'candidate-1', side: 'candidate',
+      turns: [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: decisionOffset } } }],
+      updates: [
+        { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+        result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      ],
+      assistantText: 'sentinel-a',
+      expectedTokens: ['sentinel-a'],
+      expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+      candidateTool: null, durationMs: 1,
+    });
+    assert.equal(invalidDecision.attributionComplete, false, `decision offset ${String(decisionOffset)} is not evidence`);
+    assert.equal(invalidDecision.exercised, false);
+  }
+
+  const ambiguousPathOnly = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [
+      { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: 'a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 0 },
+      { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: 'b.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 1 },
+    ],
+    cwd: '/work',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/work/a.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/work/b.txt' } },
+      result('c1', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/work/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/work/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(ambiguousPathOnly.attributionComplete, true, 'distinct files uniquely match their decisions');
+  assert.equal(ambiguousPathOnly.exercised, false, 'the unique decision still carries offset 600, not a start read');
+
+  const start = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 1 } } }],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: {} },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(start.exercised, true);
+});
+
+test('a different tool composition is not complete attribution even with equal counts', () => {
+  const turns = [
+    { ok: true, tools: ['read', 'bash'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read', 'bash'], decision: { tool: 'read', arguments: { file_path: '/home/b.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'bash', rawInput: { command: 'cat a.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', 'sentinel-a\n'),
+      result('c2', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('relative and absolute requests for one file share the first-read key', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: 'a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/work/a.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/work',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: 'a.txt', offset: 600 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/work/a.txt', offset: 1 } },
+      result('c1', 'sentinel-a\n'),
+      result('c2', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.exercised, false, 'the later absolute path is the same first request, not a new first read');
+
+  const dotPath = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/work',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: 'a.txt', offset: 600 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/work/a.txt', offset: 1 } },
+      result('c1', '<path>/work/./a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(dotPath.exercised, false, 'internal dot segments must normalize to the same first request');
+
+  const dotSlash = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/work',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: './/a.txt', offset: 600 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/work/a.txt', offset: 1 } },
+      result('c1', 'sentinel-a\n'),
+      result('c2', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/work/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(dotSlash.exercised, false, './/a.txt must resolve under the cwd, not to /a.txt');
+});
+
+test('a path-reported read cannot inherit an offset from a different decision', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/b.txt' } },
+      result('c1', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/b.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false, 'a decision for file a cannot lend its offset to file b');
+});
+
+test('two calls cannot consume the same decision offset', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/b.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/b.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/b.txt' } },
+      result('c1', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/b.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false, 'the same decision offset cannot be reused by a second call');
+});
+
+test('a read without a terminal notification is incomplete and blocks a retry', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: false, reason: 'decision-shape-invalid', usage: null, round: 1 },
+  ];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [{ sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } }],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.toolFailures, 1, 'a missing terminal is a host tool failure for evidence');
+  assert.equal(retryableSession({ toolFailures: row.toolFailures, retryableTransportFailure: true }), false);
+});
+
+test('a failed call that later looks completed is excluded from first-read evidence', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'failed' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.toolFailures, 1);
+  assert.equal(row.exercised, false, 'a failed call id cannot become a successful first read');
+});
+
+test('an offset-only ACP report still claims a path decision one-to-one', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/b.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { offset: 1 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { offset: 1 } },
+      result('c1', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/b.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a default-offset start read and an explicit continuation both claim one decision', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 601 } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt', offset: 601 } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/a.txt</path>\n<content>tail</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, true);
+  assert.equal(row.exercised, true);
+});
+
+test('a positional decision cannot accept a conflicting explicit offset', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { offset: 601 } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { offset: 1 } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('terminal paths that normalize to the same file are not a conflict', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: './a.txt' } },
+      result('c1', '<path>./a.txt</path>\n<content>sentinel-a</content>'),
+      result('c1', '<path>/w/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, true);
+  assert.equal(row.exercised, true);
+});
+
+test('two terminal results for one id must not carry different bodies', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (text) => ({ sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('<path>/home/a.txt</path>\n<content>truncated</content>'),
+      result('<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a terminal notification without a matching tool_call is not evidence', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      result('ghost', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+});
+
+test('two relative terminal paths resolving to one file are not a conflict', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: './a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (path) => ({ sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: `<path>${path}</path>\n<content>sentinel-a</content>` } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: './a.txt' } },
+      result('a.txt'),
+      result('./a.txt'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, true);
+  assert.equal(row.exercised, true);
+});
+
+test('a later terminal path updates a first pathless terminal and conflicts with the request', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (text) => ({ sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt' } },
+      result('<content>sentinel-a</content>'),
+      result('<path>/w/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('an anonymous terminal notification is incomplete evidence', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      { sessionUpdate: 'tool_call_update', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: 'sentinel-a' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a path tag is metadata, not read content', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>sentinel-a</path>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.exercised, false, 'a path tag cannot prove the read body');
+});
+
+test('a path-only terminal beside a valid read is a missing result', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/b.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/b.txt' } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/b.txt</path>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.toolFailures, 1);
+});
+
+test('empty and whitespace content envelopes are missing read bodies', () => {
+  for (const body of ['', '   \n  ']) {
+    const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+    const row = extractSessionEvidence({
+      label: 'candidate-1', side: 'candidate', turns,
+      updates: [
+        { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+        { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: `<path>/home/a.txt</path>\n<content>${body}</content>` } }] },
+      ],
+      assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+      expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+      candidateTool: null, durationMs: 1,
+    });
+    assert.equal(row.attributionComplete, false);
+    assert.equal(row.toolFailures, 1);
+  }
+});
+
+test('an in-progress update for an unknown call id is incomplete evidence', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a</content>' } }] },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'ghost', status: 'in_progress' },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+});
+
+test('the official typed envelope is unwrapped without a body conflict', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (text) => ({ sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('<path>/home/a.txt</path>\n<type>file</type>\n<content>sentinel-a</content>'),
+      result('<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, true);
+  assert.equal(row.exercised, true);
+});
+
+test('an empty typed content envelope is a missing read body', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<type>file</type>\n<content>  </content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.toolFailures, 1);
+});
+
+test('a file path containing < is still an envelope, not body text', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a<b.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a<b.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/w/a<b.txt</path>\n<content></content>' } }] },
+    ],
+    assistantText: 'b.txt', expectedTokens: ['b.txt'],
+    expectedReads: [{ path: '/w/a<b.txt', token: 'b.txt' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a malformed content envelope is not body evidence', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('an unresolved parent segment cannot prove a first read', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/hop/../a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/w/a.txt</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(readPathMatches('/w/hop/../a.txt', '/w/a.txt', '/w'), false);
+  assert.equal(row.attributionComplete, false);
+});
+
+test('an envelope without a complete content segment is invalid', () => {
+  for (const text of [
+    '<path>/home/a.txt</path>\n<type>file</type>',
+    '<path></path>\n<content>sentinel-a</content>',
+  ]) {
+    const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+    const row = extractSessionEvidence({
+      label: 'candidate-1', side: 'candidate', turns,
+      updates: [
+        { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+        { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] },
+      ],
+      assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+      expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+      candidateTool: null, durationMs: 1,
+    });
+    assert.equal(row.attributionComplete, false);
+    assert.equal(row.toolFailures, 1);
+  }
+});
+
+test('a later rawInput update changes the effective offset', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', rawInput: { file_path: '/home/a.txt', offset: 40 } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.exercised, false, 'the updated offset 40 is not a first read');
+});
+
+test('an initial completed tool_call body conflicts with a later update', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a</content>' } }] },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/b.txt</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+});
+
+test('the structured ACP name wins over a misleading title', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', name: 'grep', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: 'read', durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.usedCandidate, false);
+});
+
+test('two envelopes in one notification cannot lend a value across paths', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      {
+        sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed',
+        content: [
+          { type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>first</content>' } },
+          { type: 'content', content: { type: 'text', text: '<path>/home/b.txt</path>\n<content>sentinel-b</content>' } },
+        ],
+      },
+    ],
+    assistantText: 'sentinel-b', expectedTokens: ['sentinel-b'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-b' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('an input update after a terminal result cannot rewrite the offset', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 40 } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt', offset: 40 } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a</content>' } }] },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', rawInput: { offset: 1 } },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('two envelopes in one text block are invalid', () => {
+  const text = '<path>/home/a.txt</path>\n<content>first</content>\n<path>/home/b.txt</path>\n<content>sentinel-b</content>';
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] },
+    ],
+    assistantText: 'sentinel-b', expectedTokens: ['sentinel-b'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-b' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a tool update before its tool_call is incomplete', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', rawInput: { file_path: '/home/a.txt' }, content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a</content>' } }] },
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('an envelope after a diagnostic prefix is not bare text', () => {
+  const text = 'diagnostic\n<path>/work/a.txt</path>\n<content>first</content>\n<path>/work/b.txt</path>\n<content>sentinel-b</content>';
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/work/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/work',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/work/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] },
+    ],
+    assistantText: 'sentinel-b', expectedTokens: ['sentinel-b'],
+    expectedReads: [{ path: '/work/a.txt', token: 'sentinel-b' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a bare-text result cannot inherit an unresolved parent path', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/hop/../a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: 'sentinel-a' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a trailing space in the terminal path is not trimmed away', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/w/a.txt </path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('an offset-only input inherits the matched decision path', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { offset: 1 } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: 'sentinel-a' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, true);
+  assert.equal(row.exercised, true);
+});
+
+test('a null path after a terminal result is a rewrite, not a missing field', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/w/a.txt</path>\n<content>sentinel-a</content>' } }] },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', rawInput: { file_path: null } },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a scenario baseline comes from its own loss kind, not the merged target', () => {
+  const selection = {
+    baselinePath: { kind: 'observed-recovery', lossKinds: ['line-truncated', 'output-capped'], recoveryTools: ['grep'], recoveryCalls: 7 },
+    loss: {
+      kinds: ['line-truncated', 'output-capped'],
+      recoverable: true,
+      recoveryCalls: 7,
+      recoveryTools: ['grep'],
+      breakdown: [
+        { kind: 'line-truncated', occurrences: 3, recoveryCalls: 7, recoveryTools: ['grep'] },
+        { kind: 'output-capped', occurrences: 3, recoveryCalls: 0, recoveryTools: [] },
+      ],
+    },
+  };
+  const capped = scenarioBaselineOf(selection, 'output-capped');
+  assert.equal(capped.row?.recoveryCalls, 0, 'the capped row owns no recovery cost');
+  assert.deepEqual(capped.baseline.lossKinds, ['output-capped'], 'the proposal root cause names only the scenario kind');
+  assert.deepEqual(capped.baseline.recoveryTools, []);
+  assert.equal(capped.baseline.recoveryCalls, 0);
+  assert.equal(capped.baseline.occurrences, 3, 'the scenario row keeps its own occurrences');
+  // The merged target must not lend its grep recovery to the capped scenario.
+  assert.equal(selection.loss.recoveryCalls, 7);
+  const line = scenarioBaselineOf(selection, 'line-truncated');
+  assert.deepEqual(line.baseline.recoveryTools, ['grep']);
+  assert.deepEqual(scenarioBaselineOf(selection, 'missing').row, null);
+});
+
+test('a post-terminal limit change or a late offset is a frozen-input conflict', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt', offset: 40 } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/w/a.txt</path>\n<content>sentinel-a</content>' } }] };
+  const base = {
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  };
+  for (const late of [{ limit: null }, { limit: 5 }, { offset: 1 }]) {
+    const row = extractSessionEvidence({
+      ...base,
+      updates: [
+        { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt', offset: 40 } },
+        result,
+        { sessionUpdate: 'tool_call_update', toolCallId: 'c1', rawInput: late },
+      ],
+    });
+    assert.equal(row.attributionComplete, false, 'a post-terminal ' + JSON.stringify(late) + ' is not evidence');
+    assert.equal(row.exercised, false);
+  }
+  // The matched decision still supplies an offset that the terminal input
+  // never carried; a later update may not fill that missing field.
+  const decisionOffset = [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } } }];
+  const filled = extractSessionEvidence({
+    ...base, turns: decisionOffset,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt' } },
+      result,
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', rawInput: { offset: 1 } },
+    ],
+  });
+  assert.equal(filled.attributionComplete, false);
+  const decided = extractSessionEvidence({
+    ...base, turns: decisionOffset,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt' } },
+      result,
+    ],
+  });
+  assert.equal(decided.attributionComplete, true, 'the matched decision resolves the missing offset');
+  assert.equal(decided.exercised, true);
+});
+
+test('two identical result envelopes in one notification are unproven', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const envelope = { type: 'content', content: { type: 'text', text: '<path>/w/a.txt</path>\n<content>sentinel-a</content>' } };
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [envelope, envelope] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('an explicitly invalid raw path is not replaced by the result path', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 0 }];
+  for (const filePath of [null, '', 5]) {
+    const row = extractSessionEvidence({
+      label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+      updates: [
+        { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: filePath, offset: 1 } },
+        { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/w/a.txt</path>\n<content>sentinel-a</content>' } }] },
+      ],
+      assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+      expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+      candidateTool: null, durationMs: 1,
+    });
+    assert.equal(row.attributionComplete, false, 'raw path ' + JSON.stringify(filePath) + ' is not missing evidence');
+    assert.equal(row.exercised, false);
+  }
+});
+
+test('a per-file binding must cover every expected token', () => {
+  const base = { id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' };
+  const task = normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] });
+  assert.deepEqual(task.reads, [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }]);
+  assert.throws(() => normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }] }), /every expected token/);
+  assert.throws(() => normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'other' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] }), /not declared/);
+  assert.throws(() => normalizeTask({ ...base, reads: [{ path: 'a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] }), /absolute/);
 });
 
 test('a read result without the expected value is not proof that the policy ran', () => {
