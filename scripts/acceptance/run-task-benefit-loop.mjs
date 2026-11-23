@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { failedToolCallIds, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, terminalNotificationMissingId, terminalToolResults, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
+import { failedToolCallIds, mergeAcpInputs, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, terminalNotificationMissingId, terminalToolResults, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -735,21 +735,9 @@ try {
     const consumerTerminal = terminalToolResults(consumerUpdates, home);
     if (consumerTerminal.conflicts.size > 0) consumerAttributionComplete = false;
     const consumerResultPathById = consumerTerminal.paths;
-    const consumerInputByCall = new Map();
-    for (const call of consumerCalls) {
-      if (typeof call.toolCallId !== 'string') continue;
-      if (call.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput)) {
-        consumerInputByCall.set(call.toolCallId, { ...call.rawInput });
-      }
-    }
-    for (const update of consumerUpdates) {
-      if (update?.sessionUpdate !== 'tool_call_update') continue;
-      const id = typeof update.toolCallId === 'string' ? update.toolCallId : null;
-      if (id === null) continue;
-      const reported = update.rawInput && typeof update.rawInput === 'object' && !Array.isArray(update.rawInput)
-        ? update.rawInput : null;
-      if (reported) consumerInputByCall.set(id, { ...(consumerInputByCall.get(id) ?? {}), ...reported });
-    }
+    const consumerMergedInputs = mergeAcpInputs(consumerCalls, consumerUpdates, home);
+    if (consumerMergedInputs.conflict) consumerAttributionComplete = false;
+    const consumerInputByCall = consumerMergedInputs.inputs;
     const consumerHasOffset = (call) => {
       const input = consumerInputByCall.get(call?.toolCallId) ?? call?.rawInput;
       return Number.isInteger(input?.offset) && input.offset > 0;

@@ -270,6 +270,16 @@ function normalizeReadPath(value, cwd) {
   return typeof cwd === 'string' && path.isAbsolute(cwd) ? path.resolve(cwd, normalized) : normalized;
 }
 
+function toolResultTextBlocks(update) {
+  const blocks = Array.isArray(update?.content) ? update.content : [];
+  const texts = [];
+  for (const block of blocks) {
+    if (typeof block?.text === 'string') texts.push(block.text);
+    else if (typeof block?.content?.text === 'string') texts.push(block.content.text);
+  }
+  return texts;
+}
+
 /** Flatten the text blocks the ACP transport reports for one tool result. */
 function toolUpdateText(update) {
   const blocks = Array.isArray(update?.content) ? update.content : [];
@@ -306,6 +316,52 @@ function parseToolResultText(text) {
   return { path, body: contentMatch[1].trim(), invalid: false };
 }
 
+/**
+ * Merge ACP call input from the initial tool_call and later tool_call_update
+ * notifications. A terminal notification locks the known path/offset; later
+ * updates may fill a missing field but may not rewrite a locked one.
+ */
+export function mergeAcpInputs(calls, updates, cwd = null) {
+  const inputs = new Map();
+  const locked = new Set();
+  let conflict = false;
+  const terminal = (update) => update?.status === 'completed' || update?.status === 'success'
+    || update?.status === 'failed' || update?.status === 'error'
+    || update?.isError === true || update?.is_error === true;
+  const merge = (id, rawInput) => {
+    if (typeof id !== 'string' || !rawInput || typeof rawInput !== 'object' || Array.isArray(rawInput)) return;
+    const current = inputs.get(id) ?? {};
+    const next = { ...current, ...rawInput };
+    if (locked.has(id)) {
+      for (const key of ['file_path']) {
+        if (typeof current[key] === 'string' && typeof rawInput[key] === 'string'
+          && !readPathMatches(rawInput[key], current[key], cwd) && !readPathMatches(current[key], rawInput[key], cwd)) {
+          conflict = true;
+        }
+      }
+      for (const key of ['file_path', 'offset']) {
+        if (current[key] !== undefined) next[key] = current[key];
+      }
+      if (rawInput.offset !== undefined && current.offset !== undefined && rawInput.offset !== current.offset) conflict = true;
+    }
+    inputs.set(id, next);
+  };
+  for (const call of Array.isArray(calls) ? calls : []) {
+    const id = typeof call?.toolCallId === 'string' ? call.toolCallId : null;
+    if (id === null) continue;
+    merge(id, call.rawInput);
+    if (terminal(call)) locked.add(id);
+  }
+  for (const update of Array.isArray(updates) ? updates : []) {
+    if (update?.sessionUpdate !== 'tool_call_update') continue;
+    const id = typeof update.toolCallId === 'string' ? update.toolCallId : null;
+    if (id === null) continue;
+    merge(id, update.rawInput);
+    if (terminal(update)) locked.add(id);
+  }
+  return { inputs, conflict };
+}
+
 export function terminalNotificationMissingId(updates) {
   for (const update of Array.isArray(updates) ? updates : []) {
     if (update?.sessionUpdate !== 'tool_call' && update?.sessionUpdate !== 'tool_call_update') continue;
@@ -328,26 +384,34 @@ export function terminalToolResults(updates, cwd = null) {
     if (!successfulToolResult(update)) continue;
     const id = typeof update.toolCallId === 'string' && update.toolCallId !== '' ? update.toolCallId : null;
     if (id === null) continue;
-    const text = toolUpdateText(update);
+    const blocks = toolResultTextBlocks(update);
     // An initial completed tool_call without content is only a status, not a
     // result; a later update may carry the actual body.
-    if (kind === 'tool_call' && !text) continue;
-    const parsed = parseToolResultText(text);
-    const path = parsed.path;
-    const body = parsed.body;
-    if (texts.has(id)) {
-      if (bodies.get(id) !== body) conflicts.add(id);
-      if (path) {
-        if (!paths.has(id)) paths.set(id, path);
-        else if (paths.get(id) !== path
-          && !readPathMatches(path, paths.get(id), cwd) && !readPathMatches(paths.get(id), path, cwd)) {
-          conflicts.add(id);
+    if (kind === 'tool_call' && blocks.length === 0) continue;
+    const parsedBlocks = blocks.map((text) => parseToolResultText(text));
+    // Multiple complete envelopes in one notification are separate results,
+    // not one concatenated body. Bare text blocks of one result may still be
+    // joined.
+    const hasEnvelope = parsedBlocks.some((parsed) => parsed.path !== null || parsed.invalid === true);
+    const results = hasEnvelope
+      ? parsedBlocks
+      : [{ path: null, body: blocks.join('\n').trim(), invalid: false }];
+    for (const parsed of results) {
+      const { path: resultPath, body } = parsed;
+      if (texts.has(id)) {
+        if (bodies.get(id) !== body) conflicts.add(id);
+        if (resultPath) {
+          if (!paths.has(id)) paths.set(id, resultPath);
+          else if (paths.get(id) !== resultPath
+            && !readPathMatches(resultPath, paths.get(id), cwd) && !readPathMatches(paths.get(id), resultPath, cwd)) {
+            conflicts.add(id);
+          }
         }
+      } else {
+        texts.set(id, body);
+        bodies.set(id, body);
+        if (resultPath) paths.set(id, resultPath);
       }
-    } else {
-      texts.set(id, body);
-      bodies.set(id, body);
-      if (path) paths.set(id, path);
     }
   }
   return { paths, texts, conflicts };
@@ -508,31 +572,15 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     if (update.status === 'completed' || update.status === 'success'
       || update.status === 'failed' || update.status === 'error'
       || update.isError === true || update.is_error === true) terminalIds.add(id);
-    if ((update.sessionUpdate === 'tool_call' || update.sessionUpdate === 'tool_call_update') && successfulToolResult(update)) {
-      const parsed = parseToolResultText(toolUpdateText(update));
-      if (parsed.body) resultTextIds.add(id);
-    }
   }
   // Map one `tool_call` update to its model decision by order: ACP reports one
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name and the arguments the model chose.
   const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
-  const inputByCall = new Map();
-  for (const call of calls) {
-    if (typeof call.toolCallId !== 'string') continue;
-    if (call.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput)) {
-      inputByCall.set(call.toolCallId, { ...call.rawInput });
-    }
-  }
-  for (const update of Array.isArray(updates) ? updates : []) {
-    if (update?.sessionUpdate !== 'tool_call_update') continue;
-    const id = typeof update.toolCallId === 'string' ? update.toolCallId : null;
-    if (id === null) continue;
-    const reported = update.rawInput && typeof update.rawInput === 'object' && !Array.isArray(update.rawInput)
-      ? update.rawInput : null;
-    if (reported) inputByCall.set(id, { ...(inputByCall.get(id) ?? {}), ...reported });
-  }
+  const mergedInputs = mergeAcpInputs(calls, updates, cwd);
+  const inputByCall = mergedInputs.inputs;
   const terminalPaths = terminalToolResults(updates, cwd);
+  for (const [id, body] of terminalPaths.texts) if (body) resultTextIds.add(id);
   const resultPathByCall = terminalPaths.paths;
   const hasRawOffset = (call) => {
     const input = inputByCall.get(call?.toolCallId) ?? call?.rawInput;
@@ -543,7 +591,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const byId = new Map();
   const seenCallIds = new Set();
   let attributionComplete = calls.length === toolTurns.length && missingTerminals === 0
-    && !missingTerminalId && terminalPaths.conflicts.size === 0;
+    && !missingTerminalId && terminalPaths.conflicts.size === 0 && !mergedInputs.conflict;
   const usedReadDecisions = new Set();
   orderedCalls.forEach(({ call, index }) => {
     const effectiveCall = typeof call.toolCallId === 'string' && inputByCall.has(call.toolCallId)
