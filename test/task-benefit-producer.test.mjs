@@ -705,6 +705,60 @@ test('relative and absolute requests for one file share the first-read key', () 
   assert.equal(dotSlash.exercised, false, './/a.txt must resolve under the cwd, not to /a.txt');
 });
 
+test('a path-reported read cannot inherit an offset from a different decision', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/b.txt' } },
+      result('c1', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/b.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false, 'a decision for file a cannot lend its offset to file b');
+});
+
+test('two calls cannot consume the same decision offset', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/b.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/b.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/b.txt' } },
+      result('c1', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/b.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false, 'the same decision offset cannot be reused by a second call');
+});
+
+test('a read without a terminal notification is incomplete and blocks a retry', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: false, reason: 'decision-shape-invalid', usage: null, round: 1 },
+  ];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [{ sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } }],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.toolFailures, 1, 'a missing terminal is a host tool failure for evidence');
+  assert.equal(retryableSession({ toolFailures: row.toolFailures, retryableTransportFailure: true }), false);
+});
+
 test('a per-file binding must cover every expected token', () => {
   const base = { id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' };
   const task = normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] });

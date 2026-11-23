@@ -146,7 +146,7 @@ export function readPathMatches(actual, expected, cwd = null) {
  * decision, its arguments are not trusted (the order is not reliable), but the
  * call identity still comes from the title.
  */
-export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null) {
+export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null, usedDecisions = null) {
   const title = typeof call?.title === 'string' && call.title.trim() !== '' ? call.title.trim() : null;
   const decision = toolTurns?.[index]?.decision;
   const decisionName = typeof toolNames?.[index] === 'string' ? toolNames[index] : null;
@@ -182,7 +182,14 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
         && (readPathMatches(rawInput.file_path, path, cwd) || readPathMatches(path, rawInput.file_path, cwd));
     }) : [];
     const uniqueDecision = sameFile.length === 1 ? sameFile[0].decision : null;
-    const alignedDecision = uniqueDecision ?? (positionTrusted ? decision : null);
+    // ACP already reported a path: never borrow an offset from a decision for a
+    // different file. Without a reported path, the unique positional decision
+    // is the only fallback.
+    let alignedDecision = uniqueDecision ?? (!rawFile && positionTrusted ? decision : null);
+    if (alignedDecision && usedDecisions) {
+      if (usedDecisions.has(alignedDecision)) alignedDecision = null;
+      else usedDecisions.add(alignedDecision);
+    }
     const alignedArguments = alignedDecision?.arguments && typeof alignedDecision.arguments === 'object'
       && !Array.isArray(alignedDecision.arguments) ? alignedDecision.arguments : null;
     if (rawOffsetValid) {
@@ -256,6 +263,26 @@ function failedToolCalls(updates) {
     else anonymous += 1;
   }
   return ids.size + anonymous;
+}
+
+/**
+ * Count tool calls that never reached a terminal notification. A read with a
+ * path/offset but no final result is incomplete evidence, not a zero-failure
+ * host call, so a whole-session retry must not hide it.
+ */
+export function missingTerminalToolCalls(updates) {
+  const terminal = new Set();
+  const calls = [];
+  for (const update of Array.isArray(updates) ? updates : []) {
+    const id = typeof update?.toolCallId === 'string' ? update.toolCallId : null;
+    if (update?.sessionUpdate === 'tool_call') calls.push(id);
+    if (update?.sessionUpdate !== 'tool_call' && update?.sessionUpdate !== 'tool_call_update') continue;
+    const done = update.status === 'completed' || update.status === 'success'
+      || update.status === 'failed' || update.status === 'error'
+      || update.isError === true || update.is_error === true;
+    if (done && id !== null) terminal.add(id);
+  }
+  return calls.filter((id) => id === null || !terminal.has(id)).length;
 }
 
 /** Billing fields must be real finite numbers; optional cache.read defaults to 0. */
@@ -359,16 +386,19 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const usageComplete = decisionTurns.every((turn) => finiteUsage(turn.usage));
   const failedModelTurns = (Array.isArray(turns) ? turns : []).filter((turn) => turn.ok !== true).length;
   const failedUpdates = failedToolCalls(updates);
-  const failures = failedModelTurns + failedUpdates;
+  const missingTerminals = missingTerminalToolCalls(updates);
+  const toolFailures = failedUpdates + missingTerminals;
+  const failures = failedModelTurns + toolFailures;
   // Map one `tool_call` update to its model decision by order: ACP reports one
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name and the arguments the model chose.
   const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
   const byId = new Map();
   const seenCallIds = new Set();
-  let attributionComplete = calls.length === toolTurns.length;
+  let attributionComplete = calls.length === toolTurns.length && missingTerminals === 0;
+  const usedReadDecisions = new Set();
   calls.forEach((call, index) => {
-    const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames, cwd);
+    const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames, cwd, usedReadDecisions);
     if (typeof call.toolCallId !== 'string' || seenCallIds.has(call.toolCallId)) attributionComplete = false;
     if (typeof call.toolCallId === 'string') seenCallIds.add(call.toolCallId);
     if (typeof descriptor.name !== 'string') attributionComplete = false;
@@ -464,7 +494,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     attributionComplete,
     usedCandidate: candidateTool !== null && callNames.includes(candidateTool),
     usageComplete,
-    toolFailures: failedUpdates,
+    toolFailures,
     turns: decisionTurns.length,
     toolCalls: callNames.length,
     toolNames: callNames,

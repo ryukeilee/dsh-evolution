@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
+import { missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -728,11 +728,13 @@ try {
     const consumerCallIds = consumerCalls.map((call) => call.toolCallId);
     let consumerAttributionComplete = consumerCalls.length === consumerDecisions.length
       && consumerCallIds.every((id) => typeof id === 'string')
-      && new Set(consumerCallIds).size === consumerCallIds.length;
+      && new Set(consumerCallIds).size === consumerCallIds.length
+      && missingTerminalToolCalls(consumerUpdates) === 0;
     const consumerToolNames = consumerDecisions.map((turn) => turn.decision.tool);
     const consumerCallById = new Map();
+    const consumerUsedDecisions = new Set();
     consumerCalls.forEach((call, index) => {
-      const descriptor = toolCallDescriptor(call, index, consumerDecisions, consumerToolNames, home);
+      const descriptor = toolCallDescriptor(call, index, consumerDecisions, consumerToolNames, home, consumerUsedDecisions);
       if (typeof call.toolCallId === 'string' && typeof descriptor.name === 'string') {
         consumerCallById.set(call.toolCallId, descriptor);
       } else {
