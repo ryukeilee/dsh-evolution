@@ -218,6 +218,47 @@ test('a non-zero exit after an own tool call keeps the bypass evidence', async (
   assert.equal(result.ownToolCalls, 1);
 });
 
+test('the bridge persists only fixed failure codes, never body or exception text', async (t) => {
+  const thrown = await startModelBridge({ runner: async () => { throw new Error('Unexpected token in {"private":"body"}'); } });
+  t.after(() => thrown.close());
+  const thrownResult = await post(thrown);
+  assert.equal(thrownResult.status, 500);
+  assert.equal(thrownResult.text, 'pilot-transport-error');
+  assert.equal(thrown.turns[0].reason, 'pilot-transport-error');
+
+  const failed = await startModelBridge({ runner: async () => ({ ok: false, reason: 'Unexpected token in {"private":"body"}' }) });
+  t.after(() => failed.close());
+  const failedResult = await post(failed);
+  assert.equal(failedResult.status, 502);
+  assert.doesNotMatch(failedResult.text, /private|body/i);
+  assert.match(failedResult.text, /pilot-transport-error/);
+  assert.equal(failed.turns[0].reason, 'pilot-transport-error');
+  assert.equal('replySample' in failed.turns[0], false);
+});
+
+test('streaming keeps early own-tool and step events beyond the diagnostic sample', async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-stream-large-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await fs.writeFile(path.join(dir, 'opencode'),
+    '#!/bin/sh\n'
+    + 'printf \'%s\\n\' \'{"type":"tool","part":{"tool":"read"}}\'\n'
+    + 'printf \'%s\\n\' \'{"type":"step_finish","part":{"tokens":{"input":10,"output":2,"cache":{"read":3}}}}\'\n'
+    + 'printf \'{"type":"text","part":{"text":"\'\n'
+    + 'head -c 4100000 /dev/zero | tr \'\\0\' x\n'
+    + 'printf \'"}}\\n\'\n'
+    + 'printf \'%s\\n\' \'{"type":"step_finish","part":{"tokens":{"input":4,"output":1,"cache":{"read":5}}}}\'\n'
+    + 'printf \'%s\\n\' \'{"type":"text","part":{"text":"{\\"tool\\":\\"read\\",\\"arguments\\":{}}"}}\'\n',
+    { mode: 0o755 });
+  const result = await runOpencodeTurn('prompt', {
+    model: 'test/model',
+    cwd: dir,
+    env: { ...process.env, PATH: dir + path.delimiter + (process.env.PATH ?? '') },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.ownToolCalls, 1);
+  assert.deepEqual(result.usage, { input: 14, output: 3, cache: { read: 8 } });
+});
+
 test('a real decision is streamed back with its measured usage', async (t) => {
   const runner = async () => ({ ok: true, text: '{"tool":"read","arguments":{"file_path":"workflow-generated.json"}}', usage: { input: 11, output: 4, cache: { read: 2 } }, wallMs: 7 });
   const bridge = await startModelBridge({ runner });

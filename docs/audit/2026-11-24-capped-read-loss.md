@@ -259,9 +259,10 @@ run6 的 producer 已经干净，但 Trial 功能复验仍在 `E_DESKTOP_FUNCTIO
 候选 Host 源码与规划器，不改晋升门禁、既有证据或正式环境；本轮没有重跑真实模型闭环。
 
 1. **首次读取必须按文件与调用身份绑定。** `task.reads` 按绝对路径绑定 token，`exercised`
-   要求每个文件自己的首读包含自己的值。ACP 的 `title` 决定实际执行的工具，`rawInput` 决定
-   参数，结果 `<path>` 决定读取的文件；按位置贴上的模型决策只在 `title` 一致时作为参数回退。
-   结果路径与请求路径不一致、或调用数与工具决策数不一致时，该调用/会话不作机制证据。
+   要求每个文件自己的首读包含自己的值。ACP 的 `title` 只有在它是本次提供的工具时才决定实际
+   执行的工具；`rawInput` 决定参数；结果 `<path>` 决定读取的文件。按位置贴上的模型决策只在
+   `title` 与决策工具一致且该工具只调用一次时作为参数回退；描述性标题、同名多次调用却没有
+   `rawInput`、结果路径与请求路径不一致、或调用数与工具决策数不一致时，都不作机制证据。
    记录的 candidate 行有 3 次 read、每次 3 个完整文件结果（`readResultCharacters` 206,610，
    fixtures 合计 195,840，其余是宿主信封），与逐文件判定一致；但本轮没有重跑真实模型来重新
    生成 artifact，报告不把「新判定已在真实会话上重跑」写成已执行事实。
@@ -272,18 +273,25 @@ run6 的 producer 已经干净，但 Trial 功能复验仍在 `E_DESKTOP_FUNCTIO
 3. **capped 尾部不能越过不可证明的窗口。** 字节上限 footer 只说明本次窗口停在哪一行，不揭示
    宿主配置的 `readLimit`。现在没有显式 `limit` 时保留原结果，只有调用方声明了 `limit` 才在
    该窗口内补齐；capped 验收提示词明确请求 `limit=2000`，功能复验也使用显式 `limit`。
-   候选源码因此变为 `4d4b5798…`；验收文件只有 700 行，run15 的旧候选哈希在
+   候选源码因此变为 `421ac1fe…`；验收文件只有 700 行，run15 的旧候选哈希在
    `docs/evidence/` 中只是历史记录，不声称覆盖新源码，本轮也没有重跑真实模型来重建 artifact。
-4. **追加行遵守官方单行上限。** 追加行超过官方默认的 2,000 字符时策略放弃变换，不再把完整
-   长行塞进结果而绕过 renderer 的单行截断。
+4. **追加行遵守官方单行上限与同一文件快照。** 追加行超过官方默认的 2,000 字符时策略放弃
+   变换；重读文件后先核对原窗口的每一行和总行数，文件在宿主读取与策略重读之间被替换时保留
+   原结果，不把新版尾部拼到旧版头部。
 5. **自有工具调用不能被重试洗掉。** 整会话替换只接受结构化 allowlist 中的 pilot 传输失败，
    并要求宿主工具零失败；`pilot-used-own-tools`（包括先调用自有工具再非零退出的轮次）留在
-   失败行，artifact 保持不完整。持久化的失败原因只保留固定原因码，未知异常投影为
-   `pilot-transport-error`，不写入原始异常文本。
+   失败行，artifact 保持不完整。桥接边界只生成固定原因码：失败轮次、HTTP 错误响应和
+   ACP 控制验收看到的内容都不含失败回复正文或原始异常文本；未知异常投影为
+   `pilot-transport-error`。CLI 输出改为流式逐行解析，早期自有工具与 `step_finish` 事件不再
+   因为尾部诊断缓冲区而被丢弃。
 6. **混合失败的证据门槛与评分只算可处理失败。** 100 次 `invalid args` 不能再把 1 次
    `code run failure` 抬过 `minOccurrences`，也不再进入可处理目标的失败率、时效、回归、
-   证据引用和故障模式宽度；caller-input 模式保留在 `excludedModes` 中。新的 caller-input
-   失败也不会重开已经由可行动证据解决的目标。
+   证据引用和故障模式宽度；caller-input 模式保留在 `excludedModes` 中。只有 `rootCause` 的
+   无模式失败按可行动失败保留，不会被一条 caller-input 记录整体拒绝；caller-input 的
+   `rootCause` 也不会把可行动目标的验收指标从成功率改成延迟。新的 caller-input 失败同样不会
+   重开已经由可行动证据解决的目标。
+7. **同一条成功判定。** producer 与 fresh consumer 共用 `successfulToolResult`：`completed`
+   或 `success` 之外，还要求 `isError` / `is_error` 不为真，避免把错误结果当首读证据。
 
 另外把候选测试的挂载方式从 `new Function` 改成 `node:vm`（只注入
 `TextEncoder`/`TextDecoder`/`btoa`/`atob`），这样再次出现 `Buffer`/`process` 依赖时测试会先

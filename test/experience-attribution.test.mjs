@@ -229,6 +229,57 @@ test('caller-input recency, regressions and refs do not raise a mixed target sco
   assert.ok(Math.abs(noisy.score - clean.score) < 0.0002, `caller evidence changed the score: ${clean.score} vs ${noisy.score}`);
 });
 
+test('a rootCause-only failure stays actionable beside caller-input rows', () => {
+  const now = new Date().toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:root-only', scope: 'tool run code',
+        problem: 'host operation failure', rootCause: 'timeout waiting for the sandbox',
+        failureCount: 4, occurrences: 4, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 10, count: 4 }, successessincefailure: { sum: 6, count: 4 } },
+      },
+      {
+        key: 'knowledge:args', scope: 'tool run code',
+        problem: 'official operation failure invalid args',
+        failureCount: 100, occurrences: 100, lastSeen: now,
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(candidate, `the root-cause failure was discarded: ${JSON.stringify(planned.rejected)}`);
+  assert.equal(candidate.attribution, 'classified');
+  assert.equal(candidate.occurrences, 4);
+  assert.match(candidate.excludedModes.join(' '), /invalid args/);
+  assert.doesNotMatch(candidate.failureModes.join(' '), /invalid args/);
+});
+
+test('a caller-input rootCause does not choose the actionable acceptance metric', () => {
+  const now = new Date().toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:code', scope: 'tool run code',
+        problem: 'official operation failure code run failure',
+        failureCount: 4, occurrences: 4, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 10, count: 4 }, successessincefailure: { sum: 6, count: 4 } },
+      },
+      {
+        key: 'knowledge:args', scope: 'tool run code',
+        problem: 'official operation failure invalid args', rootCause: 'timeout and latency when arguments are wrong',
+        failureCount: 100, occurrences: 100, lastSeen: now,
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(candidate);
+  assert.equal(candidate.acceptanceMetrics.some((metric) => metric.name === 'latencyMs'), false,
+    'the caller rootCause must not switch the actionable metric to latency');
+  assert.equal(candidate.acceptanceMetrics.some((metric) => metric.name === 'successRate'), true);
+});
+
 test('one caller-input mode does not discard a tool target with actionable failures', () => {
   const now = new Date().toISOString();
   const planned = planEvolutionCandidates({

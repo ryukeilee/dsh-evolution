@@ -143,6 +143,21 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(longDeclined.value, undefined);
 
+  // A file replaced between the host's window and the policy's re-read must not
+  // be spliced: the new tail cannot be appended to the old head.
+  const snapshotRows = [...deep.slice(0, 620), 'sentinel-a'];
+  const replacedRows = [...snapshotRows];
+  replacedRows[0] = 'changed after the host read';
+  const snapshotFile = '/isolated/snapshot.txt';
+  const snapshotListener = mount({ [snapshotFile]: replacedRows.join('\n') + '\n' });
+  const snapshotFirst = snapshotRows.slice(0, 620).map((value, index) => ({ number: index + 1, text: value }));
+  const replaced = await snapshotListener(
+    { name: 'read', arguments: { file_path: 'snapshot.txt', limit: 2000 }, agent: {}, signal: null },
+    readResult({ lines: snapshotFirst, totalLines: snapshotRows.length, path: snapshotFile, content: snapshotFirst.map((line) => line.text).join('\n') + '\n(Output capped. Showing lines 1-620. Use offset=621 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(replaced.value, undefined);
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(

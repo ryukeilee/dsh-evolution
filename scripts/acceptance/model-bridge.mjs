@@ -39,6 +39,21 @@ export const DEFAULT_BRIDGE_MODEL = 'opencode-go/deepseek-v4.1-flash';
 
 const MAX_BLOCK_TEXT = 20_000;
 const MAX_TOOL_TEXT = 4_000;
+// Fixed reason codes are the only failure text that may leave the bridge. A raw
+// provider/JSON exception can carry a request or reply body.
+const PILOT_REASON_CODES = new Set([
+  'model-process-failed',
+  'reply-not-text',
+  'reply-has-no-object',
+  'reply-object-invalid',
+  'reply-object-unterminated',
+  'decision-shape-invalid',
+  'pilot-used-own-tools',
+]);
+
+function pilotReasonCode(reason) {
+  return typeof reason === 'string' && PILOT_REASON_CODES.has(reason) ? reason : 'pilot-transport-error';
+}
 
 function bounded(value, limit) {
   const text = typeof value === 'string' ? value : JSON.stringify(value ?? '');
@@ -148,27 +163,17 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   const child = spawn('opencode', ['run', '--format', 'json', '--agent', 'build', '--model', model, prompt], {
     cwd: workdir, env, stdio: ['ignore', 'pipe', 'pipe'],
   });
-  let stdout = '';
   let stderr = '';
-  child.stdout.on('data', (bytes) => { stdout = (stdout + bytes).slice(-4_000_000); });
-  child.stderr.on('data', (bytes) => { stderr = (stderr + bytes).slice(-20_000); });
-  const timeout = setTimeout(() => { try { child.kill('SIGKILL'); } catch {} }, timeoutMs);
-  const [code, signal] = await new Promise((resolve) => {
-    let settled = false;
-    const settle = (value, name) => { if (!settled) { settled = true; resolve([value, name]); } };
-    child.once('error', () => settle('spawn-error', null));
-    child.once('exit', (value, name) => settle(value, name));
-  });
-  clearTimeout(timeout);
-  const wallMs = Date.now() - startedAt;
+  let stdoutSample = '';
+  let pending = Buffer.alloc(0);
   let text = '';
   let usage = null;
   let usageComplete = true;
   let ownToolCalls = 0;
-  for (const line of stdout.split('\n')) {
-    if (!line.trim().startsWith('{')) continue;
+  const handleLine = (line) => {
+    if (!line.trim().startsWith('{')) return;
     let row;
-    try { row = JSON.parse(line); } catch { continue; }
+    try { row = JSON.parse(line); } catch { return; }
     if (row?.type === 'text' && typeof row.part?.text === 'string') text += row.part.text;
     // One `opencode run` invocation can make several provider calls (one per
     // step). Each `step_finish` carries that call's bill, so the turn's cost is
@@ -195,14 +200,38 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
     // tools, the answer did not come from the host transcript (and could know
     // values the host path never delivered). Report it instead of accepting it.
     if (row?.type === 'tool_use' || row?.type === 'tool') ownToolCalls += 1;
-  }
+  };
+  // Parse complete JSON lines as they arrive. A trailing byte cap would drop
+  // early own-tool or step_finish events, turning a bypass into a retryable
+  // process failure and understating the bill. Only the diagnostic sample is
+  // bounded; the events are consumed once.
+  child.stdout.on('data', (bytes) => {
+    if (stdoutSample.length < 4_000) stdoutSample = (stdoutSample + bytes.toString('utf8')).slice(0, 4_000);
+    pending = Buffer.concat([pending, bytes]);
+    let index;
+    while ((index = pending.indexOf(0x0a)) !== -1) {
+      handleLine(pending.subarray(0, index).toString('utf8'));
+      pending = pending.subarray(index + 1);
+    }
+  });
+  child.stderr.on('data', (bytes) => { stderr = (stderr + bytes).slice(-20_000); });
+  const timeout = setTimeout(() => { try { child.kill('SIGKILL'); } catch {} }, timeoutMs);
+  const [code, signal] = await new Promise((resolve) => {
+    let settled = false;
+    const settle = (value, name) => { if (!settled) { settled = true; resolve([value, name]); } };
+    child.once('error', () => settle('spawn-error', null));
+    child.once('exit', (value, name) => settle(value, name));
+  });
+  clearTimeout(timeout);
+  if (pending.length > 0) handleLine(pending.toString('utf8'));
+  const wallMs = Date.now() - startedAt;
   if (!usageComplete) usage = null;
   // A non-zero exit or a signal is a process failure even when partial text was
   // written: that text may be a truncated reply, and the caller's correctness
   // (and its single retry) must not treat it as a parseable decision. Own-tool
   // evidence survives the failure so a bypass cannot be retried as transport.
   if (code !== 0 || signal !== null) {
-    return { ok: false, reason: 'model-process-failed', code, signal, ownToolCalls, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdout, 1_000) };
+    return { ok: false, reason: 'model-process-failed', code, signal, ownToolCalls, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdoutSample, 1_000) };
   }
   return { ok: true, text, usage, wallMs, ownToolCalls };
 }
@@ -317,11 +346,10 @@ export async function startModelBridge({
       const wallMs = attempts.reduce((total, reply) => total + (Number.isFinite(reply?.wallMs) ? reply.wallMs : 0), 0);
       const retries = attempts.length - 1;
       if (decision === null) {
-        const last = attempts.at(-1);
-        turns.push({ round, ok: false, reason: failureReason, wallMs, usage, retries,
-          ...(typeof last?.text === 'string' ? { replySample: bounded(last.text, 400) } : {}) });
+        const reason = pilotReasonCode(failureReason);
+        turns.push({ round, ok: false, reason, wallMs, usage, retries });
         response.writeHead(502, { 'content-type': 'application/json' });
-        response.end(JSON.stringify({ error: failureReason }));
+        response.end(JSON.stringify({ error: reason }));
         return;
       }
       const record = {
@@ -332,10 +360,12 @@ export async function startModelBridge({
       turns.push(record);
       onDecision?.(record);
       anthropicStream(response, decision, usage, crypto.randomUUID());
-    } catch (error) {
-      turns.push({ round: turns.length, ok: false, reason: String(error?.message ?? error) });
+    } catch {
+      // The exception text may contain the request or reply body. Only a fixed
+      // transport code crosses the bridge boundary.
+      turns.push({ round: turns.length, ok: false, reason: 'pilot-transport-error' });
       if (!response.headersSent) response.writeHead(500);
-      response.end(String(error?.message ?? error));
+      response.end('pilot-transport-error');
     }
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));

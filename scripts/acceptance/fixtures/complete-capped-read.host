@@ -85,7 +85,14 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // The official line counter does not count the empty segment after a
       // trailing newline; drop only that one, never a real empty last line.
       if (all.length > 0 && all.at(-1) === '' && content.endsWith('\n')) all.pop();
-      if (all.length < total) return decision;
+      // The tail must come from the same snapshot as the window the host
+      // returned. Re-reading is only safe when every returned line (and the
+      // total line count) still matches; otherwise keep the original result.
+      if (all.length !== total) return decision;
+      for (const line of base.lines) {
+        if (!Number.isInteger(line?.number) || typeof line?.text !== 'string') continue;
+        if (all[line.number - 1] !== line.text) return decision;
+      }
       const tail = [];
       let bytes = 0;
       for (let number = end + 1; number <= windowEnd; number += 1) {

@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { produceTaskBenefit, readPathMatches, safeErrorCode, toolCallDescriptor } from './task-benefit.mjs';
+import { produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, toolCallDescriptor } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -737,7 +737,7 @@ try {
     const consumerResultById = new Map();
     for (const update of consumerUpdates) {
       if (update.sessionUpdate !== 'tool_call_update') continue;
-      if (!(update.status === 'completed' || update.status === 'success')) continue;
+      if (!successfulToolResult(update)) continue;
       const call = consumerCallById.get(update.toolCallId);
       if (call?.name !== 'read') continue;
       const text = toolUpdateText(update);

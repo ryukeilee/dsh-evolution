@@ -32,6 +32,7 @@ import {
   resolveArtifactTarget,
   resolveFilesystemPath,
   safeErrorCode,
+  successfulToolResult,
   toolCallDescriptor,
   writeArtifactFile,
   writePreviewModule,
@@ -188,7 +189,7 @@ test('a value read from another file cannot prove the mechanism ran', () => {
     usage: { input: 1000, output: 10, cache: { read: 50 } },
     round: index,
   }));
-  const calls = paths.map((_, index) => ({ sessionUpdate: 'tool_call', toolCallId: 'c' + (index + 1), title: 'read' }));
+  const calls = paths.map((_, index) => ({ sessionUpdate: 'tool_call', toolCallId: 'c' + (index + 1), title: 'read', rawInput: { file_path: paths[index] } }));
   const result = (id, text) => ({
     sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
     content: [{ type: 'content', content: { type: 'text', text } }],
@@ -303,6 +304,47 @@ test('a reordered bash/read reply cannot make bash output count as a read', () =
   assert.equal(row.exercised, false, 'the value came from bash, not from the first read');
 });
 
+test('same-name calls without rawInput and descriptive titles cannot borrow an offset', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 1 } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  // Transport order is the tail read first, but both calls are named read and
+  // carry no rawInput: position cannot prove which offset belongs to which id.
+  const ambiguous = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read' },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/a.txt</path>\n<content>first window</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(ambiguous.exercised, false);
+
+  const descriptive = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ...turns[0] }],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'Read the config file' },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(descriptive.exercised, false, 'a descriptive title is not a tool identity');
+});
+
 test('a call/decision count mismatch is not attributed to the policy', () => {
   const turns = turnsWith(['read', 'read']).map((turn, index) => ({
     ...turn,
@@ -353,6 +395,14 @@ test('persisted pilot failure reasons are fixed codes, not raw exception text', 
   assert.deepEqual(pilotFailureReasons([{ ok: false, reason: 'pilot-used-own-tools' }]), ['pilot-used-own-tools']);
   assert.deepEqual(pilotFailureReasons([{ ok: false, reason: 'Unexpected token < in JSON: {"private":"body"}' }]), ['pilot-transport-error']);
   assert.deepEqual(pilotFailureReasons([{ ok: true, reason: 'whatever' }]), []);
+});
+
+test('a completed result marked as an error is not a successful read', () => {
+  assert.equal(successfulToolResult({ status: 'completed' }), true);
+  assert.equal(successfulToolResult({ status: 'success' }), true);
+  assert.equal(successfulToolResult({ status: 'completed', isError: true }), false);
+  assert.equal(successfulToolResult({ status: 'completed', is_error: true }), false);
+  assert.equal(successfulToolResult({ status: 'in_progress' }), false);
 });
 
 test('a per-file binding must cover every expected token', () => {

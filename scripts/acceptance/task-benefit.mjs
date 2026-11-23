@@ -152,9 +152,15 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames) {
     ? call.rawInput : null;
   const decisionArguments = decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
     ? decision.arguments : null;
-  const positionTrusted = title === null || title === decisionName;
+  // Position is only trustworthy when the title names the decision's tool and
+  // that tool appears once. With two same-name calls, a reversed transport order
+  // would otherwise lend a tail read the start read's offset.
+  const ambiguous = decisionName !== null && toolNames.filter((name) => name === decisionName).length > 1;
+  const positionTrusted = !ambiguous && (title === null || title === decisionName);
   return {
-    name: titleIsTool ? title : (decisionName ?? title),
+    // A descriptive title that is not one of the offered tools cannot identify
+    // the executed tool; do not fall back to a position that may be reordered.
+    name: titleIsTool ? title : (title === null ? decisionName : null),
     arguments: rawInput ?? (positionTrusted ? decisionArguments : null) ?? {},
     inputKnown: rawInput !== null || positionTrusted,
   };
@@ -173,6 +179,11 @@ function toolUpdateText(update) {
 /** A tool result only proves an effect once the transport reports it complete. */
 function completedToolUpdate(update) {
   return update?.status === 'completed' || update?.status === 'success';
+}
+
+/** A completed result that the transport did not also mark as an error. */
+export function successfulToolResult(update) {
+  return completedToolUpdate(update) && update?.isError !== true && update?.is_error !== true;
 }
 
 /** Billing fields must be real finite numbers; optional cache.read defaults to 0. */
@@ -280,7 +291,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const readResults = new Map();
   for (const update of Array.isArray(updates) ? updates : []) {
     if (update?.sessionUpdate !== 'tool_call_update') continue;
-    if (!completedToolUpdate(update) || update.isError === true || update.is_error === true) continue;
+    if (!successfulToolResult(update)) continue;
     const call = byId.get(update.toolCallId);
     if (call?.name !== 'read') continue;
     const text = toolUpdateText(update);
