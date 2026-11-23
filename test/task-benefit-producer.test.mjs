@@ -563,6 +563,21 @@ test('an empty rawInput cannot erase an explicit offset from a unique decision',
   });
   assert.equal(withPathOnly.exercised, false, 'a rawInput path must keep the uniquely aligned offset');
 
+  const invalidOffset = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 600 } } }],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt', offset: null } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(invalidOffset.attributionComplete, false);
+  assert.equal(invalidOffset.exercised, false, 'an explicitly invalid offset is not a start read');
+
   const ambiguousPathOnly = extractSessionEvidence({
     label: 'candidate-1', side: 'candidate',
     turns: [
@@ -657,6 +672,20 @@ test('relative and absolute requests for one file share the first-read key', () 
     assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
   });
   assert.equal(dotPath.exercised, false, 'internal dot segments must normalize to the same first request');
+
+  const dotSlash = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/work',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: './/a.txt', offset: 600 } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/work/a.txt', offset: 1 } },
+      result('c1', 'sentinel-a\n'),
+      result('c2', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/work/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(dotSlash.exercised, false, './/a.txt must resolve under the cwd, not to /a.txt');
 });
 
 test('a per-file binding must cover every expected token', () => {

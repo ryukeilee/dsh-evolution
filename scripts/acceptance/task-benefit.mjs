@@ -124,8 +124,7 @@ export function answerMatches(text, tokens) {
 export function readPathMatches(actual, expected, cwd = null) {
   if (typeof actual !== 'string' || typeof expected !== 'string') return false;
   const normalize = (value) => {
-    let textValue = value.replace(/\\/g, '/');
-    if (textValue.startsWith('./')) textValue = textValue.slice(2);
+    const textValue = value.replace(/\\/g, '/');
     const normalized = path.posix.normalize(textValue);
     return normalized === '.' ? '' : normalized;
   };
@@ -168,27 +167,34 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
   const name = titleIsTool ? title : null;
   const rawFile = rawInput && typeof rawInput.file_path === 'string' && rawInput.file_path.trim() !== '';
   const decisionFile = decisionArguments && typeof decisionArguments.file_path === 'string' && decisionArguments.file_path.trim() !== '';
-  const rawHasOffset = Number.isInteger(rawInput?.offset) && rawInput.offset > 0;
+  const hasRawOffset = rawInput !== null && Object.prototype.hasOwnProperty.call(rawInput, 'offset');
+  const rawOffsetValid = Number.isInteger(rawInput?.offset) && rawInput.offset > 0;
   let argumentsValue = {};
   let inputKnown = false;
   if (name === 'read') {
     // An empty/partial rawInput must not erase an explicit offset in the
     // uniquely aligned decision. A rawInput that names the same file is merged
-    // over the decision so its own offset wins but a missing offset is kept.
+    // over the decision so its own valid offset wins; an omitted offset keeps
+    // the decision's offset, but an explicitly invalid offset is not evidence.
     const sameFile = rawFile && positionTrusted && decisionFile
       && (readPathMatches(rawInput.file_path, decisionArguments.file_path, cwd)
         || readPathMatches(decisionArguments.file_path, rawInput.file_path, cwd));
     if (sameFile) {
-      argumentsValue = { ...decisionArguments, ...rawInput };
-      inputKnown = true;
+      if (hasRawOffset && !rawOffsetValid) {
+        argumentsValue = rawInput;
+        inputKnown = false;
+      } else {
+        argumentsValue = { ...decisionArguments, ...rawInput };
+        inputKnown = true;
+      }
     } else if (rawFile) {
       argumentsValue = rawInput;
       // File identity alone does not prove the start line when the decision
-      // position is ambiguous; only an explicit offset or a unique match does.
-      inputKnown = rawHasOffset;
+      // position is ambiguous; only an explicit valid offset or a unique match does.
+      inputKnown = rawOffsetValid;
     } else if (positionTrusted) {
       argumentsValue = { ...(decisionArguments ?? {}), ...(rawInput ?? {}) };
-      inputKnown = true;
+      inputKnown = !(hasRawOffset && !rawOffsetValid);
     }
   } else {
     argumentsValue = rawInput ?? (positionTrusted ? decisionArguments : null) ?? {};
