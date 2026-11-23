@@ -14,7 +14,7 @@ PR #82 新增的 `originCounts` 用一个共享的 `Map` 同时累加两个来�
 1. 同一失败同时出现在两个来源时，`originCounts` 把它算两次，可能大于 `occurrences`；
 2. 同一失败记忆在同一目标下有多个快照时，归因把各快照相加，而总数只取最大值；
 3. 被重复计算的成因可能改变多数成因，把本来由 `unknown` 主导的目标误判成 `caller-input` 并拒绝，或反过来让真正的 `caller-input` 目标进入候选；
-4. 拒绝项的 `detail` 用 `occurrences` 作分母，而分子来自未去重的计数，出现过“9 of 8”这类自相矛盾的说明。
+4. 拒绝项的 `detail` 用 `occurrences` 作分母，而分子来自未去重的计数，分子可以大于分母，成因份额因此不可信。
 
 本轮让归因计数沿用与失败总数相同的去重规则，不改变 `occurrences`、评分公式、候选上限、生命周期或任何门禁。
 
@@ -45,7 +45,7 @@ PR #82 新增的 `originCounts` 用一个共享的 `Map` 同时累加两个来�
 - 知识库单独重放（不传 `--memory`）时，修复前后的完整计划文档逐字段相同（`diff` 为空），PR #82 的候选、排序和分数没有变化；
 - 带失败记忆重放时，前 5 个候选、`selected`、分数、顺序、前 5 名覆盖的 255 条失败全部不变，只有上表的两处归因计数从“重复 +1”回到与 `occurrences` 一致；
 - 修复前 / 后候选队列均为 `run code 167`（0.6558）、`read 30`（0.4564）、`apply patch 43`（0.3746）、`mcp pull request read 4`（0.3720）、`edit 11`（0.3289）；
-- 对照 `origin/main`（`cbc1694`）的规划器：修复后的队列仍是 PR #82 的队列（`run code` / `apply patch` / `edit` 进入候选与拒绝报告），没有被本轮修复退回“最大的损失不可见”的旧行为。
+- 对照 `origin/main`（`cbc1694`）的规划器：修复后的队列仍是 PR #82 的队列（`run code` / `apply patch` / `edit` 进入候选或拒绝报告），没有被本轮修复退回“最大的损失不可见”的旧行为。
 
 生产数据里只有两个目标在两个来源中重叠（`tool read`、`tool wait agent`），且重复的那条记忆都是 `revert` 形状，因此本轮在该库上只修正了计数，没有翻转候选或排序。翻转判定由下面的合成边界用例证明。
 
@@ -97,11 +97,11 @@ node docs/audit/replay/plan-from-store.mjs \
 | --- | --- |
 | `node --test test/experience-plan.test.mjs test/experience-attribution.test.mjs test/experience-degradation.test.mjs test/experience-plan-real-capture.test.mjs` | 51 项通过，0 失败 |
 | 生产库重放，知识与失败记忆两路来源 | §3 的前后对照；知识单源计划逐字段不变 |
-| 全量 `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 见 §7 |
-| `npm run pack:check` | 见 §7 |
+| 全量 `NODE_OPTIONS=--max-old-space-size=4096 npm test` | 1993 通过 / 2 跳过 / 0 失败（1995 项） |
+| `npm run pack:check` | 17 项全部通过；工作树是固定点的已提交后继（`dsh-evolution-0.2.16`，content `57ae759e…`） |
 | 隔离真实宿主 `0.2.2-rc.5 --no-hmr --experience-evolution` | 25/25 步通过（`host-install` 至 `doctor-final` 全部 `ok`）；`seed` 阶段规划器选中 `tool probe healthcheck`，`originCounts: {"unknown": 4}`、`occurrences: 4`；完整的 propose → baseline 3/3 失败 → trial → candidate 3/3 成功 → measure → promote → restart → regression 流程通过 |
 
-真实宿主证据：`/tmp/acceptance-attribution-rc5.json`（tarball `sha256 7b730a9c…`，`contentSha256 59269b6e…`）。最终 doctor 步骤为 `ok`；doctor 自身状态是 `degraded`，原因只有 CLI 模式无法观测的 `runtime.*`、尚未初始化的 `data.root`/`data.key`，以及既有的五个 `degradedCapabilities`，没有新的 finding。该运行使用本树构建的 tarball，不是 `release/` 固定产物。
+真实宿主证据：`/tmp/acceptance-attribution-rc5.json`（tarball `sha256 7b730a9c…`，`contentSha256 59269b6e…`）。最终 doctor 步骤为 `ok`；doctor 自身状态是 `degraded`，原因只有 CLI 模式无法观测的 `runtime.*`、尚未初始化的 `data.root`/`data.key`，以及既有的五个 `degradedCapabilities`，没有新增 finding。该运行使用本树构建的 tarball，不是 `release/` 固定产物。
 
 ## 7. 未证明与剩余风险
 
