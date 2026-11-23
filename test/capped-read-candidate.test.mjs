@@ -446,6 +446,54 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(postStatDecision.value, undefined, 'a limit narrowed during the final await is not appended');
 
+  const finalPathExec = { name: 'read', callId: 'final-path', arguments: { file_path: 'final-path.txt', limit: 5 }, agent: {}, signal: null };
+  const finalPathFile = '/isolated/final-path.txt';
+  let finalPathStats = 0;
+  const finalPathListener = mount({ [finalPathFile]: raceRows.join('\n') + '\n' }, {
+    onStat: () => { finalPathStats += 1; if (finalPathStats === 3) finalPathExec.arguments.file_path = 'other.txt'; },
+  });
+  const finalPathDecision = await finalPathListener(
+    finalPathExec,
+    readResult({ lines: raceRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })), totalLines: 5, path: finalPathFile, content: 'aaaa\nbbbb\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(finalPathDecision.value, undefined, 'a path changed during the final await is not appended');
+
+  const flapExec = { name: 'read', callId: 'flap', arguments: { file_path: 'flap.txt', limit: 5 }, agent: {}, signal: null };
+  const flapFile = '/isolated/flap.txt';
+  let flapStats = 0;
+  const flapListener = mount({ [flapFile]: raceRows.join('\n') + '\n' }, {
+    onStat: () => {
+      flapStats += 1;
+      if (flapStats === 2) flapExec.arguments.limit = 2;
+      if (flapStats === 3) flapExec.arguments.limit = 5;
+    },
+  });
+  const flapDecision = await flapListener(
+    flapExec,
+    readResult({ lines: raceRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })), totalLines: 5, path: flapFile, content: 'aaaa\nbbbb\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(flapDecision.value, undefined, 'a window narrowed then restored after an await is not appended');
+
+  const offWindowFile = '/isolated/off-window.txt';
+  const offWindowListener = mount({ [offWindowFile]: raceRows.join('\n') + '\n' });
+  const offWindowDecision = await offWindowListener(
+    { name: 'read', callId: 'off-window', arguments: { file_path: 'off-window.txt', offset: 3, limit: 2 }, agent: {}, signal: null },
+    readResult({ lines: [{ number: 1, text: raceRows[0] }], totalLines: 5, path: offWindowFile, content: '' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(offWindowDecision.value, undefined, 'lines starting before the requested offset are not extended');
+
+  const badFooterFile = '/isolated/bad-footer.txt';
+  const badFooterListener = mount({ [badFooterFile]: raceRows.join('\n') + '\n' });
+  const badFooterDecision = await badFooterListener(
+    { name: 'read', callId: 'bad-footer', arguments: { file_path: 'bad-footer.txt', limit: 5 }, agent: {}, signal: null },
+    readResult({ lines: raceRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })), totalLines: 5, path: badFooterFile, content: 'aaaa\nbbbb\n(Output capped. Showing lines 1-3. Use offset=4 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(badFooterDecision.value, undefined, 'a footer that disagrees with the returned window is not extended');
+
   const sepPrefix = 'a\u2028bc';
   const sepMarker = sepPrefix + '... (line truncated to 4 chars)';
   const sepFile = '/isolated/sep-marker.txt';

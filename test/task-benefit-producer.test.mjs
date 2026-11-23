@@ -33,6 +33,7 @@ import {
   resolveArtifactTarget,
   resolveFilesystemPath,
   safeErrorCode,
+  scenarioBaselineOf,
   successfulToolResult,
   toolCallDescriptor,
   writeArtifactFile,
@@ -1302,6 +1303,49 @@ test('an offset-only input inherits the matched decision path', () => {
   });
   assert.equal(row.attributionComplete, true);
   assert.equal(row.exercised, true);
+});
+
+test('a null path after a terminal result is a rewrite, not a missing field', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/w/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, cwd: '/w',
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/w/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/w/a.txt</path>\n<content>sentinel-a</content>' } }] },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', rawInput: { file_path: null } },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/w/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.exercised, false);
+});
+
+test('a scenario baseline comes from its own loss kind, not the merged target', () => {
+  const selection = {
+    baselinePath: { kind: 'observed-recovery', lossKinds: ['line-truncated', 'output-capped'], recoveryTools: ['grep'], recoveryCalls: 7 },
+    loss: {
+      kinds: ['line-truncated', 'output-capped'],
+      recoverable: true,
+      recoveryCalls: 7,
+      recoveryTools: ['grep'],
+      breakdown: [
+        { kind: 'line-truncated', occurrences: 3, recoveryCalls: 7, recoveryTools: ['grep'] },
+        { kind: 'output-capped', occurrences: 3, recoveryCalls: 0, recoveryTools: [] },
+      ],
+    },
+  };
+  const capped = scenarioBaselineOf(selection, 'output-capped');
+  assert.equal(capped.row?.recoveryCalls, 0, 'the capped row owns no recovery cost');
+  assert.deepEqual(capped.baseline.lossKinds, ['output-capped'], 'the proposal root cause names only the scenario kind');
+  assert.deepEqual(capped.baseline.recoveryTools, []);
+  assert.equal(capped.baseline.recoveryCalls, 0);
+  // The merged target must not lend its grep recovery to the capped scenario.
+  assert.equal(selection.loss.recoveryCalls, 7);
+  const line = scenarioBaselineOf(selection, 'line-truncated');
+  assert.deepEqual(line.baseline.recoveryTools, ['grep']);
+  assert.deepEqual(scenarioBaselineOf(selection, 'missing').row, null);
 });
 
 test('a per-file binding must cover every expected token', () => {

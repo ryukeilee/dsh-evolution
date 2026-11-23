@@ -171,10 +171,15 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   let usage = null;
   let usageComplete = true;
   let ownToolCalls = 0;
+  let transportIncomplete = false;
   const handleLine = (line) => {
     if (!line.trim().startsWith('{')) return;
     let row;
-    try { row = JSON.parse(line); } catch { return; }
+    // A line that opens like a JSON event but cannot be parsed is an incomplete
+    // transport, not a line to skip: a truncated tool_use would otherwise be
+    // dropped, reported as zero own-tool calls, and retried as transport. Known
+    // events parsed before it still count.
+    try { row = JSON.parse(line); } catch { transportIncomplete = true; return; }
     if (row?.type === 'text' && typeof row.part?.text === 'string') text += row.part.text;
     // One `opencode run` invocation can make several provider calls (one per
     // step). Each `step_finish` carries that call's bill, so the turn's cost is
@@ -244,6 +249,12 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   }
   if (pending.length > 0) handleLine(pending.toString('utf8'));
   if (!usageComplete) usage = null;
+  // An unparseable event means the transport truncated evidence (for example a
+  // tool_use), so it is not a retryable process failure: the own-tool count is
+  // only a lower bound. Known own-tool evidence is still reported.
+  if (transportIncomplete) {
+    return { ok: false, reason: 'pilot-transport-incomplete', code, signal, ownToolCalls, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdoutSample, 1_000) };
+  }
   // A non-zero exit or a signal is a process failure even when partial text was
   // written: that text may be a truncated reply, and the caller's correctness
   // (and its single retry) must not treat it as a parseable decision. Own-tool

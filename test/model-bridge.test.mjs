@@ -10,6 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { buildDecisionPrompt, parseDecision, runOpencodeTurn, startModelBridge, usageTotals } from '../scripts/acceptance/model-bridge.mjs';
+import { pilotTransportRetryable } from '../scripts/acceptance/task-benefit.mjs';
 
 const REQUEST = {
   system: 'You are a coding agent.',
@@ -123,6 +124,27 @@ test('a non-zero exit after partial text is a process failure, not a parseable r
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'model-process-failed');
   assert.equal(result.code, 1);
+});
+
+test('a truncated tool event is not retryable transport', async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-truncated-opencode-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await fs.writeFile(path.join(dir, 'opencode'),
+    '#!/bin/sh\n'
+    + 'printf \'%s\\n\' \'{"type":"tool_use","part":{"tool":"bash"}}\'\n'
+    + 'printf \'%s\' \'{"type":"tool_use","part":{"tool":"rea\'\n'
+    + 'exit 1\n',
+    { mode: 0o755 });
+  const result = await runOpencodeTurn('prompt', {
+    model: 'test/model',
+    cwd: dir,
+    env: { ...process.env, PATH: dir + path.delimiter + (process.env.PATH ?? '') },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'pilot-transport-incomplete');
+  // The parseable own-tool event before the truncation is still reported.
+  assert.equal(result.ownToolCalls, 1);
+  assert.equal(pilotTransportRetryable([result]), false, 'a truncated event must not be retried as transport');
 });
 
 test('every provider step in one run contributes to the turn bill', async (t) => {

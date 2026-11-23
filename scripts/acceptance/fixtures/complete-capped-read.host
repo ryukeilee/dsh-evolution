@@ -56,6 +56,15 @@ function sameReadWindow(left, right) {
   return true;
 }
 
+const readOffsetOf = (value) => {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0 ? number : 1;
+};
+const readLimitOf = (value) => {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0 ? number : null;
+};
+
 return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
   // A pre-execute freshness token proves the file did not change between the
   // host's read and this policy's re-read. The host read result does not expose
@@ -80,6 +89,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
         if (info?.type === 'file' && typeof info.version === 'string') {
           versions.set(callId, {
             target,
+            filePath,
             version: info.version,
             limit: Number.isInteger(limit) && limit > 0 ? limit : null,
             offset: Number.isInteger(offset) && offset > 0 ? offset : null,
@@ -111,8 +121,43 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
     } catch {
       return next();
     }
-    const decision = await next();
+    // Capture the caller's request before the waterfall: a downstream hook or a
+    // stat callback may mutate the arguments while the checks are pending. Every
+    // await below revalidates this request, so a path/offset/limit drift cannot
+    // append the tail requested by a different call.
     const callId = typeof exec?.callId === 'string' ? exec.callId : null;
+    const requestPath = typeof exec?.arguments?.file_path === 'string' ? exec.arguments.file_path : null;
+    const requestOffset = readOffsetOf(exec?.arguments?.offset);
+    const requestLimit = readLimitOf(exec?.arguments?.limit);
+    const requestIntact = () => typeof callId === 'string'
+      && exec?.name === 'read'
+      && exec.callId === callId
+      && requestPath !== null
+      && exec.arguments?.file_path === requestPath
+      && readOffsetOf(exec.arguments?.offset) === requestOffset
+      // A later widening is bounded by the captured window; a narrowing or a
+      // missing limit means the window this tail was computed for is gone.
+      && (requestLimit === null
+        ? readLimitOf(exec.arguments?.limit) !== null
+        : (readLimitOf(exec.arguments?.limit) ?? 0) >= requestLimit);
+    // The original result may be mutated by a hook or a fs callback while an
+    // await is pending; the tail (and the content it is appended beside) must
+    // still describe the same result.
+    const resultUnchanged = () => {
+      try {
+        if (contentText(result) !== originalContent) return false;
+        if (JSON.stringify(result?.content ?? null) !== originalContentJson) return false;
+        if (originalWindow) {
+          const current = snapshotWindow(result?.value);
+          if (!current || !sameReadWindow(current, originalWindow)) return false;
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const decision = await next();
+    if (!requestIntact() || !resultUnchanged()) return decision;
     try {
       if (!decision || decision.kind !== 'accept') return decision;
       // A downstream hook may replace or mutate the model-visible content.
@@ -155,6 +200,22 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       const effectiveValid = Number.isInteger(effectiveLimit) && effectiveLimit > 0 ? effectiveLimit : null;
       if (effectiveValid === null) return decision;
       const windowLimit = Math.min(requestedLimit, effectiveValid);
+      // The returned window must actually start at the requested offset and be
+      // consecutive; a result that claims offset 3 but returns line 1 cannot be
+      // extended across the request start.
+      if (base.lines.length === 0) return decision;
+      const firstNumber = base.lines[0]?.number;
+      if (!Number.isInteger(firstNumber) || firstNumber !== snapshotOffset) return decision;
+      for (let index = 0; index < base.lines.length; index += 1) {
+        if (base.lines[index]?.number !== snapshotOffset + index) return decision;
+      }
+      const footerMatch = /\(Output capped\. Showing lines (\d+)-(\d+)\. Use offset=(\d+) to continue\.\)/u.exec(text);
+      if (footerMatch) {
+        const footerStart = Number(footerMatch[1]);
+        const footerEnd = Number(footerMatch[2]);
+        const footerNext = Number(footerMatch[3]);
+        if (footerStart !== snapshotOffset || footerEnd !== end || footerNext !== end + 1) return decision;
+      }
       // Only the no-rendered-content path may fall back to structure, and only
       // when the caller declared an explicit limit: otherwise a deployment's
       // smaller default line window would look like a byte cap. When content is
@@ -176,15 +237,21 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       if (missing < 1 || missing > MAX_TAIL_LINES) return decision;
       const prePath = typeof pre.target === 'string' ? pre.target : pre.target?.displayPath;
       if (typeof prePath === 'string' && base.path !== prePath) return decision;
+      // A path changed between pre-execute and now already invalidates the
+      // snapshot this tail would use.
+      if (typeof pre.filePath === 'string' && requestPath !== pre.filePath) return decision;
       const target = pre.target;
       const info = await ctx.fs.stat(target, exec.signal);
+      if (!requestIntact() || !resultUnchanged()) return decision;
       if (!info || info.type !== 'file' || info.version !== pre.version
         || !Number.isInteger(info.size) || info.size > MAX_FILE_BYTES) return decision;
       const content = await ctx.fs.readText(target, exec.signal);
+      if (!requestIntact() || !resultUnchanged()) return decision;
       // Reading is only safe while the freshness token is unchanged. A write
       // between the host read and this re-read, or during the re-read, must
       // keep the original result.
       const after = await ctx.fs.stat(target, exec.signal);
+      if (!requestIntact() || !resultUnchanged()) return decision;
       if (!after || after.type !== 'file' || after.version !== pre.version) return decision;
       // Revalidate after the last await: the hook may have mutated content or
       // the value while the file checks were pending. Only then append

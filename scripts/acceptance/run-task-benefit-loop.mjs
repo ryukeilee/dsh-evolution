@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { failedToolCallIds, hasParentSegment, mergeAcpInputs, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, terminalNotificationMissingId, terminalToolResults, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
+import { failedToolCallIds, hasParentSegment, mergeAcpInputs, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, scenarioBaselineOf, successfulToolResult, terminalNotificationMissingId, terminalToolResults, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -554,6 +554,18 @@ try {
   const lossKind = (selection.loss.breakdown ?? []).find((row) => row.kind === SCENARIO.lossKind);
   assert(lossKind && lossKind.occurrences >= runs,
     'the planner did not report the per-kind evidence for ' + SCENARIO.lossKind + ': ' + JSON.stringify(selection.loss.breakdown ?? null));
+  // The merged `loss` may be satisfied by another kind (for example a line
+  // truncation recovered by grep), so the scenario's own row must carry the
+  // occurrence, recovery and tool evidence this acceptance builds a proposal on.
+  const scenario = scenarioBaselineOf(selection, SCENARIO.lossKind);
+  assert(scenario.row && scenario.row.occurrences >= runs,
+    'the scenario row does not cover the baseline sessions: ' + JSON.stringify(scenario.row));
+  assert(scenario.row.recoveryCalls >= 1,
+    'the ' + SCENARIO.lossKind + ' loss reports no recovery calls: ' + JSON.stringify(scenario.row));
+  assert(scenario.recoveryTools.length >= 1,
+    'the ' + SCENARIO.lossKind + ' loss reports no recovery tool: ' + JSON.stringify(scenario.row));
+  const scenarioRecoveryTools = scenario.recoveryTools;
+  const scenarioBaseline = scenario.baseline;
   assert(selection.loss.recoverable === true, 'the selected loss has no observed recovery cost');
   assert(selection.loss.recoveryCalls >= 1, 'the selected loss reports no recovery calls');
   assert(selection.attribution === 'classified', 'the selected loss is unattributed: ' + JSON.stringify(selection.attribution));
@@ -566,12 +578,13 @@ try {
   assert(selection.baselinePath?.kind === 'observed-recovery', 'the planner did not record the observed recovery baseline');
   // The collector also accepts grep and a successful same-path re-read; the
   // concrete recovery tool is an observed fact, not a harness requirement.
-  assert(selection.baselinePath.recoveryTools.some((tool) => ['bash', 'grep', 'read'].includes(tool)),
-    'the planner lost the observed recovery path: ' + JSON.stringify(selection.baselinePath.recoveryTools));
+  assert(scenarioRecoveryTools.some((tool) => ['bash', 'grep', 'read'].includes(tool)),
+    'the scenario recovery path is not an observed tool: ' + JSON.stringify(scenarioRecoveryTools));
   evidence.discovery = {
     scenario: SCENARIO.name,
     problemKey: selection.problemKey,
     loss: selection.loss,
+    scenarioLoss: lossKind,
     lossKindsBreakdown: selection.loss.breakdown ?? null,
     occurrences: selection.occurrences,
     score: selection.score,
@@ -580,7 +593,7 @@ try {
     hook: selection.hook,
     verificationKind: selection.verificationKind,
     improvementReason: selection.improvementReason,
-    baselinePath: selection.baselinePath,
+    baselinePath: scenarioBaseline,
     source: 'production evolution_plan over the isolated shared experience store after the baseline sessions',
     transport: planReceipt.transport,
   };
@@ -590,7 +603,7 @@ try {
   evidence.negatives = await runNegativeControls({ artifact: producer.artifact, planTarget, selection });
   evidence.steps.push({ name: 'negative-artifacts-rejected', at: new Date().toISOString() });
 
-  const plan = planFor({ target: planTarget, selection });
+  const plan = planFor({ target: planTarget, selection: { ...selection, baselinePath: scenarioBaseline } });
   let approvalObserved = null;
   let positiveFailure = null;
   await runFixturePrompt('acp-delegate', '请把这次上下文策略改进交给 Desktop 执行，先停在所有者确认前，不要自行批准。', (tools, result, round) => {

@@ -345,16 +345,24 @@ export function mergeAcpInputs(calls, updates, cwd = null) {
     const current = inputs.get(id) ?? {};
     const next = { ...current, ...rawInput };
     if (locked.has(id)) {
-      for (const key of ['file_path']) {
-        if (typeof current[key] === 'string' && typeof rawInput[key] === 'string'
-          && !readPathMatches(rawInput[key], current[key], cwd) && !readPathMatches(current[key], rawInput[key], cwd)) {
+      // Presence matters, not truthiness: an explicit `null`/wrong path after
+      // the terminal result is a rewrite attempt, not a missing field.
+      if ('file_path' in rawInput) {
+        const reported = rawInput.file_path;
+        if (typeof reported !== 'string' || reported === '' || typeof current.file_path !== 'string'
+          || !readPathMatches(reported, current.file_path, cwd)) conflict = true;
+      }
+      if ('offset' in rawInput) {
+        const reported = rawInput.offset;
+        if (current.offset === undefined) {
+          if (!(Number.isInteger(reported) && reported > 0)) conflict = true;
+        } else if (!Number.isInteger(reported) || reported !== current.offset) {
           conflict = true;
         }
       }
       for (const key of ['file_path', 'offset']) {
         if (current[key] !== undefined) next[key] = current[key];
       }
-      if (rawInput.offset !== undefined && current.offset !== undefined && rawInput.offset !== current.offset) conflict = true;
     }
     inputs.set(id, next);
   };
@@ -520,6 +528,31 @@ export function pilotFailureReasons(turns) {
 /** A whole-session replacement needs a retryable pilot failure, complete attribution and no product tool failure. */
 export function retryableSession(row) {
   return row?.toolFailures === 0 && row?.attributionComplete === true && row?.retryableTransportFailure === true;
+}
+
+/**
+ * The per-kind loss row that must back a scenario-specific acceptance, plus the
+ * baseline a proposal records for it. A merged target can be recoverable
+ * overall through a different kind, so the scenario's own occurrences, recovery
+ * calls and recovery tools are the only evidence that this scenario happened.
+ */
+export function scenarioBaselineOf(selection, kind) {
+  const row = (Array.isArray(selection?.loss?.breakdown) ? selection.loss.breakdown : [])
+    .find((entry) => entry?.kind === kind) ?? null;
+  if (!row) return { row: null, baseline: null, recoveryTools: [] };
+  const recoveryTools = (Array.isArray(row.recoveryTools) ? row.recoveryTools : [])
+    .filter((tool) => typeof tool === 'string' && tool !== '');
+  return {
+    row,
+    recoveryTools,
+    baseline: {
+      ...(selection?.baselinePath ?? {}),
+      kind: 'observed-recovery',
+      lossKinds: [row.kind],
+      recoveryTools: recoveryTools.slice(0, 3),
+      recoveryCalls: row.recoveryCalls,
+    },
+  };
 }
 
 /** Count tool names so a reordered but identical call set still aligns. */
