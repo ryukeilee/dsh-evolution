@@ -125,6 +125,64 @@ test('a non-zero exit after partial text is a process failure, not a parseable r
   assert.equal(result.code, 1);
 });
 
+test('every provider step in one run contributes to the turn bill', async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-usage-opencode-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const argsFile = path.join(dir, 'args.txt');
+  await fs.writeFile(path.join(dir, 'opencode'),
+    '#!/bin/sh\n'
+    + `printf '%s\\n' "$@" > '${argsFile}'\n`
+    + 'printf \'%s\\n\' \'{"type":"step_finish","part":{"tokens":{"input":10,"output":2,"cache":{"read":3}}}}\'\n'
+    + 'printf \'%s\\n\' \'{"type":"text","part":{"text":"{\\"tool\\":\\"read\\",\\"arguments\\":{}}"}}\'\n'
+    + 'printf \'%s\\n\' \'{"type":"step_finish","part":{"tokens":{"input":4,"output":1,"cache":{"read":5}}}}\'\n',
+    { mode: 0o755 });
+  const result = await runOpencodeTurn('prompt', {
+    model: 'test/model',
+    cwd: dir,
+    env: { ...process.env, PATH: dir + path.delimiter + (process.env.PATH ?? '') },
+  });
+  assert.equal(result.ok, true);
+  // The last step alone would have reported 4 input / 1 output / 5 cache.
+  assert.deepEqual(result.usage, { input: 14, output: 3, cache: { read: 8 } });
+  // The pilot is always started on the agent whose project permissions the
+  // bridge overrides, not a host default that might allow its own tools.
+  const args = (await fs.readFile(argsFile, 'utf8')).split('\n');
+  assert.deepEqual(args.slice(0, 7), ['run', '--format', 'json', '--agent', 'build', '--model', 'test/model']);
+});
+
+test('an incomplete step bill makes the turn spend unknown instead of smaller', async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-usage-unknown-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await fs.writeFile(path.join(dir, 'opencode'),
+    '#!/bin/sh\n'
+    + 'printf \'%s\\n\' \'{"type":"step_finish","part":{"tokens":{"input":10,"output":2}}}\'\n'
+    + 'printf \'%s\\n\' \'{"type":"step_finish","part":{"tokens":{"output":1}}}\'\n',
+    { mode: 0o755 });
+  const result = await runOpencodeTurn('prompt', {
+    model: 'test/model',
+    cwd: dir,
+    env: { ...process.env, PATH: dir + path.delimiter + (process.env.PATH ?? '') },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.usage, null);
+});
+
+test('pilot tool isolation denies every action in the build agent config', async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-isolation-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const bridge = await startModelBridge({
+    cwd: dir,
+    isolatePilotTools: true,
+    runner: async () => ({ ok: true, text: '{"tool":"read","arguments":{}}', usage: { input: 1, output: 1 }, wallMs: 1 }),
+  });
+  t.after(() => bridge.close());
+  const config = JSON.parse(await fs.readFile(path.join(dir, 'opencode.json'), 'utf8'));
+  assert.deepEqual(config.agents.build.permissions, [{ action: '*', resource: '*', effect: 'deny' }]);
+  assert.equal(config.agents.build.description.includes('decision transport'), true);
+  await post(bridge);
+  assert.equal(bridge.turns.length, 1);
+});
+
 test('a real decision is streamed back with its measured usage', async (t) => {
   const runner = async () => ({ ok: true, text: '{"tool":"read","arguments":{"file_path":"workflow-generated.json"}}', usage: { input: 11, output: 4, cache: { read: 2 } }, wallMs: 7 });
   const bridge = await startModelBridge({ runner });

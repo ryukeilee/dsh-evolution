@@ -67,7 +67,27 @@ export function normalizeTask(task) {
   if (!expect || expect.length > MAX_EXPECT) throw new Error(`task.expect must be 1-${MAX_EXPECT} characters`);
   const tokens = parseExpectTokens(expect);
   if (tokens.length === 0) throw new Error('task.expect declares no expected value');
-  return { id, prompt, expect, tokens };
+  // Optional per-path binding: when a task declares which value belongs to
+  // which file, `exercised` requires that file's own first read to carry it.
+  // The artifact still hashes only prompt/expect, so this cannot widen what a
+  // plan or the kernel validates; it makes the harness's own attribution
+  // stricter. Every expected token must be mapped and every mapped token must
+  // be expected, so a partial mapping cannot weaken the check.
+  const reads = Array.isArray(task.reads) ? task.reads.map((row) => ({
+    path: typeof row?.path === 'string' ? row.path.trim() : '',
+    token: typeof row?.token === 'string' ? row.token.trim() : '',
+  })) : [];
+  if (reads.length > 0) {
+    if (reads.length > 32) throw new Error('task.reads must carry at most 32 entries');
+    if (reads.some((row) => !row.path || row.path.length > 300 || !path.isAbsolute(row.path) || !row.token || row.token.length > 200)) {
+      throw new Error('task.reads entries need an absolute bounded path and token');
+    }
+    if (reads.some((row) => !tokens.includes(row.token))) throw new Error('task.reads token is not declared in task.expect');
+    if (tokens.some((token) => !reads.some((row) => row.token === token))) {
+      throw new Error('task.reads must map every expected token to a path');
+    }
+  }
+  return { id, prompt, expect, tokens, reads };
 }
 
 /**
@@ -92,6 +112,27 @@ export function answerMatches(text, tokens) {
   if (typeof text !== 'string') return false;
   const list = Array.isArray(tokens) ? tokens : parseExpectTokens(tokens);
   return list.length > 0 && list.every((token) => text.includes(token));
+}
+
+/**
+ * Join a requested path to the path the host/ACP reports. The harness declares
+ * the expected file as an absolute path. A relative actual path is resolved
+ * against the session cwd first, so `a.txt` under `/home` matches
+ * `/home/a.txt` but not `/home/sub/a.txt`; without a cwd it is accepted only as
+ * a suffix, and two absolute paths must be identical.
+ */
+export function readPathMatches(actual, expected, cwd = null) {
+  if (typeof actual !== 'string' || typeof expected !== 'string') return false;
+  const normalize = (value) => value.replace(/\\/g, '/').replace(/^\.\//, '');
+  const left = normalize(actual);
+  const right = normalize(expected);
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (path.isAbsolute(left) || !path.isAbsolute(right)) return false;
+  if (typeof cwd === 'string' && path.isAbsolute(cwd)) {
+    return path.posix.normalize(path.posix.join(normalize(cwd), left)) === path.posix.normalize(right);
+  }
+  return right.endsWith('/' + left);
 }
 
 /** Flatten the text blocks the ACP transport reports for one tool result. */
@@ -146,9 +187,13 @@ function failureProjection(error) {
  * surface of each decision). Version and stop turns are excluded from the
  * decision metrics exactly like the existing acceptance.
  */
-export function extractSessionEvidence({ label, side, turns, updates, assistantText, expectedTokens, candidateTool = null, durationMs = 0 }) {
+export function extractSessionEvidence({ label, side, turns, updates, assistantText, expectedTokens, candidateTool = null, durationMs = 0, expectedReads = null, cwd = null }) {
   const decisionTurns = (Array.isArray(turns) ? turns : []).filter((turn) => (turn?.tools?.length ?? 0) > 0);
-  const toolNames = decisionTurns.flatMap((turn) => (turn.decision?.tool ? [turn.decision.tool] : []));
+  // Only a turn that actually chose a tool has a `tool_call` update. Keeping
+  // that list (rather than indexing every decision turn) means a stop turn can
+  // never shift a later call's arguments onto the wrong id.
+  const toolTurns = decisionTurns.filter((turn) => typeof turn?.decision?.tool === 'string' && turn.decision.tool.trim() !== '');
+  const toolNames = toolTurns.map((turn) => turn.decision.tool);
   const usage = usageTotals(decisionTurns);
   // A decision without a usage record is not a zero-cost turn: the artifact's
   // token budget would then be understated. The session is incomplete and the
@@ -162,9 +207,13 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name and the arguments the model chose.
   const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
+  // If the transport reported a different number of calls than the decisions
+  // that chose a tool, the order join is not trustworthy. Keep the measured
+  // rows, but never claim the mechanism ran for this session.
+  const attributionAligned = calls.length === toolTurns.length;
   const byId = new Map();
   calls.forEach((call, index) => {
-    const decision = decisionTurns[index]?.decision;
+    const decision = toolTurns[index]?.decision;
     const name = toolNames[index] ?? (typeof call.title === 'string' ? call.title : null);
     if (typeof call.toolCallId === 'string' && typeof name === 'string') {
       byId.set(call.toolCallId, {
@@ -216,8 +265,20 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     const result = readResults.get(request.callId);
     if (result) firstReads.push(result.text);
   }
-  const exercised = expectedTokens.length > 0
-    && expectedTokens.every((token) => firstReads.some((text) => text.includes(token)));
+  // A token is proof only when it came from the first start read of its own
+  // path. Counting all first reads together lets a value from file B stand in
+  // for a missing value in file A.
+  const reads = Array.isArray(expectedReads)
+    ? expectedReads.filter((row) => typeof row?.path === 'string' && row.path !== '' && typeof row?.token === 'string' && row.token !== '')
+    : [];
+  const boundReads = reads.map((expected) => {
+    const request = readRequests.find((candidate) => readPathMatches(candidate.path, expected.path, cwd));
+    const result = request ? readResults.get(request.callId) : null;
+    return Boolean(request && request.offset === 1 && result && result.text.includes(expected.token));
+  });
+  const exercised = attributionAligned && expectedTokens.length > 0 && (reads.length > 0
+    ? boundReads.every(Boolean)
+    : expectedTokens.every((token) => firstReads.some((text) => text.includes(token))));
   return {
     label,
     side,
@@ -747,7 +808,7 @@ function spawnAcp({ cli, home, overlay, env, cwd }) {
   return { child, rpc, updates, stderr: () => stderr };
 }
 
-async function runSession({ cli, home, work, overlay, env, bridge, prompt, label, side, expectedTokens, candidateTool }) {
+async function runSession({ cli, home, work, overlay, env, bridge, prompt, label, side, expectedTokens, expectedReads = null, candidateTool }) {
   const startedAt = Date.now();
   const acp = spawnAcp({ cli, home, overlay, env, cwd: home });
   let promptFailure = null;
@@ -769,7 +830,7 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
   const assistantText = updates
     .filter((update) => update?.sessionUpdate === 'agent_message_chunk' && update.content?.type === 'text')
     .map((update) => update.content.text).join('');
-  const row = extractSessionEvidence({ label, side, turns, updates, assistantText, expectedTokens, candidateTool, durationMs });
+  const row = extractSessionEvidence({ label, side, turns, updates, assistantText, expectedTokens, expectedReads, cwd: home, candidateTool, durationMs });
   const failedTurns = turns.filter((turn) => turn.ok !== true).length;
   // The raw transport detail stays on the operator console; the persisted row
   // carries only a stage/category/code projection.
@@ -871,6 +932,7 @@ export async function produceTaskBenefit(options = {}) {
           env, bridge, prompt: task.prompt,
           label, side,
           expectedTokens: task.tokens,
+          expectedReads: task.reads,
           candidateTool: improvement === 'tool' ? targetTool : null,
         })];
         // Only a transport-incomplete session is replaced; a product tool
@@ -882,6 +944,7 @@ export async function produceTaskBenefit(options = {}) {
             env, bridge, prompt: task.prompt,
             label: label + '-retry', side,
             expectedTokens: task.tokens,
+            expectedReads: task.reads,
             candidateTool: improvement === 'tool' ? targetTool : null,
           });
           attempts.push(retried);

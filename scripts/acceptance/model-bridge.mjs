@@ -163,18 +163,36 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   const wallMs = Date.now() - startedAt;
   let text = '';
   let usage = null;
+  let usageComplete = true;
   let ownToolCalls = 0;
   for (const line of stdout.split('\n')) {
     if (!line.trim().startsWith('{')) continue;
     let row;
     try { row = JSON.parse(line); } catch { continue; }
     if (row?.type === 'text' && typeof row.part?.text === 'string') text += row.part.text;
-    if (row?.type === 'step_finish' && row.part?.tokens) usage = row.part.tokens;
+    // One `opencode run` invocation can make several provider calls (one per
+    // step). Each `step_finish` carries that call's bill, so the turn's cost is
+    // their sum; keeping only the last step understated a turn by about half in
+    // a measured two-step run. A step without numeric input/output makes the
+    // whole turn unknown instead of counting it as a smaller bill.
+    if (row?.type === 'step_finish' && row.part?.tokens) {
+      const tokens = row.part.tokens;
+      if (!Number.isFinite(tokens.input) || !Number.isFinite(tokens.output)
+        || (tokens.cache?.read !== undefined && !Number.isFinite(tokens.cache.read))) {
+        usageComplete = false;
+      } else {
+        usage ??= { input: 0, output: 0, cache: { read: 0 } };
+        usage.input += tokens.input;
+        usage.output += tokens.output;
+        usage.cache.read += tokens.cache?.read ?? 0;
+      }
+    }
     // The pilot is a full coding agent. If it inspects the fixture with its own
     // tools, the answer did not come from the host transcript (and could know
     // values the host path never delivered). Report it instead of accepting it.
     if (row?.type === 'tool_use' || row?.type === 'tool') ownToolCalls += 1;
   }
+  if (!usageComplete) usage = null;
   // A non-zero exit or a signal is a process failure even when partial text was
   // written: that text may be a truncated reply, and the caller's correctness
   // (and its single retry) must not treat it as a parseable decision.

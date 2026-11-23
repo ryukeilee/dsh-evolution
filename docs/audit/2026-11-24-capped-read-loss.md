@@ -87,8 +87,12 @@ ACP/Desktop 会话在生成候选后可以完成 Trial 与度量，但无法自�
 4. `scripts/acceptance/task-benefit.mjs`
    - `exercised` 改为「**从第 1 行开始**的首次**请求**同一路径的结果就带有期望值」。按
      `tool_call` 顺序登记每条路径的第一次读取，再用 call ID 要求这次请求成功返回；失败的尾部
-     首读、后续续读、无法识别路径的读取都不算机制运行。fresh consumer 复用同一判定，单行截断
-     与字节上限两个场景都断言。对单行截断场景语义不变（只有候选能让首读包含 sentinel）。
+     首读、后续续读、无法识别路径的读取都不算机制运行。路径与期望值还可以按
+     `task.reads: [{ path, token }]` 逐文件绑定：token 必须来自它自己路径的首读，不能被另一个
+     文件的结果顶替；相对路径按会话 cwd 解析，两个不同的绝对路径不相等。模型决策数与
+     `tool_call` 数不一致时，整段归因作废而不是按位置猜测。fresh consumer 复用同一判定，
+     单行截断与字节上限两个场景都按文件断言。对单行截断场景语义不变（只有候选能让首读包含
+     sentinel）。
    - producer 对**仅 pilot 传输失败**（`failedTurns > 0` 且 `toolFailures === 0`）的会话做一次
      整会话替换，并在 report/evidence 中保留两次尝试的 turns/tokens；产品工具失败不替换，
      artifact 仍要求三个最终会话全部 complete、correct、failures 0。
@@ -97,14 +101,16 @@ ACP/Desktop 会话在生成候选后可以完成 Trial 与度量，但无法自�
 5. `scripts/acceptance/model-bridge.mjs`
    - 把 `maxToolText` 作为显式选项（默认仍为 4 KiB），不改变既有场景。
    - 新增 `isolatePilotTools`：在被测模型的 cwd 写入只对 `build` agent 生效的 native-tools
-     deny 配置，并显式指定 `--agent build`；解析到任何自有 `tool_use` 时把该轮判为
+     deny 配置，并显式指定 `--agent build`；解析到任何自有 `tool_use` / `tool` 时把该轮判为
      `pilot-used-own-tools` 失败。`task-benefit.mjs`、`run-task-benefit-loop.mjs` 与
      `run-acp-desktop-control.mjs` 都启用它，防止 pilot 自己读取 fixture 后给出 0 宿主调用的
      正确答案。
    - 对同一个宿主请求做一次纠正性重试，只处理 pilot 的回复无法解析/决策结构无效；两次尝试的
      usage 相加并记录 `retries`。任何非零退出/信号（即使已有部分文本）或自有工具调用都不
-     重试，直接保持失败轮。fresh consumer 与 ACP 对照在 `usage.unknownTurns > 0` 时把 token
-     总量标为未知，而不是把已知轮次的小计冒充总量。
+     重试，直接保持失败轮。一次 `opencode run` 的多个 provider step 的 `step_finish` usage
+     逐项相加；任一 step 缺少计费字段时该轮记为 unknown，而不是按最后一步的小计冒充总量。
+     fresh consumer 与 ACP 对照在 `usage.unknownTurns > 0` 时把 token 总量标为未知，而不是
+     把已知轮次的小计冒充总量。
 6. `scripts/acceptance/run-task-benefit-loop.mjs`
    - 新增 `--scenario capped`：生成三个刚超过官方 50 KiB 字节上限、sentinel 在最后一行的文件；
      从规划器选择的 `output-capped` 损失构造提案；功能复验读取第 700 行；fresh consumer
@@ -244,3 +250,24 @@ run6 的 producer 已经干净，但 Trial 功能复验仍在 `E_DESKTOP_FUNCTIO
 - 首次读取的判定提升了对「机制运行」的要求；它只改变候选侧 adoption 的计算，不改变门禁阈值。
 - 规划器仍不能自动判断某个已发布插件覆盖了哪个 loss kind；本轮只把每类损失的独立证据
   暴露出来，选择未覆盖 kind 仍需所有者/模型依据证据决定。这是下一轮的候选改进，不在本轮伪造。
+
+## 8. 本轮复审后的收紧（未重跑真实模型闭环）
+
+最终证据（run15）生成之后，复审确认了两处「判定比证据弱」的问题，并只修改验收 harness，不修改
+候选 Host 源码、门禁或既有证据：
+
+1. **首次读取必须按文件绑定。** 旧判定把各路径的首读结果放在一起，只要求每个 sentinel 出现在
+   某个首读里；文件 B 的值因此可以顶替文件 A。现在 `task.reads` 按绝对路径绑定 token，
+   `exercised` 要求每个文件自己的首读包含自己的值。记录的 candidate 行有 3 次 read、每次
+   3 个完整文件结果（`readResultCharacters` 206,610，fixtures 合计 195,840，其余是宿主信封），
+   与新的逐文件判定一致；但本轮没有重跑真实模型来重新生成 artifact，报告不把「新判定已在
+   真实会话上重跑」写成已执行事实。
+2. **多 step 的 usage 必须相加。** 实测一次 `opencode run` 的两个 `step_finish` 分别报告
+   input 9,621/output 39/cache.read 512 与 input 89/output 7/cache.read 10,112；旧实现只保留
+   最后一步。现在按 step 相加，任一 step 缺计费字段则该轮 unknown。该修复只影响后续运行的
+   计量，不改写已记录的 artifact。
+
+另外把候选测试的挂载方式从 `new Function` 改成 `node:vm`（只注入
+`TextEncoder`/`TextDecoder`/`btoa`/`atob`），这样再次出现 `Buffer`/`process` 依赖时测试会先
+失败，而不是等到 Trial 才被功能复验拦下。以上修改都有对应单测，未重新运行真实 Desktop /
+ACP 配对会话。

@@ -25,6 +25,7 @@ import {
   normalizeTask,
   parseExpectTokens,
   prepareArtifactDirectory,
+  readPathMatches,
   resolveArtifactTarget,
   resolveFilesystemPath,
   safeErrorCode,
@@ -172,6 +173,100 @@ test('a first read that jumps to the tail or has no identifiable path is not mec
     assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
   });
   assert.equal(noPath.exercised, false, 'a result with no identifiable path cannot be deduplicated');
+});
+
+test('a value read from another file cannot prove the mechanism ran', () => {
+  const paths = ['/home/a.txt', '/home/b.txt', '/home/c.txt'];
+  const turns = ['read', 'read', 'read'].map((tool, index) => ({
+    ok: true,
+    tools: ['read', 'bash'],
+    decision: { tool, arguments: { file_path: paths[index] } },
+    usage: { input: 1000, output: 10, cache: { read: 50 } },
+    round: index,
+  }));
+  const calls = paths.map((_, index) => ({ sessionUpdate: 'tool_call', toolCallId: 'c' + (index + 1), title: 'read' }));
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  // a's first read wrongly carries b's sentinel; b's own first read does not.
+  const updates = [
+    ...calls,
+    result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a sentinel-b</content>'),
+    result('c2', '<path>/home/b.txt</path>\n<content>no value here</content>'),
+    result('c3', '<path>/home/c.txt</path>\n<content>sentinel-c</content>'),
+  ];
+  const expectedReads = [
+    { path: '/home/a.txt', token: 'sentinel-a' },
+    { path: '/home/b.txt', token: 'sentinel-b' },
+    { path: '/home/c.txt', token: 'sentinel-c' },
+  ];
+  const bound = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, updates,
+    assistantText: 'sentinel-a sentinel-b sentinel-c',
+    expectedTokens: TOKENS, expectedReads, candidateTool: null, durationMs: 1,
+  });
+  assert.equal(bound.correct, true);
+  assert.equal(bound.exercised, false, "b's sentinel was delivered by a's read, not by b's first read");
+  // The same shape without a per-file binding is what the earlier check
+  // accepted; keep this assertion so the reason for the binding stays visible.
+  const unbound = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, updates,
+    assistantText: 'sentinel-a sentinel-b sentinel-c',
+    expectedTokens: TOKENS, candidateTool: null, durationMs: 1,
+  });
+  assert.equal(unbound.exercised, true);
+
+  // The bound check still passes when each file's own first read carries its
+  // own value.
+  const complete = updates.map((update, index) => index < 3 ? update
+    : result('c' + (index - 2), '<path>' + paths[index - 3] + '</path>\n<content>' + TOKENS[index - 3] + '</content>'));
+  const boundComplete = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns, updates: complete,
+    assistantText: 'sentinel-a sentinel-b sentinel-c',
+    expectedTokens: TOKENS, expectedReads, candidateTool: null, durationMs: 1,
+  });
+  assert.equal(boundComplete.exercised, true);
+});
+
+test('a call/decision count mismatch is not attributed to the policy', () => {
+  const turns = turnsWith(['read', 'read']).map((turn, index) => ({
+    ...turn,
+    decision: { tool: 'read', arguments: { file_path: index === 0 ? '/work/a.txt' : '/work/b.txt' } },
+  }));
+  const update = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      update('c1', '<path>/work/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.toolCalls, 2);
+  assert.equal(row.exercised, false, 'two decisions but one reported call cannot be joined by position');
+});
+
+test('read path binding accepts relative/canonical aliases but not a different path', () => {
+  assert.equal(readPathMatches('/iso/home/a.txt', '/iso/home/a.txt', '/iso/home'), true);
+  assert.equal(readPathMatches('a.txt', '/iso/home/a.txt', '/iso/home'), true);
+  assert.equal(readPathMatches('./a.txt', '/iso/home/a.txt', '/iso/home'), true);
+  assert.equal(readPathMatches('sub/a.txt', '/iso/home/sub/a.txt', '/iso/home'), true);
+  assert.equal(readPathMatches('/iso/home/a.txt', '/iso/home/b.txt', '/iso/home'), false);
+  assert.equal(readPathMatches('/iso/home/sub/a.txt', '/iso/home/a.txt', '/iso/home'), false);
+  assert.equal(readPathMatches('a.txt', '/iso/home/sub/a.txt', '/iso/home'), false);
+});
+
+test('a per-file binding must cover every expected token', () => {
+  const base = { id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' };
+  const task = normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] });
+  assert.deepEqual(task.reads, [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }]);
+  assert.throws(() => normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }] }), /every expected token/);
+  assert.throws(() => normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'other' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] }), /not declared/);
+  assert.throws(() => normalizeTask({ ...base, reads: [{ path: 'a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] }), /absolute/);
 });
 
 test('a read result without the expected value is not proof that the policy ran', () => {

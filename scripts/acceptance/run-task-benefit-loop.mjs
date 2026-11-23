@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { produceTaskBenefit, safeErrorCode } from './task-benefit.mjs';
+import { produceTaskBenefit, readPathMatches, safeErrorCode } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -378,11 +378,13 @@ async function prepareFixtures() {
       id: 'read-three-capped-tails',
       prompt: '请用 read 工具从第一行开始读取 a.txt、b.txt、c.txt，然后分别告诉我这三个文件最后一行里 sentinel 的值。',
       expect: JSON.stringify(files.map((file) => file.sentinel)),
+      reads: files.map((file) => ({ path: path.join(home, file.name), token: file.sentinel })),
     }
     : {
       id: 'read-three-long-lines',
       prompt: '请依次用 read 工具读取 a.json、b.json、c.json 的第一行，然后告诉我这三个文件各自的 sentinel 字段值。',
       expect: JSON.stringify(files.map((file) => file.sentinel)),
+      reads: files.map((file) => ({ path: path.join(home, file.name), token: file.sentinel })),
     };
   sentinels = files.map((file) => file.sentinel);
   assert(task.expect.length <= 500, 'the fixture sentinels exceed the task contract');
@@ -762,21 +764,19 @@ try {
     assert(sentinels.every((sentinel) => consumerReadResults.some((result) => result.text.includes(sentinel))), 'the promoted policy did not deliver the complete read result in the fresh consumer');
     assert(!consumerReadResults.some((result) => result.text.includes(SCENARIO.forbiddenReadText)),
       'a fresh consumer read result still carried "' + SCENARIO.forbiddenReadText + '"');
-    // The first *request* of each file must start at line 1 and return the
-    // sentinel: a tail-first or failed first request followed by a later start
-    // read is the cost the policy exists to remove, not proof that it ran.
-    const firstRequestByPath = new Map();
-    for (const request of consumerReadRequests) {
-      if (typeof request.path !== 'string' || request.path === '') continue;
-      if (firstRequestByPath.has(request.path)) continue;
-      firstRequestByPath.set(request.path, request);
+    // The first *request* of each file must start at line 1 and return that
+    // file's own sentinel: a tail-first or failed first request followed by a
+    // later start read is the cost the policy exists to remove, not proof that
+    // it ran. The value is bound to its path, so one file's content cannot
+    // stand in for another's.
+    for (const file of files) {
+      const expectedPath = path.join(home, file.name);
+      const request = consumerReadRequests.find((candidate) => readPathMatches(candidate.path, expectedPath, home));
+      assert(request && request.offset === 1, 'the fresh consumer did not take a start read of ' + file.name);
+      const result = consumerResultById.get(request.callId);
+      assert(result && result.text.includes(file.sentinel),
+        'the promoted policy did not complete the first start read of ' + file.name);
     }
-    const firstStartReads = [...firstRequestByPath.values()]
-      .filter((request) => request.offset === 1 && consumerResultById.has(request.callId))
-      .map((request) => consumerResultById.get(request.callId).text);
-    assert(firstStartReads.length >= sentinels.length, 'the fresh consumer did not take a start read of every fixture');
-    assert(sentinels.every((sentinel) => firstStartReads.some((text) => text.includes(sentinel))),
-      'the promoted policy did not complete the first start read in the fresh consumer');
     const consumerUsage = usageTotals(consumerTurns);
     evidence.freshConsumer = {
       taskId,

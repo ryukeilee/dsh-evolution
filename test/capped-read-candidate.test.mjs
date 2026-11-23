@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'scripts', 'acceptance', 'fixtures', 'complete-capped-read.host');
@@ -14,9 +15,14 @@ const body = fs.readFileSync(fixture, 'utf8');
 const CAP_FOOTER = '(Output capped. Showing lines 1-620. Use offset=621 to continue.)';
 
 function mount(files) {
-  // The real Trial evaluates this body in a `node:vm` sandbox without Buffer
-  // or process; TextEncoder is provided there (and is a Node global here).
-  const plugin = new Function(body)();
+  // The real Trial runs this body in a `node:vm` sandbox that provides neither
+  // Buffer nor process (only TextEncoder/TextDecoder/btoa/atob). A plain
+  // `new Function` would still expose Node's globals and let a Buffer
+  // dependency pass here while failing in the Trial, so mount it the same way.
+  const sandbox = { TextEncoder, TextDecoder, btoa, atob };
+  assert.equal(vm.runInNewContext('typeof Buffer', sandbox), 'undefined');
+  assert.equal(vm.runInNewContext('typeof process', sandbox), 'undefined');
+  const plugin = vm.runInNewContext(`(function(){${body}})()`, sandbox, { filename: 'complete-capped-read.host' });
   const listeners = [];
   const ctx = {
     on: (event, listener) => { if (event === 'tools/post-execute') listeners.push(listener); },
