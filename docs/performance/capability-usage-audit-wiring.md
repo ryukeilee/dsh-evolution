@@ -29,7 +29,7 @@
 | 无投影（`usage.json` 不存在） | `usageEvidence.status: absent`，`recordCount: 0`，tier `usage-unknown` | 同左（保持诚实） |
 | 有投影，`workflowInvocations: 0` | `usageEvidence.status: absent`，`recordCount: 0`，tier `usage-unknown` | `status: ok`、`complete: true`、`stale: false`、`recordCount: 1`，`invoked: false` |
 | 有投影，`workflowInvocations: 3` | `usageEvidence.status: absent`，tier `usage-unknown` | tier `in-use`，`workflowInvocations: 3` |
-| 审计中位耗时 | 0.448 ms | 0.341 ms（有投影）；0.502 ms（零投影）；0.713 ms（无投影） |
+| 审计中位耗时 | 0.416 ms | 0.386 ms（有投影）；0.516 ms（零投影）；0.762 ms（无投影） |
 
 基线在投影存在时也不读它：`reviewSelfEvolution()` 与 `audit()` 都调用
 `readPublishedPluginReview({ paths, host })`，`usage` 始终为 `null`。候选多出的一次
@@ -52,7 +52,7 @@
 
 | 输入 | 会话 | `tool/call` | 完整 | 中位耗时 | 峰值 RSS 增量 | 压缩字节 |
 | --- | ---: | ---: | --- | ---: | ---: | ---: |
-| 200 × 2,000 行 | 200 | 380,000 | 是 | 303.2 ms | +53.3 MiB | 787,567 |
+| 200 × 2,000 行 | 200 | 380,000 | 是 | 311.6 ms | +75.5 MiB | 787,567 |
 
 - 扫描是**逐会话流式读取 + 逐行解析**，解压输出有 256 MiB/会话 上限，超过即记为失败而不是继续分配；
 - 计数只保留每会话的打开集合与待定调用，聚合后释放；内存增量主要来自解压流与 zlib 内部缓冲；

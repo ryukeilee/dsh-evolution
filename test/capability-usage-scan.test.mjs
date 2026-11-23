@@ -315,6 +315,20 @@ test('a damaged or oversized projection is reported, never guessed around', asyn
   assert.equal(loaded.usage.complete, true, 'the session coverage itself is unaffected');
 });
 
+test('an unreadable session file is reported, not thrown', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const dir = path.join(env.root, 'sessions', 'dangling');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.symlinkSync(path.join(dir, 'missing-target'), path.join(dir, 'session.v4.jsonl.zstd'));
+  writeSession(env.root, 'one', [call('widget_tool', 'c1')]);
+  const { status, projection } = run(env.root);
+  assert.equal(status, 3);
+  assert.equal(projection.complete, false);
+  assert.deepEqual(projection.failures.unreadableSessions, [{ session: 'dangling' }]);
+  assert.equal(projection.records[RECORD_ID].workflowInvocations, null);
+});
+
 test('an older projection without the unattributed bucket is still readable', async (t) => {
   const env = scratch(t);
   writeRecord(env, { source: WIDGET_SOURCE });
