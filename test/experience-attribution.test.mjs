@@ -435,6 +435,34 @@ test('a mixed candidate reports the actionable firstSeen, not an excluded failur
   assert.equal(candidate.firstSeen, '2026-11-01T00:00:00.000Z');
 });
 
+test('a mixed degradation candidate reports the earliest loss firstSeen', () => {
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:loss-long', scope: 'tool read', issueType: 'tool degradation', failureMode: 'output-capped',
+        occurrences: 2, failureCount: 0, successCount: 0,
+        firstSeen: '2026-02-01T00:00:00.000Z', lastSeen: '2026-11-01T00:00:00.000Z',
+        metrics: { recoverycalls: { sum: 2, count: 2 } }, recoveryTool: 'tool:read',
+      },
+      {
+        key: 'knowledge:loss-short', scope: 'tool read', issueType: 'tool degradation', failureMode: 'output-capped',
+        occurrences: 1, failureCount: 0, successCount: 0,
+        firstSeen: '2026-10-01T00:00:00.000Z', lastSeen: '2026-10-02T00:00:00.000Z',
+        metrics: { recoverycalls: { sum: 1, count: 1 } }, recoveryTool: 'tool:read',
+      },
+      {
+        key: 'knowledge:caller', scope: 'tool read',
+        problem: 'official operation failure invalid args',
+        failureCount: 100, occurrences: 100, firstSeen: '2026-01-01T00:00:00.000Z', lastSeen: '2026-01-02T00:00:00.000Z',
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool read');
+  assert.ok(candidate, JSON.stringify(planned.rejected));
+  assert.equal(candidate.firstSeen, '2026-02-01T00:00:00.000Z');
+});
+
 test('one caller-input mode does not discard a tool target with actionable failures', () => {
   const now = new Date().toISOString();
   const planned = planEvolutionCandidates({

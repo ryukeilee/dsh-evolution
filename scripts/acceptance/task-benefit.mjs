@@ -488,8 +488,9 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     if (update.status === 'completed' || update.status === 'success'
       || update.status === 'failed' || update.status === 'error'
       || update.isError === true || update.is_error === true) terminalIds.add(id);
-    if (update.sessionUpdate === 'tool_call_update' && successfulToolResult(update) && toolUpdateText(update)) {
-      resultTextIds.add(id);
+    if (update.sessionUpdate === 'tool_call_update' && successfulToolResult(update)) {
+      const parsed = parseToolResultText(toolUpdateText(update));
+      if (parsed.body) resultTextIds.add(id);
     }
   }
   // Map one `tool_call` update to its model decision by order: ACP reports one

@@ -961,6 +961,28 @@ test('a path tag is metadata, not read content', () => {
   assert.equal(row.exercised, false, 'a path tag cannot prove the read body');
 });
 
+test('a path-only terminal beside a valid read is a missing result', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 },
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/b.txt' } }, usage: { input: 1, output: 1 }, round: 1 },
+  ];
+  const result = (id, text) => ({ sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed', content: [{ type: 'content', content: { type: 'text', text } }] });
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/b.txt' } },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      result('c2', '<path>/home/b.txt</path>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.attributionComplete, false);
+  assert.equal(row.toolFailures, 1);
+});
+
 test('a per-file binding must cover every expected token', () => {
   const base = { id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' };
   const task = normalizeTask({ ...base, reads: [{ path: '/iso/home/a.txt', token: 'sentinel-a' }, { path: '/iso/home/b.txt', token: 'sentinel-b' }] });
