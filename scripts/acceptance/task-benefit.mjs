@@ -184,11 +184,16 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
         && (readPathMatches(effectivePath, path, cwd) || readPathMatches(path, effectivePath, cwd));
     }) : [];
     if (usedDecisions) candidates = candidates.filter((turn) => !usedDecisions.has(turn.decision));
-    // Multiple decisions for one path are disambiguated by an explicit offset,
-    // but only when exactly one decision carries that offset.
-    if (effectivePath && candidates.length > 1 && rawOffsetValid) {
-      const byOffset = candidates.filter((turn) => turn?.decision?.arguments?.offset === rawInput.offset);
-      if (byOffset.length === 1) candidates = byOffset;
+    const decisionOffset = (turn) => {
+      const value = turn?.decision?.arguments?.offset;
+      if (value === undefined) return 1;
+      return Number.isInteger(value) && value > 0 ? value : NaN;
+    };
+    // An ACP-reported offset must match the decision exactly, including the
+    // decision's implicit default of 1. An omitted ACP offset may inherit the
+    // unique remaining decision.
+    if (effectivePath && rawOffsetValid) {
+      candidates = candidates.filter((turn) => decisionOffset(turn) === rawInput.offset);
     }
     // Every path-reported read must claim exactly one matching decision, even
     // when ACP supplied its own offset. This keeps repeated calls from reusing
@@ -264,6 +269,22 @@ function completedToolUpdate(update) {
 /** A completed result that the transport did not also mark as an error. */
 export function successfulToolResult(update) {
   return completedToolUpdate(update) && update?.isError !== true && update?.is_error !== true;
+}
+
+export function terminalToolResultPaths(updates) {
+  const paths = new Map();
+  const conflicts = new Set();
+  for (const update of Array.isArray(updates) ? updates : []) {
+    if (update?.sessionUpdate !== 'tool_call_update' || !successfulToolResult(update)) continue;
+    const id = typeof update.toolCallId === 'string' ? update.toolCallId : null;
+    if (id === null) continue;
+    const text = toolUpdateText(update);
+    const path = text ? /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null : null;
+    if (!path) continue;
+    if (paths.has(id) && paths.get(id) !== path) conflicts.add(id);
+    else paths.set(id, path);
+  }
+  return { paths, conflicts };
 }
 
 /**
@@ -407,25 +428,31 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const failedModelTurns = (Array.isArray(turns) ? turns : []).filter((turn) => turn.ok !== true).length;
   const failedUpdates = failedToolCallIds(updates);
   const missingTerminals = missingTerminalToolCalls(updates);
-  const toolFailures = failedUpdates.count + missingTerminals;
-  const failures = failedModelTurns + toolFailures;
+  const terminalIds = new Set();
+  const resultTextIds = new Set();
+  for (const update of Array.isArray(updates) ? updates : []) {
+    const id = typeof update?.toolCallId === 'string' ? update.toolCallId : null;
+    if (id === null) continue;
+    if (update.status === 'completed' || update.status === 'success'
+      || update.status === 'failed' || update.status === 'error'
+      || update.isError === true || update.is_error === true) terminalIds.add(id);
+    if (update.sessionUpdate === 'tool_call_update' && successfulToolResult(update) && toolUpdateText(update)) {
+      resultTextIds.add(id);
+    }
+  }
   // Map one `tool_call` update to its model decision by order: ACP reports one
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name and the arguments the model chose.
   const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
-  const resultPathByCall = new Map();
-  for (const update of Array.isArray(updates) ? updates : []) {
-    if (update?.sessionUpdate !== 'tool_call_update') continue;
-    const text = toolUpdateText(update);
-    const path = text ? /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() : null;
-    if (typeof update.toolCallId === 'string' && path) resultPathByCall.set(update.toolCallId, path);
-  }
+  const terminalPaths = terminalToolResultPaths(updates);
+  const resultPathByCall = terminalPaths.paths;
   const hasRawOffset = (call) => Number.isInteger(call?.rawInput?.offset) && call.rawInput.offset > 0;
   const orderedCalls = calls.map((call, index) => ({ call, index }))
     .sort((left, right) => Number(hasRawOffset(right.call)) - Number(hasRawOffset(left.call)));
   const byId = new Map();
   const seenCallIds = new Set();
-  let attributionComplete = calls.length === toolTurns.length && missingTerminals === 0;
+  let attributionComplete = calls.length === toolTurns.length && missingTerminals === 0
+    && terminalPaths.conflicts.size === 0;
   const usedReadDecisions = new Set();
   orderedCalls.forEach(({ call, index }) => {
     const descriptor = toolCallDescriptor(call, index, toolTurns, toolNames, cwd, usedReadDecisions,
@@ -443,6 +470,16 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     && callNames.length === calls.length
     && toolNameCountsMatch(toolNames, callNames);
   attributionComplete = attributionComplete && attributionAligned;
+  let missingReadResults = 0;
+  for (const call of calls) {
+    const meta = byId.get(call.toolCallId);
+    if (meta?.name !== 'read') continue;
+    if (failedUpdates.ids.has(call.toolCallId)) continue;
+    if (!resultTextIds.has(call.toolCallId) && terminalIds.has(call.toolCallId)) missingReadResults += 1;
+  }
+  attributionComplete = attributionComplete && missingReadResults === 0;
+  const toolFailures = failedUpdates.count + missingTerminals + missingReadResults;
+  const failures = failedModelTurns + toolFailures;
   // A read is a *request* before it is a result. Register the first request of
   // each path from the ordered tool_call updates, then accept it only if that
   // exact call returned successfully from offset 1. A failed or tail-first
@@ -450,6 +487,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const readResults = new Map();
   for (const update of Array.isArray(updates) ? updates : []) {
     if (update?.sessionUpdate !== 'tool_call_update') continue;
+    if (terminalPaths.conflicts.has(update.toolCallId)) continue;
     if (failedUpdates.ids.has(update.toolCallId)) continue;
     if (!successfulToolResult(update)) continue;
     const call = byId.get(update.toolCallId);

@@ -32,7 +32,12 @@ function mount(files, { versions = null } = {}) {
       if (event === 'tools/post-execute') postListeners.push(listener);
     },
     fs: {
-      resolve: async (file) => file,
+      resolve: async (file, options = {}) => {
+        if (path.isAbsolute(file)) return file;
+        if (typeof options.cwd === 'string' && path.isAbsolute(options.cwd)) return path.resolve(options.cwd, file);
+        const match = Object.keys(files).find((key) => key === file || key.endsWith('/' + file));
+        return match ?? file;
+      },
       stat: async (file) => {
         const sequence = versions?.[file];
         const version = Array.isArray(sequence) ? (sequence[statCall] ?? sequence.at(-1)) : (sequence ?? 'v1');
@@ -207,6 +212,17 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(contentDecision.content[0].text, 'downstream content', 'a downstream content rewrite is preserved');
   assert.equal(contentDecision.value.lines.length, 3, 'the candidate does not re-render over rewritten content');
+
+  const inPlace = readResult({ lines: originalLines, totalLines: 5, path: downstreamFile, content: 'one\ntwo\nthree\n(Output capped. Showing lines 1-3. Use offset=4 to continue.)' });
+  const inPlaceDecision = await downstream(
+    { name: 'read', arguments: { file_path: 'downstream.txt', limit: 5 }, agent: {}, signal: null },
+    inPlace,
+    async () => {
+      inPlace.content = [];
+      return { kind: 'accept', value: inPlace.value };
+    },
+  );
+  assert.equal(inPlaceDecision.value.lines.length, 3, 'an in-place content clear is not a structural cap signal');
 
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.

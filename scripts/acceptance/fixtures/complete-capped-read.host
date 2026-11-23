@@ -36,9 +36,19 @@ function contentText(result) {
   return parts.join('\n');
 }
 
+function snapshotWindow(value) {
+  if (!value || typeof value !== 'object' || !Array.isArray(value.lines)) return null;
+  return {
+    path: typeof value.path === 'string' ? value.path : null,
+    offset: value.offset,
+    totalLines: value.totalLines,
+    lines: value.lines.map((line) => ({ number: line?.number, text: line?.text })),
+  };
+}
+
 function sameReadWindow(left, right) {
   if (!left || !right || typeof left !== 'object' || typeof right !== 'object') return false;
-  if (left.offset !== right.offset || left.totalLines !== right.totalLines) return false;
+  if (left.path !== right.path || left.offset !== right.offset || left.totalLines !== right.totalLines) return false;
   if (!Array.isArray(left.lines) || !Array.isArray(right.lines) || left.lines.length !== right.lines.length) return false;
   for (let index = 0; index < left.lines.length; index += 1) {
     if (left.lines[index]?.number !== right.lines[index]?.number || left.lines[index]?.text !== right.lines[index]?.text) return false;
@@ -62,7 +72,7 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
         });
         const info = await ctx.fs.stat(target, exec.signal);
         if (info?.type === 'file' && typeof info.version === 'string') {
-          versions.set(exec.callId, info.version);
+          versions.set(exec.callId, { target, version: info.version });
           while (versions.size > 32) versions.delete(versions.keys().next().value);
         }
       }
@@ -70,24 +80,27 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
     return next();
   });
   ctx.on('tools/post-execute', async (exec, result, next) => {
+    // Snapshot before awaiting downstream hooks: they may mutate result.content
+    // or result.value in place.
+    const originalContent = contentText(result);
+    const originalWindow = snapshotWindow(result?.value);
     const decision = await next();
     const callId = typeof exec?.callId === 'string' ? exec.callId : null;
     try {
       if (!decision || decision.kind !== 'accept') return decision;
       if (exec?.name !== 'read') return decision;
-      // A downstream hook may replace the model-visible content instead of the
-      // structured value. Its rendered window is authoritative; never re-render
-      // the original lines over it.
+      // A downstream hook may replace or mutate the model-visible content.
+      if (contentText(result) !== originalContent) return decision;
       if (decision.content !== undefined
         && JSON.stringify(decision.content) !== JSON.stringify(result?.content)) return decision;
-      const text = contentText(result);
+      const text = originalContent;
       const footer = text.length > 0 && OUTPUT_CAPPED.test(text.length > 8192 ? text.slice(-8192) : text);
-      const base = decision.value === undefined ? result?.value : decision.value;
+      const base = decision.value === undefined ? originalWindow : decision.value;
       if (!base || typeof base !== 'object' || !Array.isArray(base.lines) || typeof base.path !== 'string') return decision;
       // A downstream post-execute hook may have rewritten the window. The cap
       // signal belongs to the original host result; if the final value is a
       // different window, keep the downstream result untouched.
-      if (decision.value !== undefined && result?.value && !sameReadWindow(decision.value, result.value)) return decision;
+      if (decision.value !== undefined && originalWindow && !sameReadWindow(decision.value, originalWindow)) return decision;
       const total = base.totalLines;
       const end = base.lines.at(-1)?.number ?? (Number.isInteger(base.offset) ? base.offset - 1 : 0);
       if (!Number.isInteger(total) || !Number.isInteger(end) || end < 0 || end >= total) return decision;
@@ -119,18 +132,22 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       const windowEnd = Math.min(total, offset - 1 + requestedLimit);
       const missing = windowEnd - end;
       if (missing < 1 || missing > MAX_TAIL_LINES) return decision;
-      const preVersion = callId === null ? undefined : versions.get(callId);
-      if (typeof preVersion !== 'string') return decision;
-      const target = await ctx.fs.resolve(base.path, { cwd: exec.agent?.session?.header?.cwd, signal: exec.signal });
+      const pre = callId === null ? undefined : versions.get(callId);
+      if (!pre || typeof pre.version !== 'string') {
+        return decision;
+      }
+      const prePath = typeof pre.target === 'string' ? pre.target : pre.target?.displayPath;
+      if (typeof prePath === 'string' && base.path !== prePath) return decision;
+      const target = pre.target;
       const info = await ctx.fs.stat(target, exec.signal);
-      if (!info || info.type !== 'file' || info.version !== preVersion
+      if (!info || info.type !== 'file' || info.version !== pre.version
         || !Number.isInteger(info.size) || info.size > MAX_FILE_BYTES) return decision;
       const content = await ctx.fs.readText(target, exec.signal);
       // Reading is only safe while the freshness token is unchanged. A write
       // between the host read and this re-read, or during the re-read, must
       // keep the original result.
       const after = await ctx.fs.stat(target, exec.signal);
-      if (!after || after.type !== 'file' || after.version !== preVersion) return decision;
+      if (!after || after.type !== 'file' || after.version !== pre.version) return decision;
       const all = content.split('\n').map((line) => line.endsWith('\r') ? line.slice(0, -1) : line);
       // The official line counter does not count the empty segment after a
       // trailing newline; drop only that one, never a real empty last line.
