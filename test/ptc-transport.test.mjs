@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import {
   PTC_WRAPPED_VALUE,
   ptcDirectCallRefusal,
+  ptcKernelCallProgram,
   ptcWrappedEnvelope,
 } from '../lib/ptc-transport.js';
 
@@ -38,6 +39,18 @@ test('an ordinary error quoting the refusal phrase is not recognized', () => {
   assert.equal(ptcDirectCallRefusal(refusal('read', { info: { name: 'ToolNotFoundError', code: 'E_OTHER' } }), 'read'), null);
   assert.equal(ptcDirectCallRefusal({ isError: false, error: { message: 'unknown tool "read": only `run_code` is callable directly' } }, 'read'), null);
   assert.equal(ptcDirectCallRefusal(refusal('read'), '../escape'), null);
+});
+
+test('the kernel wrapper parses arguments as JSON, preserving own __proto__ keys', () => {
+  const args = JSON.parse('{"label":"x","__proto__":{"polluted":true}}');
+  const program = ptcKernelCallProgram('evolution_propose', args);
+  const parsed = /const args = JSON\.parse\(("(?:[^"\\]|\\.)*")\);/.exec(program);
+  assert.ok(parsed, 'the program parses its JSON text before calling the tool');
+  const delivered = JSON.parse(JSON.parse(parsed[1]));
+  assert.equal(Object.hasOwn(delivered, '__proto__'), true, 'the own data key survives');
+  assert.deepEqual(Object.keys(delivered), ['label', '__proto__']);
+  assert.equal(delivered.polluted, undefined, 'the prototype was not polluted');
+  assert.equal(program.includes('await tools["evolution_propose"](args)'), true);
 });
 
 test('the wrapper envelope is unwrapped only through its sentinel', () => {

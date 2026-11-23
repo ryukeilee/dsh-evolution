@@ -322,6 +322,27 @@ test('the scoped total is exact whether or not the window is full', (t) => {
   assert.equal(short.truncated, false);
 });
 
+test('same-scope failure rows cannot crowd an older proven-ineffective conclusion out of the window', (t) => {
+  const store = open(t);
+  store.recordConclusion(conclude({ experimentId: 'exp-proven', decision: 'no-benefit', occurredAt: at(1) }), ORIGIN);
+  assert.equal(store.findConclusions({ target: TARGET, applicability: VERSIONS }).best?.decision, 'no-benefit');
+
+  // Failures for the same target share the conclusion's canonical scope. When
+  // they are newer than the conclusion they used to fill the bounded window and
+  // the proposal gate saw the strategy as new again.
+  for (let index = 0; index < 600; index += 1) {
+    store.recordFailure({
+      id: crypto.createHash('sha256').update(`same-scope-failure:${index}`).digest('hex'),
+      type: 'tool/error', code: `E_SAME_SCOPE_${index}`, target: TARGET,
+    });
+  }
+  const found = store.findConclusions({ target: TARGET, applicability: VERSIONS });
+  assert.equal(found.best?.decision, 'no-benefit', 'the proven-ineffective verdict survives the failure flood');
+  assert.equal(found.best.sameApplicability, true);
+  assert.equal(found.considered, 1, 'only conclusions consume the window');
+  assert.equal(found.truncated, false);
+});
+
 test('the stored conclusion body keeps the canonical scope marker the windowed read uses', (t) => {
   const root = temporary(t);
   const store = openSharedExperience(root);
