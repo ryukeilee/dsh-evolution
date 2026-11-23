@@ -160,10 +160,29 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames) {
   // would otherwise lend a tail read the start read's offset.
   const ambiguous = decisionName !== null && toolNames.filter((name) => name === decisionName).length > 1;
   const positionTrusted = !ambiguous && title !== null && title === decisionName;
+  const name = titleIsTool ? title : null;
+  const rawFile = rawInput && typeof rawInput.file_path === 'string' && rawInput.file_path.trim() !== '';
+  let argumentsValue = {};
+  let inputKnown = false;
+  if (name === 'read') {
+    // An empty/partial rawInput must not erase an explicit offset in the
+    // uniquely aligned decision. A rawInput that names the file is authoritative;
+    // otherwise merge it over the uniquely aligned decision input.
+    if (rawFile) {
+      argumentsValue = rawInput;
+      inputKnown = true;
+    } else if (positionTrusted) {
+      argumentsValue = { ...(decisionArguments ?? {}), ...(rawInput ?? {}) };
+      inputKnown = true;
+    }
+  } else {
+    argumentsValue = rawInput ?? (positionTrusted ? decisionArguments : null) ?? {};
+    inputKnown = rawInput !== null || positionTrusted;
+  }
   return {
-    name: titleIsTool ? title : null,
-    arguments: rawInput ?? (positionTrusted ? decisionArguments : null) ?? {},
-    inputKnown: rawInput !== null || positionTrusted,
+    name,
+    arguments: argumentsValue,
+    inputKnown,
   };
 }
 /** Flatten the text blocks the ACP transport reports for one tool result. */
@@ -952,6 +971,13 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
   };
 }
 
+/** Multi-file context-policy evidence needs a complete path-to-value mapping. */
+export function assertReadBinding(improvement, task) {
+  if (improvement === 'context-policy' && task.tokens.length > 1 && task.reads.length === 0) {
+    throw new Error('a multi-file context-policy task must declare task.reads');
+  }
+}
+
 /**
  * Run the complete paired experiment and write the artifact.
  *
@@ -963,10 +989,11 @@ export async function produceTaskBenefit(options = {}) {
   const home = assertIsolatedHome(options.home);
   const work = await assertIsolatedTarget(options.work ?? path.join(home, 'task-benefit-work'), home, 'work directory');
   const task = normalizeTask(options.task);
+  const improvement = options.improvement ?? 'context-policy';
+  assertReadBinding(improvement, task);
   const taskId = options.taskId;
   const candidateHost = options.candidateHost;
   if (typeof candidateHost !== 'string' || candidateHost.trim() === '') throw new Error('candidateHost must be the exact Host body');
-  const improvement = options.improvement ?? 'context-policy';
   if (!['tool', 'context-policy'].includes(improvement)) throw new Error('improvement must be tool or context-policy');
   const targetTool = typeof options.targetTool === 'string' ? options.targetTool : null;
   if (improvement === 'tool' && targetTool === null) throw new Error('a tool-form run needs targetTool');

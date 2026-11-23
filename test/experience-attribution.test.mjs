@@ -356,6 +356,34 @@ test('a rootCause on one record does not attribute 100 generic counters', () => 
   assert.equal(rejected?.occurrences, 1, 'the rootCause applies only to its own record');
 });
 
+test('a smaller generic memory failure is not hidden by a larger classified one', () => {
+  const now = Date.now();
+  const iso = (days) => new Date(now - days * 86_400_000).toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [{
+      key: 'knowledge:fixed', scope: 'tool run code',
+      problem: 'official operation failure code run failure',
+      successCount: 3, occurrences: 3, lastSeen: iso(5),
+    }],
+    failureMemory: [
+      {
+        key: 'memory:code', scope: 'tool run code',
+        problem: 'official operation failure code run failure',
+        failureCount: 5, occurrences: 5, lastSeen: iso(10),
+      },
+      {
+        key: 'memory:generic', scope: 'tool run code',
+        problem: 'host operation failure',
+        failureCount: 2, occurrences: 2, lastSeen: iso(0),
+      },
+    ],
+  }, { minOccurrences: 3 });
+  // The generic row is newer, but it is not actionable; the older actionable
+  // failure is already resolved, so the target must stay resolved.
+  assert.equal(planned.candidates.length, 0);
+  assert.equal(planned.rejected.find((entry) => entry.problemKey === 'tool run code')?.reason, 'already-resolved');
+});
+
 test('one caller-input mode does not discard a tool target with actionable failures', () => {
   const now = new Date().toISOString();
   const planned = planEvolutionCandidates({

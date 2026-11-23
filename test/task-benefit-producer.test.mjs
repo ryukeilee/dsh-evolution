@@ -15,6 +15,7 @@ import {
   aggregateSessions,
   answerMatches,
   assertIsolatedHome,
+  assertReadBinding,
   assertIsolatedStorageRoots,
   assertIsolatedTarget,
   assertReportOutsideEvidence,
@@ -517,6 +518,51 @@ test('a failed initial tool_call is a host tool failure even without an update',
     assistantText: 'no value', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
   });
   assert.equal(row.toolFailures, 2, 'the same failed call id is counted once, and both notifications are merged');
+});
+
+test('multi-file context-policy evidence requires a complete read mapping', () => {
+  const task = normalizeTask({ id: 'read-files', prompt: 'read a and b', expect: '["sentinel-a","sentinel-b"]' });
+  assert.throws(() => assertReadBinding('context-policy', task), /task\.reads/);
+  assert.doesNotThrow(() => assertReadBinding('context-policy', { ...task, reads: [
+    { path: '/home/a.txt', token: 'sentinel-a' }, { path: '/home/b.txt', token: 'sentinel-b' },
+  ] }));
+  assert.doesNotThrow(() => assertReadBinding('tool', task));
+});
+
+test('an empty rawInput cannot erase an explicit offset from a unique decision', () => {
+  const turns = [
+    { ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 600 } }, usage: { input: 1, output: 1 }, round: 0 },
+  ];
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const tail = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: {} },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(tail.exercised, false, 'the tail read must keep its explicit offset');
+
+  const start = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: 1 } } }],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: {} },
+      result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(start.exercised, true);
 });
 
 test('a per-file binding must cover every expected token', () => {
