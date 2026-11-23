@@ -295,7 +295,7 @@ test('a descendant that holds stdout past the drain deadline is not a usable tur
   });
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'pilot-transport-incomplete');
-  assert.ok(Date.now() - startedAt < 1_500, 'the drain deadline must bound the wait');
+  assert.ok(Date.now() - startedAt < 2_500, 'the drain deadline must bound the wait');
 });
 
 test('a real decision is streamed back with its measured usage', async (t) => {

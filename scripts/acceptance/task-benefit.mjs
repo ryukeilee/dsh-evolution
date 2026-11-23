@@ -162,14 +162,17 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames) {
   const positionTrusted = !ambiguous && title !== null && title === decisionName;
   const name = titleIsTool ? title : null;
   const rawFile = rawInput && typeof rawInput.file_path === 'string' && rawInput.file_path.trim() !== '';
+  const decisionFile = decisionArguments && typeof decisionArguments.file_path === 'string' && decisionArguments.file_path.trim() !== '';
   let argumentsValue = {};
   let inputKnown = false;
   if (name === 'read') {
     // An empty/partial rawInput must not erase an explicit offset in the
-    // uniquely aligned decision. A rawInput that names the file is authoritative;
-    // otherwise merge it over the uniquely aligned decision input.
+    // uniquely aligned decision. A rawInput that names the same file is merged
+    // over the decision so its own offset wins but a missing offset is kept.
     if (rawFile) {
-      argumentsValue = rawInput;
+      argumentsValue = positionTrusted && decisionFile && readPathMatches(rawInput.file_path, decisionArguments.file_path)
+        ? { ...decisionArguments, ...rawInput }
+        : rawInput;
       inputKnown = true;
     } else if (positionTrusted) {
       argumentsValue = { ...(decisionArguments ?? {}), ...(rawInput ?? {}) };
@@ -185,6 +188,13 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames) {
     inputKnown,
   };
 }
+function normalizeReadPath(value, cwd) {
+  if (typeof value !== 'string' || value === '') return value;
+  const normalized = value.replace(/\\/g, '/');
+  if (path.isAbsolute(normalized)) return path.normalize(normalized);
+  return typeof cwd === 'string' && path.isAbsolute(cwd) ? path.resolve(cwd, normalized) : normalized;
+}
+
 /** Flatten the text blocks the ACP transport reports for one tool result. */
 function toolUpdateText(update) {
   const blocks = Array.isArray(update?.content) ? update.content : [];
@@ -270,6 +280,26 @@ export function retryableSession(row) {
   return row?.toolFailures === 0 && row?.retryableTransportFailure === true;
 }
 
+/** Count tool names so a reordered but identical call set still aligns. */
+function toolCounts(names) {
+  const counts = new Map();
+  for (const name of Array.isArray(names) ? names : []) {
+    if (typeof name === 'string') counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function sameToolCounts(left, right) {
+  if (left.size !== right.size) return false;
+  for (const [name, count] of left) if (right.get(name) !== count) return false;
+  return true;
+}
+
+/** Compare two tool-name lists as multisets (order is not significant). */
+export function toolNameCountsMatch(left, right) {
+  return sameToolCounts(toolCounts(left), toolCounts(right));
+}
+
 /** Only a trusted structured code in an allowlist may reach the evidence. */
 export function safeErrorCode(value) {
   const code = typeof value === 'string' ? value : value?.code;
@@ -311,10 +341,6 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // tool call per decision turn, in the same order. The id then joins the
   // completed result update to the tool name and the arguments the model chose.
   const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
-  // If the transport reported a different number of calls than the decisions
-  // that chose a tool, the order join is not trustworthy. Keep the measured
-  // rows, but never claim the mechanism ran for this session.
-  const attributionAligned = calls.length === toolTurns.length;
   const byId = new Map();
   const seenCallIds = new Set();
   let attributionComplete = calls.length === toolTurns.length;
@@ -327,6 +353,12 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
       byId.set(call.toolCallId, descriptor);
     }
   });
+  const callNames = calls.map((call) => byId.get(call.toolCallId)?.name)
+    .filter((name) => typeof name === 'string');
+  const attributionAligned = calls.length === toolTurns.length
+    && callNames.length === calls.length
+    && toolNameCountsMatch(toolNames, callNames);
+  attributionComplete = attributionComplete && attributionAligned;
   // A read is a *request* before it is a result. Register the first request of
   // each path from the ordered tool_call updates, then accept it only if that
   // exact call returned successfully from offset 1. A failed or tail-first
@@ -375,7 +407,8 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const firstRequestByPath = new Map();
   for (const request of readRequests) {
     if (typeof request.path !== 'string' || request.path === '') continue;
-    if (!firstRequestByPath.has(request.path)) firstRequestByPath.set(request.path, request);
+    const key = normalizeReadPath(request.path, cwd);
+    if (!firstRequestByPath.has(key)) firstRequestByPath.set(key, request);
   }
   const firstReads = [];
   for (const request of firstRequestByPath.values()) {
@@ -397,8 +430,6 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // Every call must have a verifiable identity and a read must have a usable
   // path. An unidentified or pathless call could be the first read of a path,
   // so its presence makes any later start read an unreliable substitute.
-  const verifiedToolNames = calls.map((call) => byId.get(call.toolCallId)?.name)
-    .filter((name) => typeof name === 'string');
   const exercised = attributionAligned && attributionComplete && expectedTokens.length > 0 && (reads.length > 0
     ? boundReads.every(Boolean)
     : expectedTokens.every((token) => firstReads.some((text) => text.includes(token))));
@@ -408,12 +439,12 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     correct,
     exercised,
     attributionComplete,
-    usedCandidate: candidateTool !== null && verifiedToolNames.includes(candidateTool),
+    usedCandidate: candidateTool !== null && callNames.includes(candidateTool),
     usageComplete,
     toolFailures: failedUpdates,
     turns: decisionTurns.length,
-    toolCalls: verifiedToolNames.length,
-    toolNames: verifiedToolNames,
+    toolCalls: callNames.length,
+    toolNames: callNames,
     failures,
     tokens: usageComplete ? usage.inputTokens + usage.outputTokens + usage.cacheReadTokens : 0,
     inputTokens: usageComplete ? usage.inputTokens : 0,

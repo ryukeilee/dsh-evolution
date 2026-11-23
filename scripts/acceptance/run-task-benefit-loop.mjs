@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, toolCallDescriptor } from './task-benefit.mjs';
+import { produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -725,8 +725,7 @@ try {
     // shift a later call's arguments onto another id.
     const consumerDecisions = consumerTurns
       .filter((turn) => (turn.tools?.length ?? 0) > 0 && typeof turn.decision?.tool === 'string' && turn.decision.tool.trim() !== '');
-    assert(consumerCalls.length === consumerDecisions.length, 'the fresh consumer model decisions and ACP calls do not align');
-    let consumerAttributionComplete = new Set(consumerCalls.map((call) => call.toolCallId)).size === consumerCalls.length;
+    let consumerAttributionComplete = consumerCalls.length === consumerDecisions.length;
     const consumerToolNames = consumerDecisions.map((turn) => turn.decision.tool);
     const consumerCallById = new Map();
     consumerCalls.forEach((call, index) => {
@@ -737,8 +736,12 @@ try {
         consumerAttributionComplete = false;
       }
     });
-    assert(consumerCalls.every((call) => consumerCallById.get(call.toolCallId)?.name),
-      'the fresh consumer reported a tool call without a verifiable identity');
+    const consumerCallNames = consumerCalls.map((call) => consumerCallById.get(call.toolCallId)?.name)
+      .filter((name) => typeof name === 'string');
+    assert(consumerCalls.length === consumerDecisions.length
+      && consumerCallNames.length === consumerCalls.length
+      && toolNameCountsMatch(consumerToolNames, consumerCallNames),
+    'the fresh consumer model decisions and ACP calls do not align by tool identity');
     const consumerResultById = new Map();
     for (const update of consumerUpdates) {
       if (update.sessionUpdate !== 'tool_call_update') continue;
