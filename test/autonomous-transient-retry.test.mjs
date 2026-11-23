@@ -324,7 +324,10 @@ test('a decision reservation whose release failed is retried by the next observa
       reservations.add(identity);
       return true;
     },
-    autonomousDecisions: async () => [...reservations],
+    // Production contract: only the reservations present when the store opened.
+    // A reservation taken by this session is invisible here, which is why a
+    // failed release needs an explicit retry.
+    autonomousDecisions: async () => [],
     // The first release (at revert time) fails; a later one must be attempted.
     releaseAutonomousDecision: async (identity) => {
       releaseCalls += 1;
@@ -351,4 +354,29 @@ test('a decision reservation whose release failed is retried by the next observa
   assert.equal(releaseCalls, 2, 'the next observation completed the failed release');
   assert.equal(next.phase, 'candidate-awaiting-confirmation', 'the hypothesis can run a new isolated Trial');
   assert.equal(reservations.has(identity), true, 'the new Trial took its own reservation');
+});
+
+test('a persistently failing decision release is deferred, never learned as a strategy failure', async (t) => {
+  const reservations = new Set();
+  const domainStorage = {
+    observe: async () => {},
+    reserveAutonomousDecision: async (identity) => {
+      if (reservations.has(identity)) return false;
+      reservations.add(identity);
+      return true;
+    },
+    autonomousDecisions: async () => [], // open-time snapshot: this session's hold is invisible
+    releaseAutonomousDecision: async () => { throw new Error('storage write failed'); },
+  };
+  const h = await session(t, { domainStorage });
+  await belowThreshold(h.observe, 'AGENT_ERROR');
+  const pending = await h.observe('AGENT_ERROR');
+  assert.equal(pending.phase, 'candidate-awaiting-confirmation');
+  await h.core.revert({ experimentId: pending.experimentId }, h.exec);
+
+  const deferred = await h.observe('AGENT_ERROR');
+  assert.equal(deferred.phase, 'experiment-deferred');
+  assert.equal(deferred.reason, 'decision-release-pending');
+  assert.equal(h.core.memory.data.entries.filter((entry) => entry.result?.state === 'failed').length, 0,
+    'an environment failure must not become durable strategy suppression');
 });

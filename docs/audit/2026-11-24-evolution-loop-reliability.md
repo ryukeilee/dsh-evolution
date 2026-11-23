@@ -30,10 +30,10 @@
 | 7 | Desktop 任务的 PTC `run_code` 回退把参数写成 JS 对象字面量 | 自有 `__proto__` 数据键被原型 setter 吞掉，候选与基线收到的实参不同，且污染内核工具入参；违反不变量 12 | 抽出共享 `ptcKernelCallProgram()`，参数以 JSON 文本传入并在程序内 `JSON.parse`（与 probe 侧已修复路径一致） | 新增 `ptc-transport` 用例断言自有键保留且原型未被污染；原 PTC 集成用例的 program 解析同步更新 |
 | 8 | `revert()` 在清理已证明恢复之后仍把 `releaseAutonomousDecision()` 的 I/O 异常算作清理失败 | 存储抖动被 autonomous observer 读成策略失败，写入 session 抑制与持久失败记忆 | 该后置簿记用非抛出警告边界，不再覆盖 `reverted` 状态 | 新增用例：注入 `releaseAutonomousDecision` 抛错，断言 `ok:true` / `state:reverted` / claim 已释放 / 无 failure |
 | 9 | （复审 S1）上面的 advisory veto 修复会无条件覆盖 `measure()` 已得出的真实 `regression` / `no-benefit` | 真实回归被降级为 `insufficient-evidence`，durable lesson 丢失，同一策略可再次提案 | 仅当现有决策不是实测 verdict（或来自 evaluator 自身）时才降级；实测 verdict 原样保留 | 新增用例：真实 regression → evaluator rollback → revert → 共享经验仍为 `regression`；修复前实测得到 `insufficient-evidence` |
-| 10 | （复审 S2）释放失败后记录为 `reverted`，但 `releaseInheritedAutonomousDecision()` 因该记录仍跳过释放 | 同一策略的下一次观测返回 `prior-decision-requires-owner`，没有可处理的实验，也没有重试 | 终态 `reverted` 不再阻止继承占位释放；下一次观测完成释放并正常建立新 Trial | 新增用例：注入一次释放失败，断言下一次观测不再报 `prior-decision-requires-owner` 且 release 被调用第二次；修复前实测命中该拒绝 |
+| 10 | （复审 S2，两轮）释放失败后记录为 `reverted`；`autonomousDecisions()` 只是存储打开时的快照，继承释放路径看不到本会话新取的占位 | 同一策略的下一次观测返回 `prior-decision-requires-owner`，没有可处理的实验，也没有重试 | `revert()` 释放失败时把身份记入有界 `pendingDecisionReleases`；同一身份的后续观测先重试释放，成功即清除，持续失败按环境故障推迟（不写策略失败记忆） | 测试桩按生产契约返回空快照；注入一次失败后下一次观测完成释放并建立新 Trial，注入持续失败则得到 `decision-release-pending` 且失败记忆为 0；关闭修复后实测命中 `prior-decision-requires-owner` |
 | 11 | （复审 S4）持久 probe 用顶层 `scenarioId`，分类器只读 `probe.scenario.id` | 重启后的决策丢掉场景身份 | 同时读取两种形状 | 重启分类用例断言 `decision.probe.scenarioId` |
 
-复审 S3（并发撤销改用子进程）为 nit，已婉拒：`acquirePublishLock()` 的真实跨进程互斥由 `review-fix-shared-publish-lock.test.mjs` 独立钉住，撤销表现在使用同一把锁；再增加子进程用例只增加测试面，不改变被证明的性质。
+复审 S3（并发撤销改用子进程）为 nit，已婉拒：`acquirePublishLock()` 的真实跨进程互斥由 `review-fix-shared-publish-lock.test.mjs` 独立钉住，撤销表现在使用同一把锁；再增加子进程用例只增加测试面，不改变被证明的性质。复审 S2 的第一版修复依赖测试桩返回实时快照，与生产端口不符；第二轮改为显式的有界待释放标记后才真正成立。
 
 ## 3. 经过核查后判定为正确 / 已知边界的区域
 
