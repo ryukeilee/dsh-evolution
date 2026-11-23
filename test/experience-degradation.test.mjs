@@ -234,6 +234,8 @@ test('a degradation outside the tool hook scope keeps the tool form and its exis
   assert.equal(candidate.hook, null);
   assert.equal(candidate.verificationKind, 'capability-probe');
   assert.equal(candidate.benefitModel, undefined);
+  assert.match(candidate.whyCordisPlugin, /工具注册/);
+  assert.doesNotMatch(candidate.whyCordisPlugin, /pre-step|post-execute/);
 
   const invalidTool = planEvolutionCandidates({
     knowledge: [{
