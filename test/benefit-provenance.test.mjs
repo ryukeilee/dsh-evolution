@@ -155,3 +155,39 @@ test('kernel-derived workflow quality gains use the measured cost budget; legacy
     assert.equal(promotionGates({ ...record, latestObservation: { ...observed, probeDerived: false } }).eligible, false);
   }
 });
+
+test('a measurement merge preserves probeDerived, so a budgeted workflow gain is not re-read as a regression', async () => {
+  const {
+    compareWorkflowProbeRuns, normalizeProbeScenario, mergeMeasurement,
+    domainEvaluationEvidence, promotionGates: gatesOf,
+  } = await import('../lib/orchestrator.js');
+  const { EvolutionEvaluator } = await import('../lib/dockyard-domain/index.js');
+  const scenario = normalizeProbeScenario({ kind: 'workflow', id: 'merge-keeps-probe-derived', repetitions: 5, steps: [
+    { name: 'read', candidateName: 'complete_read', role: 'target', arguments: {}, expected: 'complete' },
+    { name: 'read', role: 'control', arguments: {}, expected: 'unchanged' },
+  ] });
+  const rows = (candidate, durationMs) => Array.from({ length: 5 }, (_, repetition) => scenario.steps.map((step, index) => ({
+    repetition, index, step: candidate ? step.candidateName : step.name, role: step.role,
+    expectedDigest: step.expectedDigest, isError: !candidate && index === 0,
+    code: !candidate && index === 0 ? 'E_EVOLUTION_PROBE_INCORRECT' : null,
+    valueDigest: !candidate && index === 0 ? null : step.expectedDigest,
+    outputBytes: 100, durationMs: index === 0 ? durationMs : 0,
+  }))).flat();
+  const baseline = { samples: rows(false, 1) };
+  const comparison = compareWorkflowProbeRuns(baseline, { samples: rows(true, 2), reference: baseline }, scenario);
+  assert.equal(comparison.workload.durationAcceptable, true);
+  const observed = { ...observation('workflow'), probeDerived: true,
+    solvesProblem: comparison.benefit, regressionPassed: !comparison.regression,
+    beforeMetrics: comparison.beforeMetrics, afterMetrics: comparison.afterMetrics,
+    probe: { comparison }, taskBenefit: { benefit: true } };
+  const record = { runtimeRecovered: true, proposal: { benefitModel: { kind: 'workflow' } } };
+  assert.equal(gatesOf({ ...record, latestObservation: observed }).eligible, true);
+
+  // hydateRecordFromSnapshot / canary / archive reload all merge a durable
+  // observation with the in-session one. That merge must not erase the marker
+  // that makes the budgeted comparison authoritative.
+  const merged = mergeMeasurement(observed, { at: '2026-01-01T00:00:00.001Z' });
+  assert.equal(merged.probeDerived, true, 'the authoritative comparison marker survives the merge');
+  assert.equal(gatesOf({ ...record, latestObservation: merged }).eligible, true);
+  assert.equal(new EvolutionEvaluator().evaluate(domainEvaluationEvidence({ ...record, latestObservation: merged })).decision === 'rollback', false);
+});

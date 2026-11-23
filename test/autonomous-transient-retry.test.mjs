@@ -88,7 +88,7 @@ const INPUT = {
   BUILD_ERROR: { type: 'build/error', code: 'BUILD_ERROR', message: 'build failed', target: 'build:x' },
 };
 
-async function session(t, { strategies, transientRetryCooldownMs = 0 } = {}) {
+async function session(t, { strategies, transientRetryCooldownMs = 0, domainStorage } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-transient-retry-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const ctx = context();
@@ -117,6 +117,7 @@ async function session(t, { strategies, transientRetryCooldownMs = 0 } = {}) {
     mode: 'autonomous',
     unattended: true,
     transientRetryCooldownMs,
+    ...(domainStorage ? { domainStorage } : {}),
     autonomousStrategies: strategies ?? {
       AGENT_ERROR: declaration('a'),
       TOOL_ERROR: declaration('b'),
@@ -311,4 +312,96 @@ test('a concurrent observation of a deferred hypothesis never starts a second Tr
   assert.equal(runs.length, 2, 'one reverted record for A and one measured record for B');
   assert.equal(h.runtime.defineCalls, definesBefore + 1, 'one Trial for the retry');
   assert.equal(runs.filter((record) => record.state === 'measured').length, 1);
+});
+
+test('a decision reservation whose release failed is retried by the next observation', async (t) => {
+  const reservations = new Set();
+  let releaseCalls = 0;
+  const domainStorage = {
+    observe: async () => {},
+    reserveAutonomousDecision: async (identity) => {
+      if (reservations.has(identity)) return false;
+      reservations.add(identity);
+      return true;
+    },
+    // Production contract: only the reservations present when the store opened.
+    // A reservation taken by this session is invisible here, which is why a
+    // failed release needs an explicit retry.
+    autonomousDecisions: async () => [],
+    // The first release (at revert time) fails; a later one must be attempted.
+    releaseAutonomousDecision: async (identity) => {
+      releaseCalls += 1;
+      if (releaseCalls === 1) throw new Error('storage write failed');
+      reservations.delete(identity);
+    },
+  };
+  const h = await session(t, { domainStorage });
+  await belowThreshold(h.observe, 'AGENT_ERROR');
+  const pending = await h.observe('AGENT_ERROR');
+  assert.equal(pending.phase, 'candidate-awaiting-confirmation');
+  const identity = deferralKey(h.core, 'AGENT_ERROR', 'a');
+  assert.equal(reservations.has(identity), true);
+
+  const reverted = await h.core.revert({ experimentId: pending.experimentId }, h.exec);
+  assert.equal(reverted.ok, true);
+  assert.equal(reservations.has(identity), true, 'the failed release left the reservation behind');
+
+  // Before the fix this answered `prior-decision-requires-owner`: the record was
+  // terminal but still blocked the inherited-decision release, so no tool could
+  // resolve the reservation and the hypothesis was stuck until a restart.
+  const next = await h.observe('AGENT_ERROR');
+  assert.notEqual(next.reason, 'prior-decision-requires-owner');
+  assert.equal(releaseCalls, 2, 'the next observation completed the failed release');
+  assert.equal(next.phase, 'candidate-awaiting-confirmation', 'the hypothesis can run a new isolated Trial');
+  assert.equal(reservations.has(identity), true, 'the new Trial took its own reservation');
+});
+
+test('concurrent observations attempt a failed release only once per cooldown', async (t) => {
+  let releaseCalls = 0;
+  const domainStorage = {
+    observe: async () => {},
+    reserveAutonomousDecision: async (identity) => { reservations.add(identity); return true; },
+    autonomousDecisions: async () => [],
+    // A slow, failing storage queue: without the per-identity mutex, two
+    // observations entering before the first retry completes both enqueue one.
+    releaseAutonomousDecision: () => {
+      releaseCalls += 1;
+      return new Promise((_, reject) => setTimeout(() => reject(new Error('storage busy')), 10));
+    },
+  };
+  const reservations = new Set();
+  const h = await session(t, { domainStorage, transientRetryCooldownMs: 1000 });
+  await belowThreshold(h.observe, 'AGENT_ERROR');
+  const pending = await h.observe('AGENT_ERROR');
+  await h.core.revert({ experimentId: pending.experimentId }, h.exec);
+  assert.equal(releaseCalls, 1, 'the revert attempted the release once');
+
+  const [first, second] = await Promise.all([h.observe('AGENT_ERROR'), h.observe('AGENT_ERROR')]);
+  assert.deepEqual([first.phase, second.phase].sort(), ['experiment-deferred', 'observing']);
+  assert.equal(releaseCalls, 2, 'only one observation may retry in the same window');
+});
+
+test('a persistently failing decision release is deferred, never learned as a strategy failure', async (t) => {
+  const reservations = new Set();
+  const domainStorage = {
+    observe: async () => {},
+    reserveAutonomousDecision: async (identity) => {
+      if (reservations.has(identity)) return false;
+      reservations.add(identity);
+      return true;
+    },
+    autonomousDecisions: async () => [], // open-time snapshot: this session's hold is invisible
+    releaseAutonomousDecision: async () => { throw new Error('storage write failed'); },
+  };
+  const h = await session(t, { domainStorage });
+  await belowThreshold(h.observe, 'AGENT_ERROR');
+  const pending = await h.observe('AGENT_ERROR');
+  assert.equal(pending.phase, 'candidate-awaiting-confirmation');
+  await h.core.revert({ experimentId: pending.experimentId }, h.exec);
+
+  const deferred = await h.observe('AGENT_ERROR');
+  assert.equal(deferred.phase, 'experiment-deferred');
+  assert.equal(deferred.reason, 'decision-release-pending');
+  assert.equal(h.core.memory.data.entries.filter((entry) => entry.result?.state === 'failed').length, 0,
+    'an environment failure must not become durable strategy suppression');
 });

@@ -536,10 +536,12 @@ test('a PTC preset routes kernel calls through the official run_code transport',
         continue;
       }
       const parsed = JSON.parse(call.arguments);
-      const match = /tools\[("(?:[^"\\]|\\.)*")\]\(([\s\S]*)\)/.exec(parsed.code);
-      assert.ok(match, 'the wrapper program calls the kernel tool through the SDK');
-      const name = JSON.parse(match[1]);
-      const args = JSON.parse(match[2]);
+      const match = /const args = JSON\.parse\(("(?:[^"\\]|\\.)*")\);[\s\S]*?tools\[("(?:[^"\\]|\\.)*")\]\(args\)/.exec(parsed.code);
+      assert.ok(match, 'the wrapper prepares arguments as JSON text and calls through the SDK');
+      const name = JSON.parse(match[2]);
+      // Parse the program's own JSON text, exactly as the executor does: an
+      // object literal would silently drop an own `__proto__` data key.
+      const args = JSON.parse(JSON.parse(match[1]));
       const tool = ctx.tools.get(name);
       assert.ok(tool, `the wrapper names a registered tool: ${name}`);
       assert.equal(isVerificationCall({ agent: input.agent, rootCallId: call.id, callId: 'nested' }), true);
