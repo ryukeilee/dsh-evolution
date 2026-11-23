@@ -66,15 +66,19 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
     try {
       if (exec?.name === 'read' && typeof exec.callId === 'string'
         && typeof exec.arguments?.file_path === 'string') {
-        const target = await ctx.fs.resolve(exec.arguments.file_path, {
+        // Capture the caller's request before any await: a hook/stat callback
+        // may mutate exec.arguments while the file checks are pending.
+        const callId = exec.callId;
+        const filePath = exec.arguments.file_path;
+        const limit = Number(exec.arguments?.limit);
+        const offset = Number(exec.arguments?.offset);
+        const target = await ctx.fs.resolve(filePath, {
           cwd: exec.agent?.session?.header?.cwd,
           signal: exec.signal,
         });
         const info = await ctx.fs.stat(target, exec.signal);
         if (info?.type === 'file' && typeof info.version === 'string') {
-          const limit = Number(exec.arguments?.limit);
-          const offset = Number(exec.arguments?.offset);
-          versions.set(exec.callId, {
+          versions.set(callId, {
             target,
             version: info.version,
             limit: Number.isInteger(limit) && limit > 0 ? limit : null,
@@ -187,6 +191,11 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // synchronously.
       if (contentText(result) !== originalContent) return decision;
       if (JSON.stringify(result?.content ?? null) !== originalContentJson) return decision;
+      const currentLimit = Number(exec?.arguments?.limit);
+      const currentOffsetRaw = Number(exec?.arguments?.offset);
+      const currentOffset = Number.isInteger(currentOffsetRaw) && currentOffsetRaw > 0 ? currentOffsetRaw : 1;
+      if (!Number.isInteger(currentLimit) || currentLimit <= 0 || currentLimit < effectiveLimitSnapshot
+        || currentOffset !== snapshotOffset) return decision;
       if (!decision || decision.kind !== 'accept') return decision;
       if ('content' in decision) return decision;
       const finalBase = decision.value === undefined ? result?.value : decision.value;

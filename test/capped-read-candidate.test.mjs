@@ -420,6 +420,32 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(pathRaceDecision.value.lines.length, 2, 'a value path mutated during the async checks is not appended');
 
+  const preStatExec = { name: 'read', callId: 'pre-stat', arguments: { file_path: 'pre-stat.txt', limit: 1 }, agent: {}, signal: null };
+  const preStatFile = '/isolated/pre-stat.txt';
+  let preStats = 0;
+  const preStatListener = mount({ [preStatFile]: raceRows.join('\n') + '\n' }, {
+    onStat: () => { preStats += 1; if (preStats === 1) preStatExec.arguments.limit = 3; },
+  });
+  const preStatDecision = await preStatListener(
+    preStatExec,
+    readResult({ lines: [{ number: 1, text: raceRows[0] }], totalLines: 5, path: preStatFile, content: raceRows[0] + '\n(Output capped. Showing lines 1-1. Use offset=2 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(preStatDecision.value, undefined, 'the pre-execute request window is captured before the first await');
+
+  const postStatExec = { name: 'read', callId: 'post-stat', arguments: { file_path: 'post-stat.txt', limit: 3 }, agent: {}, signal: null };
+  const postStatFile = '/isolated/post-stat.txt';
+  let postStats = 0;
+  const postStatListener = mount({ [postStatFile]: raceRows.join('\n') + '\n' }, {
+    onStat: () => { postStats += 1; if (postStats === 3) postStatExec.arguments.limit = 1; },
+  });
+  const postStatDecision = await postStatListener(
+    postStatExec,
+    readResult({ lines: raceRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })), totalLines: 5, path: postStatFile, content: 'aaaa\nbbbb\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(postStatDecision.value, undefined, 'a limit narrowed during the final await is not appended');
+
   const sepPrefix = 'a\u2028bc';
   const sepMarker = sepPrefix + '... (line truncated to 4 chars)';
   const sepFile = '/isolated/sep-marker.txt';

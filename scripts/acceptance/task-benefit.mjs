@@ -238,7 +238,7 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
     } else if (unresolvedPath || (effectivePath && alignedDecision === null)) {
       inputKnown = false;
     } else if (rawOffsetValid) {
-      argumentsValue = rawInput;
+      argumentsValue = alignedArguments ? { ...alignedArguments, ...rawInput } : rawInput;
       inputKnown = true;
     } else if (alignedArguments) {
       argumentsValue = { ...alignedArguments, ...(rawInput ?? {}) };
@@ -315,8 +315,8 @@ function parseToolResultText(text) {
   }
   const pathMatch = /^\s*<path>([\s\S]*?)<\/path>[ \t]*(?:\r?\n|$)/u.exec(value);
   if (!pathMatch) return { path: null, body: '', invalid: true };
-  const path = pathMatch[1].trim() || null;
-  if (!path) return { path: null, body: '', invalid: true };
+  const path = pathMatch[1];
+  if (!path.trim()) return { path: null, body: '', invalid: true };
   const pathTags = (value.match(/<path>/gu) ?? []).length;
   const openTags = (value.match(/<content>/gu) ?? []).length;
   const closeTags = (value.match(/<\/content>/gu) ?? []).length;
