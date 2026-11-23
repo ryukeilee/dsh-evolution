@@ -100,10 +100,10 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       if (exec?.name !== 'read') return decision;
       // A downstream hook may replace or mutate the model-visible content.
       if (contentText(result) !== originalContent) return decision;
-      // A downstream decision that owns rendered content must be returned
-      // as-is; the official postExecute rejects a decision with both content and
-      // a rebuilt value.
-      if (decision.content !== undefined) return decision;
+      // A downstream decision that owns the content property (even as
+      // undefined) must be returned as-is; the official postExecute rejects a
+      // decision with both content and a rebuilt value.
+      if (Object.hasOwn(decision, 'content')) return decision;
       if (originalWindow) {
         const currentWindow = snapshotWindow(result?.value);
         if (!currentWindow || !sameReadWindow(currentWindow, originalWindow)) return decision;
@@ -182,9 +182,15 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       }
       const tail = [];
       let bytes = 0;
-      const maxOriginalLine = base.lines.reduce((max, line) => (
-        typeof line?.text === 'string' ? Math.max(max, line.text.length) : max
-      ), 0);
+      const maxOriginalLine = base.lines.reduce((max, line) => {
+        if (typeof line?.text !== 'string') return max;
+        const truncated = /^(.*?)\.\.\. \(line truncated to (\d+) chars\)$/u.exec(line.text);
+        if (truncated) {
+          // The suffix proves the host line width, not the marker's length.
+          return Math.max(max, truncated[1].length);
+        }
+        return Math.max(max, line.text.length);
+      }, 0);
       for (let number = end + 1; number <= windowEnd; number += 1) {
         const value = all[number - 1];
         if (typeof value !== 'string' || value.length > DEFAULT_LINE_CHARS) return decision;

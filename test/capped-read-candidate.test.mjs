@@ -345,6 +345,25 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.deepEqual(contextDecision.additionalContexts, context);
 
+  const ownContent = await hostListener(
+    { name: 'read', arguments: { file_path: 'host-value.txt', limit: 5 }, agent: {}, signal: null },
+    { value: { path: hostFile, offset: 1, totalLines: 5, lines: hostRows.slice(0, 2).map((text, index) => ({ number: index + 1, text })) }, content: [{ type: 'text', text: 'one\ntwo\n(Output capped. Showing lines 1-2. Use offset=3 to continue.)' }] },
+    async () => ({ kind: 'accept', content: undefined }),
+  );
+  assert.equal(Object.hasOwn(ownContent, 'content'), true);
+  assert.equal(ownContent.value, undefined, 'an own content property is authoritative even when undefined');
+
+  const markerLine = 'abc... (line truncated to 3 chars)';
+  const markerFile = '/isolated/marker.txt';
+  const markerListener = mount({ [markerFile]: markerLine + '\nlonger\n' });
+  const markerFirst = [{ number: 1, text: markerLine }];
+  const markerDecision = await markerListener(
+    { name: 'read', arguments: { file_path: 'marker.txt', limit: 2 }, agent: {}, signal: null },
+    readResult({ lines: markerFirst, totalLines: 2, path: markerFile, content: 'abc... (line truncated to 3 chars)\n(Output capped. Showing lines 1-1. Use offset=2 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(markerDecision.value, undefined, 'a truncated marker proves only its prefix width');
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(
