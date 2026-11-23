@@ -81,7 +81,7 @@ ACP/Desktop 会话在生成候选后可以完成 Trial 与度量，但无法自�
      「显式 limit 未达到且未到 EOF」的结构证据）、剩余行数 ≤ 200 且剩余字节 ≤ 16 KiB、
      文件 ≤ 256 KiB 时，把缺失的尾部追加到既有 `read` 结果；逐行遵循官方行号，超长行或任何
      异常都放弃变换。footer 同时接受裸文本与 `<content>` 信封两种形态，因为不同宿主路径给
-     waterfall 的内容形态不同。追加终点被限制在调用方显式 `limit` 的请求窗口内，不会越界读到
+     waterfall 的内容形态不同。追加终点被限制在调用方显式 `limit` 的请求窗口内；没有显式 `limit` 时以官方默认的 2,000 行窗口为边界，不会越界读到
      文件尾。只有存在显式 `limit` 时才启用「未到行数且未到 EOF」的结构判定，避免把宿主较小的
      默认行窗口误判成字节上限。沙箱不提供 `Buffer`/`process`，UTF-8 字节数用 `TextEncoder` 计算。
 4. `scripts/acceptance/task-benefit.mjs`
@@ -258,14 +258,26 @@ run6 的 producer 已经干净，但 Trial 功能复验仍在 `E_DESKTOP_FUNCTIO
 
 1. **首次读取必须按文件绑定。** 旧判定把各路径的首读结果放在一起，只要求每个 sentinel 出现在
    某个首读里；文件 B 的值因此可以顶替文件 A。现在 `task.reads` 按绝对路径绑定 token，
-   `exercised` 要求每个文件自己的首读包含自己的值。记录的 candidate 行有 3 次 read、每次
-   3 个完整文件结果（`readResultCharacters` 206,610，fixtures 合计 195,840，其余是宿主信封），
-   与新的逐文件判定一致；但本轮没有重跑真实模型来重新生成 artifact，报告不把「新判定已在
-   真实会话上重跑」写成已执行事实。
+   `exercised` 要求每个文件自己的首读包含自己的值；ACP 的 `rawInput` 优先于按位置贴上的模型
+   决策，结果里的 `<path>` 作为实际读取路径，结果路径与请求路径不一致时该调用不作证据。
+   记录的 candidate 行有 3 次 read、每次 3 个完整文件结果（`readResultCharacters` 206,610，
+   fixtures 合计 195,840，其余是宿主信封），与新的逐文件判定一致；但本轮没有重跑真实模型来
+   重新生成 artifact，报告不把「新判定已在真实会话上重跑」写成已执行事实。
 2. **多 step 的 usage 必须相加。** 实测一次 `opencode run` 的两个 `step_finish` 分别报告
    input 9,621/output 39/cache.read 512 与 input 89/output 7/cache.read 10,112；旧实现只保留
-   最后一步。现在按 step 相加，任一 step 缺计费字段则该轮 unknown。该修复只影响后续运行的
-   计量，不改写已记录的 artifact。
+   最后一步。现在按 step 相加，任一 step 缺计费字段或整个 `tokens` 对象则该轮 unknown。该修复
+   只影响后续运行的计量，不改写已记录的 artifact。
+3. **capped 尾部不能越过默认行窗口。** 无显式 `limit` 时旧实现补到 EOF；已复现 2,090 行文件在
+   字节上限停到 1,896 行后被补到 2,090 行，越过宿主默认的 2,000 行窗口。现在无显式 `limit`
+   时以 2,000 行为边界，有显式 `limit` 时仍以调用方窗口为边界。候选源码因此从
+   `2aa925db…` 变为 `877a6bdf…`；验收文件只有 700 行（低于 2,000 行默认窗口），所以 run15
+   在这三个文件上的首读结果与修复后的行为相同，但本轮没有重跑真实模型来重建 artifact；
+   `docs/evidence/` 里的旧候选哈希是历史记录，不声称覆盖新源码。
+4. **自有工具调用不能被重试洗掉。** 整会话替换现在只接受结构化 allowlist 中的 pilot 传输
+   失败；`pilot-used-own-tools` 留在失败行，artifact 保持不完整。
+5. **混合失败的证据门槛只算可处理失败。** 100 次 `invalid args` 不能再把 1 次
+   `code run failure` 抬过 `minOccurrences`，也不再进入可处理目标的失败率分母；caller-input
+   模式仍保留在 `excludedModes` 中。
 
 另外把候选测试的挂载方式从 `new Function` 改成 `node:vm`（只注入
 `TextEncoder`/`TextDecoder`/`btoa`/`atob`），这样再次出现 `Buffer`/`process` 依赖时测试会先

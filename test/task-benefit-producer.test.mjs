@@ -24,6 +24,7 @@ import {
   inspectArtifactTarget,
   normalizeTask,
   parseExpectTokens,
+  pilotTransportRetryable,
   prepareArtifactDirectory,
   readPathMatches,
   resolveArtifactTarget,
@@ -229,6 +230,50 @@ test('a value read from another file cannot prove the mechanism ran', () => {
   assert.equal(boundComplete.exercised, true);
 });
 
+test('ACP rawInput and result path decide attribution, not the decision order', () => {
+  const turns = ['read', 'read'].map((tool, index) => ({
+    ok: true,
+    tools: ['read'],
+    decision: { tool, arguments: { file_path: index === 0 ? '/home/a.txt' : '/home/b.txt' } },
+    usage: { input: 1, output: 1, cache: { read: 0 } },
+    round: index,
+  }));
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  // The model said a then b, but ACP reports the executed calls as b then a.
+  const reordered = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/b.txt' } },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', '<path>/home/b.txt</path>\n<content>sentinel-b</content>'),
+      result('c2', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a sentinel-b',
+    expectedTokens: ['sentinel-a', 'sentinel-b'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }, { path: '/home/b.txt', token: 'sentinel-b' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(reordered.exercised, true, 'the executed call input and result path win over the decision order');
+
+  // A request for a that returns b's path is not proof for either file.
+  const conflicting = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate',
+    turns: [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } } }],
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      result('c1', '<path>/home/b.txt</path>\n<content>sentinel-a</content>'),
+    ],
+    assistantText: 'sentinel-a',
+    expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(conflicting.exercised, false, 'a result path that disagrees with the request cannot prove a read');
+});
+
 test('a call/decision count mismatch is not attributed to the policy', () => {
   const turns = turnsWith(['read', 'read']).map((turn, index) => ({
     ...turn,
@@ -258,6 +303,15 @@ test('read path binding accepts relative/canonical aliases but not a different p
   assert.equal(readPathMatches('/iso/home/a.txt', '/iso/home/b.txt', '/iso/home'), false);
   assert.equal(readPathMatches('/iso/home/sub/a.txt', '/iso/home/a.txt', '/iso/home'), false);
   assert.equal(readPathMatches('a.txt', '/iso/home/sub/a.txt', '/iso/home'), false);
+});
+
+test('only a pilot transport failure can replace a whole session', () => {
+  assert.equal(pilotTransportRetryable([{ ok: false, reason: 'decision-shape-invalid' }]), true);
+  assert.equal(pilotTransportRetryable([{ ok: false, reason: 'model-process-failed' }]), true);
+  assert.equal(pilotTransportRetryable([{ ok: false, reason: 'pilot-used-own-tools' }]), false);
+  assert.equal(pilotTransportRetryable([{ ok: false, reason: 'pilot-used-own-tools' }, { ok: false, reason: 'reply-has-no-object' }]), false);
+  assert.equal(pilotTransportRetryable([{ ok: false }]), false);
+  assert.equal(pilotTransportRetryable([]), false);
 });
 
 test('a per-file binding must cover every expected token', () => {

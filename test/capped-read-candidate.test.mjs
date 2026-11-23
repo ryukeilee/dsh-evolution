@@ -106,6 +106,20 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(boundedStructural.value.lines.length, 600);
 
+  // Without an explicit limit the request still ends at the host's default
+  // 2,000-line window: a byte cap at 1,896 must not be widened to EOF (2,090).
+  const deep = Array.from({ length: 2090 }, (_, index) => 'row ' + index + ' ' + 'z'.repeat(40));
+  const deepFile = '/isolated/deep.txt';
+  const deepListener = mount({ [deepFile]: deep.join('\n') + '\n' });
+  const deepFirst = deep.slice(0, 1896).map((value, index) => ({ number: index + 1, text: value }));
+  const defaultWindow = await deepListener(
+    { name: 'read', arguments: { file_path: 'deep.txt' }, agent: {}, signal: null },
+    readResult({ lines: deepFirst, totalLines: deep.length, path: deepFile, content: deepFirst.map((line) => line.text).join('\n') + '\n(Output capped. Showing lines 1-1896. Use offset=1897 to continue.)' }),
+    async () => ({ kind: 'accept' }),
+  );
+  assert.equal(defaultWindow.value.lines.length, 2000);
+  assert.equal(defaultWindow.value.lines.at(-1).number, 2000);
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(

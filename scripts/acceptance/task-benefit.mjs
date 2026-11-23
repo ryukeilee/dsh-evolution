@@ -164,6 +164,24 @@ function finiteUsage(usage) {
 }
 
 const SAFE_ERROR_CODE = /^E_(?:DESKTOP|ACP|EVOLUTION|DSH|EXPERIENCE)_[A-Z0-9_]{2,63}$/;
+// A whole-session replacement is only for a pilot transport failure. An own-tool
+// call is a measurement-integrity failure, not a formatting slip: retrying it
+// would let a session that bypassed the host transcript be replaced by a clean
+// one and still produce a complete artifact.
+const PILOT_RETRYABLE_REASONS = new Set([
+  'model-process-failed',
+  'reply-not-text',
+  'reply-has-no-object',
+  'reply-object-invalid',
+  'reply-object-unterminated',
+  'decision-shape-invalid',
+]);
+
+/** True only when every failed turn is a retryable pilot transport failure. */
+export function pilotTransportRetryable(turns) {
+  const failed = (Array.isArray(turns) ? turns : []).filter((turn) => turn?.ok !== true);
+  return failed.length > 0 && failed.every((turn) => typeof turn.reason === 'string' && PILOT_RETRYABLE_REASONS.has(turn.reason));
+}
 
 /** Only a trusted structured code in an allowlist may reach the evidence. */
 export function safeErrorCode(value) {
@@ -216,11 +234,14 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     const decision = toolTurns[index]?.decision;
     const name = toolNames[index] ?? (typeof call.title === 'string' ? call.title : null);
     if (typeof call.toolCallId === 'string' && typeof name === 'string') {
-      byId.set(call.toolCallId, {
-        name,
-        arguments: decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
-          ? decision.arguments : {},
-      });
+      // ACP echoes the executed call's own input as `rawInput`; prefer it over
+      // the model decision joined by position. When it is absent, the decision
+      // is still tied to this call by the one-call-per-tool-turn order above.
+      const rawInput = call.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput)
+        ? call.rawInput : null;
+      const decisionArguments = decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
+        ? decision.arguments : null;
+      byId.set(call.toolCallId, { name, arguments: rawInput ?? decisionArguments ?? {} });
     }
   });
   // A read is a *request* before it is a result. Register the first request of
@@ -235,9 +256,14 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     if (call?.name !== 'read') continue;
     const text = toolUpdateText(update);
     if (!text) continue;
-    const renderedPath = /<path>([^<]*)<\/path>/u.exec(text)?.[1];
+    const renderedPath = /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null;
     const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
       ? call.arguments.file_path : null;
+    // The rendered result names the file the host actually read. If it
+    // disagrees with the request, this call cannot prove either file's effect.
+    if (renderedPath && argumentPath
+      && !readPathMatches(argumentPath, renderedPath, cwd)
+      && !readPathMatches(renderedPath, argumentPath, cwd)) continue;
     const requestedOffset = Number.isInteger(call.arguments.offset) && call.arguments.offset > 0
       ? call.arguments.offset : 1;
     readResults.set(update.toolCallId, { text, path: renderedPath ?? argumentPath, offset: requestedOffset });
@@ -249,9 +275,9 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     const argumentPath = typeof meta.arguments.file_path === 'string' && meta.arguments.file_path.trim() !== ''
       ? meta.arguments.file_path : null;
     const offset = Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0 ? meta.arguments.offset : 1;
-    // `arguments` is the live decision; a result's rendered path is the
-    // fallback for an older transport that did not echo the input.
-    readRequests.push({ callId: call.toolCallId, path: argumentPath ?? readResults.get(call.toolCallId)?.path ?? null, offset });
+    // The result path is authoritative when it exists; the requested path is the
+    // fallback for a transport that does not render it.
+    readRequests.push({ callId: call.toolCallId, path: readResults.get(call.toolCallId)?.path ?? argumentPath ?? null, offset });
   }
   const correct = answerMatches(assistantText, expectedTokens);
   const firstRequestByPath = new Map();
@@ -832,6 +858,8 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
     .map((update) => update.content.text).join('');
   const row = extractSessionEvidence({ label, side, turns, updates, assistantText, expectedTokens, expectedReads, cwd: home, candidateTool, durationMs });
   const failedTurns = turns.filter((turn) => turn.ok !== true).length;
+  const failureReasons = [...new Set(turns.filter((turn) => turn.ok !== true)
+    .map((turn) => typeof turn.reason === 'string' ? turn.reason : null).filter(Boolean))].slice(0, 4);
   // The raw transport detail stays on the operator console; the persisted row
   // carries only a stage/category/code projection.
   if (promptFailure !== null) console.error(`[task-benefit] ${label} failed: ${String(promptFailure?.message ?? promptFailure).slice(0, 400)}`);
@@ -839,6 +867,8 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
     ...row,
     ok: promptFailure === null && failedTurns === 0 && row.turns > 0 && row.usageComplete === true,
     failedTurns,
+    retryableTransportFailure: promptFailure === null && pilotTransportRetryable(turns),
+    ...(failureReasons.length > 0 ? { failureReasons } : {}),
     ...(promptFailure === null ? {} : { failure: failureProjection(promptFailure) }),
     assistantCharacters: assistantText.length,
   };
@@ -935,9 +965,9 @@ export async function produceTaskBenefit(options = {}) {
           expectedReads: task.reads,
           candidateTool: improvement === 'tool' ? targetTool : null,
         })];
-        // Only a transport-incomplete session is replaced; a product tool
-        // failure keeps its row and invalidates the artifact.
-        if (!attempts[0].ok && attempts[0].failedTurns > 0 && attempts[0].toolFailures === 0) {
+        // Only a confirmed pilot transport failure is replaced; a product tool
+        // failure or an own-tool bypass keeps its row and invalidates the artifact.
+        if (!attempts[0].ok && attempts[0].retryableTransportFailure === true) {
           const retried = await runSession({
             cli, home, work: runWork,
             overlay: side === 'candidate' ? candidateOverlay : baselineOverlay,
@@ -960,6 +990,7 @@ export async function produceTaskBenefit(options = {}) {
               ok: attempt.ok,
               failedTurns: attempt.failedTurns,
               toolFailures: attempt.toolFailures,
+              ...(attempt.failureReasons ? { failureReasons: attempt.failureReasons } : {}),
               tokens: attempt.tokens,
               durationMs: attempt.durationMs,
             })),

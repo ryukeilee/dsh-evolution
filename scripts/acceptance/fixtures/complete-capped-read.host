@@ -12,6 +12,11 @@ const MAX_FILE_BYTES = 256 * 1024;
 const MAX_TAIL_LINES = 200;
 const MAX_TAIL_BYTES = 16 * 1024;
 const MAX_LINE_CHARS = 16 * 1024;
+// The official read tool's default line window for the supported hosts. When
+// the caller declares no `limit`, the request still ends at this window, so a
+// byte-capped window must not be widened past it (a 2,090-line file caps at
+// line 1,896 but the default request stops at 2,000, not EOF).
+const DEFAULT_LINE_WINDOW = 2000;
 // The dynamic-package host half runs in a `node:vm` sandbox where `Buffer` and
 // `process` are absent (the sandbox provides TextEncoder instead). Using Buffer
 // here made the hook throw and silently return the unmodified result, which is
@@ -62,13 +67,11 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       // …" footer must not be widened.
       const structuralByteCap = text.length === 0 && hasExplicitLimit && base.lines.length < requestedLimit;
       if (!footer && !structuralByteCap) return decision;
-      // Never read past the window the caller asked for: an explicit `limit`
+      // Never read past the window the caller asked for. An explicit `limit`
       // is a request boundary even when the byte cap stopped the first window
-      // early. Without one, the remaining file is the request.
+      // early; without one, the official default line window is the boundary.
       const offset = Number.isInteger(base.offset) && base.offset > 0 ? base.offset : 1;
-      const windowEnd = Number.isInteger(requestedLimit) && requestedLimit > 0
-        ? Math.min(total, offset - 1 + requestedLimit)
-        : total;
+      const windowEnd = Math.min(total, offset - 1 + (hasExplicitLimit ? requestedLimit : DEFAULT_LINE_WINDOW));
       const missing = windowEnd - end;
       if (missing < 1 || missing > MAX_TAIL_LINES) return decision;
       const target = await ctx.fs.resolve(base.path, { cwd: exec.agent?.session?.header?.cwd, signal: exec.signal });

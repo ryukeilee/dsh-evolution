@@ -122,6 +122,59 @@ test('the planner exposes a real denominator, classifies origin and names the be
   assert.equal(caller.candidates.length, 0);
   assert.equal(caller.rejected[0].reason, 'caller-input');
 });
+test('a caller-input failure cannot lift one actionable failure over the floor', () => {
+  const now = new Date().toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:args', scope: 'tool run code',
+        problem: 'official operation failure invalid args',
+        failureCount: 100, occurrences: 100, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 100, count: 100 }, successessincefailure: { sum: 0, count: 100 } },
+      },
+      {
+        key: 'knowledge:code', scope: 'tool run code',
+        problem: 'official operation failure code run failure',
+        failureCount: 1, occurrences: 1, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 10, count: 1 }, successessincefailure: { sum: 6, count: 1 } },
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  assert.equal(planned.candidates.length, 0);
+  const rejected = planned.rejected.find((entry) => entry.problemKey === 'tool run code');
+  assert.equal(rejected?.reason, 'insufficient-evidence');
+  assert.equal(rejected?.occurrences, 1, 'only the actionable failure counts toward the floor');
+});
+
+test('a mixed target reports actionable occurrences and frequency, not the caller total', () => {
+  const now = new Date().toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:args', scope: 'tool run code',
+        problem: 'official operation failure invalid args',
+        failureCount: 100, occurrences: 100, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 100, count: 100 }, successessincefailure: { sum: 0, count: 100 } },
+      },
+      {
+        key: 'knowledge:code', scope: 'tool run code',
+        problem: 'official operation failure code run failure',
+        failureCount: 4, occurrences: 4, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 10, count: 4 }, successessincefailure: { sum: 6, count: 4 } },
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(candidate, JSON.stringify(planned.rejected));
+  assert.equal(candidate.occurrences, 4);
+  assert.equal(candidate.observedAttempts, 10);
+  assert.equal(candidate.observedFailureRate, 0.4);
+  assert.deepEqual(candidate.excludedModes, ['invalid args']);
+  assert.equal(candidate.mixedOrigin, true);
+});
+
 test('one caller-input mode does not discard a tool target with actionable failures', () => {
   const now = new Date().toISOString();
   const planned = planEvolutionCandidates({

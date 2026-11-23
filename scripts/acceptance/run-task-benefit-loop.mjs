@@ -721,17 +721,20 @@ try {
     // is a *read* result carrying the complete line, not a shell fallback that
     // happened to print the same value.
     const consumerCalls = consumerUpdates.filter((update) => update.sessionUpdate === 'tool_call');
-    const consumerDecisions = consumerTurns.filter((turn) => (turn.tools?.length ?? 0) > 0).map((turn) => turn.decision ?? null).filter(Boolean);
+    // Only decisions that chose a tool have a call; a trailing stop must not
+    // shift a later call's arguments onto another id.
+    const consumerDecisions = consumerTurns
+      .filter((turn) => (turn.tools?.length ?? 0) > 0 && typeof turn.decision?.tool === 'string' && turn.decision.tool.trim() !== '');
+    assert(consumerCalls.length === consumerDecisions.length, 'the fresh consumer model decisions and ACP calls do not align');
     const consumerCallById = new Map();
     consumerCalls.forEach((call, index) => {
-      const decision = consumerDecisions[index];
+      const decision = consumerDecisions[index]?.decision;
       const name = decision?.tool ?? call.title;
       if (typeof call.toolCallId === 'string' && typeof name === 'string') {
-        consumerCallById.set(call.toolCallId, {
-          name,
-          arguments: decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
-            ? decision.arguments : {},
-        });
+        const rawInput = call.rawInput && typeof call.rawInput === 'object' && !Array.isArray(call.rawInput) ? call.rawInput : null;
+        const decisionArguments = decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
+          ? decision.arguments : null;
+        consumerCallById.set(call.toolCallId, { name, arguments: rawInput ?? decisionArguments ?? {} });
       }
     });
     const consumerResultById = new Map();
@@ -742,10 +745,16 @@ try {
       if (call?.name !== 'read') continue;
       const text = toolUpdateText(update);
       if (!text) continue;
-      const path = /<path>([^<]*)<\/path>/u.exec(text)?.[1]
-        ?? (typeof call.arguments.file_path === 'string' ? call.arguments.file_path : null);
+      const renderedPath = /<path>([^<]*)<\/path>/u.exec(text)?.[1]?.trim() || null;
+      const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
+        ? call.arguments.file_path : null;
+      // The result names the file the host actually read; a disagreement with
+      // the request proves neither file's effect and is not evidence.
+      if (renderedPath && argumentPath
+        && !readPathMatches(argumentPath, renderedPath, home)
+        && !readPathMatches(renderedPath, argumentPath, home)) continue;
       const offset = Number.isInteger(call.arguments.offset) && call.arguments.offset > 0 ? call.arguments.offset : 1;
-      consumerResultById.set(update.toolCallId, { text, path, offset });
+      consumerResultById.set(update.toolCallId, { text, path: renderedPath ?? argumentPath, offset });
     }
     const consumerReadResults = [...consumerResultById.values()];
     const consumerReadRequests = [];
@@ -755,7 +764,7 @@ try {
       const argumentPath = typeof meta.arguments.file_path === 'string' && meta.arguments.file_path.trim() !== ''
         ? meta.arguments.file_path : null;
       const offset = Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0 ? meta.arguments.offset : 1;
-      consumerReadRequests.push({ callId: call.toolCallId, path: argumentPath ?? consumerResultById.get(call.toolCallId)?.path ?? null, offset });
+      consumerReadRequests.push({ callId: call.toolCallId, path: consumerResultById.get(call.toolCallId)?.path ?? argumentPath ?? null, offset });
     }
     assert(consumerTurns.every((turn) => turn.ok === true), 'a fresh consumer model turn failed');
     const matchedSentinels = sentinels.filter((sentinel) => consumerText.includes(sentinel)).length;

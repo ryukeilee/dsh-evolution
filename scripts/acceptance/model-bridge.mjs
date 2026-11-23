@@ -175,9 +175,13 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
     // their sum; keeping only the last step understated a turn by about half in
     // a measured two-step run. A step without numeric input/output makes the
     // whole turn unknown instead of counting it as a smaller bill.
-    if (row?.type === 'step_finish' && row.part?.tokens) {
-      const tokens = row.part.tokens;
-      if (!Number.isFinite(tokens.input) || !Number.isFinite(tokens.output)
+    if (row?.type === 'step_finish') {
+      const tokens = row.part?.tokens;
+      // A step whose bill is entirely absent is still an unmeasured step: keep
+      // the whole turn unknown instead of letting the other steps' subtotal
+      // reach the token-regression gate.
+      if (!tokens || typeof tokens !== 'object'
+        || !Number.isFinite(tokens.input) || !Number.isFinite(tokens.output)
         || (tokens.cache?.read !== undefined && !Number.isFinite(tokens.cache.read))) {
         usageComplete = false;
       } else {

@@ -156,7 +156,8 @@ test('an incomplete step bill makes the turn spend unknown instead of smaller', 
   await fs.writeFile(path.join(dir, 'opencode'),
     '#!/bin/sh\n'
     + 'printf \'%s\\n\' \'{"type":"step_finish","part":{"tokens":{"input":10,"output":2}}}\'\n'
-    + 'printf \'%s\\n\' \'{"type":"step_finish","part":{"tokens":{"output":1}}}\'\n',
+    + 'printf \'%s\\n\' \'{"type":"step_finish","part":{}}\'\n'
+    + 'printf \'%s\\n\' \'{"type":"step_finish","part":{"tokens":{"input":4,"output":1}}}\'\n',
     { mode: 0o755 });
   const result = await runOpencodeTurn('prompt', {
     model: 'test/model',
