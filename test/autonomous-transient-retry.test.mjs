@@ -88,7 +88,7 @@ const INPUT = {
   BUILD_ERROR: { type: 'build/error', code: 'BUILD_ERROR', message: 'build failed', target: 'build:x' },
 };
 
-async function session(t, { strategies, transientRetryCooldownMs = 0 } = {}) {
+async function session(t, { strategies, transientRetryCooldownMs = 0, domainStorage } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-transient-retry-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const ctx = context();
@@ -117,6 +117,7 @@ async function session(t, { strategies, transientRetryCooldownMs = 0 } = {}) {
     mode: 'autonomous',
     unattended: true,
     transientRetryCooldownMs,
+    ...(domainStorage ? { domainStorage } : {}),
     autonomousStrategies: strategies ?? {
       AGENT_ERROR: declaration('a'),
       TOOL_ERROR: declaration('b'),
@@ -311,4 +312,43 @@ test('a concurrent observation of a deferred hypothesis never starts a second Tr
   assert.equal(runs.length, 2, 'one reverted record for A and one measured record for B');
   assert.equal(h.runtime.defineCalls, definesBefore + 1, 'one Trial for the retry');
   assert.equal(runs.filter((record) => record.state === 'measured').length, 1);
+});
+
+test('a decision reservation whose release failed is retried by the next observation', async (t) => {
+  const reservations = new Set();
+  let releaseCalls = 0;
+  const domainStorage = {
+    observe: async () => {},
+    reserveAutonomousDecision: async (identity) => {
+      if (reservations.has(identity)) return false;
+      reservations.add(identity);
+      return true;
+    },
+    autonomousDecisions: async () => [...reservations],
+    // The first release (at revert time) fails; a later one must be attempted.
+    releaseAutonomousDecision: async (identity) => {
+      releaseCalls += 1;
+      if (releaseCalls === 1) throw new Error('storage write failed');
+      reservations.delete(identity);
+    },
+  };
+  const h = await session(t, { domainStorage });
+  await belowThreshold(h.observe, 'AGENT_ERROR');
+  const pending = await h.observe('AGENT_ERROR');
+  assert.equal(pending.phase, 'candidate-awaiting-confirmation');
+  const identity = deferralKey(h.core, 'AGENT_ERROR', 'a');
+  assert.equal(reservations.has(identity), true);
+
+  const reverted = await h.core.revert({ experimentId: pending.experimentId }, h.exec);
+  assert.equal(reverted.ok, true);
+  assert.equal(reservations.has(identity), true, 'the failed release left the reservation behind');
+
+  // Before the fix this answered `prior-decision-requires-owner`: the record was
+  // terminal but still blocked the inherited-decision release, so no tool could
+  // resolve the reservation and the hypothesis was stuck until a restart.
+  const next = await h.observe('AGENT_ERROR');
+  assert.notEqual(next.reason, 'prior-decision-requires-owner');
+  assert.equal(releaseCalls, 2, 'the next observation completed the failed release');
+  assert.equal(next.phase, 'candidate-awaiting-confirmation', 'the hypothesis can run a new isolated Trial');
+  assert.equal(reservations.has(identity), true, 'the new Trial took its own reservation');
 });

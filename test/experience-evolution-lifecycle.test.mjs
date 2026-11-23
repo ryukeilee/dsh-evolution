@@ -674,7 +674,31 @@ test('an invalid probe pair stays insufficient and never writes a strategy failu
   assert.equal((recall.records ?? []).filter((entry) => entry.source === 'failure-memory').length, 0);
 });
 
-test('an advisory evaluator veto never becomes a durable regression conclusion', async (t) => {
+test('an advisory veto cannot overwrite a real measured regression verdict', async (t) => {
+  const h = await createHarness(t, 'advisory-veto-real-regression', { config: {
+    domainStorage: { evaluate: () => ({ decision: 'rollback', reason: 'advisory cost regression' }) },
+  } });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  await startTrial(h, experimentId);
+  // A genuine measured regression: the correctness control failed.
+  const measured = h.orchestrator.measure({
+    experimentId,
+    observation: measuredObservation({ solvesProblem: false, regressionPassed: false }),
+  }, h.exec);
+  assert.equal(measured.decision.kind, 'regression');
+  const promoted = await h.orchestrator.promote({ experimentId, confirmation: true }, h.exec);
+  assert.equal(promoted.ok, false);
+  assert.equal(promoted.reason, 'domain-evaluator-rollback');
+  const record = h.orchestrator.requireOwned(experimentId, h.exec.agent);
+  assert.equal(record.decision.kind, 'regression', 'the measured verdict survives the advisory veto');
+  assert.equal(conclusionKindFor(record), 'regression');
+  await h.orchestrator.revert({ experimentId, reason: 'measured regression' }, h.exec);
+  const found = h.store.findConclusions({ target: TARGET, applicability: APPLICABILITY, strategyFingerprint: strategyFingerprint(TARGET, STRATEGY) });
+  assert.equal(found.best?.decision, 'regression', 'the real regression remains a durable lesson');
+});
+
+test('an advisory veto never becomes a durable regression conclusion', async (t) => {
   const h = await createHarness(t, 'advisory-veto-not-durable', { config: {
     domainStorage: { evaluate: () => ({ decision: 'rollback', reason: 'advisory cost regression' }) },
   } });
@@ -1326,13 +1350,15 @@ test('classifyExperimentDecision reads the durable probe comparison after a rest
       solvesProblem: false,
       repeatable: false,
       regressionPassed: false,
-      probe: { comparison: { measurementInvalid: true, regression: false, benefit: false,
-        reasons: ['the baseline pair did not measure the strategy'] } },
+      probe: { scenarioId: 'edge-cache-first-read',
+        comparison: { measurementInvalid: true, regression: false, benefit: false,
+          reasons: ['the baseline pair did not measure the strategy'] } },
     },
   };
   const decision = classifyExperimentDecision(recovered);
   assert.equal(decision.kind, 'insufficient-evidence');
   assert.ok(decision.reasons.some((reason) => /did not measure/.test(reason)));
+  assert.equal(decision.probe.scenarioId, 'edge-cache-first-read', 'the durable probe keeps its scenario identity');
 });
 
 test('conclusionKindFor maps the terminal decision onto a stored conclusion', () => {
