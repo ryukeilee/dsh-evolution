@@ -486,8 +486,9 @@ test('only a pilot transport failure can replace a whole session', () => {
   // A product tool failure is never hidden by a retry, even when a pilot turn
   // also failed with a retryable reason.
   assert.equal(retryableSession({ toolFailures: 1, retryableTransportFailure: true }), false);
-  assert.equal(retryableSession({ toolFailures: 0, retryableTransportFailure: true }), true);
-  assert.equal(retryableSession({ toolFailures: 0, retryableTransportFailure: false }), false);
+  assert.equal(retryableSession({ toolFailures: 0, attributionComplete: true, retryableTransportFailure: true }), true);
+  assert.equal(retryableSession({ toolFailures: 0, attributionComplete: false, retryableTransportFailure: true }), false);
+  assert.equal(retryableSession({ toolFailures: 0, attributionComplete: true, retryableTransportFailure: false }), false);
 });
 
 test('persisted pilot failure reasons are fixed codes, not raw exception text', () => {
@@ -757,6 +758,23 @@ test('a read without a terminal notification is incomplete and blocks a retry', 
   assert.equal(row.attributionComplete, false);
   assert.equal(row.toolFailures, 1, 'a missing terminal is a host tool failure for evidence');
   assert.equal(retryableSession({ toolFailures: row.toolFailures, retryableTransportFailure: true }), false);
+});
+
+test('a failed call that later looks completed is excluded from first-read evidence', () => {
+  const turns = [{ ok: true, tools: ['read'], decision: { tool: 'read', arguments: { file_path: '/home/a.txt' } }, usage: { input: 1, output: 1 }, round: 0 }];
+  const row = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'failed' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/home/a.txt</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'],
+    expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+    candidateTool: null, durationMs: 1,
+  });
+  assert.equal(row.toolFailures, 1);
+  assert.equal(row.exercised, false, 'a failed call id cannot become a successful first read');
 });
 
 test('a per-file binding must cover every expected token', () => {

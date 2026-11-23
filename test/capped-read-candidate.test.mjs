@@ -187,6 +187,19 @@ test('the raw renderer footer, without the host envelope, triggers the bounded t
   );
   assert.equal(tailReplaced.value, undefined, 'a changed freshness token must keep the original result');
 
+  // A downstream post-execute rewrite is not a byte-capped original result;
+  // the policy must not append the lines that rewrite removed.
+  const downstreamRows = ['one', 'two', 'three', 'four', 'five'];
+  const downstreamFile = '/isolated/downstream.txt';
+  const downstream = mount({ [downstreamFile]: downstreamRows.join('\n') + '\n' });
+  const originalLines = downstreamRows.slice(0, 3).map((value, index) => ({ number: index + 1, text: value }));
+  const downstreamDecision = await downstream(
+    { name: 'read', arguments: { file_path: 'downstream.txt', limit: 5 }, agent: {}, signal: null },
+    readResult({ lines: originalLines, totalLines: 5, path: downstreamFile, content: '' }),
+    async () => ({ kind: 'accept', value: { path: downstreamFile, offset: 1, lines: [originalLines[0]], totalLines: 5 } }),
+  );
+  assert.equal(downstreamDecision.value.lines.length, 1, 'a downstream rewrite keeps its own window');
+
   // Without rendered content AND without an explicit limit, a partial window
   // could be the deployment's own (smaller) default line cap: decline.
   const noLimitStructural = await listener(

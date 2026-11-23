@@ -36,6 +36,16 @@ function contentText(result) {
   return parts.join('\n');
 }
 
+function sameReadWindow(left, right) {
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object') return false;
+  if (left.offset !== right.offset || left.totalLines !== right.totalLines) return false;
+  if (!Array.isArray(left.lines) || !Array.isArray(right.lines) || left.lines.length !== right.lines.length) return false;
+  for (let index = 0; index < left.lines.length; index += 1) {
+    if (left.lines[index]?.number !== right.lines[index]?.number || left.lines[index]?.text !== right.lines[index]?.text) return false;
+  }
+  return true;
+}
+
 return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
   // A pre-execute freshness token proves the file did not change between the
   // host's read and this policy's re-read. The host read result does not expose
@@ -69,6 +79,10 @@ return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
       const footer = text.length > 0 && OUTPUT_CAPPED.test(text.length > 8192 ? text.slice(-8192) : text);
       const base = decision.value === undefined ? result?.value : decision.value;
       if (!base || typeof base !== 'object' || !Array.isArray(base.lines) || typeof base.path !== 'string') return decision;
+      // A downstream post-execute hook may have rewritten the window. The cap
+      // signal belongs to the original host result; if the final value is a
+      // different window, keep the downstream result untouched.
+      if (decision.value !== undefined && result?.value && !sameReadWindow(decision.value, result.value)) return decision;
       const total = base.totalLines;
       const end = base.lines.at(-1)?.number ?? (Number.isInteger(base.offset) ? base.offset - 1 : 0);
       if (!Number.isInteger(total) || !Number.isInteger(end) || end < 0 || end >= total) return decision;

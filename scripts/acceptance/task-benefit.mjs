@@ -176,30 +176,41 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
     // ambiguous and needs an explicit valid offset.
     const sameTool = (Array.isArray(toolTurns) ? toolTurns : [])
       .filter((turn) => turn?.decision?.tool === 'read');
-    const sameFile = rawFile ? sameTool.filter((turn) => {
+    let candidates = rawFile ? sameTool.filter((turn) => {
       const path = turn?.decision?.arguments?.file_path;
       return typeof path === 'string' && path.trim() !== ''
         && (readPathMatches(rawInput.file_path, path, cwd) || readPathMatches(path, rawInput.file_path, cwd));
     }) : [];
-    const uniqueDecision = sameFile.length === 1 ? sameFile[0].decision : null;
-    // ACP already reported a path: never borrow an offset from a decision for a
-    // different file. Without a reported path, the unique positional decision
-    // is the only fallback.
-    let alignedDecision = uniqueDecision ?? (!rawFile && positionTrusted ? decision : null);
+    // Multiple decisions for one path are disambiguated by an explicit offset,
+    // but only when exactly one decision carries that offset.
+    if (rawFile && candidates.length > 1 && rawOffsetValid) {
+      const byOffset = candidates.filter((turn) => turn?.decision?.arguments?.offset === rawInput.offset);
+      if (byOffset.length === 1) candidates = byOffset;
+    }
+    // Every path-reported read must claim exactly one matching decision, even
+    // when ACP supplied its own offset. This keeps repeated calls from reusing
+    // one decision or borrowing another file's offset.
+    let alignedDecision = null;
+    if (rawFile) {
+      if (candidates.length === 1) alignedDecision = candidates[0].decision;
+    } else if (positionTrusted) {
+      alignedDecision = decision;
+    }
     if (alignedDecision && usedDecisions) {
       if (usedDecisions.has(alignedDecision)) alignedDecision = null;
       else usedDecisions.add(alignedDecision);
     }
     const alignedArguments = alignedDecision?.arguments && typeof alignedDecision.arguments === 'object'
       && !Array.isArray(alignedDecision.arguments) ? alignedDecision.arguments : null;
-    if (rawOffsetValid) {
+    if (rawFile && alignedDecision === null) {
+      inputKnown = false;
+    } else if (rawOffsetValid) {
       argumentsValue = rawInput;
       inputKnown = true;
     } else if (alignedArguments) {
       argumentsValue = { ...alignedArguments, ...(rawInput ?? {}) };
       inputKnown = true;
-    } else if (rawFile) {
-      argumentsValue = rawInput;
+    } else {
       inputKnown = false;
     }
     // The final adopted offset must be absent (default 1) or a positive
@@ -252,7 +263,7 @@ export function successfulToolResult(update) {
  * only updates would let a whole-session retry hide that product failure. The
  * same call id seen in both notifications is one failure.
  */
-function failedToolCalls(updates) {
+export function failedToolCallIds(updates) {
   const ids = new Set();
   let anonymous = 0;
   for (const update of Array.isArray(updates) ? updates : []) {
@@ -262,7 +273,7 @@ function failedToolCalls(updates) {
     if (typeof update.toolCallId === 'string') ids.add(update.toolCallId);
     else anonymous += 1;
   }
-  return ids.size + anonymous;
+  return { ids, anonymous, count: ids.size + anonymous };
 }
 
 /**
@@ -325,9 +336,9 @@ export function pilotFailureReasons(turns) {
     .map((turn) => (typeof turn.reason === 'string' && known.has(turn.reason) ? turn.reason : 'pilot-transport-error')))].slice(0, 4);
 }
 
-/** A whole-session replacement needs a retryable pilot failure and no product tool failure. */
+/** A whole-session replacement needs a retryable pilot failure, complete attribution and no product tool failure. */
 export function retryableSession(row) {
-  return row?.toolFailures === 0 && row?.retryableTransportFailure === true;
+  return row?.toolFailures === 0 && row?.attributionComplete === true && row?.retryableTransportFailure === true;
 }
 
 /** Count tool names so a reordered but identical call set still aligns. */
@@ -385,9 +396,9 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   // kernel rejects the whole artifact.
   const usageComplete = decisionTurns.every((turn) => finiteUsage(turn.usage));
   const failedModelTurns = (Array.isArray(turns) ? turns : []).filter((turn) => turn.ok !== true).length;
-  const failedUpdates = failedToolCalls(updates);
+  const failedUpdates = failedToolCallIds(updates);
   const missingTerminals = missingTerminalToolCalls(updates);
-  const toolFailures = failedUpdates + missingTerminals;
+  const toolFailures = failedUpdates.count + missingTerminals;
   const failures = failedModelTurns + toolFailures;
   // Map one `tool_call` update to its model decision by order: ACP reports one
   // tool call per decision turn, in the same order. The id then joins the
@@ -419,6 +430,7 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const readResults = new Map();
   for (const update of Array.isArray(updates) ? updates : []) {
     if (update?.sessionUpdate !== 'tool_call_update') continue;
+    if (failedUpdates.ids.has(update.toolCallId)) continue;
     if (!successfulToolResult(update)) continue;
     const call = byId.get(update.toolCallId);
     if (call?.name !== 'read') continue;

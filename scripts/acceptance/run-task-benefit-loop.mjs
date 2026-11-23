@@ -29,7 +29,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startModelBridge, usageTotals, DEFAULT_BRIDGE_MODEL } from './model-bridge.mjs';
-import { missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
+import { failedToolCallIds, missingTerminalToolCalls, produceTaskBenefit, readPathMatches, safeErrorCode, successfulToolResult, toolCallDescriptor, toolNameCountsMatch } from './task-benefit.mjs';
 import { mintTaskId, taskChannelPaths } from '../../lib/desktop-task-protocol.js';
 
 const argv = process.argv.slice(2);
@@ -748,8 +748,10 @@ try {
       && toolNameCountsMatch(consumerToolNames, consumerCallNames),
     'the fresh consumer model decisions and ACP calls do not align by tool identity');
     const consumerResultById = new Map();
+    const consumerFailed = failedToolCallIds(consumerUpdates);
     for (const update of consumerUpdates) {
       if (update.sessionUpdate !== 'tool_call_update') continue;
+      if (consumerFailed.ids.has(update.toolCallId)) continue;
       if (!successfulToolResult(update)) continue;
       const call = consumerCallById.get(update.toolCallId);
       if (call?.name !== 'read') continue;
