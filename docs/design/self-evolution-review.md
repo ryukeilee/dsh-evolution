@@ -105,7 +105,8 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 **“数不到”不是“读不到”。** context-policy 形态的插件（监听官方 `tools/post-execute`，改写既有工具的结果）
 不注册任何工具，因此没有可计数的调用。这类记录的行带 `measurement: "no-tool-surface"`、计数为 `null`，
 并在投影顶层的 `uncountableRecords` 中列出；它属于能力形态，不是扫描失败，所以不会把 `recordsComplete`
-拉成 `false`。评审对它保持 `invoked: null`（永远不会等于“实测 0”，因此永不产生停用建议），
+拉成 `false`。评审对它保持 `invoked: null`（与持久化投影里携带的数值无关：即使某份投影把它写成 0 或正数，
+也不会等于“实测 0”，因此永不产生停用建议），
 并在有配对工作流证据时把 tier 落到 `experiment-benefit`：采用事实取自持久 artifact 的
 `taskBenefit.adoption`（`sessionsExercised` 是机制运行的会话数，`sessionsUsingCandidate` 是模型主动
 选择的会话数，对 context-policy 按定义恒为 0），而不是从工具调用数推断。

@@ -1008,6 +1008,71 @@ test('a no-tool-surface capability without paired evidence is unknown, never a r
   assert.match(record.value.reasons.join(' '), /mounted but its effect is unproven/);
 });
 
+test('no persisted count can turn a no-tool-surface capability into an unused one', async (t) => {
+  const env = await fixture(t, 'provenance-no-tool-surface-counts');
+  await writeConsumers(env);
+  await writeEvidence(env, {
+    solvesProblem: true,
+    probeDerived: false,
+    observationWindow: 'a mounted context policy',
+    benefitEvidence: 'the candidate changed every read result in the trial',
+  });
+  // A projection can pair the marker with a numeric count: a sidecar written
+  // before the marker existed, a hand-edited file, or a writer regression. The
+  // count does not apply to a capability with no call surface, so none of these
+  // shapes may be read as a measured zero.
+  const shapes = {
+    'trusted zero': { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 0 },
+    'zero with unattributed calls': { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 3 },
+    'zero with verification calls': { workflowInvocations: 0, verificationInvocations: 2, unattributedInvocations: 0 },
+    'positive count': { workflowInvocations: 4, verificationInvocations: 0, unattributedInvocations: 0 },
+  };
+  for (const [shape, counts] of Object.entries(shapes)) {
+    const usage = { source: 'session-evidence', complete: true, recordsComplete: true, records: { [RECORD_ID]: {
+      ...counts, measurement: 'no-tool-surface', capabilityAssessment: 'self-contained',
+    } } };
+    const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
+    const [record] = result.records;
+    assert.equal(record.value.measurement, 'no-tool-surface', shape);
+    assert.equal(record.value.invoked, null, shape + ': a count that does not apply is never a measured zero');
+    assert.equal(record.value.tier, 'installed-only', shape);
+    assert.equal(result.retirementCandidates.length, 0, shape + ': an inapplicable count never unlocks retirement');
+    assert.equal(record.retirement, undefined, shape);
+    assert.match(record.value.reasons.join(' '), /registers no tool/, shape);
+  }
+});
+
+test('no persisted count hides a no-tool-surface capability\'s paired workflow benefit', async (t) => {
+  const env = await fixture(t, 'provenance-no-tool-surface-counts-paired');
+  await writeConsumers(env);
+  await writeEvidence(env, {
+    solvesProblem: true,
+    observationWindow: 'task:read-long-config-line',
+    taskBenefit: {
+      schemaVersion: 1,
+      kind: 'paired-real-session',
+      complete: true,
+      improvement: 'context-policy',
+      mechanismRan: true,
+      benefit: true,
+      adoption: { sessionsUsingCandidate: 0, sessionsExercised: 3 },
+    },
+  });
+  const usage = { source: 'session-evidence', complete: true, recordsComplete: true, records: { [RECORD_ID]: {
+    workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 0,
+    measurement: 'no-tool-surface', capabilityAssessment: 'self-contained',
+  } } };
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
+  const [record] = result.records;
+  assert.equal(record.value.invoked, null);
+  assert.equal(record.value.experimentBenefit, true);
+  assert.equal(record.value.tier, 'experiment-benefit');
+  assert.equal(result.valueSummary.experimentBenefit, 1);
+  assert.equal(result.valueSummary.installedOnly, 0);
+  assert.equal(result.retirementCandidates.length, 0);
+  assert.match(record.value.reasons.join(' '), /mechanism ran in 3 session\(s\), with the model selecting it in 0 session\(s\)/);
+});
+
 test('the pre-comparison probe shape is classified by its baseline failure codes', async (t) => {
   const env = await fixture(t, 'provenance-legacy-probe');
   await writeConsumers(env);
