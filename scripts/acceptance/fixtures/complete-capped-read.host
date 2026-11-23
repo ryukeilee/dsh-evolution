@@ -1,0 +1,98 @@
+// Candidate source submitted through the real kernel by the capped-read
+// acceptance. It is not installed by this repository: the Trial mounts it, the
+// promotion gate decides, and the evidence records whether it ran.
+//
+// The official `read` tool stops a window at its byte cap and tells the model to
+// continue with `offset`. When the remaining tail is small, that continuation is
+// a whole extra model turn and tool call for content the model is about to read
+// anyway. This policy appends that bounded tail to the existing result through
+// the official `tools/post-execute` waterfall; it registers no tool, so the
+// model does not have to choose it.
+const MAX_FILE_BYTES = 256 * 1024;
+const MAX_TAIL_LINES = 200;
+const MAX_TAIL_BYTES = 16 * 1024;
+const MAX_LINE_CHARS = 16 * 1024;
+// The dynamic-package host half runs in a `node:vm` sandbox where `Buffer` and
+// `process` are absent (the sandbox provides TextEncoder instead). Using Buffer
+// here made the hook throw and silently return the unmodified result, which is
+// exactly what the Trial functional check caught.
+const encoder = new TextEncoder();
+// The official renderer's exact cap footer. Different host paths hand the
+// waterfall either the raw rendered text or the same text inside the
+// `<path>/<content>` envelope, so both endings are accepted; file text
+// elsewhere cannot match because the footer must be at the end. Normal file
+// text may contain the words anywhere else.
+const OUTPUT_CAPPED = /\(Output capped\. Showing lines \d+-\d+\. Use offset=\d+ to continue\.\)(?:\n<\/content>)?\s*$/;
+
+function contentText(result) {
+  const parts = [];
+  for (const block of Array.isArray(result?.content) ? result.content : []) {
+    if (typeof block?.text === 'string') parts.push(block.text);
+    else if (typeof block?.content?.text === 'string') parts.push(block.content.text);
+  }
+  return parts.join('\n');
+}
+
+return { name: 'complete-capped-read', inject: ['tools', 'fs'], apply(ctx) {
+  ctx.on('tools/post-execute', async (exec, result, next) => {
+    const decision = await next();
+    try {
+      if (!decision || decision.kind !== 'accept') return decision;
+      if (exec?.name !== 'read') return decision;
+      const text = contentText(result);
+      const footer = text.length > 0 && OUTPUT_CAPPED.test(text.length > 8192 ? text.slice(-8192) : text);
+      const base = decision.value === undefined ? result?.value : decision.value;
+      if (!base || typeof base !== 'object' || !Array.isArray(base.lines) || typeof base.path !== 'string') return decision;
+      const total = base.totalLines;
+      const end = base.lines.at(-1)?.number ?? (Number.isInteger(base.offset) ? base.offset - 1 : 0);
+      if (!Number.isInteger(total) || !Number.isInteger(end) || end < 0 || end >= total) return decision;
+      // The Trial's functional check invokes `ctx.tools.execute` directly, and
+      // on that path the waterfall can receive a result without rendered
+      // content. A window that stops before the requested line count and EOF
+      // can only have stopped at the byte cap. The official read default is
+      // 2000 lines; a deployment that configured a smaller default is not
+      // distinguished here, so this path never widens more than the bounded
+      // tail below (and the footer remains the precise signal elsewhere).
+      const requestedLimit = Number(exec?.arguments?.limit);
+      const hasExplicitLimit = Number.isInteger(requestedLimit) && requestedLimit > 0;
+      // Only the no-rendered-content path may fall back to structure, and only
+      // when the caller declared an explicit limit: otherwise a deployment's
+      // smaller default line window would look like a byte cap. When content is
+      // present its footer is the precise signal and an ordinary "Showing lines
+      // …" footer must not be widened.
+      const structuralByteCap = text.length === 0 && hasExplicitLimit && base.lines.length < requestedLimit;
+      if (!footer && !structuralByteCap) return decision;
+      // Never read past the window the caller asked for: an explicit `limit`
+      // is a request boundary even when the byte cap stopped the first window
+      // early. Without one, the remaining file is the request.
+      const offset = Number.isInteger(base.offset) && base.offset > 0 ? base.offset : 1;
+      const windowEnd = Number.isInteger(requestedLimit) && requestedLimit > 0
+        ? Math.min(total, offset - 1 + requestedLimit)
+        : total;
+      const missing = windowEnd - end;
+      if (missing < 1 || missing > MAX_TAIL_LINES) return decision;
+      const target = await ctx.fs.resolve(base.path, { cwd: exec.agent?.session?.header?.cwd, signal: exec.signal });
+      const info = await ctx.fs.stat(target, exec.signal);
+      if (!info || info.type !== 'file' || !Number.isInteger(info.size) || info.size > MAX_FILE_BYTES) return decision;
+      const content = await ctx.fs.readText(target, exec.signal);
+      const all = content.split('\n').map((line) => line.endsWith('\r') ? line.slice(0, -1) : line);
+      // The official line counter does not count the empty segment after a
+      // trailing newline; drop only that one, never a real empty last line.
+      if (all.length > 0 && all.at(-1) === '' && content.endsWith('\n')) all.pop();
+      if (all.length < total) return decision;
+      const tail = [];
+      let bytes = 0;
+      for (let number = end + 1; number <= windowEnd; number += 1) {
+        const value = all[number - 1];
+        if (typeof value !== 'string' || value.length > MAX_LINE_CHARS) return decision;
+        bytes += encoder.encode(value).length + 1;
+        if (bytes > MAX_TAIL_BYTES) return decision;
+        tail.push({ number, text: value });
+      }
+      if (tail.length === 0) return decision;
+      return { kind: 'accept', value: { ...base, lines: [...base.lines, ...tail] } };
+    } catch {
+      return decision;
+    }
+  });
+} };

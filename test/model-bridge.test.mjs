@@ -5,7 +5,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildDecisionPrompt, parseDecision, startModelBridge, usageTotals } from '../scripts/acceptance/model-bridge.mjs';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
+import { buildDecisionPrompt, parseDecision, runOpencodeTurn, startModelBridge, usageTotals } from '../scripts/acceptance/model-bridge.mjs';
 
 const REQUEST = {
   system: 'You are a coding agent.',
@@ -66,6 +70,59 @@ test('a model process failure is reported instead of an empty answer', async (t)
   assert.equal(result.status, 502);
   assert.match(result.text, /model-process-failed/);
   assert.equal(bridge.turns[0].ok, false);
+});
+
+test('a malformed reply is retried once and the retry cost is counted', async (t) => {
+  let calls = 0;
+  const runner = async () => {
+    calls += 1;
+    return calls === 1
+      ? { ok: true, text: 'I cannot decide.', usage: { input: 9, output: 3, cache: { read: 1 } }, wallMs: 4 }
+      : { ok: true, text: '{"tool":"read","arguments":{"file_path":"retry.json"}}', usage: { input: 7, output: 2, cache: { read: 5 } }, wallMs: 6 };
+  };
+  const bridge = await startModelBridge({ runner });
+  t.after(() => bridge.close());
+  const result = await post(bridge);
+  assert.equal(result.status, 200);
+  assert.equal(calls, 2);
+  assert.equal(bridge.turns.length, 1);
+  assert.equal(bridge.turns[0].ok, true);
+  assert.equal(bridge.turns[0].retries, 1);
+  assert.deepEqual(usageTotals(bridge.turns), { inputTokens: 16, outputTokens: 5, cacheReadTokens: 6, turns: 1, unknownTurns: 0 });
+});
+
+test('an own-tool turn is not retried into a clean decision', async (t) => {
+  let calls = 0;
+  const bridge = await startModelBridge({
+    runner: async () => {
+      calls += 1;
+      return calls === 1
+        ? { ok: true, text: '{"tool":"read","arguments":{}}', ownToolCalls: 1, usage: { input: 3, output: 1 }, wallMs: 2 }
+        : { ok: true, text: '{"tool":"read","arguments":{}}', usage: { input: 3, output: 1 }, wallMs: 2 };
+    },
+  });
+  t.after(() => bridge.close());
+  const result = await post(bridge);
+  assert.equal(result.status, 502);
+  assert.match(result.text, /pilot-used-own-tools/);
+  assert.equal(calls, 1);
+  assert.equal(bridge.turns[0].retries, 0);
+});
+
+test('a non-zero exit after partial text is a process failure, not a parseable reply', async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-fake-opencode-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await fs.writeFile(path.join(dir, 'opencode'),
+    '#!/bin/sh\nprintf \'%s\\n\' \'{"type":"text","part":{"text":"{\\"tool\\":\\"read\\"}"}}\'\nexit 1\n',
+    { mode: 0o755 });
+  const result = await runOpencodeTurn('prompt', {
+    model: 'test/model',
+    cwd: dir,
+    env: { ...process.env, PATH: dir + path.delimiter + (process.env.PATH ?? '') },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'model-process-failed');
+  assert.equal(result.code, 1);
 });
 
 test('a real decision is streamed back with its measured usage', async (t) => {

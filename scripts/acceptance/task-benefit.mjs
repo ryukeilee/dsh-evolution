@@ -160,24 +160,64 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const failures = failedModelTurns + failedUpdates.length;
   // Map one `tool_call` update to its model decision by order: ACP reports one
   // tool call per decision turn, in the same order. The id then joins the
-  // completed result update to the tool name.
+  // completed result update to the tool name and the arguments the model chose.
   const calls = (Array.isArray(updates) ? updates : []).filter((update) => update?.sessionUpdate === 'tool_call');
   const byId = new Map();
   calls.forEach((call, index) => {
+    const decision = decisionTurns[index]?.decision;
     const name = toolNames[index] ?? (typeof call.title === 'string' ? call.title : null);
-    if (typeof call.toolCallId === 'string' && typeof name === 'string') byId.set(call.toolCallId, name);
+    if (typeof call.toolCallId === 'string' && typeof name === 'string') {
+      byId.set(call.toolCallId, {
+        name,
+        arguments: decision?.arguments && typeof decision.arguments === 'object' && !Array.isArray(decision.arguments)
+          ? decision.arguments : {},
+      });
+    }
   });
-  const readResults = [];
+  // A read is a *request* before it is a result. Register the first request of
+  // each path from the ordered tool_call updates, then accept it only if that
+  // exact call returned successfully from offset 1. A failed or tail-first
+  // first request followed by a start reread is not mechanism proof.
+  const readResults = new Map();
   for (const update of Array.isArray(updates) ? updates : []) {
     if (update?.sessionUpdate !== 'tool_call_update') continue;
     if (!completedToolUpdate(update) || update.isError === true || update.is_error === true) continue;
-    const name = byId.get(update.toolCallId);
-    if (name !== 'read') continue;
+    const call = byId.get(update.toolCallId);
+    if (call?.name !== 'read') continue;
     const text = toolUpdateText(update);
-    if (text) readResults.push(text);
+    if (!text) continue;
+    const renderedPath = /<path>([^<]*)<\/path>/u.exec(text)?.[1];
+    const argumentPath = typeof call.arguments.file_path === 'string' && call.arguments.file_path.trim() !== ''
+      ? call.arguments.file_path : null;
+    const requestedOffset = Number.isInteger(call.arguments.offset) && call.arguments.offset > 0
+      ? call.arguments.offset : 1;
+    readResults.set(update.toolCallId, { text, path: renderedPath ?? argumentPath, offset: requestedOffset });
+  }
+  const readRequests = [];
+  for (const call of calls) {
+    const meta = byId.get(call.toolCallId);
+    if (meta?.name !== 'read') continue;
+    const argumentPath = typeof meta.arguments.file_path === 'string' && meta.arguments.file_path.trim() !== ''
+      ? meta.arguments.file_path : null;
+    const offset = Number.isInteger(meta.arguments.offset) && meta.arguments.offset > 0 ? meta.arguments.offset : 1;
+    // `arguments` is the live decision; a result's rendered path is the
+    // fallback for an older transport that did not echo the input.
+    readRequests.push({ callId: call.toolCallId, path: argumentPath ?? readResults.get(call.toolCallId)?.path ?? null, offset });
   }
   const correct = answerMatches(assistantText, expectedTokens);
-  const exercised = expectedTokens.some((token) => readResults.some((text) => text.includes(token)));
+  const firstRequestByPath = new Map();
+  for (const request of readRequests) {
+    if (typeof request.path !== 'string' || request.path === '') continue;
+    if (!firstRequestByPath.has(request.path)) firstRequestByPath.set(request.path, request);
+  }
+  const firstReads = [];
+  for (const request of firstRequestByPath.values()) {
+    if (request.offset !== 1) continue;
+    const result = readResults.get(request.callId);
+    if (result) firstReads.push(result.text);
+  }
+  const exercised = expectedTokens.length > 0
+    && expectedTokens.every((token) => firstReads.some((text) => text.includes(token)));
   return {
     label,
     side,
@@ -195,8 +235,8 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     outputTokens: usageComplete ? usage.outputTokens : 0,
     cacheReadTokens: usageComplete ? usage.cacheReadTokens : 0,
     durationMs: Number.isFinite(durationMs) ? Math.max(0, Math.round(durationMs)) : 0,
-    readResultCount: readResults.length,
-    readResultCharacters: readResults.reduce((total, text) => total + text.length, 0),
+    readResultCount: readResults.size,
+    readResultCharacters: [...readResults.values()].reduce((total, result) => total + result.text.length, 0),
   };
 }
 
@@ -796,10 +836,26 @@ export async function produceTaskBenefit(options = {}) {
 
   const previewUrl = pathToFileURL(path.join(runWork, 'preview-policy.mjs')).href;
   await writePreviewModule(path.join(runWork, 'preview-policy.mjs'), candidateHost);
-  const bridge = await startModelBridge({ model, cwd: path.join(runWork, 'bridge-cwd') });
+  // The bridge bounds each tool result before asking the pilot model, because a
+  // provider transcript is not unlimited. A scenario whose real result is larger
+  // than that default must raise the bound explicitly, or the model would be
+  // deciding on a harness-truncated result instead of the host's own output.
+  const maxToolText = Number.isInteger(options.maxToolText) && options.maxToolText > 0
+    ? options.maxToolText : undefined;
+  const bridge = await startModelBridge({
+    model,
+    cwd: path.join(runWork, 'bridge-cwd'),
+    isolatePilotTools: true,
+    ...(maxToolText ? { maxToolText } : {}),
+  });
   let candidateOverlay;
   let baselineOverlay;
   const sessions = { baseline: [], candidate: [] };
+  // An incomplete pilot session is not a measurement. Keep its row in the
+  // report and replace it once with a fresh session when the only failure was
+  // the pilot transport (no product tool failure). The artifact still requires
+  // every final session to be complete and correct.
+  const sessionRetries = [];
   try {
     candidateOverlay = path.join(runWork, 'overlay-candidate.yml');
     baselineOverlay = path.join(runWork, 'overlay-baseline.yml');
@@ -808,16 +864,45 @@ export async function produceTaskBenefit(options = {}) {
     for (let repetition = 0; repetition < runs; repetition += 1) {
       const order = repetition % 2 === 0 ? ['candidate', 'baseline'] : ['baseline', 'candidate'];
       for (const side of order) {
-        const row = await runSession({
+        const label = `${side}-${repetition + 1}`;
+        const attempts = [await runSession({
           cli, home, work: runWork,
           overlay: side === 'candidate' ? candidateOverlay : baselineOverlay,
           env, bridge, prompt: task.prompt,
-          label: `${side}-${repetition + 1}`, side,
+          label, side,
           expectedTokens: task.tokens,
           candidateTool: improvement === 'tool' ? targetTool : null,
-        });
+        })];
+        // Only a transport-incomplete session is replaced; a product tool
+        // failure keeps its row and invalidates the artifact.
+        if (!attempts[0].ok && attempts[0].failedTurns > 0 && attempts[0].toolFailures === 0) {
+          const retried = await runSession({
+            cli, home, work: runWork,
+            overlay: side === 'candidate' ? candidateOverlay : baselineOverlay,
+            env, bridge, prompt: task.prompt,
+            label: label + '-retry', side,
+            expectedTokens: task.tokens,
+            candidateTool: improvement === 'tool' ? targetTool : null,
+          });
+          attempts.push(retried);
+        }
+        const row = attempts.at(-1);
         sessions[side].push(row);
-        options.log?.(`${side} session ${repetition + 1}: correct=${row.correct} turns=${row.turns} calls=${row.toolCalls} tokens=${row.tokens} exercised=${row.exercised} ms=${row.durationMs}`);
+        if (attempts.length > 1) {
+          sessionRetries.push({
+            side,
+            repetition: repetition + 1,
+            attempts: attempts.map((attempt) => ({
+              label: attempt.label,
+              ok: attempt.ok,
+              failedTurns: attempt.failedTurns,
+              toolFailures: attempt.toolFailures,
+              tokens: attempt.tokens,
+              durationMs: attempt.durationMs,
+            })),
+          });
+        }
+        options.log?.(`${side} session ${repetition + 1}: correct=${row.correct} turns=${row.turns} calls=${row.toolCalls} tokens=${row.tokens} exercised=${row.exercised} ms=${row.durationMs}${attempts.length > 1 ? ' (retried)' : ''}`);
       }
     }
   } finally {
@@ -862,6 +947,7 @@ export async function produceTaskBenefit(options = {}) {
       adoption: artifact.adoption,
     },
     sessions,
+    retries: sessionRetries,
     artifactFile: outFile,
   };
   return { ok: complete, artifact, report, artifactFile: outFile };

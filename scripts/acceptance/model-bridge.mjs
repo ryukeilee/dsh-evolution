@@ -59,7 +59,7 @@ function renderTool(tool) {
 }
 
 /** The conversation the host sent, as a plain transcript. */
-function renderTranscript(messages) {
+function renderTranscript(messages, maxToolText = MAX_TOOL_TEXT) {
   const lines = [];
   for (const message of Array.isArray(messages) ? messages : []) {
     const blocks = Array.isArray(message?.content) ? message.content : [];
@@ -67,14 +67,14 @@ function renderTranscript(messages) {
       if (block?.type === 'text') lines.push(`[${message.role}]\n${bounded(block.text, MAX_BLOCK_TEXT)}`);
       else if (block?.type === 'tool_use') lines.push(`[assistant calls ${block.name}]\n${bounded(JSON.stringify(block.input ?? {}), MAX_TOOL_TEXT)}`);
       else if (block?.type === 'tool_result') {
-        lines.push(`[tool result${block.is_error === true ? ' (error)' : ''}]\n${bounded(block.content, MAX_TOOL_TEXT)}`);
+        lines.push(`[tool result${block.is_error === true ? ' (error)' : ''}]\n${bounded(block.content, maxToolText)}`);
       }
     }
   }
   return lines.join('\n\n');
 }
 
-export function buildDecisionPrompt(input) {
+export function buildDecisionPrompt(input, { maxToolText = MAX_TOOL_TEXT } = {}) {
   const tools = Array.isArray(input?.tools) ? input.tools : [];
   const system = typeof input?.system === 'string' ? input.system
     : Array.isArray(input?.system) ? input.system.map((block) => block?.text ?? '').join('\n') : '';
@@ -92,7 +92,7 @@ export function buildDecisionPrompt(input) {
     bounded(system, MAX_BLOCK_TEXT),
     '',
     '## Conversation so far',
-    renderTranscript(input?.messages),
+    renderTranscript(input?.messages, maxToolText),
     '',
     '## Your reply',
   ].join('\n');
@@ -142,7 +142,10 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   // ever runs, which looks like a model failure. Create it instead.
   await fs.mkdir(workdir, { recursive: true });
   const startedAt = Date.now();
-  const child = spawn('opencode', ['run', '--format', 'json', '--model', model, prompt], {
+  // `build` is the agent a denied-tool project config can override; naming it
+  // keeps the transport deterministic instead of following a host default that
+  // might allow the pilot to inspect the fixtures with its own tools.
+  const child = spawn('opencode', ['run', '--format', 'json', '--agent', 'build', '--model', model, prompt], {
     cwd: workdir, env, stdio: ['ignore', 'pipe', 'pipe'],
   });
   let stdout = '';
@@ -150,25 +153,35 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   child.stdout.on('data', (bytes) => { stdout = (stdout + bytes).slice(-4_000_000); });
   child.stderr.on('data', (bytes) => { stderr = (stderr + bytes).slice(-20_000); });
   const timeout = setTimeout(() => { try { child.kill('SIGKILL'); } catch {} }, timeoutMs);
-  const code = await new Promise((resolve) => {
-    child.once('error', () => resolve('spawn-error'));
-    child.once('exit', (value) => resolve(value));
+  const [code, signal] = await new Promise((resolve) => {
+    let settled = false;
+    const settle = (value, name) => { if (!settled) { settled = true; resolve([value, name]); } };
+    child.once('error', () => settle('spawn-error', null));
+    child.once('exit', (value, name) => settle(value, name));
   });
   clearTimeout(timeout);
   const wallMs = Date.now() - startedAt;
   let text = '';
   let usage = null;
+  let ownToolCalls = 0;
   for (const line of stdout.split('\n')) {
     if (!line.trim().startsWith('{')) continue;
     let row;
     try { row = JSON.parse(line); } catch { continue; }
     if (row?.type === 'text' && typeof row.part?.text === 'string') text += row.part.text;
     if (row?.type === 'step_finish' && row.part?.tokens) usage = row.part.tokens;
+    // The pilot is a full coding agent. If it inspects the fixture with its own
+    // tools, the answer did not come from the host transcript (and could know
+    // values the host path never delivered). Report it instead of accepting it.
+    if (row?.type === 'tool_use' || row?.type === 'tool') ownToolCalls += 1;
   }
-  if (code !== 0 && text === '') {
-    return { ok: false, reason: 'model-process-failed', code, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdout, 1_000) };
+  // A non-zero exit or a signal is a process failure even when partial text was
+  // written: that text may be a truncated reply, and the caller's correctness
+  // (and its single retry) must not treat it as a parseable decision.
+  if (code !== 0 || signal !== null) {
+    return { ok: false, reason: 'model-process-failed', code, signal, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdout, 1_000) };
   }
-  return { ok: true, text, usage, wallMs };
+  return { ok: true, text, usage, wallMs, ownToolCalls };
 }
 
 function anthropicStream(response, decision, usage, messageId) {
@@ -200,7 +213,33 @@ function anthropicStream(response, decision, usage, messageId) {
  * Start the bridge. `turns` collects one record per model request so the caller
  * can report real token counts, latency and the chosen tool per turn.
  */
-export async function startModelBridge({ model = DEFAULT_BRIDGE_MODEL, runner = runOpencodeTurn, cwd, onDecision } = {}) {
+export async function startModelBridge({
+  model = DEFAULT_BRIDGE_MODEL,
+  runner = runOpencodeTurn,
+  cwd,
+  onDecision,
+  maxToolText = MAX_TOOL_TEXT,
+  isolatePilotTools = false,
+} = {}) {
+  // Deny the pilot's own filesystem/shell tools for the `build` agent it is
+  // started with. The acceptance tasks live in the same isolated home the host
+  // can read; without this, a pilot turn could inspect a fixture itself, answer
+  // with zero host tool calls, and make a paired session look cheaper than the
+  // path the capability is meant to change. The host tools are still offered as
+  // text in the prompt, so the measured decision is unchanged.
+  if (isolatePilotTools) {
+    if (typeof cwd !== 'string' || cwd === '') throw new Error('isolatePilotTools requires a bridge cwd');
+    await fs.mkdir(cwd, { recursive: true });
+    await fs.writeFile(path.join(cwd, 'opencode.json'), `${JSON.stringify({
+      $schema: 'https://opencode.ai/config.json',
+      agents: {
+        build: {
+          description: 'single-step decision transport for the DSH acceptance',
+          permissions: [{ action: '*', resource: '*', effect: 'deny' }],
+        },
+      },
+    }, null, 2)}\n`, { mode: 0o600 });
+  }
   const turns = [];
   const sockets = new Set();
   const server = http.createServer(async (request, response) => {
@@ -208,44 +247,67 @@ export async function startModelBridge({ model = DEFAULT_BRIDGE_MODEL, runner = 
     try {
       for await (const bytes of request) raw += bytes;
       const input = JSON.parse(raw);
-      const prompt = buildDecisionPrompt(input);
-      const reply = await runner(prompt, { model, cwd });
+      const prompt = buildDecisionPrompt(input, { maxToolText });
       const round = turns.length;
-      if (!reply.ok) {
-        // A failed real turn is a failed turn: report the error to the host
-        // instead of inventing a decision.
-        turns.push({ round, ok: false, reason: reply.reason, wallMs: reply.wallMs ?? null });
+      // A malformed reply is a pilot transport failure, not a product result.
+      // Retry the same host request once with a corrective instruction so a
+      // one-off formatting/refusal turn does not invalidate a whole session.
+      // Every attempt's usage is summed, so the cost of the retry is measured.
+      const attempts = [];
+      let decision = null;
+      let failureReason = null;
+      for (let attempt = 0; attempt < 2 && decision === null; attempt += 1) {
+        const retryPrompt = attempt === 0 ? prompt
+          : `${prompt}\n\n[transport retry] Your previous reply was not a usable decision. Reply with exactly one JSON object and nothing else; do not call tools.`;
+        const reply = await runner(retryPrompt, { model, cwd });
+        attempts.push(reply);
+        if (!reply.ok) {
+          // A process failure is a transport fact, not a formatting slip, and
+          // an own-tool call means the answer may come from outside the host
+          // transcript. Neither may be retried into a clean-looking decision.
+          failureReason = reply.reason;
+          break;
+        }
+        if ((reply.ownToolCalls ?? 0) > 0) {
+          failureReason = 'pilot-used-own-tools';
+          break;
+        }
+        const parsed = parseDecision(reply.text);
+        const value = parsed.ok ? parsed.value : null;
+        const isStop = value?.stop === true && typeof value.message === 'string' && value.message.trim() !== '';
+        const isTool = typeof value?.tool === 'string' && value.tool.trim() !== ''
+          && (value.arguments === undefined || (typeof value.arguments === 'object' && value.arguments !== null && !Array.isArray(value.arguments)));
+        if (!isStop && !isTool) {
+          // Turning this into `stop` would let an inference or protocol failure
+          // look like "the model chose no tool", which is the exact measurement
+          // the acceptance exists to make.
+          failureReason = parsed.ok ? 'decision-shape-invalid' : parsed.reason;
+          continue;
+        }
+        decision = isStop
+          ? { kind: 'stop', message: bounded(value.message, 2_000) }
+          : { kind: 'tool', tool: value.tool, arguments: value.arguments ?? {} };
+        failureReason = null;
+      }
+      const usage = combinedUsage(attempts);
+      const wallMs = attempts.reduce((total, reply) => total + (Number.isFinite(reply?.wallMs) ? reply.wallMs : 0), 0);
+      const retries = attempts.length - 1;
+      if (decision === null) {
+        const last = attempts.at(-1);
+        turns.push({ round, ok: false, reason: failureReason, wallMs, usage, retries,
+          ...(typeof last?.text === 'string' ? { replySample: bounded(last.text, 400) } : {}) });
         response.writeHead(502, { 'content-type': 'application/json' });
-        response.end(JSON.stringify({ error: reply.reason }));
+        response.end(JSON.stringify({ error: failureReason }));
         return;
       }
-      const parsed = parseDecision(reply.text);
-      const value = parsed.ok ? parsed.value : null;
-      const isStop = value?.stop === true && typeof value.message === 'string' && value.message.trim() !== '';
-      const isTool = typeof value?.tool === 'string' && value.tool.trim() !== ''
-        && (value.arguments === undefined || (typeof value.arguments === 'object' && value.arguments !== null && !Array.isArray(value.arguments)));
-      if (!isStop && !isTool) {
-        // A reply that is not a decision is a failed turn, not an empty one.
-        // Turning it into `stop` would let an inference or protocol failure look
-        // like "the model chose no tool", which is the exact measurement the
-        // acceptance exists to make.
-        const reason = parsed.ok ? 'decision-shape-invalid' : parsed.reason;
-        turns.push({ round: turns.length, ok: false, reason, wallMs: reply.wallMs, replySample: bounded(reply.text, 400) });
-        response.writeHead(502, { 'content-type': 'application/json' });
-        response.end(JSON.stringify({ error: reason }));
-        return;
-      }
-      const decision = isStop
-        ? { kind: 'stop', message: bounded(value.message, 2_000) }
-        : { kind: 'tool', tool: value.tool, arguments: value.arguments ?? {} };
       const record = {
         round, ok: true, decision: decision.kind === 'tool' ? { tool: decision.tool, arguments: decision.arguments } : { stop: true },
-        usage: reply.usage ?? null, wallMs: reply.wallMs,
+        usage, wallMs, retries,
         promptCharacters: prompt.length, tools: (input.tools ?? []).map((tool) => tool?.name).filter(Boolean),
       };
       turns.push(record);
       onDecision?.(record);
-      anthropicStream(response, decision, reply.usage, crypto.randomUUID());
+      anthropicStream(response, decision, usage, crypto.randomUUID());
     } catch (error) {
       turns.push({ round: turns.length, ok: false, reason: String(error?.message ?? error) });
       if (!response.headersSent) response.writeHead(500);
@@ -271,6 +333,28 @@ export async function startModelBridge({ model = DEFAULT_BRIDGE_MODEL, runner = 
 }
 
 /** Sum of the real usage the model reported across turns. */
+/**
+ * Sum the usage of every attempt made for one host request. A missing billing
+ * field on any attempt makes the whole turn unknown (`null`), so a retry cannot
+ * be counted as a zero-cost turn.
+ */
+function combinedUsage(attempts) {
+  let total = null;
+  for (const attempt of Array.isArray(attempts) ? attempts : []) {
+    const usage = attempt?.usage;
+    if (!usage || typeof usage.input !== 'number' || !Number.isFinite(usage.input)
+      || typeof usage.output !== 'number' || !Number.isFinite(usage.output)
+      || (usage.cache !== undefined && (typeof usage.cache?.read !== 'number' || !Number.isFinite(usage.cache.read)))) {
+      return null;
+    }
+    total ??= { input: 0, output: 0, cache: { read: 0 } };
+    total.input += usage.input;
+    total.output += usage.output;
+    total.cache.read += usage.cache?.read ?? 0;
+  }
+  return total;
+}
+
 export function usageTotals(turns) {
   const totals = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, turns: 0, unknownTurns: 0 };
   for (const turn of turns ?? []) {

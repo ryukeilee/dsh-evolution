@@ -591,6 +591,34 @@ test('the review carries the planner capability form and observed baseline', () 
   assert.equal(action.verificationKind, 'paired-real-session');
   assert.deepEqual(action.baselineRecoveryTools, ['bash', 'run_code']);
 
+  // A merged target's per-kind evidence travels with the action: an existing
+  // capability for one read loss must not read as covering the other.
+  const withKinds = composeSelfEvolutionReview({
+    stable: { nextActions: [] },
+    experience: plannedExperience({
+      selected: {
+        problemKey: 'tool read',
+        occurrences: 5,
+        expectedImprovement: 'fewer recovery calls',
+        improvement: 'context-policy',
+        verificationKind: 'paired-real-session',
+        baselinePath: { kind: 'observed-recovery', recoveryTools: ['run_code'], recoveryCalls: 5 },
+        loss: {
+          kinds: ['line-truncated', 'output-capped'],
+          breakdown: [
+            { kind: 'line-truncated', occurrences: 3, recoveryCalls: 3, recoveryTools: ['bash'] },
+            { kind: 'output-capped', occurrences: 2, recoveryCalls: 2, recoveryTools: ['run_code'] },
+          ],
+        },
+      },
+    }),
+    versions: CURRENT_HOST,
+  });
+  assert.deepEqual(withKinds.nextActions[0].lossKinds, [
+    { kind: 'line-truncated', occurrences: 3, recoveryCalls: 3, recoveryTools: ['bash'] },
+    { kind: 'output-capped', occurrences: 2, recoveryCalls: 2, recoveryTools: ['run_code'] },
+  ]);
+
   // An unknown form is not silently promoted into a proposal contract.
   const unknown = composeSelfEvolutionReview({
     stable: { nextActions: [] },

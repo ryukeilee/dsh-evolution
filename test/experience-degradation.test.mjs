@@ -219,6 +219,46 @@ test('cumulative recovery calls are never attributed to one recorded recovery to
   assert.doesNotMatch(candidate.improvementReason, /grep 兜底 6 次/);
 });
 
+test('each loss kind keeps its own occurrence and recovery evidence', () => {
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:truncated', scope: 'tool read', issueType: 'tool degradation', failureMode: 'line-truncated',
+        occurrences: 5, failureCount: 0, successCount: 0, lastSeen: '2026-11-20T00:00:00.000Z',
+        metrics: { recoverycalls: { sum: 5, count: 5 } }, recoveryTool: 'tool:bash',
+      },
+      {
+        key: 'knowledge:capped-1', scope: 'tool read', issueType: 'tool degradation', failureMode: 'output-capped',
+        occurrences: 2, failureCount: 0, successCount: 0, lastSeen: '2026-11-21T00:00:00.000Z',
+        metrics: { recoverycalls: { sum: 2, count: 2 } }, recoveryTool: 'tool:run_code',
+      },
+      {
+        key: 'knowledge:capped-2', scope: 'tool read', issueType: 'tool degradation', failureMode: 'output-capped',
+        occurrences: 1, failureCount: 0, successCount: 0, lastSeen: '2026-11-22T00:00:00.000Z',
+        metrics: { recoverycalls: { sum: 1, count: 1 } }, recoveryTool: 'tool:read',
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates[0];
+  assert.ok(candidate, JSON.stringify(planned.rejected));
+  assert.deepEqual(candidate.loss.kinds.sort(), ['line-truncated', 'output-capped']);
+  // The merged total stays available, but a consumer can now see that the
+  // capped kind is a separate loss with its own (smaller) recovery cost.
+  assert.equal(candidate.loss.occurrences, 8);
+  const capped = candidate.loss.breakdown.find((row) => row.kind === 'output-capped');
+  assert.deepEqual({ occurrences: capped.occurrences, recoveryCalls: capped.recoveryCalls },
+    { occurrences: 3, recoveryCalls: 3 });
+  assert.deepEqual(capped.recoveryTools, ['run_code', 'read']);
+  assert.equal(capped.firstSeen, '2026-11-21T00:00:00.000Z');
+  assert.equal(capped.lastSeen, '2026-11-22T00:00:00.000Z');
+  const truncated = candidate.loss.breakdown.find((row) => row.kind === 'line-truncated');
+  assert.deepEqual({ occurrences: truncated.occurrences, recoveryCalls: truncated.recoveryCalls },
+    { occurrences: 5, recoveryCalls: 5 });
+  // The breakdown is ordered by its own occurrence count, not the record order.
+  assert.deepEqual(candidate.loss.breakdown.map((row) => row.kind), ['line-truncated', 'output-capped']);
+});
+
 test('a degradation outside the tool hook scope keeps the tool form and its existing gate', () => {
   const planned = planEvolutionCandidates({
     knowledge: [{

@@ -776,7 +776,7 @@ try {
   // the live tool surface; the prompt never names the promoted tool. The
   // baseline session runs the same task and the same model with the capability
   // revoked for this profile, so the only difference is the capability.
-  const bridge = await startModelBridge({ cwd: path.join(work, 'bridge-cwd') });
+  const bridge = await startModelBridge({ cwd: path.join(work, 'bridge-cwd'), isolatePilotTools: true });
   const bridgeOverlay = path.join(work, 'acp-bridge-transport.yml');
   await fs.writeFile(bridgeOverlay, `- id: llm-deepseek\n  config:\n    baseURL: ${bridge.baseURL}\n    apiKeyEnv: EVOLUTION_ACCEPTANCE_KEY\n`);
   const naturalTask = '读取 workflow-generated.json 的第一行，告诉我该文件 sentinel 字段的值。';
@@ -838,6 +838,8 @@ try {
 
   const candidateRun = evidence.realModelReuse.candidate;
   const baselineRun = evidence.realModelReuse.baseline;
+  const candidateTokensKnown = candidateRun.usage.unknownTurns === 0;
+  const baselineTokensKnown = baselineRun.usage.unknownTurns === 0;
   evidence.realModelReuse.comparison = {
     sameTask: true,
     sameModel: true,
@@ -848,10 +850,12 @@ try {
     baselineTurns: baselineRun.modelTurns,
     candidateToolCalls: candidateRun.toolCalls.length,
     baselineToolCalls: baselineRun.toolCalls.length,
-    candidateInputTokens: candidateRun.usage.inputTokens,
-    baselineInputTokens: baselineRun.usage.inputTokens,
-    candidateOutputTokens: candidateRun.usage.outputTokens,
-    baselineOutputTokens: baselineRun.usage.outputTokens,
+    candidateInputTokens: candidateTokensKnown ? candidateRun.usage.inputTokens : null,
+    baselineInputTokens: baselineTokensKnown ? baselineRun.usage.inputTokens : null,
+    candidateOutputTokens: candidateTokensKnown ? candidateRun.usage.outputTokens : null,
+    baselineOutputTokens: baselineTokensKnown ? baselineRun.usage.outputTokens : null,
+    candidateUsageUnknownTurns: candidateRun.usage.unknownTurns,
+    baselineUsageUnknownTurns: baselineRun.usage.unknownTurns,
     candidateWallMs: candidateRun.wallMs,
     baselineWallMs: baselineRun.wallMs,
     unknown: [

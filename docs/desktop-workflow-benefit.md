@@ -37,6 +37,10 @@ Desktop 先通过官方 preset 的公开 `resolve` / `mount` API 配置 owner �
 
 场景摘要绑定工具、输入、期望摘要、结果字段、重复次数及宿主适用版本。运行时只持久化结果摘要、验收结果、错误分类、耗时和字节计数，不把读取的正文复制到 probe 证据中。工作负载不触发后台模型、经验扫描或自动批准。
 
+## 第二种读取损失
+
+`output-capped` 使用同一份 `context-policy` 契约，不新增证据类型：候选只允许在官方 footer 证明是字节上限、剩余行数 ≤ 200 且剩余字节 ≤ 16 KiB、文件 ≤ 256 KiB 时补齐尾部；验收入口是 `run-task-benefit-loop.mjs --scenario capped`，它把被测模型的工具结果渲染上限提高，使模型看到宿主真实的 50 KiB 结果而不是测试传输层的截断。尾部超过预算时策略放弃变换，仍走原有 `offset` 路径。两种场景的发现、提案、Trial 功能复验、taskBenefit 门禁、确认、canary、stable、fresh consumer 与重启判定完全共用。
+
 ## 门槛与指标
 
 - **正确性优先**：调用成功但结果不符也计为失败，错误码为 `E_EVOLUTION_PROBE_INCORRECT`。候选必须通过全部验收；baseline 已通过的步骤不允许退化。

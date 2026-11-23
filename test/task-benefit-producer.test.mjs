@@ -72,7 +72,7 @@ test('a session row counts only decision turns and proves the policy was exercis
   const updates = [
     { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
     { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'bash' },
-    { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<content>sentinel-a sentinel-b sentinel-c</content>' } }] },
+    { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/work/a.json</path>\n<content>sentinel-a sentinel-b sentinel-c</content>' } }] },
     { sessionUpdate: 'tool_call_update', toolCallId: 'c2', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: 'shell output' } }] },
   ];
   const row = extractSessionEvidence({
@@ -90,6 +90,88 @@ test('a session row counts only decision turns and proves the policy was exercis
   assert.equal(row.correct, true);
   assert.equal(row.exercised, true);
   assert.equal(row.usedCandidate, false);
+});
+
+test('a follow-up read of the same file cannot stand in for the policy effect', () => {
+  const turns = turnsWith(['read', 'read', null]);
+  const call = (id) => ({ sessionUpdate: 'tool_call', toolCallId: id, title: 'read' });
+  const result = (id, text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  // Baseline shape: the capped first window lacks the sentinel, and the model
+  // recovers with a second read of the same path that carries it.
+  const split = extractSessionEvidence({
+    label: 'baseline-1', side: 'baseline', turns,
+    updates: [
+      call('c1'), call('c2'),
+      result('c1', '<path>/home/a.json</path>\n<content>\nfirst window\n(Output capped. Showing lines 1-37. Use offset=38 to continue.)\n</content>'),
+      result('c2', '<path>/home/a.json</path>\n<content>\nsentinel-a\n(End of file - total 42 lines)\n</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 5,
+  });
+  assert.equal(split.correct, true);
+  assert.equal(split.exercised, false, 'the recover-by-reread path is not the policy completing the first read');
+  // Candidate shape: the first window already carries the value.
+  const whole = extractSessionEvidence({
+    label: 'candidate-1', side: 'candidate', turns: turnsWith(['read', null]),
+    updates: [
+      call('c1'),
+      result('c1', '<path>/home/a.json</path>\n<content>\nfirst window\nsentinel-a\n(End of file - total 42 lines)\n</content>'),
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 5,
+  });
+  assert.equal(whole.exercised, true);
+});
+
+test('a first read that jumps to the tail or has no identifiable path is not mechanism proof', () => {
+  const call = { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' };
+  const result = (text) => ({
+    sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed',
+    content: [{ type: 'content', content: { type: 'text', text } }],
+  });
+  const baseTurn = turnsWith(['read', 'read'])[0];
+  const second = { ...turnsWith(['read', 'read'])[1], decision: { tool: 'read', arguments: { file_path: '/work/a.json' } } };
+  const turns = [{ ...baseTurn, decision: { tool: 'read', arguments: { file_path: '/work/a.json', offset: 600 } } }, second];
+  const tail = extractSessionEvidence({
+    label: 'candidate-tail', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/work/a.json</path>\n<content>tail</content>' } }] },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c2', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/work/a.json</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(tail.exercised, false, 'a start reread after a tail-first read does not prove the policy completed the start window');
+
+  const failedTail = extractSessionEvidence({
+    label: 'candidate-failed-tail', side: 'candidate', turns,
+    updates: [
+      { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read' },
+      { sessionUpdate: 'tool_call', toolCallId: 'c2', title: 'read' },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c1', status: 'failed', content: [{ type: 'content', content: { type: 'text', text: 'read failed' } }] },
+      { sessionUpdate: 'tool_call_update', toolCallId: 'c2', status: 'completed', content: [{ type: 'content', content: { type: 'text', text: '<path>/work/a.json</path>\n<content>sentinel-a</content>' } }] },
+    ],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(failedTail.exercised, false, 'a failed first request cannot be replaced by a later start read');
+
+  const start = extractSessionEvidence({
+    label: 'candidate-start', side: 'candidate',
+    turns: [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/work/a.json' } } }],
+    updates: [call, result('<path>/work/a.json</path>\n<content>sentinel-a</content>')],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(start.exercised, true);
+
+  const noPath = extractSessionEvidence({
+    label: 'candidate-nopath', side: 'candidate',
+    turns: [{ ...turns[0], decision: { tool: 'read', arguments: {} } }],
+    updates: [call, result('<content>sentinel-a</content>')],
+    assistantText: 'sentinel-a', expectedTokens: ['sentinel-a'], candidateTool: null, durationMs: 1,
+  });
+  assert.equal(noPath.exercised, false, 'a result with no identifiable path cannot be deduplicated');
 });
 
 test('a read result without the expected value is not proof that the policy ran', () => {

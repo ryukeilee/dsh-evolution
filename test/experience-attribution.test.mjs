@@ -122,6 +122,119 @@ test('the planner exposes a real denominator, classifies origin and names the be
   assert.equal(caller.candidates.length, 0);
   assert.equal(caller.rejected[0].reason, 'caller-input');
 });
+test('one caller-input mode does not discard a tool target with actionable failures', () => {
+  const now = new Date().toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:run-code-failures', scope: 'tool run code',
+        problem: 'official operation failure code run failure',
+        failureCount: 54, occurrences: 54, lastSeen: now,
+        metrics: { attemptssincefailure: { sum: 1955, count: 54 }, successessincefailure: { sum: 1901, count: 54 } },
+      },
+      {
+        key: 'knowledge:run-code-args', scope: 'tool run code',
+        problem: 'official operation failure invalid args',
+        failureCount: 2, occurrences: 2, lastSeen: now,
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(candidate, `the mixed origin discarded the target: ${JSON.stringify(planned.rejected)}`);
+  // The group is no longer labelled as caller input as a whole; the excluded
+  // mode is reported beside it instead of silently changing the verdict.
+  assert.equal(candidate.origin, 'unknown');
+  assert.equal(candidate.mixedOrigin, true);
+  assert.deepEqual(candidate.excludedModes, ['invalid args']);
+  assert.doesNotMatch(candidate.whyCordisPlugin, /^$|caller/i);
+  assert.deepEqual(candidate.benefitModel, { kind: 'workflow', metric: 'failureRate' });
+});
+
+test('an actionable mode beyond the first three still prevents a caller-input rejection', () => {
+  const now = new Date().toISOString();
+  const row = (key, problem, occurrences = 2) => ({
+    key, scope: 'tool run code', problem, failureCount: occurrences, occurrences, lastSeen: now,
+  });
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      row('knowledge:missing', 'official operation failure fs edit missing'),
+      row('knowledge:mismatch', 'official operation failure fs patch mismatch'),
+      row('knowledge:args', 'official operation failure invalid args'),
+      row('knowledge:code', 'official operation failure code run failure', 6),
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(candidate, `the fourth mode was dropped before classification: ${JSON.stringify(planned.rejected)}`);
+  assert.equal(candidate.origin, 'unknown');
+  assert.equal(candidate.mixedOrigin, true);
+  assert.equal(candidate.failureModes[0], 'code run failure', 'the actionable cause is listed first');
+  assert.deepEqual(candidate.excludedModes, ['fs edit missing', 'fs patch mismatch', 'invalid args']);
+});
+
+test('the classification is not bounded by the display list', () => {
+  const now = new Date().toISOString();
+  const caller = Array.from({ length: 24 }, (_, index) => ({
+    key: 'knowledge:caller-' + index,
+    scope: 'tool run code',
+    // Distinct mode strings, so a 24-mode identity cap cannot pass this test.
+    problem: 'official operation failure invalid args case-' + index,
+    failureCount: 1, occurrences: 1, lastSeen: now,
+  }));
+  const planned = planEvolutionCandidates({
+    knowledge: [...caller, {
+      key: 'knowledge:code-25', scope: 'tool run code',
+      problem: 'official operation failure code run failure',
+      failureCount: 5, occurrences: 5, lastSeen: now,
+    }],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool run code');
+  assert.ok(candidate, `the 25th mode was dropped: ${JSON.stringify(planned.rejected)}`);
+  assert.equal(candidate.origin, 'unknown');
+  assert.equal(candidate.failureModes[0], 'code run failure');
+});
+
+test('the mixed origin does not depend on record order', () => {
+  const now = new Date().toISOString();
+  const row = (key, problem) => ({ key, scope: 'tool bash', problem, failureCount: 3, occurrences: 3, lastSeen: now });
+  const plan = (rows) => planEvolutionCandidates({ knowledge: rows, failureMemory: [] }, { minOccurrences: 3 });
+  const forward = plan([
+    row('knowledge:code', 'official operation failure code run failure'),
+    row('knowledge:guard', 'official operation failure composition guard denied'),
+  ]);
+  const reverse = plan([
+    row('knowledge:guard', 'official operation failure composition guard denied'),
+    row('knowledge:code', 'official operation failure code run failure'),
+  ]);
+  assert.equal(forward.candidates[0].origin, 'host');
+  assert.equal(reverse.candidates[0].origin, 'host');
+  assert.equal(forward.candidates[0].benefitModel, undefined);
+  assert.equal(reverse.candidates[0].benefitModel, undefined);
+});
+
+test('a group whose modes are all caller input still stays rejected', () => {
+  const now = new Date().toISOString();
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      {
+        key: 'knowledge:patch-a', scope: 'tool apply patch',
+        problem: 'official operation failure fs patch mismatch',
+        failureCount: 32, occurrences: 32, lastSeen: now,
+      },
+      {
+        key: 'knowledge:patch-b', scope: 'tool apply patch',
+        problem: 'official operation failure fs edit missing',
+        failureCount: 2, occurrences: 2, lastSeen: now,
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 3 });
+  assert.equal(planned.candidates.length, 0);
+  assert.equal(planned.rejected[0].reason, 'caller-input');
+});
+
 test('the observed rate uses the window denominator, not the all-time count', () => {
   const planned = planEvolutionCandidates({
     knowledge: [{
