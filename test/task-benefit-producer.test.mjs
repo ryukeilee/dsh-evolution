@@ -578,6 +578,23 @@ test('an empty rawInput cannot erase an explicit offset from a unique decision',
   assert.equal(invalidOffset.attributionComplete, false);
   assert.equal(invalidOffset.exercised, false, 'an explicitly invalid offset is not a start read');
 
+  for (const decisionOffset of [null, 600.5, '600']) {
+    const invalidDecision = extractSessionEvidence({
+      label: 'candidate-1', side: 'candidate',
+      turns: [{ ...turns[0], decision: { tool: 'read', arguments: { file_path: '/home/a.txt', offset: decisionOffset } } }],
+      updates: [
+        { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: '/home/a.txt' } },
+        result('c1', '<path>/home/a.txt</path>\n<content>sentinel-a</content>'),
+      ],
+      assistantText: 'sentinel-a',
+      expectedTokens: ['sentinel-a'],
+      expectedReads: [{ path: '/home/a.txt', token: 'sentinel-a' }],
+      candidateTool: null, durationMs: 1,
+    });
+    assert.equal(invalidDecision.attributionComplete, false, `decision offset ${String(decisionOffset)} is not evidence`);
+    assert.equal(invalidDecision.exercised, false);
+  }
+
   const ambiguousPathOnly = extractSessionEvidence({
     label: 'candidate-1', side: 'candidate',
     turns: [
@@ -596,8 +613,8 @@ test('an empty rawInput cannot erase an explicit offset from a unique decision',
     expectedReads: [{ path: '/work/a.txt', token: 'sentinel-a' }],
     candidateTool: null, durationMs: 1,
   });
-  assert.equal(ambiguousPathOnly.attributionComplete, false);
-  assert.equal(ambiguousPathOnly.exercised, false, 'an ambiguous path-only input cannot prove offset 1');
+  assert.equal(ambiguousPathOnly.attributionComplete, true, 'distinct files uniquely match their decisions');
+  assert.equal(ambiguousPathOnly.exercised, false, 'the unique decision still carries offset 600, not a start read');
 
   const start = extractSessionEvidence({
     label: 'candidate-1', side: 'candidate',

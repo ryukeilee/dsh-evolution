@@ -166,35 +166,40 @@ export function toolCallDescriptor(call, index, toolTurns, toolNames, cwd = null
   const positionTrusted = !ambiguous && title !== null && title === decisionName;
   const name = titleIsTool ? title : null;
   const rawFile = rawInput && typeof rawInput.file_path === 'string' && rawInput.file_path.trim() !== '';
-  const decisionFile = decisionArguments && typeof decisionArguments.file_path === 'string' && decisionArguments.file_path.trim() !== '';
-  const hasRawOffset = rawInput !== null && Object.prototype.hasOwnProperty.call(rawInput, 'offset');
   const rawOffsetValid = Number.isInteger(rawInput?.offset) && rawInput.offset > 0;
   let argumentsValue = {};
   let inputKnown = false;
   if (name === 'read') {
-    // An empty/partial rawInput must not erase an explicit offset in the
-    // uniquely aligned decision. A rawInput that names the same file is merged
-    // over the decision so its own valid offset wins; an omitted offset keeps
-    // the decision's offset, but an explicitly invalid offset is not evidence.
-    const sameFile = rawFile && positionTrusted && decisionFile
-      && (readPathMatches(rawInput.file_path, decisionArguments.file_path, cwd)
-        || readPathMatches(decisionArguments.file_path, rawInput.file_path, cwd));
-    if (sameFile) {
-      if (hasRawOffset && !rawOffsetValid) {
-        argumentsValue = rawInput;
-        inputKnown = false;
-      } else {
-        argumentsValue = { ...decisionArguments, ...rawInput };
-        inputKnown = true;
-      }
+    // Resolve same-name decisions by path: a rawInput path that matches exactly
+    // one read decision identifies that decision even when several reads are in
+    // flight. A path shared by two decisions (different offsets) stays
+    // ambiguous and needs an explicit valid offset.
+    const sameTool = (Array.isArray(toolTurns) ? toolTurns : [])
+      .filter((turn) => turn?.decision?.tool === 'read');
+    const sameFile = rawFile ? sameTool.filter((turn) => {
+      const path = turn?.decision?.arguments?.file_path;
+      return typeof path === 'string' && path.trim() !== ''
+        && (readPathMatches(rawInput.file_path, path, cwd) || readPathMatches(path, rawInput.file_path, cwd));
+    }) : [];
+    const uniqueDecision = sameFile.length === 1 ? sameFile[0].decision : null;
+    const alignedDecision = uniqueDecision ?? (positionTrusted ? decision : null);
+    const alignedArguments = alignedDecision?.arguments && typeof alignedDecision.arguments === 'object'
+      && !Array.isArray(alignedDecision.arguments) ? alignedDecision.arguments : null;
+    if (rawOffsetValid) {
+      argumentsValue = rawInput;
+      inputKnown = true;
+    } else if (alignedArguments) {
+      argumentsValue = { ...alignedArguments, ...(rawInput ?? {}) };
+      inputKnown = true;
     } else if (rawFile) {
       argumentsValue = rawInput;
-      // File identity alone does not prove the start line when the decision
-      // position is ambiguous; only an explicit valid offset or a unique match does.
-      inputKnown = rawOffsetValid;
-    } else if (positionTrusted) {
-      argumentsValue = { ...(decisionArguments ?? {}), ...(rawInput ?? {}) };
-      inputKnown = !(hasRawOffset && !rawOffsetValid);
+      inputKnown = false;
+    }
+    // The final adopted offset must be absent (default 1) or a positive
+    // integer. An explicit null/0/fraction/string is not evidence.
+    if (inputKnown && Object.prototype.hasOwnProperty.call(argumentsValue, 'offset')
+      && !(Number.isInteger(argumentsValue.offset) && argumentsValue.offset > 0)) {
+      inputKnown = false;
     }
   } else {
     argumentsValue = rawInput ?? (positionTrusted ? decisionArguments : null) ?? {};
