@@ -21,6 +21,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { createSessionCounter } from '../lib/capability-usage.js';
+import { knowledgeExperienceRecord } from '../lib/experience-recall.js';
 import { EvolutionOrchestrator } from '../lib/orchestrator.js';
 import { readPublishedPluginReview } from '../lib/self-evolution-review.js';
 import {
@@ -54,6 +55,20 @@ test('a call sharing a lifecycle callId is counted but never guessed as usage', 
   assert.equal(counts.get('published_tool').workflow, 0);
   assert.equal(counts.get('published_tool').verification, 0);
   assert.equal(counts.get('published_tool').unattributed, 2, 'ambiguous attribution stays unattributed, never a guessed verdict');
+});
+
+test('official event seq links close reused callId lifecycles exactly', () => {
+  const counter = createSessionCounter(new Set(['published_tool']));
+  const call = (seq) => ({ type: 'tool/call', seq, data: { callId: 'reused', name: 'evolution_trial' } });
+  const result = (seq) => ({ type: 'tool/result', seq: seq + 1000, sourceEventSeqs: [seq], data: { toolCallId: 'reused' } });
+  assert.equal(counter.call(call(1)), 'lifecycle');
+  counter.call(result(1));
+  assert.equal(counter.call(call(2)), 'lifecycle');
+  counter.call(result(2));
+  // Both lifecycles are closed by their exact seq link; the reused callId no
+  // longer keeps the session occupied.
+  assert.equal(counter.call({ type: 'tool/call', seq: 3, data: { callId: 'fresh', name: 'published_tool' } }), 'workflow');
+  assert.equal(counter.finish().get('published_tool').workflow, 1);
 });
 
 test('an unpublished tool reusing a lifecycle callId cannot close the Trial', () => {
@@ -106,7 +121,7 @@ test('a task-coupled conclusion carries the measured before/after deltas', () =>
     latestObservation: {
       beforeMetrics: { turns: 12, toolCalls: 8, correct: 2, sessions: 3 },
       afterMetrics: { turns: 9, toolCalls: 5, correct: 3, sessions: 3 },
-      taskBenefit: { benefit: true, regression: false, task: { id: 'task-read' } },
+      taskBenefit: { benefit: true, regression: false, mechanismRan: true, task: { id: 'task-read' } },
     },
   };
   EvolutionOrchestrator.prototype.publishConclusion.call(orchestrator, record, 'adopted');
@@ -116,7 +131,7 @@ test('a task-coupled conclusion carries the measured before/after deltas', () =>
   assert.equal(captured[0].metrics.toolCallsDelta, -3);
 });
 
-test('a task-coupled regression is recorded with a regression failure mode', () => {
+test('a task regression keeps the conclusion identity of the same hypothesis', () => {
   const { captured, orchestrator } = conclusionStub();
   const record = {
     id: 'exp-task-regression',
@@ -129,7 +144,11 @@ test('a task-coupled regression is recorded with a regression failure mode', () 
   };
   EvolutionOrchestrator.prototype.publishConclusion.call(orchestrator, record, 'regression');
   assert.equal(captured.length, 1);
-  assert.equal(captured[0].failureMode, 'regression', 'the next planning round must see why this strategy failed');
+  // failureMode is a knowledge identity dimension: a task-specific value would
+  // leave the regression row alive beside a later adopted verdict. The verdict
+  // itself still records the regression.
+  assert.equal(captured[0].failureMode, '');
+  assert.equal(captured[0].decision, 'regression');
 });
 
 test('caller-supplied metrics without a validated task artifact stay out of the shared lesson', () => {
@@ -140,6 +159,22 @@ test('caller-supplied metrics without a validated task artifact stay out of the 
     latestObservation: { beforeMetrics: { turns: 10 }, afterMetrics: { turns: 2 } },
   }, 'adopted');
   assert.deepEqual(captured[0].metrics, {});
+});
+
+test('all seven task metric deltas survive the bounded recall projection', () => {
+  const metrics = Object.fromEntries([
+    'sessionsDelta', 'correctDelta', 'failuresDelta', 'turnsDelta',
+    'toolCallsDelta', 'tokensDelta', 'durationMsDelta',
+  ].map((key) => [key, { sum: -1, count: 1, last: -1 }]));
+  const record = knowledgeExperienceRecord({
+    knowledgeKey: 'knowledge:task-deltas',
+    semanticFact: 'tool read context-policy task benefit',
+    scope: 'tool read',
+    effectStats: { metrics },
+  });
+  for (const key of Object.keys(metrics)) {
+    assert.ok(Object.hasOwn(record.metrics, key), `${key} must be visible to the next planning round`);
+  }
 });
 
 test('a regression observed without the candidate running is not attributed to it', () => {
