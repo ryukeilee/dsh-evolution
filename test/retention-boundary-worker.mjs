@@ -51,6 +51,21 @@ if (process.argv[2] === '--worker') {
       const report = await f.port.reclaim({ confirmation: true, archives: false, retainRecords: 2 });
       process.send({ report, global: f.global() });
       setInterval(() => {}, 1000); // Parent kills without close: durable floor, old log, dead lock.
+    } else if (mode === 'crash-ambiguous') {
+      // The parent wrote A and an at-least-once duplicate A, so the retained tail
+      // is byte-identical to the prior file's prefix. Hold the append lock so the
+      // committed, generation-bearing floor stays pending, then let the parent
+      // SIGKILL us between the floor commit and the truncation.
+      const f = await openFixture(root);
+      const logFile = configFor(root).eventBridgePath;
+      const flush = await f.port.flush();
+      const lock = `${logFile}.append.lock`;
+      fs.mkdirSync(lock);
+      fs.writeFileSync(path.join(lock, 'owner'), JSON.stringify({ token: 'child-crash-ambiguous', pid: process.pid,
+        hostname: os.hostname(), acquiredAt: Date.now() }));
+      const report = await f.port.reclaim({ confirmation: true, archives: false, retainRecords: 1 });
+      process.send({ report, flush, global: f.global() });
+      setInterval(() => {}, 1000); // Parent SIGKILLs here: durable floor, prior still on disk, dead lock.
     } else if (mode === 'probe-lock') {
       withEventBridgeAppendLock(configFor(root).eventBridgePath, () => { throw new Error('unexpected lock acquisition'); });
     } else if (mode === 'recover') {
