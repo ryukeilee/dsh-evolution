@@ -55,6 +55,15 @@ test('a real undefined cannot satisfy a literal "[undefined]" expectation', asyn
     JSON.stringify(result.samples));
 });
 
+test('a custom iterator cannot reorder a result into matching the expectation', async (t) => {
+  const value = ['north', 'south'];
+  value[Symbol.iterator] = function* reverse() { yield 'south'; yield 'north'; };
+  const h = harness(t, { value, expected: ['south', 'north'] });
+  const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);
+  assert.ok(result.samples.some((entry) => entry.isError === true && entry.code === 'E_EVOLUTION_PROBE_INCORRECT'),
+    JSON.stringify(result.samples));
+});
+
 test('a non-plain object cannot satisfy an empty record expectation', async (t) => {
   const h = harness(t, { value: new Date(0), expected: {} });
   const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);

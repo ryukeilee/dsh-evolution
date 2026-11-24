@@ -209,6 +209,18 @@ test('the domain store keeps appends that recreate a truncated duplicate prefix,
   }
 });
 
+test('a reclaim refuses an unverifiable trailing line instead of certifying it', (t) => {
+  const root = scratch(t);
+  const file = path.join(root, 'events.jsonl');
+  const first = line('evt-1', 1);
+  fs.writeFileSync(file, first + first + '{"schema":2,"writer":"dsh-evolution');
+  const buffer = fs.readFileSync(file);
+  assert.throws(() => planLogPrune({ buffer, key: KEY, writer: WRITER,
+    applied: { 'evt-1': JSON.parse(first.trim()).mac }, retainRecords: 1, identity: identityOf(file) }),
+  (error) => error.code === 'E_DOMAIN_EVENT_LOG_PARTIAL_TAIL');
+  assert.deepEqual(fs.readFileSync(file), buffer, 'the damaged log is left for the doctor to repair');
+});
+
 test('an ambiguous floor whose bytes match neither generation is refused', (t) => {
   const root = scratch(t);
   const file = path.join(root, 'events.jsonl');
