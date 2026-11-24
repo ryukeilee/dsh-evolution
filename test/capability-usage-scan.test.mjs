@@ -88,12 +88,15 @@ function writeRecord(env, { id = RECORD_ID, source, moduleUrl = null } = {}) {
   return record;
 }
 
-function writeSession(root, name, lines, { corrupt = false } = {}) {
+function writeSession(root, name, lines, { corrupt = false, plain = false, fileName = null } = {}) {
   const dir = path.join(root, 'sessions', name);
   fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, 'session.v4.jsonl.zstd');
+  const file = path.join(dir, fileName ?? (plain ? 'session.v4.jsonl' : 'session.v4.jsonl.zstd'));
   if (corrupt) fs.writeFileSync(file, Buffer.from('not a zstd frame'));
-  else fs.writeFileSync(file, zlib.zstdCompressSync(Buffer.from(lines.map((line) => JSON.stringify(line)).join('\n'))));
+  else {
+    const body = Buffer.from(lines.map((line) => JSON.stringify(line)).join('\n'));
+    fs.writeFileSync(file, plain ? body : zlib.zstdCompressSync(body));
+  }
   return file;
 }
 
@@ -103,6 +106,23 @@ function call(name, callId) {
 
 function result(callId) {
   return { type: 'tool/result', data: { toolCallId: callId, message: { isError: false } } };
+}
+
+/** The official PTC row shape (`dsh-tools` / `dsh-session`): ids and name live in `data`. */
+function ptcStart(name, subCallId, parentCallId) {
+  return {
+    type: 'tool/ptc-dispatch-start',
+    seq: 7,
+    data: { rootCallId: parentCallId, parentCallId, subCallId, name },
+  };
+}
+
+function ptcDispatch(name, subCallId, parentCallId) {
+  return {
+    type: 'tool/ptc-dispatch',
+    seq: 8,
+    data: { rootCallId: parentCallId, parentCallId, subCallId, name, isError: false },
+  };
 }
 
 function run(home, extra = []) {
@@ -429,4 +449,185 @@ test('a real promotion lifecycle call still marks an overlapping published call 
   assert.deepEqual(Object.fromEntries(counter.finish()), {
     mytool: { workflow: 0, verification: 1, unattributed: 0 },
   });
+});
+
+// 2026-11-25 PTC usage attribution round. The counter contract is pinned at
+// unit level first: native rows keep their old returns, a start only reserves
+// a dispatch, a completed dispatch is counted once, and a start with no final
+// dispatch is still an invocation at finish.
+test('createSessionCounter counts native calls and PTC dispatches exactly once', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  assert.equal(counter.call(call('mytool', 'native1')), 'workflow');
+  assert.equal(counter.call(call('evolution_probe', 'p1')), 'lifecycle');
+  assert.equal(counter.call(call('mytool', 'native2')), 'pending');
+  assert.equal(counter.call(result('native2')), 'result');
+  assert.equal(counter.call(result('p1')), 'result');
+  assert.equal(counter.call(call('run_code', 'rc1')), 'ignored');
+  assert.equal(counter.call(ptcStart('mytool', 'rc1:ptc:1', 'rc1')), 'ptc-start');
+  assert.equal(counter.call(ptcDispatch('mytool', 'rc1:ptc:1', 'rc1')), 'workflow');
+  assert.equal(counter.call(call('evolution_trial', 't1')), 'lifecycle');
+  assert.equal(counter.call(ptcStart('mytool', 'rc1:ptc:2', 'rc1')), 'ptc-start');
+  assert.equal(counter.call(ptcDispatch('mytool', 'rc1:ptc:2', 'rc1')), 'pending');
+  // This start never completes: it is still a proven invocation at finish.
+  assert.equal(counter.call(ptcStart('mytool', 'rc1:ptc:3', 'rc1')), 'ptc-start');
+  assert.equal(counter.call(result('t1')), 'result');
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 2, verification: 2, unattributed: 1 },
+  });
+});
+
+test('a model run_code PTC dispatch of a published tool is workflow usage', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-workflow', [
+    call('run_code', 'rc1'),
+    ptcStart('widget_tool', 'rc1:ptc:1', 'rc1'),
+    ptcDispatch('widget_tool', 'rc1:ptc:1', 'rc1'),
+  ]);
+  const { status, projection } = run(env.root);
+  assert.equal(status, 0);
+  assert.equal(projection.complete, true);
+  assert.deepEqual(projection.records[RECORD_ID], {
+    workflowInvocations: 1,
+    verificationInvocations: 0,
+    unattributedInvocations: 0,
+    capabilityAssessment: 'unknown',
+  });
+  assert.equal(projection.scannedSessions, 1);
+  // Native run_code row plus the completed PTC dispatch; the start is not a call.
+  assert.equal(projection.scannedToolCalls, 2);
+});
+
+test('a PTC dispatch under an open evolution_probe is verification', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-verification', [
+    call('evolution_probe', 'p1'),
+    call('run_code', 'rc1'),
+    ptcStart('widget_tool', 'rc1:ptc:1', 'rc1'),
+    ptcDispatch('widget_tool', 'rc1:ptc:1', 'rc1'),
+    result('rc1'),
+    result('p1'),
+  ]);
+  const { projection } = run(env.root);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 0, verificationInvocations: 1, unattributedInvocations: 0, capabilityAssessment: undefined },
+  );
+});
+
+test('a PTC dispatch under a lifecycle call that never returns is unattributed', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-truncated', [
+    call('evolution_trial', 't1'),
+    call('run_code', 'rc1'),
+    ptcStart('widget_tool', 'rc1:ptc:1', 'rc1'),
+    ptcDispatch('widget_tool', 'rc1:ptc:1', 'rc1'),
+  ]);
+  const { projection } = run(env.root);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 1, capabilityAssessment: undefined },
+  );
+});
+
+test('a host-driven PTC dispatch with no native parent call is unattributed', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-host-driven', [
+    ptcStart('widget_tool', 'host:ptc:1', 'host-root'),
+    ptcDispatch('widget_tool', 'host:ptc:1', 'host-root'),
+  ]);
+  const { projection } = run(env.root);
+  assert.equal(projection.complete, true);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 1, capabilityAssessment: undefined },
+  );
+});
+
+test('a dangling PTC dispatch-start is unattributed, never a measured zero', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-dangling', [
+    call('run_code', 'rc1'),
+    ptcStart('widget_tool', 'rc1:ptc:1', 'rc1'),
+  ]);
+  const { projection } = run(env.root);
+  assert.equal(projection.complete, true);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 1, capabilityAssessment: undefined },
+  );
+  assert.equal(projection.scannedToolCalls, 1, 'a start is not a completed call');
+});
+
+test('a non-published PTC dispatch is ignored', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-unpublished', [
+    call('run_code', 'rc1'),
+    ptcStart('bash', 'rc1:ptc:1', 'rc1'),
+    ptcDispatch('bash', 'rc1:ptc:1', 'rc1'),
+  ]);
+  const { status, projection } = run(env.root);
+  assert.equal(status, 0);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 0, capabilityAssessment: undefined },
+  );
+});
+
+test('ignored PTC rows do not change the native call path', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'native', [
+    call('evolution_probe', 'p1'),
+    call('widget_tool', 'c1'),
+    result('c1'),
+    result('p1'),
+    call('widget_tool', 'c2'),
+    ptcStart('bash', 'rc1:ptc:1', 'rc1'),
+    ptcDispatch('bash', 'rc1:ptc:1', 'rc1'),
+  ]);
+  const { projection } = run(env.root);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 1, verificationInvocations: 1, unattributedInvocations: 0, capabilityAssessment: undefined },
+  );
+});
+
+test('a plaintext v4 session counts a real call like the zstd encoding', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'plain', [call('widget_tool', 'c1')], { plain: true });
+  const { status, projection } = run(env.root);
+  assert.equal(status, 0);
+  assert.equal(projection.complete, true);
+  assert.equal(projection.scannedSessions, 1);
+  assert.equal(projection.scannedToolCalls, 1);
+  assert.equal(projection.records[RECORD_ID].workflowInvocations, 1);
+});
+
+test('other canonical session generations are reported unscanned, never a measured zero', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'current', [call('widget_tool', 'c1')]);
+  writeSession(env.root, 'legacy-plain', [call('widget_tool', 'old1')], { plain: true, fileName: 'session.v3.jsonl' });
+  writeSession(env.root, 'legacy-zstd', [call('widget_tool', 'old2')], { fileName: 'session.v3.jsonl.zstd' });
+  writeSession(env.root, 'unversioned', [call('widget_tool', 'old3')], { plain: true, fileName: 'session.jsonl' });
+  const { status, projection } = run(env.root);
+  assert.equal(status, 3);
+  assert.equal(projection.complete, false);
+  assert.equal(projection.recordsComplete, false);
+  assert.deepEqual(projection.failures.unsupportedSessionFormats, [
+    { session: 'legacy-plain', file: 'session.v3.jsonl' },
+    { session: 'legacy-zstd', file: 'session.v3.jsonl.zstd' },
+    { session: 'unversioned', file: 'session.jsonl' },
+  ]);
+  assert.equal(projection.scannedSessions, 1, 'only the current generation is parsed');
+  assert.equal(projection.records[RECORD_ID].workflowInvocations, null);
+  assert.equal(projection.records[RECORD_ID].verificationInvocations, null);
+  assert.equal(projection.records[RECORD_ID].unattributedInvocations, null);
 });
