@@ -37,9 +37,16 @@
 
 ## 5. 验证
 
-- 反证：6 个新用例（含既有生命周期用例的新断言）在旧源码全部按预期失败；修复后全部通过。
-- 聚焦：`review-fix-feedback-fidelity`、`experience-evolution-lifecycle`、`self-evolution-review`、`capability-usage-scan` 共 127/127 通过。
-- 全量、打包与宿主验收：见 PR 描述与本文件更新后的最终记录（只记录本轮实际执行的检查）。
+- 反证：8 个新用例（含既有生命周期用例的新断言）在旧源码全部按预期失败；修复后全部通过。
+- 聚焦：最终 183/183 通过（`review-fix-feedback-fidelity`、`experience-evolution-lifecycle`、`self-evolution-review`、`capability-usage-scan`、`shared-experience-conclusion`、`experience-attribution`）。
+- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2192 项，2190 通过 / 0 失败 / 2 跳过**。
+- 打包：`npm run pack:check` 17/17 通过；工作树是 v0.2.19 固定点的已提交后继，固定点、产物与证据未改动；未执行 `--release` 或任何发布动作。
+- 隔离真实宿主验收：在最终树重新 `npm run release:pack` 后，对 `0.2.2-rc.5` 运行 `npm run acceptance:host -- --no-hmr --experience-evolution`，**26/26 步骤 ok**（含安装、lifecycle、升级/回滚、真实晋升、经验驱动实验、重启与回归、最终 doctor），证据写入 `docs/evidence/dsh-0.2.2-rc.5-round6-feedback.json`。只使用隔离 runtime/home，未触碰正式 DSH_HOME。
+
+## 5.1 独立复审
+
+- sol-loop（codex / gpt-6.2-sol / reasoningEffort high）：第 1 轮返回 5 项（3 blocker、2 should），第 2 轮返回 1 项仍开放的 blocker；逐条复核后全部按最小改动修复并有回归证明。第 3 轮因 codex 提供方额度限制未能启动（提示 14:27 可重试），不构成未解决的实质问题； council 在最终变更上完成了独立反方复审。
+- council（双模型独立反方复审）：GPT-6.2 Sol High 对最终变更返回 4 项（2 P1、2 P2），均已修复：用官方 envelope 的 `seq` / `sourceEventSeqs` 精确关闭复用 callId 的生命周期；撤销任务专属 `failureMode`（它是知识身份维度）；任务指标要求 `mechanismRan`；召回投影窗口覆盖第七项 `durationMsDelta`。DeepSeek 4.1 Flash Max 结果见 PR 描述。
 
 ## 6. 剩余风险
 
