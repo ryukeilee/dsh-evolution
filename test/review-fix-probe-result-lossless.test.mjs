@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { EvolutionOrchestrator, normalizeProbeScenario } from '../lib/orchestrator.js';
 
-function harness(t, { value, expected }) {
+function harness(t, { value, expected, resultPath } ) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'probe-result-lossless-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const recorded = [];
@@ -43,7 +43,7 @@ function harness(t, { value, expected }) {
     proposal: { target: 'tool:read', strategy: 'S', strategyFingerprint: 'a1b2c3d4e5f60718' },
   });
   const scenario = { kind: 'workflow', id: 'lossless', repetitions: 1, steps: [
-    { name: 'probe-target', role: 'target', arguments: {}, expected },
+    { name: 'probe-target', role: 'target', arguments: {}, expected, ...(resultPath ? { resultPath } : {}) },
   ] };
   return { orchestrator, exec, scenario, recorded };
 }
@@ -74,6 +74,18 @@ test('an accessor that answers differently is rejected in one pass', async (t) =
   const h = harness(t, { value, expected: { marker: '[undefined]' } });
   const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);
   assert.ok(result.samples.some((entry) => entry.isError === true && entry.code === 'PROBE_VALUE_NOT_LOSSLESS'),
+    JSON.stringify(result.samples));
+});
+
+test('a resultPath accessor is rejected without being read', async (t) => {
+  let reads = 0;
+  const nested = {};
+  Object.defineProperty(nested, 'marker', { enumerable: true,
+    get() { reads += 1; return reads === 1 ? '[undefined]' : 'wrong'; } });
+  const h = harness(t, { value: { nested }, expected: { marker: '[undefined]' }, resultPath: ['nested'] });
+  const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);
+  assert.equal(reads, 0, 'the path walker must read only own data descriptors');
+  assert.ok(result.samples.some((entry) => entry.isError === true && entry.code === 'PROBE_VALUE_NOT_LOSSLESS' && entry.outputUnmeasurable === true),
     JSON.stringify(result.samples));
 });
 
