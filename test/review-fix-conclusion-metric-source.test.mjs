@@ -54,23 +54,24 @@ function probeOf(comparison, { id = 'workload' } = {}) {
   };
 }
 
-function taskArtifact({ benefit = false, regression = false, mechanismRan = true, turns = 10, toolCalls = 10, candidateTurns = turns, candidateToolCalls = toolCalls } = {}) {
+function taskArtifact({ benefit = false, regression = false, mechanismRan = true, turns = 10, toolCalls = 10, candidateTurns = turns, candidateToolCalls = toolCalls, candidateTokens = 5000, candidateDurationMs = 1000 } = {}) {
   return {
     benefit, regression, mechanismRan,
     runs: { baseline: 3, candidate: 3 },
     correctness: { baseline: true, candidate: true },
     baseline: { sessions: 3, correct: 3, failures: 0, turns, toolCalls, tokens: 5000, durationMs: 1000 },
-    candidate: { sessions: 3, correct: 3, failures: 0, turns: candidateTurns, toolCalls: candidateToolCalls, tokens: 5000, durationMs: 1000 },
+    candidate: { sessions: 3, correct: 3, failures: 0, turns: candidateTurns, toolCalls: candidateToolCalls, tokens: candidateTokens, durationMs: candidateDurationMs },
   };
 }
 
-function recordOf({ probe, taskBenefit, useDurableProbeOnly = false, taskTurns, taskCalls, candidateTurns, candidateToolCalls, taskRegression = false, taskBenefitValue = false }) {
+function recordOf({ probe, taskBenefit, useDurableProbeOnly = false, taskTurns, taskCalls, candidateTurns, candidateToolCalls, candidateTokens, candidateDurationMs, taskRegression = false, taskBenefitValue = false }) {
   const comparison = probe?.comparison ?? null;
   const task = taskBenefit ?? (taskTurns !== undefined || taskCalls !== undefined || candidateTurns !== undefined || candidateToolCalls !== undefined || taskRegression || taskBenefitValue
     ? taskArtifact({
       benefit: taskBenefitValue, regression: taskRegression,
       turns: taskTurns ?? 10, toolCalls: taskCalls ?? 10,
       candidateTurns: candidateTurns ?? 10, candidateToolCalls: candidateToolCalls ?? 10,
+      candidateTokens: candidateTokens ?? 5000, candidateDurationMs: candidateDurationMs ?? 1000,
     })
     : undefined);
   const durableProbe = probe ? deriveProbeObservation(probe) : undefined;
@@ -119,13 +120,22 @@ test('a task-driven no-benefit conclusion carries task deltas, not the probe pos
 });
 
 test('a task-driven regression conclusion carries task deltas showing the cost overrun', () => {
+  // A real validator sets regression only when failures, tokens or wall time
+  // exceed the budget; keep the synthetic artifact self-consistent with that.
   const probe = probeOf(probeComparison({ benefit: true }));
-  const record = recordOf({ probe, taskTurns: 10, taskCalls: 10, candidateTurns: 13, candidateToolCalls: 12, taskRegression: true });
+  const record = recordOf({
+    probe, taskTurns: 10, taskCalls: 10,
+    candidateTurns: 13, candidateToolCalls: 12,
+    candidateTokens: 9000, candidateDurationMs: 2000,
+    taskRegression: true,
+  });
   assert.equal(record.decision.kind, 'regression');
   const { captured } = captureConclusion(record);
   assert.equal(captured[0].decision, 'regression');
   assert.equal(captured[0].metrics.turnsDelta, 3);
   assert.equal(captured[0].metrics.toolCallsDelta, 2);
+  assert.equal(captured[0].metrics.tokensDelta, 4000);
+  assert.equal(captured[0].metrics.durationMsDelta, 1000);
   assert.equal(captured[0].metrics.successRateDelta, undefined);
 });
 
@@ -151,6 +161,31 @@ test('a probe-negative verdict with a positive task artifact still reports probe
   assert.equal(record.decision.kind, 'no-benefit');
   const { captured } = captureConclusion(record);
   assert.deepEqual(captured[0].metrics, { successRateDelta: 0, errorsDelta: 0 });
+});
+
+test('the probe keeps its metric basis when both sources agree or the probe itself regresses', () => {
+  const cases = [
+    {
+      name: 'both sources positive',
+      probe: probeOf(probeComparison({ benefit: true })),
+      task: { taskTurns: 10, candidateTurns: 8, taskBenefitValue: true },
+      expected: { successRateDelta: 0.5, errorsDelta: -5 },
+    },
+    {
+      name: 'both sources report a regression',
+      probe: probeOf(probeComparison({ benefit: false, regression: true, beforeRate: 0.4, afterRate: 0.2, beforeErrors: 6, afterErrors: 12 })),
+      task: {
+        taskTurns: 10, candidateTurns: 13, candidateTokens: 9000,
+        candidateDurationMs: 2000, taskRegression: true,
+      },
+      expected: { successRateDelta: -0.2, errorsDelta: 6 },
+    },
+  ];
+  for (const { name, probe, task, expected } of cases) {
+    const record = recordOf({ probe, ...task });
+    const { captured } = captureConclusion(record);
+    assert.deepEqual(captured[0].metrics, expected, name);
+  }
 });
 
 test('task-only conclusions keep their byte-for-byte historical metric shape', () => {
