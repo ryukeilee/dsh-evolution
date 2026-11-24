@@ -64,6 +64,19 @@ test('a custom iterator cannot reorder a result into matching the expectation', 
     JSON.stringify(result.samples));
 });
 
+test('an accessor that answers differently is rejected in one pass', async (t) => {
+  let reads = 0;
+  const value = {};
+  Object.defineProperty(value, 'marker', {
+    enumerable: true,
+    get() { reads += 1; return reads === 1 ? '[undefined]' : undefined; },
+  });
+  const h = harness(t, { value, expected: { marker: '[undefined]' } });
+  const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);
+  assert.ok(result.samples.some((entry) => entry.isError === true && entry.code === 'PROBE_VALUE_NOT_LOSSLESS'),
+    JSON.stringify(result.samples));
+});
+
 test('a non-plain object cannot satisfy an empty record expectation', async (t) => {
   const h = harness(t, { value: new Date(0), expected: {} });
   const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);
