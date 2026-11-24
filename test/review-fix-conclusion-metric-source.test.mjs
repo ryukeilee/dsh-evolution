@@ -64,11 +64,11 @@ function taskArtifact({ benefit = false, regression = false, mechanismRan = true
   };
 }
 
-function recordOf({ probe, taskBenefit, useDurableProbeOnly = false, taskTurns, taskCalls, candidateTurns, candidateToolCalls, candidateTokens, candidateDurationMs, taskRegression = false, taskBenefitValue = false }) {
+function recordOf({ probe, taskBenefit, useDurableProbeOnly = false, taskTurns, taskCalls, candidateTurns, candidateToolCalls, candidateTokens, candidateDurationMs, taskRegression = false, taskBenefitValue = false, taskMechanismRan = true }) {
   const comparison = probe?.comparison ?? null;
-  const task = taskBenefit ?? (taskTurns !== undefined || taskCalls !== undefined || candidateTurns !== undefined || candidateToolCalls !== undefined || taskRegression || taskBenefitValue
+  const task = taskBenefit ?? (taskTurns !== undefined || taskCalls !== undefined || candidateTurns !== undefined || candidateToolCalls !== undefined || taskRegression || taskBenefitValue || taskMechanismRan === false
     ? taskArtifact({
-      benefit: taskBenefitValue, regression: taskRegression,
+      benefit: taskBenefitValue, regression: taskRegression, mechanismRan: taskMechanismRan,
       turns: taskTurns ?? 10, toolCalls: taskCalls ?? 10,
       candidateTurns: candidateTurns ?? 10, candidateToolCalls: candidateToolCalls ?? 10,
       candidateTokens: candidateTokens ?? 5000, candidateDurationMs: candidateDurationMs ?? 1000,
@@ -168,6 +168,14 @@ test('probe-only conclusions keep their byte-for-byte historical metric shape', 
 test('a probe-negative verdict with a positive task artifact still reports probe deltas', () => {
   const probe = probeOf(probeComparison({ benefit: false, beforeRate: 0.4, afterRate: 0.4, beforeErrors: 6, afterErrors: 6 }));
   const record = recordOf({ probe, taskBenefitValue: true, taskTurns: 8, taskCalls: 8 });
+  assert.equal(record.decision.kind, 'no-benefit');
+  const { captured } = captureConclusion(record);
+  assert.deepEqual(captured[0].metrics, { successRateDelta: 0, errorsDelta: 0 });
+});
+
+test('a task artifact whose mechanism did not run never displaces the probe basis', () => {
+  const probe = probeOf(probeComparison({ benefit: false, beforeRate: 0.4, afterRate: 0.4, beforeErrors: 6, afterErrors: 6 }));
+  const record = recordOf({ probe, taskMechanismRan: false, taskTurns: 10, candidateTurns: 6 });
   assert.equal(record.decision.kind, 'no-benefit');
   const { captured } = captureConclusion(record);
   assert.deepEqual(captured[0].metrics, { successRateDelta: 0, errorsDelta: 0 });
