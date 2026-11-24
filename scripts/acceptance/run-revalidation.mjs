@@ -37,7 +37,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { hostCompatible, hostDigest, isDisabledForProfile, readDisableState } from '../../lib/promoted-sharing.js';
+import { applySupersession, hostCompatible, hostDigest, isDisabledForProfile, readDisableState } from '../../lib/promoted-sharing.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
@@ -185,14 +185,20 @@ export function profileIsRevalidationTarget(record, profile, disable) {
  * to be active again, which is exactly the recovery the consumer performs.
  */
 export function expectedRecordStatus(record, profile, records, disable) {
-  const marker = record?.supersededBy?.[profile];
-  if (marker) {
-    const replacement = (records || []).find((row) => row.id === marker.recordId && profileIsRevalidationTarget(row, profile, disable));
-    if (replacement && replacement.sourceSha256 === marker.sourceSha256) {
-      return { status: 'disabled', reason: 'superseded-by' };
-    }
-  }
-  return { status: 'active' };
+  const all = Array.isArray(records) ? records : [];
+  // Use the production rule, not a direct-marker shortcut: a chain whose
+  // middle version is disabled still suppresses its predecessor in favour of
+  // the furthest eligible tail.
+  const decisions = all.map((row) => ({
+    record: row,
+    decision: profileIsRevalidationTarget(row, profile, disable)
+      ? { status: 'eligible' }
+      : { status: 'disabled', reason: 'operator-disabled' },
+  }));
+  const outcome = applySupersession(decisions, { profile })
+    .find(({ record: row }) => row.id === record?.id);
+  if (!outcome || outcome.decision.status === 'eligible') return { status: 'active' };
+  return { status: 'disabled', reason: outcome.decision.reason || 'superseded-by' };
 }
 
 export function planFor(plans, recordId, work) {

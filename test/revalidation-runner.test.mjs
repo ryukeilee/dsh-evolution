@@ -51,6 +51,18 @@ test('revalidation runner: evidence clone strips supersession, post-adoption clo
   assert.equal(adopted.plugins[0].supersededBy.acp.recordId, TARGET_B, 'the final mounted topology must still be checked');
 });
 
+test('revalidation runner: a disabled middle link keeps the chain terminal expectation', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const first = { id: TARGET_A, approvedProfiles: ['acp'], supersededBy: { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } } };
+  const middle = { id: TARGET_B, approvedProfiles: ['acp'], sourceSha256: 'b'.repeat(64), supersededBy: { acp: { recordId: THIRD, sourceSha256: 'f'.repeat(64) } } };
+  const tail = { id: THIRD, approvedProfiles: ['acp'], sourceSha256: 'f'.repeat(64) };
+  const disable = { entries: [{ pluginId: TARGET_B, profile: 'acp' }] };
+  const records = [first, middle, tail];
+  assert.deepEqual(runner.expectedRecordStatus(first, 'acp', records, disable), { status: 'disabled', reason: 'superseded-by' });
+  assert.deepEqual(runner.expectedRecordStatus(middle, 'acp', records, disable), { status: 'disabled', reason: 'operator-disabled' });
+  assert.deepEqual(runner.expectedRecordStatus(tail, 'acp', records, disable), { status: 'active' });
+});
+
 test('revalidation runner: parses its operator flags', () => {
   const options = runner.parseArgs(['--home', '/tmp/home', '--apply', '--json', '--timeout-ms', '9000']);
   assert.equal(options.home, path.resolve('/tmp/home'));
