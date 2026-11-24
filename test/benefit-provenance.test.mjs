@@ -156,6 +156,45 @@ test('kernel-derived workflow quality gains use the measured cost budget; legacy
   }
 });
 
+test('an unmeasurable pre-Trial baseline output cannot make a candidate look regressive', async () => {
+  const { compareWorkflowProbeRuns, normalizeProbeScenario } = await import('../lib/orchestrator.js');
+  const scenario = normalizeProbeScenario({ kind: 'workflow', id: 'initial-unmeasurable', repetitions: 5, steps: [
+    { name: 'read', candidateName: 'complete_read', role: 'target', arguments: {}, expected: 'complete' },
+    { name: 'read', role: 'control', arguments: {}, expected: 'unchanged' },
+  ] });
+  const rows = (candidate, initial = false) => Array.from({ length: 5 }, (_, repetition) => scenario.steps.map((step, index) => ({
+    repetition, index, step: candidate ? step.candidateName : step.name, role: step.role,
+    expectedDigest: step.expectedDigest, isError: false, code: null, valueDigest: step.expectedDigest,
+    outputBytes: 100, durationMs: 1,
+    ...(initial && index === 0 ? { outputBytes: null, outputUnmeasurable: true } : {}),
+  }))).flat();
+  const baseline = { samples: rows(false, true) };
+  const comparison = compareWorkflowProbeRuns(baseline,
+    { samples: rows(true), reference: { samples: rows(false) } }, scenario);
+  assert.equal(comparison.measurementInvalid, true);
+  assert.equal(comparison.regression, false);
+});
+
+test('an unmeasurable output makes the paired workflow comparison invalid, not a regression', async () => {
+  const { compareWorkflowProbeRuns, normalizeProbeScenario } = await import('../lib/orchestrator.js');
+  const scenario = normalizeProbeScenario({ kind: 'workflow', id: 'unmeasurable-output', repetitions: 5, steps: [
+    { name: 'read', candidateName: 'complete_read', role: 'target', arguments: {}, expected: 'complete' },
+    { name: 'read', role: 'control', arguments: {}, expected: 'unchanged' },
+  ] });
+  const rows = (candidate) => Array.from({ length: 5 }, (_, repetition) => scenario.steps.map((step, index) => ({
+    repetition, index, step: candidate ? step.candidateName : step.name, role: step.role,
+    expectedDigest: step.expectedDigest, isError: !candidate && index === 0,
+    code: null, valueDigest: step.expectedDigest,
+    outputBytes: 100, durationMs: 1,
+    ...(candidate && index === 0 ? { outputBytes: null, outputUnmeasurable: true } : {}),
+  }))).flat();
+  const baseline = { samples: rows(false) };
+  const comparison = compareWorkflowProbeRuns(baseline, { samples: rows(true), reference: baseline }, scenario);
+  assert.equal(comparison.measurementInvalid, true);
+  assert.equal(comparison.regression, false);
+  assert.equal(comparison.benefit, false);
+});
+
 test('a measurement merge preserves probeDerived, so a budgeted workflow gain is not re-read as a regression', async () => {
   const {
     compareWorkflowProbeRuns, normalizeProbeScenario, mergeMeasurement,

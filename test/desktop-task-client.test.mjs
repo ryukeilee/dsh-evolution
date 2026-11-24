@@ -613,6 +613,15 @@ test('confirm refuses every path that is not an exact, explicitly confirmed pend
   assert.equal(invalidProfile.code, 'E_DESKTOP_APPROVAL_INVALID');
   assert.equal(await readJson(approvalFile(awaitingTaskId)), null);
 
+  const scopedTaskId = 'desktop-task-confirm-scoped-1';
+  await writeState(home, makeState(scopedTaskId, 'awaiting-owner-confirmation', {
+    experimentId, candidateSourceSha256: sourceSha256, requestedTargetProfiles: ['web'],
+  }));
+  const wrongScope = await tool.execute({ ...base, taskId: scopedTaskId, experimentId, sourceSha256 }, {});
+  assert.equal(wrongScope.ok, false, 'the client default ["acp"] must not silently narrow a web-scoped plan');
+  assert.equal(wrongScope.code, 'E_DESKTOP_APPROVAL_MISMATCH');
+  assert.equal(await readJson(approvalFile(scopedTaskId)), null);
+
   const stateAfter = await readJson(path.join(paths.state, `${awaitingTaskId}.json`));
   assert.equal(stateAfter.phase, 'awaiting-owner-confirmation', 'refusals never mutate the host-owned state');
 });
