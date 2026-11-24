@@ -7,7 +7,7 @@ import test from 'node:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { EvolutionOrchestrator } from '../lib/orchestrator.js';
+import { EvolutionOrchestrator, normalizeProbeScenario } from '../lib/orchestrator.js';
 
 function harness(t, { value, expected }) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'probe-result-lossless-'));
@@ -73,6 +73,26 @@ test('an accessor that answers differently is rejected in one pass', async (t) =
   });
   const h = harness(t, { value, expected: { marker: '[undefined]' } });
   const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);
+  assert.ok(result.samples.some((entry) => entry.isError === true && entry.code === 'PROBE_VALUE_NOT_LOSSLESS'),
+    JSON.stringify(result.samples));
+});
+
+test('the length bound reads the validated snapshot, not a toJSON proxy', () => {
+  const expected = { big: 'x'.repeat(17000) };
+  Object.defineProperty(expected, 'toJSON', { value: () => 'short', enumerable: false });
+  assert.throws(() => normalizeProbeScenario({ kind: 'workflow', id: 'long', steps: [
+    { name: 'probe-target', role: 'target', arguments: {}, expected },
+  ] }), (error) => error.code === 'E_EVOLUTION_PROBE_SCENARIO');
+});
+
+test('a throwing accessor is never read and keeps the precise classification', async (t) => {
+  let reads = 0;
+  const value = {};
+  Object.defineProperty(value, 'marker', { enumerable: true,
+    get() { reads += 1; throw new Error('getter must not be read again'); } });
+  const h = harness(t, { value, expected: { marker: '[undefined]' } });
+  const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);
+  assert.equal(reads, 0, 'the snapshot rejects accessors before reading them');
   assert.ok(result.samples.some((entry) => entry.isError === true && entry.code === 'PROBE_VALUE_NOT_LOSSLESS'),
     JSON.stringify(result.samples));
 });

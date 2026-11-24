@@ -7,7 +7,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { openSharedExperience } from '../lib/shared-experience.js';
+import { DatabaseSync } from 'node:sqlite';
+import { openSharedExperience, sharedExperienceLocation } from '../lib/shared-experience.js';
+import { buildExperienceQuery } from '../lib/experience-recall.js';
 
 function scratch(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'recall-window-'));
@@ -32,6 +34,32 @@ test('an outer knowledge window truncation is reported by recall', (t) => {
   const discovered = store.discover({ window: 10 });
   assert.equal(discovered.truncated, true);
   assert.equal(all.truncated, discovered.truncated, 'both bounded read surfaces agree');
+});
+
+test('a second row outside the window stays truncated after an exact-key restore', (t) => {
+  const root = scratch(t);
+  const store = openSharedExperience(root);
+  t.after(() => store.close());
+  const target = 'needle';
+  const key = buildExperienceQuery({ target }).knowledgeKey;
+  for (let index = 0; index < 2002; index += 1) {
+    store.recordFailure({ id: crypto.createHash('sha256').update(`two-${index}`).digest('hex'),
+      type: 'tool/error', code: 'HOST_OPERATION_FAILED', target: `tool:filler-${index}`, metrics: { n: index } });
+  }
+  store.close();
+  const { file } = sharedExperienceLocation(root);
+  const db = new DatabaseSync(file);
+  // Replace the oldest row with one whose key is exactly what a recall for
+  // `needle` looks up; the next-oldest row stays an unrelated filler.
+  const second = db.prepare('SELECT key,revision FROM knowledge ORDER BY revision ASC LIMIT 1 OFFSET 1').get();
+  db.prepare('DELETE FROM knowledge WHERE key=?').run(second.key);
+  db.prepare('INSERT INTO knowledge (key,body,revision) VALUES (?,?,?)')
+    .run(key, JSON.stringify({ scope: target, semanticFact: 'needle fact', knowledgeKey: key }), second.revision);
+  db.close();
+  const reopened = openSharedExperience(root);
+  t.after(() => { try { reopened.close(); } catch {} });
+  const result = reopened.recall({ target });
+  assert.equal(result.truncated, true, 'the unrelated row outside the window was still omitted');
 });
 
 test('a store inside the window is not reported truncated', (t) => {
