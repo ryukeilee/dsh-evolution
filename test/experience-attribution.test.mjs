@@ -626,3 +626,84 @@ test('a __proto__ metric key survives the projection as own data', async () => {
   assert.equal(Object.hasOwn(record.metrics, '__proto__'), true);
   assert.equal(record.metrics['__proto__'].sum, 1);
 });
+
+// 2026-11-24 reliability round: a single caller-input mode must not erase
+// genuine failures that carry no mode at all (the standard recordFailure shape).
+test('caller-input beside mode-less generic failures keeps an unattributed candidate', () => {
+  const at = new Date().toISOString();
+  const knowledge = [];
+  for (let index = 0; index < 20; index += 1) {
+    knowledge.push({
+      key: `knowledge:generic-${index}`,
+      scope: 'tool read',
+      problem: 'official operation failure host operation failure',
+      failureCount: 1, occurrences: 1, lastSeen: at,
+    });
+  }
+  knowledge.push({
+    key: 'knowledge:bad-args',
+    scope: 'tool read',
+    problem: 'official operation failure invalid args',
+    failureCount: 1, occurrences: 1, lastSeen: at,
+  });
+  const planned = planEvolutionCandidates({ knowledge, failureMemory: [] }, { minOccurrences: 3 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool read');
+  assert.ok(candidate, `the generic failures were discarded: ${JSON.stringify(planned.rejected)}`);
+  assert.equal(candidate.attribution, 'unattributed');
+  assert.equal(candidate.occurrences, 20);
+  assert.equal(candidate.origin, 'unknown');
+  assert.equal(candidate.mixedOrigin, true);
+  assert.deepEqual(candidate.excludedModes, ['invalid args']);
+  assert.equal(candidate.benefitModel, undefined);
+});
+
+test('caller-input beside generic failures keeps only the generic dedup and recency', () => {
+  const generic = (key, at) => ({
+    key, scope: 'tool read', problem: 'official operation failure host operation failure',
+    failureCount: 1, occurrences: 1, lastSeen: at,
+  });
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      generic('knowledge:g1', '2026-01-01T00:00:00.000Z'),
+      generic('knowledge:g2', '2026-01-01T00:00:00.000Z'),
+      generic('knowledge:g3', '2026-01-01T00:00:00.000Z'),
+      {
+        key: 'knowledge:args', scope: 'tool read', problem: 'official operation failure invalid args',
+        failureCount: 1, occurrences: 1, lastSeen: '2026-06-01T00:00:00.000Z',
+      },
+    ],
+    failureMemory: [{
+      source: 'failure-memory', key: 'sig-generic', scope: 'tool read',
+      problem: 'official operation failure host operation failure',
+      failureCount: 3, occurrences: 3, lastSeen: '2026-01-01T00:00:00.000Z', decision: 'failed',
+    }],
+  }, { minOccurrences: 2 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool read');
+  assert.ok(candidate, `generic failures were lost: ${JSON.stringify(planned.rejected)}`);
+  assert.equal(candidate.occurrences, 3, 'knowledge sum and memory max are not added together');
+  assert.equal(candidate.lastSeen, '2026-01-01T00:00:00.000Z', 'a newer caller-input row does not reopen the target');
+  assert.equal(candidate.attribution, 'unattributed');
+  assert.deepEqual(candidate.excludedModes, ['invalid args']);
+});
+
+test('a caller-input rootCause does not classify a generic-failure candidate', () => {
+  const generic = (key) => ({
+    key, scope: 'tool read', problem: 'official operation failure host operation failure',
+    failureCount: 3, occurrences: 3, lastSeen: '2026-01-01T00:00:00.000Z',
+  });
+  const planned = planEvolutionCandidates({
+    knowledge: [
+      generic('knowledge:g1'),
+      {
+        key: 'knowledge:args', scope: 'tool read', problem: 'official operation failure invalid args',
+        rootCause: 'bad arguments', failureCount: 1, occurrences: 1, lastSeen: '2026-01-01T00:00:00.000Z',
+      },
+    ],
+    failureMemory: [],
+  }, { minOccurrences: 2 });
+  const candidate = planned.candidates.find((entry) => entry.problemKey === 'tool read');
+  assert.ok(candidate, `candidate lost: ${JSON.stringify(planned.rejected)}`);
+  assert.equal(candidate.attribution, 'unattributed');
+  assert.deepEqual(candidate.failureModes, []);
+  assert.equal(candidate.benefitModel, undefined);
+});

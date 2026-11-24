@@ -346,7 +346,9 @@ test('a live host identity that cannot be proven is verify-host, not a false rev
 
 test('operator-disabled for every approved profile is inactive with no next action', async (t) => {
   const env = await fixture(t, 'disabled');
-  await writeConsumers(env);
+  // Every consumer has already unmounted the record, so revocation needs no
+  // further action. Active rows after revocation are covered separately below.
+  await writeConsumers(env, { rows: { acp: [], web: [] } });
   for (const profile of PROFILES) {
     const outcome = await setDisabledForProfile(env.paths, { pluginId: RECORD_ID, profile, disabled: true, reason: 'operator test' });
     assert.equal(outcome.ok, true);
@@ -367,24 +369,22 @@ test('operator-disabled for every approved profile is inactive with no next acti
   assert.equal(composed.kind, 'no-action');
 });
 
-test('a record disabled for one profile stays active where it is still enabled', async (t) => {
+test('a record disabled for one profile needs a restart while that consumer still mounts it', async (t) => {
   const env = await fixture(t, 'partial-disabled');
   await writeConsumers(env);
   const outcome = await setDisabledForProfile(env.paths, { pluginId: RECORD_ID, profile: 'acp', disabled: true, reason: 'operator test' });
   assert.equal(outcome.ok, true);
 
   const result = await review(env);
-  assert.equal(result.status, 'active');
-  assert.equal(result.summary.active, 1);
-  assert.deepEqual(result.nextActions, []);
+  assert.equal(result.status, 'restart-required');
+  assert.equal(result.nextActions.length, 1);
+  assert.equal(result.nextActions[0].action, REVIEW_ACTIONS.RESTART);
 
   const [record] = result.records;
-  assert.equal(record.status, 'active');
-  assert.equal(record.action, null);
-  assert.deepEqual(record.profiles.map((row) => row.status).sort(), ['active', 'disabled']);
+  assert.deepEqual(record.profiles.map((row) => row.status).sort(), ['active', 'restart-required']);
 
   const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
-  assert.equal(composed.kind, 'no-action');
+  assert.equal(composed.kind, 'restart-consumer');
 });
 
 test('an invalid published record surfaces an operator action instead of a silent no-action', async (t) => {
@@ -1216,4 +1216,59 @@ test('a missing promotion sidecar is unknown, never an experiment benefit', asyn
   assert.equal(withUsage.valueSummary.experimentBenefit, 0);
   assert.equal(withUsage.retirementCandidates.length, 1);
   assert.match(withUsage.retirementCandidates[0].reasons.join(' '), /unknown/);
+});
+
+// 2026-11-24 reliability round: the same consumer-host mismatch behind a stale
+// `failed` row must not be reported as restart-required. Restarting a consumer
+// that still runs another host can never mount the record.
+test('a stale failure row on another host asks for revalidation, not a restart', async (t) => {
+  const env = await fixture(t, 'consumer-host-mismatch-failed');
+  const staleDigest = hostDigest(PREVIOUS_HOST);
+  await writeConsumers(env, {
+    host: PREVIOUS_HOST,
+    rows: {
+      acp: [{ id: env.record.id, status: 'failed', reason: 'plugin-apply-failed', hostDigest: staleDigest, activatedAt: null }],
+      web: [{ id: env.record.id, status: 'failed', reason: 'plugin-apply-failed', hostDigest: staleDigest, activatedAt: null }],
+    },
+  });
+
+  const result = await review(env);
+  const [record] = result.records;
+  assert.equal(record.status, 'pending-revalidation', JSON.stringify(record.profiles));
+  assert.equal(record.action, REVIEW_ACTIONS.REVALIDATE);
+  assert.equal(result.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART), false);
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'revalidate');
+});
+
+test('a compatible consumer patch still reports a real apply failure, not a restart loop', async (t) => {
+  const env = await fixture(t, 'consumer-compatible-patch');
+  const consumerHost = { ...CURRENT_HOST, cordis: '4.1.1' };
+  await writeConsumers(env, {
+    host: consumerHost,
+    rows: {
+      acp: [{ id: env.record.id, status: 'failed', reason: 'plugin-apply-failed', hostDigest: hostDigest(consumerHost), activatedAt: null }],
+      web: [{ id: env.record.id, status: 'active', reason: null, hostDigest: hostDigest(CURRENT_HOST), activatedAt: null }],
+    },
+  });
+  const result = await review(env);
+  const [record] = result.records;
+  assert.equal(record.status, 'incompatible');
+  assert.equal(record.action, REVIEW_ACTIONS.REPAIR);
+  assert.equal(result.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART), false);
+});
+
+test('a revoked record still mounted by a consumer asks for a restart', async (t) => {
+  const env = await fixture(t, 'disabled-still-mounted');
+  await writeConsumers(env); // default rows are active
+  for (const profile of PROFILES) {
+    await setDisabledForProfile(env.paths, { pluginId: RECORD_ID, profile, disabled: true, reason: 'operator test' });
+  }
+  const result = await review(env);
+  assert.equal(result.status, 'restart-required');
+  assert.equal(result.nextActions.length, 1);
+  assert.equal(result.nextActions[0].action, REVIEW_ACTIONS.RESTART);
+  assert.deepEqual(result.records[0].profiles.map((row) => row.status), ['restart-required', 'restart-required']);
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'restart-consumer');
 });

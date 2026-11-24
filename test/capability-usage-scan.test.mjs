@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { sha256 } from '../lib/promoted-sharing.js';
 import {
+  createSessionCounter,
   readUsageProjection,
   summarizeCapabilityUsage,
   toolNamesFromSource,
@@ -390,4 +391,31 @@ test('the scanner output is reproducible directly, without the CLI', async (t) =
   assert.equal(projection.records[RECORD_ID].verificationInvocations, 1);
   assert.equal(projection.scannedSessions, 1);
   assert.equal(projection.scannedToolCalls, 2);
+});
+
+// 2026-11-24 reliability round: the ACP coordination tool is not a candidate
+// execution lifecycle. Its read-only audit/status calls must never turn a real
+// published-tool usage into verification traffic.
+test('evolution_desktop coordination does not mark a published call as verification', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  assert.equal(counter.call({ type: 'tool/call', data: { name: 'mytool', callId: 't1' } }), 'workflow');
+  assert.equal(counter.call({ type: 'tool/call', data: { name: 'evolution_desktop', callId: 'e1' } }), 'ignored');
+  assert.equal(counter.call({ type: 'tool/call', data: { name: 'mytool', callId: 't2' } }), 'workflow');
+  counter.call({ type: 'tool/result', data: { toolCallId: 'e1' } });
+  counter.call({ type: 'tool/result', data: { toolCallId: 't2' } });
+  counter.call({ type: 'tool/result', data: { toolCallId: 't1' } });
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 2, verification: 0, unattributed: 0 },
+  });
+});
+
+test('a real promotion lifecycle call still marks an overlapping published call as verification', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  counter.call({ type: 'tool/call', data: { name: 'evolution_trial', callId: 'life1' } });
+  counter.call({ type: 'tool/call', data: { name: 'mytool', callId: 't1' } });
+  counter.call({ type: 'tool/result', data: { toolCallId: 't1' } });
+  counter.call({ type: 'tool/result', data: { toolCallId: 'life1' } });
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 0, verification: 1, unattributed: 0 },
+  });
 });

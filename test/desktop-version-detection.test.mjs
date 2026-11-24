@@ -16,6 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { detectRuntimeVersions } from '../lib/orchestrator.js';
+import { packageVersionFromHostRoot } from '../lib/runtime-versions.js';
 
 const HOST_VERSION = '0.2.2-rc.1';
 const CORDIS_VERSION = '4.1.0';
@@ -109,6 +110,26 @@ test('a direct host entry still resolves through the official package layout', (
     const versions = detectRuntimeVersions({ refresh: true, entries: [entry], resourcesPath: '' });
     assert.equal(versions.host, HOST_VERSION);
     assert.equal(versions.cordis, CORDIS_VERSION);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// 2026-11-24 reliability round: a package at the official path is still not
+// the official package when its manifest says otherwise. The reader must fail
+// closed to unknown instead of lending a random package's version to the host
+// identity used by applicability and cross-entry compatibility.
+test('a dependency manifest with a foreign name does not supply a host version', () => {
+  const root = scratch();
+  try {
+    const dshDir = path.join(root, 'node_modules', '@deepseek-ai', 'dsh');
+    writeJson(path.join(dshDir, 'package.json'), { name: '@deepseek-ai/dsh', version: HOST_VERSION });
+    const cordisDir = path.join(root, 'node_modules', '@deepseek-ai', 'cordis');
+    writeJson(path.join(cordisDir, 'package.json'), { name: 'totally-not-cordis', version: '99.0.0' });
+    assert.equal(packageVersionFromHostRoot(dshDir, '@deepseek-ai/cordis'), null);
+    assert.equal(packageVersionFromHostRoot(dshDir, '@deepseek-ai/dsh'), HOST_VERSION);
+    writeJson(path.join(cordisDir, 'package.json'), { name: '@deepseek-ai/cordis', version: CORDIS_VERSION });
+    assert.equal(packageVersionFromHostRoot(dshDir, '@deepseek-ai/cordis'), CORDIS_VERSION);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
