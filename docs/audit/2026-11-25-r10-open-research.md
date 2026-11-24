@@ -164,6 +164,25 @@ compose 把它映射成 `incomplete: true`，但没有为第 51 条之后的 `re
 per-record 状态、截断动作存在且排第一、动作上限与 `nextActionsDropped` 仍生效、compose 的 `kind` 为
 `operator-action` 且 `incomplete: true`。
 
+### 2.6 独立复审 R1 发现并修复的边界
+
+R1（T3 Codex `gpt-6.2-sol` high）审查的是本轮中间提交 `3ec6d8d`。它确认 4 个 blocker、4 个 should；
+Lead 逐条复核后在其后提交中修复，并由 R2 在新 HEAD 上复验。
+
+| # | R1 结论 | 修复 |
+| --- | --- | --- |
+| S1 | 新增 sidecar 字段把调用方 `composition.name` / `purpose` 原样写入 journal/sidecar | `compositionStrategyName()` 只持久化经凭据规则投影、200 字符上限的名称；`purpose` 及 composition 的其余字段不进入任何 durable evidence；实时发布与恢复共用同一投影（`64d9ab5`）。 |
+| S2 | 重启后 `record.probe` 不在内存，发布只看 `record.probe.versions`，补写会与重启后的 canary 写出两条不同版本的 adopted | 解析顺序扩展为 `record.probe.versions` → `latestObservation.probe.versions` → `proposal.applicability` → live；恢复器与实时发布共用（`e91a7fb`、`7990ba0`）。 |
+| S3 | `replayExperimentEvidence()` 重写 sidecar 时丢掉 composition | 正式 replay 路径写入同一个投影名称（`7990ba0`）。 |
+| S4 | 同一 session 目录的双编码被计两次 | 按目录分组；双当前编码 → `ambiguousSessionEncoding`、`complete:false`、计数 null；旧 generation 与当前文件并存视为迁移副本（`1da7323`）。 |
+| S5 | PTC 把任意历史同 ID 调用当成模型 `run_code`；PTC 内调用的生命周期工具被忽略 | 只有 **open** 的 native `run_code` 实例能证明 workflow；历史/已返回的 ID 归 unattributed；PTC 生命周期 start/dispatch 打开/关闭同一验证窗口（`7990ba0`）。 |
+| S6 | 修复前生成的旧 `usage.json` 仍是 `complete:true` 的假零 | 投影新增 `coverage` 标记；旧投影零值为 unknown，正数仍是事实，直到显式重扫（`7990ba0`）。 |
+| S7 | 宿主不匹配 / 宿主未知 / 空索引时 doctor 与 review 对损坏撤销表仍分叉 | review 把撤销表检查提前到宿主检查之前；空索引 + 损坏表单独返回 blocked/operator；doctor 与 review 同判（`e91a7fb`、`7990ba0`）。 |
+| S8 | 截断说明与 nameless invalid-record 动作共用去重键，且可能被动作上限裁掉 | 截断动作带 `code: "review-record-cap"` 的独立身份，原文审查为它保留一个名额（`7990ba0`）。 |
+
+R1 的 8 个 doctor 用例因其工作树缺少可发布宿主身份而失败；本轮在 `test/promoted-sharing-diagnostics.test.mjs`
+用固定宿主事实与临时目录覆盖等价场景，修复后 13/13 通过。
+
 ## 3. 明确不修改的项
 
 | 项 | 结论 | 依据 |
