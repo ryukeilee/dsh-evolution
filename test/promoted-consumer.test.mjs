@@ -426,6 +426,46 @@ test('a failing plugin apply is reported without affecting the other plugin', as
   await session.dispose();
 });
 
+test('an improved iteration replaces the old policy, and revoke restores it', async (t) => {
+  const { dataRoot, createRecord, writeIndex, writeDisable, readComposition } = await fixture(t);
+  const previous = await createRecord({ toolName: 'old_policy_tool' });
+  const iteration = await createRecord({ toolName: 'new_policy_tool' });
+  const marker = {
+    recordId: iteration.record.id,
+    sourceSha256: iteration.record.sourceSha256,
+    approvalSha256: 'c'.repeat(64),
+    evidenceSha256: 'd'.repeat(64),
+    at: '2026-11-24T15:00:00.000Z',
+    summary: 'owner approved the replacement',
+    profiles: ['acp'],
+  };
+  await writeIndex([
+    { ...previous.record, supersededBy: marker },
+    iteration.record,
+  ]);
+
+  const firstContext = await boot();
+  const first = await mountSession(firstContext, dataRoot);
+  const firstRows = new Map(first.rows.map((row) => [row.id, row]));
+  assert.equal(firstRows.get(previous.record.id).status, 'disabled');
+  assert.equal(firstRows.get(previous.record.id).reason, 'superseded-by');
+  assert.equal(firstRows.get(iteration.record.id).status, 'active');
+  assert.deepEqual(firstContext.tools.schemas().map((definition) => definition.name), ['new_policy_tool']);
+  assert.deepEqual((await readComposition('acp')).map((row) => row.id), [`shared-${iteration.record.id}`]);
+  await first.dispose();
+
+  // Revocation clears the marker and disables the iteration in this profile.
+  await writeIndex([previous.record, iteration.record]);
+  await writeDisable([{ pluginId: iteration.record.id, profile: 'acp', disabledAt: '2026-11-24T16:00:00.000Z', reason: 'revoke-supersede' }]);
+  const secondContext = await boot();
+  const second = await mountSession(secondContext, dataRoot);
+  const secondRows = new Map(second.rows.map((row) => [row.id, row]));
+  assert.equal(secondRows.get(previous.record.id).status, 'active');
+  assert.equal(secondRows.get(iteration.record.id).status, 'disabled');
+  assert.deepEqual(secondContext.tools.schemas().map((definition) => definition.name), ['old_policy_tool']);
+  await second.dispose();
+});
+
 test('a second start over the same data root mounts once and never duplicates', async (t) => {
   const { dataRoot, paths, createRecord, writeIndex, readComposition } = await fixture(t);
   const { record, toolName } = await createRecord();

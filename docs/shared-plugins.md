@@ -146,6 +146,15 @@ dsh-evolution-shared reset --plugin <evolution-promoted-...> --profile acp|web
 
 # 采用真实隔离宿主验证证据，追加 revalidation 代并采用该宿主身份（用于 DSH 升级后）
 dsh-evolution-shared revalidate --evidence <evidence.json>
+
+# 给已 stable、已发布的记录增加一个消费 profile：复用既有收益证据，不重跑实验
+dsh-evolution-shared approve --plugin <id> --profile acp|web --approval "<所有者明确批准原文>"
+
+# 让一条已发布记录在同一 profile 让位给另一条已发布记录（迭代替换，双方字节与 stable 证明不变）
+dsh-evolution-shared supersede --old <id> --new <id> --profile acp|web --approval "<所有者明确批准原文>"
+
+# 撤销上述让位：禁用替换方在该 profile 的资格并恢复原记录（下一次启动生效）
+dsh-evolution-shared revoke-supersede --old <id> --profile acp|web --approval "<所有者明确批准原文>"
 ```
 
 `revalidate` 的证据格式为：
@@ -165,6 +174,24 @@ dsh-evolution-shared revalidate --evidence <evidence.json>
 `active: true`；证据文件的 SHA256 会写入新 revalidation 代。任何条件不满足即拒绝，不会只凭证据里的版本号
 放宽兼容性。命令**不会**晋升、回滚或删除记录、journal、canary 状态或经验数据。退出码：`0` 成功，
 `1` 拒绝 / 参数错误，`2` 状态不可读。
+
+### 5.1 新增 profile 与迭代替换为什么不需要新实验
+
+一次晋升产生的收益证据绑定的是候选源码摘要、任务身份、模型与 DSH/Cordis 版本，而不是消费 profile。
+`approve` 只记录所有者对**新增 profile** 的明确批准，复用同一份已验证事实；它不会重新哈希宿主充当新证明，
+也不会改写 `publishedAt`、`stable`、源码摘要或 revalidation 代。因此“先发布到 ACP，之后想再发布到 Web”
+不再需要另起一次 Trial / 配对会话 / canary / 晋升。
+
+`supersede` 解决的是另一个问题：新候选本质上是既有 stable 插件的改进时，旧插件不应与新插件在同一 profile
+同时挂载（两个 `tools/post-execute` 监听器会重复处理同一结果）。它在**同一次索引锁与原子写**里给旧记录写入
+一个有界的 `supersededBy` 标记，精确绑定新记录的 id、源码摘要、profile 范围与批准摘要。consumer 在完成该快照内
+**全部**记录的资格判定后才应用这个标记：只有替换方 `eligible`、字节仍与批准时一致、且自身没有被替换时，旧记录
+才报 `disabled` / `superseded-by`。若替换方升级后停在 `pending-revalidation`、字节被改动或资格失败，旧记录
+保持 `active`，不会出现“两条都不挂”的空窗。回滚用 `revoke-supersede`（禁用替换方并清除标记），或现有的
+`disable` / `enable` 逐 profile 开关；两者都不改插件源码、journal、canary 或经验数据。
+
+两种注释都拒绝格式错误的标记、未变更字节的重新批准、缺失的明确批准与非消费 profile。批准原文只以 SHA256
+与脱敏后的有界摘要进入索引，不把任意操作者文本写入分发状态。
 
 ## 6. 升级与重验证策略
 
