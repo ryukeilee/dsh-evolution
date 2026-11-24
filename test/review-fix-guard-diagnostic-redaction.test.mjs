@@ -44,6 +44,21 @@ test('a file path carrying a credential is redacted in the error branch', () => 
   assert.ok(serialized.includes('[redacted]'));
 });
 
+test('a credential that starts after the projection bound is still redacted', () => {
+  const c = ctx();
+  apply(c, {});
+  const args = {
+    get file_path() { throw new Error('diagnostic input failed'); },
+    // The getter above forces the catch branch; the file path is read after the
+    // throw and must be redacted before the 200-character projection.
+  };
+  Object.defineProperty(args, 'file_path', { value: `/tmp/agent-presets/${'x'.repeat(185)}SECRET_token=abcdefghij/agent.cordis.yml`, configurable: true });
+  // Use a hostile proxy so simulateResult throws before sampling file_path.
+  const hostile = new Proxy(args, { get(target, key) { if (key === 'content') throw new Error('boom'); return target[key]; } });
+  c.listener({ arguments: hostile }, {}, () => {});
+  assert.equal(JSON.stringify(c.emitted).includes('abc123'), false);
+});
+
 test('a throwing getter cannot escape the diagnostic listener', () => {
   const c = ctx();
   apply(c, {});

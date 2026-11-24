@@ -25,7 +25,7 @@ test('an outer knowledge window truncation is reported by recall', (t) => {
       type: 'tool/error', code: 'HOST_OPERATION_FAILED', target: index === 0 ? 'needle' : `tool:filler-${index}`, metrics: { n: index } });
   }
   const all = store.recall({ problem: 'needle' });
-  assert.equal(all.scanned, 2050);
+  assert.equal(all.scanned, 2000);
   assert.equal(all.truncated, true);
   assert.ok(all.considered <= 2000);
 

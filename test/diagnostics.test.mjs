@@ -17,7 +17,7 @@ import {
   parseComposedProfile, composedEventBridgeWriter, EVOLUTION_TOOL_NAMES, SUPPORTED_DSH_VERSIONS,
 } from '../lib/diagnostics.js';
 import { EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, signEventBridgeEnvelope, verifyEventBridgeEnvelope } from '../lib/orchestrator.js';
-import { advanceRetention, planLogPrune } from '../lib/event-log-checkpoint.js';
+import { advanceRetention, planLogPrune, digestLogBytes } from '../lib/event-log-checkpoint.js';
 import { promotionPlan, derivedPluginPath } from './promotion-plan-fixture.mjs';
 import { evolutionDomainSpec } from '../lib/domain-storage.js';
 import { EVOLUTION_TOOLS } from '../lib/registration.js';
@@ -1470,6 +1470,48 @@ test('a partial-tail trim is skipped while a committed truncation is still pendi
   assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
   assert.match(applied[0].detail, /committed retention truncation is still pending/);
   assert.equal(fs.readFileSync(paths.eventBridgePath, 'utf8'), before, 'the file and its generation are untouched');
+});
+
+test('the trim also honors a pending floor that a new start would install', async () => {
+  const { paths } = freshHome('repair-pending-install');
+  const event = { eventId: 'evt-pending-install', eventType: 'measurement-completed' };
+  const firstLine = `${JSON.stringify(signEventBridgeEnvelope(event, { key: KEY, sequence: 1 }))}\n`;
+  const complete = firstLine + firstLine;
+  fs.writeFileSync(paths.eventBridgePath, complete);
+  const stat = fs.statSync(paths.eventBridgePath, { bigint: true });
+  const plan = planLogPrune({ buffer: Buffer.from(complete), key: KEY, writer: EVENT_BRIDGE_DEFAULT_WRITER,
+    applied: { [event.eventId]: JSON.parse(firstLine.trim()).mac }, retainRecords: 1,
+    identity: { dev: stat.dev, ino: stat.ino } });
+  const retention = advanceRetention(null, { prunable: plan.prunable, log: plan, key: KEY });
+  writeDomain(paths, { ...domainGlobal({ applied: {}, pending: { retention } }) });
+  fs.writeFileSync(paths.eventBridgePath, complete + '{"schema":2,"writer":"dsh-evolution');
+  const applied = await applyRepairs([{ id: 'event-bridge-trim-partial-tail', safe: true }], { paths });
+  assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
+  assert.match(applied[0].detail, /truncation is still pending/);
+});
+
+test('a trim that would drop bytes covered by the committed tail is skipped', async () => {
+  const { paths } = freshHome('repair-tail-covers-residue');
+  const event = { eventId: 'evt-tail-cover', eventType: 'measurement-completed' };
+  const line = `${JSON.stringify(signEventBridgeEnvelope(event, { key: KEY, sequence: 1 }))}\n`;
+  const residue = '{"schema":2,"writer":"dsh-evolution';
+  const withResidue = line + residue;
+  fs.writeFileSync(paths.eventBridgePath, withResidue);
+  const bytes = Buffer.from(withResidue);
+  // A floor whose retained tail deliberately covers the residual bytes. The
+  // trim would remove them and break replay's floor-prefix proof.
+  const retention = {
+    schema: 1,
+    markers: { pruned: 1, chain: 'a'.repeat(64) },
+    log: { bytes: bytes.length + 1, records: 1,
+      prior: { bytes: bytes.length + 1, digest: 'b'.repeat(64) },
+      tail: { bytes: bytes.length, digest: digestLogBytes(KEY, bytes) } },
+  };
+  writeDomain(paths, { ...domainGlobal({ applied: {} }), retention });
+  const before = fs.readFileSync(paths.eventBridgePath, 'utf8');
+  const applied = await applyRepairs([{ id: 'event-bridge-trim-partial-tail', safe: true }], { paths });
+  assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
+  assert.equal(fs.readFileSync(paths.eventBridgePath, 'utf8'), before);
 });
 
 test('a partial-tail repair that still matches is applied and keeps the trusted prefix', async () => {

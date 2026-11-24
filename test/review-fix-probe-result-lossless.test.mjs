@@ -55,6 +55,13 @@ test('a real undefined cannot satisfy a literal "[undefined]" expectation', asyn
     JSON.stringify(result.samples));
 });
 
+test('a non-plain object cannot satisfy an empty record expectation', async (t) => {
+  const h = harness(t, { value: new Date(0), expected: {} });
+  const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);
+  assert.ok(result.samples.some((entry) => entry.isError === true && entry.code === 'PROBE_VALUE_NOT_LOSSLESS'),
+    JSON.stringify(result.samples));
+});
+
 test('a lossless value keeps its historical correctness check', async (t) => {
   const h = harness(t, { value: { marker: 'ok' }, expected: { marker: 'ok' } });
   const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);
