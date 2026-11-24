@@ -314,6 +314,44 @@ test('a concurrent observation of a deferred hypothesis never starts a second Tr
   assert.equal(runs.filter((record) => record.state === 'measured').length, 1);
 });
 
+test('an unproven cleanup after a transient failure does not strand the decision reservation', async (t) => {
+  const reservations = new Set();
+  const domainStorage = {
+    observe: async () => {},
+    reserveAutonomousDecision: async (identity) => {
+      if (reservations.has(identity)) return false;
+      reservations.add(identity);
+      return true;
+    },
+    autonomousDecisions: async () => [],
+    releaseAutonomousDecision: async (identity) => { reservations.delete(identity); },
+  };
+  const strategies = {
+    AGENT_ERROR: declaration('f', async () => { throw new Error("EACCES: permission denied, open '/repo/locked.json'"); }),
+  };
+  const h = await session(t, { domainStorage, strategies, transientRetryCooldownMs: 0 });
+  // Make the disposer fail too, so cleanupAutonomousTrial reports an unproven
+  // state instead of `recovered`. The reservation must still be released: it is
+  // a concurrency placeholder, not an owner decision.
+  const stop = h.runtime.stop;
+  h.runtime.stop = async (...args) => {
+    const receipt = await stop(...args);
+    throw Object.assign(new Error('disposer failed'), { receipt });
+  };
+  await belowThreshold(h.observe, 'AGENT_ERROR');
+  const first = await h.observe('AGENT_ERROR');
+  assert.equal(first.phase, 'experiment-deferred');
+  assert.equal(first.reason, 'transient-failure');
+  const identity = deferralKey(h.core, 'AGENT_ERROR', 'f');
+  assert.equal(reservations.has(identity), false, 'the transient release ran despite unproven cleanup');
+
+  for (let index = 0; index < 3; index += 1) {
+    const next = await h.observe('AGENT_ERROR');
+    assert.notEqual(next.reason, 'prior-decision-requires-owner',
+      'a later observation must retry instead of seeing a terminal-looking answer');
+  }
+});
+
 test('a decision reservation whose release failed is retried by the next observation', async (t) => {
   const reservations = new Set();
   let releaseCalls = 0;

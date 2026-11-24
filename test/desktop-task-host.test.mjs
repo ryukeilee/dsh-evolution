@@ -210,7 +210,7 @@ function factsWriter(home) {
   };
 }
 
-async function approveWhenWaiting(home, taskId, { sourceSha256 = null } = {}) {
+async function approveWhenWaiting(home, taskId, { sourceSha256 = null, targetProfiles = ['acp'] } = {}) {
   const state = await waitForState(home, taskId, (value) => value.phase === 'awaiting-owner-confirmation');
   const approval = {
     schemaVersion: SCHEMA_VERSION,
@@ -220,7 +220,7 @@ async function approveWhenWaiting(home, taskId, { sourceSha256 = null } = {}) {
     sourceSha256: sourceSha256 ?? state.candidateSourceSha256,
     confirmation: true,
     confirmationText: 'Acceptance approval: promote the measured candidate.',
-    targetProfiles: ['acp'],
+    targetProfiles,
     confirmedAt: new Date().toISOString(),
   };
   const dir = taskChannelPaths(home).approvals;
@@ -228,6 +228,25 @@ async function approveWhenWaiting(home, taskId, { sourceSha256 = null } = {}) {
   await fsp.writeFile(path.join(dir, `${taskId}.json`), `${JSON.stringify(approval, null, 2)}\n`, { mode: 0o600 });
   return { state, approval };
 }
+
+test('an approval whose targetProfiles differ from the plan never promotes', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  plan.plan.requestedTargetProfiles = ['web'];
+  const kernel = fakeKernel({ facts: factsWriter(home) });
+  const ctx = fakeCtx(kernel, plan);
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId, { targetProfiles: ['acp'] }); // client default
+  const state = await waitForState(home, taskId, (value) => value.phase === 'rejected' || value.phase === 'interrupted' || value.error !== null);
+  assert.match(state.error?.code ?? '', /E_DESKTOP_APPROVAL_MISMATCH/);
+  assert.equal(kernel.state.confirmedPromotions, 0);
+  const confirmed = kernel.calls.filter((call) => call.name === 'evolution_promote' && call.args.confirmation === true);
+  assert.equal(confirmed.length, 0);
+  assert.deepEqual(state.requestedTargetProfiles, ['web']);
+});
 
 test('a task runs the real kernel sequence and reaches stable after a bound approval', async (t) => {
   const home = temporary(t);
