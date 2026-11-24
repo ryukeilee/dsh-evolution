@@ -621,11 +621,14 @@ test('other canonical session generations are reported unscanned, never a measur
   assert.equal(status, 3);
   assert.equal(projection.complete, false);
   assert.equal(projection.recordsComplete, false);
-  assert.deepEqual(projection.failures.unsupportedSessionFormats, [
-    { session: 'legacy-plain', file: 'session.v3.jsonl' },
-    { session: 'legacy-zstd', file: 'session.v3.jsonl.zstd' },
-    { session: 'unversioned', file: 'session.jsonl' },
-  ]);
+  assert.deepEqual(
+    [...projection.failures.unsupportedSessionFormats].sort((left, right) => left.session.localeCompare(right.session)),
+    [
+      { session: 'legacy-plain', file: 'session.v3.jsonl' },
+      { session: 'legacy-zstd', file: 'session.v3.jsonl.zstd' },
+      { session: 'unversioned', file: 'session.jsonl' },
+    ],
+  );
   assert.equal(projection.scannedSessions, 1, 'only the current generation is parsed');
   assert.equal(projection.records[RECORD_ID].workflowInvocations, null);
   assert.equal(projection.records[RECORD_ID].verificationInvocations, null);
