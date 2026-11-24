@@ -1,0 +1,105 @@
+{
+  "kind": "dsh-evolution-release-audit",
+  "version": "0.2.19",
+  "recordedAt": "2026-11-24T05:09:11.000Z",
+  "merge": {
+    "researchPr": "https://github.com/ryukeilee/dsh-evolution/pull/94",
+    "researchMergeCommit": "7f5f68ee199624b6044564b8cb65e1463e973ad1",
+    "releasePr": "https://github.com/ryukeilee/dsh-evolution/pull/95",
+    "releaseMergeCommit": "50f1a9bf7f9911e78cb48ce897a7a1ef0c757d54",
+    "researchChecks": "13/13 passed before merge",
+    "releaseChecks": "13/13 passed before merge"
+  },
+  "release": {
+    "tag": "v0.2.19",
+    "url": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.19",
+    "latest": true,
+    "draft": false,
+    "prerelease": false,
+    "publishedAt": "2026-11-24T04:56:39.000Z",
+    "workflowRun": "https://github.com/ryukeilee/dsh-evolution/actions/runs/45329767354",
+    "workflowConclusion": "success",
+    "anonymousDownloadVerified": true,
+    "artifact": {
+      "filename": "dsh-evolution-0.2.19.tgz",
+      "sha256": "40f1128fe7eb3c201247ccbdb1ab47a5f14b213fef6ff159bf3984c10234c90f",
+      "contentSha256": "c26dd989bf5494cd1fcd4cb84792c90c179c6e133cddfdce18c24c886f117179",
+      "entries": 73,
+      "sourceCommit": "5e256167fbe4e830c270091a278842c2d5430e3b"
+    }
+  },
+  "verification": {
+    "unitTests": {
+      "command": "NODE_OPTIONS=--max-old-space-size=4096 npm test",
+      "pass": 2179,
+      "fail": 0,
+      "skip": 2,
+      "node": "v26.13.1"
+    },
+    "packageChecks": {
+      "development": "17/17 passed",
+      "release": "17/17 passed",
+      "artifactVerify": "passed"
+    },
+    "provenance": "tag -> commit -> source commit -> pinned content passed",
+    "hostAcceptance": {
+      "0.2.0-rc.2": 21,
+      "0.2.1-alpha.1": 21,
+      "0.2.1-rc.2": 21,
+      "0.2.2-rc.1": 25,
+      "0.2.2-rc.2": 25,
+      "0.2.2-rc.3": 25,
+      "0.2.2-rc.4": 25,
+      "0.2.2-rc.5": 25,
+      "artifact": "release/dsh-evolution-0.2.19.tgz",
+      "evidence": "docs/evidence/dsh-<host>.json"
+    },
+    "crossEntry": {
+      "host": "0.2.2-rc.5",
+      "steps": 39,
+      "result": "passed",
+      "evidence": "docs/evidence/cross-entry-0.2.2-rc.5.json"
+    },
+    "ptc": {
+      "scope": "real official Desktop application + real ACP + isolated DSH_HOME + fixed release artifact",
+      "result": "passed to the expected taskBenefit owner gate",
+      "baselineRunCodeCalls": 15,
+      "referenceRunCodeCalls": 15,
+      "candidateRunCodeCalls": 15,
+      "directCalls": 0,
+      "gateCode": "E_DESKTOP_BENEFIT_UNPROVEN",
+      "evidence": "docs/evidence/acp-desktop-control-ptc-0.2.19-20261124.json"
+    },
+    "localInstall": {
+      "result": "passed",
+      "profiles": ["desktop", "acp", "web"],
+      "shippedEntriesMatchedPerProfile": 73,
+      "stableRecordsActive": 4,
+      "acpActive": 4,
+      "webActive": 1,
+      "webSkippedUnapproved": 3,
+      "evidence": "docs/evidence/local-three-profile-install-0.2.19-20261124.json"
+    }
+  },
+  "preservation": {
+    "sharedExperienceSchemaBefore": 1,
+    "sharedExperienceSchemaAfter": 1,
+    "eventsBefore": 439,
+    "eventsAfter": 443,
+    "knowledgeBefore": 49,
+    "knowledgeAfter": 53,
+    "missingBaselineEventIds": 0,
+    "missingBaselineKnowledgeKeys": 0,
+    "integrityCheck": "ok",
+    "promotedSourcesChanged": 0,
+    "experimentArchivesChanged": 0,
+    "publicationIndexChanged": false,
+    "eventBridgeKeyStatChanged": false,
+    "profilePatchesChanged": 0
+  },
+  "remainingRisks": [
+    "No known substantive blocker remains in the normal evolution loop, restart recovery, promotion/canary, cross-entry reuse or installation.",
+    "Confirmed non-blocking documentation/harness edges are registered in RELEASE.md section 6 item 55 and were intentionally not changed."
+  ],
+  "ok": true
+}
