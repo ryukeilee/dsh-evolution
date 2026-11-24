@@ -78,16 +78,25 @@ function recordOf({ probe, taskBenefit, useDurableProbeOnly = false, taskTurns, 
   const taskDeltas = task ? {
     beforeMetrics: { ...task.baseline }, afterMetrics: { ...task.candidate },
   } : {};
+  // Production shape from measure(): when a probe pair exists, the top-level
+  // before/after are the probe numbers; the task artifact's real session numbers
+  // live only under latestObservation.taskBenefit. Keep the durable-only variant
+  // without them so the projection cannot silently depend on that copy.
+  const probeDeltas = comparison ? {
+    beforeMetrics: { ...comparison.beforeMetrics }, afterMetrics: { ...comparison.afterMetrics },
+  } : {};
   const observation = {
     at: '2026-11-24T00:00:00.000Z',
     solvesProblem: comparison ? comparison.benefit && task?.benefit !== false : task?.benefit === true,
     repeatable: true,
     regressionPassed: !(comparison?.regression === true) && !(task?.regression === true),
+    reversible: true,
+    cleanupEvidence: 'clean disposer receipt',
     evidenceKind: comparison ? 'comparative-workload' : 'task-coupled',
     metrics: comparison
       ? { probeBenefit: 1, probeControlStable: 1 }
       : { taskBenefit: task?.benefit === true ? 1 : 0 },
-    ...(comparison && !useDurableProbeOnly ? { ...taskDeltas } : {}),
+    ...(comparison && !useDurableProbeOnly ? { ...probeDeltas } : {}),
     ...(!comparison ? taskDeltas : {}),
     ...(task === undefined ? {} : { taskBenefit: task }),
     ...(durableProbe ? { probe: durableProbe, probeDerived: true } : {}),
@@ -101,6 +110,7 @@ function recordOf({ probe, taskBenefit, useDurableProbeOnly = false, taskTurns, 
       rootCause: 'x', benefitModel: { kind: comparison ? 'workload' : 'workflow' }, improvement: 'context-policy',
     },
     ...(useDurableProbeOnly ? {} : (probe ? { probe } : {})),
+    runtimeRecovered: true,
     latestObservation: observation,
   };
   record.decision = classifyExperimentDecision(record, { source: 'measure' });
@@ -139,7 +149,7 @@ test('a task-driven regression conclusion carries task deltas showing the cost o
   assert.equal(captured[0].metrics.successRateDelta, undefined);
 });
 
-test('the same task-driven verdict after a restart (durable probe only) still uses task deltas', () => {
+test('the same task-driven verdict with only a durable probe still uses task deltas', () => {
   const probe = probeOf(probeComparison({ benefit: true }));
   const record = recordOf({ probe, useDurableProbeOnly: true, taskTurns: 10, taskCalls: 10, candidateTurns: 11, candidateToolCalls: 10 });
   assert.equal(record.decision.kind, 'no-benefit');
@@ -169,6 +179,7 @@ test('the probe keeps its metric basis when both sources agree or the probe itse
       name: 'both sources positive',
       probe: probeOf(probeComparison({ benefit: true })),
       task: { taskTurns: 10, candidateTurns: 8, taskBenefitValue: true },
+      expectedDecision: 'benefit',
       expected: { successRateDelta: 0.5, errorsDelta: -5 },
     },
     {
@@ -178,11 +189,13 @@ test('the probe keeps its metric basis when both sources agree or the probe itse
         taskTurns: 10, candidateTurns: 13, candidateTokens: 9000,
         candidateDurationMs: 2000, taskRegression: true,
       },
+      expectedDecision: 'regression',
       expected: { successRateDelta: -0.2, errorsDelta: 6 },
     },
   ];
-  for (const { name, probe, task, expected } of cases) {
+  for (const { name, probe, task, expectedDecision, expected } of cases) {
     const record = recordOf({ probe, ...task });
+    assert.equal(record.decision.kind, expectedDecision, name);
     const { captured } = captureConclusion(record);
     assert.deepEqual(captured[0].metrics, expected, name);
   }
