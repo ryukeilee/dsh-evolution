@@ -150,6 +150,10 @@ export function rewriteIndexForVerification(index, options) {
     if (record && typeof record.pluginName === 'string') {
       record.moduleUrl = pathToFileURL(path.join(dataRoot, 'promoted', record.pluginName, 'lib', 'index.js')).href;
     }
+    // The clone proves the bytes and the host, not the current operator
+    // supersession topology. Leaving a marker here would suppress a superseded
+    // target and make it impossible to gather its own activation evidence.
+    if (record && record.supersededBy) delete record.supersededBy;
     if (host && record && targetIds.has(record.id)) {
       record.host = Object.assign({}, record.host, { dsh: host.dsh, cordis: host.cordis, include: host.include, node: host.node, verifiedAt: at });
     }
@@ -524,7 +528,9 @@ async function main(argv) {
 
   // 5. Verify on the clone with the current host facts: one real boot per
   //    profile, and each planned tool call through the official executor.
-  writeJsonFile(cloneIndexPath, rewriteIndexForVerification(index, { dataRoot: cloneDataRoot, host, targets }));
+  const verificationIndex = rewriteIndexForVerification(index, { dataRoot: cloneDataRoot, host, targets });
+  writeJsonFile(cloneIndexPath, verificationIndex);
+  const verificationRecords = Array.isArray(verificationIndex.plugins) ? verificationIndex.plugins : [];
   const plansByRecord = new Map(targets.map((id) => [id, planFor(plans, id, work)]));
   for (const plan of plansByRecord.values()) {
     if (plan && plan.tool === 'readonly_git_file') writeGitFixture(path.join(work, 'git-fixture'));
@@ -536,9 +542,11 @@ async function main(argv) {
     for (const id of targets) {
       const record = records.find((row) => row.id === id);
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
-      expect[id] = expectedRecordStatus(record, profile, records, disable);
+      expect[id] = expectedRecordStatus(record, profile, verificationRecords, disable);
       const plan = plansByRecord.get(id);
-      if (plan) calls.push({ id: id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: id });
+      if (plan && expect[id].status === 'active') {
+        calls.push({ id: id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: id });
+      }
     }
     const outcome = await bootConsumer({
       profile,
@@ -571,7 +579,11 @@ async function main(argv) {
     for (const profile of PROFILES) {
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
       const row = verification[profile].rows.get(id);
-      if (!row || row.status !== 'active') throw new Error(id + ' is ' + (row ? row.status : 'missing') + ' in the verified ' + profile + ' entry');
+      const expectedStatus = expectedRecordStatus(record, profile, verificationRecords, disable);
+      if (!row || row.status !== expectedStatus.status
+        || (expectedStatus.reason && row.reason !== expectedStatus.reason)) {
+        throw new Error(id + ' is ' + (row ? `${row.status}/${row.reason}` : 'missing') + ' in the verified ' + profile + ' entry');
+      }
       if (row.sourceSha256 !== record.sourceSha256) throw new Error('the ' + profile + ' entry activated a different source for ' + id);
       if (row.hostDigest !== verification[profile].expectedHostDigest) {
         throw new Error('the ' + profile + ' entry activated ' + id + ' on host digest ' + row.hostDigest + ', not the captured ' + verification[profile].expectedHostDigest);

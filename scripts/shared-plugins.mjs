@@ -371,6 +371,17 @@ async function commandSupersede(options) {
     if (plugin.sourceSha256 !== identity.sourceSha256 || plugin.manifestSha256 !== identity.manifestSha256) {
       throw new Error(`${newId} bytes changed since publication; refusing to annotate them`);
     }
+    // Reject a cycle before it can be written: A→B followed by B→A would make
+    // every record in the loop suppress the next and leave nothing mounted.
+    const byId = new Map(index.records.map((row) => [row.id, row]));
+    const seen = new Set();
+    let walk = identity;
+    while (walk && !seen.has(walk.id)) {
+      seen.add(walk.id);
+      if (walk.id === oldId) throw new Error(`${newId} already supersedes ${oldId} in ${options.profile}; a cycle is not allowed`);
+      const marker = walk.supersededBy?.[options.profile];
+      walk = marker ? byId.get(marker.recordId) : null;
+    }
     const existing = record.supersededBy?.[options.profile];
     if (existing && (existing.recordId !== newId || existing.sourceSha256 !== identity.sourceSha256)) {
       throw new Error(`${oldId} is already superseded in ${options.profile} by ${existing.recordId}; chaining is not allowed`);

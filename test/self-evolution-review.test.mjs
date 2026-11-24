@@ -782,6 +782,14 @@ test('already-mounted and publisher-profile rows stay inactive instead of becomi
 // before per-profile verdicts are computed.
 test('a superseded-by row stays disabled instead of producing a restart loop', async (t) => {
   const env = await fixture(t, 'superseded-row');
+  const marker = {
+    recordId: 'evolution-promoted-111111111111',
+    sourceSha256: 'b'.repeat(64),
+    approvalSha256: 'c'.repeat(64),
+    evidenceSha256: 'd'.repeat(64),
+    at: '2026-11-24T15:00:00.000Z',
+  };
+  await publishSharedRecord(env.paths, { ...env.record, supersededBy: { acp: marker, web: marker } });
   const digest = hostDigest(CURRENT_HOST);
   await writeConsumers(env, {
     rows: {

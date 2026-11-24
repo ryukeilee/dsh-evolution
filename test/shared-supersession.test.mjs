@@ -14,7 +14,9 @@ import {
   annotateSharedRecord,
   applySupersession,
   publishSharedRecord,
+  readDisableState,
   readSharedIndex,
+  revokeSharedSupersession,
   validateSharedRecord,
 } from '../lib/promoted-sharing.js';
 
@@ -42,7 +44,7 @@ function pair({ replacementStatus = 'eligible', replacementSource = 'b'.repeat(6
   const replacement = {
     id: NEW,
     sourceSha256: replacementSource,
-    ...(replacementSuperseded ? { supersededBy: supersededBy({ recordId: OLD }) } : {}),
+    ...(replacementSuperseded ? { supersededBy: supersededBy({ recordId: OLD, sourceSha256: 'a'.repeat(64) }) } : {}),
   };
   return [
     { record: old, decision: { status: 'eligible' } },
@@ -126,6 +128,53 @@ test('a chain resolves to the final eligible version, never two overlapping reco
   assert.equal(result[1].decision.status, SHARED_STATUS.DISABLED);
   assert.equal(result[1].decision.supersededBy, THIRD);
   assert.equal(result[2].decision.status, 'eligible');
+});
+
+test('when the chain tail is ineligible the previous eligible version survives', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const rows = [
+    { record: { id: OLD, sourceSha256: 'a'.repeat(64), supersededBy: { acp: marker() } }, decision: { status: 'eligible' } },
+    { record: { id: NEW, sourceSha256: 'b'.repeat(64), supersededBy: { acp: marker({ recordId: THIRD, sourceSha256: 'f'.repeat(64) }) } }, decision: { status: 'eligible' } },
+    { record: { id: THIRD, sourceSha256: 'f'.repeat(64) }, decision: { status: 'pending-revalidation' } },
+  ];
+  const result = applySupersession(rows, { profile: 'acp' });
+  assert.equal(result[0].decision.status, SHARED_STATUS.DISABLED);
+  assert.equal(result[0].decision.supersededBy, NEW);
+  assert.equal(result[1].decision.status, 'eligible', 'B stays mounted; only C was removed');
+  assert.equal(result[2].decision.status, 'pending-revalidation');
+});
+
+test('a cycle suppresses nothing', () => {
+  const rows = [
+    { record: { id: OLD, sourceSha256: 'a'.repeat(64), supersededBy: { acp: marker() } }, decision: { status: 'eligible' } },
+    { record: { id: NEW, sourceSha256: 'b'.repeat(64), supersededBy: { acp: marker({ recordId: OLD, sourceSha256: 'a'.repeat(64) }) } }, decision: { status: 'eligible' } },
+  ];
+  for (const row of applySupersession(rows, { profile: 'acp' })) {
+    assert.equal(row.decision.status, 'eligible');
+  }
+});
+
+test('an ordinary republish keeps annotations added after the first publish', async (t) => {
+  const { paths, record } = await recordFixture(t);
+  await publishSharedRecord(paths, record);
+  await publishSharedRecord(paths, { ...record, approvedProfiles: ['acp', 'web'], supersededBy: supersededBy() });
+  const revalidation = { at: '2026-11-25T00:00:00.000Z', dsh: '0.2.3', cordis: '4.1.0', include: '1.1.0', node: 'v24.21.0', profiles: ['acp'], evidenceSha256: 'e'.repeat(64) };
+  await publishSharedRecord(paths, { ...record, revalidation: [revalidation] });
+  const index = await readSharedIndex(paths);
+  assert.deepEqual(index.records[0].approvedProfiles, ['acp', 'web']);
+  assert.equal(index.records[0].supersededBy.acp.recordId, NEW);
+  assert.equal(index.records[0].revalidation.length, 1);
+});
+
+test('revoke disables the replacement before clearing the marker', async (t) => {
+  const { paths, record } = await recordFixture(t);
+  await publishSharedRecord(paths, { ...record, supersededBy: supersededBy() });
+  const result = await revokeSharedSupersession(paths, { oldId: OLD, profile: 'acp', reason: 'revoke-supersede:abc123' });
+  assert.equal(result.status, 'updated');
+  const index = await readSharedIndex(paths);
+  assert.equal(index.records[0].supersededBy, undefined);
+  const disable = await readDisableState(paths);
+  assert.ok(disable.entries.some((entry) => entry.pluginId === NEW && entry.profile === 'acp'));
 });
 
 test('the index rejects a malformed supersession or approval annotation', async (t) => {
