@@ -229,6 +229,7 @@ test('the client projection stays bounded and never leaks host paths', () => {
     candidateSourceSha256: candidateSourceDigest('candidate'),
     gates: { benefit: true, measured: true, repeatable: true, regression: true, reversibility: true, cleanup: true, noOrphans: true, runtimeRecovery: true, eligible: true, extra: 'nope' },
     decision: { kind: 'benefit', eligible: true, reasons: ['r1'], secret: 'x' },
+    requestedTargetProfiles: ['web', 'invalid'],
     error: { code: 'E_X', message: 'm'.repeat(900) },
     result: { summary: 's', stable: false, observations: 2 },
     host: { path: '/Users/private' },
@@ -242,6 +243,7 @@ test('the client projection stays bounded and never leaks host paths', () => {
   assert.equal(projected.gates.extra, undefined);
   assert.equal(projected.decision.secret, undefined);
   assert.equal(projected.taskId, state.taskId);
+  assert.deepEqual(projected.requestedTargetProfiles, ['web', 'invalid']);
   assert.equal(projectTaskState(null), null);
 });
 

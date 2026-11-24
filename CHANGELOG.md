@@ -18,6 +18,40 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.20 — 稳定版
+
+`0.2.19` 的稳定后继：把第八、九轮开放性全链路研究与最终收敛修复纳入正式基线（PR #98 与 #99），并以真实 SIGKILL 注入补齐 ambiguous floor 的 commit→truncate 崩溃窗口验证。相对 `0.2.19` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/diagnostics.js`、`lib/domain-storage.js`、`lib/event-log-checkpoint.js`、`lib/experience-recall.js`、`lib/guard.js`、`lib/orchestrator.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`；持久化 schema 编号未变（`0.2.20` 仍读取旧 floor；但一旦回收写入带 `ambiguousPrefix` / `identity` 的 ambiguous floor，`0.2.19` 会以 `unrecognized_keys` 拒绝该 floor，构成降级边界），既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改变。
+
+- **Canary 结论保真。** `conclusionMetrics()` 在 canary 判 `regression` 时不再把 measure 阶段 probe / task 的正向 delta 投影进有界的共享结论；canary 失败事实仍完整保存在 observation、归档与证据 sidecar，其余判定出口逐字节不变。
+- **回收 floor 的文件代际识别。** 对 ambiguous floor（被裁记录与保留记录逐字节相同）在 prior 上记录当时的 dev/ino，分类器据此区分「floor 已提交、截断待补完的崩溃窗口」（同代 + 完整 prior 摘要 → deferred）与「截断完成后追加重建相同前缀」（rename 产生新 inode → already-truncated），关闭永不截断与二次截断丢数据两条路径。dry-run 先问分类器；doctor 的残尾裁剪在待补完截断或会破坏 tail 证明时拒绝；回收在提交 floor 前拒绝无法验签的未终止末行。
+- **真实 SIGKILL 崩溃恢复验证。** `test/retention-process-boundaries.test.mjs` 新增专项：子进程在持有 append lock 时提交带代际身份的 ambiguous floor，父进程 SIGKILL 注入后由新进程补完截断；断言只保留承诺的 tail、重建的逐字节相同前缀（新 inode）不被再次截断、二次恢复幂等、恢复后仍能吸收新事件。反证：移除代际识别逻辑即失败。
+- **统一审查与诊断一致。** doctor 的 `promotion.sharing` 把逐条非法记录计入 blocking，索引缺失仍有 ACTIVE 挂载报 degraded，废除会被 reconciler 撤销的删除建议，畸形 consumer 行不再让报告抛错。
+- **证据与跨入口一致性。** workflow probe 的期望与观测值共用一份无损快照（拒绝深度折叠、非有限值、循环与访问器差异），无法安全计量的输出记为 `measurementInvalid`；`recall()` 报告外层 SQL 窗口截断；自主 transient 失败不再永久滞留决策占位；guard 非阻断诊断脱敏文件路径；ACP `confirm` 按计划声明的 profile 范围校验后写盘。
+- **验证。** 聚焦测试全绿（含领域差分基线、回收、诊断、Desktop 任务、probe、guard、recall、自主观察者）；全量 `NODE_OPTIONS=--max-old-space-size=4096 npm test`、`npm run pack:check`、八宿主真实安装验收与 GitHub CI 均针对本版本固定产物执行。
+
+## 0.2.19 — 稳定版
+
+`0.2.18` 的稳定后继：把五轮开放性全链路可靠性研究及最终收敛修复纳入正式基线（PR #91–#94）。相对 `0.2.18` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-host.js`、`lib/diagnostics.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/experience-recall.js`、`lib/orchestrator.js`、`lib/promoted-sharing.js`、`lib/registration.js`、`lib/runtime-versions.js`、`lib/self-evolution-review.js`、`lib/shared-experience.js` 与 `docs/audit/replay/capability-usage.mjs`，新增 `lib/canary-verification.js`，加上版本号与随包文档；持久化 schema 与 schema 版本、既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改变。`evolution_promote` 只新增可选 `canaryVerification` / `canaryWindow`，`evolution_canary_observe` 只新增可选 `verificationKind`，用于把 context-policy 的功能复验义务绑定到每实验 canary。
+
+- **闭环状态与学习一致性。** 未证明清理的晋升失败保持可重试状态并保留 target claim；advisory 回归不会被写成跨会话永久否定结论，真实 probe / task 回归仍独立保留；重启后的决策从持久 observation 恢复比较证据；同一问题身份使用统一 target / strategy 指纹，失败记忆、结论窗口与自主占位不再互相挤占或漂移。
+- **Canary 功能义务与重启重放。** context-policy 晋升必须携带可重放的只读 `functionalCheck`，纯启动健康观测不能凑满窗口；请求的复验轮数只收紧不放宽内核默认窗口。Desktop 任务在崩溃或关闭后保留 `promoting` / `canary-observing` 现场，按原 session 身份重放同一功能检查；确定缺失的 journal 才结束为 interrupted，未证实的回滚或观测提交继续保留下一次恢复机会。
+- **清理拒绝穿越工具边界。** 确认晋升在写 canary journal 前清理抛错时，注册适配层把已知拒绝发布为普通 `{ok:false, reason:"promotion-cleanup-failed"}` 回执，Desktop 宿主据此调用 `evolution_revert`，不再因工具错误序列化丢失信号而永久占用运行时；内核直接调用者仍收到原异常。
+- **采集、归因与规划。** 取消的执行不进入失败分母；异常轮先结算未恢复退化，退化事件使用独立执行身份；能力缺失、通用失败与 caller-input 分组不再互相污染；中性生命周期事实不再把 canary 回滚目标误标为已解决，已证伪策略不会被较新的中性结论重新解锁。
+- **跨入口与诊断。** 同版本 DSH/Cordis/Include 的 Desktop 与 ACP/Web 不再因 Node 大版本不同而误判 stable 不兼容；doctor 按 ACP/Web consumer 角色校验组成、loader 条目与模块名，并与统一 review 对撤销、失败、待重验证和待重启使用一致分类；官方包身份同时校验实际包名，无法证明时保持 unknown。
+- **证据保真度与资源边界。** 指标合并保留当次实测值并保护自有 `__proto__` 键；显式提案与自主终态记录有界回收；发布撤销复用既有互斥锁；重验证 runner 跳过已撤销 profile，采纳后按当前索引与实时宿主给出一致动作。
+- **研究收敛。** 五轮审计、独立反方复审及最终主链复核记录分别见 `docs/audit/2026-11-24-evolution-loop-reliability.md`、`docs/audit/2026-11-24-open-reliability-round2.md`、`docs/audit/2026-11-24-open-reliability-round3.md`、`docs/audit/2026-11-24-open-reliability-round4.md` 与 `docs/audit/2026-11-24-final-convergence.md`。最终收敛未发现未解决的实质缺陷；已确认的非阻塞文案与 harness 边界不扩大本轮修改范围。
+- **宿主验收与保留。** 八个官方宿主按本版本固定产物重新验收；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR。已有 stable 插件、历史共享经验、进化档案与生产数据不迁移、不下线。
+
+## 0.2.18 — 稳定版
+
+`0.2.17` 的稳定后继：把跨阶段闭环可靠性与共享经验 / 跨入口复用的事实一致性收口（PR #87、#88 与 #89）。相对 `0.2.17` 固定产物，分发内容改 `lib/desktop-task-host.js`、`lib/event-log-checkpoint.js`、`lib/experience-recall.js`、`lib/guard.js`、`lib/orchestrator.js`、`lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/ptc-transport.js`、`lib/self-evolution-review.js`、`lib/shared-experience.js`、`scripts/shared-plugins.mjs`，并把 `docs/audit/replay/capability-usage.mjs` 加入分发白名单，加上版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改动。
+
+- **自主循环的跨阶段事实收口（PR #87）。** 目标身份、抑制与环境类推迟共用同一套 `strategyFingerprint`；未证实的自主清理在抑制与推迟判定之前经同一 `revert` 重试，只有释放证明成立才交还运行时；终态实验记录只在既不持有 target claim 也没有操作中时回收，session 抑制、环境类推迟表、终态记录与按模式的观察窗口共用 `AUTONOMOUS_PATTERN_CAP`。环境类失败按 `transientRetryCooldownMs` 过期后由后续观测重新尝试同一假设，真实策略失败仍进入持久失败记忆，不因为一次暂时性占用就停掉整个 session。
+- **评审追加的可靠性缺口（PR #88）。** 失败决策释放的重试在同一身份互斥下序列化，避免并发观测重复排队；恢复抛错时清除 `autonomousPlanning` 守卫，目标释放失败时保留 proposed 记录；发布锁、结论指纹窗口与 canary 恢复的证明边界统一到既有互斥与身份判定，没有为方便而放宽门禁。
+- **跨进程 claim 与证明绑定（PR #89）。** `recordEvolution()` 的目标与 `findConclusions()` 的指纹过滤统一为规范化问题身份，避免 `tool:read` → `tool read` 这类身份漂移让晋升 / canary / 失败学习事实静默丢失，也避免新结论把已证明无效的结论挤出有界窗口。陈旧 target claim 的读取、删除、获取失败回滚与释放复用跨进程互斥原语，只有可证明的身份与所有权才回收或释放；guard 的风险判定取参数路径、证明绑定取宿主注入的 target，不再让良性 target 遮蔽真实敏感路径。`promoted-sharing` 统一宿主身份回退，打包的 ACP / Web consumer 在缺少 `pluginPackages` 服务时不再把全部记录判为版本不兼容；`discover().truncated` 进入发现与统一检查的完整性判定；probe 的超时、取消、空结果批与未测量异常统一标为 `unmeasured`，不伪造收益，也不写入跨会话不可撤销的假 regression。
+- **分发一致性。** README 的安装与检索命令改用已进入 `package.json#files` 白名单的 `docs/audit/replay/capability-usage.mjs`。没有改变持久化格式、工具签名、授权来源、八项门禁、Cordis 信任根或宿主支持范围。
+- **宿主验收。** 八个官方宿主针对本版本的固定产物重新验收并重新固定；`0.2.2-rc.1` 至 `0.2.2-rc.5` 仍须关闭宿主 HMR。已有 stable 插件、历史共享经验与生产数据不迁移、不下线。PR #89 独立复审提到的宿主检测器字段混合属于 review / doctor 既有共用实现，本轮未改动，留作后续风险。
+
 ## 0.2.17 — 稳定版
 
 `0.2.16` 的稳定后继：把已发布 stable 插件的真实调用事实接入统一自我进化检查，把候选形态绑定到观测到的恢复路径，并补齐 `read` 字节上限损失这一第二类真实损失。相对 `0.2.16` 固定产物，分发内容改 `lib/desktop-task-client.js`、`lib/experience-plan.js`、`lib/orchestrator.js`、`lib/promoted-sharing.js`、`lib/registration.js`、`lib/self-evolution-review.js`，新增 `lib/capability-usage.js`，加上版本号与随包文档（`README.md`、`COMPATIBILITY.md`、`CHANGELOG.md`、`RELEASE.md`）；持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁的判定、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改动。

@@ -6,7 +6,7 @@
 
 | 关键事实 | 当前值 |
 | --- | --- |
-| 版本 | `0.2.17`（稳定版） |
+| 版本 | `0.2.20`（稳定版） |
 | 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1`、`0.2.2-rc.2`、`0.2.2-rc.3`、`0.2.2-rc.4`、`0.2.2-rc.5`（后五者须关闭宿主 HMR，见下） |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
@@ -16,7 +16,11 @@
 
 ## 30 秒了解
 
-本版本（`0.2.17`）把已发布 stable 插件的真实调用事实接入统一自我进化检查，并让候选形态跟随观测到的恢复路径。`evolution_plan` 与 ACP `evolution_desktop` 的只读 `audit` 在显式审计时读取 `<dataRoot>/shared-plugins/usage.json` 这份 ≤512 KiB 的投影（由 `docs/audit/replay/capability-usage.mjs --write` 生成），返回 `usageEvidence`；归因只在晋升生命周期调用尚未返回时把发布工具调用算作验证流量，生命周期调用从未返回时记为 `unattributedInvocations`，不注册工具的能力则通过配对会话证据证明 `experiment-benefit`。工具作用域退化一旦有观测恢复与 workflow 收益声明，planner 直接给出 `context-policy`、`tools/post-execute` 与恢复基线；新增的 `review-retirement` 动作只报告证据与可逆的停用命令，等待所有者授权，检查本身从不执行停用。`read` 的字节上限损失（`Output capped`）现在由同一套发现与晋升机制处理：候选只在官方 footer 或结构化证据证明窗口被截断时追加有界尾部（≤200 行、≤16 KiB、文件 ≤256 KiB），不注册工具。`exercised` 只认对同一路径从第 1 行开始并以期望值成功的第一次请求。持久化 schema、工具名与参数、授权来源、八项晋升门禁、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变；已有 stable 插件、共享经验与生产数据不迁移、不下线。
+本版本（`0.2.20`）是 `0.2.19` 的稳定性后继，把第八、九轮开放性全链路研究与最终收敛修复纳入正式基线（PR #98 与 #99），并补齐 ambiguous floor 的 commit→truncate 窗口真实 SIGKILL 崩溃恢复验证（反证证明移除文件代际识别即失败）。相对 `0.2.19` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/diagnostics.js`、`lib/domain-storage.js`、`lib/event-log-checkpoint.js`、`lib/experience-recall.js`、`lib/guard.js`、`lib/orchestrator.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`：canary 回归结论不再附带 probe 正向 delta；回收 floor 以 dev/ino 识别文件代际，区分「截断待补完」与「截断后追加重建相同前缀」，关闭永不截断与二次截断丢数据两条路径；doctor 的 sharing 诊断与统一审查口径一致；probe 证据快照无损化；共享检索截断、Desktop 任务确认范围、guard 诊断脱敏与自主 transient 占位回收按同一事实口径收口。持久化 schema 编号未变，`0.2.20` 仍读取旧 floor；但一旦回收写入带 `ambiguousPrefix` / `identity` 的 ambiguous floor，`0.2.19` 会以 `unrecognized_keys` 拒绝该 floor，构成降级边界。既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变。已有 stable 插件、共享经验、进化档案与生产数据不迁移、不下线。
+
+`0.2.18` 把自我进化闭环的跨阶段可靠性事实收口（PR #87、#88 与 #89）：晋升、canary、失败学习与结论检索对同一问题身份使用统一投影；陈旧结论不会被同 scope 的新结论挤出有界检索窗口；target claim 的获取、释放与回滚失败复用跨进程互斥原语；guard 的风险判定取参数路径、证明绑定取宿主注入的 target；缺失 `pluginPackages` 服务时 consumer 沿用既有宿主身份回退；`discover().truncated` 进入完整性判定；probe 的超时、取消与空结果批统一记为 `unmeasured`。
+
+`0.2.17` 引入的能力全部保留：`evolution_plan` 与 ACP `evolution_desktop` 的只读 `audit` 在显式审计时读取 `<dataRoot>/shared-plugins/usage.json` 这份 ≤512 KiB 的投影（由 `docs/audit/replay/capability-usage.mjs --write` 生成），返回 `usageEvidence`；归因只在晋升生命周期调用尚未返回时把发布工具调用算作验证流量，生命周期调用从未返回时记为 `unattributedInvocations`，不注册工具的能力则通过配对会话证据证明 `experiment-benefit`。工具作用域退化一旦有观测恢复与 workflow 收益声明，planner 直接给出 `context-policy`、`tools/post-execute` 与恢复基线；`review-retirement` 动作只报告证据与可逆的停用命令，等待所有者授权，检查本身从不执行停用。`read` 的字节上限损失（`Output capped`）由同一套发现与晋升机制处理：候选只在官方 footer 或结构化证据证明窗口被截断时追加有界尾部（≤200 行、≤16 KiB、文件 ≤256 KiB），不注册工具；`exercised` 只认对同一路径从第 1 行开始并以期望值成功的第一次请求。
 
 本版本把自我进化收益的判断推进到真实任务：workflow 收益必须有同一任务、同一模型、无候选 vs 有候选各 ≥3 次的真实会话证据（`taskBenefit` 门禁），并绑定候选 Host 源码摘要与 DSH/Cordis 版本；`scripts/acceptance/task-benefit.mjs` 在隔离 home 中用真实 ACP 宿主与真实模型生产该证据（源码仓库脚本，不随 tarball 分发），`run-task-benefit-loop.mjs` 跑完整闭环并在 fresh consumer 上验证自动复用。probe 继续区分 `capability-self-test` 与 `workflow`：单工具前后对照只算 `tool-improvement`；paired workload 只提供 `workflowBenefit` 证据，workflow 与 context-policy 晋升还必须通过 `taskBenefit`（同一任务、同一模型的成对真实会话）；context-policy 计划必须声明可重放的 `verification.functionalCheck`（`read` / `glob` / `grep`），安装成功本身不算生效。collector 另外记录 `line-truncated` / `output-capped` 这类非错误退化（只认官方 footer），planner 按损失频率、恢复成本与可恢复性排序。Desktop 的 `evolution_plan` 与 ACP 的 `evolution_desktop` 只读 `audit` 仍先分类已发布 stable 插件、再排序经验候选、最后给出有序 `selfEvolution.nextActions`；检查不写发布索引、不启动 Trial、不批准晋升。四个已发布 stable 插件、已有共享经验与生产数据都保持不变。本版本新增 DSH `0.2.2-rc.4` / `rc.5`：官方 rc.3 → rc.4 只改 DSH 升级说明与依赖固定；rc.4 → rc.5 只改 DSH 文档与 `dsh-base` 的 `cordis.patch.yml`（移除固定 `web.searchProvider`，改由 dsh-web 按模型路由选择），本 bundle 使用的运行时包逐字节相同，因此只扩展精确宿主声明，并用真实宿主验收后固定进发布产物。`0.2.2-rc.1` 至 `rc.5` 需要关闭宿主 HMR，见下文。已有 schema 1 共享经验库在普通启动下继续保持原布局、不会被自动迁移。
 
@@ -32,9 +36,9 @@
 
 ```sh
 # 查看计划，不写 profile
-node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.17.tgz
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.20.tgz
 # 使用官方 CLI 安装并应用计划；可用 --home 指定隔离 DSH_HOME
-node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.17.tgz --apply
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.20.tgz --apply
 ```
 
 安装器只维护标记块，保留其他插件、Skills、T3 工作流与 storage route；HMR 保持关闭。它不会复制或迁移历史，不会启停正在运行的正式应用。待安装包以内容摘要缓存在 `storages/evolution-package-cache`，由官方 CLI 从不可变路径安装，避免同版本本地重建被文件依赖缓存误判为已安装。缓存内容不匹配时拒绝覆盖。每个 profile 的官方安装结果分别报告，途中失败会停止并报告已完成项；多 profile 安装不是原子事务。安装后重启对应入口。非 macOS 或自定义安装可用 `--cli <官方 dsh 可执行文件>` 指定 CLI。
@@ -100,7 +104,14 @@ kernel 时挂载插件并执行一次、重启后只挂载一次，同时覆盖�
 `docs/evidence/verification-experience-isolation-20261121.md` 与 `docs/evidence/ptc-read-recovery-attribution-20261121.md`；
 `0.2.17` 的 capped read 闭环与 planner 形态证据见
 `docs/evidence/task-benefit-0.2.16-capped-tail-20261124.json` 与
-`docs/evidence/task-benefit-0.2.16-plan-driven-form-final-20261124.json`。rc.5 克隆数据根上的 stable 重验证见
+`docs/evidence/task-benefit-0.2.16-plan-driven-form-final-20261124.json`；`0.2.18` 的跨入口闭环证据见
+`docs/evidence/cross-entry-0.2.2-rc.5.json`，跨进程 target claim 的互斥与释放边界见
+`test/target-claim-ownership.test.mjs`。`0.2.19` 的五轮研究与最终收敛记录见
+`docs/audit/2026-11-24-evolution-loop-reliability.md`、`docs/audit/2026-11-24-open-reliability-round2.md`、
+`docs/audit/2026-11-24-open-reliability-round3.md`、`docs/audit/2026-11-24-open-reliability-round4.md`
+与 `docs/audit/2026-11-24-final-convergence.md`；`0.2.20` 的第八 / 九轮与 SIGKILL 崩溃恢复验证记录见
+`docs/audit/2026-11-24-round8-open-chain-research.md`、`docs/audit/2026-11-24-round9-generation-and-diagnostics.md`
+与 `test/retention-process-boundaries.test.mjs`。rc.5 克隆数据根上的 stable 重验证见
 `docs/evidence/revalidation-0.2.2-rc.5-20261119.json`。
 
 ### 从 ACP 发起、由 Desktop 执行的自进化任务
@@ -348,8 +359,8 @@ CLI 退出码：`0` 健康、`1` 存在降级项、`2` 存在阻塞项、`3` 参
 从 GitHub Release 下载 tarball 和校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.17
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.17.tgz" -o dsh-evolution-0.2.17.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.20
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.20.tgz" -o dsh-evolution-0.2.20.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
@@ -357,11 +368,11 @@ sha256sum --check SHA256SUMS
 macOS 可用 `shasum -a 256 -c SHA256SUMS` 校验。也可用 GitHub CLI 下载同一 Release 的 tarball、`SHA256SUMS` 与 `manifest.json`。校验通过后，用官方 CLI 安装：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.17.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.20.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
-> 上面的 `v0.2.17` Release tarball 声明并验收了全部八个宿主（`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1` 至 `0.2.2-rc.5`）；`0.2.2-rc.1` 至 `0.2.2-rc.5` 必须按下一节关闭宿主 HMR。
+> 上面的 `v0.2.20` Release tarball 声明并验收了全部八个宿主（`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1` 至 `0.2.2-rc.5`）；`0.2.2-rc.1` 至 `0.2.2-rc.5` 必须按下一节关闭宿主 HMR。
 
 安装后 bundle 会登记在官方 profile 的 `dsh.profile.bundles`，随 profile 加载，无需每个 session 手工挂载 preset。下面用 `$DSH_HOME/profiles/web` 指代 `web` profile 的安装目录。首次诊断：
 
@@ -550,7 +561,7 @@ node scripts/migrate-experience-store.mjs --root "$DSH_HOME/storages/evolution-e
 15. **UTF-16 长度超过 240 的身份维度会得到新身份。** 旧实现按 UTF-16 code unit 只保留前 239 个单位（还会切在代理对中间），因此后缀不同的事实会被合并。现在前缀按 code point 切，并附完整文本的 16 位摘要；这类事实会被区分，旧行保留到 retention 到期。归一化后 UTF-16 长度 ≤ 240 的维度逐字节不变、身份不变；长度 > 240 时身份改变：code point 数 ≤ 240 时整段保留，> 240 时保留前 222 个 code point 并附 `…#` 与 16 位十六进制摘要，结果总长 240 个 code point。因此既有记录的身份、命中与保留结果只在后一类维度上变化。
 16. **执行事件日志与领域标记表随历史单调增长；回收是显式 owner 操作，不自动运行。** `execution-events.jsonl` 每个执行事件一行（含 measurement / promotion / canary 事实），领域文档的 `applied` 每个去重身份一个 64 位十六进制 MAC（上限 9 类事件 × experiment 数）。代价是：启动时按日志字节线性读取并逐条验签，`flush()` 每个 pass 读取并 HMAC 整份已提交前缀并对整张标记表重算摘要，领域文档随标记数增长。retention/compact 规划按行读取历史并转移行所有权（`#retentionPlan({ materialize })`），`dryRun` 只计算报告、不物化会被丢弃的输出，峰值内存因此随历史规模增长更慢；实测与唯一负项见 `docs/performance/retention-plan-streaming.md`。`evolution_maintain` 是唯一的回收入口：`dryRun` 只报告字节与记录数，`confirmation: true` 才执行。归档侧沿用既有语义压缩（终态记录折叠为聚合行），被替换的 sealed 段以 `pending.files` 的 `removed` 条目在同一事务里发布，**只有新文件全部安装成功之后才删除**；日志侧先把被丢弃记录携带的 promotion / measurement 事实写进 evidence sidecar（`*.evidence.json`，hydration 链中优先级高于事件桥），再提交裁剪后的 marker 与 `retention` floor（被裁 marker 的 keyed 链、累计的裁剪数与被丢弃字节/记录数、原文件摘要 `prior`、保留尾部摘要 `tail`），最后才截断那些已证明被吸收的字节。顺序是安全论证的一部分：**先提交 floor、后截断**。floor 记录计划时整份日志的摘要（`prior`）与截断后保留前缀的摘要（`tail`），所以“floor 已提交、截断未发生或被打断”是一个可以由下一次 replay 幂等完成的已提交事务（先核对 `prior` 再重写，再核对 `tail`），不会变成永久拒绝；反过来（先截断、后提交）会让 floor 描述已经不存在的字节，第二次回收崩溃后无法恢复。replay 只信任 floor 描述的字节：日志必须要么以保留尾部开头（`continuation`），要么**恰好**是 floor 记录的 `prior` 文件（此时先幂等完成那次已提交的截断）。两者都不是时以 `E_DOMAIN_EVENT_LOG_FLOOR_MISMATCH` 拒绝吸收，而不是重放可能已裁剪 marker 的记录——空文件也一样：空日志不能证明保留字节没有丢，而接受它会让下一次追加造出永远对不上 floor 的头部，所以这里直接失败、把现场留给操作者（恢复那段保留字节，或换一个数据根）。
 
-回收后的已知边界：领域文档带 `retention` 键，旧版本插件的严格 schema 会拒绝它，所以**回收后不要降级到旧版本**（先回滚再回收，或回收后不要回滚）；被裁 marker 的 eventId 不再参与重放冲突检测：同一身份重新发出时领域 ledger 以新 MAC 重新吸收，而内存 marker 窗口仍按 id 把它当重复，记录效果不会重复应用（不再抛冲突）；段目录里 `.tmp` 形状的 seal 残件会被保留、不进事务；doctor 的 `state.retention-floor` 与运行时共用只读分类，检查已提交（含 pending）的 floor：正常保留尾部为 ok、待截断原文件为 degraded，缺失或摘要不匹配为 blocked，不提供猜测式 repair；floor 自身不自洽（有被裁 marker 却没有链、链与零被裁数矛盾、累计丢弃字节小于最后一次丢弃、`prior` 与 `tail` 摘要相同）或 pending floor 落后于已提交 floor 时先报 `floor-inconsistent`（blocked，附 `floorProblems`），并在证据里给出 floor 计数器投影、floor 来源与仅报告不删除的回收临时残件。seal 临时残件由 `state.archives` 报告为 degraded 并保留。二次回收必须先补完上一轮已提交截断并验证保留尾部；**已补完的 floor 不需要 append lock**，所以无关的并发写者不会让启动重放或回收失败，只有确实需要补完时 append lock 竞争才以 `E_DOMAIN_EVENT_LOG_BUSY`（可重试）拒绝推进新 floor，dry run 则只读报告 `pending-truncation`；截断自身的其它失败保留原来的错误码，不会被伪装成锁竞争。没有任何定时器或后台任务调用回收；诊断仍由 `state.event-bridge` 报告 `bytes`、`lines`、`verifiedEvents`、`absorbedRecords`、`unabsorbedRecords`、`oldestRecordAt`、`newestRecordAt` 让操作者先看增长与“已吸收 / 未吸收”的分布。实测数字、修复前三个阻塞的复核与收益边界分别见 `docs/performance/capacity-reclaim-20261027.md`、`docs/performance/retention-reclaim-blockers.md` 与 `docs/performance/capacity-reclaim-evaluation.md`。
+回收后的已知边界：领域文档的 `retention` 键从 `0.2.0-rc.19` 起可读，`0.2.0-rc.18` 及更早版本的严格 schema 会拒绝它；`0.2.20` 仍读取旧格式 floor，但一旦回收写入带 `ambiguousPrefix` / `identity` 的 ambiguous floor，`0.2.19` 会以 `unrecognized_keys` 拒绝该 floor。因此**回收后不要降级到不识别对应结构的版本**（先回滚再回收，或回收后不要回滚）；被裁 marker 的 eventId 不再参与重放冲突检测：同一身份重新发出时领域 ledger 以新 MAC 重新吸收，而内存 marker 窗口仍按 id 把它当重复，记录效果不会重复应用（不再抛冲突）；段目录里 `.tmp` 形状的 seal 残件会被保留、不进事务；doctor 的 `state.retention-floor` 与运行时共用只读分类，检查已提交（含 pending）的 floor：正常保留尾部为 ok、待截断原文件为 degraded，缺失或摘要不匹配为 blocked，不提供猜测式 repair；floor 自身不自洽（有被裁 marker 却没有链、链与零被裁数矛盾、累计丢弃字节小于最后一次丢弃、`prior` 与 `tail` 摘要相同）或 pending floor 落后于已提交 floor 时先报 `floor-inconsistent`（blocked，附 `floorProblems`），并在证据里给出 floor 计数器投影、floor 来源与仅报告不删除的回收临时残件。seal 临时残件由 `state.archives` 报告为 degraded 并保留。二次回收必须先补完上一轮已提交截断并验证保留尾部；**已补完的 floor 不需要 append lock**，所以无关的并发写者不会让启动重放或回收失败，只有确实需要补完时 append lock 竞争才以 `E_DOMAIN_EVENT_LOG_BUSY`（可重试）拒绝推进新 floor，dry run 则只读报告 `pending-truncation`；截断自身的其它失败保留原来的错误码，不会被伪装成锁竞争。没有任何定时器或后台任务调用回收；诊断仍由 `state.event-bridge` 报告 `bytes`、`lines`、`verifiedEvents`、`absorbedRecords`、`unabsorbedRecords`、`oldestRecordAt`、`newestRecordAt` 让操作者先看增长与“已吸收 / 未吸收”的分布。实测数字、修复前三个阻塞的复核与收益边界分别见 `docs/performance/capacity-reclaim-20261027.md`、`docs/performance/retention-reclaim-blockers.md` 与 `docs/performance/capacity-reclaim-evaluation.md`。
 17. **`0.2.2-rc.1` 至 `0.2.2-rc.5` 只验收了关闭宿主 HMR 的形态，且该缺口属于上游。** 在这五个宿主上，`hmr` 行启用时，**宿主启动窗口内**的 profile 变更可能以 `application: failed` + `HMR profile reconciliation must run inside runExclusive` 结束（选择已保存、未应用）。用纯官方 bundle 可复现，所以本 bundle 不声称修复它，也不绕过官方事务保护；已验收的部署形态是 `- id: hmr / disabled: true` + 重启生效。Evolution 自己的试用、测量、回滚与晋升在关闭 HMR 的验收形态下通过；晋升走自己的官方 Include，不经过宿主 HMR 队列。新宿主的 HMR 开启组只是纯官方对照，不加载 Evolution。复现与证据见 `COMPATIBILITY.md` 与 `docs/evidence/hmr-022/`。
 
 18. **共享经验库的空间回收是显式离线操作，日常写入不触发维护。** schema 1 的永久去重账本按原 TEXT 布局保留，只有显式运行 `dsh-evolution-experience-migrate` 才转换为 schema 2（32 字节 BLOB + `STRICT` + `WITHOUT ROWID`）并回收空闲页与 WAL；转换要求 Desktop / ACP / Web 已退出，默认留下完整 schema 1 备份，失败回滚且不删除任何事件、知识或结论。迁移后旧版本插件拒绝打开该库（未知 `user_version`），仍在运行的旧版本进程的 TEXT 写入会被 `STRICT` 拒绝，不会静默混写；日常事件写入路径没有 `VACUUM`、全库重建、后台清理服务或定时器。体积与延迟证据见 `docs/performance/shared-experience-storage.md`。
@@ -596,11 +607,11 @@ node scripts/acceptance/run-revalidation.mjs --home ~/.dsh --apply
 | `0.2.2-rc.4` | `4.1.0` | `1.1.0` | `1.1.0` | 25/25（`--no-hmr --experience-evolution`） | `healthy` |
 | `0.2.2-rc.5` | `4.1.0` | `1.1.0` | `1.1.0` | 25/25（`--no-hmr --experience-evolution`） | `healthy` |
 
-对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.1.json`、`docs/evidence/dsh-0.2.2-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.3.json`、`docs/evidence/dsh-0.2.2-rc.4.json` 与 `docs/evidence/dsh-0.2.2-rc.5.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。`0.2.17` 的固定点覆盖全部八个宿主：这八份记录必须描述 `release/` 固定产物的内容与字节，后续工作树修改不会改写它们。当前固定点没有新增宿主；`release/manifest.json#verifiedHosts` 之后的第二条通道（固定点之后新增的宿主只核对本树构建的内容）保留给下一次宿主扩展。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
+对应证据为 `docs/evidence/dsh-0.2.0-rc.2.json`、`docs/evidence/dsh-0.2.1-alpha.1.json`、`docs/evidence/dsh-0.2.1-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.1.json`、`docs/evidence/dsh-0.2.2-rc.2.json`、`docs/evidence/dsh-0.2.2-rc.3.json`、`docs/evidence/dsh-0.2.2-rc.4.json` 与 `docs/evidence/dsh-0.2.2-rc.5.json`。表中的 `healthy` 指最后一步 `doctor-final`（exit code `0`）；同一文件的顶层 `doctor` 是更早的 CLI 诊断（运行时尚未创建数据根与密钥），记为 `degraded` 是因 `data.root` 与 `data.key` 两项，而不是 `runtime.*`：那三项在 CLI 下是 `not-evaluated`，而 `not-evaluated` 不计入状态判定。文件记录 `contentSha256`（内容）和 `tarballSha256`（实际安装字节）。`0.2.20` 的固定点覆盖全部八个宿主：这八份记录必须描述 `release/` 固定产物的内容与字节，后续工作树修改不会改写它们。当前固定点没有新增宿主；`release/manifest.json#verifiedHosts` 之后的第二条通道（固定点之后新增的宿主只核对本树构建的内容）保留给下一次宿主扩展。验收里的数据保留检查比较 `evolution-memory.json` 的 SHA256，不是整个数据根的逐文件比较。
 
 `npm run pack:check` 两种模式都执行 17 项检查。开发模式允许工作树是固定点的**已提交**后继（脚本会逐条点名与固定产物不同的文件），但分发文件存在**未提交**改动时一律失败；`--release` 则把“固定点描述自己的提交 / 工作树是固定点或已提交后继”换成更严格的“固定点固定本树内容 / 工作树构建出固定内容”。
 
-源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.17.tgz --content-only`。
+源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.20.tgz --content-only`。
 
 ## 相关文档
 

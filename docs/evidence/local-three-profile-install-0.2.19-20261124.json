@@ -1,0 +1,393 @@
+{
+  "kind": "dsh-evolution-local-three-profile-install",
+  "recordedAt": "2026-11-24T05:08:34.252Z",
+  "scope": "formal DSH_HOME (<home>); official CLI install from the public GitHub Release asset; cold boots use isolated Electron user-data and temporary --patch probes only",
+  "release": {
+    "version": "0.2.19",
+    "tag": "v0.2.19",
+    "tagCommit": "50f1a9bf7f9911e78cb48ce897a7a1ef0c757d54",
+    "releaseUrl": "https://github.com/ryukeilee/dsh-evolution/releases/tag/v0.2.19",
+    "publicLatest": true,
+    "draft": false,
+    "prerelease": false,
+    "tarballSha256": "40f1128fe7eb3c201247ccbdb1ab47a5f14b213fef6ff159bf3984c10234c90f",
+    "contentSha256": "c26dd989bf5494cd1fcd4cb84792c90c179c6e133cddfdce18c24c886f117179",
+    "anonymousDownloadVerified": true,
+    "releaseWorkflowRun": "https://github.com/ryukeilee/dsh-evolution/actions/runs/45329767354"
+  },
+  "environment": {
+    "node": "v26.13.1",
+    "dshHost": "0.2.2-rc.5",
+    "desktopApp": "0.2.2-rc.5"
+  },
+  "install": {
+    "kind": "dsh-evolution-v0.2.19-installed-bytes",
+    "at": "2026-11-24T04:58:22.738Z",
+    "tarballSha256": "40f1128fe7eb3c201247ccbdb1ab47a5f14b213fef6ff159bf3984c10234c90f",
+    "entries": 73,
+    "profiles": {
+      "desktop": {
+        "installedVersion": "0.2.19",
+        "dependency": "file:<home>/storages/evolution-package-cache/40f1128fe7eb3c201247ccbdb1ab47a5f14b213fef6ff159bf3984c10234c90f.tgz",
+        "shippedEntriesMatched": 73,
+        "patchSha256": "6c91d93178bb80f21bb930daf18670d82bf2848c41ed69175b27ebaaf563d164",
+        "managedFlags": {
+          "evolution-experience": false,
+          "evolution-experience-history": true,
+          "evolution-orchestrator": false,
+          "evolution-promoted-consumer": true,
+          "evolution-desktop-task-host": false,
+          "evolution-desktop-task-client": true
+        }
+      },
+      "acp": {
+        "installedVersion": "0.2.19",
+        "dependency": "file:<home>/storages/evolution-package-cache/40f1128fe7eb3c201247ccbdb1ab47a5f14b213fef6ff159bf3984c10234c90f.tgz",
+        "shippedEntriesMatched": 73,
+        "patchSha256": "ba878e122782060e120e4c2b3dee1cc51d332723453a93c8ee0921f6443ecddc",
+        "managedFlags": {
+          "evolution-experience": false,
+          "evolution-experience-history": false,
+          "evolution-orchestrator": true,
+          "evolution-promoted-consumer": false,
+          "evolution-desktop-task-host": true,
+          "evolution-desktop-task-client": false
+        }
+      },
+      "web": {
+        "installedVersion": "0.2.19",
+        "dependency": "file:<home>/storages/evolution-package-cache/40f1128fe7eb3c201247ccbdb1ab47a5f14b213fef6ff159bf3984c10234c90f.tgz",
+        "shippedEntriesMatched": 73,
+        "patchSha256": "53765b52583eec20e2c16e25e775394a3977ea88a48db6a2d8bf32494089f23d",
+        "managedFlags": {
+          "evolution-experience": false,
+          "evolution-experience-history": false,
+          "evolution-orchestrator": true,
+          "evolution-promoted-consumer": false,
+          "evolution-desktop-task-host": true,
+          "evolution-desktop-task-client": true
+        }
+      }
+    },
+    "problems": []
+  },
+  "entries": {
+    "desktop": {
+      "entry": "official Desktop application",
+      "hostProcessFound": true,
+      "hostPidAlive": true,
+      "hostProcess": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --expose-internals /Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/index.js /Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh <home>/profiles/desktop /Applications/DeepSeek Harness.app/Contents/Resources/runtime/primary-runtime /Applications/DeepSeek Harness.app/Contents/Resources/runtime/primary-runtime/dependencies/pnpm/bin/pnpm.mjs /Applications/DeepSeek Harness.app/Contents/Resources/runtime/bin",
+      "evolutionSources": [],
+      "loadedProfile": "<home>/profiles/desktop",
+      "installedPackageRoot": "<home>/profiles/desktop/node_modules/dsh-evolution",
+      "host": {
+        "schemaVersion": 1,
+        "protocol": 1,
+        "instanceId": "318c5205-42a0-4e4e-8272-3268c5aca061",
+        "pid": 83548,
+        "startedAt": "2026-11-24T05:08:35.912Z",
+        "profile": "desktop",
+        "host": {
+          "node": "24.21.0",
+          "electron": "44.7.0",
+          "platform": "darwin",
+          "arch": "arm64"
+        }
+      },
+      "pluginLoadErrors": [],
+      "guiInteractionTested": false
+    },
+    "acp": {
+      "entry": "official ACP profile process",
+      "ok": true,
+      "simulatedEvents": false,
+      "externalModelCalls": 0,
+      "probe": {
+        "ok": true,
+        "role": "acp",
+        "node": "v24.21.0",
+        "corePresent": false,
+        "historyPresent": true,
+        "desktopClientPresent": true,
+        "audit": {
+          "ok": true,
+          "action": "audit",
+          "readOnly": true,
+          "host": {
+            "profile": "acp",
+            "dsh": "0.2.2-rc.5",
+            "cordis": "4.1.0",
+            "include": "1.1.0",
+            "node": "v24.21.0",
+            "capturedAt": "2026-11-24T05:08:37.862Z"
+          },
+          "stable": {
+            "status": "active",
+            "summary": {
+              "total": 4,
+              "active": 4,
+              "pendingRevalidation": 0,
+              "incompatible": 0,
+              "restartRequired": 0,
+              "hostUnavailable": 0,
+              "inactive": 0,
+              "invalid": 0,
+              "sourceUnusable": 0,
+              "blocked": 0,
+              "verifyHost": 0
+            },
+            "nextActions": []
+          },
+          "experience": {
+            "available": true,
+            "applicability": {
+              "dsh": "0.2.2-rc.5",
+              "cordis": "4.1.0",
+              "evolution": "0.2.19"
+            },
+            "applicabilityVerified": true,
+            "sources": {
+              "shared": 53,
+              "failureMemory": 0,
+              "truncated": false
+            },
+            "errors": []
+          },
+          "selfEvolution": {
+            "kind": "experience-candidate",
+            "hasBlockingStableIssue": false,
+            "nextActionCount": 1,
+            "versions": {
+              "dsh": "0.2.2-rc.5",
+              "cordis": "4.1.0",
+              "evolution": "0.2.19"
+            },
+            "readOnly": true
+          }
+        },
+        "promoted": {
+          "ok": true,
+          "violations": [],
+          "toolsUsed": [],
+          "programLength": 16
+        },
+        "toolNames": [
+          "evolution_desktop",
+          "evolution_history",
+          "readonly_git_file",
+          "run_code_preflight"
+        ]
+      },
+      "consumer": {
+        "sessionId": "4c05c386-f872-4d61-a80d-4f0cbabacb06",
+        "plugins": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e",
+            "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d",
+            "activatedAt": "2026-11-24T05:08:37.083Z",
+            "errorCode": null,
+            "errorName": null,
+            "errorDigest": null
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "7d446ea94e730bd69ec25c38a2d4478d2b6f362f13a3446047e84ad348833230",
+            "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d",
+            "activatedAt": "2026-11-24T05:08:37.083Z",
+            "errorCode": null,
+            "errorName": null,
+            "errorDigest": null
+          },
+          {
+            "id": "evolution-promoted-2794ab16d2b3",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "88d915e702b205ed09d84f1f5b025fdfb45216b1601a097345d30dda44b01e5d",
+            "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d",
+            "activatedAt": "2026-11-24T05:08:37.083Z",
+            "errorCode": null,
+            "errorName": null,
+            "errorDigest": null
+          },
+          {
+            "id": "evolution-promoted-d1cb6b7c8b40",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "a03359e3e00646759660b3c9f501a3feada49f3c80efc734371826ad417b7d61",
+            "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d",
+            "activatedAt": "2026-11-24T05:08:37.083Z",
+            "errorCode": null,
+            "errorName": null,
+            "errorDigest": null
+          }
+        ]
+      },
+      "pluginLoadErrors": []
+    },
+    "web": {
+      "entry": "official Web profile process",
+      "ok": true,
+      "simulatedEvents": false,
+      "externalModelCalls": 0,
+      "probe": {
+        "ok": true,
+        "role": "web",
+        "node": "v24.21.0",
+        "corePresent": false,
+        "historyPresent": true,
+        "desktopClientPresent": false,
+        "audit": null,
+        "promoted": {
+          "ok": true,
+          "exitCode": 0,
+          "installedVersion": "0.2.19",
+          "contentSha256": "c26dd989bf5494cd1fcd4cb84792c90c179c6e133cddfdce18c24c886f117179",
+          "truncated": false,
+          "stderr": ""
+        },
+        "toolNames": [
+          "evolution_history",
+          "readonly_git_file"
+        ]
+      },
+      "consumer": {
+        "sessionId": "97bcdf43-92d2-4da7-b6d8-a285a61a101b",
+        "plugins": [
+          {
+            "id": "evolution-promoted-af973a3eea01",
+            "status": "active",
+            "reason": null,
+            "sourceSha256": "ae720df6492ec4a9e24ef119e84cd05c17fcfa319d055093fc58b0da45ee8e0e",
+            "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d",
+            "activatedAt": "2026-11-24T05:08:38.710Z",
+            "errorCode": null,
+            "errorName": null,
+            "errorDigest": null
+          },
+          {
+            "id": "evolution-promoted-e82a216992bb",
+            "status": "skipped-unapproved",
+            "reason": "profile-not-approved",
+            "sourceSha256": "7d446ea94e730bd69ec25c38a2d4478d2b6f362f13a3446047e84ad348833230",
+            "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d",
+            "activatedAt": null,
+            "errorCode": null,
+            "errorName": null,
+            "errorDigest": null
+          },
+          {
+            "id": "evolution-promoted-2794ab16d2b3",
+            "status": "skipped-unapproved",
+            "reason": "profile-not-approved",
+            "sourceSha256": "88d915e702b205ed09d84f1f5b025fdfb45216b1601a097345d30dda44b01e5d",
+            "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d",
+            "activatedAt": null,
+            "errorCode": null,
+            "errorName": null,
+            "errorDigest": null
+          },
+          {
+            "id": "evolution-promoted-d1cb6b7c8b40",
+            "status": "skipped-unapproved",
+            "reason": "profile-not-approved",
+            "sourceSha256": "a03359e3e00646759660b3c9f501a3feada49f3c80efc734371826ad417b7d61",
+            "hostDigest": "a67a831b6d3e5af67cab58a4986a45db660ea34620996461346f7007f128a80d",
+            "activatedAt": null,
+            "errorCode": null,
+            "errorName": null,
+            "errorDigest": null
+          }
+        ]
+      },
+      "pluginLoadErrors": [],
+      "browserInteractionTested": false
+    }
+  },
+  "doctors": {
+    "desktop": {
+      "exitCode": 1,
+      "status": "degraded",
+      "blocked": [],
+      "degraded": [
+        "promotion.sharing"
+      ],
+      "hostCli": "not-evaluated",
+      "parseError": null
+    },
+    "acp": {
+      "exitCode": 1,
+      "status": "degraded",
+      "blocked": [],
+      "degraded": [
+        "promotion.sharing"
+      ],
+      "hostCli": "not-evaluated",
+      "parseError": null
+    },
+    "web": {
+      "exitCode": 1,
+      "status": "degraded",
+      "blocked": [],
+      "degraded": [
+        "promotion.sharing"
+      ],
+      "hostCli": "not-evaluated",
+      "parseError": null
+    }
+  },
+  "preservation": {
+    "experience": {
+      "schemaVersionBefore": 1,
+      "schemaVersionAfter": 1,
+      "automaticallyMigrated": false,
+      "baselineEvents": 439,
+      "eventsAfter": 443,
+      "missingBaselineEvents": 0,
+      "baselineKnowledgeRows": 49,
+      "knowledgeAfter": 53,
+      "missingBaselineKnowledge": 0,
+      "integrity": "ok"
+    },
+    "promoted": {
+      "baselineFiles": 8,
+      "missing": [],
+      "changed": []
+    },
+    "experimentArchives": {
+      "baselineFiles": 16,
+      "missing": [],
+      "changed": []
+    },
+    "publishedIndexUnchanged": true,
+    "eventBridgeKeyStatBefore": {
+      "bytes": 64,
+      "mtimeMs": 1793960605160.2632,
+      "inode": 302437916,
+      "device": 16777233
+    },
+    "eventBridgeKeyStatAfter": {
+      "bytes": 64,
+      "mtimeMs": 1793960605160.2632,
+      "inode": 302437916,
+      "device": 16777233
+    },
+    "eventBridgeKeyStatUnchanged": true,
+    "profilePatchesUnchanged": {
+      "desktop": true,
+      "acp": true,
+      "web": true
+    }
+  },
+  "ok": true,
+  "failures": [],
+  "notes": [
+    "CLI doctor reports degraded only for promotion.sharing because the Desktop Electron wrapper cannot be resolved as a Node CLI package outside the live host; there are no blocked checks. The live ACP audit resolves DSH 0.2.2-rc.5 / Cordis 4.1.0 / Include 1.1.0 and classifies all four stable records active with zero compatibility, restart or host problems.",
+    "Shared experience grew from 439 to 443 events and from 49 to 53 knowledge rows during acceptance attempts; every baseline event id and knowledge key remains present, schema stays 1, and integrity_check is ok. Promoted sources, experiment archives, publication index, event-bridge key stat and all three profile patches are unchanged.",
+    "Desktop GUI interaction and a fresh real-model task-benefit loop were not repeated; the fixed-artifact host/cross-entry acceptance and the targeted real Desktop + ACP PTC workload gate cover this release risk, while prior real-model closed-loop evidence remains applicable."
+  ]
+}

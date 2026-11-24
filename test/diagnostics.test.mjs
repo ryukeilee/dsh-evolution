@@ -17,6 +17,7 @@ import {
   parseComposedProfile, composedEventBridgeWriter, EVOLUTION_TOOL_NAMES, SUPPORTED_DSH_VERSIONS,
 } from '../lib/diagnostics.js';
 import { EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, signEventBridgeEnvelope, verifyEventBridgeEnvelope } from '../lib/orchestrator.js';
+import { advanceRetention, planLogPrune, digestLogBytes } from '../lib/event-log-checkpoint.js';
 import { promotionPlan, derivedPluginPath } from './promotion-plan-fixture.mjs';
 import { evolutionDomainSpec } from '../lib/domain-storage.js';
 import { EVOLUTION_TOOLS } from '../lib/registration.js';
@@ -90,6 +91,7 @@ function writeComposition(paths, rows) {
  * bundle (`# == dsh-evolution, patched by <path>` then `# == dsh-evolution`).
  */
 function composedDump({ writer = null, patchTitle = null, includeOrchestrator = true, includeGuard = true } = {}) {
+  const experience = ['- id: evolution-experience', '  name: dsh-evolution/experience'];
   const orchestrator = [];
   if (includeOrchestrator) {
     orchestrator.push('- id: evolution-orchestrator', '  name: dsh-evolution');
@@ -97,8 +99,8 @@ function composedDump({ writer = null, patchTitle = null, includeOrchestrator = 
   }
   const guard = includeGuard ? ['- id: evolution-trust-root-guard', '  name: dsh-evolution/guard', '  inject:', '    - tools'] : [];
   const lines = patchTitle
-    ? [`# == ${patchTitle}`, ...orchestrator, '# == dsh-evolution', ...guard]
-    : ['# == dsh-evolution', ...orchestrator, ...guard];
+    ? [`# == ${patchTitle}`, ...experience, ...orchestrator, '# == dsh-evolution', ...guard]
+    : ['# == dsh-evolution', ...experience, ...orchestrator, ...guard];
   lines.push('');
   return lines.join('\n');
 }
@@ -1014,6 +1016,7 @@ test('a composed profile missing the bundle entries is blocked', async () => {
   assert.equal(levelOf(report, 'host.composition'), 'blocked');
   assert.deepEqual(checkOf(report, 'host.composition').evidence.problems, [
     'evolution-orchestrator entry is absent',
+    'evolution-experience entry is absent',
     'evolution-trust-root-guard entry is absent',
   ]);
 });
@@ -1038,14 +1041,43 @@ test('a profile that cannot compose is blocked with the CLI stderr tail', async 
   assert.deepEqual(checkOf(report, 'host.composition').evidence.stderr, ['Error: Cannot find module', '  at x']);
 });
 
-test('a disabled bundle entry is blocked', async () => {
-  const { home } = freshHome('composition-disabled');
+test('a consumer-role profile with the kernel disabled and the consumer enabled is ok', async () => {
+  const { home } = freshHome('composition-consumer-role');
   const report = await collectDiagnostics(baseOptions(home, {
-    profile: 'web',
-    probe: { runDumpConfig: () => ({ status: 0, stdout: '# == dsh-evolution\n- id: evolution-orchestrator\n  name: dsh-evolution\n  disabled: true\n- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n', stderr: '' }) },
+    profile: 'acp',
+    probe: { runDumpConfig: () => ({ status: 0, stdout: '# == dsh-evolution\n- id: evolution-experience\n  name: dsh-evolution/experience\n- id: evolution-orchestrator\n  name: dsh-evolution\n  disabled: true\n- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n- id: evolution-promoted-consumer\n  name: dsh-evolution/promoted-consumer\n', stderr: '' }) },
   }));
-  assert.equal(levelOf(report, 'host.composition'), 'blocked');
-  assert.ok(checkOf(report, 'host.composition').evidence.problems.some((problem) => problem.includes('disabled')));
+  const check = checkOf(report, 'host.composition');
+  assert.equal(check.level, 'ok', JSON.stringify(check.evidence.problems));
+  assert.equal(check.evidence.role, 'promoted-consumer');
+});
+
+test('a consumer-role profile without a promoted consumer is blocked', async () => {
+  const { home } = freshHome('composition-consumer-missing');
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'acp',
+    probe: { runDumpConfig: () => ({ status: 0, stdout: '# == dsh-evolution\n- id: evolution-experience\n  name: dsh-evolution/experience\n- id: evolution-orchestrator\n  name: dsh-evolution\n  disabled: true\n- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n', stderr: '' }) },
+  }));
+  const check = checkOf(report, 'host.composition');
+  assert.equal(check.level, 'blocked');
+  assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-promoted-consumer')));
+});
+
+test('the bundle patch must declare every loader entry, not only the kernel and guard', async () => {
+  const { home } = freshHome('patch-missing-entry');
+  const patch = fs.readFileSync(path.join(repoRoot, 'cordis.patch.yml'), 'utf8');
+  const trimmed = patch.replace('    - id: evolution-experience\n      name: dsh-evolution/experience\n', '');
+  assert.notEqual(trimmed, patch);
+  // Point at a temporary package root with the edited patch; the shipped patch
+  // itself stays untouched.
+  const tmp = scratch('patch-root');
+  fs.mkdirSync(path.join(tmp, 'lib'), { recursive: true });
+  fs.writeFileSync(path.join(tmp, 'package.json'), fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+  fs.writeFileSync(path.join(tmp, 'cordis.patch.yml'), trimmed);
+  const report = await collectDiagnostics(baseOptions(home, { packageRoot: tmp, profileCandidates: [] }));
+  const check = checkOf(report, 'plugin.patch');
+  assert.equal(check.level, 'blocked');
+  assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-experience')));
 });
 
 // The official CLI splits a bundle into two sections when a profile patch
@@ -1057,7 +1089,7 @@ test('a profile patched by the user keeps one merged dsh-evolution layer and sta
   const parsed = parseComposedProfile(stdout);
   assert.deepEqual(parsed.titles, ['dsh-evolution, patched by /tmp/x/cordis.patch.yml', 'dsh-evolution']);
   const section = parsed.sections.get('dsh-evolution');
-  assert.equal(section.entries.length, 2, 'both sections merge into one layer');
+  assert.equal(section.entries.length, 3, 'both sections merge into one layer');
   assert.deepEqual(section.rawTitles, ['dsh-evolution, patched by /tmp/x/cordis.patch.yml', 'dsh-evolution']);
   assert.equal(section.patched, true);
   assert.deepEqual(composedEventBridgeWriter(parsed), { writer: 'custom-writer', unreadable: false });
@@ -1415,6 +1447,73 @@ test('a partial tail with no complete line is not offered as a repair', async ()
   assert.equal(fs.readFileSync(paths.eventBridgePath, 'utf8'), '{"schema":2,"writer":"dsh-evolution', 'nothing may be written');
 });
 
+test('a partial-tail trim is skipped while a committed truncation is still pending', async () => {
+  const { paths } = freshHome('repair-pending-floor');
+  const event = { eventId: 'evt-duplicate-trim', eventType: 'measurement-completed' };
+  const firstLine = `${JSON.stringify(signEventBridgeEnvelope(event, { key: KEY, sequence: 1 }))}\n`;
+  const complete = firstLine + firstLine;
+  fs.writeFileSync(paths.eventBridgePath, complete);
+  const stat = fs.statSync(paths.eventBridgePath, { bigint: true });
+  const plan = planLogPrune({ buffer: Buffer.from(complete), key: KEY, writer: EVENT_BRIDGE_DEFAULT_WRITER,
+    applied: { [event.eventId]: JSON.parse(firstLine.trim()).mac }, retainRecords: 1,
+    identity: { dev: stat.dev, ino: stat.ino } });
+  assert.equal(plan.prior.ambiguousPrefix, true);
+  const retention = advanceRetention(null, { prunable: plan.prunable, log: plan, key: KEY });
+  writeDomain(paths, { ...domainGlobal({ applied: { [event.eventId]: JSON.parse(firstLine.trim()).mac } }), retention });
+
+  // A torn trailing append on the still-untruncated prior file is the shape the
+  // trim repair normally fixes. It must not run: renaming would change the
+  // generation and make the runtime think the committed truncation had run.
+  fs.writeFileSync(paths.eventBridgePath, complete + '{"schema":2,"writer":"dsh-evolution');
+  const before = fs.readFileSync(paths.eventBridgePath, 'utf8');
+  const applied = await applyRepairs([{ id: 'event-bridge-trim-partial-tail', safe: true }], { paths });
+  assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
+  assert.match(applied[0].detail, /committed retention truncation is still pending/);
+  assert.equal(fs.readFileSync(paths.eventBridgePath, 'utf8'), before, 'the file and its generation are untouched');
+});
+
+test('the trim also honors a pending floor that a new start would install', async () => {
+  const { paths } = freshHome('repair-pending-install');
+  const event = { eventId: 'evt-pending-install', eventType: 'measurement-completed' };
+  const firstLine = `${JSON.stringify(signEventBridgeEnvelope(event, { key: KEY, sequence: 1 }))}\n`;
+  const complete = firstLine + firstLine;
+  fs.writeFileSync(paths.eventBridgePath, complete);
+  const stat = fs.statSync(paths.eventBridgePath, { bigint: true });
+  const plan = planLogPrune({ buffer: Buffer.from(complete), key: KEY, writer: EVENT_BRIDGE_DEFAULT_WRITER,
+    applied: { [event.eventId]: JSON.parse(firstLine.trim()).mac }, retainRecords: 1,
+    identity: { dev: stat.dev, ino: stat.ino } });
+  const retention = advanceRetention(null, { prunable: plan.prunable, log: plan, key: KEY });
+  writeDomain(paths, { ...domainGlobal({ applied: {}, pending: { retention } }) });
+  fs.writeFileSync(paths.eventBridgePath, complete + '{"schema":2,"writer":"dsh-evolution');
+  const applied = await applyRepairs([{ id: 'event-bridge-trim-partial-tail', safe: true }], { paths });
+  assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
+  assert.match(applied[0].detail, /truncation is still pending/);
+});
+
+test('a trim that would drop bytes covered by the committed tail is skipped', async () => {
+  const { paths } = freshHome('repair-tail-covers-residue');
+  const event = { eventId: 'evt-tail-cover', eventType: 'measurement-completed' };
+  const line = `${JSON.stringify(signEventBridgeEnvelope(event, { key: KEY, sequence: 1 }))}\n`;
+  const residue = '{"schema":2,"writer":"dsh-evolution';
+  const withResidue = line + residue;
+  fs.writeFileSync(paths.eventBridgePath, withResidue);
+  const bytes = Buffer.from(withResidue);
+  // A floor whose retained tail deliberately covers the residual bytes. The
+  // trim would remove them and break replay's floor-prefix proof.
+  const retention = {
+    schema: 1,
+    markers: { pruned: 1, chain: 'a'.repeat(64) },
+    log: { bytes: bytes.length + 1, records: 1,
+      prior: { bytes: bytes.length + 1, digest: 'b'.repeat(64) },
+      tail: { bytes: bytes.length, digest: digestLogBytes(KEY, bytes) } },
+  };
+  writeDomain(paths, { ...domainGlobal({ applied: {} }), retention });
+  const before = fs.readFileSync(paths.eventBridgePath, 'utf8');
+  const applied = await applyRepairs([{ id: 'event-bridge-trim-partial-tail', safe: true }], { paths });
+  assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
+  assert.equal(fs.readFileSync(paths.eventBridgePath, 'utf8'), before);
+});
+
 test('a partial-tail repair that still matches is applied and keeps the trusted prefix', async () => {
   const { home, paths } = freshHome('repair-matching');
   const withTail = writeBridge(paths, [{ eventId: 'evt-1', eventType: 'measurement-completed' }], { truncateTail: true });
@@ -1522,4 +1621,58 @@ test('the doctor CLI is reachable through a symlinked path', () => {
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.schema, 1);
   assert.ok(parsed.checks.some((check) => check.id === 'data.root'));
+});
+
+test('a non-consumer profile with a disabled kernel stays blocked even with a consumer entry', async () => {
+  const { home } = freshHome('composition-desktop-disabled-kernel');
+  const stdout = '# == dsh-evolution\n- id: evolution-experience\n  name: dsh-evolution/experience\n'
+    + '- id: evolution-orchestrator\n  name: dsh-evolution\n  disabled: true\n'
+    + '- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n'
+    + '- id: evolution-promoted-consumer\n  name: dsh-evolution/promoted-consumer\n';
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'desktop',
+    probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) },
+  }));
+  const check = checkOf(report, 'host.composition');
+  assert.equal(check.level, 'blocked');
+  assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-orchestrator is disabled')));
+});
+
+test('an experience loader entry mounted by another module is blocked', async () => {
+  const { home } = freshHome('composition-experience-wrong-name');
+  const stdout = composedDump().replace('name: dsh-evolution/experience', 'name: something-else');
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'desktop',
+    probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) },
+  }));
+  const check = checkOf(report, 'host.composition');
+  assert.equal(check.level, 'blocked');
+  assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-experience mounts')));
+});
+
+test('a nested config.disabled does not disable a loader entry', async () => {
+  const stdout = '# == dsh-evolution\n- id: evolution-experience\n  name: dsh-evolution/experience\n'
+    + '- id: evolution-orchestrator\n  name: dsh-evolution\n  config:\n    disabled: true\n'
+    + '- id: evolution-trust-root-guard\n  name: dsh-evolution/guard\n';
+  const parsed = parseComposedProfile(stdout);
+  const orchestrator = parsed.sections.get('dsh-evolution').entries.find((entry) => entry.id === 'evolution-orchestrator');
+  assert.equal(orchestrator.disabled, null);
+  const { home } = freshHome('nested-disabled');
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'desktop',
+    probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) },
+  }));
+  assert.equal(levelOf(report, 'host.composition'), 'ok', JSON.stringify(checkOf(report, 'host.composition').evidence.problems));
+});
+
+test('a trust-root guard mounted by another module is blocked', async () => {
+  const { home } = freshHome('composition-guard-wrong-name');
+  const stdout = composedDump().replace('name: dsh-evolution/guard', 'name: dsh-evolution/experience');
+  const report = await collectDiagnostics(baseOptions(home, {
+    profile: 'desktop',
+    probe: { runDumpConfig: () => ({ status: 0, stdout, stderr: '' }) },
+  }));
+  const check = checkOf(report, 'host.composition');
+  assert.equal(check.level, 'blocked');
+  assert.ok(check.evidence.problems.some((problem) => problem.includes('evolution-trust-root-guard mounts')));
 });

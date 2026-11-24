@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
-import { consumerStateDocument, publishSharedRecord, writeConsumerState } from '../lib/promoted-sharing.js';
+import { consumerStateDocument, publishSharedRecord, setDisabledForProfile, writeConsumerState } from '../lib/promoted-sharing.js';
 
 const HEX = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const KEY = 'b'.repeat(64);
@@ -65,6 +65,51 @@ test('no publication keeps every promotion Desktop-only and reports ok', async (
   assert.equal(check.level, 'ok');
   assert.equal(check.evidence.status, 'absent');
   assert.equal(report.status !== 'blocked', true);
+});
+
+test('an invalid record in an otherwise readable index blocks the check', async (t) => {
+  const env = await home(t);
+  const host = await observedHostOf(env.dshHome);
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  assert.equal((await publishSharedRecord(dataRoot, await recordFor(env, host))).status, 'published');
+  const indexPath = path.join(env.paths.dataRoot, 'shared-plugins', 'published.json');
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  delete index.plugins[0].pluginName; // one malformed row among otherwise valid data
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'blocked', JSON.stringify(check.evidence));
+  assert.equal(check.evidence.invalidRecords.length, 1);
+  assert.ok(check.evidence.problems.some((problem) => problem.id === pluginId));
+  assert.match(check.remediation, /re-promoting it through Desktop/);
+  assert.doesNotMatch(check.remediation, /dsh-evolution-shared disable/);
+});
+
+test('an absent index with a still-active consumer mount is degraded, not healthy', async (t) => {
+  const env = await home(t);
+  const host = await observedHostOf(env.dshHome);
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: '2026-01-02T00:00:00.000Z', compositionPath: null,
+    plugins: [{ id: pluginId, status: 'active', reason: null }],
+  }));
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
+  assert.equal(check.evidence.status, 'absent');
+  assert.deepEqual(check.evidence.orphanMounts, [{ profile: 'acp', id: pluginId }]);
+  assert.match(check.remediation, /Restart the consumer/);
+});
+
+test('a malformed consumer row does not crash the absent-index diagnosis', async (t) => {
+  const env = await home(t);
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host: await observedHostOf(env.dshHome), indexUpdatedAt: '2026-01-02T00:00:00.000Z',
+    compositionPath: null, plugins: [null, { id: pluginId, status: 'active', reason: null }],
+  }));
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded');
+  assert.deepEqual(check.evidence.orphanMounts, [{ profile: 'acp', id: pluginId }]);
 });
 
 test('a verified publication is reported per record and per consumer', async (t) => {
@@ -135,4 +180,60 @@ test('an unreadable revocation table degrades the check and names its status', a
   assert.equal(check.level, 'degraded');
   assert.equal(check.evidence.disableStatus, 'invalid');
   assert.match(check.summary, /revocation table is invalid/);
+});
+
+// 2026-11-24 reliability round: a consumer that explicitly refuses an approved
+// record is not a healthy publication, even when its bytes and host facts agree.
+test('a skipped-incompatible consumer row degrades the sharing check', async (t) => {
+  const env = await home(t);
+  const host = await observedHostOf(env.dshHome);
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: '2026-01-02T00:00:00.000Z', compositionPath: null,
+    plugins: [{ id: pluginId, status: 'skipped-incompatible', reason: 'missing-host-capability' }],
+  }));
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.inactiveConsumers, [{
+    profile: 'acp', id: pluginId, status: 'skipped-incompatible', reason: 'missing-host-capability',
+  }]);
+});
+
+// A consumer row written before an operator revoked the profile is historical:
+// the unified review reports the record as disabled now, so doctor must not
+// keep degrading on a stale refusal.
+test('a revoked profile does not keep a stale failed consumer row degraded', async (t) => {
+  const env = await home(t);
+  const host = await observedHostOf(env.dshHome);
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const index = JSON.parse(await fs.readFile(path.join(env.paths.dataRoot, 'shared-plugins', 'published.json'), 'utf8'));
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [{ id: pluginId, status: 'failed', reason: 'plugin-apply-failed' }],
+  }));
+  await setDisabledForProfile(env.paths, { pluginId, profile: 'acp', disabled: true });
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'ok', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.deadConsumers ?? [], []);
+});
+
+test('a revoked record still mounted by a consumer needs a restart', async (t) => {
+  const env = await home(t);
+  const host = await observedHostOf(env.dshHome);
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const index = JSON.parse(await fs.readFile(path.join(env.paths.dataRoot, 'shared-plugins', 'published.json'), 'utf8'));
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [{ id: pluginId, status: 'active', reason: null }],
+  }));
+  await setDisabledForProfile(env.paths, { pluginId, profile: 'acp', disabled: true });
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
+  assert.ok(check.evidence.pendingRestart.includes('acp'));
 });

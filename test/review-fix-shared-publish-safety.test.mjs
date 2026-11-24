@@ -189,6 +189,21 @@ test('revocation state written by the CLI still disables one profile', async (t)
   assert.equal(decision.reason, 'operator-disabled');
 });
 
+test('concurrent revocations keep every entry', async (t) => {
+  const env = await fixture(t);
+  const { readDisableState } = await import('../lib/promoted-sharing.js');
+  const ids = Array.from({ length: 8 }, (_, index) => `evolution-promoted-${index.toString(16).padStart(12, '0')}`);
+  // Two operators revoking different plugins at the same time must not rewrite
+  // the table from the snapshot each of them read first.
+  await Promise.all(ids.map((pluginId, index) => setDisabledForProfile(env.paths, {
+    pluginId, profile: index % 2 === 0 ? 'acp' : 'web', disabled: true,
+  })));
+  const state = await readDisableState(env.paths);
+  assert.equal(state.status, 'ok');
+  assert.equal(state.entries.length, ids.length);
+  assert.equal(new Set(state.entries.map((entry) => `${entry.pluginId}/${entry.profile}`)).size, ids.length);
+});
+
 test('a write to a corrupt revocation table is refused and leaves it untouched', async (t) => {
   const env = await fixture(t);
   const record = await buildRecord(env);

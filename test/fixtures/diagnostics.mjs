@@ -565,7 +565,7 @@ async function diagnosePatch(report, { packageRoot }) {
   } else {
     addCheck(report, {
       id: 'plugin.patch', category: 'plugin', level: LEVEL.OK,
-      summary: 'The bundle patch declares both loader entries.',
+      summary: 'The bundle patch declares all 7 loader entries.',
       evidence: { patchPath, entries: inserted.map((entry) => entry.id) },
     });
   }

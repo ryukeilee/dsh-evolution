@@ -121,6 +121,59 @@ test('live child append lock refuses a contender; SIGKILL and fresh process comp
   assert.deepEqual(again.flush, recovered.flush);
 });
 
+test('SIGKILL in the ambiguous floor commit-to-truncate window loses no bytes, never truncates twice and never stalls', { timeout: 30000 }, async t => {
+  const root = scratch(t);
+  // A second at-least-once delivery of the same envelope makes the prior file
+  // begin with exactly the bytes the floor will retain: A A, retainRecords:1.
+  emit(root, 'amb-crash');
+  const logFile = configFor(root).eventBridgePath;
+  fs.appendFileSync(logFile, fs.readFileSync(logFile));
+  const crashing = child(t, root, 'crash-ambiguous');
+  const committed = await crashing.message();
+  assert.equal(committed.report.log.status, 'discarded');
+  assert.equal(committed.report.log.truncated, 'deferred', 'the held append lock leaves the committed floor pending');
+  assert.equal(committed.report.log.prunedMarkers, 1);
+  const floor = committed.global.retention.log;
+  assert.equal(floor.prior.ambiguousPrefix, true);
+  assert.ok(floor.prior.identity && floor.prior.identity.dev !== undefined && floor.prior.identity.ino !== undefined,
+    'the ambiguous floor records the generation it was planned from');
+  const prior = fs.readFileSync(logFile);
+  assert.equal(prior.length, committed.report.log.bytes, 'the still-untruncated prior is on disk at the crash');
+
+  const exited = once(crashing.proc, 'exit');
+  crashing.proc.kill('SIGKILL');
+  await exited;
+
+  // A fresh process finishes the committed truncation exactly once.
+  const first = await child(t, root, 'recover').message();
+  const tail = fs.readFileSync(logFile);
+  assert.equal(tail.length, floor.tail.bytes, 'only the committed tail survives');
+  assert.ok(tail.length < prior.length, 'the discarded prefix is gone');
+  assert.equal(first.global.pending, null);
+  assert.equal(first.global.retention.log.tail.digest, floor.tail.digest);
+  const second = await child(t, root, 'recover').message();
+  assert.deepEqual(fs.readFileSync(logFile), tail, 'a second recovery does not truncate again');
+  assert.deepEqual(second.global.retention, first.global.retention, 'recovery is idempotent: no permanent stall');
+
+  // A late delivery recreates the byte-identical prior prefix on a NEW generation
+  // (the truncation's rename replaced the inode). It must survive, not be read as
+  // the still-pending prior and truncated away a second time.
+  fs.appendFileSync(logFile, tail);
+  const recreated = fs.readFileSync(logFile);
+  assert.equal(recreated.length, prior.length, 'the new file is byte-identical to the old prior');
+  const afterAppend = await child(t, root, 'recover').message();
+  assert.deepEqual(fs.readFileSync(logFile), recreated, 'the recreated prefix is not truncated away');
+  assert.equal(afterAppend.global.pending, null);
+  assert.deepEqual((await child(t, root, 'recover').message()).global.retention, afterAppend.global.retention);
+
+  // The recovered log is still live: a genuinely new event is absorbed, so the
+  // ambiguous crash window cannot leave reclaim permanently stalled.
+  emit(root, 'after-ambiguous-crash');
+  const live = await child(t, root, 'recover').message();
+  assert.ok(Object.hasOwn(live.global.applied, 'evolution:measurement-completed:after-ambiguous-crash'),
+    'a new event is absorbed after crash recovery');
+});
+
 test('promotion and knowledge dense history keeps every sidecar and canonical knowledge after reclaim', { timeout: 30000 }, async t => {
   const root = scratch(t);
   const f = await openFixture(root);

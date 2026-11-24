@@ -212,7 +212,11 @@ function runAcquisitionRow(text, recordId) {
   try {
     try {
       runtimeFor(paths).acquireTargets({ id: recordId, ownerId: 'owner', targets: [target] });
-      outcome = fs.readFileSync(file, 'utf8') === before ? 'adopt' : 'reclaim';
+      // Adoption now refreshes a stale owner identity, so byte equality is no
+      // longer a reliable adopt/reclaim discriminator. Adoption keeps the
+      // stored experiment id; reclaim replaces it with this acquirer's id.
+      const beforeId = JSON.parse(before).experimentId;
+      outcome = JSON.parse(fs.readFileSync(file, 'utf8')).experimentId === beforeId ? 'adopt' : 'reclaim';
     } catch (error) {
       if (error instanceof TypeError) outcome = 'TypeError';
       else if (/^experiment ownership is unreadable for /.test(error.message)) outcome = 'unreadable';
@@ -234,7 +238,11 @@ test('the acquisition matches the frozen logic, probes only same-host integer pi
     assert.equal(outcome, frozen, `${label}: acquisition outcome must match the frozen logic`);
     const expectedProbes = isAdopted(text, recordId) ? 0 : reachesLivenessProbe(text, hostname) ? 1 : 0;
     assert.equal(probes, expectedProbes, `${label}: the acquisition must probe exactly ${expectedProbes} time(s)`);
-    assert.equal(bytesUnchanged, frozen !== 'reclaim', `${label}: only the pre-change reclaim rewrites the claim file`);
+    // A reclaim replaces the claim; adopting a claim whose pid/hostname belong
+    // to a previous process refreshes that liveness identity. A conflict,
+    // unreadable body or TypeError changes nothing (fail-closed).
+    assert.equal(bytesUnchanged, frozen !== 'reclaim' && frozen !== 'adopt',
+      `${label}: only a conflict, unreadable body or TypeError leaves the claim byte-identical`);
   }
 });
 
@@ -255,6 +263,112 @@ test('a reclaim is retried exactly once, never twice', () => {
       /unsafe parallel experiment conflicts on plugin:retry \(owned by exp-dead\)/,
     );
   } finally { fs.rmSync = realRmSync; }
+});
+
+test('the target lock uses the shared cross-process mutex and leaves no residue', () => {
+  const { paths } = initializedHome('lock-wrapper');
+  const target = 'plugin:lock-wrapper';
+  fs.mkdirSync(paths.ownershipDir, { recursive: true, mode: 0o700 });
+  const lockDir = path.join(paths.ownershipDir, sha256(target) + '.json.claim-lock-target.append.lock');
+  runtimeFor(paths).withTargetClaimLock(paths.ownershipDir, target, () => {
+    assert.equal(fs.statSync(lockDir).isDirectory(), true);
+  });
+  assert.equal(fs.existsSync(lockDir), false, 'the shared lock is released after the section');
+});
+
+test('a release blocked by lock contention keeps the claim for retry', () => {
+  const { paths } = initializedHome('release-contended');
+  const target = 'plugin:release-contended';
+  const file = writeClaim(paths, target, { schema: 1, target, experimentId: 'exp-own', ownerId: 'owner',
+    pid: process.pid, hostname: os.hostname(), acquiredAt: new Date().toISOString() });
+  const lockDir = path.join(paths.ownershipDir, sha256(target) + '.json.claim-lock-target.append.lock');
+  fs.mkdirSync(lockDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(lockDir, 'owner'), JSON.stringify({ token: 'other', pid: process.pid,
+    hostname: os.hostname(), acquiredAt: Date.now() }));
+  const record = { id: 'exp-own', targets: [target], targetsAcquired: true };
+  runtimeFor(paths).releaseTargets(record);
+  assert.equal(record.targetsAcquired, true, 'a failed release must stay retryable');
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).experimentId, 'exp-own', 'the claim is not deleted');
+  fs.rmSync(lockDir, { recursive: true, force: true });
+});
+
+test('two acquirers of the same stale claim cannot both own the target', () => {
+  const { paths } = initializedHome('reclaim-race');
+  const target = 'plugin:reclaim-race';
+  const file = writeClaim(paths, target, { schema: 1, target, experimentId: 'exp-dead', ownerId: 'owner',
+    pid: deadPid(), hostname: os.hostname(), acquiredAt: new Date().toISOString() });
+  const record1 = { id: 'exp-P1', ownerId: 'owner', targets: [target] };
+  const record2 = { id: 'exp-P2', ownerId: 'owner', targets: [target] };
+
+  // Both start from the same dead claim. The per-target lock serializes the
+  // read-classify-replace window, so only the first can reclaim it; the second
+  // then sees the first's live claim and refuses.
+  runtimeFor(paths).acquireTargets(record1);
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).experimentId, 'exp-P1');
+  assert.equal(record1.targetsAcquired, true);
+
+  assert.throws(
+    () => runtimeFor(paths).acquireTargets(record2),
+    /unsafe parallel experiment conflicts on plugin:reclaim-race \(owned by exp-P1\)/,
+  );
+  assert.notEqual(record2.targetsAcquired, true, 'the second acquirer must not own the target');
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).experimentId, 'exp-P1', 'the live claim is untouched');
+  assert.deepEqual(fs.readdirSync(paths.ownershipDir).sort(), [path.basename(file)], 'the lock leaves no residue');
+});
+
+test('adopting a claim with a stale owner identity refreshes it so a third party cannot reclaim it', () => {
+  const { paths } = initializedHome('adopt-refresh');
+  const target = 'plugin:adopt-refresh';
+  const file = writeClaim(paths, target, { schema: 1, target, experimentId: 'exp-adopt', ownerId: 'owner',
+    pid: deadPid(), hostname: os.hostname(), acquiredAt: '2026-01-01T00:00:00.000Z' });
+
+  // P2 restarts into the experiment that left the dead-pid claim behind.
+  const holder = { id: 'exp-adopt', ownerId: 'owner', targets: [target] };
+  runtimeFor(paths).acquireTargets(holder);
+  const refreshed = JSON.parse(fs.readFileSync(file, 'utf8'));
+  assert.equal(holder.targetsAcquired, true);
+  assert.equal(refreshed.experimentId, 'exp-adopt', 'adoption keeps the experiment identity');
+  assert.equal(refreshed.pid, process.pid, 'the stale pid is refreshed to the live adopter');
+  assert.equal(refreshed.hostname, os.hostname());
+  assert.equal(refreshed.schema, 1, 'the claim shape is preserved');
+  assert.equal(refreshed.target, target);
+  assert.equal(refreshed.ownerId, 'owner');
+
+  // A different experiment must now see a LIVE owner and refuse. Without the
+  // refresh it classified the dead pid RECLAIMABLE and stole the target while
+  // the adopter still believed it owned it (two owners of one target).
+  const intruder = { id: 'exp-other', ownerId: 'owner', targets: [target] };
+  assert.throws(
+    () => runtimeFor(paths).acquireTargets(intruder),
+    /unsafe parallel experiment conflicts on plugin:adopt-refresh \(owned by exp-adopt\)/,
+  );
+  assert.notEqual(intruder.targetsAcquired, true, 'the third party must not own the target');
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).experimentId, 'exp-adopt', 'the live claim is untouched');
+});
+
+test('a release blocked by lock contention is retried at the next availability check', () => {
+  const { paths } = initializedHome('release-wedge-retry');
+  const target = 'plugin:release-wedge-retry';
+  const file = claimPath(paths, target);
+  const core = runtimeFor(paths);
+  const record = { id: 'exp-stable', ownerId: 'owner', targets: [target], state: 'stable' };
+  core.acquireTargets(record);
+  core.experiments.set(record.id, record);
+
+  const lockDir = path.join(paths.ownershipDir, sha256(target) + '.json.claim-lock-target.append.lock');
+  fs.mkdirSync(lockDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(lockDir, 'owner'), JSON.stringify({ token: 'other', pid: process.pid,
+    hostname: os.hostname(), acquiredAt: Date.now() }));
+  core.releaseTargets(record);
+  assert.equal(record.targetsAcquired, true, 'the contended release is kept for retry');
+
+  // Once the lock clears, the next Trial's availability gate must retry the
+  // stranded release instead of declaring the runtime busy for this session.
+  fs.rmSync(lockDir, { recursive: true, force: true });
+  assert.doesNotThrow(() => core.assertRuntimeAvailable({ id: 'exp-next', targets: [] }));
+  assert.equal(record.targetsAcquired, false, 'the retried release completed');
+  assert.equal(fs.existsSync(file), false, 'the claim file was removed');
+  assert.equal(core.targetOwners.get(target), undefined, 'the in-memory owner was cleared');
 });
 
 // ---------------------------------------------------------------------------

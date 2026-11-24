@@ -11,9 +11,12 @@
  * Classification rule (reproducible, conservative):
  *   - a published-tool call is `verificationInvocations` only while a
  *     promotion-lifecycle call (`evolution_probe` / `evolution_trial` /
- *     `evolution_measure` / `evolution_promote` / `evolution_canary_observe` /
- *     `evolution_desktop`) is open in the same session — i.e. the call sits
- *     inside the official pipeline that runs the candidate;
+ *     `evolution_measure` / `evolution_promote` / `evolution_canary_observe`)
+ *     is open in the same session — i.e. the call sits inside the official
+ *     pipeline that runs the candidate. `evolution_desktop` is not one: its
+ *     audit/status/confirm actions are read-only and delegate only forwards,
+ *     while the candidate runs in the Desktop session with its own lifecycle
+ *     calls;
  *   - every other call is `workflowInvocations`: a real session that chose the
  *     capability;
  *   - a call made under a lifecycle call that never returned (crashed or

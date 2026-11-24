@@ -88,11 +88,14 @@ test('the managed exemption does not follow a symlink out of its own scope', () 
   fs.writeFileSync(path.join(root, '.env'), 'SECRET=1');
   const alias = path.join(root, '.task-ledger', 'entry');
   fs.symlinkSync(path.join(root, '.env'), alias);
-  const context = { verified: true, transactionType: 'evolution-managed', actor: 'dsh-evolution', ownership: 'evolution', operation: 'write' };
+  const honest = path.join(root, '.task-ledger', 'journal.json');
+  // The host proof names the exact bookkeeping path it authorizes.
+  const context = { verified: true, transactionType: 'evolution-managed', actor: 'dsh-evolution',
+    ownership: 'evolution', operation: 'write', target: honest };
   const escaping = { name: 'write', arguments: { file_path: alias }, operationContext: context, context };
   assert.equal(isVerifiedManagedTransaction(escaping), false, 'the resolved target is a credential file, not bookkeeping');
 
-  const honest = path.join(root, '.task-ledger', 'journal.json');
+
   fs.writeFileSync(honest, '{}');
   const bookkeeping = { name: 'write', arguments: { file_path: honest }, operationContext: context, context };
   assert.equal(isVerifiedManagedTransaction(bookkeeping), true, 'a real bookkeeping write keeps its exemption');

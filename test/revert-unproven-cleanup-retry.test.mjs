@@ -322,6 +322,62 @@ test('the autonomous cleanup retries an unproven cleanup instead of reporting it
   assert.equal((await ownershipFiles(h)).length, 0);
 });
 
+test('an autonomous reservation release failure after a proven cleanup keeps the successful revert', async (t) => {
+  const h = await harness(t, 'reservation-release-failure');
+  const proposal = h.core.propose(PROPOSAL, h.exec);
+  const record = h.core.experiments.get(proposal.experimentId);
+  await h.core.trial({ experimentId: record.id, composition: COMPOSITION }, h.exec);
+  h.core.measure({ experimentId: record.id, observation: OBSERVATION }, h.exec);
+  const target = record.targets[0];
+  record.autonomous = { patternKey: 'pattern', strategyFingerprint: 'fingerprint' };
+  h.core.domainStorage = { releaseAutonomousDecision: async () => { throw new Error('storage write failed'); } };
+
+  // The disposers proved recovery; a failure in the post-proof reservation
+  // bookkeeping must not turn this into `revert-failed`, which the autonomous
+  // observer would then record as a strategy failure and suppress.
+  const reverted = await h.core.revert({ experimentId: record.id }, h.exec);
+  assert.equal(reverted.ok, true);
+  assert.equal(record.state, 'reverted');
+  assert.equal(h.core.targetOwners.get(target), undefined, 'the proven recovery released the claim');
+  assert.equal(record.failure, undefined, 'a successful revert records no failure');
+});
+
+test('promote(): an inspection error with an unproven cleanup keeps the record revertible', async (t) => {
+  const h = await started(t, 'promotion-inspection-unproven');
+  h.core.measure({ experimentId: h.record.id, observation: OBSERVATION }, h.exec);
+
+  // Both failures at once: inspection throws and the disposers refuse with a
+  // receipt that is not one of the "already in that state" proofs. The old code
+  // wrote the terminal `promotion-failed` but kept the claim, so every later
+  // revert/promote/trial was refused with advice no tool could carry out.
+  h.runner.inspectPackage = () => { throw new Error('inspection transport down'); };
+  h.runner.stopFailure = { reason: 'busy-external' };
+  h.runner.undefineFailure = { reason: 'busy-external' };
+
+  const failed = await h.core.promote({ experimentId: h.record.id, confirmation: true }, h.exec);
+  assert.equal(failed.ok, false);
+  assert.equal(failed.reason, 'package-inspection-failed');
+  assert.equal(failed.runtimeRecovered, false);
+  assert.equal(h.record.state, 'revert-failed', 'the record stays in a retryable state');
+  assert.equal(h.record.failure.failurePhase, 'promotion-inspection', 'the archive still names the inspection stage');
+  assert.equal(h.core.targetOwners.get(h.target), h.record.id, 'an unproven cleanup keeps the claim');
+  assert.equal((await ownershipFiles(h)).length, 1, 'the claim file is still on disk');
+
+  // The suggested exit now exists: the retry runs the same disposers against the
+  // same captured baseline and releases the claim only when recovery is proved.
+  h.runner.stopFailure = null;
+  h.runner.undefineFailure = null;
+  const reverted = await h.core.revert({ experimentId: h.record.id }, h.exec);
+  assert.equal(reverted.ok, true);
+  assert.equal(reverted.phase, 'reverted');
+  assert.equal(h.core.targetOwners.get(h.target), undefined);
+  assert.deepEqual(await ownershipFiles(h), []);
+
+  const again = h.core.propose({ ...PROPOSAL, target: 'plugin:after-promotion-failure' }, h.exec);
+  const trialed = await h.core.trial({ experimentId: again.experimentId, composition: COMPOSITION }, h.exec);
+  assert.equal(trialed.phase, 'trial', 'the session can continue after the transient double failure');
+});
+
 test('a measured record still reverts in one call, without a retry', async (t) => {
   const h = await harness(t, 'first-try');
   const proposal = h.core.propose(PROPOSAL, h.exec);

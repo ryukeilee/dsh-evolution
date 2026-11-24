@@ -89,7 +89,7 @@ function buildLegacyStore(root) {
   for (let n = 0; n < 60; n += 1) {
     store.recordFailure({ id: experienceEventId('legacy', n), type: 'tool/error', code: n % 7 ? 'ENOENT' : 'EACCES', target: n % 4 === 0 ? 'tool:read_file' : `tool:op-${n % 40}` });
   }
-  store.recordEvolution({ eventType: 'promotion-succeeded', target: 'tool:stable', eventId: 'evolution:promotion-succeeded:exp-1' },
+  store.recordEvolution({ eventType: 'canary-passed', target: 'tool:stable', eventId: 'evolution:canary-passed:exp-1' },
     '/bridge/execution-events.jsonl', { writer: 'dsh-evolution-orchestrator', sequence: 1 });
   store.recordEvolution({ eventType: 'canary-failed', target: 'tool:stable', eventId: 'evolution:canary-failed:exp-1' },
     '/bridge/execution-events.jsonl', { writer: 'dsh-evolution-orchestrator', sequence: 2 });

@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { sha256 } from '../lib/promoted-sharing.js';
 import {
+  createSessionCounter,
   readUsageProjection,
   summarizeCapabilityUsage,
   toolNamesFromSource,
@@ -376,6 +377,17 @@ test('an older projection without the unattributed bucket is still readable', as
   assert.equal(partial.usage.recordsComplete, false);
 });
 
+test('the README-documented usage projection producer ships in the package', t => {
+  // `evolution_plan` and the ACP audit read `<dataRoot>/shared-plugins/usage.json`,
+  // but an installed user can only produce that file with this CLI. If the
+  // allow-list drops it, every production record stays `usage-unknown` and the
+  // review-retirement action is unreachable outside this repository.
+  const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const producer = 'docs/audit/replay/capability-usage.mjs';
+  assert.ok(pkg.files.includes(producer), 'the producer referenced by README must be distributed');
+  assert.ok(fs.existsSync(SCRIPT), 'the referenced producer must exist at that path');
+});
+
 test('the scanner output is reproducible directly, without the CLI', async (t) => {
   const env = scratch(t);
   writeRecord(env, { source: WIDGET_SOURCE });
@@ -390,4 +402,31 @@ test('the scanner output is reproducible directly, without the CLI', async (t) =
   assert.equal(projection.records[RECORD_ID].verificationInvocations, 1);
   assert.equal(projection.scannedSessions, 1);
   assert.equal(projection.scannedToolCalls, 2);
+});
+
+// 2026-11-24 reliability round: the ACP coordination tool is not a candidate
+// execution lifecycle. Its read-only audit/status calls must never turn a real
+// published-tool usage into verification traffic.
+test('evolution_desktop coordination does not mark a published call as verification', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  assert.equal(counter.call({ type: 'tool/call', data: { name: 'mytool', callId: 't1' } }), 'workflow');
+  assert.equal(counter.call({ type: 'tool/call', data: { name: 'evolution_desktop', callId: 'e1' } }), 'ignored');
+  assert.equal(counter.call({ type: 'tool/call', data: { name: 'mytool', callId: 't2' } }), 'workflow');
+  counter.call({ type: 'tool/result', data: { toolCallId: 'e1' } });
+  counter.call({ type: 'tool/result', data: { toolCallId: 't2' } });
+  counter.call({ type: 'tool/result', data: { toolCallId: 't1' } });
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 2, verification: 0, unattributed: 0 },
+  });
+});
+
+test('a real promotion lifecycle call still marks an overlapping published call as verification', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  counter.call({ type: 'tool/call', data: { name: 'evolution_trial', callId: 'life1' } });
+  counter.call({ type: 'tool/call', data: { name: 'mytool', callId: 't1' } });
+  counter.call({ type: 'tool/result', data: { toolCallId: 't1' } });
+  counter.call({ type: 'tool/result', data: { toolCallId: 'life1' } });
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 0, verification: 1, unattributed: 0 },
+  });
 });

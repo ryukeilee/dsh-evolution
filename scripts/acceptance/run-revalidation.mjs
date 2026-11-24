@@ -37,7 +37,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { hostCompatible, hostDigest } from '../../lib/promoted-sharing.js';
+import { hostCompatible, hostDigest, isDisabledForProfile, readDisableState } from '../../lib/promoted-sharing.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
@@ -159,6 +159,19 @@ export function rewriteIndexForVerification(index, options) {
 }
 
 /** The per-record tool-call plan, with $WORK expanded in string arguments. */
+/**
+ * A profile is a verification target only while it is approved and not
+ * explicitly revoked. Revocation is checked at every stage (verification
+ * expectations, evidence assembly and post-adoption verification); checking it
+ * only when selecting targets leaves a partially revoked record asking a
+ * disabled consumer to report `active` and aborts the whole adoption chain.
+ */
+export function profileIsRevalidationTarget(record, profile, disable) {
+  return Array.isArray(record?.approvedProfiles)
+    && record.approvedProfiles.includes(profile)
+    && !isDisabledForProfile(disable, record.id, profile);
+}
+
 export function planFor(plans, recordId, work) {
   const plan = plans && plans.plans ? plans.plans[recordId] : null;
   if (!plan) return null;
@@ -442,19 +455,31 @@ async function main(argv) {
 
   // 3. Every record a consumer reports as pending-revalidation on this host is a
   //    revalidation target. Anything else is reported, never silently adopted.
+  //    A record revoked on every approved profile is out of scope: it can never
+  //    be a live revalidation target, but its host mismatch must not abort the
+  //    evidence run for the records that are still active.
+  const disable = await readDisableState({ dataRoot: cloneDataRoot });
+  const skippedRevokedIds = records.filter((record) => record.approvedProfiles.length > 0
+    && record.approvedProfiles.every((profile) => isDisabledForProfile(disable, record.id, profile)))
+    .map((record) => record.id);
+  const activeRecords = records.filter((record) => !skippedRevokedIds.includes(record.id));
   const pending = new Map();
   for (const profile of PROFILES) {
     const rows = rowsById(readJsonFile(path.join(clone, CONSUMER_STATE, profile + '.json')));
-    for (const record of records) {
+    for (const record of activeRecords) {
       const row = rows.get(record.id);
       if (!row) continue;
-      if (row.status === 'pending-revalidation' && row.reason === 'host-version-mismatch') {
+      // A consumer marks a record pending-revalidation when its own host facts
+      // do not match the record, whatever the specific mismatching component
+      // (DSH, Cordis, Include or Node). Accept the status itself; the source
+      // digest, activation proof and adoption gates below stay unchanged.
+      if (row.status === 'pending-revalidation') {
         if (!pending.has(record.id)) pending.set(record.id, {});
         pending.get(record.id)[profile] = { status: row.status, reason: row.reason, hostDigest: row.hostDigest || null };
       }
     }
   }
-  for (const record of records) {
+  for (const record of activeRecords) {
     if (pending.has(record.id)) continue;
     const current = hostCompatible(record.host, host);
     if (current.ok) continue;
@@ -492,7 +517,7 @@ async function main(argv) {
     const calls = [];
     for (const id of targets) {
       const record = records.find((row) => row.id === id);
-      if (!record.approvedProfiles.includes(profile)) continue;
+      if (!profileIsRevalidationTarget(record, profile, disable)) continue;
       expect[id] = { status: 'active' };
       const plan = plansByRecord.get(id);
       if (plan) calls.push({ id: id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: id });
@@ -526,7 +551,7 @@ async function main(argv) {
     const record = records.find((row) => row.id === id);
     const profiles = {};
     for (const profile of PROFILES) {
-      if (!record.approvedProfiles.includes(profile)) continue;
+      if (!profileIsRevalidationTarget(record, profile, disable)) continue;
       const row = verification[profile].rows.get(id);
       if (!row || row.status !== 'active') throw new Error(id + ' is ' + (row ? row.status : 'missing') + ' in the verified ' + profile + ' entry');
       if (row.sourceSha256 !== record.sourceSha256) throw new Error('the ' + profile + ' entry activated a different source for ' + id);
@@ -573,6 +598,7 @@ async function main(argv) {
       indexDigestBefore,
       indexUpdatedAt: index.updatedAt || null,
       recordCount: records.length,
+      skippedRevokedIds,
     },
     // The clone is the only place the record recorded host is replaced by the
     // current one; every activation below is a real boot of the real entry.
@@ -629,7 +655,7 @@ async function main(argv) {
       const expect = {};
       const calls = [];
       for (const plugin of plugins) {
-        if (!plugin.approvedProfiles.includes(profile)) continue;
+        if (!profileIsRevalidationTarget(plugin, profile, disable)) continue;
         expect[plugin.id] = { status: 'active' };
         const plan = plansByRecord.get(plugin.id);
         if (plan) calls.push({ id: plugin.id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: plugin.id });

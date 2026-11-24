@@ -1,8 +1,7 @@
 # 跨入口共享已验证的晋升插件
 
-基线：`0.2.4` 正式版（含本文描述的全部行为）。
-本文只描述本树 `lib/promoted-sharing.js`、`lib/promoted-consumer.js`、`lib/orchestrator.js`、
-`lib/diagnostics.js` 与 `scripts/shared-plugins.mjs` 的实际行为；没有实际执行过的验证不写成已验证。
+基线：`0.2.4` 正式版。第 6.1 节的统一检查路由来自 `0.2.8`（`git show 25df170`）；同一 profile 并发会话与关闭取消语义来自 `0.2.9`（`git show 387d842` 与 `c3a24c5`）；其余行为以本树代码为准。
+本文只描述本树 `lib/promoted-sharing.js`、`lib/promoted-consumer.js`、`lib/orchestrator.js`、`lib/diagnostics.js` 与 `scripts/shared-plugins.mjs` 的实际行为；没有实际执行过的验证不写成已验证。
 
 ## 1. 架构
 

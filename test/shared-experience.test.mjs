@@ -123,14 +123,19 @@ test('failure canonical output uses existing domain semantics', t => {
   assert.equal(actual.key, baseline.knowledgeKey); assert.equal(actual.failureCount, baseline.failureCount);
 });
 
-test('only completed Evolution promotion facts become successful knowledge', t => {
+test('only a stable canary commit becomes successful knowledge', t => {
   const root = temporary(t); const store = openSharedExperience(root); t.after(() => store.close());
   assert.deepEqual(store.recordEvolution({ eventType: 'trial-completed' }, 'test'), { ignored: true });
   const receipt = sequence => ({ writer: 'dsh-evolution-orchestrator', sequence });
-  store.recordEvolution({ eventType: 'promotion-succeeded', target: 'tool-a', eventId: 'evolution:promotion-succeeded:exp-a' }, 'core-a', receipt(1));
+  const lifecycle = store.recordEvolution({ eventType: 'promotion-succeeded', target: 'tool-a', eventId: 'evolution:promotion-succeeded:exp-a' }, 'core-a', receipt(1));
+  // Entering canary is a lifecycle milestone: the promotion can still roll back,
+  // so it is not a shared problem fact at all. It remains on the event bridge.
+  assert.equal(lifecycle.ignored, true);
+  assert.equal(store.recall({ target: 'tool-a' }).records.length, 0);
+  store.recordEvolution({ eventType: 'canary-passed', target: 'tool-a', eventId: 'evolution:canary-passed:exp-a' }, 'core-a', receipt(2));
   assert.equal(store.recall({ target: 'tool-a' }).records[0].successCount, 1);
   assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN');
-  store.recordEvolution({ eventType: 'canary-failed', target: 'tool-a', eventId: 'evolution:canary-failed:exp-a' }, 'core-a', receipt(2));
+  store.recordEvolution({ eventType: 'canary-failed', target: 'tool-a', eventId: 'evolution:canary-failed:exp-a' }, 'core-a', receipt(3));
   const regressed = store.recall({ target: 'tool-a' }).records;
   assert.equal(regressed.length, 1);
   assert.equal(regressed[0].state, 'REGRESSED');
@@ -141,13 +146,14 @@ test('only completed Evolution promotion facts become successful knowledge', t =
   assert.ok(final.advice.every(line => !line.includes('reusing') && !line.includes('reuse the recorded')));
 });
 
-test('promotion facts accept the normalized problem identity with spaces', t => {
+test('terminal promotion facts accept the normalized problem identity with spaces', t => {
   const root = temporary(t); const store = openSharedExperience(root); t.after(() => store.close());
   const receipt = sequence => ({ writer: 'dsh-evolution-orchestrator', sequence });
   // `evolution_plan` reports this exact scope, and the acceptance loop passes it
-  // straight back as the experiment target. It must not be silently ignored.
+  // straight back as the experiment target. A terminal fact must not be silently
+  // ignored just because the identity contains a space.
   const written = store.recordEvolution({
-    eventType: 'promotion-succeeded', target: 'tool read', eventId: 'evolution:promotion-succeeded:exp-space',
+    eventType: 'canary-passed', target: 'tool read', eventId: 'evolution:canary-passed:exp-space',
   }, 'core-a', receipt(1));
   assert.equal(written.committed, true);
   const discovered = store.discover({ window: 500 });
@@ -211,13 +217,13 @@ test('shared publication can recover from the authenticated bridge without trust
   const root = temporary(t); const store = openSharedExperience(path.join(root, 'shared')); t.after(() => store.close());
   const file = path.join(root, 'execution-events.jsonl'); const key = 'a'.repeat(64);
   const bridge = new EvolutionEventBridge({ file, key });
-  bridge.emit('promotion-succeeded', { id: 'exp-a', proposal: { target: 'tool-a' } });
+  bridge.emit('canary-passed', { id: 'exp-a', proposal: { target: 'tool-a' } });
   const publish = (event, order) => store.recordEvolution(event, file, order);
   new EvolutionEventBridge({ file, key, onVerifiedEvent: publish });
   new EvolutionEventBridge({ file, key, onVerifiedEvent: publish });
   assert.deepEqual(store.stats(), { events: 1, knowledge: 1 });
   const foreign = new EvolutionEventBridge({ file: path.join(root, 'foreign.jsonl'), key, writer: 'another-writer' });
-  foreign.emit('promotion-succeeded', { id: 'exp-b', proposal: { target: 'tool-b' } });
+  foreign.emit('canary-passed', { id: 'exp-b', proposal: { target: 'tool-b' } });
   fs.appendFileSync(file, fs.readFileSync(foreign.file));
   new EvolutionEventBridge({ file, key, onVerifiedEvent: publish });
   assert.equal(store.stats().events, 1);
@@ -259,7 +265,7 @@ test('Trial cleanup cannot invalidate a proven production outcome, but durable r
   const bridge = new EvolutionEventBridge({ file, key: 'b'.repeat(64),
     onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
   const base = { id: 'production', proposal: { target: 'tool-a' }, durable: { adapter: 'official-include', rowId: 'fixture-row' } };
-  bridge.emit('promotion-succeeded', base);
+  bridge.emit('canary-passed', base);
   bridge.emit('promotion-reverted', { id: 'trial-only', proposal: base.proposal }, { status: 'reverted' });
   assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN');
   assert.equal(store.stats().events, 1);
@@ -273,7 +279,7 @@ test('verified bridge backfill preserves latest outcome even when timestamps tie
   const bridge = new EvolutionEventBridge({ file, key,
     onVerifiedEvent: (event, order) => { if (order.sequence > 1) store.recordEvolution(event, file, order); } });
   const base = { id: 'production', proposal: { target: 'tool-a' } };
-  bridge.emit('promotion-succeeded', base, { at });
+  bridge.emit('canary-passed', base, { at });
   bridge.emit('canary-failed', base, { at });
   assert.equal(store.stats().events, 1);
   new EvolutionEventBridge({ file, key, onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
@@ -282,8 +288,8 @@ test('verified bridge backfill preserves latest outcome even when timestamps tie
   assert.equal(row.occurrences, 2); assert.equal(store.stats().events, 2);
   const final = finalizeExperienceRecall({ target: 'tool-a' }, [store.recall({ target: 'tool-a' })]);
   assert.equal(final.resolved.length, 0); assert.equal(final.failures.length, 1);
-  bridge.emit('promotion-succeeded', { ...base, id: 'new-production' }, { at });
-  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN', 'a genuinely newer success can recover the target');
+  bridge.emit('canary-passed', { ...base, id: 'new-production' }, { at });
+  assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN', 'a genuinely newer stable commit can recover the target');
   new EvolutionEventBridge({ file, key, onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
   assert.equal(store.recall({ target: 'tool-a' }).records[0].state, 'KNOWN');
   assert.equal(store.stats().events, 3);
@@ -304,4 +310,35 @@ test('a metrics-bearing failure keeps the frozen opener replay digest', t => {
   // The frozen schema-1 opener replays the same id without the new field. Its
   // digest must still match, so it sees a duplicate, never a conflict.
   assert.equal(store.recordFailure({ id, type: 'tool/error', code: 'ENOENT', target: 'tool:read_file' }).duplicate, true);
+});
+
+test('promotion facts accept the canonical problem identity evolution_plan emits', t => {
+  const root = temporary(t);
+  const store = openSharedExperience(path.join(root, 'shared'));
+  t.after(() => store.close());
+  const file = path.join(root, 'bridge.jsonl');
+  // plan() emits the canonical scope as the problem key (`tool:read` -> `tool
+  // read`), and the closed-loop acceptance feeds that string back as
+  // proposal.target. A stable canary fact under that identity must reach shared
+  // experience; dropping it silently erases the resolved-problem signal the
+  // next review depends on. `promotion-succeeded` only enters canary and is
+  // deliberately not a resolution.
+  const bridge = new EvolutionEventBridge({ file, key: 'd'.repeat(64),
+    onVerifiedEvent: (event, order) => store.recordEvolution(event, file, order) });
+  bridge.emit('canary-passed', { id: 'promo-canonical', proposal: { target: 'tool read' },
+    durable: { adapter: 'official-include', rowId: 'canonical-row' } });
+  assert.equal(store.stats().events, 1, 'a canonical target must not be silently ignored');
+  assert.equal(store.recall({ target: 'tool read' }).records[0].state, 'KNOWN');
+});
+
+test('recordEvolution bounds canonical targets but still refuses blank ones', t => {
+  const root = temporary(t);
+  const store = openSharedExperience(root);
+  t.after(() => store.close());
+  const at = new Date().toISOString();
+  assert.equal(store.recordEvolution({ eventType: 'canary-passed', eventId: 'canary-space',
+    target: 'agent pattern recovery', audit: { at } }, 'origin', { sequence: 1, writer: 'w' }).committed, true);
+  assert.equal(store.recordEvolution({ eventType: 'canary-passed', eventId: 'canary-blank',
+    target: '   ', audit: { at } }, 'origin', { sequence: 2, writer: 'w' }).ignored, true);
+  assert.equal(store.recall({ problem: 'agent pattern recovery' }).records.length, 1);
 });

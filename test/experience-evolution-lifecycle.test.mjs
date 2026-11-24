@@ -674,6 +674,62 @@ test('an invalid probe pair stays insufficient and never writes a strategy failu
   assert.equal((recall.records ?? []).filter((entry) => entry.source === 'failure-memory').length, 0);
 });
 
+test('an advisory veto cannot overwrite a real measured regression verdict', async (t) => {
+  const h = await createHarness(t, 'advisory-veto-real-regression', { config: {
+    domainStorage: { evaluate: () => ({ decision: 'rollback', reason: 'advisory cost regression' }) },
+  } });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  await startTrial(h, experimentId);
+  // A genuine measured regression: the correctness control failed.
+  const measured = h.orchestrator.measure({
+    experimentId,
+    observation: measuredObservation({ solvesProblem: false, regressionPassed: false }),
+  }, h.exec);
+  assert.equal(measured.decision.kind, 'regression');
+  const promoted = await h.orchestrator.promote({ experimentId, confirmation: true }, h.exec);
+  assert.equal(promoted.ok, false);
+  assert.equal(promoted.reason, 'domain-evaluator-rollback');
+  const record = h.orchestrator.requireOwned(experimentId, h.exec.agent);
+  assert.equal(record.decision.kind, 'regression', 'the measured verdict survives the advisory veto');
+  assert.equal(conclusionKindFor(record), 'regression');
+  await h.orchestrator.revert({ experimentId, reason: 'measured regression' }, h.exec);
+  const found = h.store.findConclusions({ target: TARGET, applicability: APPLICABILITY, strategyFingerprint: strategyFingerprint(TARGET, STRATEGY) });
+  assert.equal(found.best?.decision, 'regression', 'the real regression remains a durable lesson');
+});
+
+test('an advisory veto never becomes a durable regression conclusion', async (t) => {
+  const h = await createHarness(t, 'advisory-veto-not-durable', { config: {
+    domainStorage: { evaluate: () => ({ decision: 'rollback', reason: 'advisory cost regression' }) },
+  } });
+  seedFailures(h.store, TARGET, 3);
+  const experimentId = await proposeExperiment(h);
+  await startTrial(h, experimentId);
+  h.orchestrator.measure({ experimentId, observation: measuredObservation() }, h.exec);
+  const promoted = await h.orchestrator.promote({ experimentId, confirmation: true }, h.exec);
+  assert.equal(promoted.ok, false);
+  assert.equal(promoted.reason, 'domain-evaluator-rollback');
+
+  const record = h.orchestrator.requireOwned(experimentId, h.exec.agent);
+  assert.equal(record.decision.kind, 'insufficient-evidence', 'an advisory veto is not a measured verdict');
+  assert.equal(record.decision.source, 'domain-evaluator');
+  assert.equal(record.decision.advisoryRegression, true, 'the veto is still visible on the decision');
+  assert.equal(conclusionKindFor(record), 'insufficient-evidence');
+
+  // The owner reverts the mounted trial. The promotion itself deliberately did
+  // not publish a conclusion; the revert used to turn the advisory decision
+  // into a permanent `regression` lesson that blocked every later attempt.
+  const reverted = await h.orchestrator.revert({ experimentId, reason: 'advisory veto' }, h.exec);
+  assert.equal(reverted.ok, true);
+  const found = h.store.findConclusions({ target: TARGET, applicability: APPLICABILITY, strategyFingerprint: strategyFingerprint(TARGET, STRATEGY) });
+  assert.notEqual(found.best?.decision, 'regression', 'the advisory veto must not become a durable regression verdict');
+  const next = h.orchestrator.propose({
+    target: TARGET, strategy: STRATEGY, rootCause: ROOT_CAUSE, why: 're-propose after the advisory veto',
+    impactScope: ['test'], successMetrics: ['successRate'],
+  }, h.exec);
+  assert.notEqual(next.reason, 'strategy-already-proven-ineffective', 'the same hypothesis remains proposable');
+});
+
 test('a plain probe with a candidate transport failure stays insufficient, not a regression', async (t) => {
   const h = await createHarness(t, 'plain-ptc-candidate-invalid', { ptc: true });
   const experimentId = await proposeExperiment(h);
@@ -1331,6 +1387,29 @@ test('classifyExperimentDecision: the four kinds and the eligibility downgrade',
   assert.equal(incompleteProbe.kind, 'insufficient-evidence');
 });
 
+test('classifyExperimentDecision reads the durable probe comparison after a restart', () => {
+  // `hydrateRecordFromSnapshot()` rebuilds `latestObservation` but not the
+  // in-session `probe`. An invalid pair that set `regressionPassed: false`
+  // must still be classified as insufficient evidence, not as a strategy
+  // regression written into shared experience.
+  const recovered = {
+    runtimeRecovered: false,
+    latestObservation: {
+      at: '2026-01-02T00:00:00.000Z',
+      solvesProblem: false,
+      repeatable: false,
+      regressionPassed: false,
+      probe: { scenarioId: 'edge-cache-first-read',
+        comparison: { measurementInvalid: true, regression: false, benefit: false,
+          reasons: ['the baseline pair did not measure the strategy'] } },
+    },
+  };
+  const decision = classifyExperimentDecision(recovered);
+  assert.equal(decision.kind, 'insufficient-evidence');
+  assert.ok(decision.reasons.some((reason) => /did not measure/.test(reason)));
+  assert.equal(decision.probe.scenarioId, 'edge-cache-first-read', 'the durable probe keeps its scenario identity');
+});
+
 test('conclusionKindFor maps the terminal decision onto a stored conclusion', () => {
   assert.equal(conclusionKindFor({ probe: { comparison: { regression: true } } }), 'regression');
   assert.equal(conclusionKindFor({ decision: { kind: 'regression' } }), 'regression');
@@ -1456,9 +1535,11 @@ test('plan boundaries: no failure signal and a non-matching focus return no cand
 test('plan boundaries: a resolved target is rejected instead of re-planned', async (t) => {
   const h = await createHarness(t, 'plan-resolved');
   seedFailures(h.store, TARGET, 3);
-  // A newer resolution for the same target is a real success fact in the store.
+  // A newer resolution for the same target is a stable canary fact. Entering
+  // canary (`promotion-succeeded`) is only a lifecycle milestone and must not
+  // close the target while the promotion can still roll back.
   const receipt = h.store.recordEvolution({
-    eventType: 'promotion-succeeded',
+    eventType: 'canary-passed',
     target: TARGET,
     eventId: 'promotion-event-1',
   }, '/tmp/evolution-lifecycle-bridge.jsonl', { sequence: 1, writer: 'lifecycle-test' });
@@ -1549,9 +1630,64 @@ test('a timed-out probe step aborts its official call and waits for it to settle
   for (const sample of baseline.samples) {
     assert.equal(sample.isError, true);
     assert.equal(sample.code, 'E_EVOLUTION_PROBE_TIMEOUT');
+    // A direct timeout never measured the tool, so it must not be read as a
+    // real failure a candidate could "fix".
+    assert.equal(sample.unmeasured, true);
   }
   // A settled rejection must not surface as an unhandled rejection later.
   await Promise.allSettled(pending);
+});
+
+test('a direct probe timeout cannot become a benefit or a regression', () => {
+  const timedOut = { samples: Array.from({ length: 2 }, () => ({
+    index: 0, step: 'probe-target', role: 'target', isError: true,
+    code: 'E_EVOLUTION_PROBE_TIMEOUT', transport: 'direct',
+  })) };
+  const succeeded = { samples: Array.from({ length: 2 }, () => ({
+    index: 0, step: 'probe-target', role: 'target', isError: false,
+    valueDigest: `sha256:${'a'.repeat(64)}`, transport: 'direct',
+  })) };
+  assert.equal(probeSummary(timedOut).unmeasured, true);
+  const forward = compareProbeRuns(timedOut, succeeded);
+  assert.equal(forward.measurementInvalid, true);
+  assert.equal(forward.benefit, false, 'a timed-out baseline is not a measured failure');
+  const reverse = compareProbeRuns(succeeded, timedOut);
+  assert.equal(reverse.measurementInvalid, true);
+  assert.equal(reverse.regression, false, 'a timed-out candidate is not a measured regression');
+});
+
+test('an empty official result batch is not a measured success', async (t) => {
+  const h = await createHarness(t, 'probe-empty-batch');
+  const experimentId = await proposeExperiment(h);
+  // No row for this call means the official pipeline never returned a result.
+  // The old fallback read the bare update (`{}`) as a successful measurement.
+  h.ctx.tools.execute = () => ({ results: [] });
+  const baseline = await runBaseline(h, experimentId);
+  assert.equal(baseline.samples.length > 0, true);
+  for (const sample of baseline.samples) {
+    assert.equal(sample.isError, true);
+    assert.equal(sample.code, 'PROBE_NO_RESULT');
+  }
+  assert.equal(probeSummary(baseline).unmeasured, true);
+  const comparison = compareProbeRuns(baseline, baseline);
+  assert.equal(comparison.measurementInvalid, true);
+  assert.equal(comparison.benefit, false);
+});
+
+test('plan and review report a truncated discovery window', async (t) => {
+  const h = await createHarness(t, 'truncated-discovery');
+  const original = h.orchestrator.sharedExperience;
+  h.orchestrator.sharedExperience = { ...original, discover: () => ({ records: [], truncated: true }) };
+  try {
+    const plan = h.orchestrator.plan({}, h.exec);
+    assert.equal(plan.sources.truncated, true, 'plan must carry the withheld-window fact');
+    assert.equal(plan.none?.reason, 'discovery-window-truncated', 'a withheld window is not the same fact as "no failure signal"');
+    assert.doesNotMatch(plan.none?.detail ?? '', /focus/, 'filtering the records already read cannot recover withheld history');
+    const review = await h.orchestrator.reviewSelfEvolution({}, h.exec);
+    assert.equal(review.selfEvolution.incomplete, true, 'a review over withheld evidence is not complete');
+  } finally {
+    h.orchestrator.sharedExperience = original;
+  }
 });
 
 test('the strategy fingerprint uses the canonical problem identity', async (t) => {
