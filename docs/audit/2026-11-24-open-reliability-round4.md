@@ -22,6 +22,23 @@
 | 10 | 重验证采纳后，`profileVerdict` 用 consumer 上次启动的 host 判断兼容性，把已过期的 `pending-revalidation` 判成再次重验证；混合 profile 的聚合动作又丢掉逐 profile 的后续动作 | runner 说「nothing to revalidate」而审查要求重验证，操作闭环空转；一个 profile 需要修源码时另一个 profile 的重启需求被吞掉 | 用 live review host 判断记录是否兼容：兼容时把过期行归为 `stale-revalidation` → restart；聚合动作不是 restart/revalidate 时仍输出逐 profile 的 restart，pending-revalidation 行仍输出绑定 consumerHosts 的重验证指令 |
 | 11 | `run-revalidation` 只在目标筛选阶段处理全撤销，验证预期/证据组装/采纳后复验仍要求被撤销 profile 变成 active | 任一 profile 被 operator 撤销即卡死整条受支持的重验证采纳链 | 抽出 `profileIsRevalidationTarget`，三处统一跳过已撤销 profile |
 
+### 独立反方复审（sol-loop 第 1 轮）
+
+GPT-6.2 Sol（High）返回 `CHANGES`：4 blocker、6 should。逐条复核后全部按最小改动修复：
+
+| id | 结论 | 处理 |
+| --- | --- | --- |
+| S1 blocker | 接受：重启重放创建新 Agent id，内核会把 canary 观测判给不同所有者（假内核跳过了这项校验） | 用原任务 session id 恢复同一所有者身份，并新增断言钉住 |
+| S2 blocker | 接受：义务在 promote 后才写任务状态，崩溃窗口会留下无法重放的 canary | 在内核写入前持久化只读检查描述符与绑定；`promoting` 阶段也参与恢复重放；内核无 journal 时自然拒绝并回退 interrupted |
+| S3 blocker | 接受：重放中的功能失败本地退出，候选继续挂载 | 失败经 `evolution_canary_observe` 的回归分支提交，由内核回滚后再结束任务 |
+| S4 blocker | 接受：`context-policy` 实验缺义务仍可晋升，健康观测即可提交 stable | 内核在任何持久化前要求有效的 canaryVerification；工具型与历史实验保持原语义 |
+| S5 should | 接受：工具型任务不传观测数，请求 5 次仍在 2 次提交 | 新增独立 `canaryWindow` 参数，内核取请求值与默认值较大者 |
+| S6 should | 接受：重放直接用缓存摘要，且摘要经有损投影 | 抽出共享纯模块 `canary-verification.js`，重放前重新校验工具白名单/形状并无损重算绑定，与内核一致 |
+| S7 should | 接受：`no-benefit → adopted → insufficient-evidence` 被计数恢复成 no-benefit，错误封杀已采纳策略 | 只有 canonical state 非 KNOWN 且末次结果非 success 时才恢复否定 verdict |
+| S8 should | 接受：live host 兼容会掩盖已读当前索引但仍在旧宿主上的 consumer | 仅当 consumer 尚未观察到当前索引（重启会重新评估）时判 stale；否则保留按 profile 的 host-bound 重验证 |
+| S9 should | 接受：官方取消分支不发 `agent/error`，只发带 aborted signal 的 tool result | 在 aborted 结果到达时按官方语义 flush 该 agent 的 pending 退化 |
+| S10 should | 接受：规划器按原始 scope 分组，`tool:read` 与 `tool read` 产生两个候选 | 分组键统一 canonical 化，并补混合来源回归；同步更新既有断言 |
+
 ## 3. 验证
 
 - 反证：新增 4 个回归文件与 2 个扩展文件；对每条核心修复先在旧源码上运行新用例：
