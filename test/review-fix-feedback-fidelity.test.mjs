@@ -56,6 +56,20 @@ test('a call sharing a lifecycle callId is counted but never guessed as usage', 
   assert.equal(counts.get('published_tool').unattributed, 2, 'ambiguous attribution stays unattributed, never a guessed verdict');
 });
 
+test('an unpublished tool reusing a lifecycle callId cannot close the Trial', () => {
+  const counter = createSessionCounter(new Set(['published_tool']));
+  counter.call({ type: 'tool/call', data: { callId: 'shared', name: 'evolution_trial' } });
+  assert.equal(counter.call({ type: 'tool/call', data: { callId: 'shared', name: 'read' } }), 'ignored');
+  // The ordinary tool's result must not close the still-running Trial.
+  counter.call({ type: 'tool/result', data: { toolCallId: 'shared' } });
+  assert.equal(counter.call({ type: 'tool/call', data: { callId: 'fresh', name: 'published_tool' } }), 'pending');
+  counter.call({ type: 'tool/result', data: { toolCallId: 'fresh' } });
+  counter.call({ type: 'tool/result', data: { toolCallId: 'shared' } });
+  const counts = counter.finish();
+  assert.equal(counts.get('published_tool').workflow, 0);
+  assert.equal(counts.get('published_tool').unattributed, 1);
+});
+
 test('two real calls with a reused callId are both counted', () => {
   const counter = createSessionCounter(new Set(['published_tool']));
   assert.equal(counter.call({ type: 'tool/call', data: { callId: 'shared-id', name: 'published_tool' } }), 'workflow');
