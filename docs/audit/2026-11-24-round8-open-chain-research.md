@@ -39,11 +39,11 @@
 
 ## 4. 验证
 
-- 反证：canary 指标测试在旧源码 4/7 失败，恢复修复版本后全绿；撤回的 floor 分类测试在旧源码 1/3 失败、新源码 3/3 通过，但因 sol-loop 的反证已随修复一并撤回。
-- 聚焦：结论来源、生命周期、feedback 保真、recall、plan、review、round4 结论、canary 义务等 **148/148** 通过；新增 6 项 canary 指标测试全绿。
-- 全量：在撤回 floor 修复后的最终树重跑 `NODE_OPTIONS=--max-old-space-size=4096 npm test`，结果以提交后实际输出为准（此前含两处修复的树为 2213 项 / 2211 通过 / 0 失败 / 2 跳过）。
+- 反证：canary 指标测试在旧源码 4/6 失败，恢复修复版本后 6/6 全绿；撤回的 floor 分类测试在旧源码 1/3 失败、新源码 3/3 通过，但因 sol-loop 的反证已随修复一并撤回。
+- 聚焦：结论来源、生命周期、feedback 保真、recall、plan、review、round4 结论、canary 义务与回收 floor 等 **65/65** 通过；新增 6 项 canary 指标测试全绿。
+- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2209 项，2207 通过 / 0 失败 / 2 跳过**（基线 2203，+6）。
 - 打包：`npm run pack:check` **17/17** 通过；工作树是 v0.2.19 固定点的已提交后继，固定点、产物与既有证据未改动；未执行 `--release` 或任何发布动作。
-- 独立复审：sol-loop（codex / gpt-6.2-sol / reasoningEffort high）第 1 轮返回 CHANGES：一个 blocker（撤回的 floor 修复会二次截断丢数据，已按上节撤回）、一个 should（dry-run 绕过分类器，随 floor 修复撤回而失效）、一个 nit（删除重复的 functional-check 用例，已处理）。第 2 轮结论见 PR 描述；最终收敛后创建 PR 并保持未合并、未开启自动合并。
+- 独立复审：sol-loop（codex / gpt-6.2-sol / reasoningEffort high）第 1 轮返回 CHANGES：一个 blocker（撤回的 floor 修复会二次截断丢数据，已按上节撤回）、一个 should（dry-run 绕过分类器，随 floor 修复撤回而失效）、一个 nit（删除重复的 functional-check 用例，已处理）；第 2 轮 **APPROVE**，无新增发现。最终收敛后创建 PR 并保持未合并、未开启自动合并。
 
 ## 5. 剩余风险
 
