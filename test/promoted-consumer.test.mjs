@@ -436,11 +436,9 @@ test('an improved iteration replaces the old policy, and revoke restores it', as
     approvalSha256: 'c'.repeat(64),
     evidenceSha256: 'd'.repeat(64),
     at: '2026-11-24T15:00:00.000Z',
-    summary: 'owner approved the replacement',
-    profiles: ['acp'],
   };
   await writeIndex([
-    { ...previous.record, supersededBy: marker },
+    { ...previous.record, supersededBy: { acp: marker } },
     iteration.record,
   ]);
 
@@ -464,6 +462,37 @@ test('an improved iteration replaces the old policy, and revoke restores it', as
   assert.equal(secondRows.get(iteration.record.id).status, 'disabled');
   assert.deepEqual(secondContext.tools.schemas().map((definition) => definition.name), ['old_policy_tool']);
   await second.dispose();
+});
+
+test('a replacement that fails to apply restores the previous record in the same start', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const previous = await createRecord({ toolName: 'working_policy_tool' });
+  const broken = await createRecord({
+    toolName: 'broken_policy_tool',
+    inject: [],
+    requiredServices: [],
+    source: "export const name = 'broken';\nexport function apply() { throw new Error('replacement exploded'); }\n",
+  });
+  await writeIndex([
+    { ...previous.record, supersededBy: { acp: {
+      recordId: broken.record.id,
+      sourceSha256: broken.record.sourceSha256,
+      approvalSha256: 'c'.repeat(64),
+      evidenceSha256: 'd'.repeat(64),
+      at: '2026-11-24T15:00:00.000Z',
+    } } },
+    broken.record,
+  ]);
+
+  const ctx = await boot();
+  const session = await mountSession(ctx, dataRoot);
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+  assert.equal(rows.get(broken.record.id).status, 'failed');
+  assert.equal(rows.get(broken.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(previous.record.id).status, 'active', 'the old stable plugin is restored without another restart');
+  assert.deepEqual(ctx.tools.schemas().map((definition) => definition.name), ['working_policy_tool']);
+  assert.ok(session.mounted.has(previous.record.id), 'the old plugin has a live, verified fiber');
+  await session.dispose();
 });
 
 test('a second start over the same data root mounts once and never duplicates', async (t) => {

@@ -27,6 +27,22 @@ test('revalidation runner: a partially revoked record still has its other profil
   assert.equal(runner.profileIsRevalidationTarget(record, 'web', allRevoked), false);
 });
 
+test('revalidation runner: a superseded record is expected disabled while its replacement is a target', () => {
+  const replacement = { id: TARGET_B, approvedProfiles: ['acp', 'web'], sourceSha256: 'b'.repeat(64) };
+  const previous = {
+    id: TARGET_A,
+    approvedProfiles: ['acp', 'web'],
+    supersededBy: { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } },
+  };
+  assert.deepEqual(runner.expectedRecordStatus(previous, 'acp', [previous, replacement], { entries: [] }), { status: 'disabled', reason: 'superseded-by' });
+  assert.deepEqual(runner.expectedRecordStatus(previous, 'web', [previous, replacement], { entries: [] }), { status: 'active' });
+  // A changed replacement digest or a revoked replacement restores the old plugin.
+  const tampered = { ...replacement, sourceSha256: 'c'.repeat(64) };
+  assert.deepEqual(runner.expectedRecordStatus(previous, 'acp', [previous, tampered], { entries: [] }), { status: 'active' });
+  const revoked = { entries: [{ pluginId: TARGET_B, profile: 'acp' }] };
+  assert.deepEqual(runner.expectedRecordStatus(previous, 'acp', [previous, replacement], revoked), { status: 'active' });
+});
+
 test('revalidation runner: parses its operator flags', () => {
   const options = runner.parseArgs(['--home', '/tmp/home', '--apply', '--json', '--timeout-ms', '9000']);
   assert.equal(options.home, path.resolve('/tmp/home'));

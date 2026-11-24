@@ -49,17 +49,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { resolveEvolutionPaths } from '../lib/diagnostics.js';
-import { redactCredentialShapes } from '../lib/error-boundary.js';
 import {
+  annotateSharedRecord,
   consumerNeedsRestart,
-  publishSharedRecord,
   readConsumerState,
   readDisableState,
   readPromotedPlugin,
   readSharedIndex,
+  revokeSharedSupersession,
   setDisabledForProfile,
   sharingPaths,
-  SHARED_ANNOTATION_TEXT_LIMIT,
   SHARED_CONSUMER_PROFILES,
   sha256,
   validateSharedRecord,
@@ -134,20 +133,17 @@ function requireApproval(options) {
 }
 
 /**
- * A bounded, credential-redacted annotation for an operator decision. The raw
- * words never enter the index: only their digest and a short scrubbed summary,
- * so the decision is auditable without turning an approval into a credential
- * leak or an unbounded write.
+ * A bounded annotation for an operator decision. Only the SHA256 of the owner's
+ * words and structured fields are persisted: no approval text, redacted or
+ * otherwise, may enter the shared index or a revocation reason.
  */
 function approvalAnnotation({ kind, profile, sourceSha256, approval, evidenceSha256 }) {
-  const scrubbed = redactCredentialShapes(approval).replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').trim();
   return {
     kind,
     profile,
     sourceSha256,
     approvalSha256: sha256(approval),
     at: new Date().toISOString(),
-    summary: scrubbed.slice(0, SHARED_ANNOTATION_TEXT_LIMIT),
     ...(typeof evidenceSha256 === 'string' ? { evidenceSha256 } : {}),
   };
 }
@@ -273,28 +269,35 @@ async function commandRevalidate(options) {
   const evidenceSha256 = sha256(fs.readFileSync(path.resolve(options.evidence)));
   const adopted = [];
   for (const candidate of evidence.plugins) {
-    const record = index.records.find((row) => row.id === candidate?.id);
-    if (!record) throw new Error(`evidence names ${candidate?.id}, which is not a published record`);
-    if (candidate.sourceSha256 !== record.sourceSha256) throw new Error(`evidence source digest for ${record.id} does not match the published bytes`);
+    if (!index.records.some((row) => row.id === candidate?.id)) throw new Error(`evidence names ${candidate?.id}, which is not a published record`);
     const profiles = SHARED_CONSUMER_PROFILES.filter((profile) => candidate.profiles?.[profile]?.active === true);
-    if (profiles.length === 0) throw new Error(`evidence does not prove activation for ${record.id} in any consumer profile`);
-    const revalidation = {
-      at: new Date().toISOString(),
-      dsh: host.dsh,
-      cordis: host.cordis,
-      include: host.include,
-      node: typeof host.node === 'string' ? host.node : null,
-      profiles,
-      evidenceSha256,
-    };
-    const { publishSharedRecord } = await import('../lib/promoted-sharing.js');
-    const result = await publishSharedRecord(paths, {
-      ...record,
-      host: { ...record.host, dsh: host.dsh, cordis: host.cordis, include: host.include, node: host.node ?? record.host.node, verifiedAt: revalidation.at },
-      revalidation: [...(record.revalidation || []), revalidation],
+    if (profiles.length === 0) throw new Error(`evidence does not prove activation for ${candidate.id} in any consumer profile`);
+    // The read above is only a cheap existence check. The digest check and the
+    // write happen against the current record inside one lock, so a concurrent
+    // approval cannot be erased by this revalidation.
+    const result = await annotateSharedRecord(paths, candidate.id, (record) => {
+      if (candidate.sourceSha256 !== record.sourceSha256) {
+        throw new Error(`evidence source digest for ${record.id} does not match the published bytes`);
+      }
+      const revalidation = {
+        at: new Date().toISOString(),
+        dsh: host.dsh,
+        cordis: host.cordis,
+        include: host.include,
+        node: typeof host.node === 'string' ? host.node : null,
+        profiles,
+        evidenceSha256,
+      };
+      return {
+        ...record,
+        host: { ...record.host, dsh: host.dsh, cordis: host.cordis, include: host.include, node: host.node ?? record.host.node, verifiedAt: revalidation.at },
+        revalidation: [...(Array.isArray(record.revalidation) ? record.revalidation : []), revalidation],
+      };
     });
-    if (result.status !== 'updated' && result.status !== 'unchanged') throw new Error(`revalidation of ${record.id} was refused: ${result.reason || result.status}`);
-    adopted.push({ id: record.id, profiles, status: result.status });
+    if (result.status !== 'updated' && result.status !== 'unchanged') {
+      throw new Error(`revalidation of ${candidate.id} was refused: ${result.reason || result.status}`);
+    }
+    adopted.push({ id: candidate.id, profiles, status: result.status });
   }
   return { ok: true, adopted, host, evidenceSha256 };
 }
@@ -311,23 +314,28 @@ async function commandApprove(options) {
   requireConsumerProfile(options);
   const approval = requireApproval(options);
   const paths = pathsFor(options);
-  const { record } = await verifiedRecord(paths, options.plugin, '--plugin');
-  const approvedProfiles = [...new Set([...record.approvedProfiles, options.profile])];
-  if (approvedProfiles.length === record.approvedProfiles.length) {
-    return { ok: true, pluginId: record.id, profile: options.profile, status: 'already-approved', approvedProfiles };
-  }
-  const receipt = approvalAnnotation({
-    kind: 'profile-approval', profile: options.profile, sourceSha256: record.sourceSha256, approval,
-  });
-  const result = await publishSharedRecord(paths, {
-    ...record,
-    approvedProfiles,
-    approvalExtensions: [...(Array.isArray(record.approvalExtensions) ? record.approvalExtensions : []), receipt],
+  const pluginId = pluginIdOf(options.plugin);
+  const result = await annotateSharedRecord(paths, pluginId, (record) => {
+    const approvedProfiles = [...new Set([...record.approvedProfiles, options.profile])];
+    if (approvedProfiles.length === record.approvedProfiles.length) return null;
+    const receipt = approvalAnnotation({
+      kind: 'profile-approval', profile: options.profile, sourceSha256: record.sourceSha256, approval,
+    });
+    return {
+      ...record,
+      approvedProfiles,
+      approvalExtensions: [...(Array.isArray(record.approvalExtensions) ? record.approvalExtensions : []), receipt],
+    };
   });
   if (!['updated', 'unchanged'].includes(result.status)) {
-    throw new Error(`approval of ${record.id} was refused: ${result.reason || result.status}`);
+    throw new Error(`approval of ${pluginId} was refused: ${result.reason || result.status}`);
   }
-  return { ok: true, pluginId: record.id, profile: options.profile, status: result.status, approvedProfiles, approval: receipt };
+  const approvedProfiles = Array.isArray(result.record?.approvedProfiles) ? result.record.approvedProfiles : null;
+  return {
+    ok: true, pluginId, profile: options.profile,
+    status: result.status === 'unchanged' ? 'already-approved' : result.status,
+    ...(approvedProfiles ? { approvedProfiles } : {}),
+  };
 }
 
 /**
@@ -346,28 +354,47 @@ async function commandSupersede(options) {
   const oldId = pluginIdOf(options.old, '--old');
   const newId = pluginIdOf(options.new, '--new');
   if (oldId === newId) throw new Error('--old and --new must name different published records');
-  const { record: previous, index } = await verifiedRecord(paths, oldId, '--old');
-  const { record: replacement } = await verifiedRecord(paths, newId, '--new');
-  if (!previous.approvedProfiles.includes(options.profile) || !replacement.approvedProfiles.includes(options.profile)) {
-    throw new Error('both records must be approved in the profile first; use approve with explicit owner approval');
-  }
-  if (previous.supersededBy && previous.supersededBy.recordId !== newId) {
-    throw new Error(`${oldId} is already superseded by ${previous.supersededBy.recordId}`);
-  }
-  const marker = approvalAnnotation({
-    kind: 'supersede-approval',
-    profile: options.profile,
-    sourceSha256: replacement.sourceSha256,
-    approval,
-    evidenceSha256: index.digest,
+  const { record: identity } = await verifiedRecord(paths, newId, '--new');
+  let writtenMarker = null;
+  const result = await annotateSharedRecord(paths, oldId, async (record, { index }) => {
+    if (!record.approvedProfiles.includes(options.profile) || !identity.approvedProfiles.includes(options.profile)) {
+      throw new Error('both records must be approved in the profile first; use approve with explicit owner approval');
+    }
+    // The replacement's bytes are checked inside the lock too: a mutation
+    // between the cheap pre-read and the write cannot become the new authority.
+    let plugin;
+    try {
+      plugin = await readPromotedPlugin(paths, { pluginName: identity.pluginName, moduleUrl: identity.moduleUrl, entry: identity.entry });
+    } catch {
+      throw new Error(`${newId} source is unusable`);
+    }
+    if (plugin.sourceSha256 !== identity.sourceSha256 || plugin.manifestSha256 !== identity.manifestSha256) {
+      throw new Error(`${newId} bytes changed since publication; refusing to annotate them`);
+    }
+    const existing = record.supersededBy?.[options.profile];
+    if (existing && (existing.recordId !== newId || existing.sourceSha256 !== identity.sourceSha256)) {
+      throw new Error(`${oldId} is already superseded in ${options.profile} by ${existing.recordId}; chaining is not allowed`);
+    }
+    if (existing) return null;
+    const marker = approvalAnnotation({
+      kind: 'supersede-approval',
+      profile: options.profile,
+      sourceSha256: identity.sourceSha256,
+      approval,
+      evidenceSha256: index.digest,
+    });
+    marker.recordId = newId;
+    writtenMarker = marker;
+    return { ...record, supersededBy: { ...(record.supersededBy || {}), [options.profile]: marker } };
   });
-  marker.recordId = newId;
-  marker.profiles = [options.profile];
-  const result = await publishSharedRecord(paths, { ...previous, supersededBy: marker });
   if (!['updated', 'unchanged'].includes(result.status)) {
     throw new Error(`supersession of ${oldId} was refused: ${result.reason || result.status}`);
   }
-  return { ok: true, oldId, newId, profile: options.profile, status: result.status, supersededBy: marker };
+  return {
+    ok: true, oldId, newId, profile: options.profile,
+    status: result.status === 'unchanged' ? 'already-superseded' : result.status,
+    ...(writtenMarker ? { supersededBy: writtenMarker } : {}),
+  };
 }
 
 /**
@@ -382,30 +409,20 @@ async function commandRevokeSupersede(options) {
   const approval = requireApproval(options);
   const paths = pathsFor(options);
   const oldId = pluginIdOf(options.old, '--old');
-  const { record } = await verifiedRecord(paths, oldId, '--old');
-  const marker = record.supersededBy;
-  if (!marker) return { ok: true, oldId, profile: options.profile, status: 'no-supersession' };
-  if (!marker.profiles.includes(options.profile)) {
-    return { ok: true, oldId, profile: options.profile, status: 'not-in-profile' };
-  }
-  const receipt = approvalAnnotation({
-    kind: 'revoke-supersede', profile: options.profile, sourceSha256: marker.sourceSha256, approval,
-  });
-  await setDisabledForProfile(paths, {
-    pluginId: marker.recordId,
+  const receipt = approvalAnnotation({ kind: 'revoke-supersede', profile: options.profile, sourceSha256: '0'.repeat(64), approval });
+  const result = await revokeSharedSupersession(paths, {
+    oldId,
     profile: options.profile,
-    disabled: true,
-    reason: `revoke-supersede:${receipt.summary || 'owner authorization'}`,
+    reason: `revoke-supersede:${receipt.approvalSha256.slice(0, 12)}`,
   });
-  const profiles = marker.profiles.filter((profile) => profile !== options.profile);
-  const next = { ...record, approvalExtensions: [...(Array.isArray(record.approvalExtensions) ? record.approvalExtensions : []), receipt] };
-  if (profiles.length === 0) delete next.supersededBy;
-  else next.supersededBy = { ...marker, profiles };
-  const result = await publishSharedRecord(paths, next);
-  if (!['updated', 'unchanged'].includes(result.status)) {
+  if (result.status === 'refused' || result.status === 'conflict') {
     throw new Error(`revoke-supersede of ${oldId} was refused: ${result.reason || result.status}`);
   }
-  return { ok: true, oldId, newId: marker.recordId, profile: options.profile, status: result.status, approval: receipt };
+  return {
+    ok: true, oldId, profile: options.profile,
+    status: result.status === 'unchanged' ? 'no-supersession' : result.status,
+    ...(result.marker ? { newId: result.marker.recordId, approval: receipt } : {}),
+  };
 }
 
 async function main(argv) {

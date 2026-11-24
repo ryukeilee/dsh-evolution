@@ -52,10 +52,10 @@
 
 新增 `supersede --old <id> --new <id> --profile <p> --approval <原文>` 与 `revoke-supersede`：
 - 双方必须都是已发布、结构有效、字节未被改动的记录，且都已在该 profile 获批；
-- `supersededBy` 精确绑定新记录 id、源码摘要、profile 范围、批准摘要、索引摘要，写在同一次索引锁/原子写内；
-- consumer 在**同一次快照内完成全部资格判定后**才应用标记（`lib/promoted-consumer.js:478-503`）：替换方 `eligible`、字节仍匹配且自身未被替换时，旧记录才报 `disabled` / `superseded-by`；替换方进入 `pending-revalidation`、字节变化或资格失败时旧记录保持 `active`，避免“两条都不挂”的空窗；
-- `revoke-supersede` 先禁用替换方在该 profile 的资格，再按 scope 清除标记，恢复原记录；`enable` 可单独恢复替换方。
-- 所有注释都经过 closed-shape 校验（`lib/promoted-sharing.js` 的 `validApprovalExtension` / `validSupersededBy`），批准原文只留摘要，不进入分发状态。
+- `supersededBy` 按 profile 分别保存，精确绑定新记录 id、源码摘要、批准原文 SHA256 与索引摘要，写在同一次索引锁/原子写内；同一 profile 的链式替换被 CLI 明确拒绝；
+- consumer 在**同一次快照内完成全部资格判定后**才应用条目并沿链走到最终仍合格的版本（`lib/promoted-sharing.js` 的 `applySupersession`、`lib/promoted-consumer.js`）：终点 `eligible` 且每跳字节匹配时，旧记录才报 `disabled` / `superseded-by`；替换方进入 `pending-revalidation`、字节变化或资格失败时旧记录保持 `active`；替换方在官方 Include 挂载后 `apply()` 失败时，同一次启动即恢复旧记录；
+- `revoke-supersede` 在**同一把锁**内禁用替换方并清除该 profile 的条目，避免与 `enable` 交错成两条同时启用；`enable` 可单独恢复替换方；
+- 所有注释都经过 closed-shape 校验（`lib/promoted-sharing.js` 的 `validApprovalExtension` / `validSupersededBy`），批准原文只留 SHA256，不进入索引或撤销原因。
 
 ## 4. 量化对照（隔离 fixture，未触碰正式数据根）
 

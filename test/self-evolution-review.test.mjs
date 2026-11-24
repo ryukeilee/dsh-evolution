@@ -780,6 +780,22 @@ test('already-mounted and publisher-profile rows stay inactive instead of becomi
 // host already matches. A genuine host upgrade is different: there the RECORD
 // itself is incompatible and the record-level check asks for revalidation
 // before per-profile verdicts are computed.
+test('a superseded-by row stays disabled instead of producing a restart loop', async (t) => {
+  const env = await fixture(t, 'superseded-row');
+  const digest = hostDigest(CURRENT_HOST);
+  await writeConsumers(env, {
+    rows: {
+      acp: [{ id: env.record.id, status: 'disabled', reason: 'superseded-by', hostDigest: digest, activatedAt: null }],
+      web: [{ id: env.record.id, status: 'disabled', reason: 'superseded-by', hostDigest: digest, activatedAt: null }],
+    },
+  });
+
+  const result = await review(env);
+  const [record] = result.records;
+  assert.deepEqual(record.profiles.map((row) => row.status), ['disabled', 'disabled']);
+  assert.equal(result.nextActions.some((action) => action.action === REVIEW_ACTIONS.RESTART), false);
+});
+
 test('a stale pending-revalidation row on a now-compatible record asks for a restart', async (t) => {
   const env = await fixture(t, 'consumer-host-mismatch');
   const staleDigest = hostDigest(PREVIOUS_HOST);

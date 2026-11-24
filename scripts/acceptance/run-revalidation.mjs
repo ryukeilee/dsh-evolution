@@ -172,6 +172,24 @@ export function profileIsRevalidationTarget(record, profile, disable) {
     && !isDisabledForProfile(disable, record.id, profile);
 }
 
+/**
+ * A record legitimately superseded in this profile is expected to stay
+ * `disabled / superseded-by` after the host upgrade: the consumer mounts only
+ * the replacement. Requiring `active` on both aborts revalidation for a valid
+ * switch. If the replacement is no longer a target, the old record is expected
+ * to be active again, which is exactly the recovery the consumer performs.
+ */
+export function expectedRecordStatus(record, profile, records, disable) {
+  const marker = record?.supersededBy?.[profile];
+  if (marker) {
+    const replacement = (records || []).find((row) => row.id === marker.recordId && profileIsRevalidationTarget(row, profile, disable));
+    if (replacement && replacement.sourceSha256 === marker.sourceSha256) {
+      return { status: 'disabled', reason: 'superseded-by' };
+    }
+  }
+  return { status: 'active' };
+}
+
 export function planFor(plans, recordId, work) {
   const plan = plans && plans.plans ? plans.plans[recordId] : null;
   if (!plan) return null;
@@ -518,7 +536,7 @@ async function main(argv) {
     for (const id of targets) {
       const record = records.find((row) => row.id === id);
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
-      expect[id] = { status: 'active' };
+      expect[id] = expectedRecordStatus(record, profile, records, disable);
       const plan = plansByRecord.get(id);
       if (plan) calls.push({ id: id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: id });
     }
@@ -656,7 +674,7 @@ async function main(argv) {
       const calls = [];
       for (const plugin of plugins) {
         if (!profileIsRevalidationTarget(plugin, profile, disable)) continue;
-        expect[plugin.id] = { status: 'active' };
+        expect[plugin.id] = expectedRecordStatus(plugin, profile, plugins, disable);
         const plan = plansByRecord.get(plugin.id);
         if (plan) calls.push({ id: plugin.id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: plugin.id });
       }

@@ -131,8 +131,8 @@ test('usage errors and unknown commands fail closed', () => {
   assert.equal(run(['list', '--bogus']).code, 1);
 });
 
-async function secondRecord(env) {
-  const id = 'evolution-promoted-123456123456';
+async function secondRecord(env, suffix = '123456123456') {
+  const id = `evolution-promoted-${suffix}`;
   const pluginName = `dsh-${id}`;
   const dir = path.join(env.pluginRoot, pluginName, 'lib');
   await fs.mkdir(dir, { recursive: true });
@@ -188,8 +188,8 @@ test('supersede and revoke-supersede are bounded, byte-bound and reversible', as
   const superseded = run(['supersede', '--data-root', env.root, '--old', pluginId, '--new', replacement.id, '--profile', 'acp', '--approval', 'replace the older policy', '--json']);
   assert.equal(superseded.code, 0, superseded.stderr);
   const index = await readSharedIndex({ dataRoot: env.root, pluginRoot: env.pluginRoot });
-  assert.equal(index.records[0].supersededBy.recordId, replacement.id);
-  assert.equal(index.records[0].supersededBy.sourceSha256, replacement.sourceSha256);
+  assert.equal(index.records[0].supersededBy.acp.recordId, replacement.id);
+  assert.equal(index.records[0].supersededBy.acp.sourceSha256, replacement.sourceSha256);
   assert.equal(index.records[0].sourceSha256, env.record.sourceSha256, 'old bytes are preserved for rollback');
   assert.deepEqual(index.records[1].approvedProfiles, ['acp', 'web']);
 
@@ -205,4 +205,30 @@ test('supersede and revoke-supersede are bounded, byte-bound and reversible', as
   await fs.writeFile(path.join(env.pluginRoot, replacement.pluginName, 'lib', 'index.js'), 'export const name = "tampered";\n');
   const reapply = run(['supersede', '--data-root', env.root, '--old', pluginId, '--new', replacement.id, '--profile', 'acp', '--approval', 'x']);
   assert.equal(reapply.code, 1);
+});
+
+test('supersession is stored per profile and chained replacements are refused', async (t) => {
+  const env = await fixture(t);
+  const replacement = await secondRecord(env);
+  await publishSharedRecord({ dataRoot: env.root, pluginRoot: env.pluginRoot }, env.record);
+  await publishSharedRecord({ dataRoot: env.root, pluginRoot: env.pluginRoot }, replacement);
+  assert.equal(run(['approve', '--data-root', env.root, '--plugin', replacement.id, '--profile', 'acp', '--approval', 'ok acp']).code, 0);
+  for (const profile of ['acp', 'web']) {
+    const result = run(['supersede', '--data-root', env.root, '--old', pluginId, '--new', replacement.id, '--profile', profile, '--approval', `replace in ${profile}`, '--json']);
+    assert.equal(result.code, 0, result.stderr);
+  }
+  const index = await readSharedIndex({ dataRoot: env.root, pluginRoot: env.pluginRoot });
+  assert.deepEqual(Object.keys(index.records[0].supersededBy).sort(), ['acp', 'web']);
+
+  // A second iteration in the same profile is bounded by the replacement's
+  // own marker: repeating the same pair is a no-op, a different target is a
+  // new generation that the consumer resolves to its terminal version.
+  const chained = run(['supersede', '--data-root', env.root, '--old', pluginId, '--new', replacement.id, '--profile', 'acp', '--approval', 'again', '--json']);
+  assert.equal(chained.json.status, 'already-superseded');
+  const third = await secondRecord(env, '999999999999');
+  await publishSharedRecord({ dataRoot: env.root, pluginRoot: env.pluginRoot }, third);
+  assert.equal(run(['approve', '--data-root', env.root, '--plugin', third.id, '--profile', 'acp', '--approval', 'ok third']).code, 0);
+  assert.equal(run(['supersede', '--data-root', env.root, '--old', replacement.id, '--new', third.id, '--profile', 'acp', '--approval', 'chain']).code, 0);
+  const afterChain = await readSharedIndex({ dataRoot: env.root, pluginRoot: env.pluginRoot });
+  assert.equal(afterChain.records[1].supersededBy.acp.recordId, third.id);
 });

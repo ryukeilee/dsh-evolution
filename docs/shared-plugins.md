@@ -184,14 +184,16 @@ dsh-evolution-shared revoke-supersede --old <id> --profile acp|web --approval "<
 
 `supersede` 解决的是另一个问题：新候选本质上是既有 stable 插件的改进时，旧插件不应与新插件在同一 profile
 同时挂载（两个 `tools/post-execute` 监听器会重复处理同一结果）。它在**同一次索引锁与原子写**里给旧记录写入
-一个有界的 `supersededBy` 标记，精确绑定新记录的 id、源码摘要、profile 范围与批准摘要。consumer 在完成该快照内
-**全部**记录的资格判定后才应用这个标记：只有替换方 `eligible`、字节仍与批准时一致、且自身没有被替换时，旧记录
-才报 `disabled` / `superseded-by`。若替换方升级后停在 `pending-revalidation`、字节被改动或资格失败，旧记录
-保持 `active`，不会出现“两条都不挂”的空窗。回滚用 `revoke-supersede`（禁用替换方并清除标记），或现有的
-`disable` / `enable` 逐 profile 开关；两者都不改插件源码、journal、canary 或经验数据。
+一个有界的 `supersededBy` 条目，**按 profile 分别保存**，精确绑定新记录的 id 与源码摘要，并记录所有者批准原文
+的 SHA256。同一 profile 内再次替换会被拒绝（链式替换会重新引入重叠）；不同 profile 的替换互不影响。
+consumer 在完成该快照内**全部**记录的资格判定后才应用这些条目，并沿替换链走到最终仍合格的版本：只有该终点
+`eligible` 且每一跳的字节都与批准时一致，链条上的旧记录才报 `disabled` / `superseded-by`。若替换方升级后停在
+`pending-revalidation`、字节被改动或资格失败，旧记录保持 `active`；若替换方通过了静态检查但官方 Include 挂载后
+`apply()` 抛错，同一次启动就把仍合格的旧记录恢复挂载，替换方保留失败回执。两种路径都不会出现“两条都不挂”的空窗。
 
-两种注释都拒绝格式错误的标记、未变更字节的重新批准、缺失的明确批准与非消费 profile。批准原文只以 SHA256
-与脱敏后的有界摘要进入索引，不把任意操作者文本写入分发状态。
+回滚用 `revoke-supersede`：在同一把锁里禁用替换方并清除该 profile 的条目，不会与 `enable` 交错成两条同时启用。
+批准原文不进入索引或撤销原因；索引里只留 SHA256 与结构化字段。所有注释都拒绝格式错误的标记、未变更字节的
+重新批准、缺失的明确批准与非消费 profile。
 
 ## 6. 升级与重验证策略
 
