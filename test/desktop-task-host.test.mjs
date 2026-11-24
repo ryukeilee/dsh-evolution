@@ -257,6 +257,8 @@ test('a task runs the real kernel sequence and reaches stable after a bound appr
   assert.ok(names.indexOf('evolution_measure') < names.indexOf('evolution_promote'));
   const confirmed = kernel.calls.filter((call) => call.name === 'evolution_promote' && call.args.confirmation === true);
   assert.deepEqual(confirmed[0].args.targetProfiles, ['acp']);
+  assert.equal(confirmed[0].args.canaryWindow, plan.plan.verification.observations,
+    'the requested observation floor is sent for tool-form tasks too; the kernel only raises it');
   assert.ok(kernel.calls.filter((call) => call.name === 'evolution_canary_observe').every((call) => call.args.startupVerified === true));
   const claimFile = path.join(taskChannelPaths(home).claims, `${taskId}.lock`);
   const deadline = Date.now() + 2000;
