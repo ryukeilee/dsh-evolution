@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { REPO_ROOT } from "../../scripts/release/release-lib.mjs";
 import { reverseArchiveDigestUtf8Round } from "./archive-digest-utf8-baseline.js";
+import { reverseFloorGenerationRound } from "./floor-generation-baseline.js";
 import { reverseArchiveScanMemoContinuationRound } from "./archive-scan-memo-continuation-baseline.js";
 import { reverseStagedElementMemoRound } from "./staged-element-memo-baseline.js";
 import { reverseStagedWindowDeferredRound } from "./staged-window-deferred-baseline.js";
@@ -274,7 +275,8 @@ export async function loadProjectionBaseline() {
     reverseArchiveDigestUtf8Round(file,
       reverseArchiveScanMemoContinuationRound(file,
         reverseStagedElementMemoRound(file,
-          reverseStagedWindowDeferredRound(file, source))))]));
+          reverseStagedWindowDeferredRound(file,
+            reverseFloorGenerationRound(file, source)))))]));
   for (const { file, post, pre } of HUNKS) {
     const source = reconstructed.get(file);
     assert.ok(source !== undefined, `${file} is not part of the projection-free load round`);

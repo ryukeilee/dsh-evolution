@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { RELEASE_DIR, readTarEntries } from "../../scripts/release/release-lib.mjs";
 import { reverseInheritedDecisionRound } from "./autonomous-decision-baseline.js";
+import { reverseFloorGenerationRound } from "./floor-generation-baseline.js";
 import { reverseArchiveScanMemoContinuationRound } from "./archive-scan-memo-continuation-baseline.js";
 import { reverseStagedElementMemoRound } from "./staged-element-memo-baseline.js";
 import { reverseStagedWindowDeferredRound } from "./staged-window-deferred-baseline.js";
@@ -1377,7 +1378,8 @@ export function reconstructPreMerge(source) {
   source = reverseInheritedDecisionRound("lib/domain-storage.js",
     reverseArchiveScanMemoContinuationRound("lib/domain-storage.js",
       reverseStagedElementMemoRound("lib/domain-storage.js",
-        reverseStagedWindowDeferredRound("lib/domain-storage.js", source))));
+        reverseStagedWindowDeferredRound("lib/domain-storage.js",
+          reverseFloorGenerationRound("lib/domain-storage.js", source)))));
   for (const [after, before] of reversals) {
     assert.equal(source.split(after).length - 1, 1,
       "domain-storage merged-variant post-change shape must occur exactly once before reconstruction");
