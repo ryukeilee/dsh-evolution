@@ -61,6 +61,16 @@ GPT-6.2 Sol（High）返回 `CHANGES`：S3/S11 仍为 blocker，S6/S12 为 shoul
 | S11 blocker | 接受：内核在写 canary journal 前返回 `revert-failed` 时，宿主因任务带义务描述符而跳过 Trial 清理 | 明确标记「晋升被拒绝」，只有内核真正进入 canary 或结果未知时才保留重放；被拒绝路径继续走既有 revert/重试 |
 | S12 should | 接受：完整检查描述符进入内核长期证据快照，可能保留文件行原文 | 内核只持久化 `kind/tool/bindingDigest/requiredObservations`；完整描述符只留在 Desktop 任务状态供重放 |
 
+### 独立反方复审（sol-loop 第 4 轮）
+
+GPT-6.2 Sol（High）返回 `CHANGES`：S11 为 blocker，S3/S6 为 should。逐条复核后处理：
+
+| id | 结论 | 处理 |
+| --- | --- | --- |
+| S3 should | 接受：崩溃在写 `promoting` 后、内核写 journal 前时，「无 journal」是确定结论，不应每次重启重试 | 内核明确报「无 live promotion journal / canary journal missing / not known in this session」时关闭任务为 interrupted；其它未知失败继续保留重放 |
+| S6 should | 接受：数值 `-0` 与字符串 `"-0"` 序列化成同一绑定 | 校验拒绝数值 `-0`，保留字符串 `-0` 为合法期望值；补回归 |
+| S11 blocker | 接受：确认晋升在 Trial 清理期间抛错时，内核进入 `revert-failed`，宿主因只识别正常回执而跳过 revert | 捕获确认调用异常，带结构化内核码/失败阶段回执的标记 `promotionRefused` 走清理路径；未知超时仍保留重放 |
+
 ## 3. 验证
 
 - 反证：新增 4 个回归文件与 2 个扩展文件；对每条核心修复先在旧源码上运行新用例：

@@ -127,6 +127,10 @@ test('the canary binding rejects malformed descriptors and distinguishes deep va
   assert.ok(valid, 'a legal descriptor is accepted');
   assert.deepEqual(valid.descriptor, { tool: 'read', arguments: { path: '/tmp/x' }, resultPath: ['value'], expected: { ok: true } });
   assert.equal(normalizeCanaryVerification({ ...base, resultPath: 'value' }), null, 'an invalid resultPath is rejected, not normalized away');
+  const negZero = normalizeCanaryVerification({ ...base, expected: -0 });
+  const stringZero = normalizeCanaryVerification({ ...base, expected: '-0' });
+  assert.equal(negZero, null, 'numeric -0 must not collide with the string "-0"');
+  assert.ok(stringZero, 'the string "-0" remains a legitimate expected value');
   assert.equal(normalizeCanaryVerification({ ...base, tool: 'bash' }), null, 'only the read-only tool set is admissible');
   assert.equal(normalizeCanaryVerification({ ...base, observations: 9 }), null);
   // A deep value must not be folded into a fixed marker: two different deep
