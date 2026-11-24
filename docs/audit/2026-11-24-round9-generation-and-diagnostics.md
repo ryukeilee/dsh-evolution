@@ -32,22 +32,38 @@
 
 **反证**：旧源码上两项新测试失败（`blocked` 实为 `ok`、`degraded` 实为 `ok`）；修复后 `test/promoted-sharing-diagnostics.test.mjs` 10/10 通过。
 
+### 2.3 本轮全链独立调查新增的实质问题
+
+| # | 根因 | 修复 | 反证 |
+| --- | --- | --- | --- |
+| F1 | 自主观察者 transient 失败后，只有部分 cleanup 状态释放决策占位；`not-recovered`/`failed` 时占位永久滞留，后续观测永远返回 `prior-decision-requires-owner`（opt-in 路径） | 所有 cleanup 状态都释放占位（失败进 `pendingDecisionReleases` 兜底）；占位仍被继承时保留冷却而非给出终局式回答。runtime claim 与实验记录仍独立门禁新 Trial | 新用例在旧源码失败（占位滞留、后续 3 次均 `prior-decision-requires-owner`），修复后 10/10 |
+| F2 | workflow probe 的 `expected` 只查字节长度；`stableJson()` 在深度折叠后把不同叶子映射为同一 `"[max-depth]"`，两个期望值共用 `expectedDigest`/`scenarioDigest`，错误结果可被判正确并驱动假 benefit | 复用无损深度/循环/非有限值校验，折叠输入直接拒绝，digest 算法不变 | 旧源码上两个仅深层不同的期望摘要相同；修复后拒绝，6/6 |
+| F3 | Desktop 任务把 `plan.requestedTargetProfiles` 只用于无确认预检；带确认的 promote 用客户端 `confirm` 默认值 `['acp']`，可静默收窄或扩大发布范围 | owner 确认前比对两组 profile（顺序无关），不一致以 `E_DESKTOP_APPROVAL_MISMATCH` 拒绝；状态持久化 requested 值；提示词要求原样传回 | 旧源码完成确认并发布；修复后 0 次确认，49/49 |
+| F4 | `recall()` 外层 `LIMIT 2000` 之外的知识不进入统计，返回 `truncated:false` 的空结果，而同一 store 的 `discover()` 如实报截断 | 读一次知识总数作为 `scanned`，`truncated` 纳入外层窗口截断 | 旧源码两项用例失败；修复后 2/2 |
+| F5 | guard 的非阻断诊断出口直接 emit 原始 `error.message`，并从 catch 中读取可能抛异常的 `exec.arguments.file_path` | 只 emit `safeErrorDto` 的有界摘要，`filePath` 有界投影且读取置于保护范围 | 旧源码泄漏 `SECRET_token=abc123` 且抛错；修复后已脱敏、不抛错 |
+
+反方交叉验证对 floor 与 doctor 修复给出 SOUND、无 blocker，并提出两项 should：缺 SIGKILL 落在 ambiguous commit→truncate 窗口的专项测试（逻辑分析仍正确）、doctor 注释引用统一审查的 `restart-required` 与 `index.status:'absent'` 时提前 return 的事实不符。后者已改为如实描述；前者登记为验证缺口。
+
 ## 3. 复评后决定不修改的项
 
 | 项 | 结论 | 依据 |
 | --- | --- | --- |
 | 自主候选资源错误被误判为环境失败 | **NO-CHANGE**。代码级误分类确实存在，但默认入口无条件 `dailyAutonomousObservation=false`，且生产入口不配置 `autonomousStrategies`，`observeAutonomous()` 在 `no-approved-strategy` 提前返回；即便 opt-in 触发，后果有界（30s cooldown、每次最多一次重试、不写持久记忆、永远停在 `candidate-awaiting-confirmation`）。按来源粗粒度改会把观察者自身资源门错误误判，反而重新引入永久压制；逐个包裹回调侵入性大、收益低。 | `index.js:83-86`；`registration.js:567,601,643`；`orchestrator.js:5523,8398,8692-8713` |
 | doctor 的 `fresh-unowned` 锁窗口 | **NO-CHANGE（前提不成立）**。锁在 journal **之前**以 `mkdir` + 原子 `writeAtomic(lock.json)` 获取；`mkdir` 与 `lock.json` 之间崩溃时尚无 journal，`recoverInterruptedPromotion()` 的首步 `promotionStateKnown()` 返回 false，doctor 也不提供 repair。有 prepared journal 时 writer 必已原子写完 lock.json，`active` 为 true，doctor 跳过修复。两边都不删锁，无行为分叉；唯一后果是 15min TTL 内 promotions 被保守阻塞，符合不变量 11。 | `orchestrator.js:4483-4489,4817-4850,4894-4928`；`diagnostics.js:2651-2658,3185-3192` |
+| 发布索引 `updatedAt` 毫秒精度且非单调（F6） | **NO-CHANGE（窄窗口残余风险）**。同一毫秒内两次发布时，严格不等比较会让已启动 consumer 认为无需重启；需要两次发布落在同一毫秒且 consumer 已观察旧值。改为单调 revision 涉及发布索引格式与所有 consumer 比较逻辑，收益与风险不匹配。 | `promoted-sharing.js:329-331,938,1404-1409` |
+| `recall()` 2000 上限本身 | **NO-CHANGE（既有定论）**。上限保持；本轮只修截断信号语义，不扩大窗口。 | 第六轮审计；本文件 §2.3 F4 |
 | canary failureMode / 矛盾结论 / usage 投影 / 撤销回写等八轮已定项 | **NO-CHANGE**。本轮子代理与父代理复核其仍有效，未重复调查。 | 第八轮审计与既有测试 |
 
 ## 4. 验证
 
 - 反证：floor 生成修复两项核心用例在旧源码失败，修复后 7/7（含真实领域存储集成）；sharing 诊断两项新用例在旧源码失败，修复后 10/10。
-- 聚焦：回收锁定、归档删除、跨进程边界、领域存储、doctor floor、sharing 诊断共 **110/110** 通过（含新增 7 项）。
+- 聚焦：回收锁定、归档删除、跨进程边界、领域存储、doctor floor、sharing 诊断、自主重试、Desktop 任务、probe 场景、guard 脱敏、recall 窗口共 100+ 项分批全绿；新增 7+10+1+6+2+2 项均通过，反证在旧源码上分别失败。
+- 领域差分基线：本轮把 `domain-storage.js` 的改动登记为新的逆向 round（`test/domain-storage/floor-generation-baseline.js`），`domain-storage-write-path-equivalence` 与 `load-projection` 恢复为等价通过。
 - 全量、打包与独立复审结果以本文件最终提交为准。
 
 ## 5. 剩余风险
 
+- ambiguous floor 的 commit→truncate 窗口没有专项 SIGKILL 用例（反方 should-1）：逻辑上崩溃在 rename 前后分别落 `deferred` / `already-truncated`，但未实测；只有通过外部 SIGKILL 注入才能完全覆盖。
 - 仅靠 dev/ino 不能覆盖同一 inode 被原地覆盖成 prior 字节、或 inode 被复用等外部操作；这类操作不在受支持的跨进程协议内，floor 本身也会被破坏，需要操作者恢复数据根。
 - 旧版（无 identity）的 ambiguous floor 仍保持历史字节摘要行为；下一次 reclaim 生成带 identity 的新 floor 后才获得代际保护。
 - 共享经验结论仍是有界摘要；usage 投影仍是显式 operator CLI 的离线事实。
