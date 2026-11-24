@@ -122,6 +122,14 @@ test('same-process experiments keep stamping the live process triple', (t) => {
   assert.equal(h.store.findConclusions({ target: TARGET, applicability: NEW }).matches[0].sameApplicability, true);
 });
 
+test('a malformed probe version object falls back to the proposal, not a fabricated unknown', (t) => {
+  const h = harness(t);
+  h.orchestrator.publishConclusion(
+    record({ proposal: { applicability: OLD }, probe: { versions: {} } }),
+    'adopted', 'canary-passed');
+  assert.deepEqual(h.writes[0].applicability, OLD);
+});
+
 test('invalid captured fields fall back to the live triple', (t) => {
   const h = harness(t);
   const bad = record({

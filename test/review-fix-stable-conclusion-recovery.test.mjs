@@ -149,6 +149,33 @@ test('a restarted canary and the startup recovery share the probe versions, so t
     'the proposal applicability is not a second measured conclusion');
 });
 
+test('a sidecar with a damaged probe version object is not backfilled under a second triple', async (t) => {
+  const experimentId = 'exp-stable-damaged-probe';
+  const proposalVersions = { dsh: '0.2.2-rc.4', cordis: '4.1.0', evolution: '0.2.20' };
+  const snapshot = stableSnapshot(experimentId);
+  snapshot.proposal.applicability = proposalVersions;
+  snapshot.latestObservation.probe.versions = APPLICABILITY;
+  const { paths, store, orchestrator } = await recoveryFixture(t, 'stable-conclusion-damaged-probe', { [experimentId]: snapshot });
+  const first = orchestrator.publishConclusion({
+    id: experimentId,
+    proposal: snapshot.proposal,
+    latestObservation: snapshot.latestObservation,
+    decision: snapshot.decision,
+    frozenAt: snapshot.stableCommittedAt,
+  }, 'adopted', 'canary-passed');
+  assert.equal(first?.duplicate, false);
+  const before = store.stats();
+  // Simulate a damaged durable projection after the normal canary wrote its one
+  // conclusion. The recovery must skip the damaged probe rather than fall back
+  // to the proposal and add a second adopted fact.
+  snapshot.latestObservation.probe.versions = {};
+  await fsp.writeFile(path.join(paths.archiveDir, `${experimentId}.evidence.json`), `${JSON.stringify(snapshot, null, 2)}\n`);
+  const result = await orchestrator.reconcileStableConclusions({ maxRecords: 20 });
+  assert.equal(result.published, 0);
+  assert.equal(result.skipped.some((row) => row.experimentId === experimentId && row.reason === 'invalid-probe-applicability'), true);
+  assert.deepEqual(store.stats(), before);
+});
+
 test('the reconciliation is idempotent across starts', async (t) => {
   const experimentId = 'exp-stable-crash-2';
   const { store, orchestrator } = await recoveryFixture(t, 'stable-conclusion-idempotent', {

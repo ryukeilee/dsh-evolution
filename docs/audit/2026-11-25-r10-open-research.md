@@ -58,11 +58,13 @@ PTC 的复现：一次模型 `run_code` 程序内的 `tool/ptc-dispatch` 在修�
 
 - `callIdentity()`/`createSessionCounter()` 识别两种 PTC 行；一个 completed `tool/ptc-dispatch` 只计一次，
   与 `tool/ptc-dispatch-start` 配对，不重复计数。
-- 归因顺序与原生调用一致：有晋升生命周期调用尚未返回 → `pending`（全部返回后为 verification，
-  否则 unattributed）；PTC 内调用的生命周期工具本身也会打开同一验证窗口。否则若 `parentCallId` 是同一会话中
-  **尚未返回**的 `run_code` 实例 → workflow；历史非 `run_code` 调用、已返回的 `run_code` 复用 ID、以及宿主驱动
-  的执行都归 unattributed（日志无法证明模型选择）。日志结束仍无 final dispatch 的 start 记 unattributed，
-  不会被当成 0。
+- 归因顺序与原生调用一致：有 **native** 晋升生命周期调用尚未返回 → `pending`（全部返回后为 verification，
+  否则 unattributed）。PTC 内调用的生命周期 start 不能作为可靠窗口：官方执行器异步追加结果行，后续正常调用
+  可能先于该结果落盘，因此这段窗口内的发布调用记为 unattributed，而不是验证流量（避免把真实使用读成 0）。
+  否则若 `parentCallId` 是同一会话中**恰好一个尚未返回**的 `run_code` 实例 → workflow；历史非 `run_code` 调用、
+  已返回或复用 ID、以及宿主驱动的执行都归 unattributed（日志无法证明模型选择）。`sourceEventSeqs` 关闭具体
+  run_code 实例；该实例结束时收束其未完成的 PTC 生命周期窗口。日志结束仍无 final dispatch 的 start 记
+  unattributed，不会被当成 0。
 - `sessionFiles()` 同时扫描当前 generation 的两种编码（`session.v4.jsonl.zstd` 与明文 `session.v4.jsonl`），
   共享 256 MiB 解压/读取上限与错误分类。同一 session 目录同时存在两种编码时，日志无法证明哪一份是当前写入，
   两份都不计数并列入 `ambiguousSessionEncoding`，令 `complete: false`、计数为 `null`，而不是重复计数。
@@ -120,9 +122,12 @@ durable stable 插件已经存在，但共享经验既没有 adopted conclusion�
   composition 对象（`purpose` 等不进入 sidecar/journal；名称走 `compactValue` 的凭据边界与 200 字符上限）。
   `mergeEvidenceSources()` / `hydrateRecordFromSnapshot()` 单调恢复它，使无 `proposal.strategy` 的实验在重启后
   仍使用同一个 composition-name 回退身份，而不是哨兵 `unnamed-cordis-plugin`；实时结论与启动补写使用同一个
-  `compositionStrategyName()` 投影，因此脱敏后的身份不会分叉。旧 sidecar 不增加键。
+  `compositionStrategyName()` 投影，因此脱敏后的身份不会分叉。旧 sidecar 不增加键。stable 最终快照在写入
+  sidecar 前再次投影（R1 格式的旧 journal 即使带着原始 composition，重启续跑也不会把它写回最终 sidecar）；
+  正式 replay 路径同样只写投影名称。
 - 新增 `reconcileStableConclusions()`：启动时只读最新 `maxRecords`（默认 20）个 evidence sidecar，
-  对 `stableCommittedAt` + `decision.kind === "benefit"` + 已捕获 `proposal.applicability` 的记录，用同一
+  对 `stableCommittedAt` + `decision.kind === "benefit"` + 已捕获适用条件（`latestObservation.probe.versions`
+或 `proposal.applicability`）的记录，用同一
   `publishConclusion()` 逻辑补写 `adopted`（`source: "stable-recovery"`）。结论 event id 由 origin /
   experimentId / decision / applicability 决定，所以重复恢复是 duplicate，不会产生第二条知识。
   单文件 2 MiB、不可读/不可解析/非稳定/无 applicability 的记录只记 bounded skip，不阻断启动。
@@ -171,11 +176,11 @@ Lead 逐条复核后在其后提交中修复，并由 R2 在新 HEAD 上复验�
 
 | # | R1 结论 | 修复 |
 | --- | --- | --- |
-| S1 | 新增 sidecar 字段把调用方 `composition.name` / `purpose` 原样写入 journal/sidecar | `compositionStrategyName()` 只持久化经凭据规则投影、200 字符上限的名称；`purpose` 及 composition 的其余字段不进入任何 durable evidence；实时发布与恢复共用同一投影（`64d9ab5`）。 |
-| S2 | 重启后 `record.probe` 不在内存，发布只看 `record.probe.versions`，补写会与重启后的 canary 写出两条不同版本的 adopted | 解析顺序扩展为 `record.probe.versions` → `latestObservation.probe.versions` → `proposal.applicability` → live；恢复器与实时发布共用（`e91a7fb`、`7990ba0`）。 |
+| S1 | 新增 sidecar 字段把调用方 `composition.name` / `purpose` 原样写入 journal/sidecar；R1 格式的旧 journal 续跑时最终快照仍展开原始对象 | `compositionStrategyName()` 只持久化经凭据规则投影、200 字符上限的名称；`purpose` 及 composition 的其余字段不进入任何 durable evidence；实时发布、启动恢复、正式 replay 与 stable 最终 sidecar 共用同一投影（`64d9ab5`、后续 S1 修复）。 |
+| S2 | 重启后 `record.probe` 不在内存，发布只看 `record.probe.versions`，补写会与重启后的 canary 写出两条不同版本的 adopted | 解析顺序扩展为 `record.probe.versions` → `latestObservation.probe.versions` → `proposal.applicability` → live；三个字段必须是字符串，损坏的 probe 版本对象不参与回退（显式全 `unknown` 仍可用）；恢复器遇到损坏的 probe 版本直接跳过，避免用 proposal 补出第二条不同版本的 adopted（`e91a7fb`、`7990ba0`、后续 S2 修复）。 |
 | S3 | `replayExperimentEvidence()` 重写 sidecar 时丢掉 composition | 正式 replay 路径写入同一个投影名称（`7990ba0`）。 |
 | S4 | 同一 session 目录的双编码被计两次 | 按目录分组；双当前编码 → `ambiguousSessionEncoding`、`complete:false`、计数 null；旧 generation 与当前文件并存视为迁移副本（`1da7323`）。 |
-| S5 | PTC 把任意历史同 ID 调用当成模型 `run_code`；PTC 内调用的生命周期工具被忽略 | 只有 **open** 的 native `run_code` 实例能证明 workflow；历史/已返回的 ID 归 unattributed；PTC 生命周期 start/dispatch 打开/关闭同一验证窗口（`7990ba0`）。 |
+| S5 | PTC 把任意历史同 ID 调用当成模型 `run_code`；PTC 生命周期结果日志异步追加会让后续正常调用被误记为验证 | 只有**恰好一个 open** 的 native `run_code` 实例能证明 workflow；历史/已返回/复用 ID 归 unattributed；按 `sourceEventSeqs` 关闭具体实例并在父程序结束时收束未完成的 PTC 生命周期窗口；PTC 生命周期窗口内无法证明的调用归 unattributed，而不是 verification（`7990ba0`、后续 S5 修复）。 |
 | S6 | 修复前生成的旧 `usage.json` 仍是 `complete:true` 的假零 | 投影新增 `coverage` 标记；旧投影零值为 unknown，正数仍是事实，直到显式重扫（`7990ba0`）。 |
 | S7 | 宿主不匹配 / 宿主未知 / 空索引时 doctor 与 review 对损坏撤销表仍分叉 | review 把撤销表检查提前到宿主检查之前；空索引 + 损坏表单独返回 blocked/operator；doctor 与 review 同判（`e91a7fb`、`7990ba0`）。 |
 | S8 | 截断说明与 nameless invalid-record 动作共用去重键，且可能被动作上限裁掉 | 截断动作带 `code: "review-record-cap"` 的独立身份，原文审查为它保留一个名额（`7990ba0`）。 |
@@ -203,11 +208,12 @@ R1 的 8 个 doctor 用例因其工作树缺少可发布宿主身份而失败；
   `test/review-fix-stable-conclusion-recovery.test.mjs`、`test/shared-experience-conclusion.test.mjs`、
   `test/experience-evolution-lifecycle.test.mjs`、`test/promotion-share-targets.test.mjs`、
   `test/full-cross-session.integration.test.mjs` 全绿。
-- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test`（最终 HEAD，含 B1/B2/B3/B4 与测试修复）——
-  **2277 项，2275 通过 / 0 失败 / 2 跳过**；基线 `bc267ce` 为 2254 项（2252 通过 / 0 失败 / 2 跳过）。
+- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test`（最终集成 HEAD，含 B1/B2/B3/B4、R1 修复与测试修复）——
+  **2290 项，2288 通过 / 0 失败 / 2 跳过**；基线 `bc267ce` 为 2254 项（2252 通过 / 0 失败 / 2 跳过）。
 - 打包：`npm run pack:check`（开发阶段）**17/17 通过**；工作树是 `0.2.20` 固定点的已提交后继，
   固定产物、固定点内容摘要与既有验收证据未改动。未执行 `release:publish`、未打 tag、未推送。
-- 独立审核：T3 Codex `gpt-6.2-sol` reasoningEffort high，独立 Worktree 线程；结论待填。
+- 独立审核：R1（T3 Codex `gpt-6.2-sol` reasoningEffort high）返回 CHANGES，4 blocker / 4 should；本轮逐条
+  修复并由 R2 在同一分支的新 HEAD 上复验，结论待填。
 - 未重跑真实宿主验收：本轮改动集中在离线用量读取、共享结论身份、启动补写和有界审查动作；既有
   `docs/evidence/` 的 0.2.2-rc.5 39/39 隔离验收覆盖安装/晋升/跨入口/恢复，未覆盖本轮新增的崩溃补写与
   PTC 用量扫描；这两条的直接证明是真实临时 SQLite/合成官方事件行与反证。真实宿主 CI 仍会运行。

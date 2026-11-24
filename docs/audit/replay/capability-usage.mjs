@@ -19,10 +19,11 @@
  *     calls;
  *   - the official PTC (`run_code`) route is also read: its nested
  *     `tool/ptc-dispatch` rows are counted once (never together with the
- *     matching `tool/ptc-dispatch-start`). A dispatch whose parent is a native
- *     `tool/call` row in the session is `workflowInvocations`; a dispatch the
- *     log cannot tie to a model-selected call, and a start with no final
- *     dispatch, are `unattributedInvocations`;
+ *     matching `tool/ptc-dispatch-start`). A dispatch whose parent is a single
+ *     open native `run_code` instance is `workflowInvocations`; a historical
+ *     non-`run_code` parent, a finished or reused run_code id, a PTC lifecycle
+ *     window whose final row can arrive asynchronously after a later normal
+ *     call, and a start with no final dispatch are `unattributedInvocations`;
  *   - every other native call is `workflowInvocations`: a real session that
  *     chose the capability;
  *   - a call made under a lifecycle call that never returned (crashed or

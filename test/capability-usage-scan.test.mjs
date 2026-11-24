@@ -504,6 +504,36 @@ test('createSessionCounter counts native calls and PTC dispatches exactly once',
   });
 });
 
+test('a reused run_code id keeps the new instance open when an old result arrives', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  const callRow = (seq, name, callId) => ({ type: 'tool/call', seq, data: { name, callId } });
+  const resultRow = (seq, sourceSeqs, callId) => ({ type: 'tool/result', seq, sourceEventSeqs: sourceSeqs, data: { message: { toolCallId: callId } } });
+  counter.call(callRow(1, 'run_code', 'reused'));
+  counter.call(callRow(2, 'run_code', 'reused'));
+  // The old execution's result cites seq 1; the seq 2 program is still open.
+  counter.call(resultRow(9, [1], 'reused'));
+  counter.call(ptcStart('mytool', 'm1', 'reused'));
+  counter.call(ptcDispatch('mytool', 'm1', 'reused'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 1, verification: 0, unattributed: 0 },
+  });
+});
+
+test('a run_code result closes its own unfinished PTC lifecycle window', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  counter.call({ type: 'tool/call', seq: 1, data: { name: 'run_code', callId: 'outer' } });
+  counter.call(ptcStart('evolution_probe', 'p1', 'outer'));
+  // The lifecycle final row is missing; the run_code result still ends the
+  // program and must not leave the window to swallow the next program's call.
+  counter.call({ type: 'tool/result', seq: 9, sourceEventSeqs: [1], data: { message: { toolCallId: 'outer' } } });
+  counter.call({ type: 'tool/call', seq: 2, data: { name: 'run_code', callId: 'outer' } });
+  counter.call(ptcStart('mytool', 'm1', 'outer'));
+  counter.call(ptcDispatch('mytool', 'm1', 'outer'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 1, verification: 0, unattributed: 0 },
+  });
+});
+
 test('a PTC dispatch needs an open run_code instance, not any historical call id', () => {
   const counter = createSessionCounter(new Set(['mytool']));
   // A normal read used this id; it is not a model run_code program.
@@ -520,14 +550,32 @@ test('a PTC dispatch needs an open run_code instance, not any historical call id
   });
 });
 
-test('a lifecycle tool invoked through PTC still marks its nested published calls as verification', () => {
+test('a PTC lifecycle window is unattributed when its final log can arrive after a normal call', () => {
+  // The official executor appends `tool/ptc-dispatch` in an async log task. A
+  // later program call can therefore start before the lifecycle's final row.
+  // The log order alone cannot prove the call was enclosure traffic, so it is
+  // unknown, not verification (a false verification would look like zero use).
   const counter = createSessionCounter(new Set(['mytool']));
   counter.call(ptcStart('evolution_probe', 'p1', 'outer'));
   counter.call(ptcStart('mytool', 'm1', 'outer'));
-  counter.call(ptcDispatch('mytool', 'm1', 'outer'));
+  counter.call(ptcStart('mytool', 'm2', 'outer'));
   counter.call(ptcDispatch('evolution_probe', 'p1', 'outer'));
+  counter.call(ptcDispatch('mytool', 'm1', 'outer'));
+  counter.call(ptcDispatch('mytool', 'm2', 'outer'));
   assert.deepEqual(Object.fromEntries(counter.finish()), {
-    mytool: { workflow: 0, verification: 1, unattributed: 0 },
+    mytool: { workflow: 0, verification: 0, unattributed: 2 },
+  });
+});
+
+test('a published call after the PTC lifecycle result is normal workflow usage', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  counter.call(call('run_code', 'outer'));
+  counter.call(ptcStart('evolution_probe', 'p1', 'outer'));
+  counter.call(ptcDispatch('evolution_probe', 'p1', 'outer'));
+  counter.call(ptcStart('mytool', 'm1', 'outer'));
+  counter.call(ptcDispatch('mytool', 'm1', 'outer'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 1, verification: 0, unattributed: 0 },
   });
 });
 

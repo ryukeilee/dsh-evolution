@@ -180,9 +180,9 @@ node docs/audit/replay/capability-usage.mjs --assessments assessments.json --wri
 扫描只统计工具名与次数（不输出正文、参数或结果），把结果投影写入
 `<DSH_HOME>/storages/evolution/shared-plugins/usage.json`；`evolution_plan` 与 ACP 的 `audit` 只在显式调用时读取
 这一份小文件。原生 `tool/call` 与官方 PTC（`run_code`）的嵌套分派都计入：一次 `tool/ptc-dispatch` 与它的
-`tool/ptc-dispatch-start` 合并为一次、不重复计数；不在生命周期调用内、且父调用是同一会话中尚未返回的
-`run_code` 时算工作流流量（PTC 内调用的生命周期工具也会打开验证窗口）；日志无法把它连到模型选择的调用、
-或会话结束时只有 start 没有最终分派时算不可归因。扫描覆盖当前代的两种编码
+`tool/ptc-dispatch-start` 合并为一次、不重复计数；不在 native 生命周期调用内、且父调用是同一会话中恰好一个
+尚未返回的 `run_code` 时算工作流流量；PTC 内调用的生命周期 start 不能可靠界定窗口（结果日志异步追加），
+其间的调用与无法连到模型选择的调用、以及会话结束时只有 start 没有最终分派都算不可归因。扫描覆盖当前代的两种编码
 （`session.v4.jsonl.zstd` 与明文 `session.v4.jsonl`，官方最小 SDK 包使用 `compression: none`）；同一会话目录
 同时存在两份当前编码时记为编码二义性并令投影不完整，而不是重复计数；其它 canonical
 会话形状记为未扫描并令投影不完整，而不是计入一个实测的 0。只有“同一会话里晋升生命周期调用尚未返回时”发生的
