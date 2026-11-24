@@ -1486,9 +1486,11 @@ test('plan boundaries: no failure signal and a non-matching focus return no cand
 test('plan boundaries: a resolved target is rejected instead of re-planned', async (t) => {
   const h = await createHarness(t, 'plan-resolved');
   seedFailures(h.store, TARGET, 3);
-  // A newer resolution for the same target is a real success fact in the store.
+  // A newer resolution for the same target is a stable canary fact. Entering
+  // canary (`promotion-succeeded`) is only a lifecycle milestone and must not
+  // close the target while the promotion can still roll back.
   const receipt = h.store.recordEvolution({
-    eventType: 'promotion-succeeded',
+    eventType: 'canary-passed',
     target: TARGET,
     eventId: 'promotion-event-1',
   }, '/tmp/evolution-lifecycle-bridge.jsonl', { sequence: 1, writer: 'lifecycle-test' });

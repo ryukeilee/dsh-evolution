@@ -184,11 +184,11 @@ function seedRichV1(root) {
     assert.equal(compat.schemaVersion, 1, 'the enrichment path is the schema 1 compatibility opener');
     assert.equal(compat.recordFailure(failures[0]).duplicate, true, 'a frozen-path replay is still a duplicate');
     const promotions = [
-      { eventId: 'evt-promotion-ok', eventType: 'promotion-succeeded', target: 'plugin:edge-cache', audit: { at: '2025-01-01T00:00:00.000Z' } },
+      { eventId: 'evt-promotion-ok', eventType: 'canary-passed', target: 'plugin:edge-cache', audit: { at: '2025-01-01T00:00:00.000Z' } },
       { eventId: 'evt-canary-ok', eventType: 'canary-passed', target: 'terminal', audit: { at: '2025-01-01T01:00:00.000Z' } },
       { eventId: 'evt-canary-bad', eventType: 'canary-failed', target: 'terminal', audit: { at: '2025-01-01T02:00:00.000Z' } },
       { eventId: 'evt-reverted', eventType: 'promotion-reverted', target: 'plugin:edge-cache', promotion: { adapter: 'official-include', rowId: 'row-42' }, audit: { at: '2025-01-01T03:00:00.000Z' } },
-      { eventId: 'evt-failure-learned', eventType: 'failure-learned', target: 'component:cache', audit: { at: '2025-01-01T04:00:00.000Z' } },
+      { eventId: 'evt-second-canary-bad', eventType: 'canary-failed', target: 'component:cache', audit: { at: '2025-01-01T04:00:00.000Z' } },
     ];
     promotions.forEach((event, index) => {
       const result = compat.recordEvolution(event, 'desktop', { writer: 'host-a', sequence: index + 1 });
