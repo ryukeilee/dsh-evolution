@@ -1632,6 +1632,8 @@ test('plan and review report a truncated discovery window', async (t) => {
   try {
     const plan = h.orchestrator.plan({}, h.exec);
     assert.equal(plan.sources.truncated, true, 'plan must carry the withheld-window fact');
+    assert.equal(plan.none?.reason, 'discovery-window-truncated', 'a withheld window is not the same fact as "no failure signal"');
+    assert.doesNotMatch(plan.none?.detail ?? '', /focus/, 'filtering the records already read cannot recover withheld history');
     const review = await h.orchestrator.reviewSelfEvolution({}, h.exec);
     assert.equal(review.selfEvolution.incomplete, true, 'a review over withheld evidence is not complete');
   } finally {
