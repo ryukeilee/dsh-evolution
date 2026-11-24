@@ -12,6 +12,21 @@ const runner = await import(pathToFileURL(path.join(ROOT, 'scripts/acceptance/ru
 const TARGET_A = 'evolution-promoted-aaaaaaaaaaaa';
 const TARGET_B = 'evolution-promoted-bbbbbbbbbbbb';
 
+test('revalidation runner: a partially revoked record still has its other profile as a target', () => {
+  const record = { id: TARGET_A, approvedProfiles: ['acp', 'web'] };
+  const disable = { entries: [{ pluginId: TARGET_A, profile: 'web', reason: 'operator test' }] };
+  assert.equal(runner.profileIsRevalidationTarget(record, 'acp', disable), true);
+  assert.equal(runner.profileIsRevalidationTarget(record, 'web', disable), false,
+    'a revoked profile must never be expected active in verification or post-adoption checks');
+  assert.equal(runner.profileIsRevalidationTarget({ id: TARGET_B, approvedProfiles: ['acp'] }, 'web', disable), false);
+  // A fully revoked record is excluded earlier by the target selector.
+  const allRevoked = { entries: [
+    { pluginId: TARGET_A, profile: 'acp' }, { pluginId: TARGET_A, profile: 'web' },
+  ] };
+  assert.equal(runner.profileIsRevalidationTarget(record, 'acp', allRevoked), false);
+  assert.equal(runner.profileIsRevalidationTarget(record, 'web', allRevoked), false);
+});
+
 test('revalidation runner: parses its operator flags', () => {
   const options = runner.parseArgs(['--home', '/tmp/home', '--apply', '--json', '--timeout-ms', '9000']);
   assert.equal(options.home, path.resolve('/tmp/home'));

@@ -849,6 +849,54 @@ test('a durable stable commit is adopted even when a stop signal is already set'
   assert.equal(adopted.publication.id, 'evolution-promoted-abc123abc123');
 });
 
+test('a restarted host replays the functional check instead of stranding a canary', async (t) => {
+  const home = temporary(t);
+  const taskId = mintTaskId();
+  const check = { tool: 'read', arguments: { path: '/tmp/replay-fixture' }, resultPath: ['value'], expected: { transformed: true } };
+  const plan = {
+    proposal: { why: 'context policy', target: 'plugin:replay', impactScope: ['runtime'], successMetrics: ['m'] },
+    composition: { name: 'replay', purpose: 'replay', code: { host: 'return {};' } },
+    verification: { functionalCheck: check, observations: 1 },
+    requestedTargetProfiles: ['acp'],
+  };
+  const observed = [];
+  const kernel = fakeKernel();
+  kernel.tools.set('evolution_canary_observe', {
+    execute: async (args) => {
+      observed.push(args);
+      await factsWriter(home).write('exp-replay');
+      return { stable: true };
+    },
+  });
+  const ctx = fakeCtx(kernel, plan, {
+    read: { execute: async () => ({ value: { transformed: true } }) },
+  });
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 0, settlePollMs: 1 });
+  t.after(async () => { await host.dispose(); });
+  const channel = taskChannelPaths(home);
+  await fsp.mkdir(channel.inbox, { recursive: true });
+  await fsp.mkdir(channel.state, { recursive: true });
+  await fsp.writeFile(path.join(channel.inbox, `${taskId}.json`), JSON.stringify(requestFor(taskId, plan)));
+  await fsp.writeFile(path.join(channel.state, `${taskId}.json`), JSON.stringify({
+    schemaVersion: SCHEMA_VERSION, protocol: PROTOCOL_VERSION, taskId,
+    phase: 'canary-observing', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    experimentId: 'exp-replay', candidateSourceSha256: 'e'.repeat(64),
+    approval: { experimentId: 'exp-replay' },
+    canaryVerification: {
+      kernel: { kind: 'functional-check', bindingDigest: 'b'.repeat(64), requiredObservations: 1 },
+      check, observations: 1,
+    },
+  }));
+
+  const recovered = await host.internals.recoverPreviousTasks();
+  assert.deepEqual(recovered, [taskId]);
+  assert.equal(observed.length, 1, 'the replay sends one functional canary observation');
+  assert.equal(observed[0].verificationKind, 'functional');
+  assert.equal(observed[0].evidence.functionalCheck.bindingDigest, 'b'.repeat(64));
+  const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.error, null);
+});
+
 test('a runtime-busy trial refusal finalizes the task and releases the queue', async (t) => {
   const home = temporary(t);
   const first = planFor(mintTaskId());

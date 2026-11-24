@@ -772,10 +772,15 @@ test('already-mounted and publisher-profile rows stay inactive instead of becomi
   assert.equal(result.nextActions.some((action) => action.action === REVIEW_ACTIONS.RESTART), false);
 });
 
-// The review host and a consumer can run different versions (one entry upgraded
-// first). A restart cannot clear a mismatch that is still real, so the review
-// must keep asking for revalidation rather than loop on restart-consumer.
-test('a consumer that still runs another host keeps the revalidation action', async (t) => {
+// After an adopted revalidation the record already matches the live host while
+// a consumer's state still carries the host from its previous start. That row
+// is stale: the consumer must be restarted (new ACP session / Web entry) to
+// pick up the compatible record. Asking for another revalidation here loops,
+// because run-revalidation reports "nothing to revalidate" once the record's
+// host already matches. A genuine host upgrade is different: there the RECORD
+// itself is incompatible and the record-level check asks for revalidation
+// before per-profile verdicts are computed.
+test('a stale pending-revalidation row on a now-compatible record asks for a restart', async (t) => {
   const env = await fixture(t, 'consumer-host-mismatch');
   const staleDigest = hostDigest(PREVIOUS_HOST);
   await writeConsumers(env, {
@@ -787,26 +792,15 @@ test('a consumer that still runs another host keeps the revalidation action', as
   });
 
   const result = await review(env);
-  assert.equal(result.status, 'pending-revalidation');
+  assert.equal(result.status, 'restart-required');
   const [record] = result.records;
   assert.equal(record.hostCompatible, true, 'the record itself matches the review host');
-  assert.equal(record.status, 'pending-revalidation');
-  assert.equal(record.action, REVIEW_ACTIONS.REVALIDATE);
-  assert.deepEqual(result.nextActions.map((action) => action.action), [REVIEW_ACTIONS.REVALIDATE]);
-  // The guidance must name the consumer that runs another host instead of
-  // asking for evidence on "the current host", which would leave that consumer
-  // pending forever.
-  const [action] = result.nextActions;
-  assert.deepEqual(action.profiles, ['acp', 'web']);
-  assert.equal(action.consumerHosts.acp.dsh, PREVIOUS_HOST.dsh);
-  assert.equal(action.consumerHosts.web.dsh, PREVIOUS_HOST.dsh);
-  assert.match(action.why, /consumer acp runs DSH 0\.2\.2-rc\.1/);
-  assert.match(action.prerequisite, /align the named consumer/);
-  assert.match(action.evidence, /consumerHosts/);
-  assert.equal(result.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART), false);
+  assert.equal(record.status, 'restart-required');
+  assert.equal(record.action, REVIEW_ACTIONS.RESTART);
+  assert.deepEqual(result.nextActions.map((action) => action.action), [REVIEW_ACTIONS.RESTART]);
 
   const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
-  assert.equal(composed.kind, 'revalidate');
+  assert.equal(composed.kind, 'restart-consumer');
 });
 
 test('value assessment stays honest when no usage projection is supplied', async (t) => {
@@ -1271,4 +1265,26 @@ test('a revoked record still mounted by a consumer asks for a restart', async (t
   assert.deepEqual(result.records[0].profiles.map((row) => row.status), ['restart-required', 'restart-required']);
   const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
   assert.equal(composed.kind, 'restart-consumer');
+});
+
+// One record can need a source repair for one profile while another profile
+// only needs a restart after an adopted revalidation. The aggregate action is
+// the repair, but the per-profile restart must not disappear with it.
+test('a mixed repair and stale-revalidation record keeps a profile-named restart action', async (t) => {
+  const env = await fixture(t, 'consumer-host-mismatch');
+  await writeConsumers(env, {
+    host: CURRENT_HOST,
+    rows: {
+      acp: [{ id: env.record.id, status: 'failed', reason: 'plugin-apply-failed', hostDigest: hostDigest(CURRENT_HOST), activatedAt: null }],
+      web: [{ id: env.record.id, status: 'pending-revalidation', reason: 'host-version-mismatch',
+        hostDigest: hostDigest(PREVIOUS_HOST), activatedAt: null }],
+    },
+  });
+  const result = await review(env);
+  assert.equal(result.status, 'incompatible');
+  const actions = result.nextActions.map((action) => action.action);
+  assert.ok(actions.includes(REVIEW_ACTIONS.REPAIR), `expected a repair action, got ${JSON.stringify(actions)}`);
+  assert.ok(actions.includes(REVIEW_ACTIONS.RESTART), `the stale profile still needs a restart, got ${JSON.stringify(actions)}`);
+  const restart = result.nextActions.find((action) => action.action === REVIEW_ACTIONS.RESTART);
+  assert.deepEqual(restart.profiles, ['web']);
 });
