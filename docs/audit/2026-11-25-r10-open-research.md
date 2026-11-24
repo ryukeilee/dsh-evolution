@@ -222,15 +222,20 @@ R2 复验 `7990ba0`/`e659377`：
   `test/review-fix-stable-conclusion-recovery.test.mjs`、`test/shared-experience-conclusion.test.mjs`、
   `test/experience-evolution-lifecycle.test.mjs`、`test/promotion-share-targets.test.mjs`、
   `test/full-cross-session.integration.test.mjs` 全绿。
-- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test`（最终集成 HEAD `80200c1`，含 B1/B2/B3/B4、
-  R1/R2 修复与测试修复）——**2296 项，2294 通过 / 0 失败 / 2 跳过**；基线 `bc267ce` 为 2254 项
+- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test`（最终集成 HEAD `9d8674a`，含 B1/B2/B3/B4、
+  R1/R2/R3 修复与测试修复）——**2297 项，2295 通过 / 0 失败 / 2 跳过**；基线 `bc267ce` 为 2254 项
   （2252 通过 / 0 失败 / 2 跳过）。
 - 打包：`npm run pack:check`（开发阶段）**17/17 通过**；工作树是 `0.2.20` 固定点的已提交后继，
-  固定产物、固定点内容摘要与既有验收证据未改动。未执行 `release:publish`、未打 tag、未推送。
+  固定产物、固定点内容摘要与既有验收证据未改动。分支已推送并创建 PR #102；未执行 `release:publish`、
+  未打 tag、未合并、未开启 auto-merge。
 - 独立审核：R1（T3 Codex `gpt-6.2-sol` reasoningEffort high）返回 CHANGES，4 blocker / 4 should；
   R2 复验返回 CHANGES（PTC 生命周期结果异步追加的误归因 blocker，以及 run_code 实例、composition 重写、
-  损坏 probe 版本、空索引动作上限与 CLI 文案 should）。Lead 逐条修复后由 R3 在同一分支的新 HEAD 上做
-  最终复验；结论待填。
+  损坏 probe 版本、空索引动作上限与 CLI 文案 should）。Lead 逐条修复后，R3 在 `80200c1` 上发现 native
+  调用与 PTC 调用仍有两条归因路径，会复查交错日志；该问题已由 `9d8674a` 修复（native 发布调用不再被
+  PTC 日志窗口吞掉，PTC 发布调用仍归 unattributed），并补了 38 项聚焦用例。R3 在给出最终结论前触发
+  Codex 账户用量限制；改用 `gpt-6.1-terra` 的 fallback R4 也在同一限制下立即失败（原始错误：
+  “You’ve hit your usage limit…”）。因此本轮**没有取得最终独立 APPROVE**，R1/R2 的已知问题均已关闭，
+  但最终复审仍是交付残余风险；正式 Playtester 路由（Codex）恢复后应补一次只读复验。
 - 未重跑真实宿主验收：本轮改动集中在离线用量读取、共享结论身份、启动补写和有界审查动作；既有
   `docs/evidence/` 的 0.2.2-rc.5 39/39 隔离验收覆盖安装/晋升/跨入口/恢复，未覆盖本轮新增的崩溃补写与
   PTC 用量扫描；这两条的直接证明是真实临时 SQLite/合成官方事件行与反证。真实宿主 CI 仍会运行。
@@ -257,4 +262,7 @@ R2 复验 `7990ba0`/`e659377`：
   无法读取撤销表”为安全优先，不为此新增逐记录动作。
 - 2.3 只补写 adopted conclusion，不重放 `canary-passed` 事件；`evolution_plan` 的 `adoptedConclusion`
   足以判为已解决，但事件桥里仍可能缺一条成功事实。跨入口发布由既有 reconciler 从 sidecar 重建。
+- 最终独立复审未取得 APPROVE：R1/R2 的 blocker/should 均已逐条关闭，R3 在失败前提出的 native/PTC 双路径
+  问题已由 `9d8674a` 修复并补测；但 R3 与 fallback R4 都因 Codex 账户用量限制在给出最终结论前失败。
+  PR 仍保持 open、未合并，待正式 Playtester 路由恢复后补一次只读复验。
 - 上述 §3 的残余项保持登记；不为极端规模或历史数据扩大机制改动。
