@@ -179,8 +179,13 @@ node docs/audit/replay/capability-usage.mjs --assessments assessments.json --wri
 
 扫描只统计工具名与次数（不输出正文、参数或结果），把结果投影写入
 `<DSH_HOME>/storages/evolution/shared-plugins/usage.json`；`evolution_plan` 与 ACP 的 `audit` 只在显式调用时读取
-这一份小文件。只有“同一会话里晋升生命周期调用尚未返回时”发生的调用才算验证流量；调用无法归因（日志截断、
-同名工具属于多条记录）或投影不完整、超过 30 天时，零调用按未知处理，不能触发停用建议。
+这一份小文件。原生 `tool/call` 与官方 PTC（`run_code`）的嵌套分派都计入：一次 `tool/ptc-dispatch` 与它的
+`tool/ptc-dispatch-start` 合并为一次、不重复计数；不在生命周期调用内、且父调用是会话里的原生调用时算工作流流量，
+日志无法把它连到模型选择的调用、或会话结束时只有 start 没有最终分派时算不可归因。扫描覆盖当前代的两种编码
+（`session.v4.jsonl.zstd` 与明文 `session.v4.jsonl`，官方最小 SDK 包使用 `compression: none`）；其它 canonical
+会话形状记为未扫描并令投影不完整，而不是计入一个实测的 0。只有“同一会话里晋升生命周期调用尚未返回时”发生的
+调用才算验证流量；调用无法归因（日志截断、同名工具属于多条记录）或投影不完整、超过 30 天时，零调用按未知处理，
+不能触发停用建议。
 
 检查完全只读：不写发布索引、不启动 Trial、不创建任务；Desktop 仍是唯一执行与晋升权威，ACP 只负责审计并把
 新计划交给 Desktop。ACP 的 `audit` 不会在本机执行 revalidate，它返回需要操作者执行的证据步骤。设计见

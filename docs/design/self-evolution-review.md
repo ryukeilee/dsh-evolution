@@ -87,13 +87,25 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 因此 `operator-action` / `verify-host` / `revalidate` 不会被索引里靠后的低优先级记录挤掉；被截断的条数由
 `nextActionsDropped` 报告，并令 `selfEvolution.incomplete=true`，模型不能把不完整的 review 当成完整结果。
 
+记录数也有上限：一次 review 只评估索引中的前 50 条记录（`SELF_EVOLUTION_REVIEW_LIMITS.maxRecords`）。索引在
+结构上合法但超过这个上限时，review 不为未评估的行编造 per-record 状态，而是增加一条 `operator-action`：说明
+有多少条记录未评估，并给出至多 5 个被省略的记录 id 作为有界样本。这条动作按 `operator-action` 优先级参与同一套
+排序与动作上限；它只让 review 明确标为不完整（`selfEvolution.incomplete=true`），不推断那些记录是否可用或可否停用。
+
 ### 4.1 价值证据：用量投影
 
 `readPublishedPluginReview()` 接受一个可选的 `usage` 投影，把每条记录分为 `production-benefit` /
 `experiment-benefit` / `in-use` / `installed-only` / `usage-unknown`。唯一的生产者是一次显式的离线扫描
 （`docs/audit/replay/capability-usage.mjs`，实现在 `lib/capability-usage.js`）：
 
-- 扫描只读取会话日志里的 `tool/call` / `tool/result` 类型与工具名，按发布记录的工具名计数；不输出正文、参数或结果；
+- 扫描只读取会话日志里的 `tool/call` / `tool/result` 与官方 PTC 的 `tool/ptc-dispatch-start` /
+  `tool/ptc-dispatch` 类型和工具名，按发布记录的工具名计数；不输出正文、参数或结果；
+- **PTC 分派只算一次**：`tool/ptc-dispatch` 与配对的 `tool/ptc-dispatch-start` 合并为一次调用，start 本身不计数；
+  不在生命周期调用内、且父调用是会话里的原生 `tool/call` 时算工作流流量，日志无法把它连到模型选择的调用、
+  或会话结束时只有 start 没有最终分派时计入 `unattributed`，不算 0；
+- 只扫描当前代的两种编码：`session.v4.jsonl.zstd` 与明文 `session.v4.jsonl`（官方最小 SDK 包设置
+  `compression: none`）。其它 canonical 会话形状（`session.jsonl`、`session.vN.jsonl[.zstd]`）记为未扫描，
+  令投影 `complete: false`，而不是一个测量出来的 0；
 - **归因是因果的**：只有在一个晋升生命周期调用（由 `PROMOTION_LIFECYCLE_TOOLS` 定义，即
   `evolution_probe`/`trial`/`measure`/`promote`/`canary_observe`，不含 `evolution_desktop`）尚未返回时发生的调用
   才算验证流量。同一会话里先前调用过 `evolution_probe` 不影响之后的真实使用；
