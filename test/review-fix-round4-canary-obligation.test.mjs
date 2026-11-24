@@ -135,6 +135,29 @@ test('the canary binding rejects malformed descriptors and distinguishes deep va
   const first = normalizeCanaryVerification({ ...base, expected: deep('one') });
   const second = normalizeCanaryVerification({ ...base, expected: deep('two') });
   assert.ok(first && second && first.bindingDigest !== second.bindingDigest);
+  const atMaxDepth = (leaf) => {
+    let value = { leaf }; let cursor = value;
+    // 22 wrappers put the leaf at validation depth 23 / serialization depth 24.
+    for (let i = 0; i < 22; i += 1) { cursor = cursor.next = {}; }
+    cursor.leaf = leaf;
+    return value;
+  };
+  const maxA = normalizeCanaryVerification({ ...base, expected: atMaxDepth('one') });
+  const maxB = normalizeCanaryVerification({ ...base, expected: atMaxDepth('two') });
+  assert.ok(maxA && maxB && maxA.bindingDigest !== maxB.bindingDigest,
+    'the maximum accepted depth must still bind leaf values distinctly');
+  // Validation and serialization must use the SAME boundary: the wrapper adds
+  // one level, so leaf at validation depth 24 would be folded into the
+  // serializer's max-depth marker and collide with any other depth-24 leaf.
+  const atCollisionDepth = (leaf) => {
+    const root = {};
+    let cursor = root;
+    for (let i = 0; i < 23; i += 1) { cursor = cursor.next = {}; }
+    cursor.leaf = leaf;
+    return root;
+  };
+  assert.equal(normalizeCanaryVerification({ ...base, expected: atCollisionDepth('one') }), null,
+    'a value at the serializer collision depth must be rejected, not bound');
   assert.equal(normalizeCanaryVerification({ ...base, expected: (() => {
     let value = {}; let cursor = value;
     for (let i = 0; i < 30; i += 1) { cursor.next = {}; cursor = cursor.next; }

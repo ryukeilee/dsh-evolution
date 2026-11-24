@@ -50,6 +50,17 @@ GPT-6.2 Sol（High）返回 `CHANGES`：S1/S2/S5/S7/S8/S9/S10 已解决；S3/S4/
 | S6 should | 接受：共享序列化器的深层固定标记会让两个不同值共享绑定；无效 resultPath 被归一为空但重放仍用原值 | 校验并拒绝非无损/超深/超界描述符，完整哈希已验证字段，并把规范化后的描述符随义务持久化；重放只执行该已验证描述符 |
 | S11 should | 接受：正常关闭中止观测后 `evolution_revert` 拒绝 canary-observing，任务写终态导致下次启动跳过 | 对带功能义务的 canary 在稳定或回滚被证明前不尝试 revert、不写终态，保留可重放阶段 |
 
+### 独立反方复审（sol-loop 第 3 轮）
+
+GPT-6.2 Sol（High）返回 `CHANGES`：S3/S11 仍为 blocker，S6/S12 为 should。逐条复核后处理：
+
+| id | 结论 | 处理 |
+| --- | --- | --- |
+| S3 blocker | 接受：功能检查通过后提交观测超时也会写终态 | 普通观测提交异常同样标记 `canaryReplayPending`，保留重放阶段；补「检查匹配但提交超时」回归 |
+| S6 should | 接受：校验深度与序列化深度差一层，深度 24 的叶值被折叠成相同标记 | 两者共用 23 层边界，超界直接拒绝；补最大深度与碰撞深度回归 |
+| S11 blocker | 接受：内核在写 canary journal 前返回 `revert-failed` 时，宿主因任务带义务描述符而跳过 Trial 清理 | 明确标记「晋升被拒绝」，只有内核真正进入 canary 或结果未知时才保留重放；被拒绝路径继续走既有 revert/重试 |
+| S12 should | 接受：完整检查描述符进入内核长期证据快照，可能保留文件行原文 | 内核只持久化 `kind/tool/bindingDigest/requiredObservations`；完整描述符只留在 Desktop 任务状态供重放 |
+
 ## 3. 验证
 
 - 反证：新增 4 个回归文件与 2 个扩展文件；对每条核心修复先在旧源码上运行新用例：
