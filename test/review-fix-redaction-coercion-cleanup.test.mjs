@@ -35,6 +35,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { EvolutionOrchestrator, safeErrorDto } from '../lib/orchestrator.js';
+import { apply } from '../lib/registration.js';
 import {
   promotionPaths, unitPromotionRuntime, orchestratorContext, execFor, HOST_CODE,
 } from './orchestrator-durability-fixtures.mjs';
@@ -339,6 +340,48 @@ test('promote(): a throw from the cleanup path itself releases the operation cla
   const record = h.core.experiments.get(proposal.experimentId);
   assert.equal(record.state, 'revert-failed');
   assert.equal(record.failure.failurePhase, 'promotion-cleanup');
+});
+
+test('evolution_promote(): a pre-canary cleanup refusal is published as a refusal receipt', async (t) => {
+  // The kernel deliberately throws the original exception for its direct
+  // callers, but the Desktop host drives promotion through the registered
+  // tool. Neither custom flags nor a plain Error's code survive that host's
+  // error serialization, so the adapter must convert this known refusal into
+  // an ordinary receipt the host's non-canary branch already understands.
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'promote-cleanup-adapter-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const definitions = new Map();
+  const ctx = {
+    dynamicCordisRunner: {
+      snapshot: () => [],
+      define: () => ({}),
+      run: async () => ({ ok: true }),
+      stop: async () => ({ ok: true }),
+      undefine: async () => ({ ok: true }),
+    },
+    tools: { register: (definition) => { definitions.set(definition.name, definition); return definition; } },
+    systemPrompt: { section() {} },
+    on() {},
+    logger: { warn() {} },
+  };
+  const core = apply(ctx, {
+    startupDrift: false,
+    presetDir: root,
+    eventBridgePath: path.join(root, 'events.jsonl'),
+    eventBridgeKey: 'k'.repeat(32),
+    driftStatePath: path.join(root, 'drift.json'),
+    memoryPath: path.join(root, 'memory.json'),
+  });
+  const boom = new Error('synthetic dispose throw');
+  boom.promotionCleanupFailed = true;
+  boom.promotionPhase = 'revert-failed';
+  core.promote = async () => { throw boom; };
+
+  const result = await definitions.get('evolution_promote').execute({ experimentId: 'exp-adapter', confirmation: true }, {});
+  assert.equal(result.ok, false, 'the tool call is a refusal, not a thrown tool error');
+  assert.equal(result.phase, 'revert-failed', 'the host sees the unproven cleanup phase');
+  assert.equal(result.runtimeRecovered, false, 'no runtime recovery is claimed');
+  assert.equal(result.reason, 'promotion-cleanup-failed');
 });
 
 test('promote(): the promotion-cleanup branch keeps the target lock on purpose and releases only the claim', async (t) => {

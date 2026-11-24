@@ -684,6 +684,39 @@ test('a proven-recovered promotion failure fails the task without wedging the qu
   assert.notEqual(next.phase, 'promoting', 'the second task must actually start');
 });
 
+test('a refused pre-canary cleanup reverts instead of replaying the canary', async (t) => {
+  // With a functional obligation the confirming task is `promoting` and carries
+  // `canaryVerification`. A refused promotion must therefore take the ordinary
+  // revert/retry path, not the replayable-canary early return that would leave
+  // the target claim occupied for the rest of this host's session.
+  const home = temporary(t);
+  const plan = contextPlanFor();
+  const kernel = fakeKernel();
+  const readTool = { execute: async () => ({
+    path: '/tmp/long.json', offset: 1,
+    lines: [{ number: 1, text: kernel.state.candidateVisible ? 'FULL-LINE' : 'truncated' }], totalLines: 1,
+  }) };
+  kernel.tools.set('evolution_promote', {
+    execute: async (args) => {
+      if (args.confirmation !== true) {
+        return { ok: false, experimentId: 'exp-desktop-task-1', phase: 'awaiting-owner-confirmation', gates: GATES, decision: { kind: 'benefit', eligible: true } };
+      }
+      // The ordinary receipt the registered tool publishes for a cleanup that
+      // threw before the canary journal was written.
+      return { ok: false, experimentId: 'exp-desktop-task-1', phase: 'revert-failed', reason: 'promotion-cleanup-failed', runtimeRecovered: false };
+    },
+  });
+  const ctx = fakeCtx(kernel, plan, { read: readTool });
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await writeTaskEvidence(home, taskId, plan.plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  await waitForState(home, taskId, (value) => value.phase === 'failed', 10_000);
+  assert.ok(kernel.state.reverts >= 1, 'an unproven pre-canary cleanup must be retried with evolution_revert');
+});
+
 test('a transient revert failure keeps the owner and retries cleanup until it is proven', async (t) => {
   const home = temporary(t);
   const plan = planFor(mintTaskId());
