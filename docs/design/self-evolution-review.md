@@ -94,9 +94,11 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 （`docs/audit/replay/capability-usage.mjs`，实现在 `lib/capability-usage.js`）：
 
 - 扫描只读取会话日志里的 `tool/call` / `tool/result` 类型与工具名，按发布记录的工具名计数；不输出正文、参数或结果；
-- **归因是因果的**：只有在一个晋升生命周期调用（`evolution_probe`/`trial`/`measure`/`promote`/
-  `canary_observe`/`desktop`）尚未返回时发生的调用才算验证流量。同一会话里先前调用过 `evolution_probe` 不影响
-  之后的真实使用；
+- **归因是因果的**：只有在一个晋升生命周期调用（由 `PROMOTION_LIFECYCLE_TOOLS` 定义，即
+  `evolution_probe`/`trial`/`measure`/`promote`/`canary_observe`，不含 `evolution_desktop`）尚未返回时发生的调用
+  才算验证流量。同一会话里先前调用过 `evolution_probe` 不影响之后的真实使用；
+- **callId 不是唯一执行身份**：官方宿主会在不同执行对象间复用它；扫描器优先用会话信封的 `seq` 与结果的
+  `sourceEventSeqs` 精确配对，无法证明归属时记为 `unattributed`，不猜成使用或验证；
 - 生命周期调用没有返回（日志截断、进程崩溃）时，其下的调用记为 `unattributedInvocations`，既不算使用也不算验证；
 - 工具名只从 `defineTool` / `registerTool` / `tools.register` 的定义处提取，不把源码里其他 `name: "…"` 字段当成工具；
 - 同一条工具名属于多条发布记录时，对每条记录都记为不可归因，不静默归给最后一条；

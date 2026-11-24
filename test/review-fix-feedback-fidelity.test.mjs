@@ -23,7 +23,8 @@ import { pathToFileURL } from 'node:url';
 import { createSessionCounter } from '../lib/capability-usage.js';
 import { knowledgeExperienceRecord } from '../lib/experience-recall.js';
 import { EvolutionOrchestrator } from '../lib/orchestrator.js';
-import { readPublishedPluginReview } from '../lib/self-evolution-review.js';
+import { readPublishedPluginReview, reviewExperience } from '../lib/self-evolution-review.js';
+import { openSharedExperience } from '../lib/shared-experience.js';
 import {
   buildSharedRecord,
   consumerStateDocument,
@@ -161,7 +162,41 @@ test('caller-supplied metrics without a validated task artifact stay out of the 
   assert.deepEqual(captured[0].metrics, {});
 });
 
-test('all seven task metric deltas survive the bounded recall projection', () => {
+test('an unreadable shared store is not reported as no failure signal', () => {
+  const result = reviewExperience({
+    store: { discover() { throw new Error('store read failed'); } },
+    versions: {},
+  });
+  assert.equal(result.none?.reason, 'store-unavailable', 'a failed read is not evidence of an empty history');
+});
+
+test('task deltas survive a real shared-experience write and discover round trip', async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-round6-store-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const store = openSharedExperience(root);
+  t.after(() => { try { store.close(); } catch { /* already closed */ } });
+  store.recordConclusion({
+    experimentId: 'exp-round6-task',
+    target: 'tool:read',
+    strategy: 'context-policy read-tail',
+    strategyFingerprint: 'abcdef0123456789',
+    rootCause: 'tail loss',
+    failureMode: '',
+    decision: 'adopted',
+    metrics: { turnsDelta: -3, toolCallsDelta: -3, tokensDelta: -20, durationMsDelta: -500, failuresDelta: 0 },
+    applicability: { dsh: '0.2.2-rc.5', cordis: '4.1.0', evolution: '0.2.19' },
+    occurredAt: new Date().toISOString(),
+  }, 'round6-test');
+  const rows = store.discover({ window: 500 }).records;
+  const withTurns = rows.find((row) => row.metrics && Object.keys(row.metrics).some((key) => /turns/i.test(key)));
+  assert.ok(withTurns, 'the written turns delta must be discoverable by the next planning round');
+  assert.ok(Object.keys(withTurns.metrics).some((key) => /duration/i.test(key)), 'the extra metric window must survive');
+});
+
+test('all task metric deltas survive the bounded recall projection', () => {
+  // A synthetic full window guards the read bound; the real task writer emits
+  // the five deltas that can actually differ (sessions/correct are pinned equal
+  // by validateTaskBenefit).
   const metrics = Object.fromEntries([
     'sessionsDelta', 'correctDelta', 'failuresDelta', 'turnsDelta',
     'toolCallsDelta', 'tokensDelta', 'durationMsDelta',

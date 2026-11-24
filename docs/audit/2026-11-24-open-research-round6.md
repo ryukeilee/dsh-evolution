@@ -19,10 +19,10 @@
 
 | # | 根因 | 影响 | 修复 | 证据 |
 | --- | --- | --- | --- | --- |
-| 1 | `capability-usage.js` 用 `callId` 做全会话单调去重，但官方宿主在 PTC envelope 的不同执行对象间复用 `callId`（`experience-collector.js:192-196` 的真实退化丢失已证实） | 真实的发布工具调用被判 `duplicate` 丢弃；复用 `callId` 的生命周期调用不进 `open`，其下调用被误记为 workflow 而非 verification，usage 投影与 in-use 判定失真 | 每条 `tool/call` 行独立计数；生命周期调用改为本地实例 token 跟踪，按 `callId` FIFO 关闭，不再全局去重 | 新增 `test/review-fix-feedback-fidelity.test.mjs` 两例：旧源码返回 `duplicate` / workflow=1，修复后 `pending` / workflow=2、verification=1 |
-| 2 | `conclusionMetrics()` 与 `failureMode` 只读 `record.probe.comparison`；context-policy / taskBenefit-only 实验没有 probe，真实 before/after 数值只写在 `latestObservation` | 下一轮 discover/plan 与统一审查看到 `adopted`/`regression` 却没有度量，无法量化真实任务受益；成本回归也丢失失败原因 | 无 probe 时改从 `latestObservation.beforeMetrics/afterMetrics` 投影有界任务增量；`taskBenefit.regression` 写入 `failureMode`。probe 路径输出逐字节不变 | 新增两例：旧源码 `metrics:{}` / `failureMode:''`，修复后含 `turnsDelta:-3`/`toolCallsDelta:-3` 与 `failureMode:'regression'` |
-| 3 | `self-evolution-review.js` 的 value tier 只看 invocation 计数，不看记录是否已被撤销 | 全 profile 已撤销的记录仍被报为 `in-use`/`production-benefit`，历史调用被当作当前复用，虚高 valueSummary 并掩盖 restart 动作 | 仅在「所有 profile 已撤销且带 operator-disabled / active-after-revocation 证据」时降为 `usage-unknown`；仅缺活跃 consumer 行、无撤销证据的记录保持原 tier | 新增一例：旧源码 tier=`in-use`，修复后 `usage-unknown`；既有 127 项聚焦用例保持通过 |
-| 4 | `plan()` 与 `reviewExperience()` 把被截断的 discover 窗口报成 `no-failure-signal` | 长期运行库超过 500 条时，窗口外的低频真实问题永不进候选，owner 与模型误判「无失败信号」而停止进化 | 无候选且 `sources.truncated` 时改报 `discovery-window-truncated`，附 considered 数与收窄提示；review 的 `incomplete:true` 保持 | 既有生命周期用例新增断言：旧源码 `no-failure-signal`，修复后 `discovery-window-truncated` |
+| 1 | `capability-usage.js` 用 `callId` 做全会话单调去重，但官方宿主在 PTC envelope 的不同执行对象间复用 `callId`（`experience-collector.js:192-196` 的真实退化丢失已证实） | 真实的发布工具调用被判 `duplicate` 丢弃；复用 `callId` 的生命周期调用不进 `open`，其下调用被误记为 workflow 而非 verification，usage 投影与 in-use 判定失真 | 每条 `tool/call` 行独立计数；用官方信封的 `seq` 与结果的 `sourceEventSeqs` 精确关闭对应生命周期，`callId` 仅作无 seq 旧行的保守回退；无法证明归属时保持 `unattributed`，不猜测 | `test/review-fix-feedback-fidelity.test.mjs`：旧源码返回 `duplicate`；修复后真实调用不再丢失、发布结果先返回也不会关闭 Trial，两次复用调用的精确 seq 链接各自关闭 |
+| 2 | `conclusionMetrics()` 只读 `record.probe.comparison`；taskBenefit-only 实验没有 probe，真实 before/after 只写在 `latestObservation`；召回投影窗口少一项 | 下一轮 discover/plan 与统一审查看到 `adopted`/`regression` 却没有度量，无法量化真实任务受益 | 仅对 validated 且 `mechanismRan` 的 taskBenefit 投影真实会话差值；不把任务专属值写进 `failureMode`（它是知识身份维度，会劈开同一假设的行），回归由 decision/outcome 表达；`experience-recall.js` 投影窗口覆盖全部 delta | 旧源码 `metrics:{}`；修复后含 `turnsDelta:-3`/`toolCallsDelta:-3`，真实 store 往返可读回；`failureMode` 保持 `''` 以保住结论身份 |
+| 3 | `self-evolution-review.js` 的 value tier 只看 invocation 计数，不看记录是否已被撤销 | 全 profile 已撤销的记录仍被报为 `in-use`/`production-benefit`，历史调用被当作当前复用，虚高 valueSummary 并掩盖 restart 动作 | 撤销范围直接取撤销表 `allDisabled`；全撤销降为 `usage-unknown` 并抑制 `productionBenefit` 声明；部分撤销保持原 tier | 旧源码 tier=`in-use`；修复后 `usage-unknown`；部分撤销仍 `in-use` |
+| 4 | `plan()` 与 `reviewExperience()` 把被截断的 discover 窗口报成 `no-failure-signal`；review 侧 store 抛错时也误报同一结论 | 长期运行库超过 500 条时，窗口外问题永不进候选；store 不可读与「无失败信号」被混为一谈，两个只读面互相矛盾 | 无候选且窗口截断时改报 `discovery-window-truncated` 并保留 `considered`；store 抛错与无 store 都归为 `store-unavailable`，与 `plan()` 一致 | 旧源码 `no-failure-signal`；修复后 `discovery-window-truncated` / `store-unavailable`；`incomplete:true` 保持 |
 
 ## 4. 调查后决定不修改的项（真实影响 / 收益 / 成本）
 
@@ -37,16 +37,18 @@
 
 ## 5. 验证
 
-- 反证：8 个新用例（含既有生命周期用例的新断言）在旧源码全部按预期失败；修复后全部通过。
-- 聚焦：最终 183/183 通过（`review-fix-feedback-fidelity`、`experience-evolution-lifecycle`、`self-evolution-review`、`capability-usage-scan`、`shared-experience-conclusion`、`experience-attribution`）。
-- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2192 项，2190 通过 / 0 失败 / 2 跳过**。
+- 反证：新用例中 7 个在旧源码按预期失败；另外 4 个是守卫（旧源码也通过，用于防止身份/归因回归）。
+- 聚焦：最终 **185/185** 通过（`review-fix-feedback-fidelity`、`experience-evolution-lifecycle`、`self-evolution-review`、`capability-usage-scan`、`shared-experience-conclusion`、`experience-attribution`）。
+- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` —— 最终树 **2192 项，2190 通过 / 0 失败 / 2 跳过**。
 - 打包：`npm run pack:check` 17/17 通过；工作树是 v0.2.19 固定点的已提交后继，固定点、产物与证据未改动；未执行 `--release` 或任何发布动作。
-- 隔离真实宿主验收：在最终树重新 `npm run release:pack` 后，对 `0.2.2-rc.5` 运行 `npm run acceptance:host -- --no-hmr --experience-evolution`，**26/26 步骤 ok**（含安装、lifecycle、升级/回滚、真实晋升、经验驱动实验、重启与回归、最终 doctor），证据写入 `docs/evidence/dsh-0.2.2-rc.5-round6-feedback.json`。只使用隔离 runtime/home，未触碰正式 DSH_HOME。
+- 隔离真实宿主验收：在最终树重新 `npm run release:pack` 后，对 `0.2.2-rc.5` 运行 `npm run acceptance:host -- --no-hmr --experience-evolution`，**25/25 步骤 ok**（含安装、lifecycle、升级/回滚、真实晋升、经验驱动实验、重启与回归、最终 doctor），证据写入 `docs/evidence/dsh-0.2.2-rc.5-round6-feedback.json`。只使用隔离 runtime/home，未触碰正式 DSH_HOME。
 
 ## 5.1 独立复审
 
-- sol-loop（codex / gpt-6.2-sol / reasoningEffort high）：第 1 轮返回 5 项（3 blocker、2 should），第 2 轮返回 1 项仍开放的 blocker；逐条复核后全部按最小改动修复并有回归证明。第 3 轮因 codex 提供方额度限制未能启动（提示 14:27 可重试），不构成未解决的实质问题； council 在最终变更上完成了独立反方复审。
-- council（双模型独立反方复审）：GPT-6.2 Sol High 对最终变更返回 4 项（2 P1、2 P2），均已修复：用官方 envelope 的 `seq` / `sourceEventSeqs` 精确关闭复用 callId 的生命周期；撤销任务专属 `failureMode`（它是知识身份维度）；任务指标要求 `mechanismRan`；召回投影窗口覆盖第七项 `durationMsDelta`。DeepSeek 4.1 Flash Max 结果见 PR 描述。
+- sol-loop（codex / gpt-6.2-sol / reasoningEffort high）：第 1 轮返回 5 项（3 blocker、2 should），第 2 轮返回 1 项仍开放的 blocker；逐条复核后全部按最小改动修复并有回归证明。第 3 轮因 codex 提供方额度限制未能启动（提示 14:27 可重试），属工具额度限制，不构成未解决的实质问题。
+- council（双模型独立反方复审）：
+  - GPT-6.2 Sol High：**6/10，CHANGES**，4 项（2 P1、2 P2）均已修复并用 183 项聚焦测试复验：用官方 envelope 的 `seq` / `sourceEventSeqs` 精确关闭复用 callId 的生命周期；撤销任务专属 `failureMode`（它是知识身份维度）；任务指标要求 `mechanismRan`；召回投影窗口覆盖全部任务 delta。
+  - DeepSeek 4.1 Flash Max：**7/10，CHANGES**，8 项中 F1（review 侧 store 抛错仍报 `no-failure-signal`）与 F2（本文件 §3 与最终代码不符）为实质项，已修复；F3–F8（步骤数、契约注释、恒零 delta、撤销记录自相矛盾、真实 store 往返测试、设计文档滞后）也一并对齐，最终 185 项聚焦测试通过。
 
 ## 6. 剩余风险
 
