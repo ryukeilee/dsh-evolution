@@ -1055,6 +1055,41 @@ test('a definitively missing canary journal does not loop on every restart', asy
   assert.equal(state.phase, 'interrupted', 'a missing journal is definitive: retrying forever would wedge the queue');
 });
 
+test('a failed functional replay with a missing journal does not loop', async (t) => {
+  const home = temporary(t);
+  const taskId = mintTaskId();
+  const check = { tool: 'read', arguments: { path: '/tmp/no-journal-failed-check' }, resultPath: ['value'], expected: { ok: true } };
+  const plan = {
+    proposal: { why: 'context policy', target: 'plugin:no-journal-failed', impactScope: ['runtime'], successMetrics: ['m'] },
+    composition: { name: 'no-journal-failed', purpose: 'no-journal-failed', code: { host: 'return {};' } },
+    verification: { functionalCheck: check, observations: 1 },
+    requestedTargetProfiles: ['acp'],
+  };
+  const kernel = fakeKernel();
+  kernel.tools.set('evolution_canary_observe', {
+    execute: async () => { throw new Error('canary journal is missing for exp; refusing to advance the canary state machine'); },
+  });
+  const ctx = fakeCtx(kernel, plan, { read: { execute: async () => ({ value: { ok: false } }) } });
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 0, settlePollMs: 1 });
+  t.after(async () => { await host.dispose(); });
+  const channel = taskChannelPaths(home);
+  await fsp.mkdir(channel.inbox, { recursive: true });
+  await fsp.mkdir(channel.state, { recursive: true });
+  await fsp.writeFile(path.join(channel.inbox, `${taskId}.json`), JSON.stringify(requestFor(taskId, plan)));
+  const stateFile = path.join(channel.state, `${taskId}.json`);
+  await fsp.writeFile(stateFile, JSON.stringify({
+    schemaVersion: SCHEMA_VERSION, protocol: PROTOCOL_VERSION, taskId,
+    phase: 'promoting', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    experimentId: 'exp-no-journal-failed', candidateSourceSha256: 'e'.repeat(64),
+    approval: { experimentId: 'exp-no-journal-failed' },
+    canaryVerification: { kernel: normalizeCanaryVerification({ ...check, observations: 1 }), check, observations: 1 },
+  }));
+
+  await host.internals.recoverPreviousTasks();
+  const state = JSON.parse(await fsp.readFile(stateFile, 'utf8'));
+  assert.equal(state.phase, 'interrupted', 'the failed-check branch must also honor a definitive missing-journal receipt');
+});
+
 test('a matching replay whose observation submission times out stays replayable', async (t) => {
   const home = temporary(t);
   const taskId = mintTaskId();

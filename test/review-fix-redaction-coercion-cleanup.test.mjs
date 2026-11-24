@@ -329,8 +329,8 @@ test('promote(): a throw from the cleanup path itself releases the operation cla
 
   await assert.rejects(
     h.core.promote({ experimentId: proposal.experimentId, confirmation: true }, h.exec),
-    (error) => error === boom,
-    'the cleanup error still reaches the caller unchanged',
+    (error) => error === boom && error.promotionCleanupFailed === true,
+    'the same error reaches the caller, now carrying a structured pre-canary cleanup signal for the host',
   );
   assert.equal(h.core.operationClaims.has(proposal.experimentId), false, 'the operation claim was released');
   assert.equal(h.core.targetOwners.get(target), proposal.experimentId,
