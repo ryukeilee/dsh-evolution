@@ -145,6 +145,22 @@ test('the recovered conclusion keeps the measured applicability after a host upg
     'the recovery must not claim the strategy was adopted under versions it never ran on');
 });
 
+test('a probe-only sidecar keeps the measured applicability too', async (t) => {
+  const experimentId = 'exp-stable-probe-only';
+  const snapshot = stableSnapshot(experimentId);
+  delete snapshot.proposal.applicability;
+  snapshot.latestObservation.probe.versions = APPLICABILITY;
+  const { store, orchestrator } = await recoveryFixture(t, 'stable-conclusion-probe-only', { [experimentId]: snapshot });
+  const result = await orchestrator.reconcileStableConclusions({ maxRecords: 20 });
+  assert.equal(result.published, 1);
+  const found = store.findConclusions({
+    target: TARGET,
+    strategyFingerprint: strategyFingerprint(TARGET, STRATEGY),
+    applicability: APPLICABILITY,
+  });
+  assert.equal(found.best?.sameApplicability, true);
+});
+
 test('a record without a captured applicability is not relabelled with the live versions', async (t) => {
   const experimentId = 'exp-stable-legacy';
   const snapshot = stableSnapshot(experimentId);

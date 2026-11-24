@@ -634,3 +634,34 @@ test('other canonical session generations are reported unscanned, never a measur
   assert.equal(projection.records[RECORD_ID].verificationInvocations, null);
   assert.equal(projection.records[RECORD_ID].unattributedInvocations, null);
 });
+
+test('one session directory with both current encodings is ambiguous, never double counted', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  // A compression change leaves the old encoding next to the current one; both
+  // describe the same session.
+  writeSession(env.root, 'both', [call('widget_tool', 'z1')]);
+  writeSession(env.root, 'both', [call('widget_tool', 'p1')], { plain: true });
+  const { status, projection } = run(env.root);
+  assert.equal(status, 3);
+  assert.equal(projection.complete, false);
+  assert.equal(projection.scannedSessions, 0);
+  assert.deepEqual(projection.failures.ambiguousSessionEncoding, [{
+    session: 'both',
+    files: ['session.v4.jsonl', 'session.v4.jsonl.zstd'],
+  }]);
+  assert.equal(projection.records[RECORD_ID].workflowInvocations, null);
+});
+
+test('historical generations beside a current file are one session, not unsupported copies', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'migrated', [call('widget_tool', 'c1')]);
+  writeSession(env.root, 'migrated', [call('widget_tool', 'old1')], { fileName: 'session.v3.jsonl.zstd' });
+  const { status, projection } = run(env.root);
+  assert.equal(status, 0);
+  assert.equal(projection.complete, true);
+  assert.equal(projection.scannedSessions, 1);
+  assert.equal(projection.records[RECORD_ID].workflowInvocations, 1);
+  assert.equal(projection.failures, undefined);
+});

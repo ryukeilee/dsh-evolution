@@ -30,9 +30,12 @@
  *     verification, and it stops "zero" from supporting a retirement
  *     recommendation;
  *   - both current-generation encodings are scanned (`session.v4.jsonl.zstd`
- *     and plaintext `session.v4.jsonl`). Any other canonical session log
- *     (`session.jsonl`, `session.vN.jsonl[.zstd]`) is reported as unscanned and
- *     makes the projection incomplete rather than a measured zero;
+ *     and plaintext `session.v4.jsonl`). A directory holding both is an
+ *     ambiguous encoding and neither is counted. Any other canonical session
+ *     log (`session.jsonl`, `session.vN.jsonl[.zstd]`) in a directory without a
+ *     current file is reported as unscanned and makes the projection incomplete
+ *     rather than a measured zero; older generations beside a current file are
+ *     the same session's migrated copies;
  *   - `capabilityAssessment` is never inferred. Pass `--assessments <file>`
  *     with an explicit `{ "<recordId>": "self-contained" | "workflow-relevant" }`
  *     map after reviewing the source; otherwise every record stays `unknown`,
