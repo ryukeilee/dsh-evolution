@@ -195,6 +195,26 @@ test('an unreadable revocation table blocks the doctor and the unified review', 
   assert.ok(review.nextActions.some((row) => row.action === REVIEW_ACTIONS.OPERATOR && /revocation table is invalid/.test(row.why)));
 });
 
+test('a host-mismatched record with a damaged revocation table stays blocked, not revalidation', async (t) => {
+  const env = await home(t);
+  const host = await observedHostOf(env.dshHome);
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  // Publish under a different DSH version so the live review sees pending
+  // revalidation for the record itself.
+  await publishSharedRecord(dataRoot, await recordFor(env, { ...host, dsh: '0.0.1' }));
+  await fs.writeFile(path.join(env.paths.dataRoot, 'shared-plugins', 'disabled.json'), '{not json');
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'blocked', JSON.stringify(check.evidence));
+  assert.equal(check.evidence.disableStatus, 'invalid');
+  const review = await readPublishedPluginReview({ paths: env.paths, host });
+  assert.equal(review.status, 'blocked');
+  assert.equal(review.records[0].status, 'blocked');
+  assert.equal(review.records[0].action, REVIEW_ACTIONS.OPERATOR);
+  assert.equal(review.nextActions.some((row) => row.action === REVIEW_ACTIONS.REVALIDATE), false,
+    'a damaged revocation table cannot be recovered by revalidating a record');
+});
+
 // 2026-11-24 reliability round: a consumer that explicitly refuses an approved
 // record is not a healthy publication, even when its bytes and host facts agree.
 test('a skipped-incompatible consumer row degrades the sharing check', async (t) => {

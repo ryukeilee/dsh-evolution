@@ -88,10 +88,12 @@ live (upgraded)       = 0.2.3-rc.1/4.2.0/0.2.20
 written applicability = 0.2.3-rc.1/4.2.0/0.2.20
 ```
 
-**修复**：`publishConclusion()` 按 `record.probe.versions`（实际测量）→ `record.proposal.applicability`
-（journal/sidecar 恢复的提案条件）→ `this.applicability()`（仅历史记录兜底）选择三元组；同一个变量同时用于
-neutral-verdict 的 `findConclusions()` 跳过门禁和 `recordConclusion()` 写入，两者不再可能指向不同条件。
-不改变 promotion gates、状态机、结论身份规则或持久化 schema。
+**修复**：`publishConclusion()` 按 `record.probe.versions`（同一进程的原始测量）→
+`record.latestObservation.probe.versions`（重启后从 durable observation 恢复的同一测量）→
+`record.proposal.applicability`（journal/sidecar 恢复的提案条件）→ `this.applicability()`（仅历史记录兜底）
+选择三元组；同一个变量同时用于 neutral-verdict 的 `findConclusions()` 跳过门禁和 `recordConclusion()` 写入，
+两者不再可能指向不同条件。恢复器也采用同一顺序，避免“重启后完成的 canary”与“启动补写”在同一实验上写出
+两组不同版本的第二条 adopted 记录。不改变 promotion gates、状态机、结论身份规则或持久化 schema。
 
 **回归**：`test/review-fix-conclusion-applicability-identity.test.mjs` 覆盖重启后旧 triple 写入、neutral
 跳过门禁、probe 优先、非法字段回退、同进程 live 行为不变；`test/review-fix-stable-conclusion-recovery.test.mjs`
@@ -130,10 +132,12 @@ durable stable 插件已经存在，但共享经验既没有 adopted conclusion�
 整个跨入口复用失效当成可延后的降级项。
 
 **修复**：doctor 把该状态计入 `blocking`，level 为 BLOCKED，summary/remediation 与 review 同口径；
-证据里增加 `blockingReason: "disable-state-<status>"`。不新增 repair，也不改写表。
+证据里增加 `blockingReason: "disable-state-<status>"`。不新增 repair，也不改写表。统一审查把撤销表检查
+提前到宿主版本检查之前：consumer 在读取记录 host 之前就因撤销表 fail-closed，因此一条同时宿主不匹配的记录
+也必须报 blocked/operator，而不是给出无法修复前置条件的 revalidate。
 
 **回归**：`test/promoted-sharing-diagnostics.test.mjs` 同时断言 doctor 的 BLOCKED 与 review 的
-`blocked` / `operator-action`。
+`blocked` / `operator-action`，并新增“宿主不匹配 + 撤销表损坏”仍为 blocked、不产生 revalidate 动作的用例。
 
 ### 2.5 审查 50 条上限之后记录的动作被静默丢弃
 

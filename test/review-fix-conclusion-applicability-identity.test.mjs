@@ -54,6 +54,7 @@ function record(over = {}) {
       ...(over.proposal ?? {}),
     },
     ...(over.probe !== undefined ? { probe: over.probe } : {}),
+    ...(over.latestObservation !== undefined ? { latestObservation: over.latestObservation } : {}),
   };
 }
 
@@ -130,6 +131,15 @@ test('invalid captured fields fall back to the live triple', (t) => {
   h.orchestrator.publishConclusion(bad, 'no-benefit', 'measure');
   assert.equal(h.writes.length, 1);
   assert.deepEqual(h.writes[0].applicability, NEW);
+});
+
+test('the durable observation probe takes precedence after a restart', (t) => {
+  const h = harness(t);
+  h.orchestrator.publishConclusion(
+    record({ proposal: { applicability: OLD }, latestObservation: { probe: { versions: MEASURED } } }),
+    'adopted', 'canary-passed');
+  assert.deepEqual(h.writes[0].applicability, MEASURED);
+  assert.equal(h.store.findConclusions({ target: TARGET, applicability: MEASURED }).matches[0].sameApplicability, true);
 });
 
 test('a probe measurement takes precedence over the proposal applicability', (t) => {

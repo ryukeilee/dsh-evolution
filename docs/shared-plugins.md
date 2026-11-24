@@ -100,7 +100,8 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 撤销表按同一条安全规则处理：`disabled.json` 存在但不可读或格式错误时状态是 `invalid` / `unreadable`，
 consumer 拒绝挂载**任何**记录（不能把「读不出撤销项」当成「没有任何撤销」）。统一只读检查一直按阻断处理，
 doctor 的 `promotion.sharing` 现在也报 `blocked`，不再只报 `degraded`；只有 `ok`（可读）与 `absent`（没有撤销表）
-是正常状态。
+是正常状态。即使某条记录同时存在宿主版本不匹配，撤销表损坏仍先按阻断处理：consumer 在读取记录 host 之前就因
+撤销表不可读而 fail-closed，revalidate 不能修复这个前置条件。
 
 ## 4. 发布是原子且幂等的
 
