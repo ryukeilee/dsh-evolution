@@ -785,6 +785,9 @@ test('a stale pending-revalidation row on a now-compatible record asks for a res
   const staleDigest = hostDigest(PREVIOUS_HOST);
   await writeConsumers(env, {
     host: PREVIOUS_HOST,
+    // The consumer's last boot predates the adopted index generation: its next
+    // start will re-evaluate the record under the live host.
+    observedIndexUpdatedAt: 'stale-index-generation',
     rows: {
       acp: [{ id: env.record.id, status: 'pending-revalidation', reason: 'host-version-mismatch', hostDigest: staleDigest, activatedAt: null }],
       web: [{ id: env.record.id, status: 'pending-revalidation', reason: 'host-version-mismatch', hostDigest: staleDigest, activatedAt: null }],
@@ -1267,6 +1270,29 @@ test('a revoked record still mounted by a consumer asks for a restart', async (t
   assert.equal(composed.kind, 'restart-consumer');
 });
 
+// A consumer that already observed the current index and STILL reports pending
+// on a different host is not stale: restarting cannot change its host. Its
+// revalidation evidence must come from that consumer's real host.
+test('a consumer that observed the current index keeps a host-bound revalidation action', async (t) => {
+  const env = await fixture(t, 'consumer-host-mismatch');
+  await writeConsumers(env, {
+    host: PREVIOUS_HOST,
+    observedIndexUpdatedAt: env.index.updatedAt,
+    rows: {
+      acp: [{ id: env.record.id, status: 'pending-revalidation', reason: 'host-version-mismatch', hostDigest: hostDigest(PREVIOUS_HOST), activatedAt: null }],
+      web: [{ id: env.record.id, status: 'pending-revalidation', reason: 'host-version-mismatch', hostDigest: hostDigest(PREVIOUS_HOST), activatedAt: null }],
+    },
+  });
+  const result = await review(env);
+  assert.equal(result.status, 'pending-revalidation');
+  const [record] = result.records;
+  assert.equal(record.action, REVIEW_ACTIONS.REVALIDATE);
+  const action = result.nextActions.find((row) => row.action === REVIEW_ACTIONS.REVALIDATE);
+  assert.ok(action, 'the per-profile revalidation instruction is present');
+  assert.deepEqual(action.profiles, ['acp', 'web']);
+  assert.equal(action.consumerHosts.acp.dsh, PREVIOUS_HOST.dsh);
+});
+
 // One record can need a source repair for one profile while another profile
 // only needs a restart after an adopted revalidation. The aggregate action is
 // the repair, but the per-profile restart must not disappear with it.
@@ -1274,6 +1300,7 @@ test('a mixed repair and stale-revalidation record keeps a profile-named restart
   const env = await fixture(t, 'consumer-host-mismatch');
   await writeConsumers(env, {
     host: CURRENT_HOST,
+    observedIndexUpdatedAt: 'stale-index-generation',
     rows: {
       acp: [{ id: env.record.id, status: 'failed', reason: 'plugin-apply-failed', hostDigest: hostDigest(CURRENT_HOST), activatedAt: null }],
       web: [{ id: env.record.id, status: 'pending-revalidation', reason: 'host-version-mismatch',

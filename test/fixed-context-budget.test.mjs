@@ -116,14 +116,17 @@ const ORIGIN_WIRE_BYTES = 10147;
  *  `evolution_promote.canaryVerification` descriptor (functional check binding
  *  and per-experiment observation floor) and `evolution_canary_observe.verificationKind`.
  *  Measured with the fixture in this file on 2026-11-24: text 4077 B (unchanged),
- *  fields 13338 B, wire 13855 B; the same formula yields 7000 B fields /
- *  7200 B wire, rounded up once more for wording headroom.
+ *  fields 13338 B, wire 13855 B. The follow-up review added the independent
+ *  `evolution_promote.canaryWindow` floor so tool-form tasks also honor their
+ *  declared observation count; re-measured fields 13514 B / wire 14031 B.
+ *  The same formula yields 7200 B fields / 7400 B wire, rounded up once more
+ *  for wording headroom.
  *
  *  So the assertion below is still "at least 20% smaller than the extended
  *  baseline", not an unbounded budget. Adding prose or another tool must raise
  *  the allowance only with a new measurement and this same formula. */
-const FIELDS_ALLOWANCE_BYTES = 7050;
-const WIRE_ALLOWANCE_BYTES = 7250;
+const FIELDS_ALLOWANCE_BYTES = 7250;
+const WIRE_ALLOWANCE_BYTES = 7450;
 const BASELINE_FIELDS_BYTES = ORIGIN_FIELDS_BYTES + FIELDS_ALLOWANCE_BYTES;
 const BASELINE_WIRE_BYTES = ORIGIN_WIRE_BYTES + WIRE_ALLOWANCE_BYTES;
 
@@ -147,7 +150,7 @@ const EXPECTED_PARAMETER_STRUCTURE = JSON.parse(`{
   "evolution_probe": {"required":["experimentId","phase","scenario"],"properties":{"experimentId":{"type":"string"},"phase":{"type":"string"},"scenario":{"type":"object","required":["id","steps"],"properties":{"id":{"type":"string"},"description":{"type":"string"},"kind":{"type":"string"},"repetitions":{"type":"number"},"steps":{"type":"array","items":{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"arguments":{"type":"json"},"role":{"type":"string"},"absentInBaseline":{"type":"boolean"},"candidateName":{"type":"string"},"resultPath":{"type":"array","items":{"type":"string"}},"expected":{"type":"json"}}}}}}}},
  "evolution_measure": {"required":["experimentId","observation"],"properties":{"experimentId":{"type":"string"},"taskId":{"type":"string"},"observation":{"type":"object","required":["solvesProblem"],"properties":{"solvesProblem":{"type":"boolean"},"sideEffects":{"type":"array","items":{"type":"string"}},"orphanResources":{"type":"array","items":{"type":"string"}},"performanceChange":{"type":"json"},"errorChange":{"type":"json"},"metrics":{"type":"object"},"beforeMetrics":{"type":"object"},"afterMetrics":{"type":"object"},"observationWindow":{"type":"json"},"sampleCount":{"type":"number"},"benefitEvidence":{"type":"string"},"repeatable":{"type":"boolean"},"regressionPassed":{"type":"boolean"},"reversible":{"type":"boolean"},"cleanupEvidence":{"type":"string"},"taskBenefit":{"type":"json"}}}}},
  "evolution_revert": {"required":["experimentId"],"properties":{"experimentId":{"type":"string"}}},
- "evolution_promote": {"required":["experimentId"],"properties":{"experimentId":{"type":"string"},"confirmation":{"type":"boolean"},"targetProfiles":{"type":"array","items":{"type":"string"}},"canaryVerification":{"type":"object","required":[],"properties":{"tool":{"type":"string"},"arguments":{"type":"object"},"resultPath":{"type":"array","items":{"type":"string"}},"expected":{"type":"json"},"observations":{"type":"number"}}}}},
+ "evolution_promote": {"required":["experimentId"],"properties":{"experimentId":{"type":"string"},"confirmation":{"type":"boolean"},"targetProfiles":{"type":"array","items":{"type":"string"}},"canaryVerification":{"type":"object","required":[],"properties":{"tool":{"type":"string"},"arguments":{"type":"object"},"resultPath":{"type":"array","items":{"type":"string"}},"expected":{"type":"json"},"observations":{"type":"number"}}},"canaryWindow":{"type":"number"}}},
  "evolution_canary_observe": {"required":["experimentId","startupVerified","componentHealth","dependenciesPresent","metricRegression","barrier"],"properties":{"experimentId":{"type":"string"},"startupVerified":{"type":"boolean"},"componentHealth":{"type":"string"},"dependenciesPresent":{"type":"boolean"},"metricRegression":{"type":"boolean"},"metrics":{"type":"object"},"evidence":{"type":"object"},"verificationKind":{"type":"string"},"barrier":{"type":"object","required":["id","reached"],"properties":{"id":{"type":"string"},"reached":{"type":"boolean"}}}}}
 }`);
 

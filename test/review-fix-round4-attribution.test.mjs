@@ -49,6 +49,20 @@ test('an aborted turn closes pending degradations before an unrelated later succ
   ], 'a later unrelated success must not be credited as recovery of an aborted turn');
 });
 
+test('the official cancellation turn boundary closes pending degradations', async (t) => {
+  // The official agent loop emits neither agent/turn-stopping nor agent/error
+  // when a turn is cancelled; the aborted tool result is its observable end.
+  const app = await collector(t);
+  const agent = { id: 'agent-official-cancel' };
+  app.emit('tools/result', { agent, name: 'read', callId: 'loss-before-cancel' }, truncatedRead);
+  app.emit('tools/result', { agent, name: 'bash', callId: 'cancelled-tool',
+    signal: { aborted: true } }, { isError: true, error: { info: { code: 'ABORTED' } } });
+  app.emit('tools/result', { agent, name: 'bash', callId: 'later-unrelated' }, success);
+  const losses = app.get('evolutionExperience').store.discover().records.filter((row) => row.issueType === 'tool degradation');
+  assert.equal(losses.length, 1);
+  assert.deepEqual(losses.map((row) => [row.occurrences, row.recoveryTool, row.metrics.recoverycalls?.sum ?? 0]), [[1, '', 0]]);
+});
+
 test('a reused callId does not swallow separate real degradations', async (t) => {
   const app = await collector(t);
   const agent = { id: 'agent-ptc-reuse' };

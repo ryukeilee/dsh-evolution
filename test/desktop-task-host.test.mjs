@@ -7,6 +7,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 import { createDesktopTaskHost } from '../lib/desktop-task-host.js';
+import { normalizeCanaryVerification } from '../lib/canary-verification.js';
 import { isVerificationCall } from '../lib/verification-call.js';
 import {
   PROTOCOL_VERSION,
@@ -873,6 +874,7 @@ test('a restarted host replays the functional check instead of stranding a canar
   });
   const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 0, settlePollMs: 1 });
   t.after(async () => { await host.dispose(); });
+  const kernelObligation = normalizeCanaryVerification({ ...check, observations: 1 });
   const channel = taskChannelPaths(home);
   await fsp.mkdir(channel.inbox, { recursive: true });
   await fsp.mkdir(channel.state, { recursive: true });
@@ -883,7 +885,7 @@ test('a restarted host replays the functional check instead of stranding a canar
     experimentId: 'exp-replay', candidateSourceSha256: 'e'.repeat(64),
     approval: { experimentId: 'exp-replay' },
     canaryVerification: {
-      kernel: { kind: 'functional-check', bindingDigest: 'b'.repeat(64), requiredObservations: 1 },
+      kernel: kernelObligation,
       check, observations: 1,
     },
   }));
@@ -892,9 +894,94 @@ test('a restarted host replays the functional check instead of stranding a canar
   assert.deepEqual(recovered, [taskId]);
   assert.equal(observed.length, 1, 'the replay sends one functional canary observation');
   assert.equal(observed[0].verificationKind, 'functional');
-  assert.equal(observed[0].evidence.functionalCheck.bindingDigest, 'b'.repeat(64));
+  assert.equal(observed[0].evidence.functionalCheck.bindingDigest, kernelObligation.bindingDigest);
+  // The kernel binds canary observations to the promotion owner, so the replay
+  // must reuse the ORIGINAL task-owner Agent identity.
+  assert.ok(ctx.created.some((options) => options.sessionId === `desktop-task-${taskId}`),
+    `replay must resume the owner agent, got ${JSON.stringify(ctx.created.map((o) => o.sessionId))}`);
   const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
   assert.equal(state.error, null);
+});
+
+test('a crash after the kernel write but before the canary state write is replayable', async (t) => {
+  const home = temporary(t);
+  const taskId = mintTaskId();
+  const check = { tool: 'read', arguments: { path: '/tmp/crash-window' }, resultPath: ['value'], expected: { ok: true } };
+  const plan = {
+    proposal: { why: 'context policy', target: 'plugin:crash', impactScope: ['runtime'], successMetrics: ['m'] },
+    composition: { name: 'crash', purpose: 'crash', code: { host: 'return {};' } },
+    verification: { functionalCheck: check, observations: 1 },
+    requestedTargetProfiles: ['acp'],
+  };
+  const observed = [];
+  const kernel = fakeKernel();
+  kernel.tools.set('evolution_canary_observe', { execute: async (args) => {
+    observed.push(args);
+    await factsWriter(home).write('exp-crash-window');
+    return { stable: true };
+  } });
+  const ctx = fakeCtx(kernel, plan, { read: { execute: async () => ({ value: { ok: true } }) } });
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 0, settlePollMs: 1 });
+  t.after(async () => { await host.dispose(); });
+  const channel = taskChannelPaths(home);
+  await fsp.mkdir(channel.inbox, { recursive: true });
+  await fsp.mkdir(channel.state, { recursive: true });
+  await fsp.writeFile(path.join(channel.inbox, `${taskId}.json`), JSON.stringify(requestFor(taskId, plan)));
+  await fsp.writeFile(path.join(channel.state, `${taskId}.json`), JSON.stringify({
+    schemaVersion: SCHEMA_VERSION, protocol: PROTOCOL_VERSION, taskId,
+    phase: 'promoting', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    experimentId: 'exp-crash-window', candidateSourceSha256: 'e'.repeat(64),
+    approval: { experimentId: 'exp-crash-window' },
+    canaryVerification: {
+      kernel: normalizeCanaryVerification({ ...check, observations: 1 }),
+      check, observations: 1,
+    },
+  }));
+
+  assert.deepEqual(await host.internals.recoverPreviousTasks(), [taskId]);
+  assert.equal(observed.length, 1, 'the persisted descriptor survives the crash window');
+  const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.error, null);
+});
+
+test('a failed canary replay is submitted as a kernel regression before the task ends', async (t) => {
+  const home = temporary(t);
+  const taskId = mintTaskId();
+  const check = { tool: 'read', arguments: { path: '/tmp/replay-fail' }, resultPath: ['value'], expected: { ok: true } };
+  const plan = {
+    proposal: { why: 'context policy', target: 'plugin:replay-fail', impactScope: ['runtime'], successMetrics: ['m'] },
+    composition: { name: 'replay-fail', purpose: 'replay-fail', code: { host: 'return {};' } },
+    verification: { functionalCheck: check, observations: 1 },
+    requestedTargetProfiles: ['acp'],
+  };
+  const observed = [];
+  const kernel = fakeKernel();
+  kernel.tools.set('evolution_canary_observe', { execute: async (args) => {
+    observed.push(args);
+    return { ok: false, phase: 'rolled-back', rollback: 'last-known-good' };
+  } });
+  const ctx = fakeCtx(kernel, plan, { read: { execute: async () => ({ value: { ok: false } }) } });
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 0, settlePollMs: 1 });
+  t.after(async () => { await host.dispose(); });
+  const channel = taskChannelPaths(home);
+  await fsp.mkdir(channel.inbox, { recursive: true });
+  await fsp.mkdir(channel.state, { recursive: true });
+  await fsp.writeFile(path.join(channel.inbox, `${taskId}.json`), JSON.stringify(requestFor(taskId, plan)));
+  await fsp.writeFile(path.join(channel.state, `${taskId}.json`), JSON.stringify({
+    schemaVersion: SCHEMA_VERSION, protocol: PROTOCOL_VERSION, taskId,
+    phase: 'canary-observing', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    experimentId: 'exp-replay-fail', candidateSourceSha256: 'e'.repeat(64),
+    approval: { experimentId: 'exp-replay-fail' },
+    canaryVerification: { kernel: normalizeCanaryVerification({ ...check, observations: 1 }), check, observations: 1 },
+  }));
+
+  await host.internals.recoverPreviousTasks();
+  assert.equal(observed.length, 1, 'the failed check is committed through the kernel, not dropped locally');
+  assert.equal(observed[0].metricRegression, true);
+  assert.equal(observed[0].startupVerified, false);
+  assert.equal(observed[0].verificationKind, 'functional');
+  const state = await waitForState(home, taskId, (value) => value.phase === 'interrupted');
+  assert.equal(state.error?.code, 'E_DESKTOP_HOST_LOST', 'the terminal task state is still the recovery boundary');
 });
 
 test('a runtime-busy trial refusal finalizes the task and releases the queue', async (t) => {

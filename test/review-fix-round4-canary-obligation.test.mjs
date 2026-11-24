@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 
 import { EvolutionOrchestrator, persistEvidenceSnapshot } from '../lib/orchestrator.js';
 import {
-  scratchRoot, unitPromotionRuntime, orchestratorContext, execFor, exists,
+  scratchRoot, promotionPaths, unitPromotionRuntime, orchestratorContext, execFor, exists, HOST_CODE,
 } from './orchestrator-durability-fixtures.mjs';
 import { promotionPlan, derivedPluginName, derivedPluginPath } from './promotion-plan-fixture.mjs';
 
@@ -118,6 +118,47 @@ test('a functional check that binds to a different plan is a canary regression',
   const result = await core.observeCanary(functional('task-forged', 'a'.repeat(64)), execFor(OWNER));
   assert.equal(result.stable, undefined);
   assert.match(result.phase, /rolled-back|revert/i, `a forged binding must roll back, got ${JSON.stringify(result)}`);
+});
+
+test('a context-policy promotion refuses to commit without a functional-check obligation', async (t) => {
+  const root = await scratchRoot('round4-context-policy-gate');
+  t.after(() => fsp.rm(root, { recursive: true, force: true }));
+  const paths = { ...promotionPaths(root), startupDrift: false, promotionRuntime: unitPromotionRuntime() };
+  await fsp.writeFile(paths.compositionPath, '[]\n');
+  const ctx = orchestratorContext();
+  ctx.dynamicCordisRunner = {
+    snapshot: () => [],
+    inspectPackage: () => ({ code: { host: HOST_CODE } }),
+    stop: async () => ({ ok: true }),
+    undefine: async () => ({ ok: true }),
+  };
+  const core = new EvolutionOrchestrator(ctx, paths);
+  const exec = execFor('context-policy-owner');
+  const proposal = core.propose({
+    why: 'context policy', target: 'plugin:context', impactScope: ['runtime'],
+    successMetrics: ['m'], improvement: 'context-policy', benefitModel: { kind: 'workflow' },
+  }, exec);
+  const record = core.experiments.get(proposal.experimentId);
+  record.state = 'trial';
+  record.pluginId = 'plugin-context';
+  record.packageId = 'package-context';
+  record.targets = ['plugin:context'];
+  core.acquireTargets(record);
+  core.measure({
+    experimentId: record.id,
+    observation: {
+      solvesProblem: true, metrics: { latencyMs: 10 }, beforeMetrics: { latencyMs: 20 },
+      afterMetrics: { latencyMs: 10 }, observationWindow: '5m', sampleCount: 5,
+      repeatable: true, regressionPassed: true, reversible: true, cleanupEvidence: 'disposed trial',
+      orphanResources: [],
+    },
+  }, exec);
+  await assert.rejects(
+    core.promote({ experimentId: record.id, confirmation: true }, exec),
+    /context-policy promotion requires canaryVerification/,
+    'no durable write may happen without the declared functional check',
+  );
+  assert.equal(record.state, 'measured', 'the refusal happens before the promotion state machine starts');
 });
 
 test('journals without an obligation keep the health-only canary behavior', async (t) => {

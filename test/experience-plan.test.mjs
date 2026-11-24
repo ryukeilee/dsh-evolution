@@ -74,8 +74,8 @@ test('plan: recurring failures become one bounded candidate with evidence', () =
   assert.equal(plan.candidates.length, 1);
   const candidate = plan.candidates[0];
   assert.deepEqual(plan.selected, candidate);
-  assert.equal(candidate.problemKey, 'tool:read_file');
-  assert.equal(candidate.problem, 'tool:read_file');
+  assert.equal(candidate.problemKey, 'tool read file');
+  assert.equal(candidate.problem, 'tool read file');
   assert.equal(candidate.occurrences, 4);
   assert.deepEqual(candidate.failureModes, ['timeout', 'econnreset']);
   assert.deepEqual(candidate.evidenceRefs, ['observations:1', 'observations:2']);
@@ -103,7 +103,7 @@ test('plan: a resolution at least as new as the latest failure excludes the targ
   assert.equal(excluded.candidates.length, 0);
   assert.equal(excluded.none.reason, 'already-resolved');
   assert.equal(excluded.rejected[0].reason, 'already-resolved');
-  assert.equal(excluded.rejected[0].problemKey, 'tool:read_file');
+  assert.equal(excluded.rejected[0].problemKey, 'tool read file');
 
   // An older resolution does not exclude; it is reported as known context.
   const older = planEvolutionCandidates({
@@ -195,7 +195,7 @@ test('plan: an observed failure rate outranks raw all-time frequency', () => {
   const plan = planEvolutionCandidates({ knowledge, versions: VERSIONS }, { now: BASE + 11 * DAY });
   assert.equal(plan.candidates.length, 2);
   const top = plan.candidates[0];
-  assert.equal(top.problemKey, 'tool:run_code');
+  assert.equal(top.problemKey, 'tool run code');
   assert.equal(top.rateBasis, 'observed-window');
   assert.equal(top.observedFailureRate, 0.75);
   assert.ok(top.score > plan.candidates[1].score);
@@ -245,7 +245,7 @@ test('plan: output is bounded by the declared limits', () => {
   const plan = planEvolutionCandidates({ knowledge: [crowded, ...attempts, ...many], versions: VERSIONS }, { now: BASE + 20 * DAY });
   assert.equal(plan.candidates.length, EXPERIENCE_PLAN_LIMITS.maxCandidates);
   assert.ok(plan.rejected.length <= EXPERIENCE_PLAN_LIMITS.maxRejected);
-  const first = plan.candidates.find((candidate) => candidate.problemKey === 'tool:crowded');
+  const first = plan.candidates.find((candidate) => candidate.problemKey === 'tool crowded');
   assert.ok(first);
   assert.ok(first.evidenceRefs.length <= EXPERIENCE_PLAN_LIMITS.maxEvidenceRefs);
   assert.ok(first.priorAttempts.length <= EXPERIENCE_PLAN_LIMITS.maxAttempts);
