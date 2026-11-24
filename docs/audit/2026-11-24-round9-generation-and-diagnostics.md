@@ -44,6 +44,18 @@
 
 反方交叉验证对 floor 与 doctor 修复给出 SOUND、无 blocker，并提出两项 should：缺 SIGKILL 落在 ambiguous commit→truncate 窗口的专项测试（逻辑分析仍正确）、doctor 注释引用统一审查的 `restart-required` 与 `index.status:'absent'` 时提前 return 的事实不符。后者已改为如实描述；前者登记为验证缺口。
 
+### 2.4 sol-loop 独立复审发现并修复的问题
+
+| 项 | 根因 | 修复 |
+| --- | --- | --- |
+| S1 blocker | doctor 的 `event-bridge-trim-partial-tail` 用 rename 更换日志 inode；待补完的 ambiguous floor 下裁剪残尾会让代际分类器认为截断已完成，已裁 marker 可复活 | 裁剪前用共享分类器检查已提交 floor，仍 `deferred` 时跳过并提示先补完截断；新增 doctor 回归 |
+| S2 blocker | workflow probe 只校验期望值；观测值中的真实 `undefined` 与期望里的 `"[undefined]"` 在 `stableJson()` 下同摘要，可伪造正确性 | 选中结果同样走无损校验，稀疏数组/非有限值/循环/深度折叠一律拒绝；新增公开 `probe()` 回归 |
+| S3 blocker | `finalizeExperienceRecall()` 丢弃来源的 `truncated:true`，两个公开检索入口仍报完整 | 来源摘要携带 truncated 并纳入最终判定；`evolution_history`/`recall` 共用该结论 |
+| S4 should | guard 诊断虽脱敏错误文本，但 `file_path` 原样发出前 200 字符 | 成功与异常分支都用 `redactCredentialShapes()` 后限长 |
+| S5 should | ACP `confirm` 把缺省 `['acp']` 写盘，Desktop 后才拒绝并回退 Trial；状态投影缺 `requestedTargetProfiles` | ACP 写盘前比对计划范围并拒绝；状态投影返回请求范围；Desktop 最终校验保留 |
+| S6 should | doctor 建议对畸形发布记录执行 `dsh-evolution-shared disable`，但 CLI 只能选择通过校验的记录 | 畸形行只提示 re-promote，明确 CLI 不可定位 |
+| S7 nit | consumer 状态 `plugins:[null]` 让 doctor 抛 TypeError，整份报告失败 | 投影前校验行形状，畸形行不计入诊断 |
+
 ## 3. 复评后决定不修改的项
 
 | 项 | 结论 | 依据 |
@@ -61,7 +73,7 @@
 - 领域差分基线：本轮把 `domain-storage.js` 的改动登记为新的逆向 round（`test/domain-storage/floor-generation-baseline.js`），`domain-storage-write-path-equivalence` 与 `load-projection` 恢复为等价通过。
 - 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2228 项，2226 通过 / 0 失败 / 2 跳过**（基线含 PR #98 为 2218）。
 - 打包：`npm run pack:check` **17/17** 通过；工作树是 v0.2.19 固定点的已提交后继，固定点、产物与既有证据未改动；未执行 `--release` 或任何发布动作。
-- 独立复审：反方子代理对 floor/doctor 修复给出 SOUND、无 blocker；sol-loop（codex / gpt-6.2-sol / high）结论见 PR 描述。
+- 独立复审：反方子代理对 floor/doctor 修复给出 SOUND、无 blocker；sol-loop（codex / gpt-6.2-sol / high）第 1 轮 CHANGES（3 blocker、3 should、1 nit），逐条复核并修复，反证见上；第 2 轮结论以 PR 描述为准。
 
 ## 5. 剩余风险
 
