@@ -201,6 +201,27 @@ export function expectedRecordStatus(record, profile, records, disable) {
   return { status: 'disabled', reason: outcome.decision.reason || 'superseded-by' };
 }
 
+/**
+ * Post-adoption expectations come from the marker-free evidence boot (which
+ * proved real eligibility, including missing services) combined with the
+ * production supersession rule. An ineligible tail restores its predecessor,
+ * so the runner must not insist on the tail's activation after adoption.
+ */
+export function expectedAfterAdoption(records, profile, evidenceRows) {
+  const rows = evidenceRows instanceof Map ? evidenceRows : new Map();
+  const decisions = (Array.isArray(records) ? records : []).map((row) => {
+    const evidence = rows.get(row.id);
+    return {
+      record: row,
+      decision: evidence?.status === 'active'
+        ? { status: 'eligible' }
+        : { status: evidence?.status ?? 'skipped-invalid', reason: evidence?.reason ?? null },
+    };
+  });
+  return new Map(applySupersession(decisions, { profile })
+    .map(({ record, decision }) => [record.id, decision]));
+}
+
 export function planFor(plans, recordId, work) {
   const plan = plans && plans.plans ? plans.plans[recordId] : null;
   if (!plan) return null;
@@ -699,8 +720,16 @@ async function main(argv) {
       const calls = [];
       for (const plugin of plugins) {
         if (!profileIsRevalidationTarget(plugin, profile, disable)) continue;
-        const adoptedRecord = adoptedRecords.find((row) => row.id === plugin.id) ?? plugin;
-        expect[plugin.id] = expectedRecordStatus(adoptedRecord, profile, adoptedRecords, disable);
+        // The marker-free evidence boot already proved which records are
+        // genuinely eligible on this host (including missing services). Apply
+        // the production supersession rule to those facts instead of assuming
+        // every approved target is eligible; a disabled or incompatible tail
+        // must restore its predecessor, and the runner must expect that.
+        const evidenceRows = verification[profile]?.rows ?? new Map();
+        const decision = expectedAfterAdoption(adoptedRecords, profile, evidenceRows).get(plugin.id);
+        expect[plugin.id] = decision?.status === 'eligible'
+          ? { status: 'active' }
+          : { status: decision?.status ?? 'active', ...(decision?.reason ? { reason: decision.reason } : {}) };
         const plan = plansByRecord.get(plugin.id);
         if (plan && expect[plugin.id].status === 'active') {
           calls.push({ id: plugin.id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: plugin.id });
