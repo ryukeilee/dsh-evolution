@@ -18,6 +18,17 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.20 — 稳定版
+
+`0.2.19` 的稳定后继：把第八、九轮开放性全链路研究与最终收敛修复纳入正式基线（PR #98 与 #99），并以真实 SIGKILL 注入补齐 ambiguous floor 的 commit→truncate 崩溃窗口验证。相对 `0.2.19` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/diagnostics.js`、`lib/domain-storage.js`、`lib/event-log-checkpoint.js`、`lib/experience-recall.js`、`lib/guard.js`、`lib/orchestrator.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`；持久化 schema 与 schema 版本、既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改变。
+
+- **Canary 结论保真。** `conclusionMetrics()` 在 canary 判 `regression` 时不再把 measure 阶段 probe / task 的正向 delta 投影进有界的共享结论；canary 失败事实仍完整保存在 observation、归档与证据 sidecar，其余判定出口逐字节不变。
+- **回收 floor 的文件代际识别。** 对 ambiguous floor（被裁记录与保留记录逐字节相同）在 prior 上记录当时的 dev/ino，分类器据此区分「floor 已提交、截断待补完的崩溃窗口」（同代 + 完整 prior 摘要 → deferred）与「截断完成后追加重建相同前缀」（rename 产生新 inode → already-truncated），关闭永不截断与二次截断丢数据两条路径。dry-run 先问分类器；doctor 的残尾裁剪在待补完截断或会破坏 tail 证明时拒绝；回收在提交 floor 前拒绝无法验签的未终止末行。
+- **真实 SIGKILL 崩溃恢复验证。** `test/retention-process-boundaries.test.mjs` 新增专项：子进程在持有 append lock 时提交带代际身份的 ambiguous floor，父进程 SIGKILL 注入后由新进程补完截断；断言只保留承诺的 tail、重建的逐字节相同前缀（新 inode）不被再次截断、二次恢复幂等、恢复后仍能吸收新事件。反证：移除代际识别逻辑即失败。
+- **统一审查与诊断一致。** doctor 的 `promotion.sharing` 把逐条非法记录计入 blocking，索引缺失仍有 ACTIVE 挂载报 degraded，废除会被 reconciler 撤销的删除建议，畸形 consumer 行不再让报告抛错。
+- **证据与跨入口一致性。** workflow probe 的期望与观测值共用一份无损快照（拒绝深度折叠、非有限值、循环与访问器差异），无法安全计量的输出记为 `measurementInvalid`；`recall()` 报告外层 SQL 窗口截断；自主 transient 失败不再永久滞留决策占位；guard 非阻断诊断脱敏文件路径；ACP `confirm` 按计划声明的 profile 范围校验后写盘。
+- **验证。** 聚焦测试全绿（含领域差分基线、回收、诊断、Desktop 任务、probe、guard、recall、自主观察者）；全量 `NODE_OPTIONS=--max-old-space-size=4096 npm test`、`npm run pack:check`、八宿主真实安装验收与 GitHub CI 均针对本版本固定产物执行。
+
 ## 0.2.19 — 稳定版
 
 `0.2.18` 的稳定后继：把五轮开放性全链路可靠性研究及最终收敛修复纳入正式基线（PR #91–#94）。相对 `0.2.18` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-host.js`、`lib/diagnostics.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/experience-recall.js`、`lib/orchestrator.js`、`lib/promoted-sharing.js`、`lib/registration.js`、`lib/runtime-versions.js`、`lib/self-evolution-review.js`、`lib/shared-experience.js` 与 `docs/audit/replay/capability-usage.mjs`，新增 `lib/canary-verification.js`，加上版本号与随包文档；持久化 schema 与 schema 版本、既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改变。`evolution_promote` 只新增可选 `canaryVerification` / `canaryWindow`，`evolution_canary_observe` 只新增可选 `verificationKind`，用于把 context-policy 的功能复验义务绑定到每实验 canary。
