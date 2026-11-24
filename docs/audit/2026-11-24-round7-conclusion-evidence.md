@@ -56,7 +56,11 @@
 - 交叉验证 B（pi / deepseek-v4.1-flash / thinking max）：VERDICT REAL、should。该代理开始复核时 HEAD 仍为基线，亲测复现输出与报告完全一致；复核期间修复提交 `09aa0a6` 与边界测试 `71e1bb2` 落地，同一脚本随后输出 task deltas。它独立确认可达路径是文档化的 workflow 正路（`desktop-task-host` 允许 tool 形态同时声明 workload + task），朴素修复（`taskBasis ?? probeBasis`）仍会失败（both 场景的顶层 before/after 装的是 probe 数字），当前修复形态是最小正确解。差分实测：3 项新测试在旧源失败、HEAD 全绿；另跑相关测试 20/20 与 35/35。
 - 交叉验证 C（codex / gpt-6.1-terra / high，针对撤销回写 F2）：状态可达但判定 nit、建议不改行为——撤销只取消跨入口资格，历史 `adopted` 仍是真实事实；写成负面结论会误述操作者意图，审计侧 `inactive` 与符合条件的新失败重开候选已覆盖。
 - sol-loop（codex / gpt-6.2-sol / reasoningEffort high）：第 1 轮 **APPROVE**，仅 2 项 nit。已采纳其中 1 项（补 probe 自身回归与双正两种边界的表驱动用例，并让 task 回归夹具与验证器成本预算自洽），另 1 项（改走完整 `validateTaskBenefit()` 生成 artifact）因会给结论投影的单元测试引入大量绑定字段、收益低而 declined。按 sol-loop 规则，仅剩 nit 即停止。
-- council（双模型独立反方复审）：见 PR 描述中的评分表与结论。
+- council（双模型独立反方复审）：
+  - 第 1 轮：DeepSeek 4.1 Flash Max 7.5/10 CHANGES（T1 夹具形状、T2 场景判定两项 should；N1 措辞、N2 canary 既有边界两项 nit）；GPT-6.2 Sol High 9/10 APPROVE（1 should：真实 SQLite 贯通测试；1 nit）。
+  - T1/T2 处置：双证据夹具顶层 before/after 改为 probe 数字（贴合 `measure()` 生产形状），补门禁字段使双正用例真正判 `benefit` 并断言；durable-only 变体不写顶层拷贝以固定"不依赖该拷贝"。两位复审者在第 2 轮各自用变异测试确认：读取顶层 before/after 的错误实现在修正后的夹具上 3/3 主用例失败（旧夹具仅 1/3），去掉门禁字段会使双正断言失败。
+  - Decline：真实 SQLite 贯通测试（本次只改有界指标投影，store 去重/冲突语义未动且既有测试覆盖；交叉验证者已用真实 SQLite 验证）；为 N1 改行为（保持"task 证据驱动负判定即用 task 数字"这一更正确的语义，以本文 §3.1 的精确条件为准）；N2 记为既有剩余风险。
+  - 第 2 轮：GPT-6.2 Sol High **9.5/10 APPROVE**，DeepSeek 4.1 Flash Max **9/10 APPROVE**，均无 blocker/should。后者另提一个低severity should：`mechanismRan:false` 守卫可达但未被固定；已补相应用例并用变异测试证明去掉该守卫即失败。前者 nit（注释只举 probe 正向情形）也已改为精确描述。
 
 ## 7. 剩余风险
 
