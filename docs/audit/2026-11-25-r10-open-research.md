@@ -42,7 +42,9 @@ reasoningEffort high；文档同步为 OpenCode `opencode-go/deepseek-v4.1-flash
 
 两处都会得到 `scannedSessions: 0`、`complete: true`、`recordsComplete: true`，并把每个发布记录写成
 `workflowInvocations: 0`。评审把这种 0 当作“实测零”，配合操作者给出的 `self-contained` 标注就会产生
-`review-retirement` 建议。复现（临时目录，合成记录与真实文件名）：
+`review-retirement` 建议。升级本身还会留下旧的 `usage.json`：它在 `schemaVersion: 1` 里同样是
+`complete: true` 的零，读端无法仅凭版本区分。修复同时给投影加 `coverage` 标记；没有该标记的旧投影保留正数
+事实，但零调用按未知处理，直到操作者显式重跑扫描。复现（临时目录，合成记录与真实文件名）：
 
 ```text
 session.v4.jsonl 中一次真实 tool/call（压缩配置 none）
@@ -57,8 +59,9 @@ PTC 的复现：一次模型 `run_code` 程序内的 `tool/ptc-dispatch` 在修�
 - `callIdentity()`/`createSessionCounter()` 识别两种 PTC 行；一个 completed `tool/ptc-dispatch` 只计一次，
   与 `tool/ptc-dispatch-start` 配对，不重复计数。
 - 归因顺序与原生调用一致：有晋升生命周期调用尚未返回 → `pending`（全部返回后为 verification，
-  否则 unattributed）；否则若 `parentCallId` 是同一会话的 `tool/call`（模型发出的 `run_code`）→ workflow；
-  否则 unattributed（宿主驱动、日志无法证明模型选择）。日志结束仍无 final dispatch 的 start 记 unattributed，
+  否则 unattributed）；PTC 内调用的生命周期工具本身也会打开同一验证窗口。否则若 `parentCallId` 是同一会话中
+  **尚未返回**的 `run_code` 实例 → workflow；历史非 `run_code` 调用、已返回的 `run_code` 复用 ID、以及宿主驱动
+  的执行都归 unattributed（日志无法证明模型选择）。日志结束仍无 final dispatch 的 start 记 unattributed，
   不会被当成 0。
 - `sessionFiles()` 同时扫描当前 generation 的两种编码（`session.v4.jsonl.zstd` 与明文 `session.v4.jsonl`），
   共享 256 MiB 解压/读取上限与错误分类。同一 session 目录同时存在两种编码时，日志无法证明哪一份是当前写入，
@@ -66,6 +69,9 @@ PTC 的复现：一次模型 `run_code` 程序内的 `tool/ptc-dispatch` 在修�
   其他 canonical 形状（`session.jsonl`、`session.vN.jsonl[.zstd]`）在没有当前文件时列入
   `unsupportedSessionFormats`，同样使投影不完整；同一目录内与当前文件并存的旧 generation 视为该会话的迁移副本，
   不重复计数，也不制造额外的 incomplete。本轮不尝试解析历史 generation 的事件。
+- 投影新增 `coverage` 标记（`native+ptc+current-encodings-v1`）。读端只在该标记存在、投影完整且未过期时才信任
+  “零调用”；旧 `usage.json`（没有该标记）的正数事实仍可用，零值回到 unknown，直到操作者显式重新扫描。这样
+  刚安装本版本的既有用户不会因为修复前的假零被建议停用。
 
 **回归**：`test/capability-usage-scan.test.mjs` 新增 PTC 的 workflow / verification / 未返回 lifecycle /
 宿主驱动无父调用 / dangling start / 非发布工具 / 原生路径不变，以及明文 v4 与历史 generation 的用例；
@@ -149,8 +155,10 @@ compose 把它映射成 `incomplete: true`，但没有为第 51 条之后的 `re
 是预期规模；位置靠后的损坏记录会看起来“没有待办”。
 
 **修复**：当 `index.records.length > maxRecords` 时，产生一个 bounded、owner-facing 的 blocking
-`operator-action`，写明被省略的记录数与最多 5 个 id 样本，明确这些记录**没有被评估**；不伪造逐记录状态。
-`orderStableActions()` 的既有优先级保证该动作位于 cap 之前，`nextActionsDropped` 继续报告被截断的动作数。
+`operator-action`（`code: "review-record-cap"`），写明被省略的记录数与最多 5 个 id 样本，明确这些记录
+**没有被评估**；不伪造逐记录状态。该动作有独立的去重身份，不会与 `recordId: null` 的 invalid-record 动作
+合并；原文审查的动作上限为它保留一个名额，`nextActionsDropped` 继续报告被截断的动作数。compose 的排序
+仍让 operator-action 先于新实验。
 
 **回归**：`test/self-evolution-review.test.mjs` 构造 51 条真实发布记录，篡改第 51 条的源码，断言它没有
 per-record 状态、截断动作存在且排第一、动作上限与 `nextActionsDropped` 仍生效、compose 的 `kind` 为

@@ -195,6 +195,24 @@ test('an unreadable revocation table blocks the doctor and the unified review', 
   assert.ok(review.nextActions.some((row) => row.action === REVIEW_ACTIONS.OPERATOR && /revocation table is invalid/.test(row.why)));
 });
 
+test('an empty index with a damaged revocation table is blocked on both surfaces', async (t) => {
+  const env = await home(t);
+  const host = await observedHostOf(env.dshHome);
+  const indexPath = path.join(env.paths.dataRoot, 'shared-plugins', 'published.json');
+  await fs.mkdir(path.dirname(indexPath), { recursive: true });
+  await fs.writeFile(indexPath, `${JSON.stringify({
+    schemaVersion: 1, kind: 'dsh-evolution-shared-plugins', updatedAt: new Date().toISOString(), plugins: [],
+  }, null, 2)}\n`);
+  await fs.writeFile(path.join(env.paths.dataRoot, 'shared-plugins', 'disabled.json'), '{not json');
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'blocked', JSON.stringify(check.evidence));
+  assert.equal(check.evidence.disableStatus, 'invalid');
+  const review = await readPublishedPluginReview({ paths: env.paths, host });
+  assert.equal(review.status, 'blocked');
+  assert.equal(review.nextActions.some((row) => row.action === REVIEW_ACTIONS.OPERATOR && /revocation table is invalid/.test(row.why)), true);
+});
+
 test('a host-mismatched record with a damaged revocation table stays blocked, not revalidation', async (t) => {
   const env = await home(t);
   const host = await observedHostOf(env.dshHome);

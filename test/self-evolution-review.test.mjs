@@ -36,6 +36,7 @@ import {
   SELF_EVOLUTION_REVIEW_LIMITS,
 } from '../lib/self-evolution-review.js';
 import { openSharedExperience } from '../lib/shared-experience.js';
+import { USAGE_PROJECTION_COVERAGE as USAGE_COVERAGE } from '../lib/capability-usage.js';
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const SCRIPT = path.resolve(fileURLToPath(new URL('../scripts/shared-plugins.mjs', import.meta.url)));
@@ -635,6 +636,22 @@ test('the review carries the planner capability form and observed baseline', () 
   assert.equal(unknown.nextActions[0].baselineRecoveryTools, undefined);
 });
 
+test('the record-cap notice keeps a distinct identity from a nameless invalid-record action', () => {
+  const stable = {
+    status: 'active',
+    summary: { total: 1 },
+    nextActionsDropped: 0,
+    nextActions: [
+      { action: REVIEW_ACTIONS.OPERATOR, code: 'invalid-record', recordId: null, why: 'a published record failed validation' },
+      { action: REVIEW_ACTIONS.OPERATOR, code: 'review-record-cap', recordId: null, why: '2 published record(s) past the cap were not evaluated' },
+    ],
+  };
+  const composed = composeSelfEvolutionReview({ stable, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.nextActions.filter((row) => row.code === 'invalid-record').length, 1);
+  assert.equal(composed.nextActions.filter((row) => row.code === 'review-record-cap').length, 1,
+    'the truncation notice must not be de-duplicated against a nameless operator action');
+});
+
 test('a blocking action is never dropped by the bounded action list', () => {
   const actions = Array.from({ length: 12 }, (_, index) => ({
     action: REVIEW_ACTIONS.RESTART,
@@ -840,7 +857,7 @@ test('a self-contained plugin with no workflow use becomes a reversible, owner-o
   const env = await fixture(t, 'value-retire');
   await writeConsumers(env);
   const usage = {
-    source: 'session-evidence',
+    source: 'session-evidence', coverage: USAGE_COVERAGE,
     capturedAt: '2026-11-18T00:00:00.000Z',
     records: {
       [RECORD_ID]: {
@@ -891,7 +908,7 @@ test('an incomplete or stale projection cannot produce a retirement recommendati
   const row = { workflowInvocations: 0, verificationInvocations: 0, capabilityAssessment: 'self-contained' };
   for (const flags of [{ complete: false }, { stale: true }, { complete: false, stale: true }]) {
     const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST,
-      usage: { source: 'session-evidence', capturedAt: '2026-11-20T00:00:00.000Z', ...flags, records: { [RECORD_ID]: row } } });
+      usage: { source: 'session-evidence', coverage: USAGE_COVERAGE, capturedAt: '2026-11-20T00:00:00.000Z', ...flags, records: { [RECORD_ID]: row } } });
     assert.equal(result.records[0].value.invoked, null, JSON.stringify(flags));
     assert.equal(result.records[0].value.tier, 'usage-unknown');
     assert.equal(result.retirementCandidates.length, 0, JSON.stringify(flags));
@@ -905,7 +922,7 @@ test('an unattributable call keeps "zero workflow usage" unknown', async (t) => 
   const env = await fixture(t, 'value-unattributed');
   await writeConsumers(env);
   const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST,
-    usage: { source: 'session-evidence', capturedAt: '2026-11-20T00:00:00.000Z', complete: true, records: { [RECORD_ID]: {
+    usage: { source: 'session-evidence', coverage: USAGE_COVERAGE, capturedAt: '2026-11-20T00:00:00.000Z', complete: true, records: { [RECORD_ID]: {
       workflowInvocations: 0,
       verificationInvocations: 0,
       unattributedInvocations: 1,
@@ -920,7 +937,7 @@ test('an unattributable call keeps "zero workflow usage" unknown', async (t) => 
 test('workflow use or evidenced production benefit blocks a retirement recommendation', async (t) => {
   const env = await fixture(t, 'value-keep');
   await writeConsumers(env);
-  const base = { source: 'session-evidence', records: { [RECORD_ID]: { verificationInvocations: 1, capabilityAssessment: 'self-contained' } } };
+  const base = { source: 'session-evidence', coverage: USAGE_COVERAGE, records: { [RECORD_ID]: { verificationInvocations: 1, capabilityAssessment: 'self-contained' } } };
   const inUse = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST,
     usage: { ...base, records: { [RECORD_ID]: { ...base.records[RECORD_ID], workflowInvocations: 5 } } } });
   assert.equal(inUse.records[0].value.invoked, true);
@@ -944,7 +961,7 @@ test('a missing or null workflow invocation count stays unknown and blocks retir
     { workflowInvocations: 'not-a-count', capabilityAssessment: 'self-contained' },
   ]) {
     const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST,
-      usage: { source: 'session-evidence', records: { [RECORD_ID]: row } } });
+      usage: { source: 'session-evidence', coverage: USAGE_COVERAGE, records: { [RECORD_ID]: row } } });
     const [record] = result.records;
     assert.equal(record.value.invoked, null);
     assert.equal(record.value.workflowInvocations, null);
@@ -1064,7 +1081,7 @@ test('a capability self-test is not reported as an experiment benefit', async (t
     observationWindow: 'probe:complete-line',
     benefitEvidence: 'the target tool was absent before the trial and every sample matched',
   });
-  const usage = { source: 'session-evidence', records: { [RECORD_ID]: {
+  const usage = { source: 'session-evidence', coverage: USAGE_COVERAGE, records: { [RECORD_ID]: {
     workflowInvocations: 0, verificationInvocations: 0, capabilityAssessment: 'self-contained',
   } } };
   const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
@@ -1088,7 +1105,7 @@ test('a paired workflow comparison stays an experiment benefit', async (t) => {
     probe: { comparison: { benefit: true, benefitKind: 'workflow', workflowBenefit: true, workload: { id: 'complete-source-line' } } },
     observationWindow: 'probe:complete-source-line',
   });
-  const usage = { source: 'session-evidence', records: { [RECORD_ID]: {
+  const usage = { source: 'session-evidence', coverage: USAGE_COVERAGE, records: { [RECORD_ID]: {
     workflowInvocations: 0, verificationInvocations: 0, capabilityAssessment: 'self-contained',
   } } };
   const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
@@ -1118,7 +1135,7 @@ test('a context-policy capability reports its paired workflow benefit instead of
       adoption: { sessionsUsingCandidate: 0, sessionsExercised: 3 },
     },
   });
-  const usage = { source: 'session-evidence', complete: true, recordsComplete: true, records: { [RECORD_ID]: {
+  const usage = { source: 'session-evidence', coverage: USAGE_COVERAGE, complete: true, recordsComplete: true, records: { [RECORD_ID]: {
     workflowInvocations: null, verificationInvocations: null, unattributedInvocations: null,
     measurement: 'no-tool-surface', capabilityAssessment: 'unknown',
   } } };
@@ -1146,7 +1163,7 @@ test('a no-tool-surface capability without paired evidence is unknown, never a r
     observationWindow: 'a mounted context policy',
     benefitEvidence: 'the candidate changed every read result in the trial',
   });
-  const usage = { source: 'session-evidence', complete: true, recordsComplete: true, records: { [RECORD_ID]: {
+  const usage = { source: 'session-evidence', coverage: USAGE_COVERAGE, complete: true, recordsComplete: true, records: { [RECORD_ID]: {
     workflowInvocations: null, verificationInvocations: null, unattributedInvocations: null,
     measurement: 'no-tool-surface', capabilityAssessment: 'self-contained',
   } } };
@@ -1178,7 +1195,7 @@ test('no persisted count can turn a no-tool-surface capability into an unused on
     'positive count': { workflowInvocations: 4, verificationInvocations: 0, unattributedInvocations: 0 },
   };
   for (const [shape, counts] of Object.entries(shapes)) {
-    const usage = { source: 'session-evidence', complete: true, recordsComplete: true, records: { [RECORD_ID]: {
+    const usage = { source: 'session-evidence', coverage: USAGE_COVERAGE, complete: true, recordsComplete: true, records: { [RECORD_ID]: {
       ...counts, measurement: 'no-tool-surface', capabilityAssessment: 'self-contained',
     } } };
     const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
@@ -1208,7 +1225,7 @@ test('no persisted count hides a no-tool-surface capability\'s paired workflow b
       adoption: { sessionsUsingCandidate: 0, sessionsExercised: 3 },
     },
   });
-  const usage = { source: 'session-evidence', complete: true, recordsComplete: true, records: { [RECORD_ID]: {
+  const usage = { source: 'session-evidence', coverage: USAGE_COVERAGE, complete: true, recordsComplete: true, records: { [RECORD_ID]: {
     workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 0,
     measurement: 'no-tool-surface', capabilityAssessment: 'self-contained',
   } } };
@@ -1263,7 +1280,7 @@ test('a pre-comparison probe whose baseline ran and failed is a tool-level benef
     },
     observationWindow: 'probe:read-complete-line',
   });
-  const usage = { source: 'session-evidence', records: { [RECORD_ID]: {
+  const usage = { source: 'session-evidence', coverage: USAGE_COVERAGE, records: { [RECORD_ID]: {
     workflowInvocations: 0, verificationInvocations: 0, capabilityAssessment: 'self-contained',
   } } };
   const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });
@@ -1287,7 +1304,7 @@ test('a missing promotion sidecar is unknown, never an experiment benefit', asyn
   assert.doesNotMatch(unknown.value.reasons.join(' '), /paired workflow comparison is recorded/,
     'the review must not claim a comparison it could not read');
 
-  const usage = { source: 'session-evidence', records: { [RECORD_ID]: {
+  const usage = { source: 'session-evidence', coverage: USAGE_COVERAGE, records: { [RECORD_ID]: {
     workflowInvocations: 0, verificationInvocations: 0, capabilityAssessment: 'self-contained',
   } } };
   const withUsage = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST, usage });

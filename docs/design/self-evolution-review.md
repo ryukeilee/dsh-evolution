@@ -101,8 +101,9 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 - 扫描只读取会话日志里的 `tool/call` / `tool/result` 与官方 PTC 的 `tool/ptc-dispatch-start` /
   `tool/ptc-dispatch` 类型和工具名，按发布记录的工具名计数；不输出正文、参数或结果；
 - **PTC 分派只算一次**：`tool/ptc-dispatch` 与配对的 `tool/ptc-dispatch-start` 合并为一次调用，start 本身不计数；
-  不在生命周期调用内、且父调用是会话里的原生 `tool/call` 时算工作流流量，日志无法把它连到模型选择的调用、
-  或会话结束时只有 start 没有最终分派时计入 `unattributed`，不算 0；
+  不在生命周期调用内、且父调用是同一会话中尚未返回的 `run_code` 时算工作流流量（只有 open 的 run_code 实例能
+  证明模型选择；历史非 run_code 调用或已返回的 run_code 不算）；PTC 内调用的生命周期工具也打开验证窗口；
+  日志无法把它连到模型选择的调用、或会话结束时只有 start 没有最终分派时计入 `unattributed`，不算 0；
 - 只扫描当前代的两种编码：`session.v4.jsonl.zstd` 与明文 `session.v4.jsonl`（官方最小 SDK 包设置
   `compression: none`）。同一 session 目录同时存在两份当前编码时，日志无法证明哪份是当前写入，记为编码二义性
   并令投影 `complete: false`，而不是重复计数；其它 canonical 会话形状（`session.jsonl`、`session.vN.jsonl[.zstd]`）
@@ -129,7 +130,8 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 
 扫描结果通过 `--write` 写到 `<dataRoot>/shared-plugins/usage.json`。运行时（Desktop 的 `evolution_plan` 与 ACP 的
 `audit`）只在显式检查时读取这一份有大小上限的小文件：不扫描会话、不写盘、无定时器。投影缺失、损坏或超过 30 天
-时零调用按未知处理（正数调用仍是事实），因此不会因为一份陈旧快照给出停用建议。停用建议还要求
+时零调用按未知处理（正数调用仍是事实），因此不会因为一份陈旧快照给出停用建议。投影还带一个扫描覆盖标记；
+升级前生成的旧投影不包含 PTC 与明文会话覆盖，它的零调用同样按未知处理，直到操作者显式重新运行扫描。停用建议还要求
 `capabilityAssessment: "self-contained"` 由操作者显式给出——脚本从不猜测能力是否自足。
 
 ## 5. revalidate 路径

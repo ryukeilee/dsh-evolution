@@ -15,6 +15,7 @@ import path from 'node:path';
 import {
   EvolutionOrchestrator,
   mergeEvidenceSources,
+  replayExperimentEvidence,
   snapshotEvidenceFromRecord,
   hydrateRecordFromSnapshot,
 } from '../lib/orchestrator.js';
@@ -109,6 +110,45 @@ test('a bounded startup reconciliation publishes the adopted conclusion a stable
   assert.equal(row.metrics.errorsdelta.last, -2);
 });
 
+test('a restarted canary and the startup recovery share the probe versions, so the conclusion is one fact', async (t) => {
+  const experimentId = 'exp-stable-probe-split';
+  const proposalVersions = { dsh: '0.2.2-rc.4', cordis: '4.1.0', evolution: '0.2.20' };
+  const snapshot = stableSnapshot(experimentId);
+  snapshot.proposal.applicability = proposalVersions;
+  snapshot.latestObservation.probe.versions = APPLICABILITY;
+  const { store, orchestrator } = await recoveryFixture(t, 'stable-conclusion-probe-split', { [experimentId]: snapshot });
+  // The restarted canary has no in-memory `record.probe`; the durable
+  // latestObservation.probe is the same measurement the recovery reads.
+  const inMemory = {
+    id: experimentId,
+    proposal: snapshot.proposal,
+    latestObservation: snapshot.latestObservation,
+    composition: snapshot.composition,
+    decision: snapshot.decision,
+    frozenAt: snapshot.stableCommittedAt,
+  };
+  const first = orchestrator.publishConclusion(inMemory, 'adopted', 'canary-passed');
+  assert.equal(first?.duplicate, false);
+  const before = store.stats();
+  const recovered = await orchestrator.reconcileStableConclusions({ maxRecords: 20 });
+  assert.equal(recovered.published, 0);
+  assert.equal(recovered.duplicates, 1);
+  assert.deepEqual(store.stats(), before, 'the recovery must not add a second adopted fact');
+  const measured = store.findConclusions({
+    target: TARGET,
+    strategyFingerprint: strategyFingerprint(TARGET, STRATEGY),
+    applicability: APPLICABILITY,
+  });
+  assert.equal(measured.matches.filter((row) => row.sameApplicability).length, 1);
+  const proposal = store.findConclusions({
+    target: TARGET,
+    strategyFingerprint: strategyFingerprint(TARGET, STRATEGY),
+    applicability: proposalVersions,
+  });
+  assert.equal(proposal.matches.some((row) => row.sameApplicability === true), false,
+    'the proposal applicability is not a second measured conclusion');
+});
+
 test('the reconciliation is idempotent across starts', async (t) => {
   const experimentId = 'exp-stable-crash-2';
   const { store, orchestrator } = await recoveryFixture(t, 'stable-conclusion-idempotent', {
@@ -200,6 +240,22 @@ test('the snapshot carries the composition name across restart so the fallback i
   const hydrated = hydrateRecordFromSnapshot({ id: record.id }, merged);
   assert.deepEqual(hydrated.composition, { name: 'edge-cache-prewarm' });
   assert.equal(Object.hasOwn(snapshotEvidenceFromRecord({ id: 'legacy' }), 'composition'), false);
+});
+
+test('the formal journal-replay sidecar keeps the projected composition name', async (t) => {
+  const root = await scratchRoot('stable-conclusion-replay');
+  t.after(() => fsp.rm(root, { recursive: true, force: true }));
+  const paths = promotionPaths(root);
+  await fsp.mkdir(paths.archiveDir, { recursive: true });
+  const experimentId = 'exp-stable-replay';
+  const snapshot = stableSnapshot(experimentId);
+  snapshot.purpose = 'not persisted';
+  snapshot.composition = { name: 'edge-cache-prewarm', purpose: 'api_key=synthetic-secret' };
+  await fsp.writeFile(path.join(paths.archiveDir, `${experimentId}.evidence.json`), `${JSON.stringify(snapshot, null, 2)}\n`);
+  await replayExperimentEvidence(paths, experimentId);
+  const replayed = JSON.parse(await fsp.readFile(path.join(paths.archiveDir, `${experimentId}.evidence.json`), 'utf8'));
+  assert.deepEqual(replayed.composition, { name: 'edge-cache-prewarm' });
+  assert.doesNotMatch(JSON.stringify(replayed), /synthetic-secret/);
 });
 
 test('the persisted composition name crosses the credential boundary and stays bounded', () => {

@@ -17,6 +17,7 @@ import {
   readUsageProjection,
   summarizeCapabilityUsage,
   toolNamesFromSource,
+  USAGE_PROJECTION_COVERAGE,
 } from '../lib/capability-usage.js';
 import { readPublishedPluginReview } from '../lib/self-evolution-review.js';
 
@@ -331,6 +332,33 @@ test('a stale projection cannot support "zero invocations" but still proves posi
   assert.equal(usedReview.records[0].value.tier, 'in-use');
 });
 
+test('a legacy projection without scan coverage cannot prove a zero', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const file = path.join(env.dataRoot, 'shared-plugins', 'usage.json');
+  const row = { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 0, capabilityAssessment: 'self-contained' };
+  const write = (coverage) => fs.writeFileSync(file, JSON.stringify({
+    kind: 'dsh-evolution-capability-usage',
+    schemaVersion: 1,
+    ...(coverage ? { coverage } : {}),
+    source: 'session-evidence',
+    complete: true,
+    capturedAt: new Date().toISOString(),
+    records: { [RECORD_ID]: row },
+  }));
+  write(null);
+  const legacy = await readUsageProjection({ dataRoot: env.dataRoot });
+  assert.equal(legacy.usage.coverage, 'legacy');
+  const legacyReview = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: legacy.usage, usageStatus: 'ok' });
+  assert.equal(legacyReview.records[0].value.invoked, null);
+  assert.equal(legacyReview.retirementCandidates.length, 0, 'an old scan cannot prove the newly covered calls were absent');
+  write(USAGE_PROJECTION_COVERAGE);
+  const current = await readUsageProjection({ dataRoot: env.dataRoot });
+  assert.equal(current.usage.coverage, USAGE_PROJECTION_COVERAGE);
+  const currentReview = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: current.usage, usageStatus: 'ok' });
+  assert.equal(currentReview.records[0].value.invoked, false);
+});
+
 test('a damaged or oversized projection is reported, never guessed around', async (t) => {
   const env = scratch(t);
   writeRecord(env, { source: WIDGET_SOURCE });
@@ -473,6 +501,33 @@ test('createSessionCounter counts native calls and PTC dispatches exactly once',
   assert.equal(counter.call(result('t1')), 'result');
   assert.deepEqual(Object.fromEntries(counter.finish()), {
     mytool: { workflow: 2, verification: 2, unattributed: 1 },
+  });
+});
+
+test('a PTC dispatch needs an open run_code instance, not any historical call id', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  // A normal read used this id; it is not a model run_code program.
+  counter.call(call('read', 'shared-id'));
+  counter.call(ptcStart('mytool', 'p1', 'shared-id'));
+  counter.call(ptcDispatch('mytool', 'p1', 'shared-id'));
+  // A run_code that already returned cannot enclose a later dispatch either.
+  counter.call(call('run_code', 'finished'));
+  counter.call(result('finished'));
+  counter.call(ptcStart('mytool', 'p2', 'finished'));
+  counter.call(ptcDispatch('mytool', 'p2', 'finished'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 0, verification: 0, unattributed: 2 },
+  });
+});
+
+test('a lifecycle tool invoked through PTC still marks its nested published calls as verification', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  counter.call(ptcStart('evolution_probe', 'p1', 'outer'));
+  counter.call(ptcStart('mytool', 'm1', 'outer'));
+  counter.call(ptcDispatch('mytool', 'm1', 'outer'));
+  counter.call(ptcDispatch('evolution_probe', 'p1', 'outer'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 0, verification: 1, unattributed: 0 },
   });
 });
 
