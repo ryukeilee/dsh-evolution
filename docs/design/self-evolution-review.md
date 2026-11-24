@@ -103,8 +103,9 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 - **PTC 分派只算一次**：`tool/ptc-dispatch` 与配对的 `tool/ptc-dispatch-start` 合并为一次调用，start 本身不计数；
   不在 native 生命周期调用内、且父调用是同一会话中恰好一个尚未返回的 `run_code` 实例时算工作流流量（历史
   非 run_code 调用、已返回或复用的 run_code 不算，`sourceEventSeqs` 关闭具体实例）；PTC 内调用的生命周期
-  start 不能可靠界定窗口，因为官方执行器的结果行是异步追加的，其间的调用与无法连到模型选择的调用、以及
-  会话结束时只有 start 没有最终分派时计入 `unattributed`，不算 0；
+  start 不能可靠界定窗口，因为官方执行器的结果行是异步追加的，其间的 PTC 发布调用与无法连到模型选择的调用、
+  以及会话结束时只有 start 没有最终分派时计入 `unattributed`，不算 0；同一窗口内的 native 发布调用仍按
+  workflow 计数（native 调用不可能嵌套在 PTC 程序里）；
 - 只扫描当前代的两种编码：`session.v4.jsonl.zstd` 与明文 `session.v4.jsonl`（官方最小 SDK 包设置
   `compression: none`）。同一 session 目录同时存在两份当前编码时，日志无法证明哪份是当前写入，记为编码二义性
   并令投影 `complete: false`，而不是重复计数；其它 canonical 会话形状（`session.jsonl`、`session.vN.jsonl[.zstd]`）

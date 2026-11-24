@@ -567,6 +567,17 @@ test('a PTC lifecycle window is unattributed when its final log can arrive after
   });
 });
 
+test('a native published call is workflow while only a PTC lifecycle window is open', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  counter.call(ptcStart('evolution_probe', 'p1', 'outer'));
+  counter.call(call('mytool', 'native'));
+  counter.call(result('native'));
+  counter.call(ptcDispatch('evolution_probe', 'p1', 'outer'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 1, verification: 0, unattributed: 0 },
+  });
+});
+
 test('a published call after the PTC lifecycle result is normal workflow usage', () => {
   const counter = createSessionCounter(new Set(['mytool']));
   counter.call(call('run_code', 'outer'));

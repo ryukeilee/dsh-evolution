@@ -60,7 +60,8 @@ PTC 的复现：一次模型 `run_code` 程序内的 `tool/ptc-dispatch` 在修�
   与 `tool/ptc-dispatch-start` 配对，不重复计数。
 - 归因顺序与原生调用一致：有 **native** 晋升生命周期调用尚未返回 → `pending`（全部返回后为 verification，
   否则 unattributed）。PTC 内调用的生命周期 start 不能作为可靠窗口：官方执行器异步追加结果行，后续正常调用
-  可能先于该结果落盘，因此这段窗口内的发布调用记为 unattributed，而不是验证流量（避免把真实使用读成 0）。
+  可能先于该结果落盘，因此这段窗口内的 PTC 发布调用记为 unattributed，而不是验证流量（避免把真实使用读成
+  0）；同一窗口内的 native 发布调用仍按 workflow 计数，因为 native 调用不可能嵌套在 PTC 程序里。
   否则若 `parentCallId` 是同一会话中**恰好一个尚未返回**的 `run_code` 实例 → workflow；历史非 `run_code` 调用、
   已返回或复用 ID、以及宿主驱动的执行都归 unattributed（日志无法证明模型选择）。`sourceEventSeqs` 关闭具体
   run_code 实例；该实例结束时收束其未完成的 PTC 生命周期窗口。日志结束仍无 final dispatch 的 start 记
@@ -188,6 +189,19 @@ Lead 逐条复核后在其后提交中修复，并由 R2 在新 HEAD 上复验�
 R1 的 8 个 doctor 用例因其工作树缺少可发布宿主身份而失败；本轮在 `test/promoted-sharing-diagnostics.test.mjs`
 用固定宿主事实与临时目录覆盖等价场景，修复后 13/13 通过。
 
+### 2.7 R2 复审发现并修复的边界
+
+R2 复验 `7990ba0`/`e659377`：
+
+| # | R2 结论 | 修复 |
+| --- | --- | --- |
+| S5 blocker | 官方 PTC 执行器异步追加 `tool/ptc-dispatch`；`evolution_probe` 的结果行可能晚于后续 `widget` 的 start。扫描器把同一 run_code 内的正常调用当成 verification，得到 workflow 0 并触发停用建议。 | PTC 生命周期 start 只用于标识一个不可证明的窗口：窗口内开始的发布调用记 `unattributed`，不再记 verification；只有 **native** 生命周期调用打开 verification 窗口（`80200c1`）。 |
+| S5 should | 旧 run_code 结果会按 callId 清掉新实例；未完成的 PTC 生命周期窗口会跨程序残留。 | 以 `sourceEventSeqs` 关闭具体 run_code 实例；实例结束/`ptcEnvelope` 关闭其 PTC 生命周期窗口；workflow 需要恰好一个 open 实例（`80200c1`）。 |
+| S1 should | R1 格式 journal 的原始 composition 在续跑后的最终 sidecar 仍被写出。 | stable 最终快照与正式 replay 再次使用 `compositionStrategyName()` 投影；原始 `purpose` 不进入最终 sidecar（`80200c1`）。 |
+| S2 should | `latestObservation.probe.versions = {}`（损坏对象）被当作可用版本，恢复补出全 unknown 的第二条 adopted。 | 发布与恢复共用三字段字符串校验；恢复遇到存在但损坏的 probe 版本直接跳过，不用 proposal 回退（`80200c1`）。 |
+| S7 should | 12 条无名坏记录 + 损坏撤销表的提前返回绕过动作上限。 | `e659377` 已为提前返回保留 operator 动作并设置 `nextActionsDropped`；R2 复核确认。 |
+| Nit | CLI 说明仍写任意原生父调用可证明 workflow。 | 改为“恰好一个尚未返回的 run_code 实例”，并说明 PTC 生命周期窗口归 unattributed（`80200c1`）。 |
+
 ## 3. 明确不修改的项
 
 | 项 | 结论 | 依据 |
@@ -208,12 +222,15 @@ R1 的 8 个 doctor 用例因其工作树缺少可发布宿主身份而失败；
   `test/review-fix-stable-conclusion-recovery.test.mjs`、`test/shared-experience-conclusion.test.mjs`、
   `test/experience-evolution-lifecycle.test.mjs`、`test/promotion-share-targets.test.mjs`、
   `test/full-cross-session.integration.test.mjs` 全绿。
-- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test`（最终集成 HEAD，含 B1/B2/B3/B4、R1 修复与测试修复）——
-  **2290 项，2288 通过 / 0 失败 / 2 跳过**；基线 `bc267ce` 为 2254 项（2252 通过 / 0 失败 / 2 跳过）。
+- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test`（最终集成 HEAD `80200c1`，含 B1/B2/B3/B4、
+  R1/R2 修复与测试修复）——**2296 项，2294 通过 / 0 失败 / 2 跳过**；基线 `bc267ce` 为 2254 项
+  （2252 通过 / 0 失败 / 2 跳过）。
 - 打包：`npm run pack:check`（开发阶段）**17/17 通过**；工作树是 `0.2.20` 固定点的已提交后继，
   固定产物、固定点内容摘要与既有验收证据未改动。未执行 `release:publish`、未打 tag、未推送。
-- 独立审核：R1（T3 Codex `gpt-6.2-sol` reasoningEffort high）返回 CHANGES，4 blocker / 4 should；本轮逐条
-  修复并由 R2 在同一分支的新 HEAD 上复验，结论待填。
+- 独立审核：R1（T3 Codex `gpt-6.2-sol` reasoningEffort high）返回 CHANGES，4 blocker / 4 should；
+  R2 复验返回 CHANGES（PTC 生命周期结果异步追加的误归因 blocker，以及 run_code 实例、composition 重写、
+  损坏 probe 版本、空索引动作上限与 CLI 文案 should）。Lead 逐条修复后由 R3 在同一分支的新 HEAD 上做
+  最终复验；结论待填。
 - 未重跑真实宿主验收：本轮改动集中在离线用量读取、共享结论身份、启动补写和有界审查动作；既有
   `docs/evidence/` 的 0.2.2-rc.5 39/39 隔离验收覆盖安装/晋升/跨入口/恢复，未覆盖本轮新增的崩溃补写与
   PTC 用量扫描；这两条的直接证明是真实临时 SQLite/合成官方事件行与反证。真实宿主 CI 仍会运行。
