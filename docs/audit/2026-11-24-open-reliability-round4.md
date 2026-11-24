@@ -39,6 +39,17 @@ GPT-6.2 Sol（High）返回 `CHANGES`：4 blocker、6 should。逐条复核后�
 | S9 should | 接受：官方取消分支不发 `agent/error`，只发带 aborted signal 的 tool result | 在 aborted 结果到达时按官方语义 flush 该 agent 的 pending 退化 |
 | S10 should | 接受：规划器按原始 scope 分组，`tool:read` 与 `tool read` 产生两个候选 | 分组键统一 canonical 化，并补混合来源回归；同步更新既有断言 |
 
+### 独立反方复审（sol-loop 第 2 轮）
+
+GPT-6.2 Sol（High）返回 `CHANGES`：S1/S2/S5/S7/S8/S9/S10 已解决；S3/S4/S6 仍开放，并新增 S11。逐条复核后处理：
+
+| id | 结论 | 处理 |
+| --- | --- | --- |
+| S3 blocker | 接受：重放回归提交吞掉异常并无条件宣称回滚成功，终态 interrupted 会让仍挂载的候选无人推进 | 以内核回执（`rollback`/`phase`）证明回滚；未证实时保留 `canary-observing`/`promoting` 阶段供下次启动重试，不写终态；补未证实回执回归 |
+| S4 blocker | 接受：内核在只读确认分支之前强制义务，Desktop Host 的未确认 gate 调用被拒绝 | 把强制检查移到确认分支之后、任何持久化之前；补真实内核用例：未确认调用仍返回 owner gate，确认调用缺义务才拒绝 |
+| S6 should | 接受：共享序列化器的深层固定标记会让两个不同值共享绑定；无效 resultPath 被归一为空但重放仍用原值 | 校验并拒绝非无损/超深/超界描述符，完整哈希已验证字段，并把规范化后的描述符随义务持久化；重放只执行该已验证描述符 |
+| S11 should | 接受：正常关闭中止观测后 `evolution_revert` 拒绝 canary-observing，任务写终态导致下次启动跳过 | 对带功能义务的 canary 在稳定或回滚被证明前不尝试 revert、不写终态，保留可重放阶段 |
+
 ## 3. 验证
 
 - 反证：新增 4 个回归文件与 2 个扩展文件；对每条核心修复先在旧源码上运行新用例：

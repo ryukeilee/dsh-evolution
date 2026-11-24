@@ -10,6 +10,7 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 
 import { EvolutionOrchestrator, persistEvidenceSnapshot } from '../lib/orchestrator.js';
+import { normalizeCanaryVerification } from '../lib/canary-verification.js';
 import {
   scratchRoot, promotionPaths, unitPromotionRuntime, orchestratorContext, execFor, exists, HOST_CODE,
 } from './orchestrator-durability-fixtures.mjs';
@@ -120,6 +121,27 @@ test('a functional check that binds to a different plan is a canary regression',
   assert.match(result.phase, /rolled-back|revert/i, `a forged binding must roll back, got ${JSON.stringify(result)}`);
 });
 
+test('the canary binding rejects malformed descriptors and distinguishes deep values', () => {
+  const base = { tool: 'read', arguments: { path: '/tmp/x' }, resultPath: ['value'], observations: 2 };
+  const valid = normalizeCanaryVerification({ ...base, expected: { ok: true } });
+  assert.ok(valid, 'a legal descriptor is accepted');
+  assert.deepEqual(valid.descriptor, { tool: 'read', arguments: { path: '/tmp/x' }, resultPath: ['value'], expected: { ok: true } });
+  assert.equal(normalizeCanaryVerification({ ...base, resultPath: 'value' }), null, 'an invalid resultPath is rejected, not normalized away');
+  assert.equal(normalizeCanaryVerification({ ...base, tool: 'bash' }), null, 'only the read-only tool set is admissible');
+  assert.equal(normalizeCanaryVerification({ ...base, observations: 9 }), null);
+  // A deep value must not be folded into a fixed marker: two different deep
+  // expected values must never share a binding digest.
+  const deep = (leaf) => ({ a: { b: { c: { d: { e: leaf } } } } });
+  const first = normalizeCanaryVerification({ ...base, expected: deep('one') });
+  const second = normalizeCanaryVerification({ ...base, expected: deep('two') });
+  assert.ok(first && second && first.bindingDigest !== second.bindingDigest);
+  assert.equal(normalizeCanaryVerification({ ...base, expected: (() => {
+    let value = {}; let cursor = value;
+    for (let i = 0; i < 30; i += 1) { cursor.next = {}; cursor = cursor.next; }
+    return value;
+  })() }), null, 'over-deep input is rejected instead of colliding');
+});
+
 test('a context-policy promotion refuses to commit without a functional-check obligation', async (t) => {
   const root = await scratchRoot('round4-context-policy-gate');
   t.after(() => fsp.rm(root, { recursive: true, force: true }));
@@ -153,6 +175,9 @@ test('a context-policy promotion refuses to commit without a functional-check ob
       orphanResources: [],
     },
   }, exec);
+  const gate = await core.promote({ experimentId: record.id }, exec);
+  assert.equal(gate.phase, 'awaiting-owner-confirmation',
+    'the read-only owner gate must stay usable without the obligation descriptor');
   await assert.rejects(
     core.promote({ experimentId: record.id, confirmation: true }, exec),
     /context-policy promotion requires canaryVerification/,

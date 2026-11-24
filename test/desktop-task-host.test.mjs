@@ -986,6 +986,40 @@ test('a failed canary replay is submitted as a kernel regression before the task
   assert.equal(state.error?.code, 'E_DESKTOP_HOST_LOST', 'the terminal task state is still the recovery boundary');
 });
 
+test('an unproven canary rollback keeps the task replayable for the next start', async (t) => {
+  const home = temporary(t);
+  const taskId = mintTaskId();
+  const check = { tool: 'read', arguments: { path: '/tmp/replay-timeout' }, resultPath: ['value'], expected: { ok: true } };
+  const plan = {
+    proposal: { why: 'context policy', target: 'plugin:replay-timeout', impactScope: ['runtime'], successMetrics: ['m'] },
+    composition: { name: 'replay-timeout', purpose: 'replay-timeout', code: { host: 'return {};' } },
+    verification: { functionalCheck: check, observations: 1 },
+    requestedTargetProfiles: ['acp'],
+  };
+  const kernel = fakeKernel();
+  // The submission itself fails: no kernel receipt proves a rollback.
+  kernel.tools.set('evolution_canary_observe', { execute: async () => { throw new Error('submission timed out'); } });
+  const ctx = fakeCtx(kernel, plan, { read: { execute: async () => ({ value: { ok: false } }) } });
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 0, settlePollMs: 1 });
+  t.after(async () => { await host.dispose(); });
+  const channel = taskChannelPaths(home);
+  await fsp.mkdir(channel.inbox, { recursive: true });
+  await fsp.mkdir(channel.state, { recursive: true });
+  await fsp.writeFile(path.join(channel.inbox, `${taskId}.json`), JSON.stringify(requestFor(taskId, plan)));
+  const stateFile = path.join(channel.state, `${taskId}.json`);
+  await fsp.writeFile(stateFile, JSON.stringify({
+    schemaVersion: SCHEMA_VERSION, protocol: PROTOCOL_VERSION, taskId,
+    phase: 'canary-observing', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    experimentId: 'exp-replay-timeout', candidateSourceSha256: 'e'.repeat(64),
+    approval: { experimentId: 'exp-replay-timeout' },
+    canaryVerification: { kernel: normalizeCanaryVerification({ ...check, observations: 1 }), check, observations: 1 },
+  }));
+
+  await host.internals.recoverPreviousTasks();
+  const state = JSON.parse(await fsp.readFile(stateFile, 'utf8'));
+  assert.equal(state.phase, 'canary-observing', 'an unproven rollback must not close the reusable replay state');
+});
+
 test('a runtime-busy trial refusal finalizes the task and releases the queue', async (t) => {
   const home = temporary(t);
   const first = planFor(mintTaskId());
