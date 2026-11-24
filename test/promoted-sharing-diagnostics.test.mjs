@@ -81,7 +81,8 @@ test('an invalid record in an otherwise readable index blocks the check', async 
   assert.equal(check.level, 'blocked', JSON.stringify(check.evidence));
   assert.equal(check.evidence.invalidRecords.length, 1);
   assert.ok(check.evidence.problems.some((problem) => problem.id === pluginId));
-  assert.match(check.remediation, /dsh-evolution-shared disable/);
+  assert.match(check.remediation, /re-promoting it through Desktop/);
+  assert.doesNotMatch(check.remediation, /dsh-evolution-shared disable/);
 });
 
 test('an absent index with a still-active consumer mount is degraded, not healthy', async (t) => {
@@ -97,6 +98,18 @@ test('an absent index with a still-active consumer mount is degraded, not health
   assert.equal(check.evidence.status, 'absent');
   assert.deepEqual(check.evidence.orphanMounts, [{ profile: 'acp', id: pluginId }]);
   assert.match(check.remediation, /Restart the consumer/);
+});
+
+test('a malformed consumer row does not crash the absent-index diagnosis', async (t) => {
+  const env = await home(t);
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host: await observedHostOf(env.dshHome), indexUpdatedAt: '2026-01-02T00:00:00.000Z',
+    compositionPath: null, plugins: [null, { id: pluginId, status: 'active', reason: null }],
+  }));
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded');
+  assert.deepEqual(check.evidence.orphanMounts, [{ profile: 'acp', id: pluginId }]);
 });
 
 test('a verified publication is reported per record and per consumer', async (t) => {

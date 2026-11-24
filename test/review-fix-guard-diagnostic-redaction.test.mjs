@@ -30,6 +30,20 @@ test('a secret-bearing error in a non-blocking diagnostic is redacted', () => {
   assert.ok(c.emitted.some((entry) => typeof entry[1]?.error === 'string' && entry[1].error.includes('[redacted]')));
 });
 
+test('a file path carrying a credential is redacted in the error branch', () => {
+  const c = ctx();
+  apply(c, {});
+  const hostilePath = '/tmp/agent-presets/SECRET_token=abc123/agent.cordis.yml';
+  const args = {
+    file_path: hostilePath,
+    get content() { throw new Error('diagnostic input failed'); },
+  };
+  c.listener({ arguments: args }, {}, () => {});
+  const serialized = JSON.stringify(c.emitted);
+  assert.equal(serialized.includes('abc123'), false);
+  assert.ok(serialized.includes('[redacted]'));
+});
+
 test('a throwing getter cannot escape the diagnostic listener', () => {
   const c = ctx();
   apply(c, {});

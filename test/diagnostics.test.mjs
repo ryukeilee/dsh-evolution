@@ -17,6 +17,7 @@ import {
   parseComposedProfile, composedEventBridgeWriter, EVOLUTION_TOOL_NAMES, SUPPORTED_DSH_VERSIONS,
 } from '../lib/diagnostics.js';
 import { EVENT_BRIDGE_DEFAULT_WRITER, eventBridgeWriterTrusted, signEventBridgeEnvelope, verifyEventBridgeEnvelope } from '../lib/orchestrator.js';
+import { advanceRetention, planLogPrune } from '../lib/event-log-checkpoint.js';
 import { promotionPlan, derivedPluginPath } from './promotion-plan-fixture.mjs';
 import { evolutionDomainSpec } from '../lib/domain-storage.js';
 import { EVOLUTION_TOOLS } from '../lib/registration.js';
@@ -1444,6 +1445,31 @@ test('a partial tail with no complete line is not offered as a repair', async ()
   const applied = await applyRepairs([{ id: 'event-bridge-trim-partial-tail', safe: true }], { paths });
   assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
   assert.equal(fs.readFileSync(paths.eventBridgePath, 'utf8'), '{"schema":2,"writer":"dsh-evolution', 'nothing may be written');
+});
+
+test('a partial-tail trim is skipped while a committed truncation is still pending', async () => {
+  const { paths } = freshHome('repair-pending-floor');
+  const event = { eventId: 'evt-duplicate-trim', eventType: 'measurement-completed' };
+  const firstLine = `${JSON.stringify(signEventBridgeEnvelope(event, { key: KEY, sequence: 1 }))}\n`;
+  const complete = firstLine + firstLine;
+  fs.writeFileSync(paths.eventBridgePath, complete);
+  const stat = fs.statSync(paths.eventBridgePath, { bigint: true });
+  const plan = planLogPrune({ buffer: Buffer.from(complete), key: KEY, writer: EVENT_BRIDGE_DEFAULT_WRITER,
+    applied: { [event.eventId]: JSON.parse(firstLine.trim()).mac }, retainRecords: 1,
+    identity: { dev: stat.dev, ino: stat.ino } });
+  assert.equal(plan.prior.ambiguousPrefix, true);
+  const retention = advanceRetention(null, { prunable: plan.prunable, log: plan, key: KEY });
+  writeDomain(paths, { ...domainGlobal({ applied: { [event.eventId]: JSON.parse(firstLine.trim()).mac } }), retention });
+
+  // A torn trailing append on the still-untruncated prior file is the shape the
+  // trim repair normally fixes. It must not run: renaming would change the
+  // generation and make the runtime think the committed truncation had run.
+  fs.writeFileSync(paths.eventBridgePath, complete + '{"schema":2,"writer":"dsh-evolution');
+  const before = fs.readFileSync(paths.eventBridgePath, 'utf8');
+  const applied = await applyRepairs([{ id: 'event-bridge-trim-partial-tail', safe: true }], { paths });
+  assert.deepEqual(applied.map((entry) => entry.status), ['skipped']);
+  assert.match(applied[0].detail, /committed retention truncation is still pending/);
+  assert.equal(fs.readFileSync(paths.eventBridgePath, 'utf8'), before, 'the file and its generation are untouched');
 });
 
 test('a partial-tail repair that still matches is applied and keeps the trusted prefix', async () => {
