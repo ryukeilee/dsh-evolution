@@ -56,6 +56,8 @@
 | S6 should | doctor 建议对畸形发布记录执行 `dsh-evolution-shared disable`，但 CLI 只能选择通过校验的记录 | 畸形行只提示 re-promote，明确 CLI 不可定位 |
 | S7 nit | consumer 状态 `plugins:[null]` 让 doctor 抛 TypeError，整份报告失败 | 投影前校验行形状，畸形行不计入诊断 |
 
+sol-loop 第 2 轮再发现 3 blocker、1 should、1 nit，均已修复并反证：S8 医生只看 committed floor、漏掉 `pending.retention`（改为与启动恢复相同的 pending 优先）；S9 已完成 floor 的 tail 覆盖残行时裁剪会破坏 replay 前缀证明（裁剪前校验保留字节仍含完整 tail）；S10 非普通对象（如 `new Date(0)`）序列化成 `{}` 可满足空记录预期（无损校验拒绝非普通对象/稀疏数组）；S11 先截 200 字符再脱敏会让跨边界凭据泄漏（改为先脱敏再截短）；S12 每次 recall 全表计数（改为多读一行判断外层窗口，`scanned` 为实际读取数）。
+
 ## 3. 复评后决定不修改的项
 
 | 项 | 结论 | 依据 |
@@ -71,7 +73,7 @@
 - 反证：floor 生成修复两项核心用例在旧源码失败，修复后 7/7（含真实领域存储集成）；sharing 诊断两项新用例在旧源码失败，修复后 10/10。
 - 聚焦：回收锁定、归档删除、跨进程边界、领域存储、doctor floor、sharing 诊断、自主重试、Desktop 任务、probe 场景、guard 脱敏、recall 窗口共 100+ 项分批全绿；新增 7+10+1+6+2+2 项均通过，反证在旧源码上分别失败。
 - 领域差分基线：本轮把 `domain-storage.js` 的改动登记为新的逆向 round（`test/domain-storage/floor-generation-baseline.js`），`domain-storage-write-path-equivalence` 与 `load-projection` 恢复为等价通过。
-- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2233 项，2231 通过 / 0 失败 / 2 跳过**（基线含 PR #98 为 2218）。
+- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2237 项，2235 通过 / 0 失败 / 2 跳过**（基线含 PR #98 为 2218）。
 - 打包：`npm run pack:check` **17/17** 通过；工作树是 v0.2.19 固定点的已提交后继，固定点、产物与既有证据未改动；未执行 `--release` 或任何发布动作。
 - 独立复审：反方子代理对 floor/doctor 修复给出 SOUND、无 blocker；sol-loop（codex / gpt-6.2-sol / high）第 1 轮 CHANGES（3 blocker、3 should、1 nit），逐条复核并修复，反证见上；第 2 轮结论以 PR 描述为准。
 
