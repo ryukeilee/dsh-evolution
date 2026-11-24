@@ -110,9 +110,11 @@ durable stable 插件已经存在，但共享经验既没有 adopted conclusion�
 
 **修复**：
 
-- `snapshotEvidenceFromRecord()` 额外持久化 `composition`（只在存在时写入；旧 sidecar 不增加键），
+- `snapshotEvidenceFromRecord()` 额外持久化 **经脱敏且有界的 composition name**，而不是调用方传入的整个
+  composition 对象（`purpose` 等不进入 sidecar/journal；名称走 `compactValue` 的凭据边界与 200 字符上限）。
   `mergeEvidenceSources()` / `hydrateRecordFromSnapshot()` 单调恢复它，使无 `proposal.strategy` 的实验在重启后
-  仍使用同一个 composition-name 回退身份，而不是哨兵 `unnamed-cordis-plugin`。
+  仍使用同一个 composition-name 回退身份，而不是哨兵 `unnamed-cordis-plugin`；实时结论与启动补写使用同一个
+  `compositionStrategyName()` 投影，因此脱敏后的身份不会分叉。旧 sidecar 不增加键。
 - 新增 `reconcileStableConclusions()`：启动时只读最新 `maxRecords`（默认 20）个 evidence sidecar，
   对 `stableCommittedAt` + `decision.kind === "benefit"` + 已捕获 `proposal.applicability` 的记录，用同一
   `publishConclusion()` 逻辑补写 `adopted`（`source: "stable-recovery"`）。结论 event id 由 origin /

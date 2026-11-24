@@ -193,10 +193,25 @@ test('the snapshot carries the composition name across restart so the fallback i
     stableCommittedAt: '2026-11-24T00:00:05.000Z',
   };
   const snapshot = snapshotEvidenceFromRecord(record);
-  assert.deepEqual(snapshot.composition, record.composition);
+  assert.deepEqual(snapshot.composition, { name: 'edge-cache-prewarm' }, 'only the identity-bearing name is persisted');
+  assert.equal(Object.hasOwn(snapshot.composition, 'purpose'), false);
   const merged = mergeEvidenceSources([snapshot]);
-  assert.deepEqual(merged.composition, record.composition);
+  assert.deepEqual(merged.composition, { name: 'edge-cache-prewarm' });
   const hydrated = hydrateRecordFromSnapshot({ id: record.id }, merged);
-  assert.deepEqual(hydrated.composition, record.composition);
+  assert.deepEqual(hydrated.composition, { name: 'edge-cache-prewarm' });
   assert.equal(Object.hasOwn(snapshotEvidenceFromRecord({ id: 'legacy' }), 'composition'), false);
+});
+
+test('the persisted composition name crosses the credential boundary and stays bounded', () => {
+  const secret = 'sk-' + 'a'.repeat(64);
+  const snapshot = snapshotEvidenceFromRecord({
+    id: 'exp-composition-redaction',
+    composition: { name: `edge-cache ${secret}`, purpose: 'api_key=' + secret },
+  });
+  const serialized = JSON.stringify(snapshot);
+  assert.doesNotMatch(serialized, new RegExp(secret.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.equal(snapshot.composition.purpose, undefined);
+  const long = snapshotEvidenceFromRecord({ id: 'exp-composition-bound', composition: { name: 'n'.repeat(5000) } });
+  assert.ok(long.composition.name.length <= 220);
+  assert.match(long.composition.name, /…\[truncated\]$/);
 });
