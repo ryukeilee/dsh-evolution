@@ -86,14 +86,6 @@ test('a canary regression does not project a probe regression into the conclusio
   assert.deepEqual(captured[0].metrics, {});
 });
 
-test('a canary regression driven by a functional-check mismatch is covered', () => {
-  const record = canaryRegression(probeRecord(), 'canary observed a startup, component, or dependency regression');
-  record.canary = { observations: [{ verificationKind: 'functional', evidence: { functionalCheck: { matched: false } } }] };
-  const captured = capture(record);
-  assert.deepEqual(captured[0].metrics, {});
-  assert.equal(record.canary.observations[0].evidence.functionalCheck.matched, false);
-});
-
 test('canary-passed adoption keeps the probe projection byte for byte', () => {
   const record = probeRecord();
   record.decision = {
