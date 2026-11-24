@@ -235,3 +235,104 @@ test('metric merge keeps an own empty-valued key instead of replacing it from th
   assert.deepEqual(merged.metrics.__proto__, {});
   assert.equal(merged.metrics.floor, 2);
 });
+
+// 2026-11-24 open research round 3: a task-coupled artifact is the only
+// measurement a context-policy candidate has. When the mechanism never ran, a
+// cost difference between two unrelated runs cannot be attributed to the
+// candidate; and a valid, fully executed no-benefit result must close the loop
+// by publishing a durable no-benefit conclusion instead of disappearing as
+// insufficient evidence.
+function taskCoupledRecord({ benefit, regression, mechanismRan }) {
+  return {
+    latestObservation: {
+      evidenceKind: 'task-coupled',
+      taskBenefit: {
+        benefit, regression, mechanismRan, improved: benefit,
+        correctness: { baseline: true, candidate: true },
+        runs: { baseline: 3, candidate: 3 },
+      },
+      solvesProblem: benefit,
+      repeatable: true,
+      regressionPassed: !regression,
+    },
+  };
+}
+
+test('an unadopted task-coupled candidate never publishes a regression conclusion', async () => {
+  const { classifyExperimentDecision, conclusionKindFor } = await import('../lib/orchestrator.js');
+  const record = taskCoupledRecord({ benefit: false, regression: true, mechanismRan: false });
+  record.decision = classifyExperimentDecision(record);
+  assert.equal(record.decision.kind, 'insufficient-evidence');
+  assert.equal(conclusionKindFor(record), 'insufficient-evidence');
+});
+
+test('a valid task-coupled no-benefit measurement publishes a no-benefit conclusion', async () => {
+  const { classifyExperimentDecision, conclusionKindFor } = await import('../lib/orchestrator.js');
+  const record = taskCoupledRecord({ benefit: false, regression: false, mechanismRan: true });
+  record.decision = classifyExperimentDecision(record);
+  assert.equal(record.decision.kind, 'no-benefit');
+  assert.equal(conclusionKindFor(record), 'no-benefit');
+});
+
+test('a task-coupled candidate that actually ran and regressed still publishes regression', async () => {
+  const { classifyExperimentDecision, conclusionKindFor } = await import('../lib/orchestrator.js');
+  const record = taskCoupledRecord({ benefit: false, regression: true, mechanismRan: true });
+  record.decision = classifyExperimentDecision(record);
+  assert.equal(record.decision.kind, 'regression');
+  assert.equal(conclusionKindFor(record), 'regression');
+});
+
+test('a workload probe alongside task evidence cannot hide the task verdict', async () => {
+  const { classifyExperimentDecision, conclusionKindFor } = await import('../lib/orchestrator.js');
+  const combined = (taskBenefit) => ({
+    latestObservation: {
+      // A probe pair keeps this label; the validated task artifact is still
+      // attached and decides whether the candidate mechanism ran and helped.
+      evidenceKind: 'comparative-workload',
+      probe: { comparison: { benefit: true, regression: false, before: { executions: 3 } } },
+      taskBenefit: { ...taskBenefit, correctness: { baseline: true, candidate: true }, runs: { baseline: 3, candidate: 3 } },
+      solvesProblem: false,
+      repeatable: true,
+      regressionPassed: taskBenefit.regression === false,
+    },
+  });
+  const unadopted = combined({ benefit: false, regression: true, mechanismRan: false });
+  unadopted.decision = classifyExperimentDecision(unadopted);
+  assert.equal(unadopted.decision.kind, 'insufficient-evidence');
+  assert.equal(conclusionKindFor(unadopted), 'insufficient-evidence');
+
+  const noGain = combined({ benefit: false, regression: false, mechanismRan: true });
+  noGain.decision = classifyExperimentDecision(noGain);
+  assert.equal(noGain.decision.kind, 'no-benefit');
+  assert.equal(conclusionKindFor(noGain), 'no-benefit');
+
+  // An insufficient/invalid workload probe must not swallow a validated task
+  // verdict: it says nothing about whether the candidate mechanism helped.
+  const invalidProbe = combined({ benefit: false, regression: false, mechanismRan: true });
+  invalidProbe.latestObservation.probe.comparison = {
+    measurementInvalid: true, workload: { sufficient: false },
+    reasons: ['probe did not measure both sides'], before: { executions: 3 },
+  };
+  invalidProbe.decision = classifyExperimentDecision(invalidProbe);
+  assert.equal(invalidProbe.decision.kind, 'no-benefit');
+  assert.equal(conclusionKindFor(invalidProbe), 'no-benefit');
+
+  // The combined regressionPassed flag is not itself regression evidence: a
+  // control that failed on both sides measures no regression, while a task
+  // artifact that actually ran and exceeded its budget does.
+  const controlFailedBothSides = combined({ benefit: false, regression: false, mechanismRan: true });
+  controlFailedBothSides.latestObservation.probe.comparison = {
+    measurementInvalid: true, workload: { sufficient: false },
+    reasons: ['insufficient'], before: { executions: 3 },
+  };
+  controlFailedBothSides.latestObservation.regressionPassed = false;
+  controlFailedBothSides.decision = classifyExperimentDecision(controlFailedBothSides);
+  assert.equal(controlFailedBothSides.decision.kind, 'no-benefit');
+
+  const taskRegression = combined({ benefit: false, regression: true, mechanismRan: true });
+  taskRegression.latestObservation.probe.comparison = { transportFailed: true, measurementInvalid: true, workload: { sufficient: false }, before: { executions: 3 } };
+  taskRegression.latestObservation.regressionPassed = false;
+  taskRegression.decision = classifyExperimentDecision(taskRegression);
+  assert.equal(taskRegression.decision.kind, 'regression');
+  assert.equal(conclusionKindFor(taskRegression), 'regression');
+});

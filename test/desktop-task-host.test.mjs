@@ -91,6 +91,12 @@ function fakeKernel({ behavior = 'stable', facts = null } = {}) {
       return { ok: false, experimentId: 'exp-desktop-task-1', phase: 'awaiting-owner-confirmation', gates: GATES, decision: { kind: 'benefit', eligible: true } };
     }
     state.confirmedPromotions += 1;
+    if (behavior === 'promotion-failed') {
+      // The kernel's package-inspection branch disposes the Trial first, proves
+      // runtime recovery, and still refuses the durable commit. Its receipt is a
+      // normal (non-isError) tool value with an explicit recovery proof.
+      return { ok: false, experimentId: 'exp-desktop-task-1', phase: 'promotion-failed', reason: 'package-inspection-failed', runtimeRecovered: true };
+    }
     return { ok: true, experimentId: 'exp-desktop-task-1', phase: 'canary-observing' };
   } });
   tools.set('evolution_canary_observe', { execute: async (args) => {
@@ -652,6 +658,27 @@ test('an ordinary tool error that quotes the refusal phrase keeps its own path',
   const state = await waitForState(home, taskId, (value) => value.phase === 'failed');
   assert.equal(state.error.code, 'E_QUOTED_POLICY');
   assert.equal(runCodeCalls, 0);
+});
+
+test('a proven-recovered promotion failure fails the task without wedging the queue', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const kernel = fakeKernel({ behavior: 'promotion-failed' });
+  const ctx = fakeCtx(kernel, plan);
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const failed = await waitForState(home, taskId, (value) => value.phase === 'failed', 10_000);
+  assert.equal(failed.error.code, 'E_DESKTOP_PROMOTION_FAILED');
+  assert.equal(kernel.state.reverts, 0, 'revert cannot act on a trial the kernel already disposed');
+  assert.notEqual(failed.cleanupPending, true, 'a proven recovery needs no cleanup retry');
+  // The next request must still be schedulable: a stuck pendingCleanup silently
+  // drops every later task for the lifetime of this host.
+  const nextTaskId = await submit(home, plan, mintTaskId());
+  const next = await waitForState(home, nextTaskId, (value) => value.phase !== undefined, 10_000);
+  assert.notEqual(next.phase, 'promoting', 'the second task must actually start');
 });
 
 test('a transient revert failure keeps the owner and retries cleanup until it is proven', async (t) => {

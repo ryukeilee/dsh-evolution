@@ -30,6 +30,8 @@ import { fileURLToPath } from 'node:url';
 
 import { EvolutionOrchestrator, safeErrorDto } from '../lib/orchestrator.js';
 import { apply } from '../lib/registration.js';
+import { openSharedExperience } from '../lib/shared-experience.js';
+import { strategyFingerprint } from '../lib/experience-plan.js';
 import { context } from './fixtures/runtime-inspect.mjs';
 
 const SESSION = fileURLToPath(new URL('./fixtures/autonomous-session.mjs', import.meta.url));
@@ -709,4 +711,39 @@ test('registered listener matches a reconstructable legacy failure without rewri
   assert.equal(second.results.at(-1).reason, 'failure-memory');
   assert.equal(second.core.suppressedPatterns.size, 1);
   assert.equal(JSON.stringify(second.core.memory.data.entries.filter((entry) => entry.experiment?.strategy)), before);
+});
+
+test('the observer consults a durable ineffective conclusion for the same declaration', async (t) => {
+  const root = await scratch(t);
+  const store = openSharedExperience(path.join(root, 'shared'));
+  t.after(() => store.close());
+  const decl = declaration('a');
+  const target = decl.target;
+  const declarationFingerprint = new EvolutionOrchestrator(context(), {
+    presetDir: root, startupDrift: false, eventBridgePath: path.join(root, 'fp-events.jsonl'),
+    eventBridgeKey: 'f'.repeat(32), driftStatePath: path.join(root, 'fp-drift.json'),
+    memoryPath: path.join(root, 'fp-memory.json'), autonomousStrategies: { AGENT_ERROR: decl },
+  }).strategyFingerprint(decl);
+  const declarationStrategy = `evolution-declaration:${declarationFingerprint}`;
+  const fingerprint = strategyFingerprint(target, declarationStrategy);
+  const applicability = { dsh: '1.30.0', cordis: '4.1.0', evolution: '0.3.0' };
+  store.recordConclusion({
+    experimentId: 'exp-prior-no-benefit', target, problem: target,
+    strategy: declarationStrategy, strategyFingerprint: fingerprint,
+    rootCause: '', failureMode: '', decision: 'no-benefit',
+    applicability, occurredAt: new Date().toISOString(),
+  }, 'prior-session-bridge');
+  const h = session(root, {
+    strategies: { AGENT_ERROR: decl },
+    overrides: {
+      sharedExperience: store,
+      runtimeVersions: { host: applicability.dsh, cordis: applicability.cordis, evolution: applicability.evolution },
+    },
+  });
+  await h.observe();
+  const second = await h.observe();
+  assert.equal(second.phase, 'strategy-already-proven-ineffective');
+  assert.equal(second.reason, 'prior-ineffective-conclusion');
+  assert.equal(second.prior.decision, 'no-benefit');
+  assert.equal([...h.core.experiments.values()].some((record) => record.state === 'trial'), false);
 });

@@ -161,7 +161,7 @@ test('v2: event ids and digests are the full 32-byte SHA-256 values as BLOBs', (
     status: 'failed', message: 'Official operation failed (E_VERIFY)',
   };
   const promotion = {
-    eventId: 'evt-promotion-1', eventType: 'promotion-succeeded', target: 'plugin:edge-cache',
+    eventId: 'evt-promotion-1', eventType: 'canary-passed', target: 'plugin:edge-cache',
     audit: { at: '2025-01-02T03:04:05.000Z' },
   };
   const conclusion = {
@@ -280,7 +280,7 @@ test('v2: knowledge rows are exactly the canonical normalize+merge result', () =
     // One promotion fact recorded out of order (sequenced receipt) later than a
     // rollback must demote the earlier success instead of leaving a stale KNOWN.
     store.recordEvolution(
-      { eventId: 'evt-know-1', eventType: 'promotion-succeeded', target: 'plugin:edge-cache', audit: { at: '2025-01-01T00:00:00.000Z' } },
+      { eventId: 'evt-know-1', eventType: 'canary-passed', target: 'plugin:edge-cache', audit: { at: '2025-01-01T00:00:00.000Z' } },
       'desktop', { writer: 'host-a', sequence: 11 },
     );
     store.recordEvolution(

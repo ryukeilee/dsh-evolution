@@ -270,8 +270,20 @@ test('host identity comparison is capability-friendly but never version-blind', 
   assert.equal(hostCompatible(base, { ...base, dsh: '0.2.2-rc.2' }).reason, 'host-version-mismatch');
   assert.equal(hostCompatible(base, { ...base, cordis: '4.2.0' }).reason, 'cordis-version-mismatch');
   assert.equal(hostCompatible(base, { ...base, include: '1.2.0' }).reason, 'include-version-mismatch');
-  assert.equal(hostCompatible(base, { ...base, node: 'v26.0.0' }).reason, 'node-version-mismatch');
   assert.equal(hostCompatible(null, base).reason, 'host-facts-missing');
+});
+
+test('a Desktop-published record stays compatible with CLI consumers on supported Node majors', () => {
+  // Desktop publishes from Electron's Node; ACP/Web consume from the user's CLI.
+  // Both 22.x and >=24 are supported by engines, so a Node major difference is
+  // normal and must not make the one shared record permanently unmountable.
+  const desktop = { dsh: '0.2.2-rc.5', cordis: '4.1.0', include: '1.0.10', node: 'v24.21.0' };
+  for (const node of ['v24.21.0', 'v22.19.0', 'v26.13.1']) {
+    assert.equal(hostCompatible(desktop, { ...desktop, node }).ok, true, `consumer on ${node}`);
+  }
+  // The Node fact still participates in the digest: a different runtime is a
+  // different recorded identity, just not a compatibility rejection.
+  assert.notEqual(hostDigest(desktop), hostDigest({ ...desktop, node: 'v22.19.0' }));
 });
 
 test('per-profile revocation and consumer state round-trip atomically', async (t) => {
