@@ -68,12 +68,15 @@ sol-loop 第 2 轮再发现 3 blocker、1 should、1 nit，均已修复并反证
 | `recall()` 2000 上限本身 | **NO-CHANGE（既有定论）**。上限保持；本轮只修截断信号语义，不扩大窗口。 | 第六轮审计；本文件 §2.3 F4 |
 | canary failureMode / 矛盾结论 / usage 投影 / 撤销回写等八轮已定项 | **NO-CHANGE**。本轮子代理与父代理复核其仍有效，未重复调查。 | 第八轮审计与既有测试 |
 
+
+sol-loop 第 3 轮再发现 2 blocker、1 should，均已修复并反证：S13 回收会认证无法验签的未终止末行，让日志既不能裁剪也不能追加（改为在提交 floor 前拒绝，交 doctor 先修残尾）；S14 校验按自有下标、摘要却按迭代器读取数组，自定义迭代器可让反向数组被判为符合预期（两者统一按自有下标生成普通快照，普通数组摘要不变）；S15 精确键补回唯一窗口外记录仍报 truncated（改为只在该行不是被补回的精确键时报告）。
+
 ## 4. 验证
 
 - 反证：floor 生成修复两项核心用例在旧源码失败，修复后 7/7（含真实领域存储集成）；sharing 诊断两项新用例在旧源码失败，修复后 10/10。
 - 聚焦：回收锁定、归档删除、跨进程边界、领域存储、doctor floor、sharing 诊断、自主重试、Desktop 任务、probe 场景、guard 脱敏、recall 窗口共 100+ 项分批全绿；新增 7+10+1+6+2+2 项均通过，反证在旧源码上分别失败。
 - 领域差分基线：本轮把 `domain-storage.js` 的改动登记为新的逆向 round（`test/domain-storage/floor-generation-baseline.js`），`domain-storage-write-path-equivalence` 与 `load-projection` 恢复为等价通过。
-- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2237 项，2235 通过 / 0 失败 / 2 跳过**（基线含 PR #98 为 2218）。
+- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2239 项，2237 通过 / 0 失败 / 2 跳过**（基线含 PR #98 为 2218）。
 - 打包：`npm run pack:check` **17/17** 通过；工作树是 v0.2.19 固定点的已提交后继，固定点、产物与既有证据未改动；未执行 `--release` 或任何发布动作。
 - 独立复审：反方子代理对 floor/doctor 修复给出 SOUND、无 blocker；sol-loop（codex / gpt-6.2-sol / high）第 1 轮 CHANGES（3 blocker、3 should、1 nit），逐条复核并修复，反证见上；第 2 轮结论以 PR 描述为准。
 
