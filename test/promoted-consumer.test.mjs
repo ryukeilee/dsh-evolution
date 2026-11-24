@@ -495,6 +495,37 @@ test('a replacement that fails to apply restores the previous record in the same
   await session.dispose();
 });
 
+test('fallback walks back a chain until it finds a candidate that applies', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const working = await createRecord({ toolName: 'original_policy_tool' });
+  const brokenB = await createRecord({
+    toolName: 'middle_policy_tool', inject: [], requiredServices: [],
+    source: "export const name = 'middle';\nexport function apply() { throw new Error('middle exploded'); }\n",
+  });
+  const brokenC = await createRecord({
+    toolName: 'final_policy_tool', inject: [], requiredServices: [],
+    source: "export const name = 'final';\nexport function apply() { throw new Error('final exploded'); }\n",
+  });
+  const marker = (id, source) => ({
+    recordId: id, sourceSha256: source, approvalSha256: 'c'.repeat(64),
+    evidenceSha256: 'd'.repeat(64), at: '2026-11-24T15:00:00.000Z',
+  });
+  await writeIndex([
+    { ...working.record, supersededBy: { acp: marker(brokenB.record.id, brokenB.record.sourceSha256) } },
+    { ...brokenB.record, supersededBy: { acp: marker(brokenC.record.id, brokenC.record.sourceSha256) } },
+    brokenC.record,
+  ]);
+
+  const ctx = await boot();
+  const session = await mountSession(ctx, dataRoot);
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+  assert.equal(rows.get(brokenC.record.id).status, 'failed');
+  assert.equal(rows.get(brokenB.record.id).status, 'failed');
+  assert.equal(rows.get(working.record.id).status, 'active', 'the oldest working policy is restored in this start');
+  assert.deepEqual(ctx.tools.schemas().map((definition) => definition.name), ['original_policy_tool']);
+  await session.dispose();
+});
+
 test('a second start over the same data root mounts once and never duplicates', async (t) => {
   const { dataRoot, paths, createRecord, writeIndex, readComposition } = await fixture(t);
   const { record, toolName } = await createRecord();

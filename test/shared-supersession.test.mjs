@@ -79,20 +79,20 @@ test('supersession is profile-scoped and digest-bound', () => {
   assert.deepEqual(applySupersession(pair(), { profile: 'desktop' })[0].decision, { status: 'eligible' });
 });
 
-async function recordFixture(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-supersession-'));
-  t.after(() => fs.rm(root, { recursive: true, force: true }));
+async function recordFixture(t, id = OLD, existingRoot = null) {
+  const root = existingRoot ?? await fs.mkdtemp(path.join(os.tmpdir(), 'evo-supersession-'));
+  if (!existingRoot) t.after(() => fs.rm(root, { recursive: true, force: true }));
   const pluginRoot = path.join(root, 'promoted');
-  const pluginName = `dsh-${OLD}`;
+  const pluginName = `dsh-${id}`;
   const pluginDir = path.join(pluginRoot, pluginName, 'lib');
   await fs.mkdir(pluginDir, { recursive: true });
   const modulePath = path.join(pluginDir, 'index.js');
-  const source = 'export const name = "old";\nexport const inject = [];\nexport function apply() {}\n';
+  const source = `export const name = ${JSON.stringify(id)};\nexport const inject = [];\nexport function apply() {}\n`;
   await fs.writeFile(modulePath, source);
   await fs.writeFile(path.join(pluginRoot, pluginName, 'package.json'), `${JSON.stringify({ name: pluginName, version: '0.1.0', type: 'module', main: 'lib/index.js' })}\n`);
   const paths = { dataRoot: root, pluginRoot };
   const record = {
-    id: OLD, schemaVersion: 1, experimentId: 'exp-old', pluginName, moduleUrl: pathToFileURL(modulePath).href,
+    id, schemaVersion: 1, experimentId: `exp-${id.slice(-4)}`, pluginName, moduleUrl: pathToFileURL(modulePath).href,
     entry: 'lib/index.js', sourceSha256: HEX(source),
     manifestSha256: HEX(await fs.readFile(path.join(pluginRoot, pluginName, 'package.json'))),
     publisherProfile: 'desktop', approvedProfiles: ['acp'],
@@ -144,6 +144,20 @@ test('when the chain tail is ineligible the previous eligible version survives',
   assert.equal(result[2].decision.status, 'pending-revalidation');
 });
 
+test('traversal crosses an ineligible intermediate to the still-eligible tail', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const rows = [
+    { record: { id: OLD, sourceSha256: 'a'.repeat(64), supersededBy: { acp: marker() } }, decision: { status: 'eligible' } },
+    { record: { id: NEW, sourceSha256: 'b'.repeat(64), supersededBy: { acp: marker({ recordId: THIRD, sourceSha256: 'f'.repeat(64) }) } }, decision: { status: SHARED_STATUS.DISABLED, reason: 'operator-disabled' } },
+    { record: { id: THIRD, sourceSha256: 'f'.repeat(64) }, decision: { status: 'eligible' } },
+  ];
+  const result = applySupersession(rows, { profile: 'acp' });
+  assert.equal(result[0].decision.status, SHARED_STATUS.DISABLED);
+  assert.equal(result[0].decision.supersededBy, THIRD, 'A stays suppressed in favour of the tail');
+  assert.equal(result[1].decision.status, SHARED_STATUS.DISABLED, 'B stays operator-disabled');
+  assert.equal(result[2].decision.status, 'eligible');
+});
+
 test('a cycle suppresses nothing', () => {
   const rows = [
     { record: { id: OLD, sourceSha256: 'a'.repeat(64), supersededBy: { acp: marker() } }, decision: { status: 'eligible' } },
@@ -175,6 +189,22 @@ test('revoke disables the replacement before clearing the marker', async (t) => 
   assert.equal(index.records[0].supersededBy, undefined);
   const disable = await readDisableState(paths);
   assert.ok(disable.entries.some((entry) => entry.pluginId === NEW && entry.profile === 'acp'));
+});
+
+test('a non-tail supersession cannot be revoked out of order', async (t) => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const { paths, record } = await recordFixture(t);
+  const second = await recordFixture(t, NEW, paths.dataRoot);
+  await publishSharedRecord(paths, { ...record, supersededBy: { acp: marker({ recordId: NEW }) } });
+  await publishSharedRecord(paths, {
+    ...second.record,
+    supersededBy: { acp: marker({ recordId: THIRD, sourceSha256: 'f'.repeat(64) }) },
+  });
+  const result = await revokeSharedSupersession(paths, { oldId: OLD, profile: 'acp', reason: 'revoke-supersede:abc' });
+  assert.equal(result.status, 'refused');
+  assert.equal(result.reason, 'revoke-chain-tail-first');
+  const disable = await readDisableState(paths);
+  assert.deepEqual(disable.entries, [], 'nothing was disabled on a refused revoke');
 });
 
 test('the index rejects a malformed supersession or approval annotation', async (t) => {

@@ -375,7 +375,7 @@ async function commandSupersede(options) {
     // every record in the loop suppress the next and leave nothing mounted.
     const byId = new Map(index.records.map((row) => [row.id, row]));
     const seen = new Set();
-    let walk = identity;
+    let walk = index.records.find((row) => row.id === newId) ?? identity;
     while (walk && !seen.has(walk.id)) {
       seen.add(walk.id);
       if (walk.id === oldId) throw new Error(`${newId} already supersedes ${oldId} in ${options.profile}; a cycle is not allowed`);

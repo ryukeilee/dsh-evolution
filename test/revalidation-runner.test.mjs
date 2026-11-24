@@ -43,6 +43,14 @@ test('revalidation runner: a superseded record is expected disabled while its re
   assert.deepEqual(runner.expectedRecordStatus(previous, 'acp', [previous, replacement], revoked), { status: 'active' });
 });
 
+test('revalidation runner: evidence clone strips supersession, post-adoption clone keeps it', () => {
+  const index = { plugins: [{ id: TARGET_A, pluginName: 'dsh-a', supersededBy: { acp: { recordId: TARGET_B } } }] };
+  const evidence = runner.rewriteIndexForVerification(index, { dataRoot: os.tmpdir() });
+  assert.equal(evidence.plugins[0].supersededBy, undefined, 'a superseded target must be verifiable on its own');
+  const adopted = runner.rewriteIndexForVerification(index, { dataRoot: os.tmpdir(), stripSupersession: false });
+  assert.equal(adopted.plugins[0].supersededBy.acp.recordId, TARGET_B, 'the final mounted topology must still be checked');
+});
+
 test('revalidation runner: parses its operator flags', () => {
   const options = runner.parseArgs(['--home', '/tmp/home', '--apply', '--json', '--timeout-ms', '9000']);
   assert.equal(options.home, path.resolve('/tmp/home'));

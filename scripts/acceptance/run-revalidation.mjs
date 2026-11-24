@@ -150,10 +150,11 @@ export function rewriteIndexForVerification(index, options) {
     if (record && typeof record.pluginName === 'string') {
       record.moduleUrl = pathToFileURL(path.join(dataRoot, 'promoted', record.pluginName, 'lib', 'index.js')).href;
     }
-    // The clone proves the bytes and the host, not the current operator
-    // supersession topology. Leaving a marker here would suppress a superseded
+    // The evidence clone proves bytes and host, not the current operator
+    // supersession topology: leaving a marker here would suppress a superseded
     // target and make it impossible to gather its own activation evidence.
-    if (record && record.supersededBy) delete record.supersededBy;
+    // The post-adoption clone keeps the markers to verify the final topology.
+    if (settings.stripSupersession !== false && record && record.supersededBy) delete record.supersededBy;
     if (host && record && targetIds.has(record.id)) {
       record.host = Object.assign({}, record.host, { dsh: host.dsh, cordis: host.cordis, include: host.include, node: host.node, verifiedAt: at });
     }
@@ -542,7 +543,8 @@ async function main(argv) {
     for (const id of targets) {
       const record = records.find((row) => row.id === id);
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
-      expect[id] = expectedRecordStatus(record, profile, verificationRecords, disable);
+      const verificationRecord = verificationRecords.find((row) => row.id === id) ?? record;
+      expect[id] = expectedRecordStatus(verificationRecord, profile, verificationRecords, disable);
       const plan = plansByRecord.get(id);
       if (plan && expect[id].status === 'active') {
         calls.push({ id: id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: id });
@@ -579,7 +581,8 @@ async function main(argv) {
     for (const profile of PROFILES) {
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
       const row = verification[profile].rows.get(id);
-      const expectedStatus = expectedRecordStatus(record, profile, verificationRecords, disable);
+      const verificationRecord = verificationRecords.find((row) => row.id === id) ?? record;
+      const expectedStatus = expectedRecordStatus(verificationRecord, profile, verificationRecords, disable);
       if (!row || row.status !== expectedStatus.status
         || (expectedStatus.reason && row.reason !== expectedStatus.reason)) {
         throw new Error(id + ' is ' + (row ? `${row.status}/${row.reason}` : 'missing') + ' in the verified ' + profile + ' entry');
@@ -679,16 +682,23 @@ async function main(argv) {
     const clone2 = path.join(work, 'adopted-home');
     cloneHome(sourceHome, clone2);
     const clone2DataRoot = path.join(clone2, 'storages', 'evolution');
-    writeJsonFile(path.join(clone2, PUBLISHED_REL), rewriteIndexForVerification(readJsonFile(indexPath), { dataRoot: clone2DataRoot, host: null, targets: [] }));
+    const adoptedIndex = rewriteIndexForVerification(readJsonFile(indexPath), {
+      dataRoot: clone2DataRoot, host: null, targets: [], stripSupersession: false,
+    });
+    writeJsonFile(path.join(clone2, PUBLISHED_REL), adoptedIndex);
+    const adoptedRecords = Array.isArray(adoptedIndex.plugins) ? adoptedIndex.plugins : [];
     postAdoption = {};
     for (const profile of PROFILES) {
       const expect = {};
       const calls = [];
       for (const plugin of plugins) {
         if (!profileIsRevalidationTarget(plugin, profile, disable)) continue;
-        expect[plugin.id] = expectedRecordStatus(plugin, profile, plugins, disable);
+        const adoptedRecord = adoptedRecords.find((row) => row.id === plugin.id) ?? plugin;
+        expect[plugin.id] = expectedRecordStatus(adoptedRecord, profile, adoptedRecords, disable);
         const plan = plansByRecord.get(plugin.id);
-        if (plan) calls.push({ id: plugin.id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: plugin.id });
+        if (plan && expect[plugin.id].status === 'active') {
+          calls.push({ id: plugin.id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: plugin.id });
+        }
       }
       const outcome = await bootConsumer({
         profile,
