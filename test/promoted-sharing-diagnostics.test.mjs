@@ -9,6 +9,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
 import { consumerStateDocument, publishSharedRecord, setDisabledForProfile, writeConsumerState } from '../lib/promoted-sharing.js';
+import { readPublishedPluginReview, REVIEW_ACTIONS } from '../lib/self-evolution-review.js';
 
 const HEX = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const KEY = 'b'.repeat(64);
@@ -168,7 +169,10 @@ test('a failed consumer activation degrades the check and names the plugin', asy
   assert.equal(check.evidence.consumers.web.plugins[0].reason, 'plugin-apply-failed');
 });
 
-test('an unreadable revocation table degrades the check and names its status', async (t) => {
+// Same scene on both read-only surfaces: a valid index with a corrupt
+// disabled.json makes consumers refuse every record, so doctor must report
+// BLOCKED just like the unified review (which emits operator-action).
+test('an unreadable revocation table blocks the doctor and the unified review', async (t) => {
   const env = await home(t);
   const host = await observedHostOf(env.dshHome);
   const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
@@ -177,9 +181,18 @@ test('an unreadable revocation table degrades the check and names its status', a
   await fs.writeFile(disablePath, '{not json');
   const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
   const check = checkOf(report, 'promotion.sharing');
-  assert.equal(check.level, 'degraded');
+  assert.equal(check.level, 'blocked', JSON.stringify(check.evidence));
   assert.equal(check.evidence.disableStatus, 'invalid');
-  assert.match(check.summary, /revocation table is invalid/);
+  assert.equal(check.evidence.blockingReason, 'disable-state-invalid');
+  assert.match(check.summary, /revocation table is invalid; consumers refuse every record/);
+  assert.match(check.remediation, /Restore it from a backup/);
+  assert.doesNotMatch(check.remediation, /Read the per-profile consumer state/);
+
+  const review = await readPublishedPluginReview({ paths: env.paths, host });
+  assert.equal(review.status, 'blocked');
+  assert.equal(review.records[0].status, 'blocked');
+  assert.equal(review.records[0].action, REVIEW_ACTIONS.OPERATOR);
+  assert.ok(review.nextActions.some((row) => row.action === REVIEW_ACTIONS.OPERATOR && /revocation table is invalid/.test(row.why)));
 });
 
 // 2026-11-24 reliability round: a consumer that explicitly refuses an approved

@@ -33,6 +33,7 @@ import {
   readPublishedPluginReview,
   reviewExperience,
   REVIEW_ACTIONS,
+  SELF_EVOLUTION_REVIEW_LIMITS,
 } from '../lib/self-evolution-review.js';
 import { openSharedExperience } from '../lib/shared-experience.js';
 
@@ -961,6 +962,78 @@ test('a truncated stable review cannot compose a complete no-action result', () 
   });
   assert.equal(composed.kind, 'no-action');
   assert.equal(composed.incomplete, true);
+});
+
+/** Publish `count` real stable records, each with its own verified plugin bytes. */
+async function publishMany(t, name, count) {
+  const root = await scratch(t, name);
+  const paths = { dataRoot: root, presetDir: root, pluginRoot: path.join(root, 'promoted') };
+  const published = [];
+  for (let i = 1; i <= count; i += 1) {
+    const suffix = i.toString(16).padStart(12, '0');
+    const id = `evolution-promoted-${suffix}`;
+    const pluginName = `dsh-${id}`;
+    const pluginDir = path.join(paths.pluginRoot, pluginName);
+    await fs.mkdir(path.join(pluginDir, 'lib'), { recursive: true });
+    const modulePath = path.join(pluginDir, 'lib', 'index.js');
+    const source = `export const name = ${JSON.stringify(pluginName)};\nexport const inject = ["tools"];\nexport function apply() {}\n`;
+    await fs.writeFile(modulePath, source);
+    await fs.writeFile(
+      path.join(pluginDir, 'package.json'),
+      `${JSON.stringify({ name: pluginName, version: '0.1.0', private: true, type: 'module', main: 'lib/index.js' }, null, 2)}\n`,
+    );
+    const durable = { pluginName, pluginPath: pluginDir, moduleUrl: pathToFileURL(modulePath).href, rowId: id };
+    const experiment = {
+      id: `exp-many-${suffix}`, ownerId: 'desktop-owner', state: 'stable',
+      stableCommittedAt: '2026-01-02T00:00:00.000Z', shareTargets: [...PROFILES],
+      canary: {
+        promotionTimestamp: '2026-01-01T23:00:00.000Z', healthObservationWindow: 1,
+        startupVerified: true, observations: [{ barrierId: 'startup' }],
+      },
+      decision: { version: 1, kind: 'benefit', source: 'canary-passed' }, durable,
+    };
+    const record = await buildSharedRecord({
+      paths, experiment, durable, journal: null, approvedProfiles: [...PROFILES],
+      host: CURRENT_HOST, capabilities: CAPABILITIES, source: { stableCommittedAt: experiment.stableCommittedAt },
+    });
+    const outcome = await publishSharedRecord(paths, record);
+    assert.equal(outcome.status, 'published', `fixture must publish record ${id}`);
+    published.push({ id, modulePath });
+  }
+  return { root, paths, published };
+}
+
+// A plugin past the bounded read cap gets one owner-facing blocking action and
+// no invented per-record verdict. The action cap/order must still hold.
+test('records past the bounded cap get an operator action, not invented statuses', async (t) => {
+  const count = SELF_EVOLUTION_REVIEW_LIMITS.maxRecords + 1;
+  const env = await publishMany(t, 'truncation', count);
+  const omitted = env.published[count - 1];
+  // If this row were evaluated its source digest would mismatch, so it would
+  // need an operator action. Being omitted, the review must not report it.
+  await fs.writeFile(omitted.modulePath, 'export const name = "tampered";');
+  // No consumer state for the evaluated rows: they legitimately produce
+  // restart actions, which exercises the ordering and the action cap.
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST });
+  assert.equal(result.indexRecordCount, count);
+  assert.equal(result.truncated, true);
+  assert.equal(result.records.length, SELF_EVOLUTION_REVIEW_LIMITS.maxRecords);
+  assert.equal(result.records.some((row) => row.id === omitted.id), false, 'the omitted record must not get a per-record status');
+
+  const truncation = result.nextActions.find((row) => row.action === REVIEW_ACTIONS.OPERATOR && /not evaluated/.test(row.why));
+  assert.ok(truncation, `missing truncation operator action: ${JSON.stringify(result.nextActions)}`);
+  assert.equal(truncation.recordId, null);
+  assert.match(truncation.why, /1 published record\(s\) past the 50-record cap were not evaluated/);
+  assert.ok(truncation.why.includes(omitted.id), `truncation action must name an omitted id: ${truncation.why}`);
+  assert.ok(truncation.why.includes('incomplete'));
+  assert.equal(result.nextActions[0], truncation, 'the blocking truncation action must outrank consumer restarts');
+  assert.ok(result.nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+  assert.ok(result.nextActionsDropped > 0, 'the action cap must still drop excess actions');
+  assert.ok(result.nextActions.slice(1).every((row) => row.action === REVIEW_ACTIONS.RESTART));
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.incomplete, true);
+  assert.equal(composed.kind, REVIEW_ACTIONS.OPERATOR);
 });
 
 test('withheld discovery evidence cannot compose a complete review', () => {
