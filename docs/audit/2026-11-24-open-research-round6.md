@@ -39,7 +39,7 @@
 
 - 反证：新用例中 7 个在旧源码按预期失败；另外 4 个是守卫（旧源码也通过，用于防止身份/归因回归）。
 - 聚焦：最终 **185/185** 通过（`review-fix-feedback-fidelity`、`experience-evolution-lifecycle`、`self-evolution-review`、`capability-usage-scan`、`shared-experience-conclusion`、`experience-attribution`）。
-- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` —— 最终树 **2192 项，2190 通过 / 0 失败 / 2 跳过**。
+- 全量：`NODE_OPTIONS=--max-old-space-size=4096 npm test` —— 最终树 **2194 项，2192 通过 / 0 失败 / 2 跳过**。
 - 打包：`npm run pack:check` 17/17 通过；工作树是 v0.2.19 固定点的已提交后继，固定点、产物与证据未改动；未执行 `--release` 或任何发布动作。
 - 隔离真实宿主验收：在最终树重新 `npm run release:pack` 后，对 `0.2.2-rc.5` 运行 `npm run acceptance:host -- --no-hmr --experience-evolution`，**25/25 步骤 ok**（含安装、lifecycle、升级/回滚、真实晋升、经验驱动实验、重启与回归、最终 doctor），证据写入 `docs/evidence/dsh-0.2.2-rc.5-round6-feedback.json`。只使用隔离 runtime/home，未触碰正式 DSH_HOME。
 
