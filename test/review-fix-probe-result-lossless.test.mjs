@@ -89,6 +89,16 @@ test('a resultPath accessor is rejected without being read', async (t) => {
     JSON.stringify(result.samples));
 });
 
+test('a throwing descriptor trap yields an unmeasurable row, not an execution failure', async (t) => {
+  const value = new Proxy({ marker: 'ok' }, {
+    getOwnPropertyDescriptor() { throw new Error('hostile descriptor'); },
+  });
+  const h = harness(t, { value, expected: { marker: 'ok' } });
+  const result = await h.orchestrator.probe({ experimentId: 'exp-probe-lossless', phase: 'baseline', scenario: h.scenario }, h.exec);
+  assert.ok(result.samples.some((entry) => entry.isError === true && entry.code === 'PROBE_VALUE_NOT_LOSSLESS'
+    && entry.outputUnmeasurable === true), JSON.stringify(result.samples));
+});
+
 test('the length bound reads the validated snapshot, not a toJSON proxy', () => {
   const expected = { big: 'x'.repeat(17000) };
   Object.defineProperty(expected, 'toJSON', { value: () => 'short', enumerable: false });
