@@ -60,6 +60,7 @@ is outside this fix.
 | DSH | `0.2.0-rc.2`, `0.2.1-alpha.1`, `0.2.1-rc.2`, `0.2.2-rc.1`, `0.2.2-rc.2`, `0.2.2-rc.3`, `0.2.2-rc.4` or `0.2.2-rc.5` (exact alternatives, enforced by `peerDependencies`; the last five require the host `hmr` row disabled, see [The upstream HMR transaction gap](#the-upstream-hmr-transaction-gap-on-022-rc1)) |
 | Node | `^22.19.0 || >=24.0.0` |
 | Bundle format | `dsh.bundle.patch` + profile `dsh.profile.bundles` |
+| Retention floor (`0.2.19` ↔ `0.2.20`) | `0.2.19` cannot open an ambiguous floor written by a `0.2.20` reclaim; ordinary floors interoperate both ways ([docs/compatibility/retention-floor.md](https://github.com/ryukeilee/dsh-evolution/blob/main/docs/compatibility/retention-floor.md)) |
 
 Every listed DSH version is verified by a real install run, not by widening a
 range. `SUPPORTED_DSH_VERSIONS` in `lib/diagnostics.js` is derived from the
@@ -120,6 +121,33 @@ is byte-identical from rc.2 through rc.5 (`33cbad2b…`) and differs in rc.1
 reproduction in `docs/evidence/hmr-022/` gives the same 3/3 diagnostic failure
 with the barrier and 3/3 success once HMR is visible; the rc.5 control is
 `docs/evidence/hmr-022/official-control-0.2.2-rc.5.json`.
+
+### Retention-floor compatibility between `0.2.19` and `0.2.20`
+
+Both versions keep the durable domain document at `schema: 1` and
+`RETENTION_SCHEMA = 1`; `0.2.20` adds only two optional fields to the retention
+floor's `log.prior` (`ambiguousPrefix: true` and `identity: { dev, ino }` with
+string values), which `planLogPrune()` writes only for an ambiguous floor — a
+non-empty retained tail whose keyed digest equals the corresponding file
+prefix — and only when a file identity is supplied. Ordinary floors keep the
+same field shape in both versions: `0.2.19` loads a `0.2.20` ordinary floor and
+continues absorbing, and `0.2.20` loads a `0.2.19` floor because the new fields
+are optional; a later `0.2.20` event-log reclaim requires a complete event log
+(`0.2.19` can commit an ordinary floor whose retained tail holds an unverifiable
+torn line, which loads under `0.2.20` but is refused at the next event-log
+reclaim planning with `E_DOMAIN_EVENT_LOG_PARTIAL_TAIL`). `0.2.19` refuses to
+open a `0.2.20` ambiguous floor while the domain opens: the official
+`@deepseek-ai/dsh-storage-domain` validates the stored global against the spec
+schema and throws a `DomainError` with code `invalid-record`; its cause is the
+`ZodError`, and an entry in that error's `issues[]` has code `unrecognized_keys`
+with path `[retention, log, prior]` for a committed floor or
+`[pending, retention, log, prior]` for a pending floor. Validation happens
+before any write to the stored domain document or the event-bridge log, so the
+domain snapshot and the event-bridge log stay byte-for-byte unchanged. Do not
+downgrade after a reclaim wrote an ambiguous floor: roll back before running a
+reclaim, and after such a reclaim either stay on `0.2.20` or restore a
+pre-reclaim data-root backup; do not delete or rewrite the floor to force a
+downgrade ([docs/compatibility/retention-floor.md](https://github.com/ryukeilee/dsh-evolution/blob/main/docs/compatibility/retention-floor.md)).
 
 ### Cross-entry promoted plugin sharing
 
