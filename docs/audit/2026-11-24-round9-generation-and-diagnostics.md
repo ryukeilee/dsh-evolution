@@ -59,7 +59,9 @@
 - 反证：floor 生成修复两项核心用例在旧源码失败，修复后 7/7（含真实领域存储集成）；sharing 诊断两项新用例在旧源码失败，修复后 10/10。
 - 聚焦：回收锁定、归档删除、跨进程边界、领域存储、doctor floor、sharing 诊断、自主重试、Desktop 任务、probe 场景、guard 脱敏、recall 窗口共 100+ 项分批全绿；新增 7+10+1+6+2+2 项均通过，反证在旧源码上分别失败。
 - 领域差分基线：本轮把 `domain-storage.js` 的改动登记为新的逆向 round（`test/domain-storage/floor-generation-baseline.js`），`domain-storage-write-path-equivalence` 与 `load-projection` 恢复为等价通过。
-- 全量、打包与独立复审结果以本文件最终提交为准。
+- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2228 项，2226 通过 / 0 失败 / 2 跳过**（基线含 PR #98 为 2218）。
+- 打包：`npm run pack:check` **17/17** 通过；工作树是 v0.2.19 固定点的已提交后继，固定点、产物与既有证据未改动；未执行 `--release` 或任何发布动作。
+- 独立复审：反方子代理对 floor/doctor 修复给出 SOUND、无 blocker；sol-loop（codex / gpt-6.2-sol / high）结论见 PR 描述。
 
 ## 5. 剩余风险
 
