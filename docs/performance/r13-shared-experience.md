@@ -109,6 +109,9 @@ function sortCandidates(records) {
 | `writes`（N 个不同 target 的新事实） | 868.25 | 2630.82 | 9347.84 | 随写入条数线性（必要工作） |
 | hot-key 单 key 500 / 2000 / 5000 次修订 | 142.31 | 423.24 | 981.75 | 随**单 key 修订数**线性（有界窗口维护，与历史总行数无关） |
 
+表中最后一行的三列依次对应 500 / 2,000 / 5,000 次修订，不是 10k / 30k / 100k 行；
+前两列（`10k` / `30k`）与其修订数刻度无关，只表示同一张表在不同总行数下的测量点。
+
 `EXPLAIN QUERY PLAN` 证据：`SELECT count(*) FROM knowledge` 走
 `knowledge_recent` covering index；`SELECT key,body ... WHERE instr(body,?)
 ORDER BY revision DESC LIMIT ?` 走 `knowledge_recent` 索引按 revision 顺序取行，

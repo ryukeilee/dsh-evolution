@@ -22,7 +22,8 @@
 APFS、热页缓存；全部夹具在隔离临时目录与合成数据根中生成，未触碰正式 `DSH_HOME`、正式
 经验库、`event-bridge.key` 或用户数据，未改官方 DSH 源码。
 
-实际模型与档位：`opencode-go/deepseek-v4.1-flash` Low（`TEAM.md` 固定配置）。
+实际模型与档位：本文由 Copywriter（`opencode-go/deepseek-v4.1-flash` Low）汇总；
+Lead 与各 Builder 的实际模型与档位记录在 PR 交付说明与各子系统文档中。
 
 ## 1. 三项接受改动
 
@@ -265,8 +266,24 @@ canary 描述符二次序列化、观察者表剪枝、`detectDegradation` 索�
 | | 篡改反证 | 当前树 `blocked`、补丁树 `degraded`，指纹不等 |
 | | 13 个聚焦套件 | 328/328 通过，0 失败 0 跳过 |
 | 完整闭环 | 四档阶段构成 + 2,000 档插桩副本 | 已测，样本数与插图见 JSON |
-| 全量回归 | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | **由 Lead 在集成后执行，结果记录在 PR 交付说明** |
-| 打包检查 | `npm run pack:check` | **由 Lead 在集成后执行，结果记录在 PR 交付说明** |
+| 全量回归 | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | **2355 项 / 2353 通过 / 0 失败 / 2 跳过**（R12 基线 2348；新增 7 项差分用例） |
+| 打包检查 | `npm run pack:check`（开发阶段） | **17/17 通过**；工作树是 `0.2.21` 固定点的已提交后继，`release/` 与既有验收证据未改动 |
+
+### 6.1 Lead 独立复跑（静默机器）
+
+各子系统收工后，Lead 在没有其它基准/测试运行时按同一脚本独立复跑两项生产改动：
+
+| 改动 | 负载 | Builder 数据 | Lead 复跑 | 方向 |
+| --- | --- | ---: | ---: | --- |
+| `planLogPrune` | 2k / 20k / 100k 事件 | −7.16% / −11.26% / −13.74% | **−8.09% / −13.70% / −12.39%** | 三档均负 |
+| `appendBounded` | 热 key 写入 | −6.02% | **−6.07%** | 同向同量级 |
+| `sortCandidates` | `recall` | −9.35% | **−8.45%** | 同向同量级 |
+
+Lead 复跑的 A/A 噪声：事件桥 +0.81 / −0.01 / +0.03%（三档）；共享经验未改动对照
+`conclusions-nomatch` −0.13%、`discover` −0.30%、`recall-none` +0.94%、`recall-one` +0.12%；
+2/4 写者并发两侧分别 500/500 与 1000/1000 committed，`busy=0`、`other=0`。
+两次运行的绝对基线略有差异，百分比因此不完全相同；方向、配对差符号与量级一致。
+原始数据：`r13-lead-event-log-prune.json`、`r13-lead-shared-experience.json`。
 
 未执行、因而不在本文主张范围：真实宿主验收、`pack:check --release`、发布、Desktop 正式
 环境、真实模型推理、冷盘、其它平台或其它 Node 版本。
@@ -325,6 +342,7 @@ node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
 | 共享经验 | `docs/performance/r13-shared-experience-scale.json`、`r13-shared-experience-aa.json`、`r13-sparse-ab.json` |
 | 跨入口 / 诊断 / 桌面 | `docs/performance/r13-cross-entry-audit.json` 及 `r13-cross-entry-audit-{aa,micro,concurrent,rescan}-*.json` |
 | 完整闭环 | `docs/performance/r13-loop-composition-{0,200,2000,5000}.json`、`r13-loop-composition-copies.json` |
+| Lead 独立复跑 | `docs/performance/r13-lead-event-log-prune.json`、`r13-lead-shared-experience.json` |
 
 `docs/performance/`、`scripts/benchmarks/`、`test/` 均不在 `package.json#files` 白名单，
 不进入分发字节。分发文件改动只有 `lib/event-log-checkpoint.js`、
@@ -335,18 +353,19 @@ node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
 
 - 本文件只新增跨子系统汇总；未改 `lib/`、`test/`、`scripts/` 或其它文档。
 - 允许本地 commit；**未** push、未建 PR、未合并、未打 tag、未安装正式环境、未改主工作区。
-- 全量 `npm test` 与 `npm run pack:check` 由 Lead 在集成后执行，本文不预设其结论。
+- 全量 `npm test` 与 `npm run pack:check` 已由 Lead 在集成后执行，结果见 §6；
+  真实宿主验收、`pack:check --release` 与发布仍未执行，也不在本文主张范围内。
 
-## 9. 汇总时发现的不一致（仅报告，未改他文档）
+## 9. 汇总时发现并已修正的不一致
 
-1. **完整闭环复现命令的样本数**：[r13-loop-composition.md](r13-loop-composition.md) §1 与
-   JSON 记录 `--history 0 / 200` 为 7 个样本、`2,000 / 5,000` 为 5 个样本，但 §6 的命令对
-   四档统一使用 `--runs 5`。按该命令重跑 0 / 200 档会得到 5 个样本，不一定复现报告中的
-   中位数。
-2. **跨入口 20k 档的样本数**：[r13-cross-entry-audit.md](r13-cross-entry-audit.md) §1
-   明确「20k 档 2 样本/侧、预热 1 次」，`r13-cross-entry-audit-aa-20000.json` 也记录
-   `samples: 2`、`warmup: 1`；但 §8 的循环命令对四档统一使用 `--samples 3 --warmup 2`。
-   该命令不能逐字复现 20k 档的记录。
-3. **共享经验规模表的表头**：[r13-shared-experience.md](r13-shared-experience.md) §4 的列
-   头是 `10k / 30k / 100k`，但最后一行 `hot-key` 的数值对应 500 / 2,000 / 5,000 次修订
-   （该行首列已注明）。数值与 JSON 的 `hot-500/2000/5000` 一致，只是列头不适用于该行。
+汇总阶段发现三处“文档命令/表头与记录不符”，均已在集成时修正（未改任何测量数字）：
+
+1. **完整闭环复现命令的样本数**：[r13-loop-composition.md](r13-loop-composition.md) §1 与 JSON
+   记录 `--history 0 / 200` 为 7 个样本、`2,000 / 5,000` 为 5 个样本，但 §6 的命令对四档统一
+   使用 `--runs 5`。已改为逐档写明 `--runs 7 / 7 / 5 / 5`。
+2. **跨入口 20k 档的样本数**：[r13-cross-entry-audit.md](r13-cross-entry-audit.md) §1 与
+   `r13-cross-entry-audit-aa-20000.json` 记录 20k 档 2 样本/侧、预热 1 次，但 §8 的循环命令
+   对四档统一使用 `--samples 3 --warmup 2`。§8 已拆成 50/500/5000 与 20k 两段命令。
+3. **共享经验规模表的表头**：[r13-shared-experience.md](r13-shared-experience.md) §4 的列头是
+   `10k / 30k / 100k`，最后一行 `hot-key` 的数值实际对应 500 / 2,000 / 5,000 次修订。
+   表下已补一行说明；数值与 JSON 的 `hot-500/2000/5000` 一致。

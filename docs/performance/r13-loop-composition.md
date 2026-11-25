@@ -124,12 +124,19 @@ knowledge 行数线性增长。本闭环每次调用它两次（`propose` 的重
 ## 6. 复现
 
 ```sh
-# 阶段构成（非插桩，4 个历史档；每档独立进程与独立夹具）
-for H in 0 200 2000 5000; do
-  node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
-    --history "$H" --runs 5 --no-instrument \
-    --out "docs/performance/r13-loop-composition-$H.json"
-done
+# 阶段构成（非插桩，4 个历史档，与报告相同的样本数；每档独立进程与独立夹具）
+node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
+  --history 0 --runs 7 --no-instrument \
+  --out docs/performance/r13-loop-composition-0.json
+node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
+  --history 200 --runs 7 --no-instrument \
+  --out docs/performance/r13-loop-composition-200.json
+node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
+  --history 2000 --runs 5 --no-instrument \
+  --out docs/performance/r13-loop-composition-2000.json
+node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
+  --history 5000 --runs 5 --no-instrument \
+  --out docs/performance/r13-loop-composition-5000.json
 
 # 序列化/深拷贝归因（插桩副本，2,000 行档）
 node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \

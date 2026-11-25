@@ -184,14 +184,21 @@ for N in 50 500 5000 20000; do
   node "$S" build --fixture "$BASE/r13-fixture-$N" --records "$N" --archive "$N"
 done
 
-# 2) 交替 A/A（当前树 vs 当前树），每档 3 轮、独立子进程
-for N in 50 500 5000 20000; do
+# 2) 交替 A/A（当前树 vs 当前树），每档 3 轮、独立子进程。
+#    20k 档按报告记录使用 2 样本/侧、预热 1 次（`r13-cross-entry-audit-aa-20000.json`
+#    的 `samples: 2` / `warmup: 1`）；其余三档 3 样本/侧、预热 2 次。
+for N in 50 500 5000; do
   NODE_OPTIONS=--max-old-space-size=4096 node "$S" run \
     --baseline . --candidate . --fixture "$BASE/r13-fixture-$N" \
     --workloads indexRead,reconcileIdle,sourceVerify,review,doctor,usageRead \
     --rounds 3 --samples 3 --warmup 2 \
     --out "docs/performance/r13-cross-entry-audit-aa-$N.json"
 done
+NODE_OPTIONS=--max-old-space-size=4096 node "$S" run \
+  --baseline . --candidate . --fixture "$BASE/r13-fixture-20000" \
+  --workloads indexRead,reconcileIdle,sourceVerify,review,doctor,usageRead \
+  --rounds 3 --samples 2 --warmup 1 \
+  --out "docs/performance/r13-cross-entry-audit-aa-20000.json"
 
 # 3) O(字节) 子步骤分解
 for N in 50 500 5000 20000; do
