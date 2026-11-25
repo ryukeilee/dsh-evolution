@@ -1,0 +1,220 @@
+{
+  "method": {
+    "records": 20000,
+    "rounds": 4,
+    "primaryMetric": "process.cpuUsage (user+system)",
+    "alternation": "A,B -> B,A -> ...; fresh child process per side per round",
+    "heapLimit": "4096 MiB",
+    "fixtureHash": "9e57b189872ffac37ec69f2fb916bef16a52d1b87426aca38d9f41f90c167c68",
+    "note": "Other builders may run concurrently; CPU is paired and alternating, wall is secondary."
+  },
+  "summary": {
+    "A": {
+      "open": {
+        "wallMs": 991.5020625,
+        "cpuMs": 1111.2555
+      },
+      "flush": {
+        "wallMs": 9.691478999999958,
+        "cpuMs": 9.7805
+      },
+      "observe": {
+        "wallMs": 47.300021000000015,
+        "cpuMs": 41.45399999999999
+      },
+      "retainedHeapBytes": 20360900,
+      "maxRSSKiB": 285736
+    },
+    "B": {
+      "open": {
+        "wallMs": 853.78775,
+        "cpuMs": 980.567
+      },
+      "flush": {
+        "wallMs": 9.666188000000034,
+        "cpuMs": 9.74
+      },
+      "observe": {
+        "wallMs": 47.40254200000004,
+        "cpuMs": 41.411
+      },
+      "retainedHeapBytes": 20367760,
+      "maxRSSKiB": 294888
+    }
+  },
+  "relativePercent": {
+    "openCpu": -11.76,
+    "observeCpu": -0.1,
+    "openWall": -13.89
+  },
+  "measurements": [
+    {
+      "round": 1,
+      "order": "A",
+      "records": 20000,
+      "fixtureHash": "9e57b189872ffac37ec69f2fb916bef16a52d1b87426aca38d9f41f90c167c68",
+      "open": {
+        "wallMs": 973.0321250000001,
+        "cpuMs": 1089.225
+      },
+      "retainedHeapBytes": 20361088,
+      "flush": {
+        "wallMs": 9.658541999999898,
+        "cpuMs": 9.735
+      },
+      "observe": {
+        "wallMs": 47.46412499999997,
+        "cpuMs": 40.999
+      },
+      "maxRSSKiB": 282944,
+      "node": "v26.13.1"
+    },
+    {
+      "round": 1,
+      "order": "B",
+      "records": 20000,
+      "fixtureHash": "9e57b189872ffac37ec69f2fb916bef16a52d1b87426aca38d9f41f90c167c68",
+      "open": {
+        "wallMs": 839.3791669999999,
+        "cpuMs": 971.606
+      },
+      "retainedHeapBytes": 20368248,
+      "flush": {
+        "wallMs": 9.66533400000003,
+        "cpuMs": 9.734
+      },
+      "observe": {
+        "wallMs": 47.88229200000001,
+        "cpuMs": 41.314
+      },
+      "maxRSSKiB": 295840,
+      "node": "v26.13.1"
+    },
+    {
+      "round": 2,
+      "order": "B",
+      "records": 20000,
+      "fixtureHash": "9e57b189872ffac37ec69f2fb916bef16a52d1b87426aca38d9f41f90c167c68",
+      "open": {
+        "wallMs": 908.546709,
+        "cpuMs": 1067.724
+      },
+      "retainedHeapBytes": 20365984,
+      "flush": {
+        "wallMs": 9.667042000000038,
+        "cpuMs": 9.746
+      },
+      "observe": {
+        "wallMs": 47.03616699999998,
+        "cpuMs": 41.261
+      },
+      "maxRSSKiB": 295648,
+      "node": "v26.13.1"
+    },
+    {
+      "round": 2,
+      "order": "A",
+      "records": 20000,
+      "fixtureHash": "9e57b189872ffac37ec69f2fb916bef16a52d1b87426aca38d9f41f90c167c68",
+      "open": {
+        "wallMs": 986.605666,
+        "cpuMs": 1102.193
+      },
+      "retainedHeapBytes": 20360592,
+      "flush": {
+        "wallMs": 9.693082999999888,
+        "cpuMs": 9.775
+      },
+      "observe": {
+        "wallMs": 47.13591700000006,
+        "cpuMs": 41.413
+      },
+      "maxRSSKiB": 288528,
+      "node": "v26.13.1"
+    },
+    {
+      "round": 3,
+      "order": "A",
+      "records": 20000,
+      "fixtureHash": "9e57b189872ffac37ec69f2fb916bef16a52d1b87426aca38d9f41f90c167c68",
+      "open": {
+        "wallMs": 996.398459,
+        "cpuMs": 1120.318
+      },
+      "retainedHeapBytes": 20360880,
+      "flush": {
+        "wallMs": 9.693209000000024,
+        "cpuMs": 9.786
+      },
+      "observe": {
+        "wallMs": 47.97541700000011,
+        "cpuMs": 41.54
+      },
+      "maxRSSKiB": 282400,
+      "node": "v26.13.1"
+    },
+    {
+      "round": 3,
+      "order": "B",
+      "records": 20000,
+      "fixtureHash": "9e57b189872ffac37ec69f2fb916bef16a52d1b87426aca38d9f41f90c167c68",
+      "open": {
+        "wallMs": 853.383792,
+        "cpuMs": 977.662
+      },
+      "retainedHeapBytes": 20367504,
+      "flush": {
+        "wallMs": 9.648083999999926,
+        "cpuMs": 9.708
+      },
+      "observe": {
+        "wallMs": 47.7689170000001,
+        "cpuMs": 41.537
+      },
+      "maxRSSKiB": 291536,
+      "node": "v26.13.1"
+    },
+    {
+      "round": 4,
+      "order": "B",
+      "records": 20000,
+      "fixtureHash": "9e57b189872ffac37ec69f2fb916bef16a52d1b87426aca38d9f41f90c167c68",
+      "open": {
+        "wallMs": 854.1917080000001,
+        "cpuMs": 983.472
+      },
+      "retainedHeapBytes": 20368016,
+      "flush": {
+        "wallMs": 9.67775000000006,
+        "cpuMs": 9.832
+      },
+      "observe": {
+        "wallMs": 46.88541699999996,
+        "cpuMs": 41.508
+      },
+      "maxRSSKiB": 294128,
+      "node": "v26.13.1"
+    },
+    {
+      "round": 4,
+      "order": "A",
+      "records": 20000,
+      "fixtureHash": "9e57b189872ffac37ec69f2fb916bef16a52d1b87426aca38d9f41f90c167c68",
+      "open": {
+        "wallMs": 1003.992958,
+        "cpuMs": 1134.794
+      },
+      "retainedHeapBytes": 20360920,
+      "flush": {
+        "wallMs": 9.689875000000029,
+        "cpuMs": 9.799
+      },
+      "observe": {
+        "wallMs": 46.863124999999854,
+        "cpuMs": 41.495
+      },
+      "maxRSSKiB": 288544,
+      "node": "v26.13.1"
+    }
+  ]
+}

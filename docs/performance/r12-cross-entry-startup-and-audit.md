@@ -4,7 +4,7 @@
 
 ## 0. 结论与交付范围
 
-- **实施 1 项**：`lib/diagnostics.js` 的 `diagnoseSharing()` 把同一遍只读检查里重复六次的消费者激活行投影、以及三处 O(记录数 × 行数) 的线性查找改成一次性构建的局部 Map/Set。相同输入的输出逐字节一致；5000 条已发布记录下 `promotion.sharing` 检查的 CPU 从 1321.490 ms 降到 679.387 ms（**−49.55%**），墙钟从 1355.224 ms 降到 605.736 ms（**−55.30%**）。
+- **实施 1 项**：`lib/diagnostics.js` 的 `diagnoseSharing()` 把同一遍只读检查里重复六次的消费者激活行投影、以及三处 O(记录数 × 行数) 的线性查找改成一次性构建的局部 Map/Set。相同输入的输出逐字节一致；5000 条已发布记录下**整次 `collectDiagnostics()`**（其中包含 `promotion.sharing`）的 CPU 从 1321.490 ms 降到 679.387 ms（**−49.55%**），墙钟从 1355.224 ms 降到 605.736 ms（**−55.30%**）。基准脚本计时的是整个诊断调用，不是该 check 的独立耗时。
 - **其余候选 NO CHANGE**：启动惰性化、空闲轮询、agent/pre-step flush 频率、`readPublishedPluginReview()` 的重复投影、canary 无损比较。本文给出每项的根因/成本与不实施理由。
 - 未修改官方 DSH 源码，未触碰正式 `DSH_HOME`、正式经验库、`event-bridge.key` 或用户数据；未 push、未建 PR、未打 tag、未合并。
 - 实际模型与档位：`opencode-go/hy4-flash-free` High（TEAM.md 固定配置）。基线提交 `719fcbb2a6405526f34ca14aa061f04220bcefec`（v0.2.21），分支 `t3/cross-entry-performance-audit`。
@@ -43,17 +43,20 @@
 
 保持所有判定、顺序、证据字段与失败语义不变，只把重复工作收成局部快照（不跨调用缓存、不信任 mtime/size）：
 
-- `lib/diagnostics.js:2938–2940`：本遍固定的撤销表成员集合 `disabledKeys` 与局部 `isDisabled(id, profile)`，替代重复线性扫描。
-- `:2951`、`:2997`：每个 profile 的激活行只投影一次（`rowsByProfile`），所有后续读取同一快照；`:2998` 的 `rowIdsByProfile` 提供 O(1) 的"该行是否存在"判定。
-- `:3033`：验证后的记录（id 唯一）构建 `recordById`，替代逐行 `find`。
-- `:3054–3056`、`:3095–3107`、`:3125`、`:3206`：全部改为Map/Set 查找与已物化的 `rows`。
+- `lib/diagnostics.js:2943–2948`：本遍固定的撤销表成员 Map（按 profile 的 `Set`，保留原始 id 值与类型）与局部 `isDisabled(id, profile)`，替代重复线性扫描。
+- `:2959`、`:3005`：每个 profile 的激活行只投影一次（`rowsByProfile`），所有后续读取同一快照；`:3006` 的 `rowIdsByProfile` 提供 O(1) 的"该行是否存在"判定。
+- `:3041`：验证后的记录（id 唯一）构建 `recordById`，替代逐行 `find`。
+- `:3063–3065`、`:3104–3116`、`:3133`、`:3214`：全部改为 Map/Set 查找与已物化的 `rows`。
 - 删除 `diagnostics.js` 中已不再使用的 `isDisabledForProfile` 静态 import。
 
 这是**同一调用内的等价改写**：没有新的缓存层，没有把 O(历史) 派生值交给 O(1) 信号"证明未变"（redundant-work.md §4 的撤回理由不适用），没有减少任何认证、去重、恢复或证据工作。`readPromotedPlugin()` 的逐记录摘要校验、`readSharedIndex()` 的全量校验与 sha256 全部保留。
 
 ### 2.3 同负载交替 A/B
 
-`promotion.sharing` 检查（`collectDiagnostics({ home: true, probe: { skipComposition: true } })`）的 CPU 中位数，ms：
+整次 `collectDiagnostics({ home: true, probe: { skipComposition: true } })` 的 CPU 中位数，ms。
+脚本对**整个调用**计时（预热 2 次、每样本先 `global.gc()`），再从结果里取出
+`promotion.sharing` 做指纹与等级断言；因此表中数值是整次诊断的耗时，收益来自其中的
+`diagnoseSharing()`，但不能当作该 check 单独的耗时：
 
 | 记录数 | 轮次与顺序 | baseline CPU | candidate CPU | baseline 墙钟 | candidate 墙钟 |
 | ---: | --- | ---: | ---: | ---: | ---: |
@@ -71,7 +74,9 @@
 
 5000 条三对配对差全部为负且远大于同配置离散度，方向不依赖采样顺序。索引文件在该档为 7,424,066 字节，两个 consumer 状态各含 5000 个激活行。
 
-`readPublishedPluginReview()` 在同进程里紧接 doctor 之后测量（其代码**未改动**）：5000 条时 CPU 82.394 → 72.384 ms（−10.47%），配对差 −1.58 / −8.63 / −22.01。这个差异是候选 doctor 产生的临时数组更少、进程内堆压力更低带来的**间接效应**，不作为本改动的直接收益主张；50/500 档分别在 ±2% / ±1% 噪声内。
+`readPublishedPluginReview()` 在同一进程里紧接 doctor 之后测量（其代码**未改动**）：5000 条时 CPU 82.394 → 72.384 ms（−10.47%），但配对差 −1.58 / −8.63 / −22.01 的离散度很大，且该路径未改动；没有隔离实验能证明它来自被优化路径（例如堆压力），因此**不主张也不归因**，只作为未改动对照记录。Lead 独立复跑该对照为 +0.99%（`r12-lead-sharing-5000.json`），与“无可测变化”一致。
+
+Lead 在复审修复后用同一脚本独立复跑 5000 档（`r12-lead-sharing-5000.json`，机器上无其它基准）：整次诊断 CPU 1137.644 → 685.903 ms（**−39.61%**），三对配对差 −450.6 / −457.6 / −449.9 ms，全部为负；review 对照 +0.99%。两次运行的绝对值和百分比不同（fixture 与机器负载不同），但方向、配对差的稳定性和量级一致。
 
 RSS：5000 档 baseline 185120/199280/196576 KiB，candidate 188816/188528/207216 KiB。本改动用少量短命 Map/Set 换取重复数组，**不声称内存下降**，也没有可测的常驻增长证据。
 
@@ -85,7 +90,7 @@ RSS：5000 档 baseline 185120/199280/196576 KiB，candidate 188816/188528/20721
 
 ### 2.5 适用范围与代价
 
-- 收益随"已发布记录数 × 每 consumer 激活行数"增长；≤50 条时在噪声内，500 条约 6% CPU，5000 条约 50%。真实安装的收益取决于索引累积长度；R11 明确没有自动删除路径，所以长寿命安装会进入有效区间。
+- 收益随"已发布记录数 × 每 consumer 激活行数"增长；≤50 条时在噪声内，500 条约 6% CPU，5000 条时整次诊断约 40–50%。真实安装的收益取决于索引累积长度；R11 明确没有自动删除路径，所以长寿命安装会进入有效区间。
 - 代价：每次诊断多构造两个 profile 的 Map/Set（与行数同阶，短命），没有跨调用状态；不改变持久化格式、API、授权、去重或失败顺序。
 - 只改 `lib/diagnostics.js`，未触碰 `lib/domain-storage.js`、`lib/event-log-checkpoint.js`、`lib/dockyard-domain/*`、`lib/shared-experience.js`、`lib/experience-*.js`。
 
@@ -138,10 +143,14 @@ node --max-old-space-size=4096 --test test/diagnostics.test.mjs \
 
 基准脚本本身在 `scripts/benchmarks/r12-sharing-{scan,diff,counter}.mjs` 与 `scripts/benchmarks/r12-startup-lazy.mjs`；原始 A/B、差分、计数、启动图与启动导入数据全部在 `docs/performance/r12-*.json`。
 
+`--fixture` 是调用方给出的路径：`buildFixture()` 只会递归删除自己创建过的目录（目录内有
+`.r12-sharing-fixture` 标记），缺失或空目录会被接管，非空且无标记的目录直接拒绝并保留
+内容；重新跑同一路径前请先删除或换新路径。
+
 ## 5. 剩余瓶颈与风险
 
 - `diagnoseSharing()` 5000 档剩余约 679 ms CPU，主要来自逐记录 `readPromotedPlugin()` 的 3 次 lstat + 2 次 readFile + 2 次 sha256，以及索引 JSON 的读取、解析、sha256 与逐记录校验；这些是防篡改边界，不能省。
-- 诊断整体（29 种 check）中冷历史 JSONL 与事件桥扫描仍按历史字节线性增长，沿用既有分块扫描；本轮未重测，数值以 `diagnostics.md` / `final-candidate.md` 为准。
+- 诊断整体（29 种 check）中冷历史 JSONL 与事件桥扫描仍按历史字节线性增长，沿用既有分块扫描；本轮未重测，数值以 `diagnostics.md` / `final-candidate.md` 为准。5000 档剩余约 679–686 ms 是整次诊断的 CPU，其中逐记录 `readPromotedPlugin()` 与索引校验占主要部分。
 - 启动侧：模块图仍有 30 文件 / 约 1.7 MB `lib/` 静态闭包；惰性化诊断只有约 2.3 ms 边际收益，未实施；其它入口的模块数/字节见 `r12-startup-graph.json`。
 - 桌面任务通道的 1500 ms 重扫与 `agent/pre-step` 的 flush 频率保留，理由见 §3。
 - 本轮没有跑真实宿主验收、全量 `npm test` 或 `pack:check`；按 Builder 约束由 Lead 集成后统一执行。未跑的检查不写成通过。

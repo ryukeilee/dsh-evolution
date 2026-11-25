@@ -246,7 +246,7 @@ const HUNKS = [
     post: "      } catch (error) {\n        // Undo this attempt's own entries and re-publish the same tables. The\n        // contents are the ones the attempt started with (including a table\n        // another read installed while this one was awaiting, which the\n        // previous full-copy assignment overwrote in exactly the same way). The\n        // tombstone toggles are undone in reverse: two entries of the same key\n        // in one attempt toggle it twice, and only the last write is the one a\n        // forward undo must overwrite first.\n        for (const key of addedKnown) known.delete(key);\n        for (const [key, wasTombstone] of toggledTombstones.reverse()) {\n          if (wasTombstone) tombstones.add(key);\n          else tombstones.delete(key);\n        }\n        this.archiveKnown.set(collection, known);\n        this.archiveTombstones.set(collection, tombstones);\n        this.#noteArchiveFault(collection, { file: path, line: null, kind: \"deferred-write\", code: error?.code ?? null, reason: error?.message ?? String(error) });\n        return false;\n      }\n",
     pre: "      } catch (error) {\n        this.archiveKnown.set(collection, originalKnown);\n        this.archiveTombstones.set(collection, originalTombstones);\n        this.#noteArchiveFault(collection, { file: path, line: null, kind: \"deferred-write\", code: error?.code ?? null, reason: error?.message ?? String(error) });\n        return false;\n      }\n" },
 ];
- 
+
 /**
  * The SHA-256 of the tree this reconstruction is pinned to.
  *

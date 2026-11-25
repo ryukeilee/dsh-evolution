@@ -19,8 +19,17 @@ const POST = `/**
  * they had before. A \`Map\` is used rather than an object so keys such as
  * \`__proto__\` stay ordinary entries, and a cache value is always a boolean
  * (never \`undefined\`), so a hit can be detected with \`!== undefined\`.
+ *
+ * A key is remembered only when it is short enough to be a field name. The
+ * entry count alone is not a memory bound: the map stores the caller's string,
+ * and a payload can carry a few hundred distinct multi-hundred-kilobyte names.
+ * Those are classified on the compute path and never retained; a real schema
+ * name is far below \`SENSITIVE_KEY_CACHE_KEY_MAX\`, so the hit rate is
+ * unaffected while the worst-case retained bytes stay
+ * \`SENSITIVE_KEY_CACHE_MAX * SENSITIVE_KEY_CACHE_KEY_MAX\` characters.
  */
 const SENSITIVE_KEY_CACHE_MAX = 512;
+const SENSITIVE_KEY_CACHE_KEY_MAX = 128;
 const sensitiveKeyCache = new Map();
 
 function isSensitiveKey(key) {
@@ -28,10 +37,14 @@ function isSensitiveKey(key) {
     const normalized = String(key).toLowerCase();
     return SENSITIVE_KEY_PARTS.some((needle) => normalized.includes(needle));
   }
-  const cached = sensitiveKeyCache.get(key);
-  if (cached !== undefined) return cached;
+  const cacheable = key.length <= SENSITIVE_KEY_CACHE_KEY_MAX;
+  if (cacheable) {
+    const cached = sensitiveKeyCache.get(key);
+    if (cached !== undefined) return cached;
+  }
   const normalized = key.toLowerCase();
   const sensitive = SENSITIVE_KEY_PARTS.some((needle) => normalized.includes(needle));
+  if (!cacheable) return sensitive;
   if (sensitiveKeyCache.size >= SENSITIVE_KEY_CACHE_MAX) {
     sensitiveKeyCache.delete(sensitiveKeyCache.keys().next().value);
   }

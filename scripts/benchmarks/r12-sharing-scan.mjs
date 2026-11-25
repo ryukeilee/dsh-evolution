@@ -62,9 +62,25 @@ async function loadLib(libroot) {
   };
 }
 
+// Own the directory before deleting it. `--fixture` is a user-supplied path and
+// this script used to recurse into it unconditionally; a build now refuses to
+// remove anything it did not create (a missing path or an empty directory is
+// adopted), and leaves a marker so a later run may rebuild it.
+const FIXTURE_MARKER = '.r12-sharing-fixture';
 function buildFixture(fixture, records) {
-  fs.rmSync(fixture, { recursive: true, force: true });
-  fs.mkdirSync(fixture, { recursive: true });
+  const target = path.resolve(fixture);
+  if (fs.existsSync(target)) {
+    const marker = path.join(target, FIXTURE_MARKER);
+    if (!fs.existsSync(marker)) {
+      if (!fs.statSync(target).isDirectory()) throw new Error(`--fixture is not a directory: ${target}`);
+      if (fs.readdirSync(target).length > 0) {
+        throw new Error(`refusing to delete a non-empty directory that is not an r12 fixture: ${target}`);
+      }
+    }
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+  fs.mkdirSync(target, { recursive: true });
+  fs.writeFileSync(path.join(target, FIXTURE_MARKER), 'r12 sharing scan fixture; safe to delete\n');
   // Mirror resolveEvolutionPaths() exactly; it is host-free and identical in
   // both source trees, so the fixture can be built without importing either.
   const dataRoot = path.join(fixture, 'storages', 'evolution');

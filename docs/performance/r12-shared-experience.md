@@ -3,7 +3,7 @@
 受理标识：**DSH-EVOLUTION-PERF-R12-01**，子系统：共享经验 SQLite 与经验链路。
 本文是本机实测的开发阶段数据，不是发布产物或宿主验收声明。
 
-- 代码提交：`dfeb9b8`（`perf(shared-experience): prepare constant-SQL write statements once per store`）。
+- 代码提交：`dfeb9b8`（首版），复审修复后为复用句柄按需准备（见 §3 第 4 项）；基准脚本与原始数据随本轮提交。
 - 基线：`719fcbb2`（该提交的父提交 / v0.2.21 起点）。
 - 原始逐轮、逐样本数据：[`r12-shared-experience-prepared.json`](r12-shared-experience-prepared.json)。
 - 环境：Node `v26.13.1`，`darwin-arm64`，Apple M2，8 逻辑 CPU、16 GiB；测量开始时
@@ -38,11 +38,17 @@ SQL；同一条 SQL 重复 prepare 的结果对象并未跨调用复用。回放
 重复事实（不同执行对象但同一 event id，例如持久化事件回放）会进入
 `prior` 命中分支，只做一次 SELECT 与 COMMIT，因此 prepare 在该分支占比最高。
 
-改动只把五个句柄移到 `openSharedExperience()` 内一次（当前
-`lib/shared-experience.js:290-299`），`record()` 内改为使用句柄
-（`:313,322,336-338`）。SQL 文本、绑定顺序、`BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK`
-边界、schema 判定与持久化字节全部不变。事务性语句仍走 `db.exec()`，避免把
-DDL/多语句执行路径混入这次等价改动。
+改动把五个句柄按 **首次使用** 缓存（当前 `lib/shared-experience.js:304-314`），
+`record()` 内改为使用句柄（`:326,335,349-352`）。SQL 文本、绑定顺序、
+`BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK` 边界、schema 判定与持久化字节全部不变。
+事务性语句仍走 `db.exec()`，避免把 DDL/多语句执行路径混入这次等价改动。
+
+**为什么不是在 open 时一次性准备**：第一版把五条 `prepare()` 放在
+`openSharedExperience()` 里，独立复审构造出一个真实分歧——schema 1 数据库若有
+`AFTER UPDATE ON clock` 触发器引用缺失表，SQLite 直到准备 `UPDATE clock` 才报错。
+基线只在真正写入时失败并回滚，数据库仍可被本进程打开、读取 `stats()` 并正常关闭；
+open 时准备则让整个 store 打不开，而且该路径在 open 的关闭清理边界之外。现在准备
+仍发生在基线编译该语句的同一位置（写入事务内），复现与反证见 §3 第 4 项。
 
 ## 2. 同负载交替 A/B
 
@@ -91,8 +97,15 @@ CPU 中位数 0.300 → 0.283 ms（−5.7%），墙钟 0.2386 → 0.2346 ms（�
 绝对差 0.017 ms，且该路径的 SQL 没有改动；视为噪声，不作为收益。
 `open()` 中位数 A/B = 1.064/1.079 ms（writes）、1.116/1.118 ms（duplicates），
 `close()` 约 0.6–0.7 ms——这些是 harness，不计入上表的工作窗口。
-两侧落盘字节相同（writes/readcontrol 98,304 B；duplicates 94,208 B），
-maxRSS 中位数 68,720/66,032 KiB（进程高水位，含 imports，不作为内存下降证明）。
+两侧 `stats()` 相同；脚本在 `close()` 前读取的 SQLite 主文件大小相同
+（writes/readcontrol 98,304 B；duplicates 94,208 B）——这是文件大小，不是
+“落盘内容逐字节相同”的证明，逻辑内容的逐字段对拍见 §3。maxRSS 中位数
+68,720/66,032 KiB（进程高水位，含 imports，不作为内存下降证明）。
+
+Lead 在复审修复后用同一脚本独立复跑（`r12-lead-shared-experience.json`，机器上
+无其它基准）：新事实 86.890 → 78.676 ms CPU（**−9.45%**，5/5 轮为负）、重复回放
+3.532 → 2.251 ms（**−36.27%**，5/5 轮为负）、未改动的读对照 0.275 → 0.278 ms
+（+1.09%，逐轮方向不一致，视为噪声）。
 
 ## 3. 正确性差分与反证
 
@@ -110,6 +123,11 @@ maxRSS 中位数 68,720/66,032 KiB（进程高水位，含 imports，不作为�
    证明比较确实覆盖被复用的句柄，而不是恒真断言。
 3. **句柄作用域**：同时打开两个 store，交替写不同 target，两个库的 knowledge
    不同且各自正确——句柄属于单个 store，不会跨库串用。
+4. **准备失败的时机**（复审新增，`test/shared-experience-prepared-equivalence.test.mjs`
+   第 4 项）：在 schema 1 库上建一个引用缺失表的 `AFTER UPDATE ON clock` 触发器，
+   基线与候选都必须能打开并读到 `{events:0,knowledge:0}`；写入以同一错误失败、
+   回滚后仍可读。用首版 open 时准备复现：open 直接抛 `no such table: main.r12_missing`；
+   当前实现 open 成功、写入失败、`stats()` 不变。
 
 额外验证：`NODE_OPTIONS=--max-old-space-size=4096 node --test
 test/shared-experience.test.mjs test/shared-experience-schema-v2.test.mjs

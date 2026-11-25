@@ -23,7 +23,7 @@ const block = source.slice(start, end);
 function writeModule(text) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'r12-sensitive-key-'));
   const file = path.join(dir, 'sensitive.mjs');
-  fs.writeFileSync(file, `${text}\nexport { isSensitiveKey };\n`);
+  fs.writeFileSync(file, `${text}\nexport { isSensitiveKey };\nexport const cacheSize = () => sensitiveKeyCache.size;\n`);
   return { dir, url: pathToFileURL(file).href };
 }
 
@@ -40,7 +40,9 @@ function reference(key) {
 const { dir, url } = writeModule(block);
 let current;
 try {
-  current = (await import(url)).isSensitiveKey;
+  const loaded = await import(url);
+  current = loaded.isSensitiveKey;
+  const cacheSize = loaded.cacheSize;
 
   const fixed = [
     '', 'id', 'status', 'eventType', 'measurement', 'evidence', 'audit', 'at', 'producer',
@@ -63,6 +65,16 @@ try {
   for (const key of [...fixed, 'accessToken', 'id', '', 'secret']) {
     assert.equal(current(key), reference(key), `after eviction: ${JSON.stringify(key).slice(0, 40)}`);
   }
+
+  // The entry bound alone is not a memory bound: the map holds the caller's
+  // string, so a payload can offer a few hundred distinct multi-hundred-KiB
+  // field names. Those must be classified without being retained.
+  for (let i = 0; i < 512; i += 1) current(`long-key-${i}-token`);
+  const retained = cacheSize();
+  assert.ok(retained <= 512, `cache entry bound: ${retained}`);
+  const longKeys = Array.from({ length: 64 }, (_, i) => `long-${i}-secret-${'q'.repeat(256 * 1024)}`);
+  for (const key of longKeys) assert.equal(current(key), reference(key));
+  assert.equal(cacheSize(), retained, 'keys longer than the bound must not be remembered');
 
   // Non-string inputs keep the compute-every-time path and the exact answer.
   const stateful = { toString() { return this.n++ % 2 ? 'accessToken' : 'id'; }, n: 0 };

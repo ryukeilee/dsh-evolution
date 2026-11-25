@@ -14,22 +14,22 @@ const source = fs.readFileSync(sourceFile, 'utf8');
 /**
  * Reconstruct the pre-optimisation implementation from the shipped source by
  * putting the five `db.prepare(...)` calls back inside record(). The transform
- * asserts every expected fragment exists, so a future edit to the hoisted
+ * asserts every expected fragment exists, so a future edit to the reused
  * statements cannot silently turn this into a self-comparison.
  */
 function preChangeSource(text) {
-  const declaration = /  \/\/ The write statements below have constant SQL\.[\s\S]*?  const stmtUpsertKnowledge = db\.prepare\('INSERT INTO knowledge VALUES \(\?,\?,\(SELECT value FROM clock\)\) ON CONFLICT\(key\) DO UPDATE SET body=excluded\.body, revision=excluded\.revision'\);\n/;
-  if (!declaration.test(text)) throw new Error('hoisted statement block not found; re-anchor this differential');
+  const declaration = /  \/\/ The write statements below have constant SQL\.[\s\S]*?  const statement = \(sql\) => \{[\s\S]*?  \};\n/;
+  if (!declaration.test(text)) throw new Error('reused statement block not found; re-anchor this differential');
   let out = text.replace(declaration, '');
   const replacements = [
-    ['stmtEventDigest.get(', "db.prepare('SELECT digest FROM events WHERE id=?').get("],
-    ['stmtKnowledgeBody.get(', "db.prepare('SELECT body FROM knowledge WHERE key=?').get("],
-    ['stmtInsertEvent.run(', "db.prepare('INSERT INTO events VALUES (?,?)').run("],
-    ['stmtAdvanceClock.run()', "db.exec('UPDATE clock SET value=value+1')"],
-    ['stmtUpsertKnowledge.run(', "db.prepare('INSERT INTO knowledge VALUES (?,?,(SELECT value FROM clock)) ON CONFLICT(key) DO UPDATE SET body=excluded.body, revision=excluded.revision').run("],
+    ["statement('SELECT digest FROM events WHERE id=?').get(", "db.prepare('SELECT digest FROM events WHERE id=?').get("],
+    ["statement('SELECT body FROM knowledge WHERE key=?').get(", "db.prepare('SELECT body FROM knowledge WHERE key=?').get("],
+    ["statement('INSERT INTO events VALUES (?,?)').run(", "db.prepare('INSERT INTO events VALUES (?,?)').run("],
+    ["statement('UPDATE clock SET value=value+1').run()", "db.exec('UPDATE clock SET value=value+1')"],
+    ["statement('INSERT INTO knowledge VALUES (?,?,(SELECT value FROM clock)) ON CONFLICT(key) DO UPDATE SET body=excluded.body, revision=excluded.revision')", "db.prepare('INSERT INTO knowledge VALUES (?,?,(SELECT value FROM clock)) ON CONFLICT(key) DO UPDATE SET body=excluded.body, revision=excluded.revision')"],
   ];
   for (const [from, to] of replacements) {
-    if (!out.includes(from)) throw new Error('hoisted call not found: ' + from);
+    if (!out.includes(from)) throw new Error('reused-statement call not found: ' + from);
     out = out.split(from).join(to);
   }
   return out;
@@ -74,7 +74,7 @@ function fill(store, id) {
   }, `origin:${id('origin')}`);
 }
 
-test('hoisted prepared statements keep the ledger, canonical rows and query answers byte-identical', async (t) => {
+test('reused prepared statements keep the ledger, canonical rows and query answers byte-identical', async (t) => {
   const before = await materialise(t, preChangeSource(source));
   const after = await materialise(t, source);
   const roots = [];
@@ -107,8 +107,8 @@ test('hoisted prepared statements keep the ledger, canonical rows and query answ
   assert.deepEqual(outputs[0], outputs[1]);
 });
 
-test('the differential is sensitive to a wrong hoisted statement (counter-proof)', async (t) => {
-  const broken = source.replace('revision=excluded.revision\');', 'revision=excluded.revision+1\');');
+test('the differential is sensitive to a wrong reused statement (counter-proof)', async (t) => {
+  const broken = source.replace("revision=excluded.revision'", "revision=excluded.revision+1'");
   assert.notEqual(broken, source, 'injection failed');
   const before = await materialise(t, preChangeSource(source));
   const after = await materialise(t, broken);
@@ -141,4 +141,41 @@ test('the prepared handles are per-store, not shared across opened databases', a
   const b = dump(path.join(roots[1], 'experience.sqlite'));
   assert.notDeepEqual(a.knowledge, b.knowledge);
   for (const store of stores) store.close();
+});
+
+// A database whose trigger references a missing table compiles fine until the
+// statement that fires it is prepared. Preparing every write statement while
+// opening made such a store unopenable (and skipped the open path's own close on
+// that failure), although this process can still read it and the baseline only
+// failed when the write needed that statement.
+test('a statement that cannot be prepared fails its write, not the open', async (t) => {
+  const before = await materialise(t, preChangeSource(source));
+  const after = await materialise(t, source);
+  const roots = [];
+  t.after(() => { for (const root of roots) fs.rmSync(root, { recursive: true, force: true }); });
+  const outcomes = [];
+  for (const mod of [before, after]) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'experience-prepared-trigger-'));
+    roots.push(root);
+    const file = path.join(root, 'experience.sqlite');
+    const seed = mod.openSharedExperience(root);
+    seed.close();
+    const db = new DatabaseSync(file);
+    db.exec('CREATE TRIGGER r12_broken_clock AFTER UPDATE ON clock BEGIN INSERT INTO r12_missing (value) VALUES (1); END;');
+    db.close();
+    // Opening must succeed: the unreadable trigger body is not this process's
+    // read path, and open() must not compile a statement it may never use.
+    const store = mod.openSharedExperience(root);
+    assert.deepEqual(store.stats(), { events: 0, knowledge: 0 });
+    let writeError = null;
+    try {
+      store.recordFailure({ id: mod.experienceEventId('trigger', 1), type: 'tool/error', code: 'ENOENT', target: 'tool:read_file' });
+    } catch (error) { writeError = String(error?.message ?? error); }
+    // The failed transaction rolls back and leaves the store usable.
+    outcomes.push({ writeError, stats: store.stats() });
+    store.close();
+  }
+  assert.deepEqual(outcomes[0], outcomes[1]);
+  assert.match(outcomes[1].writeError, /r12_missing/);
+  assert.deepEqual(outcomes[1].stats, { events: 0, knowledge: 0 });
 });

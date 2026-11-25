@@ -307,6 +307,30 @@ test('a revoked record still mounted by a consumer needs a restart', async (t) =
   assert.ok(check.evidence.pendingRestart.includes('acp'));
 });
 
+// The revocation table is shape-validated through `String(entry.pluginId)`, so a
+// non-string entry can reach the membership check. String interpolation would
+// fold an array onto the record id it contains, turning it into a revocation the
+// baseline's `===` never honoured; the id must keep its type and value.
+test('a non-string revocation id does not revoke a matching record', async (t) => {
+  const env = await home(t);
+  const host = await observedHostOf(env.dshHome);
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const index = JSON.parse(await fs.readFile(path.join(env.paths.dataRoot, 'shared-plugins', 'published.json'), 'utf8'));
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [{ id: pluginId, status: 'active', reason: null }],
+  }));
+  await fs.writeFile(path.join(env.paths.dataRoot, 'shared-plugins', 'disabled.json'), `${JSON.stringify({
+    schemaVersion: 1, kind: 'dsh-evolution-shared-plugin-disable', updatedAt: '2026-01-02T00:00:00.000Z',
+    entries: [{ pluginId: [pluginId], profile: 'acp', disabledAt: '2026-01-02T00:00:00.000Z' }],
+  }, null, 2)}\n`);
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'ok', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.pendingRestart ?? [], []);
+});
+
 // R11 C-1: published.json can survive while one record is edited away or a
 // profile is removed from approvedProfiles. A still-active consumer mount keeps
 // running, so the doctor must not report the same scene as healthy.
