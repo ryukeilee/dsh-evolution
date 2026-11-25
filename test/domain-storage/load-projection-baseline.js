@@ -9,6 +9,7 @@ import { reverseFloorGenerationRound } from "./floor-generation-baseline.js";
 import { reverseArchiveScanMemoContinuationRound } from "./archive-scan-memo-continuation-baseline.js";
 import { reverseStagedElementMemoRound } from "./staged-element-memo-baseline.js";
 import { reverseStagedWindowDeferredRound } from "./staged-window-deferred-baseline.js";
+import { reverseSensitiveKeyMemoRound } from "./sensitive-key-memo-baseline.js";
 import { STAGED_SAVE_CHECK_TEXT } from "./staged-save-check-text.js";
 
 // Revert the projection-free load round, so the whole pre-change tree can be
@@ -276,7 +277,7 @@ export async function loadProjectionBaseline() {
       reverseArchiveScanMemoContinuationRound(file,
         reverseStagedElementMemoRound(file,
           reverseStagedWindowDeferredRound(file,
-            reverseFloorGenerationRound(file, source)))))]));
+            reverseFloorGenerationRound(file, reverseSensitiveKeyMemoRound(file, source))))))]));
   for (const { file, post, pre } of HUNKS) {
     const source = reconstructed.get(file);
     assert.ok(source !== undefined, `${file} is not part of the projection-free load round`);

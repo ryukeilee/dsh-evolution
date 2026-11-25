@@ -1,0 +1,95 @@
+{
+  "note": "Cold import() of lib/index.js in fresh processes, alternating order. Lazy tree drops the static diagnostics.js import and imports it inside the async diagnose() closure. No apply(), no real DSH_HOME.",
+  "node": "v26.13.1",
+  "platform": "darwin/arm64",
+  "entry": "lib/index.js",
+  "baseline": "/private/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/opencode/r12-baseline",
+  "rounds": 6,
+  "samples": [
+    {
+      "kind": "static",
+      "round": 1,
+      "cpuMs": 61.364,
+      "wallMs": 49.048041,
+      "rssKiB": 70240
+    },
+    {
+      "kind": "lazy",
+      "round": 1,
+      "cpuMs": 58.604,
+      "wallMs": 46.478875,
+      "rssKiB": 69344
+    },
+    {
+      "kind": "lazy",
+      "round": 2,
+      "cpuMs": 58.265,
+      "wallMs": 46.139624999999995,
+      "rssKiB": 69456
+    },
+    {
+      "kind": "static",
+      "round": 2,
+      "cpuMs": 60.239,
+      "wallMs": 48.211416,
+      "rssKiB": 69936
+    },
+    {
+      "kind": "static",
+      "round": 3,
+      "cpuMs": 60.692,
+      "wallMs": 48.333999999999996,
+      "rssKiB": 70256
+    },
+    {
+      "kind": "lazy",
+      "round": 3,
+      "cpuMs": 58.493,
+      "wallMs": 46.26775,
+      "rssKiB": 69600
+    },
+    {
+      "kind": "lazy",
+      "round": 4,
+      "cpuMs": 58.021,
+      "wallMs": 45.959832999999996,
+      "rssKiB": 69136
+    },
+    {
+      "kind": "static",
+      "round": 4,
+      "cpuMs": 60.174,
+      "wallMs": 48.199708,
+      "rssKiB": 70336
+    },
+    {
+      "kind": "static",
+      "round": 5,
+      "cpuMs": 60.137,
+      "wallMs": 48.126625,
+      "rssKiB": 70288
+    },
+    {
+      "kind": "lazy",
+      "round": 5,
+      "cpuMs": 58.017,
+      "wallMs": 45.859709,
+      "rssKiB": 69408
+    },
+    {
+      "kind": "lazy",
+      "round": 6,
+      "cpuMs": 57.535,
+      "wallMs": 45.786709,
+      "rssKiB": 69280
+    },
+    {
+      "kind": "static",
+      "round": 6,
+      "cpuMs": 59.877,
+      "wallMs": 48.000707999999996,
+      "rssKiB": 69744
+    }
+  ],
+  "decision": "NO CHANGE: the marginal end-to-end saving is a few milliseconds of CPU; the async tool contract and the first-use failure window are not worth it."
+}
