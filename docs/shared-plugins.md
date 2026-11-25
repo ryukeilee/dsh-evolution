@@ -103,6 +103,85 @@ doctor 的 `promotion.sharing` 现在也报 `blocked`，不再只报 `degraded`�
 是正常状态。即使某条记录同时存在宿主版本不匹配，撤销表损坏仍先按阻断处理：consumer 在读取记录 host 之前就因
 撤销表不可读而 fail-closed，revalidate 不能修复这个前置条件。
 
+### 3.1 每会话 composition 的有界回收
+
+`lib/promoted-consumer.js` 每次 consumer 启动都会写一份
+`shared-plugins/consumers/<profile>.<sessionId>.cordis.yml`，原来只在 `disposeOnce()` 证明释放后删除；
+进程被强杀或释放未证实时文件永久残留。`lib/promoted-consumer-gc.js` 提供一次有界的启动期回收：
+`apply()` 在 `await created.mount()` 之后 `await created.collectStaleSessions()` 调用一次，结果挂在
+`session.gcResult`。只在 `acp` / `web` consumer 入口运行；`desktop` / 未知 profile 在前面直接返回，
+会话已 dispose 时跳过。没有定时器、watcher、轮询或后台任务。
+
+**文件模式与永不删除清单。** 只处理普通文件，且名称严格匹配
+`^([a-z0-9-]+)\.([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(cordis\.yml|lease\.json)$`
+（UUID 为小写标准形式）；第一个捕获组（profile）必须等于本次启动的 profile。永不删除：
+`<profile>.cordis.yml`（稳定 composition）、`<profile>.json`（消费状态）、`published.json`、
+`disabled.json`、`promoted/` 源码、`.consumer-*.tmp` 残件、其它 profile 的匹配文件（计
+`keptOtherProfile`）、目录与符号链接以及其它不匹配项（计 `ignored`）。
+
+**为什么 `state.sessionId` 不是存活证明。** `claimConsumerSession()`（`lib/promoted-sharing.js`）
+每次启动都把 `consumers/<profile>.json` 的 `state.sessionId` 覆盖为最新领取的会话；它只证明
+“最近一次领取”，不证明某个文件的所有者仍存活。同一台机器可以并行运行多个入口会话，各持自己的
+per-session composition；按 `state.sessionId` 判定会把仍存活会话的文件当成孤儿删除。因此本回收
+完全不读取 consumer state 文档。
+
+**lease 契约（真正的存活信号）。** 新会话在写自己的 composition **之前**，在同一目录原子写入
+`<profile>.<sessionId>.lease.json`：`0600` 文件、父目录 `mkdir 0700`、temp `0600` + `fsync` +
+`rename`；写入顺序固定为 lease → composition。字段为 `schemaVersion: 1`、
+`kind: "dsh-evolution-consumer-session-lease"`、`profile`、`sessionId`、`pid`、`hostname`、
+`createdAt`、`processStartedAt`。`pid` + `hostname` 是判据，`createdAt` / `processStartedAt` 仅用于
+诊断，不参与判定。会话 dispose 时无论 `result.released` 与否都删除自己的 lease（失败只记诊断）。
+lease 不刷新、没有心跳；lease 写失败只记 `session.leaseFailure`，会话仍挂载，其 composition 退化为
+“无 lease 文件”，只能靠下面的遗留窗口。
+
+**决策表**（每个 session stem，与 `lib/promoted-consumer-gc.js` 一致）：
+
+| lease | hostname | pid | 结论 |
+| --- | --- | --- | --- |
+| 合法 | 等于本机 | 存活 / 无法证明 | `keep` / `live-lease` |
+| 合法 | 等于本机 | `ESRCH` | `remove` / `stale-lease`（composition 与 lease 都删） |
+| 合法 | 不等于本机 | 任意 | `keep` / `foreign-host`（报告，不删） |
+| 缺失 | — | — | mtime 超过窗口 → `remove` / `legacy-window`；否则 `keep` / `recent` |
+| 不可读 / 非法 / 字段不符 / 过大 | — | — | `keep` / `unproven-lease`（报告，不删） |
+| 只有 lease 没有 composition | 同上 | 同上 | 证明死亡则删 lease，否则保留 |
+
+**只认 `ESRCH` 的死亡证明。** `defaultIsProcessAlive()`：`pid === process.pid` 视为存活；
+`process.kill(pid, 0)` 成功视为存活；抛错且 `error.code === 'ESRCH'` 是**唯一**死亡证明；
+`EPERM` 等其它错误、非正整数 pid 或抛错的判定都按“存活 / 无法证明”保留。pid 复用只会让已死会话
+看起来存活，产生保守假阴性，永远不会让活会话被删；活会话的 pid 一定存在，不会被判成 `ESRCH`。
+一切无法证明的形状只报告、不删除。
+
+**24h 窗口只服务遗留文件。** `staleCompositionMs` 默认 `24 * 60 * 60 * 1000`，只用于升级前遗留的
+无 lease 文件：mtime 超过窗口 → `remove` / `legacy-window`，否则 `keep` / `recent`。依据是 consumer
+的 composition 只在 `mountOnce()` 写入后、同一次 mount 内被 `refresh()` 读取；官方 Include 没有
+文件 watcher，`lib/promotion-include.js` 只在调用方请求时读文件，所以删除磁盘上的文件不会卸载
+已经挂载的行（要等下一次入口启动才会改变）。24h 远大于一次 mount 的写→refresh 间隔，新写入的
+文件不会被误删。
+
+**有界性与时机。** `maxEntries` 默认 8192（超出后 `truncated: true`，剩余条目下次启动再处理）、
+`maxRemovals` 默认 1024（超出后计入 `deferred`）、`maxLeaseBytes` 默认 4096（超过即视为不可证明并
+保留）；`failures` 最多 8 条 `{ name, code }`。每次 consumer 启动、mount 之后运行一次，由调用方
+`await`；回收耗时就是启动耗时增量，实测见 `docs/performance/consumer-session-gc.md`。
+
+**失败只诊断。** 回收自身任何失败都不抛异常、不改变 `apply()` 的返回、不写 consumer state、不改
+`published.json` / 撤销表 / 晋升 journal / canary。目录不存在 → `status: 'absent'` 且不创建目录；
+`readdir` 失败 → `status: 'unavailable'`；单个删除失败记 `{ name, code }`（basename + 有界错误码）
+后继续处理其它条目。只在 `status !== 'ok'` 或 `failures.length > 0` 时发一次受控 `ctx.logger.warn`
+（闭集标签与计数，不含路径、原始错误文本或 lease 内容），与 `warnConsumerStartup()` 共用同一
+非抛异常边界。
+
+**lease 自身回收边界。** 只有 dead lease 而没有 composition 时也会删除该 lease；外地 hostname →
+`keep` / `foreign-host`，不可读 / 字段不符 / 非法 pid / 超过 `maxLeaseBytes` → `keep` /
+`unproven-lease`，都只报告不删除。跨主机共享数据根不在支持范围（与 target claim 协议同一边界）：
+外地 pid 不能证明本机进程死亡。
+
+**操作者视角收益。** 在 `~/.dsh/storages/evolution/shared-plugins/consumers/` 的本机样本上
+（2026-11-26）：520 个目录项、511 个 session composition、334,799 逻辑字节、`du` 约 2.0 MiB；
+对副本的一次回收删除 450 个 acp 遗留文件、回收 270,090 逻辑字节，目录项降到 70。副本上 5 次独立
+运行的 GC 调用中位数 40.559 ms、最大 43.807 ms；dry-run 判定的中位数 5.786 ms、最大 6.334 ms；
+N=600 合成对照中位数 92.792 ms、最大 95.402 ms。真实目录未被修改；完整数据表与逐条复现命令见
+`docs/performance/consumer-session-gc.md`。
+
 ## 4. 发布是原子且幂等的
 
 - 索引与 consumer 状态都通过「同目录临时文件 + fsync + rename」原子替换，因此读者只会看到上一份完整文件或
