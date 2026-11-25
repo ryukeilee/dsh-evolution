@@ -63,7 +63,10 @@ open 时准备则让整个 store 打不开，而且该路径在 open 的关闭�
 - `writes`：400 条不同 id 的 `recordFailure`（同 target，触发 knowledge 合并）。
   `duplicates`：先写 400 条，再原样回放同一批 id（全部命中 duplicate 分支）。
   `readcontrol`：写 400 条后连续 3 次 `findConclusions()`（未改动的读路径对照）。
-- 每轮断言两侧 `stats()` 相同，落盘 `dbBytes` 相同。
+- 每轮断言两侧 `stats()` 相同；`dbBytes` 是 `close()` 前读到的 SQLite 主文件大小，脚本
+  逐样本记录。它只在**中位数**上相同（98,304 B / 94,208 B）：Lead 复跑的新写入第 2 轮、
+  第 2 个样本记录到 90,112 B 对 98,304 B。WAL 模式下主文件大小本来就不是内容证明，
+  逻辑内容的逐字段对拍见 §3。
 
 ### 2.1 `recordFailure` 新事实（400 条/样本）
 
@@ -109,7 +112,7 @@ Lead 在复审修复后用同一脚本独立复跑（`r12-lead-shared-experience
 
 ## 3. 正确性差分与反证
 
-`test/shared-experience-prepared-equivalence.test.mjs`（3 项，全部通过）：
+`test/shared-experience-prepared-equivalence.test.mjs`（4 项，全部通过）：
 
 1. **逐字节/逐字段等价**：测试把当前源码反向变换回「每次 `db.prepare()`」的
    实现（变换断言所有五段句柄都能找到，防止未来悄悄变成自我比较），两个实现
@@ -118,16 +121,18 @@ Lead 在复审修复后用同一脚本独立复跑（`r12-lead-shared-experience
    `events` 表全部 `hex(id)/hex(digest)`、`knowledge` 表全部 `key/revision/稳定 body
    投影`（去掉与运行时刻有关的 `firstSeen` 等字段）、`clock`、`stats()`、
    `findConclusions()` / `discover()` / `recall()` 的结构化答案——全部 `deepEqual`。
-2. **反证（注入错误语句）**：把 `stmtUpsertKnowledge` 的 SQL 改成
+2. **反证（注入错误语句）**：把 knowledge upsert 的 SQL 改成
    `revision=excluded.revision+1`（语法合法、prepare 成功），同一差分立即失败；
    证明比较确实覆盖被复用的句柄，而不是恒真断言。
 3. **句柄作用域**：同时打开两个 store，交替写不同 target，两个库的 knowledge
    不同且各自正确——句柄属于单个 store，不会跨库串用。
 4. **准备失败的时机**（复审新增，`test/shared-experience-prepared-equivalence.test.mjs`
-   第 4 项）：在 schema 1 库上建一个引用缺失表的 `AFTER UPDATE ON clock` 触发器，
-   基线与候选都必须能打开并读到 `{events:0,knowledge:0}`；写入以同一错误失败、
-   回滚后仍可读。用首版 open 时准备复现：open 直接抛 `no such table: main.r12_missing`；
-   当前实现 open 成功、写入失败、`stats()` 不变。
+   第 4 项）：测试用 `openSharedExperience()` 新建的库（schema 2）建一个引用缺失表的
+   `AFTER UPDATE ON clock` 触发器，基线与候选都必须能打开并读到 `{events:0,knowledge:0}`；
+   写入以同一错误失败、回滚后仍可读。用首版 open 时准备复现：open 直接抛
+   `no such table: main.r12_missing`；当前实现 open 成功、写入失败、`stats()` 不变。
+   复审另用 schema 1 库验证了同一行为（同样可打开、失败写入回滚、修复触发器后同一连接
+   可重试）；该 schema 1 变体未固化成用例。
 
 额外验证：`NODE_OPTIONS=--max-old-space-size=4096 node --test
 test/shared-experience.test.mjs test/shared-experience-schema-v2.test.mjs

@@ -43,7 +43,7 @@ DSH 源码。
 调用都重新 `db.prepare()` 五条 SQL 文本完全相同的语句（`node:sqlite` 每次都重新编译 SQL）。
 重复回放（at-least-once 的同一 event id）只做一次 SELECT + COMMIT，编译成本占比最高。
 
-**改动**：五个 `StatementSync` 句柄在 `openSharedExperience()` 内准备一次；SQL 文本、绑定
+**改动**：五个 `StatementSync` 句柄在首次使用时准备并复用（见 §2.4 R12-3）；SQL 文本、绑定
 顺序、`BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK` 边界、schema 判定与落盘字节全部不变
 （`lib/shared-experience.js`）。语句句柄由 `run()` 自动 reset，不是派生值缓存。
 
@@ -53,7 +53,8 @@ DSH 源码。
 | 重复回放（全部 duplicate） | 3.662 → 2.263 ms（−38.20%） | 3.532 → 2.251 ms（**−36.27%**） | 两侧均 5/5 轮为负 |
 | `findConclusions` 对照（未改路径） | 0.300 → 0.283 ms（−5.7%） | 0.275 → 0.278 ms（+1.09%） | Builder 5/5 为负；Lead 逐轮方向不一致 |
 
-两侧落盘字节相同（98,304 B / 94,208 B），`stats()` 相同。收益随写入次数线性增长、与历史
+两侧 `stats()` 相同；`close()` 前读到的主文件大小仅**中位数**相同（98,304 B / 94,208 B，Lead 复跑有
+90,112 B 对 98,304 B 的逐样本差异，且文件大小不是内容证明）。收益随写入次数线性增长、与历史
 长度无关；每个 store 多持有 5 个语句对象直到 `close()`，`open()` 无可测变化。
 
 ### 2.2 脱敏热点：`isSensitiveKey()` 的有界纯函数记忆
@@ -103,14 +104,15 @@ DSH 源码。
 
 ### 2.4 独立复核（`gpt-6.2-sol` High）发现并修复的问题
 
-首轮审核在 `31ef77b` 上返回 **CHANGES**，四项 blocker 都成立，修复后每项都有对应用例：
+首轮审核在 `31ef77b` 上返回 **CHANGES**（四项 blocker），第二轮在 `2578711` 上仍返回 **CHANGES**（三项 blocker、一项 nit）；每一轮的四/三项都成立，修复后各有对应用例或复现：
 
 | # | 问题 | 修复 | 回归/反证 |
 | --- | --- | --- | --- |
 | R12-1 | `diagnoseSharing()` 用 `` `${profile}\0${id}` `` 做撤销表成员键：模板字符串会把数组形态的 `pluginId`（`readDisableState` 只用 `String()` 校验）折叠成它包含的字符串，于是基线 `===` 不认的条目被当成撤销，doctor 多报 `pendingRestart`。 | 改为按 profile 的 `Set`，成员保留原始值与类型（`Set.has` 对记录 id 与基线 `===` 等价）。 | `promoted-sharing-diagnostics.test.mjs` 新增数组形态撤销 id 用例：修复前 `level=degraded`、`pendingRestart=[acp]`，修复后 `ok`、空；已在 `lib/diagnostics.js` 回退时确认该用例失败。 |
 | R12-2 | 512 条上限不是内存上限：`Map` 保存调用方原始字符串，128 个约 512 KiB 的字段名让基线堆增量 0.65 MiB、首版 63.63 MiB。 | 只有长度 ≤128 的键进入缓存，超长键计算后不保留；最坏保留上界 512×128 字符。 | `sensitive-key-memo.test.js` 新增：64 个约 256 KiB 的键答案仍正确，且缓存条目数不增加。 |
 | R12-3 | 五条 `prepare()` 放在 `openSharedExperience()` 内：schema 1 库若有引用缺失表的 `AFTER UPDATE ON clock` 触发器，基线只在写入时失败并回滚、仍可打开读取；首版让 store 打不开，且该失败路径在 open 的关闭清理边界之外。 | 句柄改为按首次使用缓存，准备仍发生在基线编译该语句的同一位置（写入事务内）。 | `shared-experience-prepared-equivalence.test.mjs` 第 4 项：基线与候选都能打开、读到空库；写入以同一 `no such table` 失败、回滚后 `stats()` 不变。用首版代码复现为 open 直接抛错。 |
-| R12-4 | 诊断基准的 `buildFixture()` 在校验归属前 `rmSync` 调用方传入的 `--fixture` 目录，会删掉无关文件。 | 只有带 `.r12-sharing-fixture` 标记的目录才会被递归删除；缺失/空目录可接管，非空无标记目录直接拒绝并保留内容。 | 手动复现：目录内 `keep.txt` 在 `build` 失败后仍在；新路径正常生成。 |
+| R12-4 | 诊断基准的 `buildFixture()` 会递归删除调用方传入的 `--fixture` 目录。第二轮复审进一步指出：仅凭“标记存在”仍可被同名空文件/目录伪造，且合法 fixture 里新放入的文件仍会被删。 | 脚本**从不删除 `--fixture`**：只写入不存在或空目录，任何非空目录一律拒绝并原样保留。 | 手动复现：带 `keep.txt` 的目录（含伪造标记文件、伪造标记目录、已生成的 fixture）在 `build` 失败后内容仍在；新/空路径正常生成。 |
+| R12-5 | 诊断基准在跨侧指纹不同时只记录 `allFingerprintsEqual: false` 并以 0 退出；文档仍把整次诊断的 679 ms 写成单个 check，并把“主文件大小相同”写成逐样本事实、把准备时机写成 open 时。 | `run` 在写出 JSON 后以非零失败拒绝把两个行为不同的树当成 A/B；文档改为整次 `collectDiagnostics()`、主文件大小仅中位数相同（逐样本存在 90,112/98,304 差异）、以及首次使用时准备。 | 用返回不同 `promotion.sharing` 等级的候选树运行：脚本抛出 `refusing to report an A/B`，JSON 保留 `allFingerprintsEqual: false`；正常树 smoke run 通过。 |
 
 另修正：`git diff --check` 报出的一处尾随空格；文档中把整次 `collectDiagnostics()` 的耗时
 误写成单个 check、把未改路径的 −10.47% 归因于堆压力、以及 Builder/Lead 两组读对照的

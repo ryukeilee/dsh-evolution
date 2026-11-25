@@ -143,14 +143,15 @@ node --max-old-space-size=4096 --test test/diagnostics.test.mjs \
 
 基准脚本本身在 `scripts/benchmarks/r12-sharing-{scan,diff,counter}.mjs` 与 `scripts/benchmarks/r12-startup-lazy.mjs`；原始 A/B、差分、计数、启动图与启动导入数据全部在 `docs/performance/r12-*.json`。
 
-`--fixture` 是调用方给出的路径：`buildFixture()` 只会递归删除自己创建过的目录（目录内有
-`.r12-sharing-fixture` 标记），缺失或空目录会被接管，非空且无标记的目录直接拒绝并保留
-内容；重新跑同一路径前请先删除或换新路径。
+`--fixture` 是调用方给出的路径，脚本**从不删除它**：只写入不存在或空目录，非空目录（包括
+上一轮留下的 fixture、以及伪造的标记文件/目录）一律拒绝并原样保留。重新跑同一路径前请先
+清理或换新路径。跨侧指纹不一致时 `run` 会先写出 JSON 供检查，再以非零退出失败，不会把
+两个行为不同的源码树当成一次 A/B。
 
 ## 5. 剩余瓶颈与风险
 
-- `diagnoseSharing()` 5000 档剩余约 679 ms CPU，主要来自逐记录 `readPromotedPlugin()` 的 3 次 lstat + 2 次 readFile + 2 次 sha256，以及索引 JSON 的读取、解析、sha256 与逐记录校验；这些是防篡改边界，不能省。
-- 诊断整体（29 种 check）中冷历史 JSONL 与事件桥扫描仍按历史字节线性增长，沿用既有分块扫描；本轮未重测，数值以 `diagnostics.md` / `final-candidate.md` 为准。5000 档剩余约 679–686 ms 是整次诊断的 CPU，其中逐记录 `readPromotedPlugin()` 与索引校验占主要部分。
+- 5000 档剩余约 679–686 ms 是**整次 `collectDiagnostics()`** 的 CPU；其中逐记录 `readPromotedPlugin()` 的 3 次 lstat + 2 次 readFile + 2 次 sha256，以及索引 JSON 的读取、解析、sha256 与逐记录校验占主要部分。这些是防篡改边界，不能省。
+- 诊断其余 29 种 check 中，冷历史 JSONL 与事件桥扫描仍按历史字节线性增长，沿用既有分块扫描；本轮未重测，数值以 `diagnostics.md` / `final-candidate.md` 为准。
 - 启动侧：模块图仍有 30 文件 / 约 1.7 MB `lib/` 静态闭包；惰性化诊断只有约 2.3 ms 边际收益，未实施；其它入口的模块数/字节见 `r12-startup-graph.json`。
 - 桌面任务通道的 1500 ms 重扫与 `agent/pre-step` 的 flush 频率保留，理由见 §3。
 - 本轮没有跑真实宿主验收、全量 `npm test` 或 `pack:check`；按 Builder 约束由 Lead 集成后统一执行。未跑的检查不写成通过。

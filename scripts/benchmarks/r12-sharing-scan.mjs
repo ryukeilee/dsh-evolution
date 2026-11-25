@@ -62,25 +62,21 @@ async function loadLib(libroot) {
   };
 }
 
-// Own the directory before deleting it. `--fixture` is a user-supplied path and
-// this script used to recurse into it unconditionally; a build now refuses to
-// remove anything it did not create (a missing path or an empty directory is
-// adopted), and leaves a marker so a later run may rebuild it.
-const FIXTURE_MARKER = '.r12-sharing-fixture';
+// `--fixture` is a user-supplied path, so this script never deletes it. It only
+// writes into a path that does not exist or is an empty directory; anything else
+// (including a directory a previous run left behind, and a forged marker file or
+// directory) is refused with its contents untouched. Re-running the same path
+// therefore needs a clean or new directory, which the report states.
 function buildFixture(fixture, records) {
   const target = path.resolve(fixture);
   if (fs.existsSync(target)) {
-    const marker = path.join(target, FIXTURE_MARKER);
-    if (!fs.existsSync(marker)) {
-      if (!fs.statSync(target).isDirectory()) throw new Error(`--fixture is not a directory: ${target}`);
-      if (fs.readdirSync(target).length > 0) {
-        throw new Error(`refusing to delete a non-empty directory that is not an r12 fixture: ${target}`);
-      }
+    if (!fs.statSync(target).isDirectory()) throw new Error(`--fixture is not a directory: ${target}`);
+    if (fs.readdirSync(target).length > 0) {
+      throw new Error(`refusing to write into a non-empty --fixture directory (pass a new or empty path): ${target}`);
     }
-    fs.rmSync(target, { recursive: true, force: true });
+  } else {
+    fs.mkdirSync(target, { recursive: true });
   }
-  fs.mkdirSync(target, { recursive: true });
-  fs.writeFileSync(path.join(target, FIXTURE_MARKER), 'r12 sharing scan fixture; safe to delete\n');
   // Mirror resolveEvolutionPaths() exactly; it is host-free and identical in
   // both source trees, so the fixture can be built without importing either.
   const dataRoot = path.join(fixture, 'storages', 'evolution');
@@ -197,57 +193,68 @@ async function orchestrate(args) {
   const samples = Number(args.samples);
   const records = Number(args.records);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'r12-sharing-runs-'));
-  const built = buildFixture(args.fixture, records);
-  const runs = [];
-  for (let round = 0; round < rounds; round += 1) {
-    const order = round % 2 === 0 ? [['baseline', args.baseline], ['candidate', args.candidate]]
-      : [['candidate', args.candidate], ['baseline', args.baseline]];
-    const perRound = {};
-    for (const [label, libroot] of order) {
-      const out = path.join(tmp, `r${round}-${label}.json`);
-      child(libroot, args.fixture, label, samples, out);
-      const payload = JSON.parse(fs.readFileSync(out, 'utf8'));
-      assert.equal(payload.label, label);
-      perRound[label] = payload;
+  try {
+    const built = buildFixture(args.fixture, records);
+    const runs = [];
+    for (let round = 0; round < rounds; round += 1) {
+      const order = round % 2 === 0 ? [['baseline', args.baseline], ['candidate', args.candidate]]
+        : [['candidate', args.candidate], ['baseline', args.baseline]];
+      const perRound = {};
+      for (const [label, libroot] of order) {
+        const out = path.join(tmp, `r${round}-${label}.json`);
+        child(libroot, args.fixture, label, samples, out);
+        const payload = JSON.parse(fs.readFileSync(out, 'utf8'));
+        assert.equal(payload.label, label);
+        perRound[label] = payload;
+      }
+      runs.push({
+        round,
+        order: order.map(([label]) => label),
+        baseline: summarize(perRound.baseline),
+        candidate: summarize(perRound.candidate),
+        fingerprintsEqual: ['doctor', 'review'].every((name) =>
+          perRound.baseline.results[name].fingerprint === perRound.candidate.results[name].fingerprint),
+      });
     }
-    runs.push({
-      round,
-      order: order.map(([label]) => label),
-      baseline: summarize(perRound.baseline),
-      candidate: summarize(perRound.candidate),
-      fingerprintsEqual: ['doctor', 'review'].every((name) =>
-        perRound.baseline.results[name].fingerprint === perRound.candidate.results[name].fingerprint),
-    });
-  }
-  const summary = {};
-  for (const name of ['doctor', 'review']) {
-    const baseCpu = runs.map((run) => run.baseline[name].medianCpuMs);
-    const candCpu = runs.map((run) => run.candidate[name].medianCpuMs);
-    const baseWall = runs.map((run) => run.baseline[name].medianWallMs);
-    const candWall = runs.map((run) => run.candidate[name].medianWallMs);
-    const pairedCpu = runs.map((run) => run.candidate[name].medianCpuMs - run.baseline[name].medianCpuMs);
-    const pairedWall = runs.map((run) => run.candidate[name].medianWallMs - run.baseline[name].medianWallMs);
-    summary[name] = {
-      baselineCpuMedianOfRounds: median(baseCpu), candidateCpuMedianOfRounds: median(candCpu),
-      baselineWallMedianOfRounds: median(baseWall), candidateWallMedianOfRounds: median(candWall),
-      cpuPairedDifferences: pairedCpu, wallPairedDifferences: pairedWall,
-      cpuPairedMedian: median(pairedCpu), wallPairedMedian: median(pairedWall),
-      cpuRelativeChangePct: (median(pairedCpu) / median(baseCpu)) * 100,
-      wallRelativeChangePct: (median(pairedWall) / median(baseWall)) * 100,
-      baselinePeakRssKiB: runs.map((run) => run.baseline.peakRssKiB),
-      candidatePeakRssKiB: runs.map((run) => run.candidate.peakRssKiB),
+    const summary = {};
+    for (const name of ['doctor', 'review']) {
+      const baseCpu = runs.map((run) => run.baseline[name].medianCpuMs);
+      const candCpu = runs.map((run) => run.candidate[name].medianCpuMs);
+      const baseWall = runs.map((run) => run.baseline[name].medianWallMs);
+      const candWall = runs.map((run) => run.candidate[name].medianWallMs);
+      const pairedCpu = runs.map((run) => run.candidate[name].medianCpuMs - run.baseline[name].medianCpuMs);
+      const pairedWall = runs.map((run) => run.candidate[name].medianWallMs - run.baseline[name].medianWallMs);
+      summary[name] = {
+        baselineCpuMedianOfRounds: median(baseCpu), candidateCpuMedianOfRounds: median(candCpu),
+        baselineWallMedianOfRounds: median(baseWall), candidateWallMedianOfRounds: median(candWall),
+        cpuPairedDifferences: pairedCpu, wallPairedDifferences: pairedWall,
+        cpuPairedMedian: median(pairedCpu), wallPairedMedian: median(pairedWall),
+        cpuRelativeChangePct: (median(pairedCpu) / median(baseCpu)) * 100,
+        wallRelativeChangePct: (median(pairedWall) / median(baseWall)) * 100,
+        baselinePeakRssKiB: runs.map((run) => run.baseline.peakRssKiB),
+        candidatePeakRssKiB: runs.map((run) => run.candidate.peakRssKiB),
+      };
+    }
+    const payload = {
+      records, rounds, samples, node: process.version, platform: `${process.platform}/${process.arch}`,
+      fixture: args.fixture, fixtureDetails: built,
+      baselineSource: path.resolve(args.baseline), candidateSource: path.resolve(args.candidate),
+      allFingerprintsEqual: runs.every((run) => run.fingerprintsEqual),
+      runs, summary,
     };
+    // Two source trees that answer the fixture differently are not an A/B of the
+    // same behaviour. The payload is still written so the divergence is
+    // inspectable, but the run itself fails rather than looking like a result.
+    if (!payload.allFingerprintsEqual) {
+      fs.writeFileSync(args.out, `${JSON.stringify(payload, null, 2)}\n`);
+      const differed = runs.filter((run) => !run.fingerprintsEqual).map((run) => run.round);
+      throw new Error(`baseline and candidate diagnostics differ on the same fixture (rounds ${differed.join(', ')}); refusing to report an A/B`);
+    }
+    fs.writeFileSync(args.out, `${JSON.stringify(payload, null, 2)}\n`);
+    console.log(JSON.stringify({ records, rounds, samples, allFingerprintsEqual: payload.allFingerprintsEqual, summary }, null, 2));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
   }
-  const payload = {
-    records, rounds, samples, node: process.version, platform: `${process.platform}/${process.arch}`,
-    fixture: args.fixture, fixtureDetails: built,
-    baselineSource: path.resolve(args.baseline), candidateSource: path.resolve(args.candidate),
-    allFingerprintsEqual: runs.every((run) => run.fingerprintsEqual),
-    runs, summary,
-  };
-  fs.writeFileSync(args.out, `${JSON.stringify(payload, null, 2)}\n`);
-  console.log(JSON.stringify({ records, rounds, samples, allFingerprintsEqual: payload.allFingerprintsEqual, summary }, null, 2));
-  fs.rmSync(tmp, { recursive: true, force: true });
 }
 
 function summarize(payload) {
