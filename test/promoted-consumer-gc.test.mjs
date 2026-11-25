@@ -23,6 +23,13 @@ import { createConsumerSession } from '../lib/promoted-consumer.js';
 import { sharingPaths } from '../lib/promoted-sharing.js';
 
 const PROFILE = 'acp';
+const cursorName = `.consumer-session-gc-cursor-${PROFILE}.json`;
+const cursorPath = (dir) => path.join(dir, cursorName);
+const CLOSED_CODES = new Set([
+  'EACCES', 'EPERM', 'ENOENT', 'EISDIR', 'ENOTDIR', 'ENOSPC', 'EMFILE', 'ENFILE',
+  'EBUSY', 'EROFS', 'EEXIST', 'E_LEASE_TOO_LARGE', 'SyntaxError', 'TypeError',
+  'RangeError', 'Error', 'unknown', 'other',
+]);
 
 async function tempConsumers(t) {
   const home = await fs.mkdtemp(path.join(os.tmpdir(), 'consumer-gc-'));
@@ -253,24 +260,19 @@ test('E: maxRemovals defers surplus files and maxEntries truncates the pass', as
     await writeConsumerSessionLease({ consumersDir: secondDir, profile: PROFILE, sessionId, pid: 900001 });
   }
   const sortedMore = [...more].sort();
-  const hour = CONSUMER_SESSION_GC_LIMITS.rotationMs;
-  const fixedNow = hour; // bucket 1; the window wraps from index 2
-  const expectedStart = (Math.floor(fixedNow / hour) * 2) % sortedMore.length;
-  const expectedWindow = sortedMore.slice(expectedStart).concat(sortedMore.slice(0, expectedStart)).slice(0, 2);
+  // No cursor exists yet, so the window starts at index 0.
   const truncated = await collectConsumerSessionGarbage({
     consumersDir: secondDir,
     profile: PROFILE,
-    now: fixedNow,
     isProcessAlive: () => false,
     limits: { ...CONSUMER_SESSION_GC_LIMITS, maxEntries: 2 },
   });
   assert.equal(truncated.status, 'ok');
   assert.equal(truncated.sessions, 3);
   assert.equal(truncated.truncated, true);
-  assert.deepEqual(truncated.decisions.map((decision) => decision.sessionId), expectedWindow);
+  assert.deepEqual(truncated.decisions.map((decision) => decision.sessionId), sortedMore.slice(0, 2));
   assert.equal(truncated.removedLeases, 2);
-  const untouched = sortedMore[(expectedStart + 2) % sortedMore.length];
-  assert.equal(await exists(path.join(secondDir, consumerSessionFileNames(PROFILE, untouched).lease)), true);
+  assert.equal(await exists(path.join(secondDir, consumerSessionFileNames(PROFILE, sortedMore[2]).lease)), true);
 });
 
 // --- F. Removal failures -----------------------------------------------------
@@ -558,53 +560,140 @@ test('file naming is strict and lease removal tolerates ENOENT', async (t) => {
   assert.equal(await exists(path.join(consumersDir, consumerSessionFileNames(PROFILE, sessionId).lease)), false);
 });
 
-// --- J. Rotation fairness (R1-2) ---------------------------------------------
+// --- J. Persistent cursor fairness (R2-1) ------------------------------------
 
-test('J: the bounded window rotates by hour and covers every session across buckets', async (t) => {
+test('J: a persistent cursor advances the window at the same wall-clock time', async (t) => {
   const { consumersDir } = await tempConsumers(t);
-  const ids = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()];
+  const ids = Array.from({ length: 5 }, () => crypto.randomUUID());
   for (const sessionId of ids) {
     await writeConsumerSessionLease({ consumersDir, profile: PROFILE, sessionId, pid: 900001 });
   }
-  const hour = CONSUMER_SESSION_GC_LIMITS.rotationMs;
-  const maxEntries = 2;
   const sorted = [...ids].sort();
-  const windowAt = (bucket) => {
-    const start = ((bucket * maxEntries) % sorted.length + sorted.length) % sorted.length;
-    return sorted.slice(start).concat(sorted.slice(0, start)).slice(0, maxEntries);
-  };
-  const collectAt = (bucket) => collectConsumerSessionGarbage({
+  const sameNow = Date.now();
+  const options = {
     consumersDir,
     profile: PROFILE,
-    now: bucket * hour,
+    now: sameNow, // every boot at the same instant: the cursor must still advance
     isProcessAlive: () => false,
-    limits: { ...CONSUMER_SESSION_GC_LIMITS, maxEntries },
-    dryRun: true,
-  });
-  const bucketA = Math.floor(Date.now() / hour);
-  const first = await collectAt(bucketA);
-  const second = await collectAt(bucketA + 1);
-  const firstIds = first.decisions.map((decision) => decision.sessionId);
-  const secondIds = second.decisions.map((decision) => decision.sessionId);
+    limits: { ...CONSUMER_SESSION_GC_LIMITS, maxEntries: 2 },
+    // Keep every file so only the persisted cursor decides the next window.
+    removeFile: async () => {},
+  };
+  const windows = [];
+  for (let pass = 0; pass < 5; pass += 1) {
+    const result = await collectConsumerSessionGarbage(options);
+    assert.equal(result.status, 'ok');
+    assert.equal(result.truncated, true);
+    assert.equal(result.decisions.length, 2);
+    windows.push(result.decisions.map((decision) => decision.sessionId));
+  }
+  assert.deepEqual(windows[0], sorted.slice(0, 2));
+  assert.deepEqual(windows[1], sorted.slice(2, 4));
+  assert.deepEqual(windows[2], [sorted[4], sorted[0]]);
+  assert.deepEqual(windows[3], sorted.slice(1, 3));
+  assert.deepEqual(windows[4], sorted.slice(3, 5));
+  const covered = new Set(windows.slice(0, 3).flat());
+  assert.equal(covered.size, 5);
+  assert.deepEqual([...covered].sort(), sorted);
 
-  assert.equal(first.status, 'ok');
-  assert.equal(second.status, 'ok');
-  assert.equal(first.sessions, 3);
-  assert.equal(second.sessions, 3);
-  assert.equal(first.truncated, true);
-  assert.equal(second.truncated, true);
-  assert.deepEqual(firstIds, windowAt(bucketA));
-  assert.deepEqual(secondIds, windowAt(bucketA + 1));
-  assert.notDeepEqual(firstIds, secondIds);
-  const union = new Set([...firstIds, ...secondIds]);
-  assert.equal(union.size, 3);
-  assert.deepEqual([...union].sort(), sorted);
-  // dryRun leaves every lease in place for the next bucket to process.
+  const cursor = JSON.parse(await fs.readFile(cursorPath(consumersDir), 'utf8'));
+  assert.equal(cursor.schemaVersion, 1);
+  assert.equal(cursor.kind, 'dsh-evolution-consumer-session-gc-cursor');
+  assert.equal(cursor.profile, PROFILE);
+  assert.equal(cursor.lastSessionId, sorted[4]);
+});
+
+test('J2: dryRun neither writes nor advances the cursor', async (t) => {
+  const { consumersDir } = await tempConsumers(t);
+  const ids = Array.from({ length: 5 }, () => crypto.randomUUID());
+  for (const sessionId of ids) {
+    await writeConsumerSessionLease({ consumersDir, profile: PROFILE, sessionId, pid: 900001 });
+  }
+  const options = {
+    consumersDir,
+    profile: PROFILE,
+    now: Date.now(),
+    isProcessAlive: () => false,
+    limits: { ...CONSUMER_SESSION_GC_LIMITS, maxEntries: 2 },
+    dryRun: true,
+  };
+  const first = await collectConsumerSessionGarbage(options);
+  const second = await collectConsumerSessionGarbage(options);
+  assert.deepEqual(first.decisions.map((decision) => decision.sessionId), second.decisions.map((decision) => decision.sessionId));
   assert.equal(first.removedLeases, 0);
   assert.equal(second.removedLeases, 0);
+  assert.equal(await exists(cursorPath(consumersDir)), false);
+});
+
+test('M: an invalid cursor restarts at zero and a real pass rewrites it', async (t) => {
+  const { consumersDir } = await tempConsumers(t);
+  const ids = Array.from({ length: 3 }, () => crypto.randomUUID());
   for (const sessionId of ids) {
-    assert.equal(await exists(path.join(consumersDir, consumerSessionFileNames(PROFILE, sessionId).lease)), true);
+    await writeConsumerSessionLease({ consumersDir, profile: PROFILE, sessionId, pid: 900001 });
   }
+  const sorted = [...ids].sort();
+  const badCursors = [
+    '{not json',
+    `${JSON.stringify({ schemaVersion: 1, kind: 'dsh-evolution-consumer-session-gc-cursor', profile: 'web', lastSessionId: sorted[2] })}\n`,
+    `${JSON.stringify({ schemaVersion: 1, kind: 'dsh-evolution-consumer-session-gc-cursor', profile: PROFILE, lastSessionId: 'not-a-uuid' })}\n`,
+  ];
+  for (const content of badCursors) {
+    await fs.writeFile(cursorPath(consumersDir), content, { mode: 0o600 });
+    const dry = await collectConsumerSessionGarbage({
+      consumersDir,
+      profile: PROFILE,
+      isProcessAlive: () => false,
+      limits: { ...CONSUMER_SESSION_GC_LIMITS, maxEntries: 2 },
+      dryRun: true,
+    });
+    assert.deepEqual(dry.decisions.map((decision) => decision.sessionId), sorted.slice(0, 2));
+  }
+  await fs.writeFile(cursorPath(consumersDir), badCursors[0], { mode: 0o600 });
+  const real = await collectConsumerSessionGarbage({
+    consumersDir,
+    profile: PROFILE,
+    isProcessAlive: () => false,
+    limits: { ...CONSUMER_SESSION_GC_LIMITS, maxEntries: 2 },
+  });
+  assert.equal(real.status, 'ok');
+  assert.equal(real.removedLeases, 2);
+  assert.deepEqual(real.decisions.map((decision) => decision.sessionId), sorted.slice(0, 2));
+  assert.deepEqual(real.failures, []);
+  const cursor = JSON.parse(await fs.readFile(cursorPath(consumersDir), 'utf8'));
+  assert.equal(cursor.lastSessionId, sorted[1]);
+  assert.equal(await exists(path.join(consumersDir, consumerSessionFileNames(PROFILE, sorted[2]).lease)), true);
+});
+
+test('N: a cursor path occupied by a directory is contained and recoverable', async (t) => {
+  const { consumersDir } = await tempConsumers(t);
+  const cursorDir = cursorPath(consumersDir);
+  await fs.mkdir(cursorDir);
+  const ids = Array.from({ length: 3 }, () => crypto.randomUUID());
+  for (const sessionId of ids) {
+    await writeConsumerSessionLease({ consumersDir, profile: PROFILE, sessionId, pid: 900001 });
+  }
+  const sorted = [...ids].sort();
+  const options = {
+    consumersDir,
+    profile: PROFILE,
+    now: Date.now(),
+    isProcessAlive: () => false,
+    limits: { ...CONSUMER_SESSION_GC_LIMITS, maxEntries: 2 },
+    removeFile: async () => {},
+  };
+  const first = await collectConsumerSessionGarbage(options);
+  assert.equal(first.status, 'ok');
+  assert.equal(first.removedLeases, 2);
+  assert.equal((await fs.stat(cursorDir)).isDirectory(), true);
+  assert.equal(first.failures.some((failure) => failure.name === cursorName && CLOSED_CODES.has(failure.code)), true);
+
+  await fs.rm(cursorDir, { recursive: true });
+  const second = await collectConsumerSessionGarbage(options);
+  assert.equal(second.status, 'ok');
+  assert.deepEqual(second.failures, []);
+  assert.deepEqual(second.decisions.map((decision) => decision.sessionId), sorted.slice(0, 2));
+  const third = await collectConsumerSessionGarbage(options);
+  assert.deepEqual(third.decisions.map((decision) => decision.sessionId), [sorted[2], sorted[0]]);
 });
 
 // --- K. Non-regular entries (R1-3) -------------------------------------------
