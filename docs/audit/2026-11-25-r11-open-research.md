@@ -230,6 +230,20 @@ Lead 复核 S4 修复时又发现 `boundedReviewActions()` 在同时存在 `revi
 `consumer-rows-truncated` 时会丢掉已有 cap 提示；同一 Builder 在 `b5acc6e` 中修正为保留全部
 notice（room 只压缩普通动作），并补双 notice 测试；集成提交 `4a51016`。
 
+### 2.7 独立复审 R2 发现并修复
+
+Playtester 在 `5f7dd70` 上复验 S1–S6 与四个主场景（309 项聚焦通过）后返回 **CHANGES**：
+
+| # | 根因 | 修复 |
+| --- | --- | --- |
+| R2-1 blocker | 同一毫秒提交 5 次失败 + 5 次干净成功时，collector 写入同毫秒 recovery 并置 `recoveryRecorded=true`；S3 的 planner 正确拒绝同毫秒证据，但该 episode 已耗尽，后续 195 次成功不再补写更晚的 recovery，目标持续以 100% 失败率入选 | outcome row 记录失败提交后的 `lastFailure.at`；只有 `Date.now() > at` 时才写 recovery 并置完成；同毫秒只累计 streak、不写不置完成，后续毫秒的干净成功再写一次；保持 S3 严格比较与单 episode 单事件。`f2d1031` → 集成 `7ea53fd` |
+| R2-2 should | 已批准 ACP 状态自称观察当前索引但 activation 行只有 `{id}`（缺 status）时 doctor ok、review restart；仅 Web 批准且 active、ACP 状态非法 JSON 时 doctor 要求重启 ACP、review active/no-action | doctor 对已批准且未撤销记录的 activation 行：status 缺失/未知或 `skipped-unapproved`/非 already-mounted·publisher 的 `disabled`/`missing` 记入 `unverifiedActivationRows`/`inactiveConsumers`；`unverifiedConsumers` 只针对至少有一条已批准未撤销记录的 profile；未批准 profile 的损坏状态不影响重启建议。`bba81d0` → 集成 `dc79d74` |
+| R2-3 blocker | 新设计文档把 `resultPath` 写成 Trial 能力样本支持的字段；`validateTaskRequest()` 实际拒绝 | 文档拆分为：Trial 能力样本比较完整返回值、不支持 `resultPath`；只有 workload steps 与 context-policy 的 functionalCheck 支持。`dd2a53f` → 集成 `8e99245` |
+
+R2-1/R2-2 的修复回归：A1 聚焦 73/73（含 mock timers 同毫秒→1s 后恢复、单 episode 只写一次）；
+review/doctor 聚焦 80/80（含缺 status 行、未批准 profile 损坏状态、`skipped-unapproved` 对齐）。
+R3 复审结论见 §4。
+
 ## 3. 调查后决定不修改的项
 
 | 项 | 结论与依据 |
@@ -254,15 +268,17 @@ notice（room 只压缩普通动作），并补双 notice 测试；集成提交 
   含正文）；R1 的 S1/S2/S3 在修复前 4 项失败，S4 的 consumer 行截断在修复前 no-action，S5 的
   state/warn 在修复前含 sentinel，S6 的摘要标记可被字符串伪造。
 - 聚焦：`test/review-fix-tool-recovery.test.mjs`、`test/experience-degradation.test.mjs`、
-  `test/experience-plan.test.mjs`、`test/experience-attribution.test.mjs` → 72/72；
-  `test/promoted-sharing-diagnostics.test.mjs`、`test/self-evolution-review.test.mjs` → 76/76；
+  `test/experience-plan.test.mjs`、`test/experience-attribution.test.mjs` → 73/73（含 R2-1 mock timers）；
+  `test/promoted-sharing-diagnostics.test.mjs`、`test/self-evolution-review.test.mjs` → 80/80（含 R2-2
+  缺 status/未批准 profile/skipped-unapproved）；
   `test/review-fix-host-lossless-value.test.mjs`、`test/desktop-task-host.test.mjs` → 59/59；
   以及 shared-experience / recall / desktop-task-client / diagnostics / release-pin 等相关套件。
-- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2332 项，2330 通过 / 0 失败 / 2 跳过**（含 R10 的基线为 2297）。
+- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2337 项，2335 通过 / 0 失败 / 2 跳过**（含 R10 的基线为 2297）。
 - 打包：`npm run pack:check`（开发阶段）→ **17/17 通过**；工作树是 `0.2.20` 固定点的已提交
   后继，固定产物与既有证据未改动；未执行 `--release` 或任何发布动作。
-- 独立复审与文档同步：见交付回复；复审结论对应最终 HEAD。
-- CI：推送后由 GitHub Actions 运行单元测试矩阵、package 与八宿主验收；结果见交付回复。
+- 独立复审：R1（`gpt-6.2-sol` High）CHANGES（S1–S6，已修复）；R2 在同一路由 CHANGES（R2-1/R2-2/R2-3，
+  已修复）；R3 对最终 HEAD 的复验结论见交付回复。未取得 APPROVE 前不写成通过。
+- CI：`5f7dd70`（R2 修复前）13/13 全绿；R2 修复后的最终 HEAD 推送后重新运行，结果见交付回复。
 
 ## 5. 实际收益与剩余风险
 
@@ -286,8 +302,9 @@ notice（room 只压缩普通动作），并补双 notice 测试；集成提交 
   目标仍按 recency 衰减，直到出现新失败或新恢复证据。这是有意的有界行为，未新增启动时历史扫描。
 - recovery 只在没有 qualifying loss 时 resolve；存在损失时目标保持候选，即使最近有干净成功 streak。
   这是保守取舍，宁可多留一轮候选，也不让恢复事实压掉独立损失。
-- 同一毫秒的 failure 与 recovery 不算已恢复（严格 `>`）；最坏情况下目标多留一轮候选，不会隐藏
-  更晚提交的失败。
+- 同一毫秒的 failure 与 recovery 不算已恢复（严格 `>`）；collector 会推迟到后续毫秒的干净成功
+  再写 recovery，不会耗尽 episode；若失败后所有干净成功都停在同一毫秒，目标保持候选（保守，
+  不会隐藏更晚提交的失败）。
 - C-1 的 review 只读取前 50 条 consumer 行；超过上限时给出 consumer-rows-truncated operator
   notice 并指向 doctor 全量读取，但 review 本身不逐行评估未读尾部。
 - B-1 的 `losslessCanonicalText()` 对极深非循环值可能栈溢出；`sampleEvidence()` 捕获后使用固定
