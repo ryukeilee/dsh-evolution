@@ -12,6 +12,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   buildSharedRecord,
+  consumerActivationRows,
   consumerCompositionEntries,
   consumerStateDocument,
   evaluateSharedRecord,
@@ -462,4 +463,13 @@ test('Cordis object-form inject declarations gate compatibility by required serv
     services: { has: (name) => name === 'kernelOnlyService', memberPresent: () => true },
     mountedModuleUrls: [], disableState: { entries: [] }, previousState: null,
   })).status, 'eligible');
+});
+
+test('consumerActivationRows discards malformed rows and keeps shaped activation rows', () => {
+  assert.deepEqual(
+    consumerActivationRows({ plugins: [null, [], {}, { id: '' }, { id: 'kept', status: 'active' }] }).map((row) => row.id),
+    ['kept'],
+  );
+  assert.deepEqual(consumerActivationRows(null), []);
+  assert.deepEqual(consumerActivationRows({ plugins: 'not-an-array' }), []);
 });
