@@ -469,7 +469,11 @@ async function concurrent(args) {
 
 async function protocolConstants() {
   const mod = await import(pathToFileURL(path.join(path.dirname(SCRIPT), '..', '..', 'lib/desktop-task-protocol.js')).href);
-  return { schemaVersion: mod.SCHEMA_VERSION, protocol: mod.PROTOCOL_VERSION, taskIdPattern: mod.TASK_ID_PATTERN };
+  return {
+    schemaVersion: mod.SCHEMA_VERSION, protocol: mod.PROTOCOL_VERSION,
+    taskIdPattern: mod.TASK_ID_PATTERN, createTaskState: mod.createTaskState,
+    taskChannelPaths: mod.taskChannelPaths,
+  };
 }
 
 function buildInbox(fixture, tasks, constants) {
@@ -479,56 +483,36 @@ function buildInbox(fixture, tasks, constants) {
       throw new Error(`refusing to write into a non-empty --fixture directory: ${target}`);
     }
   } else fs.mkdirSync(target, { recursive: true });
-  const inbox = path.join(target, 'inbox');
-  const state = path.join(target, 'state');
+  // The production layout: taskChannelPaths() puts the channel under
+  // <dshHome>/storages/evolution/desktop-tasks, not directly under the home.
+  const channel = constants.taskChannelPaths(target);
+  const inbox = channel.inbox;
+  const state = channel.state;
   fs.mkdirSync(inbox, { recursive: true });
   fs.mkdirSync(state, { recursive: true });
   for (let i = 0; i < tasks; i += 1) {
     const id = `task-${String(i).padStart(8, '0')}`;
     fs.writeFileSync(path.join(inbox, `${id}.json`), `${JSON.stringify({ schemaVersion: constants.schemaVersion, protocol: constants.protocol, taskId: id, createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString() })}\n`);
-    // A real state document: pendingRequests() reads it, parses it and rejects
-    // it unless schemaVersion/protocol/taskId all match.
-    fs.writeFileSync(path.join(state, `${id}.json`), `${JSON.stringify({ schemaVersion: constants.schemaVersion, protocol: constants.protocol, taskId: id, phase: 'stable', updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString() })}\n`);
+    // The production state generator, so the fixture has the exact document
+    // shape a real host writes (not a five-field stand-in).
+    fs.writeFileSync(path.join(state, `${id}.json`), `${JSON.stringify(constants.createTaskState({ taskId: id }))}\n`);
   }
   return { inbox, state, tasks };
 }
 
 async function rescan(args) {
   const fixture = path.resolve(args.fixture);
-  const inbox = path.join(fixture, 'inbox');
-  const state = path.join(fixture, 'state');
-  const samples = Number(args.samples ?? 5);
   const constants = await protocolConstants();
-  // Mirrors pendingRequests() step by step: list the inbox, then for every
-  // request read + parse + validate its state document exactly like readState()
-  // (missing, unparseable, or schema/protocol/taskId mismatch => no state),
-  // then read the request only to order the queue.
-  const readState = async (taskId) => {
-    let value;
-    try {
-      value = JSON.parse(await fs.promises.readFile(path.join(state, `${taskId}.json`), 'utf8'));
-    } catch { return null; }
-    if (value === null || value.schemaVersion !== constants.schemaVersion
-      || value.protocol !== constants.protocol || value.taskId !== taskId) return null;
-    return value;
-  };
-  const scan = async () => {
-    const files = (await fs.promises.readdir(inbox)).filter((f) => f.endsWith('.json'));
-    const pending = [];
-    for (const file of files) {
-      const taskId = path.basename(file, '.json');
-      if (!constants.taskIdPattern.test(taskId)) continue;
-      if ((await readState(taskId)) !== null) continue;
-      let createdAt = 0;
-      try {
-        const request = JSON.parse(await fs.promises.readFile(path.join(inbox, file), 'utf8'));
-        createdAt = Date.parse(request?.createdAt) || 0;
-      } catch {}
-      pending.push({ taskId, createdAt });
-    }
-    pending.sort((a, b) => a.createdAt - b.createdAt || a.taskId.localeCompare(b.taskId));
-    return pending.length;
-  };
+  const inbox = constants.taskChannelPaths(fixture).inbox;
+  const samples = Number(args.samples ?? 5);
+  // The real production scanner, constructed through the real host factory. It
+  // is the only way to time the exact read/parse/validation and failure
+  // behaviour (a corrupt state file throws; a directory named *.json throws)
+  // instead of a lookalike.
+  const hostMod = await import(pathToFileURL(path.join(path.dirname(SCRIPT), '..', '..', 'lib/desktop-task-host.js')).href);
+  const ctx = { logger: { info() {}, warn() {}, error() {}, debug() {} }, tools: { get() { return null; }, execute: async () => ({}) } };
+  const host = hostMod.createDesktopTaskHost(ctx, { dshHome: fixture, scanIntervalMs: 3_600_000, approvalPollMs: 3_600_000 });
+  const scan = async () => (await host.internals.pendingRequests()).length;
   await scan(); // warmup
   const rows = [];
   for (let i = 0; i < samples; i += 1) {
@@ -540,8 +524,9 @@ async function rescan(args) {
     const cpu = process.cpuUsage(cpuStart);
     rows.push({ cpuMs: (cpu.user + cpu.system) / 1000, wallMs: elapsedMs, pending: value });
   }
+  try { await host.dispose(); } catch { /* already disposed */ }
   const out = {
-    method: 'mirrors desktop-task-host pendingRequests(): readdir inbox, taskId pattern, read+parse+validate each state document (schemaVersion/protocol/taskId, like readState()), read+parse the request for ordering, sort; default channel disabled, this is the explicit-enable idle cost',
+    method: 'production createDesktopTaskHost(...).internals.pendingRequests() over a fixture whose states come from createTaskState(); default channel disabled, this is the explicit-enable idle cost',
     fixture, tasks: fs.readdirSync(inbox).length, node: process.version, rows,
     medianCpuMs: median(rows.map((r) => r.cpuMs)), medianWallMs: median(rows.map((r) => r.wallMs)),
     estimatedIdleCpuMsPerMinute: median(rows.map((r) => r.cpuMs)) * (60000 / 1500),
@@ -566,7 +551,9 @@ async function micro(args) {
     readIndexBytes: () => { const b = fs.readFileSync(paths.indexPath); return b.length; },
     parseIndex: () => { const v = JSON.parse(indexText); return v.plugins.length; },
     indexSha256: () => sha256(indexBytes).length,
-    archiveSort: () => names.filter((n) => n.endsWith(SUFFIX)).sort().reverse().length,
+    // readdir is inside the timed op; the earlier version pre-read the names
+    // outside the sample window and therefore did not measure what its label said.
+    archiveSort: () => fs.readdirSync(paths.archiveDir).filter((n) => n.endsWith(SUFFIX)).sort().reverse().length,
   };
   const samples = Number(args.samples ?? 5);
   const out = { fixture, node: process.version, indexBytes: indexBytes.length, archiveNames: names.length, samples: {} };

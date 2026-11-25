@@ -132,7 +132,7 @@ exact/score/recency 分支）；平局语料下候选建键数严格少于基线
 
 | 历史结论数 | 闭环总计 | plan | propose | probe baseline | trial | probe candidate | measure | promote（待确认） | revert |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 0 | 4.71 ms | 0.47 (9.9%) | 0.48 (10.2%) | 0.27 (5.7%) | 0.51 (10.8%) | 0.16 (3.4%) | 0.15 (3.2%) | 0.03 (0.6%) | 2.64 (56.0%) |
+| 0 | 4.71 ms | 0.47 (9.9%) | 0.48 (10.2%) | 0.27 (5.8%) | 0.51 (10.9%) | 0.16 (3.5%) | 0.15 (3.1%) | 0.03 (0.5%) | 2.64 (56.0%) |
 | 200 | 15.58 ms | 7.89 (50.7%) | 3.59 (23.1%) | 0.27 (1.7%) | 0.64 (4.1%) | 0.16 (1.0%) | 0.12 (0.8%) | 0.02 (0.1%) | 3.20 (20.5%) |
 | 2,000 | 79.85 ms | 37.05 (46.4%) | 29.33 (36.7%) | 0.41 (0.5%) | 0.80 (1.0%) | 0.16 (0.2%) | 0.25 (0.3%) | 0.06 (0.1%) | 10.38 (13.0%) |
 | 5,000 | 103.44 ms | 36.18 (35.0%) | 39.92 (38.6%) | 0.41 (0.4%) | 0.95 (0.9%) | 0.16 (0.2%) | 0.32 (0.3%) | 0.03 (0.0%) | 21.23 (20.5%) |
@@ -141,9 +141,10 @@ exact/score/recency 分支）；平局语料下候选建键数严格少于基线
 `promote` 的只读门禁 0.03 ms，均不随历史变化；`revert` 中约 2.5–4.6 ms 的归档渲染 +
 事件桥写入 + fsync 也是固定成本（5,000 档 `revert` 减去两次存储调用后余约 4.6 ms）。
 
-**有界增长**：`plan` 的两个读窗口（`discover` 500、`recall` 2,000 行）填满后不再随总行数
-增长，2,000 → 5,000 档从 37.05 降到 36.18 ms（噪声内）；另有约 5–7 ms 是对 500 条候选
-规范化、分组与评分的有界纯计算。
+**有界增长**：`plan` 的两个读取窗口（`discover` 500、`recall` 2,000 行）填满后不再增长，
+2,000 → 5,000 档从 37.05 降到 36.18 ms（噪声内）；另有约 5–7 ms 是对 500 条候选规范化、
+分组与评分的有界纯计算。`discover()` 每次还会做一次 O(历史) 的 `count(*)` covering-index
+计数，本轮未单独分解，因此不能说 `plan` 完全不受总行数影响。
 
 **无界增长**：`findConclusions()` 是无 scope 列可用的 `instr(body, ?)` 全表扫描，每次闭环
 调用两次（`propose` 的重复假设拦截、`revert` 的结论发布前查询），从 0.6 ms（200 行）线性
@@ -176,15 +177,15 @@ JSON1 表达式索引、`plan` 复用 `discover` 的 500 行替代 `recall` 的 
 | 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `indexRead` | 2.23 / 6.33 / 46.55 / 225.56 ms | 合理增长（parse + 逐记录校验 + 整文件 sha256） |
 | 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `sourceVerify` | 7.52 / 61.66 / 635.63 / 2856.67 ms | 合理增长（防篡改，每记录恰好一次） |
 | 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `usageRead` | 0.21 / 0.22 / 0.22 / 0.24 ms | **固定开销**（stat + readFile + parse 小投影） |
-| 桌面兜底重扫 | 100 / 1000 / 5000 任务 | 每次 `rescan`（含 state 读取/解析/校验） | 4.54 / 32.47 / 168.09 ms | 随 inbox 线性（唯一兜底） |
+| 桌面兜底重扫 | 100 / 1000 / 5000 任务 | 生产 `pendingRequests()` | 4.61 / 36.86 / 184.19 ms | 随 inbox 线性（唯一兜底） |
 | 完整闭环 | 0 / 200 / 2k / 5k 行 | 闭环总计 | 4.71 / 15.58 / 79.85 / 103.44 ms | 前段有界 + `findConclusions` 无界 |
 
 `indexRead` 的 O(字节) 分解（CPU ms 中位数，50 / 500 / 5k / 20k）：读文件
-0.061 / 0.158 / 2.019 / 5.420、`JSON.parse` 0.118 / 1.798 / 9.906 / 38.268、
-`sha256(bytes)` 0.044 / 1.172 / 3.958 / 13.264、archive `readdir+filter+sort`
-0.010 / 0.044 / 0.936 / 2.418。20k 档 sha256 仅占 `indexRead` 约 6%，parse 约 38 ms，
-其余约 170 ms 是逐记录校验；50 档则相反，O(字节) 子步骤合计约 0.22 ms，整次
-`indexRead` 2.23 ms 里约 2.0 ms 是逐记录校验的固定成本。
+0.045 / 0.092 / 1.702 / 4.901、`JSON.parse` 0.121 / 1.567 / 8.868 / 33.352、
+`sha256(bytes)` 0.044 / 1.041 / 3.581 / 11.996、archive `readdir+filter+sort`
+0.072 / 1.055 / 3.766 / 13.738（这行独立计时，不属于 `indexRead`）。20k 档 sha256 约占
+`indexRead` 5%，parse 约 33 ms，其余约 175 ms 是逐记录校验；50 档则相反，O(字节) 子步骤
+合计约 0.21 ms，整次 `indexRead` 2.23 ms 里约 2.0 ms 是逐记录校验的固定成本。
 
 **可消除增长**：本轮只在两个函数内找到并消除了 O(待处理记录数) 的重复解析/序列化
 （§1.1、§1.2/§1.3）；跨入口子系统四档均未发现同一调用内的第二次扫描。
@@ -196,10 +197,10 @@ JSON1 表达式索引、`plan` 复用 `discover` 的 500 行替代 `recall` 的 
 | 方向 | 上界收益 | 依据 | 结论 |
 | --- | ---: | --- | --- |
 | `readSharedIndex` 跳过 `sha256(bytes)` | 20k 档约 13.26 ms（`indexRead` ≈6%） | `index.digest` 严格等于 `sha256(published.json)`；宿主验收与跨入口探针依赖该等式判断索引篡改 | **否决**：认证契约 |
-| `diagnoseSharing` 跳过逐记录 `readPromotedPlugin` | 20k 档最多约 2,856 ms（doctor ≈99%） | 追加 `// tampered` 后当前树 `blocked`/`source-digest-mismatch`，跳过校验的补丁树 `degraded`/`source=verified`，doctor 指纹不等 | **否决**：防篡改边界 |
+| `diagnoseSharing` 跳过逐记录 `readPromotedPlugin` | 未单独计时（`sourceVerify` 从完整 `readSharedIndex()` 起算） | 追加 `// tampered` 后当前树 `blocked`/`source-digest-mismatch`，跳过校验的补丁树 `degraded`/`source=verified`，doctor 指纹不等 | **否决**：防篡改边界 |
 | `review` 复用 doctor 产物 / 放开 50 条上限 | 无同调用路径 | 两个独立工具无共享调用点；放开上限只增成本 | **否决** |
 | 跨入口缓存已解析索引 / 增量认证 | 每入口约 46 ms@5k、225 ms@20k | 需「使用前证明文件未变」的第二协议；dev/ino/size/mtime 无法检测同长原地改写 | **否决**：O(1) 信号证明 O(历史) |
-| Desktop 1500 ms 重扫降频 / 移除 | 4.54–168.09 ms/次 | watcher `persistent:false`，重扫是漏事件唯一兜底；降频推迟拾取、移除漏任务 | **否决**：削弱可靠性 |
+| Desktop 1500 ms 重扫降频 / 移除 | 4.61–184.19 ms/次 | watcher `persistent:false`，重扫是漏事件唯一兜底；降频推迟拾取、移除漏任务 | **否决**：削弱可靠性 |
 | `registration.js` 每工具 finally flush 改频率 | 常数成本 | 改变事件认证/去重时机；R12 已否决 agent/pre-step flush 频率 | **否决**（R12 已否决） |
 | `propose` 与 `revert` 共用一次 `findConclusions` | 5k 档约 16 ms/闭环 | 两次调用之间隔着真实 `trial`/`probe`/`revert` 写入，另一入口可能追加同一 target；复用会用旧快照决定是否发布结论 | **否决**：O(1) 缓存近似 O(历史) |
 | 给 `findConclusions` 的 scope 加 JSON1 表达式索引/列 | 100k 档约 280 ms | 需 schema 变更与既有库迁移；`json_extract` 与 `instr` 对畸形 body 不完全等价 | **否决**（边界禁止） |
@@ -236,8 +237,8 @@ canary 描述符二次序列化、观察者表剪枝、`detectDegradation` 索�
 - **`findConclusions()` 的 O(历史) 扫描**：`instr(body, ?)` 无 scope 索引，10k/30k/100k
   约 29/84/280 ms；完整闭环里每次调用两次，5k 档已占闭环约 32%。它是显式动作路径
   （`evolution_propose` / 结论发布），不在 `agent/pre-step` 热路径；真实安装在 10k 行以上
-  会先感知到它。`discover()` 的 `count(*)` covering-index 全索引计数也随库增长，但量级小
-  得多（5k 档约 1 ms），本轮未单独分解。
+  会先感知到它。`discover()` 的 `count(*)` covering-index 全索引计数也随库增长（未单独
+  分解）。
 - **事件桥稳态同步**：每次 `flush()` 完整读取日志前缀并做带密钥 HMAC，同时序列化整张已
   提交标记表后 SHA-256；R12 实测 100k 历史约 61 ms/次（`axis-steady-history.md`）。认证与
   检查点绑定的下界。
@@ -248,9 +249,8 @@ canary 描述符二次序列化、观察者表剪枝、`detectDegradation` 索�
 - **诊断防篡改**：doctor 在 20k 档约 2,838 ms，几乎全部是逐记录 `lstat` + `readFile` +
   sha256。
 - **归档事务**：R12 记录 256 段负载中约 84% 延迟是 `fsync`，复制约 7.6%。
-- **桌面兜底重扫**：显式启用时随 inbox 线性（5,000 任务 168.09 ms/次，按 1500 ms 间隔约
-  6,723.4 ms CPU/分钟，且不含真实入口的 `writeConsumerState()`）；这是 watcher 漏事件时的
-  唯一兜底。
+- **桌面兜底重扫**：显式启用时随 inbox 线性（5,000 任务 184.19 ms/次，按 1500 ms 间隔约
+  7,367.4 ms CPU/分钟）；这是 watcher 漏事件时的唯一兜底。
 
 ## 6. 验证状态
 
@@ -398,17 +398,20 @@ node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
 完整闭环复现命令改为逐档 `--runs 7 / 7 / 5 / 5`；跨入口 §8 拆成 50/500/5000 与 20k
 两段命令；共享经验 §4 的 `hot-key` 行补注"三列是 500 / 2,000 / 5,000 次修订"。
 
-## 10. 第二轮复核（`f03d991`）的修复
+## 10. 复审修复（round 2–3）
 
-第二轮独立复核返回 CHANGES，5 个 blocker 均属交付证据与计时边界，已修复：
+第二轮（`f03d991`）与第三轮（`45d83d7`）独立复核都返回 CHANGES，全部属交付证据与计时
+边界，已逐项修复；没有任何一项通过改措辞绕过。
 
 1. **汇总附件残留旧 50 档**：`docs/performance/r13-cross-entry-audit.json` 的
    `runs["50"]` / `micro["50"]` 已用重跑后的分档数据替换（`sourceVerify` 7.523 ms、
    `parseIndex` 0.118 ms），与 `-aa-50.json` / `-micro-50.json` 一致；备份口径见 §6。
-2. **桌面重扫测的不是生产路径**：夹具改为完整 state 文档，`rescan` 执行与 `readState()`
-   相同的读取/解析/`schemaVersion`+`protocol`+`taskId` 校验；数字更新为
-   4.54 / 32.47 / 168.09 ms（100/1,000/5,000）。第一版只做 `access(state)`，已在
-   §4 标注作废。**NO CHANGE 不变**。
+2. **桌面重扫测的不是生产路径**：第三轮进一步指出第二版只是相似实现（损坏 state 会抛错、
+   名为 `*.json` 的目录会被忽略，而相似实现会吞掉这两类失败）。现在 `rescan` 直接调用生产
+   `createDesktopTaskHost(...).internals.pendingRequests()`，夹具 state 由生产
+   `createTaskState()` 生成、通道用 `taskChannelPaths()` 的真实布局；数字更新为
+   4.61 / 36.86 / 184.19 ms（100/1,000/5,000）。第一版（`access()`）与第二版（相似实现）
+   都已在 §4 标注作废。**NO CHANGE 不变**。
 3. **并发启动的计时边界**：明确 `concurrent` 是只读合成负载，不含 `writeConsumerState()`
    的 SQLite 发布锁与 Include 挂载；`sourceVerify` 每次先做一次完整 `readSharedIndex()`，
    因此不能当作 doctor 内源码校验的占比。**NO CHANGE 不变**。
@@ -416,7 +419,15 @@ node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
    闭环、共享经验与本文三处口径已统一，并注明未单独分解该计数。
 5. **附件路径与复现命令**：18 份 R13 JSON 的临时目录/worktree 路径已替换为
    `<tmp>` / `<worktree>` 占位符（数值未改）；跨入口 A/A 命令补 `--expect-records`，
-   篡改反证补上两棵树的 `measure --workloads doctor`。
+   篡改反证补上两棵树的 `measure --workloads doctor`。第三轮又发现三份 rescan 附件是
+   替换之后重跑的，已再次统一替换。
+6. **汇总附件仍残留旧重扫数据**：`r13-cross-entry-audit.json` 的 `rescan` 三档已替换为
+   生产函数的重跑结果（`method` 也已更新）。
+7. **doctor 的“≈99% / 最多省 2,856 ms”**：`sourceVerify` 从完整 `readSharedIndex()` 起算，
+   无法拆出“仅源码校验”的耗时；两处量化已删除，只保留篡改反证。
+8. **`count(*)` 归因与 `micro` 标签**：三处文档统一为“读取窗口有界 + 另有未单独分解的
+   O(历史) 计数”，并删掉未测得的“5k 档约 1 ms”；`micro` 的 `archiveSort` 把 `readdir`
+   放进计时窗口（第一版在窗口外预读），全部四档重跑。
 
 另按建议注明闭环 27.3% 的聚合口径（阶段解析中位数之和 ÷ 闭环中位数；逐样本先算占比
 再取中位数为 26.1%），并统一了事件桥逐轮表的 `B−A` 舍入。

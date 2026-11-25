@@ -62,13 +62,14 @@
 
 | 记录数 | 读文件字节 | `JSON.parse` | `sha256(bytes)` | archive `readdir+filter+sort` |
 | ---: | ---: | ---: | ---: | ---: |
-| 50 | 0.061 | 0.118 | 0.044 | 0.010 |
-| 500 | 0.158 | 1.798 | 1.172 | 0.044 |
-| 5,000 | 2.019 | 9.906 | 3.958 | 0.936 |
-| 20,000 | 5.420 | 38.268 | 13.264 | 2.418 |
+| 50 | 0.045 | 0.121 | 0.044 | 0.072 |
+| 500 | 0.092 | 1.567 | 1.041 | 1.055 |
+| 5,000 | 1.702 | 8.868 | 3.581 | 3.766 |
+| 20,000 | 4.901 | 33.352 | 11.996 | 13.738 |
 
-`micro` 的四行各自独立计时：`archiveSort` 的 `readdir+filter+sort` **不在** `indexRead` 的
-计时窗口内，`indexRead` 只含读文件、`JSON.parse`、整文件 sha256 与逐记录校验。
+`micro` 的四行各自独立计时：`archiveSort` 现在把 `readdir` 也放进计时窗口（第一版在窗口外
+预读文件名，标签与测量不符），因此它的绝对值和 `indexRead` 一样随条目/字节增长，但仍**不属于**
+`indexRead`；`indexRead` 只含读文件、`JSON.parse`、整文件 sha256 与逐记录校验。
 
 **分类结论：**
 
@@ -113,25 +114,25 @@
 
 ## 4. 桌面任务通道 1500 ms 兜底重扫
 
-`rescan` 逐步骤镜像 `pendingRequests()`：`readdir(inbox)` → 按 `TASK_ID_PATTERN` 过滤 →
-对每项**读取、解析并按 `readState()` 的规则校验** state 文档（`schemaVersion` / `protocol` /
-`taskId` 任一不符即视为无状态）→ 只为排序读取 request 的 `createdAt` → 排序。
+`rescan` 现在直接调用**生产**扫描入口：`createDesktopTaskHost(...).internals.pendingRequests()`，
+夹具的 state 由生产的 `createTaskState()` 生成，通道目录用 `taskChannelPaths()` 的真实布局
+（`<home>/storages/evolution/desktop-tasks`）。因此损坏的 state JSON、名为 `*.json` 的目录，
+以及完整状态字段的行为都与生产一致，不再是一个只做 `access()` 的相似实现。
 下表为显式启用入口时的空闲成本（default `disabled`，不产生此开销）：
 
 | inbox 任务数 | 每次重扫 CPU ms | 按 1500 ms 间隔推算的每分钟 CPU ms |
 | ---: | ---: | ---: |
-| 100 | 4.54 | 181.6 |
-| 1,000 | 32.47 | 1,298.7 |
-| 5,000 | 168.09 | 6,723.4 |
+| 100 | 4.61 | 184.2 |
+| 1,000 | 36.86 | 1,474.3 |
+| 5,000 | 184.19 | 7,367.4 |
 
 随 inbox 规模线性增长，但 watcher 为 `persistent:false`，这段重扫是它漏事件时的**唯一兜底**；
 降频会推迟任务拾取，移除会削弱可靠性。任务明确禁止这两种做法，故 **NO CHANGE**。
 本轮不主张任何内存或 IO 收益。
 
-**计时边界（复审修复）**：第一版只做 `access(state)` 且夹具 state 只有 `phase`，因此
-0.055 ms 级别的墙钟只代表文件存在性检查，不是生产路径的成本。现在的夹具写入完整 state
-文档，`rescan` 也执行与 `readState()` 相同的读取/解析/校验；上表因此比第一版高约 2–4 倍，
-并且仍是**下界**：真实入口还要 `writeConsumerState()` 等写入，不在本表内。
+**计时边界（两轮复审修复）**：第一版只做 `access(state)`，第二版是相似实现（损坏 state 与
+目录项的行为和生产不同）；现在直接跑生产 `pendingRequests()`，上表是它的实际 CPU。
+它仍是**下界**：真实入口的定时器还会触发 `kick()`→写入与任务执行，不在本表内。
 
 ## 5. 诊断与统一审查的重复读取
 
@@ -154,10 +155,10 @@
 | 候选 | 上界收益 / 成本 | 反证（候选被改坏时差分失败） | 结论 |
 | --- | --- | --- | --- |
 | `readSharedIndex` 跳过 `sha256(bytes)` | 20k 档约 13.26 ms（占 indexRead ≈6%） | `index.digest` 当前严格等于 `sha256(published.json)`（实测 true），宿主验收 `run-host-acceptance.mjs:877`、`run-cross-entry.mjs:994`、`cross-entry-promotion-probe.mjs:516` 依赖该等式判断索引是否被篡改；跳过即让这些断言失效。 | **否决**：认证契约，非冗余 |
-| `diagnoseSharing` 跳过逐记录 `readPromotedPlugin` | 20k 档最多省约 2,856 ms（doctor ≈99%） | 把 1 条已发布插件的源码尾部追加 `// tampered` 后：当前树 `promotion.sharing` = **blocked**，`problems=[source-digest-mismatch]`、`source=source-digest-mismatch`；临时补丁树（跳过源码校验）= **degraded**、`source=verified`，篡改不再被发现。两侧 doctor 指纹 `ce2fbac5…` vs `34e3289e…` 不同，`run` 会以"指纹不等"非零退出。 | **否决**：防篡改边界，属不变量 8/9 |
+| `diagnoseSharing` 跳过逐记录 `readPromotedPlugin` | 未单独计时（`sourceVerify` 工作负载从完整 `readSharedIndex()` 开始，不能拆出这一步） | 把 1 条已发布插件的源码尾部追加 `// tampered` 后：当前树 `promotion.sharing` = **blocked**，`problems=[source-digest-mismatch]`、`source=source-digest-mismatch`；临时补丁树（跳过源码校验）= **degraded**、`source=verified`，篡改不再被发现。两侧 doctor 指纹 `ce2fbac5…` vs `34e3289e…` 不同，`run` 会以"指纹不等"非零退出。 | **否决**：防篡改边界，属不变量 8/9 |
 | `review` 复用 doctor 的产物 / 放开 50 上限 | 无同调用路径；放开上限反而增加成本 | `readPublishedPluginReview()` 与 `collectDiagnostics()` 无共享调用点；R12 已因上限暂缓重复投影，任务列为不要重提。 | **否决**：无机制、且被明确否决 |
 | 跨入口缓存已解析索引 / 增量认证 | 每入口约 46 ms@5k、225 ms@20k | 需要"使用前证明文件未变"的第二协议；仅靠 dev/ino/size/mtime 无法检测同长原地改写（`redundant-work.md` §4.1）。 | **否决**：禁止引入 O(1) 信号证明 O(历史) 状态未变 |
-| Desktop 1500 ms 重扫降频 / 移除 | 100–5,000 任务时 4.54–168.09 ms/次 | watcher `persistent:false`，重扫是唯一兜底；降频推迟拾取，移除漏任务。 | **否决**：削弱可靠性，任务明确禁止 |
+| Desktop 1500 ms 重扫降频 / 移除 | 100–5,000 任务时 4.61–184.19 ms/次 | watcher `persistent:false`，重扫是唯一兜底；降频推迟拾取，移除漏任务。 | **否决**：削弱可靠性，任务明确禁止 |
 | `registration.js` 每工具 finally flush 改频率 | 常数成本；`axis-steady-history.md` 给出 100k 历史 61.3 ms/次 | 改频率会改变事件认证/去重时机（不变量 8）；R12 已否决 agent/pre-step flush 频率。 | **否决**：已否决方向 |
 | `lib/index.js` 启动顺序"去重" | `resolveEvolutionPaths()` 两次调用均为纯路径计算、无 I/O | `storageConfig()` 读 key 一次；不存在重复磁盘读取。 | **NO CHANGE**：无可消除工作 |
 
