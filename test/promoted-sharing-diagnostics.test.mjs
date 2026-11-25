@@ -15,6 +15,16 @@ const HEX = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const KEY = 'b'.repeat(64);
 const pluginName = 'dsh-evolution-promoted-abcdefabcdef';
 const pluginId = 'evolution-promoted-abcdefabcdef';
+// A complete host fact set that does not depend on an installed host CLI: the
+// doctor's own observed host may be unavailable in a bare checkout, which must
+// not decide whether a record can be published for these fixtures.
+const SYNTHETIC_HOST = Object.freeze({
+  dsh: '0.2.2-rc.5',
+  cordis: '4.1.0',
+  include: '1.1.0',
+  node: process.version,
+  verifiedAt: '2026-01-02T00:00:00.000Z',
+});
 
 async function home(t) {
   const dshHome = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-sharing-doctor-'));
@@ -287,4 +297,57 @@ test('a revoked record still mounted by a consumer needs a restart', async (t) =
   const check = checkOf(report, 'promotion.sharing');
   assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
   assert.ok(check.evidence.pendingRestart.includes('acp'));
+});
+
+// R11 C-1: published.json can survive while one record is edited away or a
+// profile is removed from approvedProfiles. A still-active consumer mount keeps
+// running, so the doctor must not report the same scene as healthy.
+async function publishedWithActiveAcp(t) {
+  const env = await home(t);
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  const published = await publishSharedRecord(dataRoot, await recordFor(env, SYNTHETIC_HOST));
+  assert.equal(published.status, 'published');
+  const indexPath = path.join(env.paths.dataRoot, 'shared-plugins', 'published.json');
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host: SYNTHETIC_HOST, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [{ id: pluginId, status: 'active', reason: null }],
+  }));
+  return { env, indexPath, index };
+}
+
+test('a record deleted from a readable index still has an active orphan mount', async (t) => {
+  const { env, indexPath, index } = await publishedWithActiveAcp(t);
+  index.plugins = [];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
+  assert.equal(check.evidence.status, 'ok');
+  assert.deepEqual(check.evidence.orphanMounts, [{ profile: 'acp', id: pluginId, reason: 'record-missing' }]);
+  assert.match(check.summary, /orphan active mount/);
+  assert.match(check.remediation, /Restart the consumer/);
+});
+
+test('an unapproved profile still has an active orphan mount', async (t) => {
+  const { env, indexPath, index } = await publishedWithActiveAcp(t);
+  index.plugins[0].approvedProfiles = ['web'];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
+  assert.equal(check.evidence.status, 'ok');
+  assert.deepEqual(check.evidence.orphanMounts, [{ profile: 'acp', id: pluginId, reason: 'profile-not-approved' }]);
+  assert.match(check.summary, /orphan active mount/);
+  assert.match(check.remediation, /Restart the consumer/);
+});
+
+test('an approved, mounted record is not an orphan mount', async (t) => {
+  const { env } = await publishedWithActiveAcp(t);
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.evidence.status, 'ok');
+  assert.deepEqual(check.evidence.orphanMounts, []);
 });

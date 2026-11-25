@@ -219,6 +219,7 @@ test('an unchanged index and active consumers classify the record as active with
   assert.deepEqual(record.reasons, []);
   assert.deepEqual(record.profiles.map((row) => row.status), ['active', 'active']);
   assert.deepEqual(result.consumers.acp.rows.map((row) => row.status), ['active']);
+  assert.deepEqual(result.orphanMounts, []);
 
   // A review with nothing to fix composes to an explicit no-action result.
   const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
@@ -447,6 +448,93 @@ test('an absent index is a normal Desktop-only install: status absent, no action
 
   const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
   assert.equal(composed.kind, 'no-action');
+});
+
+// A published.json can survive while a single record is removed or one profile
+// loses approval. The consumer keeps the plugin mounted until restart, so a
+// read-only review must not call that scene active/no-action (R11 C-1).
+test('an active mount whose record was removed from a readable index needs a restart', async (t) => {
+  const env = await fixture(t, 'orphan-record-missing');
+  await writeConsumers(env);
+  const indexPath = sharingPaths(env.paths).indexPath;
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  index.plugins = [];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+
+  const result = await review(env);
+  assert.equal(result.indexStatus, 'ok');
+  assert.equal(result.status, 'restart-required');
+  assert.deepEqual(result.orphanMounts, [
+    { profile: 'acp', id: RECORD_ID, reason: 'record-missing' },
+    { profile: 'web', id: RECORD_ID, reason: 'record-missing' },
+  ]);
+  const restarts = result.nextActions.filter((row) => row.action === REVIEW_ACTIONS.RESTART);
+  assert.equal(restarts.length, 2);
+  assert.ok(restarts.some((row) => row.recordId === RECORD_ID && row.profiles[0] === 'acp'));
+  assert.ok(restarts.some((row) => row.recordId === RECORD_ID && row.profiles[0] === 'web'));
+  assert.match(restarts[0].why, /index/);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'restart-consumer');
+  assert.ok(composed.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.profiles[0] === 'acp'));
+  assert.ok(composed.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.profiles[0] === 'web'));
+});
+
+test('an active mount on an unapproved profile needs a restart', async (t) => {
+  const env = await fixture(t, 'orphan-unapproved');
+  await writeConsumers(env);
+  const indexPath = sharingPaths(env.paths).indexPath;
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  index.plugins[0].approvedProfiles = ['web'];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+
+  const result = await review(env);
+  assert.equal(result.indexStatus, 'ok');
+  assert.equal(result.status, 'restart-required');
+  assert.deepEqual(result.orphanMounts, [{ profile: 'acp', id: RECORD_ID, reason: 'profile-not-approved' }]);
+  const restarts = result.nextActions.filter((row) => row.action === REVIEW_ACTIONS.RESTART);
+  assert.equal(restarts.length, 1);
+  assert.deepEqual(restarts[0].profiles, ['acp']);
+  assert.match(restarts[0].why, /index/);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'restart-consumer');
+  assert.ok(composed.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.profiles[0] === 'acp'));
+});
+
+test('a higher-priority record status still outranks an orphan active mount', async (t) => {
+  const env = await fixture(t, 'orphan-precedence', { recordHost: PREVIOUS_HOST });
+  await writeConsumers(env);
+  const indexPath = sharingPaths(env.paths).indexPath;
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  index.plugins[0].approvedProfiles = ['web'];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+
+  const result = await review(env);
+  assert.equal(result.status, 'pending-revalidation');
+  assert.deepEqual(result.orphanMounts, [{ profile: 'acp', id: RECORD_ID, reason: 'profile-not-approved' }]);
+  assert.ok(result.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.profiles[0] === 'acp'));
+});
+
+test('an absent index with a still-active consumer mount reports restart, not no-action', async (t) => {
+  const env = await fixture(t, 'orphan-absent');
+  await writeConsumers(env);
+  await fs.rm(sharingPaths(env.paths).indexPath);
+
+  const result = await review(env);
+  assert.equal(result.indexStatus, 'absent');
+  assert.equal(result.status, 'restart-required');
+  assert.equal(result.reason, 'orphan-active-mount');
+  assert.deepEqual(result.orphanMounts, [
+    { profile: 'acp', id: RECORD_ID, reason: 'record-missing' },
+    { profile: 'web', id: RECORD_ID, reason: 'record-missing' },
+  ]);
+  const restarts = result.nextActions.filter((row) => row.action === REVIEW_ACTIONS.RESTART);
+  assert.equal(restarts.length, 2);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'restart-consumer');
+  assert.ok(composed.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.profiles[0] === 'acp'));
 });
 
 for (const { label, title, prepare } of [
