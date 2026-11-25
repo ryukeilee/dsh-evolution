@@ -161,8 +161,12 @@ or `--concurrency N`.
 - Not distributed: this changes the acceptance producer, not the plugin. Do not
   describe it as a user-facing speedup.
 - Real-model session correctness is variable (the pilot occasionally stops
-  early). The producer reports it as `correct=false` and the artifact is
-  rejected; it is not retried and not turned into a pass.
+  early). A session that answered without starting any declared task read is
+  replaced once by a fresh session (bounded, recorded in `attempts`). A session
+  that read and answered wrong, or started only part of the declared reads, is
+  reported as `correct=false`; it is not retried and not turned into a pass.
+  The artifact is admitted only when every retained session read the task and
+  answered correctly.
 - `OPENCODE_CONFIG_CONTENT` is an opencode-internal variable. The documented
   project `opencode.json` remains the primary layer; the env layer exists
   because that file was observed to be ignored outside a repository. If a future
