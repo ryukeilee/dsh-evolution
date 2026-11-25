@@ -10,9 +10,11 @@
  * first, so a symlink passed to --clone cannot turn a work copy into a link to
  * the source. Every collection pass runs on a fresh `fs.cp` copy inside a
  * temporary root, validated with lstat/realpath before GC; nothing is written
- * under `~/.dsh`. Files copied from a real directory keep their mtimes, so the
- * 24h legacy window is measured against the original bytes. Symlink entries
- * inside the source stay links and are never followed by the inventory.
+ * under `~/.dsh`: a TMPDIR that resolves there is refused before any temp
+ * directory is created, and a post-creation failure removes its residue.
+ * Files copied from a real directory keep their mtimes, so the 24h legacy
+ * window is measured against the original bytes. Symlink entries inside the
+ * source stay links and are never followed by the inventory.
  */
 import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -109,7 +111,20 @@ function assertWritableTarget(target) {
 
 /** Fresh temp root per pass; every write target is checked against the guard. */
 async function makeTempRoot(label) {
-  const root = assertWritableTarget(await fsp.mkdtemp(path.join(os.tmpdir(), `consumer-gc-${label}-`)));
+  const parent = os.tmpdir();
+  // Validate before creating anything: a TMPDIR under ~/.dsh must be refused
+  // without leaving a `consumer-gc-*` directory behind.
+  assertWritableTarget(path.resolve(parent));
+  const root = await fsp.mkdtemp(path.join(parent, `consumer-gc-${label}-`));
+  try {
+    assertWritableTarget(root);
+    // A symlinked TMPDIR can hide the protected path from the lexical check.
+    assertWritableTarget(await fsp.realpath(root));
+  } catch (error) {
+    await fsp.rm(root, { recursive: true, force: true }).catch(() => {});
+    throw error;
+  }
+  // Only a validated root is registered for exit cleanup.
   temporaryRoots.add(root);
   return root;
 }
