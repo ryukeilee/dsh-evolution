@@ -759,6 +759,32 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     const result = request ? readResults.get(request.callId) : null;
     return Boolean(request && request.offset === 1 && result && result.text.includes(expected.token));
   });
+  // Read *completion* is a separate question from mechanism exercise. A task
+  // read started when the host completed a successful, non-conflicting read
+  // whose result names a declared path; the first window need not contain the
+  // sentinel (the capped baseline's start read omits the tail value). Whether
+  // the token appeared stays the `exercised` question above. Both directions of
+  // readPathMatches are accepted so a relative result and an absolute
+  // declaration resolve to the same file under the session cwd.
+  const taskReadsRequired = reads.length;
+  let taskReadsStarted = 0;
+  if (taskReadsRequired > 0) {
+    const startedPaths = new Set();
+    for (const expected of reads) {
+      const started = [...readResults.values()].some((result) =>
+        readPathMatches(result.path, expected.path, cwd) || readPathMatches(expected.path, result.path, cwd));
+      if (started) startedPaths.add(expected.path);
+    }
+    taskReadsStarted = startedPaths.size;
+  }
+  const taskReadsComplete = taskReadsRequired > 0 ? taskReadsStarted === taskReadsRequired : null;
+  // "Answered without reading the task" is only meaningful when the task
+  // declared reads and the rest of the sample is complete: a broken attribution,
+  // a missing usage record, a failed tool call or a silent pilot cannot be
+  // distinguished from a model that genuinely skipped the declared files.
+  const answeredWithoutTaskReads = taskReadsRequired > 0
+    && attributionComplete === true && usageComplete === true && decisionTurns.length > 0
+    && toolFailures === 0 && taskReadsStarted === 0;
   // Every call must have a verifiable identity and a read must have a usable
   // path. An unidentified or pathless call could be the first read of a path,
   // so its presence makes any later start read an unreliable substitute.
@@ -785,6 +811,10 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
     durationMs: Number.isFinite(durationMs) ? Math.max(0, Math.round(durationMs)) : 0,
     readResultCount: readResults.size,
     readResultCharacters: [...readResults.values()].reduce((total, result) => total + result.text.length, 0),
+    taskReadsRequired,
+    taskReadsStarted,
+    taskReadsComplete,
+    answeredWithoutTaskReads,
   };
 }
 
@@ -1474,9 +1504,17 @@ export async function produceTaskBenefit(options = {}) {
   const sessions = { baseline: new Array(runs), candidate: new Array(runs) };
   // An incomplete pilot session is not a measurement. Keep its row in the
   // report and replace it once with a fresh session when the only failure was
-  // the pilot transport (no product tool failure). The artifact still requires
-  // every final session to be complete and correct.
+  // the pilot transport (no product tool failure). Separately, a session that
+  // answered without completing any declared task read is replaced once with a
+  // fresh session: a single skipped read is an observed model shape and one
+  // fresh session is enough to remove that noise. A candidate-only skip is
+  // final whatever the retry does, so a second retry would only add operator
+  // cost without changing admission. "Read but answered wrong" and partial
+  // reads are never retried; they fail on the retained row.
   const sessionRetries = [];
+  // Every attempt, kept or voided, enters this log once with a fixed field
+  // set; it is the single source for report.attempts and admission counts.
+  const attemptLog = [];
   // One bridge and one overlay per attempt: the overlay carries this bridge's
   // base URL, and the tag makes attribution exact even under concurrency.
   const runAttempt = async (side, label) => {
@@ -1508,28 +1546,65 @@ export async function produceTaskBenefit(options = {}) {
   };
   const runOne = async (side, repetition) => {
     const label = `${side}-${repetition + 1}`;
-    const attempts = [await runAttempt(side, label)];
+    const attempts = [];
+    const record = async (attemptLabel) => {
+      const row = await runAttempt(side, attemptLabel);
+      attempts.push({ row, voided: false, voidReason: null });
+      return row;
+    };
+    let row = await record(label);
     // Only a confirmed pilot transport failure is replaced; a product tool
     // failure or an own-tool bypass keeps its row and invalidates the artifact.
-    if (retryableSession(attempts[0])) attempts.push(await runAttempt(side, label + '-retry'));
-    const row = attempts.at(-1);
+    if (retryableSession(row)) {
+      attempts[0].voided = true;
+      attempts[0].voidReason = 'pilot-transport-failure';
+      row = await record(label + '-retry');
+    }
+    // The unread retry runs after the transport retry, on whatever row was
+    // retained there, and is capped at one. A row that still skipped its reads
+    // is kept as the retained result and fails admission on its own merits.
+    if (row.ok === true && row.answeredWithoutTaskReads === true) {
+      const prior = attempts.at(-1);
+      prior.voided = true;
+      prior.voidReason = 'answered-without-task-reads';
+      row = await record(label + '-unread-retry-1');
+    }
     sessions[side][repetition] = row;
+    attempts.forEach((attempt, index) => {
+      attemptLog.push({
+        side,
+        repetition: repetition + 1,
+        attempt: index + 1,
+        label: attempt.row.label,
+        voided: attempt.voided,
+        voidReason: attempt.voidReason,
+        ok: attempt.row.ok,
+        correct: attempt.row.correct,
+        taskReadsComplete: attempt.row.taskReadsComplete,
+        taskReadsStarted: attempt.row.taskReadsStarted,
+        turns: attempt.row.turns,
+        toolCalls: attempt.row.toolCalls,
+        tokens: attempt.row.tokens,
+        durationMs: attempt.row.durationMs,
+      });
+    });
     if (attempts.length > 1) {
       sessionRetries.push({
         side,
         repetition: repetition + 1,
-        attempts: attempts.map((attempt) => ({
-          label: attempt.label,
-          ok: attempt.ok,
-          failedTurns: attempt.failedTurns,
-          toolFailures: attempt.toolFailures,
-          ...(attempt.failureReasons ? { failureReasons: attempt.failureReasons } : {}),
-          tokens: attempt.tokens,
-          durationMs: attempt.durationMs,
+        attempts: attempts.map(({ row: attemptRow, voidReason }) => ({
+          label: attemptRow.label,
+          ok: attemptRow.ok,
+          failedTurns: attemptRow.failedTurns,
+          toolFailures: attemptRow.toolFailures,
+          ...(attemptRow.failureReasons ? { failureReasons: attemptRow.failureReasons } : {}),
+          tokens: attemptRow.tokens,
+          durationMs: attemptRow.durationMs,
+          voidReason,
         })),
       });
     }
-    options.log?.(`${side} session ${repetition + 1}: correct=${row.correct} turns=${row.turns} calls=${row.toolCalls} tokens=${row.tokens} exercised=${row.exercised} ms=${row.durationMs}${attempts.length > 1 ? ' (retried)' : ''}`);
+    options.log?.(`${side} session ${repetition + 1}: correct=${row.correct} turns=${row.turns} calls=${row.toolCalls} tokens=${row.tokens} exercised=${row.exercised} ms=${row.durationMs}${attempts.length > 1 ? ' (retried)' : ''} attempts=${attempts.length}`);
     return row;
   };
   // Repetitions are grouped by parity so the `repetition % 2` rotation keeps
@@ -1547,8 +1622,29 @@ export async function produceTaskBenefit(options = {}) {
   sessions.candidate = sessions.candidate.filter(Boolean);
   sessionRetries.sort((left, right) => left.repetition - right.repetition
     || (left.side === right.side ? 0 : left.side === 'candidate' ? -1 : 1));
+  attemptLog.sort((left, right) => left.repetition - right.repetition
+    || (left.side === right.side ? 0 : left.side === 'candidate' ? -1 : 1)
+    || left.attempt - right.attempt);
 
-  const complete = [...sessions.baseline, ...sessions.candidate].every((row) => row.ok === true);
+  // Run-level admission, after every wave. Voided unread answers say which side
+  // suppressed the model read; the retained rows are the measurement. A
+  // candidate-only suppression is never treated as noise, even if its own retry
+  // did read the files. Everything else stands or falls on all retained rows
+  // having read per the task and answered correctly.
+  const unread = { baseline: 0, candidate: 0 };
+  for (const entry of attemptLog) {
+    if (entry.voidReason === 'answered-without-task-reads') unread[entry.side] += 1;
+  }
+  const candidateOnlyUnread = unread.candidate > 0 && unread.baseline === 0;
+  const compliant = (row) => row.ok === true && row.correct === true
+    && (row.taskReadsComplete === null || row.taskReadsComplete === true);
+  const retainedRows = [...sessions.baseline, ...sessions.candidate];
+  const admission = candidateOnlyUnread
+    ? { ok: false, code: 'E_ACCEPTANCE_CANDIDATE_UNREAD_ANSWER', reason: 'only the candidate side answered without the task reads; the candidate may suppress the model read, so the run is rejected', unread }
+    : retainedRows.every(compliant)
+      ? { ok: true, code: null, reason: null, unread }
+      : { ok: false, code: 'E_ACCEPTANCE_SESSION_NOT_COMPLIANT', reason: 'a retained session did not read the task files and answer correctly', unread };
+  const complete = admission.ok;
   const artifact = buildTaskBenefitArtifact({
     taskId,
     task,
@@ -1562,6 +1658,30 @@ export async function produceTaskBenefit(options = {}) {
       ? { sessionsUsingCandidate: sessions.candidate.filter((row) => row.usedCandidate).length, sessionsExercised: 0 }
       : { sessionsUsingCandidate: 0, sessionsExercised: sessions.candidate.filter((row) => row.exercised).length },
   });
+  // These two fields ride alongside the channel artifact for audit only. The
+  // kernel validator projects a fresh artifact and ignores them, so the binding
+  // contract is unchanged; the writer still uses the admission conclusion as
+  // the single completeness authority.
+  artifact.admission = admission;
+  artifact.attempts = {
+    limitPerSession: 1,
+    voided: attemptLog.filter((entry) => entry.voided)
+      .map(({ side, repetition, attempt, voidReason }) => ({ side, repetition, attempt, voidReason })),
+    perSession: [],
+  };
+  for (const side of ['candidate', 'baseline']) {
+    for (let repetition = 1; repetition <= runs; repetition += 1) {
+      const entries = attemptLog.filter((entry) => entry.side === side && entry.repetition === repetition);
+      if (entries.length === 0) continue;
+      const copies = entries.map((entry) => ({ ...entry }));
+      artifact.attempts.perSession.push({
+        side,
+        repetition,
+        attempts: copies,
+        retainedAttempt: copies.find((entry) => entry.voided === false) ?? null,
+      });
+    }
+  }
   if (!complete) artifact.complete = false;
   // Re-validate after the long run and write through the directory the
   // publish-time check proved: the target may have changed while sessions ran.
@@ -1590,6 +1710,8 @@ export async function produceTaskBenefit(options = {}) {
     },
     sessions,
     retries: sessionRetries,
+    attempts: attemptLog,
+    admission,
     artifactFile: outFile,
   };
   return { ok: complete, artifact, report, artifactFile: outFile };
