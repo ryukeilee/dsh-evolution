@@ -130,15 +130,19 @@ Lead 在复审修复后用同一脚本独立复跑（`r12-lead-shared-experience
    `recordToolRecovery`、`recordConclusion`、同 id 异内容的冲突拒绝。比较
    `events` 表全部 `hex(id)/hex(digest)`、`knowledge` 表全部 `key/revision/稳定 body
    投影`（去掉与运行时刻有关的 `firstSeen` 等字段）、`clock`、`stats()`，以及查询结果的
-   **选定投影**——全部 `deepEqual`：
+   投影——全部 `deepEqual`：
    - `findConclusions()`：`considered` / `scoped` / `truncated`，以及每个匹配的
      `knowledgeKey` / `decision` / `applicability` / `sameApplicability`；
-   - `discover()`：记录数与 `truncated`；
-   - `recall()`：`counts` 与 `truncated`。
+   - `discover()`：记录数、`truncated`，以及每条记录的稳定投影（除 `firstSeen`/`lastSeen`
+     外的全部字段，按 `key`/`problem` 排序）；
+   - `recall()`：`considered` / `scanned` / `truncated`，以及每条记录的同一稳定投影。
+     注意 `store.recall()` 返回的是单个来源描述符，**没有 `counts` 字段**（`counts` 由
+     `finalizeExperienceRecall()` 在工具层组装）；这里比较的是它实际返回的字段。
 
-   该差分因此不会发现“只改 `discover()` 返回记录内容、但保持记录数与截断标记”的投影回归；
-   这类改动要靠 `knowledge` 稳定 body 的比较或查询侧单元测试覆盖。`text`、`lastSeen` 等
-   时间相关字段不在比较范围内，因为它们在不同实现里本来就取运行时刻。
+   返回层与持久层因此都被覆盖：存储行由 `dump()` 比较，`discover()`/`recall()` 的返回
+   内容由上面的逐字段投影比较。只有 `firstSeen`/`lastSeen` 两个时间字段被排除，因为它们
+   在不同实现里本来就取运行时刻。已用一次性单侧变异验证：只把候选 `discover()` 第一条
+   记录的 `problem` 改掉，该差分立即失败。
 2. **反证（注入错误语句）**：把 knowledge upsert 的 SQL 改成
    `revision=excluded.revision+1`（语法合法、prepare 成功），同一差分立即失败；
    证明比较确实覆盖被复用的句柄，而不是恒真断言。

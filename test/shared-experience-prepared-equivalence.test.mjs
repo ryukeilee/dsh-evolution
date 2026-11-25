@@ -60,6 +60,13 @@ function dump(file) {
     return { events, knowledge, clock };
   } finally { db.close(); }
 }
+function stableRecords(records) {
+  return records.map((record) => {
+    const { firstSeen, lastSeen, ...rest } = record;
+    return rest;
+  }).sort((left, right) => String(left.key).localeCompare(String(right.key))
+    || String(left.problem).localeCompare(String(right.problem)));
+}
 function fill(store, id) {
   store.recordFailure({ id: id('failure'), type: 'tool/error', code: 'ENOENT', target: 'tool:read_file',
     metrics: { attemptsSinceFailure: 7, successesSinceFailure: 2 } });
@@ -74,7 +81,7 @@ function fill(store, id) {
   }, `origin:${id('origin')}`);
 }
 
-test('reused prepared statements keep the ledger, canonical rows and query answers byte-identical', async (t) => {
+test('reused prepared statements keep the ledger, canonical rows and query projections identical', async (t) => {
   const before = await materialise(t, preChangeSource(source));
   const after = await materialise(t, source);
   const roots = [];
@@ -99,8 +106,15 @@ test('reused prepared statements keep the ledger, canonical rows and query answe
       conclusions: { considered: conclusions.considered, scoped: conclusions.scoped, truncated: conclusions.truncated,
         matches: conclusions.matches.map(({ knowledgeKey, decision, applicability, sameApplicability }) =>
           ({ knowledgeKey, decision, applicability, sameApplicability })) },
-      discoveredCount: discovered.records.length, discoveredTruncated: discovered.truncated,
-      recalled: { counts: recalled.counts, truncated: recalled.truncated },
+      // The record projections are compared field for field (sorted by key so the
+      // order cannot depend on when each side ran); only the two time fields are
+      // excluded, because they come from the wall clock. A change that touches
+      // only what `discover()`/`recall()` return is therefore caught here, not
+      // only in the stored body.
+      discovered: { count: discovered.records.length, truncated: discovered.truncated,
+        records: stableRecords(discovered.records) },
+      recalled: { considered: recalled.considered, scanned: recalled.scanned, truncated: recalled.truncated,
+        records: stableRecords(recalled.records ?? []) },
     });
     store.close();
   }
