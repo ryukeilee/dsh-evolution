@@ -174,9 +174,13 @@ composition。但窗口**不以“会话已结束”为判据**：lease 写失�
 游标缺失、不可读、字段非法、profile 不匹配或超过字节上限都视为无游标，从排序列表起点开始；
 窗口从排序后第一个 `sessionId > lastSessionId` 的 stem 开始，环绕整个列表取 `maxEntries` 个。
 非 `dryRun` 且 `truncated` 的一轮处理完后原子写入窗口最后一个 sessionId（temp `0600` + fsync +
-rename）；写失败只记闭集诊断、不改变回收结果，下一轮从旧游标重试，`dryRun` 不写游标。因此即使
-宿主每天同一时刻启动，每次也推进 `maxEntries` 个 stem，`ceil(sessions / maxEntries)` 次内覆盖
-全部。游标文件名不匹配 session 模式，计入 `ignored`，GC 永不删除它。
+rename）；写失败只记闭集诊断、不改变回收结果，下一轮从旧游标重试，`dryRun` 不写游标。在**串行
+启动**下，即使宿主每天同一时刻启动，每次也推进 `maxEntries` 个 stem，
+`ceil(sessions / maxEntries)` 次内覆盖全部。并发启动不提供这个保证：两个 GC 可能读到同一游标、
+处理同一窗口并写入同一个 `lastSessionId`，于是两次启动只推进一个窗口，可能重复处理同一批 stem；
+每次启动仍最多处理 `maxEntries` 个 session，不会越界，也不会误删活文件。本回收不承诺无条件的
+“每个 stem 最终都会被处理”，覆盖依赖启动被串行化。游标文件名不匹配 session 模式，计入
+`ignored`，GC 永不删除它。
 
 | 上限 | 默认值 | 含义 |
 | --- | --- | --- |

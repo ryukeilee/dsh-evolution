@@ -4,6 +4,7 @@
 引入的持久游标版 `lib/promoted-consumer-gc.js`。
 基准脚本：`scripts/benchmarks/consumer-gc.mjs`。本文只记录本机实际执行过的测量，
 **不是真实宿主轮次验证**。下表数字全部来自 R2 修复后的重跑，替换上一轮（R1）数字。
+R3 只改临时根创建前的拒绝检查（不改变回收路径与计时），本轮未重跑基准，数字仍是 R2 实测值。
 
 ## 1. 测量方法
 
@@ -26,7 +27,7 @@
 - 输出 JSON 顶层为 `filesBefore` / `filesAfter` / `bytesBefore` / `bytesAfter` / `medianMs` /
   计数 / `decisions` 汇总；`scenarios` 给出逐轮样本，`sourceStats` 是源目录只读清单。
 - **本轮所有样本的 session 数（最多 635）都小于 `maxEntries` 8192，`truncated` 均为 false：
-  持久游标既不被读取也不被写入，本轮没有测量游标推进 / 覆盖全部 stem 的轮换行为。**
+  持久游标既不被读取也不被写入，本轮没有测量游标推进 / 串行启动下覆盖全部 stem 的行为。**
   游标语义见 `docs/shared-plugins.md` §3.1，不在这里宣称已验证。
 
 ## 2. 真实目录的只读统计
@@ -134,7 +135,7 @@ R2 重跑结果：`requestedSource` 是链接、`source` 解析为 fixture；`so
 `failures: 0`，decisions 为 `legacy-window: 1` + `unproven-lease: 1`；fixture 的 lstat 清单摘要
 运行前后同为 `0bb1a0cacd4018271251228610f3525a6cdbe56ad636c539078e2fd591b12411`，目录项仍为 3。
 
-## 6. TMPDIR 保护自检（R2-2）
+## 6. TMPDIR 保护自检（R2-2 / R3-1）
 
 把 `HOME` 与 `TMPDIR` 指向假 `~/.dsh`，`--synthetic 1` 必须在创建临时目录之前被拒绝，
 且假目录前后都没有 `consumer-gc-*` 残留。
@@ -152,6 +153,28 @@ stderr 为 `consumer-gc benchmark failed: Refusing to write inside <fake home>/.
 stdout 为 0 字节；`after=0`，假 `~/.dsh/tmp` 下也没有新增目录项。同一脚本在普通 `TMPDIR` 下
 `--synthetic 2 --runs 1` 正常完成（文件 72 → 69，`truncated: false`）。
 
+### 6.1 符号链接 TMPDIR：写入前拒绝（R3-1）
+
+外部符号链接 `TMPDIR -> <fake home>/.dsh/tmp` 的词法路径看起来无害，但 realpath 指向受保护目录。
+必须在 `mkdtemp` **之前**拒绝，因此 `.dsh` 与 `tmp` 的 mtime 和目录清单摘要都不变。
+
+```sh
+T=$(mktemp -d); mkdir -p "$T/home/.dsh/tmp"; ln -s "$T/home/.dsh/tmp" "$T/tmplink"
+digest() { node -e 'const fs=require("fs"),path=require("path"),c=require("crypto"),h=c.createHash("sha256");for(const n of fs.readdirSync(process.argv[1]).sort()){const s=fs.lstatSync(path.join(process.argv[1],n));h.update(n+"|"+s.isSymbolicLink()+"|"+s.isDirectory()+"|"+s.size+"|"+s.mtimeMs+"\n");}console.log(h.digest("hex"));' "$1"; }
+dm0=$(stat -f %m "$T/home/.dsh"); tm0=$(stat -f %m "$T/home/.dsh/tmp")
+dd0=$(digest "$T/home/.dsh"); td0=$(digest "$T/home/.dsh/tmp")
+HOME="$T/home" TMPDIR="$T/tmplink" node --max-old-space-size=4096 scripts/benchmarks/consumer-gc.mjs --synthetic 1 --runs 1; echo "exit=$?"
+echo "mtime $dm0 -> $(stat -f %m "$T/home/.dsh") / $tm0 -> $(stat -f %m "$T/home/.dsh/tmp")"
+echo "digest $dd0 -> $(digest "$T/home/.dsh") / $td0 -> $(digest "$T/home/.dsh/tmp")"
+```
+
+实际结果（逐字）：退出码 `1`；stderr 同为 `consumer-gc benchmark failed: Refusing to write inside
+<fake home>/.dsh: <fake home>/.dsh/tmp`；stdout 0 字节；
+`.dsh` mtime `1795638103 → 1795638103`、`tmp` mtime `1795638103 → 1795638103`；
+`.dsh` 清单摘要 `0fdc0399d66a4032b953d46c8b1d865ac7602c09c1c50dcdccdd55e32121de3c` 前后相同；
+`tmp` 清单摘要 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` 前后相同；
+`consumer-gc-*` 残留数 `0`。这是“写入前拒绝”的证据，不只是“无残留”。
+
 ## 7. 边界与未验证项
 
 - **本机文件数。** 样本是本机 2026-11-26 的 522 个目录项；其它机器 / profile 不可外推。
@@ -161,7 +184,7 @@ stdout 为 0 字节；`after=0`，假 `~/.dsh/tmp` 下也没有新增目录项�
   删除只影响该文件本身，已挂载行不受影响。今天写入的无 lease 文件 mtime 未超过窗口，判为
   `recent` 并保留（本次 58 个）。
 - **持久游标未触发。** 所有样本 `truncated: false`，没有读写
-  `.consumer-session-gc-cursor-<profile>.json`；本轮不提供游标推进 / 覆盖全部 stem 的计时证据。
+  `.consumer-session-gc-cursor-<profile>.json`；本轮不提供游标推进 / 串行覆盖全部 stem 的计时证据。
 - **文件系统缓存。** 各轮在同一台 macOS 本机连续执行，目录项与页缓存偏热；冷启动、外接盘、
   网络文件系统可能明显不同。R2 与 R1 数字的波动不解释为回归或改进。
 - **口径。** `du -sk` 是本机 4 KiB 块的实际占用（2,088 KiB），逻辑字节（336,965）是

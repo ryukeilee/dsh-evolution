@@ -112,9 +112,11 @@ function assertWritableTarget(target) {
 /** Fresh temp root per pass; every write target is checked against the guard. */
 async function makeTempRoot(label) {
   const parent = os.tmpdir();
-  // Validate before creating anything: a TMPDIR under ~/.dsh must be refused
-  // without leaving a `consumer-gc-*` directory behind.
+  // Refuse before any write: a TMPDIR that is a symlink into ~/.dsh resolves
+  // to the protected root even though its lexical path looks harmless. A
+  // realpath failure also refuses rather than falling back to the link path.
   assertWritableTarget(path.resolve(parent));
+  assertWritableTarget(await fsp.realpath(parent));
   const root = await fsp.mkdtemp(path.join(parent, `consumer-gc-${label}-`));
   try {
     assertWritableTarget(root);
