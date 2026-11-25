@@ -1,0 +1,2161 @@
+{
+  "method": "R13 scale-growth benchmark. Main metric process.cpuUsage() (user+system). Independent child process per (round, side, workload, sample), alternating A,B / B,A; A = baseline a0380e5cf2761297ecd8ffe1c79e34865ac6baee, B = candidate worktree. All fixtures are fresh mkdtemp roots; no DSH_HOME / real data touched. Curves are single-side (candidate) measurements at 3 scales; A/B compares the two changed paths and two unchanged controls. Fingerprints and stats are asserted equal per round. Concurrency uses real child processes sharing one store.",
+  "node": "v26.13.1",
+  "platform": "darwin-arm64",
+  "baseCommit": "a0380e5cf2761297ecd8ffe1c79e34865ac6baee",
+  "rounds": 3,
+  "samples": 2,
+  "curves": {
+    "10000": {
+      "conclusions-nomatch": {
+        "workload": "conclusions-nomatch",
+        "n": 10000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 30.15,
+        "wallMs": 30.3186,
+        "maxRssKiB": 53248,
+        "dbBytes": 22020096,
+        "stats": {
+          "events": 10000,
+          "knowledge": 10000
+        },
+        "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+        "considered": 0,
+        "scanned": 10000
+      },
+      "discover": {
+        "workload": "discover",
+        "n": 10000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 6.91,
+        "wallMs": 5.27,
+        "maxRssKiB": 57312,
+        "dbBytes": 22020096,
+        "stats": {
+          "events": 10000,
+          "knowledge": 10000
+        },
+        "fingerprint": "d5559e43c6c77a77f41183113a389ef19fe598ca01074f0009ff2466415b8737",
+        "considered": 500
+      },
+      "recall": {
+        "workload": "recall",
+        "n": 10000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 67.298,
+        "wallMs": 45.53,
+        "maxRssKiB": 96288,
+        "dbBytes": 5525504,
+        "stats": {
+          "events": 2500,
+          "knowledge": 2500
+        },
+        "fingerprint": "eea1ad73e935876aaeb55eb70595ff44842a6f6e05dd5c75b99cb2e6d1bdf1ce",
+        "considered": 2000,
+        "scanned": 2000
+      },
+      "writes": {
+        "workload": "writes",
+        "n": 10000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 876.861,
+        "wallMs": 1261.3217,
+        "maxRssKiB": 65152,
+        "dbBytes": 21827584,
+        "stats": {
+          "events": 10000,
+          "knowledge": 10000
+        },
+        "fingerprint": null
+      },
+      "read-control": {
+        "workload": "read-control",
+        "n": 10000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 30.75,
+        "wallMs": 30.9025,
+        "maxRssKiB": 53216,
+        "dbBytes": 22024192,
+        "stats": {
+          "events": 10001,
+          "knowledge": 10001
+        },
+        "fingerprint": "ed211d6d6bcbfc596b0cdca8ebd08e3db6d5c9363c419d099fda01c0b33a2b1c",
+        "considered": 1,
+        "scanned": 10001
+      }
+    },
+    "30000": {
+      "conclusions-nomatch": {
+        "workload": "conclusions-nomatch",
+        "n": 30000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 85.816,
+        "wallMs": 85.9811,
+        "maxRssKiB": 53152,
+        "dbBytes": 66011136,
+        "stats": {
+          "events": 30000,
+          "knowledge": 30000
+        },
+        "fingerprint": "a73e0c5750d92db0a4078d3ba90ef5f8de0c0749d965d1dbd186340a91b763be",
+        "considered": 0,
+        "scanned": 30000
+      },
+      "discover": {
+        "workload": "discover",
+        "n": 30000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 7.194,
+        "wallMs": 5.4048,
+        "maxRssKiB": 57472,
+        "dbBytes": 66011136,
+        "stats": {
+          "events": 30000,
+          "knowledge": 30000
+        },
+        "fingerprint": "cd16b01cacde2456ba35673ffa11b2e6baca50cbead31d7107283777aff92798",
+        "considered": 500
+      },
+      "recall": {
+        "workload": "recall",
+        "n": 30000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 67.326,
+        "wallMs": 45.6325,
+        "maxRssKiB": 96368,
+        "dbBytes": 5525504,
+        "stats": {
+          "events": 2500,
+          "knowledge": 2500
+        },
+        "fingerprint": "03341ede6db0c63f802a1c7748fd3040dc71ad9f8a5be36c69a215b108c97278",
+        "considered": 2000,
+        "scanned": 2000
+      },
+      "writes": {
+        "workload": "writes",
+        "n": 30000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 2692.778,
+        "wallMs": 4257.709,
+        "maxRssKiB": 71744,
+        "dbBytes": 66027520,
+        "stats": {
+          "events": 30000,
+          "knowledge": 30000
+        },
+        "fingerprint": null
+      },
+      "read-control": {
+        "workload": "read-control",
+        "n": 30000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 87.044,
+        "wallMs": 87.2256,
+        "maxRssKiB": 53168,
+        "dbBytes": 66015232,
+        "stats": {
+          "events": 30001,
+          "knowledge": 30001
+        },
+        "fingerprint": "98728f125a35d74d1aea0c6cc1e9913f1b1436e31b24d0d8295142d9f7b779e1",
+        "considered": 1,
+        "scanned": 30001
+      }
+    },
+    "100000": {
+      "conclusions-nomatch": {
+        "workload": "conclusions-nomatch",
+        "n": 100000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 284.82,
+        "wallMs": 284.957,
+        "maxRssKiB": 53040,
+        "dbBytes": 220221440,
+        "stats": {
+          "events": 100000,
+          "knowledge": 100000
+        },
+        "fingerprint": "fa97a5ad36e8e2f47c1b22ea967de52d644c62ff8f4ec0eba6624382e2ed4848",
+        "considered": 0,
+        "scanned": 100000
+      },
+      "discover": {
+        "workload": "discover",
+        "n": 100000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 7.267,
+        "wallMs": 5.6476,
+        "maxRssKiB": 57376,
+        "dbBytes": 220221440,
+        "stats": {
+          "events": 100000,
+          "knowledge": 100000
+        },
+        "fingerprint": "6b401f0e395320449b3519947d0733b967a14336a29831ab0fa6f93dd131eeab",
+        "considered": 500
+      },
+      "recall": {
+        "workload": "recall",
+        "n": 100000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 66.535,
+        "wallMs": 45.0633,
+        "maxRssKiB": 96256,
+        "dbBytes": 5525504,
+        "stats": {
+          "events": 2500,
+          "knowledge": 2500
+        },
+        "fingerprint": "613306c8398942934de6316623fee414e53b41b2b910a5fcde1e71f7d66e9425",
+        "considered": 2000,
+        "scanned": 2000
+      },
+      "writes": {
+        "workload": "writes",
+        "n": 100000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 9289.721,
+        "wallMs": 16197.7119,
+        "maxRssKiB": 85584,
+        "dbBytes": 220033024,
+        "stats": {
+          "events": 100000,
+          "knowledge": 100000
+        },
+        "fingerprint": null
+      },
+      "read-control": {
+        "workload": "read-control",
+        "n": 100000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 282.892,
+        "wallMs": 283.0725,
+        "maxRssKiB": 53120,
+        "dbBytes": 220225536,
+        "stats": {
+          "events": 100001,
+          "knowledge": 100001
+        },
+        "fingerprint": "363ebe5be097a774d2b96516d7fc5b561801cfc11bab9a80162e94cdd4a7dbde",
+        "considered": 1,
+        "scanned": 100001
+      }
+    },
+    "hot-500": {
+      "hot": {
+        "workload": "hot",
+        "n": 500,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 139.514,
+        "wallMs": 143.9775,
+        "maxRssKiB": 59616,
+        "dbBytes": 761856,
+        "stats": {
+          "events": 800,
+          "knowledge": 301
+        },
+        "fingerprint": null
+      }
+    },
+    "hot-2000": {
+      "hot": {
+        "workload": "hot",
+        "n": 2000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 419.448,
+        "wallMs": 461.0669,
+        "maxRssKiB": 66592,
+        "dbBytes": 876544,
+        "stats": {
+          "events": 2300,
+          "knowledge": 301
+        },
+        "fingerprint": null
+      }
+    },
+    "hot-5000": {
+      "hot": {
+        "workload": "hot",
+        "n": 5000,
+        "seed": 0,
+        "lib": "t3-1f42f18a-c985af6ea36c51c7",
+        "cpuMs": 973.355,
+        "wallMs": 1094.8799,
+        "maxRssKiB": 75888,
+        "dbBytes": 1118208,
+        "stats": {
+          "events": 5300,
+          "knowledge": 301
+        },
+        "fingerprint": null
+      }
+    }
+  },
+  "ab": {
+    "samples": [
+      {
+        "round": 0,
+        "order": "A,B",
+        "A": {
+          "recall": {
+            "cpuMs": 74.093,
+            "wallMs": 52.5246,
+            "samples": [
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 0,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 74.055,
+                "wallMs": 52.5987,
+                "maxRssKiB": 102512,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "573a65c0675c67eb95d11b76fe0ea8bdc06723c6ed978b06418e943b5eb6312d",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 1,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 74.131,
+                "wallMs": 52.4505,
+                "maxRssKiB": 102880,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "573a65c0675c67eb95d11b76fe0ea8bdc06723c6ed978b06418e943b5eb6312d",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "573a65c0675c67eb95d11b76fe0ea8bdc06723c6ed978b06418e943b5eb6312d",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-none": {
+            "cpuMs": 33.932500000000005,
+            "wallMs": 22.86055,
+            "samples": [
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 0,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 33.942,
+                "wallMs": 22.8605,
+                "maxRssKiB": 83568,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 1,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 33.923,
+                "wallMs": 22.8606,
+                "maxRssKiB": 83776,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-one": {
+            "cpuMs": 34.358000000000004,
+            "wallMs": 23.0128,
+            "samples": [
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 0,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 34.054,
+                "wallMs": 22.9116,
+                "maxRssKiB": 83776,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 1,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 34.662,
+                "wallMs": 23.114,
+                "maxRssKiB": 83936,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+            "dbBytes": 5533696,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "hot": {
+            "cpuMs": 251.49200000000002,
+            "wallMs": 270.21145,
+            "samples": [
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 0,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 252.536,
+                "wallMs": 271.3154,
+                "maxRssKiB": 66416,
+                "dbBytes": 798720,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              },
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 1,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 250.448,
+                "wallMs": 269.1075,
+                "maxRssKiB": 66640,
+                "dbBytes": 794624,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              }
+            ],
+            "fingerprint": null,
+            "dbBytes": 794624,
+            "stats": {
+              "events": 1300,
+              "knowledge": 301
+            }
+          },
+          "conclusions-nomatch": {
+            "cpuMs": 30.494,
+            "wallMs": 30.6679,
+            "samples": [
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 0,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 30.526,
+                "wallMs": 30.723,
+                "maxRssKiB": 52960,
+                "dbBytes": 22020096,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              },
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 1,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 30.462,
+                "wallMs": 30.6128,
+                "maxRssKiB": 53280,
+                "dbBytes": 22020096,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              }
+            ],
+            "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+            "dbBytes": 22020096,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          },
+          "discover": {
+            "cpuMs": 6.7655,
+            "wallMs": 5.201700000000001,
+            "samples": [
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 0,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 6.695,
+                "wallMs": 5.1504,
+                "maxRssKiB": 57440,
+                "dbBytes": 22020096,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "2483ff6da0a1fa6ea085349da1be5f5c66331db18afc36e45245eaef7acc044b",
+                "considered": 500
+              },
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 1,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 6.836,
+                "wallMs": 5.253,
+                "maxRssKiB": 57504,
+                "dbBytes": 22020096,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "2483ff6da0a1fa6ea085349da1be5f5c66331db18afc36e45245eaef7acc044b",
+                "considered": 500
+              }
+            ],
+            "fingerprint": "2483ff6da0a1fa6ea085349da1be5f5c66331db18afc36e45245eaef7acc044b",
+            "dbBytes": 22020096,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          }
+        },
+        "B": {
+          "recall": {
+            "cpuMs": 67.8075,
+            "wallMs": 46.2348,
+            "samples": [
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 0,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 67.087,
+                "wallMs": 45.6089,
+                "maxRssKiB": 95984,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "573a65c0675c67eb95d11b76fe0ea8bdc06723c6ed978b06418e943b5eb6312d",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 1,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 68.528,
+                "wallMs": 46.8607,
+                "maxRssKiB": 96432,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "573a65c0675c67eb95d11b76fe0ea8bdc06723c6ed978b06418e943b5eb6312d",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "573a65c0675c67eb95d11b76fe0ea8bdc06723c6ed978b06418e943b5eb6312d",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-none": {
+            "cpuMs": 34.251000000000005,
+            "wallMs": 22.9265,
+            "samples": [
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 0,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 34.466,
+                "wallMs": 23.0836,
+                "maxRssKiB": 83888,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 1,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 34.036,
+                "wallMs": 22.7694,
+                "maxRssKiB": 83856,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-one": {
+            "cpuMs": 34.584500000000006,
+            "wallMs": 23.07175,
+            "samples": [
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 0,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 34.667,
+                "wallMs": 23.0977,
+                "maxRssKiB": 83840,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 1,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 34.502,
+                "wallMs": 23.0458,
+                "maxRssKiB": 84000,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+            "dbBytes": 5533696,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "hot": {
+            "cpuMs": 236.232,
+            "wallMs": 249.1984,
+            "samples": [
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 0,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 236.238,
+                "wallMs": 248.4915,
+                "maxRssKiB": 66432,
+                "dbBytes": 798720,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              },
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 1,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 236.226,
+                "wallMs": 249.9053,
+                "maxRssKiB": 66480,
+                "dbBytes": 794624,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              }
+            ],
+            "fingerprint": null,
+            "dbBytes": 794624,
+            "stats": {
+              "events": 1300,
+              "knowledge": 301
+            }
+          },
+          "conclusions-nomatch": {
+            "cpuMs": 30.286,
+            "wallMs": 30.44975,
+            "samples": [
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 0,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 30.475,
+                "wallMs": 30.63,
+                "maxRssKiB": 53152,
+                "dbBytes": 22020096,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              },
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 1,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 30.097,
+                "wallMs": 30.2695,
+                "maxRssKiB": 53168,
+                "dbBytes": 22020096,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              }
+            ],
+            "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+            "dbBytes": 22020096,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          },
+          "discover": {
+            "cpuMs": 6.801,
+            "wallMs": 5.233750000000001,
+            "samples": [
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 0,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 6.859,
+                "wallMs": 5.2876,
+                "maxRssKiB": 57376,
+                "dbBytes": 22020096,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "2483ff6da0a1fa6ea085349da1be5f5c66331db18afc36e45245eaef7acc044b",
+                "considered": 500
+              },
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 1,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 6.743,
+                "wallMs": 5.1799,
+                "maxRssKiB": 57264,
+                "dbBytes": 22020096,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "2483ff6da0a1fa6ea085349da1be5f5c66331db18afc36e45245eaef7acc044b",
+                "considered": 500
+              }
+            ],
+            "fingerprint": "2483ff6da0a1fa6ea085349da1be5f5c66331db18afc36e45245eaef7acc044b",
+            "dbBytes": 22020096,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          }
+        }
+      },
+      {
+        "round": 1,
+        "order": "B,A",
+        "A": {
+          "recall": {
+            "cpuMs": 73.7495,
+            "wallMs": 52.212999999999994,
+            "samples": [
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 1000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 73.568,
+                "wallMs": 52.0457,
+                "maxRssKiB": 102768,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "6def694300ab984b136378ec5026be56615a3c735230bcf401702f97ba735400",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 1001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 73.931,
+                "wallMs": 52.3803,
+                "maxRssKiB": 102688,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "6def694300ab984b136378ec5026be56615a3c735230bcf401702f97ba735400",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "6def694300ab984b136378ec5026be56615a3c735230bcf401702f97ba735400",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-none": {
+            "cpuMs": 33.823,
+            "wallMs": 22.6896,
+            "samples": [
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 1000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 33.84,
+                "wallMs": 22.7267,
+                "maxRssKiB": 83760,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 1001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 33.806,
+                "wallMs": 22.6525,
+                "maxRssKiB": 83808,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-one": {
+            "cpuMs": 34.6345,
+            "wallMs": 23.400399999999998,
+            "samples": [
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 1000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 34.607,
+                "wallMs": 23.1848,
+                "maxRssKiB": 83632,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "e1921ea63ec464cdb0fab05d1ce8970a1844253c12a481312e3c15bd7812a625",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 1001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 34.662,
+                "wallMs": 23.616,
+                "maxRssKiB": 83648,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "e1921ea63ec464cdb0fab05d1ce8970a1844253c12a481312e3c15bd7812a625",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "e1921ea63ec464cdb0fab05d1ce8970a1844253c12a481312e3c15bd7812a625",
+            "dbBytes": 5533696,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "hot": {
+            "cpuMs": 248.098,
+            "wallMs": 260.19169999999997,
+            "samples": [
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 1000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 248.067,
+                "wallMs": 260.3905,
+                "maxRssKiB": 66560,
+                "dbBytes": 790528,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              },
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 1001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 248.129,
+                "wallMs": 259.9929,
+                "maxRssKiB": 66640,
+                "dbBytes": 794624,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              }
+            ],
+            "fingerprint": null,
+            "dbBytes": 794624,
+            "stats": {
+              "events": 1300,
+              "knowledge": 301
+            }
+          },
+          "conclusions-nomatch": {
+            "cpuMs": 30.167,
+            "wallMs": 30.329749999999997,
+            "samples": [
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 1000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 30.164,
+                "wallMs": 30.3451,
+                "maxRssKiB": 53168,
+                "dbBytes": 22028288,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              },
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 1001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 30.17,
+                "wallMs": 30.3144,
+                "maxRssKiB": 53088,
+                "dbBytes": 22028288,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              }
+            ],
+            "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+            "dbBytes": 22028288,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          },
+          "discover": {
+            "cpuMs": 6.8215,
+            "wallMs": 5.2475000000000005,
+            "samples": [
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 1000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 6.842,
+                "wallMs": 5.2339,
+                "maxRssKiB": 57264,
+                "dbBytes": 22028288,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "5ab3de93cbeca55bd0fcbef344874f3eed1e6e1e159793d0eec2d1cf76c884d3",
+                "considered": 500
+              },
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 1001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 6.801,
+                "wallMs": 5.2611,
+                "maxRssKiB": 57456,
+                "dbBytes": 22028288,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "5ab3de93cbeca55bd0fcbef344874f3eed1e6e1e159793d0eec2d1cf76c884d3",
+                "considered": 500
+              }
+            ],
+            "fingerprint": "5ab3de93cbeca55bd0fcbef344874f3eed1e6e1e159793d0eec2d1cf76c884d3",
+            "dbBytes": 22028288,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          }
+        },
+        "B": {
+          "recall": {
+            "cpuMs": 67.8765,
+            "wallMs": 46.1973,
+            "samples": [
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 1000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 67.158,
+                "wallMs": 45.6332,
+                "maxRssKiB": 96144,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "6def694300ab984b136378ec5026be56615a3c735230bcf401702f97ba735400",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 1001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 68.595,
+                "wallMs": 46.7614,
+                "maxRssKiB": 96352,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "6def694300ab984b136378ec5026be56615a3c735230bcf401702f97ba735400",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "6def694300ab984b136378ec5026be56615a3c735230bcf401702f97ba735400",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-none": {
+            "cpuMs": 34.312,
+            "wallMs": 23.191699999999997,
+            "samples": [
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 1000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 34.637,
+                "wallMs": 23.5018,
+                "maxRssKiB": 83696,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 1001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 33.987,
+                "wallMs": 22.8816,
+                "maxRssKiB": 83712,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-one": {
+            "cpuMs": 34.3645,
+            "wallMs": 23.0534,
+            "samples": [
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 1000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 34.293,
+                "wallMs": 23.0705,
+                "maxRssKiB": 83840,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "e1921ea63ec464cdb0fab05d1ce8970a1844253c12a481312e3c15bd7812a625",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 1001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 34.436,
+                "wallMs": 23.0363,
+                "maxRssKiB": 83824,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "e1921ea63ec464cdb0fab05d1ce8970a1844253c12a481312e3c15bd7812a625",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "e1921ea63ec464cdb0fab05d1ce8970a1844253c12a481312e3c15bd7812a625",
+            "dbBytes": 5533696,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "hot": {
+            "cpuMs": 237.00650000000002,
+            "wallMs": 250.5747,
+            "samples": [
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 1000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 237.298,
+                "wallMs": 252.3855,
+                "maxRssKiB": 66544,
+                "dbBytes": 790528,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              },
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 1001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 236.715,
+                "wallMs": 248.7639,
+                "maxRssKiB": 66624,
+                "dbBytes": 794624,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              }
+            ],
+            "fingerprint": null,
+            "dbBytes": 794624,
+            "stats": {
+              "events": 1300,
+              "knowledge": 301
+            }
+          },
+          "conclusions-nomatch": {
+            "cpuMs": 30.097,
+            "wallMs": 30.2484,
+            "samples": [
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 1000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 30.15,
+                "wallMs": 30.2987,
+                "maxRssKiB": 52912,
+                "dbBytes": 22028288,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              },
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 1001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 30.044,
+                "wallMs": 30.1981,
+                "maxRssKiB": 53184,
+                "dbBytes": 22028288,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              }
+            ],
+            "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+            "dbBytes": 22028288,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          },
+          "discover": {
+            "cpuMs": 6.768,
+            "wallMs": 5.18335,
+            "samples": [
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 1000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 6.72,
+                "wallMs": 5.168,
+                "maxRssKiB": 57424,
+                "dbBytes": 22028288,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "5ab3de93cbeca55bd0fcbef344874f3eed1e6e1e159793d0eec2d1cf76c884d3",
+                "considered": 500
+              },
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 1001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 6.816,
+                "wallMs": 5.1987,
+                "maxRssKiB": 57312,
+                "dbBytes": 22028288,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "5ab3de93cbeca55bd0fcbef344874f3eed1e6e1e159793d0eec2d1cf76c884d3",
+                "considered": 500
+              }
+            ],
+            "fingerprint": "5ab3de93cbeca55bd0fcbef344874f3eed1e6e1e159793d0eec2d1cf76c884d3",
+            "dbBytes": 22028288,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          }
+        }
+      },
+      {
+        "round": 2,
+        "order": "A,B",
+        "A": {
+          "recall": {
+            "cpuMs": 74.06299999999999,
+            "wallMs": 52.465900000000005,
+            "samples": [
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 2000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 73.948,
+                "wallMs": 52.2879,
+                "maxRssKiB": 102704,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "0f309eff16d4f6f1e21fc88ba7ecf47814dc704bb9c7beedf46946a897fe7bce",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 2001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 74.178,
+                "wallMs": 52.6439,
+                "maxRssKiB": 102624,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "0f309eff16d4f6f1e21fc88ba7ecf47814dc704bb9c7beedf46946a897fe7bce",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "0f309eff16d4f6f1e21fc88ba7ecf47814dc704bb9c7beedf46946a897fe7bce",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-none": {
+            "cpuMs": 34.039,
+            "wallMs": 22.9095,
+            "samples": [
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 2000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 33.924,
+                "wallMs": 22.9341,
+                "maxRssKiB": 83872,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 2001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 34.154,
+                "wallMs": 22.8849,
+                "maxRssKiB": 83968,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-one": {
+            "cpuMs": 34.4955,
+            "wallMs": 23.0506,
+            "samples": [
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 2000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 33.979,
+                "wallMs": 22.9409,
+                "maxRssKiB": 83744,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "964d95b84fa94bbfc20c76166664132e432485d00638751feb3684e5ab63b983",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 2001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 35.012,
+                "wallMs": 23.1603,
+                "maxRssKiB": 84048,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "964d95b84fa94bbfc20c76166664132e432485d00638751feb3684e5ab63b983",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "964d95b84fa94bbfc20c76166664132e432485d00638751feb3684e5ab63b983",
+            "dbBytes": 5533696,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "hot": {
+            "cpuMs": 258.1115,
+            "wallMs": 273.03409999999997,
+            "samples": [
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 2000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 259.578,
+                "wallMs": 279.0444,
+                "maxRssKiB": 66544,
+                "dbBytes": 794624,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              },
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 2001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 256.645,
+                "wallMs": 267.0238,
+                "maxRssKiB": 66464,
+                "dbBytes": 794624,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              }
+            ],
+            "fingerprint": null,
+            "dbBytes": 794624,
+            "stats": {
+              "events": 1300,
+              "knowledge": 301
+            }
+          },
+          "conclusions-nomatch": {
+            "cpuMs": 30.174500000000002,
+            "wallMs": 30.33,
+            "samples": [
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 2000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 30.288,
+                "wallMs": 30.4635,
+                "maxRssKiB": 53120,
+                "dbBytes": 22007808,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              },
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 2001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 30.061,
+                "wallMs": 30.1965,
+                "maxRssKiB": 53088,
+                "dbBytes": 22007808,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              }
+            ],
+            "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+            "dbBytes": 22007808,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          },
+          "discover": {
+            "cpuMs": 6.821999999999999,
+            "wallMs": 5.24695,
+            "samples": [
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 2000,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 6.818,
+                "wallMs": 5.2856,
+                "maxRssKiB": 57504,
+                "dbBytes": 22007808,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "a459d40b3ccd2fa03087fc093dcf768eee0d7bb0cf2277f7165acda05a642366",
+                "considered": 500
+              },
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 2001,
+                "lib": "r13-baseline-KZ55T5",
+                "cpuMs": 6.826,
+                "wallMs": 5.2083,
+                "maxRssKiB": 57472,
+                "dbBytes": 22007808,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "a459d40b3ccd2fa03087fc093dcf768eee0d7bb0cf2277f7165acda05a642366",
+                "considered": 500
+              }
+            ],
+            "fingerprint": "a459d40b3ccd2fa03087fc093dcf768eee0d7bb0cf2277f7165acda05a642366",
+            "dbBytes": 22007808,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          }
+        },
+        "B": {
+          "recall": {
+            "cpuMs": 66.67099999999999,
+            "wallMs": 45.13775,
+            "samples": [
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 2000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 66.696,
+                "wallMs": 45.1105,
+                "maxRssKiB": 96080,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "0f309eff16d4f6f1e21fc88ba7ecf47814dc704bb9c7beedf46946a897fe7bce",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall",
+                "n": 10000,
+                "seed": 2001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 66.646,
+                "wallMs": 45.165,
+                "maxRssKiB": 96224,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "0f309eff16d4f6f1e21fc88ba7ecf47814dc704bb9c7beedf46946a897fe7bce",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "0f309eff16d4f6f1e21fc88ba7ecf47814dc704bb9c7beedf46946a897fe7bce",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-none": {
+            "cpuMs": 34.0215,
+            "wallMs": 22.7276,
+            "samples": [
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 2000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 33.972,
+                "wallMs": 22.6986,
+                "maxRssKiB": 83840,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-none",
+                "n": 10000,
+                "seed": 2001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 34.071,
+                "wallMs": 22.7566,
+                "maxRssKiB": 83984,
+                "dbBytes": 5525504,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+            "dbBytes": 5525504,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "recall-one": {
+            "cpuMs": 34.536,
+            "wallMs": 23.3777,
+            "samples": [
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 2000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 34.246,
+                "wallMs": 23.0926,
+                "maxRssKiB": 83616,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "964d95b84fa94bbfc20c76166664132e432485d00638751feb3684e5ab63b983",
+                "considered": 2000,
+                "scanned": 2000
+              },
+              {
+                "workload": "recall-one",
+                "n": 10000,
+                "seed": 2001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 34.826,
+                "wallMs": 23.6628,
+                "maxRssKiB": 83744,
+                "dbBytes": 5533696,
+                "stats": {
+                  "events": 2500,
+                  "knowledge": 2500
+                },
+                "fingerprint": "964d95b84fa94bbfc20c76166664132e432485d00638751feb3684e5ab63b983",
+                "considered": 2000,
+                "scanned": 2000
+              }
+            ],
+            "fingerprint": "964d95b84fa94bbfc20c76166664132e432485d00638751feb3684e5ab63b983",
+            "dbBytes": 5533696,
+            "stats": {
+              "events": 2500,
+              "knowledge": 2500
+            }
+          },
+          "hot": {
+            "cpuMs": 235.928,
+            "wallMs": 249.35160000000002,
+            "samples": [
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 2000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 237.511,
+                "wallMs": 249.3176,
+                "maxRssKiB": 66512,
+                "dbBytes": 794624,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              },
+              {
+                "workload": "hot",
+                "n": 1000,
+                "seed": 2001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 234.345,
+                "wallMs": 249.3856,
+                "maxRssKiB": 66448,
+                "dbBytes": 794624,
+                "stats": {
+                  "events": 1300,
+                  "knowledge": 301
+                },
+                "fingerprint": null
+              }
+            ],
+            "fingerprint": null,
+            "dbBytes": 794624,
+            "stats": {
+              "events": 1300,
+              "knowledge": 301
+            }
+          },
+          "conclusions-nomatch": {
+            "cpuMs": 30.134999999999998,
+            "wallMs": 30.305149999999998,
+            "samples": [
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 2000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 30.034,
+                "wallMs": 30.2196,
+                "maxRssKiB": 53200,
+                "dbBytes": 22007808,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              },
+              {
+                "workload": "conclusions-nomatch",
+                "n": 10000,
+                "seed": 2001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 30.236,
+                "wallMs": 30.3907,
+                "maxRssKiB": 53232,
+                "dbBytes": 22007808,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+                "considered": 0,
+                "scanned": 10000
+              }
+            ],
+            "fingerprint": "1868035868f60c23e5782297eed728e986dc7608db0fb825ced5779b3ffc727b",
+            "dbBytes": 22007808,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          },
+          "discover": {
+            "cpuMs": 6.8285,
+            "wallMs": 5.22755,
+            "samples": [
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 2000,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 6.842,
+                "wallMs": 5.2046,
+                "maxRssKiB": 57456,
+                "dbBytes": 22007808,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "a459d40b3ccd2fa03087fc093dcf768eee0d7bb0cf2277f7165acda05a642366",
+                "considered": 500
+              },
+              {
+                "workload": "discover",
+                "n": 10000,
+                "seed": 2001,
+                "lib": "t3-1f42f18a-c985af6ea36c51c7",
+                "cpuMs": 6.815,
+                "wallMs": 5.2505,
+                "maxRssKiB": 57456,
+                "dbBytes": 22007808,
+                "stats": {
+                  "events": 10000,
+                  "knowledge": 10000
+                },
+                "fingerprint": "a459d40b3ccd2fa03087fc093dcf768eee0d7bb0cf2277f7165acda05a642366",
+                "considered": 500
+              }
+            ],
+            "fingerprint": "a459d40b3ccd2fa03087fc093dcf768eee0d7bb0cf2277f7165acda05a642366",
+            "dbBytes": 22007808,
+            "stats": {
+              "events": 10000,
+              "knowledge": 10000
+            }
+          }
+        }
+      }
+    ],
+    "summary": {
+      "recall": {
+        "aCpuMs": 74.06299999999999,
+        "bCpuMs": 67.8075,
+        "changePercent": -8.45,
+        "perPairDeltaMs": [
+          -6.2855,
+          -5.873,
+          -7.392
+        ]
+      },
+      "recall-none": {
+        "aCpuMs": 33.932500000000005,
+        "bCpuMs": 34.251000000000005,
+        "changePercent": 0.94,
+        "perPairDeltaMs": [
+          0.3185,
+          0.489,
+          -0.0175
+        ]
+      },
+      "recall-one": {
+        "aCpuMs": 34.4955,
+        "bCpuMs": 34.536,
+        "changePercent": 0.12,
+        "perPairDeltaMs": [
+          0.2265,
+          -0.27,
+          0.0405
+        ]
+      },
+      "hot": {
+        "aCpuMs": 251.49200000000002,
+        "bCpuMs": 236.232,
+        "changePercent": -6.07,
+        "perPairDeltaMs": [
+          -15.26,
+          -11.0915,
+          -22.1835
+        ]
+      },
+      "conclusions-nomatch": {
+        "aCpuMs": 30.174500000000002,
+        "bCpuMs": 30.134999999999998,
+        "changePercent": -0.13,
+        "perPairDeltaMs": [
+          -0.208,
+          -0.07,
+          -0.0395
+        ]
+      },
+      "discover": {
+        "aCpuMs": 6.8215,
+        "bCpuMs": 6.801,
+        "changePercent": -0.3,
+        "perPairDeltaMs": [
+          0.0355,
+          -0.0535,
+          0.0065
+        ]
+      }
+    }
+  },
+  "concurrency": {
+    "A-2": {
+      "writers": 2,
+      "perWriter": 250,
+      "parentCpuMs": 3.437,
+      "committed": 500,
+      "busy": 0,
+      "other": 0,
+      "workers": [
+        {
+          "seed": 0,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 57.188
+        },
+        {
+          "seed": 1,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 56.06
+        }
+      ]
+    },
+    "A-4": {
+      "writers": 4,
+      "perWriter": 250,
+      "parentCpuMs": 2.894,
+      "committed": 1000,
+      "busy": 0,
+      "other": 0,
+      "workers": [
+        {
+          "seed": 0,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 60.928
+        },
+        {
+          "seed": 1,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 61.839
+        },
+        {
+          "seed": 2,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 57.357
+        },
+        {
+          "seed": 3,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 56.203
+        }
+      ]
+    },
+    "B-2": {
+      "writers": 2,
+      "perWriter": 250,
+      "parentCpuMs": 1.062,
+      "committed": 500,
+      "busy": 0,
+      "other": 0,
+      "workers": [
+        {
+          "seed": 0,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 50.531
+        },
+        {
+          "seed": 1,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 51.648
+        }
+      ]
+    },
+    "B-4": {
+      "writers": 4,
+      "perWriter": 250,
+      "parentCpuMs": 2.06,
+      "committed": 1000,
+      "busy": 0,
+      "other": 0,
+      "workers": [
+        {
+          "seed": 0,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 56.005
+        },
+        {
+          "seed": 1,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 56.607
+        },
+        {
+          "seed": 2,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 54.645
+        },
+        {
+          "seed": 3,
+          "writes": 250,
+          "committed": 250,
+          "busy": 0,
+          "other": 0,
+          "cpuMs": 51.38
+        }
+      ]
+    }
+  }
+}

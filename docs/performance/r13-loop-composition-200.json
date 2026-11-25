@@ -1,0 +1,3032 @@
+{
+  "method": {
+    "what": "one complete plugin-side evolution loop: plan, propose, probe baseline, trial, probe candidate, measure, promote (stopped at owner confirmation), revert",
+    "notMeasured": "host runtime, model inference, developer harness; no real DSH_HOME, no network, no formal experience store",
+    "metric": "process.cpuUsage user+system per phase, wall clock, and instrumented structuredClone/JSON call counts",
+    "scale": "each --history value seeds N prior conclusions on unrelated targets in a fresh mkdtemp store",
+    "env": {
+      "node": "v26.13.1",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "hostVersions": {
+      "host": "1.30.0",
+      "cordis": "4.1.0",
+      "evolution": "0.3.0"
+    },
+    "applicability": {
+      "dsh": "1.30.0",
+      "cordis": "4.1.0",
+      "evolution": "0.3.0"
+    }
+  },
+  "history": 200,
+  "runs": 7,
+  "instrumented": false,
+  "samples": [
+    {
+      "history": 200,
+      "phases": {
+        "plan": {
+          "cpuMs": 15.483,
+          "wallMs": 11.188458,
+          "calls": 1
+        },
+        "propose": {
+          "cpuMs": 5.865,
+          "wallMs": 4.460833,
+          "calls": 1
+        },
+        "probe-baseline": {
+          "cpuMs": 2.102,
+          "wallMs": 1.496375,
+          "calls": 1
+        },
+        "trial": {
+          "cpuMs": 1.103,
+          "wallMs": 1.104625,
+          "calls": 1
+        },
+        "probe-candidate": {
+          "cpuMs": 0.72,
+          "wallMs": 0.456959,
+          "calls": 1
+        },
+        "measure": {
+          "cpuMs": 0.722,
+          "wallMs": 0.663959,
+          "calls": 1
+        },
+        "promote-awaiting-owner": {
+          "cpuMs": 0.413,
+          "wallMs": 0.274917,
+          "calls": 1
+        },
+        "revert": {
+          "cpuMs": 13.592,
+          "wallMs": 6.723458,
+          "calls": 1
+        }
+      },
+      "copies": {
+        "plan": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "store": {
+        "plan": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 1,
+            "cpuMs": 2.35
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 5.13
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.776
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 3.775
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.656
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 1,
+            "cpuMs": 0.347
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "totalCpuMs": 40.15,
+      "totalWallMs": 26.508917,
+      "decision": "benefit",
+      "conclusion": "benefit",
+      "probeSamples": 4,
+      "archiveBytes": 18316
+    },
+    {
+      "history": 200,
+      "phases": {
+        "plan": {
+          "cpuMs": 9.135,
+          "wallMs": 6.443167,
+          "calls": 1
+        },
+        "propose": {
+          "cpuMs": 3.913,
+          "wallMs": 3.146625,
+          "calls": 1
+        },
+        "probe-baseline": {
+          "cpuMs": 0.62,
+          "wallMs": 0.3095,
+          "calls": 1
+        },
+        "trial": {
+          "cpuMs": 0.693,
+          "wallMs": 0.625333,
+          "calls": 1
+        },
+        "probe-candidate": {
+          "cpuMs": 0.163,
+          "wallMs": 0.163417,
+          "calls": 1
+        },
+        "measure": {
+          "cpuMs": 0.272,
+          "wallMs": 0.157292,
+          "calls": 1
+        },
+        "promote-awaiting-owner": {
+          "cpuMs": 0.026,
+          "wallMs": 0.026708,
+          "calls": 1
+        },
+        "revert": {
+          "cpuMs": 3.833,
+          "wallMs": 2.798666,
+          "calls": 1
+        }
+      },
+      "copies": {
+        "plan": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "store": {
+        "plan": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 1,
+            "cpuMs": 2.041
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 3.158
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.613
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 2.99
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.626
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 1,
+            "cpuMs": 0.164
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "totalCpuMs": 18.711,
+      "totalWallMs": 13.714458,
+      "decision": "benefit",
+      "conclusion": "benefit",
+      "probeSamples": 4,
+      "archiveBytes": 18316
+    },
+    {
+      "history": 200,
+      "phases": {
+        "plan": {
+          "cpuMs": 7.655,
+          "wallMs": 5.892833,
+          "calls": 1
+        },
+        "propose": {
+          "cpuMs": 2.737,
+          "wallMs": 2.680125,
+          "calls": 1
+        },
+        "probe-baseline": {
+          "cpuMs": 0.321,
+          "wallMs": 0.171542,
+          "calls": 1
+        },
+        "trial": {
+          "cpuMs": 0.642,
+          "wallMs": 0.642792,
+          "calls": 1
+        },
+        "probe-candidate": {
+          "cpuMs": 0.14,
+          "wallMs": 0.139875,
+          "calls": 1
+        },
+        "measure": {
+          "cpuMs": 0.108,
+          "wallMs": 0.108791,
+          "calls": 1
+        },
+        "promote-awaiting-owner": {
+          "cpuMs": 0.023,
+          "wallMs": 0.024542,
+          "calls": 1
+        },
+        "revert": {
+          "cpuMs": 3.076,
+          "wallMs": 2.644,
+          "calls": 1
+        }
+      },
+      "copies": {
+        "plan": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "store": {
+        "plan": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 1,
+            "cpuMs": 1.362
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 2.805
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.604
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 1.959
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.613
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 1,
+            "cpuMs": 0.148
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "totalCpuMs": 14.799,
+      "totalWallMs": 12.341,
+      "decision": "benefit",
+      "conclusion": "benefit",
+      "probeSamples": 4,
+      "archiveBytes": 18316
+    },
+    {
+      "history": 200,
+      "phases": {
+        "plan": {
+          "cpuMs": 7.161,
+          "wallMs": 5.589417,
+          "calls": 1
+        },
+        "propose": {
+          "cpuMs": 4.13,
+          "wallMs": 2.623625,
+          "calls": 1
+        },
+        "probe-baseline": {
+          "cpuMs": 0.141,
+          "wallMs": 0.141292,
+          "calls": 1
+        },
+        "trial": {
+          "cpuMs": 0.624,
+          "wallMs": 0.625416,
+          "calls": 1
+        },
+        "probe-candidate": {
+          "cpuMs": 0.135,
+          "wallMs": 0.13575,
+          "calls": 1
+        },
+        "measure": {
+          "cpuMs": 0.118,
+          "wallMs": 0.117709,
+          "calls": 1
+        },
+        "promote-awaiting-owner": {
+          "cpuMs": 0.032,
+          "wallMs": 0.03125,
+          "calls": 1
+        },
+        "revert": {
+          "cpuMs": 3.199,
+          "wallMs": 2.637041,
+          "calls": 1
+        }
+      },
+      "copies": {
+        "plan": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "store": {
+        "plan": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 1,
+            "cpuMs": 1.857
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 2.892
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.885
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 3.097
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.614
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 1,
+            "cpuMs": 0.148
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "totalCpuMs": 15.577,
+      "totalWallMs": 11.9365,
+      "decision": "benefit",
+      "conclusion": "benefit",
+      "probeSamples": 4,
+      "archiveBytes": 18316
+    },
+    {
+      "history": 200,
+      "phases": {
+        "plan": {
+          "cpuMs": 6.177,
+          "wallMs": 5.365458,
+          "calls": 1
+        },
+        "propose": {
+          "cpuMs": 3.236,
+          "wallMs": 2.648417,
+          "calls": 1
+        },
+        "probe-baseline": {
+          "cpuMs": 0.265,
+          "wallMs": 0.165375,
+          "calls": 1
+        },
+        "trial": {
+          "cpuMs": 1.266,
+          "wallMs": 0.672167,
+          "calls": 1
+        },
+        "probe-candidate": {
+          "cpuMs": 0.181,
+          "wallMs": 0.177833,
+          "calls": 1
+        },
+        "measure": {
+          "cpuMs": 0.273,
+          "wallMs": 0.101833,
+          "calls": 1
+        },
+        "promote-awaiting-owner": {
+          "cpuMs": 0.019,
+          "wallMs": 0.019708,
+          "calls": 1
+        },
+        "revert": {
+          "cpuMs": 3.277,
+          "wallMs": 3.704875,
+          "calls": 1
+        }
+      },
+      "copies": {
+        "plan": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "store": {
+        "plan": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 1,
+            "cpuMs": 1.232
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 1.811
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.668
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 2.413
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.678
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 1,
+            "cpuMs": 0.131
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "totalCpuMs": 14.746,
+      "totalWallMs": 12.898458,
+      "decision": "benefit",
+      "conclusion": "benefit",
+      "probeSamples": 4,
+      "archiveBytes": 18316
+    },
+    {
+      "history": 200,
+      "phases": {
+        "plan": {
+          "cpuMs": 7.893,
+          "wallMs": 5.774,
+          "calls": 1
+        },
+        "propose": {
+          "cpuMs": 3.591,
+          "wallMs": 2.870084,
+          "calls": 1
+        },
+        "probe-baseline": {
+          "cpuMs": 0.121,
+          "wallMs": 0.122084,
+          "calls": 1
+        },
+        "trial": {
+          "cpuMs": 0.573,
+          "wallMs": 0.572417,
+          "calls": 1
+        },
+        "probe-candidate": {
+          "cpuMs": 0.174,
+          "wallMs": 0.119625,
+          "calls": 1
+        },
+        "measure": {
+          "cpuMs": 0.094,
+          "wallMs": 0.094667,
+          "calls": 1
+        },
+        "promote-awaiting-owner": {
+          "cpuMs": 0.02,
+          "wallMs": 0.019459,
+          "calls": 1
+        },
+        "revert": {
+          "cpuMs": 2.617,
+          "wallMs": 2.569833,
+          "calls": 1
+        }
+      },
+      "copies": {
+        "plan": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "store": {
+        "plan": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 1,
+            "cpuMs": 1.323
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 3.013
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.581
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 2.885
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.604
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 1,
+            "cpuMs": 0.133
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "totalCpuMs": 15.123,
+      "totalWallMs": 12.177209,
+      "decision": "benefit",
+      "conclusion": "benefit",
+      "probeSamples": 4,
+      "archiveBytes": 18316
+    },
+    {
+      "history": 200,
+      "phases": {
+        "plan": {
+          "cpuMs": 8.877,
+          "wallMs": 5.85075,
+          "calls": 1
+        },
+        "propose": {
+          "cpuMs": 3.245,
+          "wallMs": 2.581542,
+          "calls": 1
+        },
+        "probe-baseline": {
+          "cpuMs": 0.176,
+          "wallMs": 0.123041,
+          "calls": 1
+        },
+        "trial": {
+          "cpuMs": 0.613,
+          "wallMs": 0.613208,
+          "calls": 1
+        },
+        "probe-candidate": {
+          "cpuMs": 0.102,
+          "wallMs": 0.102583,
+          "calls": 1
+        },
+        "measure": {
+          "cpuMs": 0.089,
+          "wallMs": 0.089333,
+          "calls": 1
+        },
+        "promote-awaiting-owner": {
+          "cpuMs": 0.018,
+          "wallMs": 0.018459,
+          "calls": 1
+        },
+        "revert": {
+          "cpuMs": 2.643,
+          "wallMs": 2.536583,
+          "calls": 1
+        }
+      },
+      "copies": {
+        "plan": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "structuredClone": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonStringify": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "jsonParse": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "store": {
+        "plan": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 1,
+            "cpuMs": 1.337
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 5.151
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "propose": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 1.172
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 1,
+            "cpuMs": 1.883
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-baseline": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "trial": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "probe-candidate": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "measure": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "promote-awaiting-owner": {
+          "findConclusions": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        },
+        "revert": {
+          "findConclusions": {
+            "calls": 1,
+            "cpuMs": 0.597
+          },
+          "discover": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recall": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordConclusion": {
+            "calls": 1,
+            "cpuMs": 0.152
+          },
+          "recordFailure": {
+            "calls": 0,
+            "cpuMs": 0
+          },
+          "recordDegradation": {
+            "calls": 0,
+            "cpuMs": 0
+          }
+        }
+      },
+      "totalCpuMs": 15.802,
+      "totalWallMs": 11.95,
+      "decision": "benefit",
+      "conclusion": "benefit",
+      "probeSamples": 4,
+      "archiveBytes": 18316
+    }
+  ],
+  "summary": {
+    "phases": {
+      "plan": {
+        "cpuMs": 7.893,
+        "wallMs": 5.85075,
+        "runs": 7,
+        "cpuShare": 0.506708608846376
+      },
+      "propose": {
+        "cpuMs": 3.591,
+        "wallMs": 2.680125,
+        "runs": 7,
+        "cpuShare": 0.23053219490274124
+      },
+      "probe-baseline": {
+        "cpuMs": 0.265,
+        "wallMs": 0.165375,
+        "runs": 7,
+        "cpuShare": 0.017012261667843618
+      },
+      "trial": {
+        "cpuMs": 0.642,
+        "wallMs": 0.625416,
+        "runs": 7,
+        "cpuShare": 0.041214611285870194
+      },
+      "probe-candidate": {
+        "cpuMs": 0.163,
+        "wallMs": 0.139875,
+        "runs": 7,
+        "cpuShare": 0.010464145856069846
+      },
+      "measure": {
+        "cpuMs": 0.118,
+        "wallMs": 0.108791,
+        "runs": 7,
+        "cpuShare": 0.007575271233228478
+      },
+      "promote-awaiting-owner": {
+        "cpuMs": 0.023,
+        "wallMs": 0.024542,
+        "runs": 7,
+        "cpuShare": 0.001476535918341144
+      },
+      "revert": {
+        "cpuMs": 3.199,
+        "wallMs": 2.644,
+        "runs": 7,
+        "cpuShare": 0.20536688707710085
+      }
+    },
+    "totalCpuMs": 15.577,
+    "totalWallMs": 12.341,
+    "archiveBytes": 18316,
+    "copies": {
+      "plan": {
+        "structuredClone": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonStringify": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonParse": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "propose": {
+        "structuredClone": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonStringify": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonParse": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "probe-baseline": {
+        "structuredClone": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonStringify": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonParse": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "trial": {
+        "structuredClone": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonStringify": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonParse": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "probe-candidate": {
+        "structuredClone": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonStringify": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonParse": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "measure": {
+        "structuredClone": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonStringify": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonParse": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "promote-awaiting-owner": {
+        "structuredClone": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonStringify": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonParse": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "revert": {
+        "structuredClone": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonStringify": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "jsonParse": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      }
+    },
+    "store": {
+      "plan": {
+        "findConclusions": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "discover": {
+          "calls": 1,
+          "cpuMs": 1.362
+        },
+        "recall": {
+          "calls": 1,
+          "cpuMs": 3.013
+        },
+        "recordConclusion": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordFailure": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordDegradation": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "propose": {
+        "findConclusions": {
+          "calls": 1,
+          "cpuMs": 0.668
+        },
+        "discover": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recall": {
+          "calls": 1,
+          "cpuMs": 2.885
+        },
+        "recordConclusion": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordFailure": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordDegradation": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "probe-baseline": {
+        "findConclusions": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "discover": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recall": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordConclusion": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordFailure": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordDegradation": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "trial": {
+        "findConclusions": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "discover": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recall": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordConclusion": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordFailure": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordDegradation": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "probe-candidate": {
+        "findConclusions": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "discover": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recall": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordConclusion": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordFailure": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordDegradation": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "measure": {
+        "findConclusions": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "discover": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recall": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordConclusion": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordFailure": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordDegradation": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "promote-awaiting-owner": {
+        "findConclusions": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "discover": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recall": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordConclusion": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordFailure": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordDegradation": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      },
+      "revert": {
+        "findConclusions": {
+          "calls": 1,
+          "cpuMs": 0.614
+        },
+        "discover": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recall": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordConclusion": {
+          "calls": 1,
+          "cpuMs": 0.148
+        },
+        "recordFailure": {
+          "calls": 0,
+          "cpuMs": 0
+        },
+        "recordDegradation": {
+          "calls": 0,
+          "cpuMs": 0
+        }
+      }
+    }
+  }
+}

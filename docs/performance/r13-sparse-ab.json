@@ -1,0 +1,609 @@
+{
+  "method": "R13 sparse-path A/B after the length<2 early return. Both sides load their own tree, shared fixture per workload, alternating A,B / B,A, independent process per sample, process.cpuUsage() main metric, output fingerprints asserted equal per round.",
+  "node": "v26.13.1",
+  "platform": "darwin-arm64",
+  "baseLib": "<tmp>/opencode/r13-base/lib",
+  "candLib": "<worktree>/lib",
+  "rounds": 3,
+  "samples": 2,
+  "summary": {
+    "recall-none": {
+      "aCpuMs": 33.298500000000004,
+      "bCpuMs": 33.5965,
+      "changePercent": 0.89,
+      "perPairDeltaMs": [
+        0.7125,
+        -0.0005,
+        0.298
+      ]
+    },
+    "recall-one": {
+      "aCpuMs": 34.022,
+      "bCpuMs": 34.096000000000004,
+      "changePercent": 0.22,
+      "perPairDeltaMs": [
+        0.0835,
+        -0.0225,
+        0.2215
+      ]
+    }
+  },
+  "observations": [
+    {
+      "round": 0,
+      "order": "A,B",
+      "A": {
+        "recall-none": {
+          "cpuMs": 33.1545,
+          "wallMs": 22.21815,
+          "samples": [
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 0,
+              "lib": "r13-base",
+              "cpuMs": 33.089,
+              "wallMs": 22.2303,
+              "maxRssKiB": 83840,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 1,
+              "lib": "r13-base",
+              "cpuMs": 33.22,
+              "wallMs": 22.206,
+              "maxRssKiB": 83888,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+          "dbBytes": 5525504,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        },
+        "recall-one": {
+          "cpuMs": 34.022,
+          "wallMs": 22.7271,
+          "samples": [
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 0,
+              "lib": "r13-base",
+              "cpuMs": 33.814,
+              "wallMs": 22.6258,
+              "maxRssKiB": 83952,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 1,
+              "lib": "r13-base",
+              "cpuMs": 34.23,
+              "wallMs": 22.8284,
+              "maxRssKiB": 84080,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+          "dbBytes": 5533696,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        }
+      },
+      "B": {
+        "recall-none": {
+          "cpuMs": 33.867000000000004,
+          "wallMs": 22.7922,
+          "samples": [
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 0,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 33.615,
+              "wallMs": 22.4118,
+              "maxRssKiB": 83792,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 1,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 34.119,
+              "wallMs": 23.1726,
+              "maxRssKiB": 83632,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+          "dbBytes": 5525504,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        },
+        "recall-one": {
+          "cpuMs": 34.1055,
+          "wallMs": 22.767400000000002,
+          "samples": [
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 0,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 34.376,
+              "wallMs": 22.846,
+              "maxRssKiB": 83840,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 1,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 33.835,
+              "wallMs": 22.6888,
+              "maxRssKiB": 83760,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+          "dbBytes": 5533696,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        }
+      }
+    },
+    {
+      "round": 1,
+      "order": "B,A",
+      "A": {
+        "recall-none": {
+          "cpuMs": 33.3945,
+          "wallMs": 22.32775,
+          "samples": [
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 1000,
+              "lib": "r13-base",
+              "cpuMs": 33.174,
+              "wallMs": 22.2821,
+              "maxRssKiB": 83792,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 1001,
+              "lib": "r13-base",
+              "cpuMs": 33.615,
+              "wallMs": 22.3734,
+              "maxRssKiB": 83904,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+          "dbBytes": 5525504,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        },
+        "recall-one": {
+          "cpuMs": 34.089,
+          "wallMs": 22.5882,
+          "samples": [
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 1000,
+              "lib": "r13-base",
+              "cpuMs": 34.172,
+              "wallMs": 22.6078,
+              "maxRssKiB": 83872,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 1001,
+              "lib": "r13-base",
+              "cpuMs": 34.006,
+              "wallMs": 22.5686,
+              "maxRssKiB": 83808,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+          "dbBytes": 5533696,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        }
+      },
+      "B": {
+        "recall-none": {
+          "cpuMs": 33.394,
+          "wallMs": 22.2779,
+          "samples": [
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 1000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 33.285,
+              "wallMs": 22.2065,
+              "maxRssKiB": 83728,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 1001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 33.503,
+              "wallMs": 22.3493,
+              "maxRssKiB": 83776,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+          "dbBytes": 5525504,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        },
+        "recall-one": {
+          "cpuMs": 34.0665,
+          "wallMs": 22.796799999999998,
+          "samples": [
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 1000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 33.897,
+              "wallMs": 22.659,
+              "maxRssKiB": 83696,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 1001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 34.236,
+              "wallMs": 22.9346,
+              "maxRssKiB": 83920,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+          "dbBytes": 5533696,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        }
+      }
+    },
+    {
+      "round": 2,
+      "order": "A,B",
+      "A": {
+        "recall-none": {
+          "cpuMs": 33.298500000000004,
+          "wallMs": 22.39945,
+          "samples": [
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 2000,
+              "lib": "r13-base",
+              "cpuMs": 33.266,
+              "wallMs": 22.424,
+              "maxRssKiB": 83808,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 2001,
+              "lib": "r13-base",
+              "cpuMs": 33.331,
+              "wallMs": 22.3749,
+              "maxRssKiB": 83952,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+          "dbBytes": 5525504,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        },
+        "recall-one": {
+          "cpuMs": 33.8745,
+          "wallMs": 22.543149999999997,
+          "samples": [
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 2000,
+              "lib": "r13-base",
+              "cpuMs": 33.742,
+              "wallMs": 22.5919,
+              "maxRssKiB": 83952,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 2001,
+              "lib": "r13-base",
+              "cpuMs": 34.007,
+              "wallMs": 22.4944,
+              "maxRssKiB": 83744,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+          "dbBytes": 5533696,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        }
+      },
+      "B": {
+        "recall-none": {
+          "cpuMs": 33.5965,
+          "wallMs": 22.4801,
+          "samples": [
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 2000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 33.732,
+              "wallMs": 22.5338,
+              "maxRssKiB": 83760,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-none",
+              "n": 10000,
+              "seed": 2001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 33.461,
+              "wallMs": 22.4264,
+              "maxRssKiB": 83536,
+              "dbBytes": 5525504,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "c1cae2488032fbfee3956ce46bf7e197a5d6337381f413c41d6d59d9f9a03543",
+          "dbBytes": 5525504,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        },
+        "recall-one": {
+          "cpuMs": 34.096000000000004,
+          "wallMs": 22.625,
+          "samples": [
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 2000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 34.261,
+              "wallMs": 22.6928,
+              "maxRssKiB": 83824,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall-one",
+              "n": 10000,
+              "seed": 2001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 33.931,
+              "wallMs": 22.5572,
+              "maxRssKiB": 83920,
+              "dbBytes": 5533696,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ],
+          "fingerprint": "4e4b668392bf6b15dabde3ef58d915be0b088c82bcd15017fa93d65547bcb64a",
+          "dbBytes": 5533696,
+          "stats": {
+            "events": 2500,
+            "knowledge": 2500
+          }
+        }
+      }
+    }
+  ]
+}

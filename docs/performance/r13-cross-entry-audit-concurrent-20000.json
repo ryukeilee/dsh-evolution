@@ -1,0 +1,173 @@
+{
+  "method": "N independent child processes started at once on the same read-only fixture; parent measures batch wall, children report CPU; no shared write lock in the read-only startup path",
+  "entries": 3,
+  "rounds": 3,
+  "workloads": [
+    "indexRead",
+    "reconcileIdle",
+    "sourceVerify",
+    "review"
+  ],
+  "fixture": "<tmp>/opencode/r13-fixture-20000",
+  "node": "v26.13.1",
+  "platform": "darwin/arm64",
+  "runs": [
+    {
+      "round": 0,
+      "entries": [
+        0,
+        1,
+        2
+      ],
+      "batchWallMs": 5042.232083,
+      "perEntry": [
+        {
+          "entry": 0,
+          "wallMs": 5043.877332999999,
+          "cpuMs": {
+            "indexRead": 327.934,
+            "reconcileIdle": 284.195,
+            "sourceVerify": 3579.249,
+            "review": 324.851
+          },
+          "peakRssKiB": 264624
+        },
+        {
+          "entry": 1,
+          "wallMs": 5042.769792,
+          "cpuMs": {
+            "indexRead": 330.607,
+            "reconcileIdle": 293.596,
+            "sourceVerify": 3551.035,
+            "review": 307.174
+          },
+          "peakRssKiB": 264784
+        },
+        {
+          "entry": 2,
+          "wallMs": 5042.348125,
+          "cpuMs": {
+            "indexRead": 332.283,
+            "reconcileIdle": 290.363,
+            "sourceVerify": 3563.332,
+            "review": 327.208
+          },
+          "peakRssKiB": 264016
+        }
+      ],
+      "sumCpuMs": {
+        "indexRead": 990.8240000000001,
+        "reconcileIdle": 868.154,
+        "sourceVerify": 10693.616,
+        "review": 959.233
+      }
+    },
+    {
+      "round": 1,
+      "entries": [
+        0,
+        1,
+        2
+      ],
+      "batchWallMs": 4144.175542,
+      "perEntry": [
+        {
+          "entry": 0,
+          "wallMs": 4144.752291,
+          "cpuMs": {
+            "indexRead": 328.178,
+            "reconcileIdle": 304.196,
+            "sourceVerify": 3400.522,
+            "review": 315.931
+          },
+          "peakRssKiB": 265168
+        },
+        {
+          "entry": 1,
+          "wallMs": 4144.717000000001,
+          "cpuMs": {
+            "indexRead": 323.252,
+            "reconcileIdle": 290.085,
+            "sourceVerify": 3407.316,
+            "review": 320.037
+          },
+          "peakRssKiB": 264144
+        },
+        {
+          "entry": 2,
+          "wallMs": 4141.861708,
+          "cpuMs": {
+            "indexRead": 330.971,
+            "reconcileIdle": 267.424,
+            "sourceVerify": 3408.408,
+            "review": 303.539
+          },
+          "peakRssKiB": 265168
+        }
+      ],
+      "sumCpuMs": {
+        "indexRead": 982.4010000000001,
+        "reconcileIdle": 861.7049999999999,
+        "sourceVerify": 10216.246,
+        "review": 939.507
+      }
+    },
+    {
+      "round": 2,
+      "entries": [
+        0,
+        1,
+        2
+      ],
+      "batchWallMs": 4095.342124999999,
+      "perEntry": [
+        {
+          "entry": 0,
+          "wallMs": 4096.214042,
+          "cpuMs": {
+            "indexRead": 330.511,
+            "reconcileIdle": 286.91,
+            "sourceVerify": 3357.646,
+            "review": 313.139
+          },
+          "peakRssKiB": 264176
+        },
+        {
+          "entry": 1,
+          "wallMs": 4094.679542,
+          "cpuMs": {
+            "indexRead": 329.745,
+            "reconcileIdle": 284.607,
+            "sourceVerify": 3382.087,
+            "review": 316.561
+          },
+          "peakRssKiB": 264160
+        },
+        {
+          "entry": 2,
+          "wallMs": 4088.9261670000014,
+          "cpuMs": {
+            "indexRead": 330.384,
+            "reconcileIdle": 285.899,
+            "sourceVerify": 3361.834,
+            "review": 313.996
+          },
+          "peakRssKiB": 262864
+        }
+      ],
+      "sumCpuMs": {
+        "indexRead": 990.6400000000001,
+        "reconcileIdle": 857.416,
+        "sourceVerify": 10101.567,
+        "review": 943.696
+      }
+    }
+  ],
+  "batchWallMedianMs": 4144.175542,
+  "sumCpuMedianMs": {
+    "indexRead": 990.6400000000001,
+    "reconcileIdle": 861.7049999999999,
+    "sourceVerify": 10216.246,
+    "review": 943.696
+  }
+}

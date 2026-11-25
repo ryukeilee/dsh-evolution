@@ -1,0 +1,1183 @@
+{
+  "method": "alternating A/B, one independent child process per (round, side); CPU=user+system from process.cpuUsage; wall and heap/RSS auxiliary",
+  "records": "opencode",
+  "fixture": "<tmp>/opencode/r13-fixture-5000",
+  "rounds": 3,
+  "samples": 3,
+  "warmup": 2,
+  "workloads": [
+    "indexRead",
+    "reconcileIdle",
+    "sourceVerify",
+    "review",
+    "doctor",
+    "usageRead"
+  ],
+  "node": "v26.13.1",
+  "platform": "darwin/arm64",
+  "baselineLibroot": "<worktree>",
+  "candidateLibroot": "<worktree>",
+  "allFingerprintsEqual": true,
+  "runs": [
+    {
+      "round": 0,
+      "order": [
+        "A",
+        "B"
+      ],
+      "A": {
+        "peakRssKiB": 189680,
+        "indexRead": {
+          "medianCpuMs": 46.551,
+          "medianWallMs": 40.436499999999995,
+          "medianHeapDeltaBytes": 20996664,
+          "fingerprint": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711",
+          "samples": [
+            {
+              "cpuMs": 46.551,
+              "wallMs": 41.24054100000001,
+              "heapDeltaBytes": 21340328,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 50.692,
+              "wallMs": 40.436499999999995,
+              "heapDeltaBytes": 20996664,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 42.435,
+              "wallMs": 38.740125000000035,
+              "heapDeltaBytes": 20989064,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 48.667,
+          "medianWallMs": 44.29929199999998,
+          "medianHeapDeltaBytes": 22324752,
+          "fingerprint": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b",
+          "samples": [
+            {
+              "cpuMs": 48.667,
+              "wallMs": 44.819624999999974,
+              "heapDeltaBytes": 22316768,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 50.737,
+              "wallMs": 44.29929199999998,
+              "heapDeltaBytes": 22324752,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 46.792,
+              "wallMs": 43.00316700000002,
+              "heapDeltaBytes": 22343904,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 639.291,
+          "medianWallMs": 584.3183749999998,
+          "medianHeapDeltaBytes": 22263728,
+          "fingerprint": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78",
+          "samples": [
+            {
+              "cpuMs": 624.991,
+              "wallMs": 579.4197080000001,
+              "heapDeltaBytes": 22663008,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 640.808,
+              "wallMs": 584.3183749999998,
+              "heapDeltaBytes": 22263728,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 639.291,
+              "wallMs": 591.1934579999997,
+              "heapDeltaBytes": 20462248,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 68.623,
+          "medianWallMs": 55.41637499999979,
+          "medianHeapDeltaBytes": 22260168,
+          "fingerprint": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4",
+          "samples": [
+            {
+              "cpuMs": 68.957,
+              "wallMs": 55.7778330000001,
+              "heapDeltaBytes": 22267216,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 68.623,
+              "wallMs": 55.41637499999979,
+              "heapDeltaBytes": 22260168,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 66.319,
+              "wallMs": 54.097749999999905,
+              "heapDeltaBytes": 22246616,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 671.418,
+          "medianWallMs": 614.3512499999997,
+          "medianHeapDeltaBytes": 19952048,
+          "fingerprint": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310",
+          "samples": [
+            {
+              "cpuMs": 668.909,
+              "wallMs": 613.6565,
+              "heapDeltaBytes": 19952048,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 674.593,
+              "wallMs": 617.7706659999994,
+              "heapDeltaBytes": 21437304,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 671.418,
+              "wallMs": 614.3512499999997,
+              "heapDeltaBytes": 19323952,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.217,
+          "medianWallMs": 0.14274999999997817,
+          "medianHeapDeltaBytes": 24792,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.396,
+              "wallMs": 0.17075000000022555,
+              "heapDeltaBytes": 22528,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.217,
+              "wallMs": 0.134541999999783,
+              "heapDeltaBytes": 24792,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.212,
+              "wallMs": 0.14274999999997817,
+              "heapDeltaBytes": 36472,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "B": {
+        "peakRssKiB": 189936,
+        "indexRead": {
+          "medianCpuMs": 47.722,
+          "medianWallMs": 42.052707999999996,
+          "medianHeapDeltaBytes": 20986296,
+          "fingerprint": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711",
+          "samples": [
+            {
+              "cpuMs": 47.722,
+              "wallMs": 42.761042,
+              "heapDeltaBytes": 21370320,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 52.696,
+              "wallMs": 42.052707999999996,
+              "heapDeltaBytes": 20986296,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 44.011,
+              "wallMs": 40.32566700000001,
+              "heapDeltaBytes": 20948048,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 48.416,
+          "medianWallMs": 44.11454199999997,
+          "medianHeapDeltaBytes": 22343232,
+          "fingerprint": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b",
+          "samples": [
+            {
+              "cpuMs": 48.416,
+              "wallMs": 44.570584,
+              "heapDeltaBytes": 22355944,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 50.561,
+              "wallMs": 44.11454199999997,
+              "heapDeltaBytes": 22323856,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 47.116,
+              "wallMs": 43.46449999999999,
+              "heapDeltaBytes": 22343232,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 636.045,
+          "medianWallMs": 587.4490000000001,
+          "medianHeapDeltaBytes": 25775448,
+          "fingerprint": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78",
+          "samples": [
+            {
+              "cpuMs": 635.216,
+              "wallMs": 587.4490000000001,
+              "heapDeltaBytes": 27650664,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 636.045,
+              "wallMs": 580.805875,
+              "heapDeltaBytes": 21794752,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 640.257,
+              "wallMs": 589.871459,
+              "heapDeltaBytes": 25775448,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 68.865,
+          "medianWallMs": 55.24508400000013,
+          "medianHeapDeltaBytes": 22264256,
+          "fingerprint": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4",
+          "samples": [
+            {
+              "cpuMs": 69.23,
+              "wallMs": 55.24508400000013,
+              "heapDeltaBytes": 22269840,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 68.865,
+              "wallMs": 55.30774999999994,
+              "heapDeltaBytes": 22264256,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 67.02,
+              "wallMs": 54.242707999999766,
+              "heapDeltaBytes": 22212760,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 701.836,
+          "medianWallMs": 643.8466660000004,
+          "medianHeapDeltaBytes": 20022976,
+          "fingerprint": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310",
+          "samples": [
+            {
+              "cpuMs": 671.8,
+              "wallMs": 613.9703749999999,
+              "heapDeltaBytes": 20022976,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 701.836,
+              "wallMs": 643.8466660000004,
+              "heapDeltaBytes": 19053368,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 723.554,
+              "wallMs": 664.1476659999998,
+              "heapDeltaBytes": 21134552,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.244,
+          "medianWallMs": 0.16120800000044255,
+          "medianHeapDeltaBytes": 22656,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 1.644,
+              "wallMs": 0.22075000000040745,
+              "heapDeltaBytes": 22528,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.244,
+              "wallMs": 0.16120800000044255,
+              "heapDeltaBytes": 22656,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.2,
+              "wallMs": 0.14141699999981938,
+              "heapDeltaBytes": 39312,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "fingerprintsEqual": true
+    },
+    {
+      "round": 1,
+      "order": [
+        "B",
+        "A"
+      ],
+      "A": {
+        "peakRssKiB": 189392,
+        "indexRead": {
+          "medianCpuMs": 46.521,
+          "medianWallMs": 40.420333,
+          "medianHeapDeltaBytes": 21024992,
+          "fingerprint": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711",
+          "samples": [
+            {
+              "cpuMs": 46.521,
+              "wallMs": 41.978916999999996,
+              "heapDeltaBytes": 21347344,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 50.665,
+              "wallMs": 40.420333,
+              "heapDeltaBytes": 21024992,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 42.409,
+              "wallMs": 38.710500000000025,
+              "heapDeltaBytes": 20959528,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 48.298,
+          "medianWallMs": 44.18475000000001,
+          "medianHeapDeltaBytes": 22324048,
+          "fingerprint": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b",
+          "samples": [
+            {
+              "cpuMs": 48.298,
+              "wallMs": 44.50429200000002,
+              "heapDeltaBytes": 22281528,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 50.477,
+              "wallMs": 44.18475000000001,
+              "heapDeltaBytes": 22324048,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 46.446,
+              "wallMs": 42.741625,
+              "heapDeltaBytes": 22333568,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 634.413,
+          "medianWallMs": 586.0087909999997,
+          "medianHeapDeltaBytes": 22193200,
+          "fingerprint": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78",
+          "samples": [
+            {
+              "cpuMs": 628.446,
+              "wallMs": 583.8486660000001,
+              "heapDeltaBytes": 22715728,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 640.759,
+              "wallMs": 586.0269170000001,
+              "heapDeltaBytes": 22193200,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 634.413,
+              "wallMs": 586.0087909999997,
+              "heapDeltaBytes": 20346704,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 68.164,
+          "medianWallMs": 55.095208000000184,
+          "medianHeapDeltaBytes": 22259360,
+          "fingerprint": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4",
+          "samples": [
+            {
+              "cpuMs": 68.209,
+              "wallMs": 55.17558300000019,
+              "heapDeltaBytes": 22266360,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 68.164,
+              "wallMs": 55.095208000000184,
+              "heapDeltaBytes": 22259360,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 66.813,
+              "wallMs": 54.22158399999989,
+              "heapDeltaBytes": 22245808,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 679.377,
+          "medianWallMs": 619.2200000000003,
+          "medianHeapDeltaBytes": 19109640,
+          "fingerprint": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310",
+          "samples": [
+            {
+              "cpuMs": 679.377,
+              "wallMs": 619.2200000000003,
+              "heapDeltaBytes": 18210808,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 666.998,
+              "wallMs": 608.4019579999995,
+              "heapDeltaBytes": 19684968,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 681.567,
+              "wallMs": 619.9085000000005,
+              "heapDeltaBytes": 19109640,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.22,
+          "medianWallMs": 0.14808300000004238,
+          "medianHeapDeltaBytes": 22656,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.138,
+              "wallMs": 0.07150000000001455,
+              "heapDeltaBytes": 22528,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.22,
+              "wallMs": 0.14808300000004238,
+              "heapDeltaBytes": 22656,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.227,
+              "wallMs": 0.16229199999997945,
+              "heapDeltaBytes": 36472,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "B": {
+        "peakRssKiB": 190224,
+        "indexRead": {
+          "medianCpuMs": 47.082,
+          "medianWallMs": 40.691,
+          "medianHeapDeltaBytes": 21055176,
+          "fingerprint": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711",
+          "samples": [
+            {
+              "cpuMs": 47.082,
+              "wallMs": 41.72412499999999,
+              "heapDeltaBytes": 21347944,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 50.52,
+              "wallMs": 40.691,
+              "heapDeltaBytes": 21055176,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 43.23,
+              "wallMs": 39.76537499999998,
+              "heapDeltaBytes": 20968200,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 48.493,
+          "medianWallMs": 44.58075000000002,
+          "medianHeapDeltaBytes": 22333568,
+          "fingerprint": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b",
+          "samples": [
+            {
+              "cpuMs": 48.493,
+              "wallMs": 44.78874999999999,
+              "heapDeltaBytes": 22281272,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 51.03,
+              "wallMs": 44.58075000000002,
+              "heapDeltaBytes": 22399296,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 48.05,
+              "wallMs": 44.26558400000005,
+              "heapDeltaBytes": 22333568,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 636.216,
+          "medianWallMs": 583.7762499999999,
+          "medianHeapDeltaBytes": 21791184,
+          "fingerprint": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78",
+          "samples": [
+            {
+              "cpuMs": 628.361,
+              "wallMs": 580.756417,
+              "heapDeltaBytes": 22510128,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 636.216,
+              "wallMs": 583.7762499999999,
+              "heapDeltaBytes": 21791184,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 639.492,
+              "wallMs": 588.7174169999998,
+              "heapDeltaBytes": 20430072,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 68.95,
+          "medianWallMs": 55.31095800000003,
+          "medianHeapDeltaBytes": 22261808,
+          "fingerprint": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4",
+          "samples": [
+            {
+              "cpuMs": 69.93,
+              "wallMs": 56.35691700000007,
+              "heapDeltaBytes": 22268728,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 68.95,
+              "wallMs": 55.31095800000003,
+              "heapDeltaBytes": 22261808,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 67.955,
+              "wallMs": 55.253999999999905,
+              "heapDeltaBytes": 22248256,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 704.89,
+          "medianWallMs": 643.1642499999998,
+          "medianHeapDeltaBytes": 19042200,
+          "fingerprint": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310",
+          "samples": [
+            {
+              "cpuMs": 678.039,
+              "wallMs": 618.6231250000001,
+              "heapDeltaBytes": 18474384,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 704.89,
+              "wallMs": 643.1642499999998,
+              "heapDeltaBytes": 19042200,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 741.722,
+              "wallMs": 683.0623750000004,
+              "heapDeltaBytes": 19046440,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.208,
+          "medianWallMs": 0.14420799999970768,
+          "medianHeapDeltaBytes": 24792,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.374,
+              "wallMs": 0.15491600000041217,
+              "heapDeltaBytes": 22528,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.207,
+              "wallMs": 0.12637499999982538,
+              "heapDeltaBytes": 24792,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.208,
+              "wallMs": 0.14420799999970768,
+              "heapDeltaBytes": 36472,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "fingerprintsEqual": true
+    },
+    {
+      "round": 2,
+      "order": [
+        "A",
+        "B"
+      ],
+      "A": {
+        "peakRssKiB": 189776,
+        "indexRead": {
+          "medianCpuMs": 53.606,
+          "medianWallMs": 45.20420800000002,
+          "medianHeapDeltaBytes": 21022576,
+          "fingerprint": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711",
+          "samples": [
+            {
+              "cpuMs": 53.606,
+              "wallMs": 47.917834,
+              "heapDeltaBytes": 21347000,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 56.609,
+              "wallMs": 45.20420800000002,
+              "heapDeltaBytes": 21022576,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 48.265,
+              "wallMs": 44.36258400000003,
+              "heapDeltaBytes": 20955024,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 53.804,
+          "medianWallMs": 46.40558400000003,
+          "medianHeapDeltaBytes": 22356008,
+          "fingerprint": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b",
+          "samples": [
+            {
+              "cpuMs": 54.261,
+              "wallMs": 48.48837500000002,
+              "heapDeltaBytes": 22356008,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 53.804,
+              "wallMs": 46.40558400000003,
+              "heapDeltaBytes": 22399296,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 48.64,
+              "wallMs": 44.587166999999965,
+              "heapDeltaBytes": 22332896,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 635.629,
+          "medianWallMs": 585.3714169999998,
+          "medianHeapDeltaBytes": 21793760,
+          "fingerprint": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78",
+          "samples": [
+            {
+              "cpuMs": 639.874,
+              "wallMs": 590.8949579999999,
+              "heapDeltaBytes": 27501688,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 635.629,
+              "wallMs": 584.7554580000001,
+              "heapDeltaBytes": 21793760,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 633.103,
+              "wallMs": 585.3714169999998,
+              "heapDeltaBytes": 21579568,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 69.668,
+          "medianWallMs": 55.922415999999885,
+          "medianHeapDeltaBytes": 22263032,
+          "fingerprint": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4",
+          "samples": [
+            {
+              "cpuMs": 69.668,
+              "wallMs": 55.922415999999885,
+              "heapDeltaBytes": 22269720,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 70.186,
+              "wallMs": 56.106374999999844,
+              "heapDeltaBytes": 22263032,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 67.645,
+              "wallMs": 55.145958000000064,
+              "heapDeltaBytes": 22248256,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 672.056,
+          "medianWallMs": 616.2234160000007,
+          "medianHeapDeltaBytes": 19706784,
+          "fingerprint": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310",
+          "samples": [
+            {
+              "cpuMs": 674.437,
+              "wallMs": 619.0505000000003,
+              "heapDeltaBytes": 19706784,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 672.056,
+              "wallMs": 616.2234160000007,
+              "heapDeltaBytes": 19306728,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 671.124,
+              "wallMs": 612.7081250000001,
+              "heapDeltaBytes": 21092576,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.208,
+          "medianWallMs": 0.13870800000040617,
+          "medianHeapDeltaBytes": 22656,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.4,
+              "wallMs": 0.16204199999992852,
+              "heapDeltaBytes": 22528,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.194,
+              "wallMs": 0.12200000000029831,
+              "heapDeltaBytes": 22656,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.208,
+              "wallMs": 0.13870800000040617,
+              "heapDeltaBytes": 36472,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "B": {
+        "peakRssKiB": 189088,
+        "indexRead": {
+          "medianCpuMs": 46.724,
+          "medianWallMs": 40.027833000000015,
+          "medianHeapDeltaBytes": 21024240,
+          "fingerprint": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711",
+          "samples": [
+            {
+              "cpuMs": 46.724,
+              "wallMs": 41.29095800000002,
+              "heapDeltaBytes": 21323832,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 49.616,
+              "wallMs": 40.027833000000015,
+              "heapDeltaBytes": 21024240,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            },
+            {
+              "cpuMs": 41.941,
+              "wallMs": 38.26154199999999,
+              "heapDeltaBytes": 20948656,
+              "result": "f7cfb71399cbbfa5d9556fa71036396f2f197f60b4f59f6b4ec7bf584c0da711"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 48.478,
+          "medianWallMs": 44.484125000000006,
+          "medianHeapDeltaBytes": 22356200,
+          "fingerprint": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b",
+          "samples": [
+            {
+              "cpuMs": 48.478,
+              "wallMs": 44.611290999999994,
+              "heapDeltaBytes": 22356200,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 51.079,
+              "wallMs": 44.484125000000006,
+              "heapDeltaBytes": 22398720,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            },
+            {
+              "cpuMs": 46.698,
+              "wallMs": 42.73979200000002,
+              "heapDeltaBytes": 22332896,
+              "result": "1d73c99c01e9a9350f2c119c33f8f3871ae3c1f2f5f5430023725f5c6df3f63b"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 635.768,
+          "medianWallMs": 583.9059580000003,
+          "medianHeapDeltaBytes": 21814392,
+          "fingerprint": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78",
+          "samples": [
+            {
+              "cpuMs": 639.632,
+              "wallMs": 588.5452919999998,
+              "heapDeltaBytes": 22501952,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 635.768,
+              "wallMs": 583.3022500000002,
+              "heapDeltaBytes": 21814392,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            },
+            {
+              "cpuMs": 631.579,
+              "wallMs": 583.9059580000003,
+              "heapDeltaBytes": 21546624,
+              "result": "b29a7e89257b2571abd7450afb60ad49563c8406acc02be360f6950537d89f78"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 68.406,
+          "medianWallMs": 54.93729200000007,
+          "medianHeapDeltaBytes": 22315584,
+          "fingerprint": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4",
+          "samples": [
+            {
+              "cpuMs": 68.406,
+              "wallMs": 54.96245799999997,
+              "heapDeltaBytes": 22335400,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 68.562,
+              "wallMs": 54.93729200000007,
+              "heapDeltaBytes": 22261808,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            },
+            {
+              "cpuMs": 66.66,
+              "wallMs": 53.74154200000021,
+              "heapDeltaBytes": 22315584,
+              "result": "49c1cd8c520db357db47dc0ae08c36fb193223a0d64d16a79dde7b4b0b07c7b4"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 673.869,
+          "medianWallMs": 614.7897909999992,
+          "medianHeapDeltaBytes": 19374272,
+          "fingerprint": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310",
+          "samples": [
+            {
+              "cpuMs": 673.869,
+              "wallMs": 617.4683749999995,
+              "heapDeltaBytes": 20459464,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 675.251,
+              "wallMs": 614.0177910000002,
+              "heapDeltaBytes": 19052072,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            },
+            {
+              "cpuMs": 671.878,
+              "wallMs": 614.7897909999992,
+              "heapDeltaBytes": 19374272,
+              "result": "0fdee7c2608174512d11fc66f11e4a02d0a8d8dd4c30921fe02f43bfe5c19310"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.225,
+          "medianWallMs": 0.14008300000023155,
+          "medianHeapDeltaBytes": 24792,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.091,
+              "wallMs": 0.084791000000223,
+              "heapDeltaBytes": 22528,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.231,
+              "wallMs": 0.14008300000023155,
+              "heapDeltaBytes": 24792,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.225,
+              "wallMs": 0.15408300000035524,
+              "heapDeltaBytes": 36800,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "fingerprintsEqual": true
+    }
+  ],
+  "summary": {
+    "indexRead": {
+      "aCpuMedianOfRounds": 46.551,
+      "bCpuMedianOfRounds": 47.082,
+      "aWallMedianOfRounds": 40.436499999999995,
+      "bWallMedianOfRounds": 40.691,
+      "cpuPairedDifferences": [
+        1.1709999999999994,
+        0.5609999999999999,
+        -6.882000000000005
+      ],
+      "wallPairedDifferences": [
+        1.6162080000000003,
+        0.2706670000000031,
+        -5.176375000000007
+      ],
+      "cpuPairedMedian": 0.5609999999999999,
+      "wallPairedMedian": 0.2706670000000031,
+      "cpuRelativeChangePct": 1.205129857575562,
+      "wallRelativeChangePct": 0.6693630754392766,
+      "aPeakRssKiB": [
+        189680,
+        189392,
+        189776
+      ],
+      "bPeakRssKiB": [
+        189936,
+        190224,
+        189088
+      ]
+    },
+    "reconcileIdle": {
+      "aCpuMedianOfRounds": 48.667,
+      "bCpuMedianOfRounds": 48.478,
+      "aWallMedianOfRounds": 44.29929199999998,
+      "bWallMedianOfRounds": 44.484125000000006,
+      "cpuPairedDifferences": [
+        -0.2510000000000048,
+        0.19500000000000028,
+        -5.3260000000000005
+      ],
+      "wallPairedDifferences": [
+        -0.18475000000000819,
+        0.396000000000015,
+        -1.9214590000000271
+      ],
+      "cpuPairedMedian": -0.2510000000000048,
+      "wallPairedMedian": -0.18475000000000819,
+      "cpuRelativeChangePct": -0.5157498921240363,
+      "wallRelativeChangePct": -0.41704955465204335,
+      "aPeakRssKiB": [
+        189680,
+        189392,
+        189776
+      ],
+      "bPeakRssKiB": [
+        189936,
+        190224,
+        189088
+      ]
+    },
+    "sourceVerify": {
+      "aCpuMedianOfRounds": 635.629,
+      "bCpuMedianOfRounds": 636.045,
+      "aWallMedianOfRounds": 585.3714169999998,
+      "bWallMedianOfRounds": 583.9059580000003,
+      "cpuPairedDifferences": [
+        -3.2460000000000946,
+        1.8029999999999973,
+        0.13900000000001
+      ],
+      "wallPairedDifferences": [
+        3.1306250000002365,
+        -2.2325409999998556,
+        -1.465458999999555
+      ],
+      "cpuPairedMedian": 0.13900000000001,
+      "wallPairedMedian": -1.465458999999555,
+      "cpuRelativeChangePct": 0.021868102304962486,
+      "wallRelativeChangePct": -0.2503468665262068,
+      "aPeakRssKiB": [
+        189680,
+        189392,
+        189776
+      ],
+      "bPeakRssKiB": [
+        189936,
+        190224,
+        189088
+      ]
+    },
+    "review": {
+      "aCpuMedianOfRounds": 68.623,
+      "bCpuMedianOfRounds": 68.865,
+      "aWallMedianOfRounds": 55.41637499999979,
+      "bWallMedianOfRounds": 55.24508400000013,
+      "cpuPairedDifferences": [
+        0.24199999999999022,
+        0.7860000000000014,
+        -1.2620000000000005
+      ],
+      "wallPairedDifferences": [
+        -0.17129099999965547,
+        0.21574999999984357,
+        -0.9851239999998143
+      ],
+      "cpuPairedMedian": 0.24199999999999022,
+      "wallPairedMedian": -0.17129099999965547,
+      "cpuRelativeChangePct": 0.3526514433936001,
+      "wallRelativeChangePct": -0.30909816818522706,
+      "aPeakRssKiB": [
+        189680,
+        189392,
+        189776
+      ],
+      "bPeakRssKiB": [
+        189936,
+        190224,
+        189088
+      ]
+    },
+    "doctor": {
+      "aCpuMedianOfRounds": 672.056,
+      "bCpuMedianOfRounds": 701.836,
+      "aWallMedianOfRounds": 616.2234160000007,
+      "bWallMedianOfRounds": 643.1642499999998,
+      "cpuPairedDifferences": [
+        30.418000000000006,
+        25.513000000000034,
+        1.8129999999999882
+      ],
+      "wallPairedDifferences": [
+        29.49541600000066,
+        23.944249999999556,
+        -1.4336250000014843
+      ],
+      "cpuPairedMedian": 25.513000000000034,
+      "wallPairedMedian": 23.944249999999556,
+      "cpuRelativeChangePct": 3.796261025866897,
+      "wallRelativeChangePct": 3.885644293659806,
+      "aPeakRssKiB": [
+        189680,
+        189392,
+        189776
+      ],
+      "bPeakRssKiB": [
+        189936,
+        190224,
+        189088
+      ]
+    },
+    "usageRead": {
+      "aCpuMedianOfRounds": 0.217,
+      "bCpuMedianOfRounds": 0.225,
+      "aWallMedianOfRounds": 0.14274999999997817,
+      "bWallMedianOfRounds": 0.14420799999970768,
+      "cpuPairedDifferences": [
+        0.026999999999999996,
+        -0.01200000000000001,
+        0.017000000000000015
+      ],
+      "wallPairedDifferences": [
+        0.01845800000046438,
+        -0.003875000000334694,
+        0.001374999999825377
+      ],
+      "cpuPairedMedian": 0.017000000000000015,
+      "wallPairedMedian": 0.001374999999825377,
+      "cpuRelativeChangePct": 7.834101382488486,
+      "wallRelativeChangePct": 0.9632224166904289,
+      "aPeakRssKiB": [
+        189680,
+        189392,
+        189776
+      ],
+      "bPeakRssKiB": [
+        189936,
+        190224,
+        189088
+      ]
+    }
+  }
+}

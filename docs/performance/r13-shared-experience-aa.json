@@ -1,0 +1,510 @@
+{
+  "method": "R13 A/A noise floor: both sides load the identical code (<worktree>/lib), alternating order, independent process per (round, side, workload, sample), process.cpuUsage() main metric. Differences are pure noise.",
+  "node": "v26.13.1",
+  "platform": "darwin-arm64",
+  "rounds": 3,
+  "samples": [
+    {
+      "round": 0,
+      "order": "A,B",
+      "A": {
+        "recall": {
+          "cpuMs": 73.5175,
+          "wallMs": 44.465199999999996,
+          "samples": [
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 0,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 73.268,
+              "wallMs": 44.1977,
+              "maxRssKiB": 102496,
+              "dbBytes": 5521408,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "37f889fc8a12b1345695b68c19af7cb3fb8ef8bb5c44f6688235433913a254ac",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 1,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 73.767,
+              "wallMs": 44.7327,
+              "maxRssKiB": 102640,
+              "dbBytes": 5201920,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "f6e8079f0a1281084659fdfc03a11f9c8ca0f5ad25e326be575c20a51961bd9c",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ]
+        },
+        "hot": {
+          "cpuMs": 231.84699999999998,
+          "wallMs": 249.55284999999998,
+          "samples": [
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 0,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 231.422,
+              "wallMs": 248.677,
+              "maxRssKiB": 66560,
+              "dbBytes": 798720,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            },
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 1,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 232.272,
+              "wallMs": 250.4287,
+              "maxRssKiB": 66592,
+              "dbBytes": 794624,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            }
+          ]
+        }
+      },
+      "B": {
+        "recall": {
+          "cpuMs": 73.9265,
+          "wallMs": 44.719300000000004,
+          "samples": [
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 0,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 74.073,
+              "wallMs": 44.7278,
+              "maxRssKiB": 102416,
+              "dbBytes": 5521408,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "5f5a7ae695d1119d3e2d70249a18a1bfb95c63ac6675c944c887443217443582",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 1,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 73.78,
+              "wallMs": 44.7108,
+              "maxRssKiB": 102272,
+              "dbBytes": 5201920,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "6445b1107eefe744d69265816e781590edfd58ede06ee193dbc3a4f3b2f32599",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ]
+        },
+        "hot": {
+          "cpuMs": 232.0145,
+          "wallMs": 248.44285,
+          "samples": [
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 0,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 231.334,
+              "wallMs": 247.7359,
+              "maxRssKiB": 66608,
+              "dbBytes": 798720,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            },
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 1,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 232.695,
+              "wallMs": 249.1498,
+              "maxRssKiB": 66512,
+              "dbBytes": 794624,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "round": 1,
+      "order": "B,A",
+      "A": {
+        "recall": {
+          "cpuMs": 74.023,
+          "wallMs": 44.925250000000005,
+          "samples": [
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 1000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 73.944,
+              "wallMs": 45.0005,
+              "maxRssKiB": 102496,
+              "dbBytes": 5230592,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "6622a340d7b9803ccd1cc26125aded8d002524b554550ccf48ebc8cb5840ab0e",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 1001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 74.102,
+              "wallMs": 44.85,
+              "maxRssKiB": 102512,
+              "dbBytes": 5230592,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "701420a71f3c5fcbab6a8b2d0e2f2db9c1b86de940388a3cb3887c940ff7bd55",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ]
+        },
+        "hot": {
+          "cpuMs": 231.042,
+          "wallMs": 247.2714,
+          "samples": [
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 1000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 231.942,
+              "wallMs": 248.2438,
+              "maxRssKiB": 66432,
+              "dbBytes": 790528,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            },
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 1001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 230.142,
+              "wallMs": 246.299,
+              "maxRssKiB": 66384,
+              "dbBytes": 794624,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            }
+          ]
+        }
+      },
+      "B": {
+        "recall": {
+          "cpuMs": 73.9525,
+          "wallMs": 44.7802,
+          "samples": [
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 1000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 74.077,
+              "wallMs": 44.822,
+              "maxRssKiB": 102224,
+              "dbBytes": 5230592,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "db11631efc5dccfd361d26e130ebded34fe5ed8c261dbc08f74df11375355050",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 1001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 73.828,
+              "wallMs": 44.7384,
+              "maxRssKiB": 102304,
+              "dbBytes": 5230592,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "dcd5c6c2a3976319491eae42dcd5de263185343d583c1d5a5b8eb251b07725f3",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ]
+        },
+        "hot": {
+          "cpuMs": 232.756,
+          "wallMs": 249.10575,
+          "samples": [
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 1000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 232.532,
+              "wallMs": 248.809,
+              "maxRssKiB": 66464,
+              "dbBytes": 790528,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            },
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 1001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 232.98,
+              "wallMs": 249.4025,
+              "maxRssKiB": 66272,
+              "dbBytes": 794624,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "round": 2,
+      "order": "A,B",
+      "A": {
+        "recall": {
+          "cpuMs": 74.6875,
+          "wallMs": 45.12935,
+          "samples": [
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 2000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 74.46,
+              "wallMs": 44.9137,
+              "maxRssKiB": 102512,
+              "dbBytes": 5197824,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "8a8f9eb89838898a28d91dbc3dce523d3c0ef0c8acbdb5d8a32316dcd1c311c1",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 2001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 74.915,
+              "wallMs": 45.345,
+              "maxRssKiB": 102256,
+              "dbBytes": 5206016,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "cb943236f382da1f942c40b142977082060de35e3ca78654a1a29f6c4528cea9",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ]
+        },
+        "hot": {
+          "cpuMs": 231.55450000000002,
+          "wallMs": 249.25605000000002,
+          "samples": [
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 2000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 231.091,
+              "wallMs": 249.9033,
+              "maxRssKiB": 66432,
+              "dbBytes": 794624,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            },
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 2001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 232.018,
+              "wallMs": 248.6088,
+              "maxRssKiB": 66368,
+              "dbBytes": 794624,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            }
+          ]
+        }
+      },
+      "B": {
+        "recall": {
+          "cpuMs": 74.006,
+          "wallMs": 44.932649999999995,
+          "samples": [
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 2000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 73.97,
+              "wallMs": 44.7817,
+              "maxRssKiB": 102272,
+              "dbBytes": 5197824,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "9c00cd73c82cdef2220f67bc5e1267e1f7425ecd313cc611328c50af7adb939a",
+              "considered": 2000,
+              "scanned": 2000
+            },
+            {
+              "workload": "recall",
+              "n": 10000,
+              "seed": 2001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 74.042,
+              "wallMs": 45.0836,
+              "maxRssKiB": 102128,
+              "dbBytes": 5206016,
+              "stats": {
+                "events": 2500,
+                "knowledge": 2500
+              },
+              "fingerprint": "18cf02579af4bd353540db9ebd6ccefbeb094e4da39a601bf6d37f9a39c61bfa",
+              "considered": 2000,
+              "scanned": 2000
+            }
+          ]
+        },
+        "hot": {
+          "cpuMs": 232.19,
+          "wallMs": 248.37305,
+          "samples": [
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 2000,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 233.299,
+              "wallMs": 249.5535,
+              "maxRssKiB": 66528,
+              "dbBytes": 794624,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            },
+            {
+              "workload": "hot",
+              "n": 1000,
+              "seed": 2001,
+              "lib": "t3-a60c5aee-acc115ab83206197",
+              "cpuMs": 231.081,
+              "wallMs": 247.1926,
+              "maxRssKiB": 66448,
+              "dbBytes": 794624,
+              "stats": {
+                "events": 1300,
+                "knowledge": 301
+              },
+              "fingerprint": null
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "summary": {
+    "recall": {
+      "aCpuMs": 74.023,
+      "bCpuMs": 73.9525,
+      "changePercent": -0.1,
+      "perPairDeltaMs": [
+        0.409,
+        -0.0705,
+        -0.6815
+      ]
+    },
+    "hot": {
+      "aCpuMs": 231.55450000000002,
+      "bCpuMs": 232.19,
+      "changePercent": 0.27,
+      "perPairDeltaMs": [
+        0.1675,
+        1.714,
+        0.6355
+      ]
+    }
+  }
+}
