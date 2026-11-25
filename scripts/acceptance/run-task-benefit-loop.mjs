@@ -158,6 +158,7 @@ const evidence = {
   steps: [],
   fixtures: [],
   producer: null,
+  rejection: null,
   discovery: null,
   candidate: null,
   approval: null,
@@ -533,9 +534,24 @@ try {
     ...(SCENARIO.maxToolText ? { maxToolText: SCENARIO.maxToolText } : {}),
     log: (line) => console.log(line),
   });
-  evidence.producer = { ok: producer.ok, artifactFile: producer.artifactFile, artifact: producer.artifact, sessions: producer.report.sessions, retries: producer.report.retries, concurrency: producer.report.concurrency, preflight: producer.report.preflight };
+  evidence.producer = {
+    ok: producer.ok,
+    artifactFile: producer.artifactFile,
+    artifact: producer.artifact,
+    sessions: producer.report.sessions,
+    retries: producer.report.retries,
+    concurrency: producer.report.concurrency,
+    preflight: producer.report.preflight,
+    admission: producer.report.admission,
+    attempts: producer.report.attempts,
+    attemptLimits: producer.report.attemptLimits,
+  };
   evidence.steps.push({ name: 'paired-real-sessions-produced', at: new Date().toISOString() });
-  assert(producer.ok === true, 'the producer did not complete every session: ' + JSON.stringify(producer.artifact, null, 2).slice(0, 1200));
+  const producerAdmission = producer.report.admission ?? {};
+  if (producer.ok !== true) evidence.rejection = producer.report.admission ?? null;
+  assert(producer.ok === true, 'the producer did not complete every session: '
+    + (producerAdmission.code ?? 'E_ACCEPTANCE_UNKNOWN') + ' ' + (producerAdmission.reason ?? '')
+    + ': ' + JSON.stringify(producer.artifact, null, 2).slice(0, 1200));
   assert(producer.artifact.candidate.correct === runs, 'the candidate side did not answer every session correctly');
   assert(producer.artifact.baseline.correct === runs, 'the baseline side did not answer every session correctly');
   assert(producer.artifact.adoption.sessionsExercised >= 1, 'the context policy never transformed a read result');
