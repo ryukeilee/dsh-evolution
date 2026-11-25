@@ -28,6 +28,7 @@ import {
   writeConsumerState,
 } from '../lib/promoted-sharing.js';
 import {
+  boundedReviewActions,
   composeSelfEvolutionReview,
   orderStableActions,
   readPublishedPluginReview,
@@ -1212,6 +1213,49 @@ test('a consumer row truncation note makes the composed review incomplete', () =
     versions: CURRENT_HOST,
   });
   assert.equal(composed.kind, 'no-action');
+  assert.equal(composed.incomplete, true);
+});
+
+test('both bounded-read notices survive the action cap when one starts past it', () => {
+  const cap = { action: REVIEW_ACTIONS.OPERATOR, code: 'review-record-cap', recordId: null, why: 'index records not evaluated' };
+  const consumer = { action: REVIEW_ACTIONS.OPERATOR, code: 'consumer-rows-truncated', profile: 'acp', recordId: null, why: 'consumer rows not evaluated' };
+  // Every operator has the same priority and record id, so insertion order puts
+  // the consumer notice after the cap and past the bounded action list.
+  const actions = [
+    cap,
+    ...Array.from({ length: SELF_EVOLUTION_REVIEW_LIMITS.maxActions }, () => ({
+      action: REVIEW_ACTIONS.OPERATOR, code: 'invalid-record', recordId: null, why: 'damaged record',
+    })),
+    consumer,
+  ];
+  const bounded = boundedReviewActions(actions);
+  assert.ok(bounded.nextActions.includes(cap), 'the already-present review-record-cap notice must be kept');
+  assert.ok(bounded.nextActions.includes(consumer), 'the missing consumer notice must be added');
+  assert.ok(bounded.nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+});
+
+test('a review with both an index cap and a consumer row cap reports both notices', async (t) => {
+  const env = await publishMany(t, 'both-caps', SELF_EVOLUTION_REVIEW_LIMITS.maxRecords + 1);
+  const index = await readSharedIndex(env.paths);
+  const digest = hostDigest(CURRENT_HOST);
+  const validRows = env.published.slice(0, SELF_EVOLUTION_REVIEW_LIMITS.maxRecords).map(({ id }) => ({
+    id, status: 'active', reason: null, hostDigest: digest, activatedAt: '2026-01-04T00:00:00.000Z',
+  }));
+  await writeConsumers({ ...env, index }, {
+    rows: {
+      acp: [...validRows, { id: 'evolution-promoted-ffffffffffff', status: 'active', reason: null, hostDigest: digest, activatedAt: '2026-01-04T00:00:00.000Z' }],
+      web: validRows,
+    },
+  });
+
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST });
+  const codes = result.nextActions.map((row) => row.code);
+  assert.ok(codes.includes('review-record-cap'), `missing index cap notice: ${JSON.stringify(codes)}`);
+  assert.ok(codes.includes('consumer-rows-truncated'), `missing consumer cap notice: ${JSON.stringify(codes)}`);
+  assert.ok(result.nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'operator-action');
   assert.equal(composed.incomplete, true);
 });
 
