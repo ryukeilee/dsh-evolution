@@ -1,0 +1,1183 @@
+{
+  "method": "alternating A/B, one independent child process per (round, side); CPU=user+system from process.cpuUsage; wall and heap/RSS auxiliary",
+  "records": "opencode",
+  "fixture": "/private/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/opencode/r13-fixture-50",
+  "rounds": 3,
+  "samples": 3,
+  "warmup": 2,
+  "workloads": [
+    "indexRead",
+    "reconcileIdle",
+    "sourceVerify",
+    "review",
+    "doctor",
+    "usageRead"
+  ],
+  "node": "v26.13.1",
+  "platform": "darwin/arm64",
+  "baselineLibroot": "/Users/ryukeili/.t3/worktrees/dsh-evolution/t3-79f103d6-2b201baecafbeb4f",
+  "candidateLibroot": "/Users/ryukeili/.t3/worktrees/dsh-evolution/t3-79f103d6-2b201baecafbeb4f",
+  "allFingerprintsEqual": true,
+  "runs": [
+    {
+      "round": 0,
+      "order": [
+        "A",
+        "B"
+      ],
+      "A": {
+        "peakRssKiB": 74128,
+        "indexRead": {
+          "medianCpuMs": 0.223,
+          "medianWallMs": 0.07054199999999611,
+          "medianHeapDeltaBytes": 28256,
+          "fingerprint": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081",
+          "samples": [
+            {
+              "cpuMs": 2.038,
+              "wallMs": 0.07054199999999611,
+              "heapDeltaBytes": 161352,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.077,
+              "wallMs": 0.061166000000000054,
+              "heapDeltaBytes": 28256,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.223,
+              "wallMs": 0.14287499999999653,
+              "heapDeltaBytes": 27688,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 0.591,
+          "medianWallMs": 0.2238749999999996,
+          "medianHeapDeltaBytes": 48200,
+          "fingerprint": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1",
+          "samples": [
+            {
+              "cpuMs": 0.578,
+              "wallMs": 0.19941699999999685,
+              "heapDeltaBytes": 36472,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.973,
+              "wallMs": 0.2238749999999996,
+              "heapDeltaBytes": 213624,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.591,
+              "wallMs": 0.22675000000000267,
+              "heapDeltaBytes": 48200,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 0.276,
+          "medianWallMs": 0.1336250000000021,
+          "medianHeapDeltaBytes": 22560,
+          "fingerprint": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d",
+          "samples": [
+            {
+              "cpuMs": 0.287,
+              "wallMs": 0.1336250000000021,
+              "heapDeltaBytes": 22320,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.067,
+              "wallMs": 0.06137499999999818,
+              "heapDeltaBytes": 22816,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.276,
+              "wallMs": 0.13570900000000563,
+              "heapDeltaBytes": 22560,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 1.095,
+          "medianWallMs": 0.2700410000000062,
+          "medianHeapDeltaBytes": 92536,
+          "fingerprint": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808",
+          "samples": [
+            {
+              "cpuMs": 1.196,
+              "wallMs": 0.29616700000000407,
+              "heapDeltaBytes": 94880,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 1.058,
+              "wallMs": 0.2438330000000022,
+              "heapDeltaBytes": 90224,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 1.095,
+              "wallMs": 0.2700410000000062,
+              "heapDeltaBytes": 92536,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 3.961,
+          "medianWallMs": 2.0269169999999974,
+          "medianHeapDeltaBytes": 968824,
+          "fingerprint": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb",
+          "samples": [
+            {
+              "cpuMs": 3.961,
+              "wallMs": 2.0269169999999974,
+              "heapDeltaBytes": 998576,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 4.135,
+              "wallMs": 2.1645839999999907,
+              "heapDeltaBytes": 962184,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.593,
+              "wallMs": 1.9360420000000005,
+              "heapDeltaBytes": 968824,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.215,
+          "medianWallMs": 0.1464160000000021,
+          "medianHeapDeltaBytes": 26808,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.215,
+              "wallMs": 0.1464160000000021,
+              "heapDeltaBytes": 26520,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.196,
+              "wallMs": 0.13374999999999204,
+              "heapDeltaBytes": 26808,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 1.109,
+              "wallMs": 0.33133300000000077,
+              "heapDeltaBytes": 46120,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "B": {
+        "peakRssKiB": 74432,
+        "indexRead": {
+          "medianCpuMs": 0.09,
+          "medianWallMs": 0.06979099999999505,
+          "medianHeapDeltaBytes": 28256,
+          "fingerprint": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081",
+          "samples": [
+            {
+              "cpuMs": 2.022,
+              "wallMs": 0.07287499999999625,
+              "heapDeltaBytes": 162992,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.073,
+              "wallMs": 0.06004199999999571,
+              "heapDeltaBytes": 28256,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.09,
+              "wallMs": 0.06979099999999505,
+              "heapDeltaBytes": 28168,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 0.892,
+          "medianWallMs": 0.21258299999999508,
+          "medianHeapDeltaBytes": 51408,
+          "fingerprint": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1",
+          "samples": [
+            {
+              "cpuMs": 1.076,
+              "wallMs": 0.21258299999999508,
+              "heapDeltaBytes": 36472,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.892,
+              "wallMs": 0.20691699999999713,
+              "heapDeltaBytes": 210672,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.733,
+              "wallMs": 0.2288329999999945,
+              "heapDeltaBytes": 51408,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 0.111,
+          "medianWallMs": 0.051625000000001364,
+          "medianHeapDeltaBytes": 22912,
+          "fingerprint": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d",
+          "samples": [
+            {
+              "cpuMs": 0.272,
+              "wallMs": 0.1180829999999986,
+              "heapDeltaBytes": 22928,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.111,
+              "wallMs": 0.04954199999999531,
+              "heapDeltaBytes": 22912,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.066,
+              "wallMs": 0.051625000000001364,
+              "heapDeltaBytes": 22912,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 1.17,
+          "medianWallMs": 0.3061670000000021,
+          "medianHeapDeltaBytes": 92536,
+          "fingerprint": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808",
+          "samples": [
+            {
+              "cpuMs": 1.283,
+              "wallMs": 0.3061670000000021,
+              "heapDeltaBytes": 94880,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 1.17,
+              "wallMs": 0.3124169999999964,
+              "heapDeltaBytes": 91136,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 1.155,
+              "wallMs": 0.2923329999999993,
+              "heapDeltaBytes": 92536,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 3.587,
+          "medianWallMs": 2.0197920000000096,
+          "medianHeapDeltaBytes": 968824,
+          "fingerprint": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb",
+          "samples": [
+            {
+              "cpuMs": 4.03,
+              "wallMs": 2.075541000000001,
+              "heapDeltaBytes": 996088,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.534,
+              "wallMs": 1.9727089999999947,
+              "heapDeltaBytes": 962184,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.587,
+              "wallMs": 2.0197920000000096,
+              "heapDeltaBytes": 968824,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.199,
+          "medianWallMs": 0.13670799999999872,
+          "medianHeapDeltaBytes": 26808,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.199,
+              "wallMs": 0.13670799999999872,
+              "heapDeltaBytes": 26520,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.072,
+              "wallMs": 0.06991699999998957,
+              "heapDeltaBytes": 26808,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.28,
+              "wallMs": 0.17362500000000125,
+              "heapDeltaBytes": 46120,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "fingerprintsEqual": true
+    },
+    {
+      "round": 1,
+      "order": [
+        "B",
+        "A"
+      ],
+      "A": {
+        "peakRssKiB": 74208,
+        "indexRead": {
+          "medianCpuMs": 0.218,
+          "medianWallMs": 0.09829100000000324,
+          "medianHeapDeltaBytes": 28256,
+          "fingerprint": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081",
+          "samples": [
+            {
+              "cpuMs": 2.016,
+              "wallMs": 0.06383299999999537,
+              "heapDeltaBytes": 162072,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.197,
+              "wallMs": 0.09829100000000324,
+              "heapDeltaBytes": 28256,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.218,
+              "wallMs": 0.13270800000000094,
+              "heapDeltaBytes": 28168,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 0.403,
+          "medianWallMs": 0.15241599999999522,
+          "medianHeapDeltaBytes": 40424,
+          "fingerprint": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1",
+          "samples": [
+            {
+              "cpuMs": 0.954,
+              "wallMs": 0.19437500000000085,
+              "heapDeltaBytes": 36472,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.403,
+              "wallMs": 0.1458330000000032,
+              "heapDeltaBytes": 40424,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.303,
+              "wallMs": 0.15241599999999522,
+              "heapDeltaBytes": 348464,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 0.115,
+          "medianWallMs": 0.05525000000000091,
+          "medianHeapDeltaBytes": 22656,
+          "fingerprint": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d",
+          "samples": [
+            {
+              "cpuMs": 0.1,
+              "wallMs": 0.05525000000000091,
+              "heapDeltaBytes": 22928,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.115,
+              "wallMs": 0.05449999999999733,
+              "heapDeltaBytes": 22544,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.667,
+              "wallMs": 0.16437499999999972,
+              "heapDeltaBytes": 22656,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 1.112,
+          "medianWallMs": 0.2694580000000002,
+          "medianHeapDeltaBytes": 92536,
+          "fingerprint": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808",
+          "samples": [
+            {
+              "cpuMs": 1.254,
+              "wallMs": 0.32987499999999415,
+              "heapDeltaBytes": 94880,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 1.112,
+              "wallMs": 0.2694580000000002,
+              "heapDeltaBytes": 90224,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 1.049,
+              "wallMs": 0.23416699999999935,
+              "heapDeltaBytes": 92536,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 3.448,
+          "medianWallMs": 1.9727500000000049,
+          "medianHeapDeltaBytes": 974736,
+          "fingerprint": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb",
+          "samples": [
+            {
+              "cpuMs": 4.068,
+              "wallMs": 2.1446249999999907,
+              "heapDeltaBytes": 996280,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.431,
+              "wallMs": 1.9547079999999966,
+              "heapDeltaBytes": 962184,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.448,
+              "wallMs": 1.9727500000000049,
+              "heapDeltaBytes": 974736,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.21,
+          "medianWallMs": 0.14416699999999594,
+          "medianHeapDeltaBytes": 26808,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.235,
+              "wallMs": 0.16254200000000196,
+              "heapDeltaBytes": 26520,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.21,
+              "wallMs": 0.14416699999999594,
+              "heapDeltaBytes": 26808,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.168,
+              "wallMs": 0.08745899999999551,
+              "heapDeltaBytes": 293552,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "B": {
+        "peakRssKiB": 74512,
+        "indexRead": {
+          "medianCpuMs": 0.221,
+          "medianWallMs": 0.11737500000000267,
+          "medianHeapDeltaBytes": 161304,
+          "fingerprint": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081",
+          "samples": [
+            {
+              "cpuMs": 2.096,
+              "wallMs": 0.0730000000000004,
+              "heapDeltaBytes": 161304,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.221,
+              "wallMs": 0.13366700000000264,
+              "heapDeltaBytes": 28256,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.217,
+              "wallMs": 0.11737500000000267,
+              "heapDeltaBytes": 211184,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 0.625,
+          "medianWallMs": 0.20820799999999906,
+          "medianHeapDeltaBytes": 49696,
+          "fingerprint": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1",
+          "samples": [
+            {
+              "cpuMs": 0.688,
+              "wallMs": 0.20591699999999946,
+              "heapDeltaBytes": 36472,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.513,
+              "wallMs": 0.20820799999999906,
+              "heapDeltaBytes": 215600,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.625,
+              "wallMs": 0.22025000000000006,
+              "heapDeltaBytes": 49696,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 0.107,
+          "medianWallMs": 0.04995800000000372,
+          "medianHeapDeltaBytes": 22912,
+          "fingerprint": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d",
+          "samples": [
+            {
+              "cpuMs": 0.649,
+              "wallMs": 0.2499169999999964,
+              "heapDeltaBytes": 22928,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.107,
+              "wallMs": 0.04995800000000372,
+              "heapDeltaBytes": 22912,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.089,
+              "wallMs": 0.04550000000000409,
+              "heapDeltaBytes": 22912,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 1.152,
+          "medianWallMs": 0.2865409999999997,
+          "medianHeapDeltaBytes": 92536,
+          "fingerprint": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808",
+          "samples": [
+            {
+              "cpuMs": 1.291,
+              "wallMs": 0.3508330000000015,
+              "heapDeltaBytes": 94880,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 1.118,
+              "wallMs": 0.25,
+              "heapDeltaBytes": 91136,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 1.152,
+              "wallMs": 0.2865409999999997,
+              "heapDeltaBytes": 92536,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 3.7,
+          "medianWallMs": 2.083167000000003,
+          "medianHeapDeltaBytes": 968824,
+          "fingerprint": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb",
+          "samples": [
+            {
+              "cpuMs": 4.078,
+              "wallMs": 2.163250000000005,
+              "heapDeltaBytes": 998544,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.7,
+              "wallMs": 2.083167000000003,
+              "heapDeltaBytes": 962184,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.591,
+              "wallMs": 1.9929580000000016,
+              "heapDeltaBytes": 968824,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.187,
+          "medianWallMs": 0.12600000000000477,
+          "medianHeapDeltaBytes": 26808,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.187,
+              "wallMs": 0.12600000000000477,
+              "heapDeltaBytes": 26520,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.177,
+              "wallMs": 0.12220800000000054,
+              "heapDeltaBytes": 26808,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.233,
+              "wallMs": 0.1491669999999914,
+              "heapDeltaBytes": 46120,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "fingerprintsEqual": true
+    },
+    {
+      "round": 2,
+      "order": [
+        "A",
+        "B"
+      ],
+      "A": {
+        "peakRssKiB": 73568,
+        "indexRead": {
+          "medianCpuMs": 0.233,
+          "medianWallMs": 0.1271249999999995,
+          "medianHeapDeltaBytes": 28256,
+          "fingerprint": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081",
+          "samples": [
+            {
+              "cpuMs": 2.128,
+              "wallMs": 0.06629200000000424,
+              "heapDeltaBytes": 162992,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.233,
+              "wallMs": 0.13366599999999806,
+              "heapDeltaBytes": 28256,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.224,
+              "wallMs": 0.1271249999999995,
+              "heapDeltaBytes": 28168,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 0.677,
+          "medianWallMs": 0.19408300000000622,
+          "medianHeapDeltaBytes": 213632,
+          "fingerprint": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1",
+          "samples": [
+            {
+              "cpuMs": 0.677,
+              "wallMs": 0.19408300000000622,
+              "heapDeltaBytes": 36472,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.897,
+              "wallMs": 0.20066599999999823,
+              "heapDeltaBytes": 213632,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.573,
+              "wallMs": 0.1343339999999955,
+              "heapDeltaBytes": 228888,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 0.096,
+          "medianWallMs": 0.04841600000000312,
+          "medianHeapDeltaBytes": 22912,
+          "fingerprint": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d",
+          "samples": [
+            {
+              "cpuMs": 0.101,
+              "wallMs": 0.051499999999997215,
+              "heapDeltaBytes": 22928,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.06,
+              "wallMs": 0.04841600000000312,
+              "heapDeltaBytes": 22912,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.096,
+              "wallMs": 0.04441699999999571,
+              "heapDeltaBytes": 22912,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 1.199,
+          "medianWallMs": 0.2976250000000036,
+          "medianHeapDeltaBytes": 92536,
+          "fingerprint": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808",
+          "samples": [
+            {
+              "cpuMs": 1.089,
+              "wallMs": 0.2774160000000023,
+              "heapDeltaBytes": 91136,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 1.265,
+              "wallMs": 0.31345799999999713,
+              "heapDeltaBytes": 94880,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 1.199,
+              "wallMs": 0.2976250000000036,
+              "heapDeltaBytes": 92536,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 3.604,
+          "medianWallMs": 2.025374999999997,
+          "medianHeapDeltaBytes": 968824,
+          "fingerprint": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb",
+          "samples": [
+            {
+              "cpuMs": 3.847,
+              "wallMs": 2.050207999999998,
+              "heapDeltaBytes": 996232,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.604,
+              "wallMs": 2.025374999999997,
+              "heapDeltaBytes": 962184,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.482,
+              "wallMs": 1.911083000000005,
+              "heapDeltaBytes": 968824,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.176,
+          "medianWallMs": 0.11958299999999156,
+          "medianHeapDeltaBytes": 26808,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.197,
+              "wallMs": 0.13791700000000162,
+              "heapDeltaBytes": 26520,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.176,
+              "wallMs": 0.11958299999999156,
+              "heapDeltaBytes": 26808,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.143,
+              "wallMs": 0.06979099999999505,
+              "heapDeltaBytes": 419736,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "B": {
+        "peakRssKiB": 74048,
+        "indexRead": {
+          "medianCpuMs": 0.844,
+          "medianWallMs": 0.068290999999995,
+          "medianHeapDeltaBytes": 28256,
+          "fingerprint": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081",
+          "samples": [
+            {
+              "cpuMs": 2.083,
+              "wallMs": 0.068290999999995,
+              "heapDeltaBytes": 162992,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.844,
+              "wallMs": 0.2079999999999984,
+              "heapDeltaBytes": 28256,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            },
+            {
+              "cpuMs": 0.069,
+              "wallMs": 0.056584000000000856,
+              "heapDeltaBytes": 28168,
+              "result": "6ff3408605c5c777ec21dac5a0a1edde67f413bdb53c1405b7050397026ee081"
+            }
+          ]
+        },
+        "reconcileIdle": {
+          "medianCpuMs": 1,
+          "medianWallMs": 0.2253340000000037,
+          "medianHeapDeltaBytes": 48200,
+          "fingerprint": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1",
+          "samples": [
+            {
+              "cpuMs": 1.124,
+              "wallMs": 0.217374999999997,
+              "heapDeltaBytes": 36472,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 1,
+              "wallMs": 0.23929199999999895,
+              "heapDeltaBytes": 355992,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            },
+            {
+              "cpuMs": 0.858,
+              "wallMs": 0.2253340000000037,
+              "heapDeltaBytes": 48200,
+              "result": "02b677f3e6408c7353aab00a2663df28d0a056b1f73bf9e33e4d50a335ef63a1"
+            }
+          ]
+        },
+        "sourceVerify": {
+          "medianCpuMs": 0.095,
+          "medianWallMs": 0.047624999999996476,
+          "medianHeapDeltaBytes": 22912,
+          "fingerprint": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d",
+          "samples": [
+            {
+              "cpuMs": 0.095,
+              "wallMs": 0.04895799999999895,
+              "heapDeltaBytes": 22928,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.059,
+              "wallMs": 0.047624999999996476,
+              "heapDeltaBytes": 22912,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            },
+            {
+              "cpuMs": 0.101,
+              "wallMs": 0.045999999999999375,
+              "heapDeltaBytes": 22912,
+              "result": "21500f579454210461b4c1992d42f996051fc451891605dcbff674c4b1958a5d"
+            }
+          ]
+        },
+        "review": {
+          "medianCpuMs": 0.922,
+          "medianWallMs": 0.22637499999999733,
+          "medianHeapDeltaBytes": 92536,
+          "fingerprint": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808",
+          "samples": [
+            {
+              "cpuMs": 1.587,
+              "wallMs": 0.37024999999999864,
+              "heapDeltaBytes": 91136,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 0.922,
+              "wallMs": 0.22637499999999733,
+              "heapDeltaBytes": 94880,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            },
+            {
+              "cpuMs": 0.189,
+              "wallMs": 0.19454199999999844,
+              "heapDeltaBytes": 92536,
+              "result": "647bfd1ab2dc400b1f2e1b9a56c43d211b2f22b0bde48cdde472e779bc4f4808"
+            }
+          ]
+        },
+        "doctor": {
+          "medianCpuMs": 3.517,
+          "medianWallMs": 1.9551249999999953,
+          "medianHeapDeltaBytes": 967368,
+          "fingerprint": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb",
+          "samples": [
+            {
+              "cpuMs": 4,
+              "wallMs": 2.0975420000000042,
+              "heapDeltaBytes": 998576,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.517,
+              "wallMs": 1.9551249999999953,
+              "heapDeltaBytes": 960584,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            },
+            {
+              "cpuMs": 3.509,
+              "wallMs": 1.9410000000000025,
+              "heapDeltaBytes": 967368,
+              "result": "b07da6cf545c4014d87607c3afeabd4ee3999dfd8ff3cc709d02852373b643cb"
+            }
+          ]
+        },
+        "usageRead": {
+          "medianCpuMs": 0.207,
+          "medianWallMs": 0.13895899999999983,
+          "medianHeapDeltaBytes": 26808,
+          "fingerprint": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7",
+          "samples": [
+            {
+              "cpuMs": 0.207,
+              "wallMs": 0.13895899999999983,
+              "heapDeltaBytes": 26520,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.178,
+              "wallMs": 0.1254159999999871,
+              "heapDeltaBytes": 26808,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            },
+            {
+              "cpuMs": 0.239,
+              "wallMs": 0.14700000000000557,
+              "heapDeltaBytes": 46120,
+              "result": "784d856e3f3ce7b0366e6aba26df97242bc1d4f2299eeb99ce30d0f195d158d7"
+            }
+          ]
+        }
+      },
+      "fingerprintsEqual": true
+    }
+  ],
+  "summary": {
+    "indexRead": {
+      "aCpuMedianOfRounds": 0.223,
+      "bCpuMedianOfRounds": 0.221,
+      "aWallMedianOfRounds": 0.09829100000000324,
+      "bWallMedianOfRounds": 0.06979099999999505,
+      "cpuPairedDifferences": [
+        -0.133,
+        0.0030000000000000027,
+        0.611
+      ],
+      "wallPairedDifferences": [
+        -0.0007510000000010564,
+        0.019083999999999435,
+        -0.058834000000004494
+      ],
+      "cpuPairedMedian": 0.0030000000000000027,
+      "wallPairedMedian": -0.0007510000000010564,
+      "cpuRelativeChangePct": 1.345291479820629,
+      "wallRelativeChangePct": -0.7640577468954753,
+      "aPeakRssKiB": [
+        74128,
+        74208,
+        73568
+      ],
+      "bPeakRssKiB": [
+        74432,
+        74512,
+        74048
+      ]
+    },
+    "reconcileIdle": {
+      "aCpuMedianOfRounds": 0.591,
+      "bCpuMedianOfRounds": 0.892,
+      "aWallMedianOfRounds": 0.19408300000000622,
+      "bWallMedianOfRounds": 0.21258299999999508,
+      "cpuPairedDifferences": [
+        0.30100000000000005,
+        0.22199999999999998,
+        0.32299999999999995
+      ],
+      "wallPairedDifferences": [
+        -0.01129200000000452,
+        0.05579200000000384,
+        0.031250999999997475
+      ],
+      "cpuPairedMedian": 0.30100000000000005,
+      "wallPairedMedian": 0.031250999999997475,
+      "cpuRelativeChangePct": 50.93062605752963,
+      "wallRelativeChangePct": 16.10187394052878,
+      "aPeakRssKiB": [
+        74128,
+        74208,
+        73568
+      ],
+      "bPeakRssKiB": [
+        74432,
+        74512,
+        74048
+      ]
+    },
+    "sourceVerify": {
+      "aCpuMedianOfRounds": 0.115,
+      "bCpuMedianOfRounds": 0.107,
+      "aWallMedianOfRounds": 0.05525000000000091,
+      "bWallMedianOfRounds": 0.04995800000000372,
+      "cpuPairedDifferences": [
+        -0.16500000000000004,
+        -0.008000000000000007,
+        -0.0010000000000000009
+      ],
+      "wallPairedDifferences": [
+        -0.08200000000000074,
+        -0.005291999999997188,
+        -0.0007910000000066475
+      ],
+      "cpuPairedMedian": -0.008000000000000007,
+      "wallPairedMedian": -0.005291999999997188,
+      "cpuRelativeChangePct": -6.956521739130441,
+      "wallRelativeChangePct": -9.578280542981178,
+      "aPeakRssKiB": [
+        74128,
+        74208,
+        73568
+      ],
+      "bPeakRssKiB": [
+        74432,
+        74512,
+        74048
+      ]
+    },
+    "review": {
+      "aCpuMedianOfRounds": 1.112,
+      "bCpuMedianOfRounds": 1.152,
+      "aWallMedianOfRounds": 0.2700410000000062,
+      "bWallMedianOfRounds": 0.2865409999999997,
+      "cpuPairedDifferences": [
+        0.07499999999999996,
+        0.039999999999999813,
+        -0.277
+      ],
+      "wallPairedDifferences": [
+        0.036125999999995884,
+        0.017082999999999515,
+        -0.07125000000000625
+      ],
+      "cpuPairedMedian": 0.039999999999999813,
+      "wallPairedMedian": 0.017082999999999515,
+      "cpuRelativeChangePct": 3.5971223021582563,
+      "wallRelativeChangePct": 6.326076410618804,
+      "aPeakRssKiB": [
+        74128,
+        74208,
+        73568
+      ],
+      "bPeakRssKiB": [
+        74432,
+        74512,
+        74048
+      ]
+    },
+    "doctor": {
+      "aCpuMedianOfRounds": 3.604,
+      "bCpuMedianOfRounds": 3.587,
+      "aWallMedianOfRounds": 2.025374999999997,
+      "bWallMedianOfRounds": 2.0197920000000096,
+      "cpuPairedDifferences": [
+        -0.37399999999999967,
+        0.2520000000000002,
+        -0.08700000000000019
+      ],
+      "wallPairedDifferences": [
+        -0.0071249999999878355,
+        0.11041699999999821,
+        -0.07025000000000148
+      ],
+      "cpuPairedMedian": -0.08700000000000019,
+      "wallPairedMedian": -0.0071249999999878355,
+      "cpuRelativeChangePct": -2.413984461709217,
+      "wallRelativeChangePct": -0.35178670616492486,
+      "aPeakRssKiB": [
+        74128,
+        74208,
+        73568
+      ],
+      "bPeakRssKiB": [
+        74432,
+        74512,
+        74048
+      ]
+    },
+    "usageRead": {
+      "aCpuMedianOfRounds": 0.21,
+      "bCpuMedianOfRounds": 0.199,
+      "aWallMedianOfRounds": 0.14416699999999594,
+      "bWallMedianOfRounds": 0.13670799999999872,
+      "cpuPairedDifferences": [
+        -0.015999999999999986,
+        -0.022999999999999993,
+        0.031
+      ],
+      "wallPairedDifferences": [
+        -0.00970800000000338,
+        -0.018166999999991162,
+        0.019376000000008275
+      ],
+      "cpuPairedMedian": -0.015999999999999986,
+      "wallPairedMedian": -0.00970800000000338,
+      "cpuRelativeChangePct": -7.619047619047612,
+      "wallRelativeChangePct": -6.733857262760308,
+      "aPeakRssKiB": [
+        74128,
+        74208,
+        73568
+      ],
+      "bPeakRssKiB": [
+        74432,
+        74512,
+        74048
+      ]
+    }
+  }
+}
