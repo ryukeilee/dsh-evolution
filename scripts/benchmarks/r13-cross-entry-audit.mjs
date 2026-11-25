@@ -512,6 +512,8 @@ async function rescan(args) {
   const hostMod = await import(pathToFileURL(path.join(path.dirname(SCRIPT), '..', '..', 'lib/desktop-task-host.js')).href);
   const ctx = { logger: { info() {}, warn() {}, error() {}, debug() {} }, tools: { get() { return null; }, execute: async () => ({}) } };
   const host = hostMod.createDesktopTaskHost(ctx, { dshHome: fixture, scanIntervalMs: 3_600_000, approvalPollMs: 3_600_000 });
+  // The production lister skips anything in the inbox that is not a regular
+  // file, so a directory named `task-*.json` is ignored rather than counted.
   const scan = async () => (await host.internals.pendingRequests()).length;
   await scan(); // warmup
   const rows = [];
@@ -527,7 +529,9 @@ async function rescan(args) {
   try { await host.dispose(); } catch { /* already disposed */ }
   const out = {
     method: 'production createDesktopTaskHost(...).internals.pendingRequests() over a fixture whose states come from createTaskState(); default channel disabled, this is the explicit-enable idle cost',
-    fixture, tasks: fs.readdirSync(inbox).length, node: process.version, rows,
+    fixture,
+    tasks: fs.readdirSync(inbox, { withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith('.json')).length,
+    node: process.version, rows,
     medianCpuMs: median(rows.map((r) => r.cpuMs)), medianWallMs: median(rows.map((r) => r.wallMs)),
     estimatedIdleCpuMsPerMinute: median(rows.map((r) => r.cpuMs)) * (60000 / 1500),
   };

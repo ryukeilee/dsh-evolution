@@ -153,8 +153,9 @@ exact/score/recency 分支）；平局语料下候选建键数严格少于基线
 **序列化与深拷贝**（2,000 档，3 个插桩样本，阶段与子调用同用 CPU）：整次闭环 9 次
 `structuredClone` 合计 0.05 ms、`JSON.stringify` 780 次合计 0.59 ms、`JSON.parse`
 5,006 次合计 23.48 ms（27.3%）。解析几乎全部来自 `recall` 的 2,000 行窗口与 `discover`
-的 500 行窗口 + 计划器投影，属按窗口读取正文的固有成本；插桩样本闭环 85.94 ms 略高于
-非插桩的 79.85 ms，差额来自包装本身。
+的 500 行窗口 + 计划器投影，属按窗口读取正文的固有成本。插桩样本闭环 85.94 ms 与非插桩的
+79.85 ms 是两个独立批次（3 vs 5 个样本）的观测值，差值不能全部归因于包装，因此占比只在
+同一插桩批次内计算。
 
 **结论 NO CHANGE 的依据**：`propose` 与 `revert` 共用 `findConclusions` 结果、给 scope 加
 JSON1 表达式索引、`plan` 复用 `discover` 的 500 行替代 `recall` 的 2,000 行、缩短窗口、
@@ -196,7 +197,7 @@ JSON1 表达式索引、`plan` 复用 `discover` 的 500 行替代 `recall` 的 
 
 | 方向 | 上界收益 | 依据 | 结论 |
 | --- | ---: | --- | --- |
-| `readSharedIndex` 跳过 `sha256(bytes)` | 20k 档约 13.26 ms（`indexRead` ≈6%） | `index.digest` 严格等于 `sha256(published.json)`；宿主验收与跨入口探针依赖该等式判断索引篡改 | **否决**：认证契约 |
+| `readSharedIndex` 跳过 `sha256(bytes)` | 20k 档约 11.996 ms（`indexRead` ≈5.3%，独立 micro 的参考量级） | `index.digest` 严格等于 `sha256(published.json)`；宿主验收与跨入口探针依赖该等式判断索引篡改 | **否决**：认证契约 |
 | `diagnoseSharing` 跳过逐记录 `readPromotedPlugin` | 未单独计时（`sourceVerify` 从完整 `readSharedIndex()` 起算） | 追加 `// tampered` 后当前树 `blocked`/`source-digest-mismatch`，跳过校验的补丁树 `degraded`/`source=verified`，doctor 指纹不等 | **否决**：防篡改边界 |
 | `review` 复用 doctor 产物 / 放开 50 条上限 | 无同调用路径 | 两个独立工具无共享调用点；放开上限只增成本 | **否决** |
 | 跨入口缓存已解析索引 / 增量认证 | 每入口约 46 ms@5k、225 ms@20k | 需「使用前证明文件未变」的第二协议；dev/ino/size/mtime 无法检测同长原地改写 | **否决**：O(1) 信号证明 O(历史) |
@@ -405,7 +406,7 @@ node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
 
 1. **汇总附件残留旧 50 档**：`docs/performance/r13-cross-entry-audit.json` 的
    `runs["50"]` / `micro["50"]` 已用重跑后的分档数据替换（`sourceVerify` 7.523 ms、
-   `parseIndex` 0.118 ms），与 `-aa-50.json` / `-micro-50.json` 一致；备份口径见 §6。
+   `parseIndex` 0.121 ms），与 `-aa-50.json` / `-micro-50.json` 一致；备份口径见 §6。
 2. **桌面重扫测的不是生产路径**：第三轮进一步指出第二版只是相似实现（损坏 state 会抛错、
    名为 `*.json` 的目录会被忽略，而相似实现会吞掉这两类失败）。现在 `rescan` 直接调用生产
    `createDesktopTaskHost(...).internals.pendingRequests()`，夹具 state 由生产

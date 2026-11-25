@@ -28,9 +28,9 @@
 ## 1. 方法与口径
 
 - 环境：Node `v26.13.1`、`darwin/arm64`、Apple M2、8 逻辑 CPU、16 GiB。
-- 计时：A/B 交替（`A` = 当前树、`B` = 同一当前树，即 **A/A 噪声基线**），每（轮 × 侧 × 工作负载）
-  起一个独立 `--max-old-space-size=4096 --expose-gc` 子进程；3 轮（20k 档 2 样本/侧、
-  其余 3 样本/侧），预热 2 次（20k 档 1 次）。主指标 `process.cpuUsage()` 的 user+system；
+- 计时：A/B 交替（`A` = 当前树、`B` = 同一当前树，即 **A/A 噪声基线**），每个（轮 × 侧）起
+  一个独立 `--max-old-space-size=4096 --expose-gc` 子进程，子进程用 `--workloads` 依次执行
+  整组负载；3 轮（20k 档 2 样本/侧、其余 3 样本/侧），预热 2 次（20k 档 1 次）。主指标 `process.cpuUsage()` 的 user+system；
   墙钟、堆增量、峰值 RSS 为辅。
 - 正确性：每个工作负载返回确定性的可指纹结果，`measure` 在预热和每次测量后断言指纹相同，
   `run` 断言 A/B 两侧指纹全等；任何分歧先写出 JSON 再以非零码失败。本轮所有档
@@ -77,8 +77,10 @@
   一次 `JSON.parse` 的小投影，与记录数无关）；`review` 的 50 条上限使其从 9.02 ms 升到
   277 ms 主要来自索引全量 `readSharedIndex()` 与两份 consumer state 读取，而不是逐记录验证。
 - **合理增长（完整性下界）**：`indexRead` 的 `JSON.parse` + 逐记录 `validateSharedRecord`
-  + 整文件 `sha256` 都随索引字节线性增长；20k 档 sha256 13.26 ms 仅占 `indexRead` 约 6%，
-  parse 38.27 ms，其余约 170 ms 是逐记录校验。这是每次启动都必须做的认证，不是可消除的重复。
+  + 整文件 `sha256` 都随索引字节线性增长；20k 档 sha256 11.996 ms 约占 `indexRead` 5.3%，
+  parse 33.352 ms。剩下的约 175 ms 包含逐记录校验，也包含独立 micro 未覆盖的 UTF-8 解码、
+  去重与记录收集；本轮没有把这部分残差再拆分，因此不把它整体写成“逐记录校验”。
+  这是每次启动都必须做的认证，不是可消除的重复。
 - **合理增长（防篡改）**：`sourceVerify` 从 7.52 ms 升到 2,856.67 ms，是 doctor 每记录
   3 次 `lstat` + 2 次 `readFile` + 2 次 sha256 的直接代价。**但该工作负载每次先做一次完整的
   `readSharedIndex()`**，所以它的绝对值和整次 `doctor` 同量级（5k: 635.63 vs 672.06 ms；
@@ -155,7 +157,7 @@
 
 | 候选 | 上界收益 / 成本 | 反证（候选被改坏时差分失败） | 结论 |
 | --- | --- | --- | --- |
-| `readSharedIndex` 跳过 `sha256(bytes)` | 20k 档约 13.26 ms（占 indexRead ≈6%） | `index.digest` 当前严格等于 `sha256(published.json)`（实测 true），宿主验收 `run-host-acceptance.mjs:877`、`run-cross-entry.mjs:994`、`cross-entry-promotion-probe.mjs:516` 依赖该等式判断索引是否被篡改；跳过即让这些断言失效。 | **否决**：认证契约，非冗余 |
+| `readSharedIndex` 跳过 `sha256(bytes)` | 20k 档约 11.996 ms（`indexRead` ≈5.3%，独立 micro 的参考量级） | `index.digest` 当前严格等于 `sha256(published.json)`（实测 true），宿主验收 `run-host-acceptance.mjs:877`、`run-cross-entry.mjs:994`、`cross-entry-promotion-probe.mjs:516` 依赖该等式判断索引是否被篡改；跳过即让这些断言失效。 | **否决**：认证契约，非冗余 |
 | `diagnoseSharing` 跳过逐记录 `readPromotedPlugin` | 未单独计时（`sourceVerify` 工作负载从完整 `readSharedIndex()` 开始，不能拆出这一步） | 把 1 条已发布插件的源码尾部追加 `// tampered` 后：当前树 `promotion.sharing` = **blocked**，`problems=[source-digest-mismatch]`、`source=source-digest-mismatch`；临时补丁树（跳过源码校验）= **degraded**、`source=verified`，篡改不再被发现。两侧 doctor 指纹 `ce2fbac5…` vs `34e3289e…` 不同，`run` 会以"指纹不等"非零退出。 | **否决**：防篡改边界，属不变量 8/9 |
 | `review` 复用 doctor 的产物 / 放开 50 上限 | 无同调用路径；放开上限反而增加成本 | `readPublishedPluginReview()` 与 `collectDiagnostics()` 无共享调用点；R12 已因上限暂缓重复投影，任务列为不要重提。 | **否决**：无机制、且被明确否决 |
 | 跨入口缓存已解析索引 / 增量认证 | 每入口约 46 ms@5k、225 ms@20k | 需要"使用前证明文件未变"的第二协议；仅靠 dev/ino/size/mtime 无法检测同长原地改写（`redundant-work.md` §4.1）。 | **否决**：禁止引入 O(1) 信号证明 O(历史) 状态未变 |

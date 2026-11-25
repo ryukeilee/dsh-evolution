@@ -15,7 +15,7 @@
 | 插件 CPU | **是** | `lib/orchestrator.js`、`lib/shared-experience.js`、`lib/dockyard-domain/knowledge.js` 与归档写入，`process.cpuUsage()` user+system |
 | 宿主开销 | 否 | `ctx.tools.execute` 与 `dynamicCordisRunner` 是仓库测试用的 fake pipeline；真实宿主的工具执行、Include 挂载不在样本内 |
 | 模型推理 / 等待 | 否 | 没有模型、没有网络、没有 API Key；`probe` 的样本由 fake 管道即时返回，因此"模型等待"在本表里恒为 0，不能当作真实会话的比例 |
-| 开发 harness | 仅记录 | 夹具种子写入、`mkdtemp`、模块导入全部在计时窗口之外；每个样本起独立进程 |
+| 开发 harness | 仅记录 | 夹具种子写入、`mkdtemp`、模块导入全部在计时窗口之外；每个样本使用全新临时根，但所有样本在**同一进程**内顺序执行（不是每样本独立进程） |
 
 所以这里的百分比是**插件在闭环里自己花的 CPU 如何分配**，不是真实会话墙钟构成。
 真实会话里模型推理通常远大于本文任何一项；本表只用于判断"插件侧还有没有可消除的重复工作"。
@@ -91,8 +91,9 @@ knowledge 行数线性增长；本闭环每次调用它两次（`propose` 的重
 ## 4. 序列化与深拷贝归因
 
 在 2,000 行档另跑 3 个带包装的样本（`--history 2000`，默认插桩）。包装器与阶段计时
-同用 `process.cpuUsage()`，因此这一小节的比例也是 CPU / CPU；插桩样本的闭环总计
-85.94 ms 会略高于非插桩的 79.85 ms，差异来自包装调用本身。
+同用 `process.cpuUsage()`，因此这一小节的比例也是 CPU / CPU。插桩样本（3 个）与非插桩
+样本（5 个）是两个独立批次，85.94 与 79.85 ms 的差值只是观测值，不能全部归因于包装；
+下面的占比只在同一插桩批次内计算。
 
 | 阶段 | 阶段 CPU | `JSON.parse` | `JSON.stringify` | `structuredClone` |
 | --- | ---: | ---: | ---: | ---: |
@@ -133,7 +134,7 @@ knowledge 行数线性增长；本闭环每次调用它两次（`propose` 的重
 ## 6. 复现
 
 ```sh
-# 阶段构成（非插桩，4 个历史档，与报告相同的样本数；每档独立进程与独立夹具）
+# 阶段构成（非插桩，4 个历史档，与报告相同的样本数；每个历史档一次独立进程，每个样本独立夹具）
 node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
   --history 0 --runs 7 --no-instrument \
   --out docs/performance/r13-loop-composition-0.json

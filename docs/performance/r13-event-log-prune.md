@@ -105,7 +105,7 @@
 - 不减少认证次数：`verifyEventBridgeEnvelope()`、writer 检查、MAC 相等检查、torn-tail 拒绝、三次整段摘要全部保留。floor 的提交顺序、marker 剪裁、证据外部化、截断幂等补完均不在本改动内。
 - 代价：认证循环多一次稀疏数组写入与一个事件对象引用保留（与原本 `pairs` 的量级相同），并在循环里多了 `index < maxBoundary` 判断；净 CPU 在三档均为负，没有可测的常驻增长。
 - 边界：只测 Node 26 / darwin-arm64 / 热页缓存 / 单进程 `planLogPrune`；未测冷盘、并发 `reclaim` 写者、其它 Node 版本或真实宿主分布。`maxRSS` 不是内存收益证据。
-- 端到端 `reclaim()` 还包含 `prefixEvidence()` 的第二次验签、外部化、事务与 fsync；这些未改动，因此完整回收调用的绝对降幅会小于上表的函数级数字。本轮只对被改函数做隔离 A/B，不把函数级百分比外推为端到端收益。
+- 端到端 `reclaim()` 还包含 `prefixEvidence()` 的第二次验签、外部化、事务与 fsync；这些未改动，但本轮没有测完整回收调用，因此只对被改函数做隔离 A/B，不把函数级百分比外推为端到端收益。
 
 ## 7. 调查后决定不修改的方向（同子系统）
 
