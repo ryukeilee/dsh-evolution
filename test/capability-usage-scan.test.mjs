@@ -17,10 +17,22 @@ import {
   readUsageProjection,
   summarizeCapabilityUsage,
   toolNamesFromSource,
+  USAGE_PROJECTION_COVERAGE,
 } from '../lib/capability-usage.js';
 import { readPublishedPluginReview } from '../lib/self-evolution-review.js';
 
 const SCRIPT = fileURLToPath(new URL('../docs/audit/replay/capability-usage.mjs', import.meta.url));
+
+test('the documented usage producer ships with the tarball', () => {
+  const manifest = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'));
+  const declared = manifest.files ?? [];
+  assert.ok(declared.includes('docs/audit/replay/capability-usage.mjs'),
+    'README instructs installed users to run the producer, so it must be distributed');
+  assert.ok(declared.includes('lib'), 'the shared scanner implementation must be distributed too');
+  const source = fs.readFileSync(SCRIPT, 'utf8');
+  assert.match(source, /from\s+['"](\.\.\/){3}lib\/capability-usage\.js['"]/,
+    'the producer must import the shipped scanner through its relative package path');
+});
 
 const RECORD_ID = 'evolution-promoted-aaaaaaaaaaaa';
 const SECOND_ID = 'evolution-promoted-bbbbbbbbbbbb';
@@ -77,12 +89,15 @@ function writeRecord(env, { id = RECORD_ID, source, moduleUrl = null } = {}) {
   return record;
 }
 
-function writeSession(root, name, lines, { corrupt = false } = {}) {
+function writeSession(root, name, lines, { corrupt = false, plain = false, fileName = null } = {}) {
   const dir = path.join(root, 'sessions', name);
   fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, 'session.v4.jsonl.zstd');
+  const file = path.join(dir, fileName ?? (plain ? 'session.v4.jsonl' : 'session.v4.jsonl.zstd'));
   if (corrupt) fs.writeFileSync(file, Buffer.from('not a zstd frame'));
-  else fs.writeFileSync(file, zlib.zstdCompressSync(Buffer.from(lines.map((line) => JSON.stringify(line)).join('\n'))));
+  else {
+    const body = Buffer.from(lines.map((line) => JSON.stringify(line)).join('\n'));
+    fs.writeFileSync(file, plain ? body : zlib.zstdCompressSync(body));
+  }
   return file;
 }
 
@@ -92,6 +107,23 @@ function call(name, callId) {
 
 function result(callId) {
   return { type: 'tool/result', data: { toolCallId: callId, message: { isError: false } } };
+}
+
+/** The official PTC row shape (`dsh-tools` / `dsh-session`): ids and name live in `data`. */
+function ptcStart(name, subCallId, parentCallId) {
+  return {
+    type: 'tool/ptc-dispatch-start',
+    seq: 7,
+    data: { rootCallId: parentCallId, parentCallId, subCallId, name },
+  };
+}
+
+function ptcDispatch(name, subCallId, parentCallId) {
+  return {
+    type: 'tool/ptc-dispatch',
+    seq: 8,
+    data: { rootCallId: parentCallId, parentCallId, subCallId, name, isError: false },
+  };
 }
 
 function run(home, extra = []) {
@@ -300,6 +332,33 @@ test('a stale projection cannot support "zero invocations" but still proves posi
   assert.equal(usedReview.records[0].value.tier, 'in-use');
 });
 
+test('a legacy projection without scan coverage cannot prove a zero', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const file = path.join(env.dataRoot, 'shared-plugins', 'usage.json');
+  const row = { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 0, capabilityAssessment: 'self-contained' };
+  const write = (coverage) => fs.writeFileSync(file, JSON.stringify({
+    kind: 'dsh-evolution-capability-usage',
+    schemaVersion: 1,
+    ...(coverage ? { coverage } : {}),
+    source: 'session-evidence',
+    complete: true,
+    capturedAt: new Date().toISOString(),
+    records: { [RECORD_ID]: row },
+  }));
+  write(null);
+  const legacy = await readUsageProjection({ dataRoot: env.dataRoot });
+  assert.equal(legacy.usage.coverage, 'legacy');
+  const legacyReview = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: legacy.usage, usageStatus: 'ok' });
+  assert.equal(legacyReview.records[0].value.invoked, null);
+  assert.equal(legacyReview.retirementCandidates.length, 0, 'an old scan cannot prove the newly covered calls were absent');
+  write(USAGE_PROJECTION_COVERAGE);
+  const current = await readUsageProjection({ dataRoot: env.dataRoot });
+  assert.equal(current.usage.coverage, USAGE_PROJECTION_COVERAGE);
+  const currentReview = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: current.usage, usageStatus: 'ok' });
+  assert.equal(currentReview.records[0].value.invoked, false);
+});
+
 test('a damaged or oversized projection is reported, never guessed around', async (t) => {
   const env = scratch(t);
   writeRecord(env, { source: WIDGET_SOURCE });
@@ -418,4 +477,305 @@ test('a real promotion lifecycle call still marks an overlapping published call 
   assert.deepEqual(Object.fromEntries(counter.finish()), {
     mytool: { workflow: 0, verification: 1, unattributed: 0 },
   });
+});
+
+// 2026-11-25 PTC usage attribution round. The counter contract is pinned at
+// unit level first: native rows keep their old returns, a start only reserves
+// a dispatch, a completed dispatch is counted once, and a start with no final
+// dispatch is still an invocation at finish.
+test('createSessionCounter counts native calls and PTC dispatches exactly once', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  assert.equal(counter.call(call('mytool', 'native1')), 'workflow');
+  assert.equal(counter.call(call('evolution_probe', 'p1')), 'lifecycle');
+  assert.equal(counter.call(call('mytool', 'native2')), 'pending');
+  assert.equal(counter.call(result('native2')), 'result');
+  assert.equal(counter.call(result('p1')), 'result');
+  assert.equal(counter.call(call('run_code', 'rc1')), 'ignored');
+  assert.equal(counter.call(ptcStart('mytool', 'rc1:ptc:1', 'rc1')), 'ptc-start');
+  assert.equal(counter.call(ptcDispatch('mytool', 'rc1:ptc:1', 'rc1')), 'workflow');
+  assert.equal(counter.call(call('evolution_trial', 't1')), 'lifecycle');
+  assert.equal(counter.call(ptcStart('mytool', 'rc1:ptc:2', 'rc1')), 'ptc-start');
+  assert.equal(counter.call(ptcDispatch('mytool', 'rc1:ptc:2', 'rc1')), 'pending');
+  // This start never completes: it is still a proven invocation at finish.
+  assert.equal(counter.call(ptcStart('mytool', 'rc1:ptc:3', 'rc1')), 'ptc-start');
+  assert.equal(counter.call(result('t1')), 'result');
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 2, verification: 2, unattributed: 1 },
+  });
+});
+
+test('a reused run_code id keeps the new instance open when an old result arrives', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  const callRow = (seq, name, callId) => ({ type: 'tool/call', seq, data: { name, callId } });
+  const resultRow = (seq, sourceSeqs, callId) => ({ type: 'tool/result', seq, sourceEventSeqs: sourceSeqs, data: { message: { toolCallId: callId } } });
+  counter.call(callRow(1, 'run_code', 'reused'));
+  counter.call(callRow(2, 'run_code', 'reused'));
+  // The old execution's result cites seq 1; the seq 2 program is still open.
+  counter.call(resultRow(9, [1], 'reused'));
+  counter.call(ptcStart('mytool', 'm1', 'reused'));
+  counter.call(ptcDispatch('mytool', 'm1', 'reused'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 1, verification: 0, unattributed: 0 },
+  });
+});
+
+test('a run_code result closes its own unfinished PTC lifecycle window', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  counter.call({ type: 'tool/call', seq: 1, data: { name: 'run_code', callId: 'outer' } });
+  counter.call(ptcStart('evolution_probe', 'p1', 'outer'));
+  // The lifecycle final row is missing; the run_code result still ends the
+  // program and must not leave the window to swallow the next program's call.
+  counter.call({ type: 'tool/result', seq: 9, sourceEventSeqs: [1], data: { message: { toolCallId: 'outer' } } });
+  counter.call({ type: 'tool/call', seq: 2, data: { name: 'run_code', callId: 'outer' } });
+  counter.call(ptcStart('mytool', 'm1', 'outer'));
+  counter.call(ptcDispatch('mytool', 'm1', 'outer'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 1, verification: 0, unattributed: 0 },
+  });
+});
+
+test('a PTC dispatch needs an open run_code instance, not any historical call id', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  // A normal read used this id; it is not a model run_code program.
+  counter.call(call('read', 'shared-id'));
+  counter.call(ptcStart('mytool', 'p1', 'shared-id'));
+  counter.call(ptcDispatch('mytool', 'p1', 'shared-id'));
+  // A run_code that already returned cannot enclose a later dispatch either.
+  counter.call(call('run_code', 'finished'));
+  counter.call(result('finished'));
+  counter.call(ptcStart('mytool', 'p2', 'finished'));
+  counter.call(ptcDispatch('mytool', 'p2', 'finished'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 0, verification: 0, unattributed: 2 },
+  });
+});
+
+test('a PTC lifecycle window is unattributed when its final log can arrive after a normal call', () => {
+  // The official executor appends `tool/ptc-dispatch` in an async log task. A
+  // later program call can therefore start before the lifecycle's final row.
+  // The log order alone cannot prove the call was enclosure traffic, so it is
+  // unknown, not verification (a false verification would look like zero use).
+  const counter = createSessionCounter(new Set(['mytool']));
+  counter.call(ptcStart('evolution_probe', 'p1', 'outer'));
+  counter.call(ptcStart('mytool', 'm1', 'outer'));
+  counter.call(ptcStart('mytool', 'm2', 'outer'));
+  counter.call(ptcDispatch('evolution_probe', 'p1', 'outer'));
+  counter.call(ptcDispatch('mytool', 'm1', 'outer'));
+  counter.call(ptcDispatch('mytool', 'm2', 'outer'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 0, verification: 0, unattributed: 2 },
+  });
+});
+
+test('a native published call is workflow while only a PTC lifecycle window is open', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  counter.call(ptcStart('evolution_probe', 'p1', 'outer'));
+  counter.call(call('mytool', 'native'));
+  counter.call(result('native'));
+  counter.call(ptcDispatch('evolution_probe', 'p1', 'outer'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 1, verification: 0, unattributed: 0 },
+  });
+});
+
+test('a published call after the PTC lifecycle result is normal workflow usage', () => {
+  const counter = createSessionCounter(new Set(['mytool']));
+  counter.call(call('run_code', 'outer'));
+  counter.call(ptcStart('evolution_probe', 'p1', 'outer'));
+  counter.call(ptcDispatch('evolution_probe', 'p1', 'outer'));
+  counter.call(ptcStart('mytool', 'm1', 'outer'));
+  counter.call(ptcDispatch('mytool', 'm1', 'outer'));
+  assert.deepEqual(Object.fromEntries(counter.finish()), {
+    mytool: { workflow: 1, verification: 0, unattributed: 0 },
+  });
+});
+
+test('a model run_code PTC dispatch of a published tool is workflow usage', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-workflow', [
+    call('run_code', 'rc1'),
+    ptcStart('widget_tool', 'rc1:ptc:1', 'rc1'),
+    ptcDispatch('widget_tool', 'rc1:ptc:1', 'rc1'),
+  ]);
+  const { status, projection } = run(env.root);
+  assert.equal(status, 0);
+  assert.equal(projection.complete, true);
+  assert.deepEqual(projection.records[RECORD_ID], {
+    workflowInvocations: 1,
+    verificationInvocations: 0,
+    unattributedInvocations: 0,
+    capabilityAssessment: 'unknown',
+  });
+  assert.equal(projection.scannedSessions, 1);
+  // Native run_code row plus the completed PTC dispatch; the start is not a call.
+  assert.equal(projection.scannedToolCalls, 2);
+});
+
+test('a PTC dispatch under an open evolution_probe is verification', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-verification', [
+    call('evolution_probe', 'p1'),
+    call('run_code', 'rc1'),
+    ptcStart('widget_tool', 'rc1:ptc:1', 'rc1'),
+    ptcDispatch('widget_tool', 'rc1:ptc:1', 'rc1'),
+    result('rc1'),
+    result('p1'),
+  ]);
+  const { projection } = run(env.root);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 0, verificationInvocations: 1, unattributedInvocations: 0, capabilityAssessment: undefined },
+  );
+});
+
+test('a PTC dispatch under a lifecycle call that never returns is unattributed', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-truncated', [
+    call('evolution_trial', 't1'),
+    call('run_code', 'rc1'),
+    ptcStart('widget_tool', 'rc1:ptc:1', 'rc1'),
+    ptcDispatch('widget_tool', 'rc1:ptc:1', 'rc1'),
+  ]);
+  const { projection } = run(env.root);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 1, capabilityAssessment: undefined },
+  );
+});
+
+test('a host-driven PTC dispatch with no native parent call is unattributed', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-host-driven', [
+    ptcStart('widget_tool', 'host:ptc:1', 'host-root'),
+    ptcDispatch('widget_tool', 'host:ptc:1', 'host-root'),
+  ]);
+  const { projection } = run(env.root);
+  assert.equal(projection.complete, true);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 1, capabilityAssessment: undefined },
+  );
+});
+
+test('a dangling PTC dispatch-start is unattributed, never a measured zero', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-dangling', [
+    call('run_code', 'rc1'),
+    ptcStart('widget_tool', 'rc1:ptc:1', 'rc1'),
+  ]);
+  const { projection } = run(env.root);
+  assert.equal(projection.complete, true);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 1, capabilityAssessment: undefined },
+  );
+  assert.equal(projection.scannedToolCalls, 1, 'a start is not a completed call');
+});
+
+test('a non-published PTC dispatch is ignored', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'ptc-unpublished', [
+    call('run_code', 'rc1'),
+    ptcStart('bash', 'rc1:ptc:1', 'rc1'),
+    ptcDispatch('bash', 'rc1:ptc:1', 'rc1'),
+  ]);
+  const { status, projection } = run(env.root);
+  assert.equal(status, 0);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 0, verificationInvocations: 0, unattributedInvocations: 0, capabilityAssessment: undefined },
+  );
+});
+
+test('ignored PTC rows do not change the native call path', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'native', [
+    call('evolution_probe', 'p1'),
+    call('widget_tool', 'c1'),
+    result('c1'),
+    result('p1'),
+    call('widget_tool', 'c2'),
+    ptcStart('bash', 'rc1:ptc:1', 'rc1'),
+    ptcDispatch('bash', 'rc1:ptc:1', 'rc1'),
+  ]);
+  const { projection } = run(env.root);
+  assert.deepEqual(
+    { ...projection.records[RECORD_ID], capabilityAssessment: undefined },
+    { workflowInvocations: 1, verificationInvocations: 1, unattributedInvocations: 0, capabilityAssessment: undefined },
+  );
+});
+
+test('a plaintext v4 session counts a real call like the zstd encoding', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'plain', [call('widget_tool', 'c1')], { plain: true });
+  const { status, projection } = run(env.root);
+  assert.equal(status, 0);
+  assert.equal(projection.complete, true);
+  assert.equal(projection.scannedSessions, 1);
+  assert.equal(projection.scannedToolCalls, 1);
+  assert.equal(projection.records[RECORD_ID].workflowInvocations, 1);
+});
+
+test('other canonical session generations are reported unscanned, never a measured zero', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'current', [call('widget_tool', 'c1')]);
+  writeSession(env.root, 'legacy-plain', [call('widget_tool', 'old1')], { plain: true, fileName: 'session.v3.jsonl' });
+  writeSession(env.root, 'legacy-zstd', [call('widget_tool', 'old2')], { fileName: 'session.v3.jsonl.zstd' });
+  writeSession(env.root, 'unversioned', [call('widget_tool', 'old3')], { plain: true, fileName: 'session.jsonl' });
+  const { status, projection } = run(env.root);
+  assert.equal(status, 3);
+  assert.equal(projection.complete, false);
+  assert.equal(projection.recordsComplete, false);
+  assert.deepEqual(
+    [...projection.failures.unsupportedSessionFormats].sort((left, right) => left.session.localeCompare(right.session)),
+    [
+      { session: 'legacy-plain', file: 'session.v3.jsonl' },
+      { session: 'legacy-zstd', file: 'session.v3.jsonl.zstd' },
+      { session: 'unversioned', file: 'session.jsonl' },
+    ],
+  );
+  assert.equal(projection.scannedSessions, 1, 'only the current generation is parsed');
+  assert.equal(projection.records[RECORD_ID].workflowInvocations, null);
+  assert.equal(projection.records[RECORD_ID].verificationInvocations, null);
+  assert.equal(projection.records[RECORD_ID].unattributedInvocations, null);
+});
+
+test('one session directory with both current encodings is ambiguous, never double counted', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  // A compression change leaves the old encoding next to the current one; both
+  // describe the same session.
+  writeSession(env.root, 'both', [call('widget_tool', 'z1')]);
+  writeSession(env.root, 'both', [call('widget_tool', 'p1')], { plain: true });
+  const { status, projection } = run(env.root);
+  assert.equal(status, 3);
+  assert.equal(projection.complete, false);
+  assert.equal(projection.scannedSessions, 0);
+  assert.deepEqual(projection.failures.ambiguousSessionEncoding, [{
+    session: 'both',
+    files: ['session.v4.jsonl', 'session.v4.jsonl.zstd'],
+  }]);
+  assert.equal(projection.records[RECORD_ID].workflowInvocations, null);
+});
+
+test('historical generations beside a current file are one session, not unsupported copies', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'migrated', [call('widget_tool', 'c1')]);
+  writeSession(env.root, 'migrated', [call('widget_tool', 'old1')], { fileName: 'session.v3.jsonl.zstd' });
+  const { status, projection } = run(env.root);
+  assert.equal(status, 0);
+  assert.equal(projection.complete, true);
+  assert.equal(projection.scannedSessions, 1);
+  assert.equal(projection.records[RECORD_ID].workflowInvocations, 1);
+  assert.equal(projection.failures, undefined);
 });

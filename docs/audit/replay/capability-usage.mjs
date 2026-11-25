@@ -17,12 +17,26 @@
  *     audit/status/confirm actions are read-only and delegate only forwards,
  *     while the candidate runs in the Desktop session with its own lifecycle
  *     calls;
- *   - every other call is `workflowInvocations`: a real session that chose the
- *     capability;
+ *   - the official PTC (`run_code`) route is also read: its nested
+ *     `tool/ptc-dispatch` rows are counted once (never together with the
+ *     matching `tool/ptc-dispatch-start`). A dispatch whose parent is a single
+ *     open native `run_code` instance is `workflowInvocations`; a historical
+ *     non-`run_code` parent, a finished or reused run_code id, a PTC lifecycle
+ *     window whose final row can arrive asynchronously after a later normal
+ *     call, and a start with no final dispatch are `unattributedInvocations`;
+ *   - every other native call is `workflowInvocations`: a real session that
+ *     chose the capability;
  *   - a call made under a lifecycle call that never returned (crashed or
  *     truncated log) is `unattributedInvocations`; it is neither usage nor
  *     verification, and it stops "zero" from supporting a retirement
  *     recommendation;
+ *   - both current-generation encodings are scanned (`session.v4.jsonl.zstd`
+ *     and plaintext `session.v4.jsonl`). A directory holding both is an
+ *     ambiguous encoding and neither is counted. Any other canonical session
+ *     log (`session.jsonl`, `session.vN.jsonl[.zstd]`) in a directory without a
+ *     current file is reported as unscanned and makes the projection incomplete
+ *     rather than a measured zero; older generations beside a current file are
+ *     the same session's migrated copies;
  *   - `capabilityAssessment` is never inferred. Pass `--assessments <file>`
  *     with an explicit `{ "<recordId>": "self-contained" | "workflow-relevant" }`
  *     map after reviewing the source; otherwise every record stays `unknown`,
