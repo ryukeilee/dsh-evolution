@@ -97,7 +97,8 @@
 `indexRead + reconcileIdle + sourceVerify + review`。父进程测批量墙钟，子进程各自报 CPU。
 **计时边界**：这是"每个入口各做一遍只读认证"的合成负载，不是完整的 Consumer 启动——
 真实启动还会调用 `writeConsumerState()`，它获取同一把 SQLite 发布锁；本表不含这部分写入，
-也不含 Include 挂载与 fiber 验证。
+也不含 Include 挂载与 fiber 验证。父进程的"批量墙钟"在 `spawn` 循环之后起计：不含 spawn
+调用本身，但含三个子进程的启动与模块加载。三个子进程执行同一组负载。
 
 | 记录数 | 批量墙钟中位数 | Σ子进程 CPU（indexRead / reconcileIdle / sourceVerify / review） |
 | ---: | ---: | --- |
