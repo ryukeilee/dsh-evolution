@@ -507,8 +507,8 @@ async function rescan(args) {
   const samples = Number(args.samples ?? 5);
   // The real production scanner, constructed through the real host factory. It
   // is the only way to time the exact read/parse/validation and failure
-  // behaviour (a corrupt state file throws; a directory named *.json throws)
-  // instead of a lookalike.
+  // behaviour (a corrupt state file throws; a directory named *.json is
+  // skipped) instead of a lookalike.
   const hostMod = await import(pathToFileURL(path.join(path.dirname(SCRIPT), '..', '..', 'lib/desktop-task-host.js')).href);
   const ctx = { logger: { info() {}, warn() {}, error() {}, debug() {} }, tools: { get() { return null; }, execute: async () => ({}) } };
   const host = hostMod.createDesktopTaskHost(ctx, { dshHome: fixture, scanIntervalMs: 3_600_000, approvalPollMs: 3_600_000 });
