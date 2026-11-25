@@ -230,6 +230,9 @@ test('E: maxRemovals defers surplus files and maxEntries truncates the pass', as
   for (const sessionId of ids) {
     await writeConsumerSessionLease({ consumersDir, profile: PROFILE, sessionId, pid: 900001 });
   }
+  // The collector processes session stems in sorted order. Derive the expected
+  // survivor from that order instead of assuming the creation order.
+  const sorted = [...ids].sort();
   const removal = await collectConsumerSessionGarbage({
     consumersDir,
     profile: PROFILE,
@@ -239,13 +242,17 @@ test('E: maxRemovals defers surplus files and maxEntries truncates the pass', as
   assert.equal(removal.status, 'ok');
   assert.equal(removal.removedLeases, 1);
   assert.equal(removal.deferred >= 1, true);
-  assert.equal(await exists(path.join(consumersDir, consumerSessionFileNames(PROFILE, ids[1]).lease)), true);
+  assert.deepEqual(removal.decisions.map((decision) => [decision.sessionId, decision.action, decision.reason]),
+    sorted.map((sessionId) => [sessionId, 'remove', 'stale-lease']));
+  assert.equal(await exists(path.join(consumersDir, consumerSessionFileNames(PROFILE, sorted[0]).lease)), false);
+  assert.equal(await exists(path.join(consumersDir, consumerSessionFileNames(PROFILE, sorted[1]).lease)), true);
 
   const { consumersDir: secondDir } = await tempConsumers(t);
   const more = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()];
   for (const sessionId of more) {
     await writeConsumerSessionLease({ consumersDir: secondDir, profile: PROFILE, sessionId, pid: 900001 });
   }
+  const sortedMore = [...more].sort();
   const truncated = await collectConsumerSessionGarbage({
     consumersDir: secondDir,
     profile: PROFILE,
@@ -255,8 +262,9 @@ test('E: maxRemovals defers surplus files and maxEntries truncates the pass', as
   assert.equal(truncated.status, 'ok');
   assert.equal(truncated.sessions, 3);
   assert.equal(truncated.truncated, true);
-  assert.equal(truncated.decisions.length, 2);
+  assert.deepEqual(truncated.decisions.map((decision) => decision.sessionId), sortedMore.slice(0, 2));
   assert.equal(truncated.removedLeases, 2);
+  assert.equal(await exists(path.join(secondDir, consumerSessionFileNames(PROFILE, sortedMore[2]).lease)), true);
 });
 
 // --- F. Removal failures -----------------------------------------------------
