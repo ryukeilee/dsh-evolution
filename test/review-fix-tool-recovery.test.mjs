@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import { Context } from '@deepseek-ai/cordis';
 
 import { apply as applyCollector } from '../lib/experience-collector.js';
@@ -72,21 +72,31 @@ const pinRecoveryLater = (records) => records.map((row) => ({
 }));
 
 test('five failures then five successes write a recovery fact and resolve the target', async (t) => {
-  const app = await mounted(t);
-  const agent = { id: 'recovery-five' };
-  emitRun(app, agent, 'five', 5, 5);
-  const store = app.get('evolutionExperience').store;
-  const records = store.discover().records;
-  const [recovery] = recoveryRows(records);
-  assert.ok(recovery, 'a recovery fact must be discoverable after five successes');
-  assert.equal(recovery.scope, 'tool read');
-  assert.equal(recovery.failureCount, 0, 'a recovery is not a failure');
-  assert.ok(recovery.successCount >= 1, 'a recovery is a success');
-  const plan = planEvolutionCandidates({ knowledge: pinRecoveryLater(records), failureMemory: [] });
-  assert.equal(plan.selected, null, 'the recovered target must not be selected');
-  const rejected = plan.rejected.find((row) => row.problemKey === 'tool read');
-  assert.ok(rejected, `tool read should be rejected, got ${JSON.stringify(plan)}`);
-  assert.equal(rejected.reason, 'already-resolved');
+  const t0 = Date.parse('2026-11-01T00:00:00.000Z');
+  mock.timers.enable({ apis: ['Date'], now: t0 });
+  try {
+    const app = await mounted(t);
+    const agent = { id: 'recovery-five' };
+    emitRun(app, agent, 'five', 5, 5);
+    // A recovery in the failure's own millisecond is never written; the next
+    // clean success in a later millisecond commits the same episode.
+    mock.timers.setTime(t0 + 1000);
+    app.emit('tools/result', { agent, name: 'read', callId: 'five-later' }, succeeded());
+    const store = app.get('evolutionExperience').store;
+    const records = store.discover().records;
+    const [recovery] = recoveryRows(records);
+    assert.ok(recovery, 'a recovery fact must be discoverable after five successes');
+    assert.equal(recovery.scope, 'tool read');
+    assert.equal(recovery.failureCount, 0, 'a recovery is not a failure');
+    assert.ok(recovery.successCount >= 1, 'a recovery is a success');
+    const plan = planEvolutionCandidates({ knowledge: records, failureMemory: [] });
+    assert.equal(plan.selected, null, 'the recovered target must not be selected');
+    const rejected = plan.rejected.find((row) => row.problemKey === 'tool read');
+    assert.ok(rejected, `tool read should be rejected, got ${JSON.stringify(plan)}`);
+    assert.equal(rejected.reason, 'already-resolved');
+  } finally {
+    mock.timers.reset();
+  }
 });
 
 test('four successes stay in the window and keep the target a candidate', async (t) => {
@@ -113,38 +123,59 @@ test('four clean successes plus one truncated success do not write a recovery fa
 });
 
 test('a new failure reopens the target and a second episode writes a second recovery fact', async (t) => {
-  const app = await mounted(t);
-  const agent = { id: 'recovery-twice' };
-  emitRun(app, agent, 'episode-1', 5, 5);
-  const store = app.get('evolutionExperience').store;
-  const afterFirst = store.stats().events;
-  assert.deepEqual(recoveryRows(store.discover().records).map((row) => row.successCount), [1]);
+  const t0 = Date.parse('2026-11-01T00:00:00.000Z');
+  mock.timers.enable({ apis: ['Date'], now: t0 });
+  try {
+    const app = await mounted(t);
+    const agent = { id: 'recovery-twice' };
+    emitRun(app, agent, 'episode-1', 5, 5);
+    mock.timers.setTime(t0 + 1000);
+    app.emit('tools/result', { agent, name: 'read', callId: 'episode-1-later' }, succeeded());
+    const store = app.get('evolutionExperience').store;
+    const afterFirst = store.stats().events;
+    assert.deepEqual(recoveryRows(store.discover().records).map((row) => row.successCount), [1]);
 
-  emitRun(app, agent, 'episode-2', 5, 0);
-  const reopened = planEvolutionCandidates({ knowledge: store.discover().records, failureMemory: [] });
-  assert.ok(reopened.candidates.some((row) => row.problemKey === 'tool read'),
-    `a fresh failure must reopen the target: ${JSON.stringify(reopened.rejected)}`);
-  emitRun(app, agent, 'episode-2-ok', 0, 5);
+    mock.timers.setTime(t0 + 2000);
+    emitRun(app, agent, 'episode-2', 5, 0);
+    const reopened = planEvolutionCandidates({ knowledge: store.discover().records, failureMemory: [] });
+    assert.ok(reopened.candidates.some((row) => row.problemKey === 'tool read'),
+      `a fresh failure must reopen the target: ${JSON.stringify(reopened.rejected)}`);
+    emitRun(app, agent, 'episode-2-ok', 0, 5);
+    mock.timers.setTime(t0 + 3000);
+    app.emit('tools/result', { agent, name: 'read', callId: 'episode-2-later' }, succeeded());
 
-  // Five new failure events and one new recovery event: a duplicate recovery id
-  // would not insert a new ledger row.
-  assert.equal(store.stats().events, afterFirst + 6);
-  const recoveries = recoveryRows(store.discover().records);
-  assert.equal(recoveries.length, 1, 'both recovery facts merge into one canonical row');
-  assert.equal(recoveries[0].successCount, 2, 'the second event is counted in the same row');
-  const settled = planEvolutionCandidates({ knowledge: pinRecoveryLater(store.discover().records), failureMemory: [] });
-  assert.equal(settled.rejected.find((row) => row.problemKey === 'tool read')?.reason, 'already-resolved');
+    // Five new failure events and one new recovery event: a duplicate recovery id
+    // would not insert a new ledger row.
+    assert.equal(store.stats().events, afterFirst + 6);
+    const recoveries = recoveryRows(store.discover().records);
+    assert.equal(recoveries.length, 1, 'both recovery facts merge into one canonical row');
+    assert.equal(recoveries[0].successCount, 2, 'the second event is counted in the same row');
+    const settled = planEvolutionCandidates({ knowledge: store.discover().records, failureMemory: [] });
+    assert.equal(settled.rejected.find((row) => row.problemKey === 'tool read')?.reason, 'already-resolved');
+  } finally {
+    mock.timers.reset();
+  }
 });
 
 test('successes beyond the threshold do not repeat the recovery event', async (t) => {
-  const app = await mounted(t);
-  const agent = { id: 'recovery-long' };
-  emitRun(app, agent, 'long', 5, 200);
-  const store = app.get('evolutionExperience').store;
-  const recoveries = recoveryRows(store.discover().records);
-  assert.equal(recoveries.length, 1);
-  assert.equal(recoveries[0].successCount, 1, 'one episode writes exactly one recovery fact');
-  assert.equal(store.stats().events, 6, 'five failures plus one recovery event');
+  const t0 = Date.parse('2026-11-01T00:00:00.000Z');
+  mock.timers.enable({ apis: ['Date'], now: t0 });
+  try {
+    const app = await mounted(t);
+    const agent = { id: 'recovery-long' };
+    emitRun(app, agent, 'long', 5, 5);
+    // The remaining 195 successes land in a later millisecond: the first one
+    // writes the recovery, none of the rest may repeat it.
+    mock.timers.setTime(t0 + 1000);
+    emitRun(app, agent, 'long-later', 0, 195);
+    const store = app.get('evolutionExperience').store;
+    const recoveries = recoveryRows(store.discover().records);
+    assert.equal(recoveries.length, 1);
+    assert.equal(recoveries[0].successCount, 1, 'one episode writes exactly one recovery fact');
+    assert.equal(store.stats().events, 6, 'five failures plus one recovery event');
+  } finally {
+    mock.timers.reset();
+  }
 });
 
 // S1: the official bash tool signals a failed foreground command with
@@ -220,4 +251,41 @@ test('plan: recovery only resolves a target strictly newer than the latest failu
   const later = planEvolutionCandidates({ knowledge: [failure, recovery('2026-11-01T00:00:01.000Z')], failureMemory: [] }, { now });
   assert.equal(later.candidates.some((row) => row.problemKey === 'tool read'), false);
   assert.equal(later.rejected.find((row) => row.problemKey === 'tool read')?.reason, 'already-resolved');
+});
+
+// R2-1: a recovery written in the same millisecond as its failure can never
+// satisfy the planner's strict timing rule. Writing it anyway spends the
+// episode, so the remaining successes cannot emit a later fact and the target
+// stays at a 100% observed failure rate forever.
+test('a same-millisecond recovery waits for a later clean success and stays one episode', async (t) => {
+  const t0 = Date.parse('2026-11-01T00:00:00.000Z');
+  mock.timers.enable({ apis: ['Date'], now: t0 });
+  try {
+    const app = await mounted(t);
+    const agent = { id: 'recovery-clock' };
+    const store = app.get('evolutionExperience').store;
+    emitRun(app, agent, 'clock', 5, 5);
+
+    // Five clean successes in the failure's millisecond are counted but not
+    // committed: a same-instant recovery can never resolve the target.
+    assert.equal(recoveryRows(store.discover().records).length, 0,
+      'a same-millisecond recovery must not be written');
+    assert.equal(store.stats().events, 5, 'five failures and no recovery event');
+
+    mock.timers.setTime(t0 + 1000);
+    app.emit('tools/result', { agent, name: 'read', callId: 'clock-later' }, succeeded());
+    const after = store.discover().records;
+    assert.equal(recoveryRows(after).length, 1, 'the first later-millisecond clean success writes recovery');
+    const settled = planEvolutionCandidates({ knowledge: after, failureMemory: [] });
+    assert.equal(settled.rejected.find((row) => row.problemKey === 'tool read')?.reason, 'already-resolved');
+
+    const events = store.stats().events;
+    for (let index = 0; index < 10; index += 1) {
+      app.emit('tools/result', { agent, name: 'read', callId: `clock-extra-${index}` }, succeeded());
+    }
+    assert.equal(store.stats().events, events, 'extra successes must not flush another episode');
+    assert.equal(recoveryRows(store.discover().records).length, 1);
+  } finally {
+    mock.timers.reset();
+  }
 });
