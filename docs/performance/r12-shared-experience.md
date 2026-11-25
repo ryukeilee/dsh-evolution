@@ -100,9 +100,11 @@ CPU 中位数 0.300 → 0.283 ms（−5.7%），墙钟 0.2386 → 0.2346 ms（�
 绝对差 0.017 ms，且该路径的 SQL 没有改动；视为噪声，不作为收益。
 `open()` 中位数 A/B = 1.064/1.079 ms（writes）、1.116/1.118 ms（duplicates），
 `close()` 约 0.6–0.7 ms——这些是 harness，不计入上表的工作窗口。
-两侧 `stats()` 相同；脚本在 `close()` 前读取的 SQLite 主文件大小相同
-（writes/readcontrol 98,304 B；duplicates 94,208 B）——这是文件大小，不是
-“落盘内容逐字节相同”的证明，逻辑内容的逐字段对拍见 §3。maxRSS 中位数
+两侧 `stats()` 相同；脚本在 `close()` 前读取的 SQLite 主文件大小只在**中位数**上相同
+（writes/readcontrol 98,304 B；duplicates 94,208 B）。逐样本并不总是相同：Builder 数据在
+writes 的 round 3 / sample 3 为 102,400 B 对 90,112 B，Lead 数据在 round 2 / sample 2 为
+90,112 B 对 98,304 B。WAL 模式下主文件大小本来就不是内容证明，正确性只主张 §3 差分测试
+实际比较的逻辑字段（events 身份、knowledge 键/修订/稳定 body、clock、stats 与查询答案）。maxRSS 中位数
 68,720/66,032 KiB（进程高水位，含 imports，不作为内存下降证明）。
 
 Lead 在复审修复后用同一脚本独立复跑（`r12-lead-shared-experience.json`，机器上
