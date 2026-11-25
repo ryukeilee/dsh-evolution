@@ -18,6 +18,16 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.22 — 稳定版
+
+`0.2.21` 的稳定后继：纳入第十二、十三轮开放性性能研究（PR #106 与 #107）中经证据确认的优化。分发内容只改 `lib/event-log-checkpoint.js` 与 `lib/experience-recall.js`；持久化 schema、协议、工具名与参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变。
+
+- **回收日志规划复用已验签信封（`c47a17e`）。** `planLogPrune()` 原本在认证循环里逐行 `toString` → `JSON.parse` → HMAC 验签，算出 `boundary` 后又对前 `boundary` 行二次解码与解析，只为投影 `prunable`。现在认证循环保存已通过的 `{eventId, mac}`，`prunable` 直接取用；计划输出（`prior` / `tail` 摘要、`prefixBytes`、`prunable`、`boundaryRecords`）逐字节不变，认证次数、floor、marker 剪裁与提交顺序未改。A/B（3 轮 × 每侧 5 样本，A→B→A2 交替，配对中位数）：2,000 / 20,000 / 100,000 事件下 CPU −7.16% / −11.26% / −13.74%，A/A 噪声 +0.09% / +1.86% / +0.56%；100,000 档每次调用约省 63.7 ms。收益只在显式 `reclaim()` 的日志分支，固定扫描与摘要开销不变，不外推为端到端收益。
+- **经验召回排序键惰性缓存（`e4913e8`）。** `sortCandidates()` 在同一轮排序内对每个候选只计算一次排序键。`recall` 73.732 → 66.836 ms（−9.35%），三对配对差全部为负；A/A 对照 −0.10%，未改动对照（`recall-none`、`recall-one`、`conclusions-nomatch`、`discover`）均落在噪声内。
+- **撤回的候选。** `appendBounded()` 把 `stableStringify(value)` 提到循环外（热 key 写入约 −6%）在独立审核中被证伪：状态化 accessor 的输入会让基线不序列化、候选提前序列化，导致去重结果与失败顺序改变，已恢复基线实现。
+- **NO CHANGE 结论。** 跨入口 / 诊断 / 统一审查 / 用量 / 桌面任务通道未发现可消除增长；进化闭环耗时构成已量化，5,000 行时 `findConclusions()` 全表扫描约占闭环 34%，属于 O(历史) 已知边界。
+- **验证。** 全量 2,355 项 / 2,353 通过 / 0 失败 / 2 跳过；`pack:check` 17/17；独立复审六轮后 APPROVE；CI 13/13 通过。
+
 ## 0.2.21 — 稳定版
 
 `0.2.20` 的稳定后继：收口第十、十一轮开放性全链路研究及四轮独立复审的修复（PR #102 与 #104）。相对 `0.2.20` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-host.js`、`lib/diagnostics.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/index.js`、`lib/orchestrator.js`、`lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`；持久化 schema 编号未变，`0.2.19` 的 floor 降级边界与 `0.2.20` 相同（`docs/compatibility/retention-floor.md`），既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改变。
