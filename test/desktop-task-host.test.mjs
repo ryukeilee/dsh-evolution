@@ -292,6 +292,49 @@ test('a task runs the real kernel sequence and reaches stable after a bound appr
   }
 });
 
+test('canary evidence records bounded sample digests instead of raw tool bodies', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const bodies = [
+    'FIRST_SENTINEL_TOOL_BODY_6e21b7',
+    'SECOND_SENTINEL_TOOL_BODY_9c04af',
+  ];
+  plan.plan.verification.samples.forEach((sample, index) => { sample.expected.body = bodies[index]; });
+  const kernel = fakeKernel({ facts: factsWriter(home) });
+  const ctx = fakeCtx(kernel, plan);
+  const directGet = ctx.tools.get;
+  ctx.tools.get = (name, agent) => {
+    const tool = directGet(name, agent);
+    if (name !== plan.tool || tool === null) return tool;
+    const execute = tool.execute;
+    return { execute: async (args) => ({ ...(await execute(args)), body: bodies[args.text === 'abc' ? 0 : 1] }) };
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.error, null);
+  const observations = kernel.calls.filter((call) => call.name === 'evolution_canary_observe');
+  assert.ok(observations.length >= 2, 'the stable path still completes the canary window');
+  for (const call of observations) {
+    const { actualToolOutput } = call.args.evidence;
+    assert.ok(Array.isArray(actualToolOutput));
+    assert.equal(actualToolOutput.length, 2);
+    for (const item of actualToolOutput) {
+      assert.deepEqual(Object.keys(item).sort(), ['label', 'resultCharacters', 'resultSha256']);
+      assert.match(item.resultSha256, /^[0-9a-f]{64}$/);
+      assert.equal(typeof item.resultCharacters, 'number');
+      assert.ok(item.resultCharacters > 0);
+    }
+    assert.notEqual(actualToolOutput[0].resultSha256, actualToolOutput[1].resultSha256, 'different tool results keep different digests');
+    const serialized = JSON.stringify(call.args);
+    assert.equal(serialized.includes(bodies[0]), false, 'no raw tool body may enter canary evidence');
+    assert.equal(serialized.includes(bodies[1]), false, 'no raw tool body may enter canary evidence');
+  }
+});
+
 test('the host forwards optional strategy and rootCause to evolution_propose unchanged', async (t) => {
   const { home, plan, kernel, host } = harness(t);
   plan.plan.proposal.strategy = 'fix:timeout-retry';
