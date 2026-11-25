@@ -18,6 +18,17 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.21 — 稳定版
+
+`0.2.20` 的稳定后继：收口第十、十一轮开放性全链路研究及四轮独立复审的修复（PR #102 与 #104）。相对 `0.2.20` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-host.js`、`lib/diagnostics.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/index.js`、`lib/orchestrator.js`、`lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`；持久化 schema 编号未变，`0.2.19` 的 floor 降级边界与 `0.2.20` 相同（`docs/compatibility/retention-floor.md`），既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改变。
+
+- **用量归因。** 官方 `tool/ptc-dispatch` 一次调用只计一次；`session.v4.jsonl.zstd` 与明文 `session.v4.jsonl` 都纳入统计。双编码目录记为 ambiguous、旧 generation 记为 unscanned，不再把未覆盖的目录报成“实测 0”；旧 `usage.json` 的零值通过 `coverage` 回到 unknown。只有恰好一个未返回的 native `run_code` 实例能证明 workflow，PTC 生命周期结果异步追加的窗口记为 unattributed。
+- **结论适用与恢复。** 结论按实验捕获的版本重算，跨重启按 probe → durable 顺序读取；稳定提交后崩溃留下的已采纳结论可以恢复，不再沿用失效结论。
+- **工具恢复事实。** 工具失败恢复写独立事实 `tool/recovery`，planner 能判定目标为 `already-resolved`；恢复按 clean exit 与未解决损失收敛，并修正同毫秒内多条失败/恢复的排序，避免提前判定已解决或掩盖仍在发生的截断。
+- **consumer 诊断一致。** consumer 状态不可读或 `invalid`、缺 activation 行、继承行畸形时，doctor 与统一审查给出一致结论；有界读取的 50 行窗口仍会提示其后的非法行；索引重建后遗留的孤儿 ACTIVE 挂载会被诊断发现。
+- **宿主证据保真。** probe/样本证据无损保留原始值，canary 证据不再夹带正文，样本不匹配的错误信息有界且类型规范化。
+- **验证。** 全量 2342 项 / 2340 通过 / 0 失败 / 2 跳过；`pack:check` 17/17；独立复审 R1–R3 为 CHANGES、R4 在 `429c7bc` 上 APPROVE；CI 13/13 通过。
+
 ## 0.2.20 — 稳定版
 
 `0.2.19` 的稳定后继：把第八、九轮开放性全链路研究与最终收敛修复纳入正式基线（PR #98 与 #99），并以真实 SIGKILL 注入补齐 ambiguous floor 的 commit→truncate 崩溃窗口验证。相对 `0.2.19` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/diagnostics.js`、`lib/domain-storage.js`、`lib/event-log-checkpoint.js`、`lib/experience-recall.js`、`lib/guard.js`、`lib/orchestrator.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`；持久化 schema 编号未变（`0.2.20` 仍读取旧 floor；但一旦回收写入带 `ambiguousPrefix` / `identity` 的 ambiguous floor，`0.2.19` 会以 `unrecognized_keys` 拒绝该 floor，构成降级边界），既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改变。
