@@ -1,0 +1,281 @@
+// R13 differential equivalence for the two shared-experience hot-path rewrites:
+//   (A) knowledge.js `appendBounded()` hoists the pure `stableStringify(value)`
+//       out of the bounded-window scan;
+//   (B) experience-recall.js `sortCandidates()` precomputes each record's
+//       `orderingKey()` once per sort instead of once per comparison.
+// Both tests build a "baseline" variant by reverse-transforming the production
+// source, compare full outputs byte-for-byte on a rich corpus, assert the
+// redundant call is actually removed, and include a mutation whose differential
+// must fail (so the comparison is not a tautology).
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const REPO = path.resolve(import.meta.dirname, '..');
+const KNOWLEDGE_SOURCE = fs.readFileSync(path.join(REPO, 'lib/dockyard-domain/knowledge.js'), 'utf8');
+const RECALL_SOURCE = fs.readFileSync(path.join(REPO, 'lib/experience-recall.js'), 'utf8');
+
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'r13-equivalence-'));
+// `experience-recall.js` has three relative imports, so its variants need the
+// same relative dependency layout next to them in the temp tree.
+const tmpLib = path.join(tmp, 'lib');
+fs.mkdirSync(path.join(tmpLib, 'dockyard-domain'), { recursive: true });
+for (const name of ['experience-plan.js', 'error-boundary.js']) {
+  fs.copyFileSync(path.join(REPO, 'lib', name), path.join(tmpLib, name));
+}
+fs.copyFileSync(path.join(REPO, 'lib/dockyard-domain/knowledge.js'), path.join(tmpLib, 'dockyard-domain/knowledge.js'));
+let counter = 0;
+function loadVariant(source, tag, inLib = false) {
+  const file = inLib ? path.join(tmpLib, `${tag}-${counter++}.mjs`) : path.join(tmp, `${tag}-${counter++}.mjs`);
+  fs.writeFileSync(file, source);
+  return import(pathToFileURL(file).href);
+}
+function replaceOnce(source, from, to, label) {
+  assert.equal(source.split(from).length - 1, 1, `${label}: anchor must appear exactly once`);
+  return source.replace(from, to);
+}
+
+// --- A. appendBounded -------------------------------------------------------
+const APPEND_CANDIDATE = `function appendBounded(values, value, limit) {
+  const list = Array.isArray(values) ? values.filter((item) => item !== undefined && item !== null).map(clone) : [];
+  if (value !== undefined && value !== null) {
+    // \`stableStringify(value)\` is a pure function of \`value\` and the argument is
+    // unchanged while the bounded window is scanned. Computing it once instead
+    // of once per existing item removes redundant serialization on every append
+    // to a canonical row whose window is already populated.
+    const serialized = stableStringify(value);
+    if (!list.some((item) => stableStringify(item) === serialized)) list.push(clone(value));
+  }
+  return list.slice(-limit);
+}`;
+const APPEND_BASELINE = `function appendBounded(values, value, limit) {
+  const list = Array.isArray(values) ? values.filter((item) => item !== undefined && item !== null).map(clone) : [];
+  if (value !== undefined && value !== null && !list.some((item) => stableStringify(item) === stableStringify(value))) list.push(clone(value));
+  return list.slice(-limit);
+}`;
+// A broken variant: the hoisted value is replaced by a constant, so the dedupe
+// check never fires. Any corpus with a populated window must diverge.
+const APPEND_BROKEN = APPEND_CANDIDATE.replace('const serialized = stableStringify(value);', 'const serialized = "\\u0000never\\u0000";');
+
+function instrumentKnowledge(source) {
+  return replaceOnce(source, 'function stableStringify(value) {',
+    'function stableStringify(value) { globalThis.__r13SerializeCalls = (globalThis.__r13SerializeCalls || 0) + 1;',
+    'instrument stableStringify');
+}
+
+function knowledgeFact(i) {
+  const proto = JSON.parse('{"__proto__":"own-proto-' + i + '"}');
+  return {
+    knowledgeKey: 'knowledge:fact-' + i,
+    issueType: 'tool/error',
+    rootCause: 'cause ' + (i % 5),
+    strategy: null,
+    failureMode: 'line-truncated',
+    semanticFact: 'read failed ' + i,
+    scope: 'tool read',
+    status: 'failed',
+    outcome: 'failure',
+    confidence: 0.5,
+    regression: i % 9 === 0,
+    contradiction: i % 13 === 0,
+    sourceCollection: i % 2 ? 'observations' : 'learnings',
+    sourceRef: 'observations:event-' + i,
+    sourceId: 'event-' + i,
+    eventId: 'event-' + i,
+    occurredAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+    relations: i % 3 === 0 ? ['experiment:e-' + i, { proposal: 'p-' + i }] : [],
+    lineageId: i % 7 === 0 ? 'lineage-' + i : null,
+    recovery: i % 11 === 0 ? { status: 'observed', reason: 'tool:bash', restored: true } : null,
+    metrics: { latency: i % 17, ...(i % 19 === 0 ? proto : {}) },
+    delta: 1,
+  };
+}
+
+test('A. appendBounded rewrite is byte-equivalent and the differential has teeth', async () => {
+  const candidateSource = replaceOnce(KNOWLEDGE_SOURCE, APPEND_CANDIDATE, APPEND_BASELINE, 'reverse appendBounded');
+  assert.notEqual(candidateSource, KNOWLEDGE_SOURCE);
+  const [candidate, baseline] = await Promise.all([
+    loadVariant(KNOWLEDGE_SOURCE, 'knowledge-candidate'),
+    loadVariant(candidateSource, 'knowledge-baseline'),
+  ]);
+
+  // Populate every bounded window past its cap, then roll many events through
+  // the same canonical row (the exact shape a long-lived hot target reaches).
+  let a = null;
+  let b = null;
+  for (let i = 0; i < 90; i += 1) {
+    const event = candidate.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) });
+    const baselineEvent = baseline.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) });
+    a = candidate.mergeKnowledgeEntry(a, event, { now: new Date(0) });
+    b = baseline.mergeKnowledgeEntry(b, baselineEvent, { now: new Date(0) });
+    assert.equal(JSON.stringify(a), JSON.stringify(b), 'canonical row diverged after event ' + i);
+  }
+  // Replays inside the window must still be recognized as duplicates.
+  for (const i of [3, 17, 42, 89]) {
+    const event = candidate.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) });
+    const baselineEvent = baseline.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) });
+    assert.equal(
+      JSON.stringify(candidate.mergeKnowledgeEntry(a, event, { now: new Date(0) })),
+      JSON.stringify(baseline.mergeKnowledgeEntry(b, baselineEvent, { now: new Date(0) })),
+    );
+  }
+
+  // The hoist really removes calls: instrument stableStringify in both variants
+  // and run one populated-window merge.
+  globalThis.__r13SerializeCalls = 0;
+  const countedCandidate = await loadVariant(instrumentKnowledge(KNOWLEDGE_SOURCE), 'knowledge-count-c');
+  const countedBaseline = await loadVariant(instrumentKnowledge(candidateSource), 'knowledge-count-b');
+  // Populate the bounded windows in each instrumented module before counting a
+  // single merge; the hoist only pays when the window already has entries.
+  let warm = null;
+  let warmB = null;
+  for (let i = 0; i < 60; i += 1) {
+    warm = countedCandidate.mergeKnowledgeEntry(warm, countedCandidate.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) }), { now: new Date(0) });
+    warmB = countedBaseline.mergeKnowledgeEntry(warmB, countedBaseline.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) }), { now: new Date(0) });
+  }
+  const event = countedCandidate.normalizeKnowledgeEvent(knowledgeFact(60), { now: new Date(0) });
+  const eventB = countedBaseline.normalizeKnowledgeEvent(knowledgeFact(60), { now: new Date(0) });
+  globalThis.__r13SerializeCalls = 0;
+  countedCandidate.mergeKnowledgeEntry(warm, event, { now: new Date(0) });
+  const candidateCalls = globalThis.__r13SerializeCalls;
+  globalThis.__r13SerializeCalls = 0;
+  countedBaseline.mergeKnowledgeEntry(warmB, eventB, { now: new Date(0) });
+  const baselineCalls = globalThis.__r13SerializeCalls;
+  assert.ok(baselineCalls > candidateCalls, `expected fewer serializations: candidate=${candidateCalls}, baseline=${baselineCalls}`);
+
+  // Counter-example: a stale hoisted value breaks the byte differential.
+  const brokenSource = replaceOnce(KNOWLEDGE_SOURCE, APPEND_CANDIDATE, APPEND_BROKEN, 'inject broken hoist');
+  const broken = await loadVariant(brokenSource, 'knowledge-broken');
+  let bad = null;
+  for (let i = 0; i < 40; i += 1) {
+    const event = broken.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) });
+    bad = broken.mergeKnowledgeEntry(bad, event, { now: new Date(0) });
+  }
+  assert.notEqual(JSON.stringify(bad), JSON.stringify(b), 'the broken hoist must diverge from the baseline');
+});
+
+// --- B. sortCandidates ------------------------------------------------------
+const SORT_CANDIDATE = `function sortCandidates(records) {
+  // Fewer than two records cannot compare, so the baseline did zero work here.
+  // Return before allocating anything, making the sparse path exactly the same
+  // work as the baseline rather than merely the same result.
+  if (records.length < 2) return records;
+  const keys = new Map();
+  const keyOf = (record) => {
+    let key = keys.get(record);
+    if (key === undefined) { key = orderingKey(record); keys.set(record, key); }
+    return key;
+  };
+  return records.sort((left, right) => compareCandidates(left, right, keyOf));
+}`;
+const SORT_BASELINE = `function sortCandidates(records) {
+  return records.sort((left, right) => compareCandidates(left, right));
+}`;
+const SORT_BROKEN = `function sortCandidates(records) {
+  const keyOf = () => "stale";
+  return records.sort((left, right) => compareCandidates(left, right, keyOf));
+}`;
+function instrumentRecall(source) {
+  return replaceOnce(source, 'function orderingKey(record) {',
+    'function orderingKey(record) { globalThis.__r13OrderingCalls = (globalThis.__r13OrderingCalls || 0) + 1;',
+    'instrument orderingKey');
+}
+function recallRecords(n) {
+  return Array.from({ length: n }, (_, i) => {
+    const extended = i % 17 === 0 ? '+010000-01-01T00:00:00.000Z' : new Date(Date.UTC(2026, 0, 1, 0, 0, i % 60)).toISOString();
+    return {
+      source: 'knowledge',
+      key: 'knowledge:' + String(n - i).padStart(4, '0'),
+      problem: 'read failure',
+      scope: 'tool read',
+      strategy: i % 5 === 0 ? 'cache ' + (i % 3) : '',
+      failureMode: 'line-truncated',
+      rootCause: i % 7 === 0 ? 'pipe closed' : '',
+      prevention: '',
+      state: i % 2 ? 'LEARNING' : 'KNOWN',
+      lastOutcome: 'failure',
+      decision: 'failed',
+      successCount: i % 11 === 0 ? 1 : 0,
+      failureCount: i % 11 === 0 ? 0 : 1,
+      successRate: i % 11 === 0 ? 1 : 0,
+      fitnessMean: null,
+      regressionCount: i % 13 === 0 ? 1 : 0,
+      occurrences: 1 + (i % 3),
+      firstSeen: '2026-01-01T00:00:00.000Z',
+      lastSeen: extended,
+      evidenceRefs: ['event:' + i, 'ref:' + (i % 5)],
+    };
+  });
+}
+
+test('B. sortCandidates rewrite is byte-equivalent and the differential has teeth', async () => {
+  const baselineSource = replaceOnce(RECALL_SOURCE, SORT_CANDIDATE, SORT_BASELINE, 'reverse sortCandidates');
+  assert.notEqual(baselineSource, RECALL_SOURCE);
+  const [candidate, baseline] = await Promise.all([
+    loadVariant(RECALL_SOURCE, 'recall-candidate', true),
+    loadVariant(baselineSource, 'recall-baseline', true),
+  ]);
+  const input = { problem: 'read failure' };
+  const sources = (mod) => [
+    { source: 'knowledge', records: recallRecords(120), considered: 120, scanned: 120 },
+    { source: 'failure-memory', records: recallRecords(60).map((r) => ({ ...r, source: 'failure-memory', strategy: '' })), considered: 60, scanned: 60 },
+  ];
+  assert.equal(
+    JSON.stringify(candidate.finalizeExperienceRecall(input, sources(candidate), {})),
+    JSON.stringify(baseline.finalizeExperienceRecall(input, sources(baseline), {})),
+    'finalizeExperienceRecall output diverged',
+  );
+  assert.equal(
+    JSON.stringify(candidate.collectKnowledgeExperience(recallRecords(150), input, {})),
+    JSON.stringify(baseline.collectKnowledgeExperience(recallRecords(150), input, {})),
+    'collectKnowledgeExperience output diverged',
+  );
+
+  // Call-count proof needs a tie-heavy corpus: the comparator only builds an
+  // ordering key when exact/score/recency all tie, which is the shape a real
+  // long-lived store produces (many failures with identical bounded scores).
+  const tied = (n) => Array.from({ length: n }, (_, i) => ({
+    ...recallRecords(1)[0],
+    key: 'knowledge:' + String(n - i).padStart(4, '0'),
+    problem: 'read failure', strategy: '', state: 'LEARNING', successCount: 0,
+    failureCount: 1, successRate: 0, occurrences: 1, regressionCount: 0,
+    lastSeen: '2026-01-01T00:00:00.000Z', evidenceRefs: ['event:' + i],
+  }));
+  const tiedSources = (mod) => [{ source: 'knowledge', records: tied(120), considered: 120, scanned: 120 }];
+  globalThis.__r13OrderingCalls = 0;
+  const countedCandidate = await loadVariant(instrumentRecall(RECALL_SOURCE), 'recall-count-c', true);
+  const countedBaseline = await loadVariant(instrumentRecall(baselineSource), 'recall-count-b', true);
+  countedCandidate.finalizeExperienceRecall(input, tiedSources(countedCandidate), {});
+  const candidateCalls = globalThis.__r13OrderingCalls;
+  globalThis.__r13OrderingCalls = 0;
+  countedBaseline.finalizeExperienceRecall(input, tiedSources(countedBaseline), {});
+  const baselineCalls = globalThis.__r13OrderingCalls;
+  assert.ok(baselineCalls > candidateCalls, `expected fewer orderingKey builds: candidate=${candidateCalls}, baseline=${baselineCalls}`);
+
+  // The lazy cache must not turn into unconditional recomputation: with zero or
+  // one candidate no comparison reaches the tie-break, so both sides must do
+  // zero orderingKey builds (strictly no worse than baseline).
+  for (const count of [0, 1]) {
+    const sparse = (mod) => [{ source: 'knowledge', records: tied(count), considered: count, scanned: count }];
+    globalThis.__r13OrderingCalls = 0;
+    countedCandidate.finalizeExperienceRecall(input, sparse(countedCandidate), {});
+    const cCalls = globalThis.__r13OrderingCalls;
+    globalThis.__r13OrderingCalls = 0;
+    countedBaseline.finalizeExperienceRecall(input, sparse(countedBaseline), {});
+    const bCalls = globalThis.__r13OrderingCalls;
+    assert.equal(cCalls, 0, `${count} candidate(s): candidate must build zero ordering keys`);
+    assert.equal(bCalls, 0, `${count} candidate(s): baseline must build zero ordering keys`);
+  }
+
+  const broken = await loadVariant(replaceOnce(RECALL_SOURCE, SORT_CANDIDATE, SORT_BROKEN, 'inject stale keys'), 'recall-broken', true);
+  assert.notEqual(
+    JSON.stringify(broken.finalizeExperienceRecall(input, sources(broken), {})),
+    JSON.stringify(baseline.finalizeExperienceRecall(input, sources(baseline), {})),
+    'stale precomputed keys must break the differential',
+  );
+});
+
+test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
