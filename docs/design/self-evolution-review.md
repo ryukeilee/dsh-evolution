@@ -54,10 +54,10 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 | 状态 | 含义 | 动作 |
 | --- | --- | --- |
 | `active` | 所有未被操作者撤销的已批准 profile 在当前宿主上 active，且索引未在 consumer 启动后变化 | `none` |
-| `inactive` | 所有已批准 profile 都被操作者撤销；consumer 行里未批准的陈旧记录也归入此列 | `none` |
+| `inactive` | 所有已批准 profile 都被操作者撤销；consumer 行里未批准且非 active 的陈旧记录也归入此列 | `none` |
 | `pending-revalidation` | 记录宿主与当前 DSH/Cordis/Include/Node 身份不一致 | `revalidate` |
 | `incompatible` | 当前宿主上 consumer 报告缺少能力/服务或 plugin apply 失败 | `repair-stable` |
-| `restart-required` | consumer 状态过期或不可读（索引变化、pending-restart、状态文件缺失/不可读、或宿主已匹配但记录仍是旧 pending-revalidation） | `restart-consumer` |
+| `restart-required` | consumer 状态过期或不可读（索引变化、pending-restart、状态文件缺失/不可读、或宿主已匹配但记录仍是旧 pending-revalidation），或 consumer 仍把索引中已删除/未批准的记录报为 `active`（孤儿挂载） | `restart-consumer` |
 | `host-unavailable` | consumer 报告 `include-unavailable`（宿主可用性失败，不是插件结论） | `restart-consumer` |
 | `verify-host` | 无法证明当前宿主身份 | `verify-host` |
 | `source-unusable` | 源码缺失、符号链接、摘要不一致 | `operator-action` |
@@ -70,6 +70,15 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 索引结构合法但包含未通过 `validateSharedRecord` 的记录时，review 不会静默跳过：它计入 `summary.invalid`、把总状态标为
 `blocked`，并为每条损坏记录给出 `operator-action`；consumer 对同一行实际会报 `skipped-invalid`。`skipped-unapproved`
 只能来自与该记录批准范围不一致的陈旧 consumer 行（主循环只遍历记录自己的 `approvedProfiles`），因此按 stale 处理。
+
+**孤儿挂载。** 索引可读并不等于 consumer 的运行状态健康：某条记录可能已从 `published.json` 删除，或其
+`approvedProfiles` 已收窄，而 consumer 在上一次启动时挂载的插件仍在运行。review 对每个
+`status: "active"` 的 consumer 行检查索引：找不到对应记录（`reason: record-missing`）或该 profile 不在批准范围
+（`reason: profile-not-approved`）时，记入 `orphanMounts`，并为该 profile 产出 `restart-consumer` 动作
+（`code: "orphan-active-mount"`）。删除记录或收窄批准范围不会卸载已运行的插件，只有重启对应 consumer 才会。
+索引 `status: "absent"` 但存在 active 孤儿时，review 返回 `restart-required` + `reason: "orphan-active-mount"`，
+而不是 `absent`；没有孤儿时才保持原有的 `absent` / `no-action`。孤儿只把最终状态提升到 `restart-required`，
+不会覆盖更高优先级的 `blocked` / `pending-revalidation` / `incompatible`。
 
 ## 4. 动作排序
 
@@ -86,6 +95,8 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 同一 `(action, recordId/problemKey/profile)` 只出现一次，输出有界。stable 动作在截断前先按同一优先级排序，
 因此 `operator-action` / `verify-host` / `revalidate` 不会被索引里靠后的低优先级记录挤掉；被截断的条数由
 `nextActionsDropped` 报告，并令 `selfEvolution.incomplete=true`，模型不能把不完整的 review 当成完整结果。
+孤儿挂载的 `restart-consumer` 动作按 `recordId + profile` 各自保留一条（`code: "orphan-active-mount"`），
+同一插件在 acp 与 web 都残留时不会合并成一条，因此操作者不会漏掉其中一个入口。
 
 记录数也有上限：一次 review 只评估索引中的前 50 条记录（`SELF_EVOLUTION_REVIEW_LIMITS.maxRecords`）。索引在
 结构上合法但超过这个上限时，review 不为未评估的行编造 per-record 状态，而是增加一条 `operator-action`：说明
@@ -169,6 +180,9 @@ revalidate 不是新的晋升，也不改变八项门禁、所有者确认或授
 
 - 检查只读：不修复索引、不重试 consumer、不 reset sticky failure；这些仍是显式操作者动作。
 - consumer 的 `hostDigest` 是上一次启动时捕获的事实；索引在其后变化时只报告 `restart-required`，不推断当前运行状态。
+- 孤儿挂载的读取边界：review 只读取每个 profile 的前 50 条 consumer 行（`SELF_EVOLUTION_REVIEW_LIMITS.maxRecords`），
+  超出上限的孤儿不在 review 的 `orphanMounts` 里；doctor 的 `promotion.sharing` 读取全量 consumer 状态，
+  两个只读面因此不会同时漏报同一批孤儿。
 - 当前宿主身份优先来自官方 `PluginPackages.packageOf`；ACP 等 profile 缺少该服务时回退到进程/包布局的精确解析（`lib/runtime-versions.js`），仍读不到时记录为 `verify-host`，绝不按“兼容”处理。
 - ACP 的 `audit` 使用同机共享数据根与共享经验库；它不能替代真实隔离宿主验证，也不会在本机执行 revalidate。
 - 用量投影是操作者产出的只读事实，不是第二个经验库：它只包含记录 id、计数、`measurement` 与能力标注，

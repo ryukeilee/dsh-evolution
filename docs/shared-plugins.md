@@ -191,11 +191,22 @@ dsh-evolution-shared revalidate --evidence <evidence.json>
 `dsh-evolution-doctor` 与会话内 `evolution_doctor` 共用同一个只读检查 `promotion.sharing`：
 
 - 索引缺失 → `ok`（全部 Desktop-only）；
-- 所有记录源码摘要匹配、撤销表可读（`ok` / `absent`）、consumer 无失败且无派生的 `pendingRestart` → `ok`；
-- 存在兼容性问题、失败激活或需要重启 → `degraded`；
+- 所有记录源码摘要匹配、撤销表可读（`ok` / `absent`）、consumer 无失败且无派生的 `pendingRestart`、也没有孤儿挂载 → `ok`；
+- 存在兼容性问题、失败激活、需要重启 → `degraded`；
+- 索引可读，但某条记录已被删除或该 profile 已不在 `approvedProfiles`，而 consumer 仍把该行报为 `active` → `degraded`。
+  这类孤儿挂载写入 `evidence.orphanMounts`（`reason: record-missing` / `profile-not-approved`），summary 与 remediation
+  明确“删除记录或收窄批准范围不会卸载已运行的插件，必须重启对应 consumer”；不新增 repair；
+- 索引缺失但某个 consumer 仍报告 `active` 行（索引文件被删除时的同一窗口）→ `degraded`，`evidence.orphanMounts` 形状
+  保持 `{profile, id}`；
 - 索引不可读 / 格式错误、某条记录与其源码摘要不一致，或撤销表 `invalid` / `unreadable` → `blocked`。撤销表损坏
   时 consumer 拒绝挂载任何记录，evidence 给出 `disableStatus`（阻断原因同时记为 `blockingReason`）；统一只读检查
   此前就按阻断处理，doctor 现在与它一致。
+
+孤儿挂载在两个只读面上必须一致：统一检查（`lib/self-evolution-review.js`）为每个孤儿产出按 profile 区分的
+`restart-consumer` 动作（`code: "orphan-active-mount"`），索引 `ok` 时把最终状态至少提升到 `restart-required`，
+索引 `absent` 且有 active 孤儿时返回 `restart-required` + `reason: "orphan-active-mount"`。读取边界不同：review 只读每个
+profile 的前 50 条 consumer 行（`SELF_EVOLUTION_REVIEW_LIMITS.maxRecords`），doctor 的 `promotion.sharing` 读取全量
+consumer 状态，因此超出上限的孤儿仍会被 doctor 报出。
 
 检查只报告，不激活、不撤销、不修复。撤销表不可读时，operator 应从备份恢复，或**刻意**删除该文件表示
 「没有任何逐 profile 撤销」（这会重新启用所有曾被撤销的插件）；`shared-plugins disable|enable` 在撤销表

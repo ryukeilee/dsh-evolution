@@ -109,6 +109,23 @@ profile 相同）。artifact 里的 `tokenBasis` 记录这一点，校验器忽�
 - 每次 canary 观测都重放；失败按 `metricRegression` 交给内核 rollback。
 - 状态投影只保留 label/tool/matched/结果 sha256/长度，不保留工具输出正文。
 
+### 4.1 宿主侧的期望比较与 canary 证据
+
+Trial 能力样本与 canary workload 都按 `resultPath` 从真实返回值取值，再与计划声明的期望比较；这一步发生在宿主，宿主必须用与内核一致的无损判定：
+
+- 宿主用无损结构相等（`lib/desktop-task-host.js` 的 `sameValue()`）而不是 JSON 文本比较：`undefined` 不等于 `null`，
+  数组空洞不等于 `null`，稀疏数组按自有下标比较，`NaN` / `Infinity` / `-0` 不等于普通 JSON 数值；
+- 只接受 plain object（`Object.prototype` / `null` 原型）与 dense array：`Date`、`Map`、`Set`、类实例不与 plain 对象相等，
+  访问器属性与循环引用判为不相等并返回 `false`，不抛栈溢出；
+- 普通 JSON 语义不变：对象键顺序无关、数组顺序有关。`canonical()` 只保留给运行时稳定指纹（比较连续两次轮询），
+  它会把 `undefined`/空洞折叠成 `null`、把 `-0` 折叠成 `0`，因此不得用于证据判定。
+
+canary 观测写入晋升 journal 与 stable sidecar 的 `evidence.actualToolOutput` 只有
+`{ label, resultSha256, resultCharacters }`：摘要取自无损 canonical 文本，长度是该文本的字符数，真实工具输出正文
+不跨宿主边界（它可能包含用户文件或会话数据）。无损文本无法计算的形状（循环、访问器、类实例）使用固定
+`"[unavailable]"` 标记，记录仍可写、诊断异常不改变任务结果。内核的通用 `evidence` 契约没有变化：它仍接受调用方
+提交的有界证据，只由生产宿主负责不把正文放进去。
+
 ## 5. 信任边界
 
 通道是同一 OS 用户可写的传输层，不是授权边界（与 `desktop-tasks` 其余文件相同）。
