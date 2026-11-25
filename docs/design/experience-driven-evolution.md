@@ -95,6 +95,10 @@ probe 不复刻工具执行器、沙箱或权限系统，只复用官方工具�
 
 结论作为 canonical knowledge 的一行（`type: experiment-conclusion`，`sourceCollection: learnings`），复用现有身份、去重、状态机与 `REGRESSED` 降级：同一（问题、策略、根因、版本）的新 `no-benefit` / `regression` 会把旧 `adopted` 降级；不同版本是不同身份，互不降级；`reverted-unconfirmed` / `insufficient-evidence` 不伪造成功也不否定旧成功。`strategy` 以对象形式保存，版本数字不会被知识身份归一化抹掉；版本缺失写 `unknown`，`unknown` 永不等于任何版本，因此不会被当作“同条件”。
 
+结论的 `applicability` 属于实验本身，而不是写结论的那个进程：优先使用 probe 记录的 `versions`，其次是 proposal 携带的 `applicability`（提出时捕获，随 journal / evidence sidecar 保存），只有两者都不存在的历史记录才回退到实时的 `applicability()`。canary 可以跨进程重启、甚至跨宿主升级存活，因此由它写出的 `adopted` / `regression` 结论仍描述实验被测量时的三元组，不会因为宿主已升级而被重新标注。同一个值也用于中性结论的跳过判定，所以“跳过写入”与“实际写回的结论”不会对同一问题使用不同的适用条件。这不新增晋升路径，也不改变所有者确认与自动批准的边界。
+
+**stable 提交与结论写入之间的崩溃。** stable canary 先写 durable evidence sidecar（包含 proposal、measurement、经脱敏且有界的 composition name 与 `stableCommittedAt`），再写入 `adopted` 结论。进程若在这个窗口退出，已经提交的 stable 插件在共享经验里就没有成功事实，下一轮 `evolution_plan` 会把已解决的目标再次当作候选。因此 bundle 启动时（注册 orchestrator 之后、入口开始服务之前）执行一次有界的 `reconcileStableConclusions()`：只读 `archive/experiments/` 中最新 20 个 `*.evidence.json`（每个 ≤2 MiB），只采纳同时具备已捕获适用条件（`latestObservation.probe.versions` 或 `proposal.applicability`）、`decision.kind === "benefit"` 与非空 `stableCommittedAt` 的快照，按 sidecar 的事实以 `adopted` 重发结论。结论 event id 由（origin、experimentId、decision、applicability）决定，重复执行是 duplicate 而不是第二条事实。缺少适用条件的旧快照会被跳过，绝不用当前进程的版本重新标注；损坏或过大的文件只记入有界结果，下一次启动从同一份字节重试。它不重新打开 canary、不推断批准、不删除记录，失败只记诊断，不会让宿主已经提交的 stable 插件失效。
+
 `findConclusions()` 按 target + 三项版本 + strategy 指纹做有界查询；`evolution_propose` 对“同 target、同适用条件、同 strategy 指纹且已证明无效”的提案返回 `reason: "strategy-already-proven-ineffective"` 并附旧证据。换了假设（不同 strategy 文本）或换了适用版本即可继续，不需要降低门禁。
 
 ## Desktop / 打包宿主的版本身份
@@ -106,7 +110,7 @@ probe 不复刻工具执行器、沙箱或权限系统，只复用官方工具�
 - **Cordis**：host 包同级或嵌套的官方 `@deepseek-ai/cordis`；pnpm store 布局逐级向上查找；
 - Electron 打包布局下，argv 不暴露模块入口时使用 Electron 官方的 `process.resourcesPath`，在 `app.asar/dsh/node_modules/@deepseek-ai/dsh` 与 `app.asar.unpacked` 中查找精确包；仍找不到就保持 `null`/`unknown`，绝不猜测或降低匹配门槛。
 
-`evolution_plan`、`evolution_probe`、`recordConclusion` 与 `findConclusions` 全部调用同一个 `applicability()`，因此同一轮实验、结论检索和下一轮提案共享同一个 `{dsh, cordis, evolution}` 三元组。真实 Desktop Electron 环境（Electron 44.7.0 / Node 24.21.0，DSH 0.2.2-rc.1 / Cordis 4.1.0 / Evolution 0.2.3）的只读验证记录在 `docs/evidence/desktop-version-detection-0.2.2-rc.1.json`。
+`evolution_plan`、`evolution_probe` 与 `evolution_propose` 的 proven-ineffective 查询使用同一个实时 `applicability()`，因此规划、测量和提案拒绝对当前环境使用同一个 `{dsh, cordis, evolution}` 三元组；`recordConclusion` 写出的是实验自己捕获的三元组（probe 的 `versions`，其次是 proposal 的 `applicability`，仅历史记录回退到实时值，见上节），所以结论永远属于被测量时的版本。真实 Desktop Electron 环境（Electron 44.7.0 / Node 24.21.0，DSH 0.2.2-rc.1 / Cordis 4.1.0 / Evolution 0.2.3）的只读验证记录在 `docs/evidence/desktop-version-detection-0.2.2-rc.1.json`。
 
 ## 运行期与安全不变量
 

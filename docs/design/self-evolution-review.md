@@ -87,13 +87,30 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 因此 `operator-action` / `verify-host` / `revalidate` 不会被索引里靠后的低优先级记录挤掉；被截断的条数由
 `nextActionsDropped` 报告，并令 `selfEvolution.incomplete=true`，模型不能把不完整的 review 当成完整结果。
 
+记录数也有上限：一次 review 只评估索引中的前 50 条记录（`SELF_EVOLUTION_REVIEW_LIMITS.maxRecords`）。索引在
+结构上合法但超过这个上限时，review 不为未评估的行编造 per-record 状态，而是增加一条 `operator-action`：说明
+有多少条记录未评估，并给出至多 5 个被省略的记录 id 作为有界样本。这条动作按 `operator-action` 优先级参与同一套
+排序与动作上限；它只让 review 明确标为不完整（`selfEvolution.incomplete=true`），不推断那些记录是否可用或可否停用。
+
 ### 4.1 价值证据：用量投影
 
 `readPublishedPluginReview()` 接受一个可选的 `usage` 投影，把每条记录分为 `production-benefit` /
 `experiment-benefit` / `in-use` / `installed-only` / `usage-unknown`。唯一的生产者是一次显式的离线扫描
 （`docs/audit/replay/capability-usage.mjs`，实现在 `lib/capability-usage.js`）：
 
-- 扫描只读取会话日志里的 `tool/call` / `tool/result` 类型与工具名，按发布记录的工具名计数；不输出正文、参数或结果；
+- 扫描只读取会话日志里的 `tool/call` / `tool/result` 与官方 PTC 的 `tool/ptc-dispatch-start` /
+  `tool/ptc-dispatch` 类型和工具名，按发布记录的工具名计数；不输出正文、参数或结果；
+- **PTC 分派只算一次**：`tool/ptc-dispatch` 与配对的 `tool/ptc-dispatch-start` 合并为一次调用，start 本身不计数；
+  不在 native 生命周期调用内、且父调用是同一会话中恰好一个尚未返回的 `run_code` 实例时算工作流流量（历史
+  非 run_code 调用、已返回或复用的 run_code 不算，`sourceEventSeqs` 关闭具体实例）；PTC 内调用的生命周期
+  start 不能可靠界定窗口，因为官方执行器的结果行是异步追加的，其间的 PTC 发布调用与无法连到模型选择的调用、
+  以及会话结束时只有 start 没有最终分派时计入 `unattributed`，不算 0；同一窗口内的 native 发布调用仍按
+  workflow 计数（native 调用不可能嵌套在 PTC 程序里）；
+- 只扫描当前代的两种编码：`session.v4.jsonl.zstd` 与明文 `session.v4.jsonl`（官方最小 SDK 包设置
+  `compression: none`）。同一 session 目录同时存在两份当前编码时，日志无法证明哪份是当前写入，记为编码二义性
+  并令投影 `complete: false`，而不是重复计数；其它 canonical 会话形状（`session.jsonl`、`session.vN.jsonl[.zstd]`）
+  在没有当前文件时记为未扫描，令投影 `complete: false`，而不是一个测量出来的 0；与当前文件并存的旧 generation
+  视为同一会话的迁移副本，不重复计数；
 - **归因是因果的**：只有在一个晋升生命周期调用（由 `PROMOTION_LIFECYCLE_TOOLS` 定义，即
   `evolution_probe`/`trial`/`measure`/`promote`/`canary_observe`，不含 `evolution_desktop`）尚未返回时发生的调用
   才算验证流量。同一会话里先前调用过 `evolution_probe` 不影响之后的真实使用；
@@ -115,7 +132,8 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 
 扫描结果通过 `--write` 写到 `<dataRoot>/shared-plugins/usage.json`。运行时（Desktop 的 `evolution_plan` 与 ACP 的
 `audit`）只在显式检查时读取这一份有大小上限的小文件：不扫描会话、不写盘、无定时器。投影缺失、损坏或超过 30 天
-时零调用按未知处理（正数调用仍是事实），因此不会因为一份陈旧快照给出停用建议。停用建议还要求
+时零调用按未知处理（正数调用仍是事实），因此不会因为一份陈旧快照给出停用建议。投影还带一个扫描覆盖标记；
+升级前生成的旧投影不包含 PTC 与明文会话覆盖，它的零调用同样按未知处理，直到操作者显式重新运行扫描。停用建议还要求
 `capabilityAssessment: "self-contained"` 由操作者显式给出——脚本从不猜测能力是否自足。
 
 ## 5. revalidate 路径

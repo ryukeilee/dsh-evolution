@@ -165,6 +165,44 @@ test('P3-18 concurrent canary observations cannot silently drop a barrier', asyn
   assert.equal(fulfilled[0].value.canary.observations.some(entry => entry.barrierId === stored[0]), true);
 });
 
+test('a stable commit resumed from an R1-format journal projects the composition name', async t => {
+  const { root, paths, experimentId } = await promotedFixture('stable-composition-redaction', { canaryWindow: 1 });
+  t.after(() => fsp.rm(root, { recursive: true, force: true }));
+  const journal = await readJournal(paths);
+  journal.canary.healthObservationWindow = 1;
+  journal.canary.startupVerified = true;
+  journal.canary.observations = barriers(['startup:owner']);
+  // A journal written before the projection existed can still carry the raw
+  // caller object. Resuming it must not write that object into the final
+  // sidecar, which is durable evidence.
+  journal.evidenceSnapshot.composition = { name: 'edge-cache-prewarm', purpose: 'api_key=synthetic-secret' };
+  await writeJournal(paths, journal);
+  const core = new EvolutionOrchestrator(orchestratorContext(), {
+    ...paths, startupDrift: false, canaryWindow: 1, eventBridge: { emit: () => ({}) },
+  });
+  core.experiments.set(experimentId, {
+    id: experimentId,
+    ownerId: journal.ownerId,
+    state: 'canary-observing',
+    targets: [],
+    proposal: journal.proposal,
+    observations: [],
+    latestObservation: {},
+    durable: journal.durable,
+    canary: journal.canary,
+  });
+  await core.observeCanary({
+    experimentId,
+    barrier: { id: 'stable-commit', reached: true },
+    startupVerified: true,
+    componentHealth: 'active',
+    dependenciesPresent: true,
+  }, execFor());
+  const sidecar = JSON.parse(await fsp.readFile(path.join(paths.archiveDir, `${experimentId}.evidence.json`), 'utf8'));
+  assert.deepEqual(sidecar.composition, { name: 'edge-cache-prewarm' });
+  assert.doesNotMatch(JSON.stringify(sidecar), /synthetic-secret/);
+});
+
 test('P3-18 sequential canary observations still accumulate every barrier', async t => {
   const { root, paths, observe } = await canaryOrchestrator('canary-sequential');
   t.after(() => fsp.rm(root, { recursive: true, force: true }));

@@ -1,8 +1,7 @@
 # 跨入口共享已验证的晋升插件
 
-基线：`0.2.4` 正式版（含本文描述的全部行为）。
-本文只描述本树 `lib/promoted-sharing.js`、`lib/promoted-consumer.js`、`lib/orchestrator.js`、
-`lib/diagnostics.js` 与 `scripts/shared-plugins.mjs` 的实际行为；没有实际执行过的验证不写成已验证。
+基线：`0.2.4` 正式版。第 6.1 节的统一检查路由来自 `0.2.8`（`git show 25df170`）；同一 profile 并发会话与关闭取消语义来自 `0.2.9`（`git show 387d842` 与 `c3a24c5`）；其余行为以本树代码为准。
+本文只描述本树 `lib/promoted-sharing.js`、`lib/promoted-consumer.js`、`lib/orchestrator.js`、`lib/diagnostics.js` 与 `scripts/shared-plugins.mjs` 的实际行为；没有实际执行过的验证不写成已验证。
 
 ## 1. 架构
 
@@ -99,8 +98,10 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 挂载（doctor 报 `blocked`）。单个记录非法不会丢弃其它合法记录。
 
 撤销表按同一条安全规则处理：`disabled.json` 存在但不可读或格式错误时状态是 `invalid` / `unreadable`，
-consumer 拒绝挂载**任何**记录（不能把「读不出撤销项」当成「没有任何撤销」），doctor 的 `promotion.sharing`
-报 `degraded` 并给出 `disableStatus`。只有 `ok`（可读）与 `absent`（没有撤销表）是正常状态。
+consumer 拒绝挂载**任何**记录（不能把「读不出撤销项」当成「没有任何撤销」）。统一只读检查一直按阻断处理，
+doctor 的 `promotion.sharing` 现在也报 `blocked`，不再只报 `degraded`；只有 `ok`（可读）与 `absent`（没有撤销表）
+是正常状态。即使某条记录同时存在宿主版本不匹配，撤销表损坏仍先按阻断处理：consumer 在读取记录 host 之前就因
+撤销表不可读而 fail-closed，revalidate 不能修复这个前置条件。
 
 ## 4. 发布是原子且幂等的
 
@@ -191,9 +192,10 @@ dsh-evolution-shared revalidate --evidence <evidence.json>
 
 - 索引缺失 → `ok`（全部 Desktop-only）；
 - 所有记录源码摘要匹配、撤销表可读（`ok` / `absent`）、consumer 无失败且无派生的 `pendingRestart` → `ok`；
-- 存在兼容性问题、失败激活、需要重启，或撤销表 `invalid` / `unreadable`（consumer 此时拒绝挂载任何记录，
-  evidence 给出 `disableStatus`）→ `degraded`；
-- 索引不可读 / 格式错误，或某条记录与其源码摘要不一致 → `blocked`。
+- 存在兼容性问题、失败激活或需要重启 → `degraded`；
+- 索引不可读 / 格式错误、某条记录与其源码摘要不一致，或撤销表 `invalid` / `unreadable` → `blocked`。撤销表损坏
+  时 consumer 拒绝挂载任何记录，evidence 给出 `disableStatus`（阻断原因同时记为 `blockingReason`）；统一只读检查
+  此前就按阻断处理，doctor 现在与它一致。
 
 检查只报告，不激活、不撤销、不修复。撤销表不可读时，operator 应从备份恢复，或**刻意**删除该文件表示
 「没有任何逐 profile 撤销」（这会重新启用所有曾被撤销的插件）；`shared-plugins disable|enable` 在撤销表

@@ -63,6 +63,14 @@ async function boot() {
   return ctx;
 }
 
+/** A packaged entry that does not expose the official package service. */
+async function bootWithoutPackageService() {
+  const ctx = new Context();
+  await ctx.plugin(Loader, { baseUrl: BASE_URL });
+  await ctx.plugin(FakeTools);
+  return ctx;
+}
+
 /** One isolated shared data root plus published-plugin fixtures. */
 async function fixture(t) {
   const home = await fs.mkdtemp(path.join(os.tmpdir(), 'promoted-consumer-'));
@@ -351,6 +359,19 @@ test('host identity mismatch waits for revalidation instead of mounting', async 
   assert.deepEqual(session.rows.map((row) => [row.status, row.reason]), [['pending-revalidation', 'host-version-mismatch']]);
   assert.deepEqual(await readComposition('acp'), []);
   assert.deepEqual(ctx.tools.schemas(), []);
+  await session.dispose();
+});
+
+test('a packaged host without the official package service still mounts eligible records', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const ctx = await bootWithoutPackageService();
+  const { record, toolName } = await createRecord();
+  await writeIndex([record]);
+
+  const session = await mountSession(ctx, dataRoot, { detectHost: () => HOST });
+
+  assert.deepEqual(session.rows.map((row) => [row.status, row.reason]), [['active', null]]);
+  assert.deepEqual(ctx.tools.schemas().map((definition) => definition.name), [toolName]);
   await session.dispose();
 });
 
