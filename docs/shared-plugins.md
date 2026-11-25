@@ -113,7 +113,7 @@ doctor 的 `promotion.sharing` 现在也报 `blocked`，不再只报 `degraded`�
 会话已 dispose 时跳过。没有定时器、watcher、轮询或后台任务。
 
 **文件模式与永不删除清单。** 只处理普通文件，且名称严格匹配
-`^([a-z0-9-]+)\.([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(cordis\.yml|lease\.json)$`
+`^([a-z0-9-]+)\.([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(cordis\.yml|lease\.json)$`
 （UUID 为小写标准形式）；第一个捕获组（profile）必须等于本次启动的 profile。永不删除：
 `<profile>.cordis.yml`（稳定 composition）、`<profile>.json`（消费状态）、`published.json`、
 `disabled.json`、`promoted/` 源码、`.consumer-*.tmp` 残件、其它 profile 的匹配文件（计
