@@ -242,7 +242,17 @@ Playtester 在 `5f7dd70` 上复验 S1–S6 与四个主场景（309 项聚焦通
 
 R2-1/R2-2 的修复回归：A1 聚焦 73/73（含 mock timers 同毫秒→1s 后恢复、单 episode 只写一次）；
 review/doctor 聚焦 80/80（含缺 status 行、未批准 profile 损坏状态、`skipped-unapproved` 对齐）。
-R3 复审结论见 §4。
+
+### 2.8 独立复审 R3 发现并修复
+
+Playtester 在 `843f75f` 上确认 R2-1/R2-2/R2-3 的原始反例关闭（314 项聚焦通过），但返回
+**CHANGES** 一项 should：
+
+| # | 根因 | 修复 |
+| --- | --- | --- |
+| R3-1 | consumer 状态是合法 JSON、状态头正确，但 `plugins` 含 `null`。`readConsumerState()` 只校验 `plugins` 是数组；统一审查的 `base.consumers` 映射直接访问 `row.id`，抛 TypeError，`evolution_desktop audit` 返回 `E_DESKTOP_AUDIT_FAILED`。仅 Web 批准且 active、ACP 状态 `plugins:[null]` 时 doctor ok 但 audit 整体失败；已批准 ACP 的 `plugins:[null]` 时 doctor 能报缺行、review 仍抛错 | 在 `lib/promoted-sharing.js` 提供共享的 `consumerActivationRows()`：只保留普通对象、非数组、id 非空字符串的 rows；doctor 与 review 共用，丢弃空/畸形行但保留有效行。review 的 `rowCount`/`rowsTruncated`/`rows` 与其余直接读 `state.plugins` 的站点基于有效行；已批准 profile 没有有效 activation 行时落到现有 missing/unverified/restart 结论，不伪造 active、不再抛错。`61b1b5b` → 集成；随后 `347c235` 把同一判定用于 consumer 继承状态（`promoted-consumer` 的 previous rows 与 `evaluateSharedRecord` 的 previous 查找），避免畸形继承状态使 consumer 启动变 inert |
+
+R3-1 的修复回归与 R4 复审结论见 §4。
 
 ## 3. 调查后决定不修改的项
 
@@ -269,16 +279,20 @@ R3 复审结论见 §4。
   state/warn 在修复前含 sentinel，S6 的摘要标记可被字符串伪造。
 - 聚焦：`test/review-fix-tool-recovery.test.mjs`、`test/experience-degradation.test.mjs`、
   `test/experience-plan.test.mjs`、`test/experience-attribution.test.mjs` → 73/73（含 R2-1 mock timers）；
-  `test/promoted-sharing-diagnostics.test.mjs`、`test/self-evolution-review.test.mjs` → 80/80（含 R2-2
-  缺 status/未批准 profile/skipped-unapproved）；
+  `test/promoted-sharing-diagnostics.test.mjs`、`test/self-evolution-review.test.mjs`、
+  `test/desktop-task-client.test.mjs` → 103/103（含 R2-2 缺 status/未批准 profile/skipped-unapproved、
+  R3-1 空行与 audit 路径）；
+  `test/promoted-sharing.test.mjs`、`test/promoted-consumer.test.mjs` 与上述 review/doctor →
+  149/149（含 `consumerActivationRows` 与继承状态）；
   `test/review-fix-host-lossless-value.test.mjs`、`test/desktop-task-host.test.mjs` → 59/59；
-  以及 shared-experience / recall / desktop-task-client / diagnostics / release-pin 等相关套件。
-- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2337 项，2335 通过 / 0 失败 / 2 跳过**（含 R10 的基线为 2297）。
+  以及 shared-experience / recall / diagnostics / release-pin 等相关套件。
+- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2342 项，2340 通过 / 0 失败 / 2 跳过**（含 R10 的基线为 2297）。
 - 打包：`npm run pack:check`（开发阶段）→ **17/17 通过**；工作树是 `0.2.20` 固定点的已提交
   后继，固定产物与既有证据未改动；未执行 `--release` 或任何发布动作。
-- 独立复审：R1（`gpt-6.2-sol` High）CHANGES（S1–S6，已修复）；R2 在同一路由 CHANGES（R2-1/R2-2/R2-3，
-  已修复）；R3 对最终 HEAD 的复验结论见交付回复。未取得 APPROVE 前不写成通过。
-- CI：`5f7dd70`（R2 修复前）13/13 全绿；R2 修复后的最终 HEAD 推送后重新运行，结果见交付回复。
+- 独立复审：R1（`gpt-6.2-sol` High）CHANGES（S1–S6，已修复）；R2 同一路由 CHANGES
+  （R2-1/R2-2/R2-3，已修复）；R3 同一路由 CHANGES（R3-1，已修复）；R4 对最终 HEAD 的复验结论
+  见交付回复。未取得 APPROVE 前不写成通过。
+- CI：`843f75f`（R3-1 修复前）13/13 全绿；R3-1 修复后的最终 HEAD 推送后重新运行，结果见交付回复。
 
 ## 5. 实际收益与剩余风险
 
@@ -295,6 +309,10 @@ R3 复审结论见 §4。
   占位标记；canary 不会因字段缺失被误判通过。
 - review 的 consumer 行超过 50 条时不再静默：给出有界 operator notice、指向 doctor 全量读取，
   并令 review 显式 incomplete。
+- consumer 状态里的空/畸形 activation 行由共享 `consumerActivationRows()` 丢弃、有效行保留；
+  已批准 profile 没有任何有效行时落到 missing/unverified/restart，未批准 profile 的空行不影响；
+  consumer 的继承状态与 `evaluateSharedRecord` 的 previous 查找使用同一判定，不再因 `plugins:[null]`
+  让 review/audit 或 consumer 启动整体失败。
 
 **剩余风险**
 
