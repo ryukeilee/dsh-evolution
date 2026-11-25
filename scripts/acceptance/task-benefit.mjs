@@ -772,13 +772,14 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   const taskReadsRequired = reads.length;
   let taskReadsStarted = 0;
   if (taskReadsRequired > 0) {
-    const startedPaths = new Set();
+    // Count declared rows, not unique paths: two expected values may belong to
+    // the same file, and one completed read of that path satisfies both. A set
+    // of paths would undercount them and reject a session that did read.
     for (const expected of reads) {
       const started = [...readResults.values()].some((result) =>
         readPathMatches(result.path, expected.path, cwd) || readPathMatches(expected.path, result.path, cwd));
-      if (started) startedPaths.add(expected.path);
+      if (started) taskReadsStarted += 1;
     }
-    taskReadsStarted = startedPaths.size;
   }
   const taskReadsComplete = taskReadsRequired > 0 ? taskReadsStarted === taskReadsRequired : null;
   // "Answered without reading the task" is only meaningful when the task
@@ -1667,7 +1668,11 @@ export async function produceTaskBenefit(options = {}) {
   // the single completeness authority.
   artifact.admission = admission;
   artifact.attempts = {
-    limitPerSession: 1,
+    // Two replacement rules can both apply to one session: a retryable pilot
+    // transport failure is replaced once, and an unread answer is replaced once
+    // on whatever row remains. The declared bound must describe both rules, not
+    // a single number that the attempt log can exceed.
+    limits: { transportFailure: 1, unreadAnswer: 1, totalAttempts: 3 },
     voided: attemptLog.filter((entry) => entry.voided)
       .map(({ side, repetition, attempt, voidReason }) => ({ side, repetition, attempt, voidReason })),
     perSession: [],
@@ -1714,6 +1719,7 @@ export async function produceTaskBenefit(options = {}) {
     sessions,
     retries: sessionRetries,
     attempts: attemptLog,
+    attemptLimits: artifact.attempts.limits,
     admission,
     artifactFile: outFile,
   };

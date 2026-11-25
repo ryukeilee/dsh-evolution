@@ -21,7 +21,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { constants } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { produceTaskBenefit, safeErrorCode } from './task-benefit.mjs';
+import { produceTaskBenefit, safeErrorCode, extractSessionEvidence } from './task-benefit.mjs';
 import { mintTaskId } from '../../lib/desktop-task-protocol.js';
 import { validateTaskBenefit } from '../../lib/orchestrator.js';
 
@@ -146,6 +146,71 @@ function check(summary, name, condition) {
   summary.assertions.push({ name, ok: condition === true });
   return condition === true;
 }
+
+/**
+ * Pure classification checks for the boundary the isolation scenarios cannot
+ * cover by their shape: one file may carry several declared values, and a
+ * successful first read may omit the tail value the task asks for. Neither may
+ * be mistaken for "answered without reading".
+ */
+function classificationChecks() {
+  const usage = { input: 1, output: 1, cache: { read: 0 } };
+  const turn = (decision, round) => ({ ok: true, tools: ['read'], decision, usage, round });
+  const readUpdates = (path, text) => [
+    { sessionUpdate: 'tool_call', toolCallId: 'c1', title: 'read', rawInput: { file_path: path } },
+    {
+      sessionUpdate: 'tool_call_update',
+      toolCallId: 'c1',
+      status: 'completed',
+      content: [{ type: 'content', content: { type: 'text', text: '<path>' + path + '</path>\n<content>' + text + '</content>' } }],
+    },
+  ];
+  const duplicate = extractSessionEvidence({
+    label: 'duplicate', side: 'baseline',
+    turns: [turn({ tool: 'read', arguments: { file_path: '/iso/a.json' } }, 0), turn({ stop: true }, 1)],
+    updates: readUpdates('/iso/a.json', 'value-alpha value-beta'),
+    assistantText: 'value-alpha value-beta',
+    expectedTokens: ['value-alpha', 'value-beta'],
+    expectedReads: [
+      { path: '/iso/a.json', token: 'value-alpha' },
+      { path: '/iso/a.json', token: 'value-beta' },
+    ],
+    cwd: '/iso', durationMs: 1,
+  });
+  const capped = extractSessionEvidence({
+    label: 'capped', side: 'baseline',
+    turns: [turn({ tool: 'read', arguments: { file_path: '/iso/big.txt' } }, 0), turn({ stop: true }, 1)],
+    updates: readUpdates('/iso/big.txt', 'first window only\n(Output capped at 50 KiB.)'),
+    assistantText: 'tail-value',
+    expectedTokens: ['tail-value'],
+    expectedReads: [{ path: '/iso/big.txt', token: 'tail-value' }],
+    cwd: '/iso', durationMs: 1,
+  });
+  const abandoned = extractSessionEvidence({
+    label: 'abandoned', side: 'candidate',
+    turns: [turn({ stop: true }, 0)],
+    updates: [],
+    assistantText: 'I did not read the files.',
+    expectedTokens: ['tail-value'],
+    expectedReads: [{ path: '/iso/big.txt', token: 'tail-value' }],
+    cwd: '/iso', durationMs: 1,
+  });
+  return [
+    {
+      name: 'duplicate-path-rows-counted',
+      ok: duplicate.taskReadsRequired === 2 && duplicate.taskReadsStarted === 2
+        && duplicate.taskReadsComplete === true && duplicate.answeredWithoutTaskReads === false,
+    },
+    {
+      name: 'capped-first-read-counts-as-read',
+      ok: capped.taskReadsComplete === true && capped.answeredWithoutTaskReads === false,
+    },
+    {
+      name: 'no-read-answer-is-unread',
+      ok: abandoned.taskReadsComplete === false && abandoned.answeredWithoutTaskReads === true,
+    },
+  ];
+}
 function attemptsFor(report, side, repetition) {
   return (Array.isArray(report?.attempts) ? report.attempts : [])
     .filter((entry) => entry.side === side && entry.repetition === repetition);
@@ -215,6 +280,9 @@ async function runScenario({ scenario, description, name, unreadLabel, partialLa
       check(summary, 'baseline-1 retry retained', second.voided === false);
       check(summary, 'artifact perSession baseline-1 attempts=2', session?.attempts?.length === 2);
       check(summary, 'artifact voided records baseline-1', (artifact.attempts?.voided ?? []).some((row) => row.side === 'baseline' && row.repetition === 1 && row.attempt === 1 && row.voidReason === 'answered-without-task-reads'));
+      check(summary, 'artifact attempt limits declare both rules', artifact.attempts?.limits?.transportFailure === 1
+        && artifact.attempts?.limits?.unreadAnswer === 1 && artifact.attempts?.limits?.totalAttempts === 3);
+      check(summary, 'report attempt limits match the artifact', JSON.stringify(report.attemptLimits) === JSON.stringify(artifact.attempts?.limits));
       const verdict = validateTaskBenefit(artifact, {
         hostSha256: artifact.candidateHostSha256,
         taskId,
@@ -226,10 +294,12 @@ async function runScenario({ scenario, description, name, unreadLabel, partialLa
       check(summary, 'validateTaskBenefit.benefit', verdict.benefit === true);
     } else if (scenario === 'B') {
       const baselineAttempts = attemptsFor(report, 'baseline', 1);
+      const retained = baselineAttempts.find((entry) => entry.voided === false) ?? {};
       check(summary, 'report.ok=false', report.ok === false);
       check(summary, 'admission.ok=false', report.admission?.ok === false);
       check(summary, 'admission.code', report.admission?.code === 'E_ACCEPTANCE_SESSION_NOT_COMPLIANT');
       check(summary, 'baseline-1 attempts=1', baselineAttempts.length === 1);
+      check(summary, 'baseline-1 read then answered wrong', retained.taskReadsComplete === true && retained.correct === false);
       check(summary, 'no voided attempts', summary.attempts.voided === 0 && summary.attempts.artifactVoided === 0);
       check(summary, 'artifact.complete=false', artifact.complete === false);
     } else {
@@ -257,6 +327,7 @@ async function runScenario({ scenario, description, name, unreadLabel, partialLa
   return summary;
 }
 
+const classifications = classificationChecks();
 const summaries = [];
 summaries.push(await runScenario({
   scenario: 'A',
@@ -282,5 +353,10 @@ else {
   process.stdout.write('Kept home: ' + home + '\n');
   for (const name of ['a', 'b', 'c']) process.stdout.write('Kept work: ' + path.join(home, 'work-' + name) + '\n');
 }
-process.stdout.write(JSON.stringify({ kind: 'task-benefit-session-retry-check', ok: summaries.every((row) => row.ok), scenarios: summaries }, null, 2) + '\n');
-process.exitCode = summaries.every((row) => row.ok) ? 0 : 1;
+process.stdout.write(JSON.stringify({
+  kind: 'task-benefit-session-retry-check',
+  ok: classifications.every((row) => row.ok) && summaries.every((row) => row.ok),
+  classification: classifications,
+  scenarios: summaries,
+}, null, 2) + '\n');
+process.exitCode = classifications.every((row) => row.ok) && summaries.every((row) => row.ok) ? 0 : 1;

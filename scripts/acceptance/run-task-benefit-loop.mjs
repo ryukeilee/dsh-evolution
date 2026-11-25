@@ -544,6 +544,7 @@ try {
     preflight: producer.report.preflight,
     admission: producer.report.admission,
     attempts: producer.report.attempts,
+    attemptLimits: producer.report.attemptLimits,
   };
   evidence.steps.push({ name: 'paired-real-sessions-produced', at: new Date().toISOString() });
   const producerAdmission = producer.report.admission ?? {};
