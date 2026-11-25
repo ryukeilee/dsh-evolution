@@ -1,7 +1,7 @@
 # 每会话 consumer composition 回收：本机基准与收益边界
 
 采集日期：2026-11-26；本机 macOS，Node `v26.13.1`；实现基线为 R1 修复后的
-`lib/promoted-consumer-gc.js`（以 `bf28213` 合入本分支）。基准脚本：
+`lib/promoted-consumer-gc.js`（交付分支中由提交 `c97af6f` 引入）。基准脚本：
 `scripts/benchmarks/consumer-gc.mjs`。本文只记录本机实际执行过的测量，**不是真实宿主轮次验证**。
 本轮为复审 R1 后的重跑：下表中的数字全部来自修复后的脚本与实现，替换修复前的旧数字。
 
