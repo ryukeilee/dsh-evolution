@@ -64,21 +64,33 @@ plan.selected: { problemKey: 'tool read', observedFailureRate: 1,
   保留 id。
 - `lib/experience-collector.js` 增加 `RECOVERY_SUCCESS_THRESHOLD = 5`（与 planner 的
   `MIN_RATE_SAMPLES` 对齐）；outcome row 记录 `lastFailure` / `recoverySuccesses` /
-  `recoveryRecorded`。失败提交成功后开启新 episode；同一 episode 内 5 次**干净成功**
-  （`isError !== true` 且 `detectDegradation() === null`）后写一条 recovery，写成功后不再重复；
-  新失败重置 episode。截断/降级成功仍计入既有 `successesSinceFailure`，但不计入 recovery 阈值。
+  `recoveryRecorded`。失败提交成功后开启新 episode；同一 episode 内 5 次**连续干净成功**
+  （`isError !== true`、`detectDegradation() === null`，且 `bash` 必须复用
+  `recoverySucceeded()`：`exitCode === 0`、非 timeout/abort/signal）后写一条 recovery，写成功后
+  不再重复；新失败重置 episode。截断/降级成功与 bash 非零退出都打断 streak，但仍按既有语义计入
+  `successesSinceFailure`，不计入 recovery 阈值。
+- planner 不把 `tool/recovery` 当作普通 resolution：`lib/experience-plan.js` 记录独立的
+  `recoveryEpoch`；只有该 group 的 `lossSum < minOccurrences`（没有达到门槛的 actionable
+  degradation）且 recovery **严格晚于** `latestFailure` 时，recovery 才能判 `already-resolved`。
+  存在 qualifying loss 时损失证据保留、目标仍是候选；同一毫秒的 failure 与 recovery 不算
+  “失败已消失”。普通 success / adopted / canary 行仍保持 `>=` 语义。
 - 写 recovery 失败仍由既有 `warnRedacted` 兜底，不改变工具结果或采集路径。
 
-**回归**：`test/review-fix-tool-recovery.test.mjs` 5 项：
+**回归**：`test/review-fix-tool-recovery.test.mjs` 9 项：
 
 - 5 失败 + 5 干净成功 → `tool recovery` 行可发现，planner 将 `tool read` 判为
   `already-resolved`，`selected` 为空；
 - 4 成功不写 recovery，目标仍是候选；
 - 4 干净成功 + 1 次截断成功不写 recovery；
+- 5 次 bash `exitCode:1` 不写 recovery（真实失败）；
+- 截断成功打断 streak，之后的单次干净成功不写 recovery；
+- 5 次失败 + 5 次截断 + 5 次干净 + 4 次截断：recovery 仍写入，但 qualifying loss 保留，
+  目标仍是候选；
 - 新失败重开目标；第二 episode 写第二条事件，knowledge 合并 `successCount=2`；
-- 同一 episode 的 200 次成功不重复写事件。
+- 同一 episode 的 200 次成功不重复写事件；
+- 同毫秒 recovery 不 resolve；晚 1ms 才 resolve。
 
-反证：修复前的同一测试 3 项失败（无 recovery 行、planner 仍选目标）。修复后聚焦 68/68。
+反证：修复前的同一测试 3 项失败（无 recovery 行、planner 仍选目标）；S1/S2/S3 的 4 项在 R1 修复前失败。修复后聚焦 72/72。
 
 **边界**：recovery 需要同一 collector 进程观察到失败与后续 5 次干净成功。进程在失败后重启、
 且之后只成功不再失败时，仍不会有 recovery 行；目标继续按 recency 衰减（见 §5）。
@@ -165,12 +177,58 @@ workload 的 `resultPath`（字段缺失被选成 `undefined`，期望 `null`）
 
 **修复**：宿主不再发送原始 `actual`，改为 `sampleEvidence(sample)`：
 `{ label, resultSha256, resultCharacters }`。摘要来自无损 canonical 文本（`undefined`、空洞、
-`-0`、非有限值、循环、类实例均有独立/固定标记），正文不跨宿主边界。无法计算时用固定
-`"[unavailable]"` 标记，诊断失败不改变任务结果。内核的通用 `evidence` 契约不变。
+`-0`、非有限值、循环、类实例均有独立/固定标记），正文不跨宿主边界。S6 复审后改为带类型前缀的
+编码（null=`n`、undefined=`u`、string=`s…`、boolean=`b…`、number=`d…`、array=`a…`、
+object=`o…`、unsupported=`x`），普通字符串无法伪造 nullish/占位标记；无法计算时用固定 `x`
+标记，诊断失败不改变任务结果。内核的通用 `evidence` 契约不变。
 
 **回归**：`test/desktop-task-host.test.mjs` 新增稳定路径断言：canary 观测的 evidence 不含原始
 sentinel 正文，含 64 位 hex 摘要与非负长度；仍能推进 stable 与回归路径。修复前 2 项失败；
 修复后 55/55。
+
+### 2.5 consumer 状态不可读或缺少 activation 行时 doctor 报 ok（B4，should）
+
+**根因**：`lib/diagnostics.js` 的 `diagnoseSharing()` 只在 consumer 状态 `ok` 且 `state.state`
+存在时派发 `pendingRestart`。当索引有记录、但某个 consumer 状态文件不可读（`readConsumerState`
+返回 `invalid`/`unreadable`，`state.state` 为 null），或状态为 `ok`、`observedIndexUpdatedAt`
+等于当前索引、却缺少某条已批准且未撤销记录的 activation 行时，doctor 仍报 `ok`。统一审查的
+`profileVerdict()` 对这两种情况都返回 `unverified` → `restart-required`，于是两个只读面再次分叉。
+
+**复现**（临时目录；发布一条有效记录）：
+- 把 `consumers/acp.json` 写成非法 JSON：doctor `level=ok`、`consumers.acp.status=invalid`，
+  review `restart-required`；
+- 写合法的 `acp` 状态但 `observedIndexUpdatedAt` 等于当前索引且 `plugins: []`（缺 activation 行）：
+  doctor `level=ok`，review `restart-required`。
+
+**修复**：doctor 在 `index.records.length > 0` 时收集：
+- `unverifiedConsumers`：`status` 不是 `ok`/`absent` 的 profile；
+- `missingConsumerRows`：状态 `ok`、已观察当前索引、且缺少已批准未撤销记录的 activation 行的
+  `{profile, id}`。
+
+两者都进入 `evidence`，使 `promotion.sharing` 至少 `DEGRADED`，summary/remediation 明确
+“无法证明激活 → 重启 consumer”。索引 `absent` 分支保持既有 `{profile,id}` 形状与级别；未启动的
+consumer（`absent`）不被当作缺行，避免把正常的首次使用当成损坏。不新增 repair，不改持久化/API。
+
+**回归**：`test/promoted-sharing-diagnostics.test.mjs` 新增 4 项（两类分歧、absent 不回归、
+正常 active 行不报告），修复前 3 项失败；聚焦 71/71。
+
+### 2.6 独立复审 R1 发现并修复
+
+Playtester（`gpt-6.2-sol` High）在 `6a7a2bd..f5b4799` 上独立复现四个主场景后返回 **CHANGES**，
+确认以下问题；全部修复后由同一路由复审。
+
+| # | 根因 | 修复 | 回归 |
+| --- | --- | --- | --- |
+| S1 | collector 把官方 `bash` 的 `isError:false` + `exitCode:1` 当作干净成功，5 次失败后写入 recovery | 干净成功复用 `recoverySucceeded()`（bash 必须 `exitCode === 0`，非 timeout/abort/signal）；非干净成功重置 streak | 5 次 bash 非零退出不写 recovery，目标仍是候选 |
+| S2 | recovery 按 scope 把仍在发生的 `read` 截断一并判 `already-resolved` | collector 在退化成功时重置 streak；planner 把 `tool/recovery` 与普通 resolution 分开，只有 `lossSum < minOccurrences` 且 recovery 严格晚于 latestFailure 时才 resolve；qualifying loss 保留为候选 | 5 失败 + 5 截断 + 5 干净 + 4 截断：recovery 写入但目标仍是带 loss 的候选 |
+| S3 | 同一毫秒内 recovery 与后续 failure 的 `lastSeen` 相等，`>=` 让 recovery 覆盖更晚提交的失败 | recovery resolution 使用严格 `>`；普通 success/adopted/canary 保持 `>=` | 同毫秒仍是候选，晚 1ms 才 resolved |
+| S4 | review 只读每个 consumer 前 50 行；第 51 行孤儿被静默遗漏，仍报 active/no-action | consumer 投影保留真实 `rowCount`/`rowsTruncated`；超过上限产出 `consumer-rows-truncated` operator-action，指向 doctor 全量读取，并令 compose `incomplete=true`；截断提示保留既有 `review-record-cap` 槽位 | 50 记录 + 51 active、仅第 51 条孤儿 → review 不再 no-action，compose operator-action + incomplete |
+| S5 | Trial 样本失败消息用 `JSON.stringify(actual)`，任务 `state/*.json` 与宿主 warn 保留工具正文 | 消息只写 label + actual/expected 的 `resultSha256`/`resultCharacters`；内存 `error.sample` 仍供 canary 回归使用 | 含 sentinel 的样本失败后 state/warn 均不含 sentinel，含摘要/长度；canary 回归仍请求内核回滚 |
+| S6 | canonical 摘要的 `"[undefined]"`/`"[unavailable]"` 标记可被普通字符串伪造 | 改为类型前缀编码（null=`n`、undefined=`u`、string=`s…`、boolean=`b…`、number=`d…`、array=`a…`、object=`o…`、unsupported=`x`） | undefined vs `"[undefined]"`、null vs `"null"`、hole vs `"[unavailable]"`、NaN/-0 摘要均不同 |
+
+Lead 复核 S4 修复时又发现 `boundedReviewActions()` 在同时存在 `review-record-cap` 与
+`consumer-rows-truncated` 时会丢掉已有 cap 提示；同一 Builder 在 `b5acc6e` 中修正为保留全部
+notice（room 只压缩普通动作），并补双 notice 测试；集成提交 `4a51016`。
 
 ## 3. 调查后决定不修改的项
 
@@ -186,19 +244,21 @@ sentinel 正文，含 64 位 hex 摘要与非负长度；仍能推进 stable 与
 | canary 回滚后、结论写入前的崩溃窗口（C 线索 5） | **已知残余**。回滚路径删除 journal；没有等价 durable sidecar 可重建。R10 §3 已登记。 |
 | 内核级 `targetProfiles` 与 owner-gate 返回值的交叉绑定（B 线索 1） | **NO-CHANGE（通道双重校验）**。ACP `confirm` 与 Desktop `waitForApproval` 都按 plan 声明的 profile 范围校验；内核级绑定属于新增机制，不是本轮缺陷。 |
 | `canary-verification.js` 不拒绝非 plain 对象（B 线索 2） | **NO-CHANGE（生产入口只产生 JSON）**。协议校验、工具参数与磁盘 JSON 回放都只产生普通对象；没有可达调用链。 |
+| consumer 从未启动（状态 `absent`）时 review 报 `restart-required`、doctor 报 `ok` | **NO-CHANGE（语义差异）**。doctor 的健康定义是“没有失败、孤儿或不可读状态”，首次启动本身不是健康问题；review 的 restart 是激活提示。B4 只把不可读状态与“自称已观察当前索引却缺行”纳入 degraded，不把正常的 absent 首次使用误报为损坏。 |
 | R10 的 `priorIneffectiveConclusion()` 窗口、canary 失败无 conclusion 行、failure/degradation target 回退、usage 离线投影等 NO-CHANGE 项 | **保持登记**。本轮子代理与 Lead 复核未发现新证据；不为边缘规模扩大机制。 |
 
 ## 4. 验证
 
 - 反证：A1 主用例在修复前 3/5 失败（无 recovery、planner 仍选目标）；C-1 的 7 项在修复前全部
   失败；B-1 的端到端 2 项在修复前失败；B-2 的 evidence 断言在修复前失败（`actualToolOutput`
-  含正文）。
+  含正文）；R1 的 S1/S2/S3 在修复前 4 项失败，S4 的 consumer 行截断在修复前 no-action，S5 的
+  state/warn 在修复前含 sentinel，S6 的摘要标记可被字符串伪造。
 - 聚焦：`test/review-fix-tool-recovery.test.mjs`、`test/experience-degradation.test.mjs`、
-  `test/experience-plan.test.mjs`、`test/experience-attribution.test.mjs` → 68/68；
-  `test/promoted-sharing-diagnostics.test.mjs`、`test/self-evolution-review.test.mjs` → 67/67；
-  `test/review-fix-host-lossless-value.test.mjs`、`test/desktop-task-host.test.mjs` → 55/55；
+  `test/experience-plan.test.mjs`、`test/experience-attribution.test.mjs` → 72/72；
+  `test/promoted-sharing-diagnostics.test.mjs`、`test/self-evolution-review.test.mjs` → 76/76；
+  `test/review-fix-host-lossless-value.test.mjs`、`test/desktop-task-host.test.mjs` → 59/59；
   以及 shared-experience / recall / desktop-task-client / diagnostics / release-pin 等相关套件。
-- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2315 项，2313 通过 / 0 失败 / 2 跳过**（含 R10 的基线为 2297）。
+- 全量：最终树 `NODE_OPTIONS=--max-old-space-size=4096 npm test` —— **2332 项，2330 通过 / 0 失败 / 2 跳过**（含 R10 的基线为 2297）。
 - 打包：`npm run pack:check`（开发阶段）→ **17/17 通过**；工作树是 `0.2.20` 固定点的已提交
   后继，固定产物与既有证据未改动；未执行 `--release` 或任何发布动作。
 - 独立复审与文档同步：见交付回复；复审结论对应最终 HEAD。
@@ -208,21 +268,30 @@ sentinel 正文，含 64 位 hex 摘要与非负长度；仍能推进 stable 与
 
 **收益**
 
-- 已恢复的工具目标在 5 次干净成功后写入可复核的恢复事实，planner 不再以 100% 失败率反复推荐
-  已恢复目标；截断/降级成功不会伪造恢复。
-- 索引存在但记录被删除/未批准时，doctor 与统一审查不再报健康；两个只读面都给出一致的
-  restart-consumer 动作，操作者能看到仍在运行的孤儿挂载。
-- Desktop 宿主的样本/workload 判定不再把 `undefined` 当作 `null`；canary 不会因字段缺失被
-  误判通过。
-- canary journal 与 stable sidecar 不再保留真实工具输出正文，只保留样本标签、摘要与长度。
+- 已恢复的工具目标在 5 次连续干净成功后写入可复核的恢复事实，planner 不再以 100% 失败率反复推荐
+  已恢复目标；截断/降级成功、bash 非零退出不会伪造恢复；存在 qualifying loss 时恢复事实不会压掉
+  独立的退化证据。
+- 索引存在但记录被删除/未批准、consumer 状态不可读、或状态自称已观察当前索引却缺少 activation
+  行时，doctor 与统一审查不再报健康；两个只读面都给出一致的重启结论，操作者能看到仍在运行的
+  孤儿挂载或无法证明的激活。
+- Desktop 宿主的样本/workload 判定不再把 `undefined` 当作 `null`；Trial 样本失败消息与 canary
+  evidence 只保留摘要/长度，不保留工具正文；摘要编码带类型前缀，普通字符串不能伪造 nullish/
+  占位标记；canary 不会因字段缺失被误判通过。
+- review 的 consumer 行超过 50 条时不再静默：给出有界 operator notice、指向 doctor 全量读取，
+  并令 review 显式 incomplete。
 
 **剩余风险**
 
-- A1 的 recovery 需要同一 collector 进程观察失败与后续 5 次干净成功；失败后重启且不再失败的
+- A1 的 recovery 需要同一 collector 进程观察失败与后续 5 次连续干净成功；失败后重启且不再失败的
   目标仍按 recency 衰减，直到出现新失败或新恢复证据。这是有意的有界行为，未新增启动时历史扫描。
-- C-1 的 review 只读取前 50 条 consumer 行；超过上限的孤儿由 doctor 的全量 consumer 状态报告。
+- recovery 只在没有 qualifying loss 时 resolve；存在损失时目标保持候选，即使最近有干净成功 streak。
+  这是保守取舍，宁可多留一轮候选，也不让恢复事实压掉独立损失。
+- 同一毫秒的 failure 与 recovery 不算已恢复（严格 `>`）；最坏情况下目标多留一轮候选，不会隐藏
+  更晚提交的失败。
+- C-1 的 review 只读取前 50 条 consumer 行；超过上限时给出 consumer-rows-truncated operator
+  notice 并指向 doctor 全量读取，但 review 本身不逐行评估未读尾部。
 - B-1 的 `losslessCanonicalText()` 对极深非循环值可能栈溢出；`sampleEvidence()` 捕获后使用固定
-  marker，不改变任务结果，但该极端场景未做专门压测。
+  `x` marker，不改变任务结果，但该极端场景未做专门压测。
 - B-2 只修生产宿主；内核的通用 `evidence` 仍接受直接调用方传入的任意有界证据（同用户传输层，
   不是授权边界）。`scripts/acceptance` 的 probe 不属于生产路径，未改。
 - R10 的最终独立 APPROVE 仍缺失（Codex 用量限制）。R11 的 Playtester 复审覆盖合并树；如果
