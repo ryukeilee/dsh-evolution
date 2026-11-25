@@ -167,9 +167,11 @@ test('every provider step in one run contributes to the turn bill', async (t) =>
   // The last step alone would have reported 4 input / 1 output / 5 cache.
   assert.deepEqual(result.usage, { input: 14, output: 3, cache: { read: 8 } });
   // The pilot is always started on the agent whose project permissions the
-  // bridge overrides, not a host default that might allow its own tools.
+  // bridge overrides, not a host default that might allow its own tools, and on
+  // a private server so a shared service's project/config cache cannot decide
+  // whether the deny ruleset applies.
   const args = (await fs.readFile(argsFile, 'utf8')).split('\n');
-  assert.deepEqual(args.slice(0, 7), ['run', '--format', 'json', '--agent', 'build', '--model', 'test/model']);
+  assert.deepEqual(args.slice(0, 8), ['--standalone', 'run', '--format', 'json', '--agent', 'build', '--model', 'test/model']);
 });
 
 test('an incomplete step bill makes the turn spend unknown instead of smaller', async (t) => {
@@ -193,16 +195,31 @@ test('an incomplete step bill makes the turn spend unknown instead of smaller', 
 test('pilot tool isolation denies every action in the build agent config', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-isolation-'));
   t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  let runnerEnv = null;
   const bridge = await startModelBridge({
     cwd: dir,
     isolatePilotTools: true,
-    runner: async () => ({ ok: true, text: '{"tool":"read","arguments":{}}', usage: { input: 1, output: 1 }, wallMs: 1 }),
+    runner: async (prompt, options) => {
+      runnerEnv = options?.env ?? null;
+      return { ok: true, text: '{"tool":"read","arguments":{}}', usage: { input: 1, output: 1 }, wallMs: 1 };
+    },
   });
   t.after(() => bridge.close());
   const config = JSON.parse(await fs.readFile(path.join(dir, 'opencode.json'), 'utf8'));
-  assert.deepEqual(config.agents.build.permissions, [{ action: '*', resource: '*', effect: 'deny' }]);
+  const permissions = config.agents.build.permissions;
+  assert.deepEqual(permissions[0], { action: '*', resource: '*', effect: 'deny' });
+  // The wildcard is not sufficient on its own (v2 resolves some actions outside
+  // it), so every capability action stays explicitly denied.
+  for (const action of ['read', 'edit', 'bash', 'shell', 'task', 'skill']) {
+    assert.ok(permissions.some((rule) => rule.action === action && rule.resource === '*' && rule.effect === 'deny'), `missing deny for ${action}`);
+  }
   assert.equal(config.agents.build.description.includes('decision transport'), true);
+  // The project file alone is not reliably read outside a repository, so the
+  // same ruleset is also merged into the pilot process environment.
   await post(bridge);
+  assert.ok(runnerEnv && typeof runnerEnv.OPENCODE_CONFIG_CONTENT === 'string', 'the runner env must carry the isolation layer');
+  const contentRules = JSON.parse(runnerEnv.OPENCODE_CONFIG_CONTENT).agents.build.permissions;
+  assert.deepEqual(contentRules, permissions);
   assert.equal(bridge.turns.length, 1);
 });
 
@@ -222,6 +239,47 @@ test('a process failure that used an own tool is reported as a bypass', async (t
   assert.equal(bridge.turns[0].reason, 'pilot-used-own-tools');
 });
 
+test('an instruction-only skill call is retried once with a no-tool instruction', async (t) => {
+  let calls = 0;
+  const prompts = [];
+  const bridge = await startModelBridge({
+    runner: async (prompt) => {
+      calls += 1;
+      prompts.push(prompt);
+      if (calls === 1) {
+        return { ok: true, ownToolCalls: 1, ownToolNames: ['skill'], text: '{"stop":true,"message":"first"}', usage: { input: 1, output: 1 }, wallMs: 1 };
+      }
+      return { ok: true, ownToolCalls: 0, ownToolNames: [], text: '{"stop":true,"message":"second"}', usage: { input: 1, output: 1 }, wallMs: 1 };
+    },
+  });
+  t.after(() => bridge.close());
+  const result = await post(bridge);
+  assert.equal(result.status, 200);
+  assert.equal(calls, 2);
+  assert.match(prompts[1], /including skill/);
+  assert.equal(bridge.turns.length, 1);
+  assert.equal(bridge.turns[0].ok, true);
+  assert.equal(bridge.turns[0].retries, 1);
+  assert.deepEqual(bridge.turns[0].decision, { stop: true });
+});
+
+test('a capability own-tool call is fatal and never retried', async (t) => {
+  let calls = 0;
+  const bridge = await startModelBridge({
+    runner: async () => {
+      calls += 1;
+      return { ok: true, ownToolCalls: 1, ownToolNames: ['read'], text: '{"stop":true,"message":"fixture value"}', usage: { input: 1, output: 1 }, wallMs: 1 };
+    },
+  });
+  t.after(() => bridge.close());
+  const result = await post(bridge);
+  assert.equal(result.status, 502);
+  assert.equal(calls, 1);
+  assert.equal(bridge.turns[0].ok, false);
+  assert.equal(bridge.turns[0].reason, 'pilot-used-own-tools');
+  assert.deepEqual(bridge.turns[0].ownToolNames, ['read']);
+});
+
 test('a non-zero exit after an own tool call keeps the bypass evidence', async (t) => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-own-tool-exit-'));
   t.after(() => fs.rm(dir, { recursive: true, force: true }));
@@ -238,6 +296,26 @@ test('a non-zero exit after an own tool call keeps the bypass evidence', async (
   assert.equal(result.ok, false);
   assert.equal(result.reason, 'model-process-failed');
   assert.equal(result.ownToolCalls, 1);
+});
+
+test('a permission-denied own tool attempt is not an execution', async (t) => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-own-tool-denied-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await fs.writeFile(path.join(dir, 'opencode'),
+    '#!/bin/sh\n'
+    + 'printf \'%s\\n\' \'{"type":"tool_use","part":{"tool":"skill","state":{"status":"error","error":"Permission denied: skill"}}}\'\n'
+    + 'printf \'%s\\n\' \'{"type":"text","part":{"text":"{\\"tool\\":\\"read\\",\\"arguments\\":{}}"}}\'\n',
+    { mode: 0o755 });
+  const result = await runOpencodeTurn('prompt', {
+    model: 'test/model',
+    cwd: dir,
+    env: { ...process.env, PATH: dir + path.delimiter + (process.env.PATH ?? '') },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.ownToolCalls, 0);
+  assert.deepEqual(result.ownToolNames, []);
+  assert.equal(result.deniedToolCalls, 1);
+  assert.deepEqual(result.deniedToolNames, ['skill']);
 });
 
 test('the bridge persists only fixed failure codes, never body or exception text', async (t) => {

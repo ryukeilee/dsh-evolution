@@ -44,7 +44,7 @@ import crypto from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { pathToFileURL } from 'node:url';
-import { DEFAULT_BRIDGE_MODEL, startModelBridge, usageTotals } from './model-bridge.mjs';
+import { DEFAULT_BRIDGE_MODEL, runPilotIsolationPreflight, startModelBridge, usageTotals } from './model-bridge.mjs';
 
 export const TASK_BENEFIT_RUNS = Object.freeze({ min: 3, max: 5 });
 export const TASK_BENEFIT_MODEL = DEFAULT_BRIDGE_MODEL;
@@ -788,6 +788,45 @@ export function extractSessionEvidence({ label, side, turns, updates, assistantT
   };
 }
 
+/**
+ * Select the model-bridge records that belong to one session. Paired sessions
+ * run concurrently on a side, so a shared `turns` list cannot be sliced by
+ * length: a turn may arrive from another session's model request in between.
+ * Every bridge record carries the session tag it was recorded under.
+ */
+export function selectSessionTurns(turns, sessionId) {
+  if (typeof sessionId !== 'string' || sessionId === '') return [];
+  return (Array.isArray(turns) ? turns : []).filter((turn) => turn?.sessionId === sessionId);
+}
+
+/**
+ * Order the paired sessions. A wave runs its repetitions concurrently on one
+ * side and then on the other, so the two sides never overlap. `serial` keeps the
+ * historical order exactly (repetition 0..n-1, alternating side order); the
+ * concurrent path groups repetitions by parity, so each repetition keeps the
+ * `repetition % 2` side order it would have had in the serial run. A parity
+ * group holds ceil(runs / 2) repetitions, so that is also the effective lane
+ * cap (three lanes for `runs = 5`; two for the minimum `runs = 3`).
+ */
+export function planSessionWaves({ runs, concurrency, serial }) {
+  if (!Number.isInteger(runs) || runs < 1) throw new Error('runs must be a positive integer');
+  const sides = (repetition) => (repetition % 2 === 0 ? ['candidate', 'baseline'] : ['baseline', 'candidate']);
+  if (serial) {
+    return Array.from({ length: runs }, (_, repetition) => ({ repetitions: [repetition], order: sides(repetition) }));
+  }
+  const size = Number.isInteger(concurrency) && concurrency > 0 ? Math.min(concurrency, runs) : Math.min(2, runs);
+  const waves = [];
+  for (const parity of [0, 1]) {
+    const group = [];
+    for (let repetition = parity; repetition < runs; repetition += 2) group.push(repetition);
+    for (let start = 0; start < group.length; start += size) {
+      const repetitions = group.slice(start, start + size);
+      waves.push({ repetitions, order: sides(repetitions[0]) });
+    }
+  }
+  return waves;
+}
+
 /** Sum the per-session rows; turns/toolCalls/tokens/time are additive. */
 export function aggregateSessions(sessions) {
   const rows = Array.isArray(sessions) ? sessions : [];
@@ -1295,11 +1334,10 @@ function spawnAcp({ cli, home, overlay, env, cwd }) {
   return { child, rpc, updates, stderr: () => stderr };
 }
 
-async function runSession({ cli, home, work, overlay, env, bridge, prompt, label, side, expectedTokens, expectedReads = null, candidateTool }) {
+async function runSession({ cli, home, work, overlay, env, bridge, sessionId, prompt, label, side, expectedTokens, expectedReads = null, candidateTool }) {
   const startedAt = Date.now();
   const acp = spawnAcp({ cli, home, overlay, env, cwd: home });
   let promptFailure = null;
-  const before = bridge.turns.length;
   const updates = acp.updates;
   try {
     await acp.rpc('initialize', { protocolVersion: 1, clientCapabilities: {} });
@@ -1313,16 +1351,20 @@ async function runSession({ cli, home, work, overlay, env, bridge, prompt, label
     await Promise.race([once(acp.child, 'exit'), new Promise((resolve) => setTimeout(resolve, 5000))]);
   }
   const durationMs = Date.now() - startedAt;
-  const turns = bridge.turns.slice(before);
+  // Per-session bridge, filtered by the session tag: concurrent sessions never
+  // share a record, even if a bridge is ever reused across them.
+  const turns = selectSessionTurns(bridge.turns, sessionId);
   const assistantText = updates
     .filter((update) => update?.sessionUpdate === 'agent_message_chunk' && update.content?.type === 'text')
     .map((update) => update.content.text).join('');
   const row = extractSessionEvidence({ label, side, turns, updates, assistantText, expectedTokens, expectedReads, cwd: home, candidateTool, durationMs });
   const failedTurns = turns.filter((turn) => turn.ok !== true).length;
   const failureReasons = pilotFailureReasons(turns);
+  const ownToolNames = [...new Set(turns.flatMap((turn) => Array.isArray(turn?.ownToolNames) ? turn.ownToolNames : []))].slice(0, 8);
   // The raw transport detail stays on the operator console; the persisted row
   // carries only a stage/category/code projection.
   if (promptFailure !== null) console.error(`[task-benefit] ${label} failed: ${String(promptFailure?.message ?? promptFailure).slice(0, 400)}`);
+  if (ownToolNames.length > 0) console.error(`[task-benefit] ${label} pilot used its own tools: ${ownToolNames.join(',')}`);
   return {
     ...row,
     ok: promptFailure === null && failedTurns === 0 && row.turns > 0 && row.usageComplete === true && row.attributionComplete === true,
@@ -1390,8 +1432,25 @@ export async function produceTaskBenefit(options = {}) {
   // bridge-cwd, preview or overlay symlinks cannot be followed.
   const runWork = await fs.mkdtemp(path.join(work, 'run-'));
   if (await fs.realpath(runWork) !== runWork) throw new Error('the fresh run directory resolved to a different path');
-  await fs.mkdir(path.join(runWork, 'bridge-cwd'), { recursive: true });
   await inspectArtifactTarget(artifactTarget);
+
+  // Prove the pilot's own tools are denied before spending a single paired
+  // session. The failure this replaces only became visible after all six
+  // sessions had run (the whole artifact was then discarded), so the preflight
+  // is a bounded, machine-readable refusal instead of an expensive one.
+  const preflight = await runPilotIsolationPreflight({
+    model,
+    cwd: path.join(runWork, 'pilot-preflight'),
+    ...(typeof options.preflightRunner === 'function' ? { runner: options.preflightRunner } : {}),
+  });
+  if (preflight.ok !== true) {
+    const error = new Error(`the pilot isolation preflight refused this run: ${preflight.reason}`);
+    error.code = preflight.code;
+    error.reason = preflight.reason;
+    error.wallMs = preflight.wallMs;
+    throw error;
+  }
+  options.log?.(`pilot isolation preflight: ok ms=${preflight.wallMs}`);
 
   const previewUrl = pathToFileURL(path.join(runWork, 'preview-policy.mjs')).href;
   await writePreviewModule(path.join(runWork, 'preview-policy.mjs'), candidateHost);
@@ -1401,75 +1460,93 @@ export async function produceTaskBenefit(options = {}) {
   // deciding on a harness-truncated result instead of the host's own output.
   const maxToolText = Number.isInteger(options.maxToolText) && options.maxToolText > 0
     ? options.maxToolText : undefined;
-  const bridge = await startModelBridge({
-    model,
-    cwd: path.join(runWork, 'bridge-cwd'),
-    isolatePilotTools: true,
-    ...(maxToolText ? { maxToolText } : {}),
-  });
-  let candidateOverlay;
-  let baselineOverlay;
-  const sessions = { baseline: [], candidate: [] };
+  // Same-side concurrency only. The candidate side measures the capability and
+  // the baseline side measures the plain host, so running them at the same time
+  // would let one side's load land in the other side's wall clock. Two lanes is
+  // the default: a three-lane run finished sooner but raised the candidate
+  // side's median single-session wall clock by 25% (see the R14 A/B evidence),
+  // which is the contention signal the acceptance treats as no benefit. The
+  // rotation (`repetition % 2`) that protects against a warm cache is kept per
+  // wave.
+  const serial = options.serial === true;
+  const requested = Number.isInteger(options.concurrency) && options.concurrency > 0 ? options.concurrency : 2;
+  const concurrency = serial ? 1 : Math.min(runs, requested);
+  const sessions = { baseline: new Array(runs), candidate: new Array(runs) };
   // An incomplete pilot session is not a measurement. Keep its row in the
   // report and replace it once with a fresh session when the only failure was
   // the pilot transport (no product tool failure). The artifact still requires
   // every final session to be complete and correct.
   const sessionRetries = [];
-  try {
-    candidateOverlay = path.join(runWork, 'overlay-candidate.yml');
-    baselineOverlay = path.join(runWork, 'overlay-baseline.yml');
-    await fs.writeFile(candidateOverlay, overlayText(bridge.baseURL, previewUrl), { mode: 0o600 });
-    await fs.writeFile(baselineOverlay, overlayText(bridge.baseURL, null), { mode: 0o600 });
-    for (let repetition = 0; repetition < runs; repetition += 1) {
-      const order = repetition % 2 === 0 ? ['candidate', 'baseline'] : ['baseline', 'candidate'];
-      for (const side of order) {
-        const label = `${side}-${repetition + 1}`;
-        const attempts = [await runSession({
-          cli, home, work: runWork,
-          overlay: side === 'candidate' ? candidateOverlay : baselineOverlay,
-          env, bridge, prompt: task.prompt,
-          label, side,
-          expectedTokens: task.tokens,
-          expectedReads: task.reads,
-          candidateTool: improvement === 'tool' ? targetTool : null,
-        })];
-        // Only a confirmed pilot transport failure is replaced; a product tool
-        // failure or an own-tool bypass keeps its row and invalidates the artifact.
-        if (retryableSession(attempts[0])) {
-          const retried = await runSession({
-            cli, home, work: runWork,
-            overlay: side === 'candidate' ? candidateOverlay : baselineOverlay,
-            env, bridge, prompt: task.prompt,
-            label: label + '-retry', side,
-            expectedTokens: task.tokens,
-            expectedReads: task.reads,
-            candidateTool: improvement === 'tool' ? targetTool : null,
-          });
-          attempts.push(retried);
-        }
-        const row = attempts.at(-1);
-        sessions[side].push(row);
-        if (attempts.length > 1) {
-          sessionRetries.push({
-            side,
-            repetition: repetition + 1,
-            attempts: attempts.map((attempt) => ({
-              label: attempt.label,
-              ok: attempt.ok,
-              failedTurns: attempt.failedTurns,
-              toolFailures: attempt.toolFailures,
-              ...(attempt.failureReasons ? { failureReasons: attempt.failureReasons } : {}),
-              tokens: attempt.tokens,
-              durationMs: attempt.durationMs,
-            })),
-          });
-        }
-        options.log?.(`${side} session ${repetition + 1}: correct=${row.correct} turns=${row.turns} calls=${row.toolCalls} tokens=${row.tokens} exercised=${row.exercised} ms=${row.durationMs}${attempts.length > 1 ? ' (retried)' : ''}`);
-      }
+  // One bridge and one overlay per attempt: the overlay carries this bridge's
+  // base URL, and the tag makes attribution exact even under concurrency.
+  const runAttempt = async (side, label) => {
+    const bridge = await startModelBridge({
+      model,
+      cwd: path.join(runWork, 'bridge', label),
+      isolatePilotTools: true,
+      sessionId: label,
+      // A caller may supply a deterministic runner for harness self-checks; the
+      // measured runs leave it unset and use the real model transport.
+      ...(typeof options.pilotRunner === 'function' ? { runner: options.pilotRunner } : {}),
+      ...(maxToolText ? { maxToolText } : {}),
+    });
+    try {
+      const overlay = path.join(runWork, `overlay-${label}.yml`);
+      await fs.writeFile(overlay, overlayText(bridge.baseURL, side === 'candidate' ? previewUrl : null), { mode: 0o600 });
+      return await runSession({
+        cli, home, work: runWork,
+        overlay,
+        env, bridge, sessionId: label, prompt: task.prompt,
+        label, side,
+        expectedTokens: task.tokens,
+        expectedReads: task.reads,
+        candidateTool: improvement === 'tool' ? targetTool : null,
+      });
+    } finally {
+      await bridge.close();
     }
-  } finally {
-    await bridge.close();
+  };
+  const runOne = async (side, repetition) => {
+    const label = `${side}-${repetition + 1}`;
+    const attempts = [await runAttempt(side, label)];
+    // Only a confirmed pilot transport failure is replaced; a product tool
+    // failure or an own-tool bypass keeps its row and invalidates the artifact.
+    if (retryableSession(attempts[0])) attempts.push(await runAttempt(side, label + '-retry'));
+    const row = attempts.at(-1);
+    sessions[side][repetition] = row;
+    if (attempts.length > 1) {
+      sessionRetries.push({
+        side,
+        repetition: repetition + 1,
+        attempts: attempts.map((attempt) => ({
+          label: attempt.label,
+          ok: attempt.ok,
+          failedTurns: attempt.failedTurns,
+          toolFailures: attempt.toolFailures,
+          ...(attempt.failureReasons ? { failureReasons: attempt.failureReasons } : {}),
+          tokens: attempt.tokens,
+          durationMs: attempt.durationMs,
+        })),
+      });
+    }
+    options.log?.(`${side} session ${repetition + 1}: correct=${row.correct} turns=${row.turns} calls=${row.toolCalls} tokens=${row.tokens} exercised=${row.exercised} ms=${row.durationMs}${attempts.length > 1 ? ' (retried)' : ''}`);
+    return row;
+  };
+  // Repetitions are grouped by parity so the `repetition % 2` rotation keeps
+  // meaning: every repetition in a group runs with the same side order, and the
+  // two sides never overlap. Within a group the repetitions run concurrently.
+  const waves = planSessionWaves({ runs, concurrency, serial });
+  for (const wave of waves) {
+    for (const side of wave.order) {
+      const settled = await Promise.allSettled(wave.repetitions.map((repetition) => runOne(side, repetition)));
+      const rejected = settled.find((entry) => entry.status === 'rejected');
+      if (rejected) throw rejected.reason;
+    }
   }
+  sessions.baseline = sessions.baseline.filter(Boolean);
+  sessions.candidate = sessions.candidate.filter(Boolean);
+  sessionRetries.sort((left, right) => left.repetition - right.repetition
+    || (left.side === right.side ? 0 : left.side === 'candidate' ? -1 : 1));
 
   const complete = [...sessions.baseline, ...sessions.candidate].every((row) => row.ok === true);
   const artifact = buildTaskBenefitArtifact({
@@ -1501,6 +1578,9 @@ export async function produceTaskBenefit(options = {}) {
     model,
     host,
     runs,
+    concurrency,
+    serial,
+    preflight,
     tokenBasis: 'model-bill: input + output + cache.read (opencode reports each decision turn)',
     artifact: {
       complete,
@@ -1529,7 +1609,7 @@ if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
   const taskFile = argument('--task', argv);
   const hostFile = argument('--candidate-host', argv);
   if (!home || !taskFile || !hostFile) {
-    throw new Error('usage: task-benefit.mjs --home <isolated-dsh-home> --task <task.json> --candidate-host <host.js> [--task-id <id>] [--runs 3-5] [--out <artifact.json>] [--report <report.json>] [--channel-home <dsh-home-that-reads-the-evidence>]');
+    throw new Error('usage: task-benefit.mjs --home <isolated-dsh-home> --task <task.json> --candidate-host <host.js> [--task-id <id>] [--runs 3-5] [--concurrency 1-5] [--serial] [--out <artifact.json>] [--report <report.json>] [--channel-home <dsh-home-that-reads-the-evidence>]');
   }
   // An option that is present but has no value must not silently fall back to
   // the default: `--channel-home` at the end of the command would otherwise run
@@ -1558,6 +1638,10 @@ if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
   }
   const task = JSON.parse(await fs.readFile(taskFile, 'utf8'));
   const candidateHost = await fs.readFile(hostFile, 'utf8');
+  const concurrencyOption = option('--concurrency');
+  if (concurrencyOption !== undefined && !/^[1-9][0-9]?$/.test(concurrencyOption)) {
+    throw new Error('--concurrency needs a positive integer');
+  }
   const result = await produceTaskBenefit({
     home,
     task,
@@ -1565,6 +1649,8 @@ if (process.argv[1] && process.argv[1].endsWith('task-benefit.mjs')) {
     candidateHost,
     runs: Number(argument('--runs', argv) ?? TASK_BENEFIT_RUNS.min),
     model: argument('--model', argv) ?? TASK_BENEFIT_MODEL,
+    ...(argv.includes('--serial') ? { serial: true } : {}),
+    ...(concurrencyOption === undefined ? {} : { concurrency: Number(concurrencyOption) }),
     // The report preflight, the evidence delivery and the report re-check share
     // this one resolved target.
     ...(artifactTarget === null ? { outFile, channelHome } : { artifactTarget }),
