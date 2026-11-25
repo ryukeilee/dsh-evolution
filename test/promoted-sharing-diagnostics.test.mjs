@@ -69,6 +69,14 @@ async function observedHostOf(dshHome) {
   };
 }
 
+// Use the doctor's own observed host when a CLI is discoverable, so the
+// published record is also host-compatible in that environment; a bare
+// checkout has no host facts, so fall back to the synthetic set.
+async function fixtureHost(dshHome) {
+  const observed = await observedHostOf(dshHome);
+  return typeof observed.dsh === 'string' && observed.dsh ? observed : SYNTHETIC_HOST;
+}
+
 test('no publication keeps every promotion Desktop-only and reports ok', async (t) => {
   const env = await home(t);
   const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
@@ -350,4 +358,100 @@ test('an approved, mounted record is not an orphan mount', async (t) => {
   const check = checkOf(report, 'promotion.sharing');
   assert.equal(check.evidence.status, 'ok');
   assert.deepEqual(check.evidence.orphanMounts, []);
+});
+
+// R11 consumer-state reliability: an unreadable state, or a state that claims
+// to have observed the current index without an activation row for an approved
+// record, cannot prove activation. Both read-only surfaces must agree that the
+// affected consumer needs a restart instead of reporting a healthy publication.
+test('an invalid consumer state degrades the doctor and requires a restart', async (t) => {
+  const env = await home(t);
+  const host = await fixtureHost(env.dshHome);
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const consumersDir = path.join(env.paths.dataRoot, 'shared-plugins', 'consumers');
+  await fs.mkdir(consumersDir, { recursive: true });
+  await fs.writeFile(path.join(consumersDir, 'acp.json'), '{not json');
+
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.unverifiedConsumers, [{ profile: 'acp', status: 'invalid' }]);
+  assert.equal(check.evidence.consumers.acp.status, 'invalid');
+  assert.match(check.summary, /restart/i);
+  assert.match(check.remediation, /restart/i);
+
+  const review = await readPublishedPluginReview({ paths: env.paths, host });
+  assert.equal(review.records[0].status, 'restart-required');
+  assert.ok(review.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.recordId === pluginId));
+});
+
+test('an absent index with an invalid consumer state keeps the existing absent shape', async (t) => {
+  const env = await home(t);
+  const host = await fixtureHost(env.dshHome);
+  const consumersDir = path.join(env.paths.dataRoot, 'shared-plugins', 'consumers');
+  await fs.mkdir(consumersDir, { recursive: true });
+  await fs.writeFile(path.join(consumersDir, 'acp.json'), '{not json');
+
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'ok', JSON.stringify(check.evidence));
+  assert.equal(check.evidence.status, 'absent');
+  assert.equal(check.evidence.unverifiedConsumers, undefined);
+  const review = await readPublishedPluginReview({ paths: env.paths, host });
+  assert.equal(review.status, 'absent');
+});
+
+test('an active consumer row is neither unverified nor a missing row', async (t) => {
+  const env = await home(t);
+  const observed = await observedHostOf(env.dshHome);
+  const host = typeof observed.dsh === 'string' && observed.dsh ? observed : SYNTHETIC_HOST;
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const indexPath = path.join(env.paths.dataRoot, 'shared-plugins', 'published.json');
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [{ id: pluginId, status: 'active', reason: null }],
+  }));
+
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  // Without a discoverable CLI the doctor also sees a host mismatch, so level
+  // is only asserted healthy where the published host can actually be observed.
+  if (observed.dsh) assert.equal(check.level, 'ok', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.unverifiedConsumers, []);
+  assert.deepEqual(check.evidence.missingConsumerRows, []);
+});
+
+test('a consumer that observed the current index without the record row is degraded', async (t) => {
+  const env = await home(t);
+  const observed = await observedHostOf(env.dshHome);
+  const host = typeof observed.dsh === 'string' && observed.dsh ? observed : SYNTHETIC_HOST;
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const indexPath = path.join(env.paths.dataRoot, 'shared-plugins', 'published.json');
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: index.updatedAt, compositionPath: null, plugins: [],
+  }));
+
+  let report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  let check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.missingConsumerRows, [{ profile: 'acp', id: pluginId }]);
+  assert.match(check.remediation, /restart/i);
+
+  const review = await readPublishedPluginReview({ paths: env.paths, host });
+  assert.equal(review.records[0].status, 'restart-required');
+
+  // Writing the activation row clears the suspicion without any other change.
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [{ id: pluginId, status: 'active', reason: null }],
+  }));
+  report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  check = checkOf(report, 'promotion.sharing');
+  if (observed.dsh) assert.equal(check.level, 'ok', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.missingConsumerRows, []);
 });
