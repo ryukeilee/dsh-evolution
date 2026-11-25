@@ -39,6 +39,17 @@ export const DEFAULT_BRIDGE_MODEL = 'opencode-go/deepseek-v4.1-flash';
 
 const MAX_BLOCK_TEXT = 20_000;
 const MAX_TOOL_TEXT = 4_000;
+// The pilot is a full coding agent started as `opencode run --agent build`. It
+// must not be able to read the fixture (or the isolated home) with its own
+// tools: every measurement decision has to come from the host transcript. The
+// wildcard rule is not enough on its own: v2 resolves some actions (notably
+// `skill`) outside it, so each capability action is denied explicitly as well.
+const PILOT_ISOLATION_RULESET = Object.freeze([
+  { action: '*', resource: '*', effect: 'deny' },
+  ...['read', 'edit', 'glob', 'grep', 'list', 'bash', 'shell', 'task',
+    'external_directory', 'todowrite', 'question', 'webfetch', 'websearch', 'lsp', 'skill']
+    .map((action) => ({ action, resource: '*', effect: 'deny' })),
+]);
 // Fixed reason codes are the only failure text that may leave the bridge. A raw
 // provider/JSON exception can carry a request or reply body.
 const PILOT_REASON_CODES = new Set([
@@ -54,6 +65,18 @@ const PILOT_REASON_CODES = new Set([
 
 function pilotReasonCode(reason) {
   return typeof reason === 'string' && PILOT_REASON_CODES.has(reason) ? reason : 'pilot-transport-error';
+}
+
+// `skill` only loads instruction text; it cannot read the fixture or the host
+// transcript. opencode still offers it under a deny-all ruleset (the call is
+// denied at execution), and the pilot sometimes asks for it. A capability tool
+// is anything that can observe or change the measured workspace.
+const INSTRUCTION_ONLY_PILOT_TOOLS = new Set(['skill']);
+
+/** The own tools that would make a pilot turn unprovable. */
+export function capabilityOwnToolNames(names) {
+  return (Array.isArray(names) ? names : [])
+    .filter((name) => typeof name === 'string' && name !== '' && !INSTRUCTION_ONLY_PILOT_TOOLS.has(name));
 }
 
 function bounded(value, limit) {
@@ -147,6 +170,45 @@ export function parseDecision(text) {
 }
 
 /**
+ * The pilot's own tool surface, denied twice:
+ *
+ *   - the project `opencode.json` is the documented layer, but an opencode run
+ *     outside a repository does not reliably read it (observed: a file-read
+ *     prompt got `read`/`shell` back in 10 of 10 turns);
+ *   - `OPENCODE_CONFIG_CONTENT` is a process-local layer that opencode merges
+ *     before project config, so the same ruleset reaches the agent even when
+ *     the working directory is not recognized as a project.
+ *
+ * Both carry the identical ruleset so an upgrade that drops either mechanism
+ * still fails closed instead of silently re-enabling the pilot's tools.
+ */
+export function pilotIsolationEnv(base = process.env) {
+  return {
+    ...base,
+    OPENCODE_CONFIG_CONTENT: JSON.stringify({ agents: { build: { permissions: PILOT_ISOLATION_RULESET } } }),
+  };
+}
+
+/**
+ * Write the pilot isolation config into a private working directory. Both the
+ * measurement bridge and the preflight use this one definition, so the probe
+ * proves the same enforcement the sessions run under.
+ */
+export async function writePilotIsolationConfig(cwd) {
+  if (typeof cwd !== 'string' || cwd === '') throw new Error('the pilot isolation config needs a private working directory');
+  await fs.mkdir(cwd, { recursive: true });
+  await fs.writeFile(path.join(cwd, 'opencode.json'), `${JSON.stringify({
+    $schema: 'https://opencode.ai/config.json',
+    agents: {
+      build: {
+        description: 'single-step decision transport for the DSH acceptance',
+        permissions: PILOT_ISOLATION_RULESET,
+      },
+    },
+  }, null, 2)}\n`, { mode: 0o600 });
+}
+
+/**
  * Run one real model turn through the `opencode` CLI.
  *
  * Resolves to the assistant text plus the usage the CLI reported. The child is
@@ -161,7 +223,11 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   // `build` is the agent a denied-tool project config can override; naming it
   // keeps the transport deterministic instead of following a host default that
   // might allow the pilot to inspect the fixtures with its own tools.
-  const child = spawn('opencode', ['run', '--format', 'json', '--agent', 'build', '--model', model, prompt], {
+  // `--standalone` keeps each turn on a private server in this working
+  // directory. The shared background service is a different process with its
+  // own project/config cache: a turn routed there was observed to ignore the
+  // agent-level deny ruleset and read the fixture with its own `read` tool.
+  const child = spawn('opencode', ['--standalone', 'run', '--format', 'json', '--agent', 'build', '--model', model, prompt], {
     cwd: workdir, env, stdio: ['ignore', 'pipe', 'pipe'],
   });
   let stderr = '';
@@ -171,6 +237,9 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   let usage = null;
   let usageComplete = true;
   let ownToolCalls = 0;
+  const ownToolNames = [];
+  let deniedToolCalls = 0;
+  const deniedToolNames = [];
   let transportIncomplete = false;
   const handleLine = (line) => {
     if (!line.trim().startsWith('{')) return;
@@ -205,7 +274,23 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
     // The pilot is a full coding agent. If it inspects the fixture with its own
     // tools, the answer did not come from the host transcript (and could know
     // values the host path never delivered). Report it instead of accepting it.
-    if (row?.type === 'tool_use' || row?.type === 'tool') ownToolCalls += 1;
+    // A permission-denied attempt is not an execution: opencode still emits a
+    // `tool_use` event for it (`state.status: "error"`, "Permission denied"),
+    // but nothing was read or run. Only executed calls make a turn unprovable.
+    // The tool *names* are kept for the operator; they carry no arguments or
+    // file content, and arguments never leave here.
+    if (row?.type === 'tool_use' || row?.type === 'tool') {
+      const name = row?.part?.tool ?? row?.part?.name ?? row?.name;
+      const state = row?.part?.state;
+      const denied = state?.status === 'error' && typeof state.error === 'string' && /permission denied/i.test(state.error);
+      if (denied) {
+        deniedToolCalls += 1;
+        if (typeof name === 'string' && name !== '' && deniedToolNames.length < 8 && !deniedToolNames.includes(name)) deniedToolNames.push(name);
+      } else {
+        ownToolCalls += 1;
+        if (typeof name === 'string' && name !== '' && ownToolNames.length < 8 && !ownToolNames.includes(name)) ownToolNames.push(name);
+      }
+    }
   };
   // Parse complete JSON lines as they arrive. A trailing byte cap would drop
   // early own-tool or step_finish events, turning a bypass into a retryable
@@ -243,7 +328,7 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
     try { child.stderr.destroy(); } catch {}
     try { child.kill('SIGKILL'); } catch {}
     return {
-      ok: false, reason: 'pilot-transport-incomplete', code, signal, ownToolCalls, wallMs,
+      ok: false, reason: 'pilot-transport-incomplete', code, signal, ownToolCalls, ownToolNames, deniedToolCalls, deniedToolNames, wallMs,
       stderr: bounded(stderr, 1_000), stdout: bounded(stdoutSample, 1_000),
     };
   }
@@ -253,16 +338,16 @@ export async function runOpencodeTurn(prompt, { model, cwd, timeoutMs = 180_000,
   // tool_use), so it is not a retryable process failure: the own-tool count is
   // only a lower bound. Known own-tool evidence is still reported.
   if (transportIncomplete) {
-    return { ok: false, reason: 'pilot-transport-incomplete', code, signal, ownToolCalls, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdoutSample, 1_000) };
+    return { ok: false, reason: 'pilot-transport-incomplete', code, signal, ownToolCalls, ownToolNames, deniedToolCalls, deniedToolNames, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdoutSample, 1_000) };
   }
   // A non-zero exit or a signal is a process failure even when partial text was
   // written: that text may be a truncated reply, and the caller's correctness
   // (and its single retry) must not treat it as a parseable decision. Own-tool
   // evidence survives the failure so a bypass cannot be retried as transport.
   if (code !== 0 || signal !== null) {
-    return { ok: false, reason: 'model-process-failed', code, signal, ownToolCalls, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdoutSample, 1_000) };
+    return { ok: false, reason: 'model-process-failed', code, signal, ownToolCalls, ownToolNames, deniedToolCalls, deniedToolNames, wallMs, stderr: bounded(stderr, 1_000), stdout: bounded(stdoutSample, 1_000) };
   }
-  return { ok: true, text, usage, wallMs, ownToolCalls };
+  return { ok: true, text, usage, wallMs, ownToolCalls, ownToolNames, deniedToolCalls, deniedToolNames };
 }
 
 function anthropicStream(response, decision, usage, messageId) {
@@ -293,6 +378,10 @@ function anthropicStream(response, decision, usage, messageId) {
 /**
  * Start the bridge. `turns` collects one record per model request so the caller
  * can report real token counts, latency and the chosen tool per turn.
+ *
+ * `sessionId` tags every record with the session that owns this bridge. The
+ * producer runs one bridge per paired session, so concurrent sessions can never
+ * share a recording: attribution is by tag instead of by a shared list slice.
  */
 export async function startModelBridge({
   model = DEFAULT_BRIDGE_MODEL,
@@ -301,6 +390,7 @@ export async function startModelBridge({
   onDecision,
   maxToolText = MAX_TOOL_TEXT,
   isolatePilotTools = false,
+  sessionId = null,
 } = {}) {
   // Deny the pilot's own filesystem/shell tools for the `build` agent it is
   // started with. The acceptance tasks live in the same isolated home the host
@@ -310,19 +400,12 @@ export async function startModelBridge({
   // text in the prompt, so the measured decision is unchanged.
   if (isolatePilotTools) {
     if (typeof cwd !== 'string' || cwd === '') throw new Error('isolatePilotTools requires a bridge cwd');
-    await fs.mkdir(cwd, { recursive: true });
-    await fs.writeFile(path.join(cwd, 'opencode.json'), `${JSON.stringify({
-      $schema: 'https://opencode.ai/config.json',
-      agents: {
-        build: {
-          description: 'single-step decision transport for the DSH acceptance',
-          permissions: [{ action: '*', resource: '*', effect: 'deny' }],
-        },
-      },
-    }, null, 2)}\n`, { mode: 0o600 });
+    await writePilotIsolationConfig(cwd);
   }
   const turns = [];
   const sockets = new Set();
+  // The runner's own process environment carries the second isolation layer.
+  const runnerEnv = isolatePilotTools ? pilotIsolationEnv(process.env) : null;
   const server = http.createServer(async (request, response) => {
     let raw = '';
     try {
@@ -337,20 +420,40 @@ export async function startModelBridge({
       const attempts = [];
       let decision = null;
       let failureReason = null;
+      let instructionOnlyRetry = false;
       for (let attempt = 0; attempt < 2 && decision === null; attempt += 1) {
         const retryPrompt = attempt === 0 ? prompt
-          : `${prompt}\n\n[transport retry] Your previous reply was not a usable decision. Reply with exactly one JSON object and nothing else; do not call tools.`;
-        const reply = await runner(retryPrompt, { model, cwd });
+          : instructionOnlyRetry
+            ? `${prompt}\n\n[transport retry] Do not call any tool, including skill. Reply with exactly one JSON object and nothing else.`
+            : `${prompt}\n\n[transport retry] Your previous reply was not a usable decision. Reply with exactly one JSON object and nothing else; do not call tools.`;
+        const reply = await runner(retryPrompt, { model, cwd, ...(runnerEnv === null ? {} : { env: runnerEnv }) });
         attempts.push(reply);
+        const ownToolCalls = Number.isInteger(reply?.ownToolCalls) ? reply.ownToolCalls : 0;
+        const ownNames = Array.isArray(reply?.ownToolNames) ? reply.ownToolNames : [];
         if (!reply.ok) {
           // A process failure is a transport fact, not a formatting slip, and
           // an own-tool call means the answer may come from outside the host
           // transcript. Neither may be retried into a clean-looking decision;
           // own-tool evidence wins over the process-failure classification.
-          failureReason = (reply.ownToolCalls ?? 0) > 0 ? 'pilot-used-own-tools' : reply.reason;
+          failureReason = ownToolCalls > 0 ? 'pilot-used-own-tools' : reply.reason;
           break;
         }
-        if ((reply.ownToolCalls ?? 0) > 0) {
+        // A capability tool proves the answer may have come from the fixture;
+        // it is never retried. An instruction-only `skill` call cannot observe
+        // the measured state, so the turn is retried once in a fresh process
+        // with an explicit no-tool instruction. An own-tool count with no name
+        // is unclassified and stays fatal.
+        const capability = capabilityOwnToolNames(ownNames);
+        if (capability.length > 0 || (ownToolCalls > 0 && ownNames.length === 0)) {
+          failureReason = 'pilot-used-own-tools';
+          break;
+        }
+        if (ownToolCalls > 0) {
+          if (attempt === 0) {
+            instructionOnlyRetry = true;
+            failureReason = 'pilot-used-own-tools';
+            continue;
+          }
           failureReason = 'pilot-used-own-tools';
           break;
         }
@@ -376,13 +479,13 @@ export async function startModelBridge({
       const retries = attempts.length - 1;
       if (decision === null) {
         const reason = pilotReasonCode(failureReason);
-        turns.push({ round, ok: false, reason, wallMs, usage, retries });
+        turns.push({ round, sessionId, ok: false, reason, wallMs, usage, retries, ownToolNames: attempts.flatMap((attempt) => Array.isArray(attempt?.ownToolNames) ? attempt.ownToolNames : []).slice(0, 8), deniedToolNames: attempts.flatMap((attempt) => Array.isArray(attempt?.deniedToolNames) ? attempt.deniedToolNames : []).slice(0, 8) });
         response.writeHead(502, { 'content-type': 'application/json' });
         response.end(JSON.stringify({ error: reason }));
         return;
       }
       const record = {
-        round, ok: true, decision: decision.kind === 'tool' ? { tool: decision.tool, arguments: decision.arguments } : { stop: true },
+        round, sessionId, ok: true, decision: decision.kind === 'tool' ? { tool: decision.tool, arguments: decision.arguments } : { stop: true },
         usage, wallMs, retries,
         promptCharacters: prompt.length, tools: (input.tools ?? []).map((tool) => tool?.name).filter(Boolean),
       };
@@ -392,7 +495,7 @@ export async function startModelBridge({
     } catch {
       // The exception text may contain the request or reply body. Only a fixed
       // transport code crosses the bridge boundary.
-      turns.push({ round: turns.length, ok: false, reason: 'pilot-transport-error' });
+      turns.push({ round: turns.length, sessionId, ok: false, reason: 'pilot-transport-error' });
       if (!response.headersSent) response.writeHead(500);
       response.end('pilot-transport-error');
     }
@@ -413,6 +516,78 @@ export async function startModelBridge({
       server.close(() => resolve());
     }),
   };
+}
+
+/**
+ * The preflight prompt asks the pilot to use its own shell and read tools. When
+ * the isolation config is enforced those tools are not offered, so the turn can
+ * only answer in text with zero own-tool calls; when enforcement is missing the
+ * pilot reads the probe file or runs the command and the evidence is immediate.
+ */
+export const PILOT_PREFLIGHT_PROMPT = [
+  'You are a coding agent with your own filesystem and shell tools.',
+  'Do this now with your own tools:',
+  '1. Run the shell command `echo DSH_PILOT_ISOLATION_PROBE`.',
+  '2. Read the file ./pilot-isolation-probe.txt.',
+  '3. Reply with the two values you observed.',
+  'If you have no shell and no read tool, reply exactly: DSH_PILOT_NO_TOOLS',
+].join('\n');
+
+/**
+ * Prove that the pilot's own tools are actually denied before a paired run
+ * spends six sessions. One minimal turn is enough: the measurement harness has
+ * already observed that an unenforced pilot executes the probe instead of
+ * answering. The result carries a fixed reason code, never raw model text.
+ */
+export async function runPilotIsolationPreflight({
+  model = DEFAULT_BRIDGE_MODEL,
+  cwd,
+  runner = runOpencodeTurn,
+  timeoutMs = 45_000,
+} = {}) {
+  if (typeof cwd !== 'string' || cwd === '') throw new Error('the pilot isolation preflight needs a private working directory');
+  await writePilotIsolationConfig(cwd);
+  await fs.writeFile(path.join(cwd, 'pilot-isolation-probe.txt'), 'pilot-isolation-probe-value\n', { mode: 0o600 });
+  const startedAt = Date.now();
+  let reply;
+  // One retry only for a transport failure: a flaky pilot process must not
+  // abort the whole run, while a bypass (evidence) is never retried away.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      reply = await runner(PILOT_PREFLIGHT_PROMPT, { model, cwd, timeoutMs, env: pilotIsolationEnv(process.env) });
+    } catch {
+      // A thrown runner is a failed preflight, not a measurement.
+      reply = { ok: false, reason: 'model-process-failed' };
+    }
+    if (reply?.ok === true) break;
+    const attemptNames = Array.isArray(reply?.ownToolNames) ? reply.ownToolNames : [];
+    if (capabilityOwnToolNames(attemptNames).length > 0) break;
+    if (reply?.reason === 'pilot-used-own-tools') break;
+  }
+  const wallMs = Date.now() - startedAt;
+  const ownToolCalls = Number.isInteger(reply?.ownToolCalls) ? reply.ownToolCalls : 0;
+  const ownToolNames = Array.isArray(reply?.ownToolNames) ? reply.ownToolNames : [];
+  const capability = capabilityOwnToolNames(ownToolNames);
+  // An instruction-only `skill` call cannot reach the fixtures; the sessions
+  // handle it with a single tool-free retry. Anything else — or an own-tool
+  // count without a name — means the deny ruleset is not in force.
+  const bypass = capability.length > 0
+    || (ownToolCalls > 0 && ownToolNames.length === 0)
+    || (reply?.reason === 'pilot-used-own-tools' && ownToolNames.length === 0);
+  if (bypass) {
+    return {
+      ok: false,
+      code: 'E_ACP_PILOT_ISOLATION_BYPASS',
+      reason: 'pilot-used-own-tools',
+      wallMs,
+      ownToolCalls,
+      ...(ownToolNames.length > 0 ? { ownToolNames: ownToolNames.slice(0, 8) } : {}),
+    };
+  }
+  if (reply?.ok !== true) {
+    return { ok: false, code: 'E_ACP_PILOT_PREFLIGHT_FAILED', reason: pilotReasonCode(reply?.reason), wallMs };
+  }
+  return { ok: true, wallMs };
 }
 
 /** Sum of the real usage the model reported across turns. */

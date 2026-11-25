@@ -40,6 +40,8 @@ let runs = 3;
 let model = DEFAULT_BRIDGE_MODEL;
 let ptc = false;
 let scenarioName = 'line';
+let serial = false;
+let concurrency = null;
 for (let index = 0; index < argv.length; index += 1) {
   const arg = argv[index];
   if (arg === '--work' && argv[index + 1]) workArg = path.resolve(argv[++index]);
@@ -47,13 +49,16 @@ for (let index = 0; index < argv.length; index += 1) {
   else if (arg === '--runs' && argv[index + 1]) runs = Number(argv[++index]);
   else if (arg === '--model' && argv[index + 1]) model = argv[++index];
   else if (arg === '--scenario' && argv[index + 1]) scenarioName = argv[++index];
+  else if (arg === '--concurrency' && argv[index + 1]) concurrency = Number(argv[++index]);
+  else if (arg === '--serial') serial = true;
   else if (arg === '--ptc') ptc = true;
   else positional.push(arg);
 }
 if (!['line', 'capped'].includes(scenarioName)) throw new Error('--scenario must be "line" or "capped"');
 const [tarballArg, outArg] = positional;
-if (!tarballArg || !outArg) throw new Error('Usage: run-task-benefit-loop.mjs <packed.tgz> <evidence.json> [--work <dir>] [--runs 3] [--scenario line|capped] [--approve <owner confirmation text>] [--ptc]');
+if (!tarballArg || !outArg) throw new Error('Usage: run-task-benefit-loop.mjs <packed.tgz> <evidence.json> [--work <dir>] [--runs 3] [--scenario line|capped] [--concurrency 1-5] [--serial] [--approve <owner confirmation text>] [--ptc]');
 if (!Number.isInteger(runs) || runs < 3 || runs > 5) throw new Error('--runs must be 3 through 5');
+if (concurrency !== null && (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 5)) throw new Error('--concurrency must be 1 through 5');
 const tarball = path.resolve(tarballArg);
 const out = path.resolve(outArg);
 const repo = fileURLToPath(new URL('../../', import.meta.url));
@@ -523,10 +528,12 @@ try {
     model,
     binary,
     cli,
+    ...(serial ? { serial: true } : {}),
+    ...(concurrency === null ? {} : { concurrency }),
     ...(SCENARIO.maxToolText ? { maxToolText: SCENARIO.maxToolText } : {}),
     log: (line) => console.log(line),
   });
-  evidence.producer = { ok: producer.ok, artifactFile: producer.artifactFile, artifact: producer.artifact, sessions: producer.report.sessions, retries: producer.report.retries };
+  evidence.producer = { ok: producer.ok, artifactFile: producer.artifactFile, artifact: producer.artifact, sessions: producer.report.sessions, retries: producer.report.retries, concurrency: producer.report.concurrency, preflight: producer.report.preflight };
   evidence.steps.push({ name: 'paired-real-sessions-produced', at: new Date().toISOString() });
   assert(producer.ok === true, 'the producer did not complete every session: ' + JSON.stringify(producer.artifact, null, 2).slice(0, 1200));
   assert(producer.artifact.candidate.correct === runs, 'the candidate side did not answer every session correctly');
