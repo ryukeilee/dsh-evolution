@@ -112,7 +112,7 @@ CPU 中位数 0.300 → 0.283 ms（−5.7%），墙钟 0.2386 → 0.2346 ms（�
 | `readcontrol` | 0 / 0 | — |
 
 WAL 模式下主文件大小本来就不是内容证明，正确性只主张 §3 差分测试实际比较的逻辑字段
-（events 身份、knowledge 键/修订/稳定 body、clock、stats 与查询答案）。maxRSS 中位数
+（events 身份、knowledge 键/修订/稳定 body、clock、stats 与查询结果的选定投影）。maxRSS 中位数
 68,720/66,032 KiB（进程高水位，含 imports，不作为内存下降证明）。
 
 Lead 在复审修复后用同一脚本独立复跑（`r12-lead-shared-experience.json`，机器上
@@ -129,8 +129,16 @@ Lead 在复审修复后用同一脚本独立复跑（`r12-lead-shared-experience
    在同一组输入上各跑 12 轮，覆盖新事实、同 id 回放、`recordDegradation`、
    `recordToolRecovery`、`recordConclusion`、同 id 异内容的冲突拒绝。比较
    `events` 表全部 `hex(id)/hex(digest)`、`knowledge` 表全部 `key/revision/稳定 body
-   投影`（去掉与运行时刻有关的 `firstSeen` 等字段）、`clock`、`stats()`、
-   `findConclusions()` / `discover()` / `recall()` 的结构化答案——全部 `deepEqual`。
+   投影`（去掉与运行时刻有关的 `firstSeen` 等字段）、`clock`、`stats()`，以及查询结果的
+   **选定投影**——全部 `deepEqual`：
+   - `findConclusions()`：`considered` / `scoped` / `truncated`，以及每个匹配的
+     `knowledgeKey` / `decision` / `applicability` / `sameApplicability`；
+   - `discover()`：记录数与 `truncated`；
+   - `recall()`：`counts` 与 `truncated`。
+
+   该差分因此不会发现“只改 `discover()` 返回记录内容、但保持记录数与截断标记”的投影回归；
+   这类改动要靠 `knowledge` 稳定 body 的比较或查询侧单元测试覆盖。`text`、`lastSeen` 等
+   时间相关字段不在比较范围内，因为它们在不同实现里本来就取运行时刻。
 2. **反证（注入错误语句）**：把 knowledge upsert 的 SQL 改成
    `revision=excluded.revision+1`（语法合法、prepare 成功），同一差分立即失败；
    证明比较确实覆盖被复用的句柄，而不是恒真断言。
