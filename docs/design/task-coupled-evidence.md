@@ -111,7 +111,12 @@ profile 相同）。artifact 里的 `tokenBasis` 记录这一点，校验器忽�
 
 ### 4.1 宿主侧的期望比较与 canary 证据
 
-Trial 能力样本与 canary workload 都按 `resultPath` 从真实返回值取值，再与计划声明的期望比较；这一步发生在宿主，宿主必须用与内核一致的无损判定：
+两类样本的取值方式不同，`resultPath` 只属于后两类：
+
+- Trial 能力样本（`verification.samples[]`）只能声明 `label` / `tool` / `arguments` / `expected`，宿主把目标工具的**完整返回值**与 `expected` 做无损比较；它不支持 `resultPath`，带该字段的计划会被 `validateTaskRequest()` 以 `plan.verification.samples[N] has unexpected field: resultPath` 拒绝；
+- `verification.workload.steps[]` 与 context-policy 的 `verification.functionalCheck` 支持 `resultPath`：宿主先按声明的键路径从真实返回值取值，再与该 step / check 的 `expected` 比较。
+
+比较发生在宿主，宿主必须用与内核一致的无损判定：
 
 - 宿主用无损结构相等（`lib/desktop-task-host.js` 的 `sameValue()`）而不是 JSON 文本比较：`undefined` 不等于 `null`，
   数组空洞不等于 `null`，稀疏数组按自有下标比较，`NaN` / `Infinity` / `-0` 不等于普通 JSON 数值；
