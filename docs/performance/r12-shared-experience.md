@@ -34,9 +34,9 @@ SQL；同一条 SQL 重复 prepare 的结果对象并未跨调用复用。回放
 
 复现用的探针（只测 prepare，不写任何插件文件）把 `INSERT` 放进 `BEGIN IMMEDIATE`：
 每轮 2000 次调用，`prepare()` 每条一次 vs 复用同一句柄，CPU 中位数
-`51.7 → 46.4 ms`（约 −10%）；这就是下面被优化的具体工作。
-更关键的是，R11 之后普通采集器对同一 `tools/result` 的重复投递会走完整回放分支，
-使这条路径成为可测的稳态成本。
+`52.09 → 46.70 ms`（约 −10%）；这就是下面被优化的具体工作。
+重复事实（不同执行对象但同一 event id，例如持久化事件回放）会进入
+`prior` 命中分支，只做一次 SELECT 与 COMMIT，因此 prepare 在该分支占比最高。
 
 改动只把五个句柄移到 `openSharedExperience()` 内一次（当前
 `lib/shared-experience.js:290-299`），`record()` 内改为使用句柄
@@ -138,7 +138,9 @@ test/experience-plan.test.mjs test/experience-attribution.test.mjs` → **159/15
 | --- | --- | --- |
 | `findConclusions()` 的 scope `instr()` 全表扫描 | 现有 `shared-experience-conclusion-scan.mjs` 的 10k/30k 数据（本改动前已实现「窗口优先、仅在填满时计数」）：82.0 ms @30k，仍随历史线性增长。加 JSON1 表达式索引会改 schema、要求既有库补建索引，且 `instr` 与 `json_extract` 的匹配语义对畸形 body 不完全等价。 | **NO-CHANGE**：显式动作读路径，索引/schema 风险与收益不匹配；R10 §3 已登记同类窗口残余。 |
 | `PRAGMA synchronous=NORMAL` / 去掉 busy_timeout | 现有 `shared-experience.md` 记录 2 s 等待是慢盘四进程饥饿后的修复；降低同步级别会削弱崩溃恢复。 | **NO-CHANGE**：硬约束禁止削弱持久化/崩溃恢复。 |
+| 调大 `PRAGMA cache_size` | 当前未设置（SQLite 默认 −2000，约 2 MiB）。现有规模下 events 账本约 0.8 MiB、knowledge 随身份增长；改缓存大小只影响读页命中且会增加常驻内存，没有可复现的 A/B 收益。 | **NO-CHANGE**：无证据的启发式调参，不引入。 |
 | `detectDegradation()` 用索引循环替代 `value.lines.slice(0,2050)` | 探索性单进程微基准（400 次/样本）：2000 行时 CPU 0.0428 → 0.0295 ms（−31%），绝对节省约 13 µs/次；500 行时差异落到噪声内。收益微小且依赖结果大小，不值得单独维护。 | **NO-CHANGE**：绝对收益不足。 |
+| collector 的 LRU / streak 数据结构 | `experience-collector.js:99-151` 的 `outcomes` 用 delete+set 做 O(1) touch，上限 256；`counted`/`executions` 是 WeakMap/WeakSet； streak 是常数运算。没有重复序列化或深拷贝。 | **NO-CHANGE**：无冗余工作。 |
 | R11 新增 `recordToolRecovery` 的写入 | 每个 episode 5 次干净成功才写一条，且同一 episode 只写一次；经同一 `record()`，已随本次句柄复用受益。 | **NO-CHANGE**：无需额外机制。 |
 | 迁移 CLI 的多次流式校验 | `lib/shared-experience-migration.js:480/505/520` 对 events 做三次指纹/复制扫描，`knowledgeFingerprint` 两次；但这是**一次性离线命令**，现有 10k 迁移耗时 229–488 ms（`shared-experience-storage.md`）。合并扫描会改变备份验证与事务内自证的顺序。 | **NO-CHANGE**：低频操作，不为约 1/3 的一次性耗时扩大安全边界。 |
 
