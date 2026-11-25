@@ -6,7 +6,7 @@
 
 | 关键事实 | 当前值 |
 | --- | --- |
-| 版本 | `0.2.20`（稳定版） |
+| 版本 | `0.2.21`（稳定版） |
 | 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1`、`0.2.2-rc.2`、`0.2.2-rc.3`、`0.2.2-rc.4`、`0.2.2-rc.5`（后五者须关闭宿主 HMR，见下） |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
@@ -16,7 +16,7 @@
 
 ## 30 秒了解
 
-本版本（`0.2.20`）是 `0.2.19` 的稳定性后继，把第八、九轮开放性全链路研究与最终收敛修复纳入正式基线（PR #98 与 #99），并补齐 ambiguous floor 的 commit→truncate 窗口真实 SIGKILL 崩溃恢复验证（反证证明移除文件代际识别即失败）。相对 `0.2.19` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-client.js`、`lib/desktop-task-host.js`、`lib/desktop-task-protocol.js`、`lib/diagnostics.js`、`lib/domain-storage.js`、`lib/event-log-checkpoint.js`、`lib/experience-recall.js`、`lib/guard.js`、`lib/orchestrator.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`：canary 回归结论不再附带 probe 正向 delta；回收 floor 以 dev/ino 识别文件代际，区分「截断待补完」与「截断后追加重建相同前缀」，关闭永不截断与二次截断丢数据两条路径；doctor 的 sharing 诊断与统一审查口径一致；probe 证据快照无损化；共享检索截断、Desktop 任务确认范围、guard 诊断脱敏与自主 transient 占位回收按同一事实口径收口。持久化 schema 编号未变，`0.2.20` 仍读取旧 floor；但一旦回收写入带 `ambiguousPrefix` / `identity` 的 ambiguous floor，`0.2.19` 会以 `unrecognized_keys` 拒绝该 floor，构成降级边界。既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变。已有 stable 插件、共享经验、进化档案与生产数据不迁移、不下线。
+本版本（`0.2.21`）是 `0.2.20` 的稳定性后继，收口第十、十一轮开放性全链路研究及其复审修复（PR #102 与 #104）。相对 `0.2.20` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-host.js`、`lib/diagnostics.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/index.js`、`lib/orchestrator.js`、`lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`：PTC 与明文 v4 会话按调用计一次用量，双编码目录记为 ambiguous、旧 generation 记为 unscanned，不再把未覆盖的目录报成实测 0；结论按实验捕获的适用版本跨重启重算，稳定提交崩溃后的已采纳结论可以恢复；工具失败恢复写独立事实并按 clean exit 与未解决损失收敛，跨失败毫秒的同毫秒恢复不再提前判定已解决；consumer 状态不可读或 activation 行畸形时 doctor 与统一审查给出一致结论，孤儿 active 挂载会被诊断发现；宿主证据无损保留样本值、canary 证据不再夹带正文、有界读的截断提示完整保留。持久化 schema 编号未变，`0.2.19` 仍读取旧 floor，带 `ambiguousPrefix` / `identity` 的 ambiguous floor 的降级边界与 `0.2.20` 相同（详见 `docs/compatibility/retention-floor.md`）。既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变。已有 stable 插件、共享经验、进化档案与生产数据不迁移、不下线。
 
 `0.2.18` 把自我进化闭环的跨阶段可靠性事实收口（PR #87、#88 与 #89）：晋升、canary、失败学习与结论检索对同一问题身份使用统一投影；陈旧结论不会被同 scope 的新结论挤出有界检索窗口；target claim 的获取、释放与回滚失败复用跨进程互斥原语；guard 的风险判定取参数路径、证明绑定取宿主注入的 target；缺失 `pluginPackages` 服务时 consumer 沿用既有宿主身份回退；`discover().truncated` 进入完整性判定；probe 的超时、取消与空结果批统一记为 `unmeasured`。
 
