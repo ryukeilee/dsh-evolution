@@ -33,7 +33,10 @@
  *     preview candidate (the fresh-consumer proof is a separate acceptance);
  *   - a failed model turn or an unreadable reply makes the run incomplete, never
  *     zero;
- *   - it does not choose a tool for the model and does not retry a failed turn.
+ *   - it does not choose a tool for the model. A session is replaced only for a
+ *     confirmed pilot transport failure, or once when it answered without any
+ *     declared task read; a candidate-only abandonment still fails the run.
+ *     "Read but answered wrong" is never retried.
  */
 import fs from 'node:fs/promises';
 import { realpathSync } from 'node:fs';
