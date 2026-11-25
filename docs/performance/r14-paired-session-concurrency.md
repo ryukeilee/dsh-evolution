@@ -168,6 +168,8 @@ or `--concurrency N`.
   because that file was observed to be ignored outside a repository. If a future
   opencode drops the variable, the preflight fails closed instead of silently
   re-enabling the pilot's tools.
+- `--concurrency` cannot exceed the parity group size (`ceil(runs / 2)`): with
+  `runs = 3` the effective maximum is two lanes, with `runs = 5` it is three.
 - `--standalone` costs one private server per model turn. It is part of the
   measured transport on both sides; sharing the background service was observed
   to let a turn bypass the agent-level deny ruleset.

@@ -804,7 +804,9 @@ export function selectSessionTurns(turns, sessionId) {
  * side and then on the other, so the two sides never overlap. `serial` keeps the
  * historical order exactly (repetition 0..n-1, alternating side order); the
  * concurrent path groups repetitions by parity, so each repetition keeps the
- * `repetition % 2` side order it would have had in the serial run.
+ * `repetition % 2` side order it would have had in the serial run. A parity
+ * group holds ceil(runs / 2) repetitions, so that is also the effective lane
+ * cap (three lanes for `runs = 5`; two for the minimum `runs = 3`).
  */
 export function planSessionWaves({ runs, concurrency, serial }) {
   if (!Number.isInteger(runs) || runs < 1) throw new Error('runs must be a positive integer');
