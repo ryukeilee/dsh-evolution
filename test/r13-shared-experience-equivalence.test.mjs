@@ -1,12 +1,12 @@
-// R13 differential equivalence for the two shared-experience hot-path rewrites:
-//   (A) knowledge.js `appendBounded()` hoists the pure `stableStringify(value)`
-//       out of the bounded-window scan;
-//   (B) experience-recall.js `sortCandidates()` precomputes each record's
-//       `orderingKey()` once per sort instead of once per comparison.
-// Both tests build a "baseline" variant by reverse-transforming the production
-// source, compare full outputs byte-for-byte on a rich corpus, assert the
-// redundant call is actually removed, and include a mutation whose differential
-// must fail (so the comparison is not a tautology).
+// R13 differential equivalence for the shared-experience recall rewrite:
+//   experience-recall.js `sortCandidates()` caches each record's `orderingKey()`
+//   once per sort instead of once per comparison.
+//
+// A sibling `appendBounded()` serialization hoist was reverted: a stateful
+// accessor in the appended value changes both the failure path (an empty window
+// never serialized it in the baseline) and the dedupe comparison order, so the
+// hoist was not byte-equivalent for arbitrary inputs. It is not shipped; the
+// evidence and the repro are in docs/performance/r13-shared-experience.md.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -15,7 +15,6 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const REPO = path.resolve(import.meta.dirname, '..');
-const KNOWLEDGE_SOURCE = fs.readFileSync(path.join(REPO, 'lib/dockyard-domain/knowledge.js'), 'utf8');
 const RECALL_SOURCE = fs.readFileSync(path.join(REPO, 'lib/experience-recall.js'), 'utf8');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'r13-equivalence-'));
@@ -37,125 +36,6 @@ function replaceOnce(source, from, to, label) {
   assert.equal(source.split(from).length - 1, 1, `${label}: anchor must appear exactly once`);
   return source.replace(from, to);
 }
-
-// --- A. appendBounded -------------------------------------------------------
-const APPEND_CANDIDATE = `function appendBounded(values, value, limit) {
-  const list = Array.isArray(values) ? values.filter((item) => item !== undefined && item !== null).map(clone) : [];
-  if (value !== undefined && value !== null) {
-    // \`stableStringify(value)\` is a pure function of \`value\` and the argument is
-    // unchanged while the bounded window is scanned. Computing it once instead
-    // of once per existing item removes redundant serialization on every append
-    // to a canonical row whose window is already populated.
-    const serialized = stableStringify(value);
-    if (!list.some((item) => stableStringify(item) === serialized)) list.push(clone(value));
-  }
-  return list.slice(-limit);
-}`;
-const APPEND_BASELINE = `function appendBounded(values, value, limit) {
-  const list = Array.isArray(values) ? values.filter((item) => item !== undefined && item !== null).map(clone) : [];
-  if (value !== undefined && value !== null && !list.some((item) => stableStringify(item) === stableStringify(value))) list.push(clone(value));
-  return list.slice(-limit);
-}`;
-// A broken variant: the hoisted value is replaced by a constant, so the dedupe
-// check never fires. Any corpus with a populated window must diverge.
-const APPEND_BROKEN = APPEND_CANDIDATE.replace('const serialized = stableStringify(value);', 'const serialized = "\\u0000never\\u0000";');
-
-function instrumentKnowledge(source) {
-  return replaceOnce(source, 'function stableStringify(value) {',
-    'function stableStringify(value) { globalThis.__r13SerializeCalls = (globalThis.__r13SerializeCalls || 0) + 1;',
-    'instrument stableStringify');
-}
-
-function knowledgeFact(i) {
-  const proto = JSON.parse('{"__proto__":"own-proto-' + i + '"}');
-  return {
-    knowledgeKey: 'knowledge:fact-' + i,
-    issueType: 'tool/error',
-    rootCause: 'cause ' + (i % 5),
-    strategy: null,
-    failureMode: 'line-truncated',
-    semanticFact: 'read failed ' + i,
-    scope: 'tool read',
-    status: 'failed',
-    outcome: 'failure',
-    confidence: 0.5,
-    regression: i % 9 === 0,
-    contradiction: i % 13 === 0,
-    sourceCollection: i % 2 ? 'observations' : 'learnings',
-    sourceRef: 'observations:event-' + i,
-    sourceId: 'event-' + i,
-    eventId: 'event-' + i,
-    occurredAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
-    relations: i % 3 === 0 ? ['experiment:e-' + i, { proposal: 'p-' + i }] : [],
-    lineageId: i % 7 === 0 ? 'lineage-' + i : null,
-    recovery: i % 11 === 0 ? { status: 'observed', reason: 'tool:bash', restored: true } : null,
-    metrics: { latency: i % 17, ...(i % 19 === 0 ? proto : {}) },
-    delta: 1,
-  };
-}
-
-test('A. appendBounded rewrite is byte-equivalent and the differential has teeth', async () => {
-  const candidateSource = replaceOnce(KNOWLEDGE_SOURCE, APPEND_CANDIDATE, APPEND_BASELINE, 'reverse appendBounded');
-  assert.notEqual(candidateSource, KNOWLEDGE_SOURCE);
-  const [candidate, baseline] = await Promise.all([
-    loadVariant(KNOWLEDGE_SOURCE, 'knowledge-candidate'),
-    loadVariant(candidateSource, 'knowledge-baseline'),
-  ]);
-
-  // Populate every bounded window past its cap, then roll many events through
-  // the same canonical row (the exact shape a long-lived hot target reaches).
-  let a = null;
-  let b = null;
-  for (let i = 0; i < 90; i += 1) {
-    const event = candidate.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) });
-    const baselineEvent = baseline.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) });
-    a = candidate.mergeKnowledgeEntry(a, event, { now: new Date(0) });
-    b = baseline.mergeKnowledgeEntry(b, baselineEvent, { now: new Date(0) });
-    assert.equal(JSON.stringify(a), JSON.stringify(b), 'canonical row diverged after event ' + i);
-  }
-  // Replays inside the window must still be recognized as duplicates.
-  for (const i of [3, 17, 42, 89]) {
-    const event = candidate.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) });
-    const baselineEvent = baseline.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) });
-    assert.equal(
-      JSON.stringify(candidate.mergeKnowledgeEntry(a, event, { now: new Date(0) })),
-      JSON.stringify(baseline.mergeKnowledgeEntry(b, baselineEvent, { now: new Date(0) })),
-    );
-  }
-
-  // The hoist really removes calls: instrument stableStringify in both variants
-  // and run one populated-window merge.
-  globalThis.__r13SerializeCalls = 0;
-  const countedCandidate = await loadVariant(instrumentKnowledge(KNOWLEDGE_SOURCE), 'knowledge-count-c');
-  const countedBaseline = await loadVariant(instrumentKnowledge(candidateSource), 'knowledge-count-b');
-  // Populate the bounded windows in each instrumented module before counting a
-  // single merge; the hoist only pays when the window already has entries.
-  let warm = null;
-  let warmB = null;
-  for (let i = 0; i < 60; i += 1) {
-    warm = countedCandidate.mergeKnowledgeEntry(warm, countedCandidate.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) }), { now: new Date(0) });
-    warmB = countedBaseline.mergeKnowledgeEntry(warmB, countedBaseline.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) }), { now: new Date(0) });
-  }
-  const event = countedCandidate.normalizeKnowledgeEvent(knowledgeFact(60), { now: new Date(0) });
-  const eventB = countedBaseline.normalizeKnowledgeEvent(knowledgeFact(60), { now: new Date(0) });
-  globalThis.__r13SerializeCalls = 0;
-  countedCandidate.mergeKnowledgeEntry(warm, event, { now: new Date(0) });
-  const candidateCalls = globalThis.__r13SerializeCalls;
-  globalThis.__r13SerializeCalls = 0;
-  countedBaseline.mergeKnowledgeEntry(warmB, eventB, { now: new Date(0) });
-  const baselineCalls = globalThis.__r13SerializeCalls;
-  assert.ok(baselineCalls > candidateCalls, `expected fewer serializations: candidate=${candidateCalls}, baseline=${baselineCalls}`);
-
-  // Counter-example: a stale hoisted value breaks the byte differential.
-  const brokenSource = replaceOnce(KNOWLEDGE_SOURCE, APPEND_CANDIDATE, APPEND_BROKEN, 'inject broken hoist');
-  const broken = await loadVariant(brokenSource, 'knowledge-broken');
-  let bad = null;
-  for (let i = 0; i < 40; i += 1) {
-    const event = broken.normalizeKnowledgeEvent(knowledgeFact(i), { now: new Date(0) });
-    bad = broken.mergeKnowledgeEntry(bad, event, { now: new Date(0) });
-  }
-  assert.notEqual(JSON.stringify(bad), JSON.stringify(b), 'the broken hoist must diverge from the baseline');
-});
 
 // --- B. sortCandidates ------------------------------------------------------
 const SORT_CANDIDATE = `function sortCandidates(records) {

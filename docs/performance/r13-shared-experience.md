@@ -10,12 +10,15 @@
 
 ## 1. 结论摘要
 
-实施两项「同一调用内重复工作消除」，均为可证明等价的改写：
+实施一项「同一调用内重复工作消除」，并通过独立审核：
 
 | 改动 | 路径 | 收益（CPU 中位数） | 性质 |
 | --- | --- | --- | --- |
-| `appendBounded()` 把纯 `stableStringify(value)` 提到窗口扫描之外 | 热 key 的 canonical merge / 所有 `record*` 写入 | 热 key 写入 **−6.02%** | 同一事务内重复序列化消除 |
 | `sortCandidates()` 的**惰性**排序键缓存 | `recall()` / `finalizeExperienceRecall()` 候选排序 | `recall` **−9.35%** | 同一比较排序中重复建键消除 |
+
+另一项候选（`appendBounded()` 把纯 `stableStringify(value)` 提到窗口扫描之外，热 key 写入
+−6.02%）在独立审核中**被否决并撤回**：它改变了带状态化 accessor 的输入的失败路径与去重
+结果，不是对所有输入逐字节等价（见 §3.1）。本文保留其历史数据仅作记录，不再主张该收益。
 
 其余调查方向均为 NO CHANGE，其中 `findConclusions()` 无匹配查结论是固有 O(N) 增长
 （10k/30k/100k 约 29/84/280 ms CPU；更早一轮为 33/93/313 ms，量级一致），无新增
@@ -40,29 +43,30 @@
 
 ## 3. 根因与等价改写
 
-### 3.1 `appendBounded()` 的重复序列化
+### 3.1 已撤回：`appendBounded()` 的序列化提升
 
-`lib/dockyard-domain/knowledge.js` 的 `mergeKnowledgeEntry()` 对每条事件把多个有界窗口
-（`sourceRefs` ≤32、`recentEvidence` ≤8、`trend.recent` ≤8、`relationRefs` ≤32、
-`lineageRefs` / `recoveryRefs` ≤32）追加新值。原实现：
-
-```js
-if (value != null && !list.some((item) => stableStringify(item) === stableStringify(value))) list.push(clone(value));
-```
-
-`list.some()` 每遍历一个已有元素就重新 `stableStringify(value)` 一次——而 `value` 在整个
-判定中不变，`stableStringify()` 是纯函数。一个已填满窗口的 hot key 每次 merge 因此重复
-序列化约 32+8+8 = 48 次。
-
-改动把该值提到循环外算一次：
+原始候选把 `list.some(...)` 里的 `stableStringify(value)` 提到循环外算一次。它在普通
+JSON 数据上结果相同，热 key 写入实测 **−6.02%**（248.421 → 233.465 ms，A/A +0.27%），
+但独立审核构造出两个真实分歧（用 `git archive` 物化基线后直接调用
+`mergeKnowledgeEntry()`）：
 
 ```js
-const serialized = stableStringify(value);
-if (!list.some((item) => stableStringify(item) === serialized)) list.push(clone(value));
+// 1) 空窗口：基线从不序列化 value，候选提前序列化
+let reads = 0;
+const value = { get a() { if (++reads === 1) throw new TypeError('first read'); return 42; } };
+mergeKnowledgeEntry({ knowledgeKey: 'k', relationRefs: [] }, { knowledgeKey: 'k', relations: [value] });
+// 基线：clone() 的兜底路径重读 getter，返回 [{a:42}]
+// 候选：stableStringify(value) 在 getter 第一次读取时抛错
+
+// 2) 已填窗口 + 状态化 getter：value 的序列化次数从「每个已有元素一次」变成一次
+// 基线保留 [{a:1},{a:2}]；候选追加了第二个 {a:2}
 ```
 
-`stableStringify()` / `compactValue()` 规则、窗口上限、`clone()`、去重判定、持久化字节
-全部不变；省的是同一纯函数的重复求值，不是任何历史状态或证据。
+`appendBounded()` 是 `mergeKnowledgeEntry()` 的通用入口，不能假定 `value` 一定是
+数据 DTO；把求值延迟到首次比较只能修复空窗口那一半。项目要求对所有输入保持失败顺序与
+去重结果不变（R12 的 `isSensitiveKey` 对状态化 `toString` 也是走原路径），因此该改动
+整体撤回，`lib/dockyard-domain/knowledge.js` 恢复基线实现。撤回的代价是放弃约 6% 的
+热 key 写入收益；差分用例已同步删除，避免留下一个对 40/90 次合并取不同长度的假反证。
 
 ### 3.2 `sortCandidates()` 的重复排序键构建
 
@@ -104,8 +108,8 @@ function sortCandidates(records) {
 | --- | ---: | ---: | ---: | --- |
 | `conclusions-nomatch`（无匹配查结论） | 29.42 | 84.45 | 280.42 | **随历史近似线性增长**（固有 O(N)） |
 | `read-control`（查到新结论） | 30.18 | 87.37 | 295.56 | 随历史增长 |
-| `discover(window=500)` | 6.65 | 6.92 | 7.17 | **固定开销**（covering index count + 有界窗口） |
-| `recall(window=2000)` | 66.28 | 66.63 | 68.12 | **固定开销**（仅看 outer SQL 窗口，不看历史总行数） |
+| `discover(window=500)` | 6.65 | 6.92 | 7.17 | 有界窗口 + **每次 `count(*)`** 的 covering-index scan（6.65→7.17 的那点增长来自计数，不来自窗口） |
+| `recall(window=2000)` | 66.28 | 66.63 | 68.12 | **固定夹具对照**：三档的 recall 夹具都由 `Math.min(n, 2500)` 行构成，因此这三列不构成历史规模曲线；它只说明窗口填满后每次读取约 66–68 ms，独立性由 `ORDER BY revision DESC LIMIT 2002` + `knowledge_recent` 索引（`EXPLAIN`）支持，未在 10k/30k/100k 上分别实测 |
 | `writes`（N 个不同 target 的新事实） | 868.25 | 2630.82 | 9347.84 | 随写入条数线性（必要工作） |
 | hot-key 单 key 500 / 2000 / 5000 次修订 | 142.31 | 423.24 | 981.75 | 随**单 key 修订数**线性（有界窗口维护，与历史总行数无关） |
 
@@ -125,7 +129,6 @@ ORDER BY revision DESC LIMIT ?` 走 `knowledge_recent` 索引按 revision 顺序
 | `recall` | 73.732 | 66.836 | **−9.35%** | −6.768 / −6.916 / −6.858 |
 | `recall-none`（零候选） | 33.299 | 33.597 | +0.89%（噪声） | +0.713 / −0.001 / +0.298 |
 | `recall-one`（单候选） | 34.022 | 34.096 | +0.22%（噪声） | +0.084 / −0.023 / +0.222 |
-| `hot`（热 key 写入） | 248.421 | 233.465 | **−6.02%** | −12.828 / −16.697 / −11.181 |
 | `conclusions-nomatch`（未改动对照） | 30.163 | 30.115 | −0.16% | +0.128 / +0.197 / −0.308 |
 | `discover`（未改动对照） | 6.807 | 6.812 | +0.07% | +0.091 / +0.017 / −0.057 |
 
@@ -135,8 +138,9 @@ ORDER BY revision DESC LIMIT ?` 走 `knowledge_recent` 索引按 revision 顺序
 零 Map 分配**，与基线走同一段代码（仅多一次长度判断），因此「严格不劣于基线」
 是代码路径层面的结论，而不是统计上的「没有显著变慢」。
 
-`recall` 与 `hot` 三对配对差**全部为负**，且 B 的最大值低于 A 的最小值，方向不依赖
-采样顺序。两个未改动对照落在噪声内，确认没有系统性漂移。
+`recall` 三对配对差**全部为负**，且 B 的最大值低于 A 的最小值，方向不依赖采样顺序。
+未改动对照落在噪声内，确认没有系统性漂移。已撤回的 `hot` 历史数据仍在 JSON 的 `ab` 中，
+但不再作为任何改动的主张。
 
 **并发写者**（每档 2/4 个真实子进程共享一个 store，每进程 250 次写入，
 `recordFailure` / `recordDegradation` 混合）：A/B 两侧 2 写者均 500/500 committed、
@@ -153,25 +157,22 @@ ORDER BY revision DESC LIMIT ?` 走 `knowledge_recent` 索引按 revision 顺序
 | 工作负载 | A CPU ms | B CPU ms | 相对 | 逐对差 ms |
 | --- | ---: | ---: | ---: | --- |
 | `recall` | 74.023 | 73.953 | −0.10% | +0.409 / −0.071 / −0.682 |
-| `hot` | 231.555 | 232.190 | +0.27% | +0.168 / +1.714 / +0.636 |
 
-A/A 的绝对噪声底约 ±0.7 ms（recall）/ ±1.7 ms（hot）。热 key 的 −6.02% ≈ −15 ms
-与 recall 的 −9.35% ≈ −6.9 ms 都远大于噪声；零/单候选的 +0.89% / +0.22%
-（约 +0.3 / +0.07 ms）落在噪声内，且建键计数相等。
+A/A 的绝对噪声底约 ±0.7 ms（recall）。recall 的 −9.35% ≈ −6.9 ms 远大于噪声；
+零/单候选的 +0.89% / +0.22%（约 +0.3 / +0.07 ms）落在噪声内，且建键计数相等。
+已撤回项的历史 `hot` A/A（+0.27%）保留在 `r13-shared-experience-aa.json`。
 
 ### 6.2 差分与反证
 
-`test/r13-shared-experience-equivalence.test.mjs`（2 项，全部通过）：
+`test/r13-shared-experience-equivalence.test.mjs`（1 项，通过）：
 
-1. **A 项**：从生产源码把 `appendBounded()` 反向变换回原实现（锚点唯一性断言），
-   两侧对 90 个事件逐条 merge 同一 canonical row（填满所有有界窗口、含 `__proto__`
-   自有键、重复回放），每步 `JSON.stringify` 逐字节相等；插桩计数证明候选建键/序列化
-   次数严格少于基线；把提升值替换成常量后差分立即失败（反证）。
-2. **B 项**：把 `sortCandidates()` 反向变换回 `records.sort(compareCandidates)`，两侧
+**sortCandidates 差分**：把 `sortCandidates()` 反向变换回 `records.sort(compareCandidates)`，两侧
    `finalizeExperienceRecall()` 与 `collectKnowledgeExperience()` 完整输出逐字节相等
    （含平分、extended-year ISO、不同 exact/score/recency 分支）；平局语料下候选建键数
    严格少于基线；**0/1 候选两侧建键数均为 0**（惰性证明）；把 `keyOf` 换成恒返回
    `"stale"` 后差分立即失败（反证）。
+
+（原 A 项 `appendBounded` 差分已随改动撤回删除；见 §3.1。）
 
 聚焦测试：受影响套件共 **295 项全部通过**（214 + 81，0 失败 0 跳过），含
 `shared-experience*` / `experience-recall` / `experience-plan` / `experience-degradation` /
@@ -180,13 +181,11 @@ A/A 的绝对噪声底约 ±0.7 ms（recall）/ ±1.7 ms（hot）。热 key 的 
 
 ## 7. 适用范围、负面取舍与收益边界
 
-- **收益来源**：`appendBounded` 只在窗口已填充时有效，随单 key 的重复事件数增长；
-  `sortCandidates` 只在候选同分/同时间走到最后平分判定时有效，随候选数增长。
+- **收益来源**：`sortCandidates` 只在候选同分/同时间走到最后平分判定时有效，随候选数增长。
+  已撤回的 `appendBounded` 候选只影响写入合并路径，不再包含在本轮交付内。
   两者都不改 `synchronous`、WAL、busy timeout、schema、去重/冲突/授权语义。
-- **成本/取舍**：`appendBounded` 的 `stableStringify(value)` 从每元素一次变成一次；
-  对带状态化 getter 的敌意输入，getter 被调用次数会变（生产路径的值都由
-  `normalizeKnowledgeEvent` 生成的普通字符串/对象，差分覆盖了该边界）。
-  `sortCandidates` 每次排序多一个短命 `Map`（与走到平分的记录数同阶），不跨调用。
+- **成本/取舍**：`sortCandidates` 每次排序多一个短命 `Map`（与走到平分的记录数同阶），
+  不跨调用；零/单候选早退，不分配。
 - **零/单候选严格不劣**：`sortCandidates()` 对 `records.length < 2` 直接早退，不分配
   `Map`、不建 `keyOf` 闭包、不调用 `orderingKey()`；差分断言两侧建键计数均为 0。
   A/B 为 +0.89% / +0.22%（约 +0.3 / +0.07 ms，落在 A/A 噪声内）。没有把键计算

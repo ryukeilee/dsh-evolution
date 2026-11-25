@@ -37,8 +37,9 @@
 - 每侧每轮独立进程，因此 A/A 的配对差反映噪声与顺序效应，而不是代码差异。20k 档
   `indexRead` / `reconcileIdle` / `sourceVerify` 的 B 侧一致偏低（−3.9% / −7.4% / −6.0%），
   而同档 `doctor` 的 B 侧偏高（+1.6%）：方向相反，判定为页缓存预热 / GC 时机的系统性偏移，
-  **不作为任何收益**。50 档 `reconcileIdle` 的 +50.9% 和 `indexRead` 的 −0.133/+0.611 ms 离群
-  同样按噪声处理。
+  **不作为任何收益**。50 档的噪声为 `indexRead` −1.9%、`reconcileIdle` +4.4%、
+  `sourceVerify` −0.6%、`review` +1.5%、`doctor` −0.2%（`usageRead` 的 −18.1% 绝对值只有
+  0.04 ms），同样按噪声处理。
 - 工作负载：`indexRead`（`readSharedIndex()` 全量解析+逐记录校验+整文件 sha256）、
   `reconcileIdle`（稳态 `reconcileSharedIndex()`，所有 sidecar 已在索引中）、`sourceVerify`
   （`readPromotedPlugin()` 逐记录验证，doctor 的防篡改主成本）、`review`
@@ -51,7 +52,7 @@
 
 | 已发布记录（索引字节） | indexRead | reconcileIdle | sourceVerify | review | doctor | usageRead |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 50（74,216 B） | 0.22（+1.3%） | 0.59（+50.9% 噪声） | 0.12（−7.0%） | 1.11（+3.6%） | 3.60（−2.4%） | 0.21（−7.6%） |
+| 50（73,966 B） | 2.23（−1.9%） | 1.56（+4.4%） | 7.52（−0.6%） | 9.02（+1.5%） | 10.26（−0.2%） | 0.21（−18.1%，绝对值 0.04 ms） |
 | 500（741,566 B） | 6.33（−1.3%） | 6.25（−2.1%） | 61.66（+1.1%） | 13.13（+1.0%） | 68.71（−0.4%） | 0.22（−5.4%） |
 | 5,000（7,424,066 B） | 46.55（+1.2%） | 48.67（−0.5%） | 635.63（0.0%） | 68.62（+0.4%） | 672.06（+3.8%） | 0.22（+7.8%） |
 | 20,000（29,729,066 B） | 225.56（−3.9%） | 254.57（−7.4%） | 2,856.67（−6.0%） | 277.46（−1.8%） | 2,837.75（+1.6%） | 0.24（+15.0%） |
@@ -60,7 +61,7 @@
 
 | 记录数 | 读文件字节 | `JSON.parse` | `sha256(bytes)` | archive `readdir+filter+sort` |
 | ---: | ---: | ---: | ---: | ---: |
-| 50 | 0.056 | 0.113 | 0.051 | 0.008 |
+| 50 | 0.061 | 0.118 | 0.044 | 0.010 |
 | 500 | 0.158 | 1.798 | 1.172 | 0.044 |
 | 5,000 | 2.019 | 9.906 | 3.958 | 0.936 |
 | 20,000 | 5.420 | 38.268 | 13.264 | 2.418 |
@@ -68,12 +69,12 @@
 **分类结论：**
 
 - **固定开销**：`usageRead` 在四档均为 0.21–0.24 ms（一次 `stat` + 一次 `readFile` +
-  一次 `JSON.parse` 的小投影，与记录数无关）；`review` 的 50 条上限使其从 1.11 ms 升到
+  一次 `JSON.parse` 的小投影，与记录数无关）；`review` 的 50 条上限使其从 9.02 ms 升到
   277 ms 主要来自索引全量 `readSharedIndex()` 与两份 consumer state 读取，而不是逐记录验证。
 - **合理增长（完整性下界）**：`indexRead` 的 `JSON.parse` + 逐记录 `validateSharedRecord`
   + 整文件 `sha256` 都随索引字节线性增长；20k 档 sha256 13.26 ms 仅占 `indexRead` 约 6%，
   parse 38.27 ms，其余约 170 ms 是逐记录校验。这是每次启动都必须做的认证，不是可消除的重复。
-- **合理增长（防篡改）**：`sourceVerify` 从 0.12 ms 升到 2,856.67 ms，是 doctor 每记录
+- **合理增长（防篡改）**：`sourceVerify` 从 7.52 ms 升到 2,856.67 ms，是 doctor 每记录
   3 次 `lstat` + 2 次 `readFile` + 2 次 sha256 的直接代价；在 5k/20k 档它占整次 `doctor`
   的约 95%–100%。R12 已把同一遍检查里重复六次的激活行投影和三处 O(N²) 查找消除，
   剩余的是每条记录恰好一次的源码校验，不能再减（`§6` 反证）。
@@ -145,7 +146,7 @@ SQLite 独占锁只在**确实有新记录要发布**（崩溃后补发）时才
 反证复现（临时补丁树，用完即弃；不修改本仓库源码）：
 
 ```sh
-BASE=/private/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/opencode
+BASE=$(mktemp -d "${TMPDIR:-/tmp}/r13-counter-XXXXXX")
 cp -R lib "$BASE/r13-counter-tree-tmp" && mkdir -p "$BASE/r13-counter-tree/lib"
 cp -R lib/. "$BASE/r13-counter-tree/lib/"
 ln -s "$PWD/node_modules" "$BASE/r13-counter-tree/node_modules"
@@ -160,6 +161,15 @@ printf '\n// tampered\n' >> "$BASE/r13-counter-fixture/storages/evolution/promot
 
 - 交替 A/A：50 / 500 / 5,000 / 20,000 四档全部 `allFingerprintsEqual: true`；逐轮逐样本、
   配对差、离群与 RSS 保存在 `r13-cross-entry-audit*.json`。
+- **50 档重建（复审修复）**：独立复核发现原 `r13-fixture-50` 的索引实际是空的，
+  `sourceVerify` 的指纹等于空集合（`sha256('{"count":0,"sample":[],"allVerified":true}')`，
+  前缀 `21500f57`），因此旧的 50 档数字（`indexRead` 0.22 / `sourceVerify` 0.12 /
+  `review` 1.11 / `doctor` 3.60 ms）测的是空索引。已用新夹具重建并重跑，
+  `indexRead` / `sourceVerify` / `review` / `doctor` 分别变为
+  2.23 / 7.52 / 9.02 / 10.26 ms；`micro` 的 50 档也一并重跑。
+- **夹具非空断言（复审修复）**：`run` 新增 `--expect-records <n>`，在每一轮每一侧断言
+  `indexRead` 与 `sourceVerify` 看到的记录数等于夹具记录数，空集合或残缺夹具会让基准
+  直接失败，而不是把空索引当成一次“很便宜”的测量。
 - 反证：篡改源码后当前树 `blocked`、补丁树 `degraded`，doctor 指纹不等；
   `index.digest === sha256(published.json)` 实测为真。
 - 聚焦回归（改动前后均无生产代码改动，确认子系统基线健康）：
@@ -176,7 +186,7 @@ printf '\n// tampered\n' >> "$BASE/r13-counter-fixture/storages/evolution/promot
 ## 8. 复现命令
 
 ```sh
-BASE=/private/var/folders/1z/bw5lw7ds72ngrqfz9fmz48mh0000gn/T/opencode
+BASE=$(mktemp -d "${TMPDIR:-/tmp}/r13-fixtures-XXXXXX")
 S=scripts/benchmarks/r13-cross-entry-audit.mjs
 
 # 1) 生成四档只读夹具（脚本从不删除传入目录）

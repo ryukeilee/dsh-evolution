@@ -4,6 +4,7 @@
  *
  * Subcommands:
  *   build      --fixture <dir> --records <n> [--archive <n>] [--history-files <n> --history-lines <n>]
+ *   run        --fixture <dir> --rounds <n> --samples <n> [--expect-records <n>] ...
  *   measure    --libroot <dir> --fixture <dir> --workloads <csv> --samples <n>
  *              --warmup <n> --label <name> --out <json>
  *   run        --baseline <dir> --candidate <dir> --fixture <dir>
@@ -236,12 +237,14 @@ async function measure(args) {
       assert.equal(value, reference, `${name}: warm-up result changed`);
     }
     const measured = [];
+    let lastValue;
     for (let i = 0; i < samples; i += 1) {
       global.gc?.();
       const cpuStart = process.cpuUsage();
       const heapStart = process.memoryUsage().heapUsed;
       const start = performance.now();
       const value = await run();
+      lastValue = value;
       const elapsedMs = performance.now() - start;
       const cpu = process.cpuUsage(cpuStart);
       const valueHash = fingerprint(value);
@@ -262,6 +265,10 @@ async function measure(args) {
       medianWallMs: median(measured.map((s) => s.wallMs)),
       medianHeapDeltaBytes: median(measured.map((s) => s.heapDeltaBytes)),
       fingerprint: reference,
+      // Every workload returns a small summary object (counts, status, level).
+      // Keeping it lets `run` prove the fixture actually exercised the workload
+      // instead of trusting a fingerprint of an empty set.
+      value: lastValue,
     };
   }
   const payload = {
@@ -308,6 +315,10 @@ async function orchestrate(args) {
   const samples = Number(args.samples);
   const warmup = Number(args.warmup ?? 2);
   const names = args.workloads.split(',').map((v) => v.trim()).filter(Boolean);
+  const expectedRecords = args['expect-records'] === undefined ? null : Number(args['expect-records']);
+  if (expectedRecords !== null && (!Number.isInteger(expectedRecords) || expectedRecords < 1)) {
+    throw new Error('--expect-records must be a positive integer');
+  }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'r13-cross-entry-runs-'));
   try {
     const runs = [];
@@ -320,6 +331,16 @@ async function orchestrate(args) {
         const out = path.join(tmp, `r${round}-${label}.json`);
         perRound[label] = childMeasure(libroot, args.fixture, label, args.workloads, samples, warmup, out);
         assert.equal(perRound[label].label, label);
+        if (expectedRecords !== null) {
+          for (const name of ['indexRead', 'sourceVerify']) {
+            const value = perRound[label].results[name]?.value;
+            if (!value) continue;
+            if (value.count !== expectedRecords) {
+              throw new Error(`${name} saw ${value.count} records but the fixture was built with ${expectedRecords}`
+                + ` (${label}, round ${round}); refusing to report a workload that did not run`);
+            }
+          }
+        }
       }
       const fingerprintsEqual = names.every((name) =>
         perRound.A.results[name].fingerprint === perRound.B.results[name].fingerprint);
@@ -351,7 +372,7 @@ async function orchestrate(args) {
     }
     const payload = {
       method: 'alternating A/B, one independent child process per (round, side); CPU=user+system from process.cpuUsage; wall and heap/RSS auxiliary',
-      records: path.basename(path.dirname(args.fixture)), fixture: args.fixture,
+      records: expectedRecords, fixture: args.fixture,
       rounds, samples, warmup, workloads: names, node: process.version,
       platform: `${process.platform}/${process.arch}`,
       baselineLibroot: path.resolve(args.baseline), candidateLibroot: path.resolve(args.candidate),
@@ -396,6 +417,10 @@ async function concurrent(args) {
   const entries = Number(args.entries ?? 3);
   const rounds = Number(args.rounds ?? 3);
   const names = args.workloads.split(',').map((v) => v.trim()).filter(Boolean);
+  const expectedRecords = args['expect-records'] === undefined ? null : Number(args['expect-records']);
+  if (expectedRecords !== null && (!Number.isInteger(expectedRecords) || expectedRecords < 1)) {
+    throw new Error('--expect-records must be a positive integer');
+  }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'r13-cross-entry-concurrent-'));
   try {
     const runs = [];

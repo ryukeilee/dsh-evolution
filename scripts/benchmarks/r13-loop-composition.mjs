@@ -65,13 +65,17 @@ function instrumentCopies() {
   const originalClone = globalThis.structuredClone;
   const originalStringify = JSON.stringify;
   const originalParse = JSON.parse;
+  // Same metric as the phase timer: `process.cpuUsage()` (user+system). A
+  // wall-clock wrapper cannot be compared with a CPU phase total, so every
+  // share in the report is CPU / CPU.
   const wrap = (bucket, fn) => function instrumented(...args) {
-    const started = process.hrtime.bigint();
+    const started = process.cpuUsage();
     try {
       return fn.apply(this, args);
     } finally {
+      const used = process.cpuUsage(started);
       bucket.calls += 1;
-      bucket.cpuMs += Number(process.hrtime.bigint() - started) / 1e6;
+      bucket.cpuMs += (used.user + used.system) / 1000;
     }
   };
   globalThis.structuredClone = wrap(stats.structuredClone, originalClone);
@@ -94,7 +98,7 @@ function instrumentCopies() {
  * Time the shared-experience store calls one loop makes. This is what turns the
  * per-phase numbers into an attribution: `findConclusions` is an explicit-action
  * full scan, while `discover`/`recall` are bounded windows. The wrapper only
- * records calls and hrtime deltas; it does not change arguments or results.
+ * records calls and process.cpuUsage deltas; it does not change arguments or results.
  */
 function instrumentStore(store) {
   const tracked = new Map();
@@ -103,12 +107,13 @@ function instrumentStore(store) {
     if (typeof original !== 'function') continue;
     const stat = { calls: 0, cpuMs: 0 };
     tracked.set(name, { stat, fn: function wrapped(...args) {
-      const started = process.hrtime.bigint();
+      const started = process.cpuUsage();
       try {
         return Reflect.apply(original, store, args);
       } finally {
+        const used = process.cpuUsage(started);
         stat.calls += 1;
-        stat.cpuMs += Number(process.hrtime.bigint() - started) / 1e6;
+        stat.cpuMs += (used.user + used.system) / 1000;
       }
     } });
   }

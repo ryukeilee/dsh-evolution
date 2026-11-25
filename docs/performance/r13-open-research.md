@@ -13,7 +13,7 @@
 | 子系统 | 文档 | 结论 | 集成提交 |
 | --- | --- | --- | --- |
 | 领域存储 / 事件桥 / 冷档案 / 数据生命周期 | [r13-event-log-prune.md](r13-event-log-prune.md) | **接受 1 项**（`planLogPrune` 复用已认证 envelope） | `c47a17e` |
-| 共享经验 SQLite 与经验链路 | [r13-shared-experience.md](r13-shared-experience.md) | **接受 2 项**（`appendBounded` 提纯函数、`sortCandidates` 惰性键缓存） | `e4913e8` |
+| 共享经验 SQLite 与经验链路 | [r13-shared-experience.md](r13-shared-experience.md) | **接受 1 项**（`sortCandidates` 惰性键缓存）；`appendBounded` 候选经审核撤回 | `e4913e8` + 撤回提交 |
 | 跨入口 / 诊断 / 统一审查 / 用量 / 桌面任务通道 | [r13-cross-entry-audit.md](r13-cross-entry-audit.md) | **NO CHANGE**（无可消除增长） | `a549110` |
 | 完整进化闭环的插件侧耗时构成 | [r13-loop-composition.md](r13-loop-composition.md) | **NO CHANGE**（构成量化，无新候选） | `30b25b8` |
 
@@ -25,10 +25,10 @@ APFS、热页缓存；全部夹具在隔离临时目录与合成数据根中生�
 实际模型与档位：本文由 Copywriter（`opencode-go/deepseek-v4.1-flash` Low）汇总；
 Lead 与各 Builder 的实际模型与档位记录在 PR 交付说明与各子系统文档中。
 
-## 1. 三项接受改动
+## 1. 两项接受改动与一项撤回
 
-三项都是「同一调用内、同一批字节/同一纯函数」的重复工作消除，不改持久化格式、协议、
-窗口上限或认证次数。
+接受的两项都是「同一调用内、同一批字节/同一纯函数」的重复工作消除，不改持久化格式、
+协议、窗口上限或认证次数。另一项候选在独立审核中被否决并撤回，理由见 §1.2。
 
 ### 1.1 事件桥回收规划：`planLogPrune()` 的重复解析（`c47a17e`）
 
@@ -45,9 +45,9 @@ Lead 与各 Builder 的实际模型与档位记录在 PR 交付说明与各子�
 
 | 事件数 | 轮 0 A / B / A2 | 轮 1 A / B / A2 | 轮 2 A / B / A2 |
 | ---: | --- | --- | --- |
-| 2,000 | 307.2 / 253.1 / 271.7 | 274.1 / 253.2 / 274.7 | 271.0 / 252.8 / 272.3 |
-| 20,000 | 864.3 / 771.3 / 971.1 | 862.4 / 787.3 / 866.0 | 864.0 / 745.1 / 873.2 |
-| 100,000 | 1859.0 / 1623.2 / 1870.9 | 1874.8 / 1606.2 / 1874.1 | 1848.9 / 1493.2 / 1863.3 |
+| 2,000 | 273.1 / 253.0 / 271.7 | 273.8 / 251.6 / 273.9 | 270.9 / 252.4 / 272.1 |
+| 20,000 | 860.5 / 758.3 / 951.0 | 858.0 / 786.0 / 864.7 | 860.7 / 737.8 / 867.0 |
+| 100,000 | 1857.7 / 1617.3 / 1866.2 | 1868.3 / 1601.0 / 1866.3 | 1845.4 / 1486.9 / 1854.9 |
 
 | 事件数 | A CPU | B CPU | 相对 | A/A 噪声 | 每次调用 A → B | 净省/调用 |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -55,8 +55,9 @@ Lead 与各 Builder 的实际模型与档位记录在 PR 交付说明与各子�
 | 20,000 | 860.51 ms | 763.58 ms | **−11.26%** | +1.86% | 86.05 → 76.36 ms | 9.69 ms |
 | 100,000 | 1855.87 ms | 1600.96 ms | **−13.74%** | +0.56% | 463.97 → 400.24 ms | 63.73 ms |
 
-三档全部轮次 B−A 为负，B 的最大值在各档都低于 A 的最小值；唯一明显离群是 20,000 档第 0 轮
-A2 = 971.1 ms（+12%），按噪声处理、不计入收益。墙钟与 CPU 同向（2,000: 240.6 → 212.0 ms；
+三档全部轮次 B−A 为负。配对中位数在 2,000 / 20,000 档还伴随"B 的最大值低于 A 的最小值"，
+但 100,000 档两侧样本范围有重叠（A 最小 1,685.0 ms、B 最大 1,780.0 ms），该档只主张配对
+中位数。唯一明显离群是 20,000 档第 0 轮 A2 = 951.0 ms，按噪声处理、不计入收益。墙钟与 CPU 同向（2,000: 240.6 → 212.0 ms；
 20,000: 795.5 → 702.6 ms；100,000: 1737.7 → 1512.0 ms），但未单独用来主张收益。`maxRSS`
 是整进程高水位且三档方向不一致，不主张内存下降。
 
@@ -71,26 +72,25 @@ A2 = 971.1 ms（+12%），按噪声处理、不计入收益。墙钟与 CPU 同�
 只测 Node 26 / darwin-arm64 / 热页缓存 / 单进程 `planLogPrune`；端到端回收还包含
 `prefixEvidence()` 第二次验签、外部化、事务与 fsync，故函数级百分比不外推为端到端收益。
 
-### 1.2 经验写入：`appendBounded()` 的重复序列化（`e4913e8`）
+### 1.2 已撤回：`appendBounded()` 的重复序列化
 
-**根因**：`lib/dockyard-domain/knowledge.js` 的 `mergeKnowledgeEntry()` 对每个有界窗口
-（`sourceRefs` ≤32、`recentEvidence` ≤8、`trend.recent` ≤8、`relationRefs` ≤32、
-`lineageRefs` / `recoveryRefs` ≤32）做去重：
-`list.some((item) => stableStringify(item) === stableStringify(value))`。`value` 在整个
-判定中不变，`stableStringify()` 是纯函数，已填满窗口的热 key 每次 merge 重复序列化约
-32+8+8 = 48 次。
+**原候选**：把 `list.some((item) => stableStringify(item) === stableStringify(value))`
+里的 `stableStringify(value)` 提到循环外算一次；热 key 写入实测 248.421 → 233.465 ms
+（−6.02%，A/A +0.27%）。
 
-**改动**：把 `stableStringify(value)` 提到循环外算一次。序列化规则、窗口上限、`clone()`、
-去重判定与持久化字节全部不变。
+**为何撤回**：独立审核用 `git archive` 物化基线后直接调用 `mergeKnowledgeEntry()`
+构造出两个真实分歧：
 
-**A/B（3 轮 × 每侧 2 样本）**：热 key 写入 248.421 → 233.465 ms（**−6.02%**），三对配对差
-−12.828 / −16.697 / −11.181 ms，全部为负；A/A 对照 +0.27%（231.555 → 232.190 ms），
-绝对噪声底约 ±1.7 ms。
+- 空窗口 + 带状态化 accessor 的 `value`：基线从不序列化 `value`，走 `clone()` 的兜底
+  路径返回 `[{a:42}]`；候选提前序列化，在 getter 第一次读取时抛错。
+- 已填窗口 + 状态化 getter：基线每个已有元素比较时各读一次 `value`，保留
+  `[{a:1},{a:2}]`；候选只读一次，追加了第二个 `{a:2}`。
 
-**差分与反证**：`test/r13-shared-experience-equivalence.test.mjs` A 项对 90 个事件逐步
-merge 同一 canonical row（填满所有窗口、含 `__proto__` 自有键、重复回放），每步
-`JSON.stringify` 逐字节相等；插桩证明建键/序列化次数严格减少；把提升值替换成常量后差分
-立即失败。
+`appendBounded()` 是通用入口，不能假定 `value` 已是数据 DTO；延迟到首次比较只能修复
+空窗口。项目要求对所有输入保持失败顺序与去重结果不变（R12 的 `isSensitiveKey` 对状态化
+`toString` 也走原路径），因此整体撤回，`lib/dockyard-domain/knowledge.js` 恢复基线实现，
+配套差分的 A 项同步删除（其反证原先把 40 次合并与 90 次合并相比，长度差异就能让它“通过”，
+对 `APPEND_BROKEN` 没有牙）。代价是放弃约 6% 的热 key 写入收益。
 
 ### 1.3 经验召回：`sortCandidates()` 的重复排序键（`e4913e8`）
 
@@ -113,8 +113,8 @@ merge 同一 canonical row（填满所有窗口、含 `__proto__` 自有键、�
 exact/score/recency 分支）；平局语料下候选建键数严格少于基线，0/1 候选两侧建键数均为 0；
 把 `keyOf` 换成恒返回 `"stale"` 后差分立即失败。
 
-**范围与代价**：两项收益分别随「单 key 重复事件数」与「同分候选数」增长，不发生在零/单
-候选或窗口未满时；不改 `synchronous`、WAL、`busy_timeout`、schema、去重/冲突/授权语义。
+**范围与代价**：收益随「同分候选数」增长，不发生在零/单候选或窗口未满时；不改
+`synchronous`、WAL、`busy_timeout`、schema、去重/冲突/授权语义。
 代价是每次排序一个短命 `Map`（与走到平分的记录数同阶），不跨调用。
 
 **并发对照**：2/4 个真实子进程共享同一 store 时，A/B 两侧 2 写者均 500/500 committed、
@@ -132,27 +132,28 @@ exact/score/recency 分支）；平局语料下候选建键数严格少于基线
 
 | 历史结论数 | 闭环总计 | plan | propose | probe baseline | trial | probe candidate | measure | promote（待确认） | revert |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 0 | 4.54 ms | 0.51 (11.2%) | 0.46 (10.2%) | 0.27 (6.0%) | 0.56 (12.4%) | 0.16 (3.6%) | 0.14 (3.2%) | 0.02 (0.5%) | 2.57 (56.6%) |
-| 200 | 15.23 ms | 7.77 (51.0%) | 3.69 (24.2%) | 0.27 (1.7%) | 0.66 (4.3%) | 0.16 (1.1%) | 0.12 (0.8%) | 0.02 (0.2%) | 2.81 (18.5%) |
-| 2,000 | 83.37 ms | 38.48 (46.2%) | 28.00 (33.6%) | 0.40 (0.5%) | 1.12 (1.3%) | 0.16 (0.2%) | 0.29 (0.3%) | 0.03 (0.0%) | 11.81 (14.2%) |
-| 5,000 | 95.91 ms | 35.64 (37.2%) | 39.97 (41.7%) | 0.41 (0.4%) | 1.23 (1.3%) | 0.18 (0.2%) | 0.22 (0.2%) | 0.03 (0.0%) | 20.24 (21.1%) |
+| 0 | 4.71 ms | 0.47 (9.9%) | 0.48 (10.2%) | 0.27 (5.7%) | 0.51 (10.8%) | 0.16 (3.4%) | 0.15 (3.2%) | 0.03 (0.6%) | 2.64 (56.0%) |
+| 200 | 15.58 ms | 7.89 (50.7%) | 3.59 (23.1%) | 0.27 (1.7%) | 0.64 (4.1%) | 0.16 (1.0%) | 0.12 (0.8%) | 0.02 (0.1%) | 3.20 (20.5%) |
+| 2,000 | 79.85 ms | 37.05 (46.4%) | 29.33 (36.7%) | 0.41 (0.5%) | 0.80 (1.0%) | 0.16 (0.2%) | 0.25 (0.3%) | 0.06 (0.1%) | 10.38 (13.0%) |
+| 5,000 | 103.44 ms | 36.18 (35.0%) | 39.92 (38.6%) | 0.41 (0.4%) | 0.95 (0.9%) | 0.16 (0.2%) | 0.32 (0.3%) | 0.03 (0.0%) | 21.23 (20.5%) |
 
-**固定开销**：`probe` 两侧合计约 0.2–0.6 ms、`trial` 0.6–1.2 ms、`measure` 0.1–0.3 ms、
-`promote` 的只读门禁 0.03 ms，均不随历史变化；`revert` 中约 2.5–4 ms 的归档渲染 +
-事件桥写入 + fsync 也是固定成本（5,000 档 `revert` 减去两次存储调用后余约 3.6 ms）。
+**固定开销**：`probe` 两侧合计约 0.2–0.6 ms、`trial` 0.5–1.0 ms、`measure` 0.1–0.3 ms、
+`promote` 的只读门禁 0.03 ms，均不随历史变化；`revert` 中约 2.5–4.6 ms 的归档渲染 +
+事件桥写入 + fsync 也是固定成本（5,000 档 `revert` 减去两次存储调用后余约 4.6 ms）。
 
 **有界增长**：`plan` 的两个读窗口（`discover` 500、`recall` 2,000 行）填满后不再随总行数
-增长，2,000 → 5,000 档从 38.48 降到 35.64 ms（噪声内）；另有约 13–16 ms 是对 500 条候选
+增长，2,000 → 5,000 档从 37.05 降到 36.18 ms（噪声内）；另有约 5–7 ms 是对 500 条候选
 规范化、分组与评分的有界纯计算。
 
 **无界增长**：`findConclusions()` 是无 scope 列可用的 `instr(body, ?)` 全表扫描，每次闭环
 调用两次（`propose` 的重复假设拦截、`revert` 的结论发布前查询），从 0.6 ms（200 行）线性
-增长到 16.4 ms（5,000 行），5,000 档两次合计 32.7 ms、约占整次闭环 34%。
+增长到 16.5 ms（5,000 行），5,000 档两次合计 32.9 ms、约占整次闭环 32%。
 
-**序列化与深拷贝**（2,000 档，3 个插桩样本）：整次闭环 9 次 `structuredClone` 合计
-0.04 ms、`JSON.stringify` 783 次合计 0.30 ms、`JSON.parse` 5,006 次合计 18.07 ms
-（21.6%）。解析几乎全部来自 `recall` 的 2,000 行窗口与 `discover` 的 500 行窗口 + 计划器
-投影，属按窗口读取正文的固有成本；插桩样本闭环 83.56 ms 与非插桩 83.37 ms 基本一致。
+**序列化与深拷贝**（2,000 档，3 个插桩样本，阶段与子调用同用 CPU）：整次闭环 9 次
+`structuredClone` 合计 0.05 ms、`JSON.stringify` 780 次合计 0.59 ms、`JSON.parse`
+5,006 次合计 23.48 ms（27.3%）。解析几乎全部来自 `recall` 的 2,000 行窗口与 `discover`
+的 500 行窗口 + 计划器投影，属按窗口读取正文的固有成本；插桩样本闭环 85.94 ms 略高于
+非插桩的 79.85 ms，差额来自包装本身。
 
 **结论 NO CHANGE 的依据**：`propose` 与 `revert` 共用 `findConclusions` 结果、给 scope 加
 JSON1 表达式索引、`plan` 复用 `discover` 的 500 行替代 `recall` 的 2,000 行、缩短窗口、
@@ -168,21 +169,22 @@ JSON1 表达式索引、`plan` 复用 `discover` 的 500 行替代 `recall` 的 
 | 事件桥回收规划 | 2k / 20k / 100k 事件 | 每次 `planLogPrune` CPU（B） | 8.41 / 76.36 / 400.24 ms | 合理增长（认证下界）；重复解析已消除 |
 | 共享经验 | 10k / 30k / 100k 行 | `conclusions-nomatch` | 29.42 / 84.45 / 280.42 ms | **无界增长**（固有 `instr` 全表扫描） |
 | 共享经验 | 10k / 30k / 100k 行 | `read-control` | 30.18 / 87.37 / 295.56 ms | 随历史增长（同一扫描路径） |
-| 共享经验 | 10k / 30k / 100k 行 | `discover(window=500)` | 6.65 / 6.92 / 7.17 ms | **固定开销**（covering index + 有界窗口） |
-| 共享经验 | 10k / 30k / 100k 行 | `recall(window=2000)` | 66.28 / 66.63 / 68.12 ms | **固定开销**（只看窗口，不看总行数） |
+| 共享经验 | 10k / 30k / 100k 行 | `discover(window=500)` | 6.65 / 6.92 / 7.17 ms | 有界窗口 + 每次 `count(*)` 的 covering-index scan |
+| 共享经验 | 10k / 30k / 100k 行 | `recall(window=2000)` | 66.28 / 66.63 / 68.12 ms | **固定夹具对照**（三档夹具均为 ≤2,500 行，不是规模曲线） |
 | 共享经验 | 10k / 30k / 100k 行 | `writes`（N 条新事实） | 868.25 / 2630.82 / 9347.84 ms | 随写入条数线性（必要工作） |
 | 共享经验 | 500 / 2000 / 5000 次修订 | 单热 key merge | 142.31 / 423.24 / 981.75 ms | 随单 key 修订数线性（有界窗口维护） |
-| 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `indexRead` | 0.22 / 6.33 / 46.55 / 225.56 ms | 合理增长（parse + 逐记录校验 + 整文件 sha256） |
-| 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `sourceVerify` | 0.12 / 61.66 / 635.63 / 2856.67 ms | 合理增长（防篡改，每记录恰好一次） |
+| 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `indexRead` | 2.23 / 6.33 / 46.55 / 225.56 ms | 合理增长（parse + 逐记录校验 + 整文件 sha256） |
+| 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `sourceVerify` | 7.52 / 61.66 / 635.63 / 2856.67 ms | 合理增长（防篡改，每记录恰好一次） |
 | 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `usageRead` | 0.21 / 0.22 / 0.22 / 0.24 ms | **固定开销**（stat + readFile + parse 小投影） |
 | 桌面兜底重扫 | 100 / 1000 / 5000 任务 | 每次 `rescan` | 2.24 / 10.54 / 45.54 ms | 随 inbox 线性（唯一兜底） |
-| 完整闭环 | 0 / 200 / 2k / 5k 行 | 闭环总计 | 4.54 / 15.23 / 83.37 / 95.91 ms | 前段有界 + `findConclusions` 无界 |
+| 完整闭环 | 0 / 200 / 2k / 5k 行 | 闭环总计 | 4.71 / 15.58 / 79.85 / 103.44 ms | 前段有界 + `findConclusions` 无界 |
 
 `indexRead` 的 O(字节) 分解（CPU ms 中位数，50 / 500 / 5k / 20k）：读文件
-0.056 / 0.158 / 2.019 / 5.420、`JSON.parse` 0.113 / 1.798 / 9.906 / 38.268、
-`sha256(bytes)` 0.051 / 1.172 / 3.958 / 13.264、archive `readdir+filter+sort`
-0.008 / 0.044 / 0.936 / 2.418。20k 档 sha256 仅占 `indexRead` 约 6%，parse 约 38 ms，
-其余约 170 ms 是逐记录校验。
+0.061 / 0.158 / 2.019 / 5.420、`JSON.parse` 0.118 / 1.798 / 9.906 / 38.268、
+`sha256(bytes)` 0.044 / 1.172 / 3.958 / 13.264、archive `readdir+filter+sort`
+0.010 / 0.044 / 0.936 / 2.418。20k 档 sha256 仅占 `indexRead` 约 6%，parse 约 38 ms，
+其余约 170 ms 是逐记录校验；50 档则相反，O(字节) 子步骤合计约 0.22 ms，整次
+`indexRead` 2.23 ms 里约 2.0 ms 是逐记录校验的固定成本。
 
 **可消除增长**：本轮只在两个函数内找到并消除了 O(待处理记录数) 的重复解析/序列化
 （§1.1、§1.2/§1.3）；跨入口子系统四档均未发现同一调用内的第二次扫描。
@@ -203,7 +205,7 @@ JSON1 表达式索引、`plan` 复用 `discover` 的 500 行替代 `recall` 的 
 | 给 `findConclusions` 的 scope 加 JSON1 表达式索引/列 | 100k 档约 280 ms | 需 schema 变更与既有库迁移；`json_extract` 与 `instr` 对畸形 body 不完全等价 | **否决**（边界禁止） |
 | `plan` 复用 `discover` 的 500 行替代 `recall` 的 2,000 行 | 2k 档约 19 ms | 两个窗口上限与过滤条件不同，复用会改变证据投影；R12 C2 已否决同类 | **否决** |
 | 缩短 `recall` / `discover` 窗口 | 与窗口成正比 | 直接缩小检索范围，可能漏掉窗口外历史 | **否决**：任务禁止 |
-| 惰性 / 分批 `plan` 评分 | 约 13–16 ms（有界） | 有界开销；改动会破坏 `evolution_plan` 同步返回契约 | **NO CHANGE** |
+| 惰性 / 分批 `plan` 评分 | 约 5–7 ms（有界） | 有界开销；改动会破坏 `evolution_plan` 同步返回契约 | **NO CHANGE** |
 
 ### 4.2 子系统内 NO CHANGE（源码检查为主）
 
@@ -232,7 +234,7 @@ canary 描述符二次序列化、观察者表剪枝、`detectDegradation` 索�
 ## 5. 剩余瓶颈（完整性与协议下界）
 
 - **`findConclusions()` 的 O(历史) 扫描**：`instr(body, ?)` 无 scope 索引，10k/30k/100k
-  约 29/84/280 ms；完整闭环里每次调用两次，5k 档已占闭环约 34%。它是显式动作路径
+  约 29/84/280 ms；完整闭环里每次调用两次，5k 档已占闭环约 32%。它是显式动作路径
   （`evolution_propose` / 结论发布），不在 `agent/pre-step` 热路径；真实安装在 10k 行以上
   会先感知到它。
 - **事件桥稳态同步**：每次 `flush()` 完整读取日志前缀并做带密钥 HMAC，同时序列化整张已
@@ -262,22 +264,23 @@ canary 描述符二次序列化、观察者表剪枝、`detectDegradation` 索�
 | | 受影响聚焦套件（214 + 81） | 295 项全部通过，0 失败 0 跳过 |
 | | A/B 与 A/A | 两侧输出指纹与 `stats()` 相同 |
 | | 2/4 写者并发 | 500/500 与 1000/1000 committed，`busy=0`、`other=0` |
-| 跨入口 / 诊断 / 桌面 | 四档交替 A/A | 全部 `allFingerprintsEqual: true` |
+| 跨入口 / 诊断 / 桌面 | 四档交替 A/A | 全部 `allFingerprintsEqual: true`；50 档在复审发现空索引后已重建重跑 |
 | | 篡改反证 | 当前树 `blocked`、补丁树 `degraded`，指纹不等 |
 | | 13 个聚焦套件 | 328/328 通过，0 失败 0 跳过 |
 | 完整闭环 | 四档阶段构成 + 2,000 档插桩副本 | 已测，样本数与插图见 JSON |
-| 全量回归 | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | **2355 项 / 2353 通过 / 0 失败 / 2 跳过**（R12 基线 2348；新增 7 项差分用例） |
+| 全量回归 | `NODE_OPTIONS=--max-old-space-size=4096 npm test` | **2354 项 / 2352 通过 / 0 失败 / 2 跳过**（R12 基线 2348；新增 6 项差分用例：事件桥 5 + 召回 1） |
 | 打包检查 | `npm run pack:check`（开发阶段） | **17/17 通过**；工作树是 `0.2.21` 固定点的已提交后继，`release/` 与既有验收证据未改动 |
 
 ### 6.1 Lead 独立复跑（静默机器）
 
-各子系统收工后，Lead 在没有其它基准/测试运行时按同一脚本独立复跑两项生产改动：
+各子系统收工后，Lead 在没有其它基准/测试运行时按同一脚本独立复跑接受的改动：
 
 | 改动 | 负载 | Builder 数据 | Lead 复跑 | 方向 |
 | --- | --- | ---: | ---: | --- |
 | `planLogPrune` | 2k / 20k / 100k 事件 | −7.16% / −11.26% / −13.74% | **−8.09% / −13.70% / −12.39%** | 三档均负 |
-| `appendBounded` | 热 key 写入 | −6.02% | **−6.07%** | 同向同量级 |
 | `sortCandidates` | `recall` | −9.35% | **−8.45%** | 同向同量级 |
+
+（已撤回的 `appendBounded` 当时也复跑为 −6.07%，但该改动不再交付，故不列入。）
 
 Lead 复跑的 A/A 噪声：事件桥 +0.81 / −0.01 / +0.03%（三档）；共享经验未改动对照
 `conclusions-nomatch` −0.13%、`discover` −0.30%、`recall-none` +0.94%、`recall-one` +0.12%；
@@ -313,23 +316,30 @@ NODE_OPTIONS=--max-old-space-size=4096 node --test \
   test/r13-shared-experience-equivalence.test.mjs
 
 # 跨入口 / 诊断 / 桌面：四档夹具 + A/A + micro + concurrent + rescan
-BASE="${TMPDIR:-/tmp}/r13-fixtures"
+BASE=$(mktemp -d "${TMPDIR:-/tmp}/r13-fixtures-XXXXXX")
 S=scripts/benchmarks/r13-cross-entry-audit.mjs
 for N in 50 500 5000 20000; do
   node "$S" build --fixture "$BASE/r13-fixture-$N" --records "$N" --archive "$N"
-  NODE_OPTIONS=--max-old-space-size=4096 node "$S" run \
+done
+# 50/500/5000：3 样本/侧、预热 2；20k：2 样本/侧、预热 1（与记录一致）
+for N in 50 500 5000; do
+  NODE_OPTIONS=--max-old-space-size=4096 node --expose-gc "$S" run \
     --baseline . --candidate . --fixture "$BASE/r13-fixture-$N" \
     --workloads indexRead,reconcileIdle,sourceVerify,review,doctor,usageRead \
-    --rounds 3 --samples 3 --warmup 2 \
+    --rounds 3 --samples 3 --warmup 2 --expect-records "$N" \
     --out "docs/performance/r13-cross-entry-audit-aa-$N.json"
 done
+NODE_OPTIONS=--max-old-space-size=4096 node --expose-gc "$S" run \
+  --baseline . --candidate . --fixture "$BASE/r13-fixture-20000" \
+  --workloads indexRead,reconcileIdle,sourceVerify,review,doctor,usageRead \
+  --rounds 3 --samples 2 --warmup 1 --expect-records 20000 \
+  --out docs/performance/r13-cross-entry-audit-aa-20000.json
 
-# 完整闭环：四档阶段构成 + 2,000 档插桩副本
-for H in 0 200 2000 5000; do
-  node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
-    --history "$H" --runs 5 --no-instrument \
-    --out "docs/performance/r13-loop-composition-$H.json"
-done
+# 完整闭环：四档阶段构成（0/200 用 7 个样本，2k/5k 用 5 个，与记录一致）
+node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs --history 0 --runs 7 --no-instrument --out docs/performance/r13-loop-composition-0.json
+node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs --history 200 --runs 7 --no-instrument --out docs/performance/r13-loop-composition-200.json
+node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs --history 2000 --runs 5 --no-instrument --out docs/performance/r13-loop-composition-2000.json
+node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs --history 5000 --runs 5 --no-instrument --out docs/performance/r13-loop-composition-5000.json
 node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
   --history 2000 --runs 3 --out docs/performance/r13-loop-composition-copies.json
 ```
@@ -356,16 +366,33 @@ node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
 - 全量 `npm test` 与 `npm run pack:check` 已由 Lead 在集成后执行，结果见 §6；
   真实宿主验收、`pack:check --release` 与发布仍未执行，也不在本文主张范围内。
 
-## 9. 汇总时发现并已修正的不一致
+## 9. 审核与汇总阶段发现并已修正的问题
 
-汇总阶段发现三处“文档命令/表头与记录不符”，均已在集成时修正（未改任何测量数字）：
+独立复核（`codex/gpt-6.2-sol` High）对 `9b18505` 返回 CHANGES；下面每项都已在同一分支
+修复并复测。没有一项是通过调整措辞绕过的：
 
-1. **完整闭环复现命令的样本数**：[r13-loop-composition.md](r13-loop-composition.md) §1 与 JSON
-   记录 `--history 0 / 200` 为 7 个样本、`2,000 / 5,000` 为 5 个样本，但 §6 的命令对四档统一
-   使用 `--runs 5`。已改为逐档写明 `--runs 7 / 7 / 5 / 5`。
-2. **跨入口 20k 档的样本数**：[r13-cross-entry-audit.md](r13-cross-entry-audit.md) §1 与
-   `r13-cross-entry-audit-aa-20000.json` 记录 20k 档 2 样本/侧、预热 1 次，但 §8 的循环命令
-   对四档统一使用 `--samples 3 --warmup 2`。§8 已拆成 50/500/5000 与 20k 两段命令。
-3. **共享经验规模表的表头**：[r13-shared-experience.md](r13-shared-experience.md) §4 的列头是
-   `10k / 30k / 100k`，最后一行 `hot-key` 的数值实际对应 500 / 2,000 / 5,000 次修订。
-   表下已补一行说明；数值与 JSON 的 `hot-500/2000/5000` 一致。
+1. **`appendBounded` 候选被否决并撤回**：状态化 accessor 的输入会让失败路径与去重结果
+   偏离基线（空窗口基线返回 `[{a:42}]`、候选抛错；已填窗口基线保留两条、候选追加
+   `{a:2}`）。`lib/dockyard-domain/knowledge.js` 恢复基线；对应差分 A 项删除
+   （其反证原先把 40 次合并与 90 次合并相比，长度差异就能让它通过）。放弃约 6% 的
+   热 key 写入收益。详见 [r13-shared-experience.md](r13-shared-experience.md) §3.1。
+2. **跨入口 50 档夹具是空索引**：`sourceVerify` 的指纹等于空集合
+   （`sha256('{"count":0,"sample":[],"allVerified":true}')`，前缀 `21500f57`），旧的
+   `indexRead` 0.22 / `sourceVerify` 0.12 / `review` 1.11 / `doctor` 3.60 ms 都测的是
+   空索引。已用新夹具重建重跑：2.23 / 7.52 / 9.02 / 10.26 ms；`micro` 50 档一并重跑。
+   `run` 新增 `--expect-records`，空集合或残缺夹具会让基准直接失败。
+3. **闭环归因混用了墙钟与 CPU**：阶段总计用 `process.cpuUsage()`，子调用包装器原先用
+   `hrtime`，所以 21.6% 之类的占比不成立。包装器已改为 `process.cpuUsage()` 并重跑
+   4 档与插桩副本；新占比（`JSON.parse` 27.3% 等）是 CPU / CPU。
+4. **事件桥逐轮表与原始样本不符**：按 `scales[].rounds[].samples[].cpuMicros` 重算后，
+   20,000 档第 0 轮是 860.5 / 758.3 / 951.0（原写 864.3 / 771.3 / 971.1）；
+   100,000 档样本范围有重叠（A 最小 1,685.0、B 最大 1,780.0），因此分离结论只针对
+   配对中位数。
+5. **规模表与复现命令超出证据**：`recall` 三档夹具都是 `Math.min(n, 2500)` 行，
+   已标为"固定夹具对照"而非规模曲线；`discover` 已分开"有界窗口"与"每次 `count(*)` 的
+   covering-index scan"；跨入口与夹具命令改用 `mktemp`，20k 档样本数/预热与闭环
+   0/200 档样本数按记录更正。
+
+汇总阶段另发现三处"文档命令/表头与记录不符"，也已修正（未改任何测量数字）：
+完整闭环复现命令改为逐档 `--runs 7 / 7 / 5 / 5`；跨入口 §8 拆成 50/500/5000 与 20k
+两段命令；共享经验 §4 的 `hot-key` 行补注"三列是 500 / 2,000 / 5,000 次修订"。
