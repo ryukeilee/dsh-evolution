@@ -80,6 +80,14 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 而不是 `absent`；没有孤儿时才保持原有的 `absent` / `no-action`。孤儿只把最终状态提升到 `restart-required`，
 不会覆盖更高优先级的 `blocked` / `pending-revalidation` / `incompatible`。
 
+**无法证明激活的 consumer。** 除了孤儿挂载，另一类“索引可读但激活无法证明”的现场由 doctor 的
+`promotion.sharing` 报出（review 对同一 profile 给出 `restart-required`）：已有发布记录时，某个 consumer 状态是
+`invalid` / `unreadable` 记入 `evidence.unverifiedConsumers`（`{profile, status}`）；consumer 已观察当前索引
+（`observedIndexUpdatedAt` 等于索引的 `updatedAt`）却缺少某条已批准且未撤销记录的 activation 行时，记入
+`evidence.missingConsumerRows`（`{profile, id}`）。两者都让检查停在 `degraded` 并给出重启建议，都不提供 repair。
+索引 `absent` 时保持既有形状：`unverifiedConsumers` 不出现、孤儿语义与上面一致；从未启动过的 consumer
+（`absent`）不当作缺行。
+
 ## 4. 动作排序
 
 `composeSelfEvolutionReview()` 只做排序，不做执行：
@@ -102,6 +110,13 @@ ACP 的 `audit` 返回同一组分类与决策，但明确标记 `readOnly: true
 结构上合法但超过这个上限时，review 不为未评估的行编造 per-record 状态，而是增加一条 `operator-action`：说明
 有多少条记录未评估，并给出至多 5 个被省略的记录 id 作为有界样本。这条动作按 `operator-action` 优先级参与同一套
 排序与动作上限；它只让 review 明确标为不完整（`selfEvolution.incomplete=true`），不推断那些记录是否可用或可否停用。
+
+consumer 行也按同一上限读取：review 只读每个 profile 的前 50 条 activation 行（同一个
+`SELF_EVOLUTION_REVIEW_LIMITS.maxRecords`）。某个 profile 报出更多行时，投影保留真实行数（`rowCount`）并标记
+`rowsTruncated`，review 增加一条 `operator-action`（`code: "consumer-rows-truncated"`，逐 profile 一条），说明
+总行数、已评估与未评估的条数，并指向 doctor 的 `promotion.sharing`（它读取全量 consumer 状态）。未读的尾部不会被
+推断成 active 或健康，`stablePlugins` 同时列出 `consumerRowsTruncated`，`selfEvolution.incomplete=true`；两条
+有界读取通知（记录上限与 consumer 行上限）在动作排序后都保留各自的槽位，不会被截断丢掉。
 
 ### 4.1 价值证据：用量投影
 
@@ -181,8 +196,9 @@ revalidate 不是新的晋升，也不改变八项门禁、所有者确认或授
 - 检查只读：不修复索引、不重试 consumer、不 reset sticky failure；这些仍是显式操作者动作。
 - consumer 的 `hostDigest` 是上一次启动时捕获的事实；索引在其后变化时只报告 `restart-required`，不推断当前运行状态。
 - 孤儿挂载的读取边界：review 只读取每个 profile 的前 50 条 consumer 行（`SELF_EVOLUTION_REVIEW_LIMITS.maxRecords`），
-  超出上限的孤儿不在 review 的 `orphanMounts` 里；doctor 的 `promotion.sharing` 读取全量 consumer 状态，
-  两个只读面因此不会同时漏报同一批孤儿。
+  超出上限的孤儿不在 review 的 `orphanMounts` 里；此时 review 用 `consumer-rows-truncated` 明示未读尾部并置
+  `selfEvolution.incomplete=true`，doctor 的 `promotion.sharing` 读取全量 consumer 状态，两个只读面因此不会无声漏报
+  同一批孤儿。
 - 当前宿主身份优先来自官方 `PluginPackages.packageOf`；ACP 等 profile 缺少该服务时回退到进程/包布局的精确解析（`lib/runtime-versions.js`），仍读不到时记录为 `verify-host`，绝不按“兼容”处理。
 - ACP 的 `audit` 使用同机共享数据根与共享经验库；它不能替代真实隔离宿主验证，也不会在本机执行 revalidate。
 - 用量投影是操作者产出的只读事实，不是第二个经验库：它只包含记录 id、计数、`measurement` 与能力标注，

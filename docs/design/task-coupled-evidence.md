@@ -122,9 +122,18 @@ Trial 能力样本与 canary workload 都按 `resultPath` 从真实返回值取�
 
 canary 观测写入晋升 journal 与 stable sidecar 的 `evidence.actualToolOutput` 只有
 `{ label, resultSha256, resultCharacters }`：摘要取自无损 canonical 文本，长度是该文本的字符数，真实工具输出正文
-不跨宿主边界（它可能包含用户文件或会话数据）。无损文本无法计算的形状（循环、访问器、类实例）使用固定
-`"[unavailable]"` 标记，记录仍可写、诊断异常不改变任务结果。内核的通用 `evidence` 契约没有变化：它仍接受调用方
-提交的有界证据，只由生产宿主负责不把正文放进去。
+不跨宿主边界（它可能包含用户文件或会话数据）。Trial 与 canary 的样本不匹配同样不携带正文：`E_DESKTOP_SAMPLE_MISMATCH`
+的消息只含 label（截断到 8 字符）与 actual / expected 各自的 `resultSha256`、`resultCharacters`（错误消息会落进
+`state/*.json` 并进入 `logger.warn`，所以必须无正文又有界），内存中的 `error.sample` 仍保留 actual / expected 本身，
+供 canary 回归路径生成上面那份摘要证据。无损文本无法计算的形状（循环、访问器、类实例）使用固定的类型化
+`x` 标记，记录仍可写、诊断异常不改变任务结果。内核的通用 `evidence` 契约没有变化：它仍接受调用方提交的有界证据，
+只由生产宿主负责不把正文放进去。
+
+canonical 文本带类型前缀，使不同形状不会共用同一摘要：`null` → `n`，`undefined` → `u`，字符串 →
+`s` + JSON 文本，布尔 → `b` + `true`/`false`，数字 → `d` + 字面量（含 `d-0`、`dNaN`），数组 → `a[...]`，
+plain object → `o{...}`，不支持或不可计算的形状 → `x`。这取代了旧版 `"[undefined]"` / `"[unavailable]"` 这类
+可被普通字符串拼出的标记，因此一份包含字面量 `"[unavailable]"` 的工具输出不会与一个缺失值共享摘要。它只影响
+证据摘要的 canonical 文本，`sameValue()` 的无损相等判定不变。
 
 ## 5. 信任边界
 
