@@ -253,18 +253,24 @@ test('E: maxRemovals defers surplus files and maxEntries truncates the pass', as
     await writeConsumerSessionLease({ consumersDir: secondDir, profile: PROFILE, sessionId, pid: 900001 });
   }
   const sortedMore = [...more].sort();
+  const hour = CONSUMER_SESSION_GC_LIMITS.rotationMs;
+  const fixedNow = hour; // bucket 1; the window wraps from index 2
+  const expectedStart = (Math.floor(fixedNow / hour) * 2) % sortedMore.length;
+  const expectedWindow = sortedMore.slice(expectedStart).concat(sortedMore.slice(0, expectedStart)).slice(0, 2);
   const truncated = await collectConsumerSessionGarbage({
     consumersDir: secondDir,
     profile: PROFILE,
+    now: fixedNow,
     isProcessAlive: () => false,
     limits: { ...CONSUMER_SESSION_GC_LIMITS, maxEntries: 2 },
   });
   assert.equal(truncated.status, 'ok');
   assert.equal(truncated.sessions, 3);
   assert.equal(truncated.truncated, true);
-  assert.deepEqual(truncated.decisions.map((decision) => decision.sessionId), sortedMore.slice(0, 2));
+  assert.deepEqual(truncated.decisions.map((decision) => decision.sessionId), expectedWindow);
   assert.equal(truncated.removedLeases, 2);
-  assert.equal(await exists(path.join(secondDir, consumerSessionFileNames(PROFILE, sortedMore[2]).lease)), true);
+  const untouched = sortedMore[(expectedStart + 2) % sortedMore.length];
+  assert.equal(await exists(path.join(secondDir, consumerSessionFileNames(PROFILE, untouched).lease)), true);
 });
 
 // --- F. Removal failures -----------------------------------------------------
@@ -550,4 +556,116 @@ test('file naming is strict and lease removal tolerates ENOENT', async (t) => {
   assert.equal(stat.mode & 0o777, 0o600);
   await removeConsumerSessionLease({ consumersDir, profile: PROFILE, sessionId });
   assert.equal(await exists(path.join(consumersDir, consumerSessionFileNames(PROFILE, sessionId).lease)), false);
+});
+
+// --- J. Rotation fairness (R1-2) ---------------------------------------------
+
+test('J: the bounded window rotates by hour and covers every session across buckets', async (t) => {
+  const { consumersDir } = await tempConsumers(t);
+  const ids = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()];
+  for (const sessionId of ids) {
+    await writeConsumerSessionLease({ consumersDir, profile: PROFILE, sessionId, pid: 900001 });
+  }
+  const hour = CONSUMER_SESSION_GC_LIMITS.rotationMs;
+  const maxEntries = 2;
+  const sorted = [...ids].sort();
+  const windowAt = (bucket) => {
+    const start = ((bucket * maxEntries) % sorted.length + sorted.length) % sorted.length;
+    return sorted.slice(start).concat(sorted.slice(0, start)).slice(0, maxEntries);
+  };
+  const collectAt = (bucket) => collectConsumerSessionGarbage({
+    consumersDir,
+    profile: PROFILE,
+    now: bucket * hour,
+    isProcessAlive: () => false,
+    limits: { ...CONSUMER_SESSION_GC_LIMITS, maxEntries },
+    dryRun: true,
+  });
+  const bucketA = Math.floor(Date.now() / hour);
+  const first = await collectAt(bucketA);
+  const second = await collectAt(bucketA + 1);
+  const firstIds = first.decisions.map((decision) => decision.sessionId);
+  const secondIds = second.decisions.map((decision) => decision.sessionId);
+
+  assert.equal(first.status, 'ok');
+  assert.equal(second.status, 'ok');
+  assert.equal(first.sessions, 3);
+  assert.equal(second.sessions, 3);
+  assert.equal(first.truncated, true);
+  assert.equal(second.truncated, true);
+  assert.deepEqual(firstIds, windowAt(bucketA));
+  assert.deepEqual(secondIds, windowAt(bucketA + 1));
+  assert.notDeepEqual(firstIds, secondIds);
+  const union = new Set([...firstIds, ...secondIds]);
+  assert.equal(union.size, 3);
+  assert.deepEqual([...union].sort(), sorted);
+  // dryRun leaves every lease in place for the next bucket to process.
+  assert.equal(first.removedLeases, 0);
+  assert.equal(second.removedLeases, 0);
+  for (const sessionId of ids) {
+    assert.equal(await exists(path.join(consumersDir, consumerSessionFileNames(PROFILE, sessionId).lease)), true);
+  }
+});
+
+// --- K. Non-regular entries (R1-3) -------------------------------------------
+
+async function isSymlink(file) {
+  try {
+    return (await fs.lstat(file)).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+test('K: symlink-shaped lease/composition entries keep the whole stem unproven', async (t) => {
+  const { consumersDir } = await tempConsumers(t);
+
+  const dangling = crypto.randomUUID();
+  const lease = path.join(consumersDir, consumerSessionFileNames(PROFILE, dangling).lease);
+  await fs.symlink(path.join(consumersDir, 'never-exists.lease.target'), lease);
+  const composition = await writeComposition(consumersDir, dangling);
+  const old = Date.now() - 48 * 60 * 60 * 1000;
+  await fs.utimes(composition, new Date(old), new Date(old));
+
+  const linkedComposition = crypto.randomUUID();
+  const compositionLink = path.join(consumersDir, consumerSessionFileNames(PROFILE, linkedComposition).composition);
+  await fs.symlink(path.join(consumersDir, 'never-exists.composition.target'), compositionLink);
+
+  const result = await collectConsumerSessionGarbage({
+    consumersDir,
+    profile: PROFILE,
+    isProcessAlive: () => false,
+  });
+  assert.equal(result.status, 'ok');
+  assert.equal(result.removedCompositions, 0);
+  assert.equal(result.removedLeases, 0);
+  assert.deepEqual(decisionsBySession(result).get(dangling), { sessionId: dangling, action: 'keep', reason: 'unproven-lease' });
+  assert.deepEqual(decisionsBySession(result).get(linkedComposition), { sessionId: linkedComposition, action: 'keep', reason: 'unproven-lease' });
+  assert.equal(await exists(composition), true, 'legacy composition must not be deleted behind a symlink lease');
+  assert.equal(await isSymlink(lease), true);
+  assert.equal(await isSymlink(compositionLink), true);
+});
+
+// --- L. Closed failure-code vocabulary (R1-4) --------------------------------
+
+test('L: a code outside the closed set is projected as other', async (t) => {
+  const { consumersDir } = await tempConsumers(t);
+  const sessionId = crypto.randomUUID();
+  await writeConsumerSessionLease({ consumersDir, profile: PROFILE, sessionId, pid: 900001 });
+  const file = path.join(consumersDir, consumerSessionFileNames(PROFILE, sessionId).lease);
+  const injected = new Error('raw text must not be projected');
+  injected.code = 'arbitrary-code-sentinel';
+
+  const result = await collectConsumerSessionGarbage({
+    consumersDir,
+    profile: PROFILE,
+    isProcessAlive: () => false,
+    removeFile: async () => { throw injected; },
+  });
+  assert.equal(result.status, 'ok');
+  assert.equal(result.removedLeases, 0);
+  assert.equal(result.failures.length, 1);
+  assert.equal(result.failures[0].code, 'other');
+  assert.equal(result.failures[0].name, path.basename(file));
+  assert.equal(JSON.stringify(result.failures).includes('arbitrary-code-sentinel'), false);
 });
