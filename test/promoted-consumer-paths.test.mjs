@@ -56,6 +56,7 @@ test('consumer module stays lightweight: sharing contract, Include helper and pu
   assert.deepEqual(specifiers.sort(), [
     './cordis-compat.js',
     './promoted-sharing.js',
+    './promoted-consumer-gc.js',
     './promotion-include.js',
     // Pure exact host identity reader: fs/path/url only, no kernel. Needed for
     // the packaged-host fallback the review and doctor already use.

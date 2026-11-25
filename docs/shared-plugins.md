@@ -103,6 +103,120 @@ doctor 的 `promotion.sharing` 现在也报 `blocked`，不再只报 `degraded`�
 是正常状态。即使某条记录同时存在宿主版本不匹配，撤销表损坏仍先按阻断处理：consumer 在读取记录 host 之前就因
 撤销表不可读而 fail-closed，revalidate 不能修复这个前置条件。
 
+### 3.1 每会话 composition 的有界回收
+
+`lib/promoted-consumer.js` 每次 consumer 启动都会写一份
+`shared-plugins/consumers/<profile>.<sessionId>.cordis.yml`，原来只在 `disposeOnce()` 证明释放后删除；
+进程被强杀或释放未证实时文件永久残留。`lib/promoted-consumer-gc.js` 提供一次有界的启动期回收：
+`apply()` 在 `await created.mount()` 之后 `await created.collectStaleSessions()` 调用一次，结果挂在
+`session.gcResult`。只在 `acp` / `web` consumer 入口运行；`desktop` / 未知 profile 在前面直接返回，
+会话已 dispose 时跳过。没有定时器、watcher、轮询或后台任务。
+
+**文件模式与永不删除清单。** 只处理普通文件，且名称严格匹配
+`^([a-z0-9-]+)\.([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(cordis\.yml|lease\.json)$`
+（UUID 为小写标准形式）；第一个捕获组（profile）必须等于本次启动的 profile。永不删除：
+`<profile>.cordis.yml`（稳定 composition）、`<profile>.json`（消费状态）、`published.json`、
+`disabled.json`、`promoted/` 源码、`.consumer-*.tmp` 残件、其它 profile 的匹配文件（计
+`keptOtherProfile`）、目录与符号链接以及其它不匹配项（计 `ignored`）。
+
+**为什么 `state.sessionId` 不是存活证明。** `claimConsumerSession()`（`lib/promoted-sharing.js`）
+每次启动都把 `consumers/<profile>.json` 的 `state.sessionId` 覆盖为最新领取的会话；它只证明
+“最近一次领取”，不证明某个文件的所有者仍存活。同一台机器可以并行运行多个入口会话，各持自己的
+per-session composition；按 `state.sessionId` 判定会把仍存活会话的文件当成孤儿删除。因此本回收
+完全不读取 consumer state 文档。
+
+**lease 契约（真正的存活信号）。** 新会话在写自己的 composition **之前**，在同一目录原子写入
+`<profile>.<sessionId>.lease.json`：`0600` 文件、父目录 `mkdir 0700`、temp `0600` + `fsync` +
+`rename`；写入顺序固定为 lease → composition。字段为 `schemaVersion: 1`、
+`kind: "dsh-evolution-consumer-session-lease"`、`profile`、`sessionId`、`pid`、`hostname`、
+`createdAt`、`processStartedAt`。`pid` + `hostname` 是判据，`createdAt` / `processStartedAt` 仅用于
+诊断，不参与判定。会话 dispose 时无论 `result.released` 与否都删除自己的 lease（失败只记诊断）。
+lease 不刷新、没有心跳；lease 写失败只记 `session.leaseFailure`，会话仍挂载，其 composition 退化为
+“无 lease 文件”，24h 后可能被回收（已挂载行不受影响），属已知残余风险。
+
+**决策表**（每个 session stem，与 `lib/promoted-consumer-gc.js` 一致）：
+
+| lease | hostname | pid | 结论 |
+| --- | --- | --- | --- |
+| 合法 | 等于本机 | 存活 / 无法证明 | `keep` / `live-lease` |
+| 合法 | 等于本机 | `ESRCH` | `remove` / `stale-lease`（composition 与 lease 都删） |
+| 合法 | 不等于本机 | 任意 | `keep` / `foreign-host`（报告，不删） |
+| 缺失 | — | — | mtime 超过窗口 → `remove` / `legacy-window`；否则 `keep` / `recent` |
+| 不可读 / 非法 / 字段不符 / 过大 | — | — | `keep` / `unproven-lease`（报告，不删） |
+| 只有 lease 没有 composition | 同上 | 同上 | 证明死亡则删 lease，否则保留 |
+
+**只认 `ESRCH` 的死亡证明。** `defaultIsProcessAlive()`：`pid === process.pid` 视为存活；
+`process.kill(pid, 0)` 成功视为存活；抛错且 `error.code === 'ESRCH'` 是**唯一**死亡证明；
+`EPERM` 等其它错误、非正整数 pid 或抛错的判定都按“存活 / 无法证明”保留。pid 复用只会让已死会话
+看起来存活，产生保守假阴性，永远不会让活会话被删；活会话的 pid 一定存在，不会被判成 `ESRCH`。
+一切无法证明的形状只报告、不删除。
+
+名称匹配但目录项不是普通文件（符号链接、目录等）的 lease / composition 条目不会被跟随或删除，
+该 stem 判为 `keep / unproven-lease`；形如 lease 的不可读条目不会让同一 stem 的 composition 落到
+`legacy-window`。
+
+**24h 窗口作用于任何无 lease 的 composition。** `staleCompositionMs` 默认
+`24 * 60 * 60 * 1000`：没有 lease 的 composition 若 mtime 超过窗口 → `remove` / `legacy-window`，
+否则 `keep` / `recent`。常见来源是已结束会话留下的无 lease 文件：(1) 升级前遗留（本功能之前
+没有 lease）；(2) dispose 未证实释放（`released: false`）时被保留、但 lease 已随会话删除的
+composition。但窗口**不以“会话已结束”为判据**：lease 写失败（权限 / 空间等）时会话仍挂载，
+其 composition 同样是无 lease 文件，24h 后也可能被回收——这是已知残余风险，删除只影响该文件
+本身，已挂载行不受影响。依据是 consumer 的 composition 只在 `mountOnce()` 写入后、同一次 mount
+内被 `refresh()` 读取；官方 Include 没有文件 watcher，`lib/promotion-include.js` 只在调用方请求时
+读文件，所以删除磁盘上的文件不会卸载已经挂载的行（要等下一次入口启动才会改变）。24h 远大于
+一次 mount 的写→refresh 间隔，正常写入的文件不会被误删。
+
+**有界性、公平性与时机。** `scan` 阶段只做 `readdir`，窗口外的 session 不做 stat、不读 lease、
+不删除；每次启动最多**处理**（stat + 读 lease + 判定 + 删除）`maxEntries` 个 session。公平推进
+用**持久游标**，不依赖启动时刻：仅当 `truncated: true`（session 数超过 `maxEntries`）时才读取
+`consumers/.consumer-session-gc-cursor-<profile>.json`（`0600`，≤ `maxCursorBytes`），内容为
+`{ schemaVersion: 1, kind: "dsh-evolution-consumer-session-gc-cursor", profile, lastSessionId }`。
+游标缺失、不可读、字段非法、profile 不匹配或超过字节上限都视为无游标，从排序列表起点开始；
+窗口从排序后第一个 `sessionId > lastSessionId` 的 stem 开始，环绕整个列表取 `maxEntries` 个。
+非 `dryRun` 且 `truncated` 的一轮处理完后原子写入窗口最后一个 sessionId（temp `0600` + fsync +
+rename）；写失败只记闭集诊断、不改变回收结果，下一轮从旧游标重试，`dryRun` 不写游标。在**串行
+启动**下，即使宿主每天同一时刻启动，每次也推进 `maxEntries` 个 stem，
+`ceil(sessions / maxEntries)` 次内覆盖全部。并发启动不提供这个保证：两个 GC 可能读到同一游标、
+处理同一窗口并写入同一个 `lastSessionId`，于是两次启动只推进一个窗口，可能重复处理同一批 stem；
+每次启动仍最多处理 `maxEntries` 个 session，不会越界，也不会误删活文件。本回收不承诺无条件的
+“每个 stem 最终都会被处理”，覆盖依赖启动被串行化。游标文件名不匹配 session 模式，计入
+`ignored`，GC 永不删除它。
+
+| 上限 | 默认值 | 含义 |
+| --- | --- | --- |
+| `maxEntries` | 8192 | 每次启动最多处理的 session 数 |
+| `maxRemovals` | 1024 | 删除数上限，超出后计入 `deferred` |
+| `maxLeaseBytes` | 4096 | lease 超过即视为不可证明并保留 |
+| `maxCursorBytes` | 2048 | 游标字节上限，超过视为无游标 |
+
+另有 `failures` 最多 8 条 `{ name, code }`。每次 consumer 启动、mount 之后运行一次，由调用方
+`await`，没有定时器；回收耗时就是启动耗时增量，实测见 `docs/performance/consumer-session-gc.md`。
+
+**失败只诊断。** 回收自身任何失败都不抛异常、不改变 `apply()` 的返回、不写 consumer state、不改
+`published.json` / 撤销表 / 晋升 journal / canary。目录不存在 → `status: 'absent'` 且不创建目录；
+`readdir` 失败 → `status: 'unavailable'`；单个删除失败记 `{ name, code }`（basename + 闭集错误码）
+后继续处理其它条目。日志与 `failures` 的 `code` 都是闭集：
+`EACCES EPERM ENOENT EISDIR ENOTDIR ENOSPC EMFILE ENFILE EBUSY EROFS EEXIST
+E_LEASE_TOO_LARGE SyntaxError TypeError RangeError Error unknown other`；闭集之外的任何字符串
+（包括调用方注入的任意 code）一律映射为 `other`，不写原始错误文本。只在 `status !== 'ok'` 或
+`failures.length > 0` 时发一次受控 `ctx.logger.warn`
+（闭集标签与计数，不含路径、原始错误文本或 lease 内容），与 `warnConsumerStartup()` 共用同一
+非抛异常边界。
+
+**lease 自身回收边界。** 只有 dead lease 而没有 composition 时也会删除该 lease；外地 hostname →
+`keep` / `foreign-host`，不可读 / 字段不符 / 非法 pid / 超过 `maxLeaseBytes` → `keep` /
+`unproven-lease`，都只报告不删除。跨主机共享数据根不在支持范围（与 target claim 协议同一边界）：
+外地 pid 不能证明本机进程死亡。
+
+**操作者视角收益。** 在 `~/.dsh/storages/evolution/shared-plugins/consumers/` 的本机样本上
+（2026-11-26，R2 修复后重跑）：522 个目录项、513 个 session composition、336,965 逻辑字节、
+`du` 约 2.0 MiB；对副本的一次回收删除 453 个 acp 遗留文件、回收 272,799 逻辑字节，目录项降到 69。
+副本上 3 次独立运行的 GC 调用中位数 40.099 ms、最大 43.198 ms；dry-run 判定的中位数
+5.504 ms、最大 6.237 ms；N=600 合成对照中位数 99.211 ms、最大 100.056 ms。本轮样本 session 数
+远小于 `maxEntries` 8192，`truncated` 均为 false，未触发持久游标，也没有轮换计时证据。真实目录
+未被修改；完整数据表、符号链接与 TMPDIR 自检、逐条复现命令见
+`docs/performance/consumer-session-gc.md`。
+
 ## 4. 发布是原子且幂等的
 
 - 索引与 consumer 状态都通过「同目录临时文件 + fsync + rename」原子替换，因此读者只会看到上一份完整文件或
