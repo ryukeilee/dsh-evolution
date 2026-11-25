@@ -176,7 +176,7 @@ JSON1 表达式索引、`plan` 复用 `discover` 的 500 行替代 `recall` 的 
 | 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `indexRead` | 2.23 / 6.33 / 46.55 / 225.56 ms | 合理增长（parse + 逐记录校验 + 整文件 sha256） |
 | 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `sourceVerify` | 7.52 / 61.66 / 635.63 / 2856.67 ms | 合理增长（防篡改，每记录恰好一次） |
 | 跨入口索引 | 50 / 500 / 5k / 20k 记录 | `usageRead` | 0.21 / 0.22 / 0.22 / 0.24 ms | **固定开销**（stat + readFile + parse 小投影） |
-| 桌面兜底重扫 | 100 / 1000 / 5000 任务 | 每次 `rescan` | 2.24 / 10.54 / 45.54 ms | 随 inbox 线性（唯一兜底） |
+| 桌面兜底重扫 | 100 / 1000 / 5000 任务 | 每次 `rescan`（含 state 读取/解析/校验） | 4.54 / 32.47 / 168.09 ms | 随 inbox 线性（唯一兜底） |
 | 完整闭环 | 0 / 200 / 2k / 5k 行 | 闭环总计 | 4.71 / 15.58 / 79.85 / 103.44 ms | 前段有界 + `findConclusions` 无界 |
 
 `indexRead` 的 O(字节) 分解（CPU ms 中位数，50 / 500 / 5k / 20k）：读文件
@@ -199,7 +199,7 @@ JSON1 表达式索引、`plan` 复用 `discover` 的 500 行替代 `recall` 的 
 | `diagnoseSharing` 跳过逐记录 `readPromotedPlugin` | 20k 档最多约 2,856 ms（doctor ≈99%） | 追加 `// tampered` 后当前树 `blocked`/`source-digest-mismatch`，跳过校验的补丁树 `degraded`/`source=verified`，doctor 指纹不等 | **否决**：防篡改边界 |
 | `review` 复用 doctor 产物 / 放开 50 条上限 | 无同调用路径 | 两个独立工具无共享调用点；放开上限只增成本 | **否决** |
 | 跨入口缓存已解析索引 / 增量认证 | 每入口约 46 ms@5k、225 ms@20k | 需「使用前证明文件未变」的第二协议；dev/ino/size/mtime 无法检测同长原地改写 | **否决**：O(1) 信号证明 O(历史) |
-| Desktop 1500 ms 重扫降频 / 移除 | 2.24–45.54 ms/次 | watcher `persistent:false`，重扫是漏事件唯一兜底；降频推迟拾取、移除漏任务 | **否决**：削弱可靠性 |
+| Desktop 1500 ms 重扫降频 / 移除 | 4.54–168.09 ms/次 | watcher `persistent:false`，重扫是漏事件唯一兜底；降频推迟拾取、移除漏任务 | **否决**：削弱可靠性 |
 | `registration.js` 每工具 finally flush 改频率 | 常数成本 | 改变事件认证/去重时机；R12 已否决 agent/pre-step flush 频率 | **否决**（R12 已否决） |
 | `propose` 与 `revert` 共用一次 `findConclusions` | 5k 档约 16 ms/闭环 | 两次调用之间隔着真实 `trial`/`probe`/`revert` 写入，另一入口可能追加同一 target；复用会用旧快照决定是否发布结论 | **否决**：O(1) 缓存近似 O(历史) |
 | 给 `findConclusions` 的 scope 加 JSON1 表达式索引/列 | 100k 档约 280 ms | 需 schema 变更与既有库迁移；`json_extract` 与 `instr` 对畸形 body 不完全等价 | **否决**（边界禁止） |
@@ -236,7 +236,8 @@ canary 描述符二次序列化、观察者表剪枝、`detectDegradation` 索�
 - **`findConclusions()` 的 O(历史) 扫描**：`instr(body, ?)` 无 scope 索引，10k/30k/100k
   约 29/84/280 ms；完整闭环里每次调用两次，5k 档已占闭环约 32%。它是显式动作路径
   （`evolution_propose` / 结论发布），不在 `agent/pre-step` 热路径；真实安装在 10k 行以上
-  会先感知到它。
+  会先感知到它。`discover()` 的 `count(*)` covering-index 全索引计数也随库增长，但量级小
+  得多（5k 档约 1 ms），本轮未单独分解。
 - **事件桥稳态同步**：每次 `flush()` 完整读取日志前缀并做带密钥 HMAC，同时序列化整张已
   提交标记表后 SHA-256；R12 实测 100k 历史约 61 ms/次（`axis-steady-history.md`）。认证与
   检查点绑定的下界。
@@ -247,8 +248,9 @@ canary 描述符二次序列化、观察者表剪枝、`detectDegradation` 索�
 - **诊断防篡改**：doctor 在 20k 档约 2,838 ms，几乎全部是逐记录 `lstat` + `readFile` +
   sha256。
 - **归档事务**：R12 记录 256 段负载中约 84% 延迟是 `fsync`，复制约 7.6%。
-- **桌面兜底重扫**：显式启用时随 inbox 线性（5,000 任务 45.54 ms/次，按 1500 ms 间隔约
-  1,821.7 ms CPU/分钟）；这是 watcher 漏事件时的唯一兜底。
+- **桌面兜底重扫**：显式启用时随 inbox 线性（5,000 任务 168.09 ms/次，按 1500 ms 间隔约
+  6,723.4 ms CPU/分钟，且不含真实入口的 `writeConsumerState()`）；这是 watcher 漏事件时的
+  唯一兜底。
 
 ## 6. 验证状态
 
@@ -260,7 +262,7 @@ canary 描述符二次序列化、观察者表剪枝、`detectDegradation` 索�
 | | `test/domain-storage/` | 218/218 通过 |
 | | checkpoint / keyed-digest / read-chunks | 24/24 通过 |
 | | 三档 A/B | 全部轮次 B−A 为负，`allFingerprintsEqual: true` |
-| 共享经验 | `test/r13-shared-experience-equivalence.test.mjs` | 2 项全部通过 |
+| 共享经验 | `test/r13-shared-experience-equivalence.test.mjs` | 1 项通过（`appendBounded` 项已随撤回删除） |
 | | 受影响聚焦套件（214 + 81） | 295 项全部通过，0 失败 0 跳过 |
 | | A/B 与 A/A | 两侧输出指纹与 `stats()` 相同 |
 | | 2/4 写者并发 | 500/500 与 1000/1000 committed，`busy=0`、`other=0` |
@@ -355,9 +357,8 @@ node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
 | Lead 独立复跑 | `docs/performance/r13-lead-event-log-prune.json`、`r13-lead-shared-experience.json` |
 
 `docs/performance/`、`scripts/benchmarks/`、`test/` 均不在 `package.json#files` 白名单，
-不进入分发字节。分发文件改动只有 `lib/event-log-checkpoint.js`、
-`lib/dockyard-domain/knowledge.js`、`lib/experience-recall.js`，由 Lead 集成后统一重打包
-与验收。
+不进入分发字节。分发文件改动只有 `lib/event-log-checkpoint.js` 与
+`lib/experience-recall.js`（`knowledge.js` 已恢复到基线），由 Lead 集成后统一重打包与验收。
 
 ## 8. 交付状态
 
@@ -396,3 +397,26 @@ node --max-old-space-size=4096 scripts/benchmarks/r13-loop-composition.mjs \
 汇总阶段另发现三处"文档命令/表头与记录不符"，也已修正（未改任何测量数字）：
 完整闭环复现命令改为逐档 `--runs 7 / 7 / 5 / 5`；跨入口 §8 拆成 50/500/5000 与 20k
 两段命令；共享经验 §4 的 `hot-key` 行补注"三列是 500 / 2,000 / 5,000 次修订"。
+
+## 10. 第二轮复核（`f03d991`）的修复
+
+第二轮独立复核返回 CHANGES，5 个 blocker 均属交付证据与计时边界，已修复：
+
+1. **汇总附件残留旧 50 档**：`docs/performance/r13-cross-entry-audit.json` 的
+   `runs["50"]` / `micro["50"]` 已用重跑后的分档数据替换（`sourceVerify` 7.523 ms、
+   `parseIndex` 0.118 ms），与 `-aa-50.json` / `-micro-50.json` 一致；备份口径见 §6。
+2. **桌面重扫测的不是生产路径**：夹具改为完整 state 文档，`rescan` 执行与 `readState()`
+   相同的读取/解析/`schemaVersion`+`protocol`+`taskId` 校验；数字更新为
+   4.54 / 32.47 / 168.09 ms（100/1,000/5,000）。第一版只做 `access(state)`，已在
+   §4 标注作废。**NO CHANGE 不变**。
+3. **并发启动的计时边界**：明确 `concurrent` 是只读合成负载，不含 `writeConsumerState()`
+   的 SQLite 发布锁与 Include 挂载；`sourceVerify` 每次先做一次完整 `readSharedIndex()`，
+   因此不能当作 doctor 内源码校验的占比。**NO CHANGE 不变**。
+4. **“唯一无界项”口径**：`discover()` 的 `count(*)` 也是 covering-index 全索引计数，
+   闭环、共享经验与本文三处口径已统一，并注明未单独分解该计数。
+5. **附件路径与复现命令**：18 份 R13 JSON 的临时目录/worktree 路径已替换为
+   `<tmp>` / `<worktree>` 占位符（数值未改）；跨入口 A/A 命令补 `--expect-records`，
+   篡改反证补上两棵树的 `measure --workloads doctor`。
+
+另按建议注明闭环 27.3% 的聚合口径（阶段解析中位数之和 ÷ 闭环中位数；逐样本先算占比
+再取中位数为 26.1%），并统一了事件桥逐轮表的 `B−A` 舍入。

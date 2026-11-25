@@ -23,6 +23,7 @@
   脚本遵循 R12-4 教训：`--fixture` 由调用方给出，脚本**从不删除它**，只写入不存在或空目录；
   实证：带 `keep.txt` 的目录在 `build` 被拒绝后内容原样保留。
 - 未执行：全量 `npm test`（Lead 统一跑）、`pack:check`、宿主验收、发布。本文只报告实际跑过的检查。
+- 附件里的夹具目录与 worktree 路径已替换为 `<tmp>` / `<worktree>` 占位符；测量数值、样本顺序与指纹未改。
 
 ## 1. 方法与口径
 
@@ -66,6 +67,9 @@
 | 5,000 | 2.019 | 9.906 | 3.958 | 0.936 |
 | 20,000 | 5.420 | 38.268 | 13.264 | 2.418 |
 
+`micro` 的四行各自独立计时：`archiveSort` 的 `readdir+filter+sort` **不在** `indexRead` 的
+计时窗口内，`indexRead` 只含读文件、`JSON.parse`、整文件 sha256 与逐记录校验。
+
 **分类结论：**
 
 - **固定开销**：`usageRead` 在四档均为 0.21–0.24 ms（一次 `stat` + 一次 `readFile` +
@@ -75,8 +79,11 @@
   + 整文件 `sha256` 都随索引字节线性增长；20k 档 sha256 13.26 ms 仅占 `indexRead` 约 6%，
   parse 38.27 ms，其余约 170 ms 是逐记录校验。这是每次启动都必须做的认证，不是可消除的重复。
 - **合理增长（防篡改）**：`sourceVerify` 从 7.52 ms 升到 2,856.67 ms，是 doctor 每记录
-  3 次 `lstat` + 2 次 `readFile` + 2 次 sha256 的直接代价；在 5k/20k 档它占整次 `doctor`
-  的约 95%–100%。R12 已把同一遍检查里重复六次的激活行投影和三处 O(N²) 查找消除，
+  3 次 `lstat` + 2 次 `readFile` + 2 次 sha256 的直接代价。**但该工作负载每次先做一次完整的
+  `readSharedIndex()`**，所以它的绝对值和整次 `doctor` 同量级（5k: 635.63 vs 672.06 ms；
+  20k: 2,856.67 vs 2,837.75 ms），不能读成"doctor 内源码校验占 95%–100%"——两者都包含一次
+  索引认证，而 doctor 还包含更多 check。可支持的结论是：doctor 的成本由索引读取与逐记录
+  源码校验主导，且 R12 已把同一遍检查里重复六次的激活行投影和三处 O(N²) 查找消除，
   剩余的是每条记录恰好一次的源码校验，不能再减（`§6` 反证）。
 - **可消除增长**：**本轮未发现**。同一调用内不存在第二次扫描：诊断的冷历史 JSONL 与事件桥
   分别只扫一次（`scanJsonLinesFile` 分块）、`dockyard/state.json` 在同一轮只读一次
@@ -86,34 +93,45 @@
 ## 3. 多入口（Desktop / ACP / Web）并发启动
 
 `concurrent` 模式用真实子进程，3 个入口同时在同一只读夹具上做
-`indexRead + reconcileIdle + sourceVerify + review`。父进程测批量墙钟，子进程各自报 CPU：
+`indexRead + reconcileIdle + sourceVerify + review`。父进程测批量墙钟，子进程各自报 CPU。
+**计时边界**：这是"每个入口各做一遍只读认证"的合成负载，不是完整的 Consumer 启动——
+真实启动还会调用 `writeConsumerState()`，它获取同一把 SQLite 发布锁；本表不含这部分写入，
+也不含 Include 挂载与 fiber 验证。
 
 | 记录数 | 批量墙钟中位数 | Σ子进程 CPU（indexRead / reconcileIdle / sourceVerify / review） |
 | ---: | ---: | --- |
 | 5,000 | 1,173.5 ms | 286.6 / 240.4 / 2,543.6 / 299.6 ms |
 | 20,000 | 4,144.2 ms | 990.6 / 861.7 / 10,216.2 / 943.7 ms |
 
-ΣCPU 远大于批量墙钟，说明三个进程确实并行执行；每个入口独立读取并校验同一份索引与源码，
-没有共享写锁——启动期的 `publish.json` 读取路径只有 `readFile`，`publishSharedRecord()` 的
-SQLite 独占锁只在**确实有新记录要发布**（崩溃后补发）时才进入。跨进程共享索引解析结果需要
+ΣCPU 远大于批量墙钟，说明三个进程确实并行执行；每个入口独立读取并校验同一份索引与源码。
+本表的只读路径没有共享写锁：启动期的 `publish.json` 读取路径只有 `readFile`，
+`publishSharedRecord()` 的 SQLite 独占锁只在**确实有新记录要发布**（崩溃后补发）时才进入；
+`writeConsumerState()` 也拿同一把锁，但它不在本表内（见上）。跨进程共享索引解析结果需要
 新的"使用前证明文件未变"协议，而仅靠 size/mtime/inode 无法证明前缀未被原地改写，正是
 `redundant-work.md` §4 两次撤回的理由；硬约束也禁止把成本转移到后台或第二套协议。
 **结论：每个入口各自认证是必要的，NO CHANGE。**
 
 ## 4. 桌面任务通道 1500 ms 兜底重扫
 
-`rescan` 镜像 `pendingRequests()`：`readdir(inbox)` → 对每项 `access(state)` → 读并解析 request
-→ 按 `createdAt` 排序。下表为显式启用入口时的空闲成本（default `disabled`，不产生此开销）：
+`rescan` 逐步骤镜像 `pendingRequests()`：`readdir(inbox)` → 按 `TASK_ID_PATTERN` 过滤 →
+对每项**读取、解析并按 `readState()` 的规则校验** state 文档（`schemaVersion` / `protocol` /
+`taskId` 任一不符即视为无状态）→ 只为排序读取 request 的 `createdAt` → 排序。
+下表为显式启用入口时的空闲成本（default `disabled`，不产生此开销）：
 
 | inbox 任务数 | 每次重扫 CPU ms | 按 1500 ms 间隔推算的每分钟 CPU ms |
 | ---: | ---: | ---: |
-| 100 | 2.24 | 89.7 |
-| 1,000 | 10.54 | 421.5 |
-| 5,000 | 45.54 | 1,821.7 |
+| 100 | 4.54 | 181.6 |
+| 1,000 | 32.47 | 1,298.7 |
+| 5,000 | 168.09 | 6,723.4 |
 
 随 inbox 规模线性增长，但 watcher 为 `persistent:false`，这段重扫是它漏事件时的**唯一兜底**；
 降频会推迟任务拾取，移除会削弱可靠性。任务明确禁止这两种做法，故 **NO CHANGE**。
 本轮不主张任何内存或 IO 收益。
+
+**计时边界（复审修复）**：第一版只做 `access(state)` 且夹具 state 只有 `phase`，因此
+0.055 ms 级别的墙钟只代表文件存在性检查，不是生产路径的成本。现在的夹具写入完整 state
+文档，`rescan` 也执行与 `readState()` 相同的读取/解析/校验；上表因此比第一版高约 2–4 倍，
+并且仍是**下界**：真实入口还要 `writeConsumerState()` 等写入，不在本表内。
 
 ## 5. 诊断与统一审查的重复读取
 
@@ -139,7 +157,7 @@ SQLite 独占锁只在**确实有新记录要发布**（崩溃后补发）时才
 | `diagnoseSharing` 跳过逐记录 `readPromotedPlugin` | 20k 档最多省约 2,856 ms（doctor ≈99%） | 把 1 条已发布插件的源码尾部追加 `// tampered` 后：当前树 `promotion.sharing` = **blocked**，`problems=[source-digest-mismatch]`、`source=source-digest-mismatch`；临时补丁树（跳过源码校验）= **degraded**、`source=verified`，篡改不再被发现。两侧 doctor 指纹 `ce2fbac5…` vs `34e3289e…` 不同，`run` 会以"指纹不等"非零退出。 | **否决**：防篡改边界，属不变量 8/9 |
 | `review` 复用 doctor 的产物 / 放开 50 上限 | 无同调用路径；放开上限反而增加成本 | `readPublishedPluginReview()` 与 `collectDiagnostics()` 无共享调用点；R12 已因上限暂缓重复投影，任务列为不要重提。 | **否决**：无机制、且被明确否决 |
 | 跨入口缓存已解析索引 / 增量认证 | 每入口约 46 ms@5k、225 ms@20k | 需要"使用前证明文件未变"的第二协议；仅靠 dev/ino/size/mtime 无法检测同长原地改写（`redundant-work.md` §4.1）。 | **否决**：禁止引入 O(1) 信号证明 O(历史) 状态未变 |
-| Desktop 1500 ms 重扫降频 / 移除 | 100–5,000 任务时 2.24–45.54 ms/次 | watcher `persistent:false`，重扫是唯一兜底；降频推迟拾取，移除漏任务。 | **否决**：削弱可靠性，任务明确禁止 |
+| Desktop 1500 ms 重扫降频 / 移除 | 100–5,000 任务时 4.54–168.09 ms/次 | watcher `persistent:false`，重扫是唯一兜底；降频推迟拾取，移除漏任务。 | **否决**：削弱可靠性，任务明确禁止 |
 | `registration.js` 每工具 finally flush 改频率 | 常数成本；`axis-steady-history.md` 给出 100k 历史 61.3 ms/次 | 改频率会改变事件认证/去重时机（不变量 8）；R12 已否决 agent/pre-step flush 频率。 | **否决**：已否决方向 |
 | `lib/index.js` 启动顺序"去重" | `resolveEvolutionPaths()` 两次调用均为纯路径计算、无 I/O | `storageConfig()` 读 key 一次；不存在重复磁盘读取。 | **NO CHANGE**：无可消除工作 |
 
@@ -154,7 +172,13 @@ ln -s "$PWD/node_modules" "$BASE/r13-counter-tree/node_modules"
 node -e 'const fs=require("fs");const f=process.argv[1];let s=fs.readFileSync(f,"utf8");const n="      const plugin = await readPromotedPlugin(shared, { pluginName: record.pluginName, moduleUrl: record.moduleUrl, entry: record.entry });";if(!s.includes(n))throw new Error("needle");s=s.replace(n,"      const plugin = { sourceSha256: record.sourceSha256, manifestSha256: record.manifestSha256 };");fs.writeFileSync(f,s);' "$BASE/r13-counter-tree/lib/diagnostics.js"
 node scripts/benchmarks/r13-cross-entry-audit.mjs build --fixture "$BASE/r13-counter-fixture" --records 1 --archive 1
 printf '\n// tampered\n' >> "$BASE/r13-counter-fixture/storages/evolution/promoted/dsh-evolution-promoted-000000000000/lib/index.js"
-# 当前树 -> blocked / source-digest-mismatch；补丁树 -> degraded / source=verified
+# 两个源码树各跑一次 doctor：当前树 -> blocked / source-digest-mismatch，补丁树 -> degraded / verified
+NODE_OPTIONS=--max-old-space-size=4096 node scripts/benchmarks/r13-cross-entry-audit.mjs \
+  measure --libroot . --fixture "$BASE/r13-counter-fixture" --workloads doctor \
+  --samples 1 --warmup 1 --label current --out "$BASE/current.json"
+NODE_OPTIONS=--max-old-space-size=4096 node scripts/benchmarks/r13-cross-entry-audit.mjs \
+  measure --libroot "$BASE/r13-counter-tree" --fixture "$BASE/r13-counter-fixture" --workloads doctor \
+  --samples 1 --warmup 1 --label patched --out "$BASE/patched.json"
 ```
 
 ## 7. 验证
@@ -201,13 +225,13 @@ for N in 50 500 5000; do
   NODE_OPTIONS=--max-old-space-size=4096 node "$S" run \
     --baseline . --candidate . --fixture "$BASE/r13-fixture-$N" \
     --workloads indexRead,reconcileIdle,sourceVerify,review,doctor,usageRead \
-    --rounds 3 --samples 3 --warmup 2 \
+    --rounds 3 --samples 3 --warmup 2 --expect-records "$N" \
     --out "docs/performance/r13-cross-entry-audit-aa-$N.json"
 done
 NODE_OPTIONS=--max-old-space-size=4096 node "$S" run \
   --baseline . --candidate . --fixture "$BASE/r13-fixture-20000" \
   --workloads indexRead,reconcileIdle,sourceVerify,review,doctor,usageRead \
-  --rounds 3 --samples 2 --warmup 1 \
+  --rounds 3 --samples 2 --warmup 1 --expect-records 20000 \
   --out "docs/performance/r13-cross-entry-audit-aa-20000.json"
 
 # 3) O(字节) 子步骤分解

@@ -467,7 +467,12 @@ async function concurrent(args) {
 // rescan: the desktop task channel's 1500 ms safety rescan (pendingRequests)
 // ---------------------------------------------------------------------------
 
-function buildInbox(fixture, tasks) {
+async function protocolConstants() {
+  const mod = await import(pathToFileURL(path.join(path.dirname(SCRIPT), '..', '..', 'lib/desktop-task-protocol.js')).href);
+  return { schemaVersion: mod.SCHEMA_VERSION, protocol: mod.PROTOCOL_VERSION, taskIdPattern: mod.TASK_ID_PATTERN };
+}
+
+function buildInbox(fixture, tasks, constants) {
   const target = path.resolve(fixture);
   if (fs.existsSync(target)) {
     if (!fs.statSync(target).isDirectory() || fs.readdirSync(target).length > 0) {
@@ -480,8 +485,10 @@ function buildInbox(fixture, tasks) {
   fs.mkdirSync(state, { recursive: true });
   for (let i = 0; i < tasks; i += 1) {
     const id = `task-${String(i).padStart(8, '0')}`;
-    fs.writeFileSync(path.join(inbox, `${id}.json`), `${JSON.stringify({ taskId: id, createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString() })}\n`);
-    fs.writeFileSync(path.join(state, `${id}.json`), `${JSON.stringify({ phase: 'stable' })}\n`);
+    fs.writeFileSync(path.join(inbox, `${id}.json`), `${JSON.stringify({ schemaVersion: constants.schemaVersion, protocol: constants.protocol, taskId: id, createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString() })}\n`);
+    // A real state document: pendingRequests() reads it, parses it and rejects
+    // it unless schemaVersion/protocol/taskId all match.
+    fs.writeFileSync(path.join(state, `${id}.json`), `${JSON.stringify({ schemaVersion: constants.schemaVersion, protocol: constants.protocol, taskId: id, phase: 'stable', updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString() })}\n`);
   }
   return { inbox, state, tasks };
 }
@@ -491,17 +498,27 @@ async function rescan(args) {
   const inbox = path.join(fixture, 'inbox');
   const state = path.join(fixture, 'state');
   const samples = Number(args.samples ?? 5);
-  // Mirrors pendingRequests(): list json files, skip any with a state file,
-  // read the request to order the queue, then sort by createdAt.
+  const constants = await protocolConstants();
+  // Mirrors pendingRequests() step by step: list the inbox, then for every
+  // request read + parse + validate its state document exactly like readState()
+  // (missing, unparseable, or schema/protocol/taskId mismatch => no state),
+  // then read the request only to order the queue.
+  const readState = async (taskId) => {
+    let value;
+    try {
+      value = JSON.parse(await fs.promises.readFile(path.join(state, `${taskId}.json`), 'utf8'));
+    } catch { return null; }
+    if (value === null || value.schemaVersion !== constants.schemaVersion
+      || value.protocol !== constants.protocol || value.taskId !== taskId) return null;
+    return value;
+  };
   const scan = async () => {
     const files = (await fs.promises.readdir(inbox)).filter((f) => f.endsWith('.json'));
     const pending = [];
     for (const file of files) {
       const taskId = path.basename(file, '.json');
-      try {
-        await fs.promises.access(path.join(state, `${taskId}.json`));
-        continue;
-      } catch {}
+      if (!constants.taskIdPattern.test(taskId)) continue;
+      if ((await readState(taskId)) !== null) continue;
       let createdAt = 0;
       try {
         const request = JSON.parse(await fs.promises.readFile(path.join(inbox, file), 'utf8'));
@@ -524,7 +541,7 @@ async function rescan(args) {
     rows.push({ cpuMs: (cpu.user + cpu.system) / 1000, wallMs: elapsedMs, pending: value });
   }
   const out = {
-    method: 'mirrors desktop-task-host pendingRequests(): readdir inbox, access() state, read+parse request, sort; default channel disabled, this is the explicit-enable idle cost',
+    method: 'mirrors desktop-task-host pendingRequests(): readdir inbox, taskId pattern, read+parse+validate each state document (schemaVersion/protocol/taskId, like readState()), read+parse the request for ordering, sort; default channel disabled, this is the explicit-enable idle cost',
     fixture, tasks: fs.readdirSync(inbox).length, node: process.version, rows,
     medianCpuMs: median(rows.map((r) => r.cpuMs)), medianWallMs: median(rows.map((r) => r.wallMs)),
     estimatedIdleCpuMsPerMinute: median(rows.map((r) => r.cpuMs)) * (60000 / 1500),
@@ -594,7 +611,7 @@ if (mode === 'build') {
 } else if (mode === 'micro') {
   await micro(args);
 } else if (mode === 'build-inbox') {
-  const info = buildInbox(path.resolve(args.fixture), Number(args.tasks));
+  const info = buildInbox(path.resolve(args.fixture), Number(args.tasks), await protocolConstants());
   console.log(JSON.stringify(info));
 } else if (mode === 'rescan') {
   await rescan(args);

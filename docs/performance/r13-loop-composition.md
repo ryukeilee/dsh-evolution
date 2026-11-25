@@ -59,8 +59,11 @@ CPU 总计。
 `plan` 里另有一块约 5–7 ms 是对这 500 条候选做规范化、分组与评分的纯计算，同样有界。
 
 **无界增长**：`findConclusions()` 是无 scope 列可用的 `instr(body, ?)` 全表扫描，随
-knowledge 行数线性增长。本闭环每次调用它两次（`propose` 的重复假设拦截、`revert` 的结论
-发布前查询）。
+knowledge 行数线性增长；本闭环每次调用它两次（`propose` 的重复假设拦截、`revert` 的结论
+发布前查询），是唯一数量级显著的无界项。另有一项较小的无界工作：每次 `discover()` 的
+`SELECT count(*) FROM knowledge` 会走 `knowledge_recent` 的 covering-index 全索引计数
+（[r13-shared-experience.md](r13-shared-experience.md) §4）；5,000 行档它只有约 1 ms
+量级，本轮未把它单独分解，因此不能把 `discover` 6.65→7.17 ms 的全部差额都归给它。
 
 ## 3. 存储调用归因
 
@@ -78,8 +81,8 @@ knowledge 行数线性增长。本闭环每次调用它两次（`propose` 的重
   窗口之外的行不会被解析。
 - `discover` 稳定在约 3.1–3.3 ms：500 行窗口（外加每次一次 `count(*)` 的
   covering-index scan；见 [r13-shared-experience.md](r13-shared-experience.md) §4）。
-- `findConclusions` 从 0.6 ms（200 行）到 16.5 ms（5,000 行）线性增长，是本闭环唯一
-  随历史无界增长的项；在 5,000 档两次调用合计 32.9 ms、约占整次闭环 32%。
+- `findConclusions` 从 0.6 ms（200 行）到 16.5 ms（5,000 行）线性增长，是本闭环最大
+  的随历史无界增长项（另有 `discover` 的 `count(*)` 全索引计数，量级小得多）；在 5,000 档两次调用合计 32.9 ms、约占整次闭环 32%。
   独立子系统报告给出同一函数在 10k/30k/100k 行为 29/84/280 ms
   （[r13-shared-experience.md](r13-shared-experience.md)），按此推算 100k 档单次闭环里
   仅这两次扫描就约 0.56 s，会取代 `plan`/`propose` 成为主要成本。
@@ -104,7 +107,8 @@ knowledge 行数线性增长。本闭环每次调用它两次（`propose` 的重
 
 - **深拷贝不是瓶颈**：整次闭环只有 9 次 `structuredClone`，合计 0.05 ms。
 - **序列化不是瓶颈**：`JSON.stringify` 合计 0.59 ms。
-- **解析是**：23.48 ms、占插桩闭环 27.3%，几乎全部来自 `recall` 的 2,000 行窗口
+- **解析是**：23.48 ms、占插桩闭环 27.3%（口径：各阶段 `JSON.parse` CPU 中位数之和 ÷
+  闭环 CPU 中位数；按每个样本先算占比再取中位数为 26.1%，两种聚合都支持同一结论），几乎全部来自 `recall` 的 2,000 行窗口
   （`propose` 的 2,000 次）与 `discover` 的 500 行窗口 + 计划器投影（`plan` 的 2,999 次）。
   这是"按窗口读取并解析记录正文"的固有成本：窗口本身是有界语义
   （[experience-recall.js](../../lib/experience-recall.js) 的 `maxConsidered`），
