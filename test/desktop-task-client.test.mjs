@@ -21,7 +21,7 @@ import {
   apply,
   systemText,
 } from '../lib/desktop-task-client.js';
-import { sha256 } from '../lib/promoted-sharing.js';
+import { consumerStateDocument, sha256 } from '../lib/promoted-sharing.js';
 import { evolutionPackageVersion } from '../lib/self-evolution-review.js';
 import {
   PROTOCOL_VERSION,
@@ -925,6 +925,38 @@ test('a review that cannot run is reported as a bounded audit failure, never as 
   assert.ok(result.message.length <= 500);
   assert.equal(result.message.includes('/Users/operator/private/path'), false);
   assert.deepEqual(await fs.readdir(home), []);
+});
+
+test('audit survives a consumer state with a null activation row', async (t) => {
+  const home = await tempHome(t);
+  const record = await writePublishedRecord(home);
+  const consumersDir = path.join(home, 'storages', 'evolution', 'shared-plugins', 'consumers');
+  await fs.mkdir(consumersDir, { recursive: true });
+  await fs.writeFile(path.join(consumersDir, 'acp.json'), `${JSON.stringify(consumerStateDocument({
+    profile: 'acp',
+    host: record.host,
+    indexUpdatedAt: '2026-01-01T00:00:00.000Z',
+    compositionPath: null,
+    plugins: [null],
+  }), null, 2)}\n`);
+  const services = liveHostServices({
+    '@deepseek-ai/dsh': '0.2.2',
+    '@deepseek-ai/cordis': '4.1.2',
+    '@deepseek-ai/cordis-plugin-include': '2.0.3',
+  });
+  const { tool } = mount(home, {
+    spawn: () => { throw new Error('audit must not launch the Desktop application'); },
+    get: (name) => services[name] ?? null,
+  });
+
+  const result = await tool.execute({ action: 'audit' }, {});
+
+  assert.equal(result.ok, true);
+  assert.equal(result.code, undefined);
+  assert.equal(result.action, 'audit');
+  assert.equal(result.stable.status, 'restart-required');
+  assert.equal(result.stable.records[0].status, 'restart-required');
+  assert.equal(result.selfEvolution.kind, 'restart-consumer');
 });
 
 test('the tool schema admits a context-policy plan without tool self-tests', async () => {

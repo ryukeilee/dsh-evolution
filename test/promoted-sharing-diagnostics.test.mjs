@@ -576,3 +576,90 @@ test('a historical disabled row stays quiet while an actionable one needs a rest
   review = await readPublishedPluginReview({ paths: env.paths, host });
   assert.equal(review.records[0].status, 'restart-required');
 });
+
+// R3-1: a consumer state can be structurally valid while one plugins entry is
+// null. Null rows are not activation facts: neither read-only surface may
+// dereference them, and only well-formed rows may prove activation.
+test('a null activation row in an unapproved consumer does not break the review', async (t) => {
+  const env = await home(t);
+  const observed = await observedHostOf(env.dshHome);
+  const host = typeof observed.dsh === 'string' && observed.dsh ? observed : SYNTHETIC_HOST;
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const indexPath = path.join(env.paths.dataRoot, 'shared-plugins', 'published.json');
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  index.plugins[0].approvedProfiles = ['web'];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'web', consumerStateDocument({
+    profile: 'web', host, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [{ id: pluginId, status: 'active', reason: null }],
+  }));
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [null],
+  }));
+
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  if (observed.dsh) assert.equal(check.level, 'ok', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.missingConsumerRows, []);
+
+  const review = await readPublishedPluginReview({ paths: env.paths, host });
+  assert.equal(review.status, 'active');
+  assert.equal(review.records[0].status, 'active');
+  assert.equal(review.records[0].action, null);
+  assert.equal(review.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART), false);
+});
+
+test('a null activation row in an approved consumer is a missing row, not a crash', async (t) => {
+  const env = await home(t);
+  const observed = await observedHostOf(env.dshHome);
+  const host = typeof observed.dsh === 'string' && observed.dsh ? observed : SYNTHETIC_HOST;
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const indexPath = path.join(env.paths.dataRoot, 'shared-plugins', 'published.json');
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  index.plugins[0].approvedProfiles = ['acp'];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [null],
+  }));
+
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.missingConsumerRows, [{ profile: 'acp', id: pluginId }]);
+
+  const review = await readPublishedPluginReview({ paths: env.paths, host });
+  assert.equal(review.records[0].status, 'restart-required');
+  assert.ok(review.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.recordId === pluginId));
+});
+
+test('a null activation row is dropped while a valid active row is kept', async (t) => {
+  const env = await home(t);
+  const observed = await observedHostOf(env.dshHome);
+  const host = typeof observed.dsh === 'string' && observed.dsh ? observed : SYNTHETIC_HOST;
+  const dataRoot = { dataRoot: env.paths.dataRoot, pluginRoot: env.paths.pluginRoot };
+  await publishSharedRecord(dataRoot, await recordFor(env, host));
+  const indexPath = path.join(env.paths.dataRoot, 'shared-plugins', 'published.json');
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  index.plugins[0].approvedProfiles = ['acp'];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+  await writeConsumerState({ dataRoot: env.paths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host, indexUpdatedAt: index.updatedAt, compositionPath: null,
+    plugins: [null, { id: pluginId, status: 'active', reason: null }],
+  }));
+
+  const report = await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } });
+  const check = checkOf(report, 'promotion.sharing');
+  if (observed.dsh) assert.equal(check.level, 'ok', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.consumers.acp.active, [pluginId]);
+  assert.deepEqual(check.evidence.missingConsumerRows, []);
+
+  const review = await readPublishedPluginReview({ paths: env.paths, host });
+  assert.equal(review.status, 'active');
+  assert.equal(review.records[0].status, 'active');
+  assert.equal(review.consumers.acp.rowCount, 1);
+  assert.equal(review.consumers.acp.rows[0].id, pluginId);
+});
