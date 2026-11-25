@@ -28,6 +28,7 @@ import {
   writeConsumerState,
 } from '../lib/promoted-sharing.js';
 import {
+  boundedReviewActions,
   composeSelfEvolutionReview,
   orderStableActions,
   readPublishedPluginReview,
@@ -219,6 +220,7 @@ test('an unchanged index and active consumers classify the record as active with
   assert.deepEqual(record.reasons, []);
   assert.deepEqual(record.profiles.map((row) => row.status), ['active', 'active']);
   assert.deepEqual(result.consumers.acp.rows.map((row) => row.status), ['active']);
+  assert.deepEqual(result.orphanMounts, []);
 
   // A review with nothing to fix composes to an explicit no-action result.
   const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
@@ -447,6 +449,93 @@ test('an absent index is a normal Desktop-only install: status absent, no action
 
   const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
   assert.equal(composed.kind, 'no-action');
+});
+
+// A published.json can survive while a single record is removed or one profile
+// loses approval. The consumer keeps the plugin mounted until restart, so a
+// read-only review must not call that scene active/no-action (R11 C-1).
+test('an active mount whose record was removed from a readable index needs a restart', async (t) => {
+  const env = await fixture(t, 'orphan-record-missing');
+  await writeConsumers(env);
+  const indexPath = sharingPaths(env.paths).indexPath;
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  index.plugins = [];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+
+  const result = await review(env);
+  assert.equal(result.indexStatus, 'ok');
+  assert.equal(result.status, 'restart-required');
+  assert.deepEqual(result.orphanMounts, [
+    { profile: 'acp', id: RECORD_ID, reason: 'record-missing' },
+    { profile: 'web', id: RECORD_ID, reason: 'record-missing' },
+  ]);
+  const restarts = result.nextActions.filter((row) => row.action === REVIEW_ACTIONS.RESTART);
+  assert.equal(restarts.length, 2);
+  assert.ok(restarts.some((row) => row.recordId === RECORD_ID && row.profiles[0] === 'acp'));
+  assert.ok(restarts.some((row) => row.recordId === RECORD_ID && row.profiles[0] === 'web'));
+  assert.match(restarts[0].why, /index/);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'restart-consumer');
+  assert.ok(composed.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.profiles[0] === 'acp'));
+  assert.ok(composed.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.profiles[0] === 'web'));
+});
+
+test('an active mount on an unapproved profile needs a restart', async (t) => {
+  const env = await fixture(t, 'orphan-unapproved');
+  await writeConsumers(env);
+  const indexPath = sharingPaths(env.paths).indexPath;
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  index.plugins[0].approvedProfiles = ['web'];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+
+  const result = await review(env);
+  assert.equal(result.indexStatus, 'ok');
+  assert.equal(result.status, 'restart-required');
+  assert.deepEqual(result.orphanMounts, [{ profile: 'acp', id: RECORD_ID, reason: 'profile-not-approved' }]);
+  const restarts = result.nextActions.filter((row) => row.action === REVIEW_ACTIONS.RESTART);
+  assert.equal(restarts.length, 1);
+  assert.deepEqual(restarts[0].profiles, ['acp']);
+  assert.match(restarts[0].why, /index/);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'restart-consumer');
+  assert.ok(composed.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.profiles[0] === 'acp'));
+});
+
+test('a higher-priority record status still outranks an orphan active mount', async (t) => {
+  const env = await fixture(t, 'orphan-precedence', { recordHost: PREVIOUS_HOST });
+  await writeConsumers(env);
+  const indexPath = sharingPaths(env.paths).indexPath;
+  const index = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+  index.plugins[0].approvedProfiles = ['web'];
+  await fs.writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+
+  const result = await review(env);
+  assert.equal(result.status, 'pending-revalidation');
+  assert.deepEqual(result.orphanMounts, [{ profile: 'acp', id: RECORD_ID, reason: 'profile-not-approved' }]);
+  assert.ok(result.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.profiles[0] === 'acp'));
+});
+
+test('an absent index with a still-active consumer mount reports restart, not no-action', async (t) => {
+  const env = await fixture(t, 'orphan-absent');
+  await writeConsumers(env);
+  await fs.rm(sharingPaths(env.paths).indexPath);
+
+  const result = await review(env);
+  assert.equal(result.indexStatus, 'absent');
+  assert.equal(result.status, 'restart-required');
+  assert.equal(result.reason, 'orphan-active-mount');
+  assert.deepEqual(result.orphanMounts, [
+    { profile: 'acp', id: RECORD_ID, reason: 'record-missing' },
+    { profile: 'web', id: RECORD_ID, reason: 'record-missing' },
+  ]);
+  const restarts = result.nextActions.filter((row) => row.action === REVIEW_ACTIONS.RESTART);
+  assert.equal(restarts.length, 2);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'restart-consumer');
+  assert.ok(composed.nextActions.some((row) => row.action === REVIEW_ACTIONS.RESTART && row.profiles[0] === 'acp'));
 });
 
 for (const { label, title, prepare } of [
@@ -1051,6 +1140,123 @@ test('records past the bounded cap get an operator action, not invented statuses
   const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
   assert.equal(composed.incomplete, true);
   assert.equal(composed.kind, REVIEW_ACTIONS.OPERATOR);
+});
+
+// The publication index may be small enough to evaluate while a consumer
+// reports more activation rows than the bounded projection reads. A problem in
+// an unread row (for example an orphan active mount doctor names) must not be
+// silently reported as active/no-action (Playtester R1/S4).
+test('a consumer row past the bounded read cap is reported instead of a silent no-action', async (t) => {
+  const count = SELF_EVOLUTION_REVIEW_LIMITS.maxRecords;
+  const env = await publishMany(t, 'consumer-row-cap', count);
+  const index = await readSharedIndex(env.paths);
+  const withIndex = { ...env, index };
+  const digest = hostDigest(CURRENT_HOST);
+  const validRows = env.published.map(({ id }) => ({
+    id, status: 'active', reason: null, hostDigest: digest, activatedAt: '2026-01-04T00:00:00.000Z',
+  }));
+  const orphanId = 'evolution-promoted-ffffffffffff';
+  await writeConsumers(withIndex, {
+    rows: {
+      acp: [...validRows, { id: orphanId, status: 'active', reason: null, hostDigest: digest, activatedAt: '2026-01-04T00:00:00.000Z' }],
+      web: validRows,
+    },
+  });
+
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST });
+  assert.equal(result.indexStatus, 'ok');
+  assert.equal(result.consumers.acp.rowCount, count + 1);
+  assert.equal(result.consumers.acp.rowsTruncated, true);
+  assert.equal(result.consumers.acp.rows.length, count);
+  assert.equal(result.consumers.web.rowCount, count);
+  assert.equal(result.consumers.web.rowsTruncated, false);
+  assert.deepEqual(result.consumerRowsTruncated, ['acp']);
+  // The omitted row is not evaluated, so no per-row status is invented for it.
+  assert.deepEqual(result.orphanMounts, []);
+
+  const notice = result.nextActions.find((row) => row.code === 'consumer-rows-truncated');
+  assert.ok(notice, `missing consumer row truncation action: ${JSON.stringify(result.nextActions)}`);
+  assert.equal(notice.action, REVIEW_ACTIONS.OPERATOR);
+  assert.equal(notice.profile, 'acp');
+  assert.match(notice.why, new RegExp(`only the first ${count}`));
+  assert.match(notice.why, /1 row\(s\)/);
+  assert.match(notice.why, /not evaluated/);
+  assert.match(notice.why, /promotion\.sharing/);
+  assert.ok(result.nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'operator-action');
+  assert.equal(composed.primary, REVIEW_ACTIONS.OPERATOR);
+  assert.equal(composed.incomplete, true);
+  assert.ok(composed.nextActions.some((row) => row.code === 'consumer-rows-truncated'));
+});
+
+test('a consumer state within the bounded read cap produces no truncation action', async (t) => {
+  const env = await fixture(t, 'consumer-row-within-cap');
+  await writeConsumers(env);
+
+  const result = await review(env);
+  assert.equal(result.consumers.acp.rowCount, 1);
+  assert.equal(result.consumers.acp.rowsTruncated, false);
+  assert.deepEqual(result.consumerRowsTruncated, []);
+  assert.equal(result.nextActions.some((row) => row.code === 'consumer-rows-truncated'), false);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'no-action');
+  assert.equal(composed.incomplete, false);
+});
+
+test('a consumer row truncation note makes the composed review incomplete', () => {
+  const composed = composeSelfEvolutionReview({
+    stable: { status: 'active', consumerRowsTruncated: ['acp'], nextActions: [], nextActionsDropped: 0, summary: { total: 50 } },
+    experience: null,
+    versions: CURRENT_HOST,
+  });
+  assert.equal(composed.kind, 'no-action');
+  assert.equal(composed.incomplete, true);
+});
+
+test('both bounded-read notices survive the action cap when one starts past it', () => {
+  const cap = { action: REVIEW_ACTIONS.OPERATOR, code: 'review-record-cap', recordId: null, why: 'index records not evaluated' };
+  const consumer = { action: REVIEW_ACTIONS.OPERATOR, code: 'consumer-rows-truncated', profile: 'acp', recordId: null, why: 'consumer rows not evaluated' };
+  // Every operator has the same priority and record id, so insertion order puts
+  // the consumer notice after the cap and past the bounded action list.
+  const actions = [
+    cap,
+    ...Array.from({ length: SELF_EVOLUTION_REVIEW_LIMITS.maxActions }, () => ({
+      action: REVIEW_ACTIONS.OPERATOR, code: 'invalid-record', recordId: null, why: 'damaged record',
+    })),
+    consumer,
+  ];
+  const bounded = boundedReviewActions(actions);
+  assert.ok(bounded.nextActions.includes(cap), 'the already-present review-record-cap notice must be kept');
+  assert.ok(bounded.nextActions.includes(consumer), 'the missing consumer notice must be added');
+  assert.ok(bounded.nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+});
+
+test('a review with both an index cap and a consumer row cap reports both notices', async (t) => {
+  const env = await publishMany(t, 'both-caps', SELF_EVOLUTION_REVIEW_LIMITS.maxRecords + 1);
+  const index = await readSharedIndex(env.paths);
+  const digest = hostDigest(CURRENT_HOST);
+  const validRows = env.published.slice(0, SELF_EVOLUTION_REVIEW_LIMITS.maxRecords).map(({ id }) => ({
+    id, status: 'active', reason: null, hostDigest: digest, activatedAt: '2026-01-04T00:00:00.000Z',
+  }));
+  await writeConsumers({ ...env, index }, {
+    rows: {
+      acp: [...validRows, { id: 'evolution-promoted-ffffffffffff', status: 'active', reason: null, hostDigest: digest, activatedAt: '2026-01-04T00:00:00.000Z' }],
+      web: validRows,
+    },
+  });
+
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST });
+  const codes = result.nextActions.map((row) => row.code);
+  assert.ok(codes.includes('review-record-cap'), `missing index cap notice: ${JSON.stringify(codes)}`);
+  assert.ok(codes.includes('consumer-rows-truncated'), `missing consumer cap notice: ${JSON.stringify(codes)}`);
+  assert.ok(result.nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'operator-action');
+  assert.equal(composed.incomplete, true);
 });
 
 test('withheld discovery evidence cannot compose a complete review', () => {

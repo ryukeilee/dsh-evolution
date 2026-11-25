@@ -99,6 +99,16 @@ probe 不复刻工具执行器、沙箱或权限系统，只复用官方工具�
 
 **stable 提交与结论写入之间的崩溃。** stable canary 先写 durable evidence sidecar（包含 proposal、measurement、经脱敏且有界的 composition name 与 `stableCommittedAt`），再写入 `adopted` 结论。进程若在这个窗口退出，已经提交的 stable 插件在共享经验里就没有成功事实，下一轮 `evolution_plan` 会把已解决的目标再次当作候选。因此 bundle 启动时（注册 orchestrator 之后、入口开始服务之前）执行一次有界的 `reconcileStableConclusions()`：只读 `archive/experiments/` 中最新 20 个 `*.evidence.json`（每个 ≤2 MiB），只采纳同时具备已捕获适用条件（`latestObservation.probe.versions` 或 `proposal.applicability`）、`decision.kind === "benefit"` 与非空 `stableCommittedAt` 的快照，按 sidecar 的事实以 `adopted` 重发结论。结论 event id 由（origin、experimentId、decision、applicability）决定，重复执行是 duplicate 而不是第二条事实。缺少适用条件的旧快照会被跳过，绝不用当前进程的版本重新标注；损坏或过大的文件只记入有界结果，下一次启动从同一份字节重试。它不重新打开 canary、不推断批准、不删除记录，失败只记诊断，不会让宿主已经提交的 stable 插件失效。
 
+**工具失败的恢复事实（`tool/recovery`）。** 结构化的实验结论不是唯一的长期学习结果：日常会话里的工具失败被采集器写入共享经验后，失败之后的成功原本只留在进程内 LRU，失败行保持 `attempts sum=5 / successes sum=0`，规划器因此持续以 100% 失败率推荐一个已经恢复的目标。现在一次失败 episode 之后的**干净成功**会落成一条独立的成功事实：
+
+- 失败事件提交成功后开启 episode；同一 episode 内连续 5 次干净成功（`isError !== true` 且不命中任何截断/降级分类）后写入一条 `type: "tool/recovery"`、`status: "success"`、`success: true` 的事件（阈值 `RECOVERY_SUCCESS_THRESHOLD` 与规划器的 `MIN_RATE_SAMPLES` 对齐）；写成功后本 episode 不再重复写，即使之后还有大量成功。
+- “干净”还包含 `bash` 的结构化回执：官方 `bash` 对失败的前台命令也返回 `isError: false`，因此采集器复用 `recoverySucceeded()`，要求 `isError !== true`、非 timedOut/aborted、无 signal，且 `exitCode === 0`。截断/降级成功与 `bash` 非零退出都不算干净成功，会把连续计数清零——恢复必须是连续的干净成功，中途一次降级就要重新攒满 5 次（它们仍按既有语义计入 `successesSinceFailure` 窗口，分母不变）。
+- 该行不写 `failureMode` / `rootCause` / `semanticFact`，因此 knowledge 身份与同 target 的 `tool/error` 行分开：恢复既不会把失败行降格，也不会放大失败分母；重复 episode 在 knowledge 层合并为一行，事件层按 episode 各自保留 id。
+- 规划器把该行当作**独立信号**，而不是普通 success 行（它因此不出现在 `resolved` 集合里，不会顺带压掉同 target 的损失证据）。只有两个条件同时成立才进入 `rejected: already-resolved`：该 target 没有达到门槛的 actionable degradation（`lossSum < minOccurrences`，即损失次数低于可行动下限），且恢复时间**严格晚于**最近一次失败——同一毫秒内观察到的失败与恢复不构成证明。普通 success / adopted / canary 结论仍按“不早于最近一次失败”（`>=`）判定。存在达到门槛的损失时恢复不生效：损失证据保留，目标仍是候选。
+- 新失败会重置 episode（连续成功计数清零），目标重新变为候选，下一次恢复写新的一条事件。
+
+边界：恢复依赖同一 collector 进程同时观察到失败与后续的干净成功。失败后进程重启且不再出现新失败时不会补写恢复事实，目标继续按 recency 衰减，直到出现新失败或新的可观察恢复证据；这是有意的有界行为，没有新增启动时历史扫描或定时任务。
+
 `findConclusions()` 按 target + 三项版本 + strategy 指纹做有界查询；`evolution_propose` 对“同 target、同适用条件、同 strategy 指纹且已证明无效”的提案返回 `reason: "strategy-already-proven-ineffective"` 并附旧证据。换了假设（不同 strategy 文本）或换了适用版本即可继续，不需要降低门禁。
 
 ## Desktop / 打包宿主的版本身份

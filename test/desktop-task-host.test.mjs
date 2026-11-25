@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-import { createDesktopTaskHost } from '../lib/desktop-task-host.js';
+import { createDesktopTaskHost, losslessCanonicalText } from '../lib/desktop-task-host.js';
 import { normalizeCanaryVerification } from '../lib/canary-verification.js';
 import { isVerificationCall } from '../lib/verification-call.js';
 import {
@@ -290,6 +290,80 @@ test('a task runs the real kernel sequence and reaches stable after a bound appr
     assert.ok(Date.now() < deadline, 'claim should be released after the task finished');
     await new Promise((resolve) => { setTimeout(resolve, 10); });
   }
+});
+
+test('canary evidence records bounded sample digests instead of raw tool bodies', async (t) => {
+  const home = temporary(t);
+  const plan = planFor(mintTaskId());
+  const bodies = [
+    'FIRST_SENTINEL_TOOL_BODY_6e21b7',
+    'SECOND_SENTINEL_TOOL_BODY_9c04af',
+  ];
+  plan.plan.verification.samples.forEach((sample, index) => { sample.expected.body = bodies[index]; });
+  const kernel = fakeKernel({ facts: factsWriter(home) });
+  const ctx = fakeCtx(kernel, plan);
+  const directGet = ctx.tools.get;
+  ctx.tools.get = (name, agent) => {
+    const tool = directGet(name, agent);
+    if (name !== plan.tool || tool === null) return tool;
+    const execute = tool.execute;
+    return { execute: async (args) => ({ ...(await execute(args)), body: bodies[args.text === 'abc' ? 0 : 1] }) };
+  };
+  const host = createDesktopTaskHost(ctx, { dshHome: home, scanIntervalMs: 10, approvalPollMs: 10, approvalTimeoutMs: 5000, settlePollMs: 1, settleSamples: 4, settleMaxPolls: 20 });
+  t.after(async () => { await host.dispose(); });
+  const taskId = await submit(home, plan);
+  await host.start();
+  await approveWhenWaiting(home, taskId);
+  const state = await waitForState(home, taskId, (value) => value.phase === 'stable');
+  assert.equal(state.error, null);
+  const observations = kernel.calls.filter((call) => call.name === 'evolution_canary_observe');
+  assert.ok(observations.length >= 2, 'the stable path still completes the canary window');
+  for (const call of observations) {
+    const { actualToolOutput } = call.args.evidence;
+    assert.ok(Array.isArray(actualToolOutput));
+    assert.equal(actualToolOutput.length, 2);
+    for (const item of actualToolOutput) {
+      assert.deepEqual(Object.keys(item).sort(), ['label', 'resultCharacters', 'resultSha256']);
+      assert.match(item.resultSha256, /^[0-9a-f]{64}$/);
+      assert.equal(typeof item.resultCharacters, 'number');
+      assert.ok(item.resultCharacters > 0);
+    }
+    assert.notEqual(actualToolOutput[0].resultSha256, actualToolOutput[1].resultSha256, 'different tool results keep different digests');
+    const serialized = JSON.stringify(call.args);
+    assert.equal(serialized.includes(bodies[0]), false, 'no raw tool body may enter canary evidence');
+    assert.equal(serialized.includes(bodies[1]), false, 'no raw tool body may enter canary evidence');
+  }
+});
+
+test('a trial sample mismatch reports only bounded digests, never the tool body', async (t) => {
+  const sentinel = 'S5_TRIAL_SAMPLE_SENTINEL_9a3f21';
+  const { home, plan, host, ctx } = harness(t);
+  const warnings = [];
+  ctx.logger.warn = (message) => { warnings.push(String(message)); };
+  plan.plan.verification.samples[0].expected = null;
+  const directGet = ctx.tools.get;
+  ctx.tools.get = (name, agent) => {
+    const tool = directGet(name, agent);
+    if (name !== plan.tool || tool === null) return tool;
+    return { execute: async () => ({ body: sentinel, nested: { secret: sentinel } }) };
+  };
+  const taskId = await submit(home, plan);
+  await host.start();
+  const state = await waitForState(home, taskId, (value) => value.phase === 'failed' || value.phase === 'awaiting-owner-confirmation');
+  assert.equal(state.phase, 'failed');
+  assert.equal(state.error.code, 'E_DESKTOP_SAMPLE_MISMATCH');
+  assert.equal(JSON.stringify(state.error).includes(sentinel), false, 'the terminal state must not retain the tool body');
+  assert.match(state.error.message, /resultSha256=/, 'the error reports a bounded digest');
+  assert.match(state.error.message, /resultCharacters=/, 'the error reports a bounded length');
+  assert.equal(state.error.message.includes('9a3f21'), false);
+  const digest = crypto.createHash('sha256').update(losslessCanonicalText({ body: sentinel, nested: { secret: sentinel } })).digest('hex');
+  assert.ok(state.error.message.includes(digest.slice(0, 16)), 'the actual digest is reported without the body');
+  // The terminal state is published just before the logger warning is emitted.
+  const deadline = Date.now() + 2000;
+  while (warnings.length === 0 && Date.now() < deadline) await new Promise((resolve) => { setTimeout(resolve, 10); });
+  assert.ok(warnings.length > 0, 'the failure is diagnosed through the logger');
+  assert.equal(warnings.some((message) => message.includes(sentinel)), false, 'logger warnings must not carry the tool body');
+  assert.ok(warnings.some((message) => message.includes('resultSha256=')), 'the warning carries the bounded evidence');
 });
 
 test('the host forwards optional strategy and rootCause to evolution_propose unchanged', async (t) => {

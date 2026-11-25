@@ -191,11 +191,33 @@ dsh-evolution-shared revalidate --evidence <evidence.json>
 `dsh-evolution-doctor` 与会话内 `evolution_doctor` 共用同一个只读检查 `promotion.sharing`：
 
 - 索引缺失 → `ok`（全部 Desktop-only）；
-- 所有记录源码摘要匹配、撤销表可读（`ok` / `absent`）、consumer 无失败且无派生的 `pendingRestart` → `ok`；
-- 存在兼容性问题、失败激活或需要重启 → `degraded`；
+- 所有记录源码摘要匹配、撤销表可读（`ok` / `absent`）、consumer 无失败且无派生的 `pendingRestart`、每个 consumer 都证明了激活、也没有孤儿挂载 → `ok`；
+- 存在兼容性问题、失败激活、需要重启 → `degraded`；
+- 已有发布记录时，某个 consumer 状态是 `invalid` / `unreadable` → `degraded`，写入 `evidence.unverifiedConsumers`
+  （`{profile, status}`），summary 与 remediation 要求重启对应 consumer：损坏的状态无法证明任何记录曾被激活；
+  索引 `absent` 时保持既有形状，不出现这个字段（从未挂载的损坏状态属于历史残留）；
+- consumer 已观察当前索引（`observedIndexUpdatedAt` 等于索引的 `updatedAt`）却缺少某条已批准且未撤销记录的
+  activation 行 → `degraded`，写入 `evidence.missingConsumerRows`（`{profile, id}`），同样给出重启建议：
+  “看过当前索引却没有这一行”不能证明该记录被激活；consumer 从未启动（`status: "absent"`）不当作缺行；
+- 索引可读，但某条记录已被删除或该 profile 已不在 `approvedProfiles`，而 consumer 仍把该行报为 `active` → `degraded`。
+  这类孤儿挂载写入 `evidence.orphanMounts`（`reason: record-missing` / `profile-not-approved`），summary 与 remediation
+  明确“删除记录或收窄批准范围不会卸载已运行的插件，必须重启对应 consumer”；不新增 repair；
+- 索引缺失但某个 consumer 仍报告 `active` 行（索引文件被删除时的同一窗口）→ `degraded`，`evidence.orphanMounts` 形状
+  保持 `{profile, id}`；
 - 索引不可读 / 格式错误、某条记录与其源码摘要不一致，或撤销表 `invalid` / `unreadable` → `blocked`。撤销表损坏
   时 consumer 拒绝挂载任何记录，evidence 给出 `disableStatus`（阻断原因同时记为 `blockingReason`）；统一只读检查
   此前就按阻断处理，doctor 现在与它一致。
+
+`unverifiedConsumers` 与 `missingConsumerRows` 只把检查提升到 `degraded`，不进入 `blocked`，也没有 repair：
+它们描述的是“激活未被证明”，而不是索引或记录本身损坏。
+
+孤儿挂载与缺失激活行在两个只读面上必须一致：统一检查（`lib/self-evolution-review.js`）为每个孤儿产出按 profile
+区分的 `restart-consumer` 动作（`code: "orphan-active-mount"`），索引 `ok` 时把最终状态至少提升到 `restart-required`，
+索引 `absent` 且有 active 孤儿时返回 `restart-required` + `reason: "orphan-active-mount"`；状态损坏或缺少激活行的
+profile 同样落到 `restart-required`。读取边界不同：review 只读每个 profile 的前 50 条 consumer 行
+（`SELF_EVOLUTION_REVIEW_LIMITS.maxRecords`），超过时增加一条 `operator-action`（`code: "consumer-rows-truncated"`）
+指明未评估的条数、把 review 标为不完整，并指向本检查；doctor 的 `promotion.sharing` 读取全量 consumer 状态，
+因此超出上限的行与孤儿仍然会被 doctor 报出。
 
 检查只报告，不激活、不撤销、不修复。撤销表不可读时，operator 应从备份恢复，或**刻意**删除该文件表示
 「没有任何逐 profile 撤销」（这会重新启用所有曾被撤销的插件）；`shared-plugins disable|enable` 在撤销表
