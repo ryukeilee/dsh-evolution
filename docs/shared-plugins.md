@@ -132,7 +132,7 @@ per-session composition；按 `state.sessionId` 判定会把仍存活会话的�
 `createdAt`、`processStartedAt`。`pid` + `hostname` 是判据，`createdAt` / `processStartedAt` 仅用于
 诊断，不参与判定。会话 dispose 时无论 `result.released` 与否都删除自己的 lease（失败只记诊断）。
 lease 不刷新、没有心跳；lease 写失败只记 `session.leaseFailure`，会话仍挂载，其 composition 退化为
-“无 lease 文件”，只能靠下面的遗留窗口。
+“无 lease 文件”，24h 后可能被回收（已挂载行不受影响），属已知残余风险。
 
 **决策表**（每个 session stem，与 `lib/promoted-consumer-gc.js` 一致）：
 
@@ -151,22 +151,38 @@ lease 不刷新、没有心跳；lease 写失败只记 `session.leaseFailure`，
 看起来存活，产生保守假阴性，永远不会让活会话被删；活会话的 pid 一定存在，不会被判成 `ESRCH`。
 一切无法证明的形状只报告、不删除。
 
-**24h 窗口只服务遗留文件。** `staleCompositionMs` 默认 `24 * 60 * 60 * 1000`，只用于升级前遗留的
-无 lease 文件：mtime 超过窗口 → `remove` / `legacy-window`，否则 `keep` / `recent`。依据是 consumer
-的 composition 只在 `mountOnce()` 写入后、同一次 mount 内被 `refresh()` 读取；官方 Include 没有
-文件 watcher，`lib/promotion-include.js` 只在调用方请求时读文件，所以删除磁盘上的文件不会卸载
-已经挂载的行（要等下一次入口启动才会改变）。24h 远大于一次 mount 的写→refresh 间隔，新写入的
-文件不会被误删。
+名称匹配但目录项不是普通文件（符号链接、目录等）的 lease / composition 条目不会被跟随或删除，
+该 stem 判为 `keep / unproven-lease`；形如 lease 的不可读条目不会让同一 stem 的 composition 落到
+`legacy-window`。
 
-**有界性与时机。** `maxEntries` 默认 8192（超出后 `truncated: true`，剩余条目下次启动再处理）、
-`maxRemovals` 默认 1024（超出后计入 `deferred`）、`maxLeaseBytes` 默认 4096（超过即视为不可证明并
-保留）；`failures` 最多 8 条 `{ name, code }`。每次 consumer 启动、mount 之后运行一次，由调用方
-`await`；回收耗时就是启动耗时增量，实测见 `docs/performance/consumer-session-gc.md`。
+**24h 窗口只服务两类已结束会话。** `staleCompositionMs` 默认 `24 * 60 * 60 * 1000`，只用于没有
+lease 且 mtime 超过窗口的 composition：mtime 超过窗口 → `remove` / `legacy-window`，否则 `keep` /
+`recent`。两类来源都是**已结束**的会话：(1) 升级前遗留文件（本功能之前没有 lease）；
+(2) dispose 未证实释放（`released: false`）时被保留、但 lease 已随会话删除的 composition。两类文件
+都不会被任何活进程再次读取或刷新，窗口只决定“何时可以把残留文件删掉”。依据是 consumer 的
+composition 只在 `mountOnce()` 写入后、同一次 mount 内被 `refresh()` 读取；官方 Include 没有文件
+watcher，`lib/promotion-include.js` 只在调用方请求时读文件，所以删除磁盘上的文件不会卸载已经
+挂载的行（要等下一次入口启动才会改变）。24h 远大于一次 mount 的写→refresh 间隔，新写入的文件
+不会被误删。
+
+**有界性、公平性与时机。** `maxEntries` 默认 8192：每次启动最多**处理**（stat + 读 lease + 判定 +
+删除）这么多个 session，不是固定处理排序后的前 N 个。`scan` 阶段只做 `readdir`，窗口外的 session
+不做 stat、不读 lease、不删除。超出时 `truncated: true`，窗口起点按 `rotationMs`（默认
+`60 * 60 * 1000`，即 1h）轮换：`start = (floor(now / rotationMs) * maxEntries) % sessions.length`，
+从 `start` 环绕整个有序列表取 `maxEntries` 个，因此每个 stem 最终都会被处理，不存在“末尾孤儿
+永远跳过”。`maxRemovals` 默认 1024（超出后计入 `deferred`）、`maxLeaseBytes` 默认 4096（超过即
+视为不可证明并保留）；`failures` 最多 8 条 `{ name, code }`。每次 consumer 启动、mount 之后运行
+一次，由调用方 `await`，没有定时器；回收耗时就是启动耗时增量，实测见
+`docs/performance/consumer-session-gc.md`。
 
 **失败只诊断。** 回收自身任何失败都不抛异常、不改变 `apply()` 的返回、不写 consumer state、不改
 `published.json` / 撤销表 / 晋升 journal / canary。目录不存在 → `status: 'absent'` 且不创建目录；
-`readdir` 失败 → `status: 'unavailable'`；单个删除失败记 `{ name, code }`（basename + 有界错误码）
-后继续处理其它条目。只在 `status !== 'ok'` 或 `failures.length > 0` 时发一次受控 `ctx.logger.warn`
+`readdir` 失败 → `status: 'unavailable'`；单个删除失败记 `{ name, code }`（basename + 闭集错误码）
+后继续处理其它条目。日志与 `failures` 的 `code` 都是闭集：
+`EACCES EPERM ENOENT EISDIR ENOTDIR ENOSPC EMFILE ENFILE EBUSY EROFS EEXIST
+E_LEASE_TOO_LARGE SyntaxError TypeError RangeError Error unknown other`；闭集之外的任何字符串
+（包括调用方注入的任意 code）一律映射为 `other`，不写原始错误文本。只在 `status !== 'ok'` 或
+`failures.length > 0` 时发一次受控 `ctx.logger.warn`
 （闭集标签与计数，不含路径、原始错误文本或 lease 内容），与 `warnConsumerStartup()` 共用同一
 非抛异常边界。
 
@@ -176,11 +192,12 @@ lease 不刷新、没有心跳；lease 写失败只记 `session.leaseFailure`，
 外地 pid 不能证明本机进程死亡。
 
 **操作者视角收益。** 在 `~/.dsh/storages/evolution/shared-plugins/consumers/` 的本机样本上
-（2026-11-26）：520 个目录项、511 个 session composition、334,799 逻辑字节、`du` 约 2.0 MiB；
-对副本的一次回收删除 450 个 acp 遗留文件、回收 270,090 逻辑字节，目录项降到 70。副本上 5 次独立
-运行的 GC 调用中位数 40.559 ms、最大 43.807 ms；dry-run 判定的中位数 5.786 ms、最大 6.334 ms；
-N=600 合成对照中位数 92.792 ms、最大 95.402 ms。真实目录未被修改；完整数据表与逐条复现命令见
-`docs/performance/consumer-session-gc.md`。
+（2026-11-26，R1 修复后重跑）：522 个目录项、513 个 session composition、336,965 逻辑字节、
+`du` 约 2.0 MiB；对副本的一次回收删除 453 个 acp 遗留文件、回收 272,799 逻辑字节，目录项降到 69。
+副本上 3 次独立运行的 GC 调用中位数 40.725 ms、最大 41.240 ms；dry-run 判定的中位数
+5.883 ms、最大 6.630 ms；N=600 合成对照中位数 107.573 ms、最大 112.523 ms。真实目录未被修改
+（该目录属于正在运行的宿主，宿主自身写入会让它在不同采集时刻增长）；完整数据表、符号链接自检
+与逐条复现命令见 `docs/performance/consumer-session-gc.md`。
 
 ## 4. 发布是原子且幂等的
 

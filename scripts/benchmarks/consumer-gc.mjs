@@ -6,10 +6,13 @@
  *   node --max-old-space-size=4096 scripts/benchmarks/consumer-gc.mjs --synthetic 200 --runs 3
  *   node --max-old-space-size=4096 scripts/benchmarks/consumer-gc.mjs --clone <realConsumersDir> --runs 5
  *
- * The source directory is only ever read. Every collection pass runs on a
- * fresh `fs.cp` copy inside a temporary root; nothing is written under
- * `~/.dsh`. Files copied from a real directory keep their mtimes, so the 24h
- * legacy window is measured against the original bytes.
+ * The source directory is only ever read. The requested source is realpath'd
+ * first, so a symlink passed to --clone cannot turn a work copy into a link to
+ * the source. Every collection pass runs on a fresh `fs.cp` copy inside a
+ * temporary root, validated with lstat/realpath before GC; nothing is written
+ * under `~/.dsh`. Files copied from a real directory keep their mtimes, so the
+ * 24h legacy window is measured against the original bytes. Symlink entries
+ * inside the source stay links and are never followed by the inventory.
  */
 import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -121,17 +124,24 @@ async function copyInto(source, target) {
   });
 }
 
-/** Read-only inventory of a directory; never creates or modifies anything. */
+/** Read-only inventory of a directory; never follows links or modifies anything. */
 function inspectDirectory(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   let files = 0;
+  let symlinks = 0;
   let logicalBytes = 0;
   let sessionCompositions = 0;
   let sessionLeases = 0;
   for (const entry of entries) {
-    if (!entry.isFile()) continue;
+    // lstat, not stat: a link that merely looks like a session file must never
+    // be counted as (or resolved to) a regular file.
+    const stat = fs.lstatSync(path.join(dir, entry.name));
+    if (stat.isSymbolicLink()) {
+      symlinks += 1;
+      continue;
+    }
+    if (!stat.isFile()) continue;
     files += 1;
-    const stat = fs.statSync(path.join(dir, entry.name));
     logicalBytes += stat.size;
     if (SESSION_RE.test(entry.name)) {
       if (entry.name.endsWith('.cordis.yml')) sessionCompositions += 1;
@@ -141,6 +151,7 @@ function inspectDirectory(dir) {
   return {
     directoryEntries: entries.length,
     files,
+    symlinks,
     sessionCompositions,
     sessionLeases,
     logicalBytes,
@@ -253,21 +264,35 @@ async function buildSyntheticFixture(profile, orphans) {
   return root;
 }
 
-/** Manual enumeration + stat, to isolate scan cost from decisions and deletion. */
+/** Readdir-only baseline: the collector's scan phase stats nothing outside the window. */
 async function measureScan(dir) {
   const started = performance.now();
   const entries = await fsp.readdir(dir, { withFileTypes: true });
-  let files = 0;
-  for (const entry of entries) {
-    if (entry.isFile()) {
-      files += 1;
-      await fsp.stat(path.join(dir, entry.name));
-    }
-  }
+  const files = entries.filter(entry => entry.isFile()).length;
   return { wallMs: performance.now() - started, entries: entries.length, files };
 }
 
-async function runScenario({ source, targetRoot, runs, profile, dryRun, scenario }) {
+/**
+ * Prove every pass operates on a real directory inside the temp root, never on
+ * the source itself. A symlinked --clone source must never be followed.
+ */
+async function assertSafeWorkCopy(work, realTargetRoot, realSource) {
+  const stat = await fsp.lstat(work);
+  if (!stat.isDirectory()) {
+    throw new Error(`Refusing GC: copy is not a real directory: ${work}`);
+  }
+  const realWork = await fsp.realpath(work);
+  const relative = path.relative(realTargetRoot, realWork);
+  if (relative === '' || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`Refusing GC: copy resolves outside the temporary root: ${realWork}`);
+  }
+  if (realWork === realSource) {
+    throw new Error(`Refusing GC: copy resolves to the source directory: ${realWork}`);
+  }
+  return realWork;
+}
+
+async function runScenario({ source, realSource, realTargetRoot, runs, profile, dryRun, scenario }) {
   const samples = [];
   const collectorSamples = [];
   let representative = null;
@@ -276,8 +301,9 @@ async function runScenario({ source, targetRoot, runs, profile, dryRun, scenario
   let before = null;
   let after = null;
   for (let pass = 0; pass < runs; pass += 1) {
-    const work = path.join(targetRoot, `${scenario}-${pass}`);
+    const work = path.join(realTargetRoot, `${scenario}-${pass}`);
     await copyInto(source, work);
+    await assertSafeWorkCopy(work, realTargetRoot, realSource);
     before = inspectDirectory(work);
     let wallMs;
     let result;
@@ -320,6 +346,8 @@ async function runScenario({ source, targetRoot, runs, profile, dryRun, scenario
     runs,
     filesBefore: before.files,
     filesAfter: after.files,
+    symlinksBefore: before.symlinks,
+    symlinksAfter: after.symlinks,
     bytesBefore: before.logicalBytes,
     bytesAfter: after.logicalBytes,
     medianMs: median(samples),
@@ -340,17 +368,25 @@ async function main() {
   }
 
   const targetRoot = await makeTempRoot('runs');
+  const realTargetRoot = await fsp.realpath(targetRoot);
+  let requestedSource = null;
   let source;
+  let realSource;
   let sourceStats = null;
   let scenarios;
   if (args.clone !== null) {
-    source = path.resolve(args.clone);
-    if (!fs.existsSync(source)) throw new Error(`Clone source does not exist: ${source}`);
-    if (path.relative(assertWritableTarget(targetRoot), source) === '') throw new Error('Clone source must not be a GC target');
-    sourceStats = inspectDirectory(source); // read-only
+    requestedSource = path.resolve(args.clone);
+    if (!fs.existsSync(requestedSource)) throw new Error(`Clone source does not exist: ${requestedSource}`);
+    // Copy from the resolved directory, never from a symlink to it: otherwise
+    // fs.cp would create a link at the work path and GC could delete the source.
+    realSource = await fsp.realpath(requestedSource);
+    if (path.relative(realTargetRoot, realSource) === '') throw new Error('Clone source must not be a GC target');
+    source = realSource;
+    sourceStats = inspectDirectory(realSource); // read-only
     scenarios = [args.dryRun ? 'keep' : 'delete'];
   } else {
     source = await buildSyntheticFixture(args.profile, args.synthetic);
+    realSource = await fsp.realpath(source);
     // A dry run never deletes anything, so there is no delete scenario to name.
     scenarios = args.dryRun ? ['scan', 'keep'] : ['scan', 'keep', 'delete'];
   }
@@ -358,7 +394,7 @@ async function main() {
   const results = {};
   for (const scenario of scenarios) {
     results[scenario] = await runScenario({
-      source, targetRoot, runs: args.runs, profile: args.profile, dryRun: args.dryRun, scenario,
+      source, realSource, realTargetRoot, runs: args.runs, profile: args.profile, dryRun: args.dryRun, scenario,
     });
   }
 
@@ -368,6 +404,7 @@ async function main() {
     mode: args.clone !== null ? 'clone' : 'synthetic',
     profile: args.profile,
     source,
+    requestedSource,
     sourceStats,
     dryRun: args.dryRun,
     runs: args.runs,
