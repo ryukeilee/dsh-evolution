@@ -1141,6 +1141,80 @@ test('records past the bounded cap get an operator action, not invented statuses
   assert.equal(composed.kind, REVIEW_ACTIONS.OPERATOR);
 });
 
+// The publication index may be small enough to evaluate while a consumer
+// reports more activation rows than the bounded projection reads. A problem in
+// an unread row (for example an orphan active mount doctor names) must not be
+// silently reported as active/no-action (Playtester R1/S4).
+test('a consumer row past the bounded read cap is reported instead of a silent no-action', async (t) => {
+  const count = SELF_EVOLUTION_REVIEW_LIMITS.maxRecords;
+  const env = await publishMany(t, 'consumer-row-cap', count);
+  const index = await readSharedIndex(env.paths);
+  const withIndex = { ...env, index };
+  const digest = hostDigest(CURRENT_HOST);
+  const validRows = env.published.map(({ id }) => ({
+    id, status: 'active', reason: null, hostDigest: digest, activatedAt: '2026-01-04T00:00:00.000Z',
+  }));
+  const orphanId = 'evolution-promoted-ffffffffffff';
+  await writeConsumers(withIndex, {
+    rows: {
+      acp: [...validRows, { id: orphanId, status: 'active', reason: null, hostDigest: digest, activatedAt: '2026-01-04T00:00:00.000Z' }],
+      web: validRows,
+    },
+  });
+
+  const result = await readPublishedPluginReview({ paths: env.paths, host: CURRENT_HOST });
+  assert.equal(result.indexStatus, 'ok');
+  assert.equal(result.consumers.acp.rowCount, count + 1);
+  assert.equal(result.consumers.acp.rowsTruncated, true);
+  assert.equal(result.consumers.acp.rows.length, count);
+  assert.equal(result.consumers.web.rowCount, count);
+  assert.equal(result.consumers.web.rowsTruncated, false);
+  assert.deepEqual(result.consumerRowsTruncated, ['acp']);
+  // The omitted row is not evaluated, so no per-row status is invented for it.
+  assert.deepEqual(result.orphanMounts, []);
+
+  const notice = result.nextActions.find((row) => row.code === 'consumer-rows-truncated');
+  assert.ok(notice, `missing consumer row truncation action: ${JSON.stringify(result.nextActions)}`);
+  assert.equal(notice.action, REVIEW_ACTIONS.OPERATOR);
+  assert.equal(notice.profile, 'acp');
+  assert.match(notice.why, new RegExp(`only the first ${count}`));
+  assert.match(notice.why, /1 row\(s\)/);
+  assert.match(notice.why, /not evaluated/);
+  assert.match(notice.why, /promotion\.sharing/);
+  assert.ok(result.nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'operator-action');
+  assert.equal(composed.primary, REVIEW_ACTIONS.OPERATOR);
+  assert.equal(composed.incomplete, true);
+  assert.ok(composed.nextActions.some((row) => row.code === 'consumer-rows-truncated'));
+});
+
+test('a consumer state within the bounded read cap produces no truncation action', async (t) => {
+  const env = await fixture(t, 'consumer-row-within-cap');
+  await writeConsumers(env);
+
+  const result = await review(env);
+  assert.equal(result.consumers.acp.rowCount, 1);
+  assert.equal(result.consumers.acp.rowsTruncated, false);
+  assert.deepEqual(result.consumerRowsTruncated, []);
+  assert.equal(result.nextActions.some((row) => row.code === 'consumer-rows-truncated'), false);
+
+  const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+  assert.equal(composed.kind, 'no-action');
+  assert.equal(composed.incomplete, false);
+});
+
+test('a consumer row truncation note makes the composed review incomplete', () => {
+  const composed = composeSelfEvolutionReview({
+    stable: { status: 'active', consumerRowsTruncated: ['acp'], nextActions: [], nextActionsDropped: 0, summary: { total: 50 } },
+    experience: null,
+    versions: CURRENT_HOST,
+  });
+  assert.equal(composed.kind, 'no-action');
+  assert.equal(composed.incomplete, true);
+});
+
 test('withheld discovery evidence cannot compose a complete review', () => {
   const composed = composeSelfEvolutionReview({
     stable: { status: 'active', nextActions: [], nextActionsDropped: 0, summary: { total: 0 } },
