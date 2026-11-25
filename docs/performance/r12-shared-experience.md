@@ -40,7 +40,8 @@ SQL；同一条 SQL 重复 prepare 的结果对象并未跨调用复用。回放
 
 改动把五个句柄按 **首次使用** 缓存（当前 `lib/shared-experience.js:304-314`），
 `record()` 内改为使用句柄（`:326,335,349-352`）。SQL 文本、绑定顺序、
-`BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK` 边界、schema 判定与持久化字节全部不变。
+`BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK` 边界与 schema 判定全部不变；差分测试覆盖的逻辑字段
+一致（见 §3），不以数据库文件或 WAL 字节主张等价。
 事务性语句仍走 `db.exec()`，避免把 DDL/多语句执行路径混入这次等价改动。
 
 **为什么不是在 open 时一次性准备**：第一版把五条 `prepare()` 放在
@@ -64,9 +65,9 @@ open 时准备则让整个 store 打不开，而且该路径在 open 的关闭�
   `duplicates`：先写 400 条，再原样回放同一批 id（全部命中 duplicate 分支）。
   `readcontrol`：写 400 条后连续 3 次 `findConclusions()`（未改动的读路径对照）。
 - 每轮断言两侧 `stats()` 相同；`dbBytes` 是 `close()` 前读到的 SQLite 主文件大小，脚本
-  逐样本记录。它只在**中位数**上相同（98,304 B / 94,208 B）：Lead 复跑的新写入第 2 轮、
-  第 2 个样本记录到 90,112 B 对 98,304 B。WAL 模式下主文件大小本来就不是内容证明，
-  逻辑内容的逐字段对拍见 §3。
+  逐样本记录。它只在**中位数**上相同（98,304 B / 94,208 B）：Lead 复跑的 writes 在
+  `round=2`、`sample=2`（两者都从 0 起算，即第三轮第三个样本）记录到 90,112 B 对
+  98,304 B。WAL 模式下主文件大小本来就不是内容证明，逻辑内容的逐字段对拍见 §3。
 
 ### 2.1 `recordFailure` 新事实（400 条/样本）
 
@@ -101,10 +102,17 @@ CPU 中位数 0.300 → 0.283 ms（−5.7%），墙钟 0.2386 → 0.2346 ms（�
 `open()` 中位数 A/B = 1.064/1.079 ms（writes）、1.116/1.118 ms（duplicates），
 `close()` 约 0.6–0.7 ms——这些是 harness，不计入上表的工作窗口。
 两侧 `stats()` 相同；脚本在 `close()` 前读取的 SQLite 主文件大小只在**中位数**上相同
-（writes/readcontrol 98,304 B；duplicates 94,208 B）。逐样本并不总是相同：Builder 数据在
-writes 的 round 3 / sample 3 为 102,400 B 对 90,112 B，Lead 数据在 round 2 / sample 2 为
-90,112 B 对 98,304 B。WAL 模式下主文件大小本来就不是内容证明，正确性只主张 §3 差分测试
-实际比较的逻辑字段（events 身份、knowledge 键/修订/稳定 body、clock、stats 与查询答案）。maxRSS 中位数
+（writes/readcontrol 98,304 B；duplicates 94,208 B）。逐样本并不总是相同（`round` / `sample`
+均从 0 起算）：
+
+| 工作负载 | 大小不同的样本对数（Builder / Lead） | 例 |
+| --- | --- | --- |
+| `writes` | 3 / 3（各 25 对） | Builder `round=3,sample=3` 102,400 → 90,112 B；Lead `round=2,sample=2` 90,112 → 98,304 B |
+| `duplicates` | 1 / 3（各 25 对） | Builder `round=3,sample=3` 98,304 → 94,208 B；Lead `round=0/1,sample=3` 94,208 → 98,304 B |
+| `readcontrol` | 0 / 0 | — |
+
+WAL 模式下主文件大小本来就不是内容证明，正确性只主张 §3 差分测试实际比较的逻辑字段
+（events 身份、knowledge 键/修订/稳定 body、clock、stats 与查询答案）。maxRSS 中位数
 68,720/66,032 KiB（进程高水位，含 imports，不作为内存下降证明）。
 
 Lead 在复审修复后用同一脚本独立复跑（`r12-lead-shared-experience.json`，机器上
@@ -116,7 +124,7 @@ Lead 在复审修复后用同一脚本独立复跑（`r12-lead-shared-experience
 
 `test/shared-experience-prepared-equivalence.test.mjs`（4 项，全部通过）：
 
-1. **逐字节/逐字段等价**：测试把当前源码反向变换回「每次 `db.prepare()`」的
+1. **逻辑字段等价**：测试把当前源码反向变换回「每次 `db.prepare()`」的
    实现（变换断言所有五段句柄都能找到，防止未来悄悄变成自我比较），两个实现
    在同一组输入上各跑 12 轮，覆盖新事实、同 id 回放、`recordDegradation`、
    `recordToolRecovery`、`recordConclusion`、同 id 异内容的冲突拒绝。比较
