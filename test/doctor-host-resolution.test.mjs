@@ -437,6 +437,31 @@ test('a partial profile is not initialized just to run the real probe', async (t
   assert.equal(fs.existsSync(marker), false, 'the wrapper was not executed');
 });
 
+test('an unsafe profile name is refused before any copy or probe', async (t) => {
+  const dir = tmp(t, 'host-res-profile-traversal-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.5', 'console.log("");\n');
+  const marker = path.join(dir, 'marker');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nprintf x > "${marker}"\nexec ${process.execPath} "${dsh.bin}" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+  const dshHome = doctorHome(t);
+  const outside = path.join(dir, 'outside');
+  fs.mkdirSync(outside, { recursive: true });
+  const outsideFile = path.join(outside, 'cordis.yml');
+  fs.writeFileSync(outsideFile, 'OUTSIDE-ORIGINAL\n');
+  const before = fs.readdirSync(outside);
+
+  for (const profile of ['../../evil', '..', path.join(dir, 'outside'), '/absolute', 'a/b']) {
+    const report = await collectDiagnostics({ dshHome, cliPath: wrapper, profile });
+    const composition = report.checks.find((check) => check.id === 'host.composition');
+    assert.equal(composition.level, 'not-evaluated', `profile ${JSON.stringify(profile)} must be refused`);
+    assert.match(composition.evidence.reason, /safe path component/);
+  }
+  assert.equal(fs.existsSync(marker), false, 'the wrapper was never executed');
+  assert.deepEqual(fs.readdirSync(outside), before, 'nothing was created outside the throwaway home');
+  assert.equal(fs.readFileSync(outsideFile, 'utf8'), 'OUTSIDE-ORIGINAL\n');
+});
+
 test('a symlinked cordis.yml cannot write through the isolated copy', async (t) => {
   const dir = tmp(t, 'host-res-composition-symlink-');
   const outside = path.join(dir, 'outside-cordis.yml');
