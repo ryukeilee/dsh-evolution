@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolveHostCli, defaultRunDumpConfig, collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
+import { resolveHostCli, defaultRunDumpConfig, collectDiagnostics, resolveEvolutionPaths, observedHostFacts } from '../lib/diagnostics.js';
 
 function tmp(t, prefix) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -57,7 +57,7 @@ function pointerWrapper(file, targetBin) {
 }
 
 /** A minimal ASAR: 16-byte header with the manifest tree, then manifest bytes. */
-function makeAsar(file, manifests) {
+function makeAsar(file, manifests, { padded = false } = {}) {
   const tree = { files: {} };
   const chunks = [];
   let offset = 0;
@@ -75,12 +75,16 @@ function makeAsar(file, manifests) {
     offset += bytes.length;
   }
   const json = Buffer.from(JSON.stringify(tree), 'utf8');
+  // Pickle header: [4, header payload size][4, string length][json][padding].
+  // A padded header keeps the file data offset distinct from 16 + jsonLength.
+  const padding = padded ? ((4 - (json.length % 4)) % 4) || 4 : 0;
+  const headerSize = 8 + json.length + padding;
   const header = Buffer.alloc(16);
   header.writeUInt32LE(4, 0);
-  header.writeUInt32LE(16 + json.length, 4);
-  header.writeUInt32LE(8 + json.length, 8);
+  header.writeUInt32LE(headerSize, 4);
+  header.writeUInt32LE(4, 8);
   header.writeUInt32LE(json.length, 12);
-  fs.writeFileSync(file, Buffer.concat([header, json, ...chunks]));
+  fs.writeFileSync(file, Buffer.concat([header, json, Buffer.alloc(padding), ...chunks]));
 }
 
 function doctorHome(t) {
@@ -151,6 +155,22 @@ test('in-ASAR manifests identify a packaged DSH host without executing anything'
   assert.deepEqual(result.selected.hostFacts, { dsh: '0.2.2-rc.5', cordis: '4.1.0', include: '1.1.0' });
 });
 
+test('ASAR 4-byte header padding does not shift in-ASAR manifest offsets', (t) => {
+  const dir = tmp(t, 'host-res-asar-pad-');
+  const asar = path.join(dir, 'app.asar');
+  makeAsar(asar, [
+    { internalPath: 'dsh/node_modules/@deepseek-ai/dsh/package.json', value: { name: '@deepseek-ai/dsh', version: '0.2.2-rc.5' } },
+  ], { padded: true });
+  const entry = `${asar}/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js`;
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /mock/binary "${entry}" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const selected = withPath('', () => resolveHostCli({ runningEntry: wrapper })).selected;
+  assert.equal(selected.version, '0.2.2-rc.5', 'a padded ASAR header still yields the manifest version');
+  assert.equal(selected.hostFacts.dsh, '0.2.2-rc.5');
+});
+
 test('selection order: explicit > running entry > highest semver; same version keeps candidate order', (t) => {
   const dir = tmp(t, 'host-res-select-');
   const v1 = makeDshPackage(path.join(dir, 'a'), '1.0.0');
@@ -190,14 +210,18 @@ test('version probe: explicit only, bounded, semantic output; failures become un
   const ok = makeDshPackage(path.join(dir, 'ok'), null, 'console.log("3.4.5")\n');
   const invalid = makeDshPackage(path.join(dir, 'invalid'), null, 'console.log("not-a-version")\n');
   const failed = makeDshPackage(path.join(dir, 'failed'), null, 'process.exit(1)\n');
-  const timeout = makeDshPackage(path.join(dir, 'timeout'), null, 'setInterval(() => {}, 1000)\n');
+  const timeout = makeDshPackage(path.join(dir, 'timeout'), null,
+    'process.on("SIGTERM", () => {});\nsetInterval(() => {}, 1000)\n');
+  const badSemver = makeDshPackage(path.join(dir, 'bad-semver'), null, 'console.log("01.2.3-..")\n');
 
   assert.equal(withPath('', () => resolveHostCli({ cliPath: ok.bin })).selected.version, '3.4.5');
   assert.equal(withPath('', () => resolveHostCli({ cliPath: invalid.bin })).selected.version, null);
   assert.equal(withPath('', () => resolveHostCli({ cliPath: failed.bin })).selected.version, null);
+  assert.equal(withPath('', () => resolveHostCli({ cliPath: badSemver.bin })).selected.version, null,
+    'a shape-looking but semantically invalid version stays unknown');
   const started = Date.now();
   assert.equal(withPath('', () => resolveHostCli({ cliPath: timeout.bin })).selected.version, null);
-  assert.ok(Date.now() - started < 8000, 'the probe is bounded by its 5s timeout');
+  assert.ok(Date.now() - started < 6500, 'SIGKILL bounds even a SIGTERM-ignoring probe at 5s');
 });
 
 test('a PATH candidate that looks like DSH is never executed', (t) => {
@@ -251,6 +275,69 @@ test('a host without a Node-resolvable package root keeps host.modules not-evalu
   assert.deepEqual(modules.evidence.hostFacts.cordis, '4.1.0');
   assert.equal(modules.evidence.hostFacts.include, undefined);
   assert.doesNotMatch(modules.summary, /packaged ASAR host/);
+});
+
+test('composition launches the outermost wrapper while identity uses the terminal entry', async (t) => {
+  const dir = tmp(t, 'host-res-launch-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.5');
+  const bin = path.join(dir, 'bin');
+  fs.mkdirSync(path.join(bin, 'nested'), { recursive: true });
+  const inner = path.join(bin, 'nested', 'dsh');
+  pointerWrapper(inner, dsh.bin);
+  const outer = path.join(bin, 'dsh');
+  fs.writeFileSync(outer, `#!/bin/sh\nexec "${inner}" "$@"\n`);
+  fs.chmodSync(outer, 0o755);
+
+  const selected = withPath('', () => resolveHostCli({ cliPath: outer })).selected;
+  assert.equal(selected.path, outer, 'composition must launch the outermost wrapper');
+  assert.equal(selected.entryPath, dsh.bin, 'the terminal entry is only identity evidence');
+  assert.equal(selected.version, '0.2.2-rc.5');
+
+  let seen;
+  await collectDiagnostics({
+    dshHome: doctorHome(t), cliPath: outer, profile: 'web',
+    probe: { runDumpConfig: ({ cliPath }) => {
+      seen = cliPath;
+      return { status: 0, stdout: '', stderr: '' };
+    } },
+  });
+  assert.equal(seen, outer, 'the dump-config probe receives the outermost launch path');
+});
+
+test('heredoc bodies are data, not exec branches', (t) => {
+  const dir = tmp(t, 'host-res-heredoc-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '9.9.9');
+  const hidden = path.join(dir, 'hidden-dsh');
+  fs.writeFileSync(hidden, `#!/bin/sh
+cat <<'EOF' > /dev/null
+exec ${process.execPath} "${dsh.bin}" "$@"
+EOF
+exec /bin/false "$@"
+`);
+  fs.chmodSync(hidden, 0o755);
+  assert.equal(withPath('', () => resolveHostCli({ cliPath: hidden })).selected, null,
+    'an exec inside a heredoc is not a candidate');
+
+  const visible = path.join(dir, 'visible-dsh');
+  fs.writeFileSync(visible, `#!/bin/sh
+cat <<EOF
+exec /bin/false "$@"
+EOF
+exec ${process.execPath} "${dsh.bin}" "$@"
+`);
+  fs.chmodSync(visible, 0o755);
+  assert.equal(withPath('', () => resolveHostCli({ cliPath: visible })).selected.version, '9.9.9',
+    'an exec after the heredoc delimiter is still parsed');
+});
+
+test('partial host facts never borrow missing fields from process identity', (t) => {
+  const facts = observedHostFacts({ dsh: '0.2.2-rc.5', cordis: '4.1.0', runningEntry: '/some/entry' });
+  assert.equal(facts.dsh, '0.2.2-rc.5');
+  assert.equal(facts.cordis, '4.1.0');
+  assert.equal(facts.include, null, 'a partially described host keeps missing fields null');
+
+  const fallback = observedHostFacts({});
+  assert.ok(Object.hasOwn(fallback, 'include'), 'with no facts the process-identity fallback still applies');
 });
 
 test('defaultRunDumpConfig executes a shell wrapper directly and still uses node for .js', (t) => {
