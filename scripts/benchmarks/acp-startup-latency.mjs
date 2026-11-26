@@ -99,18 +99,44 @@ if (options.smoke) {
 
 const isInside = (child, parent) => child === parent || child.startsWith(parent + path.sep);
 
-/** Resolve a path that may not exist yet through its nearest existing ancestor. */
-function resolvePathThroughExistingAncestor(target) {
+/**
+ * Resolve a path component by component, following symlinks with lstat/readlink
+ * instead of realpath: the final component (or an intermediate one) may not
+ * exist yet, and a dangling symlink must still resolve to *where it points* so
+ * a protected target cannot be hidden behind "the path does not exist".
+ * Returns the final path plus every resolved ancestor for containment checks.
+ */
+function resolvePathComponents(target, state = { hops: 0, visited: new Set() }) {
   const absolute = path.resolve(target);
-  const tail = [];
-  let cursor = absolute;
-  while (!fs.existsSync(cursor)) {
-    tail.unshift(path.basename(cursor));
-    const parent = path.dirname(cursor);
-    if (parent === cursor) throw new Error(`cannot resolve path: ${absolute}`);
-    cursor = parent;
+  const root = path.parse(absolute).root;
+  const segments = absolute.slice(root.length).split(path.sep).filter(Boolean);
+  let current = root;
+  const ancestors = [root];
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index];
+    const candidate = path.join(current, segment);
+    let entry = null;
+    try { entry = fs.lstatSync(candidate); } catch (error) {
+      if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error;
+    }
+    if (entry?.isSymbolicLink()) {
+      const hops = state.hops + 1;
+      if (hops > 40) throw new Error(`too many symlink hops while resolving ${absolute}`);
+      if (state.visited.has(candidate)) throw new Error(`symlink loop while resolving ${absolute}: ${candidate}`);
+      state.visited.add(candidate);
+      const destination = fs.readlinkSync(candidate);
+      if (!destination) throw new Error(`empty symlink target at ${candidate}`);
+      const next = path.isAbsolute(destination)
+        ? destination
+        : path.resolve(path.dirname(candidate), destination);
+      const rest = segments.slice(index + 1);
+      const nested = resolvePathComponents(path.join(next, ...rest), { hops, visited: state.visited });
+      return { final: nested.final, ancestors: [...ancestors, ...nested.ancestors] };
+    }
+    current = candidate;
+    ancestors.push(current);
   }
-  return path.join(fs.realpathSync(cursor), ...tail);
+  return { final: current, ancestors };
 }
 
 /**
@@ -145,10 +171,13 @@ function assertNoEscapingLinks(root, label) {
 
 function assertOutPath(target, pristineHome) {
   if (!target) return null;
-  const resolved = resolvePathThroughExistingAncestor(target);
-  assert.ok(!isInside(resolved, REAL_HOME), 'refusing --out inside the real DSH_HOME');
-  assert.ok(!isInside(resolved, pristineHome), 'refusing --out inside the source pristine home');
-  return resolved;
+  const { final, ancestors } = resolvePathComponents(target);
+  const realHome = fs.existsSync(REAL_HOME) ? fs.realpathSync(REAL_HOME) : resolvePathComponents(REAL_HOME).final;
+  for (const candidate of [final, ...ancestors]) {
+    assert.ok(!isInside(candidate, realHome), `refusing --out inside the real DSH_HOME (via ${candidate})`);
+    assert.ok(!isInside(candidate, pristineHome), `refusing --out inside the source pristine home (via ${candidate})`);
+  }
+  return final;
 }
 
 function assertIsolatedHome(target) {
@@ -241,9 +270,11 @@ async function run() {
   const realWork = fs.realpathSync(work);
   assert.ok(isInside(realWork, fs.realpathSync(os.tmpdir())), 'work directory escaped the temp root');
   const assertScratchPath = (candidate, label) => {
-    const resolved = resolvePathThroughExistingAncestor(candidate);
-    assert.ok(isInside(resolved, realWork), `${label} escaped the scratch root: ${resolved}`);
-    return resolved;
+    // Same component-wise resolver as --out: never rely on an existing
+    // ancestor to discover a symlink in a path we are about to write.
+    const { final } = resolvePathComponents(candidate);
+    assert.ok(isInside(final, realWork), `${label} escaped the scratch root: ${final}`);
+    return final;
   };
   const linkChecks = { pristine: pristineLinkCheck, copies: [] };
   const project = (value) => typeof value === 'string'
@@ -414,12 +445,17 @@ async function run() {
   async function boot({ homeCopy, arm, label, seeded }) {
     const requests = [];
     const server = http.createServer(async (req, res) => {
-      // Arrival time, recorded before the body is drained, so a slow request
-      // cannot hide inside the timed window by finishing after session/new.
+      // Register at handler entry, before the body is drained. A request whose
+      // headers arrive inside the timed window but whose body completes later
+      // must still be counted as inside that window.
       const at = performance.now();
+      const entry = { at, bytes: null, tools: null };
+      requests.push(entry);
       let body = '';
       for await (const chunk of req) body += chunk;
-      requests.push({ at, bytes: Buffer.byteLength(body), tools: (JSON.parse(body).tools || []).length });
+      entry.bytes = Buffer.byteLength(body);
+      try { entry.tools = (JSON.parse(body).tools || []).length; }
+      catch { entry.tools = null; }
       res.writeHead(200, { 'content-type': 'text/event-stream' });
       const send = (type, data) => res.write(`event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`);
       send('message_start', { message: { id: `bench-${label}`, type: 'message', role: 'assistant', model: 'loopback-fixture', content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 0 } } });
@@ -486,7 +522,7 @@ async function run() {
       // interval, including requests that arrived while session/new was in
       // flight. Both clocks are performance.now() from this process.
       const requestsInsideTimedWindow = requests.filter((request) => request.at - started <= sessionNewMs).length;
-      assert.equal(requestsInsideTimedWindow, 0, 'a model request landed inside the timed startup window');
+      assert.equal(requestsInsideTimedWindow, 0, `a model request landed inside the timed startup window: ${requestsInsideTimedWindow} of ${requests.length}, arrivals ${JSON.stringify(requests.map((request) => Number((request.at - started).toFixed(2))))} vs session/new ${Number(sessionNewMs.toFixed(2))} ms`);
       // Overlay proof is deliberately after both timers: the model call below
       // is the only one in a sample, so the reported delta has no network cost.
       const prompt = await rpc('session/prompt', { sessionId: created.sessionId, prompt: [{ type: 'text', text: 'Confirm loopback provider.' }] }, 30000);
@@ -688,7 +724,7 @@ async function run() {
       ...linkChecks,
       totalChecked: pristineLinkCheck.checked + linkChecks.copies.reduce((sum, row) => sum + row.checked, 0),
       totalEscaping: pristineLinkCheck.escaping + linkChecks.copies.reduce((sum, row) => sum + row.escaping, 0),
-      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath (lstat/readdir withFileTypes, never following) and must stay inside its own root; dangling links and out-of-root links fail the run. --out is resolved through its existing ancestor and must be outside the real and pristine homes. homeCopy/overlay/entryRoot must resolve inside the scratch root.',
+      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath (lstat/readdir withFileTypes, never following) and must stay inside its own root; dangling links and out-of-root links fail the run. --out and scratch paths are resolved component by component with lstat/readlink (40-hop and loop guards), including paths whose final component does not exist; the final path and every resolved ancestor must stay outside the real/pristine homes (for --out) and inside the scratch root (for writes).',
     },
     hostFacts,
     threshold: decision,
