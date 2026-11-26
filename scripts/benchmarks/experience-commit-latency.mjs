@@ -113,15 +113,71 @@ function createScratch() {
   return real;
 }
 
-function validateHome(home) {
+function isInside(root, candidate) {
+  return candidate === root || candidate.startsWith(`${root}${path.sep}`);
+}
+
+function formalDshHome() {
   const formal = path.resolve(os.homedir(), '.dsh');
-  let realFormal = formal;
-  try { realFormal = fs.realpathSync(formal); } catch {}
+  try { return fs.realpathSync(formal); } catch { return formal; }
+}
+
+function validateHome(home) {
+  const realFormal = formalDshHome();
   const realHome = fs.realpathSync(home);
   if (!fs.statSync(realHome).isDirectory()) throw new Error(`--home is not a directory: ${home}`);
-  if (realHome === formal || realHome === realFormal) throw new Error('Refusing the formal DSH_HOME');
+  if (isInside(realFormal, realHome) || isInside(realHome, realFormal)) throw new Error('Refusing the formal DSH_HOME');
   return realHome;
 }
+
+/** Every symlink under a root must resolve to a path still under that root.
+ * Dangling links are rejected. Symlinks are never traversed as directories.
+ * This runs on the source home before copying and on every copy before a host
+ * is spawned against it, so a link to the formal home cannot redirect writes. */
+function auditSymlinks(root, label) {
+  const realRoot = fs.realpathSync(root);
+  const checked = [];
+  const escaped = [];
+  const walk = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const full = path.join(directory, entry.name);
+      if (entry.isSymbolicLink()) {
+        const relative = path.relative(realRoot, full);
+        checked.push(relative);
+        try {
+          const target = fs.realpathSync(full);
+          if (!isInside(realRoot, target)) escaped.push({ path: relative, target, reason: 'outside-root' });
+        } catch (error) {
+          escaped.push({ path: relative, reason: `dangling-or-unreadable: ${error.message}` });
+        }
+        continue;
+      }
+      if (entry.isDirectory()) walk(full);
+    }
+  };
+  walk(realRoot);
+  const result = { label, checked: checked.length, escaped };
+  if (escaped.length > 0) {
+    throw new Error(`Symlink containment failed for ${label}: ${JSON.stringify(escaped)}`);
+  }
+  return result;
+}
+
+/** --out (the report itself) must not point inside the formal home or the
+ * source home. Resolve the deepest existing ancestor so a not-yet-created
+ * file under a protected home is also rejected. */
+function assertOutOutsideHomes(out, home) {
+  if (!out) return;
+  let cursor = out;
+  while (!fs.existsSync(cursor) && path.dirname(cursor) !== cursor) cursor = path.dirname(cursor);
+  let real;
+  try { real = fs.realpathSync(cursor); } catch { real = cursor; }
+  for (const [label, root] of [['formal DSH_HOME', formalDshHome()], ['source home', home]]) {
+    if (isInside(root, real)) throw new Error(`--out must not be inside ${label}: ${out}`);
+  }
+}
+
+const auditEvidence = { source: null, copies: [] };
 
 const cleanup = { dirs: new Set(), children: new Set(), servers: new Set() };
 function cleanupAll() {
@@ -242,6 +298,9 @@ const failedRead = (index) => ({
 });
 const failureExec = (index) => ({ agent: { id: 'latency-agent' }, name: 'read', callId: `failure-${index}` });
 const successExec = (index) => ({ agent: { id: 'latency-agent' }, name: 'read', callId: `success-${index}` });
+// A different tool target keeps the positive control's failure episode from
+// spending the recovery threshold of the clean `read` batch it brackets.
+const positiveExec = (index) => ({ agent: { id: 'latency-agent' }, name: 'grep', callId: `positive-control-${index}` });
 const truncatedRead = {
   isError: false,
   value: { path: '/tmp/latency-truncated.json', offset: 1,
@@ -274,10 +333,18 @@ async function measureInProcess(Context, applyCollector, openSharedExperience, s
     } finally { await mounted.close(); }
   }
 
-  // (b) Clean success: the listener must not write at all.
+  // (b) Clean success: the listener must not write. A known failing emit
+  // before and after the batch proves the same mounted listener really writes;
+  // without this control an empty listener would pass the zero-write check.
   {
     const mounted = await mountCollector(Context, applyCollector, openSharedExperience, scratch, 'success');
     try {
+      const control = (label) => {
+        const before = mounted.probe.stats().events;
+        mounted.ctx.emit('tools/result', positiveExec(label), failedRead(`positive-${label}`));
+        return mounted.probe.stats().events === before + 1;
+      };
+      const beforeOk = control('before');
       const durations = [];
       let rejected = 0;
       for (let index = 0; index < samples; index += 1) {
@@ -289,8 +356,12 @@ async function measureInProcess(Context, applyCollector, openSharedExperience, s
         if (after !== before) { rejected += 1; continue; }
         durations.push(elapsed);
       }
+      const afterOk = control('after');
+      const positiveControl = { ok: beforeOk && afterOk, beforeOk, afterOk, target: 'tool:grep',
+        description: 'a known failing emit before and after the batch must each commit exactly one event' };
+      if (!positiveControl.ok) rejected = samples;
       result.cleanSuccess = { description: 'clean read; in-memory counters only, zero writes',
-        emit: summarize(durations), rejectedSamples: rejected };
+        positiveControl, emit: summarize(positiveControl.ok ? durations : []), rejectedSamples: rejected };
     } finally { await mounted.close(); }
   }
 
@@ -300,27 +371,31 @@ async function measureInProcess(Context, applyCollector, openSharedExperience, s
     const mounted = await mountCollector(Context, applyCollector, openSharedExperience, scratch, 'degradation');
     try {
       const agent = { id: 'degradation-agent' };
-      const first = [];
-      const steady = [];
+      const firstStop = [];
+      const steadyStop = [];
       const toolsOnly = [];
       let rejected = 0;
       for (let index = 0; index < samples; index += 1) {
         const exec = { agent, name: 'read', callId: `degraded-${index}` };
         const before = mounted.probe.stats().events;
-        const t0 = performance.now();
+        const tTools = performance.now();
         mounted.ctx.emit('tools/result', exec, truncatedRead);
-        const afterTools = performance.now() - t0;
+        const toolsElapsed = performance.now() - tTools;
         const between = mounted.probe.stats().events;
+        const tStop = performance.now();
         mounted.ctx.emit('agent/turn-stopping', { agent });
-        const elapsed = performance.now() - t0;
+        const stopElapsed = performance.now() - tStop;
         const after = mounted.probe.stats().events;
+        // The commit must happen at turn-stopping: no write before it, +1 after it.
         if (between !== before || after !== before + 1) { rejected += 1; continue; }
-        toolsOnly.push(afterTools);
-        (index === 0 ? first : steady).push(elapsed);
+        toolsOnly.push(toolsElapsed);
+        (index === 0 ? firstStop : steadyStop).push(stopElapsed);
       }
       result.degradation = {
         description: 'read with TRUNCATED_LINE; real collector defers the COMMIT to agent/turn-stopping',
-        firstCommit: summarize(first), steady: summarize(steady), toolsResultOnly: summarize(toolsOnly),
+        commitLocation: 'agent/turn-stopping',
+        toolsResultOnly: summarize(toolsOnly),
+        turnStoppingOnly: { firstCommit: summarize(firstStop), steady: summarize(steadyStop) },
         rejectedSamples: rejected,
       };
     } finally { await mounted.close(); }
@@ -351,7 +426,7 @@ async function measureInProcess(Context, applyCollector, openSharedExperience, s
         if (mounted.probe.stats().events !== before + 2) { elapsed = null; rejected += 1; }
       }
       result.recoveryAfterFiveSuccesses = { description: '5th clean success in a failure episode commits tool/recovery',
-        oneCommit: elapsed === null ? null : { ms: elapsed }, rejectedAttempts: rejected };
+        verified: elapsed !== null, oneCommit: elapsed === null ? null : { ms: elapsed }, rejectedAttempts: rejected };
     } finally { await mounted.close(); }
   }
   return result;
@@ -472,6 +547,7 @@ async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) 
   const homeCopy = path.join(freshDir(scratch, `acp-${arm}`), 'home');
   fs.cpSync(home, homeCopy, { recursive: true, verbatimSymlinks: true });
   assertInside(scratch, homeCopy, `ACP copy (${arm})`);
+  auditEvidence.copies.push(auditSymlinks(homeCopy, `acp-copy:${arm}`));
   if (arm === 'disabled') disableExperienceEntries(homeCopy);
   const { server, state } = startProvider();
   server.listen(0, '127.0.0.1');
@@ -541,10 +617,9 @@ async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) 
   if (!state.toolFailedObserved) reasons.push('no failed tool_call_update observed');
   if (state.intervals.length !== 1) reasons.push(`expected 1 timed interval, got ${state.intervals.length}`);
   if (promptResult?.stopReason !== 'end_turn') reasons.push(`unexpected stop reason: ${promptResult?.stopReason}`);
-  if (arm === 'disabled') {
-    if (statsDelta.events !== 0) reasons.push(`disabled arm committed ${statsDelta.events} events`);
-  } else if (statsDelta.events < 1) {
-    reasons.push('no real shared-experience commit observed');
+  const expectedEvents = arm === 'disabled' ? 0 : 1;
+  if (statsDelta.events !== expectedEvents) {
+    reasons.push(`expected exactly ${expectedEvents} committed event(s), got ${statsDelta.events}`);
   }
   const intervalMs = state.intervals[0];
   if (!Number.isFinite(intervalMs) || intervalMs < 0) reasons.push('invalid interval');
@@ -565,7 +640,7 @@ async function runAcp({ home, cli, scratch, rounds, openSharedExperience }) {
   for (const arm of ARMS) {
     const warm = await runAcpSession({ arm, home, cli, scratch, openSharedExperience });
     warmup.push({ arm, valid: warm.valid, intervalMs: warm.intervalMs,
-      fullTurnMs: warm.fullTurnMs, reasons: warm.reasons });
+      fullTurnMs: warm.fullTurnMs, statsDelta: warm.statsDelta, reasons: warm.reasons });
   }
   for (let round = 0; round < rounds; round += 1) {
     const order = ROTATIONS[round % ROTATIONS.length];
@@ -592,11 +667,18 @@ async function runAcp({ home, cli, scratch, rounds, openSharedExperience }) {
   }
   const pairs = (key) => {
     const usable = rows.filter(row => row.paired[key] !== null);
-    return { medianMs: ms3(median(usable.map(row => row.paired[key]))),
-      perRound: usable.map(row => row.paired[key]) };
+    const values = usable.map(row => row.paired[key]);
+    const direction = { positive: 0, negative: 0, tie: 0 };
+    for (const value of values) {
+      if (value > 0) direction.positive += 1;
+      else if (value < 0) direction.negative += 1;
+      else direction.tie += 1;
+    }
+    return { medianMs: ms3(median(values)), medianAbsDiff: ms3(median(values.map(Math.abs))),
+      direction, perRound: values };
   };
   return {
-    timingNarrow: 'Parent-process performance.now(): tool_call_update (failed/completed) -> next provider HTTP request arrival. Includes host tool finalization + collector only if the collector commit happens before that update; excludes model generation, network and the end_turn response. Attribution window only.',
+    timingNarrow: 'Parent-process performance.now() between two observation points in this parent process: client-observed tool_call_update (failed/completed) -> next provider HTTP request arrival. It does NOT prove coverage of a collector commit that occurred before the update; use timingFullTurn for coverage. Model generation, network and the end_turn response are outside this attribution window.',
     timingFullTurn: 'Parent-process performance.now(): writing the session/prompt JSON-RPC request -> receiving that prompt\'s JSON-RPC response. Unconditionally contains any synchronous collector commit anywhere in the turn, host tool finalization, the follow-up request and the loopback end_turn response. With the deterministic loopback provider there is no real model inference; host scheduling and IPC are included.',
     provider: 'loopback deterministic Anthropic-compatible SSE; no external model calls, no credentials',
     warmup,
@@ -622,6 +704,9 @@ async function runAcp({ home, cli, scratch, rounds, openSharedExperience }) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const home = validateHome(options.home);
+  assertOutOutsideHomes(options.out, home);
+  // Containment is proven before any copy or host write, not after the fact.
+  auditEvidence.source = auditSymlinks(home, 'source-home');
   const cli = path.join(options.runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
   if (!fs.existsSync(cli)) throw new Error(`Official DSH CLI not found: ${cli} (check --runtime)`);
   const scratch = createScratch();
@@ -635,6 +720,22 @@ async function main() {
     const failureP95 = inProcess.failure.steady.p95;
     let dshVersion = 'unknown';
     try { dshVersion = JSON.parse(fs.readFileSync(path.join(options.runtime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'), 'utf8')).version; } catch {}
+    const acpSamples = [...acp.warmup, ...acp.rows.flatMap(row => ARMS.map(arm => row.samples[arm]))];
+    const gates = {
+      cleanPositiveControl: inProcess.cleanSuccess.positiveControl.ok === true,
+      recoveryVerified: inProcess.recoveryAfterFiveSuccesses.verified === true,
+      acpDeltaExact: acpSamples.every(sample => sample.valid
+        && sample.statsDelta.events === (sample.arm === 'disabled' ? 0 : 1)),
+      symlinkContainment: auditEvidence.source?.escaped.length === 0
+        && auditEvidence.copies.length > 0
+        && auditEvidence.copies.every(copy => copy.escaped.length === 0),
+      outPath: true,
+    };
+    const linkAudit = { source: auditEvidence.source, copies: auditEvidence.copies,
+      totalChecked: auditEvidence.source.checked
+        + auditEvidence.copies.reduce((sum, copy) => sum + copy.checked, 0),
+      escapedTotal: auditEvidence.source.escaped.length
+        + auditEvidence.copies.reduce((sum, copy) => sum + copy.escaped.length, 0) };
     report = {
       task: 'DSH-EVOLUTION-PERF-R15-01',
       authoritative: !options.smoke,
@@ -645,11 +746,13 @@ async function main() {
       environment: { node: process.version, platform: process.platform, home, runtime: options.runtime,
         cli, dshVersion, samplesRequested: options.samples, roundsRequested: options.rounds, smoke: options.smoke },
       harness,
+      linkAudit, gates,
       measurementNotes: [
-        'Reporter clock is performance.now() in one process for all ACP endpoints; the narrow tool_call_update -> next-request window is attribution only, the full session/prompt -> JSON-RPC response window is the user-perceived turn latency.',
+        'The narrow window is only between two parent-process observation points and does not prove coverage of a collector commit; the full session/prompt -> JSON-RPC response window is the coverage proof.',
+        'Paired results report median, medianAbsDiff and signed direction counts; no claim is made that an effect is smaller than the A/A noise.',
         'In-process harness loads the installed bundle from --home with the host Cordis resolved from --runtime; any fallback is recorded in harness.fallback and degrades evidence quality.',
         'The in-process first commit includes lazy SQL statement preparation; steady percentiles exclude it.',
-        'The real collector defers degradation writes to agent/turn-stopping, so its tools/result emit has no COMMIT; both timings are reported.',
+        'The real collector defers degradation writes to agent/turn-stopping: toolsResultOnly and turnStoppingOnly are timed separately, with the +1 event required at turn-stopping.',
         'The fsync comparison is attribution only on an isolated database; NORMAL weakens durability and is not a proposed change.',
         'Every accepted sample is gated by a real store.stats() delta; rejected samples are counted and fail the run.',
       ],
@@ -663,19 +766,32 @@ async function main() {
       steadyP50: report.inProcess.failure.steady.p50, steadyP95: report.inProcess.failure.steady.p95,
       steadyP99: report.inProcess.failure.steady.p99, steadyMax: report.inProcess.failure.steady.max },
     cleanSuccessP50: report.inProcess.cleanSuccess.emit.p50,
-    degradation: { firstCommitMs: report.inProcess.degradation.firstCommit.p50,
-      steadyP50: report.inProcess.degradation.steady.p50, steadyP95: report.inProcess.degradation.steady.p95 },
-    recoveryMs: report.inProcess.recoveryAfterFiveSuccesses.oneCommit?.ms ?? null,
+    cleanPositiveControl: report.inProcess.cleanSuccess.positiveControl,
+    degradation: {
+      toolsResultOnlyP50: report.inProcess.degradation.toolsResultOnly.p50,
+      turnStoppingFirstCommitMs: report.inProcess.degradation.turnStoppingOnly.firstCommit.p50,
+      turnStoppingP50: report.inProcess.degradation.turnStoppingOnly.steady.p50,
+      turnStoppingP95: report.inProcess.degradation.turnStoppingOnly.steady.p95,
+      commitLocation: report.inProcess.degradation.commitLocation,
+    },
+    recovery: { verified: report.inProcess.recoveryAfterFiveSuccesses.verified,
+      ms: report.inProcess.recoveryAfterFiveSuccesses.oneCommit?.ms ?? null },
     fsyncAttributionMedianDeltaMs: report.attribution.medianDeltaMs,
+    gates: report.gates,
+    linkAudit: { sourceChecked: report.linkAudit.source.checked,
+      copiesChecked: report.linkAudit.copies.reduce((sum, copy) => sum + copy.checked, 0),
+      totalChecked: report.linkAudit.totalChecked, escapedTotal: report.linkAudit.escapedTotal },
     harness: { collectorPath: report.harness.collectorPath, bundleVersion: report.harness.bundleVersion,
       cordisVersion: report.harness.cordisVersion, fallback: report.harness.fallback,
       fallbackReason: report.harness.fallbackReason },
     acpMedians: Object.fromEntries(ARMS.map(arm => [arm, report.acp.arms[arm].medianMs])),
-    acpPaired: { disabledMinusEnabled: report.acp.pairedDiff.disabledMinusEnabled.medianMs,
-      enabled2MinusEnabled: report.acp.pairedDiff.enabled2MinusEnabled.medianMs },
+    acpPaired: Object.fromEntries(Object.entries(report.acp.pairedDiff)
+      .map(([key, value]) => [key, { medianMs: value.medianMs, medianAbsDiff: value.medianAbsDiff,
+        direction: value.direction }])),
     acpFullTurnMedians: Object.fromEntries(ARMS.map(arm => [arm, report.acp.arms[arm].fullTurnMedianMs])),
-    acpFullTurnPaired: { disabledMinusEnabled: report.acp.fullTurnPairedDiff.disabledMinusEnabled.medianMs,
-      enabled2MinusEnabled: report.acp.fullTurnPairedDiff.enabled2MinusEnabled.medianMs },
+    acpFullTurnPaired: Object.fromEntries(Object.entries(report.acp.fullTurnPairedDiff)
+      .map(([key, value]) => [key, { medianMs: value.medianMs, medianAbsDiff: value.medianAbsDiff,
+        direction: value.direction }])),
     invalidAcpSamples: report.acp.invalidSamples.length,
   };
   console.log(`SUMMARY ${JSON.stringify(summary, null, 2)}`);
@@ -685,6 +801,9 @@ async function main() {
     fs.writeFileSync(options.out, `${JSON.stringify(report, null, 2)}\n`);
   }
   if (options.smoke) console.log('NON-AUTHORITATIVE SMOKE: not a substitute for the Lead\'s serial authoritative run.');
+  for (const [name, ok] of Object.entries(report.gates)) {
+    if (!ok) { console.error(`GATE FAILED: ${name}`); process.exitCode = 1; }
+  }
   if (report.acp.invalidSamples.length > 0) {
     console.error(`INVALID ACP SAMPLES: ${JSON.stringify(report.acp.invalidSamples, null, 2)}`);
     process.exitCode = 1;
