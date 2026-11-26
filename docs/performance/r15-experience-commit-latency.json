@@ -219,17 +219,17 @@
       "description": "tools/result isError=true; one BEGIN IMMEDIATE/COMMIT per emit",
       "firstCommit": {
         "n": 1,
-        "p50": 2.3277920000000023,
-        "p95": 2.3277920000000023,
-        "p99": 2.3277920000000023,
-        "max": 2.3277920000000023
+        "p50": 2.3225830000000016,
+        "p95": 2.3225830000000016,
+        "p99": 2.3225830000000016,
+        "max": 2.3225830000000016
       },
       "steady": {
         "n": 49,
-        "p50": 0.248541000000003,
-        "p95": 0.44812500000000455,
-        "p99": 0.5474589999999964,
-        "max": 0.5474589999999964
+        "p50": 0.23979200000000844,
+        "p95": 0.4702910000000031,
+        "p99": 0.5101669999999956,
+        "max": 0.5101669999999956
       },
       "rejectedSamples": 0
     },
@@ -244,10 +244,10 @@
       },
       "emit": {
         "n": 50,
-        "p50": 0.004749999999987153,
-        "p95": 0.008417000000008557,
-        "p99": 0.08566700000000083,
-        "max": 0.08566700000000083
+        "p50": 0.004584000000008359,
+        "p95": 0.008667000000002645,
+        "p99": 0.0898340000000104,
+        "max": 0.0898340000000104
       },
       "rejectedSamples": 0
     },
@@ -256,25 +256,25 @@
       "commitLocation": "agent/turn-stopping",
       "toolsResultOnly": {
         "n": 50,
-        "p50": 0.008167000000000257,
-        "p95": 0.01870800000000372,
-        "p99": 0.03895800000000804,
-        "max": 0.03895800000000804
+        "p50": 0.00795800000000213,
+        "p95": 0.019874999999998977,
+        "p99": 0.04016599999999926,
+        "max": 0.04016599999999926
       },
       "turnStoppingOnly": {
         "firstCommit": {
           "n": 1,
-          "p50": 0.34695899999999824,
-          "p95": 0.34695899999999824,
-          "p99": 0.34695899999999824,
-          "max": 0.34695899999999824
+          "p50": 0.3468330000000037,
+          "p95": 0.3468330000000037,
+          "p99": 0.3468330000000037,
+          "max": 0.3468330000000037
         },
         "steady": {
           "n": 49,
-          "p50": 0.2164160000000095,
-          "p95": 0.2973750000000024,
-          "p99": 0.46487499999999216,
-          "max": 0.46487499999999216
+          "p50": 0.19879099999999994,
+          "p95": 0.28958299999999326,
+          "p99": 0.4471249999999998,
+          "max": 0.4471249999999998
         }
       },
       "rejectedSamples": 0
@@ -283,7 +283,7 @@
       "description": "5th clean success in a failure episode commits tool/recovery",
       "verified": true,
       "oneCommit": {
-        "ms": 0.2543330000000026
+        "ms": 0.21858300000000952
       },
       "rejectedAttempts": 0
     }
@@ -293,17 +293,17 @@
     "iterationsPerMode": 30,
     "full": {
       "n": 30,
-      "p50": 0.0841660000000104,
-      "p95": 0.0976659999999896,
-      "p99": 0.11545800000000384,
-      "max": 0.11545800000000384
+      "p50": 0.08445900000000961,
+      "p95": 0.1039999999999992,
+      "p99": 0.12600000000000477,
+      "max": 0.12600000000000477
     },
     "normal": {
       "n": 30,
-      "p50": 0.03912499999999852,
-      "p95": 0.049334000000001765,
-      "p99": 0.06120799999999349,
-      "max": 0.06120799999999349
+      "p50": 0.039500000000003865,
+      "p95": 0.05520799999999326,
+      "p99": 0.06458399999999642,
+      "max": 0.06458399999999642
     },
     "medianDeltaMs": 0.045
   },
@@ -315,8 +315,8 @@
       {
         "arm": "enabled",
         "valid": true,
-        "intervalMs": 13.445,
-        "fullTurnMs": 84.862,
+        "intervalMs": 12.438,
+        "fullTurnMs": 83.87,
         "statsDelta": {
           "events": 1,
           "knowledge": 1
@@ -326,8 +326,8 @@
       {
         "arm": "disabled",
         "valid": true,
-        "intervalMs": 10.826,
-        "fullTurnMs": 72.896,
+        "intervalMs": 11.981,
+        "fullTurnMs": 76.065,
         "statsDelta": {
           "events": 0,
           "knowledge": 0
@@ -337,8 +337,8 @@
       {
         "arm": "enabled2",
         "valid": true,
-        "intervalMs": 13.604,
-        "fullTurnMs": 82.131,
+        "intervalMs": 12.521,
+        "fullTurnMs": 75.442,
         "statsDelta": {
           "events": 1,
           "knowledge": 1
@@ -349,85 +349,85 @@
     "rounds": 9,
     "arms": {
       "enabled": {
-        "medianMs": 12.476,
+        "medianMs": 11.987,
         "intervals": [
-          12.5,
-          13.478,
-          13.496,
-          13.523,
-          11.535,
-          12.352,
-          9.931,
-          11.475,
-          12.476
+          11.333,
+          11.514,
+          13.458,
+          12.48,
+          10.03,
+          13.868,
+          11.63,
+          11.987,
+          13.452
         ],
-        "fullTurnMedianMs": 78.969,
+        "fullTurnMedianMs": 79.52,
         "fullTurnIntervals": [
-          78.969,
-          78.016,
-          81.121,
-          82.556,
-          76.569,
-          83.073,
-          76.919,
-          79.054,
-          76.562
+          76.824,
+          80.707,
+          83.613,
+          75.05,
+          78.98,
+          79.52,
+          77.111,
+          80.622,
+          81.445
         ],
         "validSamples": 9,
         "rejectedSamples": 0
       },
       "disabled": {
-        "medianMs": 11.026,
+        "medianMs": 11.819,
         "intervals": [
-          9.634,
-          11.7,
-          9.863,
-          12.342,
-          9.727,
-          10.998,
-          13.08,
-          12.916,
-          11.026
+          11.92,
+          10.701,
+          13.841,
+          12.897,
+          11.671,
+          10.955,
+          11.984,
+          11.819,
+          10.897
         ],
-        "fullTurnMedianMs": 75.593,
+        "fullTurnMedianMs": 78.759,
         "fullTurnIntervals": [
-          77.189,
-          76.811,
-          74.976,
-          69.933,
-          67.827,
-          75.593,
-          72.573,
-          80.595,
-          75.986
+          79.108,
+          74.814,
+          79.548,
+          74.957,
+          78.759,
+          72.348,
+          74.956,
+          80.374,
+          78.952
         ],
         "validSamples": 9,
         "rejectedSamples": 0
       },
       "enabled2": {
-        "medianMs": 12.447,
+        "medianMs": 12.075,
         "intervals": [
-          13.348,
-          12.661,
-          12.537,
-          13.516,
-          12.19,
-          12.447,
+          13.612,
+          11.739,
+          13.459,
+          26.257,
+          11.352,
+          11.455,
           11.495,
-          11.306,
-          12.384
+          12.075,
+          12.411
         ],
-        "fullTurnMedianMs": 79.082,
+        "fullTurnMedianMs": 79.318,
         "fullTurnIntervals": [
-          80.068,
-          78.002,
-          80.641,
-          81.141,
-          78.051,
-          81.436,
-          76.943,
-          76.098,
-          79.082
+          81.161,
+          74.974,
+          80.443,
+          103.303,
+          78.85,
+          82.564,
+          79.318,
+          77.418,
+          77.419
         ],
         "validSamples": 9,
         "rejectedSamples": 0
@@ -435,85 +435,85 @@
     },
     "pairedDiff": {
       "disabledMinusEnabled": {
-        "medianMs": -1.45,
-        "medianAbsDiff": 1.778,
+        "medianMs": 0.354,
+        "medianAbsDiff": 0.587,
         "direction": {
-          "positive": 2,
-          "negative": 7,
+          "positive": 5,
+          "negative": 4,
           "tie": 0
         },
         "perRound": [
-          -2.866,
-          -1.778,
-          -3.633,
-          -1.181,
-          -1.808,
-          -1.354,
-          3.149,
-          1.441,
-          -1.45
+          0.587,
+          -0.813,
+          0.383,
+          0.417,
+          1.641,
+          -2.913,
+          0.354,
+          -0.168,
+          -2.555
         ]
       },
       "enabled2MinusEnabled": {
-        "medianMs": -0.007,
-        "medianAbsDiff": 0.655,
+        "medianMs": 0.088,
+        "medianAbsDiff": 1.041,
         "direction": {
-          "positive": 4,
-          "negative": 5,
+          "positive": 6,
+          "negative": 3,
           "tie": 0
         },
         "perRound": [
-          0.848,
-          -0.817,
-          -0.959,
-          -0.007,
-          0.655,
-          0.095,
-          1.564,
-          -0.169,
-          -0.092
+          2.279,
+          0.225,
+          0.001,
+          13.777,
+          1.322,
+          -2.413,
+          -0.135,
+          0.088,
+          -1.041
         ]
       }
     },
     "fullTurnPairedDiff": {
       "disabledMinusEnabled": {
-        "medianMs": -4.346,
-        "medianAbsDiff": 4.346,
+        "medianMs": -2.155,
+        "medianAbsDiff": 2.284,
         "direction": {
           "positive": 1,
           "negative": 8,
           "tie": 0
         },
         "perRound": [
-          -1.78,
-          -1.205,
-          -6.145,
-          -12.623,
-          -8.742,
-          -7.48,
-          -4.346,
-          1.541,
-          -0.576
+          2.284,
+          -5.893,
+          -4.065,
+          -0.093,
+          -0.221,
+          -7.172,
+          -2.155,
+          -0.248,
+          -2.493
         ]
       },
       "enabled2MinusEnabled": {
-        "medianMs": -0.014,
-        "medianAbsDiff": 1.415,
+        "medianMs": -0.13,
+        "medianAbsDiff": 3.204,
         "direction": {
           "positive": 4,
           "negative": 5,
           "tie": 0
         },
         "perRound": [
-          1.099,
-          -0.014,
-          -0.48,
-          -1.415,
-          1.482,
-          -1.637,
-          0.024,
-          -2.956,
-          2.52
+          4.337,
+          -5.733,
+          -3.17,
+          28.253,
+          -0.13,
+          3.044,
+          2.207,
+          -3.204,
+          -4.026
         ]
       }
     },
@@ -524,8 +524,8 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.5,
-            "fullTurnMs": 78.969,
+            "intervalMs": 11.333,
+            "fullTurnMs": 76.824,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -538,8 +538,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 9.634,
-            "fullTurnMs": 77.189,
+            "intervalMs": 11.92,
+            "fullTurnMs": 79.108,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -552,8 +552,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 13.348,
-            "fullTurnMs": 80.068,
+            "intervalMs": 13.612,
+            "fullTurnMs": 81.161,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -566,10 +566,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -2.866,
-          "enabled2MinusEnabled": 0.848,
-          "fullDisabledMinusEnabled": -1.78,
-          "fullEnabled2MinusEnabled": 1.099
+          "disabledMinusEnabled": 0.587,
+          "enabled2MinusEnabled": 2.279,
+          "fullDisabledMinusEnabled": 2.284,
+          "fullEnabled2MinusEnabled": 4.337
         }
       },
       {
@@ -578,8 +578,8 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.7,
-            "fullTurnMs": 76.811,
+            "intervalMs": 10.701,
+            "fullTurnMs": 74.814,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -592,8 +592,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.661,
-            "fullTurnMs": 78.002,
+            "intervalMs": 11.739,
+            "fullTurnMs": 74.974,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -606,8 +606,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 13.478,
-            "fullTurnMs": 78.016,
+            "intervalMs": 11.514,
+            "fullTurnMs": 80.707,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -620,10 +620,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.778,
-          "enabled2MinusEnabled": -0.817,
-          "fullDisabledMinusEnabled": -1.205,
-          "fullEnabled2MinusEnabled": -0.014
+          "disabledMinusEnabled": -0.813,
+          "enabled2MinusEnabled": 0.225,
+          "fullDisabledMinusEnabled": -5.893,
+          "fullEnabled2MinusEnabled": -5.733
         }
       },
       {
@@ -632,8 +632,8 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.537,
-            "fullTurnMs": 80.641,
+            "intervalMs": 13.459,
+            "fullTurnMs": 80.443,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -646,8 +646,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 13.496,
-            "fullTurnMs": 81.121,
+            "intervalMs": 13.458,
+            "fullTurnMs": 83.613,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -660,8 +660,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 9.863,
-            "fullTurnMs": 74.976,
+            "intervalMs": 13.841,
+            "fullTurnMs": 79.548,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -674,10 +674,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -3.633,
-          "enabled2MinusEnabled": -0.959,
-          "fullDisabledMinusEnabled": -6.145,
-          "fullEnabled2MinusEnabled": -0.48
+          "disabledMinusEnabled": 0.383,
+          "enabled2MinusEnabled": 0.001,
+          "fullDisabledMinusEnabled": -4.065,
+          "fullEnabled2MinusEnabled": -3.17
         }
       },
       {
@@ -686,8 +686,8 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 13.523,
-            "fullTurnMs": 82.556,
+            "intervalMs": 12.48,
+            "fullTurnMs": 75.05,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -700,8 +700,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 12.342,
-            "fullTurnMs": 69.933,
+            "intervalMs": 12.897,
+            "fullTurnMs": 74.957,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -714,8 +714,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 13.516,
-            "fullTurnMs": 81.141,
+            "intervalMs": 26.257,
+            "fullTurnMs": 103.303,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -728,10 +728,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.181,
-          "enabled2MinusEnabled": -0.007,
-          "fullDisabledMinusEnabled": -12.623,
-          "fullEnabled2MinusEnabled": -1.415
+          "disabledMinusEnabled": 0.417,
+          "enabled2MinusEnabled": 13.777,
+          "fullDisabledMinusEnabled": -0.093,
+          "fullEnabled2MinusEnabled": 28.253
         }
       },
       {
@@ -740,8 +740,8 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 9.727,
-            "fullTurnMs": 67.827,
+            "intervalMs": 11.671,
+            "fullTurnMs": 78.759,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -754,8 +754,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.19,
-            "fullTurnMs": 78.051,
+            "intervalMs": 11.352,
+            "fullTurnMs": 78.85,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -768,8 +768,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 11.535,
-            "fullTurnMs": 76.569,
+            "intervalMs": 10.03,
+            "fullTurnMs": 78.98,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -782,10 +782,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.808,
-          "enabled2MinusEnabled": 0.655,
-          "fullDisabledMinusEnabled": -8.742,
-          "fullEnabled2MinusEnabled": 1.482
+          "disabledMinusEnabled": 1.641,
+          "enabled2MinusEnabled": 1.322,
+          "fullDisabledMinusEnabled": -0.221,
+          "fullEnabled2MinusEnabled": -0.13
         }
       },
       {
@@ -794,8 +794,8 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.447,
-            "fullTurnMs": 81.436,
+            "intervalMs": 11.455,
+            "fullTurnMs": 82.564,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -808,8 +808,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.352,
-            "fullTurnMs": 83.073,
+            "intervalMs": 13.868,
+            "fullTurnMs": 79.52,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -822,8 +822,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 10.998,
-            "fullTurnMs": 75.593,
+            "intervalMs": 10.955,
+            "fullTurnMs": 72.348,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -836,10 +836,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.354,
-          "enabled2MinusEnabled": 0.095,
-          "fullDisabledMinusEnabled": -7.48,
-          "fullEnabled2MinusEnabled": -1.637
+          "disabledMinusEnabled": -2.913,
+          "enabled2MinusEnabled": -2.413,
+          "fullDisabledMinusEnabled": -7.172,
+          "fullEnabled2MinusEnabled": 3.044
         }
       },
       {
@@ -848,8 +848,8 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 9.931,
-            "fullTurnMs": 76.919,
+            "intervalMs": 11.63,
+            "fullTurnMs": 77.111,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -862,8 +862,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 13.08,
-            "fullTurnMs": 72.573,
+            "intervalMs": 11.984,
+            "fullTurnMs": 74.956,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -877,7 +877,7 @@
           "enabled2": {
             "arm": "enabled2",
             "intervalMs": 11.495,
-            "fullTurnMs": 76.943,
+            "fullTurnMs": 79.318,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -890,10 +890,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 3.149,
-          "enabled2MinusEnabled": 1.564,
-          "fullDisabledMinusEnabled": -4.346,
-          "fullEnabled2MinusEnabled": 0.024
+          "disabledMinusEnabled": 0.354,
+          "enabled2MinusEnabled": -0.135,
+          "fullDisabledMinusEnabled": -2.155,
+          "fullEnabled2MinusEnabled": 2.207
         }
       },
       {
@@ -902,8 +902,8 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 12.916,
-            "fullTurnMs": 80.595,
+            "intervalMs": 11.819,
+            "fullTurnMs": 80.374,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -916,8 +916,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 11.306,
-            "fullTurnMs": 76.098,
+            "intervalMs": 12.075,
+            "fullTurnMs": 77.418,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -930,8 +930,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 11.475,
-            "fullTurnMs": 79.054,
+            "intervalMs": 11.987,
+            "fullTurnMs": 80.622,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -944,10 +944,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 1.441,
-          "enabled2MinusEnabled": -0.169,
-          "fullDisabledMinusEnabled": 1.541,
-          "fullEnabled2MinusEnabled": -2.956
+          "disabledMinusEnabled": -0.168,
+          "enabled2MinusEnabled": 0.088,
+          "fullDisabledMinusEnabled": -0.248,
+          "fullEnabled2MinusEnabled": -3.204
         }
       },
       {
@@ -956,8 +956,8 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.384,
-            "fullTurnMs": 79.082,
+            "intervalMs": 12.411,
+            "fullTurnMs": 77.419,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -970,8 +970,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.476,
-            "fullTurnMs": 76.562,
+            "intervalMs": 13.452,
+            "fullTurnMs": 81.445,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -984,8 +984,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.026,
-            "fullTurnMs": 75.986,
+            "intervalMs": 10.897,
+            "fullTurnMs": 78.952,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -998,10 +998,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.45,
-          "enabled2MinusEnabled": -0.092,
-          "fullDisabledMinusEnabled": -0.576,
-          "fullEnabled2MinusEnabled": 2.52
+          "disabledMinusEnabled": -2.555,
+          "enabled2MinusEnabled": -1.041,
+          "fullDisabledMinusEnabled": -2.493,
+          "fullEnabled2MinusEnabled": -4.026
         }
       }
     ],
