@@ -146,7 +146,7 @@ test('in-ASAR manifests identify a packaged DSH host without executing anything'
   ]);
   const entry = `${asar}/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js`;
   const wrapper = path.join(dir, 'dsh');
-  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /mock/binary --expose-internals "${entry}" "$@"\n`);
+  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /mock/Electron --expose-internals "${entry}" "$@"\n`);
   fs.chmodSync(wrapper, 0o755);
 
   const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
@@ -163,7 +163,7 @@ test('ASAR 4-byte header padding does not shift in-ASAR manifest offsets', (t) =
   ], { padded: true });
   const entry = `${asar}/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js`;
   const wrapper = path.join(dir, 'dsh');
-  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /mock/binary "${entry}" "$@"\n`);
+  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /mock/Electron "${entry}" "$@"\n`);
   fs.chmodSync(wrapper, 0o755);
 
   const selected = withPath('', () => resolveHostCli({ runningEntry: wrapper })).selected;
@@ -261,7 +261,7 @@ test('a host without a Node-resolvable package root keeps host.modules not-evalu
   ]);
   const entry = `${asar}/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js`;
   const wrapper = path.join(dir, 'dsh');
-  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /mock/binary "${entry}" "$@"\n`);
+  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /mock/Electron "${entry}" "$@"\n`);
   fs.chmodSync(wrapper, 0o755);
   const cli = withPath('', () => resolveHostCli({ cliPath: wrapper })).selected;
   assert.equal(cli.version, '0.2.2-rc.5');
@@ -369,43 +369,51 @@ test('ASAR entry parsing stays linear on long .asar-like paths', (t) => {
   assert.ok(elapsed < 1000, `ASAR path parsing must stay linear, took ${elapsed}ms`);
 });
 
-test('the composition probe stays read-only until the profile is fully initialized', async (t) => {
-  const dir = tmp(t, 'host-res-composition-readonly-');
-  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.5', 'console.log("");\n');
+test('the real composition probe runs on an isolated profile copy', async (t) => {
+  const dir = tmp(t, 'host-res-composition-isolated-');
+  const dump = [
+    '# == dsh-evolution',
+    '- id: evolution-experience',
+    '  name: dsh-evolution/experience',
+    '- id: evolution-orchestrator',
+    '  name: dsh-evolution',
+    '- id: evolution-trust-root-guard',
+    '  name: dsh-evolution/guard',
+    '',
+  ].join('\n');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.5', `process.stdout.write(${JSON.stringify(dump)});\n`);
   const marker = path.join(dir, 'marker');
   const wrapper = path.join(dir, 'dsh');
-  fs.writeFileSync(wrapper, `#!/bin/sh\nprintf x > "${marker}"\nexec ${process.execPath} "${dsh.bin}" "$@"\n`);
+  fs.writeFileSync(wrapper, `#!/bin/sh\nprintf '%s\\n' "$DSH_HOME" > "${marker}"\nexec ${process.execPath} "${dsh.bin}" "$@"\n`);
   fs.chmodSync(wrapper, 0o755);
   const dshHome = doctorHome(t);
   const profileDir = path.join(dshHome, 'profiles', 'acp');
-  fs.mkdirSync(profileDir, { recursive: true });
-  fs.writeFileSync(path.join(profileDir, 'cordis.yml'), '');
-  const countFiles = (root) => fs.readdirSync(root, { withFileTypes: true })
-    .reduce((sum, entry) => sum + (entry.isDirectory() ? countFiles(path.join(root, entry.name)) : 1), 0);
-  const before = countFiles(profileDir);
+  fs.mkdirSync(path.join(profileDir, 'node_modules'), { recursive: true });
+  for (const name of ['cordis.yml', 'cordis.patch.yml', 'package.json', 'pnpm-workspace.yaml']) {
+    fs.writeFileSync(path.join(profileDir, name), `real-${name}\n`);
+  }
+  const cordisPath = path.join(profileDir, 'cordis.yml');
+  const original = fs.readFileSync(cordisPath);
+  const originalMtime = fs.statSync(cordisPath).mtimeMs;
 
   const report = await collectDiagnostics({ dshHome, cliPath: wrapper, profile: 'acp' });
   const composition = report.checks.find((check) => check.id === 'host.composition');
-  assert.equal(composition.level, 'not-evaluated');
-  assert.match(composition.evidence.reason, /read-only/);
-  assert.equal(fs.existsSync(marker), false, 'the doctor must not run a probe that creates profile state');
-  assert.equal(countFiles(profileDir), before, 'a partial profile must not gain config files');
+  assert.equal(composition.level, 'ok', JSON.stringify(composition));
+  assert.deepEqual(fs.readFileSync(cordisPath), original, 'the real cordis.yml bytes are unchanged');
+  assert.equal(fs.statSync(cordisPath).mtimeMs, originalMtime, 'the real cordis.yml mtime is unchanged');
+  assert.equal(fs.existsSync(marker), true, 'the wrapper was executed');
+  const seenHome = fs.readFileSync(marker, 'utf8').trim();
+  assert.notEqual(seenHome, dshHome, 'the wrapper never saw the real DSH_HOME');
+  assert.match(seenHome, /dsh-evolution-doctor-/, 'the probe used a throwaway home');
+  assert.equal(fs.existsSync(seenHome), false, 'the throwaway home was removed');
 
-  // An injected hermetic probe keeps its existing behavior even on a partial profile.
+  // An injected hermetic probe keeps its existing behavior.
   let called = false;
   await collectDiagnostics({
     dshHome, cliPath: wrapper, profile: 'acp',
     probe: { runDumpConfig: () => { called = true; return { status: 0, stdout: '', stderr: '' }; } },
   });
   assert.equal(called, true, 'an injected probe still runs');
-
-  // A fully initialized profile allows the real probe to execute the wrapper.
-  for (const name of ['cordis.patch.yml', 'package.json', 'pnpm-workspace.yaml']) {
-    fs.writeFileSync(path.join(profileDir, name), '');
-  }
-  fs.mkdirSync(path.join(profileDir, 'node_modules'));
-  await collectDiagnostics({ dshHome, cliPath: wrapper, profile: 'acp' });
-  assert.equal(fs.existsSync(marker), true, 'a complete profile is probed normally');
 });
 
 test('ASAR reads bypass the Electron asar patch and restore process.noAsar', (t) => {
@@ -416,7 +424,7 @@ test('ASAR reads bypass the Electron asar patch and restore process.noAsar', (t)
   ]);
   const entry = `${asar}/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js`;
   const wrapper = path.join(dir, 'dsh');
-  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /mock/binary "${entry}" "$@"\n`);
+  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /mock/Electron "${entry}" "$@"\n`);
   fs.chmodSync(wrapper, 0o755);
 
   const original = fs.openSync;
@@ -505,4 +513,58 @@ test('a direct .js entry is still resolved as a Node host', (t) => {
   const dsh = makeDshPackage(path.join(dir, 'host'), '9.9.9');
   const result = withPath('', () => resolveHostCli({ cliPath: dsh.bin }));
   assert.equal(result.selected?.version, '9.9.9');
+});
+
+test('a quoted heredoc delimiter with a hyphen still hides its exec lines', (t) => {
+  const dir = tmp(t, 'host-res-heredoc-hyphen-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '9.9.9');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+cat <<'END-HELP'
+exec ${process.execPath} "${dsh.bin}" "$@"
+END-HELP
+exec /bin/false "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(withPath('', () => resolveHostCli({ cliPath: wrapper })).selected, null,
+    'an exec inside a hyphenated heredoc is not a candidate');
+});
+
+test('node -e never promotes its arguments to a host entry', (t) => {
+  const dir = tmp(t, 'host-res-node-eval-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '9.9.9');
+  const scripts = [
+    `#!/bin/sh\nexec ${process.execPath} -e 'process.exit(0)' "${dsh.bin}" "$@"\n`,
+    `#!/bin/sh\nexec ${process.execPath} -e "${dsh.bin}" "$@"\n`,
+    `#!/bin/sh\nexec ${process.execPath} --eval="process.exit(0)" "${dsh.bin}" "$@"\n`,
+  ];
+  for (const [index, script] of scripts.entries()) {
+    const wrapper = path.join(dir, `dsh-${index}`);
+    fs.writeFileSync(wrapper, script);
+    fs.chmodSync(wrapper, 0o755);
+    assert.equal(withPath('', () => resolveHostCli({ cliPath: wrapper })).selected, null,
+      `node eval invocation #${index} has no script entry`);
+  }
+});
+
+test('ELECTRON_RUN_AS_NODE alone does not make a binary an Electron host', (t) => {
+  const dir = tmp(t, 'host-res-electron-token-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '9.9.9');
+  const asar = path.join(dir, 'app.asar');
+  makeAsar(asar, [
+    { internalPath: 'dsh/node_modules/@deepseek-ai/dsh/package.json', value: { name: '@deepseek-ai/dsh', version: '0.2.2-rc.5' } },
+  ]);
+  const entry = `${asar}/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js`;
+
+  const echo = path.join(dir, 'echo-dsh');
+  fs.writeFileSync(echo, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /bin/echo "${entry}" "$@"\n`);
+  fs.chmodSync(echo, 0o755);
+  assert.equal(withPath('', () => resolveHostCli({ cliPath: echo })).selected, null,
+    '/bin/echo is not an Electron binary');
+
+  const real = path.join(dir, 'electron-dsh');
+  fs.writeFileSync(real, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec "/mock/DeepSeek Harness" "${entry}" "$@"\n`);
+  fs.chmodSync(real, 0o755);
+  assert.equal(withPath('', () => resolveHostCli({ cliPath: real })).selected?.version, '0.2.2-rc.5',
+    'an Electron binary with the ASAR entry is still resolved');
 });
