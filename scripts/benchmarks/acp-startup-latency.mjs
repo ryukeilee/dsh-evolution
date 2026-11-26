@@ -36,6 +36,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROBE = path.join(HERE, 'probes', 'acp-startup-latency-probe.mjs');
 const ARMS = ['on', 'off', 'on2'];
+const ENTRY_FILES = {
+  web: ['experience-collector', 'experience-history', 'promoted-consumer', 'guard'],
+  acp: ['experience-collector', 'experience-history', 'promoted-consumer', 'guard', 'desktop-task-client'],
+};
 const KEY_ENV = 'DSH_EVOLUTION_LATENCY_KEY';
 const THRESHOLD_MS = 200;
 // Do not path.resolve(HOME): a lexical ".." would name a different directory
@@ -177,7 +181,10 @@ function resolvePathComponents(target, state = { hops: 0, visited: new Set() }) 
       if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error;
     }
     if (entry?.isSymbolicLink()) {
-      const hops = state.hops + 1;
+      // Accumulate across the whole resolution, including target components
+      // spliced into the queue; otherwise an acyclic 41-link chain is accepted.
+      state.hops += 1;
+      const hops = state.hops;
       if (hops > 40) throw new Error(`too many symlink hops while resolving ${absolute}`);
       if (state.visited.has(candidate)) throw new Error(`symlink loop while resolving ${absolute}: ${candidate}`);
       state.visited.add(candidate);
@@ -254,6 +261,20 @@ function safeReaddir(directory, purpose) {
   const dirents = fs.readdirSync(resolved, { withFileTypes: true });
   readdirStats.calls += 1;
   return { names: dirents.map((entry) => entry.name), dirents, resolved };
+}
+
+/** Assert a scratch copy contains no symlinks after a dereferencing copy. */
+function assertNoSymlinks(root, label) {
+  let links = 0;
+  const walk = (directory) => {
+    for (const entry of safeReaddir(directory, `copy check ${label}`).dirents) {
+      if (entry.isSymbolicLink()) { links += 1; continue; }
+      if (entry.isDirectory()) walk(path.join(directory, entry.name));
+    }
+  };
+  walk(root);
+  assert.equal(links, 0, `${label}: ${links} symlinks survived the copy; ESM could follow them out of the scratch root`);
+  return links;
 }
 
 /**
@@ -457,7 +478,18 @@ async function run() {
   assert.ok(pristineManifest.dsh?.profile?.bundles?.includes('dsh-evolution'), 'the given home does not select dsh-evolution in its acp profile');
   assert.ok(fs.existsSync(PROBE), 'attribution probe is missing');
 
-  const sharing = await import(pathToFileURL(path.join(bundleLib, 'promoted-sharing.js')).href);
+  // ESM resolves relative imports with the JS realpath semantics that fold
+  // ".." inside symlink targets. Only ever hand it a path we resolved and
+  // identity-checked ourselves; never the raw source-home spelling.
+  async function guardedImport(file, purpose) {
+    const resolved = resolvePathComponents(file).final;
+    assert.ok(!isInsideByIdentity(resolved, RESOLVED_REAL_HOME), `${purpose}: ${resolved} is inside the formal home`);
+    assert.ok(allowedReadRoots.some((root) => isInsideByIdentity(resolved, root)), `${purpose}: ${resolved} is outside the allowed roots`);
+    const stat = fs.lstatSync(resolved);
+    assert.ok(stat.isFile(), `${purpose}: ${resolved} is not a regular file`);
+    return import(pathToFileURL(resolved).href);
+  }
+  const sharing = await guardedImport(path.join(bundleLib, 'promoted-sharing.js'), 'sharing contract');
   const hostFacts = {
     dsh: hostVersion,
     cordis: versionFromManifest(runtimePackageManifest('cordis')),
@@ -501,6 +533,7 @@ async function run() {
     return final;
   };
   const linkChecks = { pristine: pristineLinkCheck, copies: [] };
+  const copyLinkCounts = { entryLib: null, homes: [] };
 
   // A fresh-process import needs a node_modules next to lib/, exactly as in
   // experience-entry-load.mjs. Assemble one from the packages the real host
@@ -509,7 +542,16 @@ async function run() {
   const entryRoot = path.join(realWork, 'entry-lib');
   assertScratchPath(entryRoot, 'entryRoot');
   const entryLib = path.join(entryRoot, 'lib');
-  fs.cpSync(bundleLib, entryLib, { recursive: true });
+  fs.cpSync(bundleLib, entryLib, { recursive: true, dereference: true });
+  copyLinkCounts.entryLib = assertNoSymlinks(entryLib, 'entry lib copy');
+  function guardedEntryFile(file) {
+    const resolved = resolvePathComponents(file).final;
+    assert.ok(!isInsideByIdentity(resolved, RESOLVED_REAL_HOME), `entry file ${resolved} is inside the formal home`);
+    assert.ok(isInsideByIdentity(resolved, realWork), `entry file ${resolved} escaped the scratch root`);
+    const stat = fs.lstatSync(resolved);
+    assert.ok(stat.isFile(), `entry file ${resolved} is not a regular file`);
+    return resolved;
+  }
   const entryModules = path.join(entryRoot, 'node_modules');
   fs.mkdirSync(entryModules, { recursive: true, mode: 0o700 });
   const linkPackage = (relative, target) => {
@@ -700,7 +742,10 @@ async function run() {
   function prepare(label, arm, { firstBoot = false } = {}) {
     const homeCopy = path.join(realWork, 'homes', label);
     assertScratchPath(homeCopy, `homeCopy ${label}`);
-    fs.cpSync(home, homeCopy, { recursive: true, verbatimSymlinks: true });
+    // Dereference so no ESM import in the copied tree can follow a link out
+    // of the scratch root; assert below that zero links survived the copy.
+    fs.cpSync(home, homeCopy, { recursive: true, dereference: true });
+    copyLinkCounts.homes.push({ label, links: assertNoSymlinks(homeCopy, `home copy ${label}`) });
     const copyStat = fs.lstatSync(homeCopy);
     assert.ok(copyStat.isDirectory() && !copyStat.isSymbolicLink(), `homeCopy ${label} is not a real directory copy`);
     assert.ok(isInsideByIdentity(resolvePathComponents(homeCopy).final, realWork), `homeCopy ${label} does not resolve inside the scratch root`);
@@ -924,7 +969,10 @@ async function run() {
   const moduleRows = [];
   for (let round = 0; round < attributionRounds; round += 1) {
     const order = round % 2 === 0 ? ['web', 'acp'] : ['acp', 'web'];
-    for (const setName of order) moduleRows.push({ round, set: setName, ...runProbe(['module-load', entryLib, setName]) });
+    for (const setName of order) {
+      const files = ENTRY_FILES[setName].map((name) => guardedEntryFile(path.join(entryLib, `${name}.js`)));
+      moduleRows.push({ round, set: setName, ...runProbe(['module-load', entryLib, files.join(',')]) });
+    }
   }
   const experienceRows = [];
   for (let round = 0; round < attributionRounds; round += 1) {
@@ -999,6 +1047,11 @@ async function run() {
       totalChecked: pristineLinkCheck.checked + linkChecks.copies.reduce((sum, row) => sum + row.checked, 0),
       totalEscaping: pristineLinkCheck.escaping + linkChecks.copies.reduce((sum, row) => sum + row.escaping, 0),
       safeReaddir: { ...readdirStats },
+      copyLinkCounts: {
+        entryLib: copyLinkCounts.entryLib,
+        homes: copyLinkCounts.homes,
+        rule: 'Copies are made with dereference:true and asserted to contain zero symlinks, so ESM cannot traverse a link out of the scratch root.',
+      },
       homePreflight: {
         files: pristineLinkCheck.files,
         hardLinked: pristineLinkCheck.hardLinked,
@@ -1058,6 +1111,7 @@ async function run() {
     homePreflightHardLinked: payload.symlinkCheck.homePreflight.hardLinked,
     safeReaddirCalls: readdirStats.calls,
     safeReaddirRejections: readdirStats.rejections,
+    copiedTreeSymlinks: (copyLinkCounts.entryLib ?? 0) + copyLinkCounts.homes.reduce((sum, row) => sum + row.links, 0),
     result: decision.result,
     host: hostVersion,
     bundle: bundleVersion,
