@@ -48,6 +48,10 @@
     "files": 1006,
     "hardLinked": 0
   },
+  "safeReaddir": {
+    "calls": 3676,
+    "rejected": 0
+  },
   "linkAudit": {
     "out": {
       "provided": true,
@@ -305,17 +309,17 @@
       "description": "tools/result isError=true; one BEGIN IMMEDIATE/COMMIT per emit",
       "firstCommit": {
         "n": 1,
-        "p50": 2.435874999999996,
-        "p95": 2.435874999999996,
-        "p99": 2.435874999999996,
-        "max": 2.435874999999996
+        "p50": 2.388417000000004,
+        "p95": 2.388417000000004,
+        "p99": 2.388417000000004,
+        "max": 2.388417000000004
       },
       "steady": {
         "n": 49,
-        "p50": 0.2404159999999962,
-        "p95": 0.42770799999999554,
-        "p99": 0.5616250000000065,
-        "max": 0.5616250000000065
+        "p50": 0.23054099999990285,
+        "p95": 0.4169170000000122,
+        "p99": 0.45879200000001674,
+        "max": 0.45879200000001674
       },
       "rejectedSamples": 0
     },
@@ -330,10 +334,10 @@
       },
       "emit": {
         "n": 50,
-        "p50": 0.004584000000008359,
-        "p95": 0.009208999999998468,
-        "p99": 0.08591600000001165,
-        "max": 0.08591600000001165
+        "p50": 0.004500000000007276,
+        "p95": 0.008624999999938154,
+        "p99": 0.08808399999998073,
+        "max": 0.08808399999998073
       },
       "rejectedSamples": 0
     },
@@ -342,25 +346,25 @@
       "commitLocation": "agent/turn-stopping",
       "toolsResultOnly": {
         "n": 50,
-        "p50": 0.00808399999999665,
-        "p95": 0.022332999999989056,
-        "p99": 0.039500000000003865,
-        "max": 0.039500000000003865
+        "p50": 0.007791999999994914,
+        "p95": 0.019667000000026746,
+        "p99": 0.0399169999999458,
+        "max": 0.0399169999999458
       },
       "turnStoppingOnly": {
         "firstCommit": {
           "n": 1,
-          "p50": 0.344333000000006,
-          "p95": 0.344333000000006,
-          "p99": 0.344333000000006,
-          "max": 0.344333000000006
+          "p50": 0.3834590000000162,
+          "p95": 0.3834590000000162,
+          "p99": 0.3834590000000162,
+          "max": 0.3834590000000162
         },
         "steady": {
           "n": 49,
-          "p50": 0.21229199999999082,
-          "p95": 0.3136249999999876,
-          "p99": 0.4042919999999981,
-          "max": 0.4042919999999981
+          "p50": 0.18887500000005275,
+          "p95": 0.294208000000026,
+          "p99": 0.3741659999999456,
+          "max": 0.3741659999999456
         }
       },
       "rejectedSamples": 0
@@ -369,7 +373,7 @@
       "description": "5th clean success in a failure episode commits tool/recovery",
       "verified": true,
       "oneCommit": {
-        "ms": 0.24200000000000443
+        "ms": 0.21762499999999818
       },
       "rejectedAttempts": 0
     }
@@ -379,19 +383,19 @@
     "iterationsPerMode": 30,
     "full": {
       "n": 30,
-      "p50": 0.0905829999999952,
-      "p95": 0.13474999999999682,
-      "p99": 0.13658300000000168,
-      "max": 0.13658300000000168
+      "p50": 0.08104200000002493,
+      "p95": 0.09454199999993307,
+      "p99": 0.09516699999994671,
+      "max": 0.09516699999994671
     },
     "normal": {
       "n": 30,
-      "p50": 0.039540999999999826,
-      "p95": 0.06037500000000762,
-      "p99": 0.06366599999999778,
-      "max": 0.06366599999999778
+      "p50": 0.04066699999998491,
+      "p95": 0.043959000000086235,
+      "p99": 0.06316700000002129,
+      "max": 0.06316700000002129
     },
-    "medianDeltaMs": 0.051
+    "medianDeltaMs": 0.041
   },
   "acp": {
     "timingNarrow": "Parent-process performance.now() between two observation points in this parent process: client-observed tool_call_update (failed/completed) -> next provider HTTP request arrival. It does NOT prove coverage of a collector commit that occurred before the update; use timingFullTurn for coverage. Model generation, network and the end_turn response are outside this attribution window.",
@@ -401,39 +405,39 @@
       {
         "arm": "enabled",
         "valid": true,
-        "intervalMs": 12.25,
-        "fullTurnMs": 79.15,
+        "intervalMs": 11.464,
+        "fullTurnMs": 75.152,
         "statsDelta": {
           "events": 1,
           "knowledge": 1
         },
-        "missingPath": "<SCRATCH>/missing-e8d47a53-2a0b-4080-b02b-1eaa938fec99.txt",
+        "missingPath": "<SCRATCH>/missing-bbb8d36b-6d51-4d2c-a3ca-c348d16d9ab5.txt",
         "missingPathSafe": true,
         "reasons": []
       },
       {
         "arm": "disabled",
         "valid": true,
-        "intervalMs": 14.047,
-        "fullTurnMs": 74.057,
+        "intervalMs": 11.898,
+        "fullTurnMs": 71.971,
         "statsDelta": {
           "events": 0,
           "knowledge": 0
         },
-        "missingPath": "<SCRATCH>/missing-5a52c25e-32d0-43cb-abd1-f3f7d3534be0.txt",
+        "missingPath": "<SCRATCH>/missing-b85cf853-5f80-494f-bf0d-1a4875167ba9.txt",
         "missingPathSafe": true,
         "reasons": []
       },
       {
         "arm": "enabled2",
         "valid": true,
-        "intervalMs": 13.279,
-        "fullTurnMs": 84.299,
+        "intervalMs": 13.357,
+        "fullTurnMs": 74.015,
         "statsDelta": {
           "events": 1,
           "knowledge": 1
         },
-        "missingPath": "<SCRATCH>/missing-5fa92f5f-c9ce-467f-a269-6828e1e26a34.txt",
+        "missingPath": "<SCRATCH>/missing-f2284872-30b8-4388-9e7b-98eb9db47c8a.txt",
         "missingPathSafe": true,
         "reasons": []
       }
@@ -441,85 +445,85 @@
     "rounds": 9,
     "arms": {
       "enabled": {
-        "medianMs": 12.07,
+        "medianMs": 12.327,
         "intervals": [
-          11.356,
-          10.094,
-          12.52,
-          12.312,
-          12.07,
-          11.414,
-          12.202,
-          11.34,
-          12.204
+          11.54,
+          11.328,
+          11.228,
+          12.327,
+          13.358,
+          12.39,
+          12.377,
+          13.282,
+          11.81
         ],
-        "fullTurnMedianMs": 75.026,
+        "fullTurnMedianMs": 74.073,
         "fullTurnIntervals": [
-          78.077,
-          71.882,
-          75.026,
-          75.071,
-          72.98,
-          72.622,
-          78.31,
-          73.575,
-          77.067
+          74.073,
+          80.337,
+          75.702,
+          72.979,
+          71.885,
+          74.025,
+          76.354,
+          77.451,
+          69.894
         ],
         "validSamples": 9,
         "rejectedSamples": 0
       },
       "disabled": {
-        "medianMs": 11.991,
+        "medianMs": 12.021,
         "intervals": [
-          12.029,
-          12.736,
-          13.016,
-          10.9,
-          9.455,
-          9.68,
-          11.991,
-          11.881,
-          14.942
+          12.9,
+          10.082,
+          11.971,
+          10.497,
+          12.021,
+          12.688,
+          12.866,
+          11.394,
+          13.46
         ],
-        "fullTurnMedianMs": 71.931,
+        "fullTurnMedianMs": 72.637,
         "fullTurnIntervals": [
-          71.044,
-          71.931,
-          74.627,
-          73.994,
-          64.827,
-          67.685,
-          69.998,
-          72.391,
-          72.952
+          77.601,
+          66.435,
+          67.924,
+          69.029,
+          76.447,
+          66.861,
+          76.519,
+          73.446,
+          72.637
         ],
         "validSamples": 9,
         "rejectedSamples": 0
       },
       "enabled2": {
-        "medianMs": 11.432,
+        "medianMs": 13.351,
         "intervals": [
-          11.283,
-          12.403,
-          11.416,
-          11.022,
-          13.102,
-          11.432,
-          12.642,
-          12.119,
-          9.671
+          11.262,
+          15.302,
+          21.383,
+          11.731,
+          13.406,
+          14.958,
+          13.351,
+          11.519,
+          12.184
         ],
-        "fullTurnMedianMs": 74.821,
+        "fullTurnMedianMs": 73.047,
         "fullTurnIntervals": [
-          71.471,
-          74.956,
-          74.821,
-          73.686,
-          75.018,
-          77.575,
-          77.47,
-          71.865,
-          65.394
+          69.04,
+          86.613,
+          99.409,
+          72.032,
+          76.549,
+          79.27,
+          71.332,
+          73.047,
+          70.954
         ],
         "validSamples": 9,
         "rejectedSamples": 0
@@ -527,85 +531,85 @@
     },
     "pairedDiff": {
       "disabledMinusEnabled": {
-        "medianMs": 0.496,
-        "medianAbsDiff": 1.412,
+        "medianMs": 0.298,
+        "medianAbsDiff": 1.337,
         "direction": {
           "positive": 5,
           "negative": 4,
           "tie": 0
         },
         "perRound": [
-          0.673,
-          2.642,
-          0.496,
-          -1.412,
-          -2.615,
-          -1.734,
-          -0.211,
-          0.541,
-          2.738
+          1.36,
+          -1.246,
+          0.743,
+          -1.83,
+          -1.337,
+          0.298,
+          0.489,
+          -1.888,
+          1.65
         ]
       },
       "enabled2MinusEnabled": {
-        "medianMs": 0.018,
-        "medianAbsDiff": 1.032,
+        "medianMs": 0.374,
+        "medianAbsDiff": 0.974,
         "direction": {
-          "positive": 5,
-          "negative": 4,
+          "positive": 6,
+          "negative": 3,
           "tie": 0
         },
         "perRound": [
-          -0.073,
-          2.309,
-          -1.104,
-          -1.29,
-          1.032,
-          0.018,
-          0.44,
-          0.779,
-          -2.533
+          -0.278,
+          3.974,
+          10.155,
+          -0.596,
+          0.048,
+          2.568,
+          0.974,
+          -1.763,
+          0.374
         ]
       }
     },
     "fullTurnPairedDiff": {
       "disabledMinusEnabled": {
-        "medianMs": -4.115,
-        "medianAbsDiff": 4.115,
+        "medianMs": -3.95,
+        "medianAbsDiff": 4.005,
         "direction": {
-          "positive": 1,
-          "negative": 8,
+          "positive": 4,
+          "negative": 5,
           "tie": 0
         },
         "perRound": [
-          -7.033,
-          0.049,
-          -0.399,
-          -1.077,
-          -8.153,
-          -4.937,
-          -8.312,
-          -1.184,
-          -4.115
+          3.528,
+          -13.902,
+          -7.778,
+          -3.95,
+          4.562,
+          -7.164,
+          0.165,
+          -4.005,
+          2.743
         ]
       },
       "enabled2MinusEnabled": {
-        "medianMs": -0.84,
-        "medianAbsDiff": 2.038,
+        "medianMs": 1.06,
+        "medianAbsDiff": 5.022,
         "direction": {
-          "positive": 3,
-          "negative": 6,
+          "positive": 5,
+          "negative": 4,
           "tie": 0
         },
         "perRound": [
-          -6.606,
-          3.074,
-          -0.205,
-          -1.385,
-          2.038,
-          4.953,
-          -0.84,
-          -1.71,
-          -11.673
+          -5.033,
+          6.276,
+          23.707,
+          -0.947,
+          4.664,
+          5.245,
+          -5.022,
+          -4.404,
+          1.06
         ]
       }
     },
@@ -616,13 +620,13 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 11.356,
-            "fullTurnMs": 78.077,
+            "intervalMs": 11.54,
+            "fullTurnMs": 74.073,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-26502fba-fcc2-4fee-a26d-72dfc2d05c02.txt",
+            "missingPath": "<SCRATCH>/missing-311bf218-7a8e-4624-a5c0-a121d6d2877f.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -632,13 +636,13 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 12.029,
-            "fullTurnMs": 71.044,
+            "intervalMs": 12.9,
+            "fullTurnMs": 77.601,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
             },
-            "missingPath": "<SCRATCH>/missing-ebe794e9-2a22-4a48-b549-24164cec6b3f.txt",
+            "missingPath": "<SCRATCH>/missing-13331c2e-f30b-497f-88bb-23bc57255173.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -648,13 +652,13 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 11.283,
-            "fullTurnMs": 71.471,
+            "intervalMs": 11.262,
+            "fullTurnMs": 69.04,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-813873f0-b03c-4138-be54-d941ab4d1136.txt",
+            "missingPath": "<SCRATCH>/missing-43b1cb55-7e54-4c80-a777-656a6ef64d50.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -664,10 +668,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 0.673,
-          "enabled2MinusEnabled": -0.073,
-          "fullDisabledMinusEnabled": -7.033,
-          "fullEnabled2MinusEnabled": -6.606
+          "disabledMinusEnabled": 1.36,
+          "enabled2MinusEnabled": -0.278,
+          "fullDisabledMinusEnabled": 3.528,
+          "fullEnabled2MinusEnabled": -5.033
         }
       },
       {
@@ -676,13 +680,13 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 12.736,
-            "fullTurnMs": 71.931,
+            "intervalMs": 10.082,
+            "fullTurnMs": 66.435,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
             },
-            "missingPath": "<SCRATCH>/missing-faaabcdb-8027-41e4-b582-3a26413c0c63.txt",
+            "missingPath": "<SCRATCH>/missing-58c101b1-e33f-4508-b7de-fa245619c6dc.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -692,13 +696,13 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.403,
-            "fullTurnMs": 74.956,
+            "intervalMs": 15.302,
+            "fullTurnMs": 86.613,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-294198c1-e0d0-4f50-a635-c40093803c82.txt",
+            "missingPath": "<SCRATCH>/missing-3b76ca91-941a-4fe1-b915-9cfd317c3e27.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -708,13 +712,13 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 10.094,
-            "fullTurnMs": 71.882,
+            "intervalMs": 11.328,
+            "fullTurnMs": 80.337,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-c1b4b4dd-8a15-43c2-b705-6b2544218df3.txt",
+            "missingPath": "<SCRATCH>/missing-353e92fa-61ad-40fb-901b-9e202aae9253.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -724,10 +728,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 2.642,
-          "enabled2MinusEnabled": 2.309,
-          "fullDisabledMinusEnabled": 0.049,
-          "fullEnabled2MinusEnabled": 3.074
+          "disabledMinusEnabled": -1.246,
+          "enabled2MinusEnabled": 3.974,
+          "fullDisabledMinusEnabled": -13.902,
+          "fullEnabled2MinusEnabled": 6.276
         }
       },
       {
@@ -736,13 +740,13 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 11.416,
-            "fullTurnMs": 74.821,
+            "intervalMs": 21.383,
+            "fullTurnMs": 99.409,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-d9d30942-6221-4847-8ba9-c28fe114d9d7.txt",
+            "missingPath": "<SCRATCH>/missing-64bf76e8-002d-4abc-9269-77cbaae47d3f.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -752,13 +756,13 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.52,
-            "fullTurnMs": 75.026,
+            "intervalMs": 11.228,
+            "fullTurnMs": 75.702,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-cf43d6bb-a808-4aec-b9d5-e71b4813443c.txt",
+            "missingPath": "<SCRATCH>/missing-04bd06d6-56f7-4d4a-9d6b-79500f7fa604.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -768,13 +772,13 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 13.016,
-            "fullTurnMs": 74.627,
+            "intervalMs": 11.971,
+            "fullTurnMs": 67.924,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
             },
-            "missingPath": "<SCRATCH>/missing-bed15234-c2e8-4d55-85a5-f6f9e44144b2.txt",
+            "missingPath": "<SCRATCH>/missing-8d848b68-d0c7-485e-bfd5-d2344457a4f3.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -784,10 +788,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 0.496,
-          "enabled2MinusEnabled": -1.104,
-          "fullDisabledMinusEnabled": -0.399,
-          "fullEnabled2MinusEnabled": -0.205
+          "disabledMinusEnabled": 0.743,
+          "enabled2MinusEnabled": 10.155,
+          "fullDisabledMinusEnabled": -7.778,
+          "fullEnabled2MinusEnabled": 23.707
         }
       },
       {
@@ -796,13 +800,13 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.312,
-            "fullTurnMs": 75.071,
+            "intervalMs": 12.327,
+            "fullTurnMs": 72.979,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-9a67773b-b76c-43f7-be6f-e8ac70d75a3e.txt",
+            "missingPath": "<SCRATCH>/missing-9cd6b17f-be1c-40f0-beb4-819f1eb31a9b.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -812,13 +816,13 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 10.9,
-            "fullTurnMs": 73.994,
+            "intervalMs": 10.497,
+            "fullTurnMs": 69.029,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
             },
-            "missingPath": "<SCRATCH>/missing-a671a356-814d-4521-95e4-e562fc5a14b2.txt",
+            "missingPath": "<SCRATCH>/missing-b33dc06b-e62b-4db8-9022-95082b053068.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -828,13 +832,13 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 11.022,
-            "fullTurnMs": 73.686,
+            "intervalMs": 11.731,
+            "fullTurnMs": 72.032,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-3e1d6ca9-38e9-430d-9b75-a2fd8fafa8e0.txt",
+            "missingPath": "<SCRATCH>/missing-6d725268-e01f-4d3f-ac8b-ec7042131fbb.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -844,10 +848,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.412,
-          "enabled2MinusEnabled": -1.29,
-          "fullDisabledMinusEnabled": -1.077,
-          "fullEnabled2MinusEnabled": -1.385
+          "disabledMinusEnabled": -1.83,
+          "enabled2MinusEnabled": -0.596,
+          "fullDisabledMinusEnabled": -3.95,
+          "fullEnabled2MinusEnabled": -0.947
         }
       },
       {
@@ -856,13 +860,13 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 9.455,
-            "fullTurnMs": 64.827,
+            "intervalMs": 12.021,
+            "fullTurnMs": 76.447,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
             },
-            "missingPath": "<SCRATCH>/missing-a2ab064a-ff66-4c18-a0fc-30599d9d392a.txt",
+            "missingPath": "<SCRATCH>/missing-2ef06eb4-1718-4433-b0bc-ca74972e77de.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -872,13 +876,13 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 13.102,
-            "fullTurnMs": 75.018,
+            "intervalMs": 13.406,
+            "fullTurnMs": 76.549,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-cd39c490-aacf-40c6-aeab-97dcbdee36c3.txt",
+            "missingPath": "<SCRATCH>/missing-a10243ae-e379-4dd7-ab31-e3d5a29752b8.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -888,13 +892,13 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.07,
-            "fullTurnMs": 72.98,
+            "intervalMs": 13.358,
+            "fullTurnMs": 71.885,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-a7456fca-f40c-4baa-92ba-2b077ef62862.txt",
+            "missingPath": "<SCRATCH>/missing-bad9472d-adc2-4ee7-a363-4d9c269c0f51.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -904,10 +908,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -2.615,
-          "enabled2MinusEnabled": 1.032,
-          "fullDisabledMinusEnabled": -8.153,
-          "fullEnabled2MinusEnabled": 2.038
+          "disabledMinusEnabled": -1.337,
+          "enabled2MinusEnabled": 0.048,
+          "fullDisabledMinusEnabled": 4.562,
+          "fullEnabled2MinusEnabled": 4.664
         }
       },
       {
@@ -916,13 +920,13 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 11.432,
-            "fullTurnMs": 77.575,
+            "intervalMs": 14.958,
+            "fullTurnMs": 79.27,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-71ddd8dc-d454-45ec-9e7b-18db61604c79.txt",
+            "missingPath": "<SCRATCH>/missing-2c4f91ba-d67e-4036-bc12-38a52add4420.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -932,13 +936,13 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 11.414,
-            "fullTurnMs": 72.622,
+            "intervalMs": 12.39,
+            "fullTurnMs": 74.025,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-0bdb5b90-27ac-47e8-b03e-3c86fb568d9d.txt",
+            "missingPath": "<SCRATCH>/missing-2a070743-1e0b-4b9b-b2ec-da9bd00e91c7.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -948,13 +952,13 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 9.68,
-            "fullTurnMs": 67.685,
+            "intervalMs": 12.688,
+            "fullTurnMs": 66.861,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
             },
-            "missingPath": "<SCRATCH>/missing-fbabcd4a-5cb9-45fd-81db-b65dc6298614.txt",
+            "missingPath": "<SCRATCH>/missing-ec883ec3-c2b3-407f-9c7f-6e16b8e1033e.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -964,10 +968,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.734,
-          "enabled2MinusEnabled": 0.018,
-          "fullDisabledMinusEnabled": -4.937,
-          "fullEnabled2MinusEnabled": 4.953
+          "disabledMinusEnabled": 0.298,
+          "enabled2MinusEnabled": 2.568,
+          "fullDisabledMinusEnabled": -7.164,
+          "fullEnabled2MinusEnabled": 5.245
         }
       },
       {
@@ -976,13 +980,13 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.202,
-            "fullTurnMs": 78.31,
+            "intervalMs": 12.377,
+            "fullTurnMs": 76.354,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-f9f1cb8b-8312-46ec-8df4-c669eb7e951d.txt",
+            "missingPath": "<SCRATCH>/missing-48b1aab0-ed48-4b04-8ccf-e04f402e1f84.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -992,13 +996,13 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.991,
-            "fullTurnMs": 69.998,
+            "intervalMs": 12.866,
+            "fullTurnMs": 76.519,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
             },
-            "missingPath": "<SCRATCH>/missing-a80e3184-1e77-478b-b850-96fb02ece849.txt",
+            "missingPath": "<SCRATCH>/missing-5387f962-9e8d-4198-8b18-9489b00f4eb8.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -1008,13 +1012,13 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.642,
-            "fullTurnMs": 77.47,
+            "intervalMs": 13.351,
+            "fullTurnMs": 71.332,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-dbac4947-ed76-4f18-b1c4-63d2a102b1d8.txt",
+            "missingPath": "<SCRATCH>/missing-ef822485-de2c-4e06-9fd0-28f3b666f540.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -1024,10 +1028,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -0.211,
-          "enabled2MinusEnabled": 0.44,
-          "fullDisabledMinusEnabled": -8.312,
-          "fullEnabled2MinusEnabled": -0.84
+          "disabledMinusEnabled": 0.489,
+          "enabled2MinusEnabled": 0.974,
+          "fullDisabledMinusEnabled": 0.165,
+          "fullEnabled2MinusEnabled": -5.022
         }
       },
       {
@@ -1036,13 +1040,13 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.881,
-            "fullTurnMs": 72.391,
+            "intervalMs": 11.394,
+            "fullTurnMs": 73.446,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
             },
-            "missingPath": "<SCRATCH>/missing-7649c329-41c0-4add-9f44-c6944da3eb68.txt",
+            "missingPath": "<SCRATCH>/missing-65ff02db-d16e-4905-b8cd-92045b7dfcf4.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -1052,13 +1056,13 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.119,
-            "fullTurnMs": 71.865,
+            "intervalMs": 11.519,
+            "fullTurnMs": 73.047,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-64a8c17d-1396-44d8-9f02-abfc8017378f.txt",
+            "missingPath": "<SCRATCH>/missing-ceb81d4d-0a7f-4bed-bef7-71fe47833084.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -1068,13 +1072,13 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 11.34,
-            "fullTurnMs": 73.575,
+            "intervalMs": 13.282,
+            "fullTurnMs": 77.451,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-d60b9860-0d7a-4ecd-8219-1fa7439d57f3.txt",
+            "missingPath": "<SCRATCH>/missing-ed44fac8-9a80-456b-b85f-f18571d4aa6d.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -1084,10 +1088,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 0.541,
-          "enabled2MinusEnabled": 0.779,
-          "fullDisabledMinusEnabled": -1.184,
-          "fullEnabled2MinusEnabled": -1.71
+          "disabledMinusEnabled": -1.888,
+          "enabled2MinusEnabled": -1.763,
+          "fullDisabledMinusEnabled": -4.005,
+          "fullEnabled2MinusEnabled": -4.404
         }
       },
       {
@@ -1096,13 +1100,13 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 9.671,
-            "fullTurnMs": 65.394,
+            "intervalMs": 12.184,
+            "fullTurnMs": 70.954,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-4a28c387-34c6-4553-a82a-7821b0fee93c.txt",
+            "missingPath": "<SCRATCH>/missing-4298d57f-9830-483a-b973-a347db43d0b8.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -1112,13 +1116,13 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.204,
-            "fullTurnMs": 77.067,
+            "intervalMs": 11.81,
+            "fullTurnMs": 69.894,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
             },
-            "missingPath": "<SCRATCH>/missing-0493ae5f-67e3-4aea-bebe-8a9a32640325.txt",
+            "missingPath": "<SCRATCH>/missing-86bcc644-ea0a-4a35-81c3-fa02c021df75.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -1128,13 +1132,13 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 14.942,
-            "fullTurnMs": 72.952,
+            "intervalMs": 13.46,
+            "fullTurnMs": 72.637,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
             },
-            "missingPath": "<SCRATCH>/missing-309cb5c0-aba1-43c2-bc68-871551e20b5a.txt",
+            "missingPath": "<SCRATCH>/missing-fcb6c77a-21bf-4290-882a-2786b56514ec.txt",
             "missingPathSafe": true,
             "providerRequests": 2,
             "toolFailedObserved": true,
@@ -1144,10 +1148,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 2.738,
-          "enabled2MinusEnabled": -2.533,
-          "fullDisabledMinusEnabled": -4.115,
-          "fullEnabled2MinusEnabled": -11.673
+          "disabledMinusEnabled": 1.65,
+          "enabled2MinusEnabled": 0.374,
+          "fullDisabledMinusEnabled": 2.743,
+          "fullEnabled2MinusEnabled": 1.06
         }
       }
     ],
