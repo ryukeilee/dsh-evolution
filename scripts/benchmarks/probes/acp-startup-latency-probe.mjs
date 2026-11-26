@@ -6,7 +6,7 @@
  * parse/instantiate and first-open costs. Nothing here writes to the pristine
  * home; every root passed in is a scratch copy owned by the caller.
  *
- *   module-load <bundleLib> <web|acp>   import the ACP/Web entry set
+ *   module-load <bundleLib> <csv-of-validated-entry-files> import the ACP/Web entry set
  *   shared-experience <bundleLib> <root> open the shared SQLite cold then hot
  *   shared-index <bundleLib> <dataRoot> <expectedCount> read + evaluate index
  */
@@ -18,16 +18,12 @@ import { registerHooks } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const ENTRY_SETS = {
-  web: ['experience-collector', 'experience-history', 'promoted-consumer', 'guard'],
-  acp: ['experience-collector', 'experience-history', 'promoted-consumer', 'guard', 'desktop-task-client'],
-};
-
 const importFile = (file) => import(pathToFileURL(file).href);
 
-async function moduleLoad(libRoot, setName) {
-  const entries = ENTRY_SETS[setName];
-  assert.ok(entries, `unknown entry set: ${setName}`);
+async function moduleLoad(libRoot, filesCsv) {
+  const files = filesCsv.split(',').filter(Boolean);
+  assert.ok(files.length > 0, 'no validated entry files supplied');
+  const realRoot = realpathSync.native(libRoot);
   const seen = new Set();
   registerHooks({
     load(url, context, nextLoad) {
@@ -38,16 +34,16 @@ async function moduleLoad(libRoot, setName) {
   });
   const cpuStart = process.cpuUsage();
   const started = performance.now();
-  for (const entry of entries) {
-    const module = await importFile(path.join(libRoot, `${entry}.js`));
-    assert.equal(typeof module.apply, 'function', `${entry} has no apply() export`);
+  for (const file of files) {
+    // Every entry is re-resolved with native (kernel) semantics and confined
+    // to the validated lib copy before ESM sees it.
+    const resolved = realpathSync.native(file);
+    assert.ok(resolved.startsWith(realRoot + path.sep), `entry ${file} resolves outside the validated lib root: ${resolved}`);
+    const module = await importFile(resolved);
+    assert.equal(typeof module.apply, 'function', `${path.basename(file)} has no apply() export`);
   }
   const ms = performance.now() - started;
   const cpu = process.cpuUsage(cpuStart);
-  // Native (kernel) realpath: the JS implementation folds ".." in symlink
-  // targets before following them, which can misclassify which files belong
-  // to the lib root during byte accounting.
-  const realRoot = realpathSync.native(libRoot);
   const prefix = realRoot + path.sep;
   let libBytes = 0;
   for (const url of seen) {
@@ -58,7 +54,7 @@ async function moduleLoad(libRoot, setName) {
       if (stat.isFile() && file.startsWith(prefix)) libBytes += stat.size;
     } catch { /* loader URLs are not always regular files */ }
   }
-  return { entries, ms, cpuMs: (cpu.user + cpu.system) / 1000, modules: seen.size, libBytes };
+  return { entries: files.map((file) => path.basename(file, '.js')), ms, cpuMs: (cpu.user + cpu.system) / 1000, modules: seen.size, libBytes };
 }
 
 async function sharedExperience(libRoot, root) {
