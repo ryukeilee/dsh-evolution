@@ -86,10 +86,12 @@ function percentile(values, fraction) {
 }
 
 function summarize(values) {
-  if (values.length === 0) return { n: 0, p50: null, p95: null, p99: null, max: null };
+  // Keep the accepted samples themselves: every percentile must be
+  // independently recomputable from the published evidence.
+  if (values.length === 0) return { n: 0, p50: null, p95: null, p99: null, max: null, samples: [] };
   return { n: values.length,
     p50: percentile(values, 0.5), p95: percentile(values, 0.95), p99: percentile(values, 0.99),
-    max: Math.max(...values) };
+    max: Math.max(...values), samples: values.map(value => ms3(value)) };
 }
 
 function median(values) {
@@ -304,11 +306,13 @@ function validateRuntime(runtime, home) {
     if (stat.nlink !== 1) throw new Error(`runtime ${label} has ${stat.nlink} hard links: ${resolved}`);
     return resolved;
   };
-  const cli = check(path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js'), 'CLI');
-  const dshManifest = check(path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'), 'dsh manifest');
+  // The raw --runtime string is used only for the first resolution above;
+  // every derived path below starts from the validated resolvedRuntime.
+  const cli = check(path.join(resolvedRuntime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js'), 'CLI');
+  const dshManifest = check(path.join(resolvedRuntime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'), 'dsh manifest');
   // Locate the pnpm cordis manifest from directory names, not from a resolved
   // package specifier, so a symlinked manifest cannot be read before checking.
-  const pnpmInput = path.join(runtime, 'node_modules', '.pnpm');
+  const pnpmInput = path.join(resolvedRuntime, 'node_modules', '.pnpm');
   const pnpmRoot = resolveThroughSymlinks(pnpmInput);
   for (const [protectedLabel, root] of roots) {
     if (isWithin(root, pnpmRoot)) {
@@ -725,7 +729,8 @@ async function measureInProcess(Context, applyCollector, openSharedExperience, s
         if (mounted.probe.stats().events !== before + 2) { elapsed = null; rejected += 1; }
       }
       result.recoveryAfterFiveSuccesses = { description: '5th clean success in a failure episode commits tool/recovery',
-        verified: elapsed !== null, oneCommit: elapsed === null ? null : { ms: elapsed }, rejectedAttempts: rejected };
+        verified: elapsed !== null, oneCommit: elapsed === null ? null : { ms: elapsed },
+        samples: elapsed === null ? [] : [ms3(elapsed)], rejectedAttempts: rejected };
     } finally { await mounted.close(); }
   }
   return result;
@@ -866,9 +871,16 @@ async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) 
   // Every child gets all three temp variables from the validated scratch, and
   // host children get HOME from the scratch copy. This script creates no other
   // child processes (there is no execFileSync attribution probe here).
-  const childEnv = { ...process.env, HOME: homeCopy, TMPDIR: scratch, TEMP: scratch, TMP: scratch,
-    DSH_HOME: homeCopy, DSH_PROFILE: 'acp', EVOLUTION_LATENCY_KEY: 'loopback-fixture-only' };
+  // Explicit minimal whitelist: no NODE_*, coverage, proxy or unrelated DSH_*
+  // variables from the parent are inherited by any child we spawn.
+  const childEnv = {};
+  for (const key of ['PATH', 'LANG', 'LC_ALL', 'TZ', 'USER', 'LOGNAME']) {
+    if (process.env[key] !== undefined) childEnv[key] = process.env[key];
+  }
+  Object.assign(childEnv, { HOME: homeCopy, TMPDIR: scratch, TEMP: scratch, TMP: scratch,
+    DSH_HOME: homeCopy, DSH_PROFILE: 'acp', EVOLUTION_LATENCY_KEY: 'loopback-fixture-only' });
   childEnvEvidence = {
+    keys: Object.keys(childEnv).sort(),
     TMPDIR: '<SCRATCH>', TEMP: '<SCRATCH>', TMP: '<SCRATCH>', HOME: '<ACP HOME COPY>',
     allTempVarsAreScratch: [childEnv.TMPDIR, childEnv.TEMP, childEnv.TMP].every(value => value === scratch),
     homeIsCopy: childEnv.HOME === homeCopy && childEnv.DSH_HOME === homeCopy,
@@ -1020,6 +1032,10 @@ async function runAcp({ home, cli, scratch, rounds, openSharedExperience }) {
 }
 
 async function main() {
+  // Node auto-propagates V8 coverage to spawned Node processes even when their
+  // env omits NODE_V8_COVERAGE. Clearing this process's value suppresses that
+  // propagation; the child whitelist below still contains no NODE_* key.
+  if (process.env.NODE_V8_COVERAGE) process.env.NODE_V8_COVERAGE = '';
   const options = parseArgs(process.argv.slice(2));
   const home = validateHome(options.home);
   scanSourceHome = home;
@@ -1064,8 +1080,9 @@ async function main() {
       thresholdMs: THRESHOLD_MS,
       verdict: failureP95 === null ? 'NO DATA'
         : failureP95 >= THRESHOLD_MS ? 'THRESHOLD MET (>=50ms per failing tool call)' : 'NO CHANGE (<50ms per failing tool call)',
-      environment: { node: process.version, platform: process.platform, home, runtime: options.runtime,
-        cli, dshVersion, samplesRequested: options.samples, roundsRequested: options.rounds, smoke: options.smoke },
+      environment: { node: process.version, platform: process.platform, parentPid: process.pid,
+        home, runtime: options.runtime, cli, dshVersion, samplesRequested: options.samples,
+        roundsRequested: options.rounds, smoke: options.smoke },
       harness,
       runtimeAudit: runtimeValidation.evidence,
       childEnv: childEnvEvidence,
@@ -1088,6 +1105,17 @@ async function main() {
   const summary = {
     label: report.label,
     verdict: report.verdict,
+    sampleLengths: {
+      failureFirst: report.inProcess.failure.firstCommit.samples.length,
+      failureSteady: report.inProcess.failure.steady.samples.length,
+      cleanSuccess: report.inProcess.cleanSuccess.emit.samples.length,
+      degradationToolsResult: report.inProcess.degradation.toolsResultOnly.samples.length,
+      degradationTurnFirst: report.inProcess.degradation.turnStoppingOnly.firstCommit.samples.length,
+      degradationTurnSteady: report.inProcess.degradation.turnStoppingOnly.steady.samples.length,
+      recovery: report.inProcess.recoveryAfterFiveSuccesses.samples.length,
+      fsyncFull: report.attribution.full.samples.length,
+      fsyncNormal: report.attribution.normal.samples.length,
+    },
     failure: { firstCommitMs: report.inProcess.failure.firstCommit.p50,
       steadyP50: report.inProcess.failure.steady.p50, steadyP95: report.inProcess.failure.steady.p95,
       steadyP99: report.inProcess.failure.steady.p99, steadyMax: report.inProcess.failure.steady.max },
