@@ -356,3 +356,15 @@ test('defaultRunDumpConfig executes a shell wrapper directly and still uses node
   assert.equal(viaNode.status, 0);
   assert.match(viaNode.stdout, /NODE-MARKER/);
 });
+
+test('ASAR entry parsing stays linear on long .asar-like paths', (t) => {
+  // 20k repeated ".asar/a" fragments ending in an empty ".asar/": the former
+  // greedy /(.*\.asar)\/(.+)$/ had to re-split every candidate at the end and
+  // backtracked polynomially. A linear lastIndexOf scan must finish in ms.
+  const long = `/tmp/host/${'.asar/a'.repeat(20000)}.asar/`;
+  const started = Date.now();
+  const result = withPath('', () => resolveHostCli({ cliPath: long }));
+  const elapsed = Date.now() - started;
+  assert.equal(result.selected, null);
+  assert.ok(elapsed < 1000, `ASAR path parsing must stay linear, took ${elapsed}ms`);
+});
