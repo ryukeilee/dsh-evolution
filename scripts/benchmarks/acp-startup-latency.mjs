@@ -333,10 +333,10 @@ function assertNoEscapingLinks(root, label) {
   return { label, checked, files, hardLinked: hardLinked.length, escaping: escaping.length };
 }
 
-function assertOutPath(target, pristineHome) {
+function assertOutPath(target, pristineHome, runtime = null) {
   if (!target) return null;
   const { final, ancestors } = resolvePathComponents(target);
-  const protectedRoots = [RESOLVED_REAL_HOME, pristineHome];
+  const protectedRoots = [RESOLVED_REAL_HOME, pristineHome, ...(runtime ? [runtime] : [])];
   assertNotProtected([final], protectedRoots, '--out', { bothWays: true });
   assertNotProtected(ancestors, protectedRoots, '--out ancestor');
   const details = { resolved: final, existed: false, nlink: null, protectedIdentitiesChecked: 0, devInoMatched: false };
@@ -423,18 +423,14 @@ async function run() {
   // contains an escaping link or a hard-linked file is not a usable input.
   const pristineLinkCheck = assertNoEscapingLinks(home, 'pristine home');
   protectedReadRoots.push(home);
-  const outCheck = assertOutPath(options.out, home);
-  const outResolved = outCheck?.path ?? null;
-  // Guard the executable source before reading its package.json or spawning
-  // it. Only lstat/readlink are used here; the CLI's bytes are never touched
-  // until this passes.
-  // The raw argument is consumed exactly once. Every derived path below
-  // (CLI, manifests, .pnpm) is built from the resolved runtime, never from
-  // the raw spelling: an alias/.. pair is only meaningful before resolution.
+  // Resolve the runtime first: --out must also refuse to overwrite any file
+  // inside it (CLI, manifests, pnpm store), not just the two protected homes.
   const runtimeInput = options.runtime;
   const runtime = resolvePathComponents(runtimeInput).final;
   assertNotProtected([runtime], [RESOLVED_REAL_HOME, home], '--runtime', { bothWays: true });
   allowedReadRoots.push(runtime);
+  const outCheck = assertOutPath(options.out, home, runtime);
+  const outResolved = outCheck?.path ?? null;
   const runtimeFiles = [];
   function assertRuntimeFile(candidate, label) {
     const resolved = resolvePathComponents(candidate).final;
@@ -478,18 +474,6 @@ async function run() {
   assert.ok(pristineManifest.dsh?.profile?.bundles?.includes('dsh-evolution'), 'the given home does not select dsh-evolution in its acp profile');
   assert.ok(fs.existsSync(PROBE), 'attribution probe is missing');
 
-  // ESM resolves relative imports with the JS realpath semantics that fold
-  // ".." inside symlink targets. Only ever hand it a path we resolved and
-  // identity-checked ourselves; never the raw source-home spelling.
-  async function guardedImport(file, purpose) {
-    const resolved = resolvePathComponents(file).final;
-    assert.ok(!isInsideByIdentity(resolved, RESOLVED_REAL_HOME), `${purpose}: ${resolved} is inside the formal home`);
-    assert.ok(allowedReadRoots.some((root) => isInsideByIdentity(resolved, root)), `${purpose}: ${resolved} is outside the allowed roots`);
-    const stat = fs.lstatSync(resolved);
-    assert.ok(stat.isFile(), `${purpose}: ${resolved} is not a regular file`);
-    return import(pathToFileURL(resolved).href);
-  }
-  const sharing = await guardedImport(path.join(bundleLib, 'promoted-sharing.js'), 'sharing contract');
   const hostFacts = {
     dsh: hostVersion,
     cordis: versionFromManifest(runtimePackageManifest('cordis')),
@@ -533,7 +517,7 @@ async function run() {
     return final;
   };
   const linkChecks = { pristine: pristineLinkCheck, copies: [] };
-  const copyLinkCounts = { entryLib: null, homes: [] };
+  const copyLinkCounts = { entryLib: null, harness: null, homes: [] };
 
   // A fresh-process import needs a node_modules next to lib/, exactly as in
   // experience-entry-load.mjs. Assemble one from the packages the real host
@@ -544,6 +528,17 @@ async function run() {
   const entryLib = path.join(entryRoot, 'lib');
   fs.cpSync(bundleLib, entryLib, { recursive: true, dereference: true });
   copyLinkCounts.entryLib = assertNoSymlinks(entryLib, 'entry lib copy');
+  // ESM resolves relative imports with JS-realpath semantics. Only import from
+  // the dereferenced scratch copy, never from the source home.
+  async function guardedImport(file, purpose) {
+    const resolved = resolvePathComponents(file).final;
+    assert.ok(!isInsideByIdentity(resolved, RESOLVED_REAL_HOME), `${purpose}: ${resolved} is inside the formal home`);
+    assert.ok(isInsideByIdentity(resolved, realWork), `${purpose}: ${resolved} is outside the scratch root`);
+    const stat = fs.lstatSync(resolved);
+    assert.ok(stat.isFile() && stat.nlink === 1, `${purpose}: ${resolved} is not a single-link regular file`);
+    return import(pathToFileURL(resolved).href);
+  }
+  const sharing = await guardedImport(path.join(entryLib, 'promoted-sharing.js'), 'sharing contract from scratch copy');
   function guardedEntryFile(file) {
     const resolved = resolvePathComponents(file).final;
     assert.ok(!isInsideByIdentity(resolved, RESOLVED_REAL_HOME), `entry file ${resolved} is inside the formal home`);
@@ -552,48 +547,51 @@ async function run() {
     assert.ok(stat.isFile(), `entry file ${resolved} is not a regular file`);
     return resolved;
   }
+  // The harness node_modules is materialised INSIDE the scratch root by
+  // dereferencing copies. Nothing is symlinked from the source home or runtime
+  // into the module graph that import() will execute.
   const entryModules = path.join(entryRoot, 'node_modules');
   fs.mkdirSync(entryModules, { recursive: true, mode: 0o700 });
-  const linkPackage = (relative, target) => {
-    const destination = path.join(entryModules, relative);
-    fs.mkdirSync(path.dirname(destination), { recursive: true });
-    if (!fs.existsSync(destination)) fs.symlinkSync(target, destination, 'dir');
-  };
   const guardPackageSource = (source, relative) => {
     const resolved = resolvePathComponents(source).final;
     assert.ok(!isInsideByIdentity(resolved, RESOLVED_REAL_HOME), `probe package ${relative} resolves into the formal home: ${resolved}`);
     assert.ok(allowedReadRoots.some((root) => isInsideByIdentity(resolved, root)), `probe package ${relative} resolves outside the allowed roots: ${resolved}`);
     return resolved;
   };
+  const copyPackageIntoHarness = (source, relative) => {
+    const resolved = guardPackageSource(source, relative);
+    if (!fs.lstatSync(resolved).isDirectory()) return;
+    const destination = path.join(entryModules, relative);
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    if (!fs.existsSync(destination)) fs.cpSync(resolved, destination, { recursive: true, dereference: true });
+  };
   const addPackagesFrom = (directory) => {
     if (!fs.existsSync(directory)) return;
     for (const name of safeReaddir(directory, 'probe package index').names) {
       const source = path.join(directory, name);
       if (name.startsWith('@')) {
-        // Resolve and identity-check the scope directory before enumerating it:
-        // a scope symlink into a protected home must never be readdir'd.
+        // Resolve and identity-check the scope directory before enumerating it.
         const resolvedScope = guardPackageSource(source, name);
         if (!fs.lstatSync(resolvedScope).isDirectory()) continue;
         for (const member of safeReaddir(resolvedScope, `probe scoped package ${name}`).names) {
-          const memberSource = path.join(resolvedScope, member);
-          const resolvedMember = guardPackageSource(memberSource, `${name}/${member}`);
-          if (!fs.lstatSync(resolvedMember).isDirectory()) continue;
-          linkPackage(`${name}/${member}`, resolvedMember);
+          copyPackageIntoHarness(path.join(resolvedScope, member), `${name}/${member}`);
         }
       } else {
-        const resolvedPackage = guardPackageSource(source, name);
-        if (!fs.lstatSync(resolvedPackage).isDirectory()) continue;
-        linkPackage(name, resolvedPackage);
+        copyPackageIntoHarness(source, name);
       }
     }
   };
   addPackagesFrom(path.join(profileDir, 'node_modules'));
   const pnpmStore = path.join(runtime, 'node_modules', '.pnpm');
   if (fs.existsSync(pnpmStore)) {
+    // Runtime packages are copied as executable inputs only; only the small
+    // Cordis/Include set needed by the probe is materialised into scratch.
+    const needed = /^@deepseek-ai\+(cordis|cordis-plugin-include|cordis-plugin-loader)@/;
     for (const storeEntry of safeReaddir(pnpmStore, 'runtime pnpm store').names) {
-      addPackagesFrom(path.join(pnpmStore, storeEntry, 'node_modules'));
+      if (needed.test(storeEntry)) addPackagesFrom(path.join(pnpmStore, storeEntry, 'node_modules'));
     }
   }
+  copyLinkCounts.harness = assertNoSymlinks(entryModules, 'harness node_modules');
   assert.ok(fs.existsSync(path.join(entryModules, '@deepseek-ai', 'cordis')), 'could not assemble @deepseek-ai/cordis for the module-load probe');
 
   // Every child (ACP host and attribution probe) gets a dedicated temp dir
@@ -1049,8 +1047,14 @@ async function run() {
       safeReaddir: { ...readdirStats },
       copyLinkCounts: {
         entryLib: copyLinkCounts.entryLib,
+        harness: copyLinkCounts.harness,
         homes: copyLinkCounts.homes,
-        rule: 'Copies are made with dereference:true and asserted to contain zero symlinks, so ESM cannot traverse a link out of the scratch root.',
+        rule: 'lib, home copies and harness node_modules are copied with dereference:true and asserted to contain zero symlinks, so ESM cannot traverse a link out of the scratch root.',
+      },
+      importAssertion: {
+        sharingFromScratchCopy: true,
+        entryFilesInScratch: true,
+        harnessOutsideLinks: copyLinkCounts.harness,
       },
       homePreflight: {
         files: pristineLinkCheck.files,
@@ -1088,6 +1092,10 @@ async function run() {
     warmup: warmup.map((row) => project(row)),
   };
   if (outResolved) {
+    // Re-run the full --out guard immediately before the destructive write:
+    // no runtime input, protected home or hard-linked file may be truncated.
+    const rechecked = assertOutPath(options.out, home, runtime);
+    assert.equal(rechecked.path, outResolved, '--out resolution changed during the run');
     fs.mkdirSync(path.dirname(outResolved), { recursive: true });
     fs.writeFileSync(outResolved, `${JSON.stringify(payload, null, 2)}\n`);
   }
@@ -1111,7 +1119,7 @@ async function run() {
     homePreflightHardLinked: payload.symlinkCheck.homePreflight.hardLinked,
     safeReaddirCalls: readdirStats.calls,
     safeReaddirRejections: readdirStats.rejections,
-    copiedTreeSymlinks: (copyLinkCounts.entryLib ?? 0) + copyLinkCounts.homes.reduce((sum, row) => sum + row.links, 0),
+    copiedTreeSymlinks: (copyLinkCounts.entryLib ?? 0) + (copyLinkCounts.harness ?? 0) + copyLinkCounts.homes.reduce((sum, row) => sum + row.links, 0),
     result: decision.result,
     host: hostVersion,
     bundle: bundleVersion,
