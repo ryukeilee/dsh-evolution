@@ -13,12 +13,13 @@
  *    only: NORMAL weakens durability and is NOT a candidate change.
  * 3. Real ACP end-to-end A/B with a deterministic loopback provider. A fresh
  *    copy of the pristine home is used for every session. Each session emits
- *    one real failed `read` and ends the turn. The measured interval is from
- *    the client-observed `tool_call_update` completion to the next provider
- *    request arrival, both timestamped in this parent process with the same
- *    monotonic clock. It includes host tool finalization + the collector +
- *    next-request construction. Model generation and network time are absent:
- *    the loopback provider answers immediately on request arrival.
+ *    one real failed `read` and ends the turn. Two windows are timestamped in
+ *    this parent process with the same monotonic clock: the narrow attribution
+ *    window (tool_call_update completion -> next provider request arrival), and
+ *    the user-perceived full turn (writing session/prompt -> its JSON-RPC
+ *    response), which unconditionally contains a collector commit anywhere in
+ *    the turn. Model inference and network time are absent: the loopback
+ *    provider answers immediately on request arrival.
  *
  * No formal DSH_HOME is read or written. All scratch state lives in a temp
  * directory and is removed on every exit path.
@@ -31,7 +32,8 @@ import readline from 'node:readline';
 import { spawn } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
 import { createHash, randomUUID } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const THRESHOLD_MS = 50;
@@ -142,24 +144,80 @@ function freshDir(scratch, label) {
   return assertInside(scratch, target, label);
 }
 
-async function loadModules() {
+/** Resolve the exact Cordis instance the ACP host uses. The profile's own
+ * node_modules has no @deepseek-ai/cordis entry; the official loader maps the
+ * specifier onto the runtime tree. Resolve from the realpath of the installed
+ * dsh package so pnpm's tree gives the same file the host loads. */
+function resolveHostCordis(runtime) {
+  const installedDsh = path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json');
+  const require = createRequire(fs.realpathSync(installedDsh));
+  const entry = require.resolve('@deepseek-ai/cordis');
+  const packageFile = require.resolve('@deepseek-ai/cordis/package.json');
+  return { entry, dir: path.dirname(packageFile),
+    version: JSON.parse(fs.readFileSync(packageFile, 'utf8')).version };
+}
+
+/** Load collector/store/Context from the bundle installed in --home, with the
+ * host's Cordis, not the repository's devDependency. The official host uses a
+ * loader hook for @deepseek-ai/cordis, so the harness copies the installed
+ * bundle lib verbatim into the scratch tree and symlinks the host Cordis there;
+ * every path and version is recorded, and any fallback is explicit. */
+async function loadModules(home, runtime, scratch) {
+  const bundleDir = path.join(home, 'profiles', 'acp', 'node_modules', 'dsh-evolution');
+  const collectorRel = 'profiles/acp/node_modules/dsh-evolution/lib/experience-collector.js';
+  const installedCollector = path.join(bundleDir, 'lib', 'experience-collector.js');
+  const installedStore = path.join(bundleDir, 'lib', 'shared-experience.js');
   try {
+    const hostCordis = resolveHostCordis(runtime);
+    if (!fs.existsSync(installedCollector) || !fs.existsSync(installedStore)) {
+      throw new Error('installed bundle lib files not found');
+    }
+    const harness = freshDir(scratch, 'host-harness');
+    const modules = path.join(harness, 'node_modules');
+    fs.mkdirSync(path.join(modules, '@deepseek-ai'), { recursive: true });
+    fs.cpSync(path.join(bundleDir, 'lib'), path.join(modules, 'dsh-evolution', 'lib'), { recursive: true });
+    fs.copyFileSync(path.join(bundleDir, 'package.json'), path.join(modules, 'dsh-evolution', 'package.json'));
+    fs.symlinkSync(hostCordis.dir, path.join(modules, '@deepseek-ai', 'cordis'), 'dir');
+    const copiedCollector = path.join(modules, 'dsh-evolution', 'lib', 'experience-collector.js');
+    const copiedStore = path.join(modules, 'dsh-evolution', 'lib', 'shared-experience.js');
+    const resolved = createRequire(copiedCollector).resolve('@deepseek-ai/cordis');
+    if (resolved !== hostCordis.entry) throw new Error(`copied bundle resolved a different Cordis: ${resolved} !== ${hostCordis.entry}`);
+    const [cordis, collector, store] = await Promise.all([
+      import(pathToFileURL(hostCordis.entry).href),
+      import(pathToFileURL(copiedCollector).href),
+      import(pathToFileURL(copiedStore).href),
+    ]);
+    if (typeof collector.apply !== 'function' || typeof store.openSharedExperience !== 'function' || typeof cordis.Context !== 'function') {
+      throw new Error('loaded bundle modules do not expose the expected APIs');
+    }
+    return {
+      Context: cordis.Context, applyCollector: collector.apply, openSharedExperience: store.openSharedExperience,
+      harness: { fallback: false, fallbackReason: null,
+        collectorPath: collectorRel,
+        bundleVersion: JSON.parse(fs.readFileSync(path.join(bundleDir, 'package.json'), 'utf8')).version,
+        cordisVersion: hostCordis.version,
+        cordisEntry: `<runtime>/${path.relative(runtime, hostCordis.entry)}`,
+        bundleCollectorSha256: createHash('sha256').update(fs.readFileSync(installedCollector)).digest('hex'),
+        note: 'Installed bundle lib copied verbatim into scratch; @deepseek-ai/cordis symlinked to the runtime copy resolved from the installed dsh package. Same bytes and same Cordis as the ACP arms.' },
+    };
+  } catch (error) {
     const [cordis, collector, store] = await Promise.all([
       import('@deepseek-ai/cordis'),
       import('../../lib/experience-collector.js'),
       import('../../lib/shared-experience.js'),
     ]);
-    const { createRequire } = await import('node:module');
     const require = createRequire(import.meta.url);
     const readVersion = (name) => {
       try { return JSON.parse(fs.readFileSync(require.resolve(`${name}/package.json`), 'utf8')).version; }
       catch { return 'unknown'; }
     };
-    return { Context: cordis.Context, applyCollector: collector.apply, openSharedExperience: store.openSharedExperience,
-      versions: { cordis: readVersion('@deepseek-ai/cordis'),
-        dshEvolution: JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')).version } };
-  } catch (error) {
-    throw new Error(`Cannot load the real collector/Cordis modules (run npm ci --ignore-scripts first): ${error.message}`);
+    return {
+      Context: cordis.Context, applyCollector: collector.apply, openSharedExperience: store.openSharedExperience,
+      harness: { fallback: true, fallbackReason: error.message, collectorPath: 'lib/experience-collector.js (repository fallback)',
+        bundleVersion: JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')).version,
+        cordisVersion: readVersion('@deepseek-ai/cordis'), cordisEntry: '<repo>/node_modules/@deepseek-ai/cordis',
+        note: 'Repository devDependency fallback. NOT the same host bundle as the ACP arms; evidence quality is degraded.' },
+    };
   }
 }
 
@@ -366,7 +424,8 @@ function disableExperienceEntries(homeCopy) {
 }
 
 function startProvider() {
-  const state = { hits: 0, toolCompletedAt: null, toolFailedObserved: false, intervals: [], requests: [], error: null };
+  const state = { hits: 0, toolCompletedAt: null, toolFailedObserved: false, intervals: [], requests: [],
+    rpcTimings: {}, error: null };
   const server = http.createServer(async (req, res) => {
     const arrivedAt = performance.now();
     let body = '';
@@ -448,7 +507,12 @@ async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) 
     const id = ++sequence;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => { pending.delete(id); reject(new Error(`${method} timed out`)); }, 45000);
-      pending.set(id, row => { clearTimeout(timer); row.error ? reject(new Error(`${method}: ${JSON.stringify(row.error)}`)) : resolve(row.result); });
+      const sentAt = performance.now();
+      pending.set(id, row => {
+        clearTimeout(timer);
+        state.rpcTimings[method] = performance.now() - sentAt;
+        row.error ? reject(new Error(`${method}: ${JSON.stringify(row.error)}`)) : resolve(row.result);
+      });
       child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
     });
   };
@@ -484,19 +548,24 @@ async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) 
   }
   const intervalMs = state.intervals[0];
   if (!Number.isFinite(intervalMs) || intervalMs < 0) reasons.push('invalid interval');
+  const fullTurnMs = state.rpcTimings['session/prompt'];
+  if (!Number.isFinite(fullTurnMs) || fullTurnMs < 0) reasons.push('invalid full-turn interval');
   if (reasons.length) reasons.push(`stderr: ${stderr.slice(-600)}`);
-  return { arm, intervalMs: Number.isFinite(intervalMs) ? ms3(intervalMs) : null, statsDelta,
+  return { arm, intervalMs: Number.isFinite(intervalMs) ? ms3(intervalMs) : null,
+    fullTurnMs: Number.isFinite(fullTurnMs) ? ms3(fullTurnMs) : null, statsDelta,
     providerRequests: state.requests.length, toolFailedObserved: state.toolFailedObserved,
     stopReason: promptResult?.stopReason ?? null, valid: reasons.length === 0, reasons };
 }
 
 async function runAcp({ home, cli, scratch, rounds, openSharedExperience }) {
   const armSamples = Object.fromEntries(ARMS.map(arm => [arm, []]));
+  const fullTurnSamples = Object.fromEntries(ARMS.map(arm => [arm, []]));
   const rows = [];
   const warmup = [];
   for (const arm of ARMS) {
     const warm = await runAcpSession({ arm, home, cli, scratch, openSharedExperience });
-    warmup.push({ arm, valid: warm.valid, intervalMs: warm.intervalMs, reasons: warm.reasons });
+    warmup.push({ arm, valid: warm.valid, intervalMs: warm.intervalMs,
+      fullTurnMs: warm.fullTurnMs, reasons: warm.reasons });
   }
   for (let round = 0; round < rounds; round += 1) {
     const order = ROTATIONS[round % ROTATIONS.length];
@@ -504,32 +573,45 @@ async function runAcp({ home, cli, scratch, rounds, openSharedExperience }) {
     for (const arm of order) {
       const sample = await runAcpSession({ arm, home, cli, scratch, openSharedExperience });
       row.samples[arm] = sample;
-      if (sample.valid) armSamples[arm].push(sample.intervalMs);
+      if (sample.valid) {
+        armSamples[arm].push(sample.intervalMs);
+        fullTurnSamples[arm].push(sample.fullTurnMs);
+      }
     }
     const enabled = row.samples.enabled;
     const disabled = row.samples.disabled;
     const enabled2 = row.samples.enabled2;
+    const bothValid = (left, right) => left.valid && right.valid;
     row.paired = {
-      disabledMinusEnabled: enabled.valid && disabled.valid ? ms3(disabled.intervalMs - enabled.intervalMs) : null,
-      enabled2MinusEnabled: enabled.valid && enabled2.valid ? ms3(enabled2.intervalMs - enabled.intervalMs) : null,
+      disabledMinusEnabled: bothValid(enabled, disabled) ? ms3(disabled.intervalMs - enabled.intervalMs) : null,
+      enabled2MinusEnabled: bothValid(enabled, enabled2) ? ms3(enabled2.intervalMs - enabled.intervalMs) : null,
+      fullDisabledMinusEnabled: bothValid(enabled, disabled) ? ms3(disabled.fullTurnMs - enabled.fullTurnMs) : null,
+      fullEnabled2MinusEnabled: bothValid(enabled, enabled2) ? ms3(enabled2.fullTurnMs - enabled.fullTurnMs) : null,
     };
     rows.push(row);
   }
-  const validPairs = rows.filter(row => row.paired.disabledMinusEnabled !== null);
-  const aaPairs = rows.filter(row => row.paired.enabled2MinusEnabled !== null);
+  const pairs = (key) => {
+    const usable = rows.filter(row => row.paired[key] !== null);
+    return { medianMs: ms3(median(usable.map(row => row.paired[key]))),
+      perRound: usable.map(row => row.paired[key]) };
+  };
   return {
-    timing: 'parent-process performance.now(): tool_call_update (failed/completed) -> next provider HTTP request arrival. Includes host tool finalization + collector + next request construction; excludes model generation and network.',
+    timingNarrow: 'Parent-process performance.now(): tool_call_update (failed/completed) -> next provider HTTP request arrival. Includes host tool finalization + collector only if the collector commit happens before that update; excludes model generation, network and the end_turn response. Attribution window only.',
+    timingFullTurn: 'Parent-process performance.now(): writing the session/prompt JSON-RPC request -> receiving that prompt\'s JSON-RPC response. Unconditionally contains any synchronous collector commit anywhere in the turn, host tool finalization, the follow-up request and the loopback end_turn response. With the deterministic loopback provider there is no real model inference; host scheduling and IPC are included.',
     provider: 'loopback deterministic Anthropic-compatible SSE; no external model calls, no credentials',
     warmup,
     rounds,
-    arms: Object.fromEntries(ARMS.map(arm => [arm, { medianMs: ms3(median(armSamples[arm])),
-      validSamples: armSamples[arm].length, rejectedSamples: rounds - armSamples[arm].length,
-      intervals: armSamples[arm] }])),
+    arms: Object.fromEntries(ARMS.map(arm => [arm, {
+      medianMs: ms3(median(armSamples[arm])), intervals: armSamples[arm],
+      fullTurnMedianMs: ms3(median(fullTurnSamples[arm])), fullTurnIntervals: fullTurnSamples[arm],
+      validSamples: armSamples[arm].length, rejectedSamples: rounds - armSamples[arm].length }])),
     pairedDiff: {
-      disabledMinusEnabled: { medianMs: ms3(median(validPairs.map(row => row.paired.disabledMinusEnabled))),
-        perRound: validPairs.map(row => row.paired.disabledMinusEnabled) },
-      enabled2MinusEnabled: { medianMs: ms3(median(aaPairs.map(row => row.paired.enabled2MinusEnabled))),
-        perRound: aaPairs.map(row => row.paired.enabled2MinusEnabled) },
+      disabledMinusEnabled: pairs('disabledMinusEnabled'),
+      enabled2MinusEnabled: pairs('enabled2MinusEnabled'),
+    },
+    fullTurnPairedDiff: {
+      disabledMinusEnabled: pairs('fullDisabledMinusEnabled'),
+      enabled2MinusEnabled: pairs('fullEnabled2MinusEnabled'),
     },
     rows,
     invalidSamples: rows.flatMap(row => ARMS.filter(arm => !row.samples[arm].valid)
@@ -546,7 +628,7 @@ async function main() {
   cleanup.dirs.add(scratch);
   let report;
   try {
-    const { Context, applyCollector, openSharedExperience, versions } = await loadModules();
+    const { Context, applyCollector, openSharedExperience, harness } = await loadModules(home, options.runtime, scratch);
     const inProcess = await measureInProcess(Context, applyCollector, openSharedExperience, scratch, options.samples);
     const attribution = await measureFsyncAttribution(scratch);
     const acp = await runAcp({ home, cli, scratch, rounds: options.rounds, openSharedExperience });
@@ -561,9 +643,11 @@ async function main() {
       verdict: failureP95 === null ? 'NO DATA'
         : failureP95 >= THRESHOLD_MS ? 'THRESHOLD MET (>=50ms per failing tool call)' : 'NO CHANGE (<50ms per failing tool call)',
       environment: { node: process.version, platform: process.platform, home, runtime: options.runtime,
-        cli, versions, dshVersion, samplesRequested: options.samples, roundsRequested: options.rounds, smoke: options.smoke },
+        cli, dshVersion, samplesRequested: options.samples, roundsRequested: options.rounds, smoke: options.smoke },
+      harness,
       measurementNotes: [
-        'Reporter clock is performance.now() in one process for both ACP endpoints (session/update tool_call_update -> provider HTTP request arrival).',
+        'Reporter clock is performance.now() in one process for all ACP endpoints; the narrow tool_call_update -> next-request window is attribution only, the full session/prompt -> JSON-RPC response window is the user-perceived turn latency.',
+        'In-process harness loads the installed bundle from --home with the host Cordis resolved from --runtime; any fallback is recorded in harness.fallback and degrades evidence quality.',
         'The in-process first commit includes lazy SQL statement preparation; steady percentiles exclude it.',
         'The real collector defers degradation writes to agent/turn-stopping, so its tools/result emit has no COMMIT; both timings are reported.',
         'The fsync comparison is attribution only on an isolated database; NORMAL weakens durability and is not a proposed change.',
@@ -583,9 +667,15 @@ async function main() {
       steadyP50: report.inProcess.degradation.steady.p50, steadyP95: report.inProcess.degradation.steady.p95 },
     recoveryMs: report.inProcess.recoveryAfterFiveSuccesses.oneCommit?.ms ?? null,
     fsyncAttributionMedianDeltaMs: report.attribution.medianDeltaMs,
+    harness: { collectorPath: report.harness.collectorPath, bundleVersion: report.harness.bundleVersion,
+      cordisVersion: report.harness.cordisVersion, fallback: report.harness.fallback,
+      fallbackReason: report.harness.fallbackReason },
     acpMedians: Object.fromEntries(ARMS.map(arm => [arm, report.acp.arms[arm].medianMs])),
     acpPaired: { disabledMinusEnabled: report.acp.pairedDiff.disabledMinusEnabled.medianMs,
       enabled2MinusEnabled: report.acp.pairedDiff.enabled2MinusEnabled.medianMs },
+    acpFullTurnMedians: Object.fromEntries(ARMS.map(arm => [arm, report.acp.arms[arm].fullTurnMedianMs])),
+    acpFullTurnPaired: { disabledMinusEnabled: report.acp.fullTurnPairedDiff.disabledMinusEnabled.medianMs,
+      enabled2MinusEnabled: report.acp.fullTurnPairedDiff.enabled2MinusEnabled.medianMs },
     invalidAcpSamples: report.acp.invalidSamples.length,
   };
   console.log(`SUMMARY ${JSON.stringify(summary, null, 2)}`);
