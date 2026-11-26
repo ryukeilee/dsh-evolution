@@ -230,8 +230,11 @@ function isWithin(root, candidate) {
 }
 
 function formalDshHome() {
-  const formal = path.resolve(os.homedir(), '.dsh');
-  try { return resolveThroughSymlinks(formal); } catch { return formal; }
+  // HOME itself may contain a symlink followed by `..`; joining before
+  // resolving would fold that `..` lexically and protect the wrong directory.
+  const homeDirectory = resolveThroughSymlinks(os.homedir());
+  const joined = path.join(homeDirectory, '.dsh');
+  try { return resolveThroughSymlinks(joined); } catch { return joined; }
 }
 
 function validateHome(home) {
@@ -278,11 +281,24 @@ function validateRuntime(runtime, home) {
   const dshManifest = check(path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'), 'dsh manifest');
   // Locate the pnpm cordis manifest from directory names, not from a resolved
   // package specifier, so a symlinked manifest cannot be read before checking.
-  const pnpmRoot = path.join(resolvedRuntime, 'node_modules', '.pnpm');
-  const candidates = fs.existsSync(pnpmRoot)
-    ? fs.readdirSync(pnpmRoot).filter(name => /^@deepseek-ai\+cordis@/.test(name))
-      .map(name => path.join(pnpmRoot, name, 'node_modules', '@deepseek-ai', 'cordis', 'package.json'))
-    : [];
+  const pnpmInput = path.join(runtime, 'node_modules', '.pnpm');
+  const pnpmRoot = resolveThroughSymlinks(pnpmInput);
+  for (const [protectedLabel, root] of roots) {
+    if (isWithin(root, pnpmRoot)) {
+      throw new Error(`runtime .pnpm directory resolves inside ${protectedLabel}: ${pnpmRoot}`);
+    }
+  }
+  if (!isWithin(resolvedRuntime, pnpmRoot)) {
+    throw new Error(`runtime .pnpm directory is outside the resolved runtime: ${pnpmRoot}`);
+  }
+  let candidates = [];
+  try {
+    if (!fs.statSync(pnpmRoot).isDirectory()) throw new Error('not a directory');
+    candidates = fs.readdirSync(pnpmRoot).filter(name => /^@deepseek-ai\+cordis@/.test(name))
+      .map(name => path.join(pnpmRoot, name, 'node_modules', '@deepseek-ai', 'cordis', 'package.json'));
+  } catch (error) {
+    if (error.code !== 'ENOENT' && !/not a directory/.test(error.message)) throw error;
+  }
   let cordisManifest = null;
   let cordisEntry = null;
   for (const candidate of candidates) {
@@ -315,11 +331,24 @@ function auditSymlinks(root, label) {
   const realRoot = resolveThroughSymlinks(root);
   const checked = [];
   const escaped = [];
+  const hardLinked = [];
+  let files = 0;
   const walk = (directory) => {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const full = path.join(directory, entry.name);
+      const relative = path.relative(realRoot, full);
+      if (entry.isFile()) {
+        files += 1;
+        // A hard link can expose protected bytes to cpSync/readFileSync long
+        // before any content check; reject the whole home tree up front.
+        const stat = fs.lstatSync(full);
+        if (stat.nlink > 1) {
+          hardLinked.push(relative);
+          escaped.push({ path: relative, target: full, nlink: stat.nlink, reason: 'hard-linked' });
+        }
+        continue;
+      }
       if (entry.isSymbolicLink()) {
-        const relative = path.relative(realRoot, full);
         checked.push(relative);
         // Link auditing is deliberately stricter than --out resolution: a
         // dangling or unreadable link is rejected outright, not merely checked
@@ -336,9 +365,9 @@ function auditSymlinks(root, label) {
     }
   };
   walk(realRoot);
-  const result = { label, checked: checked.length, escaped };
+  const result = { label, checked: checked.length, files, hardLinked: hardLinked.length, escaped };
   if (escaped.length > 0) {
-    throw new Error(`Symlink containment failed for ${label}: ${JSON.stringify(escaped)}`);
+    throw new Error(`Home preflight failed for ${label}: ${JSON.stringify(escaped)}`);
   }
   return result;
 }
@@ -693,7 +722,7 @@ function disableExperienceEntries(homeCopy) {
   return changed;
 }
 
-function startProvider() {
+function startProvider(missingPath) {
   const state = { hits: 0, toolCompletedAt: null, toolFailedObserved: false, intervals: [], requests: [],
     rpcTimings: {}, error: null };
   const server = http.createServer(async (req, res) => {
@@ -715,7 +744,7 @@ function startProvider() {
       const tool = (input.tools || []).find(candidate => /read.*file|file.*read|^read$/.test(candidate.name));
       if (!tool) { state.error = 'real read tool unavailable'; res.destroy(); return; }
       const pathKey = Object.keys(tool.input_schema?.properties || {}).find(key => /path/i.test(key)) || 'path';
-      const args = { [pathKey]: path.join(os.tmpdir(), `dsh-latency-missing-${randomUUID()}.txt`) };
+      const args = { [pathKey]: missingPath };
       const id = 'latency-call-0';
       send('content_block_start', { index: 0, content_block: { type: 'tool_use', id, name: tool.name, input: {} } });
       send('content_block_delta', { index: 0, delta: { type: 'input_json_delta', partial_json: JSON.stringify(args) } });
@@ -744,7 +773,16 @@ async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) 
   assertInside(scratch, homeCopy, `ACP copy (${arm})`);
   auditEvidence.copies.push(auditSymlinks(homeCopy, `acp-copy:${arm}`));
   if (arm === 'disabled') disableExperienceEntries(homeCopy);
-  const { server, state } = startProvider();
+  // The missing file passed to the real read tool is built only from the
+  // validated scratch root, never from the raw TMPDIR string.
+  const missingPath = path.join(scratch, `missing-${randomUUID()}.txt`);
+  const resolvedMissing = resolveThroughSymlinks(missingPath);
+  const missingInsideProtected = [['formal DSH_HOME', formalDshHome()], ['source home', home]]
+    .find(([, root]) => isWithin(root, resolvedMissing));
+  if (missingInsideProtected) {
+    throw new Error(`read target resolves inside ${missingInsideProtected[0]}: ${resolvedMissing}`);
+  }
+  const { server, state } = startProvider(missingPath);
   server.listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   cleanup.servers.add(server);
@@ -831,6 +869,7 @@ async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) 
   if (reasons.length) reasons.push(`stderr: ${stderr.slice(-600)}`);
   return { arm, intervalMs: Number.isFinite(intervalMs) ? ms3(intervalMs) : null,
     fullTurnMs: Number.isFinite(fullTurnMs) ? ms3(fullTurnMs) : null, statsDelta,
+    missingPath: `<SCRATCH>/${path.basename(missingPath)}`, missingPathSafe: true,
     providerRequests: state.requests.length, toolFailedObserved: state.toolFailedObserved,
     stopReason: promptResult?.stopReason ?? null, valid: reasons.length === 0, reasons };
 }
@@ -843,7 +882,8 @@ async function runAcp({ home, cli, scratch, rounds, openSharedExperience }) {
   for (const arm of ARMS) {
     const warm = await runAcpSession({ arm, home, cli, scratch, openSharedExperience });
     warmup.push({ arm, valid: warm.valid, intervalMs: warm.intervalMs,
-      fullTurnMs: warm.fullTurnMs, statsDelta: warm.statsDelta, reasons: warm.reasons });
+      fullTurnMs: warm.fullTurnMs, statsDelta: warm.statsDelta,
+      missingPath: warm.missingPath, missingPathSafe: warm.missingPathSafe, reasons: warm.reasons });
   }
   for (let round = 0; round < rounds; round += 1) {
     const order = ROTATIONS[round % ROTATIONS.length];
@@ -953,6 +993,7 @@ async function main() {
       harness,
       runtimeAudit: runtimeValidation.evidence,
       childEnv: childEnvEvidence,
+      homePreflight: { files: auditEvidence.source.files, hardLinked: auditEvidence.source.hardLinked },
       linkAudit, gates,
       measurementNotes: [
         'The narrow window is only between two parent-process observation points and does not prove coverage of a collector commit; the full session/prompt -> JSON-RPC response window is the coverage proof.',
@@ -987,6 +1028,7 @@ async function main() {
     fsyncAttributionMedianDeltaMs: report.attribution.medianDeltaMs,
     runtimeAudit: report.runtimeAudit,
     childEnv: report.childEnv,
+    homePreflight: report.homePreflight,
     gates: report.gates,
     linkAudit: { sourceChecked: report.linkAudit.source.checked,
       copiesChecked: report.linkAudit.copies.reduce((sum, copy) => sum + copy.checked, 0),
