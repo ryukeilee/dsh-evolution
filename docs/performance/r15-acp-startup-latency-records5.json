@@ -3,8 +3,8 @@
   "kind": "dsh-evolution-acp-startup-latency",
   "smoke": false,
   "authoritative": true,
-  "startedAt": "2026-11-26T09:56:40.367Z",
-  "finishedAt": "2026-11-26T09:57:39.310Z",
+  "startedAt": "2026-11-26T10:12:56.681Z",
+  "finishedAt": "2026-11-26T10:13:56.624Z",
   "host": {
     "version": "0.2.2-rc.5",
     "cli": "$RUNTIME/node_modules/.pnpm/@deepseek-ai+dsh@0.2.2-rc.5_0afc8fd22019c53acbb87574b3673145/node_modules/@deepseek-ai/dsh/lib/bin.js"
@@ -395,11 +395,12 @@
     "totalChecked": 5,
     "totalEscaping": 0,
     "safeReaddir": {
-      "calls": 9276,
+      "calls": 8292,
       "rejections": 0
     },
     "copyLinkCounts": {
       "entryLib": 0,
+      "harness": 0,
       "homes": [
         {
           "label": "warm-on",
@@ -610,7 +611,12 @@
           "links": 0
         }
       ],
-      "rule": "Copies are made with dereference:true and asserted to contain zero symlinks, so ESM cannot traverse a link out of the scratch root."
+      "rule": "lib, home copies and harness node_modules are copied with dereference:true and asserted to contain zero symlinks, so ESM cannot traverse a link out of the scratch root."
+    },
+    "importAssertion": {
+      "sharingFromScratchCopy": true,
+      "entryFilesInScratch": true,
+      "harnessOutsideLinks": 0
     },
     "homePreflight": {
       "files": 1006,
@@ -624,7 +630,7 @@
       "resolved": "<repo>/docs/performance/r15-acp-startup-latency-records5.json",
       "existed": true,
       "nlink": 1,
-      "protectedIdentitiesChecked": 13,
+      "protectedIdentitiesChecked": 14,
       "devInoMatched": false
     },
     "scratchCheck": {
@@ -712,7 +718,7 @@
   "threshold": {
     "thresholdMs": 200,
     "metric": "spawn -> session/new, steady-state paired on-off median",
-    "measuredMedianDeltaMs": 22.04,
+    "measuredMedianDeltaMs": 23.93,
     "result": "NO CHANGE",
     "authoritative": true
   },
@@ -729,84 +735,84 @@
     "initializeMs": {
       "on": {
         "samples": 15,
-        "median": 721.85,
-        "p25": 720.94,
-        "p75": 725.34
+        "median": 724.63,
+        "p25": 721.5,
+        "p75": 727.24
       },
       "off": {
         "samples": 15,
-        "median": 710.08,
-        "p25": 707.16,
-        "p75": 711.87
+        "median": 707.3,
+        "p25": 705.3,
+        "p75": 709.9
       },
       "on2": {
         "samples": 15,
-        "median": 722.19,
-        "p25": 720.91,
-        "p75": 722.59
+        "median": 724.81,
+        "p25": 721.24,
+        "p75": 731.96
       },
       "on-off": {
         "samples": 15,
-        "median": 14.39,
-        "p25": 9.51,
-        "p75": 17.43
+        "median": 16.63,
+        "p25": 13.74,
+        "p75": 21.15
       },
       "on2-off": {
         "samples": 15,
-        "median": 12.85,
-        "p25": 10.21,
-        "p75": 14.38
+        "median": 15.62,
+        "p25": 13.76,
+        "p75": 19.54
       },
       "on-on2": {
         "samples": 15,
-        "median": 0.34,
-        "p25": -1.72,
-        "p75": 5.16
+        "median": 0.28,
+        "p25": -2.62,
+        "p75": 5.43
       }
     },
     "sessionNewMs": {
       "on": {
         "samples": 15,
-        "median": 769.49,
-        "p25": 763.86,
-        "p75": 775.69
+        "median": 770.83,
+        "p25": 765.73,
+        "p75": 776.83
       },
       "off": {
         "samples": 15,
-        "median": 747.37,
-        "p25": 743.63,
-        "p75": 750.13
+        "median": 744.42,
+        "p25": 743.3,
+        "p75": 746.92
       },
       "on2": {
         "samples": 15,
-        "median": 767.41,
-        "p25": 765.59,
-        "p75": 770.34
+        "median": 769.6,
+        "p25": 764.82,
+        "p75": 776.5
       },
       "on-off": {
         "samples": 15,
-        "median": 22.04,
-        "p25": 16.32,
-        "p75": 30.28
+        "median": 23.93,
+        "p25": 20.45,
+        "p75": 31.92
       },
       "on2-off": {
         "samples": 15,
-        "median": 21.12,
-        "p25": 19.11,
-        "p75": 26.18
+        "median": 23.46,
+        "p25": 17.99,
+        "p75": 27.12
       },
       "on-on2": {
         "samples": 15,
-        "median": 1.5,
-        "p25": -4.65,
-        "p75": 6.69
+        "median": 3.25,
+        "p25": -6.45,
+        "p75": 7.95
       }
     }
   },
   "decision": {
     "thresholdMs": 200,
     "metric": "spawn -> session/new, steady-state paired on-off median",
-    "measuredMedianDeltaMs": 22.04,
+    "measuredMedianDeltaMs": 23.93,
     "result": "NO CHANGE",
     "authoritative": true
   },
@@ -828,8 +834,8 @@
         "on": {
           "arm": "on",
           "label": "first-0-on",
-          "initializeMs": 724.7,
-          "sessionNewMs": 761.4,
+          "initializeMs": 725.45,
+          "sessionNewMs": 761.88,
           "requestsInsideTimedWindow": 0,
           "requestsAfterTimer": 1,
           "overlayRequests": 1,
@@ -844,13 +850,13 @@
               "active:null"
             ]
           },
-          "sessionIdPrefix": "c8cb9d6f"
+          "sessionIdPrefix": "a7aaf814"
         },
         "off": {
           "arm": "off",
           "label": "first-0-off",
-          "initializeMs": 714.3,
-          "sessionNewMs": 744.77,
+          "initializeMs": 709.92,
+          "sessionNewMs": 738.59,
           "requestsInsideTimedWindow": 0,
           "requestsAfterTimer": 1,
           "overlayRequests": 1,
@@ -860,7 +866,7 @@
             "statuses": [],
             "note": "bundle deselected"
           },
-          "sessionIdPrefix": "dfcd5a11"
+          "sessionIdPrefix": "7ac494d0"
         }
       },
       {
@@ -869,8 +875,8 @@
         "off": {
           "arm": "off",
           "label": "first-1-off",
-          "initializeMs": 717.45,
-          "sessionNewMs": 747.64,
+          "initializeMs": 712,
+          "sessionNewMs": 741.28,
           "requestsInsideTimedWindow": 0,
           "requestsAfterTimer": 1,
           "overlayRequests": 1,
@@ -880,13 +886,13 @@
             "statuses": [],
             "note": "bundle deselected"
           },
-          "sessionIdPrefix": "a6881ef6"
+          "sessionIdPrefix": "8917b288"
         },
         "on": {
           "arm": "on",
           "label": "first-1-on",
-          "initializeMs": 723.65,
-          "sessionNewMs": 755.67,
+          "initializeMs": 728.74,
+          "sessionNewMs": 768.34,
           "requestsInsideTimedWindow": 0,
           "requestsAfterTimer": 1,
           "overlayRequests": 1,
@@ -901,27 +907,27 @@
               "active:null"
             ]
           },
-          "sessionIdPrefix": "f26c8251"
+          "sessionIdPrefix": "47b89073"
         }
       }
     ],
     "on": {
       "samples": 2,
-      "median": 758.53,
-      "p25": 757.1,
-      "p75": 759.97
+      "median": 765.11,
+      "p25": 763.5,
+      "p75": 766.73
     },
     "off": {
       "samples": 2,
-      "median": 746.2,
-      "p25": 745.49,
-      "p75": 746.92
+      "median": 739.93,
+      "p25": 739.26,
+      "p75": 740.61
     },
     "on-off": {
       "samples": 2,
-      "median": 12.33,
-      "p25": 10.18,
-      "p75": 14.48
+      "median": 25.18,
+      "p25": 24.23,
+      "p75": 26.12
     }
   },
   "attribution": {
@@ -929,9 +935,9 @@
     "moduleRoot": "$WORK/entry-lib/lib",
     "moduleLoad": {
       "web": {
-        "medianMs": 16.98,
-        "medianCpuMs": 19.97,
-        "modules": 26,
+        "medianMs": 14.82,
+        "medianCpuMs": 17.54,
+        "modules": 25,
         "libBytes": 469811,
         "entries": [
           "experience-collector",
@@ -941,9 +947,9 @@
         ]
       },
       "acp": {
-        "medianMs": 20.12,
-        "medianCpuMs": 23.2,
-        "modules": 34,
+        "medianMs": 17.9,
+        "medianCpuMs": 20.7,
+        "modules": 33,
         "libBytes": 663546,
         "entries": [
           "experience-collector",
@@ -964,9 +970,9 @@
             "promoted-consumer",
             "guard"
           ],
-          "ms": 20.067333000000005,
-          "cpuMs": 20.757,
-          "modules": 26,
+          "ms": 19.158208000000002,
+          "cpuMs": 18.065,
+          "modules": 25,
           "libBytes": 469811
         },
         {
@@ -979,9 +985,9 @@
             "guard",
             "desktop-task-client"
           ],
-          "ms": 21.979833,
-          "cpuMs": 23.717,
-          "modules": 34,
+          "ms": 19.503624999999996,
+          "cpuMs": 21.124,
+          "modules": 33,
           "libBytes": 663546
         },
         {
@@ -994,9 +1000,9 @@
             "guard",
             "desktop-task-client"
           ],
-          "ms": 19.981792000000002,
-          "cpuMs": 23.057,
-          "modules": 34,
+          "ms": 17.665959,
+          "cpuMs": 20.551,
+          "modules": 33,
           "libBytes": 663546
         },
         {
@@ -1008,9 +1014,9 @@
             "promoted-consumer",
             "guard"
           ],
-          "ms": 16.984625,
-          "cpuMs": 19.97,
-          "modules": 26,
+          "ms": 14.737166,
+          "cpuMs": 17.41,
+          "modules": 25,
           "libBytes": 469811
         },
         {
@@ -1022,9 +1028,9 @@
             "promoted-consumer",
             "guard"
           ],
-          "ms": 16.954124999999998,
-          "cpuMs": 19.916,
-          "modules": 26,
+          "ms": 14.822375,
+          "cpuMs": 17.539,
+          "modules": 25,
           "libBytes": 469811
         },
         {
@@ -1037,9 +1043,9 @@
             "guard",
             "desktop-task-client"
           ],
-          "ms": 20.116542,
-          "cpuMs": 23.201,
-          "modules": 34,
+          "ms": 17.774584,
+          "cpuMs": 20.641,
+          "modules": 33,
           "libBytes": 663546
         },
         {
@@ -1052,9 +1058,9 @@
             "guard",
             "desktop-task-client"
           ],
-          "ms": 20.106292000000003,
-          "cpuMs": 23.153,
-          "modules": 34,
+          "ms": 17.969250000000002,
+          "cpuMs": 20.756,
+          "modules": 33,
           "libBytes": 663546
         },
         {
@@ -1066,9 +1072,9 @@
             "promoted-consumer",
             "guard"
           ],
-          "ms": 17.048083,
-          "cpuMs": 19.971,
-          "modules": 26,
+          "ms": 14.830874999999999,
+          "cpuMs": 17.643,
+          "modules": 25,
           "libBytes": 469811
         },
         {
@@ -1080,9 +1086,9 @@
             "promoted-consumer",
             "guard"
           ],
-          "ms": 16.878875,
-          "cpuMs": 19.828,
-          "modules": 26,
+          "ms": 14.220875,
+          "cpuMs": 16.688,
+          "modules": 25,
           "libBytes": 469811
         },
         {
@@ -1095,9 +1101,9 @@
             "guard",
             "desktop-task-client"
           ],
-          "ms": 20.185125,
-          "cpuMs": 23.263,
-          "modules": 34,
+          "ms": 17.896,
+          "cpuMs": 20.705,
+          "modules": 33,
           "libBytes": 663546
         }
       ]
@@ -1105,54 +1111,54 @@
     "sharedExperience": {
       "cold": {
         "samples": 5,
-        "median": 1.89,
-        "p25": 1.82,
-        "p75": 1.94
+        "median": 1.92,
+        "p25": 1.9,
+        "p75": 1.93
       },
       "hot": {
         "samples": 5,
-        "median": 0.5,
-        "p25": 0.5,
-        "p75": 0.53
+        "median": 0.48,
+        "p25": 0.48,
+        "p75": 0.49
       },
       "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition",
       "samples": [
         {
           "round": 0,
-          "coldMs": 1.9619999999999997,
-          "hotMs": 0.49229199999999906,
+          "coldMs": 1.897000000000002,
+          "hotMs": 0.478749999999998,
           "coldSchemaVersion": null,
           "hotSchemaVersion": null,
           "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition"
         },
         {
           "round": 1,
-          "coldMs": 1.9365830000000024,
-          "hotMs": 0.5001250000000006,
+          "coldMs": 1.9205000000000005,
+          "hotMs": 0.48825000000000074,
           "coldSchemaVersion": null,
           "hotSchemaVersion": null,
           "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition"
         },
         {
           "round": 2,
-          "coldMs": 1.8879580000000011,
-          "hotMs": 0.5574580000000005,
+          "coldMs": 1.9313330000000022,
+          "hotMs": 0.4905840000000019,
           "coldSchemaVersion": null,
           "hotSchemaVersion": null,
           "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition"
         },
         {
           "round": 3,
-          "coldMs": 1.7960829999999994,
-          "hotMs": 0.5307910000000007,
+          "coldMs": 1.8747079999999983,
+          "hotMs": 0.476583999999999,
           "coldSchemaVersion": null,
           "hotSchemaVersion": null,
           "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition"
         },
         {
           "round": 4,
-          "coldMs": 1.8214579999999998,
-          "hotMs": 0.5015830000000001,
+          "coldMs": 1.970165999999999,
+          "hotMs": 0.47954200000000213,
           "coldSchemaVersion": null,
           "hotSchemaVersion": null,
           "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition"
@@ -1163,9 +1169,9 @@
       "0": {
         "readIndexMs": {
           "samples": 5,
-          "median": 0.73,
+          "median": 0.74,
           "p25": 0.72,
-          "p75": 0.74
+          "p75": 0.75
         },
         "evaluateTotalMs": {
           "samples": 5,
@@ -1179,15 +1185,15 @@
       "5": {
         "readIndexMs": {
           "samples": 5,
-          "median": 1.07,
-          "p25": 1.06,
-          "p75": 1.08
+          "median": 1.09,
+          "p25": 1.08,
+          "p75": 1.1
         },
         "evaluateTotalMs": {
           "samples": 5,
-          "median": 1.67,
-          "p25": 1.63,
-          "p75": 1.74
+          "median": 1.72,
+          "p25": 1.71,
+          "p75": 1.73
         },
         "eligible": 5,
         "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup"
@@ -1196,14 +1202,14 @@
         "readIndexMs": {
           "samples": 5,
           "median": 2.29,
-          "p25": 2.27,
-          "p75": 2.29
+          "p25": 2.29,
+          "p75": 2.32
         },
         "evaluateTotalMs": {
           "samples": 5,
-          "median": 7.75,
-          "p25": 7.7,
-          "p75": 7.79
+          "median": 7.83,
+          "p25": 7.79,
+          "p75": 7.87
         },
         "eligible": 50,
         "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup"
@@ -1213,125 +1219,125 @@
       {
         "round": 0,
         "records": 0,
-        "readIndexMs": 0.7192080000000018,
+        "readIndexMs": 0.753499999999999,
+        "evaluateTotalMs": 0.0006670000000035259,
+        "eligible": 0,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 0
+      },
+      {
+        "round": 0,
+        "records": 5,
+        "readIndexMs": 1.096499999999999,
+        "evaluateTotalMs": 1.7242080000000009,
+        "eligible": 5,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 5
+      },
+      {
+        "round": 0,
+        "records": 50,
+        "readIndexMs": 3.2414580000000015,
+        "evaluateTotalMs": 7.868417000000001,
+        "eligible": 50,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 50
+      },
+      {
+        "round": 1,
+        "records": 50,
+        "readIndexMs": 2.319458000000001,
+        "evaluateTotalMs": 7.790041000000002,
+        "eligible": 50,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 50
+      },
+      {
+        "round": 1,
+        "records": 5,
+        "readIndexMs": 1.076708,
+        "evaluateTotalMs": 1.742208999999999,
+        "eligible": 5,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 5
+      },
+      {
+        "round": 1,
+        "records": 0,
+        "readIndexMs": 0.705957999999999,
+        "evaluateTotalMs": 0.0007080000000030395,
+        "eligible": 0,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 0
+      },
+      {
+        "round": 2,
+        "records": 0,
+        "readIndexMs": 0.7557500000000026,
+        "evaluateTotalMs": 0.0008339999999975589,
+        "eligible": 0,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 0
+      },
+      {
+        "round": 2,
+        "records": 5,
+        "readIndexMs": 1.110125,
+        "evaluateTotalMs": 1.7087499999999984,
+        "eligible": 5,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 5
+      },
+      {
+        "round": 2,
+        "records": 50,
+        "readIndexMs": 2.2695420000000013,
+        "evaluateTotalMs": 7.654667,
+        "eligible": 50,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 50
+      },
+      {
+        "round": 3,
+        "records": 50,
+        "readIndexMs": 2.291125000000001,
+        "evaluateTotalMs": 7.829166999999998,
+        "eligible": 50,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 50
+      },
+      {
+        "round": 3,
+        "records": 5,
+        "readIndexMs": 1.09375,
+        "evaluateTotalMs": 1.7348749999999988,
+        "eligible": 5,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 5
+      },
+      {
+        "round": 3,
+        "records": 0,
+        "readIndexMs": 0.7404580000000003,
+        "evaluateTotalMs": 0.00079200000000057,
+        "eligible": 0,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 0
+      },
+      {
+        "round": 4,
+        "records": 0,
+        "readIndexMs": 0.7157499999999999,
         "evaluateTotalMs": 0.0007500000000000284,
         "eligible": 0,
         "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
         "expectedRecords": 0
       },
       {
-        "round": 0,
-        "records": 5,
-        "readIndexMs": 1.0838750000000026,
-        "evaluateTotalMs": 1.7697079999999978,
-        "eligible": 5,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 5
-      },
-      {
-        "round": 0,
-        "records": 50,
-        "readIndexMs": 2.2733750000000015,
-        "evaluateTotalMs": 7.749666999999999,
-        "eligible": 50,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 50
-      },
-      {
-        "round": 1,
-        "records": 50,
-        "readIndexMs": 2.3138749999999995,
-        "evaluateTotalMs": 7.643041,
-        "eligible": 50,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 50
-      },
-      {
-        "round": 1,
-        "records": 5,
-        "readIndexMs": 1.0772499999999994,
-        "evaluateTotalMs": 1.6315419999999996,
-        "eligible": 5,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 5
-      },
-      {
-        "round": 1,
-        "records": 0,
-        "readIndexMs": 0.7762080000000005,
-        "evaluateTotalMs": 0.0008750000000006253,
-        "eligible": 0,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 0
-      },
-      {
-        "round": 2,
-        "records": 0,
-        "readIndexMs": 0.7267910000000022,
-        "evaluateTotalMs": 0.0007079999999994868,
-        "eligible": 0,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 0
-      },
-      {
-        "round": 2,
-        "records": 5,
-        "readIndexMs": 1.0555839999999996,
-        "evaluateTotalMs": 1.6096670000000017,
-        "eligible": 5,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 5
-      },
-      {
-        "round": 2,
-        "records": 50,
-        "readIndexMs": 2.289249999999999,
-        "evaluateTotalMs": 7.704625,
-        "eligible": 50,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 50
-      },
-      {
-        "round": 3,
-        "records": 50,
-        "readIndexMs": 2.2665419999999976,
-        "evaluateTotalMs": 7.856708000000001,
-        "eligible": 50,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 50
-      },
-      {
-        "round": 3,
-        "records": 5,
-        "readIndexMs": 1.0705830000000027,
-        "evaluateTotalMs": 1.6681249999999999,
-        "eligible": 5,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 5
-      },
-      {
-        "round": 3,
-        "records": 0,
-        "readIndexMs": 0.705166000000002,
-        "evaluateTotalMs": 0.0007079999999994868,
-        "eligible": 0,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 0
-      },
-      {
-        "round": 4,
-        "records": 0,
-        "readIndexMs": 0.737833000000002,
-        "evaluateTotalMs": 0.0008330000000000837,
-        "eligible": 0,
-        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
-        "expectedRecords": 0
-      },
-      {
         "round": 4,
         "records": 5,
-        "readIndexMs": 1.0487089999999988,
-        "evaluateTotalMs": 1.7393339999999995,
+        "readIndexMs": 1.0672080000000008,
+        "evaluateTotalMs": 1.6580839999999988,
         "eligible": 5,
         "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
         "expectedRecords": 5
@@ -1339,8 +1345,8 @@
       {
         "round": 4,
         "records": 50,
-        "readIndexMs": 2.292458,
-        "evaluateTotalMs": 7.787792,
+        "readIndexMs": 2.2937499999999993,
+        "evaluateTotalMs": 7.875833999999998,
         "eligible": 50,
         "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
         "expectedRecords": 50
@@ -1354,8 +1360,8 @@
       "on": {
         "arm": "on",
         "label": "r0-on",
-        "initializeMs": 723.1,
-        "sessionNewMs": 762.75,
+        "initializeMs": 1189.14,
+        "sessionNewMs": 1255.01,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1370,13 +1376,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "feb88b7b"
+        "sessionIdPrefix": "d14e8850"
       },
       "off": {
         "arm": "off",
         "label": "r0-off",
-        "initializeMs": 705.46,
-        "sessionNewMs": 741.74,
+        "initializeMs": 971.19,
+        "sessionNewMs": 1012.63,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1386,13 +1392,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "4d793dcf"
+        "sessionIdPrefix": "04effc97"
       },
       "on2": {
         "arm": "on2",
         "label": "r0-on2",
-        "initializeMs": 723.55,
-        "sessionNewMs": 767.82,
+        "initializeMs": 750.25,
+        "sessionNewMs": 801.92,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1407,7 +1413,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "9892f6bb"
+        "sessionIdPrefix": "c0ba6fbe"
       }
     },
     {
@@ -1416,8 +1422,8 @@
       "on": {
         "arm": "on",
         "label": "r1-on",
-        "initializeMs": 726.45,
-        "sessionNewMs": 777.21,
+        "initializeMs": 721.9,
+        "sessionNewMs": 766.42,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1432,13 +1438,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "8d4dd879"
+        "sessionIdPrefix": "cea6bc4b"
       },
       "off": {
         "arm": "off",
         "label": "r1-off",
-        "initializeMs": 709.23,
-        "sessionNewMs": 747.37,
+        "initializeMs": 726.63,
+        "sessionNewMs": 776.46,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1448,13 +1454,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "60b633c7"
+        "sessionIdPrefix": "65ca0cc0"
       },
       "on2": {
         "arm": "on2",
         "label": "r1-on2",
-        "initializeMs": 719.79,
-        "sessionNewMs": 767.41,
+        "initializeMs": 747.57,
+        "sessionNewMs": 797.9,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1469,7 +1475,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "e284b1a6"
+        "sessionIdPrefix": "a6766b29"
       }
     },
     {
@@ -1478,8 +1484,8 @@
       "on": {
         "arm": "on",
         "label": "r2-on",
-        "initializeMs": 719.95,
-        "sessionNewMs": 769.9,
+        "initializeMs": 721.79,
+        "sessionNewMs": 767.91,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1494,13 +1500,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "d5e4f2e9"
+        "sessionIdPrefix": "3efb937c"
       },
       "off": {
         "arm": "off",
         "label": "r2-off",
-        "initializeMs": 712.66,
-        "sessionNewMs": 751.59,
+        "initializeMs": 704.22,
+        "sessionNewMs": 743.98,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1510,13 +1516,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "e26a4afd"
+        "sessionIdPrefix": "fb2d861a"
       },
       "on2": {
         "arm": "on2",
         "label": "r2-on2",
-        "initializeMs": 721.91,
-        "sessionNewMs": 762.57,
+        "initializeMs": 734.82,
+        "sessionNewMs": 783.46,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1531,7 +1537,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "4aa805a5"
+        "sessionIdPrefix": "1bd9b0c5"
       }
     },
     {
@@ -1540,8 +1546,8 @@
       "on": {
         "arm": "on",
         "label": "r3-on",
-        "initializeMs": 722.42,
-        "sessionNewMs": 766.96,
+        "initializeMs": 719.29,
+        "sessionNewMs": 758.11,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1556,13 +1562,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "5c6365b6"
+        "sessionIdPrefix": "59078397"
       },
       "off": {
         "arm": "off",
         "label": "r3-off",
-        "initializeMs": 708.03,
-        "sessionNewMs": 745.21,
+        "initializeMs": 713.91,
+        "sessionNewMs": 750.56,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1572,13 +1578,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "87a7ccd0"
+        "sessionIdPrefix": "f34de503"
       },
       "on2": {
         "arm": "on2",
         "label": "r3-on2",
-        "initializeMs": 720.17,
-        "sessionNewMs": 766.33,
+        "initializeMs": 720.57,
+        "sessionNewMs": 759.01,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1593,7 +1599,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "8744d1c1"
+        "sessionIdPrefix": "98ff4f88"
       }
     },
     {
@@ -1602,8 +1608,8 @@
       "on": {
         "arm": "on",
         "label": "r4-on",
-        "initializeMs": 720.66,
-        "sessionNewMs": 779.17,
+        "initializeMs": 727.46,
+        "sessionNewMs": 771.72,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1618,13 +1624,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "eb2d6c68"
+        "sessionIdPrefix": "9e5771d5"
       },
       "off": {
         "arm": "off",
         "label": "r4-off",
-        "initializeMs": 710.99,
-        "sessionNewMs": 748.52,
+        "initializeMs": 700.54,
+        "sessionNewMs": 739.06,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1634,13 +1640,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "d9748a0a"
+        "sessionIdPrefix": "c9387d56"
       },
       "on2": {
         "arm": "on2",
         "label": "r4-on2",
-        "initializeMs": 724.93,
-        "sessionNewMs": 778.6,
+        "initializeMs": 718.53,
+        "sessionNewMs": 768.75,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1655,7 +1661,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "6e7c8053"
+        "sessionIdPrefix": "c9740290"
       }
     },
     {
@@ -1664,8 +1670,8 @@
       "on": {
         "arm": "on",
         "label": "r5-on",
-        "initializeMs": 721.17,
-        "sessionNewMs": 763.83,
+        "initializeMs": 726.19,
+        "sessionNewMs": 778.18,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1680,13 +1686,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "fa5b3cd4"
+        "sessionIdPrefix": "d6519d43"
       },
       "off": {
         "arm": "off",
         "label": "r5-off",
-        "initializeMs": 711.82,
-        "sessionNewMs": 749.49,
+        "initializeMs": 704.8,
+        "sessionNewMs": 743.08,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1696,13 +1702,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "5bff94b3"
+        "sessionIdPrefix": "34b74f23"
       },
       "on2": {
         "arm": "on2",
         "label": "r5-on2",
-        "initializeMs": 730.7,
-        "sessionNewMs": 782.36,
+        "initializeMs": 717.54,
+        "sessionNewMs": 758.14,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1717,7 +1723,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "f727f3d5"
+        "sessionIdPrefix": "eb9d2f32"
       }
     },
     {
@@ -1726,8 +1732,8 @@
       "on": {
         "arm": "on",
         "label": "r6-on",
-        "initializeMs": 720.71,
-        "sessionNewMs": 763.88,
+        "initializeMs": 716.97,
+        "sessionNewMs": 759.55,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1742,13 +1748,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "db4a981b"
+        "sessionIdPrefix": "3a8ea861"
       },
       "off": {
         "arm": "off",
         "label": "r6-off",
-        "initializeMs": 712.33,
-        "sessionNewMs": 751.92,
+        "initializeMs": 704.16,
+        "sessionNewMs": 741.44,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1758,13 +1764,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "614d7d21"
+        "sessionIdPrefix": "e9472a1f"
       },
       "on2": {
         "arm": "on2",
         "label": "r6-on2",
-        "initializeMs": 722.19,
-        "sessionNewMs": 770.87,
+        "initializeMs": 737.08,
+        "sessionNewMs": 779.65,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1779,7 +1785,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "e43b431c"
+        "sessionIdPrefix": "b57f19fb"
       }
     },
     {
@@ -1788,8 +1794,8 @@
       "on": {
         "arm": "on",
         "label": "r7-on",
-        "initializeMs": 721.67,
-        "sessionNewMs": 761.48,
+        "initializeMs": 724.63,
+        "sessionNewMs": 776.35,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1804,13 +1810,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "4e037736"
+        "sessionIdPrefix": "ff040bca"
       },
       "off": {
         "arm": "off",
         "label": "r7-off",
-        "initializeMs": 711.91,
-        "sessionNewMs": 750.07,
+        "initializeMs": 709.42,
+        "sessionNewMs": 746.04,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1820,13 +1826,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "47fded5a"
+        "sessionIdPrefix": "332ca838"
       },
       "on2": {
         "arm": "on2",
         "label": "r7-on2",
-        "initializeMs": 721.33,
-        "sessionNewMs": 759.84,
+        "initializeMs": 723.26,
+        "sessionNewMs": 770.4,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1841,7 +1847,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "0cfc9109"
+        "sessionIdPrefix": "c472eb4f"
       }
     },
     {
@@ -1850,8 +1856,8 @@
       "on": {
         "arm": "on",
         "label": "r8-on",
-        "initializeMs": 721.85,
-        "sessionNewMs": 765.57,
+        "initializeMs": 722.46,
+        "sessionNewMs": 765.01,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1866,13 +1872,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "eda4138c"
+        "sessionIdPrefix": "d0d67f92"
       },
       "off": {
         "arm": "off",
         "label": "r8-off",
-        "initializeMs": 704.93,
-        "sessionNewMs": 743.53,
+        "initializeMs": 707.42,
+        "sessionNewMs": 746.16,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1882,13 +1888,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "ce6af52d"
+        "sessionIdPrefix": "5389f268"
       },
       "on2": {
         "arm": "on2",
         "label": "r8-on2",
-        "initializeMs": 718.2,
-        "sessionNewMs": 769.8,
+        "initializeMs": 726.41,
+        "sessionNewMs": 773.35,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1903,7 +1909,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "495fe2d3"
+        "sessionIdPrefix": "688f7e8a"
       }
     },
     {
@@ -1912,8 +1918,8 @@
       "on": {
         "arm": "on",
         "label": "r9-on",
-        "initializeMs": 727.95,
-        "sessionNewMs": 769.49,
+        "initializeMs": 730.21,
+        "sessionNewMs": 777.31,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1928,13 +1934,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "618d321c"
+        "sessionIdPrefix": "26090477"
       },
       "off": {
         "arm": "off",
         "label": "r9-off",
-        "initializeMs": 707.09,
-        "sessionNewMs": 745.47,
+        "initializeMs": 709.31,
+        "sessionNewMs": 746.14,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1944,13 +1950,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "e667d78c"
+        "sessionIdPrefix": "79d34c01"
       },
       "on2": {
         "arm": "on2",
         "label": "r9-on2",
-        "initializeMs": 720.84,
-        "sessionNewMs": 764.74,
+        "initializeMs": 729.1,
+        "sessionNewMs": 773.18,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1965,7 +1971,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "ae9fa5b4"
+        "sessionIdPrefix": "fc099313"
       }
     },
     {
@@ -1974,8 +1980,8 @@
       "on": {
         "arm": "on",
         "label": "r10-on",
-        "initializeMs": 724.23,
-        "sessionNewMs": 772.96,
+        "initializeMs": 727.02,
+        "sessionNewMs": 770.83,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -1990,13 +1996,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "45cefea2"
+        "sessionIdPrefix": "59d4e849"
       },
       "off": {
         "arm": "off",
         "label": "r10-off",
-        "initializeMs": 707.24,
-        "sessionNewMs": 742.84,
+        "initializeMs": 710.39,
+        "sessionNewMs": 747.69,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2006,13 +2012,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "3e037675"
+        "sessionIdPrefix": "e8c4109b"
       },
       "on2": {
         "arm": "on2",
         "label": "r10-on2",
-        "initializeMs": 722.24,
-        "sessionNewMs": 766.91,
+        "initializeMs": 724.81,
+        "sessionNewMs": 767.58,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2027,7 +2033,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "041280cc"
+        "sessionIdPrefix": "6ed25745"
       }
     },
     {
@@ -2036,44 +2042,7 @@
       "on": {
         "arm": "on",
         "label": "r11-on",
-        "initializeMs": 719.87,
-        "sessionNewMs": 761.66,
-        "requestsInsideTimedWindow": 0,
-        "requestsAfterTimer": 1,
-        "overlayRequests": 1,
-        "overlayToolSchemas": 25,
-        "sourceValidation": {
-          "checked": 5,
-          "statuses": [
-            "active:null",
-            "active:null",
-            "active:null",
-            "active:null",
-            "active:null"
-          ]
-        },
-        "sessionIdPrefix": "3e8c412c"
-      },
-      "off": {
-        "arm": "off",
-        "label": "r11-off",
-        "initializeMs": 716.85,
-        "sessionNewMs": 759.35,
-        "requestsInsideTimedWindow": 0,
-        "requestsAfterTimer": 1,
-        "overlayRequests": 1,
-        "overlayToolSchemas": 23,
-        "sourceValidation": {
-          "checked": 0,
-          "statuses": [],
-          "note": "bundle deselected"
-        },
-        "sessionIdPrefix": "503f34f8"
-      },
-      "on2": {
-        "arm": "on2",
-        "label": "r11-on2",
-        "initializeMs": 722.22,
+        "initializeMs": 721.2,
         "sessionNewMs": 766.9,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
@@ -2089,7 +2058,44 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "df0b82ac"
+        "sessionIdPrefix": "7a1b0588"
+      },
+      "off": {
+        "arm": "off",
+        "label": "r11-off",
+        "initializeMs": 707.23,
+        "sessionNewMs": 743.91,
+        "requestsInsideTimedWindow": 0,
+        "requestsAfterTimer": 1,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 23,
+        "sourceValidation": {
+          "checked": 0,
+          "statuses": [],
+          "note": "bundle deselected"
+        },
+        "sessionIdPrefix": "9d5d994b"
+      },
+      "on2": {
+        "arm": "on2",
+        "label": "r11-on2",
+        "initializeMs": 720.92,
+        "sessionNewMs": 761.63,
+        "requestsInsideTimedWindow": 0,
+        "requestsAfterTimer": 1,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "e5629f13"
       }
     },
     {
@@ -2098,8 +2104,8 @@
       "on": {
         "arm": "on",
         "label": "r12-on",
-        "initializeMs": 721.48,
-        "sessionNewMs": 774.17,
+        "initializeMs": 725.33,
+        "sessionNewMs": 765.04,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2114,13 +2120,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "2eb01179"
+        "sessionIdPrefix": "2c631b73"
       },
       "off": {
         "arm": "off",
         "label": "r12-off",
-        "initializeMs": 710.61,
-        "sessionNewMs": 743.72,
+        "initializeMs": 705.8,
+        "sessionNewMs": 742.99,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2130,13 +2136,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "876fbf3d"
+        "sessionIdPrefix": "42ccdcc6"
       },
       "on2": {
         "arm": "on2",
         "label": "r12-on2",
-        "initializeMs": 722.19,
-        "sessionNewMs": 764.85,
+        "initializeMs": 725.08,
+        "sessionNewMs": 769.6,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2151,7 +2157,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "7b8a6c60"
+        "sessionIdPrefix": "91afa7fc"
       }
     },
     {
@@ -2160,8 +2166,8 @@
       "on": {
         "arm": "on",
         "label": "r13-on",
-        "initializeMs": 739.34,
-        "sessionNewMs": 786.06,
+        "initializeMs": 720.8,
+        "sessionNewMs": 772.62,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2176,13 +2182,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "c1e3f33d"
+        "sessionIdPrefix": "f7faa5bf"
       },
       "off": {
         "arm": "off",
         "label": "r13-off",
-        "initializeMs": 710.08,
-        "sessionNewMs": 750.18,
+        "initializeMs": 707.3,
+        "sessionNewMs": 744.42,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2192,13 +2198,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "cdde3fd2"
+        "sessionIdPrefix": "a3e32659"
       },
       "on2": {
         "arm": "on2",
         "label": "r13-on2",
-        "initializeMs": 722.93,
-        "sessionNewMs": 769.75,
+        "initializeMs": 721.57,
+        "sessionNewMs": 762.67,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2213,7 +2219,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "0ebe63b6"
+        "sessionIdPrefix": "04f59a5f"
       }
     },
     {
@@ -2222,8 +2228,8 @@
       "on": {
         "arm": "on",
         "label": "r14-on",
-        "initializeMs": 730.57,
-        "sessionNewMs": 778.35,
+        "initializeMs": 732.26,
+        "sessionNewMs": 784.93,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2238,13 +2244,13 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "c4bf1eb9"
+        "sessionIdPrefix": "7d223506"
       },
       "off": {
         "arm": "off",
         "label": "r14-off",
-        "initializeMs": 706.16,
-        "sessionNewMs": 741.28,
+        "initializeMs": 705.94,
+        "sessionNewMs": 743.51,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2254,13 +2260,13 @@
           "statuses": [],
           "note": "bundle deselected"
         },
-        "sessionIdPrefix": "35a2b0c6"
+        "sessionIdPrefix": "fa939169"
       },
       "on2": {
         "arm": "on2",
         "label": "r14-on2",
-        "initializeMs": 720.98,
-        "sessionNewMs": 776.85,
+        "initializeMs": 721.56,
+        "sessionNewMs": 766.97,
         "requestsInsideTimedWindow": 0,
         "requestsAfterTimer": 1,
         "overlayRequests": 1,
@@ -2275,7 +2281,7 @@
             "active:null"
           ]
         },
-        "sessionIdPrefix": "96095b0a"
+        "sessionIdPrefix": "ca4dac7b"
       }
     }
   ],
@@ -2283,8 +2289,8 @@
     {
       "arm": "on",
       "label": "warm-on",
-      "initializeMs": 1508.28,
-      "sessionNewMs": 1588.14,
+      "initializeMs": 1694.45,
+      "sessionNewMs": 1751.99,
       "requestsInsideTimedWindow": 0,
       "requestsAfterTimer": 1,
       "overlayRequests": 1,
@@ -2299,13 +2305,13 @@
           "active:null"
         ]
       },
-      "sessionIdPrefix": "e7c33cce"
+      "sessionIdPrefix": "3f5e0f4d"
     },
     {
       "arm": "off",
       "label": "warm-off",
-      "initializeMs": 702.37,
-      "sessionNewMs": 741.38,
+      "initializeMs": 704.35,
+      "sessionNewMs": 744.45,
       "requestsInsideTimedWindow": 0,
       "requestsAfterTimer": 1,
       "overlayRequests": 1,
@@ -2315,13 +2321,13 @@
         "statuses": [],
         "note": "bundle deselected"
       },
-      "sessionIdPrefix": "2f86c3c3"
+      "sessionIdPrefix": "b0dc064b"
     },
     {
       "arm": "on2",
       "label": "warm-on2",
-      "initializeMs": 722.11,
-      "sessionNewMs": 767.81,
+      "initializeMs": 723.96,
+      "sessionNewMs": 773.32,
       "requestsInsideTimedWindow": 0,
       "requestsAfterTimer": 1,
       "overlayRequests": 1,
@@ -2336,7 +2342,7 @@
           "active:null"
         ]
       },
-      "sessionIdPrefix": "6d367aed"
+      "sessionIdPrefix": "01a28540"
     }
   ]
 }
