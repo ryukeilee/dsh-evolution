@@ -58,12 +58,17 @@ async function recordFor(env, host) {
 async function observedHostOf(dshHome) {
   const report = await collectDiagnostics({ dshHome, home: true, probe: { skipComposition: true } });
   const host = checkOf(report, 'host.version')?.evidence ?? {};
-  const modules = checkOf(report, 'host.modules')?.evidence?.modules ?? [];
+  const modulesCheck = checkOf(report, 'host.modules');
+  const modules = modulesCheck?.evidence?.modules ?? [];
+  const facts = modulesCheck?.evidence?.hostFacts ?? null;
   const moduleVersion = (name) => modules.find((module) => module.name === name)?.version ?? null;
   return {
-    dsh: host.found ?? null,
-    cordis: moduleVersion('@deepseek-ai/cordis'),
-    include: moduleVersion('@deepseek-ai/cordis-plugin-include'),
+    // A packaged host has no Node-resolvable package root; its module versions
+    // come from the manifests that identified the CLI, never this process's
+    // peer dependencies. Missing fields stay null.
+    dsh: facts?.dsh ?? host.found ?? null,
+    cordis: facts?.cordis ?? moduleVersion('@deepseek-ai/cordis'),
+    include: facts?.include ?? moduleVersion('@deepseek-ai/cordis-plugin-include'),
     node: process.version,
     verifiedAt: '2026-01-02T00:00:00.000Z',
   };
