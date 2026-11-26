@@ -99,6 +99,58 @@ if (options.smoke) {
 
 const isInside = (child, parent) => child === parent || child.startsWith(parent + path.sep);
 
+/** Resolve a path that may not exist yet through its nearest existing ancestor. */
+function resolvePathThroughExistingAncestor(target) {
+  const absolute = path.resolve(target);
+  const tail = [];
+  let cursor = absolute;
+  while (!fs.existsSync(cursor)) {
+    tail.unshift(path.basename(cursor));
+    const parent = path.dirname(cursor);
+    if (parent === cursor) throw new Error(`cannot resolve path: ${absolute}`);
+    cursor = parent;
+  }
+  return path.join(fs.realpathSync(cursor), ...tail);
+}
+
+/**
+ * Reject any symlink that resolves outside the root, including links copied
+ * verbatim from a home. lstat/readdir(withFileTypes) never follow a link; a
+ * dangling link is refused instead of being guessed at. Symlinked directories
+ * are checked but never recursed into.
+ */
+function assertNoEscapingLinks(root, label) {
+  const realRoot = fs.realpathSync(root);
+  let checked = 0;
+  const escaping = [];
+  const walk = (directory, prefix) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isSymbolicLink()) {
+        checked += 1;
+        let resolved;
+        try { resolved = fs.realpathSync(absolute); }
+        catch (error) { throw new Error(`${label}: dangling or unresolvable symlink ${relative}: ${error.message}`); }
+        if (!isInside(resolved, realRoot)) escaping.push(`${relative} -> ${resolved}`);
+        continue;
+      }
+      if (entry.isDirectory()) walk(absolute, relative);
+    }
+  };
+  walk(root, '');
+  assert.equal(escaping.length, 0, `${label}: symlink escapes the home root: ${escaping.join(', ')}`);
+  return { label, checked, escaping: escaping.length };
+}
+
+function assertOutPath(target, pristineHome) {
+  if (!target) return null;
+  const resolved = resolvePathThroughExistingAncestor(target);
+  assert.ok(!isInside(resolved, REAL_HOME), 'refusing --out inside the real DSH_HOME');
+  assert.ok(!isInside(resolved, pristineHome), 'refusing --out inside the source pristine home');
+  return resolved;
+}
+
 function assertIsolatedHome(target) {
   // Resolve before any write: a symlinked home or a lexically safe path under
   // TMPDIR can still point at the production home.
@@ -160,6 +212,11 @@ function atomicWrite(file, bytes) {
 async function run() {
   const startedAt = new Date().toISOString();
   const home = assertIsolatedHome(options.home);
+  // Both checks run before any scratch write: a pristine home that already
+  // contains an escaping link is not a usable input, and an --out inside the
+  // real home (or the pristine home) would overwrite protected data.
+  const pristineLinkCheck = assertNoEscapingLinks(home, 'pristine home');
+  const outResolved = assertOutPath(options.out, home);
   const runtime = fs.realpathSync(options.runtime);
   const cli = path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
   assert.ok(fs.existsSync(cli), `${options.runtime} does not contain @deepseek-ai/dsh/lib/bin.js`);
@@ -183,6 +240,12 @@ async function run() {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-evolution-acp-latency-'));
   const realWork = fs.realpathSync(work);
   assert.ok(isInside(realWork, fs.realpathSync(os.tmpdir())), 'work directory escaped the temp root');
+  const assertScratchPath = (candidate, label) => {
+    const resolved = resolvePathThroughExistingAncestor(candidate);
+    assert.ok(isInside(resolved, realWork), `${label} escaped the scratch root: ${resolved}`);
+    return resolved;
+  };
+  const linkChecks = { pristine: pristineLinkCheck, copies: [] };
   const project = (value) => typeof value === 'string'
     ? value.split(realWork).join('$WORK').split(home).join('$HOME').split(runtime).join('$RUNTIME').split(REPO_ROOT).join('<repo>')
     : value;
@@ -192,6 +255,7 @@ async function run() {
   // resolved (pnpm store + profile top level) so the attribution measures the
   // same external graph the booted entries use, without touching the home.
   const entryRoot = path.join(realWork, 'entry-lib');
+  assertScratchPath(entryRoot, 'entryRoot');
   const entryLib = path.join(entryRoot, 'lib');
   fs.cpSync(bundleLib, entryLib, { recursive: true });
   const entryModules = path.join(entryRoot, 'node_modules');
@@ -330,7 +394,12 @@ async function run() {
 
   function prepare(label, arm, { firstBoot = false } = {}) {
     const homeCopy = path.join(realWork, 'homes', label);
+    assertScratchPath(homeCopy, `homeCopy ${label}`);
     fs.cpSync(home, homeCopy, { recursive: true, verbatimSymlinks: true });
+    const copyStat = fs.lstatSync(homeCopy);
+    assert.ok(copyStat.isDirectory() && !copyStat.isSymbolicLink(), `homeCopy ${label} is not a real directory copy`);
+    assert.ok(isInside(fs.realpathSync(homeCopy), realWork), `homeCopy ${label} does not resolve inside the scratch root`);
+    linkChecks.copies.push(assertNoEscapingLinks(homeCopy, `home copy ${label}`));
     if (firstBoot) {
       for (const relative of FIRST_BOOT_REMOVALS) {
         fs.rmSync(path.join(homeCopy, ...relative.split('/')), { recursive: true, force: true });
@@ -345,9 +414,12 @@ async function run() {
   async function boot({ homeCopy, arm, label, seeded }) {
     const requests = [];
     const server = http.createServer(async (req, res) => {
+      // Arrival time, recorded before the body is drained, so a slow request
+      // cannot hide inside the timed window by finishing after session/new.
+      const at = performance.now();
       let body = '';
       for await (const chunk of req) body += chunk;
-      requests.push({ at: performance.now(), bytes: Buffer.byteLength(body), tools: (JSON.parse(body).tools || []).length });
+      requests.push({ at, bytes: Buffer.byteLength(body), tools: (JSON.parse(body).tools || []).length });
       res.writeHead(200, { 'content-type': 'text/event-stream' });
       const send = (type, data) => res.write(`event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`);
       send('message_start', { message: { id: `bench-${label}`, type: 'message', role: 'assistant', model: 'loopback-fixture', content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 0 } } });
@@ -363,6 +435,7 @@ async function run() {
       server.listen(0, '127.0.0.1', resolve);
     });
     const overlay = path.join(realWork, 'overlays', `${label}.yml`);
+    assertScratchPath(overlay, `overlay ${label}`);
     fs.mkdirSync(path.dirname(overlay), { recursive: true });
     fs.writeFileSync(overlay, `- id: llm-deepseek\n  config:\n    baseURL: http://127.0.0.1:${server.address().port}\n    apiKeyEnv: ${KEY_ENV}\n`, { mode: 0o600 });
 
@@ -406,22 +479,27 @@ async function run() {
       const initialize = await rpc('initialize', { protocolVersion: 1, clientCapabilities: {} });
       assert.ok(initialize && typeof initialize === 'object', 'initialize returned no result object');
       const initializeMs = performance.now() - started;
-      const modelRequestsBeforeSessionNew = requests.length;
       const created = await rpc('session/new', { cwd: homeCopy, mcpServers: [] });
       assert.ok(typeof created?.sessionId === 'string' && created.sessionId.length > 0, 'session/new returned no sessionId');
       const sessionNewMs = performance.now() - started;
-      // Overlay proof is deliberately outside both timers: the only model call
-      // in a sample happens here, so the timed window contains zero network cost.
+      // Timestamp-based, not count-based: check the whole [spawn, session/new]
+      // interval, including requests that arrived while session/new was in
+      // flight. Both clocks are performance.now() from this process.
+      const requestsInsideTimedWindow = requests.filter((request) => request.at - started <= sessionNewMs).length;
+      assert.equal(requestsInsideTimedWindow, 0, 'a model request landed inside the timed startup window');
+      // Overlay proof is deliberately after both timers: the model call below
+      // is the only one in a sample, so the reported delta has no network cost.
       const prompt = await rpc('session/prompt', { sessionId: created.sessionId, prompt: [{ type: 'text', text: 'Confirm loopback provider.' }] }, 30000);
       assert.ok(prompt && typeof prompt === 'object', 'session/prompt returned no result object');
-      assert.ok(requests.length >= 1, 'loopback provider got no request: the overlay did not take effect');
-      assert.equal(modelRequestsBeforeSessionNew, 0, 'a model request landed inside the timed startup window');
+      const requestsAfterTimer = requests.filter((request) => request.at - started > sessionNewMs).length;
+      assert.ok(requestsAfterTimer >= 1, 'loopback provider got no request after the timer: the overlay did not take effect');
       const sourceValidation = arm === 'off' ? { checked: 0, statuses: [], note: 'bundle deselected' } : assertSourceValidation(homeCopy, seeded);
       return {
         arm, label,
         initializeMs: Number(initializeMs.toFixed(2)),
         sessionNewMs: Number(sessionNewMs.toFixed(2)),
-        modelRequestsBeforeSessionNew,
+        requestsInsideTimedWindow,
+        requestsAfterTimer,
         overlayRequests: requests.length,
         overlayToolSchemas: requests[0]?.tools ?? null,
         sourceValidation,
@@ -449,8 +527,8 @@ async function run() {
     arms: 'on (bundle selected), off (bundle deselected in a fresh copy, package still installed), on2 (second fresh copy identical to on)',
     perRound: 'every arm gets a brand-new copy of the pristine home; copying time is excluded; arm order rotates on-off-on2 / off-on2-on / on2-on-off',
     timers: 'process.hrtime-equivalent performance.now() from just before spawn to the initialize response and to the session/new response; both are asserted successful',
-    modelIsolation: 'loopback SSE provider via --patch, one end_turn text response with no tool_use; the overlay is proven by an UNTIMED session/prompt after session/new; zero model requests are allowed inside the timed window',
-    assertions: 'initialize/session/new/prompt success, overlay request observed, bundle selected/deselected in each copy, seeded records reach source validation (not index-shape)',
+    modelIsolation: 'loopback SSE provider via --patch, one end_turn text response with no tool_use. Provider arrival timestamps (recorded before body drain) are compared against the session/new completion instant: requestsInsideTimedWindow must be 0 over the whole [spawn, session/new] interval, and requestsAfterTimer must be >=1 after an UNTIMED prompt.',
+    assertions: 'initialize/session/new/prompt success, timestamp-based request-window check, overlay request observed, bundle selected/deselected in each copy, seeded records reach source validation (not index-shape), every symlink in the pristine home and each copy resolves inside its own root, --out outside the real/pristine homes',
     quantiles: 'linear interpolation over per-round values; paired differences are computed per round before their median/p25/p75',
     exclusion: 'host cold start (~1.3-1.5 s), closed-loop self-evolution CPU, consumer-session GC and all attribution probes are separate and are never added to the ACP delta',
   };
@@ -473,7 +551,8 @@ async function run() {
       sample[arm] = await boot({ homeCopy, arm, label, seeded });
     }
     samples.push(sample);
-    process.stdout.write(`${JSON.stringify({ sample: round, onInitializeMs: sample.on.initializeMs, offInitializeMs: sample.off.initializeMs, on2InitializeMs: sample.on2.initializeMs, onSessionNewMs: sample.on.sessionNewMs, offSessionNewMs: sample.off.sessionNewMs, on2SessionNewMs: sample.on2.sessionNewMs, aaNoiseMs: Number((sample.on.sessionNewMs - sample.on2.sessionNewMs).toFixed(2)) })}\n`);
+    const windowOf = (arm) => ({ inside: sample[arm].requestsInsideTimedWindow, after: sample[arm].requestsAfterTimer });
+    process.stdout.write(`${JSON.stringify({ sample: round, onInitializeMs: sample.on.initializeMs, offInitializeMs: sample.off.initializeMs, on2InitializeMs: sample.on2.initializeMs, onSessionNewMs: sample.on.sessionNewMs, offSessionNewMs: sample.off.sessionNewMs, on2SessionNewMs: sample.on2.sessionNewMs, aaNoiseMs: Number((sample.on.sessionNewMs - sample.on2.sessionNewMs).toFixed(2)), requestWindow: { on: windowOf('on'), off: windowOf('off'), on2: windowOf('on2') } })}\n`);
   }
 
   const paired = {};
@@ -605,6 +684,12 @@ async function run() {
     rounds: options.rounds,
     warmupPerArm: 1,
     records: options.records,
+    symlinkCheck: {
+      ...linkChecks,
+      totalChecked: pristineLinkCheck.checked + linkChecks.copies.reduce((sum, row) => sum + row.checked, 0),
+      totalEscaping: pristineLinkCheck.escaping + linkChecks.copies.reduce((sum, row) => sum + row.escaping, 0),
+      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath (lstat/readdir withFileTypes, never following) and must stay inside its own root; dangling links and out-of-root links fail the run. --out is resolved through its existing ancestor and must be outside the real and pristine homes. homeCopy/overlay/entryRoot must resolve inside the scratch root.',
+    },
     hostFacts,
     threshold: decision,
     method,
@@ -621,10 +706,13 @@ async function run() {
     })),
     warmup: warmup.map((row) => project(row)),
   };
-  if (options.out) {
-    fs.mkdirSync(path.dirname(options.out), { recursive: true });
-    fs.writeFileSync(options.out, `${JSON.stringify(payload, null, 2)}\n`);
+  if (outResolved) {
+    fs.mkdirSync(path.dirname(outResolved), { recursive: true });
+    fs.writeFileSync(outResolved, `${JSON.stringify(payload, null, 2)}\n`);
   }
+  const symlinkLinksChecked = payload.symlinkCheck.totalChecked;
+  const symlinkEscapes = payload.symlinkCheck.totalEscaping;
+  const allWindows = [...samples.flatMap((sample) => ['on', 'off', 'on2'].map((arm) => sample[arm]))];
   process.stdout.write(`${JSON.stringify({
     smoke: options.smoke,
     authoritative: !options.smoke,
@@ -634,6 +722,10 @@ async function run() {
     aaNoiseMedianMs: paired.sessionNewMs['on-on2'].median,
     onOffMedianMs: primaryDelta,
     on2OffMedianMs: paired.sessionNewMs['on2-off'].median,
+    requestsInsideTimedWindow: Math.max(...allWindows.map((row) => row.requestsInsideTimedWindow)),
+    requestsAfterTimer: Math.min(...allWindows.map((row) => row.requestsAfterTimer)),
+    symlinkLinksChecked,
+    symlinkEscapes,
     result: decision.result,
     host: hostVersion,
     bundle: bundleVersion,
