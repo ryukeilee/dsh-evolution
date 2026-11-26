@@ -67,11 +67,14 @@ function parseArgs(argv) {
       index += 1;
       return next;
     };
-    if (arg === '--runtime') options.runtime = path.resolve(value());
-    else if (arg === '--home') options.home = path.resolve(value());
+    // Keep the user spelling: path.resolve() folds ".." lexically and would
+    // turn a path through a symlink into a different filesystem location.
+    // Type checking only here; resolution happens in resolvePathComponents().
+    if (arg === '--runtime') options.runtime = value();
+    else if (arg === '--home') options.home = value();
     else if (arg === '--rounds') options.rounds = Number(value());
     else if (arg === '--records') options.records = Number(value());
-    else if (arg === '--out') options.out = path.resolve(value());
+    else if (arg === '--out') options.out = value();
     else if (arg === '--smoke') options.smoke = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
     else throw new Error(`unknown argument: ${arg}`);
@@ -286,14 +289,8 @@ function assertIsolatedHome(target) {
   return resolved;
 }
 
-function installedVersion(runtime, name) {
-  const pnpm = path.join(runtime, 'node_modules', '.pnpm');
-  let entries = [];
-  try { entries = fs.readdirSync(pnpm); } catch { /* flat npm layout */ }
-  const match = entries.find((entry) => entry.startsWith(`@deepseek-ai+${name}@`));
-  if (match) return match.slice(`@deepseek-ai+${name}@`.length).split('_')[0];
-  const manifest = path.join(runtime, 'node_modules', '@deepseek-ai', name, 'package.json');
-  return JSON.parse(fs.readFileSync(manifest, 'utf8')).version;
+function versionFromManifest(file) {
+  return JSON.parse(fs.readFileSync(file, 'utf8')).version;
 }
 
 function quantile(values, q) {
@@ -344,18 +341,40 @@ async function run() {
   // until this passes.
   const runtime = resolvePathComponents(options.runtime).final;
   assertNotProtected([runtime], [RESOLVED_REAL_HOME, home], '--runtime', { bothWays: true });
-  const cli = resolvePathComponents(path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js')).final;
-  assertNotProtected([cli], [RESOLVED_REAL_HOME, home], '--runtime CLI', { bothWays: true });
-  assert.ok(isInsideByIdentity(cli, runtime), `the resolved CLI ${cli} escaped the resolved runtime ${runtime}`);
+  const runtimeFiles = [];
+  function assertRuntimeFile(candidate, label) {
+    const resolved = resolvePathComponents(candidate).final;
+    assertNotProtected([resolved], [RESOLVED_REAL_HOME, home], label, { bothWays: true });
+    assert.ok(isInsideByIdentity(resolved, runtime), `${label} ${resolved} escaped the resolved runtime ${runtime}`);
+    const stat = fs.lstatSync(resolved);
+    assert.ok(stat.isFile(), `${label} ${resolved} is not a regular file`);
+    assert.equal(stat.nlink, 1, `${label} ${resolved} has ${stat.nlink} hard links`);
+    runtimeFiles.push({ label, resolved, nlink: stat.nlink });
+    return resolved;
+  }
+  function runtimePackageManifest(name) {
+    const pnpm = path.join(runtime, 'node_modules', '.pnpm');
+    const pnpmResolved = resolvePathComponents(pnpm).final;
+    assertNotProtected([pnpmResolved], [RESOLVED_REAL_HOME, home], `runtime ${name} store`, { bothWays: true });
+    assert.ok(isInsideByIdentity(pnpmResolved, runtime), `runtime store ${pnpmResolved} escaped ${runtime}`);
+    let manifest = path.join(runtime, 'node_modules', '@deepseek-ai', name, 'package.json');
+    if (fs.existsSync(pnpm)) {
+      const match = fs.readdirSync(pnpm).find((entry) => entry.startsWith(`@deepseek-ai+${name}@`));
+      if (match) manifest = path.join(pnpm, match, 'node_modules', '@deepseek-ai', name, 'package.json');
+    }
+    return assertRuntimeFile(manifest, `runtime ${name} manifest`);
+  }
+  const cli = assertRuntimeFile(path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js'), '--runtime CLI');
   const runtimeCheck = {
     resolvedRuntime: runtime,
     resolvedCli: cli,
     runtimeProtected: false,
     cliProtected: false,
     cliInsideRuntime: true,
+    guardedFiles: runtimeFiles,
   };
-  assert.ok(fs.existsSync(cli), `${options.runtime} does not contain @deepseek-ai/dsh/lib/bin.js`);
-  const hostVersion = JSON.parse(fs.readFileSync(path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'), 'utf8')).version;
+  const dshManifest = runtimePackageManifest('dsh');
+  const hostVersion = versionFromManifest(dshManifest);
   const profileDir = path.join(home, 'profiles', 'acp');
   const bundleRoot = path.join(profileDir, 'node_modules', 'dsh-evolution');
   const bundleLib = path.join(bundleRoot, 'lib');
@@ -367,8 +386,8 @@ async function run() {
   const sharing = await import(pathToFileURL(path.join(bundleLib, 'promoted-sharing.js')).href);
   const hostFacts = {
     dsh: hostVersion,
-    cordis: installedVersion(runtime, 'cordis'),
-    include: installedVersion(runtime, 'cordis-plugin-include'),
+    cordis: versionFromManifest(runtimePackageManifest('cordis')),
+    include: versionFromManifest(runtimePackageManifest('cordis-plugin-include')),
     node: process.version,
   };
 
@@ -442,23 +461,50 @@ async function run() {
   }
   assert.ok(fs.existsSync(path.join(entryModules, '@deepseek-ai', 'cordis')), 'could not assemble @deepseek-ai/cordis for the module-load probe');
 
-  function buildEnv(homeCopy) {
+  // Every child (ACP host and attribution probe) gets a dedicated temp dir
+  // inside the validated scratch root; no raw parent TMPDIR is ever inherited.
+  const childTmp = assertScratchPath(path.join(realWork, 'child-tmp'), 'childTmp');
+  fs.mkdirSync(childTmp, { recursive: true, mode: 0o700 });
+  const childEnvCheck = {};
+  const childEnvSnapshot = (env) => ({
+    TMPDIR: project(env.TMPDIR),
+    TEMP: project(env.TEMP),
+    TMP: project(env.TMP),
+    HOME: project(env.HOME),
+  });
+  function baseChildEnv() {
     const env = {};
     for (const [key, value] of Object.entries(process.env)) {
       if (key.startsWith('DSH_')) continue;
       if (key === 'NODE_OPTIONS') continue;
-      if (key === 'TMPDIR' || key === 'TEMP' || key === 'TMP') continue;
+      if (key === 'TMPDIR' || key === 'TEMP' || key === 'TMP' || key === 'HOME') continue;
       if (/^(DEEPSEEK|ANTHROPIC|OPENAI|OLLAMA|LLM|API|HTTP|HTTPS|ALL|NO)_/i.test(key)) continue;
       env[key] = value;
     }
-    // The host/Node must not resolve the raw TMPDIR string again: its lexical
-    // ".." folding is exactly what put scratch files into the protected home.
-    env.TMPDIR = tmpResolution.final;
-    env.TEMP = tmpResolution.final;
-    env.TMP = tmpResolution.final;
+    env.TMPDIR = childTmp;
+    env.TEMP = childTmp;
+    env.TMP = childTmp;
+    env.HOME = childTmp;
+    return env;
+  }
+  function buildEnv(homeCopy) {
+    const env = baseChildEnv();
+    env.HOME = homeCopy;
     env.DSH_HOME = homeCopy;
     env.DSH_PROFILE = 'acp';
     env[KEY_ENV] = 'local-fixture-only';
+    if (!childEnvCheck.acp) {
+      childEnvCheck.acp = childEnvSnapshot(env);
+      process.stdout.write(`${JSON.stringify({ childEnvAtAcpSpawn: childEnvCheck.acp })}\n`);
+    }
+    return env;
+  }
+  function probeEnv() {
+    const env = baseChildEnv();
+    if (!childEnvCheck.probe) {
+      childEnvCheck.probe = childEnvSnapshot(env);
+      process.stdout.write(`${JSON.stringify({ childEnvAtProbeSpawn: childEnvCheck.probe })}\n`);
+    }
     return env;
   }
 
@@ -775,7 +821,7 @@ async function run() {
   // they are NOT added to the ACP delta (that would double-count the same work).
   function runProbe(args) {
     const output = execFileSync(process.execPath, ['--max-old-space-size=4096', PROBE, ...args], {
-      encoding: 'utf8', timeout: 120000, maxBuffer: 16 * 1024 * 1024,
+      encoding: 'utf8', timeout: 120000, maxBuffer: 16 * 1024 * 1024, env: probeEnv(),
     });
     return JSON.parse(output.trim().split('\n').at(-1));
   }
@@ -857,13 +903,15 @@ async function run() {
       ...linkChecks,
       totalChecked: pristineLinkCheck.checked + linkChecks.copies.reduce((sum, row) => sum + row.checked, 0),
       totalEscaping: pristineLinkCheck.escaping + linkChecks.copies.reduce((sum, row) => sum + row.escaping, 0),
-      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath.native (lstat/readdir withFileTypes, never following) and must stay inside its own root by filesystem identity; dangling links and out-of-root links fail the run. The formal DSH_HOME, TMPDIR, --out and scratch paths use realpath-style resolution: a resolved stack plus a pending component queue, symlink targets prepended, `..` popping the resolved stack, 40-hop and repeated-link loop guards, missing final component allowed. Containment is decided by lstat dev:ino identities of the resolved path and its ancestors (string prefix is only a fast path), on both sides where applicable. An existing --out must be a regular file with nlink === 1 and a dev/ino distinct from both protected roots and their ancestors (metadata only; no production file contents are read). --runtime and its resolved CLI are both rejected if related to either protected root, and the CLI must resolve inside the runtime; scratch is created from the resolved TMPDIR, never the raw string.',
+      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath.native (lstat/readdir withFileTypes, never following) and must stay inside its own root by filesystem identity; dangling links and out-of-root links fail the run. The formal DSH_HOME, TMPDIR, --out and scratch paths use realpath-style resolution: a resolved stack plus a pending component queue, symlink targets prepended, `..` popping the resolved stack, 40-hop and repeated-link loop guards, missing final component allowed. Containment is decided by lstat dev:ino identities of the resolved path and its ancestors (string prefix is only a fast path), on both sides where applicable. An existing --out must be a regular file with nlink === 1 and a dev/ino distinct from both protected roots and their ancestors (metadata only; no production file contents are read). --runtime and every runtime file read or executed (CLI and all manifests) are rejected if related to either protected root, must have nlink === 1 and must resolve inside the runtime; scratch is created from the resolved TMPDIR, never the raw string; every spawned child explicitly receives TMPDIR/TEMP/TMP inside the scratch (ACP child also receives HOME = its own home copy).',
       outPath: outCheck?.details ? { ...outCheck.details, resolved: project(outCheck.details.resolved) } : null,
       scratchCheck,
+      childEnvCheck: { scratchTmpdir: project(childTmp), ...childEnvCheck },
       runtimeCheck: {
         ...runtimeCheck,
         resolvedRuntime: project(runtimeCheck.resolvedRuntime),
         resolvedCli: project(runtimeCheck.resolvedCli),
+        guardedFiles: runtimeFiles.map((row) => ({ ...row, resolved: project(row.resolved) })),
         rejected: false,
       },
     },
