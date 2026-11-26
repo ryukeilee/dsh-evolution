@@ -522,6 +522,41 @@ function validateImportEntry(target, allowedRoot, label) {
   return resolved;
 }
 
+/** Inspect a package source tree without following links, before cpSync
+ * dereferences it. Every file must have one link and every link must resolve
+ * back inside the already-validated root, so dereferencing cannot read bytes
+ * from outside that root. */
+function preflightPackageTree(sourceRoot, allowedRoot, label) {
+  const root = resolveThroughSymlinks(sourceRoot);
+  const base = resolveThroughSymlinks(allowedRoot);
+  let files = 0;
+  let links = 0;
+  const walk = (directory) => {
+    for (const entry of safeReaddir(directory, `source tree ${label}`, { allowedRoot: base }).entries) {
+      const full = path.join(directory, entry.name);
+      const relative = path.relative(root, full);
+      const stat = fs.lstatSync(full);
+      if (entry.isSymbolicLink()) {
+        links += 1;
+        const target = fs.realpathSync.native(full);
+        if (!isWithin(base, target)) {
+          throw new Error(`${label} source link ${relative} resolves outside the allowed root: ${target}`);
+        }
+        continue;
+      }
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (stat.isFile()) {
+        files += 1;
+        if (stat.nlink !== 1) {
+          throw new Error(`${label} source file ${relative} has ${stat.nlink} hard links`);
+        }
+      }
+    }
+  };
+  walk(root);
+  return { files, links };
+}
+
 function countSymlinks(root, label = 'copy') {
   const allowedRoot = resolveThroughSymlinks(root);
   let total = 0;
@@ -557,6 +592,7 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
     const copiedLib = path.join(modules, 'dsh-evolution', 'lib');
     // Materialize links into plain files/directories; a link left in the
     // harness tree could make ESM resolve outside the validated copy.
+    preflightPackageTree(path.join(bundleDir, 'lib'), home, 'bundle lib');
     fs.cpSync(path.join(bundleDir, 'lib'), copiedLib, { recursive: true, dereference: true });
     fs.copyFileSync(path.join(bundleDir, 'package.json'), path.join(modules, 'dsh-evolution', 'package.json'));
     // Validate the package directory before linking it into the harness.
@@ -577,6 +613,7 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
     // Cordis and every resolvable dependency materialized, not linked back to
     // the runtime tree. The closure is bounded and recorded as evidence.
     const cordisCopy = path.join(modules, '@deepseek-ai', 'cordis');
+    preflightPackageTree(cordisPackage, runtime, 'cordis');
     fs.cpSync(cordisPackage, cordisCopy, { recursive: true, dereference: true });
     const runtimeRequire = createRequire(path.join(cordisPackage, 'package.json'));
     const copiedPackages = [];
@@ -587,32 +624,39 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
       const name = pendingPackages.shift();
       if (seenPackages.has(name) || name.startsWith('node:')) continue;
       seenPackages.add(name);
+      const validateManifest = (file) => {
+        const resolved = resolveThroughSymlinks(file);
+        for (const [label, root] of protectedRoots) {
+          if (isWithin(root, resolved)) throw new Error(`dependency ${name} resolves inside ${label}: ${resolved}`);
+        }
+        if (!isWithin(resolveThroughSymlinks(runtime), resolved) || fs.lstatSync(resolved).nlink !== 1) {
+          throw new Error(`dependency ${name} manifest is outside the runtime or hard-linked: ${resolved}`);
+        }
+        return resolved;
+      };
+      const boundaryError = (error) => /resolves inside|manifest is outside/.test(error.message);
       let manifest;
-      try { manifest = resolveThroughSymlinks(runtimeRequire.resolve(`${name}/package.json`)); }
-      catch {
+      try { manifest = validateManifest(runtimeRequire.resolve(`${name}/package.json`)); }
+      catch (error) {
+        if (boundaryError(error)) throw error;
         // Some packages do not export ./package.json; walk up from the
-        // resolved entry to the matching manifest instead.
+        // resolved entry, validating each candidate BEFORE reading its bytes.
         try {
           const entry = resolveThroughSymlinks(runtimeRequire.resolve(name));
           let directory = path.dirname(entry);
           while (directory !== path.dirname(directory)) {
             const candidate = path.join(directory, 'package.json');
-            if (fs.existsSync(candidate) && JSON.parse(fs.readFileSync(candidate, 'utf8')).name === name) {
-              manifest = candidate;
-              break;
+            if (fs.existsSync(candidate)) {
+              const validated = validateManifest(candidate);
+              if (JSON.parse(fs.readFileSync(validated, 'utf8')).name === name) { manifest = validated; break; }
             }
             directory = path.dirname(directory);
           }
-        } catch {}
+        } catch (error) { if (boundaryError(error)) throw error; }
         if (!manifest) { unresolvedPackages.push(name); continue; }
       }
-      for (const [label, root] of protectedRoots) {
-        if (isWithin(root, manifest)) throw new Error(`dependency ${name} resolves inside ${label}: ${manifest}`);
-      }
-      if (!isWithin(resolveThroughSymlinks(runtime), manifest) || fs.lstatSync(manifest).nlink !== 1) {
-        throw new Error(`dependency ${name} is outside the runtime or hard-linked: ${manifest}`);
-      }
       const packageDir = path.dirname(manifest);
+      preflightPackageTree(packageDir, runtime, name);
       const target = path.join(modules, ...name.split('/'));
       fs.cpSync(packageDir, target, { recursive: true, dereference: true });
       copiedPackages.push(`<RUNTIME>/${path.relative(runtime, packageDir)}`);
@@ -658,27 +702,8 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
         note: 'Installed bundle lib and host Cordis copied dereferenced into scratch; zero symlinks in the harness. All imported entries are inside the scratch harness and runtime is only an executable input.' },
     };
   } catch (error) {
-    const require = createRequire(import.meta.url);
-    const repoModules = resolveThroughSymlinks(path.join(REPO_ROOT, 'node_modules'));
-    const fallbackEntries = [
-      ['cordis', require.resolve('@deepseek-ai/cordis'), repoModules],
-      ['collector', require.resolve('../../lib/experience-collector.js'), REPO_ROOT],
-      ['store', require.resolve('../../lib/shared-experience.js'), REPO_ROOT],
-    ].map(([label, file, root]) => [label, validateImportEntry(file, root, `fallback ${label}`)]);
-    importEvidence.entries = fallbackEntries.map(([, file]) => `<repo>/${path.relative(REPO_ROOT, file)}`);
-    importEvidence.allInScratch = false;
-    const [cordis, collector, store] = await Promise.all(fallbackEntries.map(([, file]) => import(pathToFileURL(file).href)));
-    const readVersion = (name) => {
-      try { return JSON.parse(fs.readFileSync(require.resolve(`${name}/package.json`), 'utf8')).version; }
-      catch { return 'unknown'; }
-    };
-    return {
-      Context: cordis.Context, applyCollector: collector.apply, openSharedExperience: store.openSharedExperience,
-      harness: { fallback: true, fallbackReason: error.message, collectorPath: 'lib/experience-collector.js (repository fallback)',
-        bundleVersion: JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')).version,
-        cordisVersion: readVersion('@deepseek-ai/cordis'), cordisEntry: '<repo>/node_modules/@deepseek-ai/cordis',
-        note: 'Repository devDependency fallback. NOT the same host bundle as the ACP arms; evidence quality is degraded.' },
-    };
+    // No repository fallback: a failed isolated assembly must fail the run.
+    throw new Error(`isolated harness assembly failed (no fallback): ${error.message}`);
   }
 }
 
@@ -1178,6 +1203,7 @@ async function main() {
         && auditEvidence.copies.length > 0
         && auditEvidence.copies.every(copy => copy.escaped.length === 0),
       outPath: true,
+      allInScratch: importEvidence.allInScratch === true,
     };
     const linkAudit = { out: outAudit, source: auditEvidence.source, copies: auditEvidence.copies,
       totalChecked: auditEvidence.source.checked
