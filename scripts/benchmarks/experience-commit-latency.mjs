@@ -62,10 +62,14 @@ function parseArgs(argv) {
       const number = Number(value);
       if (!Number.isSafeInteger(number) || number < 1) throw new Error(`${arg} must be a positive integer`);
       options[key] = number;
-    } else options[key] = path.resolve(value);
+    } else {
+      // Keep the caller's spelling. path.resolve() folds `..` lexically before
+      // symlinks are followed, which can change the file actually addressed.
+      // Every path check and use below consumes the link-aware resolver's result.
+      options[key] = value;
+    }
   }
   if (!options.home) throw new Error(`--home is required. ${usage()}`);
-  if (!options.runtime) options.runtime = path.join(path.dirname(options.home), 'runtime');
   if (options.smoke) {
     options.rounds = Math.min(options.rounds, 2);
     options.samples = Math.min(options.samples, 8);
@@ -246,21 +250,61 @@ function validateHome(home) {
  * read here; lstat/readlink metadata only. */
 function validateRuntime(runtime, home) {
   const resolvedRuntime = resolveThroughSymlinks(runtime);
-  const cliInput = path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
-  const resolvedCli = resolveThroughSymlinks(cliInput);
   const roots = [
     ['formal DSH_HOME', resolveThroughSymlinks(formalDshHome())],
     ['source home', resolveThroughSymlinks(home)],
   ];
-  for (const [label, root] of roots) {
-    for (const [name, value] of [['runtime', resolvedRuntime], ['CLI', resolvedCli]]) {
-      if (isWithin(root, value)) throw new Error(`--${name} resolves inside ${label}: ${value}`);
+  // Applied to every runtime file that will be read or executed. A symlink to
+  // a protected file resolves inside a protected root; a hard link shares the
+  // inode and is rejected by nlink !== 1 before any byte is read.
+  const check = (input, label) => {
+    const resolved = resolveThroughSymlinks(input);
+    for (const [protectedLabel, root] of roots) {
+      if (isWithin(root, resolved)) {
+        throw new Error(`runtime ${label} resolves inside ${protectedLabel}: ${resolved}`);
+      }
+    }
+    if (!isWithin(resolvedRuntime, resolved)) {
+      throw new Error(`runtime ${label} is outside the resolved runtime: ${resolved}`);
+    }
+    let stat;
+    try { stat = fs.lstatSync(resolved); }
+    catch (error) { throw new Error(`runtime ${label} cannot be inspected: ${error.message}`); }
+    if (!stat.isFile()) throw new Error(`runtime ${label} is not a regular file: ${resolved}`);
+    if (stat.nlink !== 1) throw new Error(`runtime ${label} has ${stat.nlink} hard links: ${resolved}`);
+    return resolved;
+  };
+  const cli = check(path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js'), 'CLI');
+  const dshManifest = check(path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'), 'dsh manifest');
+  // Locate the pnpm cordis manifest from directory names, not from a resolved
+  // package specifier, so a symlinked manifest cannot be read before checking.
+  const pnpmRoot = path.join(resolvedRuntime, 'node_modules', '.pnpm');
+  const candidates = fs.existsSync(pnpmRoot)
+    ? fs.readdirSync(pnpmRoot).filter(name => /^@deepseek-ai\+cordis@/.test(name))
+      .map(name => path.join(pnpmRoot, name, 'node_modules', '@deepseek-ai', 'cordis', 'package.json'))
+    : [];
+  let cordisManifest = null;
+  let cordisEntry = null;
+  for (const candidate of candidates) {
+    try {
+      const checked = check(candidate, 'cordis manifest');
+      const parsed = JSON.parse(fs.readFileSync(checked, 'utf8'));
+      if (parsed.name !== '@deepseek-ai/cordis') continue;
+      const defaultEntry = parsed.exports?.['.']?.default || parsed.main || 'lib/index.js';
+      cordisManifest = checked;
+      cordisEntry = check(path.join(path.dirname(checked), defaultEntry), 'cordis entry');
+      break;
+    } catch (error) {
+      if (/resolves inside|hard links|outside the resolved runtime|not a regular file/.test(error.message)) throw error;
     }
   }
-  if (!isWithin(resolvedRuntime, resolvedCli)) throw new Error(`CLI is outside the resolved runtime: ${resolvedCli}`);
+  if (!cordisManifest || !cordisEntry) throw new Error('Unable to validate the host cordis manifest/entry inside --runtime');
+  const sanitize = (file) => `<RUNTIME>/${path.relative(resolvedRuntime, file)}`;
   const evidence = { provided: '<RUNTIME>', resolvedRuntime: '<RUNTIME>',
-    resolvedCli: `<RUNTIME>/${path.relative(resolvedRuntime, resolvedCli)}`, rejected: false };
-  return { resolvedRuntime, resolvedCli, evidence };
+    files: { cli: sanitize(cli), dshManifest: sanitize(dshManifest),
+      cordisManifest: sanitize(cordisManifest), cordisEntry: sanitize(cordisEntry) },
+    rejected: false };
+  return { resolvedRuntime, resolvedCli: cli, dshManifest, cordisManifest, cordisEntry, evidence };
 }
 
 /** Every symlink under a root must resolve to a path still under that root.
@@ -334,6 +378,7 @@ function assertOutOutsideHomes(out, home) {
 }
 
 const auditEvidence = { source: null, copies: [] };
+let childEnvEvidence = null;
 
 const cleanup = { dirs: new Set(), children: new Set(), servers: new Set() };
 function cleanupAll() {
@@ -356,17 +401,11 @@ function freshDir(scratch, label) {
   return assertInside(scratch, target, label);
 }
 
-/** Resolve the exact Cordis instance the ACP host uses. The profile's own
- * node_modules has no @deepseek-ai/cordis entry; the official loader maps the
- * specifier onto the runtime tree. Resolve from the realpath of the installed
- * dsh package so pnpm's tree gives the same file the host loads. */
-function resolveHostCordis(runtime) {
-  const installedDsh = path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json');
-  const require = createRequire(fs.realpathSync(installedDsh));
-  const entry = require.resolve('@deepseek-ai/cordis');
-  const packageFile = require.resolve('@deepseek-ai/cordis/package.json');
-  return { entry, dir: path.dirname(packageFile),
-    version: JSON.parse(fs.readFileSync(packageFile, 'utf8')).version };
+/** The exact Cordis instance the ACP host uses, already validated by
+ * validateRuntime before any of its bytes are read here. */
+function resolveHostCordis(cordisManifest, cordisEntry) {
+  return { entry: cordisEntry, dir: path.dirname(cordisManifest),
+    version: JSON.parse(fs.readFileSync(cordisManifest, 'utf8')).version };
 }
 
 /** Load collector/store/Context from the bundle installed in --home, with the
@@ -374,13 +413,13 @@ function resolveHostCordis(runtime) {
  * loader hook for @deepseek-ai/cordis, so the harness copies the installed
  * bundle lib verbatim into the scratch tree and symlinks the host Cordis there;
  * every path and version is recorded, and any fallback is explicit. */
-async function loadModules(home, runtime, scratch) {
+async function loadModules(home, runtime, scratch, runtimeValidation) {
   const bundleDir = path.join(home, 'profiles', 'acp', 'node_modules', 'dsh-evolution');
   const collectorRel = 'profiles/acp/node_modules/dsh-evolution/lib/experience-collector.js';
   const installedCollector = path.join(bundleDir, 'lib', 'experience-collector.js');
   const installedStore = path.join(bundleDir, 'lib', 'shared-experience.js');
   try {
-    const hostCordis = resolveHostCordis(runtime);
+    const hostCordis = resolveHostCordis(runtimeValidation.cordisManifest, runtimeValidation.cordisEntry);
     if (!fs.existsSync(installedCollector) || !fs.existsSync(installedStore)) {
       throw new Error('installed bundle lib files not found');
     }
@@ -711,14 +750,18 @@ async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) 
   cleanup.servers.add(server);
   const overlay = path.join(homeCopy, 'latency-transport.yml');
   fs.writeFileSync(overlay, `- id: llm-deepseek\n  config:\n    baseURL: http://127.0.0.1:${server.address().port}\n    apiKeyEnv: EVOLUTION_LATENCY_KEY\n`);
+  // Every child gets all three temp variables from the validated scratch, and
+  // host children get HOME from the scratch copy. This script creates no other
+  // child processes (there is no execFileSync attribution probe here).
+  const childEnv = { ...process.env, HOME: homeCopy, TMPDIR: scratch, TEMP: scratch, TMP: scratch,
+    DSH_HOME: homeCopy, DSH_PROFILE: 'acp', EVOLUTION_LATENCY_KEY: 'loopback-fixture-only' };
+  childEnvEvidence = {
+    TMPDIR: '<SCRATCH>', TEMP: '<SCRATCH>', TMP: '<SCRATCH>', HOME: '<ACP HOME COPY>',
+    allTempVarsAreScratch: [childEnv.TMPDIR, childEnv.TEMP, childEnv.TMP].every(value => value === scratch),
+    homeIsCopy: childEnv.HOME === homeCopy && childEnv.DSH_HOME === homeCopy,
+  };
   const child = spawn(cli, ['--profile', 'acp', '--patch', overlay], {
-    cwd: homeCopy,
-    // Keep the official host's HOME-based caches/spill files inside the
-    // scratch copy too; otherwise a fixture HOME would receive dsh-spill-*
-    // entries even though our own scratch root is correctly in TMPDIR.
-    env: { ...process.env, HOME: homeCopy, TMPDIR: scratch, DSH_HOME: homeCopy, DSH_PROFILE: 'acp',
-      EVOLUTION_LATENCY_KEY: 'loopback-fixture-only' },
-    stdio: ['pipe', 'pipe', 'pipe'],
+    cwd: homeCopy, env: childEnv, stdio: ['pipe', 'pipe', 'pipe'],
   });
   cleanup.children.add(child);
   let stderr = '';
@@ -864,6 +907,7 @@ async function runAcp({ home, cli, scratch, rounds, openSharedExperience }) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const home = validateHome(options.home);
+  if (!options.runtime) options.runtime = path.join(path.dirname(home), 'runtime');
   const outAudit = assertOutOutsideHomes(options.out, home);
   // Containment is proven before any copy or host write, not after the fact.
   auditEvidence.source = auditSymlinks(home, 'source-home');
@@ -874,13 +918,13 @@ async function main() {
   cleanup.dirs.add(scratch);
   let report;
   try {
-    const { Context, applyCollector, openSharedExperience, harness } = await loadModules(home, runtimeValidation.resolvedRuntime, scratch);
+    const { Context, applyCollector, openSharedExperience, harness } = await loadModules(home, runtimeValidation.resolvedRuntime, scratch, runtimeValidation);
     const inProcess = await measureInProcess(Context, applyCollector, openSharedExperience, scratch, options.samples);
     const attribution = await measureFsyncAttribution(scratch);
     const acp = await runAcp({ home, cli, scratch, rounds: options.rounds, openSharedExperience });
     const failureP95 = inProcess.failure.steady.p95;
     let dshVersion = 'unknown';
-    try { dshVersion = JSON.parse(fs.readFileSync(path.join(runtimeValidation.resolvedRuntime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'), 'utf8')).version; } catch {}
+    try { dshVersion = JSON.parse(fs.readFileSync(runtimeValidation.dshManifest, 'utf8')).version; } catch {}
     const acpSamples = [...acp.warmup, ...acp.rows.flatMap(row => ARMS.map(arm => row.samples[arm]))];
     const gates = {
       cleanPositiveControl: inProcess.cleanSuccess.positiveControl.ok === true,
@@ -908,6 +952,7 @@ async function main() {
         cli, dshVersion, samplesRequested: options.samples, roundsRequested: options.rounds, smoke: options.smoke },
       harness,
       runtimeAudit: runtimeValidation.evidence,
+      childEnv: childEnvEvidence,
       linkAudit, gates,
       measurementNotes: [
         'The narrow window is only between two parent-process observation points and does not prove coverage of a collector commit; the full session/prompt -> JSON-RPC response window is the coverage proof.',
@@ -915,6 +960,7 @@ async function main() {
         'In-process harness loads the installed bundle from --home with the host Cordis resolved from --runtime; any fallback is recorded in harness.fallback and degrades evidence quality.',
         'The in-process first commit includes lazy SQL statement preparation; steady percentiles exclude it.',
         'The real collector defers degradation writes to agent/turn-stopping: toolsResultOnly and turnStoppingOnly are timed separately, with the +1 event required at turn-stopping.',
+        'Every child process receives TMPDIR/TEMP/TMP from the validated scratch; the only child here is the ACP host (there is no execFileSync attribution probe).',
         'The fsync comparison is attribution only on an isolated database; NORMAL weakens durability and is not a proposed change.',
         'Every accepted sample is gated by a real store.stats() delta; rejected samples are counted and fail the run.',
       ],
@@ -940,6 +986,7 @@ async function main() {
       ms: report.inProcess.recoveryAfterFiveSuccesses.oneCommit?.ms ?? null },
     fsyncAttributionMedianDeltaMs: report.attribution.medianDeltaMs,
     runtimeAudit: report.runtimeAudit,
+    childEnv: report.childEnv,
     gates: report.gates,
     linkAudit: { sourceChecked: report.linkAudit.source.checked,
       copiesChecked: report.linkAudit.copies.reduce((sum, copy) => sum + copy.checked, 0),
