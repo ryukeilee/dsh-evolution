@@ -139,6 +139,43 @@ function resolvePathComponents(target, state = { hops: 0, visited: new Set() }) 
   return { final: current, ancestors };
 }
 
+// The formal home may itself be a symlink (or a dangling one). Resolve it with
+// the same reader used for every other protected/claimed path, not a lexical
+// path.resolve, so a consumer that passes the link target cannot slip through.
+const RESOLVED_REAL_HOME = resolvePathComponents(REAL_HOME).final;
+
+function assertNotProtected(candidates, roots, label) {
+  for (const candidate of candidates) {
+    for (const root of roots) {
+      assert.ok(!isInside(candidate, root), `${label}: ${candidate} is inside a protected directory ${root}`);
+    }
+  }
+}
+
+/**
+ * Device/inode identities of the protected roots and their ancestors. Only
+ * lstat metadata is read: enumerating user files under the real home would
+ * itself cross the "do not read production data" boundary. A hard link to a
+ * protected file is already caught by nlink > 1; this second proof rejects an
+ * existing --out that *is* a protected root (or one of its ancestors).
+ */
+function protectedRootIdentities(roots) {
+  const identities = new Set();
+  for (const root of roots) {
+    let cursor = root;
+    for (;;) {
+      try {
+        const stat = fs.lstatSync(cursor);
+        identities.add(`${stat.dev}:${stat.ino}`);
+      } catch { /* a protected ancestor need not exist in a scratch setup */ }
+      const parent = path.dirname(cursor);
+      if (parent === cursor) break;
+      cursor = parent;
+    }
+  }
+  return identities;
+}
+
 /**
  * Reject any symlink that resolves outside the root, including links copied
  * verbatim from a home. lstat/readdir(withFileTypes) never follow a link; a
@@ -172,12 +209,26 @@ function assertNoEscapingLinks(root, label) {
 function assertOutPath(target, pristineHome) {
   if (!target) return null;
   const { final, ancestors } = resolvePathComponents(target);
-  const realHome = fs.existsSync(REAL_HOME) ? fs.realpathSync(REAL_HOME) : resolvePathComponents(REAL_HOME).final;
-  for (const candidate of [final, ...ancestors]) {
-    assert.ok(!isInside(candidate, realHome), `refusing --out inside the real DSH_HOME (via ${candidate})`);
-    assert.ok(!isInside(candidate, pristineHome), `refusing --out inside the source pristine home (via ${candidate})`);
+  const protectedRoots = [RESOLVED_REAL_HOME, pristineHome];
+  assertNotProtected([final, ...ancestors], protectedRoots, '--out');
+  const details = { resolved: final, existed: false, nlink: null, protectedIdentitiesChecked: 0, devInoMatched: false };
+  let stat = null;
+  try { stat = fs.lstatSync(final); }
+  catch (error) { if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error; }
+  if (stat) {
+    details.existed = true;
+    details.nlink = stat.nlink;
+    // A hard link to a protected file is an in-place overwrite even though its
+    // path is harmless. nlink > 1 is refused outright; dev/ino identity adds a
+    // second proof for a protected file that was moved rather than linked.
+    assert.ok(stat.isFile(), `refusing --out: ${final} exists but is not a regular file`);
+    assert.equal(stat.nlink, 1, `refusing --out: ${final} has ${stat.nlink} hard links`);
+    const protectedIds = protectedRootIdentities(protectedRoots);
+    details.protectedIdentitiesChecked = protectedIds.size;
+    details.devInoMatched = protectedIds.has(`${stat.dev}:${stat.ino}`);
+    assert.ok(!details.devInoMatched, `refusing --out: ${final} has the device/inode of a protected root`);
   }
-  return final;
+  return { path: final, details };
 }
 
 function assertIsolatedHome(target) {
@@ -185,11 +236,9 @@ function assertIsolatedHome(target) {
   // TMPDIR can still point at the production home.
   const stat = fs.lstatSync(target);
   if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('the given home is not a real directory');
-  const resolved = fs.realpathSync(target);
-  if (resolved === REAL_HOME || isInside(resolved, REAL_HOME) || isInside(REAL_HOME, resolved)) {
-    throw new Error('refusing the real DSH_HOME (or a directory related to it)');
-  }
-  const repo = fs.realpathSync(REPO_ROOT);
+  const resolved = resolvePathComponents(target).final;
+  assert.ok(!isInside(resolved, RESOLVED_REAL_HOME) && !isInside(RESOLVED_REAL_HOME, resolved), `refusing the real DSH_HOME: ${resolved} relates to ${RESOLVED_REAL_HOME}`);
+  const repo = resolvePathComponents(REPO_ROOT).final;
   if (isInside(resolved, repo)) throw new Error('refusing a home inside the repository worktree');
   return resolved;
 }
@@ -245,7 +294,8 @@ async function run() {
   // contains an escaping link is not a usable input, and an --out inside the
   // real home (or the pristine home) would overwrite protected data.
   const pristineLinkCheck = assertNoEscapingLinks(home, 'pristine home');
-  const outResolved = assertOutPath(options.out, home);
+  const outCheck = assertOutPath(options.out, home);
+  const outResolved = outCheck?.path ?? null;
   const runtime = fs.realpathSync(options.runtime);
   const cli = path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
   assert.ok(fs.existsSync(cli), `${options.runtime} does not contain @deepseek-ai/dsh/lib/bin.js`);
@@ -266,9 +316,29 @@ async function run() {
     node: process.version,
   };
 
+  // TMPDIR itself may be a symlink into a protected directory. Resolve it (a
+  // missing final component is legal) and refuse before creating anything.
+  const tmpResolution = resolvePathComponents(os.tmpdir());
+  assertNotProtected([tmpResolution.final, ...tmpResolution.ancestors], [RESOLVED_REAL_HOME, home], 'os.tmpdir()');
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-evolution-acp-latency-'));
-  const realWork = fs.realpathSync(work);
-  assert.ok(isInside(realWork, fs.realpathSync(os.tmpdir())), 'work directory escaped the temp root');
+  let realWork;
+  try {
+    realWork = resolvePathComponents(work).final;
+    assert.ok(isInside(realWork, tmpResolution.final), `work directory ${realWork} escaped the resolved TMPDIR ${tmpResolution.final}`);
+    assertNotProtected([realWork], [RESOLVED_REAL_HOME, home], 'scratch root');
+  } catch (error) {
+    fs.rmSync(work, { recursive: true, force: true });
+    throw error;
+  }
+  const project = (value) => typeof value === 'string'
+    ? value.split(realWork).join('$WORK').split(home).join('$HOME').split(runtime).join('$RUNTIME').split(REPO_ROOT).join('<repo>')
+    : value;
+  const scratchCheck = {
+    tmpdir: project(os.tmpdir()),
+    resolvedTmpdir: project(tmpResolution.final),
+    resolvedWork: project(realWork),
+    protectedRealHome: project(RESOLVED_REAL_HOME),
+  };
   const assertScratchPath = (candidate, label) => {
     // Same component-wise resolver as --out: never rely on an existing
     // ancestor to discover a symlink in a path we are about to write.
@@ -277,9 +347,6 @@ async function run() {
     return final;
   };
   const linkChecks = { pristine: pristineLinkCheck, copies: [] };
-  const project = (value) => typeof value === 'string'
-    ? value.split(realWork).join('$WORK').split(home).join('$HOME').split(runtime).join('$RUNTIME').split(REPO_ROOT).join('<repo>')
-    : value;
 
   // A fresh-process import needs a node_modules next to lib/, exactly as in
   // experience-entry-load.mjs. Assemble one from the packages the real host
@@ -564,7 +631,7 @@ async function run() {
     perRound: 'every arm gets a brand-new copy of the pristine home; copying time is excluded; arm order rotates on-off-on2 / off-on2-on / on2-on-off',
     timers: 'process.hrtime-equivalent performance.now() from just before spawn to the initialize response and to the session/new response; both are asserted successful',
     modelIsolation: 'loopback SSE provider via --patch, one end_turn text response with no tool_use. Provider arrival timestamps (recorded before body drain) are compared against the session/new completion instant: requestsInsideTimedWindow must be 0 over the whole [spawn, session/new] interval, and requestsAfterTimer must be >=1 after an UNTIMED prompt.',
-    assertions: 'initialize/session/new/prompt success, timestamp-based request-window check, overlay request observed, bundle selected/deselected in each copy, seeded records reach source validation (not index-shape), every symlink in the pristine home and each copy resolves inside its own root, --out outside the real/pristine homes',
+    assertions: 'initialize/session/new/prompt success, timestamp-based request-window check, overlay request observed, bundle selected/deselected in each copy, seeded records reach source validation (not index-shape), every symlink in the pristine home and each copy resolves inside its own root, resolved formal home and resolved TMPDIR/scratch/--out outside protected directories, existing --out regular with nlink===1 and no protected dev/ino',
     quantiles: 'linear interpolation over per-round values; paired differences are computed per round before their median/p25/p75',
     exclusion: 'host cold start (~1.3-1.5 s), closed-loop self-evolution CPU, consumer-session GC and all attribution probes are separate and are never added to the ACP delta',
   };
@@ -724,7 +791,9 @@ async function run() {
       ...linkChecks,
       totalChecked: pristineLinkCheck.checked + linkChecks.copies.reduce((sum, row) => sum + row.checked, 0),
       totalEscaping: pristineLinkCheck.escaping + linkChecks.copies.reduce((sum, row) => sum + row.escaping, 0),
-      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath (lstat/readdir withFileTypes, never following) and must stay inside its own root; dangling links and out-of-root links fail the run. --out and scratch paths are resolved component by component with lstat/readlink (40-hop and loop guards), including paths whose final component does not exist; the final path and every resolved ancestor must stay outside the real/pristine homes (for --out) and inside the scratch root (for writes).',
+      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath (lstat/readdir withFileTypes, never following) and must stay inside its own root; dangling links and out-of-root links fail the run. The formal DSH_HOME, TMPDIR, --out and scratch paths are resolved component by component with lstat/readlink (40-hop and loop guards), including paths whose final component does not exist; the final path and every resolved ancestor must stay outside the resolved real/pristine homes (for --out) and inside the resolved TMPDIR (for the scratch root). An existing --out must be a regular file with nlink === 1 and a dev/ino distinct from both protected roots and their ancestors (metadata only; no production file contents are read).',
+      outPath: outCheck?.details ? { ...outCheck.details, resolved: project(outCheck.details.resolved) } : null,
+      scratchCheck,
     },
     hostFacts,
     threshold: decision,
