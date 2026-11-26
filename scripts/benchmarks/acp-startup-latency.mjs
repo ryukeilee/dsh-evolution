@@ -299,14 +299,15 @@ function protectedRootIdentities(roots) {
  * (withFileTypes) never follow a link, and symlinked directories are checked
  * but never recursed into.
  */
-function assertNoEscapingLinks(root, label) {
+function assertNoEscapingLinks(root, label, containmentRoot = null, purposePrefix = 'home preflight') {
   const realRoot = resolvePathComponents(root).final;
+  const containment = containmentRoot ? resolvePathComponents(containmentRoot).final : realRoot;
   let checked = 0;
   let files = 0;
   const escaping = [];
   const hardLinked = [];
   const walk = (directory, prefix) => {
-    for (const entry of safeReaddir(directory, `home preflight ${label}`).dirents) {
+    for (const entry of safeReaddir(directory, `${purposePrefix} ${label}`).dirents) {
       const absolute = path.join(directory, entry.name);
       const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
       if (entry.isSymbolicLink()) {
@@ -314,7 +315,7 @@ function assertNoEscapingLinks(root, label) {
         let resolved;
         try { resolved = fs.realpathSync.native(absolute); }
         catch (error) { throw new Error(`${label}: dangling or unresolvable symlink ${relative}: ${error.message}`); }
-        if (!isInsideByIdentity(resolved, realRoot)) escaping.push(`${relative} -> ${resolved}`);
+        if (!isInsideByIdentity(resolved, containment)) escaping.push(`${relative} -> ${resolved}`);
         continue;
       }
       if (entry.isDirectory()) { walk(absolute, relative); continue; }
@@ -329,7 +330,7 @@ function assertNoEscapingLinks(root, label) {
   };
   walk(root, '');
   assert.equal(hardLinked.length, 0, `${label}: hard-linked files share an inode with other data: ${hardLinked.join(', ')}`);
-  assert.equal(escaping.length, 0, `${label}: symlink escapes the home root: ${escaping.join(', ')}`);
+  assert.equal(escaping.length, 0, `${label}: symlink escapes the containment root ${containment}: ${escaping.join(', ')}`);
   return { label, checked, files, hardLinked: hardLinked.length, escaping: escaping.length };
 }
 
@@ -517,7 +518,12 @@ async function run() {
     return final;
   };
   const linkChecks = { pristine: pristineLinkCheck, copies: [] };
-  const copyLinkCounts = { entryLib: null, harness: null, homes: [] };
+  const copyLinkCounts = {
+    entryLib: null,
+    harness: null,
+    homes: [],
+    packagePreflight: { packages: 0, files: 0, links: 0, escapes: 0, hardLinked: 0 },
+  };
 
   // A fresh-process import needs a node_modules next to lib/, exactly as in
   // experience-entry-load.mjs. Assemble one from the packages the real host
@@ -558,14 +564,23 @@ async function run() {
     assert.ok(allowedReadRoots.some((root) => isInsideByIdentity(resolved, root)), `probe package ${relative} resolves outside the allowed roots: ${resolved}`);
     return resolved;
   };
-  const copyPackageIntoHarness = (source, relative) => {
+  const copyPackageIntoHarness = (source, relative, containmentRoot, purposePrefix) => {
     const resolved = guardPackageSource(source, relative);
     if (!fs.lstatSync(resolved).isDirectory()) return;
+    // Preflight the WHOLE package tree without following links. A nested link
+    // that leaves the validated root would otherwise be dereferenced by
+    // cpSync and pull bytes in that no later "0 links" check could see.
+    const preflight = assertNoEscapingLinks(resolved, `package ${relative}`, containmentRoot, purposePrefix);
+    copyLinkCounts.packagePreflight.packages += 1;
+    copyLinkCounts.packagePreflight.files += preflight.files;
+    copyLinkCounts.packagePreflight.links += preflight.checked;
+    copyLinkCounts.packagePreflight.escapes += preflight.escaping;
+    copyLinkCounts.packagePreflight.hardLinked += preflight.hardLinked;
     const destination = path.join(entryModules, relative);
     fs.mkdirSync(path.dirname(destination), { recursive: true });
     if (!fs.existsSync(destination)) fs.cpSync(resolved, destination, { recursive: true, dereference: true });
   };
-  const addPackagesFrom = (directory) => {
+  const addPackagesFrom = (directory, containmentRoot, purposePrefix) => {
     if (!fs.existsSync(directory)) return;
     for (const name of safeReaddir(directory, 'probe package index').names) {
       const source = path.join(directory, name);
@@ -574,21 +589,21 @@ async function run() {
         const resolvedScope = guardPackageSource(source, name);
         if (!fs.lstatSync(resolvedScope).isDirectory()) continue;
         for (const member of safeReaddir(resolvedScope, `probe scoped package ${name}`).names) {
-          copyPackageIntoHarness(path.join(resolvedScope, member), `${name}/${member}`);
+          copyPackageIntoHarness(path.join(resolvedScope, member), `${name}/${member}`, containmentRoot, purposePrefix);
         }
       } else {
-        copyPackageIntoHarness(source, name);
+        copyPackageIntoHarness(source, name, containmentRoot, purposePrefix);
       }
     }
   };
-  addPackagesFrom(path.join(profileDir, 'node_modules'));
+  addPackagesFrom(path.join(profileDir, 'node_modules'), home, 'home preflight');
   const pnpmStore = path.join(runtime, 'node_modules', '.pnpm');
   if (fs.existsSync(pnpmStore)) {
     // Runtime packages are copied as executable inputs only; only the small
     // Cordis/Include set needed by the probe is materialised into scratch.
     const needed = /^@deepseek-ai\+(cordis|cordis-plugin-include|cordis-plugin-loader)@/;
     for (const storeEntry of safeReaddir(pnpmStore, 'runtime pnpm store').names) {
-      if (needed.test(storeEntry)) addPackagesFrom(path.join(pnpmStore, storeEntry, 'node_modules'));
+      if (needed.test(storeEntry)) addPackagesFrom(path.join(pnpmStore, storeEntry, 'node_modules'), runtime, 'runtime package preflight');
     }
   }
   copyLinkCounts.harness = assertNoSymlinks(entryModules, 'harness node_modules');
@@ -1049,6 +1064,7 @@ async function run() {
         entryLib: copyLinkCounts.entryLib,
         harness: copyLinkCounts.harness,
         homes: copyLinkCounts.homes,
+        packagePreflight: copyLinkCounts.packagePreflight,
         rule: 'lib, home copies and harness node_modules are copied with dereference:true and asserted to contain zero symlinks, so ESM cannot traverse a link out of the scratch root.',
       },
       importAssertion: {
@@ -1120,6 +1136,7 @@ async function run() {
     safeReaddirCalls: readdirStats.calls,
     safeReaddirRejections: readdirStats.rejections,
     copiedTreeSymlinks: (copyLinkCounts.entryLib ?? 0) + (copyLinkCounts.harness ?? 0) + copyLinkCounts.homes.reduce((sum, row) => sum + row.links, 0),
+    packagePreflight: copyLinkCounts.packagePreflight,
     result: decision.result,
     host: hostVersion,
     bundle: bundleVersion,
