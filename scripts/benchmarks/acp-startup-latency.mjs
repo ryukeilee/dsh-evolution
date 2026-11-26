@@ -339,8 +339,21 @@ async function run() {
   const pristineLinkCheck = assertNoEscapingLinks(home, 'pristine home');
   const outCheck = assertOutPath(options.out, home);
   const outResolved = outCheck?.path ?? null;
-  const runtime = fs.realpathSync(options.runtime);
-  const cli = path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
+  // Guard the executable source before reading its package.json or spawning
+  // it. Only lstat/readlink are used here; the CLI's bytes are never touched
+  // until this passes.
+  const runtime = resolvePathComponents(options.runtime).final;
+  assertNotProtected([runtime], [RESOLVED_REAL_HOME, home], '--runtime', { bothWays: true });
+  const cli = resolvePathComponents(path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js')).final;
+  assertNotProtected([cli], [RESOLVED_REAL_HOME, home], '--runtime CLI', { bothWays: true });
+  assert.ok(isInsideByIdentity(cli, runtime), `the resolved CLI ${cli} escaped the resolved runtime ${runtime}`);
+  const runtimeCheck = {
+    resolvedRuntime: runtime,
+    resolvedCli: cli,
+    runtimeProtected: false,
+    cliProtected: false,
+    cliInsideRuntime: true,
+  };
   assert.ok(fs.existsSync(cli), `${options.runtime} does not contain @deepseek-ai/dsh/lib/bin.js`);
   const hostVersion = JSON.parse(fs.readFileSync(path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'), 'utf8')).version;
   const profileDir = path.join(home, 'profiles', 'acp');
@@ -365,7 +378,9 @@ async function run() {
   // Only one direction: a legitimate TMPDIR commonly *contains* an isolated
   // home (both live under the same temp root), which is not an escape.
   assertNotProtected([tmpResolution.final, ...tmpResolution.ancestors], [RESOLVED_REAL_HOME, home], 'os.tmpdir()');
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-evolution-acp-latency-'));
+  // Create from the validated, resolved path only: path.join() on the raw
+  // TMPDIR string would fold a literal ".." into the protected directory.
+  const work = fs.mkdtempSync(path.join(tmpResolution.final, 'dsh-evolution-acp-latency-'));
   let realWork;
   try {
     realWork = resolvePathComponents(work).final;
@@ -432,9 +447,15 @@ async function run() {
     for (const [key, value] of Object.entries(process.env)) {
       if (key.startsWith('DSH_')) continue;
       if (key === 'NODE_OPTIONS') continue;
+      if (key === 'TMPDIR' || key === 'TEMP' || key === 'TMP') continue;
       if (/^(DEEPSEEK|ANTHROPIC|OPENAI|OLLAMA|LLM|API|HTTP|HTTPS|ALL|NO)_/i.test(key)) continue;
       env[key] = value;
     }
+    // The host/Node must not resolve the raw TMPDIR string again: its lexical
+    // ".." folding is exactly what put scratch files into the protected home.
+    env.TMPDIR = tmpResolution.final;
+    env.TEMP = tmpResolution.final;
+    env.TMP = tmpResolution.final;
     env.DSH_HOME = homeCopy;
     env.DSH_PROFILE = 'acp';
     env[KEY_ENV] = 'local-fixture-only';
@@ -836,9 +857,15 @@ async function run() {
       ...linkChecks,
       totalChecked: pristineLinkCheck.checked + linkChecks.copies.reduce((sum, row) => sum + row.checked, 0),
       totalEscaping: pristineLinkCheck.escaping + linkChecks.copies.reduce((sum, row) => sum + row.escaping, 0),
-      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath.native (lstat/readdir withFileTypes, never following) and must stay inside its own root by filesystem identity; dangling links and out-of-root links fail the run. The formal DSH_HOME, TMPDIR, --out and scratch paths use realpath-style resolution: a resolved stack plus a pending component queue, symlink targets prepended, `..` popping the resolved stack, 40-hop and repeated-link loop guards, missing final component allowed. Containment is decided by lstat dev:ino identities of the resolved path and its ancestors (string prefix is only a fast path), on both sides where applicable. An existing --out must be a regular file with nlink === 1 and a dev/ino distinct from both protected roots and their ancestors (metadata only; no production file contents are read).',
+      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath.native (lstat/readdir withFileTypes, never following) and must stay inside its own root by filesystem identity; dangling links and out-of-root links fail the run. The formal DSH_HOME, TMPDIR, --out and scratch paths use realpath-style resolution: a resolved stack plus a pending component queue, symlink targets prepended, `..` popping the resolved stack, 40-hop and repeated-link loop guards, missing final component allowed. Containment is decided by lstat dev:ino identities of the resolved path and its ancestors (string prefix is only a fast path), on both sides where applicable. An existing --out must be a regular file with nlink === 1 and a dev/ino distinct from both protected roots and their ancestors (metadata only; no production file contents are read). --runtime and its resolved CLI are both rejected if related to either protected root, and the CLI must resolve inside the runtime; scratch is created from the resolved TMPDIR, never the raw string.',
       outPath: outCheck?.details ? { ...outCheck.details, resolved: project(outCheck.details.resolved) } : null,
       scratchCheck,
+      runtimeCheck: {
+        ...runtimeCheck,
+        resolvedRuntime: project(runtimeCheck.resolvedRuntime),
+        resolvedCli: project(runtimeCheck.resolvedCli),
+        rejected: false,
+      },
     },
     hostFacts,
     threshold: decision,
