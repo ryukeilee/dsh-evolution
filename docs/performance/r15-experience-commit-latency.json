@@ -25,11 +25,180 @@
     "bundleCollectorSha256": "1c6127c1ff98a9bf085b6631e92a4949a7a5d840749157383bcf62bfba983113",
     "note": "Installed bundle lib copied verbatim into scratch; @deepseek-ai/cordis symlinked to the runtime copy resolved from the installed dsh package. Same bytes and same Cordis as the ACP arms."
   },
+  "linkAudit": {
+    "source": {
+      "label": "source-home",
+      "checked": 5,
+      "escaped": []
+    },
+    "copies": [
+      {
+        "label": "acp-copy:enabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:disabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled2",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:disabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled2",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:disabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled2",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled2",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:disabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:disabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled2",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:disabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled2",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled2",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:disabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:disabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled2",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:disabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled2",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled2",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:enabled",
+        "checked": 5,
+        "escaped": []
+      },
+      {
+        "label": "acp-copy:disabled",
+        "checked": 5,
+        "escaped": []
+      }
+    ],
+    "totalChecked": 155,
+    "escapedTotal": 0
+  },
+  "gates": {
+    "cleanPositiveControl": true,
+    "recoveryVerified": true,
+    "acpDeltaExact": true,
+    "symlinkContainment": true,
+    "outPath": true
+  },
   "measurementNotes": [
-    "Reporter clock is performance.now() in one process for all ACP endpoints; the narrow tool_call_update -> next-request window is attribution only, the full session/prompt -> JSON-RPC response window is the user-perceived turn latency.",
+    "The narrow window is only between two parent-process observation points and does not prove coverage of a collector commit; the full session/prompt -> JSON-RPC response window is the coverage proof.",
+    "Paired results report median, medianAbsDiff and signed direction counts; no claim is made that an effect is smaller than the A/A noise.",
     "In-process harness loads the installed bundle from --home with the host Cordis resolved from --runtime; any fallback is recorded in harness.fallback and degrades evidence quality.",
     "The in-process first commit includes lazy SQL statement preparation; steady percentiles exclude it.",
-    "The real collector defers degradation writes to agent/turn-stopping, so its tools/result emit has no COMMIT; both timings are reported.",
+    "The real collector defers degradation writes to agent/turn-stopping: toolsResultOnly and turnStoppingOnly are timed separately, with the +1 event required at turn-stopping.",
     "The fsync comparison is attribution only on an isolated database; NORMAL weakens durability and is not a proposed change.",
     "Every accepted sample is gated by a real store.stats() delta; rejected samples are counted and fail the run."
   ],
@@ -38,60 +207,71 @@
       "description": "tools/result isError=true; one BEGIN IMMEDIATE/COMMIT per emit",
       "firstCommit": {
         "n": 1,
-        "p50": 2.667499999999997,
-        "p95": 2.667499999999997,
-        "p99": 2.667499999999997,
-        "max": 2.667499999999997
+        "p50": 2.341666999999994,
+        "p95": 2.341666999999994,
+        "p99": 2.341666999999994,
+        "max": 2.341666999999994
       },
       "steady": {
         "n": 49,
-        "p50": 0.2518749999999983,
-        "p95": 0.412666999999999,
-        "p99": 0.5401250000000033,
-        "max": 0.5401250000000033
+        "p50": 0.24887499999999818,
+        "p95": 0.42575000000000074,
+        "p99": 0.4971670000000046,
+        "max": 0.4971670000000046
       },
       "rejectedSamples": 0
     },
     "cleanSuccess": {
       "description": "clean read; in-memory counters only, zero writes",
+      "positiveControl": {
+        "ok": true,
+        "beforeOk": true,
+        "afterOk": true,
+        "target": "tool:grep",
+        "description": "a known failing emit before and after the batch must each commit exactly one event"
+      },
       "emit": {
         "n": 50,
-        "p50": 0.004709000000005403,
-        "p95": 0.009333999999995513,
-        "p99": 0.11041600000000074,
-        "max": 0.11041600000000074
+        "p50": 0.004582999999996673,
+        "p95": 0.008957999999992694,
+        "p99": 0.08575000000000443,
+        "max": 0.08575000000000443
       },
       "rejectedSamples": 0
     },
     "degradation": {
       "description": "read with TRUNCATED_LINE; real collector defers the COMMIT to agent/turn-stopping",
-      "firstCommit": {
-        "n": 1,
-        "p50": 0.41779100000000824,
-        "p95": 0.41779100000000824,
-        "p99": 0.41779100000000824,
-        "max": 0.41779100000000824
-      },
-      "steady": {
-        "n": 49,
-        "p50": 0.22512500000000557,
-        "p95": 0.32175000000000864,
-        "p99": 0.44454199999999844,
-        "max": 0.44454199999999844
-      },
+      "commitLocation": "agent/turn-stopping",
       "toolsResultOnly": {
         "n": 50,
-        "p50": 0.007999999999995566,
-        "p95": 0.01633300000000304,
-        "p99": 0.0471250000000083,
-        "max": 0.0471250000000083
+        "p50": 0.007958999999999605,
+        "p95": 0.01866700000000776,
+        "p99": 0.03770800000000918,
+        "max": 0.03770800000000918
+      },
+      "turnStoppingOnly": {
+        "firstCommit": {
+          "n": 1,
+          "p50": 0.33712500000000034,
+          "p95": 0.33712500000000034,
+          "p99": 0.33712500000000034,
+          "max": 0.33712500000000034
+        },
+        "steady": {
+          "n": 49,
+          "p50": 0.20087499999999636,
+          "p95": 0.2846669999999989,
+          "p99": 0.40637499999999704,
+          "max": 0.40637499999999704
+        }
       },
       "rejectedSamples": 0
     },
     "recoveryAfterFiveSuccesses": {
       "description": "5th clean success in a failure episode commits tool/recovery",
+      "verified": true,
       "oneCommit": {
-        "ms": 0.22812500000000568
+        "ms": 0.24954199999999105
       },
       "rejectedAttempts": 0
     }
@@ -101,129 +281,141 @@
     "iterationsPerMode": 30,
     "full": {
       "n": 30,
-      "p50": 0.0822910000000121,
-      "p95": 0.14333399999999585,
-      "p99": 0.16412499999999852,
-      "max": 0.16412499999999852
+      "p50": 0.09125000000000227,
+      "p95": 0.13895800000000236,
+      "p99": 0.18104100000000756,
+      "max": 0.18104100000000756
     },
     "normal": {
       "n": 30,
-      "p50": 0.04141599999999812,
-      "p95": 0.06512499999999477,
-      "p99": 0.09941600000000506,
-      "max": 0.09941600000000506
+      "p50": 0.041958000000008155,
+      "p95": 0.07450000000000045,
+      "p99": 0.07683400000000518,
+      "max": 0.07683400000000518
     },
-    "medianDeltaMs": 0.041
+    "medianDeltaMs": 0.049
   },
   "acp": {
-    "timingNarrow": "Parent-process performance.now(): tool_call_update (failed/completed) -> next provider HTTP request arrival. Includes host tool finalization + collector only if the collector commit happens before that update; excludes model generation, network and the end_turn response. Attribution window only.",
+    "timingNarrow": "Parent-process performance.now() between two observation points in this parent process: client-observed tool_call_update (failed/completed) -> next provider HTTP request arrival. It does NOT prove coverage of a collector commit that occurred before the update; use timingFullTurn for coverage. Model generation, network and the end_turn response are outside this attribution window.",
     "timingFullTurn": "Parent-process performance.now(): writing the session/prompt JSON-RPC request -> receiving that prompt's JSON-RPC response. Unconditionally contains any synchronous collector commit anywhere in the turn, host tool finalization, the follow-up request and the loopback end_turn response. With the deterministic loopback provider there is no real model inference; host scheduling and IPC are included.",
     "provider": "loopback deterministic Anthropic-compatible SSE; no external model calls, no credentials",
     "warmup": [
       {
         "arm": "enabled",
         "valid": true,
-        "intervalMs": 10.22,
-        "fullTurnMs": 78.188,
+        "intervalMs": 11.565,
+        "fullTurnMs": 81.93,
+        "statsDelta": {
+          "events": 1,
+          "knowledge": 1
+        },
         "reasons": []
       },
       {
         "arm": "disabled",
         "valid": true,
-        "intervalMs": 11.966,
-        "fullTurnMs": 74.921,
+        "intervalMs": 11.028,
+        "fullTurnMs": 72.017,
+        "statsDelta": {
+          "events": 0,
+          "knowledge": 0
+        },
         "reasons": []
       },
       {
         "arm": "enabled2",
         "valid": true,
-        "intervalMs": 11.478,
-        "fullTurnMs": 76.178,
+        "intervalMs": 13.225,
+        "fullTurnMs": 77.822,
+        "statsDelta": {
+          "events": 1,
+          "knowledge": 1
+        },
         "reasons": []
       }
     ],
     "rounds": 9,
     "arms": {
       "enabled": {
-        "medianMs": 12.261,
+        "medianMs": 12.465,
         "intervals": [
-          10.307,
-          13.437,
-          9.757,
-          13.483,
-          12.493,
-          11.596,
-          12.261,
-          13.431,
-          11.487
+          11.459,
+          12.417,
+          11.438,
+          12.465,
+          9.86,
+          13.774,
+          12.658,
+          12.495,
+          13.436
         ],
-        "fullTurnMedianMs": 78.627,
+        "fullTurnMedianMs": 80.498,
         "fullTurnIntervals": [
-          77.992,
-          84.322,
-          74.438,
-          81.065,
-          77.503,
-          78.627,
-          79.151,
-          78.591,
-          80.414
+          80.498,
+          84.533,
+          77.289,
+          79.494,
+          75.547,
+          85.102,
+          77,
+          81.373,
+          81.074
         ],
         "validSamples": 9,
         "rejectedSamples": 0
       },
       "disabled": {
-        "medianMs": 11.849,
+        "medianMs": 12.075,
         "intervals": [
-          11.037,
-          11.849,
-          12.904,
-          12.811,
-          13.011,
-          11.198,
-          13.736,
-          11.816,
-          11.788
+          10.962,
+          9.64,
+          12.148,
+          11.917,
+          12.136,
+          12.946,
+          11.902,
+          12.075,
+          12.227
         ],
-        "fullTurnMedianMs": 77.984,
+        "fullTurnMedianMs": 74.947,
         "fullTurnIntervals": [
-          73.92,
-          72.983,
-          79.516,
-          77.984,
-          78.412,
-          78.033,
-          80.555,
-          75.758,
-          74.408
+          74.127,
+          74.888,
+          75.967,
+          78.278,
+          70.967,
+          78.367,
+          70.228,
+          74.947,
+          78.439
         ],
         "validSamples": 9,
         "rejectedSamples": 0
       },
       "enabled2": {
-        "medianMs": 12.49,
+        "medianMs": 12.479,
         "intervals": [
-          11.531,
-          12.502,
-          12.453,
-          11.416,
-          23.288,
-          13.326,
-          12.33,
-          13.364,
-          12.49
+          12.457,
+          12.479,
+          11.076,
+          13.456,
+          13.459,
+          11.542,
+          14.417,
+          12.477,
+          13.502
         ],
-        "fullTurnMedianMs": 80.555,
+        "fullTurnMedianMs": 78.035,
         "fullTurnIntervals": [
-          80.555,
-          79.516,
-          75.649,
-          79.422,
-          101.198,
-          84.044,
-          81.471,
-          77.609,
-          81.159
+          77.044,
+          78.035,
+          80.287,
+          77.316,
+          80.862,
+          73.404,
+          102.068,
+          77.532,
+          85.334
         ],
         "validSamples": 9,
         "rejectedSamples": 0
@@ -231,61 +423,85 @@
     },
     "pairedDiff": {
       "disabledMinusEnabled": {
-        "medianMs": 0.301,
+        "medianMs": -0.548,
+        "medianAbsDiff": 0.756,
+        "direction": {
+          "positive": 2,
+          "negative": 7,
+          "tie": 0
+        },
         "perRound": [
-          0.73,
-          -1.588,
-          3.147,
-          -0.672,
-          0.518,
-          -0.398,
-          1.475,
-          -1.615,
-          0.301
+          -0.497,
+          -2.777,
+          0.71,
+          -0.548,
+          2.276,
+          -0.828,
+          -0.756,
+          -0.42,
+          -1.209
         ]
       },
       "enabled2MinusEnabled": {
-        "medianMs": 1.003,
+        "medianMs": 0.066,
+        "medianAbsDiff": 0.991,
+        "direction": {
+          "positive": 6,
+          "negative": 3,
+          "tie": 0
+        },
         "perRound": [
-          1.224,
-          -0.935,
-          2.696,
-          -2.067,
-          10.795,
-          1.73,
-          0.069,
-          -0.067,
-          1.003
+          0.998,
+          0.062,
+          -0.362,
+          0.991,
+          3.599,
+          -2.232,
+          1.759,
+          -0.018,
+          0.066
         ]
       }
     },
     "fullTurnPairedDiff": {
       "disabledMinusEnabled": {
-        "medianMs": -2.833,
+        "medianMs": -6.371,
+        "medianAbsDiff": 6.371,
+        "direction": {
+          "positive": 0,
+          "negative": 9,
+          "tie": 0
+        },
         "perRound": [
-          -4.072,
-          -11.339,
-          5.078,
-          -3.081,
-          0.909,
-          -0.594,
-          1.404,
-          -2.833,
-          -6.006
+          -6.371,
+          -9.645,
+          -1.322,
+          -1.216,
+          -4.58,
+          -6.735,
+          -6.772,
+          -6.426,
+          -2.635
         ]
       },
       "enabled2MinusEnabled": {
-        "medianMs": 1.211,
+        "medianMs": -2.178,
+        "medianAbsDiff": 4.26,
+        "direction": {
+          "positive": 4,
+          "negative": 5,
+          "tie": 0
+        },
         "perRound": [
-          2.563,
-          -4.806,
-          1.211,
-          -1.643,
-          23.695,
-          5.417,
-          2.32,
-          -0.982,
-          0.745
+          -3.454,
+          -6.498,
+          2.998,
+          -2.178,
+          5.315,
+          -11.698,
+          25.068,
+          -3.841,
+          4.26
         ]
       }
     },
@@ -296,8 +512,8 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 10.307,
-            "fullTurnMs": 77.992,
+            "intervalMs": 11.459,
+            "fullTurnMs": 80.498,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -310,8 +526,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.037,
-            "fullTurnMs": 73.92,
+            "intervalMs": 10.962,
+            "fullTurnMs": 74.127,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -324,8 +540,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 11.531,
-            "fullTurnMs": 80.555,
+            "intervalMs": 12.457,
+            "fullTurnMs": 77.044,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -338,10 +554,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 0.73,
-          "enabled2MinusEnabled": 1.224,
-          "fullDisabledMinusEnabled": -4.072,
-          "fullEnabled2MinusEnabled": 2.563
+          "disabledMinusEnabled": -0.497,
+          "enabled2MinusEnabled": 0.998,
+          "fullDisabledMinusEnabled": -6.371,
+          "fullEnabled2MinusEnabled": -3.454
         }
       },
       {
@@ -350,8 +566,8 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.849,
-            "fullTurnMs": 72.983,
+            "intervalMs": 9.64,
+            "fullTurnMs": 74.888,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -364,8 +580,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.502,
-            "fullTurnMs": 79.516,
+            "intervalMs": 12.479,
+            "fullTurnMs": 78.035,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -378,8 +594,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 13.437,
-            "fullTurnMs": 84.322,
+            "intervalMs": 12.417,
+            "fullTurnMs": 84.533,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -392,10 +608,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.588,
-          "enabled2MinusEnabled": -0.935,
-          "fullDisabledMinusEnabled": -11.339,
-          "fullEnabled2MinusEnabled": -4.806
+          "disabledMinusEnabled": -2.777,
+          "enabled2MinusEnabled": 0.062,
+          "fullDisabledMinusEnabled": -9.645,
+          "fullEnabled2MinusEnabled": -6.498
         }
       },
       {
@@ -404,8 +620,8 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.453,
-            "fullTurnMs": 75.649,
+            "intervalMs": 11.076,
+            "fullTurnMs": 80.287,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -418,8 +634,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 9.757,
-            "fullTurnMs": 74.438,
+            "intervalMs": 11.438,
+            "fullTurnMs": 77.289,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -432,8 +648,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 12.904,
-            "fullTurnMs": 79.516,
+            "intervalMs": 12.148,
+            "fullTurnMs": 75.967,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -446,10 +662,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 3.147,
-          "enabled2MinusEnabled": 2.696,
-          "fullDisabledMinusEnabled": 5.078,
-          "fullEnabled2MinusEnabled": 1.211
+          "disabledMinusEnabled": 0.71,
+          "enabled2MinusEnabled": -0.362,
+          "fullDisabledMinusEnabled": -1.322,
+          "fullEnabled2MinusEnabled": 2.998
         }
       },
       {
@@ -458,8 +674,8 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 13.483,
-            "fullTurnMs": 81.065,
+            "intervalMs": 12.465,
+            "fullTurnMs": 79.494,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -472,8 +688,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 12.811,
-            "fullTurnMs": 77.984,
+            "intervalMs": 11.917,
+            "fullTurnMs": 78.278,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -486,8 +702,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 11.416,
-            "fullTurnMs": 79.422,
+            "intervalMs": 13.456,
+            "fullTurnMs": 77.316,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -500,10 +716,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -0.672,
-          "enabled2MinusEnabled": -2.067,
-          "fullDisabledMinusEnabled": -3.081,
-          "fullEnabled2MinusEnabled": -1.643
+          "disabledMinusEnabled": -0.548,
+          "enabled2MinusEnabled": 0.991,
+          "fullDisabledMinusEnabled": -1.216,
+          "fullEnabled2MinusEnabled": -2.178
         }
       },
       {
@@ -512,8 +728,8 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 13.011,
-            "fullTurnMs": 78.412,
+            "intervalMs": 12.136,
+            "fullTurnMs": 70.967,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -526,8 +742,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 23.288,
-            "fullTurnMs": 101.198,
+            "intervalMs": 13.459,
+            "fullTurnMs": 80.862,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -540,8 +756,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.493,
-            "fullTurnMs": 77.503,
+            "intervalMs": 9.86,
+            "fullTurnMs": 75.547,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -554,10 +770,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 0.518,
-          "enabled2MinusEnabled": 10.795,
-          "fullDisabledMinusEnabled": 0.909,
-          "fullEnabled2MinusEnabled": 23.695
+          "disabledMinusEnabled": 2.276,
+          "enabled2MinusEnabled": 3.599,
+          "fullDisabledMinusEnabled": -4.58,
+          "fullEnabled2MinusEnabled": 5.315
         }
       },
       {
@@ -566,8 +782,8 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 13.326,
-            "fullTurnMs": 84.044,
+            "intervalMs": 11.542,
+            "fullTurnMs": 73.404,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -580,8 +796,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 11.596,
-            "fullTurnMs": 78.627,
+            "intervalMs": 13.774,
+            "fullTurnMs": 85.102,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -594,8 +810,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.198,
-            "fullTurnMs": 78.033,
+            "intervalMs": 12.946,
+            "fullTurnMs": 78.367,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -608,10 +824,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -0.398,
-          "enabled2MinusEnabled": 1.73,
-          "fullDisabledMinusEnabled": -0.594,
-          "fullEnabled2MinusEnabled": 5.417
+          "disabledMinusEnabled": -0.828,
+          "enabled2MinusEnabled": -2.232,
+          "fullDisabledMinusEnabled": -6.735,
+          "fullEnabled2MinusEnabled": -11.698
         }
       },
       {
@@ -620,8 +836,8 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.261,
-            "fullTurnMs": 79.151,
+            "intervalMs": 12.658,
+            "fullTurnMs": 77,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -634,8 +850,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 13.736,
-            "fullTurnMs": 80.555,
+            "intervalMs": 11.902,
+            "fullTurnMs": 70.228,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -648,8 +864,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.33,
-            "fullTurnMs": 81.471,
+            "intervalMs": 14.417,
+            "fullTurnMs": 102.068,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -662,10 +878,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 1.475,
-          "enabled2MinusEnabled": 0.069,
-          "fullDisabledMinusEnabled": 1.404,
-          "fullEnabled2MinusEnabled": 2.32
+          "disabledMinusEnabled": -0.756,
+          "enabled2MinusEnabled": 1.759,
+          "fullDisabledMinusEnabled": -6.772,
+          "fullEnabled2MinusEnabled": 25.068
         }
       },
       {
@@ -674,8 +890,8 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.816,
-            "fullTurnMs": 75.758,
+            "intervalMs": 12.075,
+            "fullTurnMs": 74.947,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -688,8 +904,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 13.364,
-            "fullTurnMs": 77.609,
+            "intervalMs": 12.477,
+            "fullTurnMs": 77.532,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -702,8 +918,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 13.431,
-            "fullTurnMs": 78.591,
+            "intervalMs": 12.495,
+            "fullTurnMs": 81.373,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -716,10 +932,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.615,
-          "enabled2MinusEnabled": -0.067,
-          "fullDisabledMinusEnabled": -2.833,
-          "fullEnabled2MinusEnabled": -0.982
+          "disabledMinusEnabled": -0.42,
+          "enabled2MinusEnabled": -0.018,
+          "fullDisabledMinusEnabled": -6.426,
+          "fullEnabled2MinusEnabled": -3.841
         }
       },
       {
@@ -728,8 +944,8 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.49,
-            "fullTurnMs": 81.159,
+            "intervalMs": 13.502,
+            "fullTurnMs": 85.334,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -742,8 +958,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 11.487,
-            "fullTurnMs": 80.414,
+            "intervalMs": 13.436,
+            "fullTurnMs": 81.074,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -756,8 +972,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.788,
-            "fullTurnMs": 74.408,
+            "intervalMs": 12.227,
+            "fullTurnMs": 78.439,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -770,10 +986,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 0.301,
-          "enabled2MinusEnabled": 1.003,
-          "fullDisabledMinusEnabled": -6.006,
-          "fullEnabled2MinusEnabled": 0.745
+          "disabledMinusEnabled": -1.209,
+          "enabled2MinusEnabled": 0.066,
+          "fullDisabledMinusEnabled": -2.635,
+          "fullEnabled2MinusEnabled": 4.26
         }
       }
     ],
