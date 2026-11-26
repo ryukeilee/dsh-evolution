@@ -471,6 +471,7 @@ function assertOutOutsideHomes(out, home) {
 
 const auditEvidence = { source: null, copies: [] };
 const safeReaddirEvidence = { calls: 0, rejected: 0 };
+const copyEvidence = { harnessSymlinks: null, homeCopies: [] };
 let scanSourceHome = null;
 let childEnvEvidence = null;
 
@@ -502,6 +503,36 @@ function resolveHostCordis(cordisManifest, cordisEntry) {
     version: JSON.parse(fs.readFileSync(cordisManifest, 'utf8')).version };
 }
 
+/** Only validated resolved file paths may reach ESM import(): Node's ESM
+ * resolver uses JS realpath semantics and can execute a different module than
+ * a native-realpath preflight inspected when a link target contains hop/... */
+function validateImportEntry(target, allowedRoot, label) {
+  const resolved = resolveThroughSymlinks(target);
+  const roots = [['formal DSH_HOME', formalDshHome()]];
+  if (scanSourceHome) roots.push(['source home', scanSourceHome]);
+  for (const [name, root] of roots) {
+    if (isWithin(root, resolved)) throw new Error(`import ${label} resolves inside ${name}: ${resolved}`);
+  }
+  if (!isWithin(resolveThroughSymlinks(allowedRoot), resolved)) {
+    throw new Error(`import ${label} is outside the allowed root: ${resolved}`);
+  }
+  if (!fs.lstatSync(resolved).isFile()) throw new Error(`import ${label} is not a regular file: ${resolved}`);
+  return resolved;
+}
+
+function countSymlinks(root) {
+  let total = 0;
+  const walk = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const full = path.join(directory, entry.name);
+      if (entry.isSymbolicLink()) total += 1;
+      else if (entry.isDirectory()) walk(full);
+    }
+  };
+  walk(root);
+  return total;
+}
+
 /** Load collector/store/Context from the bundle installed in --home, with the
  * host's Cordis, not the repository's devDependency. The official host uses a
  * loader hook for @deepseek-ai/cordis, so the harness copies the installed
@@ -520,7 +551,14 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
     const harness = freshDir(scratch, 'host-harness');
     const modules = path.join(harness, 'node_modules');
     fs.mkdirSync(path.join(modules, '@deepseek-ai'), { recursive: true });
-    fs.cpSync(path.join(bundleDir, 'lib'), path.join(modules, 'dsh-evolution', 'lib'), { recursive: true });
+    const copiedLib = path.join(modules, 'dsh-evolution', 'lib');
+    // Materialize links into plain files/directories; a link left in the
+    // harness tree could make ESM resolve outside the validated copy.
+    fs.cpSync(path.join(bundleDir, 'lib'), copiedLib, { recursive: true, dereference: true });
+    copyEvidence.harnessSymlinks = countSymlinks(copiedLib);
+    if (copyEvidence.harnessSymlinks !== 0) {
+      throw new Error(`harness bundle copy contains ${copyEvidence.harnessSymlinks} symlinks`);
+    }
     fs.copyFileSync(path.join(bundleDir, 'package.json'), path.join(modules, 'dsh-evolution', 'package.json'));
     // Validate the package directory before linking it into the harness.
     const cordisPackage = resolveThroughSymlinks(hostCordis.dir);
@@ -537,14 +575,17 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
       throw new Error(`probe cordis package is outside the resolved runtime or not a directory: ${cordisPackage}`);
     }
     fs.symlinkSync(cordisPackage, path.join(modules, '@deepseek-ai', 'cordis'), 'dir');
-    const copiedCollector = path.join(modules, 'dsh-evolution', 'lib', 'experience-collector.js');
-    const copiedStore = path.join(modules, 'dsh-evolution', 'lib', 'shared-experience.js');
+    const copiedCollector = path.join(copiedLib, 'experience-collector.js');
+    const copiedStore = path.join(copiedLib, 'shared-experience.js');
     const resolved = createRequire(copiedCollector).resolve('@deepseek-ai/cordis');
     if (resolved !== hostCordis.entry) throw new Error(`copied bundle resolved a different Cordis: ${resolved} !== ${hostCordis.entry}`);
+    const cordisEntry = validateImportEntry(hostCordis.entry, runtime, 'cordis entry');
+    const collectorEntry = validateImportEntry(copiedCollector, harness, 'copied collector');
+    const storeEntry = validateImportEntry(copiedStore, harness, 'copied store');
     const [cordis, collector, store] = await Promise.all([
-      import(pathToFileURL(hostCordis.entry).href),
-      import(pathToFileURL(copiedCollector).href),
-      import(pathToFileURL(copiedStore).href),
+      import(pathToFileURL(cordisEntry).href),
+      import(pathToFileURL(collectorEntry).href),
+      import(pathToFileURL(storeEntry).href),
     ]);
     if (typeof collector.apply !== 'function' || typeof store.openSharedExperience !== 'function' || typeof cordis.Context !== 'function') {
       throw new Error('loaded bundle modules do not expose the expected APIs');
@@ -560,12 +601,13 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
         note: 'Installed bundle lib copied verbatim into scratch; @deepseek-ai/cordis symlinked to the runtime copy resolved from the installed dsh package. Same bytes and same Cordis as the ACP arms.' },
     };
   } catch (error) {
-    const [cordis, collector, store] = await Promise.all([
-      import('@deepseek-ai/cordis'),
-      import('../../lib/experience-collector.js'),
-      import('../../lib/shared-experience.js'),
-    ]);
     const require = createRequire(import.meta.url);
+    const fallbackEntries = [
+      ['cordis', require.resolve('@deepseek-ai/cordis')],
+      ['collector', require.resolve('../../lib/experience-collector.js')],
+      ['store', require.resolve('../../lib/shared-experience.js')],
+    ].map(([label, file]) => [label, validateImportEntry(file, REPO_ROOT, `fallback ${label}`)]);
+    const [cordis, collector, store] = await Promise.all(fallbackEntries.map(([, file]) => import(pathToFileURL(file).href)));
     const readVersion = (name) => {
       try { return JSON.parse(fs.readFileSync(require.resolve(`${name}/package.json`), 'utf8')).version; }
       catch { return 'unknown'; }
@@ -856,6 +898,9 @@ async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) 
   fs.cpSync(home, homeCopy, { recursive: true, verbatimSymlinks: true });
   assertInside(scratch, homeCopy, `ACP copy (${arm})`);
   auditEvidence.copies.push(auditSymlinks(homeCopy, `acp-copy:${arm}`));
+  // auditSymlinks rejects any link whose native-realpath target escapes the
+  // copy; record the count so the post-copy assertion is visible in evidence.
+  copyEvidence.homeCopies.push({ arm, symlinks: countSymlinks(homeCopy), escapes: 0 });
   if (arm === 'disabled') disableExperienceEntries(homeCopy);
   // The missing file passed to the real read tool is built only from the
   // validated scratch root, never from the raw TMPDIR string.
@@ -1092,6 +1137,7 @@ async function main() {
       childEnv: childEnvEvidence,
       homePreflight: { files: auditEvidence.source.files, hardLinked: auditEvidence.source.hardLinked },
       safeReaddir: { calls: safeReaddirEvidence.calls, rejected: safeReaddirEvidence.rejected },
+      copyEvidence,
       linkAudit, gates,
       measurementNotes: [
         'The narrow window is only between two parent-process observation points and does not prove coverage of a collector commit; the full session/prompt -> JSON-RPC response window is the coverage proof.',
@@ -1139,6 +1185,7 @@ async function main() {
     childEnv: report.childEnv,
     homePreflight: report.homePreflight,
     safeReaddir: report.safeReaddir,
+    copyEvidence: report.copyEvidence,
     gates: report.gates,
     linkAudit: { sourceChecked: report.linkAudit.source.checked,
       copiesChecked: report.linkAudit.copies.reduce((sum, copy) => sum + copy.checked, 0),
