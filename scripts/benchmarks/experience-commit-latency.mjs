@@ -91,7 +91,7 @@ function summarize(values) {
   if (values.length === 0) return { n: 0, p50: null, p95: null, p99: null, max: null, samples: [] };
   return { n: values.length,
     p50: percentile(values, 0.5), p95: percentile(values, 0.95), p99: percentile(values, 0.99),
-    max: Math.max(...values), samples: values.map(value => ms3(value)) };
+    max: Math.max(...values), samples: values.slice() };
 }
 
 function median(values) {
@@ -417,7 +417,7 @@ function auditSymlinks(root, label) {
         // dangling or unreadable link is rejected outright, not merely checked
         // for a resolved target inside the root.
         try {
-          const target = fs.realpathSync(full);
+          const target = fs.realpathSync.native(full);
           if (!isWithin(realRoot, target)) escaped.push({ path: relative, target, reason: 'outside-root' });
         } catch (error) {
           escaped.push({ path: relative, reason: `dangling-or-unreadable: ${error.message}` });
@@ -730,7 +730,7 @@ async function measureInProcess(Context, applyCollector, openSharedExperience, s
       }
       result.recoveryAfterFiveSuccesses = { description: '5th clean success in a failure episode commits tool/recovery',
         verified: elapsed !== null, oneCommit: elapsed === null ? null : { ms: elapsed },
-        samples: elapsed === null ? [] : [ms3(elapsed)], rejectedAttempts: rejected };
+        samples: elapsed === null ? [] : [elapsed], rejectedAttempts: rejected };
     } finally { await mounted.close(); }
   }
   return result;
@@ -773,11 +773,15 @@ async function measureFsyncAttribution(scratch) {
         samples[mode].push(performance.now() - t0);
       }
     }
+    const fullMedian = median(samples.FULL);
+    const normalMedian = median(samples.NORMAL);
     return {
       note: 'Attribution only. Same SQL transaction shape on an isolated DB; NORMAL weakens durability and is NOT a candidate.',
+      deltaDefinition: 'median(FULL samples) - median(NORMAL samples), computed from the unrounded arrays',
       iterationsPerMode: iterations,
       full: summarize(samples.FULL), normal: summarize(samples.NORMAL),
-      medianDeltaMs: ms3(median(samples.FULL) - median(samples.NORMAL)),
+      fullMedianMs: fullMedian, normalMedianMs: normalMedian,
+      medianDeltaMs: fullMedian - normalMedian,
     };
   } finally { db.close(); }
 }
