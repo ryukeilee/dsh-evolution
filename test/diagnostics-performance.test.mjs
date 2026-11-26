@@ -9,6 +9,17 @@ import { collectDiagnostics as baseline, inspectJsonLines as oldInspect } from '
 
 const normalize = (report) => { delete report.generatedAt; return report; };
 
+/** A controlled @deepseek-ai/dsh package so both resolvers compare the same
+ * host instead of depending on whichever CLI the developer happens to have. */
+function fixtureDshHost(home) {
+  const pkg = path.join(home, 'fixture-host', 'node_modules', '@deepseek-ai', 'dsh');
+  fs.mkdirSync(path.join(pkg, 'lib'), { recursive: true });
+  fs.writeFileSync(path.join(pkg, 'package.json'), `${JSON.stringify({ name: '@deepseek-ai/dsh', version: '0.2.2-rc.5' })}\n`);
+  const bin = path.join(pkg, 'lib', 'bin.js');
+  fs.writeFileSync(bin, 'export {};\n');
+  return bin;
+}
+
 /**
  * Which check ids may legitimately differ from the frozen baseline, and why.
  *
@@ -30,6 +41,16 @@ const ADDITIONAL_CHECK_IDS = new Set(['data.key']);
  *   (lib/domain-storage.js `inspectArchiveLock`), a shape this baseline predates.
  */
 const withoutDeliberateReportChanges = (check) => {
+  if (check.id === 'host.cli') {
+    // The resolver now expands shell wrappers into every exec branch and no
+    // longer offers the bundle's peer copy as a candidate. Only the candidate
+    // list and the conflicting-host advice are named deliberate changes; the
+    // selected host (source/cli/realPath/packageRoot) is still compared
+    // exactly against the frozen fixture below.
+    const { candidates, conflictingHosts, ...evidence } = check.evidence ?? {};
+    const { remediation, ...report } = check;
+    return { ...report, evidence };
+  }
   if (check.id === 'runtime.registration') {
     // Approved tool-surface extension 10 -> 12 (`evolution_plan`,
     // `evolution_probe`): the frozen baseline pins the historical expected list,
@@ -136,6 +157,15 @@ function assertMatchesBaseline(currentReport, frozenReport) {
       assert.deepEqual(registration.evidence[field], [], `runtime.registration.${field} must stay empty`);
     }
   }
+
+  // The excluded host.cli fields are still produced, and the peer copy is
+  // never considered a candidate: the controlled fixture is the resolved host.
+  const cli = current.checks.find((check) => check.id === 'host.cli');
+  assert.equal(cli.level, 'ok', 'the controlled fixture host is resolved');
+  assert.equal(cli.evidence.source, 'argument');
+  assert.ok(cli.evidence.candidates.some((candidate) => candidate.source === 'argument' && candidate.version === '0.2.2-rc.5'));
+  assert.equal(cli.evidence.candidates.some((candidate) => candidate.source === 'plugin-node-modules'), false,
+    'the bundle peer copy is never a host candidate');
 }
 
 test('cold history diagnostics match the baseline across valid, damaged and absent files', async () => {
@@ -145,7 +175,7 @@ test('cold history diagnostics match the baseline across valid, damaged and abse
   fs.writeFileSync(paths.keyPath, 'a'.repeat(64), { mode: 0o600 });
   const state = path.join(paths.dockyardDir, 'state.json');
   const history = path.join(paths.dockyardDir, 'state.json.observations.jsonl');
-  const options = { dshHome: home, probe: { skipComposition: true } };
+  const options = { dshHome: home, cliPath: fixtureDshHost(home), probe: { skipComposition: true } };
   try {
     for (const content of [null, '{broken', 'null', '{}', '{"evolution":{"schema":4,"observations":[{"payload":"large"}],"proposals":[]}}']) {
       if (content === null) fs.rmSync(state, { force: true });
