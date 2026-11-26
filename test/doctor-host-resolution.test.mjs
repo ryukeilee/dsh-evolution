@@ -368,3 +368,93 @@ test('ASAR entry parsing stays linear on long .asar-like paths', (t) => {
   assert.equal(result.selected, null);
   assert.ok(elapsed < 1000, `ASAR path parsing must stay linear, took ${elapsed}ms`);
 });
+
+test('an unbooted profile is never initialized by the real composition probe', async (t) => {
+  const dir = tmp(t, 'host-res-composition-readonly-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.5');
+  const marker = path.join(dir, 'marker');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nprintf x > "${marker}"\nexec ${process.execPath} "${dsh.bin}" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+  const dshHome = doctorHome(t); // no profiles/acp/cordis.yml
+
+  const report = await collectDiagnostics({ dshHome, cliPath: wrapper, profile: 'acp' });
+  const composition = report.checks.find((check) => check.id === 'host.composition');
+  assert.equal(composition.level, 'not-evaluated');
+  assert.match(composition.evidence.reason, /read-only/);
+  assert.equal(fs.existsSync(marker), false, 'the doctor must not run a probe that creates profile state');
+
+  // An injected hermetic probe keeps its existing behavior.
+  let called = false;
+  await collectDiagnostics({
+    dshHome, cliPath: wrapper, profile: 'acp',
+    probe: { runDumpConfig: () => { called = true; return { status: 0, stdout: '', stderr: '' }; } },
+  });
+  assert.equal(called, true, 'an injected probe still runs');
+});
+
+test('ASAR reads bypass the Electron asar patch and restore process.noAsar', (t) => {
+  const dir = tmp(t, 'host-res-electron-asar-');
+  const asar = path.join(dir, 'app.asar');
+  makeAsar(asar, [
+    { internalPath: 'dsh/node_modules/@deepseek-ai/dsh/package.json', value: { name: '@deepseek-ai/dsh', version: '0.2.2-rc.5' } },
+  ]);
+  const entry = `${asar}/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js`;
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nELECTRON_RUN_AS_NODE=1 exec /mock/binary "${entry}" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const original = fs.openSync;
+  const before = process.noAsar;
+  fs.openSync = function patched(file, ...args) {
+    if (String(file).includes('.asar') && process.noAsar !== true) {
+      const error = new Error('ENOENT');
+      error.code = 'ENOENT';
+      throw error;
+    }
+    return original.call(this, file, ...args);
+  };
+  try {
+    const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+    assert.equal(result.selected?.version, '0.2.2-rc.5');
+    assert.equal(result.selected.hostFacts.dsh, '0.2.2-rc.5');
+    assert.equal(process.noAsar, before, 'the original noAsar value is restored');
+  } finally {
+    fs.openSync = original;
+    process.noAsar = before;
+  }
+});
+
+test('heredoc comments do not start a heredoc and terminators match exactly', (t) => {
+  const dir = tmp(t, 'host-res-heredoc-edge-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '9.9.9');
+  const commented = path.join(dir, 'commented-dsh');
+  fs.writeFileSync(commented, `#!/bin/sh\n# <<EOF\nexec ${process.execPath} "${dsh.bin}" "$@"\n`);
+  fs.chmodSync(commented, 0o755);
+  assert.equal(withPath('', () => resolveHostCli({ cliPath: commented })).selected?.version, '9.9.9',
+    'a heredoc marker in a comment must not swallow the real exec');
+
+  const spaceIndent = path.join(dir, 'space-indent-dsh');
+  fs.writeFileSync(spaceIndent, `#!/bin/sh\ncat <<-EOF\nexec ${process.execPath} "${dsh.bin}" "$@"\n  EOF\nexec /bin/false "$@"\n`);
+  fs.chmodSync(spaceIndent, 0o755);
+  assert.equal(withPath('', () => resolveHostCli({ cliPath: spaceIndent })).selected, null,
+    'space-indented EOF does not terminate a <<- heredoc');
+
+  const tabIndent = path.join(dir, 'tab-indent-dsh');
+  fs.writeFileSync(tabIndent, `#!/bin/sh\ncat <<-EOF\nexec /bin/false "$@"\n\tEOF\nexec ${process.execPath} "${dsh.bin}" "$@"\n`);
+  fs.chmodSync(tabIndent, 0o755);
+  assert.equal(withPath('', () => resolveHostCli({ cliPath: tabIndent })).selected?.version, '9.9.9',
+    'a tab-indented EOF terminates a <<- heredoc');
+});
+
+test('dump-config runs a suffixless symlink to a JS entry through node', (t) => {
+  const dir = tmp(t, 'host-res-symlink-');
+  const target = path.join(dir, 'cli.js');
+  fs.writeFileSync(target, 'console.log("SYMLINK-MARKER");\n');
+  fs.chmodSync(target, 0o644); // deliberately not executable
+  const link = path.join(dir, 'dsh');
+  fs.symlinkSync(target, link);
+  const outcome = defaultRunDumpConfig({ cliPath: link, dshHome: dir, profile: 'acp' });
+  assert.equal(outcome.status, 0);
+  assert.match(outcome.stdout, /SYMLINK-MARKER/);
+});
