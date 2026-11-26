@@ -99,21 +99,66 @@ if (options.smoke) {
 
 const isInside = (child, parent) => child === parent || child.startsWith(parent + path.sep);
 
+/** Filesystem identity from lstat metadata only: never reads file contents. */
+function pathIdentity(target) {
+  try {
+    const stat = fs.lstatSync(target);
+    return `${stat.dev}:${stat.ino}`;
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+    throw error;
+  }
+}
+
+function ancestorIdentities(resolvedPath) {
+  const identities = new Set();
+  let cursor = resolvedPath;
+  for (;;) {
+    const identity = pathIdentity(cursor);
+    if (identity) identities.add(identity);
+    const parent = path.dirname(cursor);
+    if (parent === cursor) break;
+    cursor = parent;
+  }
+  return identities;
+}
+
 /**
- * Resolve a path component by component, following symlinks with lstat/readlink
- * instead of realpath: the final component (or an intermediate one) may not
- * exist yet, and a dangling symlink must still resolve to *where it points* so
- * a protected target cannot be hidden behind "the path does not exist".
- * Returns the final path plus every resolved ancestor for containment checks.
+ * Containment by filesystem identity, not path spelling: on a
+ * case-insensitive filesystem `.dsh` and `.DSH` are the same directory, and a
+ * symlink target may be reached by several spellings. The string check is only
+ * a fast path for paths whose identities do not exist (yet).
+ */
+function isInsideByIdentity(child, parent) {
+  if (isInside(child, parent)) return true;
+  const parentIdentity = pathIdentity(parent);
+  if (!parentIdentity) return false;
+  return ancestorIdentities(child).has(parentIdentity);
+}
+
+/**
+ * realpath semantics without requiring the final component to exist: keep a
+ * resolved output stack and a pending component queue. A symlink prepends its
+ * target components (an absolute target restarts at the root); `..` pops the
+ * *resolved* stack, so `link/..` means the parent of the link's real target,
+ * not the lexical parent of the link path. 40 hops and repeated link paths are
+ * refused as loops.
  */
 function resolvePathComponents(target, state = { hops: 0, visited: new Set() }) {
-  const absolute = path.resolve(target);
+  const absolute = target.startsWith(path.sep) ? target : `${process.cwd()}${path.sep}${target}`;
   const root = path.parse(absolute).root;
-  const segments = absolute.slice(root.length).split(path.sep).filter(Boolean);
+  let pending = absolute.slice(root.length).split(path.sep).filter((part) => part !== '' && part !== '.');
   let current = root;
-  const ancestors = [root];
-  for (let index = 0; index < segments.length; index += 1) {
-    const segment = segments[index];
+  let ancestors = [root];
+  while (pending.length > 0) {
+    const segment = pending.shift();
+    if (segment === '..') {
+      if (current !== root) {
+        current = path.dirname(current);
+        ancestors = ancestors.slice(0, -1);
+      }
+      continue;
+    }
     const candidate = path.join(current, segment);
     let entry = null;
     try { entry = fs.lstatSync(candidate); } catch (error) {
@@ -126,12 +171,13 @@ function resolvePathComponents(target, state = { hops: 0, visited: new Set() }) 
       state.visited.add(candidate);
       const destination = fs.readlinkSync(candidate);
       if (!destination) throw new Error(`empty symlink target at ${candidate}`);
-      const next = path.isAbsolute(destination)
-        ? destination
-        : path.resolve(path.dirname(candidate), destination);
-      const rest = segments.slice(index + 1);
-      const nested = resolvePathComponents(path.join(next, ...rest), { hops, visited: state.visited });
-      return { final: nested.final, ancestors: [...ancestors, ...nested.ancestors] };
+      const destinationParts = destination.split(path.sep).filter((part) => part !== '' && part !== '.');
+      if (path.isAbsolute(destination)) {
+        current = root;
+        ancestors = [root];
+      }
+      pending = [...destinationParts, ...pending];
+      continue;
     }
     current = candidate;
     ancestors.push(current);
@@ -144,10 +190,15 @@ function resolvePathComponents(target, state = { hops: 0, visited: new Set() }) 
 // path.resolve, so a consumer that passes the link target cannot slip through.
 const RESOLVED_REAL_HOME = resolvePathComponents(REAL_HOME).final;
 
-function assertNotProtected(candidates, roots, label) {
+function assertNotProtected(candidates, roots, label, { bothWays = false } = {}) {
   for (const candidate of candidates) {
     for (const root of roots) {
-      assert.ok(!isInside(candidate, root), `${label}: ${candidate} is inside a protected directory ${root}`);
+      assert.ok(!isInsideByIdentity(candidate, root), `${label}: ${candidate} is inside a protected directory ${root} (filesystem identity or path)`);
+      // Only the path itself, never its generic ancestors (/private, /var...),
+      // is checked in the reverse direction.
+      if (bothWays) {
+        assert.ok(!isInsideByIdentity(root, candidate), `${label}: protected directory ${root} is inside ${candidate} (filesystem identity or path)`);
+      }
     }
   }
 }
@@ -162,16 +213,7 @@ function assertNotProtected(candidates, roots, label) {
 function protectedRootIdentities(roots) {
   const identities = new Set();
   for (const root of roots) {
-    let cursor = root;
-    for (;;) {
-      try {
-        const stat = fs.lstatSync(cursor);
-        identities.add(`${stat.dev}:${stat.ino}`);
-      } catch { /* a protected ancestor need not exist in a scratch setup */ }
-      const parent = path.dirname(cursor);
-      if (parent === cursor) break;
-      cursor = parent;
-    }
+    for (const identity of ancestorIdentities(resolvePathComponents(root).final)) identities.add(identity);
   }
   return identities;
 }
@@ -183,7 +225,7 @@ function protectedRootIdentities(roots) {
  * are checked but never recursed into.
  */
 function assertNoEscapingLinks(root, label) {
-  const realRoot = fs.realpathSync(root);
+  const realRoot = resolvePathComponents(root).final;
   let checked = 0;
   const escaping = [];
   const walk = (directory, prefix) => {
@@ -193,9 +235,9 @@ function assertNoEscapingLinks(root, label) {
       if (entry.isSymbolicLink()) {
         checked += 1;
         let resolved;
-        try { resolved = fs.realpathSync(absolute); }
+        try { resolved = fs.realpathSync.native(absolute); }
         catch (error) { throw new Error(`${label}: dangling or unresolvable symlink ${relative}: ${error.message}`); }
-        if (!isInside(resolved, realRoot)) escaping.push(`${relative} -> ${resolved}`);
+        if (!isInsideByIdentity(resolved, realRoot)) escaping.push(`${relative} -> ${resolved}`);
         continue;
       }
       if (entry.isDirectory()) walk(absolute, relative);
@@ -210,7 +252,8 @@ function assertOutPath(target, pristineHome) {
   if (!target) return null;
   const { final, ancestors } = resolvePathComponents(target);
   const protectedRoots = [RESOLVED_REAL_HOME, pristineHome];
-  assertNotProtected([final, ...ancestors], protectedRoots, '--out');
+  assertNotProtected([final], protectedRoots, '--out', { bothWays: true });
+  assertNotProtected(ancestors, protectedRoots, '--out ancestor');
   const details = { resolved: final, existed: false, nlink: null, protectedIdentitiesChecked: 0, devInoMatched: false };
   let stat = null;
   try { stat = fs.lstatSync(final); }
@@ -237,9 +280,9 @@ function assertIsolatedHome(target) {
   const stat = fs.lstatSync(target);
   if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('the given home is not a real directory');
   const resolved = resolvePathComponents(target).final;
-  assert.ok(!isInside(resolved, RESOLVED_REAL_HOME) && !isInside(RESOLVED_REAL_HOME, resolved), `refusing the real DSH_HOME: ${resolved} relates to ${RESOLVED_REAL_HOME}`);
+  assert.ok(!isInsideByIdentity(resolved, RESOLVED_REAL_HOME) && !isInsideByIdentity(RESOLVED_REAL_HOME, resolved), `refusing the real DSH_HOME: ${resolved} relates to ${RESOLVED_REAL_HOME}`);
   const repo = resolvePathComponents(REPO_ROOT).final;
-  if (isInside(resolved, repo)) throw new Error('refusing a home inside the repository worktree');
+  if (isInsideByIdentity(resolved, repo)) throw new Error('refusing a home inside the repository worktree');
   return resolved;
 }
 
@@ -319,13 +362,15 @@ async function run() {
   // TMPDIR itself may be a symlink into a protected directory. Resolve it (a
   // missing final component is legal) and refuse before creating anything.
   const tmpResolution = resolvePathComponents(os.tmpdir());
+  // Only one direction: a legitimate TMPDIR commonly *contains* an isolated
+  // home (both live under the same temp root), which is not an escape.
   assertNotProtected([tmpResolution.final, ...tmpResolution.ancestors], [RESOLVED_REAL_HOME, home], 'os.tmpdir()');
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-evolution-acp-latency-'));
   let realWork;
   try {
     realWork = resolvePathComponents(work).final;
-    assert.ok(isInside(realWork, tmpResolution.final), `work directory ${realWork} escaped the resolved TMPDIR ${tmpResolution.final}`);
-    assertNotProtected([realWork], [RESOLVED_REAL_HOME, home], 'scratch root');
+    assert.ok(isInsideByIdentity(realWork, tmpResolution.final), `work directory ${realWork} escaped the resolved TMPDIR ${tmpResolution.final}`);
+    assertNotProtected([realWork], [RESOLVED_REAL_HOME, home], 'scratch root', { bothWays: true });
   } catch (error) {
     fs.rmSync(work, { recursive: true, force: true });
     throw error;
@@ -343,7 +388,7 @@ async function run() {
     // Same component-wise resolver as --out: never rely on an existing
     // ancestor to discover a symlink in a path we are about to write.
     const { final } = resolvePathComponents(candidate);
-    assert.ok(isInside(final, realWork), `${label} escaped the scratch root: ${final}`);
+    assert.ok(isInsideByIdentity(final, realWork), `${label} escaped the scratch root: ${final}`);
     return final;
   };
   const linkChecks = { pristine: pristineLinkCheck, copies: [] };
@@ -496,7 +541,7 @@ async function run() {
     fs.cpSync(home, homeCopy, { recursive: true, verbatimSymlinks: true });
     const copyStat = fs.lstatSync(homeCopy);
     assert.ok(copyStat.isDirectory() && !copyStat.isSymbolicLink(), `homeCopy ${label} is not a real directory copy`);
-    assert.ok(isInside(fs.realpathSync(homeCopy), realWork), `homeCopy ${label} does not resolve inside the scratch root`);
+    assert.ok(isInsideByIdentity(resolvePathComponents(homeCopy).final, realWork), `homeCopy ${label} does not resolve inside the scratch root`);
     linkChecks.copies.push(assertNoEscapingLinks(homeCopy, `home copy ${label}`));
     if (firstBoot) {
       for (const relative of FIRST_BOOT_REMOVALS) {
@@ -791,7 +836,7 @@ async function run() {
       ...linkChecks,
       totalChecked: pristineLinkCheck.checked + linkChecks.copies.reduce((sum, row) => sum + row.checked, 0),
       totalEscaping: pristineLinkCheck.escaping + linkChecks.copies.reduce((sum, row) => sum + row.escaping, 0),
-      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath (lstat/readdir withFileTypes, never following) and must stay inside its own root; dangling links and out-of-root links fail the run. The formal DSH_HOME, TMPDIR, --out and scratch paths are resolved component by component with lstat/readlink (40-hop and loop guards), including paths whose final component does not exist; the final path and every resolved ancestor must stay outside the resolved real/pristine homes (for --out) and inside the resolved TMPDIR (for the scratch root). An existing --out must be a regular file with nlink === 1 and a dev/ino distinct from both protected roots and their ancestors (metadata only; no production file contents are read).',
+      rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath.native (lstat/readdir withFileTypes, never following) and must stay inside its own root by filesystem identity; dangling links and out-of-root links fail the run. The formal DSH_HOME, TMPDIR, --out and scratch paths use realpath-style resolution: a resolved stack plus a pending component queue, symlink targets prepended, `..` popping the resolved stack, 40-hop and repeated-link loop guards, missing final component allowed. Containment is decided by lstat dev:ino identities of the resolved path and its ancestors (string prefix is only a fast path), on both sides where applicable. An existing --out must be a regular file with nlink === 1 and a dev/ino distinct from both protected roots and their ancestors (metadata only; no production file contents are read).',
       outPath: outCheck?.details ? { ...outCheck.details, resolved: project(outCheck.details.resolved) } : null,
       scratchCheck,
     },
