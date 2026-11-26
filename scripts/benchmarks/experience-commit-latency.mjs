@@ -177,7 +177,10 @@ function createScratch(home) {
   for (const [label, root] of protectedRoots) {
     if (isWithin(root, resolvedBase)) throw new Error(`TMPDIR resolves inside ${label}: ${base} -> ${resolvedBase}`);
   }
-  const created = fs.mkdtempSync(path.join(base, 'dsh-evolution-commit-latency-'));
+  // Create only from the validated resolved base: path.join on the original
+  // TMPDIR string folds `..` lexically and can land inside a protected home
+  // even when the resolved base is outside it.
+  const created = fs.mkdtempSync(path.join(resolvedBase, 'dsh-evolution-commit-latency-'));
   try {
     const real = resolveThroughSymlinks(created);
     if (!fs.statSync(real).isDirectory()) throw new Error(`scratch root is not a directory: ${created}`);
@@ -237,6 +240,29 @@ function validateHome(home) {
   return realHome;
 }
 
+/** Validate --runtime and the CLI it would execute before reading package.json
+ * or spawning anything. Both resolved paths must be outside both protected
+ * homes, and the CLI must be inside the resolved runtime. No file contents are
+ * read here; lstat/readlink metadata only. */
+function validateRuntime(runtime, home) {
+  const resolvedRuntime = resolveThroughSymlinks(runtime);
+  const cliInput = path.join(runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
+  const resolvedCli = resolveThroughSymlinks(cliInput);
+  const roots = [
+    ['formal DSH_HOME', resolveThroughSymlinks(formalDshHome())],
+    ['source home', resolveThroughSymlinks(home)],
+  ];
+  for (const [label, root] of roots) {
+    for (const [name, value] of [['runtime', resolvedRuntime], ['CLI', resolvedCli]]) {
+      if (isWithin(root, value)) throw new Error(`--${name} resolves inside ${label}: ${value}`);
+    }
+  }
+  if (!isWithin(resolvedRuntime, resolvedCli)) throw new Error(`CLI is outside the resolved runtime: ${resolvedCli}`);
+  const evidence = { provided: '<RUNTIME>', resolvedRuntime: '<RUNTIME>',
+    resolvedCli: `<RUNTIME>/${path.relative(resolvedRuntime, resolvedCli)}`, rejected: false };
+  return { resolvedRuntime, resolvedCli, evidence };
+}
+
 /** Every symlink under a root must resolve to a path still under that root.
  * Dangling links are rejected. Symlinks are never traversed as directories.
  * This runs on the source home before copying and on every copy before a host
@@ -251,8 +277,11 @@ function auditSymlinks(root, label) {
       if (entry.isSymbolicLink()) {
         const relative = path.relative(realRoot, full);
         checked.push(relative);
+        // Link auditing is deliberately stricter than --out resolution: a
+        // dangling or unreadable link is rejected outright, not merely checked
+        // for a resolved target inside the root.
         try {
-          const target = resolveThroughSymlinks(full);
+          const target = fs.realpathSync(full);
           if (!isWithin(realRoot, target)) escaped.push({ path: relative, target, reason: 'outside-root' });
         } catch (error) {
           escaped.push({ path: relative, reason: `dangling-or-unreadable: ${error.message}` });
@@ -684,7 +713,11 @@ async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) 
   fs.writeFileSync(overlay, `- id: llm-deepseek\n  config:\n    baseURL: http://127.0.0.1:${server.address().port}\n    apiKeyEnv: EVOLUTION_LATENCY_KEY\n`);
   const child = spawn(cli, ['--profile', 'acp', '--patch', overlay], {
     cwd: homeCopy,
-    env: { ...process.env, DSH_HOME: homeCopy, DSH_PROFILE: 'acp', EVOLUTION_LATENCY_KEY: 'loopback-fixture-only' },
+    // Keep the official host's HOME-based caches/spill files inside the
+    // scratch copy too; otherwise a fixture HOME would receive dsh-spill-*
+    // entries even though our own scratch root is correctly in TMPDIR.
+    env: { ...process.env, HOME: homeCopy, TMPDIR: scratch, DSH_HOME: homeCopy, DSH_PROFILE: 'acp',
+      EVOLUTION_LATENCY_KEY: 'loopback-fixture-only' },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   cleanup.children.add(child);
@@ -834,19 +867,20 @@ async function main() {
   const outAudit = assertOutOutsideHomes(options.out, home);
   // Containment is proven before any copy or host write, not after the fact.
   auditEvidence.source = auditSymlinks(home, 'source-home');
-  const cli = path.join(options.runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
+  const runtimeValidation = validateRuntime(options.runtime, home);
+  const cli = runtimeValidation.resolvedCli;
   if (!fs.existsSync(cli)) throw new Error(`Official DSH CLI not found: ${cli} (check --runtime)`);
   const scratch = createScratch(home);
   cleanup.dirs.add(scratch);
   let report;
   try {
-    const { Context, applyCollector, openSharedExperience, harness } = await loadModules(home, options.runtime, scratch);
+    const { Context, applyCollector, openSharedExperience, harness } = await loadModules(home, runtimeValidation.resolvedRuntime, scratch);
     const inProcess = await measureInProcess(Context, applyCollector, openSharedExperience, scratch, options.samples);
     const attribution = await measureFsyncAttribution(scratch);
     const acp = await runAcp({ home, cli, scratch, rounds: options.rounds, openSharedExperience });
     const failureP95 = inProcess.failure.steady.p95;
     let dshVersion = 'unknown';
-    try { dshVersion = JSON.parse(fs.readFileSync(path.join(options.runtime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'), 'utf8')).version; } catch {}
+    try { dshVersion = JSON.parse(fs.readFileSync(path.join(runtimeValidation.resolvedRuntime, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'), 'utf8')).version; } catch {}
     const acpSamples = [...acp.warmup, ...acp.rows.flatMap(row => ARMS.map(arm => row.samples[arm]))];
     const gates = {
       cleanPositiveControl: inProcess.cleanSuccess.positiveControl.ok === true,
@@ -873,6 +907,7 @@ async function main() {
       environment: { node: process.version, platform: process.platform, home, runtime: options.runtime,
         cli, dshVersion, samplesRequested: options.samples, roundsRequested: options.rounds, smoke: options.smoke },
       harness,
+      runtimeAudit: runtimeValidation.evidence,
       linkAudit, gates,
       measurementNotes: [
         'The narrow window is only between two parent-process observation points and does not prove coverage of a collector commit; the full session/prompt -> JSON-RPC response window is the coverage proof.',
@@ -904,6 +939,7 @@ async function main() {
     recovery: { verified: report.inProcess.recoveryAfterFiveSuccesses.verified,
       ms: report.inProcess.recoveryAfterFiveSuccesses.oneCommit?.ms ?? null },
     fsyncAttributionMedianDeltaMs: report.attribution.medianDeltaMs,
+    runtimeAudit: report.runtimeAudit,
     gates: report.gates,
     linkAudit: { sourceChecked: report.linkAudit.source.checked,
       copiesChecked: report.linkAudit.copies.reduce((sum, copy) => sum + copy.checked, 0),
@@ -924,8 +960,12 @@ async function main() {
   console.log(`SUMMARY ${JSON.stringify(summary, null, 2)}`);
   console.log(`REPORT ${JSON.stringify(report, null, 2)}`);
   if (options.out) {
-    fs.mkdirSync(path.dirname(options.out), { recursive: true });
-    fs.writeFileSync(options.out, `${JSON.stringify(report, null, 2)}\n`);
+    // Write exactly the path that was validated. Keeping the caller's raw
+    // spelling here would let a link change between validation and write, or
+    // make the reported evidence describe a different destination.
+    const outPath = outAudit.resolved;
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
+    fs.writeFileSync(outPath, `${JSON.stringify(report, null, 2)}\n`);
   }
   if (options.smoke) console.log('NON-AUTHORITATIVE SMOKE: not a substitute for the Lead\'s serial authoritative run.');
   for (const [name, ok] of Object.entries(report.gates)) {
