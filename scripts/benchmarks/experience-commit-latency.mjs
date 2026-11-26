@@ -97,30 +97,34 @@ function median(values) {
 
 function ms3(value, digits = 3) { return typeof value === 'number' ? Number(value.toFixed(digits)) : value; }
 
-/** Resolve a path one component at a time, following symlinks even when the
- * target does not exist yet. A dangling final component is a legal result: the
- * writer would create it there. Absolute link targets restart at the root;
- * relative targets continue from the link's containing directory. Hops are
- * bounded and a repeated link path is an error, so cycles fail closed. */
+/** Identity of a filesystem entry from metadata only, never its contents. */
+function identity(p) {
+  try { const stat = fs.lstatSync(p); return `${stat.dev}:${stat.ino}`; }
+  catch { return null; }
+}
+
+/** Resolve with realpath semantics. Keep an already-resolved output and a
+ * pending component queue: link targets are pushed to the front (absolute
+ * targets restart at the root), while `..` pops the resolved output, so a
+ * link followed by `..` lands on the link target's real parent rather than
+ * the lexical one. A missing tail is a legal result and hops are bounded. */
 function resolveThroughSymlinks(input, { maxHops = 40 } = {}) {
-  // Concatenate rather than path.resolve/join: normalizing '..' before
-  // following links would skip the link's real target.
   const absolute = path.isAbsolute(input) ? input : `${process.cwd()}${path.sep}${input}`;
   const root = path.parse(absolute).root;
-  let parts = absolute.split(path.sep).filter(Boolean);
+  const queue = absolute.split(path.sep).filter(Boolean);
   const seen = new Set();
   let resolved = root;
-  let index = 0;
   let hops = 0;
-  while (index < parts.length) {
-    if (parts[index] === '.') { index += 1; continue; }
-    if (parts[index] === '..') { resolved = path.dirname(resolved); index += 1; continue; }
-    const candidate = path.join(resolved, parts[index]);
+  while (queue.length > 0) {
+    const part = queue.shift();
+    if (part === '.') continue;
+    if (part === '..') { resolved = path.dirname(resolved); continue; }
+    const candidate = path.join(resolved, part);
     let stat;
     try { stat = fs.lstatSync(candidate); }
     catch (error) {
       if (error.code !== 'ENOENT') throw error;
-      return path.join(candidate, ...parts.slice(index + 1));
+      return path.join(candidate, ...queue);
     }
     if (stat.isSymbolicLink()) {
       hops += 1;
@@ -129,22 +133,11 @@ function resolveThroughSymlinks(input, { maxHops = 40 } = {}) {
       seen.add(candidate);
       const target = fs.readlinkSync(candidate);
       if (!target) throw new Error(`empty symlink target while resolving ${input}: ${candidate}`);
-      const targetParts = target.split(path.sep).filter(Boolean);
-      const remaining = parts.slice(index + 1);
-      if (path.isAbsolute(target)) {
-        // An absolute target replaces the whole walked prefix; restarting at
-        // the root with the old prefix still present would append the target
-        // under the link's directory instead of following it.
-        parts = [...targetParts, ...remaining];
-        resolved = root;
-        index = 0;
-      } else {
-        parts.splice(index, 1, ...targetParts);
-      }
+      if (path.isAbsolute(target)) resolved = root;
+      queue.unshift(...target.split(path.sep).filter(Boolean));
       continue;
     }
     resolved = candidate;
-    index += 1;
   }
   return resolved;
 }
@@ -165,7 +158,7 @@ function resolvedAncestors(input) {
 function assertInside(root, candidate, label) {
   const realRoot = resolveThroughSymlinks(root);
   const real = resolveThroughSymlinks(candidate);
-  if (!fs.statSync(real).isDirectory() || !isInside(realRoot, real)) {
+  if (!fs.statSync(real).isDirectory() || !isWithin(realRoot, real)) {
     throw new Error(`${label} escaped the scratch root: ${candidate}`);
   }
   return real;
@@ -182,15 +175,15 @@ function createScratch(home) {
     ['source home', resolveThroughSymlinks(home)],
   ];
   for (const [label, root] of protectedRoots) {
-    if (isInside(root, resolvedBase)) throw new Error(`TMPDIR resolves inside ${label}: ${base} -> ${resolvedBase}`);
+    if (isWithin(root, resolvedBase)) throw new Error(`TMPDIR resolves inside ${label}: ${base} -> ${resolvedBase}`);
   }
   const created = fs.mkdtempSync(path.join(base, 'dsh-evolution-commit-latency-'));
   try {
     const real = resolveThroughSymlinks(created);
     if (!fs.statSync(real).isDirectory()) throw new Error(`scratch root is not a directory: ${created}`);
-    if (!isInside(resolvedBase, real)) throw new Error(`scratch root escaped resolved TMPDIR: ${created} -> ${real}`);
+    if (!isWithin(resolvedBase, real)) throw new Error(`scratch root escaped resolved TMPDIR: ${created} -> ${real}`);
     for (const [label, root] of protectedRoots) {
-      if (isInside(root, real)) throw new Error(`scratch root resolves inside ${label}: ${created} -> ${real}`);
+      if (isWithin(root, real)) throw new Error(`scratch root resolves inside ${label}: ${created} -> ${real}`);
     }
     return real;
   } catch (error) {
@@ -203,16 +196,44 @@ function isInside(root, candidate) {
   return candidate === root || candidate.startsWith(`${root}${path.sep}`);
 }
 
+function ancestorIdentities(candidate) {
+  const identities = [];
+  let cursor = candidate;
+  for (;;) {
+    const id = identity(cursor);
+    if (id) identities.push(id);
+    const parent = path.dirname(cursor);
+    if (parent === cursor) break;
+    cursor = parent;
+  }
+  return identities;
+}
+
+/** Containment by filesystem identity, not spelling: case-insensitive aliases
+ * and link+.. spellings of the same directory compare equal by dev:ino. The
+ * string prefix is only a fast path, never the sole criterion. */
+function isWithin(root, candidate) {
+  if (isInside(root, candidate)) return true;
+  const resolvedRoot = resolveThroughSymlinks(root);
+  const resolvedCandidate = resolveThroughSymlinks(candidate);
+  if (isInside(resolvedRoot, resolvedCandidate)) return true;
+  const rootId = identity(resolvedRoot);
+  if (rootId === null) return false;
+  return ancestorIdentities(resolvedCandidate).includes(rootId);
+}
+
 function formalDshHome() {
   const formal = path.resolve(os.homedir(), '.dsh');
-  try { return fs.realpathSync(formal); } catch { return formal; }
+  try { return resolveThroughSymlinks(formal); } catch { return formal; }
 }
 
 function validateHome(home) {
   const realFormal = formalDshHome();
-  const realHome = fs.realpathSync(home);
+  const realHome = resolveThroughSymlinks(home);
   if (!fs.statSync(realHome).isDirectory()) throw new Error(`--home is not a directory: ${home}`);
-  if (isInside(realFormal, realHome) || isInside(realHome, realFormal)) throw new Error('Refusing the formal DSH_HOME');
+  if (isWithin(realFormal, realHome) || isWithin(realHome, realFormal)) throw new Error('Refusing the formal DSH_HOME');
+  const repo = resolveThroughSymlinks(REPO_ROOT);
+  if (isWithin(repo, realHome)) throw new Error('Refusing --home inside the repository working tree');
   return realHome;
 }
 
@@ -221,7 +242,7 @@ function validateHome(home) {
  * This runs on the source home before copying and on every copy before a host
  * is spawned against it, so a link to the formal home cannot redirect writes. */
 function auditSymlinks(root, label) {
-  const realRoot = fs.realpathSync(root);
+  const realRoot = resolveThroughSymlinks(root);
   const checked = [];
   const escaped = [];
   const walk = (directory) => {
@@ -231,8 +252,8 @@ function auditSymlinks(root, label) {
         const relative = path.relative(realRoot, full);
         checked.push(relative);
         try {
-          const target = fs.realpathSync(full);
-          if (!isInside(realRoot, target)) escaped.push({ path: relative, target, reason: 'outside-root' });
+          const target = resolveThroughSymlinks(full);
+          if (!isWithin(realRoot, target)) escaped.push({ path: relative, target, reason: 'outside-root' });
         } catch (error) {
           escaped.push({ path: relative, reason: `dangling-or-unreadable: ${error.message}` });
         }
@@ -259,7 +280,7 @@ function assertOutOutsideHomes(out, home) {
   const paths = resolvedAncestors(out);
   for (const candidate of paths) {
     for (const [label, root] of roots) {
-      if (isInside(root, candidate)) {
+      if (isWithin(root, candidate)) {
         throw new Error(`--out must not be inside ${label}: ${out} (resolved ${candidate})`);
       }
     }
