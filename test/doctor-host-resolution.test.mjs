@@ -416,6 +416,109 @@ test('the real composition probe runs on an isolated profile copy', async (t) =>
   assert.equal(called, true, 'an injected probe still runs');
 });
 
+test('a partial profile is not initialized just to run the real probe', async (t) => {
+  const dir = tmp(t, 'host-res-composition-partial-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.5', 'console.log("");\n');
+  const marker = path.join(dir, 'marker');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nprintf x > "${marker}"\nexec ${process.execPath} "${dsh.bin}" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+  const dshHome = doctorHome(t);
+  const profileDir = path.join(dshHome, 'profiles', 'acp');
+  fs.mkdirSync(profileDir, { recursive: true });
+  fs.writeFileSync(path.join(profileDir, 'cordis.yml'), '');
+  const before = fs.readdirSync(profileDir);
+
+  const report = await collectDiagnostics({ dshHome, cliPath: wrapper, profile: 'acp' });
+  const composition = report.checks.find((check) => check.id === 'host.composition');
+  assert.equal(composition.level, 'not-evaluated');
+  assert.match(composition.evidence.reason, /incomplete/);
+  assert.deepEqual(fs.readdirSync(profileDir), before, 'no config file was created in the real profile');
+  assert.equal(fs.existsSync(marker), false, 'the wrapper was not executed');
+});
+
+test('a symlinked cordis.yml cannot write through the isolated copy', async (t) => {
+  const dir = tmp(t, 'host-res-composition-symlink-');
+  const outside = path.join(dir, 'outside-cordis.yml');
+  fs.writeFileSync(outside, 'REAL-CONTENT\n');
+  const dump = [
+    '# == dsh-evolution',
+    '- id: evolution-experience',
+    '  name: dsh-evolution/experience',
+    '- id: evolution-orchestrator',
+    '  name: dsh-evolution',
+    '- id: evolution-trust-root-guard',
+    '  name: dsh-evolution/guard',
+    '',
+  ].join('\n');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.5', `process.stdout.write(${JSON.stringify(dump)});\n`);
+  const marker = path.join(dir, 'marker');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+if [ -L "$DSH_HOME/profiles/acp/cordis.yml" ]; then printf 'symlink\\n' > "${marker}"; else printf 'regular\\n' > "${marker}"; fi
+exec ${process.execPath} "${dsh.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+  const dshHome = doctorHome(t);
+  const profileDir = path.join(dshHome, 'profiles', 'acp');
+  fs.mkdirSync(path.join(profileDir, 'node_modules'), { recursive: true });
+  for (const name of ['cordis.patch.yml', 'package.json', 'pnpm-workspace.yaml']) {
+    fs.writeFileSync(path.join(profileDir, name), 'x\n');
+  }
+  fs.symlinkSync(outside, path.join(profileDir, 'cordis.yml'));
+  const original = fs.readFileSync(outside);
+  const originalMtime = fs.statSync(outside).mtimeMs;
+
+  const report = await collectDiagnostics({ dshHome, cliPath: wrapper, profile: 'acp' });
+  assert.equal(report.checks.find((check) => check.id === 'host.composition').level, 'ok');
+  assert.match(fs.readFileSync(marker, 'utf8'), /regular/, 'the isolated copy dereferenced the config symlink');
+  assert.deepEqual(fs.readFileSync(outside), original, 'the symlink target bytes are unchanged');
+  assert.equal(fs.statSync(outside).mtimeMs, originalMtime, 'the symlink target mtime is unchanged');
+});
+
+test('a home-level cordis.patch.yml is carried into the isolated probe', async (t) => {
+  const dir = tmp(t, 'host-res-composition-homepatch-');
+  const dump = [
+    '# == dsh-evolution',
+    '- id: evolution-experience',
+    '  name: dsh-evolution/experience',
+    '- id: evolution-orchestrator',
+    '  name: dsh-evolution',
+    '- id: evolution-trust-root-guard',
+    '  name: dsh-evolution/guard',
+    '',
+  ].join('\n');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.5', `process.stdout.write(${JSON.stringify(dump)});\n`);
+  const marker = path.join(dir, 'marker');
+  const wrapper = path.join(dir, 'dsh');
+  // Stands in for the CLI's home-patch parsing: a patch without the valid
+  // marker makes composition fail instead of being silently ignored.
+  fs.writeFileSync(wrapper, `#!/bin/sh
+if [ ! -f "$DSH_HOME/cordis.patch.yml" ]; then printf 'missing\\n' > "${marker}"; echo 'home patch missing' >&2; exit 1; fi
+if ! grep -q 'GOOD-PATCH' "$DSH_HOME/cordis.patch.yml"; then printf 'invalid\\n' > "${marker}"; echo 'invalid home patch' >&2; exit 1; fi
+printf 'ok\\n' > "${marker}"
+exec ${process.execPath} "${dsh.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+  const dshHome = doctorHome(t);
+  const profileDir = path.join(dshHome, 'profiles', 'acp');
+  fs.mkdirSync(path.join(profileDir, 'node_modules'), { recursive: true });
+  for (const name of ['cordis.yml', 'cordis.patch.yml', 'package.json', 'pnpm-workspace.yaml']) {
+    fs.writeFileSync(path.join(profileDir, name), 'x\n');
+  }
+  const homePatch = path.join(dshHome, 'cordis.patch.yml');
+
+  fs.writeFileSync(homePatch, 'GOOD-PATCH\n');
+  const good = await collectDiagnostics({ dshHome, cliPath: wrapper, profile: 'acp' });
+  assert.equal(good.checks.find((check) => check.id === 'host.composition').level, 'ok');
+  assert.match(fs.readFileSync(marker, 'utf8'), /ok/);
+
+  fs.writeFileSync(homePatch, 'BROKEN-PATCH\n');
+  const bad = await collectDiagnostics({ dshHome, cliPath: wrapper, profile: 'acp' });
+  assert.notEqual(bad.checks.find((check) => check.id === 'host.composition').level, 'ok');
+  assert.match(fs.readFileSync(marker, 'utf8'), /invalid/);
+});
+
 test('ASAR reads bypass the Electron asar patch and restore process.noAsar', (t) => {
   const dir = tmp(t, 'host-res-electron-asar-');
   const asar = path.join(dir, 'app.asar');
@@ -537,6 +640,8 @@ test('node -e never promotes its arguments to a host entry', (t) => {
     `#!/bin/sh\nexec ${process.execPath} -e 'process.exit(0)' "${dsh.bin}" "$@"\n`,
     `#!/bin/sh\nexec ${process.execPath} -e "${dsh.bin}" "$@"\n`,
     `#!/bin/sh\nexec ${process.execPath} --eval="process.exit(0)" "${dsh.bin}" "$@"\n`,
+    `#!/bin/sh\nexec ${process.execPath} -p '1+1' "${dsh.bin}" "$@"\n`,
+    `#!/bin/sh\nexec ${process.execPath} --print="1+1" "${dsh.bin}" "$@"\n`,
   ];
   for (const [index, script] of scripts.entries()) {
     const wrapper = path.join(dir, `dsh-${index}`);
