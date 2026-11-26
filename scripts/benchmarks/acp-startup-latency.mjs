@@ -38,7 +38,11 @@ const PROBE = path.join(HERE, 'probes', 'acp-startup-latency-probe.mjs');
 const ARMS = ['on', 'off', 'on2'];
 const KEY_ENV = 'DSH_EVOLUTION_LATENCY_KEY';
 const THRESHOLD_MS = 200;
-const REAL_HOME = path.resolve(os.homedir(), '.dsh');
+// Do not path.resolve(HOME): a lexical ".." would name a different directory
+// than the filesystem does when HOME passes through a symlink. Resolution is
+// performed by resolvePathComponents() below (function declarations hoist).
+const RESOLVED_USER_HOME = resolvePathComponents(os.homedir()).final;
+const REAL_HOME = resolvePathComponents(`${RESOLVED_USER_HOME}${path.sep}.dsh`).final;
 const REPO_ROOT = path.resolve(HERE, '..', '..');
 const FIRST_BOOT_REMOVALS = [
   'sessions',
@@ -222,15 +226,18 @@ function protectedRootIdentities(roots) {
 }
 
 /**
- * Reject any symlink that resolves outside the root, including links copied
- * verbatim from a home. lstat/readdir(withFileTypes) never follow a link; a
- * dangling link is refused instead of being guessed at. Symlinked directories
- * are checked but never recursed into.
+ * Preflight a home tree before any file in it is read or copied: reject
+ * symlinks that resolve outside the root (dangling links included) and any
+ * regular file with nlink > 1, reporting the relative path. lstat/readdir
+ * (withFileTypes) never follow a link, and symlinked directories are checked
+ * but never recursed into.
  */
 function assertNoEscapingLinks(root, label) {
   const realRoot = resolvePathComponents(root).final;
   let checked = 0;
+  let files = 0;
   const escaping = [];
+  const hardLinked = [];
   const walk = (directory, prefix) => {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const absolute = path.join(directory, entry.name);
@@ -243,12 +250,20 @@ function assertNoEscapingLinks(root, label) {
         if (!isInsideByIdentity(resolved, realRoot)) escaping.push(`${relative} -> ${resolved}`);
         continue;
       }
-      if (entry.isDirectory()) walk(absolute, relative);
+      if (entry.isDirectory()) { walk(absolute, relative); continue; }
+      if (entry.isFile()) {
+        files += 1;
+        // A hard-linked file shares an inode with bytes outside this tree;
+        // copying or reading it would leak protected content before any later
+        // guard could see the path. Refuse it with its relative path.
+        if (fs.lstatSync(absolute).nlink !== 1) hardLinked.push(relative);
+      }
     }
   };
   walk(root, '');
+  assert.equal(hardLinked.length, 0, `${label}: hard-linked files share an inode with other data: ${hardLinked.join(', ')}`);
   assert.equal(escaping.length, 0, `${label}: symlink escapes the home root: ${escaping.join(', ')}`);
-  return { label, checked, escaping: escaping.length };
+  return { label, checked, files, hardLinked: hardLinked.length, escaping: escaping.length };
 }
 
 function assertOutPath(target, pristineHome) {
@@ -903,6 +918,13 @@ async function run() {
       ...linkChecks,
       totalChecked: pristineLinkCheck.checked + linkChecks.copies.reduce((sum, row) => sum + row.checked, 0),
       totalEscaping: pristineLinkCheck.escaping + linkChecks.copies.reduce((sum, row) => sum + row.escaping, 0),
+      homePreflight: {
+        files: pristineLinkCheck.files,
+        hardLinked: pristineLinkCheck.hardLinked,
+        symlinksChecked: pristineLinkCheck.checked,
+        escaping: pristineLinkCheck.escaping,
+        rule: 'Every regular file in the pristine home must have nlink === 1 before any read/copy; every symlink must resolve inside the home root.',
+      },
       rule: 'Every symlink in the pristine home and in each scratch copy is resolved with realpath.native (lstat/readdir withFileTypes, never following) and must stay inside its own root by filesystem identity; dangling links and out-of-root links fail the run. The formal DSH_HOME, TMPDIR, --out and scratch paths use realpath-style resolution: a resolved stack plus a pending component queue, symlink targets prepended, `..` popping the resolved stack, 40-hop and repeated-link loop guards, missing final component allowed. Containment is decided by lstat dev:ino identities of the resolved path and its ancestors (string prefix is only a fast path), on both sides where applicable. An existing --out must be a regular file with nlink === 1 and a dev/ino distinct from both protected roots and their ancestors (metadata only; no production file contents are read). --runtime and every runtime file read or executed (CLI and all manifests) are rejected if related to either protected root, must have nlink === 1 and must resolve inside the runtime; scratch is created from the resolved TMPDIR, never the raw string; every spawned child explicitly receives TMPDIR/TEMP/TMP inside the scratch (ACP child also receives HOME = its own home copy).',
       outPath: outCheck?.details ? { ...outCheck.details, resolved: project(outCheck.details.resolved) } : null,
       scratchCheck,
@@ -951,6 +973,8 @@ async function run() {
     requestsAfterTimer: Math.min(...allWindows.map((row) => row.requestsAfterTimer)),
     symlinkLinksChecked,
     symlinkEscapes,
+    homePreflightFiles: payload.symlinkCheck.homePreflight.files,
+    homePreflightHardLinked: payload.symlinkCheck.homePreflight.hardLinked,
     result: decision.result,
     host: hostVersion,
     bundle: bundleVersion,
