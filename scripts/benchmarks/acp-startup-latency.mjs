@@ -210,6 +210,47 @@ function assertNotProtected(candidates, roots, label, { bothWays = false } = {})
   }
 }
 
+// configured by run() as each validated root becomes known; no enumeration of
+// any user-provided tree is allowed before these are set.
+let allowedReadRoots = [];
+let protectedReadRoots = [RESOLVED_REAL_HOME];
+const readdirStats = { calls: 0, rejections: 0 };
+
+/**
+ * The only entry point to readdirSync in this script. Resolve first, reject a
+ * directory that resolves into a protected home or outside the validated roots
+ * by filesystem identity, and enumerate ONLY the resolved path. The exact
+ * allowed roots themselves (pristine home, runtime, scratch) may be walked;
+ * a symlink from inside them to a protected home is rejected before readdir.
+ */
+function safeReaddir(directory, purpose) {
+  const resolved = resolvePathComponents(directory).final;
+  const identity = pathIdentity(resolved);
+  const exactRoot = identity !== null && allowedReadRoots.some((root) => pathIdentity(root) === identity);
+  const reject = (message) => {
+    readdirStats.rejections += 1;
+    throw new Error(`safeReaddir(${purpose}): ${message}`);
+  };
+  if (allowedReadRoots.length === 0) reject('no allowed roots configured');
+  // Walking the pristine home tree (and assembling the probe package graph
+  // from it) is an intentional use of the validated source home; only the
+  // formal home stays protected there. A symlink from that tree into the
+  // formal home is still refused by the identity check below.
+  const walksSourceHome = /^(home preflight|probe package)/.test(purpose);
+  const protecting = walksSourceHome ? [RESOLVED_REAL_HOME] : protectedReadRoots;
+  if (!exactRoot) {
+    for (const root of protecting) {
+      if (isInsideByIdentity(resolved, root)) reject(`${resolved} is inside protected directory ${root}`);
+    }
+    if (!allowedReadRoots.some((root) => isInsideByIdentity(resolved, root))) {
+      reject(`${resolved} is outside the allowed roots`);
+    }
+  }
+  const dirents = fs.readdirSync(resolved, { withFileTypes: true });
+  readdirStats.calls += 1;
+  return { names: dirents.map((entry) => entry.name), dirents, resolved };
+}
+
 /**
  * Device/inode identities of the protected roots and their ancestors. Only
  * lstat metadata is read: enumerating user files under the real home would
@@ -239,7 +280,7 @@ function assertNoEscapingLinks(root, label) {
   const escaping = [];
   const hardLinked = [];
   const walk = (directory, prefix) => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    for (const entry of safeReaddir(directory, `home preflight ${label}`).dirents) {
       const absolute = path.join(directory, entry.name);
       const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
       if (entry.isSymbolicLink()) {
@@ -345,10 +386,17 @@ function atomicWrite(file, bytes) {
 async function run() {
   const startedAt = new Date().toISOString();
   const home = assertIsolatedHome(options.home);
+  // Enable safeReaddir only after the first validated root is known; the tree
+  // preflight below is the first enumeration of user-provided data.
+  // During the pristine-tree preflight only the formal home is protected; the
+  // source home itself is the tree being walked. It becomes protected for all
+  // later enumerations once the preflight has passed.
+  protectedReadRoots = [RESOLVED_REAL_HOME];
+  allowedReadRoots = [home];
   // Both checks run before any scratch write: a pristine home that already
-  // contains an escaping link is not a usable input, and an --out inside the
-  // real home (or the pristine home) would overwrite protected data.
+  // contains an escaping link or a hard-linked file is not a usable input.
   const pristineLinkCheck = assertNoEscapingLinks(home, 'pristine home');
+  protectedReadRoots.push(home);
   const outCheck = assertOutPath(options.out, home);
   const outResolved = outCheck?.path ?? null;
   // Guard the executable source before reading its package.json or spawning
@@ -356,6 +404,7 @@ async function run() {
   // until this passes.
   const runtime = resolvePathComponents(options.runtime).final;
   assertNotProtected([runtime], [RESOLVED_REAL_HOME, home], '--runtime', { bothWays: true });
+  allowedReadRoots.push(runtime);
   const runtimeFiles = [];
   function assertRuntimeFile(candidate, label) {
     const resolved = resolvePathComponents(candidate).final;
@@ -374,7 +423,7 @@ async function run() {
     assert.ok(isInsideByIdentity(pnpmResolved, runtime), `runtime store ${pnpmResolved} escaped ${runtime}`);
     let manifest = path.join(runtime, 'node_modules', '@deepseek-ai', name, 'package.json');
     if (fs.existsSync(pnpm)) {
-      const match = fs.readdirSync(pnpm).find((entry) => entry.startsWith(`@deepseek-ai+${name}@`));
+      const match = safeReaddir(pnpm, `runtime ${name} store`).names.find((entry) => entry.startsWith(`@deepseek-ai+${name}@`));
       if (match) manifest = path.join(pnpm, match, 'node_modules', '@deepseek-ai', name, 'package.json');
     }
     return assertRuntimeFile(manifest, `runtime ${name} manifest`);
@@ -424,6 +473,7 @@ async function run() {
     fs.rmSync(work, { recursive: true, force: true });
     throw error;
   }
+  allowedReadRoots.push(realWork);
   const project = (value) => typeof value === 'string'
     ? value.split(realWork).join('$WORK').split(home).join('$HOME').split(runtime).join('$RUNTIME').split(REPO_ROOT).join('<repo>')
     : value;
@@ -457,22 +507,40 @@ async function run() {
     fs.mkdirSync(path.dirname(destination), { recursive: true });
     if (!fs.existsSync(destination)) fs.symlinkSync(target, destination, 'dir');
   };
+  const guardPackageSource = (source, relative) => {
+    const resolved = resolvePathComponents(source).final;
+    assert.ok(!isInsideByIdentity(resolved, RESOLVED_REAL_HOME), `probe package ${relative} resolves into the formal home: ${resolved}`);
+    assert.ok(allowedReadRoots.some((root) => isInsideByIdentity(resolved, root)), `probe package ${relative} resolves outside the allowed roots: ${resolved}`);
+    return resolved;
+  };
   const addPackagesFrom = (directory) => {
     if (!fs.existsSync(directory)) return;
-    for (const name of fs.readdirSync(directory)) {
+    for (const name of safeReaddir(directory, 'probe package index').names) {
       const source = path.join(directory, name);
-      if (!fs.statSync(source).isDirectory()) continue;
       if (name.startsWith('@')) {
-        for (const member of fs.readdirSync(source)) linkPackage(`${name}/${member}`, path.join(source, member));
+        // Resolve and identity-check the scope directory before enumerating it:
+        // a scope symlink into a protected home must never be readdir'd.
+        const resolvedScope = guardPackageSource(source, name);
+        if (!fs.lstatSync(resolvedScope).isDirectory()) continue;
+        for (const member of safeReaddir(resolvedScope, `probe scoped package ${name}`).names) {
+          const memberSource = path.join(resolvedScope, member);
+          const resolvedMember = guardPackageSource(memberSource, `${name}/${member}`);
+          if (!fs.lstatSync(resolvedMember).isDirectory()) continue;
+          linkPackage(`${name}/${member}`, resolvedMember);
+        }
       } else {
-        linkPackage(name, source);
+        const resolvedPackage = guardPackageSource(source, name);
+        if (!fs.lstatSync(resolvedPackage).isDirectory()) continue;
+        linkPackage(name, resolvedPackage);
       }
     }
   };
   addPackagesFrom(path.join(profileDir, 'node_modules'));
   const pnpmStore = path.join(runtime, 'node_modules', '.pnpm');
   if (fs.existsSync(pnpmStore)) {
-    for (const storeEntry of fs.readdirSync(pnpmStore)) addPackagesFrom(path.join(pnpmStore, storeEntry, 'node_modules'));
+    for (const storeEntry of safeReaddir(pnpmStore, 'runtime pnpm store').names) {
+      addPackagesFrom(path.join(pnpmStore, storeEntry, 'node_modules'));
+    }
   }
   assert.ok(fs.existsSync(path.join(entryModules, '@deepseek-ai', 'cordis')), 'could not assemble @deepseek-ai/cordis for the module-load probe');
 
@@ -918,6 +986,7 @@ async function run() {
       ...linkChecks,
       totalChecked: pristineLinkCheck.checked + linkChecks.copies.reduce((sum, row) => sum + row.checked, 0),
       totalEscaping: pristineLinkCheck.escaping + linkChecks.copies.reduce((sum, row) => sum + row.escaping, 0),
+      safeReaddir: { ...readdirStats },
       homePreflight: {
         files: pristineLinkCheck.files,
         hardLinked: pristineLinkCheck.hardLinked,
@@ -975,6 +1044,8 @@ async function run() {
     symlinkEscapes,
     homePreflightFiles: payload.symlinkCheck.homePreflight.files,
     homePreflightHardLinked: payload.symlinkCheck.homePreflight.hardLinked,
+    safeReaddirCalls: readdirStats.calls,
+    safeReaddirRejections: readdirStats.rejections,
     result: decision.result,
     host: hostVersion,
     bundle: bundleVersion,
