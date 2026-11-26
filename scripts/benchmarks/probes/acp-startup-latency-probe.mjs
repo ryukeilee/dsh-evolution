@@ -12,6 +12,7 @@
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
 import { registerHooks } from 'node:module';
 import path from 'node:path';
@@ -43,7 +44,10 @@ async function moduleLoad(libRoot, setName) {
   }
   const ms = performance.now() - started;
   const cpu = process.cpuUsage(cpuStart);
-  const realRoot = await fs.realpath(libRoot);
+  // Native (kernel) realpath: the JS implementation folds ".." in symlink
+  // targets before following them, which can misclassify which files belong
+  // to the lib root during byte accounting.
+  const realRoot = realpathSync.native(libRoot);
   const prefix = realRoot + path.sep;
   let libBytes = 0;
   for (const url of seen) {
