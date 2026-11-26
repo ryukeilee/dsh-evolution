@@ -229,6 +229,33 @@ function isWithin(root, candidate) {
   return ancestorIdentities(resolvedCandidate).includes(rootId);
 }
 
+/** The only directory enumerator used on user-provided trees. It resolves every
+ * component first, applies identity-based containment, and reads only the
+ * resolved path. `protectHome` rejects anything inside either protected home;
+ * `allowedRoot` bounds scans of home copies/scratch to that copy. */
+function safeReaddir(directory, purpose, { allowedRoot = null, protectHome = false } = {}) {
+  safeReaddirEvidence.calls += 1;
+  const resolved = resolveThroughSymlinks(directory);
+  const fail = (reason) => {
+    safeReaddirEvidence.rejected += 1;
+    throw new Error(`safeReaddir(${purpose}) refused ${directory}: ${reason}`);
+  };
+  if (protectHome) {
+    const roots = [['formal DSH_HOME', formalDshHome()]];
+    if (scanSourceHome) roots.push(['source home', scanSourceHome]);
+    for (const [label, root] of roots) {
+      if (isWithin(root, resolved)) fail(`resolves inside ${label}`);
+    }
+  }
+  if (allowedRoot && !isWithin(resolveThroughSymlinks(allowedRoot), resolved)) {
+    fail('outside allowed root');
+  }
+  let entries;
+  try { entries = fs.readdirSync(resolved, { withFileTypes: true }); }
+  catch (error) { fail(`readdir failed: ${error.message}`); }
+  return { entries, resolved };
+}
+
 function formalDshHome() {
   // HOME itself may contain a symlink followed by `..`; joining before
   // resolving would fold that `..` lexically and protect the wrong directory.
@@ -294,8 +321,40 @@ function validateRuntime(runtime, home) {
   let candidates = [];
   try {
     if (!fs.statSync(pnpmRoot).isDirectory()) throw new Error('not a directory');
-    candidates = fs.readdirSync(pnpmRoot).filter(name => /^@deepseek-ai\+cordis@/.test(name))
-      .map(name => path.join(pnpmRoot, name, 'node_modules', '@deepseek-ai', 'cordis', 'package.json'));
+    const top = safeReaddir(pnpmRoot, 'runtime pnpm', { allowedRoot: resolvedRuntime, protectHome: true });
+    // Bounded preflight of each package's node_modules and scoped directories:
+    // resolve and identity-check every entry BEFORE enumerating it, so a link
+    // into a protected home is never readdir'd.
+    const assertSafe = (candidate, label) => {
+      const resolved = resolveThroughSymlinks(candidate);
+      for (const [protectedLabel, root] of roots) {
+        if (isWithin(root, resolved)) {
+          safeReaddirEvidence.rejected += 1;
+          throw new Error(`${label} resolves inside ${protectedLabel}: ${resolved}`);
+        }
+      }
+      if (!isWithin(resolvedRuntime, resolved)) {
+        safeReaddirEvidence.rejected += 1;
+        throw new Error(`${label} is outside the resolved runtime: ${resolved}`);
+      }
+      return resolved;
+    };
+    for (const item of top.entries) {
+      if (!item.isDirectory()) continue;
+      const modulesDir = path.join(top.resolved, item.name, 'node_modules');
+      const modulesResolved = assertSafe(modulesDir, `pnpm ${item.name}/node_modules`);
+      if (!fs.existsSync(modulesResolved)) continue;
+      const modules = safeReaddir(modulesDir, `pnpm ${item.name}`, { allowedRoot: resolvedRuntime, protectHome: true });
+      for (const child of modules.entries) {
+        const childPath = path.join(modules.resolved, child.name);
+        assertSafe(childPath, `pnpm entry ${item.name}/${child.name}`);
+        if (child.isDirectory()) {
+          safeReaddir(childPath, `pnpm ${item.name}/${child.name}`, { allowedRoot: resolvedRuntime, protectHome: true });
+        }
+      }
+    }
+    candidates = top.entries.filter(name => /^@deepseek-ai\+cordis@/.test(name.name))
+      .map(name => path.join(top.resolved, name.name, 'node_modules', '@deepseek-ai', 'cordis', 'package.json'));
   } catch (error) {
     if (error.code !== 'ENOENT' && !/not a directory/.test(error.message)) throw error;
   }
@@ -334,7 +393,7 @@ function auditSymlinks(root, label) {
   const hardLinked = [];
   let files = 0;
   const walk = (directory) => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    for (const entry of safeReaddir(directory, `home tree ${label}`, { allowedRoot: realRoot }).entries) {
       const full = path.join(directory, entry.name);
       const relative = path.relative(realRoot, full);
       if (entry.isFile()) {
@@ -407,6 +466,8 @@ function assertOutOutsideHomes(out, home) {
 }
 
 const auditEvidence = { source: null, copies: [] };
+const safeReaddirEvidence = { calls: 0, rejected: 0 };
+let scanSourceHome = null;
 let childEnvEvidence = null;
 
 const cleanup = { dirs: new Set(), children: new Set(), servers: new Set() };
@@ -457,7 +518,21 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
     fs.mkdirSync(path.join(modules, '@deepseek-ai'), { recursive: true });
     fs.cpSync(path.join(bundleDir, 'lib'), path.join(modules, 'dsh-evolution', 'lib'), { recursive: true });
     fs.copyFileSync(path.join(bundleDir, 'package.json'), path.join(modules, 'dsh-evolution', 'package.json'));
-    fs.symlinkSync(hostCordis.dir, path.join(modules, '@deepseek-ai', 'cordis'), 'dir');
+    // Validate the package directory before linking it into the harness.
+    const cordisPackage = resolveThroughSymlinks(hostCordis.dir);
+    const protectedRoots = [['formal DSH_HOME', formalDshHome()]];
+    if (scanSourceHome) protectedRoots.push(['source home', scanSourceHome]);
+    for (const [label, root] of protectedRoots) {
+      if (isWithin(root, cordisPackage)) {
+        safeReaddirEvidence.rejected += 1;
+        throw new Error(`probe cordis package resolves inside ${label}: ${cordisPackage}`);
+      }
+    }
+    if (!isWithin(resolveThroughSymlinks(runtime), cordisPackage) || !fs.statSync(cordisPackage).isDirectory()) {
+      safeReaddirEvidence.rejected += 1;
+      throw new Error(`probe cordis package is outside the resolved runtime or not a directory: ${cordisPackage}`);
+    }
+    fs.symlinkSync(cordisPackage, path.join(modules, '@deepseek-ai', 'cordis'), 'dir');
     const copiedCollector = path.join(modules, 'dsh-evolution', 'lib', 'experience-collector.js');
     const copiedStore = path.join(modules, 'dsh-evolution', 'lib', 'shared-experience.js');
     const resolved = createRequire(copiedCollector).resolve('@deepseek-ai/cordis');
@@ -947,6 +1022,7 @@ async function runAcp({ home, cli, scratch, rounds, openSharedExperience }) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const home = validateHome(options.home);
+  scanSourceHome = home;
   if (!options.runtime) options.runtime = path.join(path.dirname(home), 'runtime');
   const outAudit = assertOutOutsideHomes(options.out, home);
   // Containment is proven before any copy or host write, not after the fact.
@@ -994,6 +1070,7 @@ async function main() {
       runtimeAudit: runtimeValidation.evidence,
       childEnv: childEnvEvidence,
       homePreflight: { files: auditEvidence.source.files, hardLinked: auditEvidence.source.hardLinked },
+      safeReaddir: { calls: safeReaddirEvidence.calls, rejected: safeReaddirEvidence.rejected },
       linkAudit, gates,
       measurementNotes: [
         'The narrow window is only between two parent-process observation points and does not prove coverage of a collector commit; the full session/prompt -> JSON-RPC response window is the coverage proof.',
@@ -1029,6 +1106,7 @@ async function main() {
     runtimeAudit: report.runtimeAudit,
     childEnv: report.childEnv,
     homePreflight: report.homePreflight,
+    safeReaddir: report.safeReaddir,
     gates: report.gates,
     linkAudit: { sourceChecked: report.linkAudit.source.checked,
       copiesChecked: report.linkAudit.copies.reduce((sum, copy) => sum + copy.checked, 0),
