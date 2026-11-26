@@ -171,11 +171,32 @@ function assertInside(root, candidate, label) {
   return real;
 }
 
-function createScratch() {
+function createScratch(home) {
   const base = process.env.TMPDIR || process.env.TEMP || os.tmpdir();
-  const root = fs.mkdtempSync(path.join(base, 'dsh-evolution-commit-latency-'));
-  const real = assertInside(base, root, 'scratch root');
-  return real;
+  // A TMPDIR symlink can point into a protected home; resolve it component by
+  // component, including a target that does not exist yet, before creating
+  // anything. The same check is repeated on the created directory itself.
+  const resolvedBase = resolveThroughSymlinks(base);
+  const protectedRoots = [
+    ['formal DSH_HOME', resolveThroughSymlinks(formalDshHome())],
+    ['source home', resolveThroughSymlinks(home)],
+  ];
+  for (const [label, root] of protectedRoots) {
+    if (isInside(root, resolvedBase)) throw new Error(`TMPDIR resolves inside ${label}: ${base} -> ${resolvedBase}`);
+  }
+  const created = fs.mkdtempSync(path.join(base, 'dsh-evolution-commit-latency-'));
+  try {
+    const real = resolveThroughSymlinks(created);
+    if (!fs.statSync(real).isDirectory()) throw new Error(`scratch root is not a directory: ${created}`);
+    if (!isInside(resolvedBase, real)) throw new Error(`scratch root escaped resolved TMPDIR: ${created} -> ${real}`);
+    for (const [label, root] of protectedRoots) {
+      if (isInside(root, real)) throw new Error(`scratch root resolves inside ${label}: ${created} -> ${real}`);
+    }
+    return real;
+  } catch (error) {
+    try { fs.rmSync(created, { recursive: true, force: true }); } catch {}
+    throw error;
+  }
 }
 
 function isInside(root, candidate) {
@@ -243,7 +264,23 @@ function assertOutOutsideHomes(out, home) {
       }
     }
   }
-  return { provided: true, checkedPaths: paths.length, resolved: resolveThroughSymlinks(out) };
+  const resolved = resolveThroughSymlinks(out);
+  let existing = null;
+  try {
+    const stat = fs.lstatSync(resolved);
+    existing = { dev: stat.dev, ino: stat.ino, nlink: stat.nlink,
+      isFile: stat.isFile(), isSymbolicLink: stat.isSymbolicLink() };
+  } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  if (existing) {
+    // A hard link already points at some other inode's bytes. writeFileSync
+    // would overwrite that file in place; nlink === 1 is the only case where
+    // the inode is provably this output alone.
+    if (!existing.isFile) throw new Error(`--out is not a regular file: ${out} (resolved ${resolved})`);
+    if (existing.nlink !== 1) {
+      throw new Error(`--out has ${existing.nlink} hard links; refusing to overwrite a shared inode: ${out} (resolved ${resolved})`);
+    }
+  }
+  return { provided: true, checkedPaths: paths.length, resolved, existing };
 }
 
 const auditEvidence = { source: null, copies: [] };
@@ -778,7 +815,7 @@ async function main() {
   auditEvidence.source = auditSymlinks(home, 'source-home');
   const cli = path.join(options.runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
   if (!fs.existsSync(cli)) throw new Error(`Official DSH CLI not found: ${cli} (check --runtime)`);
-  const scratch = createScratch();
+  const scratch = createScratch(home);
   cleanup.dirs.add(scratch);
   let report;
   try {
