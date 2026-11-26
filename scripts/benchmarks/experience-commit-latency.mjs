@@ -439,9 +439,10 @@ function auditSymlinks(root, label) {
  * source home. Every component is followed through symlinks, including links
  * whose target does not exist yet; the final path and each resolved ancestor
  * are compared against both protected roots. */
-function assertOutOutsideHomes(out, home) {
+function assertOutOutsideHomes(out, home, runtime) {
   if (!out) return { provided: false, checkedPaths: 0 };
-  const roots = [['formal DSH_HOME', formalDshHome()], ['source home', home]];
+  const roots = [['formal DSH_HOME', formalDshHome()], ['source home', home],
+    ['resolved runtime', resolveThroughSymlinks(runtime)]];
   const paths = resolvedAncestors(out);
   for (const candidate of paths) {
     for (const [label, root] of roots) {
@@ -472,6 +473,7 @@ function assertOutOutsideHomes(out, home) {
 const auditEvidence = { source: null, copies: [] };
 const safeReaddirEvidence = { calls: 0, rejected: 0 };
 const copyEvidence = { harnessSymlinks: null, homeCopies: [] };
+const importEvidence = { entries: [], allInScratch: false };
 let scanSourceHome = null;
 let childEnvEvidence = null;
 
@@ -520,10 +522,11 @@ function validateImportEntry(target, allowedRoot, label) {
   return resolved;
 }
 
-function countSymlinks(root) {
+function countSymlinks(root, label = 'copy') {
+  const allowedRoot = resolveThroughSymlinks(root);
   let total = 0;
   const walk = (directory) => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    for (const entry of safeReaddir(directory, `symlink count ${label}`, { allowedRoot }).entries) {
       const full = path.join(directory, entry.name);
       if (entry.isSymbolicLink()) total += 1;
       else if (entry.isDirectory()) walk(full);
@@ -555,10 +558,6 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
     // Materialize links into plain files/directories; a link left in the
     // harness tree could make ESM resolve outside the validated copy.
     fs.cpSync(path.join(bundleDir, 'lib'), copiedLib, { recursive: true, dereference: true });
-    copyEvidence.harnessSymlinks = countSymlinks(copiedLib);
-    if (copyEvidence.harnessSymlinks !== 0) {
-      throw new Error(`harness bundle copy contains ${copyEvidence.harnessSymlinks} symlinks`);
-    }
     fs.copyFileSync(path.join(bundleDir, 'package.json'), path.join(modules, 'dsh-evolution', 'package.json'));
     // Validate the package directory before linking it into the harness.
     const cordisPackage = resolveThroughSymlinks(hostCordis.dir);
@@ -574,14 +573,72 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
       safeReaddirEvidence.rejected += 1;
       throw new Error(`probe cordis package is outside the resolved runtime or not a directory: ${cordisPackage}`);
     }
-    fs.symlinkSync(cordisPackage, path.join(modules, '@deepseek-ai', 'cordis'), 'dir');
+    // The probe's whole module graph lives inside the scratch harness: copy
+    // Cordis and every resolvable dependency materialized, not linked back to
+    // the runtime tree. The closure is bounded and recorded as evidence.
+    const cordisCopy = path.join(modules, '@deepseek-ai', 'cordis');
+    fs.cpSync(cordisPackage, cordisCopy, { recursive: true, dereference: true });
+    const runtimeRequire = createRequire(path.join(cordisPackage, 'package.json'));
+    const copiedPackages = [];
+    const unresolvedPackages = [];
+    const seenPackages = new Set(['@deepseek-ai/cordis']);
+    const pendingPackages = Object.keys(JSON.parse(fs.readFileSync(path.join(cordisCopy, 'package.json'), 'utf8')).dependencies || {});
+    while (pendingPackages.length > 0 && copiedPackages.length < 40) {
+      const name = pendingPackages.shift();
+      if (seenPackages.has(name) || name.startsWith('node:')) continue;
+      seenPackages.add(name);
+      let manifest;
+      try { manifest = resolveThroughSymlinks(runtimeRequire.resolve(`${name}/package.json`)); }
+      catch {
+        // Some packages do not export ./package.json; walk up from the
+        // resolved entry to the matching manifest instead.
+        try {
+          const entry = resolveThroughSymlinks(runtimeRequire.resolve(name));
+          let directory = path.dirname(entry);
+          while (directory !== path.dirname(directory)) {
+            const candidate = path.join(directory, 'package.json');
+            if (fs.existsSync(candidate) && JSON.parse(fs.readFileSync(candidate, 'utf8')).name === name) {
+              manifest = candidate;
+              break;
+            }
+            directory = path.dirname(directory);
+          }
+        } catch {}
+        if (!manifest) { unresolvedPackages.push(name); continue; }
+      }
+      for (const [label, root] of protectedRoots) {
+        if (isWithin(root, manifest)) throw new Error(`dependency ${name} resolves inside ${label}: ${manifest}`);
+      }
+      if (!isWithin(resolveThroughSymlinks(runtime), manifest) || fs.lstatSync(manifest).nlink !== 1) {
+        throw new Error(`dependency ${name} is outside the runtime or hard-linked: ${manifest}`);
+      }
+      const packageDir = path.dirname(manifest);
+      const target = path.join(modules, ...name.split('/'));
+      fs.cpSync(packageDir, target, { recursive: true, dereference: true });
+      copiedPackages.push(`<RUNTIME>/${path.relative(runtime, packageDir)}`);
+      const copiedManifest = JSON.parse(fs.readFileSync(path.join(target, 'package.json'), 'utf8'));
+      for (const child of Object.keys(copiedManifest.dependencies || {})) pendingPackages.push(child);
+    }
+    importEvidence.copiedPackages = copiedPackages;
+    importEvidence.unresolvedPackages = unresolvedPackages;
+    copyEvidence.harnessSymlinks = countSymlinks(modules, 'harness');
+    if (copyEvidence.harnessSymlinks !== 0) {
+      throw new Error(`harness copy contains ${copyEvidence.harnessSymlinks} symlinks`);
+    }
     const copiedCollector = path.join(copiedLib, 'experience-collector.js');
     const copiedStore = path.join(copiedLib, 'shared-experience.js');
+    const expectedCordisEntry = path.join(cordisCopy, path.relative(cordisPackage, hostCordis.entry));
     const resolved = createRequire(copiedCollector).resolve('@deepseek-ai/cordis');
-    if (resolved !== hostCordis.entry) throw new Error(`copied bundle resolved a different Cordis: ${resolved} !== ${hostCordis.entry}`);
-    const cordisEntry = validateImportEntry(hostCordis.entry, runtime, 'cordis entry');
+    if (resolved !== expectedCordisEntry) {
+      throw new Error(`copied bundle resolved a different Cordis: ${resolved} !== ${expectedCordisEntry}`);
+    }
+    const cordisEntry = validateImportEntry(expectedCordisEntry, harness, 'copied cordis entry');
     const collectorEntry = validateImportEntry(copiedCollector, harness, 'copied collector');
     const storeEntry = validateImportEntry(copiedStore, harness, 'copied store');
+    const entries = [cordisEntry, collectorEntry, storeEntry];
+    importEvidence.entries = entries.map(file => `<SCRATCH>/${path.relative(harness, file)}`);
+    importEvidence.allInScratch = entries.every(file => isWithin(resolveThroughSymlinks(harness), file));
+    if (!importEvidence.allInScratch) throw new Error('an imported module resolved outside the scratch harness');
     const [cordis, collector, store] = await Promise.all([
       import(pathToFileURL(cordisEntry).href),
       import(pathToFileURL(collectorEntry).href),
@@ -598,15 +655,18 @@ async function loadModules(home, runtime, scratch, runtimeValidation) {
         cordisVersion: hostCordis.version,
         cordisEntry: `<runtime>/${path.relative(runtime, hostCordis.entry)}`,
         bundleCollectorSha256: createHash('sha256').update(fs.readFileSync(installedCollector)).digest('hex'),
-        note: 'Installed bundle lib copied verbatim into scratch; @deepseek-ai/cordis symlinked to the runtime copy resolved from the installed dsh package. Same bytes and same Cordis as the ACP arms.' },
+        note: 'Installed bundle lib and host Cordis copied dereferenced into scratch; zero symlinks in the harness. All imported entries are inside the scratch harness and runtime is only an executable input.' },
     };
   } catch (error) {
     const require = createRequire(import.meta.url);
+    const repoModules = resolveThroughSymlinks(path.join(REPO_ROOT, 'node_modules'));
     const fallbackEntries = [
-      ['cordis', require.resolve('@deepseek-ai/cordis')],
-      ['collector', require.resolve('../../lib/experience-collector.js')],
-      ['store', require.resolve('../../lib/shared-experience.js')],
-    ].map(([label, file]) => [label, validateImportEntry(file, REPO_ROOT, `fallback ${label}`)]);
+      ['cordis', require.resolve('@deepseek-ai/cordis'), repoModules],
+      ['collector', require.resolve('../../lib/experience-collector.js'), REPO_ROOT],
+      ['store', require.resolve('../../lib/shared-experience.js'), REPO_ROOT],
+    ].map(([label, file, root]) => [label, validateImportEntry(file, root, `fallback ${label}`)]);
+    importEvidence.entries = fallbackEntries.map(([, file]) => `<repo>/${path.relative(REPO_ROOT, file)}`);
+    importEvidence.allInScratch = false;
     const [cordis, collector, store] = await Promise.all(fallbackEntries.map(([, file]) => import(pathToFileURL(file).href)));
     const readVersion = (name) => {
       try { return JSON.parse(fs.readFileSync(require.resolve(`${name}/package.json`), 'utf8')).version; }
@@ -895,12 +955,14 @@ async function readStats(home, openSharedExperience) {
 
 async function runAcpSession({ arm, home, cli, scratch, openSharedExperience }) {
   const homeCopy = path.join(freshDir(scratch, `acp-${arm}`), 'home');
-  fs.cpSync(home, homeCopy, { recursive: true, verbatimSymlinks: true });
+  // Materialize the source home's links inside the copy: the host then has no
+  // module path back to the source home or runtime.
+  fs.cpSync(home, homeCopy, { recursive: true, dereference: true });
   assertInside(scratch, homeCopy, `ACP copy (${arm})`);
   auditEvidence.copies.push(auditSymlinks(homeCopy, `acp-copy:${arm}`));
-  // auditSymlinks rejects any link whose native-realpath target escapes the
-  // copy; record the count so the post-copy assertion is visible in evidence.
-  copyEvidence.homeCopies.push({ arm, symlinks: countSymlinks(homeCopy), escapes: 0 });
+  const copyLinks = countSymlinks(homeCopy, `acp copy ${arm}`);
+  if (copyLinks !== 0) throw new Error(`ACP copy ${arm} contains ${copyLinks} symlinks`);
+  copyEvidence.homeCopies.push({ arm, symlinks: copyLinks, escapes: 0 });
   if (arm === 'disabled') disableExperienceEntries(homeCopy);
   // The missing file passed to the real read tool is built only from the
   // validated scratch root, never from the raw TMPDIR string.
@@ -1089,7 +1151,7 @@ async function main() {
   const home = validateHome(options.home);
   scanSourceHome = home;
   if (!options.runtime) options.runtime = path.join(path.dirname(home), 'runtime');
-  const outAudit = assertOutOutsideHomes(options.out, home);
+  const outAudit = assertOutOutsideHomes(options.out, home, options.runtime);
   // Containment is proven before any copy or host write, not after the fact.
   auditEvidence.source = auditSymlinks(home, 'source-home');
   const runtimeValidation = validateRuntime(options.runtime, home);
@@ -1138,6 +1200,7 @@ async function main() {
       homePreflight: { files: auditEvidence.source.files, hardLinked: auditEvidence.source.hardLinked },
       safeReaddir: { calls: safeReaddirEvidence.calls, rejected: safeReaddirEvidence.rejected },
       copyEvidence,
+      importEvidence,
       linkAudit, gates,
       measurementNotes: [
         'The narrow window is only between two parent-process observation points and does not prove coverage of a collector commit; the full session/prompt -> JSON-RPC response window is the coverage proof.',
@@ -1186,6 +1249,7 @@ async function main() {
     homePreflight: report.homePreflight,
     safeReaddir: report.safeReaddir,
     copyEvidence: report.copyEvidence,
+    importEvidence: report.importEvidence,
     gates: report.gates,
     linkAudit: { sourceChecked: report.linkAudit.source.checked,
       copiesChecked: report.linkAudit.copies.reduce((sum, copy) => sum + copy.checked, 0),
@@ -1210,6 +1274,9 @@ async function main() {
     // spelling here would let a link change between validation and write, or
     // make the reported evidence describe a different destination.
     const outPath = outAudit.resolved;
+    // Re-check the exact path that will be written, immediately before the
+    // write, so a runtime input can never be overwritten by the report.
+    assertOutOutsideHomes(outPath, home, options.runtime);
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, `${JSON.stringify(report, null, 2)}\n`);
   }
