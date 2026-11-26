@@ -103,6 +103,11 @@ if (options.smoke) {
   if (options.rounds !== 2) process.stdout.write(`--smoke overrides --rounds ${options.rounds} with 2; this run is NON-AUTHORITATIVE.\n`);
   options.rounds = 2;
 }
+// Node re-injects NODE_V8_COVERAGE into spawned children from the parent's
+// process.env even when an explicit child env is supplied. Remove it (and
+// NODE_OPTIONS) here, after this process's V8 bootstrap, so neither our
+// children nor their grandchildren can write coverage outside the scratch.
+for (const key of ['NODE_V8_COVERAGE', 'NODE_OPTIONS']) delete process.env[key];
 
 const isInside = (child, parent) => child === parent || child.startsWith(parent + path.sep);
 
@@ -402,7 +407,11 @@ async function run() {
   // Guard the executable source before reading its package.json or spawning
   // it. Only lstat/readlink are used here; the CLI's bytes are never touched
   // until this passes.
-  const runtime = resolvePathComponents(options.runtime).final;
+  // The raw argument is consumed exactly once. Every derived path below
+  // (CLI, manifests, .pnpm) is built from the resolved runtime, never from
+  // the raw spelling: an alias/.. pair is only meaningful before resolution.
+  const runtimeInput = options.runtime;
+  const runtime = resolvePathComponents(runtimeInput).final;
   assertNotProtected([runtime], [RESOLVED_REAL_HOME, home], '--runtime', { bothWays: true });
   allowedReadRoots.push(runtime);
   const runtimeFiles = [];
@@ -435,6 +444,7 @@ async function run() {
     runtimeProtected: false,
     cliProtected: false,
     cliInsideRuntime: true,
+    inputUsedOnlyForResolution: true,
     guardedFiles: runtimeFiles,
   };
   const dshManifest = runtimePackageManifest('dsh');
@@ -550,24 +560,26 @@ async function run() {
   fs.mkdirSync(childTmp, { recursive: true, mode: 0o700 });
   const childEnvCheck = {};
   const childEnvSnapshot = (env) => ({
+    keys: Object.keys(env).sort(),
     TMPDIR: project(env.TMPDIR),
     TEMP: project(env.TEMP),
     TMP: project(env.TMP),
     HOME: project(env.HOME),
   });
+  // Explicit minimum whitelist: a denylist cannot keep up with Node/host
+  // variables such as NODE_V8_COVERAGE that write outside our scratch.
+  const CHILD_ENV_ALLOWLIST = ['PATH', 'LANG', 'LC_ALL', 'TZ', 'USER', 'LOGNAME'];
   function baseChildEnv() {
     const env = {};
-    for (const [key, value] of Object.entries(process.env)) {
-      if (key.startsWith('DSH_')) continue;
-      if (key === 'NODE_OPTIONS') continue;
-      if (key === 'TMPDIR' || key === 'TEMP' || key === 'TMP' || key === 'HOME') continue;
-      if (/^(DEEPSEEK|ANTHROPIC|OPENAI|OLLAMA|LLM|API|HTTP|HTTPS|ALL|NO)_/i.test(key)) continue;
-      env[key] = value;
+    for (const key of CHILD_ENV_ALLOWLIST) {
+      if (Object.hasOwn(process.env, key)) env[key] = process.env[key];
     }
     env.TMPDIR = childTmp;
     env.TEMP = childTmp;
     env.TMP = childTmp;
     env.HOME = childTmp;
+    const leaked = ['NODE_V8_COVERAGE', 'NODE_OPTIONS'].filter((key) => Object.hasOwn(env, key));
+    assert.equal(leaked.length, 0, `unexpected inherited child env keys: ${leaked.join(', ')}`);
     return env;
   }
   function buildEnv(homeCopy) {
