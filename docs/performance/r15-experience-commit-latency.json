@@ -29,7 +29,14 @@
     "out": {
       "provided": true,
       "checkedPaths": 10,
-      "resolved": "/Users/ryukeili/.t3/worktrees/dsh-evolution/t3-ac9b79eb-3d5f5838cbf53119/docs/performance/r15-experience-commit-latency.json"
+      "resolved": "<repo>/docs/performance/r15-experience-commit-latency.json",
+      "existing": {
+        "dev": 16777233,
+        "ino": 357534064,
+        "nlink": 1,
+        "isFile": true,
+        "isSymbolicLink": false
+      }
     },
     "source": {
       "label": "source-home",
@@ -212,17 +219,17 @@
       "description": "tools/result isError=true; one BEGIN IMMEDIATE/COMMIT per emit",
       "firstCommit": {
         "n": 1,
-        "p50": 2.3547920000000033,
-        "p95": 2.3547920000000033,
-        "p99": 2.3547920000000033,
-        "max": 2.3547920000000033
+        "p50": 2.3277920000000023,
+        "p95": 2.3277920000000023,
+        "p99": 2.3277920000000023,
+        "max": 2.3277920000000023
       },
       "steady": {
         "n": 49,
-        "p50": 0.2480419999999981,
-        "p95": 0.414082999999998,
-        "p99": 0.4696250000000006,
-        "max": 0.4696250000000006
+        "p50": 0.248541000000003,
+        "p95": 0.44812500000000455,
+        "p99": 0.5474589999999964,
+        "max": 0.5474589999999964
       },
       "rejectedSamples": 0
     },
@@ -237,10 +244,10 @@
       },
       "emit": {
         "n": 50,
-        "p50": 0.004750000000001364,
-        "p95": 0.008665999999990959,
-        "p99": 0.08562499999999318,
-        "max": 0.08562499999999318
+        "p50": 0.004749999999987153,
+        "p95": 0.008417000000008557,
+        "p99": 0.08566700000000083,
+        "max": 0.08566700000000083
       },
       "rejectedSamples": 0
     },
@@ -249,25 +256,25 @@
       "commitLocation": "agent/turn-stopping",
       "toolsResultOnly": {
         "n": 50,
-        "p50": 0.00812499999999261,
-        "p95": 0.014082999999999402,
-        "p99": 0.03820899999999483,
-        "max": 0.03820899999999483
+        "p50": 0.008167000000000257,
+        "p95": 0.01870800000000372,
+        "p99": 0.03895800000000804,
+        "max": 0.03895800000000804
       },
       "turnStoppingOnly": {
         "firstCommit": {
           "n": 1,
-          "p50": 0.3332499999999925,
-          "p95": 0.3332499999999925,
-          "p99": 0.3332499999999925,
-          "max": 0.3332499999999925
+          "p50": 0.34695899999999824,
+          "p95": 0.34695899999999824,
+          "p99": 0.34695899999999824,
+          "max": 0.34695899999999824
         },
         "steady": {
           "n": 49,
-          "p50": 0.19549999999999557,
-          "p95": 0.30487499999999557,
-          "p99": 0.40474999999999284,
-          "max": 0.40474999999999284
+          "p50": 0.2164160000000095,
+          "p95": 0.2973750000000024,
+          "p99": 0.46487499999999216,
+          "max": 0.46487499999999216
         }
       },
       "rejectedSamples": 0
@@ -276,7 +283,7 @@
       "description": "5th clean success in a failure episode commits tool/recovery",
       "verified": true,
       "oneCommit": {
-        "ms": 0.26608300000000895
+        "ms": 0.2543330000000026
       },
       "rejectedAttempts": 0
     }
@@ -286,19 +293,19 @@
     "iterationsPerMode": 30,
     "full": {
       "n": 30,
-      "p50": 0.08554200000000378,
-      "p95": 0.13987500000000352,
-      "p99": 0.13999999999998636,
-      "max": 0.13999999999998636
+      "p50": 0.0841660000000104,
+      "p95": 0.0976659999999896,
+      "p99": 0.11545800000000384,
+      "max": 0.11545800000000384
     },
     "normal": {
       "n": 30,
-      "p50": 0.043209000000004494,
-      "p95": 0.06620800000000315,
-      "p99": 0.07075000000000387,
-      "max": 0.07075000000000387
+      "p50": 0.03912499999999852,
+      "p95": 0.049334000000001765,
+      "p99": 0.06120799999999349,
+      "max": 0.06120799999999349
     },
-    "medianDeltaMs": 0.042
+    "medianDeltaMs": 0.045
   },
   "acp": {
     "timingNarrow": "Parent-process performance.now() between two observation points in this parent process: client-observed tool_call_update (failed/completed) -> next provider HTTP request arrival. It does NOT prove coverage of a collector commit that occurred before the update; use timingFullTurn for coverage. Model generation, network and the end_turn response are outside this attribution window.",
@@ -308,8 +315,8 @@
       {
         "arm": "enabled",
         "valid": true,
-        "intervalMs": 11.66,
-        "fullTurnMs": 80.055,
+        "intervalMs": 13.445,
+        "fullTurnMs": 84.862,
         "statsDelta": {
           "events": 1,
           "knowledge": 1
@@ -319,8 +326,8 @@
       {
         "arm": "disabled",
         "valid": true,
-        "intervalMs": 9.725,
-        "fullTurnMs": 76.087,
+        "intervalMs": 10.826,
+        "fullTurnMs": 72.896,
         "statsDelta": {
           "events": 0,
           "knowledge": 0
@@ -330,8 +337,8 @@
       {
         "arm": "enabled2",
         "valid": true,
-        "intervalMs": 11.466,
-        "fullTurnMs": 81.583,
+        "intervalMs": 13.604,
+        "fullTurnMs": 82.131,
         "statsDelta": {
           "events": 1,
           "knowledge": 1
@@ -342,85 +349,85 @@
     "rounds": 9,
     "arms": {
       "enabled": {
-        "medianMs": 12.539,
+        "medianMs": 12.476,
         "intervals": [
-          13.565,
-          12.519,
-          12.539,
-          11.35,
-          11.259,
-          27.587,
-          13.264,
-          12.402,
-          14.231
+          12.5,
+          13.478,
+          13.496,
+          13.523,
+          11.535,
+          12.352,
+          9.931,
+          11.475,
+          12.476
         ],
-        "fullTurnMedianMs": 81.154,
+        "fullTurnMedianMs": 78.969,
         "fullTurnIntervals": [
-          81.154,
-          78.61,
-          78.117,
-          78.08,
-          78.955,
-          121.161,
-          85.486,
-          82.871,
-          89.563
+          78.969,
+          78.016,
+          81.121,
+          82.556,
+          76.569,
+          83.073,
+          76.919,
+          79.054,
+          76.562
         ],
         "validSamples": 9,
         "rejectedSamples": 0
       },
       "disabled": {
-        "medianMs": 11.969,
+        "medianMs": 11.026,
         "intervals": [
-          9.682,
-          9.729,
-          10.956,
-          12.041,
-          11.969,
-          12.175,
-          11.959,
-          12.232,
-          11.994
+          9.634,
+          11.7,
+          9.863,
+          12.342,
+          9.727,
+          10.998,
+          13.08,
+          12.916,
+          11.026
         ],
-        "fullTurnMedianMs": 75.661,
+        "fullTurnMedianMs": 75.593,
         "fullTurnIntervals": [
-          73.498,
-          70.434,
-          73.381,
-          78.424,
-          72.001,
-          75.661,
-          78.018,
-          77.626,
-          76.566
+          77.189,
+          76.811,
+          74.976,
+          69.933,
+          67.827,
+          75.593,
+          72.573,
+          80.595,
+          75.986
         ],
         "validSamples": 9,
         "rejectedSamples": 0
       },
       "enabled2": {
-        "medianMs": 12.338,
+        "medianMs": 12.447,
         "intervals": [
-          12.338,
-          12.415,
-          12.249,
-          11.13,
-          11.525,
-          9.811,
-          13.512,
-          12.394,
-          12.376
+          13.348,
+          12.661,
+          12.537,
+          13.516,
+          12.19,
+          12.447,
+          11.495,
+          11.306,
+          12.384
         ],
-        "fullTurnMedianMs": 80.016,
+        "fullTurnMedianMs": 79.082,
         "fullTurnIntervals": [
-          80.016,
-          81.448,
-          80.907,
-          72.331,
-          77.527,
-          78.438,
-          83.023,
-          81.62,
-          75.495
+          80.068,
+          78.002,
+          80.641,
+          81.141,
+          78.051,
+          81.436,
+          76.943,
+          76.098,
+          79.082
         ],
         "validSamples": 9,
         "rejectedSamples": 0
@@ -428,85 +435,85 @@
     },
     "pairedDiff": {
       "disabledMinusEnabled": {
-        "medianMs": -1.583,
-        "medianAbsDiff": 1.583,
+        "medianMs": -1.45,
+        "medianAbsDiff": 1.778,
         "direction": {
           "positive": 2,
           "negative": 7,
           "tie": 0
         },
         "perRound": [
-          -3.883,
-          -2.79,
-          -1.583,
-          0.691,
-          0.71,
-          -15.412,
-          -1.305,
-          -0.17,
-          -2.237
+          -2.866,
+          -1.778,
+          -3.633,
+          -1.181,
+          -1.808,
+          -1.354,
+          3.149,
+          1.441,
+          -1.45
         ]
       },
       "enabled2MinusEnabled": {
-        "medianMs": -0.22,
-        "medianAbsDiff": 0.266,
+        "medianMs": -0.007,
+        "medianAbsDiff": 0.655,
         "direction": {
-          "positive": 2,
-          "negative": 7,
+          "positive": 4,
+          "negative": 5,
           "tie": 0
         },
         "perRound": [
-          -1.227,
-          -0.104,
-          -0.29,
-          -0.22,
-          0.266,
-          -17.776,
-          0.248,
-          -0.008,
-          -1.855
+          0.848,
+          -0.817,
+          -0.959,
+          -0.007,
+          0.655,
+          0.095,
+          1.564,
+          -0.169,
+          -0.092
         ]
       }
     },
     "fullTurnPairedDiff": {
       "disabledMinusEnabled": {
-        "medianMs": -7.468,
-        "medianAbsDiff": 7.468,
+        "medianMs": -4.346,
+        "medianAbsDiff": 4.346,
         "direction": {
           "positive": 1,
           "negative": 8,
           "tie": 0
         },
         "perRound": [
-          -7.656,
-          -8.176,
-          -4.736,
-          0.344,
-          -6.954,
-          -45.5,
-          -7.468,
-          -5.245,
-          -12.997
+          -1.78,
+          -1.205,
+          -6.145,
+          -12.623,
+          -8.742,
+          -7.48,
+          -4.346,
+          1.541,
+          -0.576
         ]
       },
       "enabled2MinusEnabled": {
-        "medianMs": -1.428,
-        "medianAbsDiff": 2.79,
+        "medianMs": -0.014,
+        "medianAbsDiff": 1.415,
         "direction": {
-          "positive": 2,
-          "negative": 7,
+          "positive": 4,
+          "negative": 5,
           "tie": 0
         },
         "perRound": [
-          -1.138,
-          2.838,
-          2.79,
-          -5.749,
-          -1.428,
-          -42.723,
-          -2.463,
-          -1.251,
-          -14.068
+          1.099,
+          -0.014,
+          -0.48,
+          -1.415,
+          1.482,
+          -1.637,
+          0.024,
+          -2.956,
+          2.52
         ]
       }
     },
@@ -517,8 +524,8 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 13.565,
-            "fullTurnMs": 81.154,
+            "intervalMs": 12.5,
+            "fullTurnMs": 78.969,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -531,8 +538,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 9.682,
-            "fullTurnMs": 73.498,
+            "intervalMs": 9.634,
+            "fullTurnMs": 77.189,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -545,8 +552,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.338,
-            "fullTurnMs": 80.016,
+            "intervalMs": 13.348,
+            "fullTurnMs": 80.068,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -559,10 +566,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -3.883,
-          "enabled2MinusEnabled": -1.227,
-          "fullDisabledMinusEnabled": -7.656,
-          "fullEnabled2MinusEnabled": -1.138
+          "disabledMinusEnabled": -2.866,
+          "enabled2MinusEnabled": 0.848,
+          "fullDisabledMinusEnabled": -1.78,
+          "fullEnabled2MinusEnabled": 1.099
         }
       },
       {
@@ -571,8 +578,8 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 9.729,
-            "fullTurnMs": 70.434,
+            "intervalMs": 11.7,
+            "fullTurnMs": 76.811,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -585,8 +592,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.415,
-            "fullTurnMs": 81.448,
+            "intervalMs": 12.661,
+            "fullTurnMs": 78.002,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -599,8 +606,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.519,
-            "fullTurnMs": 78.61,
+            "intervalMs": 13.478,
+            "fullTurnMs": 78.016,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -613,10 +620,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -2.79,
-          "enabled2MinusEnabled": -0.104,
-          "fullDisabledMinusEnabled": -8.176,
-          "fullEnabled2MinusEnabled": 2.838
+          "disabledMinusEnabled": -1.778,
+          "enabled2MinusEnabled": -0.817,
+          "fullDisabledMinusEnabled": -1.205,
+          "fullEnabled2MinusEnabled": -0.014
         }
       },
       {
@@ -625,8 +632,8 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.249,
-            "fullTurnMs": 80.907,
+            "intervalMs": 12.537,
+            "fullTurnMs": 80.641,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -639,8 +646,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.539,
-            "fullTurnMs": 78.117,
+            "intervalMs": 13.496,
+            "fullTurnMs": 81.121,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -653,8 +660,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 10.956,
-            "fullTurnMs": 73.381,
+            "intervalMs": 9.863,
+            "fullTurnMs": 74.976,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -667,10 +674,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.583,
-          "enabled2MinusEnabled": -0.29,
-          "fullDisabledMinusEnabled": -4.736,
-          "fullEnabled2MinusEnabled": 2.79
+          "disabledMinusEnabled": -3.633,
+          "enabled2MinusEnabled": -0.959,
+          "fullDisabledMinusEnabled": -6.145,
+          "fullEnabled2MinusEnabled": -0.48
         }
       },
       {
@@ -679,8 +686,8 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 11.35,
-            "fullTurnMs": 78.08,
+            "intervalMs": 13.523,
+            "fullTurnMs": 82.556,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -693,8 +700,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 12.041,
-            "fullTurnMs": 78.424,
+            "intervalMs": 12.342,
+            "fullTurnMs": 69.933,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -707,8 +714,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 11.13,
-            "fullTurnMs": 72.331,
+            "intervalMs": 13.516,
+            "fullTurnMs": 81.141,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -721,10 +728,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 0.691,
-          "enabled2MinusEnabled": -0.22,
-          "fullDisabledMinusEnabled": 0.344,
-          "fullEnabled2MinusEnabled": -5.749
+          "disabledMinusEnabled": -1.181,
+          "enabled2MinusEnabled": -0.007,
+          "fullDisabledMinusEnabled": -12.623,
+          "fullEnabled2MinusEnabled": -1.415
         }
       },
       {
@@ -733,8 +740,8 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.969,
-            "fullTurnMs": 72.001,
+            "intervalMs": 9.727,
+            "fullTurnMs": 67.827,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -747,8 +754,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 11.525,
-            "fullTurnMs": 77.527,
+            "intervalMs": 12.19,
+            "fullTurnMs": 78.051,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -761,8 +768,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 11.259,
-            "fullTurnMs": 78.955,
+            "intervalMs": 11.535,
+            "fullTurnMs": 76.569,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -775,10 +782,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": 0.71,
-          "enabled2MinusEnabled": 0.266,
-          "fullDisabledMinusEnabled": -6.954,
-          "fullEnabled2MinusEnabled": -1.428
+          "disabledMinusEnabled": -1.808,
+          "enabled2MinusEnabled": 0.655,
+          "fullDisabledMinusEnabled": -8.742,
+          "fullEnabled2MinusEnabled": 1.482
         }
       },
       {
@@ -787,8 +794,8 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 9.811,
-            "fullTurnMs": 78.438,
+            "intervalMs": 12.447,
+            "fullTurnMs": 81.436,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -801,8 +808,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 27.587,
-            "fullTurnMs": 121.161,
+            "intervalMs": 12.352,
+            "fullTurnMs": 83.073,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -815,8 +822,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 12.175,
-            "fullTurnMs": 75.661,
+            "intervalMs": 10.998,
+            "fullTurnMs": 75.593,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -829,10 +836,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -15.412,
-          "enabled2MinusEnabled": -17.776,
-          "fullDisabledMinusEnabled": -45.5,
-          "fullEnabled2MinusEnabled": -42.723
+          "disabledMinusEnabled": -1.354,
+          "enabled2MinusEnabled": 0.095,
+          "fullDisabledMinusEnabled": -7.48,
+          "fullEnabled2MinusEnabled": -1.637
         }
       },
       {
@@ -841,8 +848,8 @@
         "samples": {
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 13.264,
-            "fullTurnMs": 85.486,
+            "intervalMs": 9.931,
+            "fullTurnMs": 76.919,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -855,8 +862,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.959,
-            "fullTurnMs": 78.018,
+            "intervalMs": 13.08,
+            "fullTurnMs": 72.573,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -869,8 +876,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 13.512,
-            "fullTurnMs": 83.023,
+            "intervalMs": 11.495,
+            "fullTurnMs": 76.943,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -883,10 +890,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -1.305,
-          "enabled2MinusEnabled": 0.248,
-          "fullDisabledMinusEnabled": -7.468,
-          "fullEnabled2MinusEnabled": -2.463
+          "disabledMinusEnabled": 3.149,
+          "enabled2MinusEnabled": 1.564,
+          "fullDisabledMinusEnabled": -4.346,
+          "fullEnabled2MinusEnabled": 0.024
         }
       },
       {
@@ -895,8 +902,8 @@
         "samples": {
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 12.232,
-            "fullTurnMs": 77.626,
+            "intervalMs": 12.916,
+            "fullTurnMs": 80.595,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -909,8 +916,8 @@
           },
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.394,
-            "fullTurnMs": 81.62,
+            "intervalMs": 11.306,
+            "fullTurnMs": 76.098,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -923,8 +930,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 12.402,
-            "fullTurnMs": 82.871,
+            "intervalMs": 11.475,
+            "fullTurnMs": 79.054,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -937,10 +944,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -0.17,
-          "enabled2MinusEnabled": -0.008,
-          "fullDisabledMinusEnabled": -5.245,
-          "fullEnabled2MinusEnabled": -1.251
+          "disabledMinusEnabled": 1.441,
+          "enabled2MinusEnabled": -0.169,
+          "fullDisabledMinusEnabled": 1.541,
+          "fullEnabled2MinusEnabled": -2.956
         }
       },
       {
@@ -949,8 +956,8 @@
         "samples": {
           "enabled2": {
             "arm": "enabled2",
-            "intervalMs": 12.376,
-            "fullTurnMs": 75.495,
+            "intervalMs": 12.384,
+            "fullTurnMs": 79.082,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -963,8 +970,8 @@
           },
           "enabled": {
             "arm": "enabled",
-            "intervalMs": 14.231,
-            "fullTurnMs": 89.563,
+            "intervalMs": 12.476,
+            "fullTurnMs": 76.562,
             "statsDelta": {
               "events": 1,
               "knowledge": 1
@@ -977,8 +984,8 @@
           },
           "disabled": {
             "arm": "disabled",
-            "intervalMs": 11.994,
-            "fullTurnMs": 76.566,
+            "intervalMs": 11.026,
+            "fullTurnMs": 75.986,
             "statsDelta": {
               "events": 0,
               "knowledge": 0
@@ -991,10 +998,10 @@
           }
         },
         "paired": {
-          "disabledMinusEnabled": -2.237,
-          "enabled2MinusEnabled": -1.855,
-          "fullDisabledMinusEnabled": -12.997,
-          "fullEnabled2MinusEnabled": -14.068
+          "disabledMinusEnabled": -1.45,
+          "enabled2MinusEnabled": -0.092,
+          "fullDisabledMinusEnabled": -0.576,
+          "fullEnabled2MinusEnabled": 2.52
         }
       }
     ],
