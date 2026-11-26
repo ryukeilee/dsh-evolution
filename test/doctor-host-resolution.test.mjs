@@ -369,28 +369,43 @@ test('ASAR entry parsing stays linear on long .asar-like paths', (t) => {
   assert.ok(elapsed < 1000, `ASAR path parsing must stay linear, took ${elapsed}ms`);
 });
 
-test('an unbooted profile is never initialized by the real composition probe', async (t) => {
+test('the composition probe stays read-only until the profile is fully initialized', async (t) => {
   const dir = tmp(t, 'host-res-composition-readonly-');
-  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.5');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.5', 'console.log("");\n');
   const marker = path.join(dir, 'marker');
   const wrapper = path.join(dir, 'dsh');
   fs.writeFileSync(wrapper, `#!/bin/sh\nprintf x > "${marker}"\nexec ${process.execPath} "${dsh.bin}" "$@"\n`);
   fs.chmodSync(wrapper, 0o755);
-  const dshHome = doctorHome(t); // no profiles/acp/cordis.yml
+  const dshHome = doctorHome(t);
+  const profileDir = path.join(dshHome, 'profiles', 'acp');
+  fs.mkdirSync(profileDir, { recursive: true });
+  fs.writeFileSync(path.join(profileDir, 'cordis.yml'), '');
+  const countFiles = (root) => fs.readdirSync(root, { withFileTypes: true })
+    .reduce((sum, entry) => sum + (entry.isDirectory() ? countFiles(path.join(root, entry.name)) : 1), 0);
+  const before = countFiles(profileDir);
 
   const report = await collectDiagnostics({ dshHome, cliPath: wrapper, profile: 'acp' });
   const composition = report.checks.find((check) => check.id === 'host.composition');
   assert.equal(composition.level, 'not-evaluated');
   assert.match(composition.evidence.reason, /read-only/);
   assert.equal(fs.existsSync(marker), false, 'the doctor must not run a probe that creates profile state');
+  assert.equal(countFiles(profileDir), before, 'a partial profile must not gain config files');
 
-  // An injected hermetic probe keeps its existing behavior.
+  // An injected hermetic probe keeps its existing behavior even on a partial profile.
   let called = false;
   await collectDiagnostics({
     dshHome, cliPath: wrapper, profile: 'acp',
     probe: { runDumpConfig: () => { called = true; return { status: 0, stdout: '', stderr: '' }; } },
   });
   assert.equal(called, true, 'an injected probe still runs');
+
+  // A fully initialized profile allows the real probe to execute the wrapper.
+  for (const name of ['cordis.patch.yml', 'package.json', 'pnpm-workspace.yaml']) {
+    fs.writeFileSync(path.join(profileDir, name), '');
+  }
+  fs.mkdirSync(path.join(profileDir, 'node_modules'));
+  await collectDiagnostics({ dshHome, cliPath: wrapper, profile: 'acp' });
+  assert.equal(fs.existsSync(marker), true, 'a complete profile is probed normally');
 });
 
 test('ASAR reads bypass the Electron asar patch and restore process.noAsar', (t) => {
@@ -457,4 +472,37 @@ test('dump-config runs a suffixless symlink to a JS entry through node', (t) => 
   const outcome = defaultRunDumpConfig({ cliPath: link, dshHome: dir, profile: 'acp' });
   assert.equal(outcome.status, 0);
   assert.match(outcome.stdout, /SYMLINK-MARKER/);
+});
+
+test('two heredocs on one line fail closed', (t) => {
+  const dir = tmp(t, 'host-res-heredoc-multi-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '9.9.9');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+cat <<A <<B
+exec ${process.execPath} "${dsh.bin}" "$@"
+A
+exec ${process.execPath} "${dsh.bin}" "$@"
+B
+`);
+  fs.chmodSync(wrapper, 0o755);
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null, 'ambiguous heredoc bodies must not expose exec candidates');
+});
+
+test('a .js argument to an ordinary binary is not a host entry', (t) => {
+  const dir = tmp(t, 'host-res-js-arg-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '9.9.9');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nexec /bin/echo "${dsh.bin}" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null, '/bin/echo is a binary; its .js argument is not a Node entry');
+});
+
+test('a direct .js entry is still resolved as a Node host', (t) => {
+  const dir = tmp(t, 'host-res-direct-js-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '9.9.9');
+  const result = withPath('', () => resolveHostCli({ cliPath: dsh.bin }));
+  assert.equal(result.selected?.version, '9.9.9');
 });
