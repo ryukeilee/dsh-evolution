@@ -97,10 +97,75 @@ function median(values) {
 
 function ms3(value, digits = 3) { return typeof value === 'number' ? Number(value.toFixed(digits)) : value; }
 
+/** Resolve a path one component at a time, following symlinks even when the
+ * target does not exist yet. A dangling final component is a legal result: the
+ * writer would create it there. Absolute link targets restart at the root;
+ * relative targets continue from the link's containing directory. Hops are
+ * bounded and a repeated link path is an error, so cycles fail closed. */
+function resolveThroughSymlinks(input, { maxHops = 40 } = {}) {
+  // Concatenate rather than path.resolve/join: normalizing '..' before
+  // following links would skip the link's real target.
+  const absolute = path.isAbsolute(input) ? input : `${process.cwd()}${path.sep}${input}`;
+  const root = path.parse(absolute).root;
+  let parts = absolute.split(path.sep).filter(Boolean);
+  const seen = new Set();
+  let resolved = root;
+  let index = 0;
+  let hops = 0;
+  while (index < parts.length) {
+    if (parts[index] === '.') { index += 1; continue; }
+    if (parts[index] === '..') { resolved = path.dirname(resolved); index += 1; continue; }
+    const candidate = path.join(resolved, parts[index]);
+    let stat;
+    try { stat = fs.lstatSync(candidate); }
+    catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      return path.join(candidate, ...parts.slice(index + 1));
+    }
+    if (stat.isSymbolicLink()) {
+      hops += 1;
+      if (hops > maxHops) throw new Error(`symlink hop limit exceeded while resolving ${input}`);
+      if (seen.has(candidate)) throw new Error(`symlink loop while resolving ${input}: ${candidate}`);
+      seen.add(candidate);
+      const target = fs.readlinkSync(candidate);
+      if (!target) throw new Error(`empty symlink target while resolving ${input}: ${candidate}`);
+      const targetParts = target.split(path.sep).filter(Boolean);
+      const remaining = parts.slice(index + 1);
+      if (path.isAbsolute(target)) {
+        // An absolute target replaces the whole walked prefix; restarting at
+        // the root with the old prefix still present would append the target
+        // under the link's directory instead of following it.
+        parts = [...targetParts, ...remaining];
+        resolved = root;
+        index = 0;
+      } else {
+        parts.splice(index, 1, ...targetParts);
+      }
+      continue;
+    }
+    resolved = candidate;
+    index += 1;
+  }
+  return resolved;
+}
+
+/** Resolved path plus every resolved ancestor, outermost last. */
+function resolvedAncestors(input) {
+  const result = [];
+  let cursor = resolveThroughSymlinks(input);
+  for (;;) {
+    result.push(resolveThroughSymlinks(cursor));
+    const parent = path.dirname(cursor);
+    if (parent === cursor) break;
+    cursor = parent;
+  }
+  return result;
+}
+
 function assertInside(root, candidate, label) {
-  const realRoot = fs.realpathSync(root);
-  const real = fs.realpathSync(candidate);
-  if (!fs.statSync(real).isDirectory() || (real !== realRoot && !real.startsWith(`${realRoot}${path.sep}`))) {
+  const realRoot = resolveThroughSymlinks(root);
+  const real = resolveThroughSymlinks(candidate);
+  if (!fs.statSync(real).isDirectory() || !isInside(realRoot, real)) {
     throw new Error(`${label} escaped the scratch root: ${candidate}`);
   }
   return real;
@@ -164,17 +229,21 @@ function auditSymlinks(root, label) {
 }
 
 /** --out (the report itself) must not point inside the formal home or the
- * source home. Resolve the deepest existing ancestor so a not-yet-created
- * file under a protected home is also rejected. */
+ * source home. Every component is followed through symlinks, including links
+ * whose target does not exist yet; the final path and each resolved ancestor
+ * are compared against both protected roots. */
 function assertOutOutsideHomes(out, home) {
-  if (!out) return;
-  let cursor = out;
-  while (!fs.existsSync(cursor) && path.dirname(cursor) !== cursor) cursor = path.dirname(cursor);
-  let real;
-  try { real = fs.realpathSync(cursor); } catch { real = cursor; }
-  for (const [label, root] of [['formal DSH_HOME', formalDshHome()], ['source home', home]]) {
-    if (isInside(root, real)) throw new Error(`--out must not be inside ${label}: ${out}`);
+  if (!out) return { provided: false, checkedPaths: 0 };
+  const roots = [['formal DSH_HOME', formalDshHome()], ['source home', home]];
+  const paths = resolvedAncestors(out);
+  for (const candidate of paths) {
+    for (const [label, root] of roots) {
+      if (isInside(root, candidate)) {
+        throw new Error(`--out must not be inside ${label}: ${out} (resolved ${candidate})`);
+      }
+    }
   }
+  return { provided: true, checkedPaths: paths.length, resolved: resolveThroughSymlinks(out) };
 }
 
 const auditEvidence = { source: null, copies: [] };
@@ -704,7 +773,7 @@ async function runAcp({ home, cli, scratch, rounds, openSharedExperience }) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const home = validateHome(options.home);
-  assertOutOutsideHomes(options.out, home);
+  const outAudit = assertOutOutsideHomes(options.out, home);
   // Containment is proven before any copy or host write, not after the fact.
   auditEvidence.source = auditSymlinks(home, 'source-home');
   const cli = path.join(options.runtime, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
@@ -731,7 +800,7 @@ async function main() {
         && auditEvidence.copies.every(copy => copy.escaped.length === 0),
       outPath: true,
     };
-    const linkAudit = { source: auditEvidence.source, copies: auditEvidence.copies,
+    const linkAudit = { out: outAudit, source: auditEvidence.source, copies: auditEvidence.copies,
       totalChecked: auditEvidence.source.checked
         + auditEvidence.copies.reduce((sum, copy) => sum + copy.checked, 0),
       escapedTotal: auditEvidence.source.escaped.length
