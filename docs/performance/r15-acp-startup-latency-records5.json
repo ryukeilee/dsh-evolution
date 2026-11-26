@@ -1,0 +1,1251 @@
+{
+  "schemaVersion": 1,
+  "kind": "dsh-evolution-acp-startup-latency",
+  "smoke": false,
+  "authoritative": true,
+  "startedAt": "2026-11-26T07:03:25.728Z",
+  "finishedAt": "2026-11-26T07:04:05.204Z",
+  "host": {
+    "version": "0.2.2-rc.5",
+    "cli": "$RUNTIME/node_modules/@deepseek-ai/dsh/lib/bin.js"
+  },
+  "bundle": {
+    "version": "0.2.22",
+    "lib": "$HOME/profiles/acp/node_modules/dsh-evolution/lib"
+  },
+  "node": "v26.13.1",
+  "platform": "darwin-arm64",
+  "rounds": 9,
+  "warmupPerArm": 1,
+  "records": 5,
+  "hostFacts": {
+    "dsh": "0.2.2-rc.5",
+    "cordis": "4.1.0",
+    "include": "1.1.0",
+    "node": "v26.13.1"
+  },
+  "threshold": {
+    "thresholdMs": 200,
+    "metric": "spawn -> session/new, steady-state paired on-off median",
+    "measuredMedianDeltaMs": 21.84,
+    "result": "NO CHANGE",
+    "authoritative": true
+  },
+  "method": {
+    "arms": "on (bundle selected), off (bundle deselected in a fresh copy, package still installed), on2 (second fresh copy identical to on)",
+    "perRound": "every arm gets a brand-new copy of the pristine home; copying time is excluded; arm order rotates on-off-on2 / off-on2-on / on2-on-off",
+    "timers": "process.hrtime-equivalent performance.now() from just before spawn to the initialize response and to the session/new response; both are asserted successful",
+    "modelIsolation": "loopback SSE provider via --patch, one end_turn text response with no tool_use; the overlay is proven by an UNTIMED session/prompt after session/new; zero model requests are allowed inside the timed window",
+    "assertions": "initialize/session/new/prompt success, overlay request observed, bundle selected/deselected in each copy, seeded records reach source validation (not index-shape)",
+    "quantiles": "linear interpolation over per-round values; paired differences are computed per round before their median/p25/p75",
+    "exclusion": "host cold start (~1.3-1.5 s), closed-loop self-evolution CPU, consumer-session GC and all attribution probes are separate and are never added to the ACP delta"
+  },
+  "summary": {
+    "initializeMs": {
+      "on": {
+        "samples": 9,
+        "median": 715.82,
+        "p25": 714.42,
+        "p75": 716.55
+      },
+      "off": {
+        "samples": 9,
+        "median": 699.4,
+        "p25": 698.8,
+        "p75": 705.1
+      },
+      "on2": {
+        "samples": 9,
+        "median": 716.84,
+        "p25": 713.74,
+        "p75": 723.43
+      },
+      "on-off": {
+        "samples": 9,
+        "median": 13.78,
+        "p25": 10.51,
+        "p75": 17.9
+      },
+      "on2-off": {
+        "samples": 9,
+        "median": 15.94,
+        "p25": 13.99,
+        "p75": 17.12
+      },
+      "on-on2": {
+        "samples": 9,
+        "median": -0.29,
+        "p25": -7.61,
+        "p75": 0.68
+      }
+    },
+    "sessionNewMs": {
+      "on": {
+        "samples": 9,
+        "median": 759.77,
+        "p25": 758.71,
+        "p75": 763.04
+      },
+      "off": {
+        "samples": 9,
+        "median": 737.03,
+        "p25": 731.75,
+        "p75": 740.32
+      },
+      "on2": {
+        "samples": 9,
+        "median": 763.75,
+        "p25": 762.25,
+        "p75": 764.96
+      },
+      "on-off": {
+        "samples": 9,
+        "median": 21.84,
+        "p25": 19.92,
+        "p75": 29.44
+      },
+      "on2-off": {
+        "samples": 9,
+        "median": 26.81,
+        "p25": 24.64,
+        "p75": 31.56
+      },
+      "on-on2": {
+        "samples": 9,
+        "median": -4.34,
+        "p25": -5.36,
+        "p75": -2.12
+      }
+    }
+  },
+  "decision": {
+    "thresholdMs": 200,
+    "metric": "spawn -> session/new, steady-state paired on-off median",
+    "measuredMedianDeltaMs": 21.84,
+    "result": "NO CHANGE",
+    "authoritative": true
+  },
+  "firstBoot": {
+    "authoritative": false,
+    "excludedFromSteadyDecision": true,
+    "syntheticRemovals": [
+      "sessions",
+      "storages/session_projcache",
+      "storages/evolution-experience",
+      "logs",
+      "storages/evolution/shared-plugins/consumers",
+      "storages/evolution/shared-plugins/.publish.lock.sqlite"
+    ],
+    "samples": [
+      {
+        "pair": 0,
+        "order": "on->off",
+        "on": {
+          "arm": "on",
+          "label": "first-0-on",
+          "initializeMs": 722.76,
+          "sessionNewMs": 756.36,
+          "modelRequestsBeforeSessionNew": 0,
+          "overlayRequests": 1,
+          "overlayToolSchemas": 25,
+          "sourceValidation": {
+            "checked": 5,
+            "statuses": [
+              "active:null",
+              "active:null",
+              "active:null",
+              "active:null",
+              "active:null"
+            ]
+          },
+          "sessionIdPrefix": "83b3f06c"
+        },
+        "off": {
+          "arm": "off",
+          "label": "first-0-off",
+          "initializeMs": 704.93,
+          "sessionNewMs": 730.21,
+          "modelRequestsBeforeSessionNew": 0,
+          "overlayRequests": 1,
+          "overlayToolSchemas": 23,
+          "sourceValidation": {
+            "checked": 0,
+            "statuses": [],
+            "note": "bundle deselected"
+          },
+          "sessionIdPrefix": "c055d99d"
+        }
+      },
+      {
+        "pair": 1,
+        "order": "off->on",
+        "off": {
+          "arm": "off",
+          "label": "first-1-off",
+          "initializeMs": 704.95,
+          "sessionNewMs": 734.37,
+          "modelRequestsBeforeSessionNew": 0,
+          "overlayRequests": 1,
+          "overlayToolSchemas": 23,
+          "sourceValidation": {
+            "checked": 0,
+            "statuses": [],
+            "note": "bundle deselected"
+          },
+          "sessionIdPrefix": "7e8a1025"
+        },
+        "on": {
+          "arm": "on",
+          "label": "first-1-on",
+          "initializeMs": 719.48,
+          "sessionNewMs": 754.88,
+          "modelRequestsBeforeSessionNew": 0,
+          "overlayRequests": 1,
+          "overlayToolSchemas": 25,
+          "sourceValidation": {
+            "checked": 5,
+            "statuses": [
+              "active:null",
+              "active:null",
+              "active:null",
+              "active:null",
+              "active:null"
+            ]
+          },
+          "sessionIdPrefix": "cf5d05be"
+        }
+      }
+    ],
+    "on": {
+      "samples": 2,
+      "median": 755.62,
+      "p25": 755.25,
+      "p75": 755.99
+    },
+    "off": {
+      "samples": 2,
+      "median": 732.29,
+      "p25": 731.25,
+      "p75": 733.33
+    },
+    "on-off": {
+      "samples": 2,
+      "median": 23.33,
+      "p25": 21.92,
+      "p75": 24.74
+    }
+  },
+  "attribution": {
+    "method": "Separate fresh-process probes: entry module graph (node:module registerHooks, apply() asserted), openSharedExperience cold then hot on a fresh root, published.json readSharedIndex + evaluateSharedRecord on seeded roots with 0/5/50 records. Probes import a byte copy of the installed bundle lib with a temp node_modules assembled from the resolved host packages (host and profile stores); no pristine-home file is written. Measures only what each note says; nothing here is summed into the ACP arm delta.",
+    "moduleRoot": "$WORK/entry-lib/lib",
+    "moduleLoad": {
+      "web": {
+        "medianMs": 17.05,
+        "medianCpuMs": 19.79,
+        "modules": 27,
+        "libBytes": 469811,
+        "entries": [
+          "experience-collector",
+          "experience-history",
+          "promoted-consumer",
+          "guard"
+        ]
+      },
+      "acp": {
+        "medianMs": 20.24,
+        "medianCpuMs": 23.04,
+        "modules": 35,
+        "libBytes": 663546,
+        "entries": [
+          "experience-collector",
+          "experience-history",
+          "promoted-consumer",
+          "guard",
+          "desktop-task-client"
+        ]
+      },
+      "reference": "R13 (docs/performance/session-startup-and-experience-growth-20261117.md) reported acp 11.98 ms / 456,178 bytes / 25 modules; that number was NOT re-measured in this run.",
+      "samples": [
+        {
+          "round": 0,
+          "set": "web",
+          "entries": [
+            "experience-collector",
+            "experience-history",
+            "promoted-consumer",
+            "guard"
+          ],
+          "ms": 20.297042,
+          "cpuMs": 20.599,
+          "modules": 27,
+          "libBytes": 469811
+        },
+        {
+          "round": 0,
+          "set": "acp",
+          "entries": [
+            "experience-collector",
+            "experience-history",
+            "promoted-consumer",
+            "guard",
+            "desktop-task-client"
+          ],
+          "ms": 21.926707999999998,
+          "cpuMs": 23.466,
+          "modules": 35,
+          "libBytes": 663546
+        },
+        {
+          "round": 1,
+          "set": "acp",
+          "entries": [
+            "experience-collector",
+            "experience-history",
+            "promoted-consumer",
+            "guard",
+            "desktop-task-client"
+          ],
+          "ms": 20.203583000000002,
+          "cpuMs": 23.037,
+          "modules": 35,
+          "libBytes": 663546
+        },
+        {
+          "round": 1,
+          "set": "web",
+          "entries": [
+            "experience-collector",
+            "experience-history",
+            "promoted-consumer",
+            "guard"
+          ],
+          "ms": 17.209375,
+          "cpuMs": 19.82,
+          "modules": 27,
+          "libBytes": 469811
+        },
+        {
+          "round": 2,
+          "set": "web",
+          "entries": [
+            "experience-collector",
+            "experience-history",
+            "promoted-consumer",
+            "guard"
+          ],
+          "ms": 16.9465,
+          "cpuMs": 19.726,
+          "modules": 27,
+          "libBytes": 469811
+        },
+        {
+          "round": 2,
+          "set": "acp",
+          "entries": [
+            "experience-collector",
+            "experience-history",
+            "promoted-consumer",
+            "guard",
+            "desktop-task-client"
+          ],
+          "ms": 20.236583,
+          "cpuMs": 22.991,
+          "modules": 35,
+          "libBytes": 663546
+        },
+        {
+          "round": 3,
+          "set": "acp",
+          "entries": [
+            "experience-collector",
+            "experience-history",
+            "promoted-consumer",
+            "guard",
+            "desktop-task-client"
+          ],
+          "ms": 20.372958999999998,
+          "cpuMs": 23.261,
+          "modules": 35,
+          "libBytes": 663546
+        },
+        {
+          "round": 3,
+          "set": "web",
+          "entries": [
+            "experience-collector",
+            "experience-history",
+            "promoted-consumer",
+            "guard"
+          ],
+          "ms": 17.047916,
+          "cpuMs": 19.785,
+          "modules": 27,
+          "libBytes": 469811
+        },
+        {
+          "round": 4,
+          "set": "web",
+          "entries": [
+            "experience-collector",
+            "experience-history",
+            "promoted-consumer",
+            "guard"
+          ],
+          "ms": 17.042250000000003,
+          "cpuMs": 19.732,
+          "modules": 27,
+          "libBytes": 469811
+        },
+        {
+          "round": 4,
+          "set": "acp",
+          "entries": [
+            "experience-collector",
+            "experience-history",
+            "promoted-consumer",
+            "guard",
+            "desktop-task-client"
+          ],
+          "ms": 20.133042000000003,
+          "cpuMs": 22.848,
+          "modules": 35,
+          "libBytes": 663546
+        }
+      ]
+    },
+    "sharedExperience": {
+      "cold": {
+        "samples": 5,
+        "median": 1.91,
+        "p25": 1.89,
+        "p75": 1.93
+      },
+      "hot": {
+        "samples": 5,
+        "median": 0.48,
+        "p25": 0.48,
+        "p75": 0.51
+      },
+      "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition",
+      "samples": [
+        {
+          "round": 0,
+          "coldMs": 1.9310839999999985,
+          "hotMs": 0.6201250000000016,
+          "coldSchemaVersion": null,
+          "hotSchemaVersion": null,
+          "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition"
+        },
+        {
+          "round": 1,
+          "coldMs": 1.9364160000000012,
+          "hotMs": 0.47812500000000213,
+          "coldSchemaVersion": null,
+          "hotSchemaVersion": null,
+          "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition"
+        },
+        {
+          "round": 2,
+          "coldMs": 1.913958000000001,
+          "hotMs": 0.5124160000000018,
+          "coldSchemaVersion": null,
+          "hotSchemaVersion": null,
+          "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition"
+        },
+        {
+          "round": 3,
+          "coldMs": 1.8171669999999978,
+          "hotMs": 0.47687500000000327,
+          "coldSchemaVersion": null,
+          "hotSchemaVersion": null,
+          "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition"
+        },
+        {
+          "round": 4,
+          "coldMs": 1.8853340000000003,
+          "hotMs": 0.47862500000000097,
+          "coldSchemaVersion": null,
+          "hotSchemaVersion": null,
+          "note": "measures openSharedExperience() only (schema create/PRAGMA/read); not collector subscribe, tool registration or host composition"
+        }
+      ]
+    },
+    "sharedIndex": {
+      "0": {
+        "readIndexMs": {
+          "samples": 5,
+          "median": 0.73,
+          "p25": 0.72,
+          "p75": 0.73
+        },
+        "evaluateTotalMs": {
+          "samples": 5,
+          "median": 0,
+          "p25": 0,
+          "p75": 0
+        },
+        "eligible": 0,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup"
+      },
+      "5": {
+        "readIndexMs": {
+          "samples": 5,
+          "median": 1.1,
+          "p25": 1.07,
+          "p75": 1.13
+        },
+        "evaluateTotalMs": {
+          "samples": 5,
+          "median": 1.71,
+          "p25": 1.7,
+          "p75": 1.74
+        },
+        "eligible": 5,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup"
+      },
+      "50": {
+        "readIndexMs": {
+          "samples": 5,
+          "median": 2.26,
+          "p25": 2.26,
+          "p75": 2.29
+        },
+        "evaluateTotalMs": {
+          "samples": 5,
+          "median": 7.79,
+          "p25": 7.78,
+          "p75": 7.83
+        },
+        "eligible": 50,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup"
+      }
+    },
+    "sharedIndexSamples": [
+      {
+        "round": 0,
+        "records": 0,
+        "readIndexMs": 0.7021660000000018,
+        "evaluateTotalMs": 0.0007919999999970173,
+        "eligible": 0,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 0
+      },
+      {
+        "round": 0,
+        "records": 5,
+        "readIndexMs": 1.0288750000000029,
+        "evaluateTotalMs": 1.6970000000000027,
+        "eligible": 5,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 5
+      },
+      {
+        "round": 0,
+        "records": 50,
+        "readIndexMs": 2.2613749999999975,
+        "evaluateTotalMs": 7.825082999999999,
+        "eligible": 50,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 50
+      },
+      {
+        "round": 1,
+        "records": 50,
+        "readIndexMs": 2.2569169999999996,
+        "evaluateTotalMs": 7.6704589999999975,
+        "eligible": 50,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 50
+      },
+      {
+        "round": 1,
+        "records": 5,
+        "readIndexMs": 1.2061670000000007,
+        "evaluateTotalMs": 1.5495000000000019,
+        "eligible": 5,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 5
+      },
+      {
+        "round": 1,
+        "records": 0,
+        "readIndexMs": 0.7285000000000004,
+        "evaluateTotalMs": 0.00079200000000057,
+        "eligible": 0,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 0
+      },
+      {
+        "round": 2,
+        "records": 0,
+        "readIndexMs": 0.7176250000000017,
+        "evaluateTotalMs": 0.0007919999999970173,
+        "eligible": 0,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 0
+      },
+      {
+        "round": 2,
+        "records": 5,
+        "readIndexMs": 1.1004590000000007,
+        "evaluateTotalMs": 1.7522090000000006,
+        "eligible": 5,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 5
+      },
+      {
+        "round": 2,
+        "records": 50,
+        "readIndexMs": 2.289166999999999,
+        "evaluateTotalMs": 7.84975,
+        "eligible": 50,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 50
+      },
+      {
+        "round": 3,
+        "records": 50,
+        "readIndexMs": 2.2986249999999977,
+        "evaluateTotalMs": 7.792791999999999,
+        "eligible": 50,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 50
+      },
+      {
+        "round": 3,
+        "records": 5,
+        "readIndexMs": 1.0660409999999985,
+        "evaluateTotalMs": 1.7144590000000015,
+        "eligible": 5,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 5
+      },
+      {
+        "round": 3,
+        "records": 0,
+        "readIndexMs": 0.7447920000000003,
+        "evaluateTotalMs": 0.0007500000000000284,
+        "eligible": 0,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 0
+      },
+      {
+        "round": 4,
+        "records": 0,
+        "readIndexMs": 0.7302500000000016,
+        "evaluateTotalMs": 0.0008330000000000837,
+        "eligible": 0,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 0
+      },
+      {
+        "round": 4,
+        "records": 5,
+        "readIndexMs": 1.1269579999999983,
+        "evaluateTotalMs": 1.7439169999999997,
+        "eligible": 5,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 5
+      },
+      {
+        "round": 4,
+        "records": 50,
+        "readIndexMs": 2.2605830000000005,
+        "evaluateTotalMs": 7.780291000000002,
+        "eligible": 50,
+        "note": "measures index JSON parse + validateSharedRecord + readPromotedPlugin (source/manifest read and SHA-256) + host/capability decisions; not Include mount, plugin apply or ACP startup",
+        "expectedRecords": 50
+      }
+    ]
+  },
+  "samples": [
+    {
+      "round": 0,
+      "order": "on->off->on2",
+      "on": {
+        "arm": "on",
+        "label": "r0-on",
+        "initializeMs": 709.31,
+        "sessionNewMs": 758.87,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "57f2631c"
+      },
+      "off": {
+        "arm": "off",
+        "label": "r0-off",
+        "initializeMs": 698.8,
+        "sessionNewMs": 737.03,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 23,
+        "sourceValidation": {
+          "checked": 0,
+          "statuses": [],
+          "note": "bundle deselected"
+        },
+        "sessionIdPrefix": "549c90f7"
+      },
+      "on2": {
+        "arm": "on2",
+        "label": "r0-on2",
+        "initializeMs": 711.16,
+        "sessionNewMs": 753.83,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "0847fd1a"
+      }
+    },
+    {
+      "round": 1,
+      "order": "off->on2->on",
+      "on": {
+        "arm": "on",
+        "label": "r1-on",
+        "initializeMs": 714.42,
+        "sessionNewMs": 761.13,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "e8bb48f7"
+      },
+      "off": {
+        "arm": "off",
+        "label": "r1-off",
+        "initializeMs": 696.62,
+        "sessionNewMs": 731.69,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 23,
+        "sourceValidation": {
+          "checked": 0,
+          "statuses": [],
+          "note": "bundle deselected"
+        },
+        "sessionIdPrefix": "a8989b55"
+      },
+      "on2": {
+        "arm": "on2",
+        "label": "r1-on2",
+        "initializeMs": 713.74,
+        "sessionNewMs": 763.25,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "93f4d250"
+      }
+    },
+    {
+      "round": 2,
+      "order": "on2->on->off",
+      "on": {
+        "arm": "on",
+        "label": "r2-on",
+        "initializeMs": 713.18,
+        "sessionNewMs": 754.69,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "bab7ec2f"
+      },
+      "off": {
+        "arm": "off",
+        "label": "r2-off",
+        "initializeMs": 699.4,
+        "sessionNewMs": 733.24,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 23,
+        "sourceValidation": {
+          "checked": 0,
+          "statuses": [],
+          "note": "bundle deselected"
+        },
+        "sessionIdPrefix": "4d54b2c9"
+      },
+      "on2": {
+        "arm": "on2",
+        "label": "r2-on2",
+        "initializeMs": 713.39,
+        "sessionNewMs": 760.05,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "dc54f13c"
+      }
+    },
+    {
+      "round": 3,
+      "order": "on->off->on2",
+      "on": {
+        "arm": "on",
+        "label": "r3-on",
+        "initializeMs": 716.04,
+        "sessionNewMs": 758.71,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "22a74417"
+      },
+      "off": {
+        "arm": "off",
+        "label": "r3-off",
+        "initializeMs": 698.14,
+        "sessionNewMs": 731.75,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 23,
+        "sourceValidation": {
+          "checked": 0,
+          "statuses": [],
+          "note": "bundle deselected"
+        },
+        "sessionIdPrefix": "55a1fbfd"
+      },
+      "on2": {
+        "arm": "on2",
+        "label": "r3-on2",
+        "initializeMs": 714.95,
+        "sessionNewMs": 762.25,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "63c837ea"
+      }
+    },
+    {
+      "round": 4,
+      "order": "off->on2->on",
+      "on": {
+        "arm": "on",
+        "label": "r4-on",
+        "initializeMs": 723.19,
+        "sessionNewMs": 770.64,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "00bb3305"
+      },
+      "off": {
+        "arm": "off",
+        "label": "r4-off",
+        "initializeMs": 698.82,
+        "sessionNewMs": 731.45,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 23,
+        "sourceValidation": {
+          "checked": 0,
+          "statuses": [],
+          "note": "bundle deselected"
+        },
+        "sessionIdPrefix": "7817f26f"
+      },
+      "on2": {
+        "arm": "on2",
+        "label": "r4-on2",
+        "initializeMs": 717.83,
+        "sessionNewMs": 763.75,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "8fd68040"
+      }
+    },
+    {
+      "round": 5,
+      "order": "on2->on->off",
+      "on": {
+        "arm": "on",
+        "label": "r5-on",
+        "initializeMs": 716.55,
+        "sessionNewMs": 759.77,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "d7470edc"
+      },
+      "off": {
+        "arm": "off",
+        "label": "r5-off",
+        "initializeMs": 705.1,
+        "sessionNewMs": 740.32,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 23,
+        "sourceValidation": {
+          "checked": 0,
+          "statuses": [],
+          "note": "bundle deselected"
+        },
+        "sessionIdPrefix": "cd0731dc"
+      },
+      "on2": {
+        "arm": "on2",
+        "label": "r5-on2",
+        "initializeMs": 716.84,
+        "sessionNewMs": 764.96,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "c406383f"
+      }
+    },
+    {
+      "round": 6,
+      "order": "on->off->on2",
+      "on": {
+        "arm": "on",
+        "label": "r6-on",
+        "initializeMs": 723.06,
+        "sessionNewMs": 773.65,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "e4aff17a"
+      },
+      "off": {
+        "arm": "off",
+        "label": "r6-off",
+        "initializeMs": 703.89,
+        "sessionNewMs": 737.05,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 23,
+        "sourceValidation": {
+          "checked": 0,
+          "statuses": [],
+          "note": "bundle deselected"
+        },
+        "sessionIdPrefix": "5bc337cd"
+      },
+      "on2": {
+        "arm": "on2",
+        "label": "r6-on2",
+        "initializeMs": 733.04,
+        "sessionNewMs": 777.99,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "f0a03d7c"
+      }
+    },
+    {
+      "round": 7,
+      "order": "off->on2->on",
+      "on": {
+        "arm": "on",
+        "label": "r7-on",
+        "initializeMs": 715.82,
+        "sessionNewMs": 758.15,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "72f22890"
+      },
+      "off": {
+        "arm": "off",
+        "label": "r7-off",
+        "initializeMs": 709.05,
+        "sessionNewMs": 743.07,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 23,
+        "sourceValidation": {
+          "checked": 0,
+          "statuses": [],
+          "note": "bundle deselected"
+        },
+        "sessionIdPrefix": "111f21d2"
+      },
+      "on2": {
+        "arm": "on2",
+        "label": "r7-on2",
+        "initializeMs": 723.43,
+        "sessionNewMs": 763.75,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "b016c834"
+      }
+    },
+    {
+      "round": 8,
+      "order": "on2->on->off",
+      "on": {
+        "arm": "on",
+        "label": "r8-on",
+        "initializeMs": 715.68,
+        "sessionNewMs": 763.04,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "cd96ede9"
+      },
+      "off": {
+        "arm": "off",
+        "label": "r8-off",
+        "initializeMs": 708.51,
+        "sessionNewMs": 743.12,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 23,
+        "sourceValidation": {
+          "checked": 0,
+          "statuses": [],
+          "note": "bundle deselected"
+        },
+        "sessionIdPrefix": "a68ca20a"
+      },
+      "on2": {
+        "arm": "on2",
+        "label": "r8-on2",
+        "initializeMs": 724.45,
+        "sessionNewMs": 769.27,
+        "modelRequestsBeforeSessionNew": 0,
+        "overlayRequests": 1,
+        "overlayToolSchemas": 25,
+        "sourceValidation": {
+          "checked": 5,
+          "statuses": [
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null",
+            "active:null"
+          ]
+        },
+        "sessionIdPrefix": "4341ecf7"
+      }
+    }
+  ],
+  "warmup": [
+    {
+      "arm": "on",
+      "label": "warm-on",
+      "initializeMs": 712.63,
+      "sessionNewMs": 751.9,
+      "modelRequestsBeforeSessionNew": 0,
+      "overlayRequests": 1,
+      "overlayToolSchemas": 25,
+      "sourceValidation": {
+        "checked": 5,
+        "statuses": [
+          "active:null",
+          "active:null",
+          "active:null",
+          "active:null",
+          "active:null"
+        ]
+      },
+      "sessionIdPrefix": "f0eb5a1a"
+    },
+    {
+      "arm": "off",
+      "label": "warm-off",
+      "initializeMs": 696.22,
+      "sessionNewMs": 732.07,
+      "modelRequestsBeforeSessionNew": 0,
+      "overlayRequests": 1,
+      "overlayToolSchemas": 23,
+      "sourceValidation": {
+        "checked": 0,
+        "statuses": [],
+        "note": "bundle deselected"
+      },
+      "sessionIdPrefix": "477ee055"
+    },
+    {
+      "arm": "on2",
+      "label": "warm-on2",
+      "initializeMs": 712.06,
+      "sessionNewMs": 754.08,
+      "modelRequestsBeforeSessionNew": 0,
+      "overlayRequests": 1,
+      "overlayToolSchemas": 25,
+      "sourceValidation": {
+        "checked": 5,
+        "statuses": [
+          "active:null",
+          "active:null",
+          "active:null",
+          "active:null",
+          "active:null"
+        ]
+      },
+      "sessionIdPrefix": "7e8447d6"
+    }
+  ]
+}

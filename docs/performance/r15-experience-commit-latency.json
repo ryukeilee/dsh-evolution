@@ -1,0 +1,782 @@
+{
+  "task": "DSH-EVOLUTION-PERF-R15-01",
+  "authoritative": true,
+  "label": "AUTHORITATIVE",
+  "thresholdMs": 50,
+  "verdict": "NO CHANGE (<50ms per failing tool call)",
+  "environment": {
+    "node": "v26.13.1",
+    "platform": "darwin",
+    "home": "$HOME_PRISTINE",
+    "runtime": "$RUNTIME",
+    "cli": "$RUNTIME/node_modules/@deepseek-ai/dsh/lib/bin.js",
+    "dshVersion": "0.2.2-rc.5",
+    "samplesRequested": 50,
+    "roundsRequested": 9,
+    "smoke": false
+  },
+  "harness": {
+    "fallback": false,
+    "fallbackReason": null,
+    "collectorPath": "profiles/acp/node_modules/dsh-evolution/lib/experience-collector.js",
+    "bundleVersion": "0.2.22",
+    "cordisVersion": "4.1.0",
+    "cordisEntry": "<runtime>/node_modules/.pnpm/@deepseek-ai+cordis@4.1.0_@deepseek-ai+cordis-plugin-include@1.1.0_@deepseek-ai+cordis-plugin-loader@1.1.0/node_modules/@deepseek-ai/cordis/lib/index.js",
+    "bundleCollectorSha256": "1c6127c1ff98a9bf085b6631e92a4949a7a5d840749157383bcf62bfba983113",
+    "note": "Installed bundle lib copied verbatim into scratch; @deepseek-ai/cordis symlinked to the runtime copy resolved from the installed dsh package. Same bytes and same Cordis as the ACP arms."
+  },
+  "measurementNotes": [
+    "Reporter clock is performance.now() in one process for all ACP endpoints; the narrow tool_call_update -> next-request window is attribution only, the full session/prompt -> JSON-RPC response window is the user-perceived turn latency.",
+    "In-process harness loads the installed bundle from --home with the host Cordis resolved from --runtime; any fallback is recorded in harness.fallback and degrades evidence quality.",
+    "The in-process first commit includes lazy SQL statement preparation; steady percentiles exclude it.",
+    "The real collector defers degradation writes to agent/turn-stopping, so its tools/result emit has no COMMIT; both timings are reported.",
+    "The fsync comparison is attribution only on an isolated database; NORMAL weakens durability and is not a proposed change.",
+    "Every accepted sample is gated by a real store.stats() delta; rejected samples are counted and fail the run."
+  ],
+  "inProcess": {
+    "failure": {
+      "description": "tools/result isError=true; one BEGIN IMMEDIATE/COMMIT per emit",
+      "firstCommit": {
+        "n": 1,
+        "p50": 2.667499999999997,
+        "p95": 2.667499999999997,
+        "p99": 2.667499999999997,
+        "max": 2.667499999999997
+      },
+      "steady": {
+        "n": 49,
+        "p50": 0.2518749999999983,
+        "p95": 0.412666999999999,
+        "p99": 0.5401250000000033,
+        "max": 0.5401250000000033
+      },
+      "rejectedSamples": 0
+    },
+    "cleanSuccess": {
+      "description": "clean read; in-memory counters only, zero writes",
+      "emit": {
+        "n": 50,
+        "p50": 0.004709000000005403,
+        "p95": 0.009333999999995513,
+        "p99": 0.11041600000000074,
+        "max": 0.11041600000000074
+      },
+      "rejectedSamples": 0
+    },
+    "degradation": {
+      "description": "read with TRUNCATED_LINE; real collector defers the COMMIT to agent/turn-stopping",
+      "firstCommit": {
+        "n": 1,
+        "p50": 0.41779100000000824,
+        "p95": 0.41779100000000824,
+        "p99": 0.41779100000000824,
+        "max": 0.41779100000000824
+      },
+      "steady": {
+        "n": 49,
+        "p50": 0.22512500000000557,
+        "p95": 0.32175000000000864,
+        "p99": 0.44454199999999844,
+        "max": 0.44454199999999844
+      },
+      "toolsResultOnly": {
+        "n": 50,
+        "p50": 0.007999999999995566,
+        "p95": 0.01633300000000304,
+        "p99": 0.0471250000000083,
+        "max": 0.0471250000000083
+      },
+      "rejectedSamples": 0
+    },
+    "recoveryAfterFiveSuccesses": {
+      "description": "5th clean success in a failure episode commits tool/recovery",
+      "oneCommit": {
+        "ms": 0.22812500000000568
+      },
+      "rejectedAttempts": 0
+    }
+  },
+  "attribution": {
+    "note": "Attribution only. Same SQL transaction shape on an isolated DB; NORMAL weakens durability and is NOT a candidate.",
+    "iterationsPerMode": 30,
+    "full": {
+      "n": 30,
+      "p50": 0.0822910000000121,
+      "p95": 0.14333399999999585,
+      "p99": 0.16412499999999852,
+      "max": 0.16412499999999852
+    },
+    "normal": {
+      "n": 30,
+      "p50": 0.04141599999999812,
+      "p95": 0.06512499999999477,
+      "p99": 0.09941600000000506,
+      "max": 0.09941600000000506
+    },
+    "medianDeltaMs": 0.041
+  },
+  "acp": {
+    "timingNarrow": "Parent-process performance.now(): tool_call_update (failed/completed) -> next provider HTTP request arrival. Includes host tool finalization + collector only if the collector commit happens before that update; excludes model generation, network and the end_turn response. Attribution window only.",
+    "timingFullTurn": "Parent-process performance.now(): writing the session/prompt JSON-RPC request -> receiving that prompt's JSON-RPC response. Unconditionally contains any synchronous collector commit anywhere in the turn, host tool finalization, the follow-up request and the loopback end_turn response. With the deterministic loopback provider there is no real model inference; host scheduling and IPC are included.",
+    "provider": "loopback deterministic Anthropic-compatible SSE; no external model calls, no credentials",
+    "warmup": [
+      {
+        "arm": "enabled",
+        "valid": true,
+        "intervalMs": 10.22,
+        "fullTurnMs": 78.188,
+        "reasons": []
+      },
+      {
+        "arm": "disabled",
+        "valid": true,
+        "intervalMs": 11.966,
+        "fullTurnMs": 74.921,
+        "reasons": []
+      },
+      {
+        "arm": "enabled2",
+        "valid": true,
+        "intervalMs": 11.478,
+        "fullTurnMs": 76.178,
+        "reasons": []
+      }
+    ],
+    "rounds": 9,
+    "arms": {
+      "enabled": {
+        "medianMs": 12.261,
+        "intervals": [
+          10.307,
+          13.437,
+          9.757,
+          13.483,
+          12.493,
+          11.596,
+          12.261,
+          13.431,
+          11.487
+        ],
+        "fullTurnMedianMs": 78.627,
+        "fullTurnIntervals": [
+          77.992,
+          84.322,
+          74.438,
+          81.065,
+          77.503,
+          78.627,
+          79.151,
+          78.591,
+          80.414
+        ],
+        "validSamples": 9,
+        "rejectedSamples": 0
+      },
+      "disabled": {
+        "medianMs": 11.849,
+        "intervals": [
+          11.037,
+          11.849,
+          12.904,
+          12.811,
+          13.011,
+          11.198,
+          13.736,
+          11.816,
+          11.788
+        ],
+        "fullTurnMedianMs": 77.984,
+        "fullTurnIntervals": [
+          73.92,
+          72.983,
+          79.516,
+          77.984,
+          78.412,
+          78.033,
+          80.555,
+          75.758,
+          74.408
+        ],
+        "validSamples": 9,
+        "rejectedSamples": 0
+      },
+      "enabled2": {
+        "medianMs": 12.49,
+        "intervals": [
+          11.531,
+          12.502,
+          12.453,
+          11.416,
+          23.288,
+          13.326,
+          12.33,
+          13.364,
+          12.49
+        ],
+        "fullTurnMedianMs": 80.555,
+        "fullTurnIntervals": [
+          80.555,
+          79.516,
+          75.649,
+          79.422,
+          101.198,
+          84.044,
+          81.471,
+          77.609,
+          81.159
+        ],
+        "validSamples": 9,
+        "rejectedSamples": 0
+      }
+    },
+    "pairedDiff": {
+      "disabledMinusEnabled": {
+        "medianMs": 0.301,
+        "perRound": [
+          0.73,
+          -1.588,
+          3.147,
+          -0.672,
+          0.518,
+          -0.398,
+          1.475,
+          -1.615,
+          0.301
+        ]
+      },
+      "enabled2MinusEnabled": {
+        "medianMs": 1.003,
+        "perRound": [
+          1.224,
+          -0.935,
+          2.696,
+          -2.067,
+          10.795,
+          1.73,
+          0.069,
+          -0.067,
+          1.003
+        ]
+      }
+    },
+    "fullTurnPairedDiff": {
+      "disabledMinusEnabled": {
+        "medianMs": -2.833,
+        "perRound": [
+          -4.072,
+          -11.339,
+          5.078,
+          -3.081,
+          0.909,
+          -0.594,
+          1.404,
+          -2.833,
+          -6.006
+        ]
+      },
+      "enabled2MinusEnabled": {
+        "medianMs": 1.211,
+        "perRound": [
+          2.563,
+          -4.806,
+          1.211,
+          -1.643,
+          23.695,
+          5.417,
+          2.32,
+          -0.982,
+          0.745
+        ]
+      }
+    },
+    "rows": [
+      {
+        "round": 1,
+        "order": "enabled->disabled->enabled2",
+        "samples": {
+          "enabled": {
+            "arm": "enabled",
+            "intervalMs": 10.307,
+            "fullTurnMs": 77.992,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "disabled": {
+            "arm": "disabled",
+            "intervalMs": 11.037,
+            "fullTurnMs": 73.92,
+            "statsDelta": {
+              "events": 0,
+              "knowledge": 0
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled2": {
+            "arm": "enabled2",
+            "intervalMs": 11.531,
+            "fullTurnMs": 80.555,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          }
+        },
+        "paired": {
+          "disabledMinusEnabled": 0.73,
+          "enabled2MinusEnabled": 1.224,
+          "fullDisabledMinusEnabled": -4.072,
+          "fullEnabled2MinusEnabled": 2.563
+        }
+      },
+      {
+        "round": 2,
+        "order": "disabled->enabled2->enabled",
+        "samples": {
+          "disabled": {
+            "arm": "disabled",
+            "intervalMs": 11.849,
+            "fullTurnMs": 72.983,
+            "statsDelta": {
+              "events": 0,
+              "knowledge": 0
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled2": {
+            "arm": "enabled2",
+            "intervalMs": 12.502,
+            "fullTurnMs": 79.516,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled": {
+            "arm": "enabled",
+            "intervalMs": 13.437,
+            "fullTurnMs": 84.322,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          }
+        },
+        "paired": {
+          "disabledMinusEnabled": -1.588,
+          "enabled2MinusEnabled": -0.935,
+          "fullDisabledMinusEnabled": -11.339,
+          "fullEnabled2MinusEnabled": -4.806
+        }
+      },
+      {
+        "round": 3,
+        "order": "enabled2->enabled->disabled",
+        "samples": {
+          "enabled2": {
+            "arm": "enabled2",
+            "intervalMs": 12.453,
+            "fullTurnMs": 75.649,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled": {
+            "arm": "enabled",
+            "intervalMs": 9.757,
+            "fullTurnMs": 74.438,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "disabled": {
+            "arm": "disabled",
+            "intervalMs": 12.904,
+            "fullTurnMs": 79.516,
+            "statsDelta": {
+              "events": 0,
+              "knowledge": 0
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          }
+        },
+        "paired": {
+          "disabledMinusEnabled": 3.147,
+          "enabled2MinusEnabled": 2.696,
+          "fullDisabledMinusEnabled": 5.078,
+          "fullEnabled2MinusEnabled": 1.211
+        }
+      },
+      {
+        "round": 4,
+        "order": "enabled->disabled->enabled2",
+        "samples": {
+          "enabled": {
+            "arm": "enabled",
+            "intervalMs": 13.483,
+            "fullTurnMs": 81.065,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "disabled": {
+            "arm": "disabled",
+            "intervalMs": 12.811,
+            "fullTurnMs": 77.984,
+            "statsDelta": {
+              "events": 0,
+              "knowledge": 0
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled2": {
+            "arm": "enabled2",
+            "intervalMs": 11.416,
+            "fullTurnMs": 79.422,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          }
+        },
+        "paired": {
+          "disabledMinusEnabled": -0.672,
+          "enabled2MinusEnabled": -2.067,
+          "fullDisabledMinusEnabled": -3.081,
+          "fullEnabled2MinusEnabled": -1.643
+        }
+      },
+      {
+        "round": 5,
+        "order": "disabled->enabled2->enabled",
+        "samples": {
+          "disabled": {
+            "arm": "disabled",
+            "intervalMs": 13.011,
+            "fullTurnMs": 78.412,
+            "statsDelta": {
+              "events": 0,
+              "knowledge": 0
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled2": {
+            "arm": "enabled2",
+            "intervalMs": 23.288,
+            "fullTurnMs": 101.198,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled": {
+            "arm": "enabled",
+            "intervalMs": 12.493,
+            "fullTurnMs": 77.503,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          }
+        },
+        "paired": {
+          "disabledMinusEnabled": 0.518,
+          "enabled2MinusEnabled": 10.795,
+          "fullDisabledMinusEnabled": 0.909,
+          "fullEnabled2MinusEnabled": 23.695
+        }
+      },
+      {
+        "round": 6,
+        "order": "enabled2->enabled->disabled",
+        "samples": {
+          "enabled2": {
+            "arm": "enabled2",
+            "intervalMs": 13.326,
+            "fullTurnMs": 84.044,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled": {
+            "arm": "enabled",
+            "intervalMs": 11.596,
+            "fullTurnMs": 78.627,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "disabled": {
+            "arm": "disabled",
+            "intervalMs": 11.198,
+            "fullTurnMs": 78.033,
+            "statsDelta": {
+              "events": 0,
+              "knowledge": 0
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          }
+        },
+        "paired": {
+          "disabledMinusEnabled": -0.398,
+          "enabled2MinusEnabled": 1.73,
+          "fullDisabledMinusEnabled": -0.594,
+          "fullEnabled2MinusEnabled": 5.417
+        }
+      },
+      {
+        "round": 7,
+        "order": "enabled->disabled->enabled2",
+        "samples": {
+          "enabled": {
+            "arm": "enabled",
+            "intervalMs": 12.261,
+            "fullTurnMs": 79.151,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "disabled": {
+            "arm": "disabled",
+            "intervalMs": 13.736,
+            "fullTurnMs": 80.555,
+            "statsDelta": {
+              "events": 0,
+              "knowledge": 0
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled2": {
+            "arm": "enabled2",
+            "intervalMs": 12.33,
+            "fullTurnMs": 81.471,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          }
+        },
+        "paired": {
+          "disabledMinusEnabled": 1.475,
+          "enabled2MinusEnabled": 0.069,
+          "fullDisabledMinusEnabled": 1.404,
+          "fullEnabled2MinusEnabled": 2.32
+        }
+      },
+      {
+        "round": 8,
+        "order": "disabled->enabled2->enabled",
+        "samples": {
+          "disabled": {
+            "arm": "disabled",
+            "intervalMs": 11.816,
+            "fullTurnMs": 75.758,
+            "statsDelta": {
+              "events": 0,
+              "knowledge": 0
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled2": {
+            "arm": "enabled2",
+            "intervalMs": 13.364,
+            "fullTurnMs": 77.609,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled": {
+            "arm": "enabled",
+            "intervalMs": 13.431,
+            "fullTurnMs": 78.591,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          }
+        },
+        "paired": {
+          "disabledMinusEnabled": -1.615,
+          "enabled2MinusEnabled": -0.067,
+          "fullDisabledMinusEnabled": -2.833,
+          "fullEnabled2MinusEnabled": -0.982
+        }
+      },
+      {
+        "round": 9,
+        "order": "enabled2->enabled->disabled",
+        "samples": {
+          "enabled2": {
+            "arm": "enabled2",
+            "intervalMs": 12.49,
+            "fullTurnMs": 81.159,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "enabled": {
+            "arm": "enabled",
+            "intervalMs": 11.487,
+            "fullTurnMs": 80.414,
+            "statsDelta": {
+              "events": 1,
+              "knowledge": 1
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          },
+          "disabled": {
+            "arm": "disabled",
+            "intervalMs": 11.788,
+            "fullTurnMs": 74.408,
+            "statsDelta": {
+              "events": 0,
+              "knowledge": 0
+            },
+            "providerRequests": 2,
+            "toolFailedObserved": true,
+            "stopReason": "end_turn",
+            "valid": true,
+            "reasons": []
+          }
+        },
+        "paired": {
+          "disabledMinusEnabled": 0.301,
+          "enabled2MinusEnabled": 1.003,
+          "fullDisabledMinusEnabled": -6.006,
+          "fullEnabled2MinusEnabled": 0.745
+        }
+      }
+    ],
+    "invalidSamples": []
+  }
+}
