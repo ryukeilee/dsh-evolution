@@ -13,6 +13,8 @@ import {
   SHARED_STATUS,
   annotateSharedRecord,
   applySupersession,
+  evaluateSharedRecord,
+  hostDigest,
   publishSharedRecord,
   readDisableState,
   readSharedIndex,
@@ -297,6 +299,29 @@ test('lock-internal annotations compose instead of overwriting earlier approvals
   const index = await readSharedIndex(paths);
   assert.deepEqual(index.records[0].approvedProfiles, ['acp', 'web'], 'the earlier approval survives');
   assert.equal(index.records[0].supersededBy.acp.recordId, NEW);
+});
+
+test('a legacy include-refresh-failed receipt is a host failure, not a sticky plugin failure', async (t) => {
+  const { paths, record } = await recordFixture(t);
+  const host = record.host;
+  const capabilities = Object.fromEntries(record.requiredCapabilities.map((name) => [name, true]));
+  const previousState = (reason) => ({
+    plugins: [{
+      id: record.id, status: SHARED_STATUS.FAILED, reason,
+      sourceSha256: record.sourceSha256, hostDigest: hostDigest(host),
+    }],
+  });
+  const base = { paths, record, profile: 'acp', host, capabilities, services: {} };
+
+  // An upgrade left this receipt on disk; it must not keep the replacement
+  // skipped after the consumer switched the fresh reason to include-unavailable.
+  const legacy = await evaluateSharedRecord({ ...base, previousState: previousState('include-refresh-failed') });
+  assert.equal(legacy.status, 'eligible', 'a legacy host failure must not become a sticky plugin failure');
+  const current = await evaluateSharedRecord({ ...base, previousState: previousState('include-unavailable') });
+  assert.equal(current.status, 'eligible', 'the current host failure reason stays non-sticky');
+  const plugin = await evaluateSharedRecord({ ...base, previousState: previousState('plugin-apply-failed') });
+  assert.equal(plugin.status, SHARED_STATUS.FAILED, 'a real plugin failure stays sticky');
+  assert.equal(plugin.sticky, true);
 });
 
 test('publishSharedRecord preserves publication identity when a supersession is added', async (t) => {
