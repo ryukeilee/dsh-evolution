@@ -18,6 +18,16 @@ words `install` / `publish` (for example test file names) are allowed again,
 while real writes and irreversible operations stay denied. No host, persistence
 format, tool-surface shape or authorization source changes.
 
+## 0.2.23 — 稳定版
+
+`0.2.22` 的稳定后继：收口第十四轮进化闭环耗时研究（PR #101）与跨入口替换、consumer 会话回收、doctor 宿主解析和验收抖动修复（PR #109–#112）。相对 `0.2.22` 固定产物，分发内容改 `lib/diagnostics.js`、`lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/promotion-include.js`、`lib/self-evolution-review.js`、`scripts/shared-plugins.mjs`，新增 `lib/promoted-consumer-gc.js`，加上版本号与随包文档（`README.md`、`RELEASE.md`、`CHANGELOG.md`）；持久化 schema 与 schema 版本、工具名与参数结构、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、`engines` 与 `peerDependencies`（八个宿主）均未改变。
+
+- **跨入口 stable 记录的替换与回退。** `approve --plugin <id> --profile <p> --approval <所有者原文>` 为已 stable 记录增加消费 profile；`supersede --old <id> --new <id> --profile <p> --approval <所有者原文>` 只在替换方确实可挂载时才让旧记录让位，替换方失效时旧记录保持启用；`revoke-supersede` 逐 profile 撤回替换，并在没有其它引用时把替换方写入撤销表。`revalidate` 的证据按记录隔离，刷新失败按宿主失败/可重试分类，不把失败刷新误判成不兼容。三者只写发布索引上的有界审批注释与撤销表，不改写插件源码、journal、canary、stable 证明或已有经验（见 `docs/shared-plugins.md`）。
+- **每会话 consumer composition 回收。** 新增 `lib/promoted-consumer-gc.js`，按持久游标分会话回收孤儿 composition；游标只在串行扫描覆盖全部 stem 后推进，避免把未覆盖的 stem 当作已回收。本机基准与收益边界见 `docs/performance/consumer-session-gc.md`（隔离只读统计与合成夹具，不是真实宿主轮次验证）。
+- **doctor 宿主解析与组合探针隔离。** 在隔离 composition 探针前拒绝不安全 profile 名，阻断符号链接写入穿透；宿主版本解析改为静态 wrapper / ASAR 分析并以隔离测试钉住，未知现场仍保持 `unknown`，不猜测。
+- **闭环与验收稳定性（不随包分发）。** 配对会话 producer 改为同侧并发、两侧隔离并加 pilot 隔离预检；任务收益会话记录重试与有界等待，消除偶发抖动造成的假阴性。改动只在 `scripts/acceptance/`，不改变运行时行为。
+- **验证。** 全量 2,466 项 / 2,464 通过 / 0 失败 / 2 跳过（`NODE_OPTIONS=--max-old-space-size=4096 npm test`）；本版本固定点与八宿主验收证据见 `RELEASE.md` 第 1、4.1 节与 `docs/evidence/dsh-*.json`。
+
 ## 0.2.22 — 稳定版
 
 `0.2.21` 的稳定后继：纳入第十二、十三轮开放性性能研究（PR #106 与 #107）中经证据确认的优化。分发内容只改 `lib/event-log-checkpoint.js` 与 `lib/experience-recall.js`；持久化 schema、协议、工具名与参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变。
