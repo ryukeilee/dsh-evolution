@@ -859,6 +859,29 @@ exec "${process.execPath}" "${dsh.bin}" "$@"
   assert.doesNotMatch(cli.summary, /TEST_DUMMY_ONLY_DSH_DOCTOR/);
 });
 
+test('a non-POSIX whitespace before # cannot hide a backslash continuation from the scanner', async (t) => {
+  const dir = tmp(t, 'host-res-non-posix-comment-boundary-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+printf '%s\\n' foo\u00a0#literal \\
+exec /tmp/TEST_DUMMY_ONLY_DSH_DOCTOR
+exec "${process.execPath}" "${dsh.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(spawnSync('/bin/sh', ['-n', wrapper]).status, 0, 'the fixture is valid POSIX shell');
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null);
+  assert.deepEqual(result.candidates[0].unresolvedBranches, [{
+    wrapperPath: wrapper,
+    line: 2,
+    error: 'UNRESOLVED_EXEC_TARGET',
+    detail: 'the launch command contains a dynamic shell expression that is not statically attributable on this line',
+  }]);
+  assert.doesNotMatch(JSON.stringify(result.candidates[0].unresolvedBranches), /TEST_DUMMY_ONLY_DSH_DOCTOR/);
+});
+
 test('a dynamic script position cannot be replaced by a later DSH entry', (t) => {
   const dir = tmp(t, 'host-res-dynamic-script-position-');
   const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
@@ -893,8 +916,12 @@ test('Node no-script options with attached values do not expose a following scri
   fs.writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({ name: '@deepseek-ai/dsh', version: '0.2.2-rc.1' }));
   // The shell wrapper is itself a .js path inside the package. If an unknown
   // attached option is skipped, the parser promotes it to a false entry.
-  const wrapper = path.join(pkg, 'lib', 'bin.js');
-  for (const [attachedOption, plainOption] of [['--version=true', '--version'], ['--run=missing', '--run missing']]) {
+  const wrapper = path.join(pkg, 'lib', 'bin.mjs');
+  for (const [attachedOption, plainOption] of [
+    ['--version=true', '--version'],
+    ['--run=missing', '--run missing'],
+    ['--input-type=module', '--input-type module'],
+  ]) {
     fs.writeFileSync(wrapper, `#!/bin/sh\ndshBin=$0\nexec "${process.execPath}" ${attachedOption} "$dshBin"\n`);
     fs.chmodSync(wrapper, 0o755);
 
@@ -1163,6 +1190,34 @@ exec ${process.execPath} "${versionless.bin}" "$@"
   const version = report.checks.find((check) => check.id === 'host.version');
   assert.equal(version.level, 'not-evaluated');
   assert.equal(version.evidence.reason, 'profile-host-ambiguous');
+});
+
+test('two unknown-version entries of one explicit wrapper stay profile-host ambiguous', async (t) => {
+  const dir = tmp(t, 'host-res-explicit-two-versionless-');
+  const one = makeDshPackage(path.join(dir, 'host-one'), null);
+  const two = makeDshPackage(path.join(dir, 'host-two'), null);
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+if [ "$1" = 'web' ]; then
+  exec ${process.execPath} "${one.bin}" "$@"
+fi
+exec ${process.execPath} "${two.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const resolution = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(resolution.selected?.entryPath, one.bin);
+  assert.deepEqual(resolution.alternatives.map((candidate) => candidate.entryPath), [two.bin],
+    'different unknown-version entries of the same wrapper must remain alternatives');
+
+  const report = await withPathAsync('', () => collectDiagnostics({ dshHome: doctorHome(t), cliPath: wrapper, probe: { skipComposition: true } }));
+  const cli = report.checks.find((check) => check.id === 'host.cli');
+  assert.equal(cli.level, 'ok');
+  assert.equal(cli.evidence.profileHostAmbiguous, true);
+  const version = report.checks.find((check) => check.id === 'host.version');
+  assert.equal(version.level, 'not-evaluated');
+  assert.equal(version.evidence.reason, 'profile-host-ambiguous');
+  assert.deepEqual(report.checks.find((check) => check.id === 'host.modules').evidence.candidateVersions, ['<unknown>']);
 });
 
 test('a valid branch cannot hide a versionless sibling in a multi-branch wrapper', async (t) => {
