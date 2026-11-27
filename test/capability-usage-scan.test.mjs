@@ -854,3 +854,83 @@ test('doctor says every in-scope record is unmeasured when no projection exists'
   assert.match(check.summary, /all 6 published record\(s\) in scope are unmeasured/);
   assert.doesNotMatch(check.summary, /0 absent from the projection/);
 });
+
+test('the review hand-off keeps a concrete home for a custom data root', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeSession(env.root, 'one', [call('widget_tool', 'c1')]);
+  const customRoot = path.join(env.root, 'storages', 'custom');
+  const customShared = path.join(customRoot, 'shared-plugins');
+  fs.mkdirSync(customShared, { recursive: true });
+  const customModule = path.join(customRoot, 'promoted', `dsh-${RECORD_ID}`, 'lib', 'index.js');
+  fs.mkdirSync(path.dirname(customModule), { recursive: true });
+  fs.copyFileSync(path.join(env.dataRoot, 'promoted', `dsh-${RECORD_ID}`, 'lib', 'index.js'), customModule);
+  fs.copyFileSync(path.join(env.dataRoot, 'promoted', `dsh-${RECORD_ID}`, 'package.json'), path.join(path.dirname(path.dirname(customModule)), 'package.json'));
+  const index = JSON.parse(fs.readFileSync(path.join(env.dataRoot, 'shared-plugins', 'published.json'), 'utf8'));
+  index.plugins[0].moduleUrl = pathToFileURL(customModule).href;
+  fs.writeFileSync(path.join(customShared, 'published.json'), `${JSON.stringify(index)}\n`);
+  const loaded = await readUsageProjection({ dataRoot: customRoot });
+  assert.equal(loaded.evidence.status, 'absent');
+  const review = await readPublishedPluginReview({
+    // Deliberately no dshHome: the audit only resolved a custom data root.
+    paths: { dataRoot: customRoot, pluginRoot: path.join(customRoot, 'promoted') },
+    host: HOST, usage: loaded.usage, usageStatus: loaded.evidence.status,
+  });
+  const action = review.nextActions.find((row) => typeof row.code === 'string' && row.code.startsWith('usage-projection-'));
+  assert.ok(action, JSON.stringify(review.nextActions));
+  assert.ok(action.command.includes(`--home '${env.root}'`), action.command);
+  assert.ok(action.command.includes(`--data-root '${customRoot}'`), action.command);
+  assert.doesNotMatch(action.command, /\$\{/);
+  // The exact commands from the real review entry must work with no shell env.
+  const bare = { PATH: process.env.PATH };
+  const templateRun = spawnSync('sh', ['-c', action.templateCommand], { encoding: 'utf8', env: bare });
+  assert.ok(templateRun.status === 0 || templateRun.status === 3, templateRun.stderr);
+  const writeRun = spawnSync('sh', ['-c', action.command], { encoding: 'utf8', env: bare });
+  assert.ok(writeRun.status === 0 || writeRun.status === 3, writeRun.stderr);
+  const after = await readUsageProjection({ dataRoot: customRoot });
+  assert.equal(after.status, 'ok');
+  // One real call in the resolved home was counted, not silently turned into zero.
+  assert.equal(after.usage.records[RECORD_ID].workflowInvocations, 1);
+});
+
+test('--template refuses the projection path and its symlinked aliases', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const usagePath = path.join(env.dataRoot, 'shared-plugins', 'usage.json');
+  const direct = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', usagePath], { encoding: 'utf8' });
+  assert.notEqual(direct.status, 0);
+  assert.match(direct.stderr, /must not target the usage projection/);
+  assert.equal(fs.existsSync(usagePath), false);
+
+  const alias = path.join(env.root, 'alias');
+  fs.symlinkSync(path.join(env.dataRoot, 'shared-plugins'), alias);
+  const aliased = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', path.join(alias, 'usage.json')], { encoding: 'utf8' });
+  assert.notEqual(aliased.status, 0);
+  assert.match(aliased.stderr, /must not target the usage projection/);
+  assert.equal(fs.existsSync(usagePath), false);
+});
+
+test('--template never overwrites an already reviewed template', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const templatePath = path.join(env.root, 'assessments-template.json');
+  const edited = { assessments: { [RECORD_ID]: 'self-contained' } };
+  fs.writeFileSync(templatePath, JSON.stringify(edited));
+  const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', templatePath], { encoding: 'utf8' });
+  assert.notEqual(out.status, 0);
+  assert.match(out.stderr, /already exists/);
+  assert.deepEqual(JSON.parse(fs.readFileSync(templatePath, 'utf8')), edited);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+});
+
+test('a missing --template value fails before the producer scans or writes', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const missing = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', '--write'], { encoding: 'utf8' });
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /--template requires a value/);
+  const reversed = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--write', '--template', path.join(env.root, 'template.json')], { encoding: 'utf8' });
+  assert.notEqual(reversed.status, 0);
+  assert.match(reversed.stderr, /cannot be combined/);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+});

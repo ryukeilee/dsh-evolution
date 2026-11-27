@@ -81,19 +81,36 @@ import {
   summarizeCapabilityUsage,
   writeUsageProjection,
 } from '../../../lib/capability-usage.js';
+import { sharingPaths } from '../../../lib/promoted-sharing.js';
 
 function argValue(name) {
   const index = process.argv.indexOf(name);
-  return index === -1 ? null : process.argv[index + 1] ?? null;
+  if (index === -1) return null;
+  const value = process.argv[index + 1];
+  if (!value || value.startsWith('--')) throw new Error(`${name} requires a value`);
+  return value;
+}
+
+/** Resolve symlinked parents too, so an alias of usage.json cannot be overwritten. */
+function canonicalPath(file) {
+  const resolved = path.resolve(file);
+  try { return fs.realpathSync.native(resolved); } catch { /* not created yet */ }
+  try { return path.join(fs.realpathSync.native(path.dirname(resolved)), path.basename(resolved)); } catch { /* no directory */ }
+  return resolved;
 }
 
 const home = path.resolve(argValue('--home') ?? process.env.DSH_HOME ?? path.join(os.homedir(), '.dsh'));
 const dataRootArg = argValue('--data-root');
 const dataRoot = dataRootArg ? path.resolve(dataRootArg) : path.join(home, 'storages', 'evolution');
 
+const wantsTemplate = process.argv.includes('--template');
 const templateFile = argValue('--template');
-if (templateFile && process.argv.includes('--write')) {
+if (wantsTemplate && !templateFile) throw new Error('--template requires a file');
+if (wantsTemplate && process.argv.includes('--write')) {
   throw new Error('--template cannot be combined with --write');
+}
+if (templateFile && canonicalPath(templateFile) === canonicalPath(sharingPaths({ dataRoot }).usagePath)) {
+  throw new Error('--template must not target the usage projection');
 }
 
 let assessments = {};
@@ -116,7 +133,15 @@ if (templateFile) {
   const template = buildAssessmentsTemplate({ projection, records: metadata.records });
   const target = path.resolve(templateFile);
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, `${JSON.stringify(template, null, 2)}\n`, { mode: 0o600 });
+  try {
+    // A second run must not silently discard the owner's edits.
+    fs.writeFileSync(target, `${JSON.stringify(template, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
+  } catch (error) {
+    if (error?.code === 'EEXIST') {
+      throw new Error('assessments template already exists; reuse it or pass a different --template path');
+    }
+    throw error;
+  }
   console.error(`assessments template written to ${target}`);
   console.log(JSON.stringify(template, null, 2));
 } else {
