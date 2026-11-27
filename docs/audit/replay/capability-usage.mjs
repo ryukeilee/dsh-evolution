@@ -49,10 +49,14 @@
  * review, so an incomplete scan cannot produce a disable recommendation.
  *
  * Usage:
- *   node docs/audit/replay/capability-usage.mjs [--home <DSH_HOME>] [--out <file>]
- *     [--write] [--assessments <file>]
+ *   node docs/audit/replay/capability-usage.mjs [--home <DSH_HOME>] [--data-root <dir>]
+ *     [--out <file>] [--write] [--assessments <file>]
  *
- * `--write` persists the projection at `<DSH_HOME>/storages/evolution/shared-plugins/usage.json`,
+ * `--data-root` overrides the derived `<DSH_HOME>/storages/evolution`, so the
+ * doctor/review supplement can write to the exact root it inspected. Session
+ * evidence still comes from `<DSH_HOME>/sessions`.
+ *
+ * `--write` persists the projection at `<dataRoot>/shared-plugins/usage.json`,
  * which is the only place the explicit `evolution_plan` / `evolution_desktop
  * audit` reads. The persisted file is a counts table (record id, counts, tool
  * assessment); it never contains transcript text, tool arguments or results.
@@ -71,7 +75,8 @@ function argValue(name) {
 }
 
 const home = path.resolve(argValue('--home') ?? process.env.DSH_HOME ?? path.join(os.homedir(), '.dsh'));
-const dataRoot = path.join(home, 'storages', 'evolution');
+const dataRootArg = argValue('--data-root');
+const dataRoot = dataRootArg ? path.resolve(dataRootArg) : path.join(home, 'storages', 'evolution');
 
 let assessments = {};
 const assessmentsFile = argValue('--assessments');
