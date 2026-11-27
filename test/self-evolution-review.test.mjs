@@ -286,6 +286,30 @@ test('a current-host consumer apply failure is incompatible and asks for the sma
   assert.equal(composed.primary, REVIEW_ACTIONS.REPAIR);
 });
 
+test('Include-level consumer failures are host-unavailable, not sticky plugin failures', async (t) => {
+  for (const reason of ['include-unavailable', 'include-refresh-failed']) {
+    const env = await fixture(t, `include-${reason}`);
+    const digest = hostDigest(CURRENT_HOST);
+    await writeConsumers(env, {
+      rows: {
+        acp: [{ id: RECORD_ID, status: 'failed', reason, hostDigest: digest }],
+        web: [{ id: RECORD_ID, status: 'active', reason: null, hostDigest: digest }],
+      },
+    });
+
+    const result = await review(env);
+    assert.equal(result.summary.hostUnavailable, 1, `${reason} is a host fact`);
+    const [record] = result.records;
+    assert.equal(record.status, 'host-unavailable', `${reason} must not be classified as an apply failure`);
+    assert.equal(record.action, REVIEW_ACTIONS.RESTART);
+    assert.ok(record.reasons.some((text) => text === `acp: host-unavailable (${reason})`));
+
+    const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+    assert.equal(composed.kind, 'restart-consumer');
+    assert.equal(composed.primary, REVIEW_ACTIONS.RESTART);
+  }
+});
+
 test('a changed plugin source is source-unusable and never gets mount advice', async (t) => {
   const env = await fixture(t, 'source-mismatch');
   await writeConsumers(env);

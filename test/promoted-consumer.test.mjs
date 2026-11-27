@@ -710,6 +710,56 @@ test('a fallback refresh that drops a previously active sibling unmounts it', as
   await session.dispose();
 });
 
+test('a stale fallback refresh retries until the restored candidate is installed', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const previous = await createRecord({ toolName: 'working_policy_tool' });
+  const broken = await createRecord({
+    toolName: 'broken_policy_tool',
+    inject: [],
+    requiredServices: [],
+    source: "export const name = 'broken';\nexport function apply() { throw new Error('replacement exploded'); }\n",
+  });
+  await writeIndex([
+    { ...previous.record, supersededBy: { acp: supersedeMarker(broken.record) } },
+    broken.record,
+  ]);
+
+  let refreshCalls = 0;
+  // The first fallback refresh still serves the composition from the initial
+  // pass (only the broken replacement), so the restored candidate is missing
+  // from that live tree even though the consumer just rewrote the composition.
+  const staleRows = [{ id: `shared-${broken.record.id}`, name: broken.record.moduleUrl }];
+  const mountInclude = async (_ctx, config) => {
+    const entries = new Map();
+    return {
+      capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true },
+      async refresh() {
+        refreshCalls += 1;
+        const rows = refreshCalls === 2 ? staleRows : JSON.parse(await fs.readFile(config.path, 'utf8'));
+        entries.clear();
+        for (const row of rows) {
+          entries.set(row.id, {
+            options: { name: row.name },
+            disabled: false,
+            fiber: row.id === `shared-${broken.record.id}` ? fakeFiber({ failApply: true }) : fakeFiber(),
+          });
+        }
+      },
+      resolveEntry: (rowId) => entries.get(rowId) ?? null,
+      async dispose() {},
+    };
+  };
+
+  const session = await mountSession(await boot(), dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.ok(refreshCalls >= 2, 'a stale fallback tree is refreshed again');
+  assert.equal(rows.get(broken.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(previous.record.id).status, 'active', 'the restored candidate is active on the refreshed tree');
+  assert.ok(session.mounted.has(previous.record.id), 'the restored candidate keeps a live fiber');
+  await session.dispose();
+});
+
 test('a first Include refresh failure does not keep the replacement sticky on the next start', async (t) => {
   const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
   const previous = await createRecord({ toolName: 'old_policy_tool' });

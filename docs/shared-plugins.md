@@ -63,7 +63,8 @@ consumer 先做静态判定（不执行插件），再挂载并验证 live 行�
 6. 源码不可用或摘要不匹配 → `skipped-invalid`；
 7. 宿主身份不匹配 → `pending-revalidation`（不挂载）；
 8. 缺少必需能力、服务或服务成员 → `skipped-incompatible`；
-9. 上一次启动对同一源码摘要 + 同一宿主身份的失败是 sticky 的 → 保持 `failed`，直到操作者 `reset`。
+9. 上一次启动对同一源码摘要 + 同一宿主身份的插件 apply / 评估类失败是 sticky 的 → 保持 `failed`，直到操作者 `reset`；
+   `include-unavailable` 与旧版 `include-refresh-failed` 属宿主 / Include 失败，非 sticky，下一次启动自动重试，不需要 `reset`。
 
 通过后，consumer 只把 eligible 行写入自己的 composition 并 `refresh()`，再逐行验证：公开 resolver 能取到
 该行、`entry.options.name` 等于记录中的模块 URL、行未被禁用、`Fiber.await()` 已 settle、Fiber 处于活动
@@ -79,7 +80,7 @@ consumer 先做静态判定（不执行插件），再挂载并验证 live 行�
 | `skipped-incompatible` | 缺少记录要求的能力 / 服务 / 服务成员 |
 | `skipped-invalid` | 记录或源码摘要 / manifest 不合法（含索引里的非法记录） |
 | `pending-revalidation` | 宿主身份（DSH 精确版本、Cordis/Include `major.minor`、Node major）不匹配；等操作者重验证 |
-| `failed` | 评估、Include 不可用、refresh 或插件 `apply` 失败；同源码 + 同宿主的失败会 sticky，直到 `reset` |
+| `failed` | 插件 apply / 评估类失败在同源码 + 同宿主下 sticky，直到 `reset`；`include-unavailable` 与旧版 `include-refresh-failed` 属宿主 / Include 失败，非 sticky，下一次启动自动重试，不需要 `reset` |
 
 `pending-restart` 不是启动时产生的状态：`reset` 会把目标行改写成 `pending-restart`（操作标记）以清除
 sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 `pendingRestart`（按 profile）：consumer 状态的
