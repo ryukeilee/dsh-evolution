@@ -118,6 +118,53 @@ test('revalidation runner: the clone keeps supersession markers', () => {
   assert.equal(clone.plugins[1].host.dsh, '0.2.2-rc.2');
 });
 
+test('revalidation runner: operator-disabled links traverse to the terminal version', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const records = [
+    {
+      id: TARGET_A,
+      approvedProfiles: ['acp'],
+      sourceSha256: 'a'.repeat(64),
+      supersededBy: { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } },
+    },
+    {
+      id: TARGET_B,
+      approvedProfiles: ['acp'],
+      sourceSha256: 'b'.repeat(64),
+      supersededBy: { acp: { recordId: THIRD, sourceSha256: 'c'.repeat(64) } },
+    },
+    { id: THIRD, approvedProfiles: ['acp'], sourceSha256: 'c'.repeat(64) },
+  ];
+  // B is operator-disabled in acp, so it has no isolated boot; A and C did boot.
+  const bootStatuses = new Map([
+    [TARGET_A, { status: 'active' }],
+    [THIRD, { status: 'active' }],
+  ]);
+  const disable = { entries: [{ pluginId: TARGET_B, profile: 'acp' }] };
+  const result = runner.expectedAfterAdoption(records, 'acp', bootStatuses, disable);
+  assert.deepEqual(result.get(TARGET_B), { status: 'disabled', reason: 'operator-disabled' },
+    'an operator-disabled link is a real skip, not a missing/invalid record');
+  assert.deepEqual(result.get(TARGET_A), { status: 'disabled', reason: 'superseded-by', supersededBy: THIRD },
+    'the chain must still traverse B to C instead of inventing an active A');
+  assert.equal(result.get(THIRD).status, 'eligible');
+});
+
+test('revalidation runner: unapproved and fully revoked records are non-integrity skips', () => {
+  const REVOKED = 'evolution-promoted-dddddddddddd';
+  const records = [
+    { id: TARGET_A, approvedProfiles: ['web'], sourceSha256: 'a'.repeat(64) },
+    { id: REVOKED, approvedProfiles: ['acp', 'web'], sourceSha256: 'd'.repeat(64) },
+  ];
+  const disable = { entries: [
+    { pluginId: REVOKED, profile: 'acp' },
+    { pluginId: REVOKED, profile: 'web' },
+  ] };
+  const result = runner.expectedAfterAdoption(records, 'acp', new Map(), disable);
+  assert.deepEqual(result.get(TARGET_A), { status: 'skipped-unapproved', reason: 'profile-not-approved' });
+  assert.deepEqual(result.get(REVOKED), { status: 'disabled', reason: 'operator-disabled' },
+    'a fully revoked record is disabled in this profile, not skipped-invalid');
+});
+
 test('revalidation runner: an ineligible tail restores its predecessor after adoption', () => {
   const THIRD = 'evolution-promoted-cccccccccccc';
   const records = [

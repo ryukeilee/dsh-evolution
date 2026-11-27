@@ -208,14 +208,34 @@ export function profileIsRevalidationTarget(record, profile, disable) {
 }
 
 /**
+ * Self-eligibility that holds before any attestation boot: a record without
+ * this profile's approval or explicitly revoked in it is a real non-integrity
+ * skip. Reporting those as `skipped-invalid` would make a chain traversal stop
+ * at them and invent an active predecessor; `disabled` / `skipped-unapproved`
+ * are traversable, which is what the production consumer reports too.
+ */
+function defaultOwnStatuses(records, profile, disable) {
+  const statuses = new Map();
+  for (const record of Array.isArray(records) ? records : []) {
+    if (!Array.isArray(record?.approvedProfiles) || !record.approvedProfiles.includes(profile)) {
+      statuses.set(record.id, { status: 'skipped-unapproved', reason: 'profile-not-approved' });
+    } else if (isDisabledForProfile(disable, record.id, profile)) {
+      statuses.set(record.id, { status: 'disabled', reason: 'operator-disabled' });
+    }
+  }
+  return statuses;
+}
+
+/**
  * Post-adoption expectations come from each record's own isolation boot (which
  * proved its real eligibility on this host, including missing services) combined
- * with the production supersession rule on the adopted index. An ineligible tail
- * restores its predecessor, so the runner must not insist on the tail's
- * activation after adoption.
+ * with the production supersession rule on the adopted index. Records that were
+ * not booted keep their pre-boot skip status, so a non-integrity skip still
+ * traverses to the terminal version. An ineligible tail restores its predecessor.
  */
-export function expectedAfterAdoption(records, profile, ownStatuses) {
-  const statuses = ownStatuses instanceof Map ? ownStatuses : new Map();
+export function expectedAfterAdoption(records, profile, ownStatuses, disable) {
+  const statuses = defaultOwnStatuses(records, profile, disable);
+  for (const [id, status] of ownStatuses instanceof Map ? ownStatuses : []) statuses.set(id, status);
   const decisions = (Array.isArray(records) ? records : []).map((row) => {
     const own = statuses.get(row.id);
     return {
@@ -573,7 +593,9 @@ async function main(argv) {
   const ownStatusesByProfile = {};
   for (const profile of PROFILES) {
     const boots = new Map();
-    const ownStatuses = new Map();
+    // Pre-seed every record's own status before any boot: unapproved and
+    // operator-revoked records are non-integrity skips, never `skipped-invalid`.
+    const ownStatuses = defaultOwnStatuses(records, profile, disable);
     for (const record of activeRecords) {
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
       const isTarget = targets.includes(record.id);
@@ -755,7 +777,7 @@ async function main(argv) {
         // rule to those facts instead of assuming every approved target is
         // eligible; a disabled or incompatible tail restores its predecessor.
         const ownStatuses = ownStatusesByProfile[profile] ?? new Map();
-        const decision = expectedAfterAdoption(adoptedRecords, profile, ownStatuses).get(plugin.id);
+        const decision = expectedAfterAdoption(adoptedRecords, profile, ownStatuses, disable).get(plugin.id);
         expect[plugin.id] = decision?.status === 'eligible'
           ? { status: 'active' }
           : { status: decision?.status ?? 'active', ...(decision?.reason ? { reason: decision.reason } : {}) };

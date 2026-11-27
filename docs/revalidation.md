@@ -30,12 +30,15 @@ runner 做这些事：
 2. 用**当前宿主**的 `dsh` 启动基线 ACP / Web 消费入口，读取它们自己记录在
    `shared-plugins/consumers/<profile>.json` 里的宿主事实（`dsh` / `cordis` / `include` / `node`），
    并要求两个入口的宿主一致；同时确认目标记录确实是 `pending-revalidation`（`host-version-mismatch`）。
-3. 对每个 profile 内**每条 approved 记录**各写一次隔离索引并 boot 一次。隔离索引把所有
-   `moduleUrl` 指向克隆，**只有被测记录**保留该 profile 的 approval 且在它是目标时改写为
-   刚读到的当前宿主事实；其它记录从 `approvedProfiles` 去掉该 profile（其它 profile 保留），
-   全部 `supersededBy` 原样保留。于是同一时刻最多只有被测记录可挂载：目标记录必须是
-   `active`，`sourceSha256` 未变，行上的 `hostDigest` 等于当前宿主摘要；非目标记录只读取
-   自己的状态行，作为采纳后拓扑判断的自身资格事实（它不执行任何工具调用）。
+3. 对每个 profile 内**每条已批准且未被该 profile 撤销的记录**各写一次隔离索引并 boot 一次。
+   隔离索引把所有 `moduleUrl` 指向克隆，**只有被测记录**保留该 profile 的 approval 且在它是
+   目标时改写为刚读到的当前宿主事实；其它记录从 `approvedProfiles` 去掉该 profile（其它
+   profile 保留），全部 `supersededBy` 原样保留。于是同一时刻最多只有被测记录可挂载：目标
+   记录必须是 `active`，`sourceSha256` 未变，行上的 `hostDigest` 等于当前宿主摘要；非目标
+   记录只读取自己的状态行，作为采纳后拓扑判断的自身资格事实（它不执行任何工具调用）。
+   未获该 profile 批准的记录记为 `skipped-unapproved / profile-not-approved`，被操作者撤销的
+   记录（含完全撤销）记为 `disabled / operator-disabled`；它们不启动，也**不是**
+   `skipped-invalid`，替换链会穿过它们继续找到真正的末端。
 4. 按 `scripts/acceptance/revalidation-plans.json` 对每条目标记录在**它自己的隔离 boot 里**
    做一次确定性的真实工具调用（官方批量执行器；选择了 PTC `run_code` 程序型执行器的入口会
    改用同一 agent 下的注册定义，报告里写明用的是哪条路径）。证据里的 `active`、
