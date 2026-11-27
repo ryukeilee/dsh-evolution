@@ -30,24 +30,11 @@ runner 做这些事：
 2. 用**当前宿主**的 `dsh` 启动基线 ACP / Web 消费入口，读取它们自己记录在
    `shared-plugins/consumers/<profile>.json` 里的宿主事实（`dsh` / `cordis` / `include` / `node`），
    并要求两个入口的宿主一致；同时确认目标记录确实是 `pending-revalidation`（`host-version-mismatch`）。
-3. 对每个 profile 内**每条已批准且未被该 profile 撤销的记录**各写一次隔离索引并 boot 一次。
-   隔离索引把所有 `moduleUrl` 指向克隆，**只有被测记录**保留该 profile 的 approval 且在它是
-   目标时改写为刚读到的当前宿主事实；其它记录从 `approvedProfiles` 去掉该 profile（其它
-   profile 保留），全部 `supersededBy` 原样保留。于是同一时刻最多只有被测记录可挂载：目标
-   记录必须是 `active`，`sourceSha256` 未变，行上的 `hostDigest` 等于当前宿主摘要；非目标
-   记录只读取自己的状态行，作为采纳后拓扑判断的自身资格事实（它不执行任何工具调用）。
-   预测与生产同序：结构不合法的记录（例如 `hostOnly=false`）先按 `readSharedIndex` 的校验判为
-   `skipped-invalid`，即使它同时被撤销也不会被当成可穿越的 `disabled`，替换链在它这里停止。
-   结构合法但未获该 profile 批准的记录记为 `skipped-unapproved / profile-not-approved`，
-   结构合法且被操作者撤销的记录（含完全撤销）记为 `disabled / operator-disabled`；这些非完整性
-   跳过不启动，但替换链会穿过它们继续找到真正的末端。
-   每次 boot 前都把克隆内各 profile 的消费状态文件恢复成克隆时的原始字节：上一次 boot 会写同一份
-   文件，不恢复就会把真实 sticky 回执覆盖成前一个 boot 的状态，使预测依赖 boot 顺序。
-4. 按 `scripts/acceptance/revalidation-plans.json` 对每条目标记录在**它自己的隔离 boot 里**
-   做一次确定性的真实工具调用（官方批量执行器；选择了 PTC `run_code` 程序型执行器的入口会
-   改用同一 agent 下的注册定义，报告里写明用的是哪条路径）。证据里的 `active`、
-   `sourceSha256`、`hostDigest`、`toolCalls` **只取目标记录自己的隔离 boot**；目标隔离 boot
-   不是 `active` 时运行失败、不采纳。计划里没有条目的目标记录只做挂载证明，不调用工具。
+3. 只把**克隆里**目标记录的 `host` 改成刚读到的当前宿主事实，重新启动两个入口：
+   记录必须变成 `active`，且 `sourceSha256` 未变、行上的 `hostDigest` 等于当前宿主摘要。
+4. 按 `scripts/acceptance/revalidation-plans.json` 对每条记录做一次确定性的真实工具调用
+   （官方批量执行器；选择了 PTC `run_code` 程序型执行器的入口会改用同一 agent 下的注册定义，
+   报告里写明用的是哪条路径）。计划里没有条目的记录只做挂载证明，不调用工具。
 5. 写出 schema 1 的 `dsh-evolution-cross-entry-evidence`（`--out` 默认写到
    `docs/evidence/revalidation-<host>-<date>.json`）。
 6. `--apply` 时：确认索引在验证期间没有变化，然后**只通过** `shared-plugins.mjs revalidate`
@@ -65,10 +52,6 @@ runner 做这些事：
 - 正式数据根只在 `revalidate` 命令里被写一次（追加 `revalidation` 世代并更新记录宿主）。
 - “当前宿主已验证”这个假设只存在于**一次性克隆**里；证据同时记录了这一步，以及每个入口真实的
   挂载结果、`hostDigest`、工具调用输出。任何人都能复核。
-- 每条记录的激活与工具证据都来自「只含该记录」的隔离 boot：其它记录在该 profile 失去 approval，
-  但替换标记保留。工具调用在共享执行器里按工具名执行、证据按调用 ID 归给单条记录；若让重叠的
-  替换方同时挂载，它的监听器就能替旧记录通过功能断言。隔离 boot 让同一时刻最多一条记录可挂载，
-  工具输出不可能由另一条记录代答；目标隔离 boot 非 `active` 即失败，不产生新宿主证据。
 - 索引在验证期间被其它发布改动时，runner 拒绝采纳。
 - 证据不通过则什么都不写。
 

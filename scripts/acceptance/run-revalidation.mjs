@@ -37,7 +37,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { applySupersession, hostCompatible, hostDigest, isDisabledForProfile, readDisableState, validateSharedRecord } from '../../lib/promoted-sharing.js';
+import { applySupersession, hostCompatible, hostDigest, isDisabledForProfile, readDisableState } from '../../lib/promoted-sharing.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
@@ -115,63 +115,6 @@ function writeJsonFile(file, value) {
   fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
 }
 
-function outsideCloneRoot(root, candidate) {
-  const relative = path.relative(root, candidate);
-  return relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative);
-}
-
-/**
- * Prove that a directory to be created or written resolves inside the throw-
- * away clone before any filesystem mutation happens. The lexical check alone
- * is not enough: `normalizeSymlinks` anchors relative links at the source home,
- * so a path like `<clone>/storages/.../shared-plugins` can lead back to the real
- * one. Walk up to the nearest existing ancestor and resolve it through
- * symlinks; only then may a caller create the missing tail.
- */
-export function assertInsideCloneRoot(root, target) {
-  if (typeof root !== 'string' || root === '') {
-    throw new Error('a clone root is required to enforce its boundary');
-  }
-  if (typeof target !== 'string' || !path.isAbsolute(target)) {
-    throw new Error('refusing a relative clone path: ' + String(target));
-  }
-  const logicalRoot = path.resolve(root);
-  const realRoot = fs.realpathSync(root);
-  const absolute = path.resolve(target);
-  if (outsideCloneRoot(logicalRoot, absolute)) {
-    throw new Error('refusing to write outside the clone: ' + target);
-  }
-  let ancestor = absolute;
-  while (!fs.existsSync(ancestor)) {
-    const parent = path.dirname(ancestor);
-    if (parent === ancestor) throw new Error('refusing to write outside the clone: ' + target);
-    ancestor = parent;
-  }
-  if (outsideCloneRoot(realRoot, fs.realpathSync(ancestor))) {
-    throw new Error('refusing to write outside the clone: ' + target);
-  }
-  return realRoot;
-}
-
-/** Atomic JSON write confined to the clone, replacing a link at the target. */
-export function writeJsonFileInClone(file, value, cloneRoot) {
-  const dir = path.dirname(path.resolve(file));
-  assertInsideCloneRoot(cloneRoot, dir);
-  fs.mkdirSync(dir, { recursive: true });
-  // Re-check the real directory after mkdir: a link installed in the gap would
-  // otherwise redirect the rename below into the source home.
-  assertInsideCloneRoot(cloneRoot, dir);
-  const temp = path.join(dir, '.' + path.basename(file) + '.' + process.pid + '.' + crypto.randomBytes(6).toString('hex') + '.tmp');
-  try {
-    fs.writeFileSync(temp, JSON.stringify(value, null, 2) + '\n', { mode: 0o600 });
-    fs.renameSync(temp, file);
-  } catch (error) {
-    try { fs.rmSync(temp, { force: true }); } catch { /* keep the original failure */ }
-    throw error;
-  }
-  return file;
-}
-
 /** The sidecar that carries adoption proofs, next to the attested evidence. */
 export function adoptionReportPath(evidenceFile) {
   return evidenceFile.endsWith('.json') ? evidenceFile.slice(0, -'.json'.length) + '.report.json' : evidenceFile + '.report.json';
@@ -189,76 +132,34 @@ export function writeAdoptionReport(evidenceFile, document) {
 }
 
 /**
- * Deep copy whose module URLs point into the throw-away data root — except for
- * records whose URL is already invalid against the real source root. Rewriting
- * those would turn a `skipped-invalid` source record into a mountable clone
- * record, so the clone would attest a different replacement chain than the one
- * production actually boots. All other structural defects do not affect this
- * decision: only the two module-URL reasons describe an out-of-root URL.
- */
-function clonedIndex(index, dataRoot, at, sourcePluginRoot) {
-  const next = JSON.parse(JSON.stringify(index));
-  const hasSourceRoot = typeof sourcePluginRoot === 'string' && sourcePluginRoot !== '';
-  for (const record of Array.isArray(next.plugins) ? next.plugins : []) {
-    if (record && typeof record.pluginName === 'string') {
-      if (hasSourceRoot) {
-        const verdict = recordValidationVerdict(record, sourcePluginRoot);
-        if (verdict.reason === 'record-module-path' || verdict.reason === 'record-module-url') continue;
-      }
-      record.moduleUrl = pathToFileURL(path.join(dataRoot, 'promoted', record.pluginName, 'lib', 'index.js')).href;
-    }
-  }
-  next.updatedAt = at;
-  return next;
-}
-
-/**
  * The clone-side index: the same records, with the module URL moved into the
  * clone (a record path outside its own data root is invalid by design) and,
  * for the records under verification only, the exact current host facts that
- * make them eligible in the throw-away clone. Supersession markers are kept:
- * hiding an overlap would let a replacement answer for the record under test.
- * Nothing here is written back to the source home.
+ * make them eligible in the throw-away clone. Nothing here is written back to
+ * the source home.
  */
 export function rewriteIndexForVerification(index, options) {
   const settings = options || {};
+  const dataRoot = settings.dataRoot;
   const host = settings.host || null;
   const targetIds = new Set(Array.isArray(settings.targets) ? settings.targets : []);
   const at = typeof settings.now === 'string' ? settings.now : new Date().toISOString();
-  const next = clonedIndex(index, settings.dataRoot, at, settings.sourcePluginRoot);
-  for (const record of Array.isArray(next.plugins) ? next.plugins : []) {
+  const next = JSON.parse(JSON.stringify(index));
+  const records = Array.isArray(next.plugins) ? next.plugins : [];
+  for (const record of records) {
+    if (record && typeof record.pluginName === 'string') {
+      record.moduleUrl = pathToFileURL(path.join(dataRoot, 'promoted', record.pluginName, 'lib', 'index.js')).href;
+    }
+    // The evidence clone proves bytes and host, not the current operator
+    // supersession topology: leaving a marker here would suppress a superseded
+    // target and make it impossible to gather its own activation evidence.
+    // The post-adoption clone keeps the markers to verify the final topology.
+    if (settings.stripSupersession !== false && record && record.supersededBy) delete record.supersededBy;
     if (host && record && targetIds.has(record.id)) {
       record.host = Object.assign({}, record.host, { dsh: host.dsh, cordis: host.cordis, include: host.include, node: host.node, verifiedAt: at });
     }
   }
-  return next;
-}
-
-/**
- * The per-record attestation index: only `recordId` keeps approval for
- * `profile`, so at most one record can mount in that profile and answer tool
- * calls. The tested record alone receives current host facts (when `host` is
- * given); every supersededBy marker is retained. This proves the record's own
- * eligibility with the production supersession rule still in force, instead of
- * fabricating a marker-free topology where two listeners could coexist.
- */
-export function isolationIndex(index, options) {
-  const settings = options || {};
-  const host = settings.host || null;
-  const profile = settings.profile || null;
-  const recordId = settings.recordId || null;
-  const at = typeof settings.now === 'string' ? settings.now : new Date().toISOString();
-  const next = clonedIndex(index, settings.dataRoot, at, settings.sourcePluginRoot);
-  for (const record of Array.isArray(next.plugins) ? next.plugins : []) {
-    if (!record) continue;
-    const tested = record.id === recordId;
-    if (tested && host) {
-      record.host = Object.assign({}, record.host, { dsh: host.dsh, cordis: host.cordis, include: host.include, node: host.node, verifiedAt: at });
-    }
-    if (!tested && profile && Array.isArray(record.approvedProfiles)) {
-      record.approvedProfiles = record.approvedProfiles.filter((name) => name !== profile);
-    }
-  }
+  next.updatedAt = at;
   return next;
 }
 
@@ -277,64 +178,44 @@ export function profileIsRevalidationTarget(record, profile, disable) {
 }
 
 /**
- * The same strict record validation the production consumer applies in
- * `readSharedIndex` before it evaluates anything. The promoted root must come
- * from the caller's real data root: deriving it from the record's own module URL
- * would make the containment check pass for any URL. Without a supplied root the
- * validator still fails closed (on `record-module-url`), but production callers
- * always pass the root of the home whose records they are predicting.
+ * A record legitimately superseded in this profile is expected to stay
+ * `disabled / superseded-by` after the host upgrade: the consumer mounts only
+ * the replacement. Requiring `active` on both aborts revalidation for a valid
+ * switch. If the replacement is no longer a target, the old record is expected
+ * to be active again, which is exactly the recovery the consumer performs.
  */
-function recordValidationVerdict(record, pluginRoot) {
-  const paths = typeof pluginRoot === 'string' && pluginRoot !== '' ? { pluginRoot } : {};
-  try {
-    return validateSharedRecord(record, paths);
-  } catch {
-    return { ok: false, reason: 'record-module-url' };
-  }
+export function expectedRecordStatus(record, profile, records, disable) {
+  const all = Array.isArray(records) ? records : [];
+  // Use the production rule, not a direct-marker shortcut: a chain whose
+  // middle version is disabled still suppresses its predecessor in favour of
+  // the furthest eligible tail.
+  const decisions = all.map((row) => ({
+    record: row,
+    decision: profileIsRevalidationTarget(row, profile, disable)
+      ? { status: 'eligible' }
+      : { status: 'disabled', reason: 'operator-disabled' },
+  }));
+  const outcome = applySupersession(decisions, { profile })
+    .find(({ record: row }) => row.id === record?.id);
+  if (!outcome || outcome.decision.status === 'eligible') return { status: 'active' };
+  return { status: 'disabled', reason: outcome.decision.reason || 'superseded-by' };
 }
 
 /**
- * Self-eligibility that holds before any attestation boot. Structure is
- * checked first, exactly like the production consumer: a record dropped by
- * `readSharedIndex` (including one that is also revoked) is `skipped-invalid`
- * and stops a supersession chain. Revocation is checked before profile approval,
- * exactly like the production consumer's `evaluateSharedRecord`: a record
- * revoked in this profile is `disabled` even when it is not approved there. Only
- * a structurally valid, non-revoked record without this profile's approval is
- * `skipped-unapproved`. Both are traversable non-integrity skips.
+ * Post-adoption expectations come from the marker-free evidence boot (which
+ * proved real eligibility, including missing services) combined with the
+ * production supersession rule. An ineligible tail restores its predecessor,
+ * so the runner must not insist on the tail's activation after adoption.
  */
-function defaultOwnStatuses(records, profile, disable, pluginRoot) {
-  const statuses = new Map();
-  for (const record of Array.isArray(records) ? records : []) {
-    const verdict = recordValidationVerdict(record, pluginRoot);
-    if (!verdict.ok) {
-      statuses.set(record.id, { status: 'skipped-invalid', reason: verdict.reason });
-    } else if (isDisabledForProfile(disable, record.id, profile)) {
-      statuses.set(record.id, { status: 'disabled', reason: 'operator-disabled' });
-    } else if (!Array.isArray(record?.approvedProfiles) || !record.approvedProfiles.includes(profile)) {
-      statuses.set(record.id, { status: 'skipped-unapproved', reason: 'profile-not-approved' });
-    }
-  }
-  return statuses;
-}
-
-/**
- * Post-adoption expectations come from each record's own isolation boot (which
- * proved its real eligibility on this host, including missing services) combined
- * with the production supersession rule on the adopted index. Records that were
- * not booted keep their pre-boot skip status, so a non-integrity skip still
- * traverses to the terminal version. An ineligible tail restores its predecessor.
- */
-export function expectedAfterAdoption(records, profile, ownStatuses, disable, pluginRoot) {
-  const statuses = defaultOwnStatuses(records, profile, disable, pluginRoot);
-  for (const [id, status] of ownStatuses instanceof Map ? ownStatuses : []) statuses.set(id, status);
+export function expectedAfterAdoption(records, profile, evidenceRows) {
+  const rows = evidenceRows instanceof Map ? evidenceRows : new Map();
   const decisions = (Array.isArray(records) ? records : []).map((row) => {
-    const own = statuses.get(row.id);
+    const evidence = rows.get(row.id);
     return {
       record: row,
-      decision: own?.status === 'active'
+      decision: evidence?.status === 'active'
         ? { status: 'eligible' }
-        : { status: own?.status ?? 'skipped-invalid', reason: own?.reason ?? null },
+        : { status: evidence?.status ?? 'skipped-invalid', reason: evidence?.reason ?? null },
     };
   });
   return new Map(applySupersession(decisions, { profile })
@@ -401,69 +282,6 @@ export function normalizeSymlinks(root, sourceRoot = root) {
       normalizeSymlinks(file, path.join(sourceRoot, relative));
     }
   }
-}
-
-/**
- * Snapshot a cloned home's per-profile consumer state reports. Every boot
- * rewrites these files, so a later isolated boot would otherwise inherit the
- * previous boot's status row as its `previousState` and its prediction would
- * depend on boot order. A file absent from the clone is captured as `null` so a
- * later boot's freshly written file is removed on restore. The source home is
- * never read or written by these helpers.
- */
-export function snapshotConsumerStates(cloneHome, profiles = PROFILES) {
-  const snapshot = new Map();
-  for (const profile of Array.isArray(profiles) ? profiles : []) {
-    const file = path.join(cloneHome, CONSUMER_STATE, profile + '.json');
-    try {
-      snapshot.set(file, fs.readFileSync(file));
-    } catch (error) {
-      if (error?.code !== 'ENOENT') throw error;
-      snapshot.set(file, null);
-    }
-  }
-  return snapshot;
-}
-
-/**
- * Restore a snapshot byte-for-byte, only at the paths it was captured from.
- * The clone root is a hard boundary: `normalizeSymlinks` deliberately anchors
- * relative links at the source home, so a path inside the clone can lead back
- * to production state. Resolve each target directory and refuse it when it
- * escapes the real root. The bytes are written through a same-directory
- * temporary file and renamed into place, which replaces a symlink at the
- * target path instead of following it into its target.
- */
-export function restoreConsumerStates(snapshot, cloneHome) {
-  if (typeof cloneHome !== 'string' || cloneHome === '') {
-    throw new Error('restoreConsumerStates requires the clone home to enforce its boundary');
-  }
-  for (const [file, bytes] of snapshot instanceof Map ? snapshot : []) {
-    if (!path.isAbsolute(file)) throw new Error('refusing to restore a relative consumer state path: ' + file);
-    const dir = path.dirname(path.resolve(file));
-    // Boundary first: mkdir through an escaping symlink would create a
-    // directory in the source home before a realpath check could reject it.
-    // Pass the caller's path (not its realpath): the snapshot paths use the
-    // same spelling, and on macOS /var and /private/var are the same tree.
-    assertInsideCloneRoot(cloneHome, dir);
-    fs.mkdirSync(dir, { recursive: true });
-    assertInsideCloneRoot(cloneHome, dir);
-    if (bytes === null) {
-      // `rm` unlinks only: a file (or link) created by a boot is removed
-      // without following it into the source home.
-      fs.rmSync(file, { force: true });
-      continue;
-    }
-    const temp = path.join(dir, '.' + path.basename(file) + '.' + process.pid + '.' + crypto.randomBytes(6).toString('hex') + '.tmp');
-    try {
-      fs.writeFileSync(temp, bytes, { mode: 0o600 });
-      fs.renameSync(temp, file);
-    } catch (error) {
-      try { fs.rmSync(temp, { force: true }); } catch { /* keep the original failure */ }
-      throw error;
-    }
-  }
-  return snapshot;
 }
 
 function treeDigest(root, options) {
@@ -619,9 +437,6 @@ async function main(argv) {
   }
   const sourceHome = options.home;
   const indexPath = path.join(sourceHome, PUBLISHED_REL);
-  // Predictions about source records use the source home's own promoted root,
-  // never a root derived from the record fields under validation.
-  const sourcePromotedRoot = path.join(sourceHome, 'storages', 'evolution', 'promoted');
   if (!fs.existsSync(indexPath)) throw new Error(sourceHome + ' has no published plugin index (' + indexPath + ')');
   const cli = options.cli || DEFAULT_CLI;
   if (!fs.existsSync(cli)) throw new Error('the dsh CLI is not installed at ' + cli);
@@ -649,21 +464,10 @@ async function main(argv) {
   cloneHome(sourceHome, clone);
   const cloneDataRoot = path.join(clone, 'storages', 'evolution');
   const cloneIndexPath = path.join(clone, PUBLISHED_REL);
-  writeJsonFileInClone(cloneIndexPath, rewriteIndexForVerification(index, {
-    dataRoot: cloneDataRoot, sourcePluginRoot: sourcePromotedRoot, host: null, targets: [],
-  }), clone);
-  // Every boot in this clone must start from the source home's actual consumer
-  // report. A boot writes those files, so without restoring the snapshot a
-  // later boot would inherit an earlier boot's sticky/skip status as its
-  // previousState and its prediction would depend on boot order.
-  const consumerSnapshot = snapshotConsumerStates(clone);
+  writeJsonFile(cloneIndexPath, rewriteIndexForVerification(index, { dataRoot: cloneDataRoot, host: null, targets: [] }));
 
   // 2. Baseline boot per profile: no expectations, so the consumers report what
-  //    they really did with every record and capture their own host facts. Each
-  //    profile writes its own state file, so the two baseline boots do not
-  //    overwrite one another; restore once before the phase, not between them
-  //    (their reports are what the pending-record selection reads below).
-  restoreConsumerStates(consumerSnapshot, clone);
+  //    they really did with every record and capture their own host facts.
   const factsByProfile = {};
   for (const profile of PROFILES) {
     const outcome = await bootConsumer({
@@ -750,100 +554,76 @@ async function main(argv) {
     if (digest !== record.sourceSha256) throw new Error(id + ' source digest is ' + digest + ', not the published ' + record.sourceSha256);
   }
 
-  // 5. Verify on the clone with the current host facts: one isolated boot per
-  //    approved record in every profile, so only that record can mount and
-  //    answer its own tool calls. Each result is kept by record; the target's
-  //    own boot is the only source of its attestation.
+  // 5. Verify on the clone with the current host facts: one real boot per
+  //    profile, and each planned tool call through the official executor.
+  const verificationIndex = rewriteIndexForVerification(index, { dataRoot: cloneDataRoot, host, targets });
+  writeJsonFile(cloneIndexPath, verificationIndex);
+  const verificationRecords = Array.isArray(verificationIndex.plugins) ? verificationIndex.plugins : [];
   const plansByRecord = new Map(targets.map((id) => [id, planFor(plans, id, work)]));
   for (const plan of plansByRecord.values()) {
     if (plan && plan.tool === 'readonly_git_file') writeGitFixture(path.join(work, 'git-fixture'));
   }
   const verification = {};
-  const ownStatusesByProfile = {};
   for (const profile of PROFILES) {
-    const boots = new Map();
-    // Pre-seed every record's own status before any boot: unapproved and
-    // operator-revoked records are non-integrity skips, never `skipped-invalid`.
-    const ownStatuses = defaultOwnStatuses(records, profile, disable, sourcePromotedRoot);
-    for (const record of activeRecords) {
+    const expect = {};
+    const calls = [];
+    for (const id of targets) {
+      const record = records.find((row) => row.id === id);
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
-      const isTarget = targets.includes(record.id);
-      writeJsonFileInClone(cloneIndexPath, isolationIndex(index, {
-        dataRoot: cloneDataRoot,
-        sourcePluginRoot: sourcePromotedRoot,
-        host: isTarget ? host : null,
-        profile,
-        recordId: record.id,
-        now: startedAt,
-      }), clone);
-      // A target must mount on its own; a non-target boot only reads its own
-      // state row and executes no tools for anyone.
-      const expect = isTarget ? { [record.id]: { status: 'active' } } : {};
-      const calls = [];
-      if (isTarget) {
-        const plan = plansByRecord.get(record.id);
-        if (plan) {
-          calls.push({ id: record.id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: record.id });
-        }
+      const verificationRecord = verificationRecords.find((row) => row.id === id) ?? record;
+      expect[id] = expectedRecordStatus(verificationRecord, profile, verificationRecords, disable);
+      const plan = plansByRecord.get(id);
+      if (plan && expect[id].status === 'active') {
+        calls.push({ id: id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: id });
       }
-      // Reset the inherited report before every isolated boot: the previous
-      // record's boot wrote its own status rows into this same profile file.
-      restoreConsumerStates(consumerSnapshot, clone);
-      const outcome = await bootConsumer({
-        profile,
-        cloneHome: clone,
-        expect,
-        toolCalls: calls.length > 0 ? calls : null,
-        label: 'verify-' + profile + '-' + record.id,
-        work,
-        logs,
-        cli,
-        timeoutMs: options.timeoutMs,
-        sourceHome,
-        cwd: work,
-      });
-      if (outcome.error) throw new Error('the verification ' + profile + ' isolated boot for ' + record.id + ' failed: ' + outcome.error);
-      for (const call of outcome.result.toolCalls || []) {
-        const failure = checkToolExpectation(call);
-        if (failure) throw new Error(failure);
-      }
-      const rows = rowsById(readJsonFile(path.join(clone, CONSUMER_STATE, profile + '.json')));
-      const row = rows.get(record.id);
-      if (isTarget && (!row || row.status !== 'active')) {
-        throw new Error(record.id + ' is ' + (row ? `${row.status}/${row.reason}` : 'missing') + ' in its own isolated ' + profile + ' boot; refusing to adopt');
-      }
-      boots.set(record.id, { result: outcome.result, rows, isTarget });
-      ownStatuses.set(record.id, row ? { status: row.status, reason: row.reason ?? null } : { status: 'missing', reason: null });
     }
-    verification[profile] = { boots, expectedHostDigest: hostDigest(host) };
-    ownStatusesByProfile[profile] = ownStatuses;
+    const outcome = await bootConsumer({
+      profile,
+      cloneHome: clone,
+      expect,
+      toolCalls: calls.length > 0 ? calls : null,
+      label: 'verify-' + profile,
+      work,
+      logs,
+      cli,
+      timeoutMs: options.timeoutMs,
+      sourceHome,
+      cwd: work,
+    });
+    if (outcome.error) throw new Error('the verification ' + profile + ' consumer boot failed: ' + outcome.error);
+    for (const call of outcome.result.toolCalls || []) {
+      const failure = checkToolExpectation(call);
+      if (failure) throw new Error(failure);
+    }
+    const state = readJsonFile(path.join(clone, CONSUMER_STATE, profile + '.json'));
+    verification[profile] = { result: outcome.result, rows: rowsById(state), expectedHostDigest: hostDigest(host) };
   }
 
   // 6. Assemble the evidence: exact host identity, exact source digest and one
-  //    activation proof per approved profile, all from that record's own
-  //    isolated boot — never from a boot where an overlapping record ran.
+  //    activation proof per approved profile, plus the real tool calls.
   const plugins = [];
   for (const id of targets) {
     const record = records.find((row) => row.id === id);
     const profiles = {};
     for (const profile of PROFILES) {
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
-      const boot = verification[profile].boots.get(id);
-      if (!boot || !boot.isTarget) throw new Error(id + ' has no own isolated ' + profile + ' boot');
-      const row = boot.rows.get(id);
-      if (!row || row.status !== 'active') {
-        throw new Error(id + ' is ' + (row ? `${row.status}/${row.reason}` : 'missing') + ' in its own isolated ' + profile + ' boot');
+      const row = verification[profile].rows.get(id);
+      const verificationRecord = verificationRecords.find((row) => row.id === id) ?? record;
+      const expectedStatus = expectedRecordStatus(verificationRecord, profile, verificationRecords, disable);
+      if (!row || row.status !== expectedStatus.status
+        || (expectedStatus.reason && row.reason !== expectedStatus.reason)) {
+        throw new Error(id + ' is ' + (row ? `${row.status}/${row.reason}` : 'missing') + ' in the verified ' + profile + ' entry');
       }
       if (row.sourceSha256 !== record.sourceSha256) throw new Error('the ' + profile + ' entry activated a different source for ' + id);
       if (row.hostDigest !== verification[profile].expectedHostDigest) {
         throw new Error('the ' + profile + ' entry activated ' + id + ' on host digest ' + row.hostDigest + ', not the captured ' + verification[profile].expectedHostDigest);
       }
-      const calls = (boot.result.toolCalls || []).filter((call) => String(call.id).startsWith(id + ':'));
+      const calls = (verification[profile].result.toolCalls || []).filter((call) => String(call.id).startsWith(id + ':'));
       profiles[profile] = {
         active: true,
         activatedAt: row.activatedAt || null,
         hostDigest: row.hostDigest || null,
-        toolNames: boot.result.toolNames || [],
+        toolNames: verification[profile].result.toolNames || [],
         toolCalls: calls.map((call) => ({ id: call.id, name: call.name, path: call.path || null, isError: call.isError, code: call.code || null, text: call.text })),
       };
     }
@@ -880,25 +660,20 @@ async function main(argv) {
       recordCount: records.length,
       skippedRevokedIds,
     },
-    // The clone is the only place a target's recorded host is replaced by the
-    // current one; each activation below is a real boot of the real entry with
-    // only that record eligible in its profile.
+    // The clone is the only place the record recorded host is replaced by the
+    // current one; every activation below is a real boot of the real entry.
     verification: {
-      method: 'per-record-isolated-clone-eligibility',
-      note: 'each record was attested in its own isolated boot: only it kept the tested profile and (when targeted) received current host facts; supersession markers were retained; the source home was never rewritten',
+      method: 'isolated-clone-current-host-eligibility',
+      note: 'the cloned record host was rewritten to the host facts captured by the baseline consumer boot; the source home was never rewritten',
       targetIds: targets,
     },
-    profiles: Object.fromEntries(PROFILES.map((profile) => {
-      const boots = [...verification[profile].boots.values()];
-      const representative = boots[0]?.result || {};
-      return [profile, {
-        consumerStateHost: factsByProfile[profile],
-        verifiedRows: boots.flatMap((boot) => boot.result.rows || []),
-        kernelPresent: boots.some((boot) => boot.result.kernelPresent === true),
-        evolutionToolNames: representative.evolutionToolNames || [],
-        tools: representative.toolNames || [],
-      }];
-    })),
+    profiles: Object.fromEntries(PROFILES.map((profile) => [profile, {
+      consumerStateHost: factsByProfile[profile],
+      verifiedRows: verification[profile].result.rows || [],
+      kernelPresent: verification[profile].result.kernelPresent === true,
+      evolutionToolNames: verification[profile].result.evolutionToolNames || [],
+      tools: verification[profile].result.toolNames || [],
+    }])),
     plugins,
   };
   writeJsonFile(evidenceFile, redact(evidence, sourceHome, work));
@@ -934,11 +709,10 @@ async function main(argv) {
     const clone2 = path.join(work, 'adopted-home');
     cloneHome(sourceHome, clone2);
     const clone2DataRoot = path.join(clone2, 'storages', 'evolution');
-    const clone2PromotedRoot = path.join(clone2DataRoot, 'promoted');
     const adoptedIndex = rewriteIndexForVerification(readJsonFile(indexPath), {
-      dataRoot: clone2DataRoot, sourcePluginRoot: sourcePromotedRoot, host: null, targets: [],
+      dataRoot: clone2DataRoot, host: null, targets: [], stripSupersession: false,
     });
-    writeJsonFileInClone(path.join(clone2, PUBLISHED_REL), adoptedIndex, clone2);
+    writeJsonFile(path.join(clone2, PUBLISHED_REL), adoptedIndex);
     const adoptedRecords = Array.isArray(adoptedIndex.plugins) ? adoptedIndex.plugins : [];
     postAdoption = {};
     for (const profile of PROFILES) {
@@ -946,12 +720,13 @@ async function main(argv) {
       const calls = [];
       for (const plugin of plugins) {
         if (!profileIsRevalidationTarget(plugin, profile, disable)) continue;
-        // Each record's own isolation boot proved its own eligibility on this
-        // host (including missing services). Apply the production supersession
-        // rule to those facts instead of assuming every approved target is
-        // eligible; a disabled or incompatible tail restores its predecessor.
-        const ownStatuses = ownStatusesByProfile[profile] ?? new Map();
-        const decision = expectedAfterAdoption(adoptedRecords, profile, ownStatuses, disable, clone2PromotedRoot).get(plugin.id);
+        // The marker-free evidence boot already proved which records are
+        // genuinely eligible on this host (including missing services). Apply
+        // the production supersession rule to those facts instead of assuming
+        // every approved target is eligible; a disabled or incompatible tail
+        // must restore its predecessor, and the runner must expect that.
+        const evidenceRows = verification[profile]?.rows ?? new Map();
+        const decision = expectedAfterAdoption(adoptedRecords, profile, evidenceRows).get(plugin.id);
         expect[plugin.id] = decision?.status === 'eligible'
           ? { status: 'active' }
           : { status: decision?.status ?? 'active', ...(decision?.reason ? { reason: decision.reason } : {}) };
