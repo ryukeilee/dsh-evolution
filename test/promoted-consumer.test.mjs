@@ -1151,6 +1151,51 @@ test('disposing a real Include tree with a live tool surface reports released:fa
   assert.deepEqual(state.state.disposal, { released: false, entries: 1 });
 });
 
+test('the host tool baseline is captured at mount time, not at construction', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const { record, toolName } = await createRecord();
+  await writeIndex([record]);
+
+  const ctx = await boot();
+  const afterConstruction = 'tool_registered_after_construction';
+  const beforeMount = 'tool_registered_before_mount';
+  ctx.tools.register({ name: afterConstruction, description: 'host probe' });
+
+  let created;
+  let baselineAtMount;
+  let compositionAtCapture;
+  const mountInclude = async (mountCtx, config) => {
+    baselineAtMount = created.session.hostBaselineTools;
+    compositionAtCapture = await fs.readFile(config.path, 'utf8');
+    return mountIncludeTree(mountCtx, config);
+  };
+  created = createConsumerSession({ ctx, config: { dataRoot }, profile: 'acp', mountInclude });
+
+  assert.equal(created.session.hostBaselineTools, null, 'construction does not freeze the tool surface');
+
+  // A tool registered in the window between construction and our first mount
+  // is still a host tool. A construction-time baseline would treat it as ours
+  // and fail closed after dispose even though we never owned it.
+  ctx.tools.register({ name: beforeMount, description: 'host probe' });
+  await created.mount();
+
+  assert.ok(baselineAtMount instanceof Set, 'the baseline exists when the first Include mount begins');
+  assert.deepEqual([...baselineAtMount].sort(), [afterConstruction, beforeMount].sort());
+  assert.equal(baselineAtMount.has(toolName), false, 'our plugin tool is not part of the host baseline');
+  assert.equal(created.session.hostBaselineTools, baselineAtMount, 'fallback and disposal reuse the same baseline');
+  assert.deepEqual(JSON.parse(compositionAtCapture), [], 'the baseline was captured after the empty composition was written');
+
+  assert.ok(ctx.tools.schemas().some((definition) => definition.name === toolName));
+  const disposal = await created.dispose();
+  assert.equal(disposal.released, true, 'host tools from the startup window are not leftover plugin tools');
+  assert.equal(created.session.unreleasedOldTree, false);
+  assert.deepEqual(
+    ctx.tools.schemas().map((definition) => definition.name).sort(),
+    [afterConstruction, beforeMount].sort(),
+    'only our own tool was released; the host tools stay online',
+  );
+});
+
 test('a fallback does not report a healthy predecessor as include-unavailable when the failed replacement keeps its entry', async (t) => {
   const { dataRoot, createRecord, writeIndex } = await fixture(t);
   const predecessor = await createRecord({ toolName: 'healthy_predecessor_tool' });
