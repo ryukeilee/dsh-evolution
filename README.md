@@ -84,6 +84,14 @@ Desktop 是唯一的晋升权威：Trial、measure、promotion、canary 与 roll
 - **生效时机与数据位置。** consumer 只在启动时读索引，因此新的发布在入口下次启动时生效；部署形态同时保持
   宿主 HMR 关闭（见下）。索引、撤销表与各 profile 的消费状态都在
   `$DSH_HOME/storages/evolution/shared-plugins/`；插件源码仍在 `$DSH_HOME/storages/evolution/promoted/`。
+- **新增入口与迭代替换。** 已 stable 的记录可以用 `dsh-evolution-shared approve --plugin <id> --profile <p>
+  --approval <所有者原文>` 获得另一个消费 profile；它复用同一份收益证据与已验证字节，不会重跑实验。
+  当新候选是既有 stable 插件的改进时，`supersede --old <id> --new <id> --profile <p> --approval <所有者原文>`
+  让旧记录在**替换方确实可挂载**时才让位，避免两个重叠策略同时生效；替换方失效时旧记录自动保持启用。
+  `revoke-supersede` 可逐 profile 撤回该决定：它清除该条替换标记，并在同 profile 没有其它记录仍指向
+  同一替换方时把替换方写入该 profile 的撤销表（`disabled.json`）；替换方仍被其它关系引用时不禁用，只清标记。
+  approve 与 supersede 只写发布索引上的有界审批注释，revoke-supersede 还会写上述撤销表；三者都不改写插件源码、
+  journal、canary、stable 证明或已有经验。详见[跨入口共享](docs/shared-plugins.md)。
 - **边界。** 只支持同一台机器、同一 OS 用户、同一 `DSH_HOME`；没有跨机器同步、插件市场、第二个晋升/canary
   引擎，也没有定时器或后台轮询。记录校验与摘要不是安全沙箱。
 

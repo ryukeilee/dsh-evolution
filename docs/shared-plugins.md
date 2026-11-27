@@ -62,11 +62,15 @@ consumer 先做静态判定（不执行插件），再挂载并验证 live 行�
 6. 源码不可用或摘要不匹配 → `skipped-invalid`；
 7. 宿主身份不匹配 → `pending-revalidation`（不挂载）；
 8. 缺少必需能力、服务或服务成员 → `skipped-incompatible`；
-9. 上一次启动对同一源码摘要 + 同一宿主身份的失败是 sticky 的 → 保持 `failed`，直到操作者 `reset`。
+9. 上一次启动对同一源码摘要 + 同一宿主身份的插件 apply / 评估类失败是 sticky 的 → 保持 `failed`，直到操作者 `reset`；
+   `include-unavailable` 与旧版 `include-refresh-failed` 属宿主 / Include 失败，非 sticky，下一次启动自动重试，不需要 `reset`。
 
 通过后，consumer 只把 eligible 行写入自己的 composition 并 `refresh()`，再逐行验证：公开 resolver 能取到
 该行、`entry.options.name` 等于记录中的模块 URL、行未被禁用、`Fiber.await()` 已 settle、Fiber 处于活动
 状态、`inject` 的服务都绑定在该 entry 自己的 scope 里。任一行验证失败只把该行标为 `failed`，不影响其他行。
+回退不再刷新旧树：它先 dispose 旧 Include 子树并证明所有旧行已释放，再写入 intended composition 并
+重新 mount 一棵只含 intended 的子树，再逐行验证；失败或被替换的版本无法在干净的新树里残留。旧子树的
+disposer 可能把它加载过的 composition 刷回磁盘，所以写盘必须在 dispose 之后。
 
 状态词表（consumer 启动时写入 `consumers/<profile>.json` 的 `plugins[].status`）：
 
@@ -78,7 +82,7 @@ consumer 先做静态判定（不执行插件），再挂载并验证 live 行�
 | `skipped-incompatible` | 缺少记录要求的能力 / 服务 / 服务成员 |
 | `skipped-invalid` | 记录或源码摘要 / manifest 不合法（含索引里的非法记录） |
 | `pending-revalidation` | 宿主身份（DSH 精确版本、Cordis/Include `major.minor`、Node major）不匹配；等操作者重验证 |
-| `failed` | 评估、Include 不可用、refresh 或插件 `apply` 失败；同源码 + 同宿主的失败会 sticky，直到 `reset` |
+| `failed` | 插件 apply / 评估类失败在同源码 + 同宿主下 sticky，直到 `reset`；`include-unavailable` 与旧版 `include-refresh-failed` 属宿主 / Include 失败，非 sticky，下一次启动自动重试，不需要 `reset` |
 
 `pending-restart` 不是启动时产生的状态：`reset` 会把目标行改写成 `pending-restart`（操作标记）以清除
 sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 `pendingRestart`（按 profile）：consumer 状态的
@@ -91,8 +95,29 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 `disposedAt` / `disposal`，保留其 `plugins`、`observedIndexUpdatedAt` 与 `sessionId`。因此短命失败会话不会覆盖
 仍在运行会话的 `active` 报告。发布前还会检查本会话是否仍能发布：自己的 fiber `uid` 已清空，或关闭中的宿主先把
 祖先 fiber 置为 UNLOADING（`state === 5`），都按取消处理，因此「挂载已成功、但 capability/service 探针在关闭中
-退化」得到的 `skipped-incompatible` / `include-refresh-failed` 行同样不会被发布。只有会话仍处于可发布 context
-且三次重试仍失败时才写 `include-unavailable`。
+退化」得到的 `skipped-incompatible` / `include-unavailable` 行同样不会被发布。会话仍处于可发布 context 时，
+首次 Include refresh 失败可在首轮即写非 sticky 的 `include-unavailable`，没有重试。回退阶段改为重建 Include
+子树：dispose 旧子树 → 证明释放（只把「在自己 mount / refresh / 逐行验证前后新出现」的工具名记入
+`ownedTools`，dispose 后仍在的这些名字才是 `toolSurfaceLeftovers`；独立宿主插件在基线之后注册的工具不算
+旧树残留；但公开接口 `schemas()` / `ctx.get()` 不提供注册归属，若独立插件恰好在 refresh 窗口内并发注册，
+仍会被保守地算作残留，本轮以非 sticky `include-unavailable` 收口并在下一次启动重试，这是已知的并发窗口；
+再加捕获的每个 Fiber 都已离开 active、旧 resolver 不再返回任何已评估行，resolver 抛错按已释放
+计）→ 写入 intended composition → 用同一 composition 重新 mount 一棵干净子树（仅对有证明的
+`INACTIVE_EFFECT` 做三次有界重试）→ 把官方子树**实际加载**的 entry 列表（`liveEntries()`）与 intended 列表
+逐项精确比对（环安全，递归 YAML 别名只会被判为不匹配，不会抛错跳过清理），不一致就 dispose 这棵新树并
+fail closed → 再逐行验证其中全部 intended 行。首次 refresh 后也做（包括 refresh 报错的路径）同样的精确比对；
+被拒绝的树一律走同一套 dispose + 工具面释放核验，未证明释放就保留该树并标记
+`unreleasedOldTree`，不让多余行留在挂载表里冒充预期的行。工具面是唯一无法被「Fiber uid
+已清空、resolver 已丢行」伪造的信号：Cordis 会捕获并记录 effect disposer 的异常，官方子树的 `dispose()`
+仍正常返回，但插件注册的工具仍在线。未释放时 fail closed：intended 行写 `include-unavailable`，不挂第二棵
+树，会话标记 `unreleasedOldTree`，并保留旧 adapter / Fiber 供宿主 `dispose()` 重试且如实报 `released:false`
+（`disposeOnce` 同样重新检查工具面，即使 uid 与 resolver 都已清空也不报 `released:true`）；只有证明释放后
+才清空它们。
+新树不可能包含被排除的版本，因此不再有「refresh 重试」「settled 树」「live Entry 仍在线」等判断，也不会
+因为一个 Entry 存在但 Fiber 已失败而把健康前驱报成 `include-unavailable`。候选的插件 apply 失败仍记
+`plugin-apply-failed` 并在下一次 pass 回退到它替换的记录；宿主级错误（含重建本身失败、以及中间版本缺少
+Fiber）同样把该行排除出本轮回退，状态保持非 sticky `include-unavailable` 并在下一次健康启动重试，不会让
+循环在同一版本上反复重建；停止本次回退时不谎报 `active`。每轮 pass 仍受 `evaluated.length` 上界约束。
 
 索引本身缺失是正常的 Desktop-only 安装；索引不可读或格式错误时视为「没有任何记录被授权」，所有记录都不能
 挂载（doctor 报 `blocked`）。单个记录非法不会丢弃其它合法记录。
@@ -261,6 +286,15 @@ dsh-evolution-shared reset --plugin <evolution-promoted-...> --profile acp|web
 
 # 采用真实隔离宿主验证证据，追加 revalidation 代并采用该宿主身份（用于 DSH 升级后）
 dsh-evolution-shared revalidate --evidence <evidence.json>
+
+# 给已 stable、已发布的记录增加一个消费 profile：复用既有收益证据，不重跑实验
+dsh-evolution-shared approve --plugin <id> --profile acp|web --approval "<所有者明确批准原文>"
+
+# 让一条已发布记录在同一 profile 让位给另一条已发布记录（迭代替换，双方字节与 stable 证明不变）
+dsh-evolution-shared supersede --old <id> --new <id> --profile acp|web --approval "<所有者明确批准原文>"
+
+# 撤销上述让位：清除该记录在该 profile 的条目并恢复其资格（下一次启动生效）；仅当没有其它记录仍引用同一替换方时才禁用替换方
+dsh-evolution-shared revoke-supersede --old <id> --profile acp|web --approval "<所有者明确批准原文>"
 ```
 
 `revalidate` 的证据格式为：
@@ -280,6 +314,35 @@ dsh-evolution-shared revalidate --evidence <evidence.json>
 `active: true`；证据文件的 SHA256 会写入新 revalidation 代。任何条件不满足即拒绝，不会只凭证据里的版本号
 放宽兼容性。命令**不会**晋升、回滚或删除记录、journal、canary 状态或经验数据。退出码：`0` 成功，
 `1` 拒绝 / 参数错误，`2` 状态不可读。
+
+### 5.1 新增 profile 与迭代替换为什么不需要新实验
+
+一次晋升产生的收益证据绑定的是候选源码摘要、任务身份、模型与 DSH/Cordis 版本，而不是消费 profile。
+`approve` 只记录所有者对**新增 profile** 的明确批准，复用同一份已验证事实；它不会重新哈希宿主充当新证明，
+也不会改写 `publishedAt`、`stable`、源码摘要或 revalidation 代。因此“先发布到 ACP，之后想再发布到 Web”
+不再需要另起一次 Trial / 配对会话 / canary / 晋升。
+
+`supersede` 解决的是另一个问题：新候选本质上是既有 stable 插件的改进时，旧插件不应与新插件在同一 profile
+同时挂载（两个 `tools/post-execute` 监听器会重复处理同一结果）。它在**同一次索引锁与原子写**里给旧记录写入
+一个有界的 `supersededBy` 条目，**按 profile 分别保存**，精确绑定新记录的 id 与源码摘要，并记录所有者批准原文
+的 SHA256。同一 profile 内再次替换同一对记录是 no-op，形成环的替换在写入前被拒绝；不同 profile 的替换互不影响。
+consumer 在完成该快照内**全部**记录的资格判定后才应用这些条目，并沿替换链走到**最远的仍合格**版本：只有该终点
+`eligible` 且每一跳的字节都与批准时一致，链条上的旧记录才报 `disabled` / `superseded-by`。穿透中间版本时允许
+`disabled`（含 `operator-disabled`）、`pending-revalidation`、`skipped-incompatible` 等非完整性不合格状态；但下一跳的 decision 是
+`skipped-invalid`（任何完整性 / 记录无效原因，含 `source-digest-mismatch`）时停止穿越，不把后续版本当作可继承的
+批准目标。链尾升级后停在 `pending-revalidation` 时，其前一个仍合格的记录自动成为终点，不会让更早的版本重新挂载。
+断开的摘要绑定不抑制任何记录；某条链遇到环时该条链不抑制任何记录，也不会退回到环中的某个中间版本，其它链照常
+应用。若替换方通过了静态检查但官方 Include 挂载后 `apply()` 抛错，consumer 去掉失败版本后**重新应用**剩余替换
+关系，只恢复应当生效的那个候选，替换方保留失败回执。上述保证只覆盖链完整且未成环的替换路径，且**仅当链上存在可验证挂载的候选时成立**：这类路径上不会出现“两条都不挂”或两条同时挂载。若所有候选都 `apply` 失败或在 live tree 中缺失，链上的前驱候选报非 sticky `include-unavailable` 且不挂载，下一次健康启动重试；失败版本仍保留自己的 `plugin-apply-failed` 回执。
+完整性阻断（`skipped-invalid`）或环按上文刻意不抑制，可能保留多个 eligible，不在这一保证内。
+
+回滚用 `revoke-supersede`：在同一把锁里清除该 profile 的条目；仅当该 profile 内没有其它记录仍以
+`supersededBy[profile].recordId` 指向同一替换方时才禁用替换方。若替换方被多条关系引用，撤销其中一条后替换方
+保持启用，被撤销的旧记录恢复资格并与仍启用的替换方共存；要真正下线替换方须先处理所有引用它的关系。链式替换
+必须从链尾开始撤销；直接撤销非链尾条目会被拒绝，以免中段回到 `active` 而链尾仍挂载。发布锁只串行化单次撤销
+或启用操作，不保证排在撤销之后到达的显式 `enable` 不会重新启用替换方；操作者紧邻执行两者时需自行确认最终拓扑。
+批准原文不进入索引或撤销原因；索引里只留 SHA256 与结构化字段。所有注释都拒绝格式错误的标记、未变更字节的
+重新批准、缺失的明确批准与非消费 profile。
 
 ## 6. 升级与重验证策略
 

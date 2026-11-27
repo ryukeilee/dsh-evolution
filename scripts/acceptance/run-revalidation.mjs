@@ -37,7 +37,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { hostCompatible, hostDigest, isDisabledForProfile, readDisableState } from '../../lib/promoted-sharing.js';
+import { applySupersession, hostCompatible, hostDigest, isDisabledForProfile, readDisableState } from '../../lib/promoted-sharing.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
@@ -150,6 +150,11 @@ export function rewriteIndexForVerification(index, options) {
     if (record && typeof record.pluginName === 'string') {
       record.moduleUrl = pathToFileURL(path.join(dataRoot, 'promoted', record.pluginName, 'lib', 'index.js')).href;
     }
+    // The evidence clone proves bytes and host, not the current operator
+    // supersession topology: leaving a marker here would suppress a superseded
+    // target and make it impossible to gather its own activation evidence.
+    // The post-adoption clone keeps the markers to verify the final topology.
+    if (settings.stripSupersession !== false && record && record.supersededBy) delete record.supersededBy;
     if (host && record && targetIds.has(record.id)) {
       record.host = Object.assign({}, record.host, { dsh: host.dsh, cordis: host.cordis, include: host.include, node: host.node, verifiedAt: at });
     }
@@ -170,6 +175,51 @@ export function profileIsRevalidationTarget(record, profile, disable) {
   return Array.isArray(record?.approvedProfiles)
     && record.approvedProfiles.includes(profile)
     && !isDisabledForProfile(disable, record.id, profile);
+}
+
+/**
+ * A record legitimately superseded in this profile is expected to stay
+ * `disabled / superseded-by` after the host upgrade: the consumer mounts only
+ * the replacement. Requiring `active` on both aborts revalidation for a valid
+ * switch. If the replacement is no longer a target, the old record is expected
+ * to be active again, which is exactly the recovery the consumer performs.
+ */
+export function expectedRecordStatus(record, profile, records, disable) {
+  const all = Array.isArray(records) ? records : [];
+  // Use the production rule, not a direct-marker shortcut: a chain whose
+  // middle version is disabled still suppresses its predecessor in favour of
+  // the furthest eligible tail.
+  const decisions = all.map((row) => ({
+    record: row,
+    decision: profileIsRevalidationTarget(row, profile, disable)
+      ? { status: 'eligible' }
+      : { status: 'disabled', reason: 'operator-disabled' },
+  }));
+  const outcome = applySupersession(decisions, { profile })
+    .find(({ record: row }) => row.id === record?.id);
+  if (!outcome || outcome.decision.status === 'eligible') return { status: 'active' };
+  return { status: 'disabled', reason: outcome.decision.reason || 'superseded-by' };
+}
+
+/**
+ * Post-adoption expectations come from the marker-free evidence boot (which
+ * proved real eligibility, including missing services) combined with the
+ * production supersession rule. An ineligible tail restores its predecessor,
+ * so the runner must not insist on the tail's activation after adoption.
+ */
+export function expectedAfterAdoption(records, profile, evidenceRows) {
+  const rows = evidenceRows instanceof Map ? evidenceRows : new Map();
+  const decisions = (Array.isArray(records) ? records : []).map((row) => {
+    const evidence = rows.get(row.id);
+    return {
+      record: row,
+      decision: evidence?.status === 'active'
+        ? { status: 'eligible' }
+        : { status: evidence?.status ?? 'skipped-invalid', reason: evidence?.reason ?? null },
+    };
+  });
+  return new Map(applySupersession(decisions, { profile })
+    .map(({ record, decision }) => [record.id, decision]));
 }
 
 export function planFor(plans, recordId, work) {
@@ -506,7 +556,9 @@ async function main(argv) {
 
   // 5. Verify on the clone with the current host facts: one real boot per
   //    profile, and each planned tool call through the official executor.
-  writeJsonFile(cloneIndexPath, rewriteIndexForVerification(index, { dataRoot: cloneDataRoot, host, targets }));
+  const verificationIndex = rewriteIndexForVerification(index, { dataRoot: cloneDataRoot, host, targets });
+  writeJsonFile(cloneIndexPath, verificationIndex);
+  const verificationRecords = Array.isArray(verificationIndex.plugins) ? verificationIndex.plugins : [];
   const plansByRecord = new Map(targets.map((id) => [id, planFor(plans, id, work)]));
   for (const plan of plansByRecord.values()) {
     if (plan && plan.tool === 'readonly_git_file') writeGitFixture(path.join(work, 'git-fixture'));
@@ -518,9 +570,12 @@ async function main(argv) {
     for (const id of targets) {
       const record = records.find((row) => row.id === id);
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
-      expect[id] = { status: 'active' };
+      const verificationRecord = verificationRecords.find((row) => row.id === id) ?? record;
+      expect[id] = expectedRecordStatus(verificationRecord, profile, verificationRecords, disable);
       const plan = plansByRecord.get(id);
-      if (plan) calls.push({ id: id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: id });
+      if (plan && expect[id].status === 'active') {
+        calls.push({ id: id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: id });
+      }
     }
     const outcome = await bootConsumer({
       profile,
@@ -553,7 +608,12 @@ async function main(argv) {
     for (const profile of PROFILES) {
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
       const row = verification[profile].rows.get(id);
-      if (!row || row.status !== 'active') throw new Error(id + ' is ' + (row ? row.status : 'missing') + ' in the verified ' + profile + ' entry');
+      const verificationRecord = verificationRecords.find((row) => row.id === id) ?? record;
+      const expectedStatus = expectedRecordStatus(verificationRecord, profile, verificationRecords, disable);
+      if (!row || row.status !== expectedStatus.status
+        || (expectedStatus.reason && row.reason !== expectedStatus.reason)) {
+        throw new Error(id + ' is ' + (row ? `${row.status}/${row.reason}` : 'missing') + ' in the verified ' + profile + ' entry');
+      }
       if (row.sourceSha256 !== record.sourceSha256) throw new Error('the ' + profile + ' entry activated a different source for ' + id);
       if (row.hostDigest !== verification[profile].expectedHostDigest) {
         throw new Error('the ' + profile + ' entry activated ' + id + ' on host digest ' + row.hostDigest + ', not the captured ' + verification[profile].expectedHostDigest);
@@ -649,16 +709,31 @@ async function main(argv) {
     const clone2 = path.join(work, 'adopted-home');
     cloneHome(sourceHome, clone2);
     const clone2DataRoot = path.join(clone2, 'storages', 'evolution');
-    writeJsonFile(path.join(clone2, PUBLISHED_REL), rewriteIndexForVerification(readJsonFile(indexPath), { dataRoot: clone2DataRoot, host: null, targets: [] }));
+    const adoptedIndex = rewriteIndexForVerification(readJsonFile(indexPath), {
+      dataRoot: clone2DataRoot, host: null, targets: [], stripSupersession: false,
+    });
+    writeJsonFile(path.join(clone2, PUBLISHED_REL), adoptedIndex);
+    const adoptedRecords = Array.isArray(adoptedIndex.plugins) ? adoptedIndex.plugins : [];
     postAdoption = {};
     for (const profile of PROFILES) {
       const expect = {};
       const calls = [];
       for (const plugin of plugins) {
         if (!profileIsRevalidationTarget(plugin, profile, disable)) continue;
-        expect[plugin.id] = { status: 'active' };
+        // The marker-free evidence boot already proved which records are
+        // genuinely eligible on this host (including missing services). Apply
+        // the production supersession rule to those facts instead of assuming
+        // every approved target is eligible; a disabled or incompatible tail
+        // must restore its predecessor, and the runner must expect that.
+        const evidenceRows = verification[profile]?.rows ?? new Map();
+        const decision = expectedAfterAdoption(adoptedRecords, profile, evidenceRows).get(plugin.id);
+        expect[plugin.id] = decision?.status === 'eligible'
+          ? { status: 'active' }
+          : { status: decision?.status ?? 'active', ...(decision?.reason ? { reason: decision.reason } : {}) };
         const plan = plansByRecord.get(plugin.id);
-        if (plan) calls.push({ id: plugin.id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: plugin.id });
+        if (plan && expect[plugin.id].status === 'active') {
+          calls.push({ id: plugin.id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: plugin.id });
+        }
       }
       const outcome = await bootConsumer({
         profile,

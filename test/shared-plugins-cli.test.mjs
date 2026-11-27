@@ -130,3 +130,105 @@ test('usage errors and unknown commands fail closed', () => {
   assert.equal(run(['frobnicate']).code, 1);
   assert.equal(run(['list', '--bogus']).code, 1);
 });
+
+async function secondRecord(env, suffix = '123456123456') {
+  const id = `evolution-promoted-${suffix}`;
+  const pluginName = `dsh-${id}`;
+  const dir = path.join(env.pluginRoot, pluginName, 'lib');
+  await fs.mkdir(dir, { recursive: true });
+  const modulePath = path.join(dir, 'index.js');
+  const source = 'export const name = "iteration";\nexport const inject = [];\nexport function apply() {}\n';
+  await fs.writeFile(modulePath, source);
+  const manifest = path.join(env.pluginRoot, pluginName, 'package.json');
+  await fs.writeFile(manifest, `${JSON.stringify({ name: pluginName, version: '0.1.0', type: 'module', main: 'lib/index.js' })}\n`);
+  return {
+    ...env.record,
+    id, pluginName, moduleUrl: pathToFileURL(modulePath).href,
+    sourceSha256: HEX(source), manifestSha256: HEX(await fs.readFile(manifest)),
+  };
+}
+
+test('approve widens an existing stable record without a new experiment or new bytes', async (t) => {
+  const env = await fixture(t);
+  // The record starts Desktop-only: approval is the only thing that changes.
+  const record = { ...env.record, approvedProfiles: ['acp'] };
+  await publishSharedRecord({ dataRoot: env.root, pluginRoot: env.pluginRoot }, record);
+  const result = run(['approve', '--data-root', env.root, '--plugin', pluginId, '--profile', 'web', '--approval', 'I approve sharing this verified plugin with Web', '--json']);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.json.status, 'updated');
+  assert.deepEqual(result.json.approvedProfiles, ['acp', 'web']);
+  const index = await readSharedIndex({ dataRoot: env.root, pluginRoot: env.pluginRoot });
+  assert.deepEqual(index.records[0].approvedProfiles, ['acp', 'web']);
+  assert.equal(index.records[0].sourceSha256, env.record.sourceSha256, 'verified bytes are unchanged');
+  assert.equal(index.records[0].stable.committedAt, env.record.stable.committedAt, 'stable proof is unchanged');
+  assert.equal(index.records[0].approvalExtensions.length, 1);
+  assert.equal(index.records[0].approvalExtensions[0].profile, 'web');
+
+  // Idempotent, and still refuses a missing approval.
+  assert.equal(run(['approve', '--data-root', env.root, '--plugin', pluginId, '--profile', 'web']).code, 1);
+  const repeat = run(['approve', '--data-root', env.root, '--plugin', pluginId, '--profile', 'web', '--approval', 'again', '--json']);
+  assert.equal(repeat.json.status, 'already-approved');
+
+  // A file changed after publication cannot be re-approved.
+  await fs.writeFile(env.modulePath, 'export const name = "tampered";\n');
+  assert.equal(run(['approve', '--data-root', env.root, '--plugin', pluginId, '--profile', 'acp', '--approval', 'x']).code, 1);
+});
+
+test('supersede and revoke-supersede are bounded, byte-bound and reversible', async (t) => {
+  const env = await fixture(t);
+  const replacement = await secondRecord(env);
+  await publishSharedRecord({ dataRoot: env.root, pluginRoot: env.pluginRoot }, env.record);
+  await publishSharedRecord({ dataRoot: env.root, pluginRoot: env.pluginRoot }, replacement);
+
+  // Both must be approved in the profile already; approval is explicit.
+  assert.equal(run(['supersede', '--data-root', env.root, '--old', pluginId, '--new', replacement.id, '--profile', 'acp']).code, 1);
+  const approved = run(['approve', '--data-root', env.root, '--plugin', replacement.id, '--profile', 'acp', '--approval', 'approve the iteration', '--json']);
+  assert.equal(approved.code, 0, approved.stderr);
+
+  const superseded = run(['supersede', '--data-root', env.root, '--old', pluginId, '--new', replacement.id, '--profile', 'acp', '--approval', 'replace the older policy', '--json']);
+  assert.equal(superseded.code, 0, superseded.stderr);
+  const index = await readSharedIndex({ dataRoot: env.root, pluginRoot: env.pluginRoot });
+  assert.equal(index.records[0].supersededBy.acp.recordId, replacement.id);
+  assert.equal(index.records[0].supersededBy.acp.sourceSha256, replacement.sourceSha256);
+  assert.equal(index.records[0].sourceSha256, env.record.sourceSha256, 'old bytes are preserved for rollback');
+  assert.deepEqual(index.records[1].approvedProfiles, ['acp', 'web']);
+
+  // Revoking disables the replacement in the profile and clears the marker.
+  const revoked = run(['revoke-supersede', '--data-root', env.root, '--old', pluginId, '--profile', 'acp', '--approval', 'roll back to the previous plugin', '--json']);
+  assert.equal(revoked.code, 0, revoked.stderr);
+  const after = await readSharedIndex({ dataRoot: env.root, pluginRoot: env.pluginRoot });
+  assert.equal(after.records[0].supersededBy, undefined);
+  const disabled = run(['list', '--data-root', env.root, '--json']);
+  assert.deepEqual(disabled.json.records[1].disabledProfiles, ['acp']);
+
+  // A tampered replacement cannot be used as the new authority.
+  await fs.writeFile(path.join(env.pluginRoot, replacement.pluginName, 'lib', 'index.js'), 'export const name = "tampered";\n');
+  const reapply = run(['supersede', '--data-root', env.root, '--old', pluginId, '--new', replacement.id, '--profile', 'acp', '--approval', 'x']);
+  assert.equal(reapply.code, 1);
+});
+
+test('supersession is stored per profile and chained replacements are refused', async (t) => {
+  const env = await fixture(t);
+  const replacement = await secondRecord(env);
+  await publishSharedRecord({ dataRoot: env.root, pluginRoot: env.pluginRoot }, env.record);
+  await publishSharedRecord({ dataRoot: env.root, pluginRoot: env.pluginRoot }, replacement);
+  assert.equal(run(['approve', '--data-root', env.root, '--plugin', replacement.id, '--profile', 'acp', '--approval', 'ok acp']).code, 0);
+  for (const profile of ['acp', 'web']) {
+    const result = run(['supersede', '--data-root', env.root, '--old', pluginId, '--new', replacement.id, '--profile', profile, '--approval', `replace in ${profile}`, '--json']);
+    assert.equal(result.code, 0, result.stderr);
+  }
+  const index = await readSharedIndex({ dataRoot: env.root, pluginRoot: env.pluginRoot });
+  assert.deepEqual(Object.keys(index.records[0].supersededBy).sort(), ['acp', 'web']);
+
+  // A second iteration in the same profile is bounded by the replacement's
+  // own marker: repeating the same pair is a no-op, a different target is a
+  // new generation that the consumer resolves to its terminal version.
+  const chained = run(['supersede', '--data-root', env.root, '--old', pluginId, '--new', replacement.id, '--profile', 'acp', '--approval', 'again', '--json']);
+  assert.equal(chained.json.status, 'already-superseded');
+  const third = await secondRecord(env, '999999999999');
+  await publishSharedRecord({ dataRoot: env.root, pluginRoot: env.pluginRoot }, third);
+  assert.equal(run(['approve', '--data-root', env.root, '--plugin', third.id, '--profile', 'acp', '--approval', 'ok third']).code, 0);
+  assert.equal(run(['supersede', '--data-root', env.root, '--old', replacement.id, '--new', third.id, '--profile', 'acp', '--approval', 'chain']).code, 0);
+  const afterChain = await readSharedIndex({ dataRoot: env.root, pluginRoot: env.pluginRoot });
+  assert.equal(afterChain.records[1].supersededBy.acp.recordId, third.id);
+});

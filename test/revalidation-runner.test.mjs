@@ -27,6 +27,62 @@ test('revalidation runner: a partially revoked record still has its other profil
   assert.equal(runner.profileIsRevalidationTarget(record, 'web', allRevoked), false);
 });
 
+test('revalidation runner: a superseded record is expected disabled while its replacement is a target', () => {
+  const replacement = { id: TARGET_B, approvedProfiles: ['acp', 'web'], sourceSha256: 'b'.repeat(64) };
+  const previous = {
+    id: TARGET_A,
+    approvedProfiles: ['acp', 'web'],
+    supersededBy: { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } },
+  };
+  assert.deepEqual(runner.expectedRecordStatus(previous, 'acp', [previous, replacement], { entries: [] }), { status: 'disabled', reason: 'superseded-by' });
+  assert.deepEqual(runner.expectedRecordStatus(previous, 'web', [previous, replacement], { entries: [] }), { status: 'active' });
+  // A changed replacement digest or a revoked replacement restores the old plugin.
+  const tampered = { ...replacement, sourceSha256: 'c'.repeat(64) };
+  assert.deepEqual(runner.expectedRecordStatus(previous, 'acp', [previous, tampered], { entries: [] }), { status: 'active' });
+  const revoked = { entries: [{ pluginId: TARGET_B, profile: 'acp' }] };
+  assert.deepEqual(runner.expectedRecordStatus(previous, 'acp', [previous, replacement], revoked), { status: 'active' });
+});
+
+test('revalidation runner: evidence clone strips supersession, post-adoption clone keeps it', () => {
+  const index = { plugins: [{ id: TARGET_A, pluginName: 'dsh-a', supersededBy: { acp: { recordId: TARGET_B } } }] };
+  const evidence = runner.rewriteIndexForVerification(index, { dataRoot: os.tmpdir() });
+  assert.equal(evidence.plugins[0].supersededBy, undefined, 'a superseded target must be verifiable on its own');
+  const adopted = runner.rewriteIndexForVerification(index, { dataRoot: os.tmpdir(), stripSupersession: false });
+  assert.equal(adopted.plugins[0].supersededBy.acp.recordId, TARGET_B, 'the final mounted topology must still be checked');
+});
+
+test('revalidation runner: a disabled middle link keeps the chain terminal expectation', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const first = { id: TARGET_A, approvedProfiles: ['acp'], supersededBy: { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } } };
+  const middle = { id: TARGET_B, approvedProfiles: ['acp'], sourceSha256: 'b'.repeat(64), supersededBy: { acp: { recordId: THIRD, sourceSha256: 'f'.repeat(64) } } };
+  const tail = { id: THIRD, approvedProfiles: ['acp'], sourceSha256: 'f'.repeat(64) };
+  const disable = { entries: [{ pluginId: TARGET_B, profile: 'acp' }] };
+  const records = [first, middle, tail];
+  assert.deepEqual(runner.expectedRecordStatus(first, 'acp', records, disable), { status: 'disabled', reason: 'superseded-by' });
+  assert.deepEqual(runner.expectedRecordStatus(middle, 'acp', records, disable), { status: 'disabled', reason: 'operator-disabled' });
+  assert.deepEqual(runner.expectedRecordStatus(tail, 'acp', records, disable), { status: 'active' });
+});
+
+test('revalidation runner: an ineligible tail restores its predecessor after adoption', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const records = [
+    { id: TARGET_A, approvedProfiles: ['acp'], supersededBy: { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } } },
+    { id: TARGET_B, approvedProfiles: ['acp'], sourceSha256: 'b'.repeat(64), supersededBy: { acp: { recordId: THIRD, sourceSha256: 'f'.repeat(64) } } },
+    { id: THIRD, approvedProfiles: ['acp'], sourceSha256: 'f'.repeat(64) },
+  ];
+  const evidence = new Map([
+    [TARGET_A, { status: 'active' }],
+    [TARGET_B, { status: 'active' }],
+    [THIRD, { status: 'skipped-incompatible', reason: 'missing-service' }],
+  ]);
+  const result = runner.expectedAfterAdoption(records, 'acp', evidence);
+  assert.equal(result.get(TARGET_A).status, 'disabled');
+  assert.equal(result.get(TARGET_A).reason, 'superseded-by');
+  assert.equal(result.get(TARGET_A).supersededBy, TARGET_B);
+  assert.equal(result.get(TARGET_B).status, 'eligible', 'B is the restored terminal for A');
+  assert.equal(result.get(THIRD).status, 'skipped-incompatible');
+});
+
 test('revalidation runner: parses its operator flags', () => {
   const options = runner.parseArgs(['--home', '/tmp/home', '--apply', '--json', '--timeout-ms', '9000']);
   assert.equal(options.home, path.resolve('/tmp/home'));

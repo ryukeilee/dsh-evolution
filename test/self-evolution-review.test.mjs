@@ -290,6 +290,30 @@ test('a current-host consumer apply failure is incompatible and asks for the sma
   assert.equal(composed.primary, REVIEW_ACTIONS.REPAIR);
 });
 
+test('Include-level consumer failures are host-unavailable, not sticky plugin failures', async (t) => {
+  for (const reason of ['include-unavailable', 'include-refresh-failed']) {
+    const env = await fixture(t, `include-${reason}`);
+    const digest = hostDigest(CURRENT_HOST);
+    await writeConsumers(env, {
+      rows: {
+        acp: [{ id: RECORD_ID, status: 'failed', reason, hostDigest: digest }],
+        web: [{ id: RECORD_ID, status: 'active', reason: null, hostDigest: digest }],
+      },
+    });
+
+    const result = await review(env);
+    assert.equal(result.summary.hostUnavailable, 1, `${reason} is a host fact`);
+    const [record] = result.records;
+    assert.equal(record.status, 'host-unavailable', `${reason} must not be classified as an apply failure`);
+    assert.equal(record.action, REVIEW_ACTIONS.RESTART);
+    assert.ok(record.reasons.some((text) => text === `acp: host-unavailable (${reason})`));
+
+    const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
+    assert.equal(composed.kind, 'restart-consumer');
+    assert.equal(composed.primary, REVIEW_ACTIONS.RESTART);
+  }
+});
+
 test('a changed plugin source is source-unusable and never gets mount advice', async (t) => {
   const env = await fixture(t, 'source-mismatch');
   await writeConsumers(env);
@@ -898,6 +922,30 @@ test('already-mounted and publisher-profile rows stay inactive instead of becomi
 // host already matches. A genuine host upgrade is different: there the RECORD
 // itself is incompatible and the record-level check asks for revalidation
 // before per-profile verdicts are computed.
+test('a superseded-by row stays disabled instead of producing a restart loop', async (t) => {
+  const env = await fixture(t, 'superseded-row');
+  const marker = {
+    recordId: 'evolution-promoted-111111111111',
+    sourceSha256: 'b'.repeat(64),
+    approvalSha256: 'c'.repeat(64),
+    evidenceSha256: 'd'.repeat(64),
+    at: '2026-11-24T15:00:00.000Z',
+  };
+  await publishSharedRecord(env.paths, { ...env.record, supersededBy: { acp: marker, web: marker } });
+  const digest = hostDigest(CURRENT_HOST);
+  await writeConsumers(env, {
+    rows: {
+      acp: [{ id: env.record.id, status: 'disabled', reason: 'superseded-by', hostDigest: digest, activatedAt: null }],
+      web: [{ id: env.record.id, status: 'disabled', reason: 'superseded-by', hostDigest: digest, activatedAt: null }],
+    },
+  });
+
+  const result = await review(env);
+  const [record] = result.records;
+  assert.deepEqual(record.profiles.map((row) => row.status), ['disabled', 'disabled']);
+  assert.equal(result.nextActions.some((action) => action.action === REVIEW_ACTIONS.RESTART), false);
+});
+
 test('a stale pending-revalidation row on a now-compatible record asks for a restart', async (t) => {
   const env = await fixture(t, 'consumer-host-mismatch');
   const staleDigest = hostDigest(PREVIOUS_HOST);
