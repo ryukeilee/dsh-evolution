@@ -228,8 +228,8 @@ test('each missing shape gets its own bounded hint; none swallows another', asyn
   }
 });
 
-test('the supplement never evicts blocking actions or the bounded-read notice', () => {
-  const blockers = Array.from({ length: SELF_EVOLUTION_REVIEW_LIMITS.maxActions - 1 }, (_, index) => ({
+test('the bounded-read notice and the supplement each keep a reserved slot', () => {
+  const blockers = Array.from({ length: SELF_EVOLUTION_REVIEW_LIMITS.maxActions - 2 }, (_, index) => ({
     action: REVIEW_ACTIONS.VERIFY_HOST,
     recordId: `record-${index}`,
     why: 'blocking',
@@ -249,9 +249,22 @@ test('the supplement never evicts blocking actions or the bounded-read notice', 
   const { nextActions, nextActionsDropped } = boundedReviewActions([...blockers, capNotice, supplement]);
   assert.equal(nextActions.filter((row) => row.action === REVIEW_ACTIONS.VERIFY_HOST).length, blockers.length);
   assert.ok(nextActions.some((row) => row.code === 'review-record-cap'));
-  assert.equal(nextActions.includes(supplement), false, 'the hint is the one dropped by the cap');
-  assert.equal(nextActionsDropped, 1);
+  assert.ok(nextActions.includes(supplement));
+  assert.equal(nextActionsDropped, 0);
   assert.ok(nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+
+  // Over budget the supplement still survives, taking one slot from the lowest
+  // priority blocker rather than disappearing with its executable command.
+  const crowded = Array.from({ length: SELF_EVOLUTION_REVIEW_LIMITS.maxActions }, (_, index) => ({
+    action: REVIEW_ACTIONS.VERIFY_HOST,
+    recordId: `crowded-${index}`,
+    why: 'blocking',
+  }));
+  const over = boundedReviewActions([...crowded, capNotice, supplement]);
+  assert.ok(over.nextActions.includes(supplement));
+  assert.ok(over.nextActions.some((row) => row.code === 'review-record-cap'));
+  assert.equal(over.nextActions.length, SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+  assert.ok(over.nextActionsDropped > 0);
 });
 
 test('doctor stays ok for absent projection with no records, but degrades a damaged one', async (t) => {
@@ -352,16 +365,20 @@ test('the supplement command targets the inspected data root, not the default on
 test('the supplement command does not let a shell expand a literal $USER in the data root', async (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'chain-gap-03-shell-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-  const home = path.join(root, 'home');
+  const home = path.join(root, "O'Brien-home");
   fs.mkdirSync(path.join(home, 'sessions'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'assessments.json'), '{}');
+  const assessments = path.join(root, "O'Brien-assessments.json");
+  fs.writeFileSync(assessments, '{}');
   const dataRoot = path.join(root, 'storages', '$USER-root');
   fs.mkdirSync(path.join(dataRoot, 'shared-plugins'), { recursive: true });
-  const command = usageProjectionRemediation({ scriptPath: usageProducerScriptPath(), dataRoot }).command
-    .replace('<DSH_HOME>', home)
-    .replace('<assessments.json>', path.join(root, 'assessments.json'));
+  const command = usageProjectionRemediation({ scriptPath: usageProducerScriptPath(), dataRoot }).command;
   assert.ok(command.includes(`--data-root '${dataRoot}'`), command);
-  const run = spawnSync('sh', ['-c', command], { encoding: 'utf8' });
+  assert.ok(command.includes('--home "$DSH_HOME"'), command);
+  assert.ok(command.includes('--assessments "$ASSESSMENTS_FILE"'), command);
+  const run = spawnSync('sh', ['-c', command], {
+    encoding: 'utf8',
+    env: { ...process.env, DSH_HOME: home, ASSESSMENTS_FILE: assessments },
+  });
   assert.ok(run.status === 0 || run.status === 3, run.stderr);
   assert.equal(fs.existsSync(path.join(dataRoot, 'shared-plugins', 'usage.json')), true);
 });
