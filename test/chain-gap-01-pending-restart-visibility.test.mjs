@@ -13,7 +13,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
-import { consumerStateDocument, publishSharedRecord, readSharedIndex, setDisabledForProfile, writeConsumerState } from '../lib/promoted-sharing.js';
+import { consumerStateDocument, publishSharedRecord, readSharedIndex, setDisabledForProfile, sharingPaths, writeConsumerState } from '../lib/promoted-sharing.js';
 
 const CLI = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'scripts', 'shared-plugins.mjs');
 const HEX = (value) => crypto.createHash('sha256').update(value).digest('hex');
@@ -202,6 +202,20 @@ test('list uses the same pending-restart decision as the top-level CLI result', 
   assert.deepEqual(run.json.pendingRestartDetails, [{ profile: 'acp', reason: 'revoked-active-mount' }]);
 });
 
+test('list keeps a revoked active mount visible when the publication index is absent', async (t) => {
+  const env = await fixture(t);
+  const record = env.records.find((row) => row.root === env.cliPaths).record;
+  await writeConsumers(env.cliPaths, env.host, [record.id], { acp: env.cliIndex.updatedAt });
+  await setDisabledForProfile({ dataRoot: env.cliPaths.dataRoot }, { pluginId: record.id, profile: 'acp', disabled: true });
+  await fs.rm(sharingPaths(env.cliPaths).indexPath, { force: true });
+  const run = runCli(['list'], env.cliPaths.dataRoot);
+  assert.equal(run.code, 0, run.stderr);
+  assert.equal(run.json.indexStatus, 'absent');
+  assert.equal(run.json.consumers.acp.needsRestart, true);
+  assert.deepEqual(run.json.pendingRestartProfiles, ['acp']);
+  assert.deepEqual(run.json.pendingRestartDetails, [{ profile: 'acp', reason: 'revoked-active-mount' }]);
+});
+
 test('enable reports a reload when the consumer last observed an operator-disabled row', async (t) => {
   const env = await fixture(t);
   const record = env.records.find((row) => row.root === env.cliPaths).record;
@@ -215,6 +229,22 @@ test('enable reports a reload when the consumer last observed an operator-disabl
   assert.deepEqual(run.json.pendingRestartProfiles, ['acp']);
   assert.deepEqual(run.json.pendingRestartDetails, [{ profile: 'acp', reason: 'eligibility-restored' }]);
   assert.match(run.json.restartGuidance, /eligible again/);
+});
+
+test('an unreadable revocation table cannot be mistaken for restored eligibility', async (t) => {
+  const env = await fixture(t);
+  const record = env.records.find((row) => row.root === env.cliPaths).record;
+  await writeConsumerState({ dataRoot: env.cliPaths.dataRoot }, 'acp', consumerStateDocument({
+    profile: 'acp', host: env.host, indexUpdatedAt: env.cliIndex.updatedAt, compositionPath: null,
+    plugins: [{ id: record.id, status: 'disabled', reason: 'operator-disabled' }],
+  }));
+  await fs.writeFile(sharingPaths(env.cliPaths).disablePath, '{invalid\n');
+  const run = runCli(['list'], env.cliPaths.dataRoot);
+  assert.equal(run.code, 0, run.stderr);
+  assert.equal(run.json.disableStatus, 'invalid');
+  assert.equal(run.json.consumers.acp.needsRestart, false);
+  assert.deepEqual(run.json.pendingRestartProfiles, []);
+  assert.equal(run.json.pendingRestartDetails?.some((row) => row.reason === 'eligibility-restored'), false);
 });
 
 test('CLI normal path reports an empty pending-restart list when every consumer followed the index', async (t) => {

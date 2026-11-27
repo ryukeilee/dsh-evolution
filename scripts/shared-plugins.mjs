@@ -188,7 +188,7 @@ async function commandList(options) {
       plugins: (state.state?.plugins || []).map((row) => ({ id: row.id, status: row.status, reason: row.reason ?? null, activatedAt: row.activatedAt ?? null })),
     };
   }
-  const restartDetails = pendingRestartDetails(index.updatedAt, index.records, consumerStates, disable.entries);
+  const restartDetails = pendingRestartDetails(index.updatedAt, index.records, consumerStates, disable.entries, disable.status);
   const restartProfiles = new Set(restartDetails.map((row) => row.profile));
   for (const profile of SHARED_CONSUMER_PROFILES) consumers[profile].needsRestart = restartProfiles.has(profile);
   const records = [];
@@ -452,13 +452,13 @@ async function withRestartGuidance(options, result) {
   if (!result || result.ok === false) return result;
   const paths = pathsFor(options);
   const [index, disable] = await Promise.all([readSharedIndex(paths), readDisableState(paths)]);
-  if (index.status !== 'ok') return { ...result, pendingRestartProfiles: [] };
+  if (index.status !== 'ok' && index.status !== 'absent') return { ...result, pendingRestartProfiles: [] };
   const states = {};
   for (const profile of SHARED_CONSUMER_PROFILES) {
     const state = await readConsumerState(paths, profile);
     if (state.state) states[profile] = state.state;
   }
-  const details = pendingRestartDetails(index.updatedAt, index.records, states, disable.entries);
+  const details = pendingRestartDetails(index.updatedAt, index.records, states, disable.entries, disable.status);
   const guidance = [
     consumerRestartGuidance(details.filter((row) => row.reason === 'index-stale').map((row) => row.profile)),
     consumerRevocationGuidance(details.filter((row) => row.reason === 'revoked-active-mount').map((row) => row.profile)),

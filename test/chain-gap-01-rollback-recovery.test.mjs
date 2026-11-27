@@ -242,6 +242,40 @@ test('event evidence externalization preserves a pending rollback receipt termin
   assert.equal(recovery.published, 1, JSON.stringify(recovery));
 });
 
+test('externalization cannot grow a rollback receipt past the cleanup and rebuild bound', async (t) => {
+  const env = await scene(t);
+  const receipt = {
+    version: 1, experimentId: EXPERIMENT, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z',
+    source: 'rollback-recovery-receipt',
+    rollbackResult: { ok: true, status: 'rolled-back-to-last-known-good' },
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z', reasons: [] },
+    proposal: env.proposal,
+  };
+  const receiptPath = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  const original = `${JSON.stringify(receipt, null, 2)}\n`;
+  await fs.writeFile(receiptPath, original);
+  await assert.rejects(externalizeEventBridgeEvidence(env.paths, [{
+    experimentId: EXPERIMENT,
+    evidence: { source: 'event-bridge', latestObservation: { padding: 'x'.repeat(2 * 1024 * 1024) } },
+  }]), (error) => error?.code === 'E_DOMAIN_ROLLBACK_RECEIPT_TOO_LARGE');
+  assert.equal(await fs.readFile(receiptPath, 'utf8'), original, 'the only durable receipt stays byte-identical');
+
+  const oversized = { ...receipt, padding: 'x'.repeat(2 * 1024 * 1024) };
+  await fs.writeFile(receiptPath, `${JSON.stringify(oversized, null, 2)}\n`);
+  await fs.writeFile(path.join(env.paths.promotionStateDir, 'rollback-intent.json'), `${JSON.stringify({
+    version: 1, experimentId: EXPERIMENT, phase: 'rollback-started', terminalSnapshot: receipt,
+  }, null, 2)}\n`);
+  await assert.rejects(recoverInterruptedPromotion(env.paths), /receipt.*invalid/);
+  assert.equal(await exists(path.join(env.paths.promotionStateDir, 'journal.json')), true);
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  assert.equal(report.checks.find((row) => row.id === 'promotion.journal').evidence.rollbackReceipt, 'invalid');
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.published, 0);
+  assert.deepEqual(recovery.skipped, [{ experimentId: EXPERIMENT, reason: 'evidence-too-large' }]);
+});
+
 test('a failed receipt write leaves a retryable intent, not a reopenable canary', async (t) => {
   const env = await scene(t);
   // Fail the atomic receipt publish after the rollback restored its targets.
@@ -383,7 +417,9 @@ test('an invalid completed receipt blocks cleanup even when the intent is valid'
   });
   const variants = [
     { ...validTerminal, rolledBackAt: '' },
+    { ...validTerminal, rolledBackAt: 'not-a-timestamp' },
     { ...validTerminal, decision: undefined },
+    { ...validTerminal, decision: { ...validTerminal.decision, at: 'not-a-timestamp' } },
     { ...validTerminal, proposal: undefined },
     { ...validTerminal, proposal: { ...env.proposal, applicability: undefined } },
   ];
@@ -408,7 +444,7 @@ test('an invalid completed receipt blocks cleanup even when the intent is valid'
   }
 });
 
-test('an interrupted recursive cleanup leaves no active state directory and the receipt remains recoverable', async (t) => {
+test('an interrupted recursive cleanup leaves no active state directory and does not hold the live claim', async (t) => {
   const env = await scene(t);
   const originalRm = fs.rm;
   let cleanupDir = null;
@@ -419,24 +455,31 @@ test('an interrupted recursive cleanup leaves no active state directory and the 
     }
     return originalRm.call(this, target, options);
   };
-  const core = orchestratorFor(env);
+  const warnings = [];
+  const core = orchestratorFor(env, warnings);
   core.experiments.set(EXPERIMENT, {
     id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
     proposal: env.proposal, observations: [], latestObservation: {},
     canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
   });
+  let result;
   try {
-    await assert.rejects(core.observeCanary(regressionArgs, execFor()), /simulated cleanup interruption/);
+    result = await core.observeCanary(regressionArgs, execFor());
   } finally {
     fs.rm = originalRm;
   }
+  assert.equal(result.phase, 'rolled-back');
+  assert.equal(result.rollbackCleanup, 'pending');
+  assert.equal(core.experiments.get(EXPERIMENT).state, 'rolled-back');
+  assert.ok(warnings.some((row) => row.includes('cleanup remains')), JSON.stringify(warnings));
   assert.ok(cleanupDir);
   assert.equal(await exists(env.paths.promotionStateDir), false, 'the active state path was atomically removed');
   assert.equal(await exists(cleanupDir), true, 'the moved copy is the only interrupted cleanup residue');
   assert.ok(await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT));
   assert.deepEqual(await recoverInterruptedPromotion(env.paths), { recovered: false, status: 'none' });
   const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
-  assert.equal(recovery.published, 1, JSON.stringify(recovery));
+  assert.equal(recovery.published, 0, JSON.stringify(recovery));
+  assert.equal(recovery.duplicates, 1);
 });
 
 test('an unreadable rollback intent blocks recovery, live canary advancement and the doctor', async (t) => {
