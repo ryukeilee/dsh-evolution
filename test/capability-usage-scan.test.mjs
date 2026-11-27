@@ -20,6 +20,7 @@ import {
   USAGE_PROJECTION_COVERAGE,
 } from '../lib/capability-usage.js';
 import { readPublishedPluginReview } from '../lib/self-evolution-review.js';
+import { collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
 
 const SCRIPT = fileURLToPath(new URL('../docs/audit/replay/capability-usage.mjs', import.meta.url));
 
@@ -778,4 +779,78 @@ test('historical generations beside a current file are one session, not unsuppor
   assert.equal(projection.scannedSessions, 1);
   assert.equal(projection.records[RECORD_ID].workflowInvocations, 1);
   assert.equal(projection.failures, undefined);
+});
+
+test('--template exports every published record with tool names, source paths and current counts', async (t) => {
+  const env = scratch(t);
+  fs.mkdirSync(path.join(env.root, 'sessions'), { recursive: true });
+  writeRecord(env, { source: WIDGET_SOURCE });
+  writeRecord(env, { id: SECOND_ID, source: 'return { name: "context-policy", apply() {} };\n' });
+  writeSession(env.root, 'one', [call('widget_tool', 'c1')]);
+  const templatePath = path.join(env.root, 'assessments-template.json');
+  const { status, projection: template } = run(env.root, ['--template', templatePath]);
+  assert.equal(status, 0);
+  assert.deepEqual(JSON.parse(fs.readFileSync(templatePath, 'utf8')), template);
+  assert.equal(fs.statSync(templatePath).mode & 0o777, 0o600);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+  assert.equal(template.kind, 'dsh-evolution-capability-assessments-template');
+  assert.deepEqual(Object.keys(template.assessments).sort(), [RECORD_ID, SECOND_ID].sort());
+  assert.ok(Object.values(template.assessments).every((value) => value === 'unknown'));
+  const byId = new Map(template.records.map((row) => [row.id, row]));
+  assert.deepEqual(byId.get(RECORD_ID).toolNames, ['widget_tool']);
+  assert.equal(byId.get(RECORD_ID).sourcePath, path.join(env.dataRoot, 'promoted', `dsh-${RECORD_ID}`, 'lib', 'index.js'));
+  assert.equal(byId.get(RECORD_ID).counts.workflowInvocations, 1);
+  assert.equal(byId.get(RECORD_ID).capabilityAssessment, 'unknown');
+  assert.deepEqual(byId.get(SECOND_ID).toolNames, []);
+  assert.equal(byId.get(SECOND_ID).sourcePath, path.join(env.dataRoot, 'promoted', `dsh-${SECOND_ID}`, 'lib', 'index.js'));
+  assert.equal(byId.get(SECOND_ID).counts.workflowInvocations, null, 'no tool surface has no count');
+  // The template describes the same counts a scan would persist, without persisting them.
+  const { status: scanStatus, projection: scanned } = run(env.root, ['--out', path.join(env.root, 'projection.json')]);
+  assert.equal(scanStatus, 0);
+  assert.equal(byId.get(RECORD_ID).counts.workflowInvocations, scanned.records[RECORD_ID].workflowInvocations);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+});
+
+test('an unedited template keeps every assessment unknown and produces no retirement candidate', async (t) => {
+  const env = scratch(t);
+  fs.mkdirSync(path.join(env.root, 'sessions'), { recursive: true });
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const templatePath = path.join(env.root, 'assessments-template.json');
+  assert.equal(run(env.root, ['--template', templatePath]).status, 0);
+  assert.equal(JSON.parse(fs.readFileSync(templatePath, 'utf8')).assessments[RECORD_ID], 'unknown');
+  assert.equal(run(env.root, ['--write', '--assessments', templatePath]).status, 0);
+  const loaded = await readUsageProjection({ dataRoot: env.dataRoot });
+  assert.equal(loaded.status, 'ok');
+  assert.equal(loaded.usage.complete, true);
+  assert.equal(loaded.usage.records[RECORD_ID].workflowInvocations, 0);
+  assert.equal(loaded.usage.records[RECORD_ID].capabilityAssessment, 'unknown');
+  const review = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: loaded.usage, usageStatus: 'ok' });
+  assert.equal(review.records[0].value.capabilityAssessment, 'unknown');
+  assert.equal(review.retirementCandidates.length, 0);
+  assert.equal(review.nextActions.some((row) => row.action === 'review-retirement'), false);
+});
+
+test('--template is read-only and cannot be combined with --write', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const templatePath = path.join(env.root, 'assessments-template.json');
+  const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', templatePath, '--write'], { encoding: 'utf8' });
+  assert.notEqual(out.status, 0);
+  assert.match(out.stderr, /cannot be combined/);
+  assert.equal(fs.existsSync(templatePath), false);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+});
+
+test('doctor says every in-scope record is unmeasured when no projection exists', async (t) => {
+  const env = scratch(t);
+  const ids = Array.from({ length: 6 }, (_, index) => `evolution-promoted-${(index + 1).toString(16).padStart(12, '0')}`);
+  for (const id of ids) writeRecord(env, { id, source: WIDGET_SOURCE });
+  const report = await collectDiagnostics({ home: env.root, paths: resolveEvolutionPaths({ dshHome: env.root }) });
+  const check = report.checks.find((row) => row.id === 'promotion.usage');
+  assert.equal(check.evidence.status, 'absent');
+  assert.equal(check.evidence.publishedRecordCount, 6);
+  assert.equal(check.evidence.missingRecordCount, 6);
+  assert.equal(check.evidence.unmeasuredRecordCount, 6);
+  assert.match(check.summary, /all 6 published record\(s\) in scope are unmeasured/);
+  assert.doesNotMatch(check.summary, /0 absent from the projection/);
 });

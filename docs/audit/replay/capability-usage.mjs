@@ -50,7 +50,7 @@
  *
  * Usage:
  *   node docs/audit/replay/capability-usage.mjs [--home <DSH_HOME>] [--data-root <dir>]
- *     [--out <file>] [--write] [--assessments <file>]
+ *     [--out <file>] [--write] [--assessments <file>] [--template <file>]
  *
  * `--data-root` overrides the derived `<DSH_HOME>/storages/evolution`, so the
  * doctor/review supplement can write to the exact root it inspected. Session
@@ -61,13 +61,26 @@
  * audit` reads. The persisted file is a counts table (record id, counts, tool
  * assessment); it never contains transcript text, tool arguments or results.
  *
- * Exits 3 when the scan is incomplete (the projection is still printed).
+ * `--template <file>` writes a read-only assessments template: every published
+ * record with its registered tool names, source path and current counts, and
+ * an `assessments` map whose values all start at "unknown". It never writes
+ * `usage.json`. Passing the unedited template back through `--assessments` is
+ * equivalent to passing no file: every capabilityAssessment stays "unknown"
+ * and no retirement recommendation can follow. `--template` and `--write` are
+ * mutually exclusive.
+ *
+ * Exits 3 when the scan is incomplete (the projection / template is still printed).
  */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { summarizeCapabilityUsage, writeUsageProjection } from '../../../lib/capability-usage.js';
+import {
+  assessmentsFromDocument,
+  buildAssessmentsTemplate,
+  summarizeCapabilityUsage,
+  writeUsageProjection,
+} from '../../../lib/capability-usage.js';
 
 function argValue(name) {
   const index = process.argv.indexOf(name);
@@ -78,24 +91,44 @@ const home = path.resolve(argValue('--home') ?? process.env.DSH_HOME ?? path.joi
 const dataRootArg = argValue('--data-root');
 const dataRoot = dataRootArg ? path.resolve(dataRootArg) : path.join(home, 'storages', 'evolution');
 
+const templateFile = argValue('--template');
+if (templateFile && process.argv.includes('--write')) {
+  throw new Error('--template cannot be combined with --write');
+}
+
 let assessments = {};
 const assessmentsFile = argValue('--assessments');
-if (assessmentsFile) assessments = JSON.parse(fs.readFileSync(path.resolve(assessmentsFile), 'utf8'));
+if (assessmentsFile) {
+  assessments = assessmentsFromDocument(JSON.parse(fs.readFileSync(path.resolve(assessmentsFile), 'utf8')));
+}
 
+const metadata = {};
 const projection = await summarizeCapabilityUsage({
   dataRoot,
   sessionsRoot: path.join(home, 'sessions'),
-  assessments,
+  // A template is generated blank regardless of any input file: it is the
+  // starting point for the owner's review, never a place to infer a verdict.
+  assessments: templateFile ? {} : assessments,
+  metadata,
 });
 
-const out = argValue('--out');
-if (out) {
-  fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-  fs.writeFileSync(path.resolve(out), `${JSON.stringify(projection, null, 2)}\n`, { mode: 0o600 });
+if (templateFile) {
+  const template = buildAssessmentsTemplate({ projection, records: metadata.records });
+  const target = path.resolve(templateFile);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, `${JSON.stringify(template, null, 2)}\n`, { mode: 0o600 });
+  console.error(`assessments template written to ${target}`);
+  console.log(JSON.stringify(template, null, 2));
+} else {
+  const out = argValue('--out');
+  if (out) {
+    fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+    fs.writeFileSync(path.resolve(out), `${JSON.stringify(projection, null, 2)}\n`, { mode: 0o600 });
+  }
+  if (process.argv.includes('--write')) {
+    const written = await writeUsageProjection({ dataRoot, projection });
+    console.error(`usage projection written to ${written}`);
+  }
+  console.log(JSON.stringify(projection, null, 2));
 }
-if (process.argv.includes('--write')) {
-  const written = await writeUsageProjection({ dataRoot, projection });
-  console.error(`usage projection written to ${written}`);
-}
-console.log(JSON.stringify(projection, null, 2));
 if (projection.complete === false || projection.recordsComplete === false) process.exitCode = 3;

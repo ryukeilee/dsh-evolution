@@ -167,9 +167,14 @@ test('absent projection: one bounded operator action with a copyable command, no
   assert.match(action.command, /capability-usage\.mjs/);
   assert.match(action.command, /--write/);
   assert.match(action.command, /--assessments/);
-  assert.equal(action.assessments.required, true);
-  assert.match(action.assessments.format, /self-contained/);
-  assert.ok(action.why.includes('absent'));
+  assert.equal(action.assessments.required, false);
+  assert.match(action.assessments.note, /self-contained/);
+  assert.match(action.assessments.format, /unknown/);
+  assert.ok(action.command.includes(`--home '${env.home}'`), action.command);
+  assert.ok(action.command.includes(`--data-root '${env.paths.dataRoot}'`), action.command);
+  assert.ok(action.templateCommand.includes(' --template '), action.templateCommand);
+  assert.doesNotMatch(action.command + action.templateCommand, /\$\{/);
+  assert.match(action.why, /all 1 published record\(s\) in scope are unmeasured/);
 
   assert.equal(stable.retirementCandidates.length, 0);
   assert.equal(stable.valueSummary.retirementCandidates, 0);
@@ -180,7 +185,13 @@ test('absent projection: one bounded operator action with a copyable command, no
   assert.deepEqual(check.evidence.issues, ['absent']);
   assert.equal(check.evidence.status, 'absent');
   assert.equal(check.evidence.publishedRecordCount, 1);
+  assert.equal(check.evidence.missingRecordCount, 1);
+  assert.equal(check.evidence.unmeasuredRecordCount, 1);
+  assert.match(check.summary, /all 1 published record\(s\) in scope are unmeasured/);
+  assert.doesNotMatch(check.summary, /0 absent from the projection/);
   assert.match(check.remediation, /--assessments/);
+  assert.ok(check.remediation.includes(`--home '${env.home}'`), check.remediation);
+  assert.ok(check.remediation.includes(' --template '), check.remediation);
 });
 
 test('a fresh, complete projection is healthy in both surfaces (no false warning)', async (t) => {
@@ -406,32 +417,38 @@ test('the supplement command targets the inspected data root, not the default on
   assert.equal(fs.existsSync(path.join(env.paths.dataRoot, 'shared-plugins', 'usage.json')), false);
 });
 
-test('the supplement command does not let a shell expand a literal $USER in the data root', async (t) => {
+test('the supplement commands run with concrete paths and no environment variables', async (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'chain-gap-03-shell-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-  const home = path.join(root, "O'Brien-home");
+  // Both a literal $ and a single quote must survive a shell copy/paste.
+  const home = path.join(root, "O'Brien-$HOME");
   fs.mkdirSync(path.join(home, 'sessions'), { recursive: true });
-  const assessments = path.join(root, "O'Brien-assessments.json");
-  fs.writeFileSync(assessments, '{}');
-  const dataRoot = path.join(root, 'storages', '$USER-root');
-  fs.mkdirSync(path.join(dataRoot, 'shared-plugins'), { recursive: true });
-  const command = usageProjectionRemediation({ scriptPath: usageProducerScriptPath(), dataRoot }).command;
-  assert.ok(command.includes(`--data-root '${dataRoot}'`), command);
-  assert.ok(command.includes('--home "${DSH_HOME:?'), command);
-  assert.ok(command.includes('--assessments "${ASSESSMENTS_FILE:?'), command);
-  // Missing required variables must abort before anything is written.
-  const unset = spawnSync('sh', ['-c', command], {
-    encoding: 'utf8',
-    env: { ...process.env, DSH_HOME: '', ASSESSMENTS_FILE: '' },
-  });
-  assert.notEqual(unset.status, 0);
-  assert.equal(fs.existsSync(path.join(dataRoot, 'shared-plugins', 'usage.json')), false);
-  const run = spawnSync('sh', ['-c', command], {
-    encoding: 'utf8',
-    env: { ...process.env, DSH_HOME: home, ASSESSMENTS_FILE: assessments },
-  });
-  assert.ok(run.status === 0 || run.status === 3, run.stderr);
-  assert.equal(fs.existsSync(path.join(dataRoot, 'shared-plugins', 'usage.json')), true);
+  const dataRoot = path.join(root, 'storages', "$USER-root");
+  const shared = sharingPaths({ dataRoot });
+  fs.mkdirSync(shared.dir, { recursive: true });
+  fs.writeFileSync(shared.indexPath, `${JSON.stringify({
+    schemaVersion: 1, kind: 'dsh-evolution-shared-plugins',
+    updatedAt: new Date().toISOString(), publisher: { profile: 'desktop' }, plugins: [],
+  })}\n`);
+  const remediation = usageProjectionRemediation({ scriptPath: usageProducerScriptPath(), dataRoot, home });
+  const quote = (value) => `'${value.replace(/'/g, "'\\''")}'`;
+  assert.ok(remediation.command.includes(`--home ${quote(home)}`), remediation.command);
+  assert.ok(remediation.command.includes(`--data-root ${quote(dataRoot)}`), remediation.command);
+  assert.ok(remediation.templateCommand.includes(`--home ${quote(home)}`), remediation.templateCommand);
+  assert.doesNotMatch(remediation.command + remediation.templateCommand, /\$\{/);
+  assert.equal(remediation.assessments.path, path.join(shared.dir, 'usage-assessments.json'));
+
+  // Only PATH is exported: no DSH_HOME, no ASSESSMENTS_FILE to set first.
+  const env = { PATH: process.env.PATH };
+  const templateRun = spawnSync('sh', ['-c', remediation.templateCommand], { encoding: 'utf8', env });
+  assert.equal(templateRun.status, 0, templateRun.stderr);
+  assert.equal(fs.existsSync(shared.usagePath), false, 'the template must not write a projection');
+  const template = JSON.parse(fs.readFileSync(remediation.assessments.path, 'utf8'));
+  assert.deepEqual(template.assessments, {});
+  assert.deepEqual(template.records, []);
+  const writeRun = spawnSync('sh', ['-c', remediation.command], { encoding: 'utf8', env });
+  assert.equal(writeRun.status, 0, writeRun.stderr);
+  assert.equal(fs.existsSync(shared.usagePath), true);
 });
 
 test('restart suggestions cannot crowd out the only usage supplement', () => {
