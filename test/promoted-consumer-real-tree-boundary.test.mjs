@@ -414,3 +414,126 @@ test('S3: a host-level failure on a middle version walks back to the healthy pre
   const state = await fs.readFile(paths.statePath('acp'), 'utf8');
   assert.ok(state.length > 0);
 });
+
+test('S1b: a mixed tree rejected at the first refresh is actually released', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 's1b_predecessor_tool' });
+  const replacement = await createRecord({
+    toolName: 's1b_replacement_tool',
+    source: [
+      `export const name = ${JSON.stringify('dsh-s1b-replacement')};`,
+      "export const inject = ['tools'];",
+      'let attempts = 0;',
+      'export function apply(ctx) {',
+      '  attempts += 1;',
+      '  ctx.effect(() => {',
+      "    const dispose = ctx.tools.register({ name: 's1b_replacement_tool', description: 'S1b probe' });",
+      "    return () => { if (typeof dispose === 'function') dispose(); };",
+      '  });',
+      "  if (attempts === 1) throw new Error('replacement exploded once');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  const staleCopy = await createRecord({ toolName: 's1b_replacement_tool' });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+  ]);
+
+  const ctx = await boot();
+  const session = await mountSession(ctx, dataRoot, async (mountCtx, config) => {
+    const adapter = await mountIncludeTree(mountCtx, config);
+    const plainRefresh = adapter.refresh.bind(adapter);
+    let calls = 0;
+    adapter.refresh = async () => {
+      calls += 1;
+      if (calls === 1) {
+        await fs.writeFile(config.path, `${JSON.stringify([
+          { id: `shared-${predecessor.record.id}`, name: predecessor.record.moduleUrl },
+          { id: `shared-${replacement.record.id}`, name: replacement.record.moduleUrl },
+          { id: `shared-stale-${staleCopy.record.id}`, name: staleCopy.record.moduleUrl },
+        ], null, 2)}\n`);
+      }
+      await plainRefresh();
+    };
+    return adapter;
+  });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.notEqual(rows.get(predecessor.record.id).status, 'active', 'a rejected tree is not reported active');
+  assert.equal(session.adapter, null, 'a released mixed tree is not kept mounted');
+  assert.deepEqual(liveToolNames(ctx), [], 'no chain tool remains callable after a rejected tree is released');
+  const disposal = await session.dispose();
+  assert.equal(disposal.released, true);
+});
+
+test('S4: a rejected rebuild with a live tool surface is kept and reported unreleased', async (t) => {
+  const { dataRoot, createRecord, writeIndex, paths } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 's4_predecessor_tool' });
+  const replacement = await createRecord({
+    toolName: 's4_replacement_tool',
+    source: [
+      `export const name = ${JSON.stringify('dsh-s4-replacement')};`,
+      "export const inject = ['tools'];",
+      'let attempts = 0;',
+      'export function apply(ctx) {',
+      '  attempts += 1;',
+      '  ctx.effect(() => {',
+      "    const dispose = ctx.tools.register({ name: 's4_replacement_tool', description: 'S4 probe' });",
+      "    return () => { if (typeof dispose === 'function') dispose(); };",
+      '  });',
+      "  if (attempts === 1) throw new Error('replacement exploded once');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  // The stale copy's effect disposer throws, so the mixed tree still has a
+  // registered tool after the official child's dispose() resolves.
+  const stuckCopy = await createRecord({
+    toolName: 's4_stale_tool',
+    source: [
+      `export const name = ${JSON.stringify('dsh-s4-stale')};`,
+      "export const inject = ['tools'];",
+      'export function apply(ctx) {',
+      "  ctx.tools.register({ name: 's4_stale_tool', description: 'stuck stale probe' });",
+      "  ctx.effect(() => () => { throw new Error('stale disposer exploded'); });",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+  ]);
+
+  const ctx = await boot();
+  let mounts = 0;
+  let rejectedAdapter;
+  const session = await mountSession(ctx, dataRoot, (mountCtx, config) => {
+    mounts += 1;
+    if (mounts === 2) {
+      return (async () => {
+        await fs.writeFile(config.path, `${JSON.stringify([
+          { id: `shared-${predecessor.record.id}`, name: predecessor.record.moduleUrl },
+          { id: `shared-stale-${stuckCopy.record.id}`, name: stuckCopy.record.moduleUrl },
+        ], null, 2)}\n`);
+        rejectedAdapter = await mountIncludeTree(mountCtx, config);
+        return rejectedAdapter;
+      })();
+    }
+    return mountIncludeTree(mountCtx, config);
+  });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(mounts, 2);
+  assert.equal(rows.get(predecessor.record.id).status, 'failed');
+  assert.equal(session.unreleasedOldTree, true, 'the rejected tree was not proven released');
+  assert.equal(session.adapter, rejectedAdapter, 'the unproven tree is kept for a disposal retry');
+  assert.ok(liveToolNames(ctx).includes('s4_stale_tool'));
+
+  const disposal = await session.dispose();
+  assert.equal(disposal.released, false, 'the still-registered stale tool is not reported as released');
+  const state = JSON.parse(await fs.readFile(paths.statePath('acp'), 'utf8'));
+  assert.deepEqual(state.disposal, { released: false, entries: 0 });
+});
