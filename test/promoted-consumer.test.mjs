@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -13,6 +14,7 @@ import {
   resolveConsumerProfile,
 } from '../lib/promoted-consumer.js';
 import { fiberIsActive } from '../lib/cordis-compat.js';
+import { mountIncludeTree } from '../lib/promotion-include.js';
 import { readPublishedPluginReview } from '../lib/self-evolution-review.js';
 import { readConsumerState, sharingPaths } from '../lib/promoted-sharing.js';
 
@@ -204,16 +206,21 @@ async function mountSession(ctx, dataRoot, overrides = {}) {
  */
 function fakeIncludeAdapter(config, { fiberFor, omitEntries = new Set() }) {
   const entries = new Map();
+  // A rebuilt subtree is mounted from the composition without a refresh, so
+  // the fake tree must be live as soon as the adapter is created, just like
+  // the official Include's Service.init().
+  const load = () => {
+    const rows = JSON.parse(fsSync.readFileSync(config.path, 'utf8'));
+    entries.clear();
+    for (const row of rows) {
+      if (omitEntries.has(row.id)) continue;
+      entries.set(row.id, { options: { name: row.name }, disabled: false, fiber: fiberFor(row.id) });
+    }
+  };
+  load();
   return {
     capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true },
-    async refresh() {
-      const rows = JSON.parse(await fs.readFile(config.path, 'utf8'));
-      entries.clear();
-      for (const row of rows) {
-        if (omitEntries.has(row.id)) continue;
-        entries.set(row.id, { options: { name: row.name }, disabled: false, fiber: fiberFor(row.id) });
-      }
-    },
+    async refresh() { load(); },
     resolveEntry(rowId) {
       return entries.get(rowId) ?? null;
     },
@@ -672,25 +679,19 @@ test('a non-candidate apply failure after fallback walks back its own predecesso
     d.record,
   ]);
 
-  // B fails on the first pass, forcing a fallback refresh. That refresh also
+  // B fails on the first pass, forcing a fallback rebuild. That rebuild also
   // installs D, which was already active; on the new tree D's own apply fails.
-  let refreshCount = 0;
-  let fallback = false;
+  let mountCount = 0;
   const mountInclude = async (_ctx, config) => {
-    const adapter = fakeIncludeAdapter(config, {
+    mountCount += 1;
+    const fallback = mountCount >= 2;
+    return fakeIncludeAdapter(config, {
       fiberFor: (rowId) => {
         if (rowId === `shared-${b.record.id}`) return fakeFiber({ failApply: true });
         if (fallback && rowId === `shared-${d.record.id}`) return fakeFiber({ failApply: true });
         return fakeFiber();
       },
     });
-    const plainRefresh = adapter.refresh;
-    adapter.refresh = async () => {
-      if (refreshCount >= 1) fallback = true;
-      refreshCount += 1;
-      await plainRefresh();
-    };
-    return adapter;
   };
   const session = await mountSession(await boot(), dataRoot, { mountInclude });
   const rows = new Map(session.rows.map((row) => [row.id, row]));
@@ -733,22 +734,17 @@ test('a restored entry that fails on a later pass is not reinstalled by the next
     c2.record,
   ]);
 
-  let refreshCount = 0;
+  let mountCount = 0;
   const mountInclude = async (_ctx, config) => {
-    const adapter = fakeIncludeAdapter(config, {
+    mountCount += 1;
+    return fakeIncludeAdapter(config, {
       fiberFor: (rowId) => {
-        if (refreshCount === 1 && rowId === `shared-${a2.record.id}`) return fakeFiber({ failApply: true });
-        if (refreshCount === 2 && rowId === `shared-${c2.record.id}`) return fakeFiber({ failApply: true });
-        if (refreshCount === 3 && rowId === `shared-${a1.record.id}`) return fakeFiber({ failApply: true });
+        if (mountCount === 1 && rowId === `shared-${a2.record.id}`) return fakeFiber({ failApply: true });
+        if (mountCount === 2 && rowId === `shared-${c2.record.id}`) return fakeFiber({ failApply: true });
+        if (mountCount === 3 && rowId === `shared-${a1.record.id}`) return fakeFiber({ failApply: true });
         return fakeFiber();
       },
     });
-    const plainRefresh = adapter.refresh;
-    adapter.refresh = async () => {
-      refreshCount += 1;
-      await plainRefresh();
-    };
-    return adapter;
   };
   const session = await mountSession(await boot(), dataRoot, { mountInclude });
   const rows = new Map(session.rows.map((row) => [row.id, row]));
@@ -766,12 +762,11 @@ test('a restored entry that fails on a later pass is not reinstalled by the next
   await session.dispose();
 });
 
-test('a fallback refresh that drops a previously active sibling unmounts it', async (t) => {
+test('a fallback rebuild keeps a previously active sibling in the intended composition', async (t) => {
   const { dataRoot, createRecord, writeIndex } = await fixture(t);
-  // Two replacement chains whose replacements fail to apply force a fallback
-  // refresh. S was already active in the first pass, but the fallback live tree
-  // no longer resolves it: leaving it active and mounted would report a plugin
-  // that this composition cannot actually serve.
+  // Two replacement chains fail to apply, forcing a fallback. S was already
+  // active in the first pass; a rebuilt subtree installs the whole intended
+  // composition, so S cannot be dropped from a stale live tree.
   const a = await createRecord({ toolName: 'fallback_a_tool' });
   const c = await createRecord({ toolName: 'fallback_c_tool' });
   const s = await createRecord({ toolName: 'healthy_sibling_tool' });
@@ -791,39 +786,34 @@ test('a fallback refresh that drops a previously active sibling unmounts it', as
     s.record,
   ]);
 
-  const omitEntries = new Set();
-  let refreshCount = 0;
+  let mountCount = 0;
+  let refreshCalls = 0;
   const mountInclude = async (_ctx, config) => {
+    mountCount += 1;
     const adapter = fakeIncludeAdapter(config, {
       fiberFor: (rowId) => (rowId === `shared-${b.record.id}` || rowId === `shared-${d.record.id}`
         ? fakeFiber({ failApply: true }) : fakeFiber()),
-      omitEntries,
     });
     const plainRefresh = adapter.refresh;
-    adapter.refresh = async () => {
-      // The first (initial) refresh still serves S; a fallback refresh does not.
-      if (refreshCount >= 1) omitEntries.add(`shared-${s.record.id}`);
-      refreshCount += 1;
-      await plainRefresh();
-    };
+    adapter.refresh = async () => { refreshCalls += 1; await plainRefresh(); };
     return adapter;
   };
   const session = await mountSession(await boot(), dataRoot, { mountInclude });
   const rows = new Map(session.rows.map((row) => [row.id, row]));
 
+  assert.equal(mountCount, 2, 'the fallback rebuilds the Include subtree once');
+  assert.equal(refreshCalls, 1, 'the fallback does not rely on another refresh');
   assert.equal(rows.get(b.record.id).reason, 'plugin-apply-failed');
   assert.equal(rows.get(d.record.id).reason, 'plugin-apply-failed');
   assert.equal(rows.get(a.record.id).status, 'active', 'the healthy fallback candidate still mounts');
   assert.equal(rows.get(c.record.id).status, 'active');
-  assert.equal(rows.get(s.record.id).status, 'failed',
-    'a sibling missing from the fallback live tree must not stay active');
-  assert.equal(rows.get(s.record.id).reason, 'include-unavailable', 'the failure is non-sticky');
-  assert.equal(session.mounted.has(s.record.id), false, 'the missing sibling is not held for disposal');
+  assert.equal(rows.get(s.record.id).status, 'active', 'the sibling stays in the rebuilt composition');
+  assert.ok(session.mounted.has(s.record.id));
   assert.ok(session.mounted.has(a.record.id));
   await session.dispose();
 });
 
-test('a stale fallback refresh retries until the restored candidate is installed', async (t) => {
+test('a fallback rebuild installs the restored candidate without refresh retries', async (t) => {
   const { dataRoot, createRecord, writeIndex } = await fixture(t);
   const previous = await createRecord({ toolName: 'working_policy_tool' });
   const broken = await createRecord({
@@ -837,52 +827,39 @@ test('a stale fallback refresh retries until the restored candidate is installed
     broken.record,
   ]);
 
+  let mountCount = 0;
   let refreshCalls = 0;
-  // The first fallback refresh still serves the composition from the initial
-  // pass (only the broken replacement), so the restored candidate is missing
-  // from that live tree even though the consumer just rewrote the composition.
-  const staleRows = [{ id: `shared-${broken.record.id}`, name: broken.record.moduleUrl }];
   const mountInclude = async (_ctx, config) => {
-    const entries = new Map();
-    return {
-      capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true },
-      async refresh() {
-        refreshCalls += 1;
-        const rows = refreshCalls === 2 ? staleRows : JSON.parse(await fs.readFile(config.path, 'utf8'));
-        entries.clear();
-        for (const row of rows) {
-          entries.set(row.id, {
-            options: { name: row.name },
-            disabled: false,
-            fiber: row.id === `shared-${broken.record.id}` ? fakeFiber({ failApply: true }) : fakeFiber(),
-          });
-        }
-      },
-      resolveEntry: (rowId) => entries.get(rowId) ?? null,
-      async dispose() {},
-    };
+    mountCount += 1;
+    const adapter = fakeIncludeAdapter(config, {
+      fiberFor: (rowId) => (rowId === `shared-${broken.record.id}` ? fakeFiber({ failApply: true }) : fakeFiber()),
+    });
+    const plainRefresh = adapter.refresh;
+    adapter.refresh = async () => { refreshCalls += 1; await plainRefresh(); };
+    return adapter;
   };
 
   const session = await mountSession(await boot(), dataRoot, { mountInclude });
   const rows = new Map(session.rows.map((row) => [row.id, row]));
 
-  assert.ok(refreshCalls >= 2, 'a stale fallback tree is refreshed again');
+  assert.equal(mountCount, 2, 'the fallback mounts a fresh subtree');
+  assert.equal(refreshCalls, 1, 'only the initial tree is refreshed');
   assert.equal(rows.get(broken.record.id).reason, 'plugin-apply-failed');
-  assert.equal(rows.get(previous.record.id).status, 'active', 'the restored candidate is active on the refreshed tree');
+  assert.equal(rows.get(previous.record.id).status, 'active', 'the restored candidate is active on the rebuilt tree');
   assert.ok(session.mounted.has(previous.record.id), 'the restored candidate keeps a live fiber');
   await session.dispose();
 });
 
-test('a stale fallback tree that keeps the failed replacement online does not reactivate its predecessor', async (t) => {
+test('a fallback rebuild cannot leave the failed replacement online beside its predecessor', async (t) => {
   const { dataRoot, createRecord, writeIndex } = await fixture(t);
-  // A1 supersedes A0 and fails to apply, so the fallback restores A0. All three
-  // fallback refreshes still serve the old tree: A1 is resolvable with a live
-  // fiber and an unrelated healthy candidate S is mounted too. A0's own entry
-  // only becomes visible to the per-row verification (the stale tree's settled
-  // checks never see it). Publishing A0 as active then leaves two rows of the
-  // same chain online, which is the double-mount this case must prevent.
+  // A1 supersedes A0 and fails to apply, so the fallback restores A0. The old
+  // refresh-based fallback could keep A1 on a stale tree while marking A0
+  // include-unavailable; a rebuilt subtree removes A1 entirely.
   const a0 = await createRecord({ toolName: 'stale_a0_tool' });
-  const a1 = await createRecord({ toolName: 'stale_a1_tool' });
+  const a1 = await createRecord({
+    toolName: 'stale_a1_tool', inject: [], requiredServices: [],
+    source: "export const name = 'a1';\nexport function apply() { throw new Error('a1 exploded'); }\n",
+  });
   const s = await createRecord({ toolName: 'stale_unrelated_tool' });
   await writeIndex([
     { ...a0.record, supersededBy: { acp: supersedeMarker(a1.record) } },
@@ -890,50 +867,204 @@ test('a stale fallback tree that keeps the failed replacement online does not re
     s.record,
   ]);
 
-  let refreshCalls = 0;
-  let a0Lookups = 0;
+  let mountCount = 0;
   const mountInclude = async (_ctx, config) => {
-    const entries = new Map();
-    return {
-      capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true },
-      async refresh() {
-        refreshCalls += 1;
-        entries.clear();
-        // The pre-fallback composition is never replaced: A1 and S stay live.
-        entries.set(`shared-${a1.record.id}`, {
-          options: { name: a1.record.moduleUrl }, disabled: false,
-          fiber: fakeFiber({ failApply: true }),
-        });
-        entries.set(`shared-${s.record.id}`, {
-          options: { name: s.record.moduleUrl }, disabled: false, fiber: fakeFiber(),
-        });
-      },
-      resolveEntry(rowId) {
-        if (rowId === `shared-${a0.record.id}`) {
-          a0Lookups += 1;
-          // The three settled checks of the fallback refresh loop see no A0;
-          // only the later per-row verification finds its still-live entry.
-          return a0Lookups <= 3 ? null : {
-            options: { name: a0.record.moduleUrl }, disabled: false, fiber: fakeFiber(),
-          };
-        }
-        return entries.get(rowId) ?? null;
-      },
-      async dispose() {},
-    };
+    mountCount += 1;
+    return fakeIncludeAdapter(config, {
+      fiberFor: (rowId) => (rowId === `shared-${a1.record.id}` ? fakeFiber({ failApply: true }) : fakeFiber()),
+    });
   };
   const session = await mountSession(await boot(), dataRoot, { mountInclude });
   const rows = new Map(session.rows.map((row) => [row.id, row]));
 
-  assert.ok(refreshCalls >= 4, 'the fallback refresh budget was spent on an unsettled tree');
+  assert.equal(mountCount, 2);
   assert.equal(rows.get(a1.record.id).reason, 'plugin-apply-failed', 'the failed replacement keeps its receipt');
-  assert.equal(rows.get(a0.record.id).status, 'failed', 'the predecessor is not published active while its replacement is still online');
-  assert.equal(rows.get(a0.record.id).reason, 'include-unavailable');
-  assert.equal(session.mounted.has(a0.record.id), false, 'the predecessor is not held for disposal');
-  assert.equal([a0.record.id, a1.record.id].filter((id) => rows.get(id).status === 'active').length <= 1, true,
-    'no two versions of the same chain are active at once');
+  assert.equal(rows.get(a0.record.id).status, 'active', 'the predecessor is active on the clean rebuilt tree');
+  assert.ok(session.mounted.has(a0.record.id));
+  assert.equal([a0.record.id, a1.record.id].filter((id) => rows.get(id).status === 'active').length, 1,
+    'exactly one version of the chain is active');
   assert.equal(rows.get(s.record.id).status, 'active', 'an unrelated healthy candidate is unaffected');
   assert.ok(session.mounted.has(s.record.id));
+  await session.dispose();
+});
+
+test('a fallback on a mixed live tree never leaves two chain versions mounted', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 'mixed_predecessor_tool' });
+  // The replacement registers its tool on every apply but throws on the first
+  // one. A fallback that merely refreshes a stale mixed tree leaves a live,
+  // healthy replacement fiber beside the restored predecessor.
+  const replacement = await createRecord({
+    toolName: 'mixed_replacement_tool',
+    inject: ['tools'],
+    requiredServices: ['tools'],
+    source: [
+      `export const name = ${JSON.stringify('dsh-mixed-replacement')};`,
+      "export const inject = ['tools'];",
+      'let attempts = 0;',
+      'export function apply(ctx) {',
+      '  attempts += 1;',
+      "  const dispose = ctx.tools.register({ name: 'mixed_replacement_tool', description: 'mixed tree probe' });",
+      "  ctx.effect(() => () => { if (typeof dispose === 'function') dispose(); });",
+      "  if (attempts === 1) throw new Error('replacement exploded once');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  // The stale tree serves a second, healthy copy of the replacement under a
+  // different row id so the official loader really starts its fiber.
+  const staleReplacement = await createRecord({ toolName: 'mixed_replacement_tool' });
+  const unrelated = await createRecord({ toolName: 'mixed_healthy_sibling_tool' });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+    unrelated.record,
+  ]);
+
+  let refreshCalls = 0;
+  const mountInclude = async (ctx, config) => {
+    const adapter = await mountIncludeTree(ctx, config);
+    const plainRefresh = adapter.refresh.bind(adapter);
+    adapter.refresh = async () => {
+      refreshCalls += 1;
+      if (refreshCalls === 2) {
+        // A stale resolver serves the old mixed tree after the consumer wrote
+        // its fallback composition: both chain versions and the sibling are
+        // live again after that refresh.
+        await fs.writeFile(config.path, `${JSON.stringify([
+          { id: `shared-${predecessor.record.id}`, name: predecessor.record.moduleUrl },
+          { id: `shared-stale-${replacement.record.id}`, name: staleReplacement.record.moduleUrl },
+          { id: `shared-${unrelated.record.id}`, name: unrelated.record.moduleUrl },
+        ], null, 2)}\n`);
+      }
+      await plainRefresh();
+    };
+    return adapter;
+  };
+
+  const ctx = await boot();
+  const session = await mountSession(ctx, dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(replacement.record.id).status, 'failed');
+  assert.equal(rows.get(replacement.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(predecessor.record.id).status, 'active', 'the restored predecessor is active');
+  assert.equal(rows.get(unrelated.record.id).status, 'active');
+  assert.ok(session.mounted.has(predecessor.record.id));
+  assert.ok(session.mounted.has(unrelated.record.id));
+  assert.deepEqual(
+    ctx.tools.schemas().map((definition) => definition.name).sort(),
+    [predecessor.toolName, unrelated.toolName].sort(),
+    'only the restored predecessor and the unrelated plugin are mounted',
+  );
+  await session.dispose();
+});
+
+test('a fallback does not report a healthy predecessor as include-unavailable when the failed replacement keeps its entry', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 'healthy_predecessor_tool' });
+  const replacement = await createRecord({
+    toolName: 'failed_replacement_tool',
+    inject: ['tools'],
+    requiredServices: ['tools'],
+    source: [
+      `export const name = ${JSON.stringify('dsh-failed-replacement')};`,
+      "export const inject = ['tools'];",
+      'export function apply(ctx) {',
+      "  ctx.effect(() => {",
+      "    const dispose = ctx.tools.register({ name: 'failed_replacement_tool', description: 'failed replacement probe' });",
+      "    return () => { if (typeof dispose === 'function') dispose(); };",
+      '  });',
+      "  throw new Error('replacement exploded');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+  ]);
+
+  let mountCount = 0;
+  let refreshCalls = 0;
+  let predecessorLookups = 0;
+  const mountInclude = async (ctx, config) => {
+    const adapter = await mountIncludeTree(ctx, config);
+    mountCount += 1;
+    if (mountCount !== 1) return adapter;
+    const plainRefresh = adapter.refresh.bind(adapter);
+    adapter.refresh = async () => {
+      refreshCalls += 1;
+      if (refreshCalls >= 2) {
+        // Keep the failed replacement on the live tree with the predecessor:
+        // an Entry can exist while holding an already-failed Fiber.
+        await fs.writeFile(config.path, `${JSON.stringify([
+          { id: `shared-${predecessor.record.id}`, name: predecessor.record.moduleUrl },
+          { id: `shared-${replacement.record.id}`, name: replacement.record.moduleUrl },
+        ], null, 2)}\n`);
+      }
+      await plainRefresh();
+    };
+    const plainResolve = adapter.resolveEntry.bind(adapter);
+    adapter.resolveEntry = (rowId) => {
+      if (rowId === `shared-${predecessor.record.id}`) {
+        predecessorLookups += 1;
+        if (predecessorLookups <= 3) return null;
+      }
+      const entry = plainResolve(rowId);
+      // A failed Fiber can still sit behind an Entry that is not disabled.
+      if (rowId === `shared-${replacement.record.id}` && entry) return { ...entry, disabled: false };
+      return entry;
+    };
+    return adapter;
+  };
+
+  const ctx = await boot();
+  const session = await mountSession(ctx, dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(replacement.record.id).status, 'failed');
+  assert.equal(rows.get(replacement.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(predecessor.record.id).status, 'active', 'the healthy predecessor is active on a clean rebuilt tree');
+  assert.ok(session.mounted.has(predecessor.record.id));
+  assert.deepEqual(
+    ctx.tools.schemas().map((definition) => definition.name),
+    [predecessor.toolName],
+    'the healthy predecessor tool remains available',
+  );
+  await session.dispose();
+});
+
+test('a failed fallback rebuild reports include-unavailable and never claims active', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const previous = await createRecord({ toolName: 'rebuild_old_tool' });
+  const broken = await createRecord({
+    toolName: 'rebuild_broken_tool',
+    inject: [],
+    requiredServices: [],
+    source: "export const name = 'rebuild-broken';\nexport function apply() { throw new Error('replacement exploded'); }\n",
+  });
+  await writeIndex([
+    { ...previous.record, supersededBy: { acp: supersedeMarker(broken.record) } },
+    broken.record,
+  ]);
+
+  let mountCount = 0;
+  const mountInclude = async (_ctx, config) => {
+    mountCount += 1;
+    if (mountCount === 2) throw new Error('Include subtree rebuild failed');
+    return fakeIncludeAdapter(config, {
+      fiberFor: (rowId) => (rowId === `shared-${broken.record.id}` ? fakeFiber({ failApply: true }) : fakeFiber()),
+    });
+  };
+  const session = await mountSession(await boot(), dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(mountCount, 2, 'the fallback attempted one rebuild');
+  assert.equal(rows.get(broken.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(previous.record.id).status, 'failed', 'no row is claimed active without a live tree');
+  assert.equal(rows.get(previous.record.id).reason, 'include-unavailable', 'a host rebuild failure is non-sticky');
+  assert.equal(session.mounted.size, 0);
   await session.dispose();
 });
 
