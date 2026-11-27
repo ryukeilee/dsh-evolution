@@ -62,7 +62,7 @@ async function observedHostOf(dshHome) {
   const modules = modulesCheck?.evidence?.modules ?? [];
   const facts = modulesCheck?.evidence?.hostFacts ?? null;
   const moduleVersion = (name) => modules.find((module) => module.name === name)?.version ?? null;
-  return {
+  const observed = {
     // A packaged host has no Node-resolvable package root; its module versions
     // come from the manifests that identified the CLI, never this process's
     // peer dependencies. Missing fields stay null.
@@ -72,14 +72,16 @@ async function observedHostOf(dshHome) {
     node: process.version,
     verifiedAt: '2026-01-02T00:00:00.000Z',
   };
+  // A multi-version wrapper deliberately leaves the profile host unattributed.
+  // Publication fixtures still need one complete identity; use the synthetic
+  // set rather than inventing missing fields from the doctor process.
+  return typeof observed.dsh === 'string' && observed.dsh ? observed : SYNTHETIC_HOST;
 }
 
-// Use the doctor's own observed host when a CLI is discoverable, so the
-// published record is also host-compatible in that environment; a bare
-// checkout has no host facts, so fall back to the synthetic set.
+// Use the doctor's own observed host when one CLI version can be attributed;
+// otherwise use the same complete synthetic identity as observedHostOf.
 async function fixtureHost(dshHome) {
-  const observed = await observedHostOf(dshHome);
-  return typeof observed.dsh === 'string' && observed.dsh ? observed : SYNTHETIC_HOST;
+  return observedHostOf(dshHome);
 }
 
 test('no publication keeps every promotion Desktop-only and reports ok', async (t) => {
