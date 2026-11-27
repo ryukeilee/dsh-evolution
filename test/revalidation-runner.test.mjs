@@ -12,7 +12,7 @@ const runner = await import(pathToFileURL(path.join(ROOT, 'scripts/acceptance/ru
 const TARGET_A = 'evolution-promoted-aaaaaaaaaaaa';
 const TARGET_B = 'evolution-promoted-bbbbbbbbbbbb';
 const CURRENT_HOST = { dsh: '0.2.2-rc.3', cordis: '4.1.0', include: '1.1.0', node: 'v24.21.0' };
-const { applySupersession } = await import(pathToFileURL(path.join(ROOT, 'lib', 'promoted-sharing.js')).href);
+const { applySupersession, validateSharedRecord } = await import(pathToFileURL(path.join(ROOT, 'lib', 'promoted-sharing.js')).href);
 
 function supersededIndex() {
   const previousHost = { dsh: '0.2.2-rc.2', cordis: '4.1.0', include: '1.1.0', node: 'v24.21.0' };
@@ -171,7 +171,7 @@ test('revalidation runner: operator-disabled links traverse to the terminal vers
     [THIRD, { status: 'active' }],
   ]);
   const disable = { entries: [{ pluginId: TARGET_B, profile: 'acp' }] };
-  const result = runner.expectedAfterAdoption(records, 'acp', bootStatuses, disable);
+  const result = runner.expectedAfterAdoption(records, 'acp', bootStatuses, disable, '/clone/promoted');
   assert.deepEqual(result.get(TARGET_B), { status: 'disabled', reason: 'operator-disabled' },
     'an operator-disabled link is a real skip, not a missing/invalid record');
   assert.deepEqual(result.get(TARGET_A), { status: 'disabled', reason: 'superseded-by', supersededBy: THIRD },
@@ -189,7 +189,7 @@ test('revalidation runner: unapproved and fully revoked records are non-integrit
     { pluginId: REVOKED, profile: 'acp' },
     { pluginId: REVOKED, profile: 'web' },
   ] };
-  const result = runner.expectedAfterAdoption(records, 'acp', new Map(), disable);
+  const result = runner.expectedAfterAdoption(records, 'acp', new Map(), disable, '/clone/promoted');
   assert.deepEqual(result.get(TARGET_A), { status: 'skipped-unapproved', reason: 'profile-not-approved' });
   assert.deepEqual(result.get(REVOKED), { status: 'disabled', reason: 'operator-disabled' },
     'a fully revoked record is disabled in this profile, not skipped-invalid');
@@ -207,7 +207,7 @@ test('revalidation runner: an ineligible tail restores its predecessor after ado
     [TARGET_B, { status: 'active' }],
     [THIRD, { status: 'skipped-incompatible', reason: 'missing-service' }],
   ]);
-  const result = runner.expectedAfterAdoption(records, 'acp', evidence);
+  const result = runner.expectedAfterAdoption(records, 'acp', evidence, undefined, '/clone/promoted');
   assert.equal(result.get(TARGET_A).status, 'disabled');
   assert.equal(result.get(TARGET_A).reason, 'superseded-by');
   assert.equal(result.get(TARGET_A).supersededBy, TARGET_B);
@@ -231,7 +231,7 @@ test('revalidation runner: a revoked but structurally invalid link stops the cha
     [TARGET_A, { status: 'active' }],
     [THIRD, { status: 'active' }],
   ]);
-  const result = runner.expectedAfterAdoption(records, 'acp', bootStatuses, disable);
+  const result = runner.expectedAfterAdoption(records, 'acp', bootStatuses, disable, '/clone/promoted');
   assert.deepEqual(result.get(TARGET_B), { status: 'skipped-invalid', reason: 'record-host-only' },
     'structure is checked before revocation, exactly like the production consumer');
   assert.equal(result.get(TARGET_A).status, 'eligible',
@@ -263,7 +263,7 @@ test('revalidation runner: consumer state snapshots restore the exact source byt
       schemaVersion: 1,
       plugins: [{ id: TARGET_A, status: 'skipped-unapproved', reason: 'profile-not-approved' }],
     }, null, 2)}\n`);
-    runner.restoreConsumerStates(snapshot);
+    runner.restoreConsumerStates(snapshot, clone);
     assert.equal(fs.readFileSync(acpFile, 'utf8'), acpBytes);
     assert.equal(fs.readFileSync(webFile, 'utf8'), webBytes);
     assert.equal(JSON.parse(fs.readFileSync(acpFile, 'utf8')).plugins[0].reason, 'include-unavailable');
@@ -272,15 +272,127 @@ test('revalidation runner: consumer state snapshots restore the exact source byt
     fs.rmSync(webFile);
     const partial = runner.snapshotConsumerStates(clone, ['acp', 'web']);
     fs.writeFileSync(acpFile, '{}\n');
-    runner.restoreConsumerStates(partial);
+    runner.restoreConsumerStates(partial, clone);
     assert.equal(fs.readFileSync(acpFile, 'utf8'), acpBytes);
     assert.equal(fs.existsSync(webFile), false);
 
     // No state files at all: both snapshot and restore are safe no-ops.
     fs.rmSync(acpFile);
     const empty = runner.snapshotConsumerStates(clone, ['acp', 'web']);
-    runner.restoreConsumerStates(empty);
+    runner.restoreConsumerStates(empty, clone);
     assert.equal(fs.existsSync(acpFile), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('revalidation runner: restore replaces a consumer symlink instead of writing its target', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-revalidation-symlink-'));
+  try {
+    const source = path.join(root, 'source');
+    const clone = path.join(root, 'clone');
+    const sourceState = path.join(source, 'storages', 'evolution', 'shared-plugins', 'consumers', 'acp.json');
+    const cloneDir = path.join(clone, 'storages', 'evolution', 'shared-plugins', 'consumers');
+    fs.mkdirSync(path.dirname(sourceState), { recursive: true });
+    fs.writeFileSync(sourceState, 'source');
+    fs.mkdirSync(cloneDir, { recursive: true });
+    fs.symlinkSync(sourceState, path.join(cloneDir, 'acp.json'));
+
+    const snapshot = runner.snapshotConsumerStates(clone, ['acp']);
+    assert.equal(fs.readFileSync(path.join(cloneDir, 'acp.json'), 'utf8'), 'source');
+    // A boot between the snapshot and the restore rewrites the source via the link.
+    fs.writeFileSync(sourceState, 'changed');
+
+    runner.restoreConsumerStates(snapshot, clone);
+    assert.equal(fs.readFileSync(sourceState, 'utf8'), 'changed', 'the source home must never be written');
+    const restored = path.join(cloneDir, 'acp.json');
+    assert.equal(fs.lstatSync(restored).isSymbolicLink(), false, 'restore replaces the link itself');
+    assert.equal(fs.readFileSync(restored, 'utf8'), 'source');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('revalidation runner: restore refuses a consumer state directory outside the clone', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-revalidation-dirlink-'));
+  try {
+    const source = path.join(root, 'source');
+    const clone = path.join(root, 'clone');
+    const outsideDir = path.join(source, 'storages', 'evolution', 'shared-plugins', 'consumers');
+    fs.mkdirSync(outsideDir, { recursive: true });
+    fs.writeFileSync(path.join(outsideDir, 'acp.json'), 'source');
+    const cloneBase = path.join(clone, 'storages', 'evolution', 'shared-plugins');
+    fs.mkdirSync(cloneBase, { recursive: true });
+    fs.symlinkSync(outsideDir, path.join(cloneBase, 'consumers'));
+
+    const snapshot = runner.snapshotConsumerStates(clone, ['acp']);
+    assert.equal(snapshot.get(path.join(cloneBase, 'consumers', 'acp.json')).toString(), 'source');
+    fs.writeFileSync(path.join(outsideDir, 'acp.json'), 'changed');
+    assert.throws(() => runner.restoreConsumerStates(snapshot, clone), /outside the clone/);
+    assert.equal(fs.readFileSync(path.join(outsideDir, 'acp.json'), 'utf8'), 'changed');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('revalidation runner: restore refuses a parent symlink outside the clone', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-revalidation-parentlink-'));
+  try {
+    const source = path.join(root, 'source');
+    const clone = path.join(root, 'clone');
+    const outsideBase = path.join(source, 'storages', 'evolution', 'shared-plugins');
+    const outsideDir = path.join(outsideBase, 'consumers');
+    fs.mkdirSync(outsideDir, { recursive: true });
+    fs.writeFileSync(path.join(outsideDir, 'acp.json'), 'source');
+    const cloneEvolution = path.join(clone, 'storages', 'evolution');
+    fs.mkdirSync(cloneEvolution, { recursive: true });
+    fs.symlinkSync(outsideBase, path.join(cloneEvolution, 'shared-plugins'));
+
+    const snapshot = runner.snapshotConsumerStates(clone, ['acp']);
+    fs.writeFileSync(path.join(outsideDir, 'acp.json'), 'changed');
+    assert.throws(() => runner.restoreConsumerStates(snapshot, clone), /outside the clone/);
+    assert.equal(fs.readFileSync(path.join(outsideDir, 'acp.json'), 'utf8'), 'changed');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('revalidation runner: a state file absent at snapshot time is removed on restore', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-revalidation-absent-'));
+  try {
+    const clone = path.join(root, 'clone');
+    const stateDir = path.join(clone, 'storages', 'evolution', 'shared-plugins', 'consumers');
+    fs.mkdirSync(stateDir, { recursive: true });
+    const acpFile = path.join(stateDir, 'acp.json');
+    assert.equal(fs.existsSync(acpFile), false, 'the source home has no consumer state file');
+
+    const snapshot = runner.snapshotConsumerStates(clone, ['acp', 'web']);
+    assert.equal(snapshot.get(acpFile), null, 'an absent file must be recorded so a later boot can be undone');
+    // A boot creates a fresh state file that the next restore must not inherit.
+    fs.writeFileSync(acpFile, '{"plugins":[{"status":"active"}]}\n');
+    runner.restoreConsumerStates(snapshot, clone);
+    assert.equal(fs.existsSync(acpFile), false, 'the boot-created file must be removed');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('revalidation runner: removing a boot-created link never follows it to the source', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-revalidation-absent-link-'));
+  try {
+    const source = path.join(root, 'source');
+    const clone = path.join(root, 'clone');
+    const sourceFile = path.join(source, 'storages', 'evolution', 'shared-plugins', 'consumers', 'acp.json');
+    fs.mkdirSync(path.dirname(sourceFile), { recursive: true });
+    fs.writeFileSync(sourceFile, 'source');
+    const cloneDir = path.join(clone, 'storages', 'evolution', 'shared-plugins', 'consumers');
+    fs.mkdirSync(cloneDir, { recursive: true });
+
+    const snapshot = runner.snapshotConsumerStates(clone, ['acp']);
+    fs.symlinkSync(sourceFile, path.join(cloneDir, 'acp.json'));
+    runner.restoreConsumerStates(snapshot, clone);
+    assert.equal(fs.readFileSync(sourceFile, 'utf8'), 'source', 'the source home must stay byte-identical');
+    assert.equal(fs.existsSync(path.join(cloneDir, 'acp.json')), false, 'only the link itself is removed');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -448,6 +560,49 @@ test('revalidation runner: adoption proofs go to a sidecar and leave the evidenc
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test('revalidation runner: an out-of-root module URL is skipped-invalid against the real plugin root', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const sourceRoot = '/tmp/root/promoted';
+  const elsewhereRoot = '/tmp/elsewhere/promoted';
+  const moduleUrlAt = (root, id) => pathToFileURL(path.join(root, `dsh-${id}`, 'lib', 'index.js')).href;
+  const records = [
+    validRecord(TARGET_A, {
+      moduleUrl: moduleUrlAt(sourceRoot, TARGET_A),
+      supersededBy: { acp: validMarker(TARGET_B, 'b'.repeat(64)) },
+    }),
+    validRecord(TARGET_B, {
+      moduleUrl: moduleUrlAt(elsewhereRoot, TARGET_B),
+      sourceSha256: 'b'.repeat(64),
+      supersededBy: { acp: validMarker(THIRD, 'c'.repeat(64)) },
+    }),
+    validRecord(THIRD, {
+      moduleUrl: moduleUrlAt(sourceRoot, THIRD),
+      sourceSha256: 'c'.repeat(64),
+    }),
+  ];
+  // B is operator-disabled in acp and has no isolated boot; A and C did boot.
+  const bootStatuses = new Map([
+    [TARGET_A, { status: 'active' }],
+    [THIRD, { status: 'active' }],
+  ]);
+  const disable = { entries: [{ pluginId: TARGET_B, profile: 'acp' }] };
+  const result = runner.expectedAfterAdoption(records, 'acp', bootStatuses, disable, sourceRoot);
+  assert.deepEqual(result.get(TARGET_B), { status: 'skipped-invalid', reason: 'record-module-path' },
+    'the real promoted root must invalidate a module URL that points outside it');
+  assert.equal(result.get(TARGET_A).status, 'eligible',
+    'an invalid middle link must not suppress its still-active predecessor');
+  // The runner and the production consumer apply the very same validator.
+  assert.deepEqual(validateSharedRecord(records[1], { pluginRoot: sourceRoot }), { ok: false, reason: 'record-module-path' });
+});
+
+test('revalidation runner: operator revocation outranks a missing profile approval', () => {
+  const record = validRecord(TARGET_A, { approvedProfiles: ['web'] });
+  const disable = { entries: [{ pluginId: TARGET_A, profile: 'acp' }] };
+  const result = runner.expectedAfterAdoption([record], 'acp', new Map(), disable, '/clone/promoted');
+  assert.deepEqual(result.get(TARGET_A), { status: 'disabled', reason: 'operator-disabled' },
+    'production checks revocation before profile approval, so the runner must too');
 });
 
 test('revalidation runner: evidence redaction covers the home, the scratch tree and the repository root', () => {
