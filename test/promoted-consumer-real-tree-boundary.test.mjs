@@ -271,3 +271,146 @@ test('B2: a failed fiber behind a non-disabled entry cannot demote a healthy pre
     'only the restored predecessor and healthy sibling remain online; the failed replacement fiber is gone');
   await session.dispose();
 });
+
+test('S1: a mixed composition read by a rebuilt child cannot expose two chain versions', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 's1_predecessor_tool' });
+  const replacement = await createRecord({
+    toolName: 's1_replacement_tool',
+    source: [
+      `export const name = ${JSON.stringify('dsh-s1-replacement')};`,
+      "export const inject = ['tools'];",
+      'let attempts = 0;',
+      'export function apply(ctx) {',
+      '  attempts += 1;',
+      '  ctx.effect(() => {',
+      "    const dispose = ctx.tools.register({ name: 's1_replacement_tool', description: 'S1 probe' });",
+      "    return () => { if (typeof dispose === 'function') dispose(); };",
+      '  });',
+      "  if (attempts === 1) throw new Error('replacement exploded once');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  const staleCopy = await createRecord({ toolName: 's1_replacement_tool' });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+  ]);
+
+  const ctx = await boot();
+  let mounts = 0;
+  const session = await mountSession(ctx, dataRoot, (mountCtx, config) => {
+    mounts += 1;
+    if (mounts === 2) {
+      // The consumer wrote the intended composition, then an external writer
+      // left a mixed list before the NEW child read the file. Per-row checks
+      // alone only see the intended predecessor on this tree.
+      return (async () => {
+        await fs.writeFile(config.path, `${JSON.stringify([
+          { id: `shared-${predecessor.record.id}`, name: predecessor.record.moduleUrl },
+          { id: `shared-stale-${staleCopy.record.id}`, name: staleCopy.record.moduleUrl },
+        ], null, 2)}\n`);
+        return mountIncludeTree(mountCtx, config);
+      })();
+    }
+    return mountIncludeTree(mountCtx, config);
+  });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(mounts, 2);
+  assert.equal(rows.get(predecessor.record.id).status, 'failed',
+    'a rebuilt tree that read a mixed list is not a clean tree');
+  assert.equal(session.mounted.has(predecessor.record.id), false);
+  assert.equal(liveToolNames(ctx).includes(predecessor.toolName), false,
+    'the predecessor must not be online beside a stale replacement copy');
+  await session.dispose();
+});
+
+test('S2: an independent host tool registered after the baseline is not our leftover', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 's2_predecessor_tool' });
+  const replacement = await createRecord({
+    toolName: 's2_replacement_tool',
+    source: [
+      `export const name = ${JSON.stringify('dsh-s2-replacement')};`,
+      "export const inject = ['tools'];",
+      'export function apply(ctx) {',
+      '  ctx.effect(() => {',
+      "    const dispose = ctx.tools.register({ name: 's2_replacement_tool', description: 'S2 probe' });",
+      "    return () => { if (typeof dispose === 'function') dispose(); };",
+      '  });',
+      "  throw new Error('replacement exploded');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+  ]);
+
+  const ctx = await boot();
+  let hostRegistered = false;
+  const session = await mountSession(ctx, dataRoot, (mountCtx, config) => {
+    if (!hostRegistered) {
+      hostRegistered = true;
+      // A separate host plugin registers after the consumer captured its
+      // baseline. Its tool survives our Include disposal but is not ours.
+      ctx.tools.register({ name: 's2_independent_host_tool', description: 'independent host plugin' });
+    }
+    return mountIncludeTree(mountCtx, config);
+  });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(replacement.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(predecessor.record.id).status, 'active',
+    'an independent host tool must not block the predecessor restore');
+  assert.ok(session.mounted.has(predecessor.record.id));
+  assert.ok(liveToolNames(ctx).includes('s2_independent_host_tool'));
+  assert.deepEqual(liveToolNames(ctx).filter((name) => name === 's2_replacement_tool'), []);
+  await session.dispose();
+});
+
+test('S3: a host-level failure on a middle version walks back to the healthy predecessor', async (t) => {
+  const { dataRoot, createRecord, writeIndex, paths } = await fixture(t);
+  const a0 = await createRecord({ toolName: 's3_a0_tool' });
+  const a1 = await createRecord({
+    toolName: 's3_a1_tool',
+    // A module that cannot even be imported leaves no Fiber behind.
+    source: "throw new Error('module import failed');\n",
+  });
+  const a2 = await createRecord({
+    toolName: 's3_a2_tool',
+    source: [
+      `export const name = ${JSON.stringify('dsh-s3-a2')};`,
+      "export const inject = ['tools'];",
+      'export function apply(ctx) {',
+      '  ctx.effect(() => {',
+      "    const dispose = ctx.tools.register({ name: 's3_a2_tool', description: 'S3 probe' });",
+      "    return () => { if (typeof dispose === 'function') dispose(); };",
+      '  });',
+      "  throw new Error('tail exploded');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  await writeIndex([
+    { ...a0.record, supersededBy: { acp: supersedeMarker(a1.record) } },
+    { ...a1.record, supersededBy: { acp: supersedeMarker(a2.record) } },
+    a2.record,
+  ]);
+
+  const ctx = await boot();
+  const session = await mountSession(ctx, dataRoot, (mountCtx, config) => mountIncludeTree(mountCtx, config));
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(a2.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(a0.record.id).status, 'active',
+    'the chain must continue past a middle version with no Fiber');
+  assert.ok(session.mounted.has(a0.record.id));
+  assert.deepEqual(liveToolNames(ctx), [a0.toolName]);
+  await session.dispose();
+  const state = await fs.readFile(paths.statePath('acp'), 'utf8');
+  assert.ok(state.length > 0);
+});

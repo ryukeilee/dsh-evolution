@@ -98,19 +98,23 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 祖先 fiber 置为 UNLOADING（`state === 5`），都按取消处理，因此「挂载已成功、但 capability/service 探针在关闭中
 退化」得到的 `skipped-incompatible` / `include-unavailable` 行同样不会被发布。会话仍处于可发布 context 时，
 首次 Include refresh 失败可在首轮即写非 sticky 的 `include-unavailable`，没有重试。回退阶段改为重建 Include
-子树：dispose 旧子树 → 证明释放（会话建立前从 `ctx.tools.schemas()` 记录的宿主工具基线，dispose 前后各取一次
-当前工具名，任何「dispose 前的插件工具名」仍在即为 `toolSurfaceLeftovers`；再加捕获的每个 Fiber 都已离开
-active、旧 resolver 不再返回任何已评估行，resolver 抛错按已释放计）→ 写入 intended composition → 用同一
-composition 重新 mount 一棵干净子树（仅对有证明的 `INACTIVE_EFFECT` 做三次有界重试），再逐行验证其中全部
-intended 行。工具面是唯一无法被「Fiber uid 已清空、resolver 已丢行」伪造的信号：Cordis 会捕获并记录 effect
-disposer 的异常，官方子树的 `dispose()` 仍正常返回，但插件注册的工具仍在线。未释放时 fail closed：intended
-行写 `include-unavailable`，不挂第二棵树，会话标记 `unreleasedOldTree`，并保留旧 adapter / Fiber 供宿主
-`dispose()` 重试且如实报 `released:false`（`disposeOnce` 同样重新检查工具面，即使 uid 与 resolver 都已清空
-也不报 `released:true`）；只有证明释放后才清空它们。
+子树：dispose 旧子树 → 证明释放（只把「在自己 mount / refresh / 逐行验证前后新出现」的工具名记入
+`ownedTools`，dispose 后仍在的这些名字才是 `toolSurfaceLeftovers`；独立宿主插件在基线之后注册的工具不算
+旧树残留；再加捕获的每个 Fiber 都已离开 active、旧 resolver 不再返回任何已评估行，resolver 抛错按已释放
+计）→ 写入 intended composition → 用同一 composition 重新 mount 一棵干净子树（仅对有证明的
+`INACTIVE_EFFECT` 做三次有界重试）→ 把官方子树**实际加载**的 entry 列表（`liveEntries()`）与 intended 列表
+逐项精确比对，不一致就 dispose 这棵新树并 fail closed → 再逐行验证其中全部 intended 行。首次 refresh 后也做
+同样的精确比对，因此外部写者留下的多余行不会被当成「预期的行都在」而放行。工具面是唯一无法被「Fiber uid
+已清空、resolver 已丢行」伪造的信号：Cordis 会捕获并记录 effect disposer 的异常，官方子树的 `dispose()`
+仍正常返回，但插件注册的工具仍在线。未释放时 fail closed：intended 行写 `include-unavailable`，不挂第二棵
+树，会话标记 `unreleasedOldTree`，并保留旧 adapter / Fiber 供宿主 `dispose()` 重试且如实报 `released:false`
+（`disposeOnce` 同样重新检查工具面，即使 uid 与 resolver 都已清空也不报 `released:true`）；只有证明释放后
+才清空它们。
 新树不可能包含被排除的版本，因此不再有「refresh 重试」「settled 树」「live Entry 仍在线」等判断，也不会
 因为一个 Entry 存在但 Fiber 已失败而把健康前驱报成 `include-unavailable`。候选的插件 apply 失败仍记
-`plugin-apply-failed` 并在下一次 pass 回退到它替换的记录；宿主级错误（含重建本身失败）写非 sticky 的
-`include-unavailable` 并停止本次回退，不谎报 `active`。每轮 pass 仍受 `evaluated.length` 上界约束。
+`plugin-apply-failed` 并在下一次 pass 回退到它替换的记录；宿主级错误（含重建本身失败、以及中间版本缺少
+Fiber）同样把该行排除出本轮回退，状态保持非 sticky `include-unavailable` 并在下一次健康启动重试，不会让
+循环在同一版本上反复重建；停止本次回退时不谎报 `active`。每轮 pass 仍受 `evaluated.length` 上界约束。
 
 索引本身缺失是正常的 Desktop-only 安装；索引不可读或格式错误时视为「没有任何记录被授权」，所有记录都不能
 挂载（doctor 报 `blocked`）。单个记录非法不会丢弃其它合法记录。
