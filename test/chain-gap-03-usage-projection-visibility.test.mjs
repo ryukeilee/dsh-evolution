@@ -350,6 +350,18 @@ test('an unreadable projection is invalid, not absent', async (t) => {
   assert.equal(actions[0].code, `${USAGE_PROJECTION_ACTION_PREFIX}invalid`);
 });
 
+test('a dangling usage.json symlink is damage, not an absent projection', async (t) => {
+  const env = await fixture(t, 'dangling-link');
+  fs.symlinkSync(path.join(env.home, 'no-such-target'), sharingPaths(env.paths).usagePath);
+  const { loaded, stable } = await reviewed(env);
+  assert.equal(loaded.evidence.status, 'invalid');
+  assert.equal(loaded.evidence.reason, 'dangling-symlink');
+  assert.deepEqual(usageActions(stable).map((row) => row.code), [`${USAGE_PROJECTION_ACTION_PREFIX}invalid`]);
+  const check = await doctorUsage(env);
+  assert.equal(check.level, 'degraded');
+  assert.equal(check.evidence.reason, 'dangling-symlink');
+});
+
 test('the supplement is not a blocking stable issue and does not block experience', () => {
   const supplement = {
     action: REVIEW_ACTIONS.OPERATOR,
@@ -450,6 +462,8 @@ test('a damaged projection is surfaced even with an empty or absent index', asyn
   const emptyReview = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: null, usageStatus: 'invalid' });
   assert.equal(usageActions(emptyReview).length, 1);
   assert.equal(usageActions(emptyReview)[0].code, `${USAGE_PROJECTION_ACTION_PREFIX}invalid`);
+  assert.match(usageActions(emptyReview)[0].prerequisite, /No published record is in scope/);
+  assert.match((await doctorUsage(env)).remediation, /removing the residual usage\.json/);
   assert.equal((await doctorUsage(env)).level, 'degraded');
 
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'chain-gap-03-absent-index-'));
