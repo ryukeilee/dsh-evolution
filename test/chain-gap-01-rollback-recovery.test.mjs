@@ -8,6 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import nodeFs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -361,6 +362,7 @@ test('a rollback intent without rebuild identity is invalid before any target is
     { ...terminal, proposal: { ...env.proposal, target: '' } },
     { ...terminal, rolledBackAt: '' },
     { ...terminal, decision: { kind: 'benefit' } },
+    { ...terminal, padding: 'x'.repeat(2 * 1024 * 1024) },
   ];
   for (const terminalSnapshot of variants) {
     const intent = { version: 1, experimentId: EXPERIMENT, phase: 'rollback-started', terminalSnapshot };
@@ -372,11 +374,13 @@ test('a rollback intent without rebuild identity is invalid before any target is
   }
 });
 
-test('an ordinary canary sidecar is not mistaken for a damaged rollback receipt', async (t) => {
+test('an oversized ordinary canary sidecar is not mistaken for a damaged rollback receipt', async (t) => {
   const env = await scene(t);
-  await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`), `${JSON.stringify(
-    snapshotEvidenceFromRecord({ id: EXPERIMENT, proposal: env.proposal }), null, 2,
-  )}\n`);
+  const sidecar = {
+    ...snapshotEvidenceFromRecord({ id: EXPERIMENT, proposal: env.proposal }),
+    padding: 'x'.repeat(2 * 1024 * 1024),
+  };
+  await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`), `${JSON.stringify(sidecar, null, 2)}\n`);
   const pending = await recoverInterruptedPromotion(env.paths);
   assert.equal(pending.status, 'canary-pending');
   const core = orchestratorFor(env);
@@ -480,6 +484,52 @@ test('an interrupted recursive cleanup leaves no active state directory and does
   const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
   assert.equal(recovery.published, 0, JSON.stringify(recovery));
   assert.equal(recovery.duplicates, 1);
+});
+
+test('a failed parent fsync preserves the moved rollback directory while the live rollback still terminates', async (t) => {
+  const env = await scene(t);
+  const originalRename = fs.rename;
+  const originalFsync = nodeFs.fsyncSync;
+  let moved = false;
+  let failed = false;
+  let cleanupDir = null;
+  fs.rename = async function observedRename(from, to) {
+    const result = await originalRename.call(this, from, to);
+    if (String(from) === env.paths.promotionStateDir) {
+      moved = true;
+      cleanupDir = String(to);
+    }
+    return result;
+  };
+  nodeFs.fsyncSync = function observedFsync(descriptor) {
+    if (moved && !failed) {
+      failed = true;
+      throw new Error('simulated parent fsync failure');
+    }
+    return originalFsync.call(this, descriptor);
+  };
+  const warnings = [];
+  const core = orchestratorFor(env, warnings);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  let result;
+  try {
+    result = await core.observeCanary(regressionArgs, execFor());
+  } finally {
+    fs.rename = originalRename;
+    nodeFs.fsyncSync = originalFsync;
+  }
+  assert.equal(failed, true);
+  assert.equal(result.phase, 'rolled-back');
+  assert.equal(result.rollbackCleanup, 'pending');
+  assert.equal(core.experiments.get(EXPERIMENT).state, 'rolled-back');
+  assert.ok(cleanupDir);
+  assert.equal(await exists(env.paths.promotionStateDir), false);
+  assert.equal(await exists(cleanupDir), true, 'an unconfirmed rename must not be followed by recursive deletion');
+  assert.ok(warnings.some((row) => row.includes('cleanup remains')), JSON.stringify(warnings));
 });
 
 test('an unreadable rollback intent blocks recovery, live canary advancement and the doctor', async (t) => {
