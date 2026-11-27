@@ -374,6 +374,39 @@ test('a rollback intent without rebuild identity is invalid before any target is
   }
 });
 
+test('a deeply nested intent is invalid without breaking startup recovery or doctor', async (t) => {
+  const env = await scene(t);
+  const terminal = {
+    experimentId: EXPERIMENT, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z',
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z' },
+    proposal: env.proposal,
+  };
+  const terminalJson = JSON.stringify(terminal).slice(0, -1);
+  const deep = `${'{"next":'.repeat(2000)}"leaf"${'}'.repeat(2000)}`;
+  const intentText = `{"version":1,"experimentId":${JSON.stringify(EXPERIMENT)},"phase":"rollback-started","terminalSnapshot":${terminalJson},"deep":${deep}}}\n`;
+  await fs.writeFile(path.join(env.paths.promotionStateDir, 'rollback-intent.json'), intentText);
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  await assert.rejects(recoverInterruptedPromotion(env.paths), /intent.*invalid/);
+  await assert.rejects(core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:deep-intent', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor()), /invalid/);
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  const check = report.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.evidence.rollbackIntent, 'invalid');
+  assert.equal(await exists(path.join(env.paths.promotionStateDir, 'journal.json')), true);
+  assert.equal(await fs.readFile(env.paths.compositionPath, 'utf8').then((text) => text.includes('evolution-promoted-')), true);
+});
+
 test('an oversized ordinary canary sidecar is not mistaken for a damaged rollback receipt', async (t) => {
   const env = await scene(t);
   const sidecar = {
