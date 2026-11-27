@@ -620,3 +620,51 @@ test('S5: a rejected first refresh does not sticky-skip the next healthy start',
   assert.deepEqual(liveToolNames(secondCtx), [replacement.toolName]);
   await second.dispose();
 });
+
+test('S6: a recursive alias in the live list cannot skip release of a mixed tree', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 's6_predecessor_tool' });
+  const replacement = await createRecord({ toolName: 's6_replacement_tool' });
+  const staleCopy = await createRecord({ toolName: 's6_replacement_tool' });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+  ]);
+
+  const ctx = await boot();
+  const session = await mountSession(ctx, dataRoot, async (mountCtx, config) => {
+    const adapter = await mountIncludeTree(mountCtx, config);
+    const plainRefresh = adapter.refresh.bind(adapter);
+    const plainLive = adapter.liveEntries.bind(adapter);
+    let calls = 0;
+    adapter.refresh = async () => {
+      calls += 1;
+      if (calls === 1) {
+        await fs.writeFile(config.path, `${JSON.stringify([
+          { id: `shared-${predecessor.record.id}`, name: predecessor.record.moduleUrl },
+          { id: `shared-stale-${staleCopy.record.id}`, name: staleCopy.record.moduleUrl },
+        ], null, 2)}\n`);
+        await plainRefresh();
+        throw new Error('stale tree reported by Include');
+      }
+      return plainRefresh();
+    };
+    adapter.liveEntries = () => {
+      const rows = plainLive();
+      // A recursive YAML alias makes the live list cyclic. Comparing it must
+      // report a mismatch, never throw and abandon the release proof.
+      const loop = {};
+      loop.self = loop;
+      rows.push({ id: 'shared-recursive', name: 'recursive', options: { loop } });
+      return rows;
+    };
+    return adapter;
+  });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(replacement.record.id).reason, 'include-unavailable');
+  assert.equal(session.adapter, null, 'a mixed tree with a recursive alias is still released');
+  assert.deepEqual(liveToolNames(ctx), [], 'no chain tool stays callable after a cyclic tree is rejected');
+  const disposal = await session.dispose();
+  assert.equal(disposal.released, true);
+});

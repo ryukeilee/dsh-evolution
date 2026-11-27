@@ -105,8 +105,9 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 再加捕获的每个 Fiber 都已离开 active、旧 resolver 不再返回任何已评估行，resolver 抛错按已释放
 计）→ 写入 intended composition → 用同一 composition 重新 mount 一棵干净子树（仅对有证明的
 `INACTIVE_EFFECT` 做三次有界重试）→ 把官方子树**实际加载**的 entry 列表（`liveEntries()`）与 intended 列表
-逐项精确比对，不一致就 dispose 这棵新树并 fail closed → 再逐行验证其中全部 intended 行。首次 refresh 后也做
-同样的精确比对；被拒绝的树一律走同一套 dispose + 工具面释放核验，未证明释放就保留该树并标记
+逐项精确比对（环安全，递归 YAML 别名只会被判为不匹配，不会抛错跳过清理），不一致就 dispose 这棵新树并
+fail closed → 再逐行验证其中全部 intended 行。首次 refresh 后也做（包括 refresh 报错的路径）同样的精确比对；
+被拒绝的树一律走同一套 dispose + 工具面释放核验，未证明释放就保留该树并标记
 `unreleasedOldTree`，不让多余行留在挂载表里冒充预期的行。工具面是唯一无法被「Fiber uid
 已清空、resolver 已丢行」伪造的信号：Cordis 会捕获并记录 effect disposer 的异常，官方子树的 `dispose()`
 仍正常返回，但插件注册的工具仍在线。未释放时 fail closed：intended 行写 `include-unavailable`，不挂第二棵
