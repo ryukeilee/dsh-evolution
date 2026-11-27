@@ -272,6 +272,13 @@ test('doctor stays ok for absent projection with no records, but degrades a dama
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const paths = resolveEvolutionPaths({ dshHome: root });
   fs.mkdirSync(path.join(paths.dataRoot, 'shared-plugins'), { recursive: true });
+  fs.writeFileSync(path.join(paths.dataRoot, 'shared-plugins', 'published.json'), `${JSON.stringify({
+    schemaVersion: 1,
+    kind: 'dsh-evolution-shared-plugins',
+    updatedAt: new Date().toISOString(),
+    publisher: { profile: 'desktop' },
+    plugins: [],
+  })}\n`);
   const absentReport = await collectDiagnostics({ home: root, paths });
   assert.equal(absentReport.checks.find((row) => row.id === 'promotion.usage').level, 'ok');
 
@@ -280,10 +287,17 @@ test('doctor stays ok for absent projection with no records, but degrades a dama
   const check = damagedReport.checks.find((row) => row.id === 'promotion.usage');
   assert.equal(check.level, 'degraded');
   assert.equal(check.evidence.status, 'invalid');
-  // No index means the producer cannot converge; the guidance must not tell the
-  // operator to replace the damaged file with another incomplete snapshot.
-  assert.doesNotMatch(check.remediation, /capability-usage\.mjs/);
-  assert.match(check.remediation, /publication index/);
+  // A valid empty index is a normal Desktop-only install: the producer can
+  // converge, so the regular supplement command is the right guidance.
+  assert.match(check.remediation, /capability-usage\.mjs/);
+
+  // A genuinely absent index cannot converge: guidance must say restore it.
+  fs.rmSync(path.join(paths.dataRoot, 'shared-plugins', 'published.json'));
+  const noIndexReport = await collectDiagnostics({ home: root, paths });
+  const noIndexCheck = noIndexReport.checks.find((row) => row.id === 'promotion.usage');
+  assert.equal(noIndexCheck.level, 'degraded');
+  assert.doesNotMatch(noIndexCheck.remediation, /capability-usage\.mjs/);
+  assert.match(noIndexCheck.remediation, /publication index/);
   fs.rmSync(path.join(paths.dataRoot, 'shared-plugins', 'usage.json'));
   const repaired = await collectDiagnostics({ home: root, paths });
   assert.equal(repaired.checks.find((row) => row.id === 'promotion.usage').level, 'ok');
@@ -453,7 +467,11 @@ test('a damaged projection is surfaced even with an empty or absent index', asyn
   const absentReview = await readPublishedPluginReview({ paths, host: HOST, usage: loaded.usage, usageStatus: loaded.evidence.status });
   assert.equal(absentReview.status, 'absent');
   assert.equal(usageActions(absentReview).length, 1);
-  assert.equal(usageActions(absentReview)[0].code, `${USAGE_PROJECTION_ACTION_PREFIX}stale`);
+  const [action] = usageActions(absentReview);
+  assert.equal(action.code, `${USAGE_PROJECTION_ACTION_PREFIX}stale`);
+  assert.match(action.command, /capability-usage\.mjs/);
+  assert.match(action.prerequisite, /Restore the shared publication index/);
+  assert.match(action.why, /Remove the residual usage\.json|Desktop-only/);
 });
 
 test('a broken index and a damaged projection both stay visible', async (t) => {
