@@ -330,6 +330,38 @@ x" in *) : ;; esac
   assert.equal(result.candidates[0].error, 'NO_EXEC_TARGET');
 });
 
+test('a parameter expansion in the case selector cannot turn its body into a launch branch', (t) => {
+  const dir = tmp(t, 'host-res-case-selector-parameter-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+case "\${1:-" in *) profile=x ;; esac
+exec ${process.execPath} "${dsh.bin}" "$@"
+"}" in *) : ;; esac
+`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(spawnSync('/bin/sh', ['-n', wrapper]).status, 0, 'the fixture is valid POSIX shell');
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null, 'exec text inside a multi-line selector expansion is data');
+  assert.equal(result.candidates[0].error, 'NO_EXEC_TARGET');
+});
+
+test('a single-quoted backtick in the case selector stays literal', (t) => {
+  const dir = tmp(t, 'host-res-case-selector-literal-backtick-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+case '\`test\`' in *) profile=x ;; esac
+exec ${process.execPath} "${dsh.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(spawnSync('/bin/sh', ['-n', wrapper]).status, 0, 'the fixture is valid POSIX shell');
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected?.version, '0.2.2-rc.1');
+});
+
 test('an unclosed parameter expansion cannot turn its body into a launch branch', (t) => {
   const dir = tmp(t, 'host-res-inline-assignment-parameter-expansion-');
   const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
@@ -695,6 +727,51 @@ test('dynamic absolute launch and script paths are not copied into branch eviden
   }
 });
 
+test('an unquoted command substitution is not split into reportable path tokens', async (t) => {
+  const dir = tmp(t, 'host-res-unquoted-substitution-');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nexec "${process.execPath}" $(printf %s /tmp/TEST_DUMMY_ONLY.js x) "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null);
+  assert.equal(result.candidates[0].error, 'UNRESOLVED_EXEC_TARGET');
+  assert.equal(result.candidates[0].unresolvedBranches[0].wrapperPath, wrapper);
+  assert.equal(result.candidates[0].unresolvedBranches[0].line, 2);
+  assert.doesNotMatch(JSON.stringify(result.candidates[0].unresolvedBranches), /printf|TEST_DUMMY_ONLY/);
+
+  const report = await withPathAsync('', () => collectDiagnostics({ dshHome: doctorHome(t), cliPath: wrapper, probe: { skipComposition: true } }));
+  const cli = report.checks.find((check) => check.id === 'host.cli');
+  assert.equal(cli.level, 'not-evaluated');
+  assert.doesNotMatch(JSON.stringify(cli.evidence), /printf|TEST_DUMMY_ONLY/);
+  assert.doesNotMatch(cli.summary, /printf|TEST_DUMMY_ONLY/);
+});
+
+test('a dynamic script position cannot be replaced by a later DSH entry', (t) => {
+  const dir = tmp(t, 'host-res-dynamic-script-position-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nexec "${process.execPath}" "/tmp/\${CLI:-TEST_DUMMY_ONLY}.js" "${dsh.bin}" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null, 'the first non-option Node argument is the script; a later .js is only an argument');
+  assert.equal(result.candidates[0].error, 'UNRESOLVED_EXEC_TARGET');
+  assert.doesNotMatch(JSON.stringify(result.candidates[0].unresolvedBranches), /TEST_DUMMY_ONLY/);
+});
+
+test('a quoted literal bracket in a host path remains attributable', (t) => {
+  const dir = tmp(t, 'host-res-literal-bracket-path-');
+  const dsh = makeDshPackage(path.join(dir, '[literal]'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nexec "${process.execPath}" "${dsh.bin}" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected?.version, '0.2.2-rc.1');
+  assert.equal(result.selected?.entryPath, dsh.bin);
+});
+
 test('an Electron launch without a static entry reports the missing entry', (t) => {
   const dir = tmp(t, 'host-res-electron-no-entry-');
   const wrapper = path.join(dir, 'dsh');
@@ -860,6 +937,26 @@ exec ${process.execPath} "${two.bin}" "$@"
   assert.equal(report.checks.find((check) => check.id === 'host.cli').level, 'ok');
   assert.equal(report.checks.find((check) => check.id === 'host.version').level, 'blocked');
   assert.equal(fs.existsSync(marker), false, 'a truthy non-string manifest version keeps the existing no-probe gate');
+});
+
+test('a valid explicit branch stays ambiguous beside a numeric manifest version', async (t) => {
+  const dir = tmp(t, 'host-res-explicit-mixed-numeric-');
+  const valid = makeDshPackage(path.join(dir, 'host-valid'), '0.2.2-rc.1');
+  const numeric = makeDshPackage(path.join(dir, 'host-numeric'), 123);
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+if [ "$1" = 'web' ]; then
+  exec ${process.execPath} "${valid.bin}" "$@"
+fi
+exec ${process.execPath} "${numeric.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const report = await withPathAsync('', () => collectDiagnostics({ dshHome: doctorHome(t), cliPath: wrapper, probe: { skipComposition: true } }));
+  assert.equal(report.checks.find((check) => check.id === 'host.cli').level, 'ok');
+  assert.equal(report.checks.find((check) => check.id === 'host.cli').evidence.profileHostAmbiguous, true);
+  assert.equal(report.checks.find((check) => check.id === 'host.version').level, 'not-evaluated');
+  assert.equal(report.checks.find((check) => check.id === 'host.version').evidence.reason, 'profile-host-ambiguous');
 });
 
 test('a valid branch cannot hide a versionless sibling in a multi-branch wrapper', async (t) => {
