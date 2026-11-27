@@ -413,7 +413,7 @@ esac
   const cli = checkOf(report, 'host.cli');
   assert.equal(cli.level, 'not-evaluated');
   assert.equal(cli.evidence.reason, 'cli-candidate-unresolved');
-  assert.match(cli.summary, /node \(UNRESOLVED_EXEC_TARGET:/);
+  assert.match(cli.summary, /path-node-case-dsh:4 \(UNRESOLVED_EXEC_TARGET: the launch command/);
 });
 
 test('an unsupported case launch body leaves the profile host unknown', async (t) => {
