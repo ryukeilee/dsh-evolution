@@ -414,6 +414,21 @@ test('a damaged projection is surfaced even with an empty or absent index', asyn
   assert.equal(usageActions(absentReview)[0].code, `${USAGE_PROJECTION_ACTION_PREFIX}stale`);
 });
 
+test('a broken index and a damaged projection both stay visible', async (t) => {
+  const env = await fixture(t, 'both-broken');
+  fs.writeFileSync(sharingPaths(env.paths).indexPath, '{ broken');
+  fs.writeFileSync(sharingPaths(env.paths).usagePath, '{ broken');
+  const review = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: null, usageStatus: 'invalid' });
+  assert.equal(review.status, 'blocked');
+  assert.equal(review.reason, 'publication-index-unreadable');
+  assert.ok(review.nextActions.some((row) => /publication index is invalid/.test(row.why)),
+    JSON.stringify(review.nextActions));
+  assert.deepEqual(usageActions(review).map((row) => row.code), [`${USAGE_PROJECTION_ACTION_PREFIX}invalid`]);
+  const composed = composeSelfEvolutionReview({ stable: review });
+  assert.equal(composed.hasBlockingStableIssue, true);
+  assert.ok(usageActions(composed).length > 0);
+});
+
 test('doctor never copies raw capturedAt text into a report', async (t) => {
   const env = await fixture(t, 'captured-at');
   await writeProjection(env, { capturedAt: 'PRIVATE <owner@example.com> not-a-date' });
