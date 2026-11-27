@@ -224,7 +224,15 @@ function fakeIncludeAdapter(config, { fiberFor, omitEntries = new Set() }) {
     resolveEntry(rowId) {
       return entries.get(rowId) ?? null;
     },
-    async dispose() {},
+    async dispose() {
+      // Model the official child's disposer: every row it owned is torn down,
+      // its fibers leave ACTIVE, and the public resolver can no longer serve
+      // them. Tests that need a failed cleanup override this method.
+      for (const entry of entries.values()) {
+        if (entry.fiber && typeof entry.fiber === 'object') entry.fiber.uid = null;
+      }
+      entries.clear();
+    },
   };
 }
 
@@ -960,6 +968,185 @@ test('a fallback on a mixed live tree never leaves two chain versions mounted', 
   await session.dispose();
 });
 
+test('a fallback disposes the old tree before writing the intended composition', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 'flush_a0_tool' });
+  // Fails its first apply (forcing the fallback) but registers a tool on every
+  // attempt: a stale tree surviving the rebuild would leave this second chain
+  // version online beside the restored predecessor.
+  const replacement = await createRecord({
+    toolName: 'flush_a1_tool',
+    inject: ['tools'],
+    requiredServices: ['tools'],
+    source: [
+      `export const name = ${JSON.stringify('dsh-flush-replacement')};`,
+      "export const inject = ['tools'];",
+      'let attempts = 0;',
+      'export function apply(ctx) {',
+      '  attempts += 1;',
+      "  const dispose = ctx.tools.register({ name: 'flush_a1_tool', description: 'flush probe' });",
+      "  ctx.effect(() => () => { if (typeof dispose === 'function') dispose(); });",
+      '  if (attempts === 1) throw new Error(\'replacement exploded once\');',
+      '}',
+      '',
+    ].join('\n'),
+  });
+  const sibling = await createRecord({ toolName: 'flush_s_tool' });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+    sibling.record,
+  ]);
+
+  let mountCount = 0;
+  const mountInclude = async (ctx, config) => {
+    const adapter = await mountIncludeTree(ctx, config);
+    mountCount += 1;
+    if (mountCount === 1) {
+      const plainDispose = adapter.dispose.bind(adapter);
+      adapter.dispose = async () => {
+        // The old child flushes the mixed composition it was mounted from
+        // back to disk as its disposer runs. Writing `intended` before dispose
+        // would let this overwrite it with the failed replacement again.
+        await fs.writeFile(config.path, `${JSON.stringify([
+          { id: `shared-${predecessor.record.id}`, name: predecessor.record.moduleUrl },
+          { id: `shared-${replacement.record.id}`, name: replacement.record.moduleUrl },
+          { id: `shared-${sibling.record.id}`, name: sibling.record.moduleUrl },
+        ], null, 2)}\n`);
+        await plainDispose();
+      };
+    }
+    return adapter;
+  };
+
+  const ctx = await boot();
+  const session = await mountSession(ctx, dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(mountCount, 2, 'the fallback rebuilds the subtree once');
+  assert.equal(rows.get(replacement.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(predecessor.record.id).status, 'active');
+  assert.equal(rows.get(sibling.record.id).status, 'active');
+  assert.deepEqual(
+    ctx.tools.schemas().map((row) => row.name).sort(),
+    [predecessor.toolName, sibling.toolName].sort(),
+    'the old tree was disposed before the intended composition was written, so the replacement cannot survive',
+  );
+  assert.equal(session.mounted.has(replacement.record.id), false);
+  await session.dispose();
+});
+
+test('a disposed real Include child with an unsettled row fails closed without a second tree', async (t) => {
+  const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 'stalled_a0_tool' });
+  // A1 fails its first apply (forcing the fallback) but registers a tool on
+  // every attempt: a second subtree would register S's tool twice, which the
+  // registration counter below observes (the tools registry keys by name).
+  const replacement = await createRecord({
+    toolName: 'stalled_a1_tool',
+    inject: ['tools'],
+    requiredServices: ['tools'],
+    source: [
+      `export const name = ${JSON.stringify('dsh-stalled-replacement')};`,
+      "export const inject = ['tools'];",
+      'let attempts = 0;',
+      'export function apply(ctx) {',
+      '  attempts += 1;',
+      "  ctx.tools.register({ name: 'stalled_a1_tool', description: 'stalled probe' });",
+      "  if (attempts === 1) throw new Error('replacement exploded once');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  // S is a REAL Cordis/Include plugin whose effect disposer throws at
+  // unregistration. Cordis records the cleanup exception in Fiber._unload()
+  // and the official child's dispose still resolves, leaving S's tool
+  // registered. The consumer's documented proof of "still online" is its
+  // public resolver, so the test keeps serving that row at that seam after
+  // the real dispose. Everything else is the official Include: the child,
+  // its fibers, the effect exception and the second mount attempt.
+  const sibling = await createRecord({
+    toolName: 'stalled_s_tool',
+    inject: ['tools'],
+    requiredServices: ['tools'],
+    source: [
+      `export const name = ${JSON.stringify('dsh-stalled-s')};`,
+      "export const inject = ['tools'];",
+      'export function apply(ctx) {',
+      "  ctx.tools.register({ name: 'stalled_s_tool', description: 'stuck S probe' });",
+      '  ctx.effect(() => () => { throw new Error(\'S effect disposer exploded\'); });',
+      '}',
+      '',
+    ].join('\n'),
+  });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+    sibling.record,
+  ]);
+
+  const ctx = await boot();
+  const registerCalls = [];
+  const plainRegister = ctx.tools.register.bind(ctx.tools);
+  ctx.tools.register = (definition) => {
+    registerCalls.push(definition.name);
+    return plainRegister(definition);
+  };
+
+  let mountCount = 0;
+  let firstAdapter;
+  const sRowId = `shared-${sibling.record.id}`;
+  const mountInclude = async (mountCtx, config) => {
+    const adapter = await mountIncludeTree(mountCtx, config);
+    mountCount += 1;
+    if (mountCount !== 1) return adapter;
+    firstAdapter = adapter;
+    let disposed = false;
+    let oldSEntry;
+    const plainResolve = adapter.resolveEntry.bind(adapter);
+    adapter.resolveEntry = (rowId) => {
+      if (rowId !== sRowId) return plainResolve(rowId);
+      if (!disposed) {
+        const entry = plainResolve(rowId);
+        if (entry) oldSEntry = entry;
+        return entry;
+      }
+      // Cordis logged S's disposer exception and returned normally, but the
+      // row is still online. Keep that fact visible to the consumer's proof
+      // instead of letting the resolver silently forget the failed cleanup.
+      return oldSEntry ?? null;
+    };
+    const plainDispose = adapter.dispose.bind(adapter);
+    adapter.dispose = async () => {
+      await plainDispose();
+      disposed = true;
+    };
+    return adapter;
+  };
+
+  const session = await mountSession(ctx, dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(mountCount, 1, 'no second Include subtree is mounted over the unsettled one');
+  assert.equal(rows.get(replacement.record.id).reason, 'plugin-apply-failed');
+  for (const record of [predecessor.record, sibling.record]) {
+    assert.equal(rows.get(record.id).status, 'failed');
+    assert.equal(rows.get(record.id).reason, 'include-unavailable', 'intended rows are not claimed active without a released tree');
+  }
+  assert.equal(session.adapter, firstAdapter, 'the unsettled old tree is kept for a disposal retry');
+  assert.equal(session.mounted.size, 1, 'the still-online S fiber is kept');
+  assert.ok(session.mounted.has(sibling.record.id));
+  assert.equal(
+    registerCalls.filter((name) => name === sibling.toolName).length,
+    1,
+    'S is registered only once: a swallowed disposal must not double-mount it',
+  );
+  await session.dispose();
+  assert.equal(session.adapter, firstAdapter, 'the retried disposal still sees the old tree');
+  const state = await readConsumerState(paths, 'acp');
+  assert.equal(state.state.plugins.find((row) => row.id === predecessor.record.id).reason, 'include-unavailable');
+});
+
 test('a fallback does not report a healthy predecessor as include-unavailable when the failed replacement keeps its entry', async (t) => {
   const { dataRoot, createRecord, writeIndex } = await fixture(t);
   const predecessor = await createRecord({ toolName: 'healthy_predecessor_tool' });
@@ -1068,48 +1255,81 @@ test('a failed fallback rebuild reports include-unavailable and never claims act
   await session.dispose();
 });
 
-test('a failed old Include disposer stops the rebuild instead of double-mounting', async (t) => {
-  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+test('a real Include disposal that refuses before Fiber reports the old row still online', async (t) => {
+  const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
   const previous = await createRecord({ toolName: 'dispose_old_tool' });
+  // A1 fails its first apply (forcing the fallback) but registers a tool on
+  // every attempt, so a swallowed refusal must not reach a second subtree.
   const broken = await createRecord({
     toolName: 'dispose_broken_tool',
-    inject: [],
-    requiredServices: [],
-    source: "export const name = 'dispose-broken';\nexport function apply() { throw new Error('replacement exploded'); }\n",
+    inject: ['tools'],
+    requiredServices: ['tools'],
+    source: [
+      `export const name = ${JSON.stringify('dsh-dispose-broken')};`,
+      "export const inject = ['tools'];",
+      'let attempts = 0;',
+      'export function apply(ctx) {',
+      '  attempts += 1;',
+      "  ctx.tools.register({ name: 'dispose_broken_tool', description: 'dispose probe' });",
+      "  if (attempts === 1) throw new Error('replacement exploded once');",
+      '}',
+      '',
+    ].join('\n'),
   });
+  // An unrelated healthy row gives the old tree one live, verified Fiber that
+  // the refused disposal never touches: that Fiber is the "old row still
+  // online" fact the disposal proof must record.
+  const sibling = await createRecord({ toolName: 'dispose_sibling_tool' });
   await writeIndex([
     { ...previous.record, supersededBy: { acp: supersedeMarker(broken.record) } },
     broken.record,
+    sibling.record,
   ]);
 
   let mountCount = 0;
-  const mountInclude = async (_ctx, config) => {
+  let firstAdapter;
+  const mountInclude = async (mountCtx, config) => {
+    const adapter = await mountIncludeTree(mountCtx, config);
     mountCount += 1;
-    const adapter = fakeIncludeAdapter(config, {
-      fiberFor: (rowId) => (rowId === `shared-${broken.record.id}` ? fakeFiber({ failApply: true }) : fakeFiber()),
-    });
-    if (mountCount === 1) {
-      // The old subtree cannot prove it was unloaded. Swallowing this error
-      // and mounting a new child would double-mount the restored predecessor
-      // (once on the stale tree, once on the new one).
-      adapter.dispose = async () => { throw new Error('old Include subtree refused to dispose'); };
-    }
+    if (mountCount !== 1) return adapter;
+    firstAdapter = adapter;
+    // The ONLY injection is at the real adapter's public dispose seam: it
+    // refuses before the official Fiber is touched. The Include child, its
+    // row fibers and every other lifecycle call are the official packages.
+    adapter.dispose = async () => { throw new Error('old Include subtree refused to dispose'); };
     return adapter;
   };
-  const session = await mountSession(await boot(), dataRoot, { mountInclude });
+  const ctx = await boot();
+  const session = await mountSession(ctx, dataRoot, { mountInclude });
   const rows = new Map(session.rows.map((row) => [row.id, row]));
 
-  assert.equal(mountCount, 1, 'no second Include subtree is mounted after the failed disposer');
+  assert.equal(mountCount, 1, 'no second Include subtree is mounted after the refused disposal');
   assert.equal(rows.get(broken.record.id).status, 'failed');
   assert.equal(rows.get(broken.record.id).reason, 'plugin-apply-failed', 'the failed replacement keeps its sticky receipt');
   assert.equal(rows.get(previous.record.id).status, 'failed', 'no intended row is claimed active without a settled tree');
   assert.equal(rows.get(previous.record.id).reason, 'include-unavailable', 'the failed disposer is a non-sticky host fact');
-  assert.equal(session.mounted.size, 0, 'no fiber from the broken rebuild survives');
-  assert.equal(session.adapter, null, 'no stale adapter is kept after a failed disposer');
+  assert.equal(rows.get(sibling.record.id).status, 'failed');
+  assert.equal(rows.get(sibling.record.id).reason, 'include-unavailable');
+  // The old tree was never proven released: forgetting its adapter/fibers here
+  // would make the host's own dispose() report released:true while the old
+  // plugin is still online.
+  assert.equal(session.adapter, firstAdapter, 'the unreleased old tree is kept for a disposal retry');
+  assert.equal(session.mounted.size, 1, 'the old fiber is kept, not silently cleared');
+  assert.ok(session.mounted.has(sibling.record.id), 'the still-online row keeps its fiber');
   assert.deepEqual(
-    [previous.record.id, broken.record.id].filter((id) => rows.get(id).status === 'active'),
+    [previous.record.id, broken.record.id, sibling.record.id].filter((id) => rows.get(id).status === 'active'),
     [], 'no version of the chain is active');
-  await session.dispose();
+  const liveFiber = session.mounted.get(sibling.record.id).fiber;
+  assert.equal(fiberIsActive(liveFiber), true, 'the refusal never reached the real Fiber, so the old row is still online');
+
+  const disposal = await session.dispose();
+  assert.equal(disposal.released, false, 'the disposal retry reports the old row as not released');
+  assert.equal(disposal.entries, 1);
+  assert.equal(session.adapter, firstAdapter, 'the retried disposal still sees the old tree');
+  assert.equal(fiberIsActive(liveFiber), true, 'the still-online row is reported, not silently released');
+  const state = await readConsumerState(paths, 'acp');
+  assert.equal(state.state.disposal.released, false);
+  assert.deepEqual(state.state.disposal, { released: false, entries: 1 });
 });
 
 test('a first Include refresh failure does not keep the replacement sticky on the next start', async (t) => {

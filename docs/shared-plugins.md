@@ -69,8 +69,9 @@ consumer 先做静态判定（不执行插件），再挂载并验证 live 行�
 通过后，consumer 只把 eligible 行写入自己的 composition 并 `refresh()`，再逐行验证：公开 resolver 能取到
 该行、`entry.options.name` 等于记录中的模块 URL、行未被禁用、`Fiber.await()` 已 settle、Fiber 处于活动
 状态、`inject` 的服务都绑定在该 entry 自己的 scope 里。任一行验证失败只把该行标为 `failed`，不影响其他行。
-回退不再刷新旧树：它写入 intended composition 后 dispose 旧 Include 子树并重新 mount 一棵只含 intended 的
-子树，再逐行验证；失败或被替换的版本无法在干净的新树里残留。
+回退不再刷新旧树：它先 dispose 旧 Include 子树并证明所有旧行已释放，再写入 intended composition 并
+重新 mount 一棵只含 intended 的子树，再逐行验证；失败或被替换的版本无法在干净的新树里残留。旧子树的
+disposer 可能把它加载过的 composition 刷回磁盘，所以写盘必须在 dispose 之后。
 
 状态词表（consumer 启动时写入 `consumers/<profile>.json` 的 `plugins[].status`）：
 
@@ -97,12 +98,15 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 祖先 fiber 置为 UNLOADING（`state === 5`），都按取消处理，因此「挂载已成功、但 capability/service 探针在关闭中
 退化」得到的 `skipped-incompatible` / `include-unavailable` 行同样不会被发布。会话仍处于可发布 context 时，
 首次 Include refresh 失败可在首轮即写非 sticky 的 `include-unavailable`，没有重试。回退阶段改为重建 Include
-子树：写入 intended composition → dispose 旧子树（disposer 失败也吞掉，因为随后必须新建）→ 清空已捕获的挂载
-→ 用同一 composition 重新 mount 一棵干净子树（仅对有证明的 `INACTIVE_EFFECT` 做三次有界重试），再逐行验证
-其中全部 intended 行。新树不可能包含被排除的版本，因此不再有「refresh 重试」「settled 树」「live Entry 仍
-在线」等判断，也不会因为一个 Entry 存在但 Fiber 已失败而把健康前驱报成 `include-unavailable`。候选的插件
-apply 失败仍记 `plugin-apply-failed` 并在下一次 pass 回退到它替换的记录；宿主级错误（含重建本身失败）写
-非 sticky 的 `include-unavailable` 并停止本次回退，不谎报 `active`。每轮 pass 仍受 `evaluated.length` 上界约束。
+子树：dispose 旧子树 → 证明释放（捕获的每个 Fiber 都已离开 active，旧 resolver 不再返回任何已评估行；
+resolver 抛错按已释放计）→ 写入 intended composition → 用同一 composition 重新 mount 一棵干净子树
+（仅对有证明的 `INACTIVE_EFFECT` 做三次有界重试），再逐行验证其中全部 intended 行。dispose 正常返回
+但旧行仍在线、或 disposer 明确失败时 fail closed：intended 行写 `include-unavailable`，不挂第二棵树，
+并保留旧 adapter / Fiber 供宿主 `dispose()` 重试且如实报 `released:false`；只有证明释放后才清空它们。
+新树不可能包含被排除的版本，因此不再有「refresh 重试」「settled 树」「live Entry 仍在线」等判断，也不会
+因为一个 Entry 存在但 Fiber 已失败而把健康前驱报成 `include-unavailable`。候选的插件 apply 失败仍记
+`plugin-apply-failed` 并在下一次 pass 回退到它替换的记录；宿主级错误（含重建本身失败）写非 sticky 的
+`include-unavailable` 并停止本次回退，不谎报 `active`。每轮 pass 仍受 `evaluated.length` 上界约束。
 
 索引本身缺失是正常的 Desktop-only 安装；索引不可读或格式错误时视为「没有任何记录被授权」，所有记录都不能
 挂载（doctor 报 `blocked`）。单个记录非法不会丢弃其它合法记录。
