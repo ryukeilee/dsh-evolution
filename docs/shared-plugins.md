@@ -153,7 +153,7 @@ dsh-evolution-shared approve --plugin <id> --profile acp|web --approval "<所有
 # 让一条已发布记录在同一 profile 让位给另一条已发布记录（迭代替换，双方字节与 stable 证明不变）
 dsh-evolution-shared supersede --old <id> --new <id> --profile acp|web --approval "<所有者明确批准原文>"
 
-# 撤销上述让位：禁用替换方在该 profile 的资格并恢复原记录（下一次启动生效）
+# 撤销上述让位：清除该记录在该 profile 的条目并恢复其资格（下一次启动生效）；仅当没有其它记录仍引用同一替换方时才禁用替换方
 dsh-evolution-shared revoke-supersede --old <id> --profile acp|web --approval "<所有者明确批准原文>"
 ```
 
@@ -187,13 +187,19 @@ dsh-evolution-shared revoke-supersede --old <id> --profile acp|web --approval "<
 一个有界的 `supersededBy` 条目，**按 profile 分别保存**，精确绑定新记录的 id 与源码摘要，并记录所有者批准原文
 的 SHA256。同一 profile 内再次替换同一对记录是 no-op，形成环的替换在写入前被拒绝；不同 profile 的替换互不影响。
 consumer 在完成该快照内**全部**记录的资格判定后才应用这些条目，并沿替换链走到**最远的仍合格**版本：只有该终点
-`eligible` 且每一跳的字节都与批准时一致，链条上的旧记录才报 `disabled` / `superseded-by`。链尾升级后停在
-`pending-revalidation` 时，其前一个仍合格的记录自动成为终点，不会让更早的版本重新挂载；环或断开的摘要绑定
-不抑制任何记录。若替换方通过了静态检查但官方 Include 挂载后 `apply()` 抛错，consumer 去掉失败版本后**重新应用**
-剩余替换关系，只恢复应当生效的那个候选，替换方保留失败回执。这些路径都不会出现“两条都不挂”或两条同时挂载。
+`eligible` 且每一跳的字节都与批准时一致，链条上的旧记录才报 `disabled` / `superseded-by`。穿透中间版本时允许
+`disabled`（含 `operator-disabled`）、`pending-revalidation`、`skipped-incompatible` 等非完整性不合格状态；但下一跳的 decision 是
+`skipped-invalid`（任何完整性 / 记录无效原因，含 `source-digest-mismatch`）时停止穿越，不把后续版本当作可继承的
+批准目标。链尾升级后停在 `pending-revalidation` 时，其前一个仍合格的记录自动成为终点，不会让更早的版本重新挂载。
+断开的摘要绑定不抑制任何记录；某条链遇到环时该条链不抑制任何记录，也不会退回到环中的某个中间版本，其它链照常
+应用。若替换方通过了静态检查但官方 Include 挂载后 `apply()` 抛错，consumer 去掉失败版本后**重新应用**剩余替换
+关系，只恢复应当生效的那个候选，替换方保留失败回执。这些路径都不会出现“两条都不挂”或两条同时挂载。
 
-回滚用 `revoke-supersede`：在同一把锁里先禁用替换方再清除该 profile 的条目，不会与 `enable` 交错成两条同时启用。
-链式替换必须从链尾开始撤销；直接撤销非链尾条目会被拒绝，以免中段回到 `active` 而链尾仍挂载。
+回滚用 `revoke-supersede`：在同一把锁里清除该 profile 的条目；仅当该 profile 内没有其它记录仍以
+`supersededBy[profile].recordId` 指向同一替换方时才禁用替换方。若替换方被多条关系引用，撤销其中一条后替换方
+保持启用，被撤销的旧记录恢复资格并与仍启用的替换方共存；要真正下线替换方须先处理所有引用它的关系。链式替换
+必须从链尾开始撤销；直接撤销非链尾条目会被拒绝，以免中段回到 `active` 而链尾仍挂载。发布锁只串行化单次撤销
+或启用操作，不保证排在撤销之后到达的显式 `enable` 不会重新启用替换方；操作者紧邻执行两者时需自行确认最终拓扑。
 批准原文不进入索引或撤销原因；索引里只留 SHA256 与结构化字段。所有注释都拒绝格式错误的标记、未变更字节的
 重新批准、缺失的明确批准与非消费 profile。
 

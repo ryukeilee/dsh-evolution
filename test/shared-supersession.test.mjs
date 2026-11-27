@@ -168,6 +168,36 @@ test('a cycle suppresses nothing', () => {
   }
 });
 
+test('an invalid intermediate version stops chain traversal', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const rows = [
+    { record: { id: OLD, sourceSha256: 'a'.repeat(64), supersededBy: { acp: marker() } }, decision: { status: 'eligible' } },
+    { record: { id: NEW, sourceSha256: 'b'.repeat(64), supersededBy: { acp: marker({ recordId: THIRD, sourceSha256: 'f'.repeat(64) }) } }, decision: { status: SHARED_STATUS.INVALID, reason: 'source-digest-mismatch' } },
+    { record: { id: THIRD, sourceSha256: 'f'.repeat(64) }, decision: { status: 'eligible' } },
+  ];
+  const result = applySupersession(rows, { profile: 'acp' });
+  assert.equal(result[0].decision.status, 'eligible', 'A is not suppressed through an invalid B');
+  assert.equal(result[1].decision.status, SHARED_STATUS.INVALID);
+  assert.equal(result[2].decision.status, 'eligible');
+});
+
+test('a cycle in one chain does not cancel an independent valid replacement', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const FOURTH = 'evolution-promoted-dddddddddddd';
+  const rows = [
+    { record: { id: OLD, sourceSha256: 'a'.repeat(64), supersededBy: { acp: marker() } }, decision: { status: 'eligible' } },
+    { record: { id: NEW, sourceSha256: 'b'.repeat(64) }, decision: { status: 'eligible' } },
+    { record: { id: THIRD, sourceSha256: 'c'.repeat(64), supersededBy: { acp: marker({ recordId: FOURTH, sourceSha256: 'd'.repeat(64) }) } }, decision: { status: 'eligible' } },
+    { record: { id: FOURTH, sourceSha256: 'd'.repeat(64), supersededBy: { acp: marker({ recordId: THIRD, sourceSha256: 'c'.repeat(64) }) } }, decision: { status: 'eligible' } },
+  ];
+  const result = applySupersession(rows, { profile: 'acp' });
+  assert.equal(result[0].decision.status, SHARED_STATUS.DISABLED, 'the valid chain still suppresses its old record');
+  assert.equal(result[0].decision.supersededBy, NEW);
+  assert.equal(result[1].decision.status, 'eligible');
+  assert.equal(result[2].decision.status, 'eligible', 'a cycle member is never a fallback terminal');
+  assert.equal(result[3].decision.status, 'eligible', 'the independent cycle suppresses nothing');
+});
+
 test('an ordinary republish keeps annotations added after the first publish', async (t) => {
   const { paths, record } = await recordFixture(t);
   await publishSharedRecord(paths, record);
@@ -189,6 +219,35 @@ test('revoke disables the replacement before clearing the marker', async (t) => 
   assert.equal(index.records[0].supersededBy, undefined);
   const disable = await readDisableState(paths);
   assert.ok(disable.entries.some((entry) => entry.pluginId === NEW && entry.profile === 'acp'));
+});
+
+test('revoking one of two records sharing a replacement keeps the replacement enabled', async (t) => {
+  const FOURTH = 'evolution-promoted-cccccccccccc';
+  const { paths, record: a } = await recordFixture(t, OLD);
+  const { record: c } = await recordFixture(t, NEW, paths.dataRoot);
+  const { record: b } = await recordFixture(t, FOURTH, paths.dataRoot);
+  const sharedMarker = () => marker({ recordId: NEW, sourceSha256: c.sourceSha256 });
+  await publishSharedRecord(paths, { ...a, supersededBy: { acp: sharedMarker() } });
+  await publishSharedRecord(paths, c);
+  await publishSharedRecord(paths, { ...b, supersededBy: { acp: sharedMarker() } });
+
+  const result = await revokeSharedSupersession(paths, { oldId: OLD, profile: 'acp', reason: 'revoke-supersede:shared' });
+  assert.equal(result.status, 'updated');
+  const index = await readSharedIndex(paths);
+  const byId = new Map(index.records.map((row) => [row.id, row]));
+  assert.equal(byId.get(OLD).supersededBy, undefined, 'A marker is cleared');
+  assert.equal(byId.get(FOURTH).supersededBy.acp.recordId, NEW, 'B marker still points at the shared replacement');
+  const disable = await readDisableState(paths);
+  assert.ok(!disable.entries.some((entry) => entry.pluginId === NEW && entry.profile === 'acp'), 'the shared replacement stays enabled');
+
+  const eligible = (record) => ({ record, decision: { status: 'eligible' } });
+  const [ra, rb, rc] = applySupersession([
+    eligible(byId.get(OLD)), eligible(byId.get(FOURTH)), eligible(byId.get(NEW)),
+  ], { profile: 'acp' });
+  assert.equal(ra.decision.status, 'eligible', 'A regains eligibility');
+  assert.equal(rb.decision.status, SHARED_STATUS.DISABLED, 'B still yields to C');
+  assert.equal(rb.decision.supersededBy, NEW);
+  assert.equal(rc.decision.status, 'eligible');
 });
 
 test('a non-tail supersession cannot be revoked out of order', async (t) => {
