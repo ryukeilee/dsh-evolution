@@ -873,6 +873,70 @@ test('a stale fallback refresh retries until the restored candidate is installed
   await session.dispose();
 });
 
+test('a stale fallback tree that keeps the failed replacement online does not reactivate its predecessor', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  // A1 supersedes A0 and fails to apply, so the fallback restores A0. All three
+  // fallback refreshes still serve the old tree: A1 is resolvable with a live
+  // fiber and an unrelated healthy candidate S is mounted too. A0's own entry
+  // only becomes visible to the per-row verification (the stale tree's settled
+  // checks never see it). Publishing A0 as active then leaves two rows of the
+  // same chain online, which is the double-mount this case must prevent.
+  const a0 = await createRecord({ toolName: 'stale_a0_tool' });
+  const a1 = await createRecord({ toolName: 'stale_a1_tool' });
+  const s = await createRecord({ toolName: 'stale_unrelated_tool' });
+  await writeIndex([
+    { ...a0.record, supersededBy: { acp: supersedeMarker(a1.record) } },
+    a1.record,
+    s.record,
+  ]);
+
+  let refreshCalls = 0;
+  let a0Lookups = 0;
+  const mountInclude = async (_ctx, config) => {
+    const entries = new Map();
+    return {
+      capabilities: { entryResolver: true, treeAwait: true, liveRootEntries: true },
+      async refresh() {
+        refreshCalls += 1;
+        entries.clear();
+        // The pre-fallback composition is never replaced: A1 and S stay live.
+        entries.set(`shared-${a1.record.id}`, {
+          options: { name: a1.record.moduleUrl }, disabled: false,
+          fiber: fakeFiber({ failApply: true }),
+        });
+        entries.set(`shared-${s.record.id}`, {
+          options: { name: s.record.moduleUrl }, disabled: false, fiber: fakeFiber(),
+        });
+      },
+      resolveEntry(rowId) {
+        if (rowId === `shared-${a0.record.id}`) {
+          a0Lookups += 1;
+          // The three settled checks of the fallback refresh loop see no A0;
+          // only the later per-row verification finds its still-live entry.
+          return a0Lookups <= 3 ? null : {
+            options: { name: a0.record.moduleUrl }, disabled: false, fiber: fakeFiber(),
+          };
+        }
+        return entries.get(rowId) ?? null;
+      },
+      async dispose() {},
+    };
+  };
+  const session = await mountSession(await boot(), dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.ok(refreshCalls >= 4, 'the fallback refresh budget was spent on an unsettled tree');
+  assert.equal(rows.get(a1.record.id).reason, 'plugin-apply-failed', 'the failed replacement keeps its receipt');
+  assert.equal(rows.get(a0.record.id).status, 'failed', 'the predecessor is not published active while its replacement is still online');
+  assert.equal(rows.get(a0.record.id).reason, 'include-unavailable');
+  assert.equal(session.mounted.has(a0.record.id), false, 'the predecessor is not held for disposal');
+  assert.equal([a0.record.id, a1.record.id].filter((id) => rows.get(id).status === 'active').length <= 1, true,
+    'no two versions of the same chain are active at once');
+  assert.equal(rows.get(s.record.id).status, 'active', 'an unrelated healthy candidate is unaffected');
+  assert.ok(session.mounted.has(s.record.id));
+  await session.dispose();
+});
+
 test('a first Include refresh failure does not keep the replacement sticky on the next start', async (t) => {
   const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
   const previous = await createRecord({ toolName: 'old_policy_tool' });
