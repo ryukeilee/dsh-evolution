@@ -412,7 +412,8 @@ esac
   const report = await diagnose(env, 'web', wrapper);
   const cli = checkOf(report, 'host.cli');
   assert.equal(cli.level, 'not-evaluated');
-  assert.equal(cli.evidence.reason, 'no DSH CLI candidate resolved to @deepseek-ai/dsh');
+  assert.equal(cli.evidence.reason, 'cli-candidate-unresolved');
+  assert.match(cli.summary, /path-node-case-dsh:4 \(UNRESOLVED_EXEC_TARGET: the launch command/);
 });
 
 test('an unsupported case launch body leaves the profile host unknown', async (t) => {
@@ -430,5 +431,6 @@ esac
   const report = await diagnose(env, 'web', wrapper);
   const cli = checkOf(report, 'host.cli');
   assert.equal(cli.level, 'not-evaluated');
-  assert.equal(cli.evidence.reason, 'no DSH CLI candidate resolved to @deepseek-ai/dsh');
+  assert.equal(cli.evidence.reason, 'cli-candidate-unresolved');
+  assert.match(cli.summary, /NO_EXEC_TARGET/);
 });
