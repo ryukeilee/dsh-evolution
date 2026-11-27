@@ -461,7 +461,7 @@ async function withRestartGuidance(options, result) {
   ].filter(Boolean).join(' ');
   return {
     ...result,
-    pendingRestartProfiles: details.map((row) => row.profile),
+    pendingRestartProfiles: [...new Set(details.map((row) => row.profile))],
     pendingRestartDetails: details,
     ...(guidance ? { restartGuidance: guidance } : {}),
   };

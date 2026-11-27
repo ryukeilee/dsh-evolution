@@ -165,6 +165,11 @@ test('a crash between receipt write and journal cleanup finishes cleanup without
   assert.ok(receipt, 'the receipt landed before the interrupted cleanup');
   assert.equal(receipt.state, 'rolled-back');
   assert.equal((await readJournal(env.paths)).phase, 'canary-observing');
+  await assert.rejects(core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:after-receipt', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor()), /already rolled back/, 'the live canary reader must not advance a journal whose rollback completed');
   await fs.chmod(env.paths.promotionStateDir, 0o700);
   const recovered = await recoverInterruptedPromotion(env.paths);
   assert.deepEqual(recovered, { recovered: true, status: 'rolled-back-cleaned', experimentId: EXPERIMENT });
@@ -198,6 +203,50 @@ test('the rollback receipt is bounded and credential-redacted before it reaches 
   const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
   assert.equal(recovery.duplicates, 1, JSON.stringify(recovery));
   assert.equal(recovery.published, 0);
+});
+
+test('an oversized proposal cannot block the rollback or overflow the receipt reader', async (t) => {
+  const env = await scene(t);
+  const proposal = { ...env.proposal, successMetrics: Array.from({ length: 40 }, (_, i) => `metric-${i}-${'x'.repeat(60000)}`) };
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const result = await core.observeCanary(regressionArgs, execFor());
+  assert.equal(result.phase, 'rolled-back');
+  assert.equal(await exists(path.join(env.paths.pluginRoot, derivedPluginName(EXPERIMENT))), false, 'rollback was not blocked by receipt construction');
+  assert.equal(await exists(env.paths.promotionStateDir), false);
+  const sidecar = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  assert.ok((await fs.stat(sidecar)).size < 2 * 1024 * 1024);
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.duplicates, 1, JSON.stringify(recovery));
+  assert.deepEqual(recovery.rollbacks, [], 'an already-published conclusion is not a new recovery');
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: resolveEvolutionPaths({ dshHome: env.root }),
+    config: { rollbackConclusionReconciliation: recovery },
+  });
+  assert.equal(report.rollbackRecovery, undefined, 'a duplicate is not reported as a recovered rollback');
+});
+
+test('a duplicate archive render is not counted as a rebuilt terminal archive', async (t) => {
+  const env = await scene(t);
+  const receipt = {
+    version: 1, state: 'rolled-back', rolledBackAt: '2026-11-27T00:00:01.000Z', experimentId: EXPERIMENT,
+    decision: { version: 1, kind: 'regression', source: 'canary', at: '2026-11-27T00:00:01.000Z', reasons: [] },
+    proposal: env.proposal,
+  };
+  await fs.mkdir(env.paths.archiveDir, { recursive: true });
+  await fs.writeFile(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`), `${JSON.stringify(receipt, null, 2)}\n`);
+  const core = orchestratorFor(env);
+  // Emulates archive()'s memory-dedup early return: no Markdown is written.
+  core.archive = async () => path.join(env.paths.archiveDir, `${EXPERIMENT}.md`);
+  const recovery = await core.reconcileRollbackConclusions();
+  assert.equal(recovery.archived, 0, JSON.stringify(recovery));
+  assert.equal(recovery.published, 0);
+  assert.equal(recovery.failed.some((row) => row.reason === 'archive-failed'), true);
+  assert.deepEqual(recovery.rollbacks, []);
 });
 
 test('rollback-failed keeps its journal, writes no rollback receipt and reports no rollback', async (t) => {

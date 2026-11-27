@@ -161,6 +161,35 @@ test('a revoked active mount is a revocation restart, not a claim of index lag',
   assert.match(run.json.restartGuidance, /revoked/);
 });
 
+test('a profile can need both a revoked unload and a stale-index reload', async (t) => {
+  const env = await fixture(t, ['aaaaaaaaaaaa', 'bbbbbbbbbbbb']);
+  const [oldRecord, replacement] = env.records.filter((row) => row.root === env.cliPaths).map((row) => row.record);
+  for (const root of [env.paths, env.cliPaths]) {
+    const ids = env.records.filter((row) => row.root === root).map((row) => row.record.id);
+    await writeConsumerState({ dataRoot: root.dataRoot }, 'web', consumerStateDocument({
+      profile: 'web', host: env.host, indexUpdatedAt: OLD, compositionPath: null,
+      plugins: ids.map((id) => ({ id, status: 'active', reason: null })),
+    }));
+  }
+  await setDisabledForProfile({ dataRoot: env.paths.dataRoot }, { pluginId: oldRecord.id, profile: 'web', disabled: true });
+  await setDisabledForProfile({ dataRoot: env.cliPaths.dataRoot }, { pluginId: oldRecord.id, profile: 'web', disabled: true });
+  const check = checkOf(await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } }));
+  assert.deepEqual(check.evidence.pendingRestartDetails, [
+    { profile: 'web', reason: 'revoked-active-mount' }, { profile: 'web', reason: 'index-stale' },
+  ]);
+  assert.deepEqual(check.evidence.pendingRestart, ['web'], 'the profile is still named once');
+  assert.match(check.summary, /revoked/);
+  assert.match(check.summary, /have not loaded the current shared index/);
+  assert.match(check.remediation, /revoked/);
+  assert.match(check.remediation, /load the current shared index/);
+  const run = runCli(['disable', '--plugin', replacement.id, '--profile', 'acp'], env.cliPaths.dataRoot);
+  assert.equal(run.code, 0, run.stderr);
+  assert.deepEqual(run.json.pendingRestartProfiles, ['web']);
+  assert.deepEqual(run.json.pendingRestartDetails, [
+    { profile: 'web', reason: 'revoked-active-mount' }, { profile: 'web', reason: 'index-stale' },
+  ]);
+});
+
 test('CLI normal path reports an empty pending-restart list when every consumer followed the index', async (t) => {
   const env = await fixture(t);
   const record = env.records.find((row) => row.root === env.cliPaths).record;
