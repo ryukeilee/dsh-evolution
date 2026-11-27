@@ -205,6 +205,62 @@ test('the rollback receipt is bounded and credential-redacted before it reaches 
   assert.equal(recovery.published, 0);
 });
 
+test('a failed receipt write leaves a retryable intent, not a reopenable canary', async (t) => {
+  const env = await scene(t);
+  // A directory at the receipt path makes the durable write fail EISDIR after
+  // the rollback already restored the targets.
+  const sidecarDir = path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`);
+  await fs.mkdir(sidecarDir, { recursive: true });
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  await assert.rejects(core.observeCanary(regressionArgs, execFor()));
+  assert.equal(await exists(path.join(env.paths.promotionStateDir, 'rollback-intent.json')), true);
+  assert.equal((await readJournal(env.paths)).phase, 'canary-observing');
+  assert.equal(await fs.readFile(env.paths.compositionPath, 'utf8'), '[]\n', 'the targets were already rolled back');
+  await assert.rejects(core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:after-failed-receipt', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor()), /unfinished rollback/);
+  await fs.rm(sidecarDir, { recursive: true, force: true });
+  const recovered = await recoverInterruptedPromotion(env.paths);
+  assert.equal(recovered.status, 'rolled-back', JSON.stringify(recovered));
+  assert.equal(await exists(env.paths.promotionStateDir), false);
+  assert.ok(await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT), 'receipt completed on retry');
+  const result = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(result.published, 1);
+});
+
+test('a trimmed receipt still carries the probe applicability the live publisher used', async (t) => {
+  const env = await scene(t);
+  const otherVersions = { dsh: '0.2.22', cordis: '4.1.0', evolution: '0.2.22' };
+  const proposal = {
+    ...env.proposal, applicability: otherVersions,
+    successMetrics: Array.from({ length: 40 }, (_, i) => `metric-${i}-${'x'.repeat(60000)}`),
+  };
+  const latestObservation = { at: '2026-11-27T00:00:00.000Z', probe: { versions: APPLICABILITY, comparison: { regression: true } } };
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal, observations: [], latestObservation,
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  const result = await core.observeCanary(regressionArgs, execFor());
+  assert.equal(result.phase, 'rolled-back');
+  const receipt = await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT);
+  assert.ok(receipt);
+  assert.ok((await fs.stat(path.join(env.paths.archiveDir, `${EXPERIMENT}.evidence.json`))).size < 2 * 1024 * 1024);
+  assert.deepEqual(receipt.latestObservation?.probe?.versions, APPLICABILITY, 'probe versions survive the trimming');
+  const recovery = await orchestratorFor(env).reconcileRollbackConclusions();
+  assert.equal(recovery.duplicates, 1, JSON.stringify(recovery));
+  assert.equal(recovery.published, 0, 'no second conclusion under the proposal versions');
+  assert.equal(findConclusion(env).best?.decision, 'regression');
+});
+
 test('an oversized proposal cannot block the rollback or overflow the receipt reader', async (t) => {
   const env = await scene(t);
   const proposal = { ...env.proposal, successMetrics: Array.from({ length: 40 }, (_, i) => `metric-${i}-${'x'.repeat(60000)}`) };
