@@ -150,6 +150,38 @@ ELECTRON_RUN_AS_NODE=1 exec "/mock/DeepSeek Harness" --expose-internals "${deskt
   assert.equal(result.alternatives[0].hostFacts.dsh, '0.2.2-rc.5');
 });
 
+test('same-version Desktop and Node entries remain ambiguous for module attribution', async (t) => {
+  const dir = tmp(t, 'host-res-whitelisted-same-version-');
+  const nodeHost = makeDshPackage(path.join(dir, 'node-host'), '0.2.2-rc.5');
+  const asar = path.join(dir, 'desktop.asar');
+  makeAsar(asar, [
+    { internalPath: 'dsh/node_modules/@deepseek-ai/dsh/package.json', value: { name: '@deepseek-ai/dsh', version: '0.2.2-rc.5' } },
+  ]);
+  const desktopEntry = `${asar}/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js`;
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+case "$1" in --profile=*) profile=\${1#--profile=} ;; esac
+if [ "$profile" = 'acp' ]; then
+  exec "${process.execPath}" "${nodeHost.bin}" "$@"
+fi
+ELECTRON_RUN_AS_NODE=1 exec "/mock/DeepSeek Harness" --expose-internals "${desktopEntry}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const resolution = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(resolution.selected?.entryPath, nodeHost.bin);
+  assert.deepEqual(resolution.alternatives.map((candidate) => candidate.entryPath), [desktopEntry],
+    'equal versions do not prove that two terminal entries share a package root');
+
+  const report = await withPathAsync('', () => collectDiagnostics({
+    dshHome: doctorHome(t), cliPath: wrapper, profile: 'desktop', probe: { skipComposition: true },
+  }));
+  assert.equal(report.checks.find((check) => check.id === 'host.cli').evidence.profileHostAmbiguous, true);
+  const modules = report.checks.find((check) => check.id === 'host.modules');
+  assert.equal(modules.level, 'not-evaluated');
+  assert.equal(modules.evidence.reason, 'profile-host-ambiguous');
+});
+
 test('a one-line case that only assigns a variable does not hide a direct exec target', (t) => {
   const dir = tmp(t, 'host-res-inline-assignment-');
   const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
