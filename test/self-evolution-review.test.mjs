@@ -1199,7 +1199,10 @@ test('records past the bounded cap get an operator action, not invented statuses
   assert.equal(result.nextActions[0], truncation, 'the blocking truncation action must outrank consumer restarts');
   assert.ok(result.nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
   assert.ok(result.nextActionsDropped > 0, 'the action cap must still drop excess actions');
-  assert.ok(result.nextActions.slice(1).every((row) => row.action === REVIEW_ACTIONS.RESTART));
+  // The missing-projection supplement legitimately sorts ahead of per-record
+  // restarts; everything after the two notices is still a restart.
+  assert.ok(result.nextActions.slice(1).every((row) => row.action === REVIEW_ACTIONS.RESTART
+    || String(row.code ?? '').startsWith('usage-projection-')));
 
   const composed = composeSelfEvolutionReview({ stable: result, experience: null, versions: CURRENT_HOST });
   assert.equal(composed.incomplete, true);

@@ -958,6 +958,24 @@ test('audit survives a consumer state with a null activation row', async (t) => 
     compositionPath: null,
     plugins: [null],
   }), null, 2)}\n`);
+  // Keep this test about the null activation row: give the audit a healthy
+  // projection so the only action is the consumer restart.
+  await writeUsageProjection({
+    dataRoot: path.join(home, 'storages', 'evolution'),
+    projection: {
+      kind: 'dsh-evolution-capability-usage',
+      schemaVersion: 1,
+      coverage: USAGE_PROJECTION_COVERAGE,
+      source: 'session-evidence',
+      complete: true,
+      recordsComplete: true,
+      stale: false,
+      capturedAt: new Date().toISOString(),
+      records: {
+        [record.id]: { workflowInvocations: 1, verificationInvocations: 0, unattributedInvocations: 0, capabilityAssessment: 'workflow-relevant' },
+      },
+    },
+  });
   const services = liveHostServices({
     '@deepseek-ai/dsh': '0.2.2',
     '@deepseek-ai/cordis': '4.1.2',

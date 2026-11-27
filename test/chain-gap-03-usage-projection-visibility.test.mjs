@@ -34,6 +34,8 @@ import {
 import {
   USAGE_PROJECTION_COVERAGE,
   readUsageProjection,
+  usageProducerScriptPath,
+  usageProjectionRemediation,
   writeUsageProjection,
 } from '../lib/capability-usage.js';
 import { collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
@@ -330,9 +332,10 @@ test('the supplement command targets the inspected data root, not the default on
     paths: env.paths, host: HOST, usage: null, usageStatus: 'absent',
   }));
   assert.equal(reviewActions.length, 1);
-  assert.match(reviewActions[0].command, new RegExp(`--data-root ${JSON.stringify(env.paths.dataRoot)}`));
+  const quotedRoot = `'${env.paths.dataRoot}'`;
+  assert.ok(reviewActions[0].command.includes(`--data-root ${quotedRoot}`), reviewActions[0].command);
   const check = await doctorUsage(env);
-  assert.match(check.remediation, new RegExp(`--data-root ${JSON.stringify(env.paths.dataRoot)}`));
+  assert.ok(check.remediation.includes(`--data-root ${quotedRoot}`), check.remediation);
 
   // The documented producer really honours the flag it is told to copy.
   const alternate = path.join(env.home, 'alternate-root');
@@ -344,4 +347,78 @@ test('the supplement command targets the inspected data root, not the default on
   assert.ok(run.status === 0 || run.status === 3, run.stderr);
   assert.equal(fs.existsSync(path.join(alternate, 'shared-plugins', 'usage.json')), true);
   assert.equal(fs.existsSync(path.join(env.paths.dataRoot, 'shared-plugins', 'usage.json')), false);
+});
+
+test('the supplement command does not let a shell expand a literal $USER in the data root', async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'chain-gap-03-shell-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const home = path.join(root, 'home');
+  fs.mkdirSync(path.join(home, 'sessions'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'assessments.json'), '{}');
+  const dataRoot = path.join(root, 'storages', '$USER-root');
+  fs.mkdirSync(path.join(dataRoot, 'shared-plugins'), { recursive: true });
+  const command = usageProjectionRemediation({ scriptPath: usageProducerScriptPath(), dataRoot }).command
+    .replace('<DSH_HOME>', home)
+    .replace('<assessments.json>', path.join(root, 'assessments.json'));
+  assert.ok(command.includes(`--data-root '${dataRoot}'`), command);
+  const run = spawnSync('sh', ['-c', command], { encoding: 'utf8' });
+  assert.ok(run.status === 0 || run.status === 3, run.stderr);
+  assert.equal(fs.existsSync(path.join(dataRoot, 'shared-plugins', 'usage.json')), true);
+});
+
+test('restart suggestions cannot crowd out the only usage supplement', () => {
+  const restarts = Array.from({ length: SELF_EVOLUTION_REVIEW_LIMITS.maxActions }, (_, index) => ({
+    action: REVIEW_ACTIONS.RESTART,
+    recordId: `record-${index}`,
+    why: 'restart',
+  }));
+  const supplement = {
+    action: REVIEW_ACTIONS.OPERATOR,
+    code: `${USAGE_PROJECTION_ACTION_PREFIX}absent`,
+    recordId: null,
+    why: 'no usage projection',
+  };
+  const { nextActions, nextActionsDropped } = boundedReviewActions([...restarts, supplement]);
+  assert.ok(nextActions.includes(supplement), JSON.stringify(nextActions.map((row) => row.code ?? row.action)));
+  assert.equal(nextActionsDropped, 1);
+  assert.ok(nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+});
+
+test('a damaged projection is surfaced even with an empty or absent index', async (t) => {
+  const env = await fixture(t, 'empty-index-damaged');
+  const shared = sharingPaths(env.paths);
+  const index = JSON.parse(fs.readFileSync(shared.indexPath, 'utf8'));
+  index.plugins = [];
+  fs.writeFileSync(shared.indexPath, `${JSON.stringify(index, null, 2)}\n`);
+  fs.writeFileSync(shared.usagePath, '{ broken');
+  const emptyReview = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: null, usageStatus: 'invalid' });
+  assert.equal(usageActions(emptyReview).length, 1);
+  assert.equal(usageActions(emptyReview)[0].code, `${USAGE_PROJECTION_ACTION_PREFIX}invalid`);
+  assert.equal((await doctorUsage(env)).level, 'degraded');
+
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'chain-gap-03-absent-index-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const paths = resolveEvolutionPaths({ dshHome: root });
+  fs.mkdirSync(path.join(paths.dataRoot, 'shared-plugins'), { recursive: true });
+  await writeUsageProjection({ dataRoot: paths.dataRoot, projection: {
+    kind: 'dsh-evolution-capability-usage', schemaVersion: 1,
+    coverage: USAGE_PROJECTION_COVERAGE, source: 'session-evidence',
+    complete: true, recordsComplete: true, stale: false,
+    capturedAt: new Date(Date.now() - 60 * 86_400_000).toISOString(),
+    records: {},
+  } });
+  const loaded = await readUsageProjection({ dataRoot: paths.dataRoot });
+  const absentReview = await readPublishedPluginReview({ paths, host: HOST, usage: loaded.usage, usageStatus: loaded.evidence.status });
+  assert.equal(absentReview.status, 'absent');
+  assert.equal(usageActions(absentReview).length, 1);
+  assert.equal(usageActions(absentReview)[0].code, `${USAGE_PROJECTION_ACTION_PREFIX}stale`);
+});
+
+test('doctor never copies raw capturedAt text into a report', async (t) => {
+  const env = await fixture(t, 'captured-at');
+  await writeProjection(env, { capturedAt: 'PRIVATE <owner@example.com> not-a-date' });
+  const check = await doctorUsage(env);
+  assert.equal(check.level, 'degraded');
+  assert.equal(check.evidence.capturedAt, null);
+  assert.equal(JSON.stringify(check).includes('PRIVATE'), false);
 });
