@@ -115,6 +115,63 @@ function writeJsonFile(file, value) {
   fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
 }
 
+function outsideCloneRoot(root, candidate) {
+  const relative = path.relative(root, candidate);
+  return relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative);
+}
+
+/**
+ * Prove that a directory to be created or written resolves inside the throw-
+ * away clone before any filesystem mutation happens. The lexical check alone
+ * is not enough: `normalizeSymlinks` anchors relative links at the source home,
+ * so a path like `<clone>/storages/.../shared-plugins` can lead back to the real
+ * one. Walk up to the nearest existing ancestor and resolve it through
+ * symlinks; only then may a caller create the missing tail.
+ */
+export function assertInsideCloneRoot(root, target) {
+  if (typeof root !== 'string' || root === '') {
+    throw new Error('a clone root is required to enforce its boundary');
+  }
+  if (typeof target !== 'string' || !path.isAbsolute(target)) {
+    throw new Error('refusing a relative clone path: ' + String(target));
+  }
+  const logicalRoot = path.resolve(root);
+  const realRoot = fs.realpathSync(root);
+  const absolute = path.resolve(target);
+  if (outsideCloneRoot(logicalRoot, absolute)) {
+    throw new Error('refusing to write outside the clone: ' + target);
+  }
+  let ancestor = absolute;
+  while (!fs.existsSync(ancestor)) {
+    const parent = path.dirname(ancestor);
+    if (parent === ancestor) throw new Error('refusing to write outside the clone: ' + target);
+    ancestor = parent;
+  }
+  if (outsideCloneRoot(realRoot, fs.realpathSync(ancestor))) {
+    throw new Error('refusing to write outside the clone: ' + target);
+  }
+  return realRoot;
+}
+
+/** Atomic JSON write confined to the clone, replacing a link at the target. */
+export function writeJsonFileInClone(file, value, cloneRoot) {
+  const dir = path.dirname(path.resolve(file));
+  assertInsideCloneRoot(cloneRoot, dir);
+  fs.mkdirSync(dir, { recursive: true });
+  // Re-check the real directory after mkdir: a link installed in the gap would
+  // otherwise redirect the rename below into the source home.
+  assertInsideCloneRoot(cloneRoot, dir);
+  const temp = path.join(dir, '.' + path.basename(file) + '.' + process.pid + '.' + crypto.randomBytes(6).toString('hex') + '.tmp');
+  try {
+    fs.writeFileSync(temp, JSON.stringify(value, null, 2) + '\n', { mode: 0o600 });
+    fs.renameSync(temp, file);
+  } catch (error) {
+    try { fs.rmSync(temp, { force: true }); } catch { /* keep the original failure */ }
+    throw error;
+  }
+  return file;
+}
+
 /** The sidecar that carries adoption proofs, next to the attested evidence. */
 export function adoptionReportPath(evidenceFile) {
   return evidenceFile.endsWith('.json') ? evidenceFile.slice(0, -'.json'.length) + '.report.json' : evidenceFile + '.report.json';
@@ -131,11 +188,23 @@ export function writeAdoptionReport(evidenceFile, document) {
   return file;
 }
 
-/** Deep copy whose every module URL points into the throw-away data root. */
-function clonedIndex(index, dataRoot, at) {
+/**
+ * Deep copy whose module URLs point into the throw-away data root — except for
+ * records whose URL is already invalid against the real source root. Rewriting
+ * those would turn a `skipped-invalid` source record into a mountable clone
+ * record, so the clone would attest a different replacement chain than the one
+ * production actually boots. All other structural defects do not affect this
+ * decision: only the two module-URL reasons describe an out-of-root URL.
+ */
+function clonedIndex(index, dataRoot, at, sourcePluginRoot) {
   const next = JSON.parse(JSON.stringify(index));
+  const hasSourceRoot = typeof sourcePluginRoot === 'string' && sourcePluginRoot !== '';
   for (const record of Array.isArray(next.plugins) ? next.plugins : []) {
     if (record && typeof record.pluginName === 'string') {
+      if (hasSourceRoot) {
+        const verdict = recordValidationVerdict(record, sourcePluginRoot);
+        if (verdict.reason === 'record-module-path' || verdict.reason === 'record-module-url') continue;
+      }
       record.moduleUrl = pathToFileURL(path.join(dataRoot, 'promoted', record.pluginName, 'lib', 'index.js')).href;
     }
   }
@@ -156,7 +225,7 @@ export function rewriteIndexForVerification(index, options) {
   const host = settings.host || null;
   const targetIds = new Set(Array.isArray(settings.targets) ? settings.targets : []);
   const at = typeof settings.now === 'string' ? settings.now : new Date().toISOString();
-  const next = clonedIndex(index, settings.dataRoot, at);
+  const next = clonedIndex(index, settings.dataRoot, at, settings.sourcePluginRoot);
   for (const record of Array.isArray(next.plugins) ? next.plugins : []) {
     if (host && record && targetIds.has(record.id)) {
       record.host = Object.assign({}, record.host, { dsh: host.dsh, cordis: host.cordis, include: host.include, node: host.node, verifiedAt: at });
@@ -179,7 +248,7 @@ export function isolationIndex(index, options) {
   const profile = settings.profile || null;
   const recordId = settings.recordId || null;
   const at = typeof settings.now === 'string' ? settings.now : new Date().toISOString();
-  const next = clonedIndex(index, settings.dataRoot, at);
+  const next = clonedIndex(index, settings.dataRoot, at, settings.sourcePluginRoot);
   for (const record of Array.isArray(next.plugins) ? next.plugins : []) {
     if (!record) continue;
     const tested = record.id === recordId;
@@ -369,16 +438,16 @@ export function restoreConsumerStates(snapshot, cloneHome) {
   if (typeof cloneHome !== 'string' || cloneHome === '') {
     throw new Error('restoreConsumerStates requires the clone home to enforce its boundary');
   }
-  const root = fs.realpathSync(cloneHome);
   for (const [file, bytes] of snapshot instanceof Map ? snapshot : []) {
     if (!path.isAbsolute(file)) throw new Error('refusing to restore a relative consumer state path: ' + file);
-    const dir = path.dirname(file);
+    const dir = path.dirname(path.resolve(file));
+    // Boundary first: mkdir through an escaping symlink would create a
+    // directory in the source home before a realpath check could reject it.
+    // Pass the caller's path (not its realpath): the snapshot paths use the
+    // same spelling, and on macOS /var and /private/var are the same tree.
+    assertInsideCloneRoot(cloneHome, dir);
     fs.mkdirSync(dir, { recursive: true });
-    const realDir = fs.realpathSync(dir);
-    const relative = path.relative(root, realDir);
-    if (relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) {
-      throw new Error('refusing to write consumer state outside the clone: ' + file);
-    }
+    assertInsideCloneRoot(cloneHome, dir);
     if (bytes === null) {
       // `rm` unlinks only: a file (or link) created by a boot is removed
       // without following it into the source home.
@@ -580,7 +649,9 @@ async function main(argv) {
   cloneHome(sourceHome, clone);
   const cloneDataRoot = path.join(clone, 'storages', 'evolution');
   const cloneIndexPath = path.join(clone, PUBLISHED_REL);
-  writeJsonFile(cloneIndexPath, rewriteIndexForVerification(index, { dataRoot: cloneDataRoot, host: null, targets: [] }));
+  writeJsonFileInClone(cloneIndexPath, rewriteIndexForVerification(index, {
+    dataRoot: cloneDataRoot, sourcePluginRoot: sourcePromotedRoot, host: null, targets: [],
+  }), clone);
   // Every boot in this clone must start from the source home's actual consumer
   // report. A boot writes those files, so without restoring the snapshot a
   // later boot would inherit an earlier boot's sticky/skip status as its
@@ -697,13 +768,14 @@ async function main(argv) {
     for (const record of activeRecords) {
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
       const isTarget = targets.includes(record.id);
-      writeJsonFile(cloneIndexPath, isolationIndex(index, {
+      writeJsonFileInClone(cloneIndexPath, isolationIndex(index, {
         dataRoot: cloneDataRoot,
+        sourcePluginRoot: sourcePromotedRoot,
         host: isTarget ? host : null,
         profile,
         recordId: record.id,
         now: startedAt,
-      }));
+      }), clone);
       // A target must mount on its own; a non-target boot only reads its own
       // state row and executes no tools for anyone.
       const expect = isTarget ? { [record.id]: { status: 'active' } } : {};
@@ -864,9 +936,9 @@ async function main(argv) {
     const clone2DataRoot = path.join(clone2, 'storages', 'evolution');
     const clone2PromotedRoot = path.join(clone2DataRoot, 'promoted');
     const adoptedIndex = rewriteIndexForVerification(readJsonFile(indexPath), {
-      dataRoot: clone2DataRoot, host: null, targets: [],
+      dataRoot: clone2DataRoot, sourcePluginRoot: sourcePromotedRoot, host: null, targets: [],
     });
-    writeJsonFile(path.join(clone2, PUBLISHED_REL), adoptedIndex);
+    writeJsonFileInClone(path.join(clone2, PUBLISHED_REL), adoptedIndex, clone2);
     const adoptedRecords = Array.isArray(adoptedIndex.plugins) ? adoptedIndex.plugins : [];
     postAdoption = {};
     for (const profile of PROFILES) {

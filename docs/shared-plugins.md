@@ -93,9 +93,9 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 仍在运行会话的 `active` 报告。发布前还会检查本会话是否仍能发布：自己的 fiber `uid` 已清空，或关闭中的宿主先把
 祖先 fiber 置为 UNLOADING（`state === 5`），都按取消处理，因此「挂载已成功、但 capability/service 探针在关闭中
 退化」得到的 `skipped-incompatible` / `include-unavailable` 行同样不会被发布。会话仍处于可发布 context 时，
-首次 Include refresh 失败可在首轮即写非 sticky 的 `include-unavailable`，没有重试；回退 refresh 每轮最多尝试三次
-（失败后最多再重试两次），候选与已挂载条目在 live tree 中缺失则在重试预算用尽后的逐行验证中才写非 sticky 的
-`include-unavailable`。
+首次 Include refresh 失败可在首轮即写非 sticky 的 `include-unavailable`，没有重试；回退 refresh 成功即立即进入
+逐行验证，候选与已挂载条目在 live tree 中缺失可就地写非 sticky 的 `include-unavailable`；只有回退 refresh 抛错时
+才做最多三次有界尝试（失败后最多再重试两次），预算用尽后仍进入同一套逐行验证。
 
 索引本身缺失是正常的 Desktop-only 安装；索引不可读或格式错误时视为「没有任何记录被授权」，所有记录都不能
 挂载（doctor 报 `blocked`）。单个记录非法不会丢弃其它合法记录。

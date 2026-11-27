@@ -620,3 +620,161 @@ test('revalidation runner: evidence redaction covers the home, the scratch tree 
   assert.equal(redacted.probe, '<repo>/scripts/acceptance/probes/cross-entry-consumer-probe.mjs');
   assert.deepEqual(redacted.texts, ['$DSH_HOME/storages', '<work>/logs']);
 });
+
+test('revalidation runner: clone rewriting preserves a source-invalid module URL', () => {
+  const sourceRoot = '/tmp/root/promoted';
+  const elsewhereRoot = '/tmp/elsewhere/promoted';
+  const cloneDataRoot = '/tmp/clone/storages/evolution';
+  const clonePromotedRoot = path.join(cloneDataRoot, 'promoted');
+  const moduleUrlAt = (root, id) => pathToFileURL(path.join(root, `dsh-${id}`, 'lib', 'index.js')).href;
+  const a = validRecord(TARGET_A, { moduleUrl: moduleUrlAt(sourceRoot, TARGET_A) });
+  const b = validRecord(TARGET_B, {
+    moduleUrl: moduleUrlAt(elsewhereRoot, TARGET_B),
+    sourceSha256: 'b'.repeat(64),
+  });
+  const index = { schemaVersion: 1, plugins: [a, b] };
+
+  const rewritten = runner.rewriteIndexForVerification(index, {
+    dataRoot: cloneDataRoot,
+    sourcePluginRoot: sourceRoot,
+    host: null,
+    targets: [],
+  });
+  assert.equal(
+    rewritten.plugins[0].moduleUrl,
+    pathToFileURL(path.join(clonePromotedRoot, `dsh-${TARGET_A}`, 'lib', 'index.js')).href,
+    'a legitimate record still moves into the clone',
+  );
+  assert.equal(rewritten.plugins[1].moduleUrl, b.moduleUrl,
+    'a module URL invalid against the source root must not be laundered into a valid clone path');
+  assert.deepEqual(validateSharedRecord(rewritten.plugins[1], { pluginRoot: clonePromotedRoot }),
+    { ok: false, reason: 'record-module-path' },
+    'the rewritten record is still invalid against the real plugin root');
+  assert.equal(index.plugins[1].moduleUrl, b.moduleUrl, 'the source index is never rewritten in place');
+
+  const isolated = runner.isolationIndex(index, {
+    dataRoot: cloneDataRoot,
+    sourcePluginRoot: sourceRoot,
+    host: CURRENT_HOST,
+    profile: 'acp',
+    recordId: TARGET_A,
+  });
+  assert.equal(isolated.plugins[0].moduleUrl, rewritten.plugins[0].moduleUrl);
+  assert.equal(isolated.plugins[1].moduleUrl, b.moduleUrl,
+    'the per-record isolation index must preserve the same source-invalid URL');
+  assert.equal(isolated.plugins[0].host.dsh, CURRENT_HOST.dsh);
+});
+
+test('revalidation runner: a non-URL structural defect still gets its clone module URL', () => {
+  const sourceRoot = '/tmp/root/promoted';
+  const cloneDataRoot = '/tmp/clone/storages/evolution';
+  const record = validRecord(TARGET_A, {
+    hostOnly: false,
+    moduleUrl: pathToFileURL(path.join(sourceRoot, `dsh-${TARGET_A}`, 'lib', 'index.js')).href,
+  });
+  // Only record-module-path / record-module-url must be left alone: other
+  // structural defects do not describe an out-of-root URL.
+  assert.equal(validateSharedRecord(record, { pluginRoot: sourceRoot }).reason, 'record-host-only');
+  const rewritten = runner.rewriteIndexForVerification({ plugins: [record] }, {
+    dataRoot: cloneDataRoot, sourcePluginRoot: sourceRoot,
+  });
+  assert.equal(
+    rewritten.plugins[0].moduleUrl,
+    pathToFileURL(path.join(cloneDataRoot, 'promoted', `dsh-${TARGET_A}`, 'lib', 'index.js')).href,
+  );
+});
+
+test('revalidation runner: a revoked out-of-root link stays skipped-invalid in the A-B-C prediction', () => {
+  const THIRD = 'evolution-promoted-cccccccccccc';
+  const sourceRoot = '/tmp/root/promoted';
+  const cloneDataRoot = '/tmp/clone/storages/evolution';
+  const moduleUrlAt = (root, id) => pathToFileURL(path.join(root, `dsh-${id}`, 'lib', 'index.js')).href;
+  const records = [
+    validRecord(TARGET_A, {
+      moduleUrl: moduleUrlAt(sourceRoot, TARGET_A),
+      supersededBy: { acp: validMarker(TARGET_B, 'b'.repeat(64)) },
+    }),
+    validRecord(TARGET_B, {
+      moduleUrl: moduleUrlAt('/tmp/elsewhere/promoted', TARGET_B),
+      sourceSha256: 'b'.repeat(64),
+    }),
+    validRecord(THIRD, {
+      moduleUrl: moduleUrlAt(sourceRoot, THIRD),
+      sourceSha256: 'c'.repeat(64),
+    }),
+  ];
+  const rewritten = runner.rewriteIndexForVerification({ plugins: records }, {
+    dataRoot: cloneDataRoot, sourcePluginRoot: sourceRoot, host: null, targets: [],
+  });
+  const disable = { entries: [{ pluginId: TARGET_B, profile: 'acp' }] };
+  const bootStatuses = new Map([
+    [TARGET_A, { status: 'active' }],
+    [THIRD, { status: 'active' }],
+  ]);
+  const result = runner.expectedAfterAdoption(
+    rewritten.plugins, 'acp', bootStatuses, disable, path.join(cloneDataRoot, 'promoted'),
+  );
+  assert.deepEqual(result.get(TARGET_B), { status: 'skipped-invalid', reason: 'record-module-path' },
+    'an out-of-root URL stays invalid in the clone, even for a revoked record');
+  assert.equal(result.get(TARGET_A).status, 'eligible',
+    'an invalid middle link must not suppress the active A expectation');
+  assert.equal(result.get(THIRD).status, 'eligible');
+});
+
+test('revalidation runner: restore refuses to create a consumer directory outside the clone', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-revalidation-mkdir-boundary-'));
+  try {
+    const source = path.join(root, 'source');
+    const clone = path.join(root, 'clone');
+    const outsideShared = path.join(source, 'storages', 'evolution', 'shared-plugins');
+    fs.mkdirSync(outsideShared, { recursive: true });
+    assert.equal(fs.existsSync(path.join(outsideShared, 'consumers')), false);
+    const cloneEvolution = path.join(clone, 'storages', 'evolution');
+    fs.mkdirSync(cloneEvolution, { recursive: true });
+    fs.symlinkSync(outsideShared, path.join(cloneEvolution, 'shared-plugins'));
+
+    const file = path.join(clone, 'storages', 'evolution', 'shared-plugins', 'consumers', 'acp.json');
+    const snapshot = new Map([[file, null]]);
+    assert.throws(() => runner.restoreConsumerStates(snapshot, clone), /outside the clone/);
+    assert.equal(fs.existsSync(path.join(outsideShared, 'consumers')), false,
+      'the boundary check must run before mkdir, so nothing is created outside the clone');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('revalidation runner: writing the clone index replaces a link instead of writing the source index', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-revalidation-write-boundary-'));
+  try {
+    const source = path.join(root, 'source');
+    const clone = path.join(root, 'clone');
+    const sourceIndex = path.join(source, 'storages', 'evolution', 'shared-plugins', 'published.json');
+    fs.mkdirSync(path.dirname(sourceIndex), { recursive: true });
+    const sourceBytes = '{"source":true}\n';
+    fs.writeFileSync(sourceIndex, sourceBytes);
+
+    const cloneShared = path.join(clone, 'storages', 'evolution', 'shared-plugins');
+    fs.mkdirSync(cloneShared, { recursive: true });
+    const cloneIndex = path.join(cloneShared, 'published.json');
+    fs.symlinkSync(sourceIndex, cloneIndex);
+
+    runner.writeJsonFileInClone(cloneIndex, { ok: true }, clone);
+    assert.equal(fs.readFileSync(sourceIndex, 'utf8'), sourceBytes, 'the source index must stay byte-identical');
+    assert.equal(fs.lstatSync(cloneIndex).isSymbolicLink(), false, 'the link itself is replaced');
+    assert.deepEqual(JSON.parse(fs.readFileSync(cloneIndex, 'utf8')), { ok: true });
+    assert.equal(fs.statSync(cloneIndex).mode & 0o777, 0o600);
+
+    const outsideShared = path.join(source, 'outside');
+    fs.mkdirSync(outsideShared, { recursive: true });
+    const clone2 = path.join(root, 'clone2');
+    const clone2Evolution = path.join(clone2, 'storages', 'evolution');
+    fs.mkdirSync(clone2Evolution, { recursive: true });
+    fs.symlinkSync(outsideShared, path.join(clone2Evolution, 'shared-plugins'));
+    const clone2Index = path.join(clone2, 'storages', 'evolution', 'shared-plugins', 'published.json');
+    assert.throws(() => runner.writeJsonFileInClone(clone2Index, { ok: true }, clone2), /outside the clone/);
+    assert.equal(fs.existsSync(path.join(outsideShared, 'published.json')), false,
+      'no file is created outside the clone when the parent is an escaping link');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
