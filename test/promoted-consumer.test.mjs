@@ -705,6 +705,67 @@ test('a non-candidate apply failure after fallback walks back its own predecesso
   await session.dispose();
 });
 
+test('a restored entry that fails on a later pass is not reinstalled by the next pass', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  // Two chains force the fallback to span several passes. On A0→A1→A2 the
+  // terminal A2 fails on the first tree, A1 is restored on the second tree and
+  // then fails on the third; unless that failed restore is forgotten, the
+  // fourth pass reinstalls A1 alongside its predecessor A0. The second chain's
+  // terminal fails on the second tree so the loop does not stop before then.
+  const a0 = await createRecord({ toolName: 'chain_a0_tool' });
+  const a1 = await createRecord({ toolName: 'chain_a1_tool' });
+  const a2 = await createRecord({
+    toolName: 'chain_a2_tool', inject: [], requiredServices: [],
+    source: "export const name = 'a2';\nexport function apply() { throw new Error('a2 exploded'); }\n",
+  });
+  const c0 = await createRecord({ toolName: 'chain_c0_tool' });
+  const c1 = await createRecord({ toolName: 'chain_c1_tool' });
+  const c2 = await createRecord({
+    toolName: 'chain_c2_tool', inject: [], requiredServices: [],
+    source: "export const name = 'c2';\nexport function apply() { throw new Error('c2 exploded'); }\n",
+  });
+  await writeIndex([
+    { ...a0.record, supersededBy: { acp: supersedeMarker(a1.record) } },
+    { ...a1.record, supersededBy: { acp: supersedeMarker(a2.record) } },
+    a2.record,
+    { ...c0.record, supersededBy: { acp: supersedeMarker(c1.record) } },
+    { ...c1.record, supersededBy: { acp: supersedeMarker(c2.record) } },
+    c2.record,
+  ]);
+
+  let refreshCount = 0;
+  const mountInclude = async (_ctx, config) => {
+    const adapter = fakeIncludeAdapter(config, {
+      fiberFor: (rowId) => {
+        if (refreshCount === 1 && rowId === `shared-${a2.record.id}`) return fakeFiber({ failApply: true });
+        if (refreshCount === 2 && rowId === `shared-${c2.record.id}`) return fakeFiber({ failApply: true });
+        if (refreshCount === 3 && rowId === `shared-${a1.record.id}`) return fakeFiber({ failApply: true });
+        return fakeFiber();
+      },
+    });
+    const plainRefresh = adapter.refresh;
+    adapter.refresh = async () => {
+      refreshCount += 1;
+      await plainRefresh();
+    };
+    return adapter;
+  };
+  const session = await mountSession(await boot(), dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(a2.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(c2.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(a1.record.id).status, 'failed',
+    `a restored row that failed to apply must stay failed: a0=${rows.get(a0.record.id).status}, a1=${rows.get(a1.record.id).status}`);
+  assert.equal(rows.get(a1.record.id).reason, 'plugin-apply-failed');
+  assert.equal(session.mounted.has(a1.record.id), false, 'the failed restore is not held for disposal');
+  assert.equal(rows.get(a0.record.id).status, 'active', 'the predecessor is restored in the same start');
+  assert.ok(session.mounted.has(a0.record.id));
+  assert.equal(rows.get(c1.record.id).status, 'active', 'the healthy second chain is unaffected');
+  assert.ok(session.mounted.has(c1.record.id));
+  await session.dispose();
+});
+
 test('a fallback refresh that drops a previously active sibling unmounts it', async (t) => {
   const { dataRoot, createRecord, writeIndex } = await fixture(t);
   // Two replacement chains whose replacements fail to apply force a fallback
