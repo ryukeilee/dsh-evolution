@@ -11,7 +11,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   buildSharedRecord,
@@ -104,7 +105,8 @@ async function fixture(t, name) {
 
 /** Write one projection through the same writer the operator CLI uses. */
 async function writeProjection(env, overrides = {}) {
-  const now = new Date('2026-11-27T00:00:00.000Z').getTime();
+  // Always relative to the reader's clock: a pinned calendar date would make
+  // this suite fail once it passes the 30-day staleness bound.
   const doc = {
     kind: 'dsh-evolution-capability-usage',
     schemaVersion: 1,
@@ -112,7 +114,7 @@ async function writeProjection(env, overrides = {}) {
     source: 'session-evidence',
     complete: true,
     recordsComplete: true,
-    capturedAt: new Date(now).toISOString(),
+    capturedAt: new Date().toISOString(),
     scannedSessions: 2,
     records: {
       [RECORD_ID]: {
@@ -197,7 +199,7 @@ test('a fresh, complete projection is healthy in both surfaces (no false warning
 
 test('each missing shape gets its own bounded hint; none swallows another', async (t) => {
   const shapes = [
-    { name: 'stale', setup: (env) => writeProjection(env, { capturedAt: '2026-01-01T00:00:00.000Z' }), issue: 'stale', absentText: 'no usage projection has been written' },
+    { name: 'stale', setup: (env) => writeProjection(env, { capturedAt: new Date(Date.now() - 60 * 86_400_000).toISOString() }), issue: 'stale', absentText: 'no usage projection has been written' },
     { name: 'legacy', setup: (env) => writeProjection(env, { coverage: 'legacy' }), issue: 'legacy-coverage', absentText: 'older than the 30-day bound' },
     { name: 'incomplete', setup: (env) => writeProjection(env, { complete: false }), issue: 'incomplete', absentText: 'predates the native+PTC' },
     { name: 'invalid', setup: (env) => fs.writeFileSync(sharingPaths(env.paths).usagePath, '{ not json'), issue: 'invalid', absentText: 'older than the 30-day bound' },
@@ -248,4 +250,82 @@ test('the supplement never evicts blocking actions or the bounded-read notice', 
   assert.equal(nextActions.includes(supplement), false, 'the hint is the one dropped by the cap');
   assert.equal(nextActionsDropped, 1);
   assert.ok(nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
+});
+
+test('a projection that omits a published record is incomplete, not complete', async (t) => {
+  const env = await fixture(t, 'missing-row');
+  // A snapshot taken before a later publication can still say complete=true
+  // with a fresh capture time; the missing row must be caught by cross-checking
+  // the record ids the review actually reads.
+  await writeProjection(env, { records: {} });
+  const { stable } = await reviewed(env);
+  const actions = usageActions(stable);
+  assert.equal(actions.length, 1);
+  assert.deepEqual(actions[0].issues, ['incomplete']);
+  assert.equal(actions[0].missingRecordCount, 1);
+  const check = await doctorUsage(env);
+  assert.equal(check.level, 'degraded');
+  assert.deepEqual(check.evidence.issues, ['incomplete']);
+  assert.equal(check.evidence.missingRecordCount, 1);
+});
+
+test('an unreadable projection is invalid, not absent', async (t) => {
+  // Reader level: ENOTDIR must not be reported as the benign absent shape.
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'chain-gap-03-unreadable-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(root, 'shared-plugins'), 'not a directory');
+  const loaded = await readUsageProjection({ dataRoot: root });
+  assert.equal(loaded.evidence.status, 'invalid');
+  assert.equal(loaded.evidence.reason, 'unreadable');
+
+  // Review level: an invalid status on a data root that still has a published
+  // record must produce the invalid supplement, not silently vanish.
+  const env = await fixture(t, 'unreadable-review');
+  const stable = await readPublishedPluginReview({ paths: env.paths, host: HOST, usage: null, usageStatus: 'invalid' });
+  const actions = usageActions(stable);
+  assert.equal(actions.length, 1);
+  assert.equal(actions[0].code, `${USAGE_PROJECTION_ACTION_PREFIX}invalid`);
+});
+
+test('the supplement is not a blocking stable issue and does not block experience', () => {
+  const supplement = {
+    action: REVIEW_ACTIONS.OPERATOR,
+    code: `${USAGE_PROJECTION_ACTION_PREFIX}absent`,
+    recordId: null,
+    why: 'no usage projection',
+  };
+  const composed = composeSelfEvolutionReview({
+    stable: { status: 'active', nextActions: [supplement] },
+    experience: {
+      available: true,
+      selected: { problemKey: 'problem:unrelated', occurrences: 2, expectedImprovement: 'smaller fix', requiresNewHypothesis: false },
+    },
+    versions: {},
+  });
+  assert.equal(composed.primary, REVIEW_ACTIONS.OPERATOR);
+  assert.equal(composed.hasBlockingStableIssue, false);
+  const experience = composed.nextActions.find((action) => action.action === REVIEW_ACTIONS.EXPERIENCE);
+  assert.equal(experience.blockedBy, undefined);
+});
+
+test('the supplement command targets the inspected data root, not the default one', async (t) => {
+  const env = await fixture(t, 'data-root-command');
+  const reviewActions = usageActions(await readPublishedPluginReview({
+    paths: env.paths, host: HOST, usage: null, usageStatus: 'absent',
+  }));
+  assert.equal(reviewActions.length, 1);
+  assert.match(reviewActions[0].command, new RegExp(`--data-root ${JSON.stringify(env.paths.dataRoot)}`));
+  const check = await doctorUsage(env);
+  assert.match(check.remediation, new RegExp(`--data-root ${JSON.stringify(env.paths.dataRoot)}`));
+
+  // The documented producer really honours the flag it is told to copy.
+  const alternate = path.join(env.home, 'alternate-root');
+  fs.mkdirSync(path.join(alternate, 'shared-plugins'), { recursive: true });
+  const script = fileURLToPath(new URL('../docs/audit/replay/capability-usage.mjs', import.meta.url));
+  const run = spawnSync(process.execPath, [script, '--home', env.home, '--data-root', alternate, '--write'], { encoding: 'utf8' });
+  // The alternate root has no publication index, so the producer documents an
+  // incomplete scan with exit 3; the projection is still written there.
+  assert.ok(run.status === 0 || run.status === 3, run.stderr);
+  assert.equal(fs.existsSync(path.join(alternate, 'shared-plugins', 'usage.json')), true);
+  assert.equal(fs.existsSync(path.join(env.paths.dataRoot, 'shared-plugins', 'usage.json')), false);
 });
