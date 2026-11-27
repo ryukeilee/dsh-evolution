@@ -131,35 +131,65 @@ export function writeAdoptionReport(evidenceFile, document) {
   return file;
 }
 
+/** Deep copy whose every module URL points into the throw-away data root. */
+function clonedIndex(index, dataRoot, at) {
+  const next = JSON.parse(JSON.stringify(index));
+  for (const record of Array.isArray(next.plugins) ? next.plugins : []) {
+    if (record && typeof record.pluginName === 'string') {
+      record.moduleUrl = pathToFileURL(path.join(dataRoot, 'promoted', record.pluginName, 'lib', 'index.js')).href;
+    }
+  }
+  next.updatedAt = at;
+  return next;
+}
+
 /**
  * The clone-side index: the same records, with the module URL moved into the
  * clone (a record path outside its own data root is invalid by design) and,
  * for the records under verification only, the exact current host facts that
- * make them eligible in the throw-away clone. Nothing here is written back to
- * the source home.
+ * make them eligible in the throw-away clone. Supersession markers are kept:
+ * hiding an overlap would let a replacement answer for the record under test.
+ * Nothing here is written back to the source home.
  */
 export function rewriteIndexForVerification(index, options) {
   const settings = options || {};
-  const dataRoot = settings.dataRoot;
   const host = settings.host || null;
   const targetIds = new Set(Array.isArray(settings.targets) ? settings.targets : []);
   const at = typeof settings.now === 'string' ? settings.now : new Date().toISOString();
-  const next = JSON.parse(JSON.stringify(index));
-  const records = Array.isArray(next.plugins) ? next.plugins : [];
-  for (const record of records) {
-    if (record && typeof record.pluginName === 'string') {
-      record.moduleUrl = pathToFileURL(path.join(dataRoot, 'promoted', record.pluginName, 'lib', 'index.js')).href;
-    }
-    // The evidence clone proves bytes and host, not the current operator
-    // supersession topology: leaving a marker here would suppress a superseded
-    // target and make it impossible to gather its own activation evidence.
-    // The post-adoption clone keeps the markers to verify the final topology.
-    if (settings.stripSupersession !== false && record && record.supersededBy) delete record.supersededBy;
+  const next = clonedIndex(index, settings.dataRoot, at);
+  for (const record of Array.isArray(next.plugins) ? next.plugins : []) {
     if (host && record && targetIds.has(record.id)) {
       record.host = Object.assign({}, record.host, { dsh: host.dsh, cordis: host.cordis, include: host.include, node: host.node, verifiedAt: at });
     }
   }
-  next.updatedAt = at;
+  return next;
+}
+
+/**
+ * The per-record attestation index: only `recordId` keeps approval for
+ * `profile`, so at most one record can mount in that profile and answer tool
+ * calls. The tested record alone receives current host facts (when `host` is
+ * given); every supersededBy marker is retained. This proves the record's own
+ * eligibility with the production supersession rule still in force, instead of
+ * fabricating a marker-free topology where two listeners could coexist.
+ */
+export function isolationIndex(index, options) {
+  const settings = options || {};
+  const host = settings.host || null;
+  const profile = settings.profile || null;
+  const recordId = settings.recordId || null;
+  const at = typeof settings.now === 'string' ? settings.now : new Date().toISOString();
+  const next = clonedIndex(index, settings.dataRoot, at);
+  for (const record of Array.isArray(next.plugins) ? next.plugins : []) {
+    if (!record) continue;
+    const tested = record.id === recordId;
+    if (tested && host) {
+      record.host = Object.assign({}, record.host, { dsh: host.dsh, cordis: host.cordis, include: host.include, node: host.node, verifiedAt: at });
+    }
+    if (!tested && profile && Array.isArray(record.approvedProfiles)) {
+      record.approvedProfiles = record.approvedProfiles.filter((name) => name !== profile);
+    }
+  }
   return next;
 }
 
@@ -178,44 +208,21 @@ export function profileIsRevalidationTarget(record, profile, disable) {
 }
 
 /**
- * A record legitimately superseded in this profile is expected to stay
- * `disabled / superseded-by` after the host upgrade: the consumer mounts only
- * the replacement. Requiring `active` on both aborts revalidation for a valid
- * switch. If the replacement is no longer a target, the old record is expected
- * to be active again, which is exactly the recovery the consumer performs.
+ * Post-adoption expectations come from each record's own isolation boot (which
+ * proved its real eligibility on this host, including missing services) combined
+ * with the production supersession rule on the adopted index. An ineligible tail
+ * restores its predecessor, so the runner must not insist on the tail's
+ * activation after adoption.
  */
-export function expectedRecordStatus(record, profile, records, disable) {
-  const all = Array.isArray(records) ? records : [];
-  // Use the production rule, not a direct-marker shortcut: a chain whose
-  // middle version is disabled still suppresses its predecessor in favour of
-  // the furthest eligible tail.
-  const decisions = all.map((row) => ({
-    record: row,
-    decision: profileIsRevalidationTarget(row, profile, disable)
-      ? { status: 'eligible' }
-      : { status: 'disabled', reason: 'operator-disabled' },
-  }));
-  const outcome = applySupersession(decisions, { profile })
-    .find(({ record: row }) => row.id === record?.id);
-  if (!outcome || outcome.decision.status === 'eligible') return { status: 'active' };
-  return { status: 'disabled', reason: outcome.decision.reason || 'superseded-by' };
-}
-
-/**
- * Post-adoption expectations come from the marker-free evidence boot (which
- * proved real eligibility, including missing services) combined with the
- * production supersession rule. An ineligible tail restores its predecessor,
- * so the runner must not insist on the tail's activation after adoption.
- */
-export function expectedAfterAdoption(records, profile, evidenceRows) {
-  const rows = evidenceRows instanceof Map ? evidenceRows : new Map();
+export function expectedAfterAdoption(records, profile, ownStatuses) {
+  const statuses = ownStatuses instanceof Map ? ownStatuses : new Map();
   const decisions = (Array.isArray(records) ? records : []).map((row) => {
-    const evidence = rows.get(row.id);
+    const own = statuses.get(row.id);
     return {
       record: row,
-      decision: evidence?.status === 'active'
+      decision: own?.status === 'active'
         ? { status: 'eligible' }
-        : { status: evidence?.status ?? 'skipped-invalid', reason: evidence?.reason ?? null },
+        : { status: own?.status ?? 'skipped-invalid', reason: own?.reason ?? null },
     };
   });
   return new Map(applySupersession(decisions, { profile })
@@ -554,76 +561,94 @@ async function main(argv) {
     if (digest !== record.sourceSha256) throw new Error(id + ' source digest is ' + digest + ', not the published ' + record.sourceSha256);
   }
 
-  // 5. Verify on the clone with the current host facts: one real boot per
-  //    profile, and each planned tool call through the official executor.
-  const verificationIndex = rewriteIndexForVerification(index, { dataRoot: cloneDataRoot, host, targets });
-  writeJsonFile(cloneIndexPath, verificationIndex);
-  const verificationRecords = Array.isArray(verificationIndex.plugins) ? verificationIndex.plugins : [];
+  // 5. Verify on the clone with the current host facts: one isolated boot per
+  //    approved record in every profile, so only that record can mount and
+  //    answer its own tool calls. Each result is kept by record; the target's
+  //    own boot is the only source of its attestation.
   const plansByRecord = new Map(targets.map((id) => [id, planFor(plans, id, work)]));
   for (const plan of plansByRecord.values()) {
     if (plan && plan.tool === 'readonly_git_file') writeGitFixture(path.join(work, 'git-fixture'));
   }
   const verification = {};
+  const ownStatusesByProfile = {};
   for (const profile of PROFILES) {
-    const expect = {};
-    const calls = [];
-    for (const id of targets) {
-      const record = records.find((row) => row.id === id);
+    const boots = new Map();
+    const ownStatuses = new Map();
+    for (const record of activeRecords) {
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
-      const verificationRecord = verificationRecords.find((row) => row.id === id) ?? record;
-      expect[id] = expectedRecordStatus(verificationRecord, profile, verificationRecords, disable);
-      const plan = plansByRecord.get(id);
-      if (plan && expect[id].status === 'active') {
-        calls.push({ id: id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: id });
+      const isTarget = targets.includes(record.id);
+      writeJsonFile(cloneIndexPath, isolationIndex(index, {
+        dataRoot: cloneDataRoot,
+        host: isTarget ? host : null,
+        profile,
+        recordId: record.id,
+        now: startedAt,
+      }));
+      // A target must mount on its own; a non-target boot only reads its own
+      // state row and executes no tools for anyone.
+      const expect = isTarget ? { [record.id]: { status: 'active' } } : {};
+      const calls = [];
+      if (isTarget) {
+        const plan = plansByRecord.get(record.id);
+        if (plan) {
+          calls.push({ id: record.id + ':' + plan.tool, name: plan.tool, arguments: plan.arguments, expect: plan.expect, recordId: record.id });
+        }
       }
+      const outcome = await bootConsumer({
+        profile,
+        cloneHome: clone,
+        expect,
+        toolCalls: calls.length > 0 ? calls : null,
+        label: 'verify-' + profile + '-' + record.id,
+        work,
+        logs,
+        cli,
+        timeoutMs: options.timeoutMs,
+        sourceHome,
+        cwd: work,
+      });
+      if (outcome.error) throw new Error('the verification ' + profile + ' isolated boot for ' + record.id + ' failed: ' + outcome.error);
+      for (const call of outcome.result.toolCalls || []) {
+        const failure = checkToolExpectation(call);
+        if (failure) throw new Error(failure);
+      }
+      const rows = rowsById(readJsonFile(path.join(clone, CONSUMER_STATE, profile + '.json')));
+      const row = rows.get(record.id);
+      if (isTarget && (!row || row.status !== 'active')) {
+        throw new Error(record.id + ' is ' + (row ? `${row.status}/${row.reason}` : 'missing') + ' in its own isolated ' + profile + ' boot; refusing to adopt');
+      }
+      boots.set(record.id, { result: outcome.result, rows, isTarget });
+      ownStatuses.set(record.id, row ? { status: row.status, reason: row.reason ?? null } : { status: 'missing', reason: null });
     }
-    const outcome = await bootConsumer({
-      profile,
-      cloneHome: clone,
-      expect,
-      toolCalls: calls.length > 0 ? calls : null,
-      label: 'verify-' + profile,
-      work,
-      logs,
-      cli,
-      timeoutMs: options.timeoutMs,
-      sourceHome,
-      cwd: work,
-    });
-    if (outcome.error) throw new Error('the verification ' + profile + ' consumer boot failed: ' + outcome.error);
-    for (const call of outcome.result.toolCalls || []) {
-      const failure = checkToolExpectation(call);
-      if (failure) throw new Error(failure);
-    }
-    const state = readJsonFile(path.join(clone, CONSUMER_STATE, profile + '.json'));
-    verification[profile] = { result: outcome.result, rows: rowsById(state), expectedHostDigest: hostDigest(host) };
+    verification[profile] = { boots, expectedHostDigest: hostDigest(host) };
+    ownStatusesByProfile[profile] = ownStatuses;
   }
 
   // 6. Assemble the evidence: exact host identity, exact source digest and one
-  //    activation proof per approved profile, plus the real tool calls.
+  //    activation proof per approved profile, all from that record's own
+  //    isolated boot — never from a boot where an overlapping record ran.
   const plugins = [];
   for (const id of targets) {
     const record = records.find((row) => row.id === id);
     const profiles = {};
     for (const profile of PROFILES) {
       if (!profileIsRevalidationTarget(record, profile, disable)) continue;
-      const row = verification[profile].rows.get(id);
-      const verificationRecord = verificationRecords.find((row) => row.id === id) ?? record;
-      const expectedStatus = expectedRecordStatus(verificationRecord, profile, verificationRecords, disable);
-      if (!row || row.status !== expectedStatus.status
-        || (expectedStatus.reason && row.reason !== expectedStatus.reason)) {
-        throw new Error(id + ' is ' + (row ? `${row.status}/${row.reason}` : 'missing') + ' in the verified ' + profile + ' entry');
+      const boot = verification[profile].boots.get(id);
+      if (!boot || !boot.isTarget) throw new Error(id + ' has no own isolated ' + profile + ' boot');
+      const row = boot.rows.get(id);
+      if (!row || row.status !== 'active') {
+        throw new Error(id + ' is ' + (row ? `${row.status}/${row.reason}` : 'missing') + ' in its own isolated ' + profile + ' boot');
       }
       if (row.sourceSha256 !== record.sourceSha256) throw new Error('the ' + profile + ' entry activated a different source for ' + id);
       if (row.hostDigest !== verification[profile].expectedHostDigest) {
         throw new Error('the ' + profile + ' entry activated ' + id + ' on host digest ' + row.hostDigest + ', not the captured ' + verification[profile].expectedHostDigest);
       }
-      const calls = (verification[profile].result.toolCalls || []).filter((call) => String(call.id).startsWith(id + ':'));
+      const calls = (boot.result.toolCalls || []).filter((call) => String(call.id).startsWith(id + ':'));
       profiles[profile] = {
         active: true,
         activatedAt: row.activatedAt || null,
         hostDigest: row.hostDigest || null,
-        toolNames: verification[profile].result.toolNames || [],
+        toolNames: boot.result.toolNames || [],
         toolCalls: calls.map((call) => ({ id: call.id, name: call.name, path: call.path || null, isError: call.isError, code: call.code || null, text: call.text })),
       };
     }
@@ -660,20 +685,25 @@ async function main(argv) {
       recordCount: records.length,
       skippedRevokedIds,
     },
-    // The clone is the only place the record recorded host is replaced by the
-    // current one; every activation below is a real boot of the real entry.
+    // The clone is the only place a target's recorded host is replaced by the
+    // current one; each activation below is a real boot of the real entry with
+    // only that record eligible in its profile.
     verification: {
-      method: 'isolated-clone-current-host-eligibility',
-      note: 'the cloned record host was rewritten to the host facts captured by the baseline consumer boot; the source home was never rewritten',
+      method: 'per-record-isolated-clone-eligibility',
+      note: 'each record was attested in its own isolated boot: only it kept the tested profile and (when targeted) received current host facts; supersession markers were retained; the source home was never rewritten',
       targetIds: targets,
     },
-    profiles: Object.fromEntries(PROFILES.map((profile) => [profile, {
-      consumerStateHost: factsByProfile[profile],
-      verifiedRows: verification[profile].result.rows || [],
-      kernelPresent: verification[profile].result.kernelPresent === true,
-      evolutionToolNames: verification[profile].result.evolutionToolNames || [],
-      tools: verification[profile].result.toolNames || [],
-    }])),
+    profiles: Object.fromEntries(PROFILES.map((profile) => {
+      const boots = [...verification[profile].boots.values()];
+      const representative = boots[0]?.result || {};
+      return [profile, {
+        consumerStateHost: factsByProfile[profile],
+        verifiedRows: boots.flatMap((boot) => boot.result.rows || []),
+        kernelPresent: boots.some((boot) => boot.result.kernelPresent === true),
+        evolutionToolNames: representative.evolutionToolNames || [],
+        tools: representative.toolNames || [],
+      }];
+    })),
     plugins,
   };
   writeJsonFile(evidenceFile, redact(evidence, sourceHome, work));
@@ -710,7 +740,7 @@ async function main(argv) {
     cloneHome(sourceHome, clone2);
     const clone2DataRoot = path.join(clone2, 'storages', 'evolution');
     const adoptedIndex = rewriteIndexForVerification(readJsonFile(indexPath), {
-      dataRoot: clone2DataRoot, host: null, targets: [], stripSupersession: false,
+      dataRoot: clone2DataRoot, host: null, targets: [],
     });
     writeJsonFile(path.join(clone2, PUBLISHED_REL), adoptedIndex);
     const adoptedRecords = Array.isArray(adoptedIndex.plugins) ? adoptedIndex.plugins : [];
@@ -720,13 +750,12 @@ async function main(argv) {
       const calls = [];
       for (const plugin of plugins) {
         if (!profileIsRevalidationTarget(plugin, profile, disable)) continue;
-        // The marker-free evidence boot already proved which records are
-        // genuinely eligible on this host (including missing services). Apply
-        // the production supersession rule to those facts instead of assuming
-        // every approved target is eligible; a disabled or incompatible tail
-        // must restore its predecessor, and the runner must expect that.
-        const evidenceRows = verification[profile]?.rows ?? new Map();
-        const decision = expectedAfterAdoption(adoptedRecords, profile, evidenceRows).get(plugin.id);
+        // Each record's own isolation boot proved its own eligibility on this
+        // host (including missing services). Apply the production supersession
+        // rule to those facts instead of assuming every approved target is
+        // eligible; a disabled or incompatible tail restores its predecessor.
+        const ownStatuses = ownStatusesByProfile[profile] ?? new Map();
+        const decision = expectedAfterAdoption(adoptedRecords, profile, ownStatuses).get(plugin.id);
         expect[plugin.id] = decision?.status === 'eligible'
           ? { status: 'active' }
           : { status: decision?.status ?? 'active', ...(decision?.reason ? { reason: decision.reason } : {}) };

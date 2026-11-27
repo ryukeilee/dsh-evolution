@@ -11,6 +11,41 @@ const runner = await import(pathToFileURL(path.join(ROOT, 'scripts/acceptance/ru
 
 const TARGET_A = 'evolution-promoted-aaaaaaaaaaaa';
 const TARGET_B = 'evolution-promoted-bbbbbbbbbbbb';
+const CURRENT_HOST = { dsh: '0.2.2-rc.3', cordis: '4.1.0', include: '1.1.0', node: 'v24.21.0' };
+const { applySupersession } = await import(pathToFileURL(path.join(ROOT, 'lib', 'promoted-sharing.js')).href);
+
+function supersededIndex() {
+  const previousHost = { dsh: '0.2.2-rc.2', cordis: '4.1.0', include: '1.1.0', node: 'v24.21.0' };
+  return {
+    schemaVersion: 1,
+    plugins: [
+      {
+        id: TARGET_A,
+        pluginName: 'dsh-a',
+        approvedProfiles: ['acp', 'web'],
+        host: { ...previousHost },
+        sourceSha256: 'a'.repeat(64),
+        supersededBy: { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } },
+      },
+      {
+        id: TARGET_B,
+        pluginName: 'dsh-b',
+        approvedProfiles: ['acp', 'web'],
+        host: { ...previousHost },
+        sourceSha256: 'b'.repeat(64),
+      },
+    ],
+  };
+}
+
+function eligibilityDecisions(records, profile) {
+  return records.map((record) => ({
+    record,
+    decision: record.approvedProfiles.includes(profile)
+      ? { status: 'eligible' }
+      : { status: 'disabled', reason: 'operator-disabled' },
+  }));
+}
 
 test('revalidation runner: a partially revoked record still has its other profile as a target', () => {
   const record = { id: TARGET_A, approvedProfiles: ['acp', 'web'] };
@@ -27,40 +62,60 @@ test('revalidation runner: a partially revoked record still has its other profil
   assert.equal(runner.profileIsRevalidationTarget(record, 'web', allRevoked), false);
 });
 
-test('revalidation runner: a superseded record is expected disabled while its replacement is a target', () => {
-  const replacement = { id: TARGET_B, approvedProfiles: ['acp', 'web'], sourceSha256: 'b'.repeat(64) };
-  const previous = {
-    id: TARGET_A,
-    approvedProfiles: ['acp', 'web'],
-    supersededBy: { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } },
-  };
-  assert.deepEqual(runner.expectedRecordStatus(previous, 'acp', [previous, replacement], { entries: [] }), { status: 'disabled', reason: 'superseded-by' });
-  assert.deepEqual(runner.expectedRecordStatus(previous, 'web', [previous, replacement], { entries: [] }), { status: 'active' });
-  // A changed replacement digest or a revoked replacement restores the old plugin.
-  const tampered = { ...replacement, sourceSha256: 'c'.repeat(64) };
-  assert.deepEqual(runner.expectedRecordStatus(previous, 'acp', [previous, tampered], { entries: [] }), { status: 'active' });
-  const revoked = { entries: [{ pluginId: TARGET_B, profile: 'acp' }] };
-  assert.deepEqual(runner.expectedRecordStatus(previous, 'acp', [previous, replacement], revoked), { status: 'active' });
+test('revalidation runner: isolating a superseded record leaves only that record eligible', () => {
+  const index = supersededIndex();
+  const dataRoot = '/clone/storages/evolution';
+  const isolated = runner.isolationIndex(index, {
+    dataRoot,
+    host: CURRENT_HOST,
+    profile: 'acp',
+    recordId: TARGET_A,
+    now: '2026-01-02T00:00:00.000Z',
+  });
+  const [a, b] = isolated.plugins;
+  assert.deepEqual(a.approvedProfiles, ['acp', 'web'], 'the tested record keeps the tested profile');
+  assert.deepEqual(b.approvedProfiles, ['web'], 'every other record loses only the tested profile');
+  assert.equal(a.host.dsh, '0.2.2-rc.3');
+  assert.equal(a.host.verifiedAt, '2026-01-02T00:00:00.000Z');
+  assert.equal(b.host.dsh, '0.2.2-rc.2', 'a non-tested record never gets a rewritten host');
+  assert.equal(b.host.verifiedAt, undefined);
+  assert.deepEqual(a.supersededBy, { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } }, 'supersession markers are retained');
+  assert.equal(a.moduleUrl, pathToFileURL(path.join(dataRoot, 'promoted', 'dsh-a', 'lib', 'index.js')).href);
+  assert.equal(b.moduleUrl, pathToFileURL(path.join(dataRoot, 'promoted', 'dsh-b', 'lib', 'index.js')).href);
+  const decisions = applySupersession(eligibilityDecisions(isolated.plugins, 'acp'), { profile: 'acp' });
+  assert.deepEqual(decisions.filter(({ decision }) => decision.status === 'eligible').map(({ record }) => record.id), [TARGET_A]);
+  assert.equal(decisions.find(({ record }) => record.id === TARGET_B).decision.reason, 'operator-disabled');
+  // The source index is a deep-copy source: it is never rewritten in place.
+  assert.deepEqual(index.plugins[0].approvedProfiles, ['acp', 'web']);
+  assert.equal(index.plugins[0].host.dsh, '0.2.2-rc.2');
+  assert.equal(index.plugins[0].moduleUrl, undefined);
 });
 
-test('revalidation runner: evidence clone strips supersession, post-adoption clone keeps it', () => {
-  const index = { plugins: [{ id: TARGET_A, pluginName: 'dsh-a', supersededBy: { acp: { recordId: TARGET_B } } }] };
-  const evidence = runner.rewriteIndexForVerification(index, { dataRoot: os.tmpdir() });
-  assert.equal(evidence.plugins[0].supersededBy, undefined, 'a superseded target must be verifiable on its own');
-  const adopted = runner.rewriteIndexForVerification(index, { dataRoot: os.tmpdir(), stripSupersession: false });
-  assert.equal(adopted.plugins[0].supersededBy.acp.recordId, TARGET_B, 'the final mounted topology must still be checked');
+test('revalidation runner: isolating a non-target record leaves its own host and profile eligibility', () => {
+  const index = supersededIndex();
+  const isolated = runner.isolationIndex(index, {
+    dataRoot: '/clone/storages/evolution',
+    host: CURRENT_HOST,
+    profile: 'acp',
+    recordId: TARGET_B,
+    now: '2026-01-02T00:00:00.000Z',
+  });
+  const [a, b] = isolated.plugins;
+  assert.deepEqual(a.approvedProfiles, ['web'], 'the replacement must not answer for the tested record');
+  assert.deepEqual(b.approvedProfiles, ['acp', 'web']);
+  assert.equal(a.host.dsh, '0.2.2-rc.2');
+  assert.equal(b.host.dsh, '0.2.2-rc.3');
+  assert.ok(a.supersededBy.acp, 'supersession is never stripped from the clone');
+  const decisions = applySupersession(eligibilityDecisions(isolated.plugins, 'acp'), { profile: 'acp' });
+  assert.deepEqual(decisions.filter(({ decision }) => decision.status === 'eligible').map(({ record }) => record.id), [TARGET_B]);
 });
 
-test('revalidation runner: a disabled middle link keeps the chain terminal expectation', () => {
-  const THIRD = 'evolution-promoted-cccccccccccc';
-  const first = { id: TARGET_A, approvedProfiles: ['acp'], supersededBy: { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } } };
-  const middle = { id: TARGET_B, approvedProfiles: ['acp'], sourceSha256: 'b'.repeat(64), supersededBy: { acp: { recordId: THIRD, sourceSha256: 'f'.repeat(64) } } };
-  const tail = { id: THIRD, approvedProfiles: ['acp'], sourceSha256: 'f'.repeat(64) };
-  const disable = { entries: [{ pluginId: TARGET_B, profile: 'acp' }] };
-  const records = [first, middle, tail];
-  assert.deepEqual(runner.expectedRecordStatus(first, 'acp', records, disable), { status: 'disabled', reason: 'superseded-by' });
-  assert.deepEqual(runner.expectedRecordStatus(middle, 'acp', records, disable), { status: 'disabled', reason: 'operator-disabled' });
-  assert.deepEqual(runner.expectedRecordStatus(tail, 'acp', records, disable), { status: 'active' });
+test('revalidation runner: the clone keeps supersession markers', () => {
+  const index = supersededIndex();
+  const clone = runner.rewriteIndexForVerification(index, { dataRoot: os.tmpdir() });
+  assert.deepEqual(clone.plugins[0].supersededBy, { acp: { recordId: TARGET_B, sourceSha256: 'b'.repeat(64) } },
+    'an overlapping replacement must never be removed from the attestation clone');
+  assert.equal(clone.plugins[1].host.dsh, '0.2.2-rc.2');
 });
 
 test('revalidation runner: an ineligible tail restores its predecessor after adoption', () => {
