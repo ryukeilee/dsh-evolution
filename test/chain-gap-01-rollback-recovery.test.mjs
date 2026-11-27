@@ -226,6 +226,13 @@ test('a failed receipt write leaves a retryable intent, not a reopenable canary'
     barrier: { id: 'window:after-failed-receipt', reached: true },
     startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
   }, execFor()), /unfinished rollback/);
+  const pendingReport = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  const pendingCheck = pendingReport.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(pendingCheck.evidence.rollbackIntent, 'ready');
+  assert.match(pendingCheck.summary, /cleanup is pending/);
+  assert.match(pendingCheck.remediation, /Restart/);
   await fs.rm(sidecarDir, { recursive: true, force: true });
   const recovered = await recoverInterruptedPromotion(env.paths);
   assert.equal(recovered.status, 'rolled-back', JSON.stringify(recovered));
@@ -233,6 +240,31 @@ test('a failed receipt write leaves a retryable intent, not a reopenable canary'
   assert.ok(await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT), 'receipt completed on retry');
   const result = await orchestratorFor(env).reconcileRollbackConclusions();
   assert.equal(result.published, 1);
+});
+
+test('an incomplete rollback intent is invalid, not a restartable rollback', async (t) => {
+  const env = await scene(t);
+  const intent = { version: 1, experimentId: EXPERIMENT, phase: 'rollback-started', terminalSnapshot: {} };
+  await fs.writeFile(path.join(env.paths.promotionStateDir, 'rollback-intent.json'), `${JSON.stringify(intent, null, 2)}\n`);
+  const core = orchestratorFor(env);
+  core.experiments.set(EXPERIMENT, {
+    id: EXPERIMENT, ownerId: 'durability-owner', state: 'canary-observing', targets: [],
+    proposal: env.proposal, observations: [], latestObservation: {},
+    canary: { healthObservationWindow: 2, observations: [], startupVerified: false },
+  });
+  await assert.rejects(recoverInterruptedPromotion(env.paths), /invalid/);
+  await assert.rejects(core.observeCanary({
+    experimentId: EXPERIMENT,
+    barrier: { id: 'window:invalid-intent', reached: true },
+    startupVerified: true, componentHealth: 'active', dependenciesPresent: true,
+  }, execFor()), /invalid/);
+  const report = await collectDiagnostics({
+    dshHome: env.root, paths: { ...resolveEvolutionPaths({ dshHome: env.root }), ...env.paths },
+  });
+  const check = report.checks.find((row) => row.id === 'promotion.journal');
+  assert.equal(check.level, 'blocked');
+  assert.equal(check.evidence.rollbackIntent, 'invalid');
+  assert.equal(await readEvidenceSnapshot(env.paths.archiveDir, EXPERIMENT), null);
 });
 
 test('an unreadable rollback intent blocks recovery, live canary advancement and the doctor', async (t) => {
