@@ -537,3 +537,86 @@ test('S4: a rejected rebuild with a live tool surface is kept and reported unrel
   const state = JSON.parse(await fs.readFile(paths.statePath('acp'), 'utf8'));
   assert.deepEqual(state.disposal, { released: false, entries: 0 });
 });
+
+test('S1c: a refresh that reports failure with a mixed live tree still releases it', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 's1c_predecessor_tool' });
+  const replacement = await createRecord({ toolName: 's1c_replacement_tool' });
+  const staleCopy = await createRecord({ toolName: 's1c_replacement_tool' });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+  ]);
+
+  const ctx = await boot();
+  const session = await mountSession(ctx, dataRoot, async (mountCtx, config) => {
+    const adapter = await mountIncludeTree(mountCtx, config);
+    const plainRefresh = adapter.refresh.bind(adapter);
+    let calls = 0;
+    adapter.refresh = async () => {
+      calls += 1;
+      if (calls === 1) {
+        await fs.writeFile(config.path, `${JSON.stringify([
+          { id: `shared-${predecessor.record.id}`, name: predecessor.record.moduleUrl },
+          { id: `shared-stale-${staleCopy.record.id}`, name: staleCopy.record.moduleUrl },
+        ], null, 2)}\n`);
+        await plainRefresh();
+        // The official refresh reports failure after the mixed tree is live.
+        throw new Error('Include refresh reported failure');
+      }
+      return plainRefresh();
+    };
+    return adapter;
+  });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(replacement.record.id).reason, 'include-unavailable',
+    'the rejected row is a retryable host fact, not not-evaluated');
+  assert.notEqual(rows.get(predecessor.record.id).status, 'active');
+  assert.equal(session.adapter, null, 'the mixed tree is not kept after a failed refresh');
+  assert.deepEqual(liveToolNames(ctx), [], 'no stale chain tool stays callable');
+  await session.dispose();
+});
+
+test('S5: a rejected first refresh does not sticky-skip the next healthy start', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const predecessor = await createRecord({ toolName: 's5_predecessor_tool' });
+  const replacement = await createRecord({ toolName: 's5_replacement_tool' });
+  const staleCopy = await createRecord({ toolName: 's5_replacement_tool' });
+  await writeIndex([
+    { ...predecessor.record, supersededBy: { acp: supersedeMarker(replacement.record) } },
+    replacement.record,
+  ]);
+
+  const firstCtx = await boot();
+  const first = await mountSession(firstCtx, dataRoot, async (mountCtx, config) => {
+    const adapter = await mountIncludeTree(mountCtx, config);
+    const plainRefresh = adapter.refresh.bind(adapter);
+    let calls = 0;
+    adapter.refresh = async () => {
+      calls += 1;
+      if (calls === 1) {
+        await fs.writeFile(config.path, `${JSON.stringify([
+          { id: `shared-${predecessor.record.id}`, name: predecessor.record.moduleUrl },
+          { id: `shared-stale-${staleCopy.record.id}`, name: staleCopy.record.moduleUrl },
+        ], null, 2)}\n`);
+      }
+      return plainRefresh();
+    };
+    return adapter;
+  });
+  const firstRows = new Map(first.rows.map((row) => [row.id, row]));
+  assert.equal(firstRows.get(replacement.record.id).reason, 'include-unavailable');
+  await first.dispose();
+
+  // A clean next start over the same shared data root must retry the healthy
+  // replacement instead of treating the host-level report as a plugin failure.
+  const secondCtx = await boot();
+  const second = await mountSession(secondCtx, dataRoot, (mountCtx, config) => mountIncludeTree(mountCtx, config));
+  const secondRows = new Map(second.rows.map((row) => [row.id, row]));
+  assert.equal(secondRows.get(replacement.record.id).status, 'active',
+    'include-unavailable is non-sticky and the healthy replacement is retried');
+  assert.equal(secondRows.get(replacement.record.id).reason, null);
+  assert.deepEqual(liveToolNames(secondCtx), [replacement.toolName]);
+  await second.dispose();
+});

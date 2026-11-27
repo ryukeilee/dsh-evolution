@@ -100,7 +100,9 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 首次 Include refresh 失败可在首轮即写非 sticky 的 `include-unavailable`，没有重试。回退阶段改为重建 Include
 子树：dispose 旧子树 → 证明释放（只把「在自己 mount / refresh / 逐行验证前后新出现」的工具名记入
 `ownedTools`，dispose 后仍在的这些名字才是 `toolSurfaceLeftovers`；独立宿主插件在基线之后注册的工具不算
-旧树残留；再加捕获的每个 Fiber 都已离开 active、旧 resolver 不再返回任何已评估行，resolver 抛错按已释放
+旧树残留；但公开接口 `schemas()` / `ctx.get()` 不提供注册归属，若独立插件恰好在 refresh 窗口内并发注册，
+仍会被保守地算作残留，本轮以非 sticky `include-unavailable` 收口并在下一次启动重试，这是已知的并发窗口；
+再加捕获的每个 Fiber 都已离开 active、旧 resolver 不再返回任何已评估行，resolver 抛错按已释放
 计）→ 写入 intended composition → 用同一 composition 重新 mount 一棵干净子树（仅对有证明的
 `INACTIVE_EFFECT` 做三次有界重试）→ 把官方子树**实际加载**的 entry 列表（`liveEntries()`）与 intended 列表
 逐项精确比对，不一致就 dispose 这棵新树并 fail closed → 再逐行验证其中全部 intended 行。首次 refresh 后也做
