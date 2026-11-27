@@ -87,7 +87,9 @@ test('doctor reports every installed profile version and degrades on skew', asyn
   assert.deepEqual(check.evidence.distinctVersions, ['0.2.22', '0.2.23']);
   assert.equal(check.evidence.referenceVersion, '0.2.23');
   assert.deepEqual(check.evidence.remediationByProfile.map((row) => row.profile), ['web']);
-  assert.match(check.remediation, /web: `dsh plugin --profile web add dsh-evolution-0\.2\.23\.tgz`/);
+  assert.match(check.remediation, /web: `DSH_HOME=.*dsh plugin --profile 'web' add 'dsh-evolution-0\.2\.23\.tgz'`/);
+  assert.equal(check.evidence.remediationByProfile[0].command.includes(home), true, 'the command targets the diagnosed home');
+  assert.match(check.summary, /acp=0\.2\.23, desktop=0\.2\.23, web=0\.2\.22/, 'the text summary lists every profile');
   assert.equal(JSON.stringify(report).includes('0.2.22'), true, 'the whole report now carries the lagging version');
   // The single-profile verdict is unchanged and still healthy for acp.
   assert.equal(report.checks.find((entry) => entry.id === 'host.install').level, 'ok');
@@ -144,6 +146,33 @@ test('unreadable profile or installed manifests are reported as unknown, never f
   assert.equal(check.evidence.installedVersions.length, 2);
 });
 
+test('a corrupt profile manifest makes the profile unknown even if its bundle is readable', async () => {
+  const home = makeHome('corrupt-profile', {
+    desktop: { version: '0.2.23' },
+    acp: { version: '0.2.23' },
+    web: { version: '0.2.22', manifest: false },
+  });
+  const report = await diagnose(home);
+  const check = report.checks.find((entry) => entry.id === SKEW_ID);
+  assert.equal(check.level, 'ok', 'an unreadable profile cannot contribute a version to skew');
+  assert.deepEqual(check.evidence.profiles.find((row) => row.profile === 'web'), {
+    profile: 'web', installedVersion: null, state: 'unknown', reason: 'profile-manifest-unreadable',
+  });
+  assert.deepEqual(check.evidence.distinctVersions, ['0.2.23']);
+  assert.match(check.summary, /web=unknown/);
+});
+
+test('the consistent text summary names every profile, including ones without a bundle', async () => {
+  const home = makeHome('text-summary', {
+    desktop: { version: '0.2.23' },
+    acp: { version: '0.2.23' },
+    web: { installed: false },
+  });
+  const report = await diagnose(home);
+  const check = report.checks.find((entry) => entry.id === SKEW_ID);
+  assert.match(check.summary, /acp=0\.2\.23, desktop=0\.2\.23, web=not-installed/);
+});
+
 test('the doctor CLI JSON makes the lagging profile visible from a single-profile run', () => {
   const home = makeHome('cli', {
     desktop: { version: '0.2.23' },
@@ -178,6 +207,34 @@ test('installedVersionSummary detects skew and names lagging profiles', () => {
   assert.deepEqual(summary.profiles.map((row) => row.installedVersion), ['0.2.23', '0.2.23', '0.2.22']);
 });
 
+test('installedVersionSummary names failed and never-attempted profiles even when an old version is the majority', () => {
+  const home = scratch('summary-statuses');
+  writeProfile(home, 'desktop', { version: '0.2.23' });
+  writeProfile(home, 'acp', { version: '0.2.22' });
+  writeProfile(home, 'web', { version: '0.2.22' });
+  const summary = installedVersionSummary(home, ['desktop', 'acp', 'web'],
+    { desktop: 'completed', acp: 'failed', web: 'not-attempted' });
+  assert.equal(summary.referenceVersion, '0.2.22', 'the old version is the numeric majority');
+  const byProfile = new Map(summary.unfinished.map((row) => [row.profile, row]));
+  assert.equal(byProfile.has('acp'), true, 'a failed profile is unfinished regardless of its version');
+  assert.equal(byProfile.get('acp').status, 'failed');
+  assert.equal(byProfile.get('web').status, 'not-attempted');
+});
+
+test('installedVersionSummary normalizes empty versions and reports fixed parse errors', () => {
+  const home = scratch('summary-empty');
+  writeProfile(home, 'desktop', { version: '' });
+  writeProfile(home, 'acp', { version: '0.2.23' });
+  writeProfile(home, 'web', { version: null, invalidInstalled: true });
+  const summary = installedVersionSummary(home, ['desktop', 'acp', 'web']);
+  assert.equal(summary.profiles.find((row) => row.profile === 'desktop').installedVersion, null);
+  assert.equal(summary.profiles.find((row) => row.profile === 'desktop').error, 'MISSING_VERSION');
+  assert.equal(summary.profiles.find((row) => row.profile === 'web').error, 'PARSE_ERROR');
+  assert.equal(summary.skewed, false);
+  assert.deepEqual(summary.unfinished.map((row) => row.profile), ['desktop', 'web'],
+    'an empty version and an unreadable manifest are both unfinished');
+});
+
 test('installedVersionSummary treats unreadable profiles as unknown and consistent installs as clean', () => {
   const home = scratch('summary-clean');
   writeProfile(home, 'desktop', { version: '0.2.23' });
@@ -206,6 +263,9 @@ const versions = JSON.parse(process.env.FAKE_VERSIONS || '{"desktop":"0.2.23","a
 const dir = path.join(home, 'profiles', profile, 'node_modules', 'dsh-evolution');
 fs.mkdirSync(dir, { recursive: true });
 fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'dsh-evolution', version: versions[profile] }));
+// Break the configuration step after the official CLI has succeeded, without
+// breaking plan-time reads of the patch file.
+if (process.env.BREAK_CONFIG === profile) fs.mkdirSync(path.join(home, 'profiles', profile, 'cordis.patch.yml'), { recursive: true });
 `);
   const wrapper = path.join(root, 'fake-dsh');
   fs.writeFileSync(wrapper, `#!/bin/sh\nexec "${process.execPath}" "${script}" "$@"\n`, { mode: 0o755 });
@@ -213,7 +273,7 @@ fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'dsh-evo
   return wrapper;
 }
 
-function runSetup(root, { home, cli, versions, failProfile, apply }) {
+function runSetup(root, { home, cli, versions, failProfile, breakConfig, apply }) {
   const tarball = path.join(root, 'candidate.tgz');
   if (!fs.existsSync(tarball)) fs.writeFileSync(tarball, 'test tarball');
   const args = ['--max-old-space-size=4096', path.join(repoRoot, 'scripts', 'setup-experience.mjs'),
@@ -221,7 +281,9 @@ function runSetup(root, { home, cli, versions, failProfile, apply }) {
   if (apply) args.push('--apply');
   return spawnSync(process.execPath, args, {
     encoding: 'utf8',
-    env: { ...process.env, DSH_HOME: home, FAKE_VERSIONS: JSON.stringify(versions), ...(failProfile ? { FAIL_PROFILE: failProfile } : {}) },
+    env: { ...process.env, DSH_HOME: home, FAKE_VERSIONS: JSON.stringify(versions),
+      ...(failProfile ? { FAIL_PROFILE: failProfile } : {}),
+      ...(breakConfig ? { BREAK_CONFIG: breakConfig } : {}) },
   });
 }
 
@@ -257,14 +319,36 @@ test('setup --apply exits zero when every profile agrees, and dry-run is unchang
   assert.deepEqual(JSON.parse(dry.stdout).apply, false);
 });
 
-test('setup --apply reports unfinished profiles after a partial install', () => {
+test('setup --apply reports unfinished profiles after a partial install of an older majority', () => {
   const root = scratch('setup-partial');
   const home = path.join(root, 'home');
   fs.mkdirSync(home, { recursive: true });
+  // A failed upgrade: old bundles remain in acp/web, so the numeric majority
+  // is the OLD version. The failed and never-attempted profiles must still be
+  // named as unfinished.
+  writeProfile(home, 'acp', { version: '0.2.22' });
+  writeProfile(home, 'web', { version: '0.2.22' });
   const cli = fakeCli(root);
   const result = runSetup(root, { home, cli, versions: { desktop: '0.2.23', acp: '0.2.23', web: '0.2.23' }, failProfile: 'acp', apply: true });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Installation stopped at acp/);
   const json = JSON.parse(result.stdout.slice(result.stdout.indexOf('{\n  "installSummary"')));
-  assert.deepEqual(json.installSummary.unfinished.map((row) => row.profile), ['acp', 'web']);
+  const unfinished = new Map(json.installSummary.unfinished.map((row) => [row.profile, row]));
+  assert.equal(unfinished.get('acp').status, 'failed');
+  assert.equal(unfinished.get('web').status, 'not-attempted');
+  assert.match(result.stderr, /unfinished profiles: /);
+});
+
+test('setup --apply reads back every profile even when configuration fails', () => {
+  const root = scratch('setup-config-failure');
+  const home = path.join(root, 'home');
+  fs.mkdirSync(home, { recursive: true });
+  const cli = fakeCli(root);
+  const result = runSetup(root, { home, cli, versions: { desktop: '0.2.23', acp: '0.2.23', web: '0.2.23' }, breakConfig: 'desktop', apply: true });
+  assert.equal(result.status, 1, `exit ${result.status}: ${result.stdout}\n${result.stderr}`);
+  const json = JSON.parse(result.stdout.slice(result.stdout.indexOf('{\n  "installSummary"')));
+  assert.equal(json.installSummary.profiles.length, 3, 'all target profiles are still read back');
+  assert.equal(json.installSummary.profiles.find((row) => row.profile === 'desktop').status, 'failed');
+  assert.equal(json.installSummary.profiles.find((row) => row.profile === 'web').status, 'not-attempted');
+  assert.match(result.stderr, /unfinished profiles: /);
 });
