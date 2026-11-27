@@ -688,7 +688,7 @@ exec "$(find-cli --token TEST_DUMMY_ONLY)" "$@"
     wrapperPath: wrapper,
     line: 2,
     error: 'UNRESOLVED_EXEC_TARGET',
-    detail: 'the launch command has no statically resolvable Node, Electron, shell, or binary target',
+    detail: 'the launch command contains a dynamic shell expression that is not statically attributable on this line',
   }]);
 
   const dshHome = doctorHome(t);
@@ -747,6 +747,33 @@ test('an unquoted command substitution is not split into reportable path tokens'
   assert.doesNotMatch(cli.summary, /printf|TEST_DUMMY_ONLY/);
 });
 
+test('a multi-line command substitution stops wrapper scanning without leaking its body', async (t) => {
+  const dir = tmp(t, 'host-res-multiline-substitution-');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+exec "$(
+exec /tmp/TEST_DUMMY_ONLY_DSH_DOCTOR
+)"
+`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(spawnSync('/bin/sh', ['-n', wrapper]).status, 0, 'the fixture is valid POSIX shell');
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null);
+  assert.deepEqual(result.candidates[0].unresolvedBranches, [{
+    wrapperPath: wrapper,
+    line: 2,
+    error: 'UNRESOLVED_EXEC_TARGET',
+    detail: 'the launch command contains a dynamic shell expression that is not statically attributable on this line',
+  }]);
+
+  const report = await withPathAsync('', () => collectDiagnostics({ dshHome: doctorHome(t), cliPath: wrapper, probe: { skipComposition: true } }));
+  const cli = report.checks.find((check) => check.id === 'host.cli');
+  assert.equal(cli.level, 'not-evaluated');
+  assert.doesNotMatch(JSON.stringify(cli.evidence), /TEST_DUMMY_ONLY_DSH_DOCTOR/);
+  assert.doesNotMatch(cli.summary, /TEST_DUMMY_ONLY_DSH_DOCTOR/);
+});
+
 test('a dynamic script position cannot be replaced by a later DSH entry', (t) => {
   const dir = tmp(t, 'host-res-dynamic-script-position-');
   const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
@@ -760,6 +787,20 @@ test('a dynamic script position cannot be replaced by a later DSH entry', (t) =>
   assert.doesNotMatch(JSON.stringify(result.candidates[0].unresolvedBranches), /TEST_DUMMY_ONLY/);
 });
 
+test('an option value is not mistaken for the Node script entry', (t) => {
+  const dir = tmp(t, 'host-res-node-option-value-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const actual = path.join(dir, 'actual.js');
+  fs.writeFileSync(actual, 'console.log("actual");\n');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nexec "${process.execPath}" --icu-data-dir "${dsh.bin}" "${actual}" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null, 'an option with a separate value makes the script position ambiguous');
+  assert.equal(result.candidates[0].error, 'UNRESOLVED_EXEC_TARGET');
+});
+
 test('a quoted literal bracket in a host path remains attributable', (t) => {
   const dir = tmp(t, 'host-res-literal-bracket-path-');
   const dsh = makeDshPackage(path.join(dir, '[literal]'), '0.2.2-rc.1');
@@ -770,6 +811,21 @@ test('a quoted literal bracket in a host path remains attributable', (t) => {
   const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
   assert.equal(result.selected?.version, '0.2.2-rc.1');
   assert.equal(result.selected?.entryPath, dsh.bin);
+});
+
+test('a non-special backslash in double quotes is not removed from a host path', (t) => {
+  const dir = tmp(t, 'host-res-double-quote-backslash-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const missing = dsh.bin.replace('/bin.js', '/b\\in.js');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nexec "${process.execPath}" "${missing}" "$@"\n`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(spawnSync('/bin/sh', ['-n', wrapper]).status, 0, 'the fixture is valid POSIX shell');
+  assert.notEqual(spawnSync(wrapper, [], { encoding: 'utf8' }).status, 0, 'the shell preserves the backslash and cannot run bin.js');
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null, 'the static path must retain the non-special backslash');
+  assert.equal(result.candidates[0].error, 'UNRESOLVED_EXEC_TARGET');
 });
 
 test('an Electron launch without a static entry reports the missing entry', (t) => {
