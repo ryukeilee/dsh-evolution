@@ -774,6 +774,63 @@ exec /tmp/TEST_DUMMY_ONLY_DSH_DOCTOR
   assert.doesNotMatch(cli.summary, /TEST_DUMMY_ONLY_DSH_DOCTOR/);
 });
 
+test('an unrecognized multi-line command substitution stops scanning without leaking its body', async (t) => {
+  const dir = tmp(t, 'host-res-unrecognized-multiline-substitution-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+ignored=$(
+exec /tmp/TEST_DUMMY_ONLY_DSH_DOCTOR
+)
+exec "${process.execPath}" "${dsh.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(spawnSync('/bin/sh', ['-n', wrapper]).status, 0, 'the fixture is valid POSIX shell');
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null);
+  assert.deepEqual(result.candidates[0].unresolvedBranches, [{
+    wrapperPath: wrapper,
+    line: 2,
+    error: 'UNRESOLVED_EXEC_TARGET',
+    detail: 'the launch command contains a dynamic shell expression that is not statically attributable on this line',
+  }]);
+
+  const report = await withPathAsync('', () => collectDiagnostics({ dshHome: doctorHome(t), cliPath: wrapper, probe: { skipComposition: true } }));
+  const cli = report.checks.find((check) => check.id === 'host.cli');
+  assert.equal(cli.level, 'not-evaluated');
+  assert.doesNotMatch(JSON.stringify(cli.evidence), /TEST_DUMMY_ONLY_DSH_DOCTOR/);
+  assert.doesNotMatch(cli.summary, /TEST_DUMMY_ONLY_DSH_DOCTOR/);
+});
+
+test('an unrecognized backslash continuation cannot turn its next line into an exec branch', async (t) => {
+  const dir = tmp(t, 'host-res-unrecognized-continuation-');
+  const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
+  const wrapper = path.join(dir, 'dsh');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+printf '%s\\n' \\
+exec /tmp/TEST_DUMMY_ONLY_DSH_DOCTOR
+exec "${process.execPath}" "${dsh.bin}" "$@"
+`);
+  fs.chmodSync(wrapper, 0o755);
+  assert.equal(spawnSync('/bin/sh', ['-n', wrapper]).status, 0, 'the fixture is valid POSIX shell');
+
+  const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(result.selected, null);
+  assert.deepEqual(result.candidates[0].unresolvedBranches, [{
+    wrapperPath: wrapper,
+    line: 2,
+    error: 'UNRESOLVED_EXEC_TARGET',
+    detail: 'the launch command contains a dynamic shell expression that is not statically attributable on this line',
+  }]);
+
+  const report = await withPathAsync('', () => collectDiagnostics({ dshHome: doctorHome(t), cliPath: wrapper, probe: { skipComposition: true } }));
+  const cli = report.checks.find((check) => check.id === 'host.cli');
+  assert.equal(cli.level, 'not-evaluated');
+  assert.doesNotMatch(JSON.stringify(cli.evidence), /TEST_DUMMY_ONLY_DSH_DOCTOR/);
+  assert.doesNotMatch(cli.summary, /TEST_DUMMY_ONLY_DSH_DOCTOR/);
+});
+
 test('a dynamic script position cannot be replaced by a later DSH entry', (t) => {
   const dir = tmp(t, 'host-res-dynamic-script-position-');
   const dsh = makeDshPackage(path.join(dir, 'host'), '0.2.2-rc.1');
@@ -799,6 +856,36 @@ test('an option value is not mistaken for the Node script entry', (t) => {
   const result = withPath('', () => resolveHostCli({ cliPath: wrapper }));
   assert.equal(result.selected, null, 'an option with a separate value makes the script position ambiguous');
   assert.equal(result.candidates[0].error, 'UNRESOLVED_EXEC_TARGET');
+});
+
+test('Node version options with attached values do not expose a following script entry', (t) => {
+  const dir = tmp(t, 'host-res-node-version-option-value-');
+  const pkg = path.join(dir, 'node_modules', '@deepseek-ai', 'dsh');
+  fs.mkdirSync(path.join(pkg, 'lib'), { recursive: true });
+  fs.writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({ name: '@deepseek-ai/dsh', version: '0.2.2-rc.1' }));
+  // The shell wrapper is itself a .js path inside the package. If the option
+  // value is skipped, the pre-fix parser promotes it to a false script entry.
+  const wrapper = path.join(pkg, 'lib', 'bin.js');
+  fs.writeFileSync(wrapper, `#!/bin/sh
+dshBin=$0
+exec "${process.execPath}" --version=true "$dshBin"
+`);
+  fs.chmodSync(wrapper, 0o755);
+
+  const attached = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(attached.selected, null);
+  assert.equal(attached.candidates[0].error, 'UNRESOLVED_EXEC_TARGET');
+  assert.equal(attached.candidates[0].unresolvedBranches[0].path, process.execPath);
+  assert.match(attached.candidates[0].unresolvedBranches[0].detail, /script entry/);
+
+  fs.writeFileSync(wrapper, `#!/bin/sh
+dshBin=$0
+exec "${process.execPath}" --version "$dshBin"
+`);
+  const plain = withPath('', () => resolveHostCli({ cliPath: wrapper }));
+  assert.equal(plain.selected, null);
+  assert.deepEqual(attached.candidates[0].unresolvedBranches, plain.candidates[0].unresolvedBranches,
+    'an attached option value must have the same no-script behavior as the plain version flag');
 });
 
 test('a quoted literal bracket in a host path remains attributable', (t) => {
