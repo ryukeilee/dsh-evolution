@@ -6,7 +6,7 @@
 
 | 关键事实 | 当前值 |
 | --- | --- |
-| 版本 | `0.2.22`（稳定版） |
+| 版本 | `0.2.23`（稳定版） |
 | 已验收 DSH | `0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1`、`0.2.2-rc.2`、`0.2.2-rc.3`、`0.2.2-rc.4`、`0.2.2-rc.5`（后五者须关闭宿主 HMR，见下） |
 | Node | `^22.19.0 || >=24.0.0` |
 | 分发 | GitHub Release tarball；不发布 npm 包 |
@@ -16,7 +16,7 @@
 
 ## 30 秒了解
 
-本版本（`0.2.22`）是 `0.2.21` 的稳定性后继，纳入第十二、十三轮开放性性能研究（PR #106 与 #107）中经证据确认的优化，不新增功能、不改持久化格式与协议。相对 `0.2.21` 固定产物，分发内容改 `lib/event-log-checkpoint.js` 与 `lib/experience-recall.js`：回收日志规划复用已验签的 `{eventId, mac}` 信封，不再对同一批字节二次解码与验签，`prunable`、`prior` / `tail` 摘要与提交顺序逐字节不变；经验召回的候选排序键改为惰性缓存，同一轮排序内只算一次。实测收益：`planLogPrune()` 在 2,000 / 20,000 / 100,000 事件下 CPU 分别 −7.16% / −11.26% / −13.74%（配对中位数，A/A 噪声 ≤1.86%）；`recall` 由 73.7 ms 降至 66.8 ms（−9.35%，A/A −0.10%）。一个候选（`appendBounded()` 重复序列化，约 −6%）因状态化 getter 会改变去重结果被撤回。跨入口/诊断/用量扫描与进化闭环耗时构成两项研究结论为 NO CHANGE。详见 `docs/performance/r13-open-research.md`。持久化 schema 编号未变，`0.2.19` 的 floor 降级边界不变；既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变。已有 stable 插件、共享经验、进化档案与生产数据不迁移、不下线。
+本版本（`0.2.23`）是 `0.2.22` 的稳定性后继，收口第十四轮进化闭环耗时研究（PR #101）与跨入口替换、consumer 会话回收、doctor 宿主解析和验收抖动修复（PR #109–#112）。相对 `0.2.22` 固定产物，分发内容改 `lib/diagnostics.js`、`lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/promotion-include.js`、`lib/self-evolution-review.js`、`scripts/shared-plugins.mjs`，新增 `lib/promoted-consumer-gc.js`：stable 记录可以用 `approve` 获得另一个消费 profile，用 `supersede` 只在替换方确实可挂载时才让旧记录让位、失效时自动回退，并用 `revoke-supersede` 逐 profile 撤回；consumer 按持久游标逐会话回收孤儿 composition；doctor 在隔离 composition 探针前拒绝不安全 profile 名并阻断符号链接写入穿透。持久化 schema 编号未变，`0.2.19` 的 floor 降级边界不变；既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变。已有 stable 插件、共享经验、进化档案与生产数据不迁移、不下线。详见 `docs/shared-plugins.md` 与 `docs/performance/consumer-session-gc.md`。
 
 `0.2.18` 把自我进化闭环的跨阶段可靠性事实收口（PR #87、#88 与 #89）：晋升、canary、失败学习与结论检索对同一问题身份使用统一投影；陈旧结论不会被同 scope 的新结论挤出有界检索窗口；target claim 的获取、释放与回滚失败复用跨进程互斥原语；guard 的风险判定取参数路径、证明绑定取宿主注入的 target；缺失 `pluginPackages` 服务时 consumer 沿用既有宿主身份回退；`discover().truncated` 进入完整性判定；probe 的超时、取消与空结果批统一记为 `unmeasured`。
 
@@ -36,9 +36,9 @@
 
 ```sh
 # 查看计划，不写 profile
-node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.22.tgz
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.23.tgz
 # 使用官方 CLI 安装并应用计划；可用 --home 指定隔离 DSH_HOME
-node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.22.tgz --apply
+node scripts/setup-experience.mjs --tarball dist/dsh-evolution-0.2.23.tgz --apply
 ```
 
 安装器只维护标记块，保留其他插件、Skills、T3 工作流与 storage route；HMR 保持关闭。它不会复制或迁移历史，不会启停正在运行的正式应用。待安装包以内容摘要缓存在 `storages/evolution-package-cache`，由官方 CLI 从不可变路径安装，避免同版本本地重建被文件依赖缓存误判为已安装。缓存内容不匹配时拒绝覆盖。每个 profile 的官方安装结果分别报告，途中失败会停止并报告已完成项；多 profile 安装不是原子事务。安装后重启对应入口。非 macOS 或自定义安装可用 `--cli <官方 dsh 可执行文件>` 指定 CLI。
@@ -376,8 +376,8 @@ CLI 退出码：`0` 健康、`1` 存在降级项、`2` 存在阻塞项、`3` 参
 从 GitHub Release 下载 tarball 和校验文件：
 
 ```sh
-RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.22
-curl -fL "$RELEASE_URL/dsh-evolution-0.2.22.tgz" -o dsh-evolution-0.2.22.tgz
+RELEASE_URL=https://github.com/ryukeilee/dsh-evolution/releases/download/v0.2.23
+curl -fL "$RELEASE_URL/dsh-evolution-0.2.23.tgz" -o dsh-evolution-0.2.23.tgz
 curl -fL "$RELEASE_URL/SHA256SUMS" -o SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
@@ -385,11 +385,11 @@ sha256sum --check SHA256SUMS
 macOS 可用 `shasum -a 256 -c SHA256SUMS` 校验。也可用 GitHub CLI 下载同一 Release 的 tarball、`SHA256SUMS` 与 `manifest.json`。校验通过后，用官方 CLI 安装：
 
 ```sh
-DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.22.tgz
+DSH_HOME=/isolated/home dsh plugin --profile web add ./dsh-evolution-0.2.23.tgz
 DSH_HOME=/isolated/home dsh web --no-open
 ```
 
-> 上面的 `v0.2.22` Release tarball 声明并验收了全部八个宿主（`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1` 至 `0.2.2-rc.5`）；`0.2.2-rc.1` 至 `0.2.2-rc.5` 必须按下一节关闭宿主 HMR。
+> 上面的 `v0.2.23` Release tarball 声明并验收了全部八个宿主（`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-rc.2`、`0.2.2-rc.1` 至 `0.2.2-rc.5`）；`0.2.2-rc.1` 至 `0.2.2-rc.5` 必须按下一节关闭宿主 HMR。
 
 安装后 bundle 会登记在官方 profile 的 `dsh.profile.bundles`，随 profile 加载，无需每个 session 手工挂载 preset。下面用 `$DSH_HOME/profiles/web` 指代 `web` profile 的安装目录。首次诊断：
 
@@ -628,7 +628,7 @@ node scripts/acceptance/run-revalidation.mjs --home ~/.dsh --apply
 
 `npm run pack:check` 两种模式都执行 17 项检查。开发模式允许工作树是固定点的**已提交**后继（脚本会逐条点名与固定产物不同的文件），但分发文件存在**未提交**改动时一律失败；`--release` 则把“固定点描述自己的提交 / 工作树是固定点或已提交后继”换成更严格的“固定点固定本树内容 / 工作树构建出固定内容”。
 
-源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.22.tgz --content-only`。
+源码贡献者可运行 `npm ci`、`npm run release:pack` 和 `npm run pack:check`。不同 Node / npm 的 tarball 压缩字节可能不同；需要跨环境比较本机重建内容时使用 `npm run release:verify -- dist/dsh-evolution-0.2.23.tgz --content-only`。
 
 ## 相关文档
 

@@ -2,7 +2,9 @@
 
 本文件记录 `dsh-evolution` 当前稳定版的产物、验证入口、已执行验收的证据，以及**尚未消除**的发布风险。本仓库公开分发 GitHub Release 资产，不发布 npm 包。
 
-当前版本：`0.2.22`——`0.2.21` 的稳定后继：纳入第十二、十三轮开放性性能研究（PR #106 与 #107）中经证据确认的两项优化（回收日志规划复用已验签信封、经验召回排序键惰性缓存），分发内容只改 `lib/event-log-checkpoint.js` 与 `lib/experience-recall.js`，无 schema、协议、宿主集合或门禁变化；1 项候选因改变去重结果撤回，2 个子系统结论为 NO CHANGE，详见 `docs/performance/r13-open-research.md`。
+当前版本：`0.2.23`——`0.2.22` 的稳定后继：收口第十四轮进化闭环耗时研究（PR #101）与跨入口替换、consumer 会话回收、doctor 宿主解析和验收抖动修复（PR #109–#112）。相对 `0.2.22` 固定产物，分发内容改 `lib/diagnostics.js`、`lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/promotion-include.js`、`lib/self-evolution-review.js`、`scripts/shared-plugins.mjs`，新增 `lib/promoted-consumer-gc.js`，并更新版本号与随包文档；schema、协议、宿主集合与八项门禁不变，详见 `docs/shared-plugins.md` 与 `docs/performance/consumer-session-gc.md`。
+
+`0.2.22` 是 `0.2.21` 的稳定后继：纳入第十二、十三轮开放性性能研究（PR #106 与 #107）中经证据确认的两项优化（回收日志规划复用已验签信封、经验召回排序键惰性缓存），分发内容只改 `lib/event-log-checkpoint.js` 与 `lib/experience-recall.js`，无 schema、协议、宿主集合或门禁变化；1 项候选因改变去重结果撤回，2 个子系统结论为 NO CHANGE，详见 `docs/performance/r13-open-research.md`。
 
 `0.2.21` 是 `0.2.20` 的稳定后继：收口第十、十一轮开放性全链路研究及其四轮复审修复（PR #102 与 #104）。相对 `0.2.20` 固定产物，分发内容改 `lib/capability-usage.js`、`lib/desktop-task-host.js`、`lib/diagnostics.js`、`lib/experience-collector.js`、`lib/experience-plan.js`、`lib/index.js`、`lib/orchestrator.js`、`lib/promoted-consumer.js`、`lib/promoted-sharing.js`、`lib/self-evolution-review.js` 与 `lib/shared-experience.js`：用量按调用归因并区分 ambiguous / unscanned 目录，结论按实验版本重算且可从稳定提交崩溃中恢复，工具恢复写独立事实并按 clean exit 与未解决损失收敛，consumer 状态不可读与畸形继承行在 doctor 与统一审查中给出同一结论，宿主证据无损保留样本值且 canary 证据不再夹带正文。持久化 schema 编号未变，`0.2.19` 的 floor 降级边界与 `0.2.20` 相同（见 `docs/compatibility/retention-floor.md`），既有工具名与必填参数、授权来源、八项晋升门禁、Host-only 晋升、Cordis 信任根、宿主集合与 `peerDependencies` 均未改变。
 
@@ -58,7 +60,7 @@
 
 | 路径 | 说明 |
 | --- | --- |
-| `release/dsh-evolution-0.2.22.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
+| `release/dsh-evolution-0.2.23.tgz` | **发布产物本体**：随仓库固定的那一次构建的字节 |
 | `release/manifest.json` | 发布固定点：`sha256`（发布字节）、`contentSha256`（跨环境内容摘要）、`sourceCommit`（产物来自哪个 commit）、条目数、权限、构建工具链、验收宿主与证据路径 |
 | `release/SHA256SUMS` | 随 Release 附件一起提供的校验文件 |
 | `dist/`（不入库） | 本机重新构建的产物与 `manifest.json`，仅用于验证与对比 |
@@ -123,14 +125,14 @@ rc.18 发布之前，最后公开的是 `v0.2.0-rc.17`（tag 指向 `2d44efc`，
 ## 2. 校验命令
 
 ```sh
-# 当前本地候选（0.2.22，仓库内容）
+# 当前本地候选（0.2.23，仓库内容）
 npm run pack:check                              # 开发阶段：打包稳定性、白名单、权限、锁文件、文档一致性 + 工作树/固定点关系
 npm run pack:check -- --release                 # 发布阶段：另外要求工作树就是固定内容（release.yml 用这一条）
 npm run release:verify                          # 固定产物：字节 sha256 + 内容摘要 + 条目 + 权限
 npm run release:verify -- dist/<构建>.tgz --content-only   # 本机重建：只比内容（字节可不同）
 # 发布后：验证 tag -> commit -> 固定点 -> 工作树（发布前在同一 commit 上也能跑）
-# 在 v0.2.22 tag 对应的 checkout 上执行
-node scripts/release/verify-provenance.mjs --tag v0.2.22 --require-source-commit
+# 在 v0.2.23 tag 对应的 checkout 上执行
+node scripts/release/verify-provenance.mjs --tag v0.2.23 --require-source-commit
 
 # 已公开的 v0.2.0-rc.1（用该 Release 自带的 SHA256SUMS 校验；
 # 本仓库的 release/ 已改为固定 0.2.20，不再覆盖旧版本）
