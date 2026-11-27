@@ -934,3 +934,27 @@ test('a missing --template value fails before the producer scans or writes', asy
   assert.match(reversed.stderr, /cannot be combined/);
   assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
 });
+
+test('--template refuses a case-only alias of usage.json even before it exists', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const usagePath = path.join(env.dataRoot, 'shared-plugins', 'usage.json');
+  const probe = path.join(env.root, 'case-probe');
+  fs.writeFileSync(probe, '');
+  const caseInsensitive = fs.existsSync(probe.toUpperCase());
+  fs.rmSync(probe);
+  const alias = joinCase(usagePath);
+  const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', alias], { encoding: 'utf8' });
+  if (caseInsensitive) {
+    assert.notEqual(out.status, 0);
+    assert.match(out.stderr, /must not target the usage projection/);
+  } else {
+    assert.ok(out.status === 0 || out.status === 3, out.stderr);
+  }
+  assert.equal(fs.existsSync(usagePath), false, 'the projection itself is never replaced by a template');
+  assert.equal(fs.existsSync(alias), !caseInsensitive, 'a distinct path is only written on a case-sensitive filesystem');
+});
+
+function joinCase(file) {
+  return path.join(path.dirname(file), path.basename(file).toUpperCase());
+}

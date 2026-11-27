@@ -91,12 +91,19 @@ function argValue(name) {
   return value;
 }
 
-/** Resolve symlinked parents too, so an alias of usage.json cannot be overwritten. */
-function canonicalPath(file) {
-  const resolved = path.resolve(file);
-  try { return fs.realpathSync.native(resolved); } catch { /* not created yet */ }
-  try { return path.join(fs.realpathSync.native(path.dirname(resolved)), path.basename(resolved)); } catch { /* no directory */ }
-  return resolved;
+/**
+ * Compare a template target with the projection even before either exists:
+ * resolve symlinked parents, and ignore filename case because DSH runs on
+ * case-insensitive filesystems too.
+ */
+function sameUsageTarget(file, usagePath) {
+  const canonical = (value) => {
+    const resolved = path.resolve(value);
+    let parent = path.dirname(resolved);
+    try { parent = fs.realpathSync.native(parent); } catch { /* not created yet */ }
+    return `${parent}${path.sep}${path.basename(resolved).toLowerCase()}`;
+  };
+  return canonical(file) === canonical(usagePath);
 }
 
 const home = path.resolve(argValue('--home') ?? process.env.DSH_HOME ?? path.join(os.homedir(), '.dsh'));
@@ -109,7 +116,7 @@ if (wantsTemplate && !templateFile) throw new Error('--template requires a file'
 if (wantsTemplate && process.argv.includes('--write')) {
   throw new Error('--template cannot be combined with --write');
 }
-if (templateFile && canonicalPath(templateFile) === canonicalPath(sharingPaths({ dataRoot }).usagePath)) {
+if (templateFile && sameUsageTarget(templateFile, sharingPaths({ dataRoot }).usagePath)) {
   throw new Error('--template must not target the usage projection');
 }
 
