@@ -92,18 +92,34 @@ function argValue(name) {
 }
 
 /**
- * Compare a template target with the projection even before either exists:
- * resolve symlinked parents, and ignore filename case because DSH runs on
- * case-insensitive filesystems too.
+ * Resolve the longest existing prefix and keep the missing suffix, so two
+ * spellings of a not-yet-created path (including symlinked ancestors) meet.
+ * Comparison is case-insensitive because DSH also runs on case-insensitive
+ * filesystems, where `USAGE.JSON` really is `usage.json`.
  */
+function canonicalTarget(file) {
+  let current = path.resolve(file);
+  const suffix = [];
+  for (;;) {
+    try { return path.join(fs.realpathSync.native(current), ...suffix).toLowerCase(); } catch { /* try the parent */ }
+    const parent = path.dirname(current);
+    if (parent === current) return path.join(current, ...suffix).toLowerCase();
+    suffix.unshift(path.basename(current));
+    current = parent;
+  }
+}
+
 function sameUsageTarget(file, usagePath) {
-  const canonical = (value) => {
-    const resolved = path.resolve(value);
-    let parent = path.dirname(resolved);
-    try { parent = fs.realpathSync.native(parent); } catch { /* not created yet */ }
-    return `${parent}${path.sep}${path.basename(resolved).toLowerCase()}`;
-  };
-  return canonical(file) === canonical(usagePath);
+  const target = canonicalTarget(file);
+  if (canonicalTarget(usagePath) === target) return true;
+  // A symlink at usage.json makes its target part of the projection's identity:
+  // writing the template there replaces what the inspected link resolves to.
+  try {
+    const link = fs.readlinkSync(usagePath);
+    return canonicalTarget(path.resolve(path.dirname(usagePath), link)) === target;
+  } catch {
+    return false;
+  }
 }
 
 const home = path.resolve(argValue('--home') ?? process.env.DSH_HOME ?? path.join(os.homedir(), '.dsh'));

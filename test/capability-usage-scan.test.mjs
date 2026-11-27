@@ -939,22 +939,38 @@ test('--template refuses a case-only alias of usage.json even before it exists',
   const env = scratch(t);
   writeRecord(env, { source: WIDGET_SOURCE });
   const usagePath = path.join(env.dataRoot, 'shared-plugins', 'usage.json');
-  const probe = path.join(env.root, 'case-probe');
-  fs.writeFileSync(probe, '');
-  const caseInsensitive = fs.existsSync(probe.toUpperCase());
-  fs.rmSync(probe);
-  const alias = joinCase(usagePath);
+  // The guard is intentionally uniform: a filename that differs only by case
+  // is refused on both case-sensitive and case-insensitive filesystems.
+  const alias = path.join(path.dirname(usagePath), path.basename(usagePath).toUpperCase());
   const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', alias], { encoding: 'utf8' });
-  if (caseInsensitive) {
-    assert.notEqual(out.status, 0);
-    assert.match(out.stderr, /must not target the usage projection/);
-  } else {
-    assert.ok(out.status === 0 || out.status === 3, out.stderr);
-  }
+  assert.notEqual(out.status, 0);
+  assert.match(out.stderr, /must not target the usage projection/);
   assert.equal(fs.existsSync(usagePath), false, 'the projection itself is never replaced by a template');
-  assert.equal(fs.existsSync(alias), !caseInsensitive, 'a distinct path is only written on a case-sensitive filesystem');
+  assert.equal(fs.existsSync(alias), false);
 });
 
-function joinCase(file) {
-  return path.join(path.dirname(file), path.basename(file).toUpperCase());
-}
+test('--template refuses a projection reached through a symlinked ancestor', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const link = path.join(env.root, 'data-link');
+  fs.symlinkSync(env.dataRoot, link);
+  const alias = path.join(link, 'shared-plugins', 'usage.json');
+  const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--data-root', env.dataRoot, '--template', alias], { encoding: 'utf8' });
+  assert.notEqual(out.status, 0);
+  assert.match(out.stderr, /must not target the usage projection/);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage.json')), false);
+  assert.equal(fs.existsSync(path.join(env.dataRoot, 'shared-plugins', 'usage-assessments.json')), false);
+});
+
+test('--template refuses the target of a dangling usage.json symlink', async (t) => {
+  const env = scratch(t);
+  writeRecord(env, { source: WIDGET_SOURCE });
+  const shared = path.join(env.dataRoot, 'shared-plugins');
+  const target = path.join(env.root, 'elsewhere', 'target.json');
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.symlinkSync(target, path.join(shared, 'usage.json'));
+  const out = spawnSync(process.execPath, [SCRIPT, '--home', env.root, '--template', target], { encoding: 'utf8' });
+  assert.notEqual(out.status, 0);
+  assert.match(out.stderr, /must not target the usage projection/);
+  assert.equal(fs.existsSync(target), false);
+});
