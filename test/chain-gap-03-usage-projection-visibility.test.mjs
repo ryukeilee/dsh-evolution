@@ -252,6 +252,22 @@ test('the supplement never evicts blocking actions or the bounded-read notice', 
   assert.ok(nextActions.length <= SELF_EVOLUTION_REVIEW_LIMITS.maxActions);
 });
 
+test('doctor stays ok for absent projection with no records, but degrades a damaged one', async (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'chain-gap-03-empty-index-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const paths = resolveEvolutionPaths({ dshHome: root });
+  fs.mkdirSync(path.join(paths.dataRoot, 'shared-plugins'), { recursive: true });
+  const absentReport = await collectDiagnostics({ home: root, paths });
+  assert.equal(absentReport.checks.find((row) => row.id === 'promotion.usage').level, 'ok');
+
+  fs.writeFileSync(path.join(paths.dataRoot, 'shared-plugins', 'usage.json'), '{ broken');
+  const damagedReport = await collectDiagnostics({ home: root, paths });
+  const check = damagedReport.checks.find((row) => row.id === 'promotion.usage');
+  assert.equal(check.level, 'degraded');
+  assert.equal(check.evidence.status, 'invalid');
+  assert.match(check.remediation, /--assessments/);
+});
+
 test('a projection that omits a published record is incomplete, not complete', async (t) => {
   const env = await fixture(t, 'missing-row');
   // A snapshot taken before a later publication can still say complete=true
