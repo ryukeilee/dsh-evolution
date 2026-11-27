@@ -98,11 +98,15 @@ sticky 失败并让下一次启动重试一次。诊断另有一个派生标记 
 祖先 fiber 置为 UNLOADING（`state === 5`），都按取消处理，因此「挂载已成功、但 capability/service 探针在关闭中
 退化」得到的 `skipped-incompatible` / `include-unavailable` 行同样不会被发布。会话仍处于可发布 context 时，
 首次 Include refresh 失败可在首轮即写非 sticky 的 `include-unavailable`，没有重试。回退阶段改为重建 Include
-子树：dispose 旧子树 → 证明释放（捕获的每个 Fiber 都已离开 active，旧 resolver 不再返回任何已评估行；
-resolver 抛错按已释放计）→ 写入 intended composition → 用同一 composition 重新 mount 一棵干净子树
-（仅对有证明的 `INACTIVE_EFFECT` 做三次有界重试），再逐行验证其中全部 intended 行。dispose 正常返回
-但旧行仍在线、或 disposer 明确失败时 fail closed：intended 行写 `include-unavailable`，不挂第二棵树，
-并保留旧 adapter / Fiber 供宿主 `dispose()` 重试且如实报 `released:false`；只有证明释放后才清空它们。
+子树：dispose 旧子树 → 证明释放（会话建立前从 `ctx.tools.schemas()` 记录的宿主工具基线，dispose 前后各取一次
+当前工具名，任何「dispose 前的插件工具名」仍在即为 `toolSurfaceLeftovers`；再加捕获的每个 Fiber 都已离开
+active、旧 resolver 不再返回任何已评估行，resolver 抛错按已释放计）→ 写入 intended composition → 用同一
+composition 重新 mount 一棵干净子树（仅对有证明的 `INACTIVE_EFFECT` 做三次有界重试），再逐行验证其中全部
+intended 行。工具面是唯一无法被「Fiber uid 已清空、resolver 已丢行」伪造的信号：Cordis 会捕获并记录 effect
+disposer 的异常，官方子树的 `dispose()` 仍正常返回，但插件注册的工具仍在线。未释放时 fail closed：intended
+行写 `include-unavailable`，不挂第二棵树，会话标记 `unreleasedOldTree`，并保留旧 adapter / Fiber 供宿主
+`dispose()` 重试且如实报 `released:false`（`disposeOnce` 同样重新检查工具面，即使 uid 与 resolver 都已清空
+也不报 `released:true`）；只有证明释放后才清空它们。
 新树不可能包含被排除的版本，因此不再有「refresh 重试」「settled 树」「live Entry 仍在线」等判断，也不会
 因为一个 Entry 存在但 Fiber 已失败而把健康前驱报成 `include-unavailable`。候选的插件 apply 失败仍记
 `plugin-apply-failed` 并在下一次 pass 回退到它替换的记录；宿主级错误（含重建本身失败）写非 sticky 的

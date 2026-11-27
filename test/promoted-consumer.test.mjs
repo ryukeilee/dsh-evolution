@@ -1036,7 +1036,16 @@ test('a fallback disposes the old tree before writing the intended composition',
   await session.dispose();
 });
 
-test('a disposed real Include child with an unsettled row fails closed without a second tree', async (t) => {
+/**
+ * A real Cordis/Include subscription whose plugin effect disposer throws before
+ * unregistering its tool. Cordis catches and logs the exception, so the child's
+ * dispose resolves and its rows drop out of the public resolver — yet the tool
+ * stays on the live registry. No resolver injection is used: the release proof
+ * has to come from the observable tool surface.
+ *
+ * A1 fails its first apply, forcing the consumer into its fallback rebuild.
+ */
+async function unreleasedToolSurface(t) {
   const { dataRoot, paths, createRecord, writeIndex } = await fixture(t);
   const predecessor = await createRecord({ toolName: 'stalled_a0_tool' });
   // A1 fails its first apply (forcing the fallback) but registers a tool on
@@ -1059,12 +1068,9 @@ test('a disposed real Include child with an unsettled row fails closed without a
     ].join('\n'),
   });
   // S is a REAL Cordis/Include plugin whose effect disposer throws at
-  // unregistration. Cordis records the cleanup exception in Fiber._unload()
-  // and the official child's dispose still resolves, leaving S's tool
-  // registered. The consumer's documented proof of "still online" is its
-  // public resolver, so the test keeps serving that row at that seam after
-  // the real dispose. Everything else is the official Include: the child,
-  // its fibers, the effect exception and the second mount attempt.
+  // unregistration. Cordis records the exception and the official child's
+  // dispose still resolves, leaving S's tool registered. Its Fiber and public
+  // resolver both look released, so only the tool surface can prove otherwise.
   const sibling = await createRecord({
     toolName: 'stalled_s_tool',
     inject: ['tools'],
@@ -1095,56 +1101,54 @@ test('a disposed real Include child with an unsettled row fails closed without a
 
   let mountCount = 0;
   let firstAdapter;
-  const sRowId = `shared-${sibling.record.id}`;
   const mountInclude = async (mountCtx, config) => {
     const adapter = await mountIncludeTree(mountCtx, config);
     mountCount += 1;
-    if (mountCount !== 1) return adapter;
-    firstAdapter = adapter;
-    let disposed = false;
-    let oldSEntry;
-    const plainResolve = adapter.resolveEntry.bind(adapter);
-    adapter.resolveEntry = (rowId) => {
-      if (rowId !== sRowId) return plainResolve(rowId);
-      if (!disposed) {
-        const entry = plainResolve(rowId);
-        if (entry) oldSEntry = entry;
-        return entry;
-      }
-      // Cordis logged S's disposer exception and returned normally, but the
-      // row is still online. Keep that fact visible to the consumer's proof
-      // instead of letting the resolver silently forget the failed cleanup.
-      return oldSEntry ?? null;
-    };
-    const plainDispose = adapter.dispose.bind(adapter);
-    adapter.dispose = async () => {
-      await plainDispose();
-      disposed = true;
-    };
+    if (mountCount === 1) firstAdapter = adapter;
     return adapter;
   };
-
   const session = await mountSession(ctx, dataRoot, { mountInclude });
-  const rows = new Map(session.rows.map((row) => [row.id, row]));
+  return {
+    dataRoot, paths, ctx, session, predecessor, replacement, sibling,
+    registerCalls, firstAdapter, mountCount: () => mountCount,
+  };
+}
 
-  assert.equal(mountCount, 1, 'no second Include subtree is mounted over the unsettled one');
-  assert.equal(rows.get(replacement.record.id).reason, 'plugin-apply-failed');
-  for (const record of [predecessor.record, sibling.record]) {
+test('a disposed real Include child with a live tool surface fails closed without a second tree', async (t) => {
+  const env = await unreleasedToolSurface(t);
+  const rows = new Map(env.session.rows.map((row) => [row.id, row]));
+
+  assert.equal(env.mountCount(), 1, 'no second Include subtree is mounted over the unsettled one');
+  assert.equal(rows.get(env.replacement.record.id).reason, 'plugin-apply-failed');
+  for (const record of [env.predecessor.record, env.sibling.record]) {
     assert.equal(rows.get(record.id).status, 'failed');
     assert.equal(rows.get(record.id).reason, 'include-unavailable', 'intended rows are not claimed active without a released tree');
   }
-  assert.equal(session.adapter, firstAdapter, 'the unsettled old tree is kept for a disposal retry');
-  assert.equal(session.mounted.size, 1, 'the still-online S fiber is kept');
-  assert.ok(session.mounted.has(sibling.record.id));
+  assert.equal(env.session.unreleasedOldTree, true, 'the live tool surface is detected as an unreleased old tree');
+  assert.equal(env.session.adapter, env.firstAdapter, 'the unsettled old tree is kept for a disposal retry');
+  assert.equal(env.session.mounted.size, 1, 'the still-online S fiber is kept');
+  assert.ok(env.session.mounted.has(env.sibling.record.id));
   assert.equal(
-    registerCalls.filter((name) => name === sibling.toolName).length,
+    env.registerCalls.filter((name) => name === env.sibling.toolName).length,
     1,
     'S is registered only once: a swallowed disposal must not double-mount it',
   );
-  await session.dispose();
-  assert.equal(session.adapter, firstAdapter, 'the retried disposal still sees the old tree');
-  const state = await readConsumerState(paths, 'acp');
-  assert.equal(state.state.plugins.find((row) => row.id === predecessor.record.id).reason, 'include-unavailable');
+  assert.deepEqual(
+    env.ctx.tools.schemas().map((definition) => definition.name).sort(),
+    [env.replacement.toolName, env.sibling.toolName].sort(),
+    'only the first tree tools remain; the restored predecessor was never mounted on a second tree',
+  );
+  const state = await readConsumerState(env.paths, 'acp');
+  assert.equal(state.state.plugins.find((row) => row.id === env.predecessor.record.id).reason, 'include-unavailable');
+});
+
+test('disposing a real Include tree with a live tool surface reports released:false', async (t) => {
+  const env = await unreleasedToolSurface(t);
+  const disposal = await env.session.dispose();
+  assert.equal(disposal.released, false, 'a still-registered plugin tool is not a released tree');
+  assert.equal(disposal.entries, 1, 'the kept S fiber is reported truthfully');
+  const state = await readConsumerState(env.paths, 'acp');
+  assert.deepEqual(state.state.disposal, { released: false, entries: 1 });
 });
 
 test('a fallback does not report a healthy predecessor as include-unavailable when the failed replacement keeps its entry', async (t) => {
