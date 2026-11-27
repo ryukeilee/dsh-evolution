@@ -52,6 +52,8 @@ import { resolveEvolutionPaths } from '../lib/diagnostics.js';
 import {
   annotateSharedRecord,
   consumerNeedsRestart,
+  consumerRestartGuidance,
+  pendingRestartProfiles,
   readConsumerState,
   readDisableState,
   readPromotedPlugin,
@@ -436,6 +438,26 @@ async function commandRevokeSupersede(options) {
   };
 }
 
+/**
+ * Every command reports which consumer profiles have not loaded the index the
+ * command just changed. The predicate is the doctor's own, so a successful
+ * approve/supersede/disable/enable can never disagree with `promotion.sharing`.
+ */
+async function withRestartGuidance(options, result) {
+  if (!result || result.ok === false) return result;
+  const paths = pathsFor(options);
+  const [index, disable] = await Promise.all([readSharedIndex(paths), readDisableState(paths)]);
+  if (index.status !== 'ok') return { ...result, pendingRestartProfiles: [] };
+  const states = {};
+  for (const profile of SHARED_CONSUMER_PROFILES) {
+    const state = await readConsumerState(paths, profile);
+    if (state.state) states[profile] = state.state;
+  }
+  const pending = pendingRestartProfiles(index.updatedAt, index.records, states, disable.entries);
+  const guidance = consumerRestartGuidance(pending);
+  return { ...result, pendingRestartProfiles: pending, ...(guidance ? { restartGuidance: guidance } : {}) };
+}
+
 async function main(argv) {
   const options = parseArgs(argv);
   if (options.help || !options.command || options.command === '--help' || options.command === '-h') { process.stdout.write(HELP); return 0; }
@@ -449,6 +471,7 @@ async function main(argv) {
   else if (options.command === 'supersede') result = await commandSupersede(options);
   else if (options.command === 'revoke-supersede') result = await commandRevokeSupersede(options);
   else throw new Error(`unknown command: ${options.command}`);
+  result = await withRestartGuidance(options, result);
   if (options.json) process.stdout.write(`${JSON.stringify(result)}\n`);
   else process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   return result.ok === false ? 2 : 0;

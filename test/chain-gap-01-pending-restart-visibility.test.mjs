@@ -1,0 +1,150 @@
+// DSH-EVOLUTION-CHAIN-GAP-01 / P1: after the shared index is updated, doctor
+// and the shared-plugins operator commands must name the consumer profiles that
+// have not loaded it and give restart guidance. A profile that already observed
+// the current index must stay on the normal path.
+//
+// Synthetic fixtures only (os.tmpdir()); no real DSH home is read or written.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+import { collectDiagnostics, resolveEvolutionPaths } from '../lib/diagnostics.js';
+import { consumerStateDocument, publishSharedRecord, readSharedIndex, writeConsumerState } from '../lib/promoted-sharing.js';
+
+const CLI = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'scripts', 'shared-plugins.mjs');
+const HEX = (value) => crypto.createHash('sha256').update(value).digest('hex');
+const KEY = 'b'.repeat(64);
+const SOURCE = 'export const name = "shared";\nexport const inject = ["tools"];\nexport function apply() {}\n';
+const OLD = '2020-01-01T00:00:00.000Z';
+
+function recordFor(suffix, host, modulePath, manifest) {
+  const pluginName = `dsh-evolution-promoted-${suffix}`;
+  return {
+    id: `evolution-promoted-${suffix}`, schemaVersion: 1, experimentId: `exp-chain-gap-01-${suffix}`,
+    pluginName, moduleUrl: pathToFileURL(modulePath).href, entry: 'lib/index.js',
+    sourceSha256: HEX(SOURCE), manifestSha256: HEX(manifest),
+    publisherProfile: 'desktop', approvedProfiles: ['acp', 'web'],
+    stable: { committedAt: '2026-01-02T00:00:00.000Z', promotionTimestamp: '2026-01-01T00:00:00.000Z', decision: 'benefit', canary: { healthObservationWindow: 2, observations: 2, startupVerified: true } },
+    requiredServices: ['tools'], serviceMembers: {}, requiredCapabilities: ['fiberLifecycle', 'fiberAwait', 'include', 'toolsRegistry'],
+    hostOnly: true, host, revalidation: [], publishedAt: '2026-01-02T00:00:00.000Z',
+  };
+}
+
+async function fixture(t, suffixes = ['aaaaaaaaaaaa']) {
+  const dshHome = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-chain-gap-01-doctor-'));
+  t.after(() => fs.rm(dshHome, { recursive: true, force: true }));
+  const home = await fs.mkdtemp(path.join(os.tmpdir(), 'evo-chain-gap-01-cli-'));
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const paths = resolveEvolutionPaths({ dshHome });
+  const cliPaths = resolveEvolutionPaths({ dshHome: home });
+  for (const p of [paths, cliPaths]) {
+    await fs.mkdir(p.dataRoot, { recursive: true, mode: 0o700 });
+    await fs.writeFile(p.keyPath, KEY, { mode: 0o600 });
+  }
+  const observed = await collectDiagnostics({ dshHome, home: true, probe: { skipComposition: true } });
+  const hostEvidence = observed.checks.find((check) => check.id === 'host.version')?.evidence ?? {};
+  const modulesCheck = observed.checks.find((check) => check.id === 'host.modules');
+  const modules = modulesCheck?.evidence?.modules ?? [];
+  const facts = modulesCheck?.evidence?.hostFacts ?? null;
+  const moduleVersion = (name) => modules.find((module) => module.name === name)?.version ?? null;
+  const host = {
+    dsh: facts?.dsh ?? hostEvidence.found ?? null,
+    cordis: facts?.cordis ?? moduleVersion('@deepseek-ai/cordis'),
+    include: facts?.include ?? moduleVersion('@deepseek-ai/cordis-plugin-include'),
+    node: process.version,
+    verifiedAt: '2026-01-02T00:00:00.000Z',
+  };
+  const records = [];
+  for (const [target, suffix] of [['doctor', suffixes[0]], ['cli', suffixes[0]], ['cli', suffixes[1] ?? 'bbbbbbbbbbbb']]) {
+    if (!suffix) continue;
+    const root = target === 'doctor' ? paths : cliPaths;
+    const pluginDir = path.join(root.pluginRoot, `dsh-evolution-promoted-${suffix}`);
+    await fs.mkdir(path.join(pluginDir, 'lib'), { recursive: true });
+    const modulePath = path.join(pluginDir, 'lib', 'index.js');
+    await fs.writeFile(modulePath, SOURCE);
+    const manifest = `${JSON.stringify({ name: `dsh-evolution-promoted-${suffix}`, version: '0.1.0', type: 'module', main: 'lib/index.js' })}\n`;
+    await fs.writeFile(path.join(pluginDir, 'package.json'), manifest);
+    const record = recordFor(suffix, host, modulePath, manifest);
+    await publishSharedRecord({ dataRoot: root.dataRoot, pluginRoot: root.pluginRoot }, record);
+    records.push({ root, record });
+  }
+  const index = await readSharedIndex({ dataRoot: paths.dataRoot, pluginRoot: paths.pluginRoot });
+  const cliIndex = await readSharedIndex({ dataRoot: cliPaths.dataRoot, pluginRoot: cliPaths.pluginRoot });
+  return { dshHome, paths, cliPaths, host, records, index, cliIndex };
+}
+
+async function writeConsumers(root, host, pluginIds, observed) {
+  for (const [profile, indexUpdatedAt] of Object.entries(observed)) {
+    await writeConsumerState({ dataRoot: root.dataRoot }, profile, consumerStateDocument({
+      profile, host, indexUpdatedAt, compositionPath: null,
+      plugins: pluginIds.map((id) => ({ id, status: 'active', reason: null })),
+    }));
+  }
+}
+
+const checkOf = (report) => report.checks.find((check) => check.id === 'promotion.sharing');
+
+function runCli(args, dataRoot) {
+  const result = spawnSync(process.execPath, [CLI, ...args, '--data-root', dataRoot, '--json'], { encoding: 'utf8' });
+  let json = null;
+  try { json = JSON.parse(result.stdout); } catch { /* reported by assertions */ }
+  return { code: result.status, json, stderr: result.stderr };
+}
+
+test('doctor names the stale profile in summary and remediation, while acp stays on the normal path', async (t) => {
+  const env = await fixture(t);
+  await writeConsumers(env.paths, env.host, [env.records[0].record.id], { acp: env.index.updatedAt, web: OLD });
+  const check = checkOf(await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } }));
+  assert.equal(check.level, 'degraded', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.pendingRestart, ['web']);
+  assert.match(check.summary, /web/);
+  assert.match(check.remediation, /web/);
+  assert.match(check.remediation, /[Rr]estart/);
+  assert.equal(check.evidence.pendingRestart.includes('acp'), false, 'acp followed the index and must not be named');
+});
+
+test('a consumer that already observed the current index keeps the unchanged normal path', async (t) => {
+  const env = await fixture(t);
+  await writeConsumers(env.paths, env.host, [env.records[0].record.id], { acp: env.index.updatedAt, web: env.index.updatedAt });
+  const check = checkOf(await collectDiagnostics({ dshHome: env.dshHome, home: true, probe: { skipComposition: true } }));
+  assert.equal(check.level, 'ok', JSON.stringify(check.evidence));
+  assert.deepEqual(check.evidence.pendingRestart, []);
+  assert.doesNotMatch(check.summary, /need a restart/);
+  assert.equal(check.remediation, undefined);
+});
+
+test('approve, supersede, disable and enable report the stale profile in their JSON result', async (t) => {
+  // A fresh data root per command: supersede rotates the index timestamp, so
+  // the command's own effect on acp must not leak into the next case.
+  const cases = [
+    ['approve', ['approve', '--plugin', 'P0', '--profile', 'web', '--approval', 'owner words'], ['web']],
+    ['supersede', ['supersede', '--old', 'P0', '--new', 'P1', '--profile', 'web', '--approval', 'owner words'], ['acp', 'web']],
+    ['disable', ['disable', '--plugin', 'P0', '--profile', 'web'], ['web']],
+    ['enable', ['enable', '--plugin', 'P0', '--profile', 'web'], ['web']],
+  ];
+  for (const [name, template, expected] of cases) {
+    const env = await fixture(t, ['aaaaaaaaaaaa', 'bbbbbbbbbbbb']);
+    const [first, second] = env.records.filter((row) => row.root === env.cliPaths).map((row) => row.record);
+    await writeConsumers(env.cliPaths, env.host, [first.id, second.id], { acp: env.cliIndex.updatedAt, web: OLD });
+    const args = template.map((value) => value === 'P0' ? first.id : value === 'P1' ? second.id : value);
+    const run = runCli(args, env.cliPaths.dataRoot);
+    assert.equal(run.code, 0, `${name}: ${run.stderr}`);
+    assert.deepEqual(run.json.pendingRestartProfiles, expected, `${name}: ${JSON.stringify(run.json)}`);
+    assert.match(run.json.restartGuidance ?? '', /web/);
+    assert.match(run.json.restartGuidance ?? '', /[Rr]estart/);
+  }
+});
+
+test('CLI normal path reports an empty pending-restart list when every consumer followed the index', async (t) => {
+  const env = await fixture(t);
+  const record = env.records.find((row) => row.root === env.cliPaths).record;
+  await writeConsumers(env.cliPaths, env.host, [record.id], { acp: env.cliIndex.updatedAt, web: env.cliIndex.updatedAt });
+  const run = runCli(['approve', '--plugin', record.id, '--profile', 'web', '--approval', 'owner words'], env.cliPaths.dataRoot);
+  assert.equal(run.code, 0, run.stderr);
+  assert.deepEqual(run.json.pendingRestartProfiles, []);
+  assert.equal(run.json.restartGuidance, undefined);
+});
