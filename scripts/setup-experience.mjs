@@ -52,6 +52,34 @@ export function setupPlan({ home, tarball, cli }) {
   });
 }
 
+/**
+ * Read back what the official CLI actually installed in every target profile.
+ * Installation is deliberately not atomic, so a partial run must report which
+ * profiles still lag instead of only where the failure was noticed. Unreadable
+ * manifests are reported as unknown, never fatal to the readback itself.
+ */
+export function installedVersionSummary(home, profiles) {
+  const rows = profiles.map((profile) => {
+    const file = path.join(home, 'profiles', profile, 'node_modules', 'dsh-evolution', 'package.json');
+    let installedVersion = null;
+    let error = null;
+    try {
+      const value = JSON.parse(fs.readFileSync(file, 'utf8'));
+      installedVersion = typeof value?.version === 'string' ? value.version : null;
+      if (!installedVersion) error = 'MISSING_VERSION';
+    } catch (cause) { error = String(cause?.code || cause?.message || cause); }
+    return { profile, installedVersion, error };
+  });
+  const counts = new Map();
+  for (const row of rows) if (row.installedVersion) counts.set(row.installedVersion, (counts.get(row.installedVersion) || 0) + 1);
+  const referenceVersion = [...counts.entries()].sort((left, right) =>
+    right[1] - left[1] || rows.findIndex((row) => row.installedVersion === left[0]) - rows.findIndex((row) => row.installedVersion === right[0]))[0]?.[0] ?? null;
+  const skewed = new Set(rows.filter((row) => row.installedVersion).map((row) => row.installedVersion)).size > 1;
+  const unfinished = rows.filter((row) => row.installedVersion === null || (referenceVersion && row.installedVersion !== referenceVersion))
+    .map((row) => ({ profile: row.profile, installedVersion: row.installedVersion, error: row.error }));
+  return { profiles: rows, referenceVersion, skewed, unfinished };
+}
+
 function main(argv) {
   const options = { home: process.env.DSH_HOME || path.join(os.homedir(), '.dsh'), apply: false };
   for (let i = 0; i < argv.length; i++) {
@@ -80,9 +108,13 @@ function main(argv) {
   // Official plugin management owns dependency registration. Apply each owned
   // override only after success; report partial progress instead of pretending
   // a multi-profile install is an atomic DSH transaction.
+  let installError = null;
   for (const item of plan) {
     const result = spawnSync(item.command, item.args, { env: { ...process.env, DSH_HOME: home }, stdio: 'inherit' });
-    if (result.error || result.status !== 0) throw new Error(`Installation stopped at ${item.profile}; previous profiles remain installed`);
+    if (result.error || result.status !== 0) {
+      installError = `Installation stopped at ${item.profile}; previous profiles remain installed`;
+      break;
+    }
     const current = fs.existsSync(item.file) ? fs.readFileSync(item.file, 'utf8') : '';
     // The official CLI may create the profile's stock patch on first install.
     // Recompute over that file, preserving its contents and all user entries.
@@ -96,6 +128,16 @@ function main(argv) {
       try { fs.fsyncSync(directory); } finally { fs.closeSync(directory); }
     }
     console.log(`${item.profile}: configured; restart this entry to apply (HMR disabled)`);
+  }
+  // Read back every target profile after the loop, including after a partial
+  // run, so the operator sees an explicit per-profile summary and the exact
+  // profiles still needing work.
+  const summary = installedVersionSummary(home, plan.map((item) => item.profile));
+  console.log(JSON.stringify({ installSummary: summary, ...(installError ? { installError } : {}) }, null, 2));
+  if (installError || summary.skewed || summary.unfinished.length > 0) {
+    if (installError) console.error(installError);
+    else console.error(`Installed versions are skewed (reference ${summary.referenceVersion}); unfinished profiles: ${summary.unfinished.map((row) => `${row.profile}=${row.installedVersion ?? 'unknown'}`).join(', ')}`);
+    process.exitCode = 1;
   }
 }
 
