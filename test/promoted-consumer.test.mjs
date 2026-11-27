@@ -653,6 +653,58 @@ test('fallback verifies each candidate even when a sibling live entry is missing
   await session.dispose();
 });
 
+test('a non-candidate apply failure after fallback walks back its own predecessor too', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const a = await createRecord({ toolName: 'chain_a_tool' });
+  const c = await createRecord({ toolName: 'chain_c_tool' });
+  const brokenReplacement = (toolName) => createRecord({
+    toolName,
+    inject: [],
+    requiredServices: [],
+    source: `export const name = '${toolName}';\nexport function apply() { throw new Error('${toolName} exploded'); }\n`,
+  });
+  const b = await brokenReplacement('broken_b_tool');
+  const d = await brokenReplacement('broken_d_tool');
+  await writeIndex([
+    { ...a.record, supersededBy: { acp: supersedeMarker(b.record) } },
+    b.record,
+    { ...c.record, supersededBy: { acp: supersedeMarker(d.record) } },
+    d.record,
+  ]);
+
+  // B fails on the first pass, forcing a fallback refresh. That refresh also
+  // installs D, which was already active; on the new tree D's own apply fails.
+  let refreshCount = 0;
+  let fallback = false;
+  const mountInclude = async (_ctx, config) => {
+    const adapter = fakeIncludeAdapter(config, {
+      fiberFor: (rowId) => {
+        if (rowId === `shared-${b.record.id}`) return fakeFiber({ failApply: true });
+        if (fallback && rowId === `shared-${d.record.id}`) return fakeFiber({ failApply: true });
+        return fakeFiber();
+      },
+    });
+    const plainRefresh = adapter.refresh;
+    adapter.refresh = async () => {
+      if (refreshCount >= 1) fallback = true;
+      refreshCount += 1;
+      await plainRefresh();
+    };
+    return adapter;
+  };
+  const session = await mountSession(await boot(), dataRoot, { mountInclude });
+  const rows = new Map(session.rows.map((row) => [row.id, row]));
+
+  assert.equal(rows.get(b.record.id).reason, 'plugin-apply-failed');
+  assert.equal(rows.get(d.record.id).status, 'failed');
+  assert.equal(rows.get(d.record.id).reason, 'plugin-apply-failed', 'a surviving row that fails to apply is still a plugin failure');
+  assert.equal(rows.get(d.record.id).errorCode, 'E_CONSUMER_PLUGIN_APPLY_FAILED');
+  assert.equal(session.mounted.has(d.record.id), false, 'the failed row is not held for disposal');
+  assert.equal(rows.get(c.record.id).status, 'active', 'the second chain predecessor is restored in the same start');
+  assert.ok(session.mounted.has(c.record.id));
+  await session.dispose();
+});
+
 test('a fallback refresh that drops a previously active sibling unmounts it', async (t) => {
   const { dataRoot, createRecord, writeIndex } = await fixture(t);
   // Two replacement chains whose replacements fail to apply force a fallback
@@ -794,6 +846,37 @@ test('a first Include refresh failure does not keep the replacement sticky on th
   assert.ok(second.mounted.has(replacement.record.id));
   const state = await readConsumerState(paths, 'acp');
   assert.equal(state.state.plugins.find((row) => row.id === replacement.record.id).status, 'active');
+  await second.dispose();
+});
+
+test('a transient missing entry on the first verify is non-sticky and retried next start', async (t) => {
+  const { dataRoot, createRecord, writeIndex } = await fixture(t);
+  const { record } = await createRecord();
+  await writeIndex([record]);
+
+  // The first refresh succeeds, but the public resolver does not serve the row
+  // yet: a transient live-tree defect, not a failure of the published plugin.
+  const first = await mountSession(await boot(), dataRoot, {
+    mountInclude: (_ctx, config) => fakeIncludeAdapter(config, {
+      fiberFor: () => fakeFiber(),
+      omitEntries: new Set([`shared-${record.id}`]),
+    }),
+  });
+  const firstRow = new Map(first.rows.map((row) => [row.id, row])).get(record.id);
+  assert.equal(firstRow.status, 'failed');
+  assert.equal(firstRow.reason, 'include-unavailable', 'a resolver miss must not be recorded as a sticky plugin failure');
+  assert.equal(firstRow.errorCode, 'E_CONSUMER_ENTRY_MISSING');
+  await first.dispose();
+
+  // The same source on a healthy tree is retried, not skipped by a sticky
+  // plugin-apply-failed receipt from the previous start.
+  const secondContext = await boot();
+  const second = await mountSession(secondContext, dataRoot, {
+    mountInclude: (_ctx, config) => fakeIncludeAdapter(config, { fiberFor: () => fakeFiber() }),
+  });
+  const secondRow = new Map(second.rows.map((row) => [row.id, row])).get(record.id);
+  assert.equal(secondRow.status, 'active');
+  assert.ok(second.mounted.has(record.id), 'the retried row has a live, verified fiber');
   await second.dispose();
 });
 
